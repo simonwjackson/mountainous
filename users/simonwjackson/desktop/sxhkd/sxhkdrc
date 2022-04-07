@@ -1,0 +1,220 @@
+# TODO: UNBOUND KEYS
+# kitty-popup wifi-menu
+  
+# new term
+super + {_, ctrl +, alt +} Return
+  {kitty tmux, kitty, kitty-popup $SHELL}
+  # {alacritty --command tmux, alacritty, kitty-popup $SHELL}}
+  # {kitty, bspc rule -a \* -o state=floating sticky=on layer=above rectangle=720x360+600+26 && kitty}
+  # {kitty tmux, kitty-popup $SHELL}
+
+# kill focused window
+super + x
+  kill-or-close
+
+super + {_, alt +} t
+  flameshot {gui,full --clipboard}
+
+super + alt + ctrl + j
+  kitty-popup xrandr-scale
+
+super + y; {_, super +}y
+  kitty-popup youtube-search
+
+super + y; {_, super +}s
+  kitty-popup youtube-subscriptions
+
+# Reload polybar
+super + shift + r; p
+  polybar-msg cmd restart
+
+# Reload sxhkdrc
+super + shift + r; s
+  pkill -usr1 -x sxhkd
+
+# Reload bspwmrc
+super + shift + r; b
+  ${HOME}/.config/bspwm/bspwmrc
+
+super + period
+  kitty-popup sxhkd-cheat
+
+super + comma
+  resize-window 16 9
+
+super + w; {_, super +}w
+  kitty-popup vimwiki-index
+
+super + w; {_, super +}i
+  kitty-popup vimwiki-inbox
+
+# Music menu
+super + p; {_, super +}s
+  kitty-popup media-control search
+
+super + p; {_, super +}l
+  kitty-popup media-control library
+
+super + apostrophe
+  kitty-popup interview-snippets
+  
+# Pianobar
+# super + p; {_, super +}p
+#   term-float control-pianobar station
+
+# Dark Mode
+# super + r ; c ; d
+#   source set-colors plastic
+
+# Light Mode
+# super + r ; c ; n
+#   source set-colors neg
+
+# Generate password
+super + r ; g ; p
+  bw generate | xclip -selection clipboard
+
+super + r ; j
+  kitty-popup node
+
+# super + d; {_,super +} {d,a,n,t,j,r}
+#   term-float tasker {_,_} {_,add,now,toggle,journal,summary}
+ 
+#################
+# Audio
+#################
+
+XF86Audio{Play,Next,Prev}
+  media-control {toggle,next,prev}
+  
+super + XF86AudioPlay
+  media-control explain
+
+# Toggle mute
+XF86AudioMute
+  pulseaudio-ctl mute
+
+# Change volume
+#XF86Audio{Raise,Lower}Volume
+#  pulseaudio-ctl {up,down} 2
+
+# # Pianobar
+# super + XF86Audio{Rewind,LowerVolume,RaiseVolume,Forward}
+#   media-control {ban,tired,like,bookmark}
+
+XF86MonBrightnessUp
+  backlight_control +5
+
+XF86MonBrightnessDown
+  backlight_control -5
+
+#####################
+# Movement
+#####################
+
+# swap the current node and the biggest window
+super + g
+  bspc node -s biggest.window.local
+
+# toggle floating
+super + space
+  bspc node -t "~floating"
+
+# focus the node in the given direction
+super + {h,j,k,l}
+  [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] \
+    && bspc node -f {west,south,north,east}.local \
+    || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
+  #movement {west,south,north,east}
+
+# move the node in the given direction
+super + ctrl + {h,j,k,l}
+  bspc node -s {west,south,north,east}
+
+super + shift + {h,j,k,l}
+  bspc node -p {west,south,north,east}
+
+# Go to monitor
+super + {Left,Right} 
+  bspc monitor {west,east} --focus
+
+# focus the older or newer node in the focus history
+super + {o,i}
+  bspc wm -h off; \
+  bspc node {older,newer} -f; \
+  bspc wm -h on
+
+# Cycle desktops
+super + {Down,Up}
+    bspc desktop -f {prev,next}.local
+
+super + shift + {Down,Up}
+    bspc node -d next
+
+# focus or send to the given desktop
+# super + {_,alt + }{1-3,7-9}
+#   bspc {desktop -f,node -d} {I,II,III,VII,VIII,IX}
+#
+# super + {_,alt + }{4-6}
+#   bspc {monitor --focus,node --to-monitor} {DP1-8,VIRTUAL1,HDMI2} {_,--follow}
+
+# move window to another desktop
+#super + apostrophe
+# bspc node -m next --follow
+
+# move workspace to another monitor 
+# super + alt + apostrophe
+#   desk=`bspc query -D -d focused`; \
+#   bspc desktop -m {prev,next}; \
+#   bspc desktop -f $desk
+
+super + alt + ctrl + {h,l} 
+  bspc node --to-monitor {west,east} --follow
+	
+#####################
+# Resize
+##################### 
+
+# Resizing (natural)
+super + shift {_,+ ctrl} + {Left,Down,Up,Right}
+  STEP={100,20}; SELECTION={1,2,3,4}; \
+  bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || \
+  bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
+
+super + alt + {Left,Right}
+  bspc node @/ -C {backward,forward}
+
+
+#####################
+# Layout
+#####################
+
+# toggle fullscreen mode for the focused container
+super + m
+  bspc desktop -l next
+
+
+#####################
+# Applications
+#####################
+
+# start qutebrowser
+super + b; {_, super +}b
+  qutebrowser
+
+# start firefox
+super + b; {_, super +}f
+  firefox
+
+# File explorer
+super + f
+  kitty-popup lf ~
+
+#####################
+# Misc
+#####################
+
+# Bluetooth Devices
+super + r; b
+  kitty-popup bluetooth-devices
+
