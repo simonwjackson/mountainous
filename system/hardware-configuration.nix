@@ -8,19 +8,17 @@
     [ (modulesPath + "/profiles/qemu-guest.nix")
     ];
 
-  boot.initrd.availableKernelModules = [ "ehci_pci" "xhci_pci" "ohci_pci" "virtio_pci" "ahci" "usbhid" "usb_storage" "sd_mod" "sr_mod" "virtio_blk" ];
+  boot.initrd.availableKernelModules = [ "ehci_pci" "xhci_pci" "ohci_pci" "virtio_pci" "ahci" "usbhid" "sr_mod" "virtio_blk" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/706b002c-e696-45e4-81d7-7d9ade894afd";
+    { device = "/dev/disk/by-label/nixos";
       fsType = "ext4";
     };
 
-  swapDevices =
-    [ { device = "/dev/disk/by-uuid/7ea23175-8bfa-415e-85f7-eca1004d2702"; }
-    ];
+  swapDevices = [ ];
 
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   # high-resolution display

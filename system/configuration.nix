@@ -7,17 +7,16 @@
 {
   imports =
     [
-      <home-manager/nixos>
       # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
 
-  nix = {
-    package = pkgs.nixFlakes;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-  };
+  #nix = {
+  #  package = pkgs.nixFlakes;
+  #  extraOptions = ''
+  #    experimental-features = nix-command flakes
+  #  '';
+  #};
 
   # Use the GRUB 2 boot loader.
   boot.loader.grub.device = "/dev/vda";
@@ -28,7 +27,7 @@
   # boot.loader.efi.efiSysMountPoint = "/boot/efi";
   # Define on which hard drive you want to install Grub.
 
-  networking.hostName = "fiji"; # Define your hostname.
+  # networking.hostName = "fiji"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Set your time zone.
@@ -61,18 +60,18 @@
       user = "simonwjackson";
     };
 
-    desktopManager = {
-      session = [{
-        name = "home-manager";
-        start = ''
-          ${pkgs.runtimeShell} $HOME/.hm-xsession &
-          waitPID=$!
-        '';
-      }];
-    };
+    #desktopManager = {
+    #  session = [{
+    #    name = "home-manager";
+    #    start = ''
+    #      ${pkgs.runtimeShell} $HOME/.hm-xsession &
+    #      waitPID=$!
+    #    '';
+    #  }];
+    #};
   };
-  #services.xserver.displayManager.gdm.enable = true;
-  #services.xserver.desktopManager.gnome.enable = true;
+  services.xserver.displayManager.gdm.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
 
 
   # Configure keymap in X11
@@ -82,9 +81,9 @@
   # services.printing.enable = true;
 
   # Enable sound.
-  sound.enable = true;
-  hardware.pulseaudio.enable = true;
-  nixpkgs.config.pulseaudio = true;
+  #sound.enable = true;
+  #hardware.pulseaudio.enable = true;
+  #nixpkgs.config.pulseaudio = true;
 
   nixpkgs.config.allowUnfree = true;
 
@@ -93,7 +92,7 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  users.defaultUserShell = pkgs.zsh;
+  #users.defaultUserShell = pkgs.zsh;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.simonwjackson = {
@@ -111,7 +110,7 @@
   environment.systemPackages = with pkgs; [
     firefox
     # Nix
-    nixFlakes
+    #nixFlakes
 
     # Other
     neovim
