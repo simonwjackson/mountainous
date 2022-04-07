@@ -1,6 +1,8 @@
 #!/bin/sh
 
-pushd ~/nix-config
+pushd ~/nix-config > /dev/null
+
 ./apply-system.sh \
 && ./apply-users.sh
-popd
+
+popd > /dev/null

@@ -11,12 +11,12 @@
       ./hardware-configuration.nix
     ];
 
-  #nix = {
-  #  package = pkgs.nixFlakes;
-  #  extraOptions = ''
-  #    experimental-features = nix-command flakes
-  #  '';
-  #};
+  nix = {
+    package = pkgs.nixFlakes;
+    extraOptions = ''
+      experimental-features = nix-command flakes
+    '';
+  };
 
   # Use the GRUB 2 boot loader.
   boot.loader.grub.device = "/dev/vda";

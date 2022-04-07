@@ -1,5 +1,8 @@
 #!/bin/sh
 
-pushd ~/nix-config
-home-manager switch -f ./users/simonwjackson/home.nix
-popd
+pushd ~/nix-config > /dev/null
+
+nix build .#homeConfigurations.simonwjackson.activationPackage
+./result/activate
+
+popd > /dev/null

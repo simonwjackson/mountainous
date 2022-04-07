@@ -2,6 +2,7 @@
 
 pushd ~/nix-config > /dev/null
 
-sudo nixos-rebuild switch --flake .#
+./update.sh \
+&& ./apply.sh
 
 popd > /dev/null
