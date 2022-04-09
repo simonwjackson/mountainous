@@ -13,7 +13,7 @@
     homeDirectory = "/home/simonwjackson";
   };
 
-  home.packages = with pkgs; [ 
+  home.packages = with pkgs; [
     git-crypt
   ];
 

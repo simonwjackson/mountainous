@@ -72,6 +72,216 @@ function! LazyGitPopup()
     endif
 endfunction
 
+
+" ====================================================
+"  => Plugins
+" ====================================================
+
+" Install vim-plug if needed
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+    silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+    autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
+call plug#begin('~/.local/share/nvim/plugged')
+
+" ----------------------------------------------------
+"  - Themes
+" ----------------------------------------------------
+
+Plug 'flrnprz/plastic.vim'
+
+
+" ----------------------------------------------------
+"  - Language Support
+" ----------------------------------------------------
+
+" Golang
+" Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+
+" Jinja2
+Plug 'Glench/Vim-Jinja2-Syntax'
+
+" Cucumber
+Plug 'tpope/vim-cucumber'
+
+" Elm
+Plug 'andys8/vim-elm-syntax' 
+
+" MDX
+Plug 'jxnblk/vim-mdx-js'
+
+" Docker
+Plug 'ekalinin/dockerfile.vim'
+
+" Git
+Plug 'tpope/vim-git'
+
+" A Vim syntax highlighting plugin for JavaScript and Flow.js
+Plug 'yuezk/vim-js' 
+
+" The React syntax highlighting and indenting plugin for vim.
+" Also supports the typescript tsx file.
+Plug 'maxmellon/vim-jsx-pretty'
+
+" Typescript
+Plug 'leafgarland/typescript-vim'
+Plug 'peitalin/vim-jsx-typescript'
+
+" Distinct highlighting of keywords vs values, 
+" JSON-specific (non-JS) warnings, quote concealing.
+Plug 'elzr/vim-json'
+
+" JSONC (with comments)
+Plug 'neoclide/jsonc.vim'
+
+" A Vim plugin that provides GraphQL file detection, syntax highlighting, and indentation.
+Plug 'jparise/vim-graphql'
+
+" quoting/parenthesizing made simple
+Plug 'tpope/vim-surround'
+
+" source ~/.config/nvim/plugins/gitgutter.vim
+Plug 'airblade/vim-gitgutter'
+" source ~/.config/nvim/plugins/which-key.vim
+" source ~/.config/nvim/plugins/bspwm.vim
+
+
+" Modify * to also work with visual selections.
+Plug 'nelstrom/vim-visual-star-search'
+
+" Automatically clear search highlights after you move your cursor.
+Plug 'haya14busa/is.vim'
+
+" Seamless navigation between tmux panes and vim splits
+Plug 'christoomey/vim-tmux-navigator'
+
+" Vim sugar for the UNIX shell commands that need it the most
+Plug 'tpope/vim-eunuch'
+
+
+
+" ----------------------------------------------------------------------------
+"  - Extras
+" ----------------------------------------------------------------------------
+
+" True Sublime Text style multiple selections for Vim
+Plug 'terryma/vim-multiple-cursors'
+
+" The React syntax highlighting and indenting plugin for vim.
+" Also supports the typescript tsx file.
+Plug 'maxmellon/vim-jsx-pretty'
+
+" A light and configurable statusline/tabline plugin for Vim http
+Plug 'itchyny/lightline.vim'
+
+" Adds file type icons to Vim plugins
+Plug 'ryanoasis/vim-devicons'
+
+
+" source ~/.config/nvim/plugins/goyo.vim
+" source ~/.config/nvim/plugins/limelight.vim
+
+" fzf for vim
+Plug 'junegunn/fzf'
+Plug 'junegunn/fzf.vim'
+
+" Use fzf instead of coc.nvim built-in fuzzy finder.  
+Plug 'antoinemadec/coc-fzf' 
+
+
+" source ~/.config/nvim/plugins/fugitive.vim
+" source ~/.config/nvim/plugins/nerdcommenter.vim
+
+" Improved * motions
+Plug 'haya14busa/vim-asterisk'
+
+" Briefly highlight which text was yanked.
+Plug 'machakann/vim-highlightedyank'
+
+" Modify * to also work with visual selections.
+Plug 'nelstrom/vim-visual-star-search'
+
+
+" FocusGained and FocusLost for vim inside Tmux
+" This is a plugin for Vim to dim inactive windows.  
+Plug 'tmux-plugins/vim-tmux-focus-events' 
+
+" An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
+" Plug 'TaDaa/vimade'
+
+" LF file browser
+Plug 'ptzz/lf.vim'
+Plug 'voldikss/vim-floaterm'
+
+" A personal wiki for Vim 
+Plug 'vimwiki/vimwiki'
+
+" Proper project management in vim.
+Plug 'tools-life/taskwiki'
+
+" Taskwarrior in VIM
+" Plug 'farseer90718/vim-taskwarrior'
+
+" Zettelkasten for VIM
+Plug 'michal-h21/vim-zettel'
+
+" source ~/.config/nvim/plugins/telescope.vim
+Plug 'nvim-lua/popup.nvim'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'fannheyward/telescope-coc.nvim'
+Plug 'nvim-telescope/telescope.nvim'
+
+" Icons
+Plug 'kyazdani42/nvim-web-devicons'
+
+" Auto Sessions
+" Plug 'rmagatti/auto-session'
+" Plug 'rmagatti/session-lens'
+
+" Todo Comments
+Plug 'folke/todo-comments.nvim'
+
+" Trouble
+Plug 'folke/trouble.nvim'
+
+" LazyGit
+Plug 'kdheepak/lazygit.nvim'
+
+" expand region (+/-)
+Plug 'terryma/vim-expand-region'
+
+" Ultisnips: Text Expansion
+Plug 'SirVer/ultisnips'
+
+" A multi-language debugging system for Vim 
+Plug 'puremourning/vimspector'
+
+" AI pair programmer
+Plug 'github/copilot.vim'
+
+" VIM Test
+Plug 'vim-test/vim-test'
+Plug 'rcarriga/vim-ultest', { 'do': ':UpdateRemotePlugins' }
+Plug 'dhruvasagar/vim-zoom'
+
+Plug 'pwntester/octo.nvim'
+Plug 'tpope/vim-obsession'
+Plug 'airblade/vim-rooter'
+
+Plug 'easymotion/vim-easymotion'
+Plug 'camgraff/telescope-tmux.nvim'
+Plug 'RyanMillerC/better-vim-tmux-resizer'
+
+" Distraction-free writing in Vim
+Plug 'junegunn/goyo.vim'
+
+" Swap windows without ruining your layout!
+Plug 'wesQ3/vim-windowswap'
+
+call plug#end()
+
 " ----------------------------------------------------------------------------
 "  - Write to file even when it does not exist
 " ----------------------------------------------------------------------------

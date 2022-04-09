@@ -13,7 +13,7 @@
 
   home.packages = with pkgs; [
     python3
-    #node2nix
+    node2nix
     nodejs
     nodePackages.npm
   ];

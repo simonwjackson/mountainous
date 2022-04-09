@@ -34,10 +34,10 @@
     ];
   };
 
-  #xsession = {
-  #  enable = true;
-  #  scriptPath = ".hm-xsession";
-  #};
+  xsession = {
+    enable = true;
+    scriptPath = ".hm-xsession";
+  };
  
   xresources = {
     properties = {
@@ -48,9 +48,9 @@
   gtk = {
     enable = true;
   
-    #gtk4.extraConfig = {
-    #  gtk-application-prefer-dark-theme = 1;
-    #};
+    gtk4.extraConfig = {
+      gtk-application-prefer-dark-theme = 1;
+    };
   };
   
   programs.mpv = {
@@ -67,11 +67,11 @@
     extraConfig = builtins.readFile (./kitty/kitty.conf);
   };
   
-  # services.picom = {
-  #   enable = true;
-  #
-  #   extraOptions = builtins.readFile (./picom/picom.conf);
-  # };
+  services.picom = {
+    enable = true;
+ 
+    extraOptions = builtins.readFile (./picom/picom.conf);
+  };
  
   services.sxhkd = {
     enable = true;

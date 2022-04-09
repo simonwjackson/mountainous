@@ -8,7 +8,6 @@
         pkgs = import nixpkgs { inherit system; };
         my-name = "my-script";
         my-buildInputs = with pkgs; [
-          # unrar
           unzip
           p7zip
         ];

@@ -60,18 +60,18 @@
       user = "simonwjackson";
     };
 
-    #desktopManager = {
-    #  session = [{
-    #    name = "home-manager";
-    #    start = ''
-    #      ${pkgs.runtimeShell} $HOME/.hm-xsession &
-    #      waitPID=$!
-    #    '';
-    #  }];
-    #};
+    desktopManager = {
+      session = [{
+        name = "home-manager";
+        start = ''
+          ${pkgs.runtimeShell} $HOME/.hm-xsession &
+          waitPID=$!
+        '';
+      }];
+    };
   };
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
+  #services.xserver.displayManager.gdm.enable = true;
+  #services.xserver.desktopManager.gnome.enable = true;
 
 
   # Configure keymap in X11
@@ -110,8 +110,6 @@
 
   environment.systemPackages = with pkgs; [
     firefox
-    # Nix
-    #nixFlakes
 
     # Other
     neovim
@@ -148,6 +146,4 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "21.11"; # Did you read the comment?
-
 }
-
