@@ -24,12 +24,12 @@
 
   in {
     homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-        inherit system pkgs username;
-	homeDirectory = "/home/${username}";
+      inherit system pkgs username;
+      homeDirectory = "/home/${username}";
 
-	configuration = import ./users/simonwjackson/home.nix;
-        # Update the state version as needed.
-        stateVersion = "21.11";
+      configuration = import ./users/simonwjackson/home.nix;
+      # Update the state version as needed.
+      stateVersion = "21.11";
     };
 
     nixosConfigurations = { 
@@ -37,9 +37,9 @@
       nixos = lib.nixosSystem {
         inherit system;
 
-	modules = [
+	    modules = [
           ./system/configuration.nix
-	];
+	    ];
       };
     };
   };
