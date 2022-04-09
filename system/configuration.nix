@@ -55,9 +55,11 @@
     enable = true;
     layout = "us";
 
-    displayManager.autoLogin = {
-      enable = true;
-      user = "simonwjackson";
+    displayManager = {
+      autoLogin = {
+        enable = true;
+        user = "simonwjackson";
+      };
     };
 
     desktopManager = {

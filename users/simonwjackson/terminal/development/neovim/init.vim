@@ -280,6 +280,8 @@ Plug 'junegunn/goyo.vim'
 " Swap windows without ruining your layout!
 Plug 'wesQ3/vim-windowswap'
 
+Plug 'lukas-reineke/lsp-format.nvim'
+
 call plug#end()
 
 " ----------------------------------------------------------------------------

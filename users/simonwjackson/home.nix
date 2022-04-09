@@ -15,6 +15,8 @@
 
   home.packages = with pkgs; [
     git-crypt
+    p7zip
+    killall
   ];
 
   programs.gpg = {

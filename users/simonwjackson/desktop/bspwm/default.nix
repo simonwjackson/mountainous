@@ -15,5 +15,8 @@
     enable = true;
 
     extraConfig = builtins.readFile (./bspwmrc);
+    startupPrograms = [
+      "kitty"
+    ];
   };
 }
