@@ -16,5 +16,4 @@
 
     extraConfig = builtins.readFile (./bspwmrc);
   };
-
 }

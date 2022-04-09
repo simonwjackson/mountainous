@@ -2,17 +2,17 @@
 
 let
   # installs a vim plugin from git with a given tag / branch
-  pluginGit = ref: repo: pkgs.vimUtils.buildVimPluginFrom2Nix {
-    pname = "${lib.strings.sanitizeDerivationName repo}";
-    version = ref;
-    src = builtins.fetchGit {
-      url = "https://github.com/${repo}.git";
-      ref = ref;
-    };
-  };
+  #pluginGit = ref: repo: pkgs.vimUtils.buildVimPluginFrom2Nix {
+  #  pname = "${lib.strings.sanitizeDerivationName repo}";
+  #  version = ref;
+  #  src = builtins.fetchGit {
+  #    url = "https://github.com/${repo}.git";
+  #    ref = ref;
+  #  };
+  #};
 
-  # always installs latest version
-  plugin = pluginGit "HEAD";
+  ## always installs latest version
+  #plugin = pluginGit "HEAD";
 in
 {
   imports = [
@@ -25,15 +25,15 @@ in
     sessionVariables = { };
   };
 
-  nixpkgs.overlays = [
-    (import (builtins.fetchTarball {
-      url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
-    }))
-  ];
+  # nixpkgs.overlays = [
+  #   (import (builtins.fetchTarball {
+  #     url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
+  #   }))
+  # ];
 
   programs.neovim = {
     enable = true;
-    package = pkgs.neovim-nightly;
+    #package = pkgs.neovim-nightly;
 
     extraPackages = with pkgs; [
       # ripgrep
@@ -56,7 +56,7 @@ in
       # ----------------------------
 
       # Plastic
-      (plugin "flrnprz/plastic.vim")
+      #(plugin "flrnprz/plastic.vim")
 
       # ----------------------------
       #  - Syntax
@@ -67,7 +67,7 @@ in
       vim-elm-syntax
       vim-git
       vim-qml
-      (plugin "rescript-lang/vim-rescript")
+      #(plugin "rescript-lang/vim-rescript")
 
       vim-jsx-pretty # The React syntax highlighting and indenting plugin for vim. Also supports the typescript tsx file.
       # Typescript
@@ -101,11 +101,11 @@ in
 
       limelight-vim # Hyperfocus-writing in Vim.
       goyo-vim # Distraction-free writing in Vim
-      vim-windowswap # Swap windows without ruining your layout!
+      ##### vim-windowswap # Swap windows without ruining your layout!
       todo-comments-nvim # Todo Comments
       lazygit-nvim # LazyGit
       trouble-nvim # Trouble
-      octo-nvim # Edit and review GitHub issues and pull requests
+      ##### octo-nvim # Edit and review GitHub issues and pull requests
       vim-obsession # continuously updated session files 
       vim-rooter # Changes Vim working directory to project root. 
       vim-easymotion # Vim motions on speed!
@@ -145,12 +145,12 @@ in
       coc-tsserver
       coc-vimlsp
 
-      (plugin "Glench/Vim-Jinja2-Syntax") # Jinja2
-      (plugin "tpope/vim-cucumber") # Cucumber
-      (plugin "jxnblk/vim-mdx-js") # MDX
-      (plugin "ekalinin/dockerfile.vim") # Docker
-      (plugin "yuezk/vim-js") # A Vim syntax highlighting plugin for JavaScript and Flow.js
-      (plugin "nelstrom/vim-visual-star-search") # Modify * to also work with visual selections.
+      # (plugin "Glench/Vim-Jinja2-Syntax") # Jinja2
+      # (plugin "tpope/vim-cucumber") # Cucumber
+      # (plugin "jxnblk/vim-mdx-js") # MDX
+      # (plugin "ekalinin/dockerfile.vim") # Docker
+      # (plugin "yuezk/vim-js") # A Vim syntax highlighting plugin for JavaScript and Flow.js
+      # (plugin "nelstrom/vim-visual-star-search") # Modify * to also work with visual selections.
       vim-easy-align # A simple, easy-to-use Vim alignment plugin.
       vim-repeat # Add repeat support to plugins
 
@@ -159,35 +159,35 @@ in
       # ----------------------------------------------------------------------------
 
       # fzf for vim
-      (plugin "junegunn/fzf")
-      (plugin "junegunn/fzf.vim")
+      #(plugin "junegunn/fzf")
+      #(plugin "junegunn/fzf.vim")
 
       # Modify * to also work with visual selections.
-      (plugin "nelstrom/vim-visual-star-search")
+      #(plugin "nelstrom/vim-visual-star-search")
 
       # An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
       # (plugin "TaDaa/vimade")
 
       # For lf
-      (plugin "voldikss/vim-floaterm")
+      #(plugin "voldikss/vim-floaterm")
 
       # Taskwarrior in VIM
       # (plugin "farseer90718/vim-taskwarrior")
 
       # Zettelkasten for VIM
-      (plugin "michal-h21/vim-zettel")
+      #(plugin "michal-h21/vim-zettel")
 
       # Auto Sessions
       # (plugin "rmagatti/auto-session")
       # (plugin "rmagatti/session-lens")
 
-      (plugin "github/copilot.vim") # AI pair programmer
+      #(plugin "github/copilot.vim") # AI pair programmer
 
-      (plugin "dhruvasagar/vim-zoom")
-      (plugin "camgraff/telescope-tmux.nvim")
-      (plugin "RyanMillerC/better-vim-tmux-resizer")
+      #(plugin "dhruvasagar/vim-zoom")
+      #(plugin "camgraff/telescope-tmux.nvim")
+      #(plugin "RyanMillerC/better-vim-tmux-resizer")
 
-      (plugin "lukas-reineke/lsp-format.nvim")
+      #(plugin "lukas-reineke/lsp-format.nvim")
       nvim-lspconfig
       lush-nvim
       multiple-cursors # Multiple cursors selection, etc
@@ -205,15 +205,15 @@ in
     coc = {
       enable = true;
 
-      pluginConfig = ''
-        let g:coc_global_extensions = [
-        \ 'coc-react-refactor',
-        \ 'coc-coverage',
-        \ 'coc-fzf-preview', 
-        \ 'coc-sh', 
-        \ 'https://github.com/rodrigore/coc-tailwind-intellisense', 
-        \ ]
-      '';
+      # pluginConfig = ''
+      #   let g:coc_global_extensions = [
+      #   \ 'coc-react-refactor',
+      #   \ 'coc-coverage',
+      #   \ 'coc-fzf-preview', 
+      #   \ 'coc-sh', 
+      #   \ 'https://github.com/rodrigore/coc-tailwind-intellisense', 
+      #   \ ]
+      # '';
 
       settings = {
         coc.preferences.formatOnSaveFiletypes = [

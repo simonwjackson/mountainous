@@ -2,7 +2,7 @@
 
 {
   imports = [
-    #./polybar
+    ./polybar
     ./bspwm
   ];
 
@@ -48,9 +48,9 @@
   gtk = {
     enable = true;
   
-    gtk4.extraConfig = {
-      gtk-application-prefer-dark-theme = 1;
-    };
+    #gtk4.extraConfig = {
+    #  gtk-application-prefer-dark-theme = 1;
+    #};
   };
   
   programs.mpv = {

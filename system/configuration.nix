@@ -96,6 +96,7 @@
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.simonwjackson = {
+    shell = pkgs.zsh;
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
   };

@@ -1,13 +1,19 @@
 { config, pkgs, ... }:
 
 {
+  imports = [
+    ./desktop
+    ./terminal
+  ];
+
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
-  home.username = "simonwjackson";
-  home.homeDirectory = "/home/simonwjackson";
+  home = {
+    username = "simonwjackson";
+    homeDirectory = "/home/simonwjackson";
+  };
 
   home.packages = with pkgs; [ 
-    kitty
     git-crypt
   ];
 
@@ -18,6 +24,10 @@
   services.gpg-agent = {
     enable = true;
     pinentryFlavor = "gnome3";
+  };
+
+  services.udiskie = {
+    enable = true;
   };
 
   # This value determines the Home Manager release that your
