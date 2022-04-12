@@ -4,7 +4,7 @@ set -e
 
 pushd ~/nix-config > /dev/null
 
-nix build .#homeConfigurations.simonwjackson.activationPackage \
+nix build .#homeConfigurations.$(whoami).activationPackage \
 && ./result/activate
 
 popd > /dev/null
