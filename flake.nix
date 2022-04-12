@@ -7,40 +7,40 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { home-manager, nixpkgs, ... }: 
-  let
-    system = "x86_64-linux";
+  outputs = { home-manager, nixpkgs, ... }:
+    let
+      system = "x86_64-linux";
 
-    pkgs = import nixpkgs {
-      inherit system;
-
-      config = {
-        allowUnfree = true;
-      };
-    };
-
-    lib = nixpkgs.lib;
-    username = "simonwjackson";
-
-  in {
-    homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-      inherit system pkgs username;
-      homeDirectory = "/home/${username}";
-
-      configuration = import ./users/simonwjackson/home.nix;
-      # Update the state version as needed.
-      stateVersion = "21.11";
-    };
-
-    nixosConfigurations = { 
-      # nixos refers to the hostname
-      nixos = lib.nixosSystem {
+      pkgs = import nixpkgs {
         inherit system;
 
-	    modules = [
-          ./system/configuration.nix
-	    ];
+        config = {
+          allowUnfree = true;
+        };
+      };
+
+      lib = nixpkgs.lib;
+      username = "simonwjackson";
+
+    in
+    {
+      homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
+        inherit system pkgs username;
+
+        configuration = import ./users/simonwjackson/home.nix;
+        homeDirectory = "/home/${username}";
+        stateVersion = "21.11";
+      };
+
+      nixosConfigurations = {
+        # nixos refers to the hostname
+        fiji = lib.nixosSystem {
+          inherit system;
+
+          modules = [
+            ./system/fiji/configuration.nix
+          ];
+        };
       };
     };
-  };
 }
