@@ -4,6 +4,7 @@
   imports = [
     ./desktop
     ./terminal
+    ../../modules/neovim
   ];
 
   # Home Manager needs a bit of information about you and the
