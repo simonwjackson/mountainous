@@ -29,7 +29,7 @@
 
         configuration = import ./users/simonwjackson/home.nix;
         homeDirectory = "/home/${username}";
-        stateVersion = "21.11";
+        stateVersion = "22.05";
       };
 
       nixosConfigurations = {
@@ -38,7 +38,7 @@
           inherit system;
 
           modules = [
-            ./system/fiji/configuration.nix
+            ./system/fiji.nix
           ];
         };
       };

@@ -117,6 +117,7 @@
             command = "rnix-lsp";
             filetypes = [ "nix" ];
           };
+
           "dhall" = {
             "command" = "dhall-lsp-server";
             "filetypes" = [ "dhall" ];

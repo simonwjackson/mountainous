@@ -31,5 +31,7 @@
 
   environment.systemPackages = with pkgs; [
     firefox
+    bluez
+    bluez-tools
   ];
 }

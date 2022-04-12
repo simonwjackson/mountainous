@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 pushd ~/nix-config > /dev/null
 
 ./update.sh \
