@@ -27,13 +27,12 @@
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
         inherit system pkgs username;
 
-        configuration = import ./users/simonwjackson/home.nix;
+        configuration = import ./users/${username};
         homeDirectory = "/home/${username}";
         stateVersion = "22.05";
       };
 
       nixosConfigurations = {
-        # nixos refers to the hostname
         fiji = lib.nixosSystem {
           inherit system;
 
