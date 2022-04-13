@@ -5,6 +5,10 @@
     ./desktop
     ./terminal
     ../../modules/neovim
+
+    # Scripts
+    ./bin/wikis
+    ./bin/scale-desktop
   ];
 
   # Home Manager needs a bit of information about you and the
@@ -14,10 +18,10 @@
     homeDirectory = "/home/simonwjackson";
   };
 
-  home.packages = with pkgs; [
-    git-crypt
-    p7zip
-    killall
+  home.packages = [
+    pkgs.git-crypt
+    pkgs.p7zip
+    pkgs.killall
   ];
 
   programs.gpg = {

@@ -8,6 +8,10 @@
     '';
   };
 
+  imports = [
+    ../packages/ex
+  ];
+
   networking.networkmanager.enable = true;
 
   # Set your time zone.
