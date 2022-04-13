@@ -103,10 +103,10 @@ XF86AudioMute
 #   media-control {ban,tired,like,bookmark}
 
 XF86MonBrightnessUp
-  backlight_control +5
+  sudo brightnessctl set 5%+
 
 XF86MonBrightnessDown
-  backlight_control -5
+  sudo brightnessctl -e set 5%-
 
 #####################
 # Movement
