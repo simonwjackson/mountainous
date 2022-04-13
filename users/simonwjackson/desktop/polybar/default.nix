@@ -1,28 +1,22 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
+let
+  check-reddit = import ./modules/check-reddit { inherit pkgs config; };
+in
 {
   services.polybar = {
     enable = true;
-    script = "polybar top &";
+    script = ''
+      polybar top &
+    '';
 
     settings = {
-      "module/volume" = {
-        type = "internal/pulseaudio";
-        format.volume = "<ramp-volume> <label-volume>";
-        label.muted.text = "🔇";
-        label.muted.foreground = "#666";
-        ramp.volume = [ "🔈" "🔉" "🔊" ];
-        click.right = "pavucontrol &";
-      };
-    };
-
-    config = {
       "bar/top" = {
         monitor = "\${env:MONITOR:eDP-1}";
         width = "100%";
         height = "3%";
         radius = 0;
-        modules-center = "date volume";
+        modules-center = "date  check-reddit";
       };
 
       "module/date" = {
@@ -32,6 +26,12 @@
         time = "%H:%M";
         label = "%time%  %date%";
       };
+
+      "module/check-reddit" = {
+        type = "custom/script";
+        exec = check-reddit;
+      };
     };
   };
 }
+
