@@ -3,7 +3,6 @@
 {
   imports = [
     # Include the results of the hardware scan.
-    # <nixos-hardware/microsoft/surface>
     ../modules/workstation.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -42,7 +41,6 @@
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-  # high-resolution display
-  hardware.video.hidpi.enable = lib.mkDefault true;
   hardware.bluetooth.enable = true;
+  hardware.video.hidpi.enable = lib.mkDefault true;
 }

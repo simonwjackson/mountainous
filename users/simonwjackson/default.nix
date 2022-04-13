@@ -5,6 +5,7 @@
     ./desktop
     ./terminal
     ../../modules/neovim
+    ../../modules/hidpi.nix
 
     # Scripts
     ./bin/wikis
