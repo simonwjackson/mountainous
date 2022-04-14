@@ -7,7 +7,7 @@ let
   fullPath = mkBin
     {
       name = name;
-      deps = with pkgs; [ jq ];
+      deps = with pkgs; [ jq curl ];
       text = builtins.readFile ./check-reddit.sh;
     };
 
