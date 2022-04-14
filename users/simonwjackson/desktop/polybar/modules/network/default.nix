@@ -3,12 +3,14 @@
 let
   mkBin = (import ../../../../../../utils/mkBin.nix { inherit config pkgs; });
 
-  name = "check-reddit";
+  name = "network";
   fullPath = mkBin
     {
       name = name;
-      deps = with pkgs; [ jq ];
-      text = builtins.readFile ./check-reddit.sh;
+      text = builtins.readFile ./network.sh;
+      deps = with pkgs; [
+        networkmanager
+      ];
     };
 
 in
@@ -16,4 +18,6 @@ in
   [module/${name}]
   type = "custom/script"
   exec = ${fullPath}
+  format-foreground = ''${colors.foreground-dim}
+  click-left = kitty-popup wifi-menu
 ''

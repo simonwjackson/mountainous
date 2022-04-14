@@ -7,7 +7,6 @@
     };
   };
 
-
   home = {
     sessionVariables = {
       GDK_SCALE = 2;

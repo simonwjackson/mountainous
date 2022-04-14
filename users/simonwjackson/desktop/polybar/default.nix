@@ -1,11 +1,17 @@
 { config, pkgs, lib, ... }:
 
-let
-  check-reddit = import ./modules/check-reddit { inherit pkgs config; };
-in
 {
+  home.packages = with pkgs; [
+    nerdfonts
+  ];
+
   services.polybar = {
     enable = true;
+    extraConfig = builtins.readFile ./polybar.ini
+      + import ./modules/network { inherit pkgs config; }
+      + import ./modules/check-reddit { inherit pkgs config; }
+    ;
+
     script = ''
       polybar top &
     '';
@@ -16,22 +22,13 @@ in
         width = "100%";
         height = "3%";
         radius = 0;
-        modules-center = "date  check-reddit";
-      };
-
-      "module/date" = {
-        type = "internal/date";
-        internal = 5;
-        date = "%d.%m.%y";
-        time = "%H:%M";
-        label = "%time%  %date%";
-      };
-
-      "module/check-reddit" = {
-        type = "custom/script";
-        exec = check-reddit;
+        modules-left = "";
+        modules-center = "";
+        modules-right = "battery check-reddit network time";
+        font-0 = "NotoSansMono Nerd Font:pixelsize=20;5";
+        font-1 = "NotoSansMono Nerd Font:pixelsize=18;4";
+        font-2 = "NotoSansMono Nerd Font:pixelsize=15;4";
       };
     };
   };
 }
-
