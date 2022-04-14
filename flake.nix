@@ -42,6 +42,14 @@
             nixos-hardware.nixosModules.microsoft-surface
           ];
         };
+
+        nixos = lib.nixosSystem {
+          inherit system;
+
+          modules = [
+            ./system/nixos.nix
+          ];
+        };
       };
     };
 }
