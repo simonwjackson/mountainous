@@ -13,7 +13,7 @@
       + builtins.readFile ./modules/filesystem.ini
       + builtins.readFile ./modules/memory.ini
       + builtins.readFile ./modules/pulseaudio.ini
-      + builtins.readFile ./modules/time.ini
+      + import ./modules/time { inherit pkgs config; }
       + import ./modules/network { inherit pkgs config; }
       + import ./modules/check-reddit { inherit pkgs config; }
     ;

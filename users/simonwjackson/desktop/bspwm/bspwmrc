@@ -3,9 +3,9 @@
 # Bspwm configuration
 #
 
-[[ -e "${CURRENT_THEME}/bspwm" ]] && {
-  source "${CURRENT_THEME}/bspwm"
-}
+# [[ -e "${CURRENT_THEME}/bspwm" ]] && {
+#   source "${CURRENT_THEME}/bspwm"
+# }
 
 # Remove outter padding for tiled layout
 bspc subscribe desktop | while read -r _ _ _ layout; do
@@ -17,7 +17,7 @@ bspc subscribe desktop | while read -r _ _ _ layout; do
       gap=$spacing
   fi
 
-  bspc config top_padding $(($POLYBAR_HEIGHT-$gap))
+  bspc config top_padding $((32-$gap)) # $(($POLYBAR_HEIGHT-$gap))
   bspc config window_gap $gap
   bspc config left_padding -$gap
   bspc config right_padding -$gap

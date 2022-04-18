@@ -4,7 +4,7 @@
   imports =
     [
       ../modules/workstation.nix
-      ../modules/wireguard-client.nix
+      #../modules/wireguard-client.nix
       ./default.nix
       (modulesPath + "/profiles/qemu-guest.nix")
     ];

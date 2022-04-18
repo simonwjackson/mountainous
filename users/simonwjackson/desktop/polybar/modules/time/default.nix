@@ -3,14 +3,15 @@
 let
   mkBin = (import ../../../../../../utils/mkBin.nix { inherit config pkgs; });
 
-  name = "network";
+  name = "time";
   fullPath = mkBin
     {
       name = name;
-      text = builtins.readFile ./network.sh;
+      text = ''
+        TZ=US/Central date '+%-l:%M'
+      '';
       deps = with pkgs; [
-        networkmanager
-        gnugrep
+        coreutils-full
       ];
     };
 
@@ -20,5 +21,5 @@ in
   type = "custom/script"
   exec = ${fullPath}
   format-foreground = ''${colors.foreground-dim}
-  click-left = kitty-popup wifi-menu
 ''
+
