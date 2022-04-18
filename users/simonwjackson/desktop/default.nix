@@ -22,8 +22,9 @@
 
     packages = with pkgs; [
       brightnessctl
-      #firefox
+      tridactyl-native
       xfce.xfwm4
+      adwaita-qt
     ];
   };
 
@@ -37,12 +38,26 @@
     # '';
   };
 
+  dconf.enable = true;
   gtk = {
     enable = true;
+    theme.package = pkgs.gnome.gnome-themes-extra;
+    theme.name = "Adwaita";
 
     gtk4.extraConfig = {
       gtk-application-prefer-dark-theme = 1;
     };
+
+    gtk3.extraConfig = {
+      gtk-application-prefer-dark-theme = 1;
+    };
+  };
+
+  qt = {
+    enable = true;
+    platformTheme = "gnome";
+    style.package = pkgs.adwaita-qt;
+    style.name = "adwaita-dark";
   };
 
   programs.mpv = {

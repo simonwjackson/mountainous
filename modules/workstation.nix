@@ -24,6 +24,10 @@
     };
   };
 
+  # Required when building a custom desktop env
+  programs.dconf.enable = true;
+
+
   # Enable sound.
   sound.enable = true;
   hardware.pulseaudio.enable = true;
