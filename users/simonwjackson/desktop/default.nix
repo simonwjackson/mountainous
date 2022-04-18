@@ -22,7 +22,7 @@
 
     packages = with pkgs; [
       brightnessctl
-      firefox
+      #firefox
       xfce.xfwm4
     ];
   };
@@ -69,6 +69,50 @@
     enable = true;
 
     extraConfig = builtins.readFile (./sxhkd/sxhkdrc);
+  };
+
+  programs.firefox = {
+    enable = true;
+    # package = pkgs.firefox.override {
+    #   # See nixpkgs' firefox/wrapper.nix to check which options you can use
+    #   cfg = {
+    #     # Tridactyl native connector
+    #     enableTridactylNative = true;
+    #   };
+    # };
+
+    package = pkgs.firefox.override
+      {
+        # See nixpkgs' firefox/wrapper.nix to check which options you can use
+        cfg = {
+          # Tridactyl native connector
+          enableTridactylNative = true;
+        };
+      };
+
+    profiles.simonwjackson = {
+      isDefault = true;
+      settings = { };
+
+      userChrome = ''
+        /* Hide tab bar in FF Quantum */
+        @-moz-document url("chrome://browser/content/browser.xul") {
+          #TabsToolbar {
+            visibility: collapse !important;
+            margin-bottom: 21px !important;
+          }
+
+          #sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header {
+            visibility: collapse !important;
+          }
+        }
+      '';
+
+      userContent = ''
+        /* Hide scrollbar in FF Quantum */
+        *{scrollbar-width:none !important}
+      '';
+    };
   };
 }
 

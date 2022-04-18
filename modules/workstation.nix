@@ -30,7 +30,7 @@
   nixpkgs.config.pulseaudio = true;
 
   environment.systemPackages = with pkgs; [
-    firefox
+    #firefox
     bluez
     bluez-tools
   ];
