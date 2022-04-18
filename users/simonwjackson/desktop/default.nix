@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -23,12 +23,18 @@
     packages = with pkgs; [
       brightnessctl
       firefox
+      xfce.xfwm4
     ];
   };
 
   xsession = {
     enable = true;
     scriptPath = ".hm-xsession";
+    # windowManager.command = lib.mkForce ''
+    #   # TESTING
+    #   # ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
+    #   exec kitty
+    # '';
   };
 
   gtk = {
@@ -65,3 +71,4 @@
     extraConfig = builtins.readFile (./sxhkd/sxhkdrc);
   };
 }
+
