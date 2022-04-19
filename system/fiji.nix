@@ -65,6 +65,11 @@ in
     };
   };
 
+  swapDevices = [{
+    device = "/dev/disk/by-label/swap";
+  }];
+
+  # Sleep
   systemd.sleep.extraConfig = ''
     # 15min delay
     HibernateDelaySec=900
@@ -78,11 +83,6 @@ in
     HandleSuspendKey=suspend-then-hibernate
     HandleHibernateKey=suspend-then-hibernate
   '';
-
-  swapDevices =
-    [{
-      device = "/dev/disk/by-label/swap";
-    }];
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
