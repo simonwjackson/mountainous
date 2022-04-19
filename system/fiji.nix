@@ -65,9 +65,24 @@ in
     };
   };
 
+  systemd.sleep.extraConfig = ''
+    # 15min delay
+    HibernateDelaySec=900
+  '';
+
+  services.logind.lidSwitch = "suspend-then-hibernate";
+  services.logind.lidSwitchExternalPower = "suspend";
+
+  services.logind.extraConfig = ''
+    HandlePowerKey=suspend-then-hibernate
+    HandleSuspendKey=suspend-then-hibernate
+    HandleHibernateKey=suspend-then-hibernate
+  '';
 
   swapDevices =
-    [{ device = "/dev/disk/by-label/swap"; }];
+    [{
+      device = "/dev/disk/by-label/swap";
+    }];
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
@@ -95,16 +110,16 @@ in
   # '';
 
   services.udev.extraRules = ''
-    # any user can change perf_mode
-    # KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
-    KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+    #KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
   '';
+  #KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
 
-  environment.systemPackages = with pkgs;
-    [
-      acpi
-      surface-control
-    ];
+  systemd.services.iptsd.enable = false;
+
+  environment.systemPackages = with pkgs; [
+    acpi
+    surface-control
+  ];
 
   networking.firewall = {
     allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
