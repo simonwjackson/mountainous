@@ -9,6 +9,17 @@
   # paths it should manage.
   home = {
     sessionVariables = { };
+
+    file = {
+      "./.config/nvim/lua" = {
+        recursive = true;
+        source = ./lua;
+      };
+
+      # "./.config/nvim/init.lua" = {
+      #   source = ./lua/init.lua;
+      # };
+    };
   };
 
   programs.neovim = {
@@ -52,12 +63,11 @@
       lush-nvim
     ];
 
-
     extraConfig = builtins.concatStringsSep "\n" [
-      (lib.strings.fileContents ./init.vim)
+      (lib.strings.fileContents ./vimrc.vim)
       ''
         lua << EOF
-        ${lib.strings.fileContents ./lua/init.lua}
+        ${lib.strings.fileContents ./vimrc.lua}
         EOF
       ''
     ];
