@@ -8,6 +8,7 @@
 
     packages = with pkgs; [
       hsetroot
+      bsp-layout
     ];
   };
 

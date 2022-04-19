@@ -10,13 +10,15 @@
     # Scripts
     ./bin/wikis
     ./bin/scale-desktop
+    ./bin/kill-or-close
+    ./bin/kitty-popup
   ];
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home = {
     username = "simonwjackson";
-    homeDirectory = "/home/simonwjackson";
+    homeDirectory = "/storage/home/simonwjackson";
   };
 
   home.packages = [
