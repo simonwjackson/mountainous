@@ -12,13 +12,14 @@
     ./bin/scale-desktop
     ./bin/kill-or-close
     ./bin/kitty-popup
+    ./bin/vim-wiki
   ];
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home = {
     username = "simonwjackson";
-    homeDirectory = "/storage/home/simonwjackson";
+    homeDirectory = "/home/simonwjackson";
   };
 
   home.packages = [
