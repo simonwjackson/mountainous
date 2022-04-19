@@ -769,11 +769,12 @@ let g:vimwiki_autowriteall = 1
 let g:vimwiki_syntax = 'markdown'
 let g:vimwiki_ext = '.md'
 let g:vimwiki_main = 'README'
+let g:vimwiki_auto_chdir = 1
 
 au BufReadPost,BufNewFile *.md,*.txt,*.tex setlocal autoread
 
 let personal = {}
-let personal.path = '~/Documents/notes'
+let personal.path = "$HOME/documents/notes"
 
 let guides = {}
 let guides.path = '~/guides'

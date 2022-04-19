@@ -63,6 +63,16 @@ in
       device = "/storage/home";
       options = [ "bind" ];
     };
+
+    "/home/simonwjackson/music" = {
+      device = "/storage/music";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/videos" = {
+      device = "/storage/videos";
+      options = [ "bind" ];
+    };
   };
 
   swapDevices = [{
