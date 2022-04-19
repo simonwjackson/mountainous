@@ -33,6 +33,7 @@
     shell = pkgs.zsh;
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    home = "/storage/home/simonwjackson";
   };
 
   # List packages installed in system profile. To search, run:
@@ -48,6 +49,7 @@
     w3m
     ripgrep
     tmux
+    lf
   ];
 
   # Enable the OpenSSH daemon.

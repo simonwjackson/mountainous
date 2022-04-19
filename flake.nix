@@ -29,7 +29,7 @@
         inherit system pkgs username;
 
         configuration = import ./users/${username};
-        homeDirectory = "/home/${username}";
+        homeDirectory = "/storage/home/${username}";
         stateVersion = "22.05";
       };
 

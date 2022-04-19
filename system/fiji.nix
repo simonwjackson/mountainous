@@ -1,10 +1,17 @@
 { config, pkgs, modulesPath, lib, ... }:
 
+let
+  wifi = {
+    mac = "7c:50:79:4f:03:2b";
+    name = "wifi";
+  };
+
+in
 {
   imports = [
     # Include the results of the hardware scan.
     ../modules/workstation.nix
-    ../modules/wireguard-client.nix
+    #../modules/wireguard-client.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -32,19 +39,35 @@
       };
   };
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/cf8272dc-71b3-41d1-96e8-c9558d3bd5de";
-    fsType = "ext4";
-  };
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-label/nixos";
+      fsType = "ext4";
+    };
 
-  fileSystems."/boot" =
-    {
-      device = "/dev/disk/by-uuid/8E65-A12D";
+    "/storage" = {
+      device = "/dev/disk/by-label/storage";
+    };
+
+    "/boot" = {
+      device = "/dev/disk/by-label/boot";
       fsType = "vfat";
     };
 
+    "/tmp" = {
+      device = "/storage/tmp";
+      options = [ "bind" ];
+    };
+
+    "/home" = {
+      device = "/storage/home";
+      options = [ "bind" ];
+    };
+  };
+
+
   swapDevices =
-    [{ device = "/dev/disk/by-uuid/75627674-6d11-43de-be97-e1432ff80bad"; }];
+    [{ device = "/dev/disk/by-label/swap"; }];
 
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
   # Per-interface useDHCP will be mandatory in the future, so this generated config
@@ -71,15 +94,17 @@
   #   Option "TearFree" "true"
   # '';
 
-  # services.udev.extraRules = ''
-  #   # any user can change perf_mode
-  #   KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
-  # '';
+  services.udev.extraRules = ''
+    # any user can change perf_mode
+    # KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
+    KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+  '';
 
-  environment.systemPackages = with pkgs; [
-    acpi
-    surface-control
-  ];
+  environment.systemPackages = with pkgs;
+    [
+      acpi
+      surface-control
+    ];
 
   networking.firewall = {
     allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
