@@ -26,6 +26,7 @@
     pkgs.git-crypt
     pkgs.p7zip
     pkgs.killall
+    pkgs.jq
   ];
 
   xdg = {

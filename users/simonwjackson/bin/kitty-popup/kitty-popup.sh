@@ -5,12 +5,18 @@
     state=floating \
     follow=on \
     focus=on \
-    rectangle="${KITTY_POPUP_WIDTH:-1000}x${KITTY_POPUP_HEIGHT:-1000}+0+0" \
+    rectangle="2000x1500+0+0" \
     center=true
 }
 
+for win in $(xwininfo -root -children | awk 'NR > 6 {print $1}'); do
+  picom-trans --window="${win}" --opacity=15 &
+done
+
+# --override window_padding_width=10 \
+# --override background='#101010' \
+
 kitty \
-  --override window_padding_width=10 \
-  --override background='#101010' \
   --class floating-term \
-  "${SHELL}" -c "$*"
+  "${SHELL}" -c "$*" \
+&& picom-trans --reset

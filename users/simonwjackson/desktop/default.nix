@@ -25,6 +25,10 @@
       tridactyl-native
       xfce.xfwm4
       adwaita-qt
+      xorg.xwininfo
+      wmctrl
+      xorg.xkill
+      tridactyl-native
     ];
   };
 
