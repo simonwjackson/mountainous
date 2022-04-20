@@ -141,4 +141,28 @@ in
   #     #privateKeyFile = "path to private key file";
   #   };
   # };
+
+  services.syncthing = {
+    overrideDevices = true;
+    overrideFolders = true;
+    devices = {
+      "kuro" = { id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7"; };
+    };
+  };
+
+  # TODO: Move to user config
+  services.syncthing = {
+    enable = true;
+    user = "simonwjackson";
+    dataDir = "/storage"; # Default folder for new synced folders
+    configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
+
+    folders = {
+      "templates" = {
+        path = "/home/simonwjackson/templates";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
+    };
+  };
 }
