@@ -11,6 +11,12 @@
       MPV_SOCKET = "/tmp/mpv.socket";
     };
 
+    file = {
+      "./.config/tridactyl/tridactylrc" = {
+        source = ./tridactylrc;
+      };
+    };
+
     shellAliases = {
       cat = "bat";
       sl = "exa";
