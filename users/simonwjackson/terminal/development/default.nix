@@ -11,6 +11,7 @@
     python3
     node2nix
     nodejs
+    entr
     nodePackages.npm
   ];
 

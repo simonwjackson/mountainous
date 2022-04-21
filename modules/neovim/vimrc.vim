@@ -282,6 +282,8 @@ Plug 'wesQ3/vim-windowswap'
 
 Plug 'lukas-reineke/lsp-format.nvim'
 
+Plug 'ThePrimeagen/git-worktree.nvim'
+
 call plug#end()
 
 " ----------------------------------------------------------------------------
@@ -848,7 +850,6 @@ let g:maplocalleader = ','
 
 " Finding Files
 nnoremap <silent> <F6>      :<C-u>call LazyGitPopup()<CR>
-nnoremap <silent> <F7>      <cmd>lua Project_Files()<CR>
 nnoremap <silent> <F8>      <cmd>lua require('telescope.builtin').buffers()<cr>
 nnoremap <silent> <F9>      :Lf<CR>
 nnoremap <silent> <F10>     :<C-u>Telescope oldfiles<CR>
