@@ -15,19 +15,27 @@
     ./bin/vim-wiki
   ];
 
-  # Home Manager needs a bit of information about you and the
-  # paths it should manage.
   home = {
     username = "simonwjackson";
     homeDirectory = "/home/simonwjackson";
-  };
 
-  home.packages = [
-    pkgs.git-crypt
-    pkgs.p7zip
-    pkgs.killall
-    pkgs.jq
-  ];
+    shellAliases = {
+      try = "nix-shell -p";
+      cat = "bat";
+      sl = "exa";
+      ls = "exa";
+      l = "exa -l";
+      la = "exa -la";
+      ip = "ip --color=auto";
+    };
+
+    packages = [
+      pkgs.git-crypt
+      pkgs.p7zip
+      pkgs.killall
+      pkgs.jq
+    ];
+  };
 
   xdg = {
     userDirs = {

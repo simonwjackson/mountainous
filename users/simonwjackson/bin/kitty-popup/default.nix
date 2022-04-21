@@ -7,6 +7,7 @@ let
 
       runtimeInputs = with pkgs; [
         kitty
+        bc
       ];
 
       text = builtins.readFile ./kitty-popup.sh;

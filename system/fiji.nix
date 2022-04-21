@@ -158,8 +158,8 @@ in
     configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
 
     folders = {
-      "templates" = {
-        path = "/home/simonwjackson/templates";
+      "documents" = {
+        path = "/home/simonwjackson/documents";
         devices = [ "kuro" ];
         # ignorePerms = false;
       };
