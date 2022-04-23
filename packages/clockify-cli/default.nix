@@ -6,7 +6,7 @@ let
 
   app = pkgs.stdenv.mkDerivation {
     version = version;
-    pname = nname;
+    pname = name;
 
     src = pkgs.fetchurl {
       curlOpts = [ "-L" "-H" "Accept:application/octet-stream" ];
