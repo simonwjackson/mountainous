@@ -147,6 +147,8 @@ in
     overrideFolders = true;
     devices = {
       "kuro" = { id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7"; };
+      "ushiro" = { id = "QLOZWRC-5K5E43G-EH7OWBS-3ZWQWU3-LAHRHSN-PXEEWXN-RQ7GKKW-UWZOXQQ"; };
+
     };
   };
 
@@ -163,6 +165,13 @@ in
         devices = [ "kuro" ];
         # ignorePerms = false;
       };
+
+      "books" = {
+        path = "/storage/books";
+        devices = [ "ushiro" "kuro" ];
+        # ignorePerms = false;
+      };
+
     };
   };
 }
