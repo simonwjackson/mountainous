@@ -26,6 +26,7 @@
       wmctrl
       xorg.xkill
       tridactyl-native
+      rofi
     ];
   };
 
@@ -33,10 +34,10 @@
     enable = true;
     scriptPath = ".hm-xsession";
     # windowManager.command = lib.mkForce ''
-    #     # TESTING
-    #     exec ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
-    #     # exec kitty
-    #   # '';
+    #       # TESTING
+    #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
+    #       exec kitty
+    # '';
   };
 
   dconf.enable = true;
