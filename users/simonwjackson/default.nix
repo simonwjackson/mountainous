@@ -51,6 +51,8 @@
     };
   };
 
+
+
   programs.gpg = {
     enable = true;
   };

@@ -10,6 +10,7 @@
 
   imports = [
     ../packages/ex
+    ../packages/clockify-cli
   ];
 
   networking.networkmanager.enable = true;
