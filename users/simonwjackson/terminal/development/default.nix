@@ -9,10 +9,15 @@
 
   home.packages = with pkgs; [
     python3
-    node2nix
+    nodePackages.node2nix
     nodejs
     entr
     nodePackages.npm
+    stdenv
+    yarn2nix
+    node2nix
+    docker
+    docker-compose
   ];
 
   programs.lazygit = {

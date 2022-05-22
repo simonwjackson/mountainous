@@ -166,7 +166,7 @@
     ];
   };
 
-  programs.bash.enable = true;
+  #     programs.bash.enable = true;
 
   programs.fzf = {
     enable = true;
