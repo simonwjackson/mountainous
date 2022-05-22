@@ -1,6 +1,8 @@
 { config, pkgs, ... }:
 
 {
+  nixpkgs.config.allowUnfree = true;
+
   nix = {
     package = pkgs.nixFlakes;
     extraOptions = ''
@@ -26,7 +28,6 @@
     keyMap = "us";
   };
 
-  nixpkgs.config.allowUnfree = true;
   security.sudo.wheelNeedsPassword = false;
 
   users.defaultUserShell = pkgs.zsh;
@@ -38,12 +39,12 @@
 
   # List packages installed in system profile. To search, run:
   environment.variables.EDITOR = "nvim";
-  programs.neovim.enable = true;
-  programs.neovim.viAlias = true;
+  #programs.neovim.enable = true;
+  #programs.neovim.viAlias = true;
 
   environment.systemPackages = with pkgs; [
     # Other
-    neovim
+    #neovim
     wget
     git
     w3m
@@ -55,5 +56,5 @@
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
 
-  system.stateVersion = "22.05";
+  #system.stateVersion = "22.05";
 }

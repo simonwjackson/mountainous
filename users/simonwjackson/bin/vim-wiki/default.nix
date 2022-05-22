@@ -3,13 +3,13 @@
 let
   script1 = pkgs.writeShellApplication {
     name = "vimwiki-index";
-    runtimeInputs = with pkgs; [ neovim ];
+    runtimeInputs = with pkgs; [ ];
     text = builtins.readFile ./vimwiki-index.sh;
   };
 
   script2 = pkgs.writeShellApplication {
     name = "vimwiki-inbox";
-    runtimeInputs = with pkgs; [ neovim ];
+    runtimeInputs = with pkgs; [ ];
     text = builtins.readFile ./vimwiki-inbox.sh;
   };
 

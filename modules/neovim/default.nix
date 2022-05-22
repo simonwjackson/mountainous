@@ -1,8 +1,13 @@
 { lib, config, pkgs, ... }:
 
 {
-  imports = [
+  imports = [ ];
 
+  nixpkgs.overlays = [
+    (import (builtins.fetchTarball {
+      url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
+      sha256 = "07rav6ivbpb8q3ffj9x907l2gd3qrw25xpk926g0f00hlbg82l4g";
+    }))
   ];
 
   # Home Manager needs a bit of information about you and the
@@ -34,8 +39,8 @@
       sumneko-lua-language-server
       go-langserver
       luaformatter
-      haskell-language-server
-      dhall-lsp-server
+      # haskell-language-server
+      # dhall-lsp-server
       # used to compile tree-sitter grammar
       tree-sitter
     ];
@@ -86,29 +91,30 @@
           \ 'coc-fzf-preview',
           \ 'coc-html',
           \ 'coc-json',
-          \ 'coc-prettier',
           \ 'coc-sh',
           \ 'coc-snippets',
           \ 'coc-tsserver',
           \ 'coc-vimlsp',
           \ 'coc-yaml',
           \ 'https://github.com/rodrigore/coc-tailwind-intellisense',
+          \ "coc-vetur"
           \ ]
       '';
+      # \ 'coc-prettier',
 
       settings = {
         coc.preferences.formatOnSaveFiletypes = [
-          "elm"
-          "javascript"
-          "typescript"
-          "typescriptreact"
+          #   "javascript"
+          #   "typescript"
+          #   "typescriptreact"
+          #   "javascriptreact"
           "json"
-          "javascriptreact"
+          "elm"
           "css"
           "Markdown"
           "nix"
         ];
-        eslint.filetypes = [ "javascript" "typescript" "typescriptreact" "javascriptreact" ];
+        #eslint.filetypes = [ "javascript" "typescript" "typescriptreact" "javascriptreact" ];
         coc.preferences.codeLens.enable = true;
         coc.preferences.currentFunctionSymbolAutoUpdate = true;
         coverage.uncoveredSign.text = "▌";
@@ -139,20 +145,20 @@
             rootPatterns = [ "elm.json" ];
           };
 
-          haskell = {
-            command = "haskell-language-server-wrapper";
-            args = [ "--lsp" ];
-            rootPatterns = [
-              "stack.yaml"
-              "hie.yaml"
-              ".hie-bios"
-              "BUILD.bazel"
-              ".cabal"
-              "cabal.project"
-              "package.yaml"
-            ];
-            filetypes = [ "hs" "lhs" "haskell" ];
-          };
+          # haskell = {
+          #   command = "haskell-language-server-wrapper";
+          #   args = [ "--lsp" ];
+          #   rootPatterns = [
+          #     "stack.yaml"
+          #     "hie.yaml"
+          #     ".hie-bios"
+          #     "BUILD.bazel"
+          #     ".cabal"
+          #     "cabal.project"
+          #     "package.yaml"
+          #   ];
+          #   filetypes = [ "hs" "lhs" "haskell" ];
+          # };
 
           rescript = {
             enable = true;

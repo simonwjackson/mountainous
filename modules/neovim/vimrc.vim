@@ -579,7 +579,7 @@ set shiftwidth=4
 set softtabstop=0
 
 " Auto format files on
-command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
+" command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
 
 
 " ============================================================================
