@@ -13,7 +13,9 @@
     ./bin/kill-or-close
     ./bin/kitty-popup
     ./bin/vim-wiki
+    ./bin/virtual-term
   ];
+
 
   home = {
     username = "simonwjackson";
@@ -51,17 +53,6 @@
     };
   };
 
-
-
-  programs.gpg = {
-    enable = true;
-  };
-
-  services.gpg-agent = {
-    enable = true;
-    pinentryFlavor = "gnome3";
-  };
-
   services.udiskie = {
     enable = true;
   };
@@ -74,7 +65,7 @@
   # You can update Home Manager without changing this value. See
   # the Home Manager release notes for a list of state version
   # changes in each release.
-  home.stateVersion = "22.05";
+  #home.stateVersion = "21.11";
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;

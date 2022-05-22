@@ -24,7 +24,7 @@ bspc subscribe desktop | while read -r _ _ _ layout; do
   bspc config bottom_padding -$gap
 done &
 
-bspc rule -a VIRTUAL1 monitor=VIRTUAL1
+bspc rule -a Virtual-2 monitor=Virtual-2
 
 # Various settings
 bspc config gapless_monocle       true
@@ -54,12 +54,11 @@ bspc subscribe node_state | while read -r _ _ _ node state status; do
   fi
 done &
 
-
-# Only VIRTUAL1 terminal on VIRTUAL1 desktop
-bspc subscribe node_focus | while read -r event monitor desktop node; do
-  bspc query --monitors --monitor ${monitor} --names | rg -q "VIRTUAL1" && {
-      xprop -id ${node} | rg -q VIRTUAL1 || bspc node --to-monitor eDP1 --focus --activate
-  }
-done &
+# Only Virtual-2 terminal on Virtual-2 desktop
+# bspc subscribe node_focus | while read -r event monitor desktop node; do
+#   bspc query --monitors --monitor ${monitor} --names | rg -q "Virtual-2" && {
+#       xprop -id ${node} | rg -q Virtual-2 || bspc node --to-monitor eDP1 --focus --activate
+#   }
+# done &
 
 hsetroot -solid "#000000"

@@ -122,6 +122,7 @@ super + space
 
 # focus the node in the given direction
 super + {h,j,k,l}
+  virtual-term deactivate; \
   [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] \
     && bspc node -f {west,south,north,east}.local \
     || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
@@ -134,9 +135,15 @@ super + ctrl + {h,j,k,l}
 super + shift + {h,j,k,l}
   bspc node -p {west,south,north,east}
 
-# Go to monitor
-super + {Left,Right} 
-  bspc monitor {west,east} --focus
+# Go to Virtual Term 1
+super + Left
+  virtual-term activate
+
+# Leave Virtual Term 1
+super + Right
+  virtual-term deactivate
+
+# bspc monitor {west,east} --focus
 
 # focus the older or newer node in the focus history
 super + {o,i}

@@ -79,6 +79,9 @@
   services.picom = {
     enable = true;
 
+    opacityRule = [
+      "0:class_g^='VIRTUAL_TERM_'"
+    ];
     extraOptions = builtins.readFile (./picom/picom.conf);
   };
 
