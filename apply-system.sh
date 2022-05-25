@@ -8,6 +8,6 @@ set -e
 # else
   sudo nixos-rebuild \
     -v switch \
-    --profile-name "$(git log -1 --pretty=%B | sed "s/[^[:alnum:]-]/-/g")" \
     --flake '.#'
 # fi
+# --profile-name "$(git log -1 --pretty=%B | sed "s/[^[:alnum:]-]/-/g")" \

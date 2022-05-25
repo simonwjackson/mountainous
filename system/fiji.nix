@@ -9,35 +9,32 @@ let
 in
 {
   imports = [
-    # Include the results of the hardware scan.
+    ../modules/hidpi.nix
+    ../modules/laptop.nix
     ../modules/workstation.nix
-    #../modules/wireguard-client.nix
+    # ../modules/wireguard-client.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
   networking.hostName = "fiji"; # Define your hostname.
 
-  boot = {
-    loader = {
-      # Use the systemd-boot EFI boot loader.
-      systemd-boot.enable = true;
-      efi.canTouchEfiVariables = true;
-    };
-    extraModulePackages = [ ];
-    initrd = {
-      availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
-      kernelModules = [ ];
-    };
-    kernelModules = [ "kvm-intel" ];
-    kernelPatches =
-      {
-        extraConfig = ''
-          CONFIG_SERIAL_DEV_BUS y
-          CONFIG_SERIAL_DEV_CTRL_TTYPORT y
-        '';
-      };
-  };
+  environment.systemPackages = with pkgs; [
+    cryptsetup
+    fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
+    mergerfs
+    mergerfs-tools
+    snapraid
+  ];
+
+  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ ];
 
   fileSystems = {
     "/" = {
@@ -45,73 +42,82 @@ in
       fsType = "ext4";
     };
 
-    "/storage" = {
-      device = "/dev/disk/by-label/storage";
+  # "/boot" = {
+  #   device = "/dev/disk/by-label/boot";
+  #   fsType = "vfat";
+  # };
+
+    "/run/media/tank" = {
+      device = "/dev/disk/by-label/tank";
+      # options = [ "defaults" "user" "rw" "utf8" ];
     };
 
-    "/boot" = {
-      device = "/dev/disk/by-label/boot";
-      fsType = "vfat";
+    "/run/media/microsd" = {
+      device = "/dev/disk/by-label/microsd";
+      # options = [ "defaults" "user" "rw" "utf8" ];
     };
 
     "/tmp" = {
-      device = "/storage/tmp";
+      device = "/run/media/tank/tmp";
       options = [ "bind" ];
     };
 
-    "/home" = {
-      device = "/storage/home";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/music" = {
-      device = "/storage/music";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/videos" = {
-      device = "/storage/videos";
-      options = [ "bind" ];
+    # mergerfs: merge drives
+    "/storage" = {
+      device = "/run/media/tank/storage:/run/media/microsd";
+      fsType = "fuse.mergerfs";
+      options = [
+        "defaults"
+        "allow_other"
+        "use_ino"
+        "cache.files=partial"
+        "dropcacheonclose=true"
+        "category.create=epmfs"
+        "nofail"
+      ];
     };
   };
 
   swapDevices = [{
-    device = "/dev/disk/by-label/swap";
+    device = "/dev/disk/by-label/swap"; 
   }];
 
-  # Sleep
-  systemd.sleep.extraConfig = ''
-    # 15min delay
-    HibernateDelaySec=900
-  '';
-
-  services.logind.lidSwitch = "suspend-then-hibernate";
-  services.logind.lidSwitchExternalPower = "suspend";
-
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend-then-hibernate
-    HandleSuspendKey=suspend-then-hibernate
-    HandleHibernateKey=suspend-then-hibernate
-  '';
-
-  # The global useDHCP flag is deprecated, therefore explicitly set to false here.
-  # Per-interface useDHCP will be mandatory in the future, so this generated config
-  # replicates the default behaviour.
-  networking.useDHCP = lib.mkDefault false;
   networking.interfaces.wlp0s20f3.useDHCP = lib.mkDefault true;
 
-  powerManagement.enable = true;
-  powerManagement.powertop.enable = true;
-  powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
-
+  #powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+
+
+
+
+
+  # Sleep
+  # systemd.sleep.extraConfig = ''
+  #   # 15min delay
+  #   HibernateDelaySec=900
+  # '';
+
+  # services.logind.lidSwitch = "suspend-then-hibernate";
+  # services.logind.lidSwitchExternalPower = "suspend";
+
+  # services.logind.extraConfig = ''
+  #   HandlePowerKey=suspend-then-hibernate
+  #   HandleSuspendKey=suspend-then-hibernate
+  #   HandleHibernateKey=suspend-then-hibernate
+  # '';
+
+  # powerManagement.enable = true;
+  # powerManagement.powertop.enable = true;
+  # powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
+
+  # hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   hardware.bluetooth.enable = true;
-  hardware.video.hidpi.enable = lib.mkDefault true;
 
   # Screen tearing
   # https://nixos.org/manual/nixos/unstable/index.html#sec-x11--graphics-cards-intel
-  services.xserver.videoDrivers = [ "modesetting" ];
-  services.xserver.useGlamor = true;
+  # services.xserver.videoDrivers = [ "modesetting" ];
+  # services.xserver.useGlamor = true;
 
   # services.xserver.videoDrivers = [ "intel" ];
   # services.xserver.deviceSection = ''
@@ -119,21 +125,16 @@ in
   #   Option "TearFree" "true"
   # '';
 
-  services.udev.extraRules = ''
-    #KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
-  '';
-  #KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
+  # services.udev.extraRules = ''
+  #   #KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+  # '';
+  # #KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
 
-  systemd.services.iptsd.enable = false;
+  # systemd.services.iptsd.enable = false;
 
-  environment.systemPackages = with pkgs; [
-    acpi
-    surface-control
-  ];
-
-  networking.firewall = {
-    allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
-  };
+  # networking.firewall = {
+  #   allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
+  # };
 
   # networking.wireguard.interfaces = {
   #   mtn = {
@@ -142,36 +143,35 @@ in
   #   };
   # };
 
-  services.syncthing = {
-    overrideDevices = true;
-    overrideFolders = true;
-    devices = {
-      "kuro" = { id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7"; };
-      "ushiro" = { id = "QLOZWRC-5K5E43G-EH7OWBS-3ZWQWU3-LAHRHSN-PXEEWXN-RQ7GKKW-UWZOXQQ"; };
+  # services.syncthing = {
+  #   overrideDevices = true;
+  #   overrideFolders = true;
+  #   devices = {
+  #     "kuro" = { id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7"; };
+  #     "ushiro" = { id = "QLOZWRC-5K5E43G-EH7OWBS-3ZWQWU3-LAHRHSN-PXEEWXN-RQ7GKKW-UWZOXQQ"; };
+  #   };
+  # };
 
-    };
-  };
+  # # TODO: Move to user config
+  # services.syncthing = {
+  #   enable = true;
+  #   user = "simonwjackson";
+  #   dataDir = "/storage"; # Default folder for new synced folders
+  #   configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
 
-  # TODO: Move to user config
-  services.syncthing = {
-    enable = true;
-    user = "simonwjackson";
-    dataDir = "/storage"; # Default folder for new synced folders
-    configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
+  #   folders = {
+  #     "documents" = {
+  #       path = "/home/simonwjackson/documents";
+  #       devices = [ "kuro" ];
+  #       # ignorePerms = false;
+  #     };
 
-    folders = {
-      "documents" = {
-        path = "/home/simonwjackson/documents";
-        devices = [ "kuro" ];
-        # ignorePerms = false;
-      };
+  #     "books" = {
+  #       path = "/storage/books";
+  #       devices = [ "ushiro" "kuro" ];
+  #       # ignorePerms = false;
+  #     };
 
-      "books" = {
-        path = "/storage/books";
-        devices = [ "ushiro" "kuro" ];
-        # ignorePerms = false;
-      };
-
-    };
-  };
+  #   };
+  # };
 }
