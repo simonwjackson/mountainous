@@ -12,12 +12,12 @@
     ];
   };
 
-  xsession.windowManager.bspwm = {
-    enable = true;
+  # xsession.windowManager.bspwm = {
+  #   enable = true;
 
-    extraConfig = builtins.readFile (./bspwmrc);
-    startupPrograms = [
-      "kitty"
-    ];
-  };
+  #   extraConfig = builtins.readFile (./bspwmrc);
+  #   startupPrograms = [
+  #     "kitty"
+  #   ];
+  # };
 }

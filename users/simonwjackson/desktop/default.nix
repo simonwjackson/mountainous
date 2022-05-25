@@ -30,15 +30,15 @@
     ];
   };
 
-  xsession = {
-    enable = true;
-    scriptPath = ".hm-xsession";
-    # windowManager.command = lib.mkForce ''
-    #       # TESTING
-    #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
-    #       exec kitty
-    # '';
-  };
+  # xsession = {
+  #   enable = true;
+  #   scriptPath = ".hm-xsession";
+  #   # windowManager.command = lib.mkForce ''
+  #   #       # TESTING
+  #   #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
+  #   #       exec kitty
+  #   # '';
+  # };
 
   dconf.enable = true;
   gtk = {
