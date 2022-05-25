@@ -3,12 +3,12 @@
 {
   imports = [ ];
 
-  nixpkgs.overlays = [
-    (import (builtins.fetchTarball {
-      url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
-      sha256 = "07rav6ivbpb8q3ffj9x907l2gd3qrw25xpk926g0f00hlbg82l4g";
-    }))
-  ];
+  # nixpkgs.overlays = [
+  #   (import (builtins.fetchTarball {
+  #     url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
+  #     sha256 = "07rav6ivbpb8q3ffj9x907l2gd3qrw25xpk926g0f00hlbg82l4g";
+  #   }))
+  # ];
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
@@ -78,7 +78,7 @@
     ];
 
     coc = {
-      enable = true;
+      enable = false;
 
       pluginConfig = ''
         let g:coc_global_extensions = [
