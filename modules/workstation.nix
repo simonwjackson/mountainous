@@ -2,27 +2,27 @@
 
 {
   # X11
-  # services.xserver = {
-  #   enable = true;
-  #   layout = "us";
+  services.xserver = {
+    enable = true;
+    layout = "us";
 
-  #   displayManager = {
-  #     autoLogin = {
-  #       enable = true;
-  #       user = "simonwjackson";
-  #     };
-  #   };
+    displayManager = {
+      autoLogin = {
+        enable = true;
+        user = "simonwjackson";
+      };
+    };
 
-  #   desktopManager = {
-  #     session = [{
-  #       name = "home-manager";
-  #       start = ''
-  #         ${pkgs.runtimeShell} $HOME/.hm-xsession &
-  #         waitPID=$!
-  #       '';
-  #     }];
-  #   };
-  # };
+    desktopManager = {
+      session = [{
+        name = "home-manager";
+        start = ''
+          ${pkgs.runtimeShell} $HOME/.hm-xsession &
+          waitPID=$!
+        '';
+      }];
+    };
+  };
 
   # Required when building a custom desktop env
   programs.dconf.enable = true;

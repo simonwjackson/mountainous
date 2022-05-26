@@ -9,15 +9,26 @@
     packages = with pkgs; [
       hsetroot
       bsp-layout
+
+      # TODO: Move into modules?
+      brotab
+      xclip
     ];
   };
 
-  # xsession.windowManager.bspwm = {
-  #   enable = true;
+  # TODO: Move into modules?
+  programs.rofi = {
+    enable = true;
+    cycle = true;
+    theme = "Arc-Dark"; 
+  };
 
-  #   extraConfig = builtins.readFile (./bspwmrc);
-  #   startupPrograms = [
-  #     "kitty"
-  #   ];
-  # };
+  xsession.windowManager.bspwm = {
+    enable = true;
+
+    extraConfig = builtins.readFile (./bspwmrc);
+    startupPrograms = [
+      "kitty"
+    ];
+  };
 }

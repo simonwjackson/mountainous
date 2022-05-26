@@ -2,7 +2,6 @@
 
 {
   nixpkgs.config.allowUnfree = true;
-
   nix = {
     package = pkgs.nixFlakes;
     extraOptions = ''
@@ -19,8 +18,7 @@
   services.xserver.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
+  # services.xserver.desktopManager.gnome.enable = true;
 
   networking.networkmanager.enable = true;
   # The global useDHCP flag is deprecated, therefore explicitly set to false here.
@@ -57,10 +55,7 @@
     ripgrep
     tmux
     lf
-
-    # TODO: Move these
     _1password
-    _1password-gui
     # obsidian
   ];
 

@@ -30,15 +30,15 @@
     ];
   };
 
-  # xsession = {
-  #   enable = true;
-  #   scriptPath = ".hm-xsession";
-  #   # windowManager.command = lib.mkForce ''
-  #   #       # TESTING
-  #   #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
-  #   #       exec kitty
-  #   # '';
-  # };
+  xsession = {
+    enable = true;
+    scriptPath = ".hm-xsession";
+    # windowManager.command = lib.mkForce ''
+    #       # TESTING
+    #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
+    #       exec kitty
+    # '';
+  };
 
   dconf.enable = true;
   gtk = {
@@ -93,13 +93,6 @@
 
   programs.firefox = {
     enable = true;
-    # package = pkgs.firefox.override {
-    #   # See nixpkgs' firefox/wrapper.nix to check which options you can use
-    #   cfg = {
-    #     # Tridactyl native connector
-    #     enableTridactylNative = true;
-    #   };
-    # };
 
     package = pkgs.firefox.override
       {
@@ -112,25 +105,35 @@
 
     profiles.simonwjackson = {
       isDefault = true;
-      settings = { };
+      settings = { 
+        "signon.rememberSignons" = false;
+        "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
+        "browser.tabs.closeWindowWithLastTab" = true;
+        "layout.css.prefers-color-scheme.content-override" = 2;
+      };
 
       userChrome = ''
-        /* Hide tab bar in FF Quantum */
-        @-moz-document url("chrome://browser/content/browser.xul") {
-          #TabsToolbar {
-            visibility: collapse !important;
-            margin-bottom: 21px !important;
-          }
+        /* Hide back/forward buttons */
+        #back-button, #forward-button { display:none!important; }
 
-          #sidebar-box[sidebarcommand="treestyletab_piro_sakura_ne_jp-sidebar-action"] #sidebar-header {
-            visibility: collapse !important;
-          }
+        /* Hide tab bar */
+        #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        #main-window:not([tabsintitlebar="true"]) #TabsToolbar {
+          visibility: collapse !important;
+        }
+
+        #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar .titlebar-spacer {
+          border-inline-end: none;
         }
       '';
 
       userContent = ''
         /* Hide scrollbar in FF Quantum */
-        *{scrollbar-width:none !important}
+        * { scrollbar-width: none !important }
       '';
     };
   };

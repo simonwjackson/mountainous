@@ -12,7 +12,7 @@ in
     ../modules/hidpi.nix
     ../modules/laptop.nix
     ../modules/workstation.nix
-    # ../modules/wireguard-client.nix
+    ../modules/wireguard-client.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -29,7 +29,13 @@ in
     mergerfs
     mergerfs-tools
     snapraid
+    nfs-utils
+    rpcbind
+    lsof
   ];
+
+  services.rpcbind.enable = true;
+  services.nfs.server.enable = true;
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
@@ -70,6 +76,7 @@ in
     # mergerfs: merge drives
     "/storage" = {
       device = "/run/media/tank/storage:/run/media/microsd";
+      # device = "/run/media/tank/storage:/run/media/microsd:/net/192.18.1.123/mnt/user";
       fsType = "fuse.mergerfs";
       options = [
         "defaults"
@@ -81,6 +88,20 @@ in
         "nofail"
       ];
     };
+
+    # "/storage/music" = {
+    #   device = "/storage/music:/net/192.18.1.123/mnt/user/music";
+    #   fsType = "fuse.mergerfs";
+    #   options = [
+    #     "defaults"
+    #     "allow_other"
+    #     "use_ino"
+    #     "cache.files=partial"
+    #     "dropcacheonclose=true"
+    #     "category.create=epff"
+    #     "nofail"
+    #   ];
+    # };
   };
 
   swapDevices = [{
@@ -141,12 +162,17 @@ in
   #   allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
   # };
 
-  # networking.wireguard.interfaces = {
-  #   mtn = {
-  #     ips = [ "192.18.1.10/32" ];
-  #     #privateKeyFile = "path to private key file";
-  #   };
-  # };
+  networking.wireguard.interfaces = {
+    mtn = {
+      ips = [ "192.18.2.10/32" ];
+      privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
+    };
+  };
+
+  services.autofs.enable = true;
+  services.autofs.autoMaster = ''
+    /net -hosts --timeout=10
+  '';
 
   # services.syncthing = {
   #   overrideDevices = true;

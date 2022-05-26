@@ -12,8 +12,8 @@ super + {_, ctrl +, alt +} Return
 super + x
   kill-or-close
 
-super + {_, alt +} t
-  flameshot {gui,full --clipboard}
+# super + {_, alt +} t
+#  flameshot {gui,full --clipboard}
 
 super + alt + ctrl + j
   kitty-popup xrandr-scale
@@ -225,3 +225,8 @@ super + f
 super + r; b
   kitty-popup bluetooth-devices
 
+super + t
+  bt list | rofi -dmenu -dpi 192 | awk '\{print $1\}' | xargs bt activate
+
+super + v
+  op item list --vault Private | rofi -dmenu -dpi 192
