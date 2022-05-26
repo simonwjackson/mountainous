@@ -57,6 +57,11 @@ in
       # options = [ "defaults" "user" "rw" "utf8" ];
     };
 
+    "/home" = {
+      device = "/run/media/tank/home";
+      options = [ "bind" ];
+    };
+
     "/tmp" = {
       device = "/run/media/tank/tmp";
       options = [ "bind" ];
