@@ -61,10 +61,10 @@
       desktop = "$HOME/desktop";
       documents = "$HOME/documents";
       download = "$HOME/downloads";
-      music = "$HOME/music";
+      music = "/tank/music";
       pictures = "$HOME/images";
       templates = "$HOME/templates";
-      videos = "$HOME/videos";
+      videos = "/tank/videos";
     };
   };
 

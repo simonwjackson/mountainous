@@ -78,7 +78,7 @@
 
   services.picom = {
     enable = true;
-
+    vSync = true;
     opacityRule = [
       "0:class_g^='VIRTUAL_TERM_'"
     ];
