@@ -2,7 +2,7 @@
 
 let
   wifi = {
-    mac = "7c:50:79:4f:03:2b";
+    mac = "c4:23:60:9f:f2:1d";
     name = "wifi";
   };
 
@@ -29,14 +29,14 @@ in
     mergerfs
     mergerfs-tools
     snapraid
-    nfs-utils
-    rpcbind
-    lsof
+    # nfs-utils
+    # rpcbind
+    # lsof
   ];
 
-  services.rpcbind.enable = true;
-  services.nfs.server.enable = true;
-
+  # services.rpcbind.enable = true;
+  # services.nfs.server.enable = true;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
@@ -53,8 +53,8 @@ in
   #   fsType = "vfat";
   # };
 
-    "/run/media/tank" = {
-      device = "/dev/disk/by-label/tank";
+    "/run/media/nvme" = {
+      device = "/dev/disk/by-label/nvme";
       # options = [ "defaults" "user" "rw" "utf8" ];
     };
 
@@ -64,19 +64,18 @@ in
     };
 
     "/home" = {
-      device = "/run/media/tank/home";
+      device = "/run/media/nvme/home";
       options = [ "bind" ];
     };
 
     "/tmp" = {
-      device = "/run/media/tank/tmp";
+      device = "/run/media/nvme/tmp";
       options = [ "bind" ];
     };
 
     # mergerfs: merge drives
-    "/storage" = {
-      device = "/run/media/tank/storage:/run/media/microsd";
-      # device = "/run/media/tank/storage:/run/media/microsd:/net/192.18.1.123/mnt/user";
+    "/tank" = {
+      device = "/run/media/nvme:/run/media/microsd";
       fsType = "fuse.mergerfs";
       options = [
         "defaults"
@@ -89,8 +88,8 @@ in
       ];
     };
 
-    # "/storage/music" = {
-    #   device = "/storage/music:/net/192.18.1.123/mnt/user/music";
+    # "/storage" = {
+    #   device = "/run/media/tank/storage:/run/media/microsd:/net/192.18.1.123/mnt/user";
     #   fsType = "fuse.mergerfs";
     #   options = [
     #     "defaults"
@@ -98,7 +97,7 @@ in
     #     "use_ino"
     #     "cache.files=partial"
     #     "dropcacheonclose=true"
-    #     "category.create=epff"
+    #     "category.create=epmfs"
     #     "nofail"
     #   ];
     # };
@@ -108,7 +107,7 @@ in
     device = "/dev/disk/by-label/swap"; 
   }];
 
-  networking.interfaces.wlp0s20f3.useDHCP = lib.mkDefault true;
+  networking.interfaces.wifi.useDHCP = lib.mkDefault true;
 
   #powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
@@ -119,31 +118,31 @@ in
 
 
   # Sleep
-  # systemd.sleep.extraConfig = ''
-  #   # 15min delay
-  #   HibernateDelaySec=900
-  # '';
+  systemd.sleep.extraConfig = ''
+    # 15min delay
+    HibernateDelaySec=900
+  '';
 
-  # services.logind.lidSwitch = "suspend-then-hibernate";
-  # services.logind.lidSwitchExternalPower = "suspend";
+  services.logind.lidSwitch = "suspend-then-hibernate";
+  services.logind.lidSwitchExternalPower = "suspend";
 
-  # services.logind.extraConfig = ''
-  #   HandlePowerKey=suspend-then-hibernate
-  #   HandleSuspendKey=suspend-then-hibernate
-  #   HandleHibernateKey=suspend-then-hibernate
-  # '';
+  services.logind.extraConfig = ''
+    HandlePowerKey=suspend-then-hibernate
+    HandleSuspendKey=suspend-then-hibernate
+    HandleHibernateKey=suspend-then-hibernate
+  '';
 
-  # powerManagement.enable = true;
-  # powerManagement.powertop.enable = true;
-  # powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
+  powerManagement.enable = true;
+  powerManagement.powertop.enable = true;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
 
   # hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   hardware.bluetooth.enable = true;
 
   # Screen tearing
   # https://nixos.org/manual/nixos/unstable/index.html#sec-x11--graphics-cards-intel
-  # services.xserver.videoDrivers = [ "modesetting" ];
-  # services.xserver.useGlamor = true;
+  services.xserver.videoDrivers = [ "modesetting" ];
+  services.xserver.useGlamor = true;
 
   # services.xserver.videoDrivers = [ "intel" ];
   # services.xserver.deviceSection = ''
@@ -151,9 +150,10 @@ in
   #   Option "TearFree" "true"
   # '';
 
-  # services.udev.extraRules = ''
-  #   #KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
-  # '';
+  services.udev.extraRules = ''
+    KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+  '';
+
   # #KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
 
   # systemd.services.iptsd.enable = false;
@@ -169,40 +169,59 @@ in
     };
   };
 
-  services.autofs.enable = true;
-  services.autofs.autoMaster = ''
-    /net -hosts --timeout=10
-  '';
+  # services.autofs.enable = true;
+  # services.autofs.autoMaster = ''
+  #   /net -hosts --timeout=10
+  # '';
 
-  # services.syncthing = {
-  #   overrideDevices = true;
-  #   overrideFolders = true;
-  #   devices = {
-  #     "kuro" = { id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7"; };
-  #     "ushiro" = { id = "QLOZWRC-5K5E43G-EH7OWBS-3ZWQWU3-LAHRHSN-PXEEWXN-RQ7GKKW-UWZOXQQ"; };
-  #   };
-  # };
+  services.syncthing = {
+    overrideDevices = true;
+    overrideFolders = true;
+    devices = {
+      kuro.id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7";
+      # TODO: 1password not working here
+      # kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
+    };
+  };
 
-  # # TODO: Move to user config
-  # services.syncthing = {
-  #   enable = true;
-  #   user = "simonwjackson";
-  #   dataDir = "/storage"; # Default folder for new synced folders
-  #   configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
+  # TODO: Move to user config
+  services.syncthing = {
+    enable = true;
+    user = "simonwjackson";
+    dataDir = "/tank"; # Default folder for new synced folders
+    configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
 
-  #   folders = {
-  #     "documents" = {
-  #       path = "/home/simonwjackson/documents";
-  #       devices = [ "kuro" ];
-  #       # ignorePerms = false;
-  #     };
+    folders = {
+      "documents" = {
+        path = "/home/simonwjackson/documents";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
 
-  #     "books" = {
-  #       path = "/storage/books";
-  #       devices = [ "ushiro" "kuro" ];
-  #       # ignorePerms = false;
-  #     };
+      "audiobooks" = {
+        path = "/tank/storage/audiobooks";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
 
-  #   };
-  # };
+      "comics" = {
+        path = "/tank/storage/comics";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
+
+      "books" = {
+        path = "/tank/storage/books";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
+
+      "music" = {
+        path = "/tank/storage/music";
+        devices = [ "kuro" ];
+        # ignorePerms = false;
+      };
+
+    };
+  };
 }
