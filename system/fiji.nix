@@ -48,10 +48,10 @@ in
       fsType = "ext4";
     };
 
-  # "/boot" = {
-  #   device = "/dev/disk/by-label/boot";
-  #   fsType = "vfat";
-  # };
+    # "/boot" = {
+    #   device = "/dev/disk/by-label/boot";
+    #   fsType = "vfat";
+    # };
 
     "/run/media/nvme" = {
       device = "/dev/disk/by-label/nvme";
@@ -104,7 +104,7 @@ in
   };
 
   swapDevices = [{
-    device = "/dev/disk/by-label/swap"; 
+    device = "/dev/disk/by-label/swap";
   }];
 
   networking.interfaces.wifi.useDHCP = lib.mkDefault true;
@@ -161,12 +161,16 @@ in
   # networking.firewall = {
   #   allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
   # };
+  networking.firewall = {
+    allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
+  };
 
   networking.wireguard.interfaces = {
     mtn = {
       ips = [ "192.18.2.10/32" ];
       privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
     };
+
   };
 
   # services.autofs.enable = true;
@@ -178,9 +182,7 @@ in
     overrideDevices = true;
     overrideFolders = true;
     devices = {
-      kuro.id = "LXF5VOJ-BJ2ZRJH-PKAMTAV-ERNTHHC-3XJRD4V-G7XLMB3-IXLNZ72-62KONA7";
-      # TODO: 1password not working here
-      # kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
+      kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
     };
   };
 

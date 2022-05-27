@@ -2,6 +2,6 @@
 
 set -e
 
-nix build .#homeConfigurations.$(whoami).activationPackage \
+op run --env-file=.env -- nix build .#homeConfigurations.$(whoami).activationPackage \
 && ./result/activate \
-&& sudo -E su -c 'op run --env-file=.env -- ./apply-users.post.sh' $(whoami)
+&& op run --env-file=.env -- ./apply-users.post.sh
