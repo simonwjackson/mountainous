@@ -60,7 +60,17 @@
   ];
 
   # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = false;
+    permitRootLogin = "no";
+    extraConfig = ''
+      #PubkeyAcceptedKeyTypes ssh-rsa
+    '';
+  };
+
+  # programs.ssh.hostKeyAlgorithms = [ "ssh-ed25519" "ssh-rsa" ];
+  # programs.ssh.pubkeyAcceptedKeyTypes = [ "ssh-rsa" ];
 
   system.stateVersion = "22.05";
 }
