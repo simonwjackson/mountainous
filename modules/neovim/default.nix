@@ -3,12 +3,12 @@
 {
   imports = [ ];
 
-  # nixpkgs.overlays = [
-  #   (import (builtins.fetchTarball {
-  #     url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
-  #     sha256 = "07rav6ivbpb8q3ffj9x907l2gd3qrw25xpk926g0f00hlbg82l4g";
-  #   }))
-  # ];
+  nixpkgs.overlays = [
+    (import (builtins.fetchTarball {
+      url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
+      sha256 = "1sy53l1adzcx802lb7nxbi44sgbi04w5adg248llwqmxdkzamibw";
+    }))
+  ];
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
@@ -78,7 +78,19 @@
     ];
 
     coc = {
-      enable = false;
+      enable = true;
+
+      package = pkgs.vimUtils.buildVimPluginFrom2Nix {
+        pname = "coc.nvim";
+        version = "2022-05-21";
+        src = pkgs.fetchFromGitHub {
+          owner = "neoclide";
+          repo = "coc.nvim";
+          rev = "791c9f673b882768486450e73d8bda10e391401d";
+          sha256 = "sha256-MobgwhFQ1Ld7pFknsurSFAsN5v+vGbEFojTAYD/kI9c=";
+        };
+        meta.homepage = "https://github.com/neoclide/coc.nvim/";
+      };
 
       pluginConfig = ''
         let g:coc_global_extensions = [

@@ -1274,4 +1274,4 @@ augroup myrescript
 augroup End
 
 nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
-au BufNewFile /mnt/storage/documents/notes/diary/*.md : silent 0r !~/.local/share/nvim/bin/generate-vimwiki-diary-template '%'
+" au BufNewFile ~/documents/notes/diary/*.md : silent 0r !~/.local/share/nvim/bin/generate-vimwiki-diary-template '%'
