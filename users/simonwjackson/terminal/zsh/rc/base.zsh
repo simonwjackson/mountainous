@@ -164,3 +164,4 @@ function git-here () {
   [[ "${PWD}" = ~ ]] && lazygit --git-dir ~/dotfiles --work-tree ~ || lazygit
 }
 
+# PROMPT=$([[ -n $IN_NIX_SHELL ]] && echo "❄ | $PROMPT")
