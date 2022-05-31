@@ -29,13 +29,14 @@ in
     mergerfs
     mergerfs-tools
     snapraid
-    # nfs-utils
+    nfs-utils
     # rpcbind
     # lsof
   ];
 
   # services.rpcbind.enable = true;
-  # services.nfs.server.enable = true;
+  services.nfs.server.enable = true;
+
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
@@ -83,24 +84,24 @@ in
         "use_ino"
         "cache.files=partial"
         "dropcacheonclose=true"
-        "category.create=epmfs"
+        "category.create=epff"
         "nofail"
       ];
     };
 
-    # "/storage" = {
-    #   device = "/run/media/tank/storage:/run/media/microsd:/net/192.18.1.123/mnt/user";
-    #   fsType = "fuse.mergerfs";
-    #   options = [
-    #     "defaults"
-    #     "allow_other"
-    #     "use_ino"
-    #     "cache.files=partial"
-    #     "dropcacheonclose=true"
-    #     "category.create=epmfs"
-    #     "nofail"
-    #   ];
-    # };
+    "/storage" = {
+      device = "/tank/storage:/net/192.18.1.123/mnt/user";
+      fsType = "fuse.mergerfs";
+      options = [
+        "defaults"
+        "allow_other"
+        "use_ino"
+        "cache.files=partial"
+        "dropcacheonclose=true"
+        "category.create=epff"
+        "nofail"
+      ];
+    };
   };
 
   swapDevices = [{
@@ -144,17 +145,9 @@ in
   services.xserver.videoDrivers = [ "modesetting" ];
   services.xserver.useGlamor = true;
 
-  # services.xserver.videoDrivers = [ "intel" ];
-  # services.xserver.deviceSection = ''
-  #   Option "DRI" "2"
-  #   Option "TearFree" "true"
-  # '';
-
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
   '';
-
-  # #KERNEL=="01:03:01:00:01", SUBSYSTEM=="surface_aggregator", RUN+="/usr/bin/chmod 666 /sys/bus/surface_aggregator/devices/01:03:01:00:01/perf_mode"
 
   # systemd.services.iptsd.enable = false;
 
@@ -173,10 +166,10 @@ in
 
   };
 
-  # services.autofs.enable = true;
-  # services.autofs.autoMaster = ''
-  #   /net -hosts --timeout=10
-  # '';
+  services.autofs.enable = true;
+  services.autofs.autoMaster = ''
+    /net -hosts --timeout=10
+  '';
 
   services.syncthing = {
     overrideDevices = true;
