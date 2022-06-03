@@ -91,7 +91,8 @@ call plug#begin('~/.local/share/nvim/plugged')
 " ----------------------------------------------------
 
 Plug 'flrnprz/plastic.vim'
-
+Plug 'lifepillar/vim-solarized8'
+Plug 'dracula/vim', { 'as': 'dracula' }
 
 " ----------------------------------------------------
 "  - Language Support
@@ -710,7 +711,7 @@ endfunction
 
 " \     [ 'cocapollo' ]
 let g:lightline = {
-            \ 'colorscheme': 'one',
+            \ 'colorscheme': 'dracula',
             \ 'active': {
                 \   'left': [
                     \     [ 'mode', 'paste' ],
@@ -1036,7 +1037,7 @@ set t_Co=256
 syntax enable
 
 " Scheme
-colorscheme plastic
+colorscheme dracula
 
 hi! Pmenu ctermbg=None ctermfg=None guibg=#111111 guifg=None
 hi! SignColumn ctermfg=None ctermbg=None guibg=None

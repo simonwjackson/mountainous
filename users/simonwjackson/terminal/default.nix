@@ -177,16 +177,22 @@
     tmux.enableShellIntegration = true;
   };
 
+  home.file = {
+    "./.config/tmux/themes" = {
+      recursive = true;
+      source = ./tmux/themes;
+    };
+  };
   programs.tmux = {
     enable = true;
 
-    plugins = with pkgs; [
-      tmuxPlugins.sensible
-      tmuxPlugins.jump
-      tmuxPlugins.extrakto
-      tmuxPlugins.tmux-fzf
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      jump
+      extrakto
+      tmux-fzf
       {
-        plugin = tmuxPlugins.resurrect;
+        plugin = resurrect;
         extraConfig = ''
           set -g @resurrect-strategy-nvim 'session'
           set -g @resurrect-save 'a'
@@ -194,7 +200,7 @@
         '';
       }
       {
-        plugin = tmuxPlugins.continuum;
+        plugin = continuum;
         extraConfig = ''
           set -g @continuum-restore 'on'
           set -g @continuum-boot 'on'
