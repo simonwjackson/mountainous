@@ -27,6 +27,7 @@
       xorg.xkill
       tridactyl-native
       rofi
+      kitty
     ];
   };
 
@@ -72,9 +73,10 @@
   };
 
   programs.kitty = {
-    enable = true;
-    extraConfig = builtins.readFile (./kitty/kitty.conf);
+    enable = false;
   };
+
+  home.file.".config/kitty/kitty.main.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
   services.picom = {
     enable = true;
@@ -105,7 +107,7 @@
 
     profiles.simonwjackson = {
       isDefault = true;
-      settings = { 
+      settings = {
         "signon.rememberSignons" = false;
         "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
         "browser.tabs.closeWindowWithLastTab" = true;
