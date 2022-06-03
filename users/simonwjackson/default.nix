@@ -28,6 +28,8 @@
       QT_AUTO_SCREEN_SET_FACTOR = 0;
       QT_SCALE_FACTOR = 2;
       QT_FONT_DPI = 96;
+
+      NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket nvim";
     };
   };
 

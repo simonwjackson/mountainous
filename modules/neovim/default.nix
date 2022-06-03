@@ -13,7 +13,12 @@
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home = {
-    sessionVariables = { };
+
+    shellAliases = {
+      nvim = "nvim --listen /tmp/nvimsocket";
+      # BUG: remove this when nvr package gets linked properly
+      nvr = "/nix/store/dxgx43vdrgmfqkcrjyfznpg8mhhi54mc-neovim-remote-2.4.0/bin/nvr";
+    };
 
     file = {
       "./.config/nvim/lua" = {
@@ -39,6 +44,7 @@
       sumneko-lua-language-server
       go-langserver
       luaformatter
+      neovim-remote
       # haskell-language-server
       # dhall-lsp-server
       # used to compile tree-sitter grammar
