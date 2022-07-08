@@ -27,12 +27,18 @@
     in
     {
       homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs username system;
+        #inherit pkgs username system;
         # system = "aarch64-linux";
-
-        configuration = import ./users/${username};
-        homeDirectory = "/home/${username}";
-        stateVersion = "22.05";
+        pkgs = nixpkgs.legacyPackages.${system};
+        modules = [
+          ./users/${username}
+          {
+            home = {
+              homeDirectory = "/home/${username}";
+              stateVersion = "22.05";
+            };
+          }
+        ];
       };
 
       nixosConfigurations = {
