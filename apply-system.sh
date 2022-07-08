@@ -7,12 +7,12 @@ set -e
 #   exit 1
 # else
 
-if ! op account get; then
-  eval $(op signin)
-fi
-if op account get; then
+# if ! op account get; then
+#   eval $(op signin)
+# fi
+# if op account get; then
   op run --env-file=.env -- sudo -E nixos-rebuild --impure -v switch --flake .#
-fi
+# fi
 # fi
     # --impure \
 # --profile-name "$(git log -1 --pretty=%B | sed "s/[^[:alnum:]-]/-/g")" \
