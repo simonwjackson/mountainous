@@ -13,6 +13,7 @@
     ./bin/kitty-popup
     ./bin/vim-wiki
     ./bin/virtual-term
+    ./bin/activate-or-open-tab
   ];
 
   # TODO: Find a way to enable this dynamicaly by system type
@@ -28,8 +29,6 @@
       QT_AUTO_SCREEN_SET_FACTOR = 0;
       QT_SCALE_FACTOR = 2;
       QT_FONT_DPI = 96;
-
-      NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket nvim";
     };
   };
 
@@ -39,6 +38,7 @@
 
     shellAliases = {
       try = "nix-shell -p";
+      run = "nix-shell -p $1 --run $1";
       cat = "bat";
       sl = "exa";
       ls = "exa";
@@ -53,7 +53,19 @@
       pkgs.killall
       pkgs.jq
       pkgs._1password-gui
+      pkgs.dracula-theme
+      pkgs.obsidian
+      pkgs.ruby
     ];
+  };
+
+  xdg.desktopEntries = {
+    obsidian = {
+      name = "Obsidian";
+      genericName = "Link Your Thinking";
+      exec = "obsidian";
+      terminal = false;
+    };
   };
 
   xdg = {
@@ -74,6 +86,43 @@
     enable = true;
   };
 
+  systemd.user = {
+    services.xsettingsd = {
+      Unit = {
+        Description = "xsettingsd";
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.xsettingsd}/bin/xsettingsd";
+        ExecStop = "pkill xsettingsd";
+      };
+      Install = {
+        WantedBy = [ "multi-user.target" ];
+      };
+    };
+
+    services.xsettingsd-watcher = {
+      Unit = {
+        Description = "xsettingsd restarter";
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.systemd}/bin/systemctl --user restart xsettingsd.service";
+      };
+      Install = {
+        WantedBy = [ "multi-user.target" ];
+      };
+    };
+
+    paths.xsettingsd-watcher = {
+      Path = {
+        PathModified = "/home/simonwjackson/.xsettingsd";
+      };
+      Install = {
+        WantedBy = [ "multi-user.target" ];
+      };
+    };
+  };
 
   # TODO: Place this next to syncthing config
   home.file = {
