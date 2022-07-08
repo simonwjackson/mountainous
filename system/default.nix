@@ -6,6 +6,8 @@
     package = pkgs.nixFlakes;
     extraOptions = ''
       experimental-features = nix-command flakes
+      keep-outputs = true
+      keep-derivations = true
     '';
   };
 
@@ -15,8 +17,6 @@
   ];
 
   # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
   # Enable the GNOME Desktop Environment.
   # services.xserver.desktopManager.gnome.enable = true;
 
@@ -39,14 +39,16 @@
   users.users.simonwjackson = {
     shell = pkgs.zsh;
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [
+      "adbusers"
+      "wheel"
+    ]; # Enable ‘sudo’ for the user.
   };
 
   # List packages installed in system profile. To search, run:
   #environment.variables.EDITOR = "nvim";
   #programs.neovim.enable = true;
   #programs.neovim.viAlias = true;
-
   environment.systemPackages = with pkgs; [
     # Other
     wget
@@ -68,6 +70,10 @@
       #PubkeyAcceptedKeyTypes ssh-rsa
     '';
   };
+
+  services.udev.packages = [
+    pkgs.android-udev-rules
+  ];
 
   # programs.ssh.hostKeyAlgorithms = [ "ssh-ed25519" "ssh-rsa" ];
   # programs.ssh.pubkeyAcceptedKeyTypes = [ "ssh-rsa" ];
