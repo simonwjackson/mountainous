@@ -20,15 +20,12 @@
   programs.rofi = {
     enable = true;
     cycle = true;
-    theme = "Arc-Dark"; 
+    configPath = "${config.xdg.configHome}/rofi/config.base.rasi";
   };
 
   xsession.windowManager.bspwm = {
     enable = true;
 
     extraConfig = builtins.readFile (./bspwmrc);
-    startupPrograms = [
-      "kitty"
-    ];
   };
 }
