@@ -13,9 +13,9 @@
 
 function! Preserve(command)
     " Save the last search.
-    let search = @/
 
     " Save the current cursor position.
+    let search = @/
     let cursor_position = getpos('.')
 
     " Save the current window position.
@@ -98,6 +98,11 @@ Plug 'dracula/vim', { 'as': 'dracula' }
 "  - Language Support
 " ----------------------------------------------------
 
+Plug 'nikolvs/vim-sunbather'
+
+" LF
+Plug 'VebbNix/lf-vim'
+
 " Golang
 " Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
@@ -175,8 +180,8 @@ Plug 'terryma/vim-multiple-cursors'
 Plug 'maxmellon/vim-jsx-pretty'
 
 " A light and configurable statusline/tabline plugin for Vim http
-Plug 'itchyny/lightline.vim'
-
+" Plug 'itchyny/lightline.vim'
+Plug 'nvim-lualine/lualine.nvim'
 " Adds file type icons to Vim plugins
 Plug 'ryanoasis/vim-devicons'
 
@@ -284,6 +289,7 @@ Plug 'wesQ3/vim-windowswap'
 Plug 'lukas-reineke/lsp-format.nvim'
 
 Plug 'ThePrimeagen/git-worktree.nvim'
+" Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
 
 call plug#end()
 
@@ -369,7 +375,7 @@ autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | end
 set fillchars=stl\:─,vert\:\█   
 
 " ...?
-set hidden
+set nohidden
 
 " Default encoding
 set encoding=utf-8
@@ -710,8 +716,8 @@ function! LightlineCocCoverageStatus() abort
 endfunction
 
 " \     [ 'cocapollo' ]
+"           \ 'colorscheme': 'dracula',
 let g:lightline = {
-            \ 'colorscheme': 'dracula',
             \ 'active': {
                 \   'left': [
                     \     [ 'mode', 'paste' ],
@@ -1014,6 +1020,8 @@ inoremap <silent><expr> <C-Space> coc#refresh()
 "  => Colors and Fonts
 " ============================================================================
 
+" set guifont=Cousine_Nerd_Font_Mono:h10
+
 " BUG: This conditional causes color inconsistancies when sourcing a second time
 " https://superuser.com/a/748204
 " if exists('$TMUX')
@@ -1037,7 +1045,11 @@ set t_Co=256
 syntax enable
 
 " Scheme
-colorscheme dracula
+if filereadable(expand("~/.local/share/nvim/colorscheme.vim"))
+  source ${HOME}/.local/share/nvim/colorscheme.vim
+else
+  colorscheme dracula
+endif
 
 hi! Pmenu ctermbg=None ctermfg=None guibg=#111111 guifg=None
 hi! SignColumn ctermfg=None ctermbg=None guibg=None

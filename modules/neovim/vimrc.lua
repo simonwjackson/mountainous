@@ -1,4 +1,5 @@
 require('plugins.telescope')
+require('lualine').setup()
 
 require("todo-comments").setup {
     keywords = {
