@@ -18,6 +18,12 @@ zstyle ':completion:*' accept-exact '*(N)'
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path ~/.zsh/cache
 
+
+# INFO: Needed for non nix pip packages
+export PATH="${HOME}/.local/bin:${PATH}"
+# INFO: Needed for non nix ruby packages
+export PATH=$(ruby=("${HOME}/.local/share/gem/ruby/**/bin"); printf "%s:" "${ruby[@]}" | sed 's/.$//'):${PATH}
+
 WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
 
 autoload edit-command-line; zle -N edit-command-line
