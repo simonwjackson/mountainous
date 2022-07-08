@@ -1,12 +1,10 @@
 # TODO: UNBOUND KEYS
 # kitty-popup wifi-menu
+# bspc node -t "~floating"
   
 # new term
 super + {_, ctrl +, alt +} Return
   {kitty tmux, kitty, kitty-popup $SHELL}
-  # {alacritty --command tmux, alacritty, kitty-popup $SHELL}}
-  # {kitty, bspc rule -a \* -o state=floating sticky=on layer=above rectangle=720x360+600+26 && kitty}
-  # {kitty tmux, kitty-popup $SHELL}
 
 # kill focused window
 super + x
@@ -43,10 +41,19 @@ super + comma
   resize-window 16 9
 
 super + w; {_, super +}w
-  kitty-popup vimwiki-index
+  kitty-popup vimwiki-journal-weekly
 
 super + w; {_, super +}i
-  kitty-popup vimwiki-inbox
+  kitty-popup vimwiki-index
+
+super + w; {_, super +}j
+  kitty-popup vimwiki-journal
+
+super + w; {_, super +}m
+  kitty-popup find-meeting
+
+super + w; {_, super +}M
+  kitty-popup vimwiki-meeting
 
 # Music menu
 super + p; {_, super +}s
@@ -95,12 +102,18 @@ XF86AudioMute
   pulseaudio-ctl mute
 
 # Change volume
-#XF86Audio{Raise,Lower}Volume
-#  pulseaudio-ctl {up,down} 2
+XF86Audio{Raise,Lower}Volume
+  pulseaudio-ctl {up,down} 2
 
 # # Pianobar
 # super + XF86Audio{Rewind,LowerVolume,RaiseVolume,Forward}
 #   media-control {ban,tired,like,bookmark}
+
+super + XF86MonBrightnessUp
+  ~/light.sh
+
+super + {_, ctrl} + XF86MonBrightnessDown
+  {~/dark.sh,~/black.sh}
 
 XF86MonBrightnessUp
   sudo brightnessctl set 5%+
@@ -113,12 +126,12 @@ XF86MonBrightnessDown
 #####################
 
 # swap the current node and the biggest window
-super + g
-  bspc node -s biggest.window.local
+# super + g
+#   bspc node -s biggest.window.local
 
 # toggle floating
 super + space
-  bspc node -t "~floating"
+  rofi -show drun -dpi 192 -p Apps
 
 # focus the node in the given direction
 super + {h,j,k,l}
@@ -230,3 +243,18 @@ super + t
 
 super + v
   op item list --vault Private | rofi -dmenu -dpi 192
+
+super + g; {_, super +}s
+  activate-or-open-tab 'https://app.slack.com/client' -p 'Slack' -u 'app.slack.com/client'
+
+super + g; {_, super +}m
+  activate-or-open-tab 'https://mail.google.com' -p 'Gmail' -u 'mail.google.com'
+
+super + g; {_, super +}a
+  activate-or-open-tab 'https://asciiflow.com/#/' -p 'ASCIIFlow' -u 'asciiflow.com'
+
+super + g; {_, super +}c
+  activate-or-open-tab 'https://calendar.google.com' -p 'Calendar' -u 'calendar.google.com'
+
+super + g; {_, super +}l
+  activate-or-open-tab 'https://linear.app' -p 'Linear' -u 'linear.app'
