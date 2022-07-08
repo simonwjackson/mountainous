@@ -26,8 +26,7 @@
       wmctrl
       xorg.xkill
       tridactyl-native
-      rofi
-      kitty
+      pulseaudio-ctl
     ];
   };
 
@@ -41,27 +40,27 @@
     # '';
   };
 
-  dconf.enable = true;
-  gtk = {
-    enable = true;
-    theme.package = pkgs.gnome.gnome-themes-extra;
-    theme.name = "Adwaita";
+  # dconf.enable = true;
+  # gtk = {
+  #   enable = true;
+  #   theme.package = pkgs.gnome.gnome-themes-extra;
+  #   theme.name = "Adwaita";
 
-    gtk4.extraConfig = {
-      gtk-application-prefer-dark-theme = 1;
-    };
+  #   gtk4.extraConfig = {
+  #     gtk-application-prefer-dark-theme = 1;
+  #   };
 
-    gtk3.extraConfig = {
-      gtk-application-prefer-dark-theme = 1;
-    };
-  };
+  #   gtk3.extraConfig = {
+  #     gtk-application-prefer-dark-theme = 1;
+  #   };
+  # };
 
-  qt = {
-    enable = true;
-    platformTheme = "gnome";
-    style.package = pkgs.adwaita-qt;
-    style.name = "adwaita-dark";
-  };
+  # qt = {
+  #   enable = true;
+  #   platformTheme = "gnome";
+  #   style.package = pkgs.adwaita-qt;
+  #   style.name = "adwaita-dark";
+  # };
 
   programs.mpv = {
     enable = true;
@@ -72,11 +71,7 @@
     };
   };
 
-  programs.kitty = {
-    enable = false;
-  };
-
-  home.file.".config/kitty/kitty.main.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
+  home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
   services.picom = {
     enable = true;
