@@ -113,11 +113,6 @@ in
   #powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-
-
-
-
-
   # Sleep
   systemd.sleep.extraConfig = ''
     # 15min delay
@@ -176,6 +171,7 @@ in
     overrideFolders = true;
     devices = {
       kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
+      ushiro.id = builtins.getEnv "SYNCTHING_USHIRO_ID";
     };
   };
 
@@ -184,7 +180,21 @@ in
     enable = true;
     user = "simonwjackson";
     dataDir = "/tank"; # Default folder for new synced folders
-    configDir = "/home/simonwjackson/.config/syncthing"; # Folder for Syncthing's settings and keys
+    configDir = "/home/simonwjackson/.config/syncthing";
+
+    extraFlags = [
+      "--no-default-folder"
+    ];
+
+    extraOptions = {
+      ignores = {
+        "line" = [
+          "**/node_modules"
+          "**/build"
+          "**/cache"
+        ];
+      };
+    };
 
     folders = {
       "documents" = {
@@ -217,6 +227,10 @@ in
         # ignorePerms = false;
       };
 
+      "code" = {
+        path = "/home/simonwjackson/code";
+        devices = [ "ushiro" ];
+      };
     };
   };
 }

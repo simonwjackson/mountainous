@@ -74,6 +74,17 @@
     enable = true;
   };
 
+
+  # TODO: Place this next to syncthing config
+  home.file = {
+    "./code/.stignore" = {
+      text = ''
+        **/node_modules
+        **/dist
+      '';
+    };
+  };
+
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 }
