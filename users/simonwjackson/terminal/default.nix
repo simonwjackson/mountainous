@@ -11,6 +11,9 @@
   home = {
     sessionVariables = {
       TERM = "tmux-256color";
+      TERMINAL = "kitty";
+      EDITOR = "nvim";
+      PAGER = "nvimpager";
     };
 
     shellAliases = {
@@ -39,6 +42,8 @@
     btop
     dialog
     nmap
+    fd
+    nvimpager
   ];
 
   programs.bat = {
@@ -83,6 +88,7 @@
         side-by-side = false;
       };
     };
+
 
     aliases = {
       d = "difftool";
@@ -144,6 +150,12 @@
       init = {
         defaultBranch = "main";
       };
+      safe = {
+        directory = [
+          "/etc/nixos"
+          "/home/simonwjackson/nix-config"
+        ];
+      };
     };
     ignores = [
       ".DS_Store"
@@ -183,6 +195,7 @@
       source = ./tmux/themes;
     };
   };
+
   programs.tmux = {
     enable = true;
 
@@ -211,4 +224,12 @@
 
     extraConfig = builtins.readFile (./tmux/tmux.conf);
   };
+
+  programs.lf = {
+    enable = true;
+    extraConfig = builtins.readFile ./lfrc;
+  };
+
+  programs.direnv.enable = true;
+  programs.direnv.nix-direnv.enable = true;
 }
