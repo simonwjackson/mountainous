@@ -1,4 +1,8 @@
-bindkey -s '^e' 'nvim^M'
+function nvim-worktree () {
+  [[ -f ./packed-refs ]] && git worktree list | awk '{print $3}' | awk 'NF > 0' && nvim +"lua require('telescope').extensions.git_worktree.git_worktrees()" $* || nvim $*
+}
+
+bindkey -s '^e' 'nvim-worktree^M'
 bindkey -s '^g' 'lazygit^M'
 
 # bindkey -s '\eOP'    '<COMMAND>^M'    # F1
