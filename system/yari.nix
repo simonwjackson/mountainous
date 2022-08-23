@@ -6,8 +6,9 @@
 {
   imports =
     [
-    ./default.nix
-    (modulesPath + "/installer/scan/not-detected.nix")
+      ../modules/workstation.nix
+      ./default.nix
+      (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
   # Bootloader.
@@ -20,19 +21,37 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
+  services.xserver.extraConfig = ''
+    Section "Device"
+      Identifier "intelgpu0" 
+      Driver "intel"
+      Option "VirtualHeads" "2"
+    EndSection
+  '';
+
+  services.xserver.deviceSection = ''
+    Option "VirtualHeads" "2"
+    Option "TearFree" "true"
+  '';
+
+  services.xserver.exportConfiguration = true;
+  services.xserver.videoDrivers = [ "intel" ];
+  services.xserver.useGlamor = true;
+
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/7a871b00-0277-4ced-9203-7a392436b972";
+    {
+      device = "/dev/disk/by-uuid/7a871b00-0277-4ced-9203-7a392436b972";
       fsType = "ext4";
     };
 
   fileSystems."/boot/efi" =
-    { device = "/dev/disk/by-uuid/14F9-7A1C";
+    {
+      device = "/dev/disk/by-uuid/14F9-7A1C";
       fsType = "vfat";
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/570cb165-8a3b-4583-8750-d0b0aa94c775"; }
-    ];
+    [{ device = "/dev/disk/by-uuid/570cb165-8a3b-4583-8750-d0b0aa94c775"; }];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
@@ -42,6 +61,6 @@
   # networking.interfaces.eno1.useDHCP = lib.mkDefault true;
   # networking.interfaces.wlp2s0.useDHCP = lib.mkDefault true;
 
-  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
+  powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }

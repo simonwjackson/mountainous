@@ -42,7 +42,7 @@
       };
 
       nixosConfigurations = {
-        yari = lib.nixosSystem {
+        nixos = lib.nixosSystem {
           inherit system;
 
           modules = [

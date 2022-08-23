@@ -75,10 +75,10 @@
       desktop = "$HOME/desktop";
       documents = "$HOME/documents";
       download = "$HOME/downloads";
-      music = "/tank/music";
+      #music = "/tank/music";
       pictures = "$HOME/images";
       templates = "$HOME/templates";
-      videos = "/tank/videos";
+      #videos = "/tank/videos";
     };
   };
 
