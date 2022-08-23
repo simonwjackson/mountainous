@@ -42,6 +42,14 @@
       };
 
       nixosConfigurations = {
+        yari = lib.nixosSystem {
+          inherit system;
+
+          modules = [
+            ./system/yari.nix
+          ];
+        };
+
         fiji = lib.nixosSystem {
           inherit system;
 
