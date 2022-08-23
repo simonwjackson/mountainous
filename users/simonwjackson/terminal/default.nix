@@ -33,6 +33,7 @@
       lan = "nmap -n -sn 192.18.1.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
       wgn = "nmap -n -sn 192.18.2.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
       all_links = "xidel --extract \"//a/resolve-uri(@href, base-uri())\" \"{$1}\" | xclip -selection clipboard";
+      kvm = "nix-shell -p barrier --run '{ ssh -N -R 24800:localhost:24800 ushiro.lan; } & { barriers -f --no-tray --debug INFO --name fiji --disable-client-cert-checking --disable-crypto -c ~/ushiro.barriers.conf --address :24800; } & wait -n; pkill -P $$;'";
     };
   };
 
