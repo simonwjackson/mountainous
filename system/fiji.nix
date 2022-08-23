@@ -146,11 +146,9 @@ in
 
   # systemd.services.iptsd.enable = false;
 
-  # networking.firewall = {
-  #   allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
-  # };
   networking.firewall = {
     allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
+    allowedTCPPorts = [ 24800 ];
   };
 
   networking.wireguard.interfaces = {
@@ -232,5 +230,23 @@ in
         devices = [ "ushiro" ];
       };
     };
+  };
+
+  services.mpd = {
+    enable = true;
+    user = "simonwjackson";
+    group = "users";
+    musicDirectory = "/tank/storage/music";
+    extraConfig = ''
+      audio_output {
+        type "pulse"
+        name "Pulseaudio"
+        server "127.0.0.1" # add this line - MPD must connect to the local sound server
+      }
+    '';
+
+    # Optional:
+    network.listenAddress = "127.0.0.1"; # if you want to allow non-localhost connections
+    startWhenNeeded = true; # systemd feature: only start MPD service upon connection to its socket
   };
 }
