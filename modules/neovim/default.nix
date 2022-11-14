@@ -5,6 +5,7 @@
 
   home.packages = with pkgs; [
     neovide
+    nodejs-16_x
   ];
 
   # Home Manager needs a bit of information about you and the
@@ -23,25 +24,20 @@
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
-    withNodeJs = true;
 
     extraPackages = with pkgs; [
       ripgrep
-      nodePackages.npm
-      nodejs
       lf
       rnix-lsp
       sumneko-lua-language-server
-      #go-langserver
       luaformatter
       neovim-remote
-      # haskell-language-server
-      # dhall-lsp-server
-      # used to compile tree-sitter grammar
       tree-sitter
     ];
 
     plugins = with pkgs.vimPlugins; [
+      copilot-vim
+
       {
         plugin = telescope-nvim;
         type = "lua";

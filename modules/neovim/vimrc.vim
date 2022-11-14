@@ -1291,6 +1291,10 @@ nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
 
 let g:floaterm_width=120
 
+" HACK: This will break if nodejs-16_x is updated
+" fix: https://lazamar.github.io/download-specific-package-version-with-nix/
+let g:copilot_node_command = '/nix/store/pzsk91sxxin42axlvdfbbbjiyz3jzfy3-nodejs-16.17.1/bin/node'
+
 lua << EOF
 -- Global Utils
 
