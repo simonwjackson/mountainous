@@ -1,6 +1,3 @@
-require('plugins.telescope')
-require('lualine').setup()
-
 require("todo-comments").setup {
     keywords = {
         FIX = {
@@ -16,6 +13,3 @@ require("todo-comments").setup {
         NOTE = { icon = " ", color = "hint", alt = { "INFO" } },
     }
 }
-
-
--- require("trouble").setup {}

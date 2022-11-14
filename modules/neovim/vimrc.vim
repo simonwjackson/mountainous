@@ -269,7 +269,7 @@ Plug 'github/copilot.vim'
 
 " VIM Test
 Plug 'vim-test/vim-test'
-Plug 'rcarriga/vim-ultest', { 'do': ':UpdateRemotePlugins' }
+" Plug 'rcarriga/vim-ultest', { 'do': ':UpdateRemotePlugins' }
 Plug 'dhruvasagar/vim-zoom'
 
 Plug 'pwntester/octo.nvim'
@@ -523,8 +523,8 @@ set title
 set titleold=
 
 " Motion timeouts
-set notimeout
-set ttimeout
+" set notimeout
+" set ttimeout
 " TODO: change help split based on screen orientation
 " Force vertical help
 " cabbrev help vert help
@@ -574,8 +574,8 @@ set nonumber
 set foldcolumn=1
 
 " Motion timeouts
-set notimeout
-set ttimeout
+" set notimeout
+" set ttimeout
 
 " Auto-resize splits when Vim gets resized.
 autocmd VimResized * wincmd =
@@ -1266,8 +1266,8 @@ nmap ga <Plug>(EasyAlign)
 " nnoremap <silent> <leader>      :<c-u>WhichKey '<Space>'<CR>
 " nnoremap <silent> <localleader> :<c-u>WhichKey  ','<CR>
 "
-" " By default timeoutlen is 1000 ms
-" set timeoutlen=500
+" By default timeoutlen is 1000 ms
+set timeoutlen=500
 
 autocmd BufWrite *.lua call Indent()
 
@@ -1288,3 +1288,21 @@ augroup End
 
 nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
 " au BufNewFile ~/documents/notes/diary/*.md : silent 0r !~/.local/share/nvim/bin/generate-vimwiki-diary-template '%'
+
+let g:floaterm_width=120
+
+lua << EOF
+-- Global Utils
+
+-- Keyboard Mapping
+function map(mode, lhs, rhs, opts)
+    local options = { noremap = true }
+
+    if opts then
+        options = vim.tbl_extend("force", options, opts)
+    end
+
+    vim.api.nvim_set_keymap(mode, lhs, rhs, options)
+end
+
+EOF

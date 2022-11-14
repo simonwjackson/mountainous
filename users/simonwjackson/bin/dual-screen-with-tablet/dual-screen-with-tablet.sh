@@ -1,0 +1,1 @@
+xrandr --output DP1 --mode 1920x1080 --pos 0x0 --rotate normal --output DP2 --off --output HDMI1 --off --output HDMI2 --primary --mode 1920x1080 --pos 3968x0 --rotate normal --output HDMI3 --off --output VIRTUAL1 --mode 2048x2732_60.00 --pos 1920x0 --rotate normal --output VIRTUAL2 --off

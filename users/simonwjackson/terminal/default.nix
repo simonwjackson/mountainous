@@ -224,6 +224,13 @@
     ];
 
     extraConfig = builtins.readFile (./tmux/tmux.conf);
+
+  };
+
+  home.file = {
+    "./.config/tmux/share.tmux.conf" = {
+      source = ./tmux/share.tmux.conf;
+    };
   };
 
   programs.lf = {

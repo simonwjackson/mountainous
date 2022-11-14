@@ -135,10 +135,10 @@ super + space
 
 # focus the node in the given direction
 super + {h,j,k,l}
-  virtual-term deactivate; \
   [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] \
     && bspc node -f {west,south,north,east}.local \
     || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
+  # virtual-term deactivate; \
   #movement {west,south,north,east}
 
 # move the node in the given direction
@@ -150,11 +150,13 @@ super + shift + {h,j,k,l}
 
 # Go to Virtual Term 1
 super + Left
-  virtual-term activate
+  bspc monitor east --focus
+  # virtual-term activate
 
 # Leave Virtual Term 1
 super + Right
-  virtual-term deactivate
+  bspc monitor east --focus
+  # virtual-term deactivate
 
 # bspc monitor {west,east} --focus
 

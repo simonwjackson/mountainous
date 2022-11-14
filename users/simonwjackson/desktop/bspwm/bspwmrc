@@ -7,9 +7,9 @@
 #   source "${CURRENT_THEME}/bspwm"
 # }
 
-# Remove outter padding for tiled layout
-bspc subscribe desktop | while read -r _ _ _ layout; do
-  spacing=15
+xrandr --auto && dual-screen-with-tablet
+
+# Remove out5
 
   if [[ "$layout" == "monocle" ]]; then
       gap=0
@@ -19,12 +19,13 @@ bspc subscribe desktop | while read -r _ _ _ layout; do
 
   bspc config top_padding $((42-$gap)) # $(($POLYBAR_HEIGHT-$gap))
   bspc config window_gap $gap
-  bspc config left_padding -$gap
+  bspc conbe desktop | while read -r _ _ _ layout; do
+  spacing=1fig left_padding -$gap
   bspc config right_padding -$gap
   bspc config bottom_padding -$gap
 done &
 
-bspc rule -a Virtual-2 monitor=Virtual-2
+bspc rule -a VIRTUAL_TERM_1 monitor=VIRTUAL1
 
 # Various settings
 bspc config gapless_monocle       true
@@ -54,16 +55,19 @@ bspc subscribe node_state | while read -r _ _ _ node state status; do
   fi
 done &
 
-# Only Virtual-2 terminal on Virtual-2 desktop
-# bspc subscribe node_focus | while read -r event monitor desktop node; do
-#   bspc query --monitors --monitor ${monitor} --names | rg -q "Virtual-2" && {
-#       xprop -id ${node} | rg -q Virtual-2 || bspc node --to-monitor eDP1 --focus --activate
-#   }
-# done &
+# Only Virtual-1 terminal on Virtual-1 desktop
+bspc subscribe node_focus | while read -r event monitor desktop node; do
+  bspc query --monitors --monitor ${monitor} --names | rg -q "VIRTUAL_TERM_1" && {
+      xprop -id ${node} | rg -q VIRTUAL1 || bspc node --to-monitor DP1 --focus --activate
+  }
+done &
 
 hsetroot -solid "#000000" &
 
 # HACK: Find a way for nix to enable this by default
 systemctl --user start xsettingsd-watcher.path &
+
+# Blank screen after 5 minutes
+xset s 300 300
 
 kitty &

@@ -1,5 +1,5 @@
+local telescope = require('telescope')
 local actions = require('telescope.actions')
-local map = require("utils").map
 
 function Project_Files ()
     local opts = {} -- define here if you want to define something
@@ -7,14 +7,14 @@ function Project_Files ()
     if not ok then require"telescope.builtin".find_files(opts) end
 end
 
-require('telescope').setup{
+telescope.setup{
     defaults = {
         mappings = {
             i = {
                 ["<esc>"] = actions.close
             },
         },
-        layout_strategy = "horizontal",
+        layout_strategy = "vertical",
         sorting_strategy = "ascending",
         layout_config = {
             horizontal = {
@@ -32,10 +32,10 @@ require('telescope').setup{
             previewer = false,
             mappings = {
                 i = {
-                    ["<c-d>"] = require("telescope.actions").delete_buffer,
+                    ["<c-d>"] = actions.delete_buffer,
                 },
                 n = {
-                    ["<c-d>"] = require("telescope.actions").delete_buffer,
+                    ["<c-d>"] = actions.delete_buffer,
                 }
             }
         },
@@ -52,6 +52,3 @@ require("telescope").load_extension("git_worktree")
 -- map("n", "<Leader>?", ":WhichKey ','<CR>")
 -- map("n", "<Leader>a", ":cclose<CR>")
 
-map("n", "<F7>", ":lua Project_Files()<CR>")
-map("n", "<F11>", ":lua require('telescope').extensions.git_worktree.git_worktrees()<CR>")
-map("n", "<F12>", ":lua require('telescope').extensions.git_worktree.create_git_worktree()<CR>")

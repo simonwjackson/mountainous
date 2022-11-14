@@ -7,37 +7,23 @@
     neovide
   ];
 
-  # nixpkgs.overlays = [
-  #   (import (builtins.fetchTarball {
-  #     url = https://objects.githubusercontent.com/github-production-release-asset-2e65be/16408992/9d82bc7f-5952-434e-8b29-099724b9bd27?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIWNJYAX4CSVEH53A%2F20220607%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220607T205415Z&X-Amz-Expires=300&X-Amz-Signature=d6aea0d5223673fa87fc966e10b9bb833d05d53b490f56591613a3b23aa82ce8&X-Amz-SignedHeaders=host&actor_id=189379&key_id=0&repo_id=16408992&response-content-disposition=attachment%3B%20filename%3Dnvim-linux64.tar.gz&response-content-type=application%2Foctet-stream;
-  #     sha256 = "0nqmmsv64l3fvjmphqrg77jdar8hlnc7p9vxzijip76akiq8m11n";
-  #   }))
-  # ];
-
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home = {
-
     shellAliases = {
       nvim = "nvim --listen /tmp/nvimsocket";
       # BUG: remove this when nvr package gets linked properly
       nvr = "/nix/store/dxgx43vdrgmfqkcrjyfznpg8mhhi54mc-neovim-remote-2.4.0/bin/nvr";
     };
 
-    file = {
-      "./.config/nvim/lua" = {
-        recursive = true;
-        source = ./lua;
-      };
-
-      # "./.config/nvim/init.lua" = {
-      #   source = ./lua/init.lua;
-      # };
-    };
   };
 
   programs.neovim = {
     enable = true;
+    viAlias = true;
+    vimAlias = true;
+    vimdiffAlias = true;
+    withNodeJs = true;
 
     extraPackages = with pkgs; [
       ripgrep
@@ -56,9 +42,39 @@
     ];
 
     plugins = with pkgs.vimPlugins; [
+      {
+        plugin = telescope-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/telescope.lua);
+      }
+
+      {
+        plugin = lualine-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/lualine.lua);
+      }
+
+      {
+        plugin = which-key-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/which-key.lua);
+      }
+
+      {
+        plugin = todo-comments-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/todo-comments.lua);
+      }
+
+      {
+        plugin = trouble-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/trouble.lua);
+      }
+
       vim-nix
       vim-qml
-      which-key-nvim
+
       git-blame-nvim
       yankring # Yank across terminals
       is-vim # Automatically clear search highlights after you move your cursor.
@@ -78,29 +94,10 @@
       lush-nvim
     ];
 
-    extraConfig = builtins.concatStringsSep "\n" [
-      (lib.strings.fileContents ./vimrc.vim)
-      ''
-        lua << EOF
-        ${lib.strings.fileContents ./vimrc.lua}
-        EOF
-      ''
-    ];
+    extraConfig = builtins.readFile ./vimrc.vim;
 
     coc = {
       enable = true;
-
-      # package = pkgs.vimUtils.buildVimPluginFrom2Nix {
-      #   pname = "coc.nvim";
-      #   version = "2022-05-21";
-      #   src = pkgs.fetchFromGitHub {
-      #     owner = "neoclide";
-      #     repo = "coc.nvim";
-      #     rev = "791c9f673b882768486450e73d8bda10e391401d";
-      #     sha256 = "sha256-MobgwhFQ1Ld7pFknsurSFAsN5v+vGbEFojTAYD/kI9c=";
-      #   };
-      #   meta.homepage = "https://github.com/neoclide/coc.nvim/";
-      # };
 
       pluginConfig = ''
         let g:coc_global_extensions = [
@@ -119,7 +116,6 @@
           \ 'coc-vimlsp',
           \ 'coc-yaml',
           \ 'https://github.com/rodrigore/coc-tailwind-intellisense',
-          \ "coc-vetur"
           \ ]
       '';
       # \ 'coc-prettier',
@@ -167,21 +163,6 @@
             rootPatterns = [ "elm.json" ];
           };
 
-          # haskell = {
-          #   command = "haskell-language-server-wrapper";
-          #   args = [ "--lsp" ];
-          #   rootPatterns = [
-          #     "stack.yaml"
-          #     "hie.yaml"
-          #     ".hie-bios"
-          #     "BUILD.bazel"
-          #     ".cabal"
-          #     "cabal.project"
-          #     "package.yaml"
-          #   ];
-          #   filetypes = [ "hs" "lhs" "haskell" ];
-          # };
-
           rescript = {
             enable = true;
             module = "~/.local/share/nvim/plugged/vim-rescript/server/out/server.js";
@@ -189,16 +170,6 @@
             filetypes = [ "rescript" ];
             rootPatterns = [ "bsconfig.json" ];
           };
-
-          # golang = {
-          #   command = "go-langserver";
-          #   filetypes = [ "go" ];
-          #   initializationOptions = {
-          #     gocodeCompletionEnabled = true;
-          #     diagnosticsEnabled = true;
-          #     lintTool = "golint";
-          #   };
-          # };
 
           lua = {
             command = "lua-language-server";

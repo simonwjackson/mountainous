@@ -33,6 +33,11 @@
   xsession = {
     enable = true;
     scriptPath = ".hm-xsession";
+    initExtra = ''
+      /home/simonwjackson/layout.sh &
+      # virtual-term start &
+      # /home/simonwjackson/.nix-profile/bin/virtual-term
+    '';
     # windowManager.command = lib.mkForce ''
     #       # TESTING
     #       ${pkgs.bspwm} -c /home/simonwjackson/.config/bspwm/bspwmrc
@@ -76,10 +81,10 @@
   services.picom = {
     enable = true;
     vSync = true;
-    opacityRule = [
-      "0:class_g^='VIRTUAL_TERM_'"
-    ];
-    extraOptions = builtins.readFile (./picom/picom.conf);
+    #opacityRule = [
+    #  "0:class_g^='VIRTUAL_TERM_'"
+    #];
+    #settings = builtins.readFile (./picom/picom.conf);
   };
 
   services.sxhkd = {

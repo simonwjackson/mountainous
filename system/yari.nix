@@ -7,6 +7,7 @@
   imports =
     [
       ../modules/workstation.nix
+      ../modules/wireguard-client.nix
       ./default.nix
       (modulesPath + "/installer/scan/not-detected.nix")
     ];
@@ -36,7 +37,7 @@
 
   services.xserver.exportConfiguration = true;
   services.xserver.videoDrivers = [ "intel" ];
-  services.xserver.useGlamor = true;
+  # services.xserver.useGlamor = true;
 
   fileSystems."/" =
     {
@@ -63,4 +64,11 @@
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+  networking.wireguard.interfaces = {
+    mtn = {
+      ips = [ "192.18.2.12/32" ];
+      privateKey = builtins.getEnv "WIREGUARD_YARI_PRIVATE";
+    };
+  };
 }

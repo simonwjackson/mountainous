@@ -14,12 +14,13 @@
     ./bin/vim-wiki
     ./bin/virtual-term
     ./bin/activate-or-open-tab
+    ./bin/dual-screen-with-tablet
   ];
 
   # TODO: Find a way to enable this dynamicaly by system type
   xresources = {
     properties = {
-      "Xft.dpi" = 192;
+      #"Xft.dpi" = 96; # 192;
     };
   };
   home = {

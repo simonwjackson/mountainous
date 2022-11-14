@@ -156,7 +156,6 @@ in
       ips = [ "192.18.2.10/32" ];
       privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
     };
-
   };
 
   services.autofs.enable = true;

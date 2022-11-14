@@ -11,15 +11,15 @@ case $1 in
     --override 'font_size=0' \
     -- tmux \
       -L VIRTUAL_TERM_1 \
-      -f ./share.tmux.conf \
+      -f "${HOME}/.config/tmux/share.tmux.conf" \
       new-session \
       -A \
       -s SERVER \
       'export TMUX=; exec tmux new-session -A -s INNER'
 
-    sleep .5
-    id=$(xdotool search --classname VIRTUAL_TERM_1 | head -n 1)
-    bspc node "$id" --flag hidden=on
+    #sleep .5
+    #id=$(xdotool search --classname VIRTUAL_TERM_1 | head -n 1)
+    #bspc node "$id" --flag hidden=on
   ;;
 
   stop)
@@ -29,12 +29,12 @@ case $1 in
 
   deactivate)
     id=$(xdotool search --classname VIRTUAL_TERM_1 | head -n 1)
-    bspc node "$id" --flag hidden=on
+    #bspc node "$id" --flag hidden=on
   ;;
 
   activate)
     id=$(xdotool search --classname VIRTUAL_TERM_1 | head -n 1)
-    bspc node "$id" --flag hidden=off
+    #bspc node "$id" --flag hidden=off
     bspc node "$id" --to-desktop focused --follow
     bspc node "$id" --focus
   ;;
