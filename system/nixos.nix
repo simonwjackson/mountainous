@@ -37,4 +37,7 @@
   environment.variables.EDITOR = "nvim";
   programs.neovim.enable = true;
   programs.neovim.viAlias = true;
+
+  hardware.pulseaudio.enable = true;
+  hardware.bluetooth.enable = true;
 }

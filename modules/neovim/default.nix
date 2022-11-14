@@ -38,6 +38,11 @@
     plugins = with pkgs.vimPlugins; [
       copilot-vim
 
+      # {
+      #   plugin = wilder-nvim;
+      #   config = builtins.readFile (./plugins/wilder.vim);
+      # }
+
       {
         plugin = telescope-nvim;
         type = "lua";
@@ -69,25 +74,25 @@
       }
 
       vim-nix
-      vim-qml
+      # vim-qml
 
-      git-blame-nvim
-      yankring # Yank across terminals
-      is-vim # Automatically clear search highlights after you move your cursor.
-      vim-fugitive
+      # git-blame-nvim
+      # yankring # Yank across terminals
+      # is-vim # Automatically clear search highlights after you move your cursor.
+      # vim-fugitive
 
       # COC
       coc-lua
 
-      vim-easy-align # A simple, easy-to-use Vim alignment plugin.
-      vim-repeat # Add repeat support to plugins
+      # vim-easy-align # A simple, easy-to-use Vim alignment plugin.
+      # vim-repeat # Add repeat support to plugins
 
       # ----------------------------------------------------------------------------
       #  - Extras
       # ----------------------------------------------------------------------------
 
-      nvim-lspconfig
-      lush-nvim
+      # nvim-lspconfig
+      # lush-nvim
     ];
 
     extraConfig = builtins.readFile ./vimrc.vim;

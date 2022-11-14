@@ -833,12 +833,12 @@ autocmd FileType markdown,markdown.mdx call <SID>markdown_enter()
 " Trigger configuration. You need to change this to something other than <tab> if you use one of the following:
 " - https://github.com/Valloric/YouCompleteMe
 " - https://github.com/nvim-lua/completion-nvim
-let g:UltiSnipsExpandTrigger="<tab>"
-let g:UltiSnipsJumpForwardTrigger="<c-b>"
-let g:UltiSnipsJumpBackwardTrigger="<c-z>"
-
-" If you want :UltiSnipsEdit to split your window.
-let g:UltiSnipsEditSplit="vertical"
+" let g:UltiSnipsExpandTrigger="<tab>"
+" let g:UltiSnipsJumpForwardTrigger="<c-b>"
+" let g:UltiSnipsJumpBackwardTrigger="<c-z>"
+" 
+" " If you want :UltiSnipsEdit to split your window.
+" let g:UltiSnipsEditSplit="vertical"
 
 
 " ============================================================================
@@ -894,9 +894,9 @@ nmap <silent> qf <Plug>(coc-fix-current)
 " Show code actions
 nmap <silent> <leader>qf :<C-u>Telescope coc code_actions<CR> 
 
-nmap <silent> <Up> <Plug>(coc-diagnostic-prev)
+" nmap <silent> <Up> <Plug>(coc-diagnostic-prev)
 " nmap <silent> <Down> <Plug>(coc-diagnostic-next)
-nmap <silent> <Down> :<C-u>call HandleDownKey()<CR>
+" nmap <silent> <Down> :<C-u>call HandleDownKey()<CR>
 
 " Goto definition of the symbol under the cursor
 nmap <silent> gd :<C-u>call CocActionAsync('jumpDefinition')<CR>
@@ -1294,6 +1294,24 @@ let g:floaterm_width=120
 " HACK: This will break if nodejs-16_x is updated
 " fix: https://lazamar.github.io/download-specific-package-version-with-nix/
 let g:copilot_node_command = '/nix/store/pzsk91sxxin42axlvdfbbbjiyz3jzfy3-nodejs-16.17.1/bin/node'
+
+" set wildcharm=<C-space>
+cnoremap <expr> <up> wildmenumode() ? "\<left>" : "\<up>"
+cnoremap <expr> <down> wildmenumode() ? "\<right>" : "\<down>"
+cnoremap <expr> <left> wildmenumode() ? "\<up>" : "\<left>"
+cnoremap <expr> <right> wildmenumode() ? " \<bs>\<C-Z>" : "\<right>"
+
+inoremap <silent><expr> <cr> coc#pum#visible() ? coc#_select_confirm() : "\<C-g>u\<CR>"
+" use <tab> for trigger completion and navigate to the next complete item
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+inoremap <silent><expr> <C-Space> 
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
 
 lua << EOF
 -- Global Utils
