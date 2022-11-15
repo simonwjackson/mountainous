@@ -23,6 +23,8 @@ zstyle ':completion:*' cache-path ~/.zsh/cache
 export PATH="${HOME}/.local/bin:${PATH}"
 # INFO: Needed for non nix ruby packages
 export PATH=$(ruby=("${HOME}/.local/share/gem/ruby/**/bin"); printf "%s:" "${ruby[@]}" | sed 's/.$//'):${PATH}
+# INFO: Needed for Flatpack
+export PATH="/var/lib/flatpak/exports/share:${HOME}/.local/bin:${HOME}/.local/share/flatpak/exports/share:${PATH}"
 
 WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
 

@@ -147,6 +147,7 @@ in
   # systemd.services.iptsd.enable = false;
 
   networking.firewall = {
+    enable = false;
     allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
     allowedTCPPorts = [ 24800 ];
   };
@@ -230,6 +231,8 @@ in
       };
     };
   };
+
+  services.flatpak.enable = true;
 
   services.mpd = {
     enable = true;
