@@ -58,22 +58,6 @@
             nixos-hardware.nixosModules.dell-xps-13-9310
           ];
         };
-
-        # adama = lib.nixosSystem {
-        #  # system = "aarch64-linux";
-
-        #   modules = [
-        #     ./system/adama.nix
-        #   ];
-        # };
-
-        # nixos = lib.nixosSystem {
-        #  inherit system;
-
-        #  modules = [
-        #    ./system/nixos.nix
-        #  ];
-        # };
       };
     };
 }

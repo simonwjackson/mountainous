@@ -1291,9 +1291,9 @@ nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
 
 let g:floaterm_width=120
 
-" HACK: This will break if nodejs-16_x is updated
+" HACK: This will break when nodejs-16_x is updated
 " fix: https://lazamar.github.io/download-specific-package-version-with-nix/
-let g:copilot_node_command = '/nix/store/pzsk91sxxin42axlvdfbbbjiyz3jzfy3-nodejs-16.17.1/bin/node'
+let g:copilot_node_command = '/nix/store/8mjfc9wz6kbrj670j8lh4w1k7i3jk4sz-nodejs-16.18.1/bin/node'
 
 " set wildcharm=<C-space>
 cnoremap <expr> <up> wildmenumode() ? "\<left>" : "\<up>"

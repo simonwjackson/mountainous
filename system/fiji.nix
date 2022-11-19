@@ -138,7 +138,7 @@ in
   # Screen tearing
   # https://nixos.org/manual/nixos/unstable/index.html#sec-x11--graphics-cards-intel
   services.xserver.videoDrivers = [ "modesetting" ];
-  services.xserver.useGlamor = true;
+  # services.xserver.useGlamor = true;
 
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"

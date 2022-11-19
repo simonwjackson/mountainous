@@ -44,6 +44,27 @@ touch ${HOME}/.config/rofi/config.rasi
 lineinfile '@import "config.base.rasi' '@import "config.base.rasi"' ${HOME}/.config/rofi/config.rasi
 ifnotset   '^@theme\s*' '@theme "themes/dracula/config1.rasi"' ${HOME}/.config/rofi/config.rasi
 
+# if file not exist, curl it into the file
+# Usage: curlifnotexist URL FILE
+function curlifnotexist () {
+  if [[ $# != 2 ]];then
+    local THIS_FUNC_NAME="${funcstack[1]-}${FUNCNAME[0]-}"
+    echo "$THIS_FUNC_NAME - 2 arguments are expected. given $#. args=[$@]" >&2
+    echo "usage: $THIS_FUNC_NAME URL FILE" >&2
+    return 1
+  fi
+
+  local URL="$1"
+  local FILE="$2"
+
+  if [[ ! -f "${FILE}" ]]; then
+    mkdir -p "$(dirname "${FILE}")"
+    curl -s "${URL}" > "${FILE}"
+  fi
+}
+
+curlifnotexist "https://raw.githubusercontent.com/dracula/rofi/master/theme/config1.rasi" "${HOME}/.config/rofi/themes/dracula/config1.rasi"
+
 # Kitty
 mkdir -p ${HOME}/.config/kitty
 touch ${HOME}/.config/kitty/kitty.conf

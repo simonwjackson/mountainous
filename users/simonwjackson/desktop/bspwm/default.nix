@@ -20,6 +20,9 @@
   programs.rofi = {
     enable = true;
     cycle = true;
+    extraConfig = {
+      dpi = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 192 else 96;
+    };
     configPath = "${config.xdg.configHome}/rofi/config.base.rasi";
   };
 

@@ -7,19 +7,22 @@
 #   source "${CURRENT_THEME}/bspwm"
 # }
 
-xrandr --auto && dual-screen-with-tablet
+
+
+# xrandr --auto && dual-screen-with-tablet
 
 # Remove out5
 
-  if [[ "$layout" == "monocle" ]]; then
-      gap=0
-  elif [[ "$layout" == "tiled" ]]; then
-      gap=$spacing
-  fi
+if [[ "$layout" == "monocle" ]]; then
+  gap=0
+elif [[ "$layout" == "tiled" ]]; then
+  gap=$spacing
+fi
 
-  bspc config top_padding $((42-$gap)) # $(($POLYBAR_HEIGHT-$gap))
-  bspc config window_gap $gap
-  bspc conbe desktop | while read -r _ _ _ layout; do
+bspc config top_padding $((42-$gap)) # $(($POLYBAR_HEIGHT-$gap))
+bspc config window_gap $gap
+
+bspc conbe desktop | while read -r _ _ _ layout; do
   spacing=1fig left_padding -$gap
   bspc config right_padding -$gap
   bspc config bottom_padding -$gap

@@ -34,7 +34,8 @@
     enable = true;
     scriptPath = ".hm-xsession";
     initExtra = ''
-      /home/simonwjackson/layout.sh &
+      xrdb -merge ~/.Xresources
+      # /home/simonwjackson/layout.sh &
       # virtual-term start &
       # /home/simonwjackson/.nix-profile/bin/virtual-term
     '';
@@ -80,11 +81,20 @@
 
   services.picom = {
     enable = true;
-    vSync = true;
-    #opacityRule = [
-    #  "0:class_g^='VIRTUAL_TERM_'"
-    #];
-    #settings = builtins.readFile (./picom/picom.conf);
+    settings = {
+      vsync = true;
+
+      shadow = true;
+      shadow-radius = 100;
+      shadow-offset-x = -100;
+      shadow-offset-y = -100;
+      shadow-opacity = .7;
+
+      fading = true;
+      fade-in-step = 0.07;
+      fade-out-step = 0.07;
+      fade-delta = 10;
+    };
   };
 
   services.sxhkd = {

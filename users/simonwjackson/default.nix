@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
-
+let
+  # sgv = pkgs.callPackage ./sgv.nix { inherit pkgs; };
+in
 {
   imports = [
     ./desktop
@@ -20,16 +22,26 @@
   # TODO: Find a way to enable this dynamicaly by system type
   xresources = {
     properties = {
-      #"Xft.dpi" = 96; # 192;
+      "Xcursor.size" = 46;
+      "Xft.autohint" = 0;
+      "Xft.lcdfilter" = "lcddefault";
+      "Xft.hintstyle" = "hintfull";
+      "Xft.hinting" = 1;
+      "Xft.antialias" = 1;
+      "Xft.rgba" = "r=b";
+      "Xft.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "192" else "96";
+      "*.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "192" else "96";
     };
   };
+
   home = {
     sessionVariables = {
       GDK_SCALE = 2;
       GDK_DPI_SCALE = 0.5;
-      QT_AUTO_SCREEN_SET_FACTOR = 0;
+      QT_AUTO_SCREEN_SET_FACTOR = 1;
+      QT_QPA_PLATFORMTHEME = "qt5ct";
       QT_SCALE_FACTOR = 2;
-      QT_FONT_DPI = 96;
+      QT_FONT_DPI = 243;
     };
   };
 

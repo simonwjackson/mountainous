@@ -1,24 +1,25 @@
-# TODO: UNBOUND KEYS
-# kitty-popup wifi-menu
-# bspc node -t "~floating"
-  
-# new term
+# New {Tmux Window,Shell Window, Shell Popup}
 super + {_, ctrl +, alt +} Return
   {kitty tmux, kitty, kitty-popup $SHELL}
 
-# kill focused window
+# Kill Focused Window
 super + x
   kill-or-close
 
-# super + {_, alt +} t
-#  flameshot {gui,full --clipboard}
 
+###########
+# Windows #
+###########
+
+# Scale Desktop
 super + alt + ctrl + j
   kitty-popup xrandr-scale
 
+# Search Youtube
 super + y; {_, super +}y
   kitty-popup youtube-search
 
+# Show youtube subscriptions
 super + y; {_, super +}s
   kitty-popup youtube-subscriptions
 
@@ -34,24 +35,31 @@ super + shift + r; s
 super + shift + r; b
   ${HOME}/.config/bspwm/bspwmrc
 
+# Sxhkdrc Cheat Sheet
 super + period
-  kitty-popup sxhkd-cheat
+  ${HOME}/.local/bin/sxhkhmenu
 
+# Resize window to 16:9
 super + comma
   resize-window 16 9
 
+# Vimwiki: Weekly Journal
 super + w; {_, super +}w
   kitty-popup vimwiki-journal-weekly
 
+# Vimwiki: Index
 super + w; {_, super +}i
   kitty-popup vimwiki-index
 
+# Vimwiki: Journal
 super + w; {_, super +}j
   kitty-popup vimwiki-journal
 
+# Vimwiki: Meeting Notes
 super + w; {_, super +}m
   kitty-popup find-meeting
 
+# Vimwiki: Start Meeting Notes
 super + w; {_, super +}M
   kitty-popup vimwiki-meeting
 
@@ -59,41 +67,31 @@ super + w; {_, super +}M
 super + p; {_, super +}s
   kitty-popup media-control search
 
+# Music: Media control library
 super + p; {_, super +}l
   kitty-popup media-control library
 
-super + apostrophe
-  kitty-popup interview-snippets
-  
-# Pianobar
-# super + p; {_, super +}p
-#   term-float control-pianobar station
-
 # Dark Mode
-# super + r ; c ; d
-#   source set-colors plastic
+super + r ; c ; d
+  source set-colors plastic
 
 # Light Mode
-# super + r ; c ; n
-#   source set-colors neg
+super + r ; c ; n
+  source set-colors neg
 
 # Generate password
 super + r ; g ; p
   bw generate | xclip -selection clipboard
 
+# Node REPL
 super + r ; j
   kitty-popup node
 
-# super + d; {_,super +} {d,a,n,t,j,r}
-#   term-float tasker {_,_} {_,add,now,toggle,journal,summary}
- 
-#################
-# Audio
-#################
-
+# Volume up
 XF86Audio{Play,Next,Prev}
   media-control {toggle,next,prev}
   
+# Media-control: Explain
 super + XF86AudioPlay
   media-control explain
 
@@ -105,60 +103,47 @@ XF86AudioMute
 XF86Audio{Raise,Lower}Volume
   pulseaudio-ctl {up,down} 2
 
-# # Pianobar
-# super + XF86Audio{Rewind,LowerVolume,RaiseVolume,Forward}
-#   media-control {ban,tired,like,bookmark}
-
+# Light Mode
 super + XF86MonBrightnessUp
   ~/light.sh
 
+# Dark Mode
 super + {_, ctrl} + XF86MonBrightnessDown
   {~/dark.sh,~/black.sh}
 
+# Brightness Up
 XF86MonBrightnessUp
   sudo brightnessctl set 5%+
 
+# Brightness Down
 XF86MonBrightnessDown
   sudo brightnessctl -e set 5%-
 
-#####################
-# Movement
-#####################
-
-# swap the current node and the biggest window
-# super + g
-#   bspc node -s biggest.window.local
-
-# toggle floating
+# Toggle floating
 super + space
-  rofi -show drun -dpi 192 -p Apps
+  rofi -show drun -p Apps
 
 # focus the node in the given direction
 super + {h,j,k,l}
   [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] \
     && bspc node -f {west,south,north,east}.local \
     || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
-  # virtual-term deactivate; \
-  #movement {west,south,north,east}
 
 # move the node in the given direction
 super + ctrl + {h,j,k,l}
   bspc node -s {west,south,north,east}
 
+# (?) swap the node in the given direction
 super + shift + {h,j,k,l}
   bspc node -p {west,south,north,east}
 
 # Go to Virtual Term 1
 super + Left
-  bspc monitor east --focus
-  # virtual-term activate
+  bspc monitor west --focus
 
 # Leave Virtual Term 1
 super + Right
   bspc monitor east --focus
-  # virtual-term deactivate
-
-# bspc monitor {west,east} --focus
 
 # focus the older or newer node in the focus history
 super + {o,i}
@@ -170,55 +155,40 @@ super + {o,i}
 super + {Down,Up}
     bspc desktop -f {prev,next}.local
 
+# (?) focus the next or previous desktop
 super + shift + {Down,Up}
     bspc node -d next
 
 # focus or send to the given desktop
-# super + {_,alt + }{1-3,7-9}
-#   bspc {desktop -f,node -d} {I,II,III,VII,VIII,IX}
-#
-# super + {_,alt + }{4-6}
-#   bspc {monitor --focus,node --to-monitor} {DP1-8,VIRTUAL1,HDMI2} {_,--follow}
+super + {_,alt + }{1-3,7-9}
+  bspc {desktop -f,node -d} {I,II,III,VII,VIII,IX}
 
 # move window to another desktop
-#super + apostrophe
-# bspc node -m next --follow
+super + apostrophe
+  bspc node -m next --follow
 
 # move workspace to another monitor 
-# super + alt + apostrophe
-#   desk=`bspc query -D -d focused`; \
-#   bspc desktop -m {prev,next}; \
-#   bspc desktop -f $desk
+super + alt + apostrophe
+  desk=`bspc query -D -d focused`; \
+  bspc desktop -m {prev,next}; \
+  bspc desktop -f $desk
 
 super + alt + ctrl + {h,l} 
   bspc node --to-monitor {west,east} --follow
 	
-#####################
-# Resize
-##################### 
-
 # Resizing (natural)
 super + shift {_,+ ctrl} + {Left,Down,Up,Right}
   STEP={100,20}; SELECTION={1,2,3,4}; \
   bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || \
   bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
 
+# not sure
 super + alt + {Left,Right}
   bspc node @/ -C {backward,forward}
-
-
-#####################
-# Layout
-#####################
 
 # toggle fullscreen mode for the focused container
 super + m
   bspc desktop -l next
-
-
-#####################
-# Applications
-#####################
 
 # start qutebrowser
 super + b; {_, super +}b
@@ -232,31 +202,34 @@ super + b; {_, super +}f
 super + f
   kitty-popup lf ~
 
-#####################
-# Misc
-#####################
-
 # Bluetooth Devices
 super + r; b
   kitty-popup bluetooth-devices
 
+# Activate blutooth device
 super + t
-  bt list | rofi -dmenu -dpi 192 | awk '\{print $1\}' | xargs bt activate
+  bt list | rofi -dmenu | awk '{print $1}' | xargs bt activate
 
+# onePassword
 super + v
-  op item list --vault Private | rofi -dmenu -dpi 192
+  op item list --vault Private | rofi -dmenu
 
+# Goto or open slack
 super + g; {_, super +}s
   activate-or-open-tab 'https://app.slack.com/client' -p 'Slack' -u 'app.slack.com/client'
 
+# Goto or open gmail
 super + g; {_, super +}m
   activate-or-open-tab 'https://mail.google.com' -p 'Gmail' -u 'mail.google.com'
 
+# Goto or open asciiflow
 super + g; {_, super +}a
   activate-or-open-tab 'https://asciiflow.com/#/' -p 'ASCIIFlow' -u 'asciiflow.com'
 
+# Goto or open google calendar
 super + g; {_, super +}c
   activate-or-open-tab 'https://calendar.google.com' -p 'Calendar' -u 'calendar.google.com'
 
+# Goto or open linear
 super + g; {_, super +}l
   activate-or-open-tab 'https://linear.app' -p 'Linear' -u 'linear.app'
