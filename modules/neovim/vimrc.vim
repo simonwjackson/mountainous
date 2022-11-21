@@ -98,6 +98,9 @@ Plug 'dracula/vim', { 'as': 'dracula' }
 "  - Language Support
 " ----------------------------------------------------
 
+" Rofi
+Plug 'Fymyte/rasi.vim'
+
 Plug 'nikolvs/vim-sunbather'
 
 " LF

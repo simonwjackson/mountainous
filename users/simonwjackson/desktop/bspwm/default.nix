@@ -26,6 +26,13 @@
     configPath = "${config.xdg.configHome}/rofi/config.base.rasi";
   };
 
+  # TODO: This might be better outside of nix. ex: theme switching
+  home.file = {
+    ".config/rofi/overrides.rasi" = {
+      text = builtins.readFile ./rofi/overrides.rasi;
+    };
+  };
+
   xsession.windowManager.bspwm = {
     enable = true;
 

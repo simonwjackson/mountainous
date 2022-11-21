@@ -1,0 +1,11 @@
+window {
+  padding: 30px;
+}
+
+element {
+  padding: 10px 0;
+}
+
+listview {
+  padding: 30px 0;
+}
