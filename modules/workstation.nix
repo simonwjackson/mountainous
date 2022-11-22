@@ -41,6 +41,8 @@
 
   environment.variables.BROWSER = "firefox";
 
+  programs.mosh.enable = true;
+
   environment.systemPackages = with pkgs; [
     neovim
     wget
