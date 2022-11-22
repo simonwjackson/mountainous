@@ -14,7 +14,7 @@
     shellAliases = {
       nvim = "nvim --listen /tmp/nvimsocket";
       # BUG: remove this when nvr package gets linked properly
-      nvr = "/nix/store/dxgx43vdrgmfqkcrjyfznpg8mhhi54mc-neovim-remote-2.4.0/bin/nvr";
+      nvr = "/nix/store/nip2349qcnlpgihczxgg36jf8qvvc9qd-neovim-remote-2.5.1/bin/nvr";
     };
 
   };
@@ -26,12 +26,12 @@
     vimdiffAlias = true;
 
     extraPackages = with pkgs; [
+      neovim-remote
       ripgrep
       lf
       rnix-lsp
       sumneko-lua-language-server
       luaformatter
-      neovim-remote
       tree-sitter
     ];
 

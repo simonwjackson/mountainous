@@ -9,7 +9,7 @@
 
 # Cycle through desktops
 super + {Down,Up}
-    bspc desktop -f {prev,next}.local
+  bspc desktop -f {prev,next}.local
 
 
 # (?) focus the next or previous desktop
