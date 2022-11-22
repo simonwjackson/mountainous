@@ -35,6 +35,12 @@
       tree-sitter
     ];
 
+    # TODO: Checkout these plugins
+    # https://github.com/rest-nvim/rest.nvim#features
+    # https://github.com/glacambre/firenvim Give it another try, integrates neovim into firefox
+    # https://github.com/sindrets/diffview.nvim
+    # https://github.com/weilbith/nvim-code-action-menu
+
     plugins = with pkgs.vimPlugins; [
       copilot-vim
 
