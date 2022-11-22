@@ -4,6 +4,7 @@
 # ██║  ██║██╔══╝  ╚════██║██╔═██╗    ██║   ██║   ██║██╔═══╝ ╚════██║
 # ██████╔╝███████╗███████║██║  ██╗   ██║   ╚██████╔╝██║     ███████║
 # ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝
+# ==================================================================
                                                                                                     
 
 # Cycle through desktops
@@ -22,9 +23,7 @@ super + apostrophe
 
 # Move desktop to another monitor 
 super + alt + apostrophe
-  desk=`bspc query -D -d focused`; \
-  bspc desktop -m {prev,next}; \
-  bspc desktop -f $desk
+  desk=`bspc query -D -d focused`; bspc desktop -m {prev,next}; bspc desktop -f $desk
 
 
 
@@ -35,7 +34,7 @@ super + alt + apostrophe
 # ╚════██║██║     ██╔══██╗██╔══╝  ██╔══╝  ██║╚██╗██║╚════██║
 # ███████║╚██████╗██║  ██║███████╗███████╗██║ ╚████║███████║
 # ╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝
-                                                                                            
+# ==========================================================
 
 # Switch to the {Left,Right} Screen
 super + {Left,Right}
@@ -50,7 +49,7 @@ super + {Left,Right}
 # ██║███╗██║██║██║╚██╗██║██║  ██║██║   ██║██║███╗██║╚════██║
 # ╚███╔███╔╝██║██║ ╚████║██████╔╝╚██████╔╝╚███╔███╔╝███████║
 #  ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝
-                                                                                            
+# ==========================================================
 
 # Kill Focused Window
 super + x
@@ -63,16 +62,12 @@ super + m
 
 # Resize the window {,(slowly)} to the {west,south,north,east}
 super + shift {_,+ ctrl} + {Left,Down,Up,Right}
-  STEP={100,20}; SELECTION={1,2,3,4}; \
-  bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || \
-  bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
+  STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
 
 
 # Nav: Switch to the {west,south,north,east} window
 super + {h,j,k,l}
-  [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] \
-    && bspc node -f {west,south,north,east}.local \
-    || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
+  [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] && bspc node -f {west,south,north,east}.local || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
 
 
 # Nav: {Switch to,Send window} {,to} desktop {I,II,III,VII,VIII,IX}
@@ -97,9 +92,7 @@ super + shift + {h,j,k,l}
 
 # Nav: Jump to the {previous,next} window
 super + {o,i}
-  bspc wm -h off; \
-  bspc node {older,newer} -f; \
-  bspc wm -h on
+  bspc wm -h off; bspc node {older,newer} -f; bspc wm -h on
 
 
 # Cycle windows {Counter,Clock}wise
@@ -119,7 +112,7 @@ super + comma
 # ██║     ██║╚════██║   ██║   ╚════██║
 # ███████╗██║███████║   ██║   ███████║
 # ╚══════╝╚═╝╚══════╝   ╚═╝   ╚══════╝
-                                    
+# ====================================
 
 # onePassword
 super + v
@@ -133,7 +126,7 @@ super + space
 
 # Sxhkdrc Cheat Sheet
 super + period
-  ${HOME}/.local/bin/sxhkhmenu
+  ${HOME}/.local/bin/hkhelper.py | rofi -dmenu -i | awk -F '[[:space:]][[:space:]]+' '{print $3}' | xargs xargs
 
 
 
@@ -144,6 +137,7 @@ super + period
 # ██║╚██╔╝██║██╔══╝  ██║  ██║██║██╔══██║
 # ██║ ╚═╝ ██║███████╗██████╔╝██║██║  ██║
 # ╚═╝     ╚═╝╚══════╝╚═════╝ ╚═╝╚═╝  ╚═╝
+# ======================================
                                       
 
 # {Toggle Playback,Next Track,Previous Track}
@@ -169,7 +163,7 @@ XF86Audio{Raise,Lower}Volume
 # ██║███╗██║██║██╔═██╗ ██║
 # ╚███╔███╔╝██║██║  ██╗██║
 #  ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚═╝
-
+# ========================
                         
 # Vimwiki: Weekly Journal
 super + w; {_, super +}w
@@ -200,7 +194,7 @@ super + w; {_, super +}M
 #    ██║   ██╔══██║██╔══╝  ██║╚██╔╝██║██╔══╝  ╚════██║
 #    ██║   ██║  ██║███████╗██║ ╚═╝ ██║███████╗███████║
 #    ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚══════╝╚══════╝
-                                                    
+# ====================================================
 
 # Light Mode
 super + XF86MonBrightnessUp
@@ -219,7 +213,7 @@ super + {_, ctrl} + XF86MonBrightnessDown
 # ██╔══██║██╔═══╝ ██╔═══╝ ╚════██║
 # ██║  ██║██║     ██║     ███████║
 # ╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝
-                                
+# ================================
 
 # New {Tmux Window,Shell Window, Shell Popup}
 super + {_, ctrl +, alt +} Return
@@ -268,7 +262,7 @@ super + g; {_, super +}l
 # ██╔══██║██╔══██║██╔══██╗██║  ██║██║███╗██║██╔══██║██╔══██╗██╔══╝  
 # ██║  ██║██║  ██║██║  ██║██████╔╝╚███╔███╔╝██║  ██║██║  ██║███████╗
 # ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
-                                                                  
+# ==================================================================
 
 # Brightness Up
 XF86MonBrightnessUp
@@ -298,7 +292,7 @@ super + t
 # ██║╚██╔╝██║██║╚════██║██║     
 # ██║ ╚═╝ ██║██║███████║╚██████╗
 # ╚═╝     ╚═╝╚═╝╚══════╝ ╚═════╝
-
+# ==============================
 
 # Reload polybar
 super + shift + r; p
