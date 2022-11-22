@@ -36,12 +36,12 @@ in
 
   home = {
     sessionVariables = {
-      GDK_SCALE = 2;
-      GDK_DPI_SCALE = 0.5;
+      GDK_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 2 else 1;
+      GDK_DPI_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 0.5 else 1;
       QT_AUTO_SCREEN_SET_FACTOR = 1;
       QT_QPA_PLATFORMTHEME = "qt5ct";
-      QT_SCALE_FACTOR = 2;
-      QT_FONT_DPI = 243;
+      QT_SCALE_FACTOR = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 2 else 1;
+      QT_FONT_DPI = 96;
     };
   };
 
