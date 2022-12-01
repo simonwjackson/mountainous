@@ -6,6 +6,7 @@
   home.packages = with pkgs; [
     neovide
     nodejs-16_x
+    bun
   ];
 
   # Home Manager needs a bit of information about you and the

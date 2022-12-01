@@ -1199,8 +1199,8 @@ augroup Goyo
     autocmd! User GoyoLeave call <SID>goyo_leave()
 augroup END
 
-nmap <A-m> :Goyo<CR>
-nmap <A-S-m> <Plug>(zoom-toggle)
+" nmap <A-m> :Goyo<CR>
+nmap <A-m> <Plug>(zoom-toggle)
 
 highlight StatusLine   guifg=#2C323D guibg=#2C323D
 highlight StatusLineNC guifg=#2C323D guibg=#2C323D
