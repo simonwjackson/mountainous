@@ -81,8 +81,13 @@
 
   services.picom = {
     enable = true;
+    vSync = true;
+    backend = "xr_glx_hybrid";
     settings = {
-      vsync = true;
+      glx-no-stencil = true;
+      glx-no-rebind-pixmap = true;
+      unredir-if-possible = true;
+      xrender-sync-fence = true;
 
       shadow = true;
       shadow-radius = 100;
