@@ -51,6 +51,28 @@
       # }
 
       {
+        plugin = vim-gitgutter;
+        type = "viml";
+        config = builtins.readFile (./plugins/gitgutter.vim);
+      }
+
+      # A personal wiki for Vim 
+      {
+        plugin = vimwiki;
+        type = "viml";
+        config = builtins.readFile (./plugins/vimwiki.vim);
+      }
+
+      # LF file browser
+      {
+        plugin = lf-vim;
+        type = "viml";
+        config = builtins.readFile (./plugins/lf.vim);
+      }
+
+      vim-floaterm
+
+      {
         plugin = telescope-nvim;
         type = "lua";
         config = builtins.readFile (./plugins/telescope.lua);

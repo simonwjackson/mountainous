@@ -103,9 +103,6 @@ Plug 'Fymyte/rasi.vim'
 
 Plug 'nikolvs/vim-sunbather'
 
-" LF
-Plug 'VebbNix/lf-vim'
-
 " Golang
 " Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
@@ -219,13 +216,6 @@ Plug 'tmux-plugins/vim-tmux-focus-events'
 
 " An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
 " Plug 'TaDaa/vimade'
-
-" LF file browser
-Plug 'ptzz/lf.vim'
-Plug 'voldikss/vim-floaterm'
-
-" A personal wiki for Vim 
-Plug 'vimwiki/vimwiki'
 
 " Proper project management in vim.
 Plug 'tools-life/taskwiki'
@@ -734,81 +724,6 @@ let g:lightline = {
                         \   'coccoverage': 'LightlineCocCoverageStatus'
                         \ }
                         \ }
-
-" ----------------------------------------------------------------------------
-"  - Git gutter
-" ----------------------------------------------------------------------------
-
-let g:gitgutter_enabled=1
-let g:gitgutter_max_signs=2000
-let g:gitgutter_preview_win_floating=1
-
-let g:gitgutter_override_sign_column_highlight = 0
-call gitgutter#highlight#define_highlights()
-
-" highlight clear SignColumn
-
-" Flatten all gutter icons
-let g:gitgutter_sign_added = '│' " █▓▒░║
-let g:gitgutter_sign_modified = '│'
-let g:gitgutter_sign_removed = '▔'
-let g:gitgutter_sign_removed_first_line = '▔'
-let g:gitgutter_sign_modified_removed = '▔'
-
-function! GitGutterNextHunkCycle()
-    let line = line('.')
-    silent! GitGutterNextHunk
-    if line('.') == line
-        1
-        GitGutterNextHunk
-    endif
-endfunction
-
-
-" ----------------------------------------------------------------------------
-"  - TaskWiki
-" ----------------------------------------------------------------------------
-
-
-" ----------------------------------------------------------------------------
-"  - VimWiki
-" ----------------------------------------------------------------------------
-
-let g:vimwiki_global_ext = 0 
-let g:vimwiki_markdown_link_ext = 1
-let g:vimwiki_links_space_char = '-'
-let g:vimwiki_autowriteall = 1
-let g:vimwiki_syntax = 'markdown'
-let g:vimwiki_ext = '.md'
-let g:vimwiki_main = 'README'
-let g:vimwiki_auto_chdir = 1
-
-au BufReadPost,BufNewFile *.md,*.txt,*.tex setlocal autoread
-
-let personal = {}
-let personal.path = "$HOME/documents/notes"
-
-let guides = {}
-let guides.path = '~/guides'
-
-let g:vimwiki_list = [personal,guides]
-let g:vimwiki_ext2syntax = {
-            \ '.md': 'markdown',
-            \ '.markdown': 'markdown',
-            \ '.mdown': 'markdown'
-            \ }
-
-
-
-" ----------------------------------------------------------------------------
-"  - lf
-" ----------------------------------------------------------------------------
-
-let g:lf_command_override = 'lf -command "map <enter> open" -command "map <esc> quit"' 
-
-
-
-
 
 " ----------------------------------------------------------------------------
 "  - Zettelkasten
