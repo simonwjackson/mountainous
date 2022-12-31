@@ -44,7 +44,6 @@ telescope.setup{
     },
 }
 
-require('telescope').load_extension('coc')
 require("telescope").load_extension("git_worktree")
 
 -- map("n", ",<Space>", ":nohlsearch<CR>", { silent = true })

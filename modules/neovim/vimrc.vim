@@ -39,15 +39,6 @@ endfunction
 
 
 " ----------------------------------------------------------------------------
-"  - Re-indent the whole buffer.
-" ----------------------------------------------------------------------------
-
-function! Indent()
-    call Preserve('normal gg=G')
-endfunction
-
-
-" ----------------------------------------------------------------------------
 "  - Fill the command line with..
 " ----------------------------------------------------------------------------
 
@@ -92,11 +83,15 @@ call plug#begin('~/.local/share/nvim/plugged')
 
 Plug 'flrnprz/plastic.vim'
 Plug 'lifepillar/vim-solarized8'
-Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'Mofiqul/dracula.nvim'
 
 " ----------------------------------------------------
 "  - Language Support
 " ----------------------------------------------------
+
+Plug 'nvim-treesitter/playground'
+
+" TODO: 
 
 " Rofi
 Plug 'Fymyte/rasi.vim'
@@ -125,15 +120,11 @@ Plug 'ekalinin/dockerfile.vim'
 Plug 'tpope/vim-git'
 
 " A Vim syntax highlighting plugin for JavaScript and Flow.js
-Plug 'yuezk/vim-js' 
+" Plug 'yuezk/vim-js' 
 
 " The React syntax highlighting and indenting plugin for vim.
 " Also supports the typescript tsx file.
-Plug 'maxmellon/vim-jsx-pretty'
-
-" Typescript
-Plug 'leafgarland/typescript-vim'
-Plug 'peitalin/vim-jsx-typescript'
+" Plug 'maxmellon/vim-jsx-pretty'
 
 " Distinct highlighting of keywords vs values, 
 " JSON-specific (non-JS) warnings, quote concealing.
@@ -149,7 +140,7 @@ Plug 'jparise/vim-graphql'
 Plug 'tpope/vim-surround'
 
 " source ~/.config/nvim/plugins/gitgutter.vim
-Plug 'airblade/vim-gitgutter'
+" Plug 'airblade/vim-gitgutter'
 " source ~/.config/nvim/plugins/which-key.vim
 " source ~/.config/nvim/plugins/bspwm.vim
 
@@ -175,16 +166,8 @@ Plug 'tpope/vim-eunuch'
 " True Sublime Text style multiple selections for Vim
 Plug 'terryma/vim-multiple-cursors'
 
-" The React syntax highlighting and indenting plugin for vim.
-" Also supports the typescript tsx file.
-Plug 'maxmellon/vim-jsx-pretty'
-
-" A light and configurable statusline/tabline plugin for Vim http
-" Plug 'itchyny/lightline.vim'
-Plug 'nvim-lualine/lualine.nvim'
 " Adds file type icons to Vim plugins
 Plug 'ryanoasis/vim-devicons'
-
 
 " source ~/.config/nvim/plugins/goyo.vim
 " source ~/.config/nvim/plugins/limelight.vim
@@ -194,7 +177,7 @@ Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 
 " Use fzf instead of coc.nvim built-in fuzzy finder.  
-Plug 'antoinemadec/coc-fzf' 
+" Plug 'antoinemadec/coc-fzf' 
 
 
 " source ~/.config/nvim/plugins/fugitive.vim
@@ -229,7 +212,7 @@ Plug 'michal-h21/vim-zettel'
 " source ~/.config/nvim/plugins/telescope.vim
 Plug 'nvim-lua/popup.nvim'
 Plug 'nvim-lua/plenary.nvim'
-Plug 'fannheyward/telescope-coc.nvim'
+" Plug 'fannheyward/telescope-coc.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 
 " Icons
@@ -257,34 +240,32 @@ Plug 'SirVer/ultisnips'
 " A multi-language debugging system for Vim 
 Plug 'puremourning/vimspector'
 
-" AI pair programmer
-Plug 'github/copilot.vim'
-
 " VIM Test
 Plug 'vim-test/vim-test'
 " Plug 'rcarriga/vim-ultest', { 'do': ':UpdateRemotePlugins' }
-Plug 'dhruvasagar/vim-zoom'
 
 Plug 'pwntester/octo.nvim'
 Plug 'tpope/vim-obsession'
-Plug 'airblade/vim-rooter'
 
-Plug 'easymotion/vim-easymotion'
 Plug 'camgraff/telescope-tmux.nvim'
 Plug 'RyanMillerC/better-vim-tmux-resizer'
-
-" Distraction-free writing in Vim
-Plug 'junegunn/goyo.vim'
 
 " Swap windows without ruining your layout!
 Plug 'wesQ3/vim-windowswap'
 
-Plug 'lukas-reineke/lsp-format.nvim'
-
 Plug 'ThePrimeagen/git-worktree.nvim'
-" Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
+Plug 'lmburns/lf.nvim'
+" Plug 'Equilibris/nx.nvim'
+
+Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
+
+Plug 'MunifTanjim/eslint.nvim'
+
 
 call plug#end()
+
+set completeopt=menu,menuone,noselect
+
 
 " ----------------------------------------------------------------------------
 "  - Write to file even when it does not exist
@@ -307,57 +288,24 @@ command! W call s:WriteCreatingDirs()
 " ----------------------------------------------------------------------------
 "  - Use K to show documentation in preview window
 " ----------------------------------------------------------------------------
-nnoremap <silent> K :call <SID>show_documentation()<CR>
-
-function! s:show_documentation()
-    if (index(['vim','help'], &filetype) >= 0)
-        execute 'h '.expand('<cword>')
-    else
-        call CocActionAsync('doHover')
-    endif
-endfunction
+" nnoremap <silent> K :call <SID>show_documentation()<CR>
+" 
+" function! s:show_documentation()
+"     if (index(['vim','help'], &filetype) >= 0)
+"         execute 'h '.expand('<cword>')
+"     else
+"         call CocActionAsync('doHover')
+"     endif
+" endfunction
 
 
 
 
 " Explorer
-let g:coc_explorer_global_presets = {
-            \   '.vim': {
-                \     'root-uri': '~/.vim',
-                \   },
-                \   'tab': {
-                    \     'position': 'tab',
-                    \     'quit-on-open': v:true,
-                    \   },
-                    \   'floating': {
-                        \     'position': 'floating',
-                        \     'open-action-strategy': 'sourceWindow',
-                        \   },
-                        \   'floatingTop': {
-                            \     'position': 'floating',
-                            \     'floating-position': 'center-top',
-                            \     'open-action-strategy': 'sourceWindow',
-                            \   },
-                            \   'floatingLeftside': {
-                                \     'position': 'floating',
-                                \     'floating-position': 'left-center',
-                                \     'floating-width': 50,
-                                \     'open-action-strategy': 'sourceWindow',
-                                \   },
-                                \   'floatingRightside': {
-                                    \     'position': 'floating',
-                                    \     'floating-position': 'right-center',
-                                    \     'floating-width': 50,
-                                    \     'open-action-strategy': 'sourceWindow',
-                                    \   },
-                                    \   'simplify': {
-                                        \     'file-child-template': '[selection | clip | 1] [indent][icon | 1] [filename omitCenter 1]'
-                                        \   }
-                                        \ }
 
-nmap <leader>e :CocCommand explorer<CR>
-nmap <leader>0 :CocCommand explorer --preset floating<CR>
-autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | endif
+"nmap <leader>e :CocCommand explorer<CR>
+"nmap <leader>0 :CocCommand explorer --preset floating<CR>
+"autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | endif
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -380,7 +328,7 @@ set ffs=unix,dos,mac
 set linebreak
 set tw=500
 
-set autoindent
+"set autoindent
 set smartindent
 set wrap
 
@@ -475,25 +423,17 @@ map <C-ScrollWheelDown> <C-d>
 " Jump to the last position when reopening a file
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 
-" Fast editing and reloading of vimrc configs
-" Redraw after reload
-" https://github.com/easymotion/vim-easymotion/issues/272#issuecomment-179505380
+function! Indent()
+    if (&ft=='typescript' || &ft=='typescriptreact' || &ft=='javascript' || &ft=='javascriptreact')
+      :EslintFixAll
+    elseif (&ft=='vim')
+      " do nothing
+    else
+      :lua vim.lsp.buf.format()
+    endif
+endfunction
 
-autocmd! BufWritePre $MYVIMRC :call Indent()
-autocmd! BufWritePost $MYVIMRC nested source $MYVIMRC | redraw
-
-" Required for markdown-folding plugin
-set nocompatible
-if has("autocmd")
-    filetype plugin indent on
-endif
-
-" Autoindend files
-augroup autoindent
-    au!
-    autocmd BufWritePre *.feature :normal migg=G`i
-augroup End
-
+autocmd BufWritePre * call Indent()
 
 " ----------------------------------------------------------------------------
 "  - Shell
@@ -546,7 +486,7 @@ cabbrev help vert help
 set signcolumn=yes
 
 " Don't redraw while executing macros (good performance config)
-set lazyredraw
+" set lazyredraw
 
 " Show matching brackets when text indicator is over them
 set showmatch
@@ -574,8 +514,8 @@ set foldcolumn=1
 autocmd VimResized * wincmd =
 
 " Tab spaces
-set tabstop=4
-set shiftwidth=4
+set tabstop=2
+set shiftwidth=2
 set softtabstop=0
 
 " Auto format files on
@@ -605,35 +545,35 @@ let g:tmux_resizer_resize_count = 5
 let g:tmux_resizer_vertical_resize_count = 10
 
 function! ResizeLeft()
-    if exists('#goyo')
-        call feedkeys("5\<C-w>\<")
-    else
+    "if exists('#goyo')
+        "call feedkeys("5\<C-w>\<")
+    "else
         TmuxResizeLeft
-    endif
+    "endif
 endfunction
 
 function! ResizeDown()
-    if exists('#goyo')
-        call feedkeys("5\<C-w>\-")
-    else
+    "if exists('#goyo')
+    "    call feedkeys("5\<C-w>\-")
+    "else
         TmuxResizeDown
-    endif
+    "endif
 endfunction
 
 function! ResizeUp()
-    if exists('#goyo')
-        call feedkeys("5\<C-w>\+")
-    else
+   " if exists('#goyo')
+   "     call feedkeys("5\<C-w>\+")
+   " else
         TmuxResizeUp
-    endif
+   " endif
 endfunction
 
 function! ResizeRight()
-    if exists('#goyo')
-        call feedkeys("5\<C-w>\>")
-    else
+   " if exists('#goyo')
+  "      call feedkeys("5\<C-w>\>")
+   " else
         TmuxResizeRight
-    endif
+  "  endif
 endfunction
 
 nnoremap <silent> <A-S-Left>  :call ResizeLeft()<CR>
@@ -645,26 +585,6 @@ nnoremap <silent> <A-S-C-Left>  :call ResizeLeft()<CR>
 nnoremap <silent> <A-S-C-Down>  :call ResizeDown()<CR>
 nnoremap <silent> <A-S-C-Up>    :call ResizeUp()<CR>
 nnoremap <silent> <A-S-C-Right> :call ResizeRight()<CR>
-
-" ----------------------------------------------------------------------------
-"  - easymotion
-" ----------------------------------------------------------------------------
-
-" This setting makes EasyMotion work similarly to Vim's smartcase option for global searches.
-let g:EasyMotion_smartcase = 1
-
-" Don't map easymotion defaults
-let g:EasyMotion_do_mapping = 0
-
-" Don't interfere with Coc
-autocmd User EasyMotionPromptBegin silent! CocDisable
-autocmd User EasyMotionPromptEnd silent! CocEnable
-
-" Easymotion keys
-let g:EasyMotion_keys = 'fjdksla;ghrueiwoqpvmcnxbz''tyqp,.'
-
-" keep cursor column when JK motion
-let g:EasyMotion_startofline = 0 
 
 
 " ----------------------------------------------------------------------------
@@ -689,43 +609,6 @@ let g:asterisk#keeppos = 1
 
 
 " ----------------------------------------------------------------------------
-"  - nerdcommenter             
-" ----------------------------------------------------------------------------
-
-
-
-
-" ----------------------------------------------------------------------------
-"  - Lightline
-" ----------------------------------------------------------------------------
-
-function! LightlineCocCoverageStatus() abort
-    let status = str2nr(get(g:, 'coc_coverage_lines_pct', ''))
-    if empty(status)
-        return ''
-    endif
-
-    return '☂ ' . status . '%'
-endfunction
-
-" \     [ 'cocapollo' ]
-"           \ 'colorscheme': 'dracula',
-let g:lightline = {
-            \ 'active': {
-                \   'left': [
-                    \     [ 'mode', 'paste' ],
-                    \     [ 'readonly', 'filename' ]
-                    \   ],
-                    \   'right':[
-                    \     [ 'coccoverage', 'cocstatus' ],
-                    \   ],
-                    \ },
-                    \ 'component_function': {
-                        \   'coccoverage': 'LightlineCocCoverageStatus'
-                        \ }
-                        \ }
-
-" ----------------------------------------------------------------------------
 "  - Zettelkasten
 " ----------------------------------------------------------------------------
 
@@ -737,11 +620,11 @@ let g:zettel_fzf_command = 'rg'
 "  - Markdown
 " ----------------------------------------------------------------------------
 
-function! s:markdown_enter()
-    " :Goyo
-endfunction
-
-autocmd FileType markdown,markdown.mdx call <SID>markdown_enter() 
+" function! s:markdown_enter()
+"     " :Goyo
+" endfunction
+" 
+" autocmd FileType markdown,markdown.mdx call <SID>markdown_enter() 
 
 
 " ----------------------------------------------------------------------------
@@ -776,7 +659,6 @@ let g:maplocalleader = ','
 " Finding Files
 nnoremap <silent> <F6>      :<C-u>call LazyGitPopup()<CR>
 nnoremap <silent> <F8>      <cmd>lua require('telescope.builtin').buffers()<cr>
-nnoremap <silent> <F9>      :Lf<CR>
 nnoremap <silent> <F10>     :<C-u>Telescope oldfiles<CR>
 
 " Finding code
@@ -790,44 +672,31 @@ nnoremap          <F4>      :<C-u>Telescope keymaps<CR>
 "  - Motions
 " ============================================================================
 
-" Movement
-vmap j <Plug>(easymotion-j)
-vmap k <Plug>(easymotion-k)
-
-" Jumping
-nmap <silent> s <Plug>(easymotion-s2)
-xmap <silent> s <Plug>(easymotion-s2)
-omap <silent> s <Plug>(easymotion-s2)
-vmap <silent> s <Plug>(easymotion-s2)
-
-nmap <silent> <Right> <Plug>(coc-range-select)
-xmap <silent> <Right> <Plug>(coc-range-select)
-
-" Rename symbol under cursor
-nmap <leader>rn <Plug>(coc-rename)
+"nmap <silent> <Right> <Plug>(coc-range-select)
+" xmap <silent> <Right> <Plug>(coc-range-select)
 
 " Fix error under cursor
-nmap <silent> qf <Plug>(coc-fix-current)
+" nmap <silent> qf <Plug>(coc-fix-current)
 
 " Show code actions
-nmap <silent> <leader>qf :<C-u>Telescope coc code_actions<CR> 
+" nmap <silent> <leader>qf :<C-u>Telescope coc code_actions<CR> 
 
 " nmap <silent> <Up> <Plug>(coc-diagnostic-prev)
 " nmap <silent> <Down> <Plug>(coc-diagnostic-next)
 " nmap <silent> <Down> :<C-u>call HandleDownKey()<CR>
 
 " Goto definition of the symbol under the cursor
-nmap <silent> gd :<C-u>call CocActionAsync('jumpDefinition')<CR>
+" nmap <silent> gd :<C-u>call CocActionAsync('jumpDefinition')<CR>
 
 " Goto references of the symbol under the cursor
-nmap <silent> gr :<C-u>Telescope coc references<CR> 
+" nmap <silent> gr :<C-u>Telescope coc references<CR> 
 
 " Goto references of the symbol under the cursor
-nmap <silent> gt :<C-u>Telescope coc type_definitions<CR> 
+" nmap <silent> gt :<C-u>Telescope coc type_definitions<CR> 
 
 " around function
-xmap af <Plug>(coc-funcobj-a)
-omap af <Plug>(coc-funcobj-a)
+" xmap af <Plug>(coc-funcobj-a)
+" omap af <Plug>(coc-funcobj-a)
 
 " Show more like under cursor
 map *   <Plug>(asterisk-*)
@@ -931,7 +800,7 @@ if has("gui_gtk") || has("gui_gtk2") || has("gui_gnome") || has("unix")
 endif
 
 " Popup menu
-inoremap <silent><expr> <C-Space> coc#refresh()
+" inoremap <silent><expr> <C-Space> coc#refresh()
 
 
 " ============================================================================
@@ -989,6 +858,7 @@ hi link diffRemoved DiffDelete
 hi UncoveredLine guifg=#d19a66 guibg=none
 
 " Hide tildas
+" NOTE: This does not work wirh the dracula-nvim theme
 silent! hi! EndOfBuffer ctermbg=bg ctermfg=bg guibg=bg guifg=bg
 
 " Vertical Split
@@ -1027,7 +897,7 @@ function! HandleDownKey()
     " if !empty(g:vimspector_session_windows.watches)
     " :call vimspector#StepInto()
     " else
-    :execute "normal \<Plug>(coc-diagnostic-next)"
+    " :execute "normal \<Plug>(coc-diagnostic-next)"
     " endif
 endfunction
 
@@ -1036,8 +906,8 @@ endfunction
 nmap <silent> <leader>t :TestNearest<CR>
 let g:ultest_use_pty = 1
 
-xnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
-nnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
+" xnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
+" nnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
 
 " Reselect visual selection after indenting
 vnoremap < <gv
@@ -1057,7 +927,7 @@ nmap <leader>x :!xdg-open %<cr><cr>
 
 " Common configs
 nmap <leader>vv :edit ~/.config/nvim/init.vim<cr>
-nmap <leader>vc :edit ~/.config/nvim/coc-settings.json<cr>
+" nmap <leader>vc :edit ~/.config/nvim/coc-settings.json<cr>
 
 " Allow gf to open non-existent files
 map gf :edit <cfile><cr>
@@ -1072,50 +942,50 @@ map gf :edit <cfile><cr>
 " endfunction
 
 
-let g:goyo_width = 90
-let g:goyo_height = '100%'
+"let g:goyo_width = 90
+"let g:goyo_height = '100%'
 
-function! s:goyo_enter()
-    let b:quitting = 0
-    let b:quitting_bang = 0
-    autocmd QuitPre <buffer> let b:quitting = 1
-    cabbrev <buffer> q! let b:quitting_bang = 1 <bar> q!
-    if executable('tmux') && strlen($TMUX) && &filetype !=# 'man' && &filetype !=# 'help'
-        silent !tmux set status off
-        silent !tmux list-panes -F '\#F' | grep -q Z || tmux resize-pane -Z
-    endif
-    " :Limelight
-endfunction
+" function! s:goyo_enter()
+"     let b:quitting = 0
+"     let b:quitting_bang = 0
+"     autocmd QuitPre <buffer> let b:quitting = 1
+"     cabbrev <buffer> q! let b:quitting_bang = 1 <bar> q!
+"     if executable('tmux') && strlen($TMUX) && &filetype !=# 'man' && &filetype !=# 'help'
+"         silent !tmux set status off
+"         silent !tmux list-panes -F '\#F' | grep -q Z || tmux resize-pane -Z
+"     endif
+"     " :Limelight
+" endfunction
 
-function! s:goyo_leave()
-    " :Limelight!
-    if executable('tmux') && strlen($TMUX)
-        silent !tmux set status on
-        silent !tmux list-panes -F '\#F' | grep -q Z && tmux resize-pane -Z
-    endif
-    " Quit Vim if this is the only remaining buffer
-    if b:quitting && len(filter(range(1, bufnr('$')), 'buflisted(v:val)')) == 1
-        if b:quitting_bang
-            qa!
-        else
-            qa
-        endif
-    endif
+" function! s:goyo_leave()
+"     " :Limelight!
+"     if executable('tmux') && strlen($TMUX)
+"         silent !tmux set status on
+"         silent !tmux list-panes -F '\#F' | grep -q Z && tmux resize-pane -Z
+"     endif
+"     " Quit Vim if this is the only remaining buffer
+"     if b:quitting && len(filter(range(1, bufnr('$')), 'buflisted(v:val)')) == 1
+"         if b:quitting_bang
+"             qa!
+"         else
+"             qa
+"         endif
+"     endif
+" 
+"     " HACK: Sourcing the VIMRC to ensure colors dont get borked after exiting Goyo.
+"     " This is slow and will not work with changing color schemes.
+"     source $MYVIMRC
+"     redraw
+" endfunction
 
-    " HACK: Sourcing the VIMRC to ensure colors dont get borked after exiting Goyo.
-    " This is slow and will not work with changing color schemes.
-    source $MYVIMRC
-    redraw
-endfunction
-
-augroup Goyo
-    autocmd!
-    autocmd! User GoyoEnter call <SID>goyo_enter()
-    autocmd! User GoyoLeave call <SID>goyo_leave()
-augroup END
+" augroup Goyo
+"     autocmd!
+"     autocmd! User GoyoEnter call <SID>goyo_enter()
+"     autocmd! User GoyoLeave call <SID>goyo_leave()
+" augroup END
 
 " nmap <A-m> :Goyo<CR>
-nmap <A-m> <Plug>(zoom-toggle)
+" nmap <A-m> <Plug>(zoom-toggle)
 
 highlight StatusLine   guifg=#2C323D guibg=#2C323D
 highlight StatusLineNC guifg=#2C323D guibg=#2C323D
@@ -1187,9 +1057,6 @@ nmap ga <Plug>(EasyAlign)
 " By default timeoutlen is 1000 ms
 set timeoutlen=500
 
-autocmd BufWrite *.lua call Indent()
-
-
 " Hooking up the ReScript autocomplete function
 set omnifunc=rescript#Complete
 
@@ -1198,38 +1065,10 @@ set omnifunc=rescript#Complete
 " information for a selected item
 set completeopt+=preview
 
-augroup myrescript
-    au!
-    autocmd BufWritePre *.res :RescriptFormat
-    " autocmd BufWritePost *.res :silent! RescriptBuild
-augroup End
-
 nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
 " au BufNewFile ~/documents/notes/diary/*.md : silent 0r !~/.local/share/nvim/bin/generate-vimwiki-diary-template '%'
 
 let g:floaterm_width=120
-
-" HACK: This will break when nodejs-16_x is updated
-" fix: https://lazamar.github.io/download-specific-package-version-with-nix/
-let g:copilot_node_command = '/nix/store/8mjfc9wz6kbrj670j8lh4w1k7i3jk4sz-nodejs-16.18.1/bin/node'
-
-" set wildcharm=<C-space>
-cnoremap <expr> <up> wildmenumode() ? "\<left>" : "\<up>"
-cnoremap <expr> <down> wildmenumode() ? "\<right>" : "\<down>"
-cnoremap <expr> <left> wildmenumode() ? "\<up>" : "\<left>"
-cnoremap <expr> <right> wildmenumode() ? " \<bs>\<C-Z>" : "\<right>"
-
-inoremap <silent><expr> <cr> coc#pum#visible() ? coc#_select_confirm() : "\<C-g>u\<CR>"
-" use <tab> for trigger completion and navigate to the next complete item
-function! CheckBackspace() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-
-inoremap <silent><expr> <C-Space> 
-      \ coc#pum#visible() ? coc#pum#next(1) :
-      \ CheckBackspace() ? "\<Tab>" :
-      \ coc#refresh()
 
 lua << EOF
 -- Global Utils

@@ -2,8 +2,8 @@
 
 set -e
 
-if ! op account get > /dev/null 2>/dev/null; then
-    echo "eval \$(op signin) && $(pwd)/$(basename $BASH_SOURCE) "
+if ! op account get; then
+  eval $(op signin)
 fi
 if op account get; then
   op run --env-file=.env -- ./apply-users.pre.sh \

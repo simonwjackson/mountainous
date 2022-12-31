@@ -3,7 +3,7 @@
 {
   imports = [
     ./polybar
-    ./bspwm
+    # ./bspwm
   ];
 
   home = {
@@ -29,6 +29,8 @@
       pulseaudio-ctl
     ];
   };
+
+  xsession.windowManager.awesome.enable = true;
 
   xsession = {
     enable = true;
@@ -131,10 +133,10 @@
 
       userChrome = ''
         /* Hide back/forward buttons */
-        #back-button, #forward-button { display:none!important; }
-
+        /* #back-button, #forward-button { display:none!important; }
+        */
         /* Hide tab bar */
-        #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
+        /* #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
           opacity: 0;
           pointer-events: none;
         }
@@ -146,6 +148,7 @@
         #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar .titlebar-spacer {
           border-inline-end: none;
         }
+        */
       '';
 
       userContent = ''

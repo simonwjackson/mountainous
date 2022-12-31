@@ -17,7 +17,6 @@
     };
 
     shellAliases = {
-      cat = "bat";
       sl = "exa";
       ls = "exa";
       l = "exa -l";
@@ -231,13 +230,27 @@
     "./.config/tmux/share.tmux.conf" = {
       source = ./tmux/share.tmux.conf;
     };
+
+    "./.local/bin/pv" = {
+      source = ./lf/pv.sh;
+    };
+
+    "./.config/lf/colors" = {
+      source = ./lf/colors;
+    };
+
+    "./.config/lf/icons" = {
+      source = ./lf/icons;
+    };
   };
 
   programs.lf = {
     enable = true;
-    extraConfig = builtins.readFile ./lfrc;
+    extraConfig = builtins.readFile ./lf/lfrc;
   };
 
-  programs.direnv.enable = true;
-  programs.direnv.nix-direnv.enable = true;
+  programs.direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+  };
 }

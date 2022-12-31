@@ -65,9 +65,17 @@ super + shift {_,+ ctrl} + {Left,Down,Up,Right}
   STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
 
 
-# Nav: Switch to the {west,south,north,east} window
+# Switch to the {previous,next} window
+super + {i,o}
+  awesome-client 'require("awful").client.focus.history.previous()'
+  # bspc node -f {prev,next}.local
+
+# Switch to the {west,south,north,east} window
 super + {h,j,k,l}
-  [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] && bspc node -f {west,south,north,east}.local || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
+  awesome-client 'require("awful").client.focus.bydirection("{left,down,up,right}")'
+
+# super + {h,j,k,l}
+  # [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] && bspc node -f {west,south,north,east}.local || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
 
 
 # Nav: {Switch to,Send window} {,to} desktop {I,II,III,VII,VIII,IX}

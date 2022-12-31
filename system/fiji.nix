@@ -142,9 +142,18 @@ in
 
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+    KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
   '';
 
+  # 2nd udev rule for sunshine
+
   # systemd.services.iptsd.enable = false;
+
+  services.avahi = {
+    enable = true;
+    nssmdns = true;
+    wideArea = true;
+  };
 
   networking.firewall = {
     enable = false;
@@ -170,6 +179,8 @@ in
     devices = {
       kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
       ushiro.id = builtins.getEnv "SYNCTHING_USHIRO_ID";
+      pixel.id = "3JIMY3T-PU4S3LS-UOIFSEY-2XJ52XF-J6HPOIW-TZTSDBB-AA3K2KB-ULNE3AZ";
+      ultra.id = "DWTWS42-OIDSJUJ-UGSE6BV-Q2Z3YWB-IKB3SHE-DKRFXC7-XLMR2Z5-MD27BAJ";
     };
   };
 
@@ -197,7 +208,7 @@ in
     folders = {
       "documents" = {
         path = "/home/simonwjackson/documents";
-        devices = [ "kuro" ];
+        devices = [ "kuro" "pixel" "ultra" ];
         # ignorePerms = false;
       };
 
@@ -207,15 +218,9 @@ in
         # ignorePerms = false;
       };
 
-      "comics" = {
-        path = "/tank/storage/comics";
-        devices = [ "kuro" ];
-        # ignorePerms = false;
-      };
-
       "books" = {
         path = "/tank/storage/books";
-        devices = [ "kuro" ];
+        devices = [ "kuro" "pixel" "ultra" ];
         # ignorePerms = false;
       };
 

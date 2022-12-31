@@ -6,7 +6,7 @@
   ];
 
   services.polybar = {
-    enable = true;
+    enable = false;
     extraConfig = builtins.readFile ./polybar.ini
       + builtins.readFile ./modules/battery.ini
       + builtins.readFile ./modules/cpu.ini

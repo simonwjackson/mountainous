@@ -4,9 +4,10 @@
   imports = [ ];
 
   home.packages = with pkgs; [
-    neovide
     nodejs-16_x
     bun
+    deno
+    neovim-remote
   ];
 
   # Home Manager needs a bit of information about you and the
@@ -14,10 +15,7 @@
   home = {
     shellAliases = {
       nvim = "nvim --listen /tmp/nvimsocket";
-      # BUG: remove this when nvr package gets linked properly
-      nvr = "/nix/store/nip2349qcnlpgihczxgg36jf8qvvc9qd-neovim-remote-2.5.1/bin/nvr";
     };
-
   };
 
   programs.neovim = {
@@ -27,33 +25,47 @@
     vimdiffAlias = true;
 
     extraPackages = with pkgs; [
+      # Language Servers
+      nil
+      nixpkgs-fmt
+      nodePackages.typescript-language-server
+      nodePackages.vscode-langservers-extracted
+      nodePackages.vim-language-server
+      nodePackages.bash-language-server
+      nodePackages.eslint_d
+      jsonnet-language-server
+      sumneko-lua-language-server
+      rnix-lsp
+      shellcheck
+
+      nodePackages.typescript
       neovim-remote
       ripgrep
       lf
-      rnix-lsp
-      sumneko-lua-language-server
       luaformatter
       tree-sitter
     ];
 
     # TODO: Checkout these plugins
+    # https://github.com/rockerBOO/awesome-neovim/blob/main/README.md
+    # https://github.com/kdheepak/lazygit.nvim
     # https://github.com/rest-nvim/rest.nvim#features
     # https://github.com/glacambre/firenvim Give it another try, integrates neovim into firefox
     # https://github.com/sindrets/diffview.nvim
+    # https://github.com/akinsho/git-conflict.nvim
     # https://github.com/weilbith/nvim-code-action-menu
-
+    # https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#tailwindcss
+    # https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#marksman
+    # https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#prosemd_lsp
+    # https://github.com/Equilibris/nx.nvim
+    # https://github.com/pwntester/octo.nvim
     plugins = with pkgs.vimPlugins; [
-      copilot-vim
-
-      # {
-      #   plugin = wilder-nvim;
-      #   config = builtins.readFile (./plugins/wilder.vim);
-      # }
+      copilot-lua
 
       {
-        plugin = vim-gitgutter;
-        type = "viml";
-        config = builtins.readFile (./plugins/gitgutter.vim);
+        plugin = gitsigns-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/gitsigns.lua);
       }
 
       # A personal wiki for Vim 
@@ -63,14 +75,8 @@
         config = builtins.readFile (./plugins/vimwiki.vim);
       }
 
-      # LF file browser
-      {
-        plugin = lf-vim;
-        type = "viml";
-        config = builtins.readFile (./plugins/lf.vim);
-      }
-
       vim-floaterm
+      toggleterm-nvim
 
       {
         plugin = telescope-nvim;
@@ -91,6 +97,15 @@
       }
 
       {
+        plugin = nvim-treesitter.withAllGrammars;
+        type = "lua";
+        config = builtins.readFile (./plugins/treesitter.lua);
+      }
+
+
+      plenary-nvim
+
+      {
         plugin = todo-comments-nvim;
         type = "lua";
         config = builtins.readFile (./plugins/todo-comments.lua);
@@ -102,16 +117,97 @@
         config = builtins.readFile (./plugins/trouble.lua);
       }
 
-      vim-nix
+      {
+        plugin = nvim-lspconfig;
+        type = "lua";
+        config = builtins.readFile (./plugins/lspconfig.lua);
+      }
+
+      # Unsure how to configure this. Formatting is working without this plugin
+      # {
+      #   plugin = lsp-format-nvim;
+      #   type = "lua";
+      #   config = builtins.readFile (./plugins/lsp-format.lua);
+      # }
+
+      {
+        plugin = dressing-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/dressing.lua);
+      }
+
+      {
+        plugin = hop-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/hop.lua);
+      }
+
+      {
+        plugin = zen-mode-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/zen-mode.lua);
+      }
+
+      {
+        plugin = twilight-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/twilight.lua);
+      }
+
+      {
+        plugin = noice-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/noice.lua);
+      }
+
+      nvim-ts-context-commentstring
+      {
+        plugin = comment-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/comment.lua);
+      }
+
+      cmp-nvim-lsp
+      cmp-buffer
+      cmp-path
+      cmp-nvim-lua
+      cmp-zsh
+      cmp-tmux
+      cmp-spell
+      cmp-npm
+      cmp-emoji
+      cmp-copilot
+      cmp-cmdline-history
+      cmp-cmdline
+      cmp_luasnip
+      luasnip
+
+      {
+        plugin = nvim-cmp;
+        type = "lua";
+        config = builtins.readFile (./plugins/cmp.lua);
+      }
+
+      editorconfig-nvim
+
+      {
+        plugin = null-ls-nvim;
+        type = "lua";
+        config = builtins.readFile (./plugins/null-ls.lua);
+      }
+
+      {
+        plugin = goto-preview;
+        type = "lua";
+        config = builtins.readFile (./plugins/goto-preview.lua);
+      }
+
       # vim-qml
 
       # git-blame-nvim
       # yankring # Yank across terminals
       # is-vim # Automatically clear search highlights after you move your cursor.
       # vim-fugitive
-
-      # COC
-      coc-lua
 
       # vim-easy-align # A simple, easy-to-use Vim alignment plugin.
       # vim-repeat # Add repeat support to plugins
@@ -120,49 +216,46 @@
       #  - Extras
       # ----------------------------------------------------------------------------
 
-      # nvim-lspconfig
       # lush-nvim
     ];
 
     extraConfig = builtins.readFile ./vimrc.vim;
 
     coc = {
-      enable = true;
+      enable = false;
 
       pluginConfig = ''
         let g:coc_global_extensions = [
-          \ 'coc-react-refactor',
-          \ 'coc-python',
-          \ 'coc-coverage',
-          \ 'coc-css',
-          \ 'coc-eslint',
-          \ 'coc-explorer',
-          \ 'coc-fzf-preview',
-          \ 'coc-html',
-          \ 'coc-json',
-          \ 'coc-sh',
-          \ 'coc-snippets',
-          \ 'coc-tsserver',
-          \ 'coc-vimlsp',
-          \ 'coc-yaml',
-          \ 'https://github.com/rodrigore/coc-tailwind-intellisense',
-          \ ]
+        \ 'coc-react-refactor',
+        \ 'coc-python',
+        \ 'coc-coverage',
+        \ 'coc-css',
+        \ 'coc-eslint',
+        \ 'coc-explorer',
+        \ 'coc-fzf-preview',
+        \ 'coc-html',
+        \ 'coc-json',
+        \ 'coc-sh',
+        \ 'coc-snippets',
+        \ 'coc-vimlsp',
+        \ 'coc-yaml',
+        \ 'https://github.com/rodrigore/coc-tailwind-intellisense',
+        \ ]
       '';
       # \ 'coc-prettier',
+      # \ 'coc-tsserver',
 
       settings = {
         coc.preferences.formatOnSaveFiletypes = [
-          #   "javascript"
-          #   "typescript"
-          #   "typescriptreact"
-          #   "javascriptreact"
+          #"javascript"
+          #"javascriptreact"
           "json"
           "elm"
           "css"
           "Markdown"
           "nix"
         ];
-        #eslint.filetypes = [ "javascript" "typescript" "typescriptreact" "javascriptreact" ];
+        # eslint.filetypes = [ "javascript" "typescript" "typescriptreact" "javascriptreact" ];
         coc.preferences.codeLens.enable = true;
         coc.preferences.currentFunctionSymbolAutoUpdate = true;
         coverage.uncoveredSign.text = "▌";
