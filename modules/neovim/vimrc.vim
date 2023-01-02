@@ -261,10 +261,20 @@ Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
 
 Plug 'MunifTanjim/eslint.nvim'
 
+Plug 'https://git.sr.ht/~whynothugo/lsp_lines.nvim'
 
 call plug#end()
 
 set completeopt=menu,menuone,noselect
+
+lua << EOF
+  require("lsp_lines").setup()
+
+  vim.diagnostic.config({ 
+    virtual_text = false,
+    virtual_lines = true
+  })
+EOF
 
 
 " ----------------------------------------------------------------------------
