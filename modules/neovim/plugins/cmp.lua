@@ -1,5 +1,10 @@
--- Set up nvim-cmp.
 local cmp = require 'cmp'
+local border = cmp.config.window.bordered({
+  -- INFO: https://github.com/hrsh7th/nvim-cmp/issues/671#issuecomment-1189019119
+  winhighlight = "Normal:Normal,FloatBorder:BorderBG,CursorLine:PmenuSel,Search:None",
+  col_offset = -3,
+  side_padding = 0,
+})
 
 cmp.setup({
   snippet = {
@@ -9,8 +14,19 @@ cmp.setup({
     end,
   },
   window = {
-    completion = cmp.config.window.bordered(),
-    documentation = cmp.config.window.bordered(),
+    completion = border,
+    documentation = border,
+  },
+  formatting = {
+    fields = { "kind", "abbr", "menu" },
+    format = function(entry, vim_item)
+      local kind = require("lspkind").cmp_format({ mode = "symbol_text", maxwidth = 50 })(entry, vim_item)
+      local strings = vim.split(kind.kind, "%s", { trimempty = true })
+      kind.kind = " " .. (strings[1] or "") .. " "
+      kind.menu = "    (" .. (strings[2] or "") .. ")"
+
+      return kind
+    end,
   },
   mapping = cmp.mapping.preset.insert({
     ['<C-b>'] = cmp.mapping.scroll_docs(-4),
@@ -24,10 +40,28 @@ cmp.setup({
     { name = 'luasnip' },
     { name = 'nvim_lua' },
     { name = 'zsh' },
-    { name = 'tmux' },
-    { name = 'npm', keyword_length = 4 },
+    {
+      name = 'tmux',
+      option = {
+        -- Source from all panes in session instead of adjacent panes
+        all_panes = false,
+
+        -- Completion popup label
+        label = '[tmux]',
+
+        -- Trigger character
+        trigger_characters = { '.' },
+
+        -- Specify trigger characters for filetype(s)
+        -- { filetype = { '.' } }
+        trigger_characters_ft = {},
+
+        -- Keyword patch mattern
+        keyword_pattern = [[\w\+]],
+      }
+    },
     { name = 'emoji' },
-    { name = 'copilot' },
+    { name = "copilot", group_index = 2 },
     {
       name = 'spell',
       option = {
@@ -77,3 +111,21 @@ for _, cmd_type in ipairs({ '/', '?', '@' }) do
     },
   })
 end
+
+-- TODO: zsh needs zmodload zsh/zpty
+-- require 'cmp_zsh'.setup {
+--   zshrc = true, -- Source the zshrc (adding all custom completions). default: false
+--   filetypes = { "deoledit", "zsh" } -- Filetypes to enable cmp_zsh source. default: {"*"}
+-- }
+
+-- vim.opt.spell = true
+vim.opt.spelllang = { 'en_us' }
+
+-- INFO: https://github.com/hrsh7th/nvim-cmp/issues/671#issuecomment-1189019119
+vim.defer_fn(function()
+  vim.api.nvim_set_hl(0, 'BorderBG', {
+    -- WARN: Color will be incorrect if theme switches
+    fg = require("dracula").colors().comment,
+    bg = "NONE",
+  })
+end, 1000)

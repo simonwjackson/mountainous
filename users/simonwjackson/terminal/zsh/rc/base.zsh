@@ -18,7 +18,8 @@ zstyle ':completion:*' accept-exact '*(N)'
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path ~/.zsh/cache
 
-
+# INFO: Needed for non nix npm packages
+export PATH="$HOME/.npm-packages/bin:$PATH"
 # INFO: Needed for non nix pip packages
 export PATH="${HOME}/.local/bin:${PATH}"
 # INFO: Needed for non nix ruby packages
@@ -171,5 +172,14 @@ function dots () {
 function git-here () {
   [[ "${PWD}" = ~ ]] && lazygit --git-dir ~/dotfiles --work-tree ~ || lazygit
 }
+
+if [ -n "$NVIM_LISTEN_ADDRESS" ]; then
+    alias nvim=nvr -cc split --remote-wait +'set bufhidden=wipe'
+    export VISUAL="nvr -cc split --remote-wait +'set bufhidden=wipe'"
+    export EDITOR="nvr -cc split --remote-wait +'set bufhidden=wipe'"
+else
+    export VISUAL="nvim"
+    export EDITOR="nvim"
+fi
 
 # PROMPT=$([[ -n $IN_NIX_SHELL ]] && echo "❄ | $PROMPT")

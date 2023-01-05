@@ -141,6 +141,9 @@ in
 
   # TODO: Place this next to syncthing config
   home.file = {
+    ".npmrc" = {
+      source = ./npmrc;
+    };
     "./code/.stignore" = {
       text = ''
         **/node_modules

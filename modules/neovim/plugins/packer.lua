@@ -1,8 +1,4 @@
-" ============================================================================
-"     Maintainer:
-"     Simon W. Jackson    @simonwjackson
-" ============================================================================
-
+vim.cmd([[
 " ============================================================================
 " => Helper Functions
 " ============================================================================
@@ -63,220 +59,670 @@ function! LazyGitPopup()
     endif
 endfunction
 
-
-" ====================================================
-"  => Plugins
-" ====================================================
-
-" Install vim-plug if needed
-let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
-if empty(glob(data_dir . '/autoload/plug.vim'))
-    silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
-    autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
-endif
-
-call plug#begin('~/.local/share/nvim/plugged')
-
-" ----------------------------------------------------
-"  - Themes
-" ----------------------------------------------------
-
-Plug 'flrnprz/plastic.vim'
-Plug 'lifepillar/vim-solarized8'
-Plug 'Mofiqul/dracula.nvim'
-
-" ----------------------------------------------------
-"  - Language Support
-" ----------------------------------------------------
-
-Plug 'nvim-treesitter/playground'
-
-" TODO: 
-
-" Rofi
-Plug 'Fymyte/rasi.vim'
-
-Plug 'nikolvs/vim-sunbather'
-
-" Golang
-" Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
-
-" Jinja2
-Plug 'Glench/Vim-Jinja2-Syntax'
-
-" Cucumber
-Plug 'tpope/vim-cucumber'
-
-" Elm
-Plug 'andys8/vim-elm-syntax' 
-
-" MDX
-Plug 'jxnblk/vim-mdx-js'
-
-" Docker
-Plug 'ekalinin/dockerfile.vim'
-
-" Git
-Plug 'tpope/vim-git'
-
-" A Vim syntax highlighting plugin for JavaScript and Flow.js
-" Plug 'yuezk/vim-js' 
-
-" The React syntax highlighting and indenting plugin for vim.
-" Also supports the typescript tsx file.
-" Plug 'maxmellon/vim-jsx-pretty'
-
-" Distinct highlighting of keywords vs values, 
-" JSON-specific (non-JS) warnings, quote concealing.
-Plug 'elzr/vim-json'
-
-" JSONC (with comments)
-Plug 'neoclide/jsonc.vim'
-
-" A Vim plugin that provides GraphQL file detection, syntax highlighting, and indentation.
-Plug 'jparise/vim-graphql'
-
-" quoting/parenthesizing made simple
-Plug 'tpope/vim-surround'
-
-" source ~/.config/nvim/plugins/gitgutter.vim
-" Plug 'airblade/vim-gitgutter'
-" source ~/.config/nvim/plugins/which-key.vim
-" source ~/.config/nvim/plugins/bspwm.vim
-
-
-" Modify * to also work with visual selections.
-Plug 'nelstrom/vim-visual-star-search'
-
-" Automatically clear search highlights after you move your cursor.
-Plug 'haya14busa/is.vim'
-
-" Seamless navigation between tmux panes and vim splits
-Plug 'christoomey/vim-tmux-navigator'
-
-" Vim sugar for the UNIX shell commands that need it the most
-Plug 'tpope/vim-eunuch'
-
-
-
-" ----------------------------------------------------------------------------
-"  - Extras
-" ----------------------------------------------------------------------------
-
-" True Sublime Text style multiple selections for Vim
-Plug 'terryma/vim-multiple-cursors'
-
-" Adds file type icons to Vim plugins
-Plug 'ryanoasis/vim-devicons'
-
-" source ~/.config/nvim/plugins/goyo.vim
-" source ~/.config/nvim/plugins/limelight.vim
-
-" fzf for vim
-Plug 'junegunn/fzf'
-Plug 'junegunn/fzf.vim'
-
-" Use fzf instead of coc.nvim built-in fuzzy finder.  
-" Plug 'antoinemadec/coc-fzf' 
-
-
-" source ~/.config/nvim/plugins/fugitive.vim
-" source ~/.config/nvim/plugins/nerdcommenter.vim
-
-" Improved * motions
-Plug 'haya14busa/vim-asterisk'
-
-" Briefly highlight which text was yanked.
-Plug 'machakann/vim-highlightedyank'
-
-" Modify * to also work with visual selections.
-Plug 'nelstrom/vim-visual-star-search'
-
-
-" FocusGained and FocusLost for vim inside Tmux
-" This is a plugin for Vim to dim inactive windows.  
-Plug 'tmux-plugins/vim-tmux-focus-events' 
-
-" An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
-" Plug 'TaDaa/vimade'
-
-" Proper project management in vim.
-Plug 'tools-life/taskwiki'
-
-" Taskwarrior in VIM
-" Plug 'farseer90718/vim-taskwarrior'
-
-" Zettelkasten for VIM
-Plug 'michal-h21/vim-zettel'
-
-" source ~/.config/nvim/plugins/telescope.vim
-Plug 'nvim-lua/popup.nvim'
-Plug 'nvim-lua/plenary.nvim'
-" Plug 'fannheyward/telescope-coc.nvim'
-Plug 'nvim-telescope/telescope.nvim'
-
-" Icons
-Plug 'kyazdani42/nvim-web-devicons'
-
-" Auto Sessions
-" Plug 'rmagatti/auto-session'
-" Plug 'rmagatti/session-lens'
-
-" Todo Comments
-Plug 'folke/todo-comments.nvim'
-
-" Trouble
-Plug 'folke/trouble.nvim'
-
-" LazyGit
-Plug 'kdheepak/lazygit.nvim'
-
-" expand region (+/-)
-Plug 'terryma/vim-expand-region'
-
-" Ultisnips: Text Expansion
-Plug 'SirVer/ultisnips'
-
-" A multi-language debugging system for Vim 
-Plug 'puremourning/vimspector'
-
-" VIM Test
-Plug 'vim-test/vim-test'
-" Plug 'rcarriga/vim-ultest', { 'do': ':UpdateRemotePlugins' }
-
-Plug 'pwntester/octo.nvim'
-Plug 'tpope/vim-obsession'
-
-Plug 'camgraff/telescope-tmux.nvim'
-Plug 'RyanMillerC/better-vim-tmux-resizer'
-
-" Swap windows without ruining your layout!
-Plug 'wesQ3/vim-windowswap'
-
-Plug 'ThePrimeagen/git-worktree.nvim'
-Plug 'lmburns/lf.nvim'
-" Plug 'Equilibris/nx.nvim'
-
-Plug 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
-
-Plug 'MunifTanjim/eslint.nvim'
-
-Plug 'https://git.sr.ht/~whynothugo/lsp_lines.nvim'
-
-call plug#end()
-
-set completeopt=menu,menuone,noselect
-
-lua << EOF
-  require("lsp_lines").setup()
-
-  vim.diagnostic.config({ 
-    virtual_text = false,
-    virtual_lines = true
+]])
+
+
+require('packer').startup(function(use)
+  use {
+    "folke/which-key.nvim",
+    config = function() require('plugins/which-key') end
+  }
+
+  use {
+    'neovim/nvim-lspconfig',
+    config = function() require('plugins/lspconfig') end,
+    requires = { 'folke/which-key.nvim', opt = true }
+  }
+
+  use {
+    'nvim-lualine/lualine.nvim',
+    config = function() require('plugins/lualine') end,
+    requires = { 'kyazdani42/nvim-web-devicons', opt = true }
+  }
+
+  use {
+    "L3MON4D3/LuaSnip",
+    tag = "v<CurrentMajor>.*"
+  }
+
+  use {
+    'rmagatti/goto-preview',
+    config = function() require('plugins/goto-preview') end,
+    requires = { "folke/which-key.nvim" }
+  }
+
+  -- editorconfig support in vim
+  use "editorconfig/editorconfig-vim"
+
+  -- incremental search improved
+  use "haya14busa/is.vim"
+
+  -- use {
+  --   "folke/noice.nvim",
+  --   config = function()
+  --     require('plugins/noice')
+  --   end,
+  --   requires = {
+  --     -- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
+  --     "MunifTanjim/nui.nvim",
+  --     -- OPTIONAL:
+  --     --   `nvim-notify` is only needed, if you want to use the notification view.
+  --     --   If not available, we use `mini` as the fallback
+  --     "rcarriga/nvim-notify",
+  --   }
+  -- }
+
+  use {
+    'phaazon/hop.nvim',
+    branch = 'v2', -- optional but strongly recommended
+    config = function()
+      require('plugins/hop')
+    end
+  }
+
+  use {
+    "folke/twilight.nvim",
+    config = function()
+      require("plugins/twilight")
+    end
+  }
+
+  use {
+    "folke/zen-mode.nvim",
+    config = function()
+      require("plugins/zen-mode")
+    end
+  }
+
+  use {
+    "stevearc/dressing.nvim",
+    config = function()
+      require("plugins/dressing")
+    end
+  }
+
+  use {
+    "folke/trouble.nvim",
+    requires = "kyazdani42/nvim-web-devicons",
+    config = function()
+      require("plugins/trouble")
+    end
+  }
+
+  use {
+    "folke/todo-comments.nvim",
+    requires = "nvim-lua/plenary.nvim",
+    config = function()
+      require("plugins/todo-comments")
+    end
+  }
+
+  use {
+    "rest-nvim/rest.nvim",
+    requires = { "nvim-lua/plenary.nvim" },
+    config = function()
+      require("plugins/rest")
+    end
+  }
+
+  use {
+    "kevinhwang91/nvim-hlslens",
+    requires = "petertriho/nvim-scrollbar",
+    config = function()
+      require("scrollbar.handlers.search").setup({
+        -- If you want to leave only search marks and disable virtual text:
+        override_lens = function() end,
+      })
+    end,
+  }
+
+  use {
+    'lewis6991/gitsigns.nvim',
+    requires = "petertriho/nvim-scrollbar",
+    config = function()
+      require('plugins/gitsigns')
+      require("scrollbar.handlers.gitsigns").setup()
+    end
+  }
+
+  use {
+    'vimwiki/vimwiki',
+    config = function()
+      require('plugins/vimwiki')
+    end
+  }
+
+  -- Proper project management in vim.
+  use {
+    'tools-life/taskwiki',
+    requires = 'vimwiki/vimwiki',
+  }
+
+
+
+  ------------------------------------------------------
+  -- - Themes
+  ------------------------------------------------------
+
+  use 'flrnprz/plastic.vim'
+  use 'lifepillar/vim-solarized8'
+  use {
+    'Mofiqul/dracula.nvim',
+    config = function() vim.cmd([[ colorscheme dracula ]]) end,
+  }
+  ------------------------------------------------------
+  -- - Language Support
+  ------------------------------------------------------
+
+
+  use "peterhoeg/vim-qml"
+  use 'nvim-treesitter/playground'
+
+  --Rofi
+  use 'Fymyte/rasi.vim'
+
+  use 'nikolvs/vim-sunbather'
+
+  --MDX
+  use 'jxnblk/vim-mdx-js'
+
+  --Seamless navigation between tmux panes and vim splits
+  use 'christoomey/vim-tmux-navigator'
+
+  --Vim sugar for the UNIX shell commands that need it the most
+  use 'tpope/vim-eunuch'
+
+  ------------------------------------------------------------------------------
+  -- - Extras
+  ------------------------------------------------------------------------------
+
+  --Adds file type icons to Vim plugins
+  use 'ryanoasis/vim-devicons'
+
+  --Improved * motions
+  use {
+    'haya14busa/vim-asterisk',
+    config = function()
+      vim.g.asterisk_no_default_mappings = 1
+      vim.cmd([[
+        let g:asterisk#keeppos = 1 
+
+        " Show more like under cursor
+        map *   <Plug>(asterisk-*)
+        map #   <Plug>(asterisk-#)
+        map g*  <Plug>(asterisk-g*)
+        map g#  <Plug>(asterisk-g#)
+        map z*  <Plug>(asterisk-z*)
+        map gz* <Plug>(asterisk-gz*)    
+        map z#  <Plug>(asterisk-z#)
+        map gz# <Plug>(asterisk-gz#)
+      ]])
+    end
+  }
+
+  --Briefly highlight which text was yanked.
+  use 'machakann/vim-highlightedyank'
+
+  --Modify * to also work with visual selections.
+  use 'nelstrom/vim-visual-star-search'
+
+
+  --FocusGained and FocusLost for vim inside Tmux
+  --This is a plugin for Vim to dim inactive windows.
+  use 'tmux-plugins/vim-tmux-focus-events'
+
+  --An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
+  --use 'TaDaa/vimade'
+
+  --Taskwarrior in VIM
+  --use 'farseer90718/vim-taskwarrior'
+
+  --Zettelkasten for VIM
+  use 'michal-h21/vim-zettel'
+
+  use 'nvim-lua/popup.nvim'
+
+  --INFO: This is a generic/global plugin for lua. Please delete with caution.
+  use 'nvim-lua/plenary.nvim'
+
+  --Icons
+  use 'kyazdani42/nvim-web-devicons'
+
+  --Auto Sessions
+  --use 'rmagatti/auto-session'
+  --use 'rmagatti/session-lens'
+
+  --LazyGit
+  use {
+    'kdheepak/lazygit.nvim',
+    requires = 'nvim-telescope/telescope.nvim',
+  }
+
+  --expand region (+/-)
+  use 'terryma/vim-expand-region'
+
+  --Ultisnips: Text Expansion
+  use 'SirVer/ultisnips'
+
+  --A multi-language debugging system for Vim
+  use 'puremourning/vimspector'
+
+  --VIM Test
+  use 'vim-test/vim-test'
+  --use 'rcarriga/vim-ultest', { 'do': ':UpdateRemoteuseins' }
+
+  use 'tpope/vim-obsession'
+
+  use 'camgraff/telescope-tmux.nvim'
+  use 'RyanMillerC/better-vim-tmux-resizer'
+
+  --Swap windows without ruining your layout!
+  use {
+    'wesQ3/vim-windowswap',
+    config = function()
+      vim.cmd([[
+        let g:windowswap_map_keys = 0 "prevent default bindings
+
+        function! DoSwapLeft()
+            call WindowSwap#MarkWindowSwap() 
+            wincmd h 
+            call WindowSwap#DoWindowSwap()
+        endfunction
+
+        function! DoSwapDown()
+            call WindowSwap#MarkWindowSwap() 
+            wincmd j
+            call WindowSwap#DoWindowSwap()
+        endfunction
+
+        function! DoSwapUp()
+            call WindowSwap#MarkWindowSwap() 
+            wincmd k
+            call WindowSwap#DoWindowSwap()
+        endfunction
+
+        function! DoSwapRight()
+            call WindowSwap#MarkWindowSwap() 
+            wincmd l
+            call WindowSwap#DoWindowSwap()
+        endfunction
+
+        nnoremap <leader>wh :call DoSwapLeft()<CR>
+        nnoremap <leader>wj :call DoSwapDown()<CR>
+        nnoremap <leader>wk :call DoSwapUp()<CR>
+        nnoremap <leader>wl :call DoSwapRight()<CR>
+      ]])
+    end
+  }
+
+  use {
+    'nvim-telescope/telescope.nvim',
+    tag = '0.1.0',
+    config = function()
+      require('plugins/telescope')
+    end,
+    requires = {
+      'nvim-lua/plenary.nvim'
+    }
+  }
+
+  use {
+    "zbirenbaum/copilot.lua",
+    config = function()
+      vim.defer_fn(function()
+        require("plugins/copilot")
+      end, 100)
+    end
+  }
+
+  -- TODO: Depends on cmp
+  use {
+    "onsails/lspkind.nvim",
+    config = function()
+      require("plugins/lspkind")
+    end
+  }
+
+  use({
+    "ThePrimeagen/git-worktree.nvim",
+    config = function()
+      require('plugins/git-worktree')
+    end,
+    requires = {
+      "folke/which-key.nvim",
+      "plenary.nvim",
+      "nvim-telescope/telescope.nvim"
+    }
   })
-EOF
 
+  use({
+    "lmburns/lf.nvim",
+    config = function()
+      require('plugins/lf')
+    end,
+    requires = {
+      "folke/which-key.nvim",
+      "nvim-lua/plenary.nvim",
+      "akinsho/toggleterm.nvim"
+    }
+  })
 
+  -- use {
+  --   'Equilibris/nx.nvim',
+  --   requires = {
+  --     'nvim-telescope/telescope.nvim',
+  --   },
+  --   config = function()
+  --     require('plugins/nx')
+  --   end
+  -- }
+
+  -- use 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
+
+  use 'MunifTanjim/eslint.nvim'
+
+  -- TODO: Disabled for now due to performance issues
+  -- use 'https://git.sr.ht/~whynothugo/lsp_lines.nvim'
+
+  use {
+    'JoosepAlviste/nvim-ts-context-commentstring',
+    config = function()
+      require('nvim-treesitter.configs').setup({
+        context_commentstring = {
+          enable = true
+        }
+      })
+    end
+  }
+
+  use {
+    'numToStr/Comment.nvim',
+    config = function()
+      require('plugins/comment')
+    end
+  }
+
+  use {
+    "LudoPinelli/comment-box.nvim",
+    config = function()
+      require('plugins/comment-box')
+    end
+  }
+
+  use {
+    'pwntester/octo.nvim',
+    requires = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+      'kyazdani42/nvim-web-devicons',
+    },
+    config = function()
+      require('plugins/octo')
+    end
+  }
+
+  -- Interactive theme creator
+  use 'rktjmp/lush.nvim'
+
+  use {
+    'nvim-treesitter/nvim-treesitter',
+    config = function()
+      require('plugins/treesitter')
+    end,
+    run = function()
+      local ts_update = require('nvim-treesitter.install').update({ with_sync = true })
+      ts_update()
+    end,
+  }
+
+  use({
+    "kylechui/nvim-surround",
+    tag = "*",
+    config = function()
+      require("nvim-surround").setup({})
+    end
+  })
+
+  --  Git Blame plugin for Neovim written in Lua
+  use 'f-person/git-blame.nvim'
+
+  -- Displays coverage information in the sign column.
+  use({
+    "andythigpen/nvim-coverage",
+    requires = "nvim-lua/plenary.nvim",
+    config = function() require("plugins/nvim-coverage") end,
+  })
+
+  use "ray-x/lsp_signature.nvim"
+
+  -- NOTE: Built into nvim v0.9
+  -- set splitkeep=screen
+  use {
+    "luukvbaal/stabilize.nvim",
+    config = function()
+      require("stabilize").setup({
+        force = true, -- stabilize window even when current cursor position will be hidden behind new window
+        forcemark = nil, -- set context mark to register on force event which can be jumped to with '<forcemark>
+        ignore = { -- do not manage windows matching these file/buftypes
+          filetype = { "help", "list", "Trouble" },
+          buftype = { "terminal", "quickfix", "loclist" }
+        },
+        nested = nil -- comma-separated list of autocmds that wil trigger the plugins window restore function
+      })
+    end
+  }
+
+  use {
+    'sindrets/winshift.nvim',
+    config = function()
+      require('winshift').setup({
+        keymaps = {
+          disable_defaults = true, -- Disable the default keymaps
+        }
+      })
+    end,
+  }
+
+  use {
+    'rmagatti/auto-session',
+    config = function()
+      require("auto-session").setup {
+        log_level = "error",
+      }
+      vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+    end
+  }
+
+  use { 'bennypowers/nvim-regexplainer',
+    config = function()
+      require 'regexplainer'.setup({
+        mode = 'narrative',
+        auto = true,
+
+        -- filetypes (i.e. extensions) in which to run the autocommand
+        filetypes = {
+          'html',
+          'js',
+          'cjs',
+          'mjs',
+          'ts',
+          'jsx',
+          'tsx',
+          'cjsx',
+          'mjsx',
+        },
+
+        -- Whether to log debug messages
+        debug = false,
+
+        -- 'split', 'popup'
+        display = 'popup',
+
+        mappings = {
+          toggle = 'gR',
+          -- examples, not defaults:
+          -- show = 'gS',
+          -- hide = 'gH',
+          -- show_split = 'gP',
+          -- show_popup = 'gU',
+        },
+
+        narrative = {
+          separator = '\n',
+        },
+      })
+    end,
+    requires = {
+      'nvim-treesitter/nvim-treesitter',
+      'MunifTanjim/nui.nvim',
+    }
+  }
+
+  -- INFO: Not sure if I want to use this
+  -- use {
+  --   'anuvyklack/pretty-fold.nvim',
+  --   config = function()
+  --     require('plugins/pretty-fold')
+  --   end
+  -- }
+
+  use({
+    'sQVe/sort.nvim',
+    config = function()
+      require("sort").setup({
+        delimiters = {
+          ',',
+          '|',
+          ';',
+          ':',
+          's', -- Space
+          't' -- Tab
+        }
+      })
+    end
+  })
+
+  use {
+    'nvim-treesitter/nvim-treesitter-context',
+    requires = 'nvim-treesitter/nvim-treesitter',
+    config = function()
+      require('plugins/treesitter-context')
+    end
+  }
+
+  use {
+    'haringsrob/nvim_context_vt',
+    requires = 'nvim-treesitter/nvim-treesitter',
+    config = function()
+      require('plugins/nvim_context_vt')
+    end
+  }
+
+  use {
+    'monaqa/dial.nvim',
+    config = function()
+      require('plugins/dial')
+    end
+  }
+
+  use {
+    'windwp/nvim-ts-autotag',
+    config = function()
+      require('plugins/ts-autotag')
+    end
+  }
+
+  use {
+    'edluffy/specs.nvim',
+    config = function()
+      -- require('plugins/specs')
+      require('specs').setup {
+        show_jumps       = true,
+        min_jump         = 30,
+        popup            = {
+          delay_ms = 0, -- delay before popup displays
+          inc_ms = 10, -- time increments used for fade/resize effects
+          blend = 10, -- starting blend, between 0-100 (fully transparent), see :h winblend
+          width = 10,
+          winhl = "PMenu",
+          fader = require('specs').linear_fader,
+          resizer = require('specs').shrink_resizer
+        },
+        ignore_filetypes = {},
+        ignore_buftypes  = {
+          nofile = true,
+        },
+      }
+    end
+  }
+
+  use {
+    "petertriho/nvim-scrollbar",
+    config = function()
+      require("plugins/scrollbar")
+    end
+  }
+
+  use({
+    "ziontee113/color-picker.nvim",
+    config = function()
+      require("plugins/color-picker")
+    end,
+  })
+
+  use {
+    'sindrets/diffview.nvim',
+    requires = 'nvim-lua/plenary.nvim',
+    config = function()
+      require('plugins/diffview')
+    end
+  }
+
+  use {
+    'cljoly/telescope-repo.nvim',
+    config = function()
+      require("telescope").setup {
+        extensions = {
+          repo = {
+            list = {
+              fd_opts = {
+                "--no-ignore-vcs",
+              },
+              search_dirs = {
+                "~/code",
+              },
+            },
+          },
+        },
+      }
+
+      require("telescope").load_extension "repo"
+    end
+  }
+
+  use {
+    'windwp/nvim-spectre',
+    requires = 'nvim-lua/plenary.nvim',
+    config = function()
+      require('spectre').setup()
+    end
+  }
+
+end);
+
+vim.cmd([[
+  highlight FloatBorder guifg=#000000 guibg=none 
+  " set completeopt=menu,menuone,noselect
+]])
+
+vim.diagnostic.config({
+  virtual_text = false,
+  virtual_lines = {
+    only_current_line = true
+  }
+})
+
+vim.cmd([[
 " ----------------------------------------------------------------------------
 "  - Write to file even when it does not exist
 " ----------------------------------------------------------------------------
@@ -323,7 +769,7 @@ command! W call s:WriteCreatingDirs()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Better chars for splits
-set fillchars=stl\:─,vert\:\█   
+" set fillchars=stl\:─,vert\:\█   
 
 " ...?
 set nohidden
@@ -596,60 +1042,12 @@ nnoremap <silent> <A-S-C-Down>  :call ResizeDown()<CR>
 nnoremap <silent> <A-S-C-Up>    :call ResizeUp()<CR>
 nnoremap <silent> <A-S-C-Right> :call ResizeRight()<CR>
 
-
-" ----------------------------------------------------------------------------
-"  - Vimade
-" ----------------------------------------------------------------------------
-
-" let g:vimade = { "fadelevel": 0.4 }
-"
-" au! FocusLost * VimadeFadeActive
-" au! FocusGained * VimadeUnfadeActive
-
-
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" - vim-asterisk
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-" Keep cursor position across matches
-let g:asterisk#keeppos = 1 
-
-
-
 " ----------------------------------------------------------------------------
 "  - Zettelkasten
 " ----------------------------------------------------------------------------
 
 let g:zettel_fzf_command = 'rg'
 
-
-
-" ----------------------------------------------------------------------------
-"  - Markdown
-" ----------------------------------------------------------------------------
-
-" function! s:markdown_enter()
-"     " :Goyo
-" endfunction
-" 
-" autocmd FileType markdown,markdown.mdx call <SID>markdown_enter() 
-
-
-" ----------------------------------------------------------------------------
-"  - Utilisnips
-" ----------------------------------------------------------------------------
-
-" Trigger configuration. You need to change this to something other than <tab> if you use one of the following:
-" - https://github.com/Valloric/YouCompleteMe
-" - https://github.com/nvim-lua/completion-nvim
-" let g:UltiSnipsExpandTrigger="<tab>"
-" let g:UltiSnipsJumpForwardTrigger="<c-b>"
-" let g:UltiSnipsJumpBackwardTrigger="<c-z>"
-" 
-" " If you want :UltiSnipsEdit to split your window.
-" let g:UltiSnipsEditSplit="vertical"
 
 
 " ============================================================================
@@ -708,16 +1106,6 @@ nnoremap          <F4>      :<C-u>Telescope keymaps<CR>
 " xmap af <Plug>(coc-funcobj-a)
 " omap af <Plug>(coc-funcobj-a)
 
-" Show more like under cursor
-map *   <Plug>(asterisk-*)
-map #   <Plug>(asterisk-#)
-map g*  <Plug>(asterisk-g*)
-map g#  <Plug>(asterisk-g#)
-map z*  <Plug>(asterisk-z*)
-map gz* <Plug>(asterisk-gz*)    
-map z#  <Plug>(asterisk-z#)
-map gz# <Plug>(asterisk-gz#)
-
 " Bspwm
 " noremap <silent> <A-h> :BspwmNavigateWest<cr>
 " noremap <silent> <A-j> :BspwmNavigateSouth<cr>
@@ -727,57 +1115,25 @@ map gz# <Plug>(asterisk-gz#)
 " Switch CWD to the directory of the open buffer
 map <leader>cd :cd %:p:h<cr>:pwd<cr>  
 
-" Prevent x from overriding what's in the clipboard.
-noremap x "_x
-noremap X "_x
-
-" Change text without putting the text into register,
-nnoremap c "_c
-nnoremap C "_C
-nnoremap cc "_cc
-
-" Don't yank whitespace at the beginning of a line
-nnoremap Y ^y$
-
-" Prevent selecting and pasting from overwriting what you originally copied.
-xnoremap p pgvy
-
 " When text is wrapped, move by terminal rows, not lines, unless a count is provided
 noremap <silent> <expr> j (v:count == 0 ? 'gj' : 'j')
 noremap <silent> <expr> k (v:count == 0 ? 'gk' : 'k')
 
-" Movement: Keep under (j/k remap)
-vnoremap j <Plug>(easymotion-j)
-vnoremap k <Plug>(easymotion-k)
-
-" Movement
-vmap j <Plug>(easymotion-j)
-vmap k <Plug>(easymotion-k)
-
-" Move a line of text using Ctrl-[jk]
-nnoremap <silent> <C-j> :move+<cr>
-" nnoremap <silent> <C-k> :move-2<cr>
-" xnoremap <silent> <C-k> :move-2<cr>gv
-xnoremap <silent> <C-j> :move'>+<cr>gv
-
-" Git
-nnoremap <silent> <Leader>gla <cmd>lua require('telescope-config').my_git_commits()<CR>
-nnoremap <silent> <Leader>gs <cmd>lua require('telescope-config').my_git_status()<CR>
-
-nnoremap <silent> <C-s> :update<CR>
+" " Move a line of text using Ctrl-[jk]
+" nnoremap <silent> <C-j> :move+<cr>
+" " nnoremap <silent> <C-k> :move-2<cr>
+" " xnoremap <silent> <C-k> :move-2<cr>gv
+" xnoremap <silent> <C-j> :move'>+<cr>gv
+" 
+" " Git
+" nnoremap <silent> <Leader>gla <cmd>lua require('telescope-config').my_git_commits()<CR>
+" nnoremap <silent> <Leader>gs <cmd>lua require('telescope-config').my_git_status()<CR>
+" 
 
 " TODO: Make this JS only
 " Open up a point free function
 " nmap gO [(ysa({$i<CR>return <ESC>O
 
-" Toggle paste mode on and off
-map <leader>pp :setlocal paste!<cr>
-
-" Quick marker
-nnoremap <Leader>m `m
-
-" qq to record, Q to replay
-nnoremap Q @q
 
 " copy current file name (relative/absolute) to system clipboard
 if has("mac") || has("gui_macvim") || has("gui_mac")
@@ -1001,36 +1357,6 @@ highlight StatusLine   guifg=#2C323D guibg=#2C323D
 highlight StatusLineNC guifg=#2C323D guibg=#2C323D
 highlight VertSplit cterm=none ctermfg=blue ctermbg=blue guifg=#2C323D guibg=#2C323D
 
-let g:windowswap_map_keys = 0 "prevent default bindings
-
-function! DoSwapLeft()
-    call WindowSwap#MarkWindowSwap() 
-    wincmd h 
-    call WindowSwap#DoWindowSwap()
-endfunction
-
-function! DoSwapDown()
-    call WindowSwap#MarkWindowSwap() 
-    wincmd j
-    call WindowSwap#DoWindowSwap()
-endfunction
-
-function! DoSwapUp()
-    call WindowSwap#MarkWindowSwap() 
-    wincmd k
-    call WindowSwap#DoWindowSwap()
-endfunction
-
-function! DoSwapRight()
-    call WindowSwap#MarkWindowSwap() 
-    wincmd l
-    call WindowSwap#DoWindowSwap()
-endfunction
-
-nnoremap <leader>wh :call DoSwapLeft()<CR>
-nnoremap <leader>wj :call DoSwapDown()<CR>
-nnoremap <leader>wk :call DoSwapUp()<CR>
-nnoremap <leader>wl :call DoSwapRight()<CR>
 
 nnoremap <A-Down> :tabnext<CR>
 nnoremap <A-Up> :tabprevious<CR>
@@ -1076,22 +1402,26 @@ set omnifunc=rescript#Complete
 set completeopt+=preview
 
 nnoremap <Leader>gb :<C-u>call gitblame#echo()<CR>
-" au BufNewFile ~/documents/notes/diary/*.md : silent 0r !~/.local/share/nvim/bin/generate-vimwiki-diary-template '%'
 
 let g:floaterm_width=120
 
-lua << EOF
+nnoremap <silent> <C-s> :update<CR>
+
+if has('nvim') && executable('nvr')
+  let $GIT_EDITOR = "nvr -cc split --remote-wait +'set bufhidden=wipe'"
+endif
+
+]])
+
 -- Global Utils
 
 -- Keyboard Mapping
 function map(mode, lhs, rhs, opts)
-    local options = { noremap = true }
+  local options = { noremap = true }
 
-    if opts then
-        options = vim.tbl_extend("force", options, opts)
-    end
+  if opts then
+    options = vim.tbl_extend("force", options, opts)
+  end
 
-    vim.api.nvim_set_keymap(mode, lhs, rhs, options)
+  vim.api.nvim_set_keymap(mode, lhs, rhs, options)
 end
-
-EOF
