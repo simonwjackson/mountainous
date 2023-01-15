@@ -31,6 +31,12 @@
     vimAlias = true;
     vimdiffAlias = true;
 
+    extraPython3Packages = (ps: with ps; [
+      six
+      packaging
+      tasklib
+    ]);
+
     extraPackages = with pkgs; [
       # Language Servers
       nil
@@ -40,12 +46,12 @@
       nodePackages.vim-language-server
       nodePackages.bash-language-server
       nodePackages.eslint_d
+      nodePackages.typescript
       jsonnet-language-server
       sumneko-lua-language-server
       rnix-lsp
       shellcheck
 
-      nodePackages.typescript
       neovim-remote
       ripgrep
       xclip
@@ -53,6 +59,8 @@
       luaformatter
       tree-sitter
       gh
+
+      taskwarrior
     ];
 
     #   extraConfig = ''
