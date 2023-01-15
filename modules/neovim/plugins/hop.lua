@@ -8,11 +8,11 @@ hop.setup {
 }
 
 wk.register({
-  j = { function() hop.hint_lines_skip_whitespace({
+  j = { function() hop.hint_vertical({
       direction = require 'hop.hint'.HintDirection.AFTER_CURSOR,
     })
   end, "Hop down below cursor" },
-  k = { function() hop.hint_lines_skip_whitespace({
+  k = { function() hop.hint_vertical({
       direction = require 'hop.hint'.HintDirection.BEFORE_CURSOR,
     })
   end, "Hop up above cursor" },
