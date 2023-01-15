@@ -57,12 +57,15 @@ super + x
 
 # Toggle fullscreen mode
 super + m
-  bspc desktop -l next
+  wm monocle
 
 
 # Resize the window {,(slowly)} to the {west,south,north,east}
-super + shift {_,+ ctrl} + {Left,Down,Up,Right}
-  STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
+super + shift + {Left,Down,Up,Right}
+  wm {grow,grow,shrink,shrink}
+  
+# super + shift {_,+ ctrl} + {Left,Down,Up,Right}
+# STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
 
 
 # Switch to the {previous,next} window

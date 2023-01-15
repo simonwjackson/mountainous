@@ -15,6 +15,9 @@
       "./.config/tridactyl/tridactylrc" = {
         source = ./tridactylrc;
       };
+      "./.local/bin/wm" = {
+        source = pkgs.writeScript "wm" (builtins.readFile ./wm.sh);
+      };
     };
 
     packages = with pkgs; [
