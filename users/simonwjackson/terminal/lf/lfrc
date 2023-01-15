@@ -3,6 +3,7 @@
 map D delete
 map <enter> open
 map T push :touch<space>
+map . set hidden!
 
 cmd touch %touch $1 && lf -remote "send $id load" && lf -remote "send $id select $1"
 
