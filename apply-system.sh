@@ -1,18 +1,8 @@
-#!/bin/sh
+#! /usr/bin/env nix-shell
+#! nix-shell -i bash -p _1password
 
 set -e
 
-# if [ -n "$(git status --porcelain)" ]; then
-#   echo "Commit your changes"
-#   exit 1
-# else
+source ./_pre.sh
 
-# if ! op account get; then
-#   eval $(op signin)
-# fi
-# if op account get; then
-  op run --env-file=.env -- sudo -E nixos-rebuild --impure -v switch --flake .#
-# fi
-# fi
-    # --impure \
-# --profile-name "$(git log -1 --pretty=%B | sed "s/[^[:alnum:]-]/-/g")" \
+op run --env-file=.env -- sudo -E nixos-rebuild --impure -v switch --flake .#

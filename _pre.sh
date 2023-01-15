@@ -3,6 +3,6 @@
 
 set -e
 
-source _pre.sh
-
-./apply-system.sh && ./apply-users.sh
+if ! op account get; then
+  eval "$(op signin)"
+fi
