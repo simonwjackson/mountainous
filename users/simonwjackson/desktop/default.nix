@@ -84,28 +84,50 @@
 
   home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
-  services.picom = {
-    enable = true;
-    vSync = true;
-    backend = "xr_glx_hybrid";
-    settings = {
-      glx-no-stencil = true;
-      glx-no-rebind-pixmap = true;
-      unredir-if-possible = true;
-      xrender-sync-fence = true;
+  services.picom =
+    {
+      enable = true;
+      # vSync = true;
+      # backend = "xr_glx_hybrid";
+      # backend = "glx";
+      extraArgs = [ "--experimental-backend" ];
+      settings = import ./picom/picom.nix;
+      wintypes =
+        {
+          tooltip = {
+            fade = true;
+            shadow = true;
+            opacity = 0.95;
+            focus = true;
+            full-shadow = false;
+          };
+          dock = {
+            shadow = false;
+            clip-shadow-above = true;
+          };
+          dnd = {
+            shadow = false;
+          };
+          popup_menu =
+            {
+              opacity = 0.9;
+              full-shadow = false;
+            };
+          dropdown_menu = {
+            opacity = 0.9;
+            full-shadow = false;
+          };
+        };
 
-      shadow = true;
-      shadow-radius = 100;
-      shadow-offset-x = -100;
-      shadow-offset-y = -100;
-      shadow-opacity = .7;
-
-      fading = true;
-      fade-in-step = 0.07;
-      fade-out-step = 0.07;
-      fade-delta = 10;
+      package = pkgs.picom.overrideAttrs (o: {
+        src = pkgs.fetchFromGitHub {
+          repo = "picom";
+          owner = "jonaburg";
+          rev = "e3c19cd7d1108d114552267f302548c113278d45";
+          sha256 = "4voCAYd0fzJHQjJo4x3RoWz5l3JJbRvgIXn1Kg6nz6Y=";
+        };
+      });
     };
-  };
 
   services.sxhkd = {
     enable = true;
