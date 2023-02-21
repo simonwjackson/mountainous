@@ -8,7 +8,13 @@ let g:vimwiki_ext = '.md'
 let g:vimwiki_main = 'README'
 let g:vimwiki_auto_chdir = 1
 
-au BufReadPost,BufNewFile *.md,*.txt,*.tex setlocal autoread
+augroup vimwiki
+    autocmd!
+    au BufReadPost,BufNewFile *.md*,*.txt,*.tex setlocal autoread 
+    au BufReadPost,BufNewFile *.md*,*.txt,*.tex ScrollbarHide
+    au BufReadPost,BufNewFile *.md*,*.txt,*.tex Gitsigns detach
+augroup END
+
 
 let personal = {}
 let personal.path = "$HOME/documents/notes"
@@ -18,8 +24,9 @@ let guides.path = '~/guides'
 
 let g:vimwiki_list = [personal,guides]
 let g:vimwiki_ext2syntax = {
-            \ '.md': 'markdown',
-            \ '.markdown': 'markdown',
-            \ '.mdown': 'markdown'
-            \ }
+  \ '.md': 'markdown',
+  \ '.markdown': 'markdown',
+  \ '.mdown': 'markdown'
+  \ }
+
 ]])

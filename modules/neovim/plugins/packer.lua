@@ -193,12 +193,11 @@ require('packer').startup(function(use)
   }
 
   -- Proper project management in vim.
+  -- INFO: dificult (impossible to install?) in packer
   use {
     'tools-life/taskwiki',
     requires = 'vimwiki/vimwiki',
   }
-
-
 
   ------------------------------------------------------
   -- - Themes
@@ -479,7 +478,7 @@ require('packer').startup(function(use)
     "kylechui/nvim-surround",
     tag = "*",
     config = function()
-      require("nvim-surround").setup({})
+      require("plugins/coverage")
     end
   })
 
@@ -708,6 +707,86 @@ require('packer').startup(function(use)
     end
   }
 
+  -- use({
+  --   "jackMort/ChatGPT.nvim",
+  --   config = function()
+  --     require("chatgpt").setup({
+  --       -- welcome_message = WELCOME_MESSAGE, -- set to "" if you don't like the fancy godot robot
+  --       loading_text = "loading",
+  --       question_sign = "", -- you can use emoji if you want e.g. 🙂
+  --       answer_sign = "ﮧ", -- 🤖
+  --       max_line_length = 120,
+  --       yank_register = "+",
+  --       chat_layout = {
+  --         relative = "editor",
+  --         position = "50%",
+  --         size = {
+  --           height = "80%",
+  --           width = "80%",
+  --         },
+  --       },
+  --       settings_window = {
+  --         border = {
+  --           style = "rounded",
+  --           text = {
+  --             top = " Settings ",
+  --           },
+  --         },
+  --       },
+  --       chat_window = {
+  --         filetype = "chatgpt",
+  --         border = {
+  --           highlight = "FloatBorder",
+  --           style = "rounded",
+  --           text = {
+  --             top = " ChatGPT ",
+  --           },
+  --         },
+  --       },
+  --       chat_input = {
+  --         prompt = "  ",
+  --         border = {
+  --           highlight = "FloatBorder",
+  --           style = "rounded",
+  --           text = {
+  --             top_align = "center",
+  --             top = " Prompt ",
+  --           },
+  --         },
+  --       },
+  --       openai_params = {
+  --         model = "text-davinci-003",
+  --         frequency_penalty = 0,
+  --         presence_penalty = 0,
+  --         max_tokens = 300,
+  --         temperature = 0,
+  --         top_p = 1,
+  --         n = 1,
+  --       },
+  --       openai_edit_params = {
+  --         model = "code-davinci-edit-001",
+  --         temperature = 0,
+  --         top_p = 1,
+  --         n = 1,
+  --       },
+  --       keymaps = {
+  --         close = { "<C-c>", "<Esc>" },
+  --         yank_last = "<C-y>",
+  --         scroll_up = "<C-u>",
+  --         scroll_down = "<C-d>",
+  --         toggle_settings = "<C-o>",
+  --         new_session = "<C-n>",
+  --         cycle_windows = "<Tab>",
+  --       },
+
+  --     })
+  --   end,
+  --   requires = {
+  --     "MunifTanjim/nui.nvim",
+  --     "nvim-lua/plenary.nvim",
+  --     "nvim-telescope/telescope.nvim"
+  --   }
+  -- })
 end);
 
 vim.cmd([[
@@ -741,58 +820,42 @@ endfunction
 command! W call s:WriteCreatingDirs()
 
 
-" ----------------------------------------------------------------------------
-"  - Use K to show documentation in preview window
-" ----------------------------------------------------------------------------
-" nnoremap <silent> K :call <SID>show_documentation()<CR>
-" 
-" function! s:show_documentation()
-"     if (index(['vim','help'], &filetype) >= 0)
-"         execute 'h '.expand('<cword>')
-"     else
-"         call CocActionAsync('doHover')
-"     endif
-" endfunction
-
-
-
-
-" Explorer
-
-"nmap <leader>e :CocCommand explorer<CR>
-"nmap <leader>0 :CocCommand explorer --preset floating<CR>
-"autocmd BufEnter * if (winnr("$") == 1 && &filetype == 'coc-explorer') | q | endif
-
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General settings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" Better chars for splits
-" set fillchars=stl\:─,vert\:\█   
+]])
 
-" ...?
-set nohidden
+-- Better vertical split fill character
+vim.opt.fillchars = "vert:█"
 
-" Default encoding
-set encoding=utf-8
+-- ...?
+vim.opt.hidden = false
 
-" Use Unix as the standard file type
-set ffs=unix,dos,mac
+-- Default encoding
+vim.opt.encoding = "utf-8"
+
+-- Be smart when using tabs ;)
+vim.opt.smarttab = true
+
+-- Use spaces for tab key
+vim.opt.expandtab = true
+
+-- set autoindent
+vim.opt.smartindent = true
+vim.opt.wrap = true
+
+-- Use Unix as the standard file type
+vim.opt.ffs = "unix,dos,mac"
+
+-- Share clipboard with OS
+vim.opt.clipboard = "unnamedplus"
+
+vim.cmd([[
 
 " Linebreak on 500 characters
 set linebreak
 set tw=500
-
-"set autoindent
-set smartindent
-set wrap
-
-" Be smart when using tabs ;)
-set smarttab
-
-" Use spaces for tab key
-set expandtab
 
 " Default shell
 set shell=/bin/sh
@@ -813,8 +876,6 @@ set history=1000
 " How often the UI updates
 set updatetime=300
 
-" Share clipboard
-set clipboard+=unnamedplus
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -882,7 +943,13 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 function! Indent()
     if (&ft=='typescript' || &ft=='typescriptreact' || &ft=='javascript' || &ft=='javascriptreact')
       :EslintFixAll
+    elseif (&ft=='sh')
+      call Preserve("normal gg=G")
     elseif (&ft=='vim')
+      " do nothing
+    elseif (&ft=='vimwiki')
+      " do nothing
+    elseif (&ft=='markdown')
       " do nothing
     else
       :lua vim.lsp.buf.format()
@@ -974,73 +1041,43 @@ set tabstop=2
 set shiftwidth=2
 set softtabstop=0
 
-" Auto format files on
-" command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
-
-
 " ============================================================================
 " => Plugin configuration
 " ============================================================================
 
-" ----------------------------------------------------------------------------
-"  - Tmux / Vim
-" ----------------------------------------------------------------------------
+]])
 
-let g:tmux_navigator_no_mappings = 1
 
-" Disable tmux navigator when zooming the Vim pane
-let g:tmux_navigator_disable_when_zoomed = 1
+-- TMUX / VIM integration
 
-nnoremap <silent> <A-h> :TmuxNavigateLeft<cr>
-nnoremap <silent> <A-j> :TmuxNavigateDown<cr>
-nnoremap <silent> <A-k> :TmuxNavigateUp<cr>
-nnoremap <silent> <A-l> :TmuxNavigateRight<cr>
+local wk = require("which-key")
 
-let g:tmux_resizer_no_mappings = 1
-let g:tmux_resizer_resize_count = 5
-let g:tmux_resizer_vertical_resize_count = 10
+wk.register({
+  ["<A-h>"] = { '<cmd>TmuxNavigateLeft<cr>', "Navigate left" },
+  ["<A-j>"] = { '<cmd>TmuxNavigateDown<cr>', "Navigate down" },
+  ["<A-k>"] = { '<cmd>TmuxNavigateUp<cr>', "Navigate up" },
+  ["<A-l>"] = { '<cmd>TmuxNavigateRight<cr>', "Navigate right" },
+  ["<A-S-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
+  ["<A-S-C-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
+  ["<A-S-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
+  ["<A-S-C-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
+  ["<A-S-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
+  ["<A-S-C-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
+  ["<A-S-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
+  ["<A-S-C-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
+}, { noremap = true })
 
-function! ResizeLeft()
-    "if exists('#goyo')
-        "call feedkeys("5\<C-w>\<")
-    "else
-        TmuxResizeLeft
-    "endif
-endfunction
+vim.g.tmux_navigator_no_mappings = 1
+-- Disable tmux navigator when zooming the Vim pane
+vim.g.tmux_navigator_disable_when_zoomed = 1
+vim.g.tmux_resizer_no_mappings = 1
+vim.g.tmux_resizer_resize_count = 5
+vim.g.tmux_resizer_vertical_resize_count = 10
 
-function! ResizeDown()
-    "if exists('#goyo')
-    "    call feedkeys("5\<C-w>\-")
-    "else
-        TmuxResizeDown
-    "endif
-endfunction
 
-function! ResizeUp()
-   " if exists('#goyo')
-   "     call feedkeys("5\<C-w>\+")
-   " else
-        TmuxResizeUp
-   " endif
-endfunction
 
-function! ResizeRight()
-   " if exists('#goyo')
-  "      call feedkeys("5\<C-w>\>")
-   " else
-        TmuxResizeRight
-  "  endif
-endfunction
 
-nnoremap <silent> <A-S-Left>  :call ResizeLeft()<CR>
-nnoremap <silent> <A-S-Down>  :call ResizeDown()<CR>
-nnoremap <silent> <A-S-Up>    :call ResizeUp()<CR>
-nnoremap <silent> <A-S-Right> :call ResizeRight()<CR>
-
-nnoremap <silent> <A-S-C-Left>  :call ResizeLeft()<CR>
-nnoremap <silent> <A-S-C-Down>  :call ResizeDown()<CR>
-nnoremap <silent> <A-S-C-Up>    :call ResizeUp()<CR>
-nnoremap <silent> <A-S-C-Right> :call ResizeRight()<CR>
+vim.cmd([[
 
 " ----------------------------------------------------------------------------
 "  - Zettelkasten
@@ -1064,53 +1101,26 @@ let g:maplocalleader = ','
 "  - Project navigation
 " ============================================================================
 
-" Finding Files
-nnoremap <silent> <F6>      :<C-u>call LazyGitPopup()<CR>
-nnoremap <silent> <F8>      <cmd>lua require('telescope.builtin').buffers()<cr>
-nnoremap <silent> <F10>     :<C-u>Telescope oldfiles<CR>
-
-" Finding code
-nnoremap <silent> <F1>      :<C-u>SearchSession<CR>
-nnoremap <silent> <F2>      :<C-u>Telescope live_grep<CR>
-nnoremap          <F3>      :<C-u>TodoTelescope<CR>
-nnoremap          <F4>      :<C-u>Telescope keymaps<CR>
+]])
 
 
+wk.register({
+  -- Finding code
+  ["<F1>"] = { '<cmd>Spectre<cr>', "Find and Replace (Global)" },
+  ["<F2>"] = { '<cmd>Telescope live_grep<cr>', "Grep Project" },
+  ["<F3>"] = { '<cmd>TodoTelescope<cr>', "Project Todos" },
+  ["<F4>"] = { '<cmd>Telescope keymaps<cr>', "Telescope keymaps" },
+  -- Finding Files
+  ["<F6>"] = { '<cmd>call LazyGitPopup()<cr>', "Open Lazygit" },
+  ['<F8>'] = { "<cmd>lua require('telescope.builtin').buffers()<cr>", "Show open buffers" },
+  ['<F10>'] = { "<cmd>Telescope oldfiles<CR><cr>", "Show recent files" },
+}, { noremap = true, silent = true })
+
+
+vim.cmd([[
 " ============================================================================
 "  - Motions
 " ============================================================================
-
-"nmap <silent> <Right> <Plug>(coc-range-select)
-" xmap <silent> <Right> <Plug>(coc-range-select)
-
-" Fix error under cursor
-" nmap <silent> qf <Plug>(coc-fix-current)
-
-" Show code actions
-" nmap <silent> <leader>qf :<C-u>Telescope coc code_actions<CR> 
-
-" nmap <silent> <Up> <Plug>(coc-diagnostic-prev)
-" nmap <silent> <Down> <Plug>(coc-diagnostic-next)
-" nmap <silent> <Down> :<C-u>call HandleDownKey()<CR>
-
-" Goto definition of the symbol under the cursor
-" nmap <silent> gd :<C-u>call CocActionAsync('jumpDefinition')<CR>
-
-" Goto references of the symbol under the cursor
-" nmap <silent> gr :<C-u>Telescope coc references<CR> 
-
-" Goto references of the symbol under the cursor
-" nmap <silent> gt :<C-u>Telescope coc type_definitions<CR> 
-
-" around function
-" xmap af <Plug>(coc-funcobj-a)
-" omap af <Plug>(coc-funcobj-a)
-
-" Bspwm
-" noremap <silent> <A-h> :BspwmNavigateWest<cr>
-" noremap <silent> <A-j> :BspwmNavigateSouth<cr>
-" noremap <silent> <A-k> :BspwmNavigateNorth<cr>
-" noremap <silent> <A-l> :BspwmNavigateEast<cr>
 
 " Switch CWD to the directory of the open buffer
 map <leader>cd :cd %:p:h<cr>:pwd<cr>  
@@ -1118,21 +1128,6 @@ map <leader>cd :cd %:p:h<cr>:pwd<cr>
 " When text is wrapped, move by terminal rows, not lines, unless a count is provided
 noremap <silent> <expr> j (v:count == 0 ? 'gj' : 'j')
 noremap <silent> <expr> k (v:count == 0 ? 'gk' : 'k')
-
-" " Move a line of text using Ctrl-[jk]
-" nnoremap <silent> <C-j> :move+<cr>
-" " nnoremap <silent> <C-k> :move-2<cr>
-" " xnoremap <silent> <C-k> :move-2<cr>gv
-" xnoremap <silent> <C-j> :move'>+<cr>gv
-" 
-" " Git
-" nnoremap <silent> <Leader>gla <cmd>lua require('telescope-config').my_git_commits()<CR>
-" nnoremap <silent> <Leader>gs <cmd>lua require('telescope-config').my_git_status()<CR>
-" 
-
-" TODO: Make this JS only
-" Open up a point free function
-" nmap gO [(ysa({$i<CR>return <ESC>O
 
 
 " copy current file name (relative/absolute) to system clipboard
@@ -1165,10 +1160,6 @@ if has("gui_gtk") || has("gui_gtk2") || has("gui_gnome") || has("unix")
     nnoremap <leader>ch :let @+=expand("%:p:h")<CR>
 endif
 
-" Popup menu
-" inoremap <silent><expr> <C-Space> coc#refresh()
-
-
 " ============================================================================
 "  => Colors and Fonts
 " ============================================================================
@@ -1197,12 +1188,7 @@ set t_Co=256
 " Enable syntax highlighting
 syntax enable
 
-" Scheme
-if filereadable(expand("~/.local/share/nvim/colorscheme.vim"))
-  source ${HOME}/.local/share/nvim/colorscheme.vim
-else
-  colorscheme dracula
-endif
+colorscheme dracula
 
 hi! Pmenu ctermbg=None ctermfg=None guibg=#111111 guifg=None
 hi! SignColumn ctermfg=None ctermbg=None guibg=None
@@ -1255,26 +1241,6 @@ augroup END
 
 
 
-nnoremap ,dd <Plug>VimspectorContinue
-nnoremap ,db <Plug>VimspectorAddFunctionBreakpoint
-nnoremap ,dh <Plug>VimspectorRunToCursor
-
-function! HandleDownKey()
-    " if !empty(g:vimspector_session_windows.watches)
-    " :call vimspector#StepInto()
-    " else
-    " :execute "normal \<Plug>(coc-diagnostic-next)"
-    " endif
-endfunction
-
-
-" let g:vimspector_enable_mappings = 'HUMAN'
-nmap <silent> <leader>t :TestNearest<CR>
-let g:ultest_use_pty = 1
-
-" xnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
-" nnoremap <leader>a :<C-u>Telescope coc line_code_actions<CR> 
-
 " Reselect visual selection after indenting
 vnoremap < <gv
 vnoremap > >gv
@@ -1293,65 +1259,11 @@ nmap <leader>x :!xdg-open %<cr><cr>
 
 " Common configs
 nmap <leader>vv :edit ~/.config/nvim/init.vim<cr>
-" nmap <leader>vc :edit ~/.config/nvim/coc-settings.json<cr>
 
 " Allow gf to open non-existent files
 map gf :edit <cfile><cr>
 
 
-" function! GoGoyo()
-"     if !empty(g:vimspector_session_windows.watches)
-"         :call vimspector#StepInto()
-"     else
-"         :execute "normal \<Plug>(coc-diagnostic-next)"
-"     endif
-" endfunction
-
-
-"let g:goyo_width = 90
-"let g:goyo_height = '100%'
-
-" function! s:goyo_enter()
-"     let b:quitting = 0
-"     let b:quitting_bang = 0
-"     autocmd QuitPre <buffer> let b:quitting = 1
-"     cabbrev <buffer> q! let b:quitting_bang = 1 <bar> q!
-"     if executable('tmux') && strlen($TMUX) && &filetype !=# 'man' && &filetype !=# 'help'
-"         silent !tmux set status off
-"         silent !tmux list-panes -F '\#F' | grep -q Z || tmux resize-pane -Z
-"     endif
-"     " :Limelight
-" endfunction
-
-" function! s:goyo_leave()
-"     " :Limelight!
-"     if executable('tmux') && strlen($TMUX)
-"         silent !tmux set status on
-"         silent !tmux list-panes -F '\#F' | grep -q Z && tmux resize-pane -Z
-"     endif
-"     " Quit Vim if this is the only remaining buffer
-"     if b:quitting && len(filter(range(1, bufnr('$')), 'buflisted(v:val)')) == 1
-"         if b:quitting_bang
-"             qa!
-"         else
-"             qa
-"         endif
-"     endif
-" 
-"     " HACK: Sourcing the VIMRC to ensure colors dont get borked after exiting Goyo.
-"     " This is slow and will not work with changing color schemes.
-"     source $MYVIMRC
-"     redraw
-" endfunction
-
-" augroup Goyo
-"     autocmd!
-"     autocmd! User GoyoEnter call <SID>goyo_enter()
-"     autocmd! User GoyoLeave call <SID>goyo_leave()
-" augroup END
-
-" nmap <A-m> :Goyo<CR>
-" nmap <A-m> <Plug>(zoom-toggle)
 
 highlight StatusLine   guifg=#2C323D guibg=#2C323D
 highlight StatusLineNC guifg=#2C323D guibg=#2C323D
@@ -1362,24 +1274,6 @@ nnoremap <A-Down> :tabnext<CR>
 nnoremap <A-Up> :tabprevious<CR>
 
 map <A-x> :confirm q<CR>
-
-" Add spaces after comment delimiters by default
-let g:NERDSpaceDelims = 1
-
-" Use compact syntax for prettified multi-line comments
-let g:NERDCompactSexyComs = 1
-
-" Align line-wise comment delimiters flush left instead of following code indenta  tion
-let g:NERDDefaultAlign = 'left'
-
-" Allow commenting and inverting empty lines (useful when commenting a region)
-let g:NERDCommentEmptyLines = 1
-
-" Enable trimming of trailing whitespace when uncommenting
-let g:NERDTrimTrailingWhitespace = 1
-
-" Enable NERDCommenterToggle to check all selected lines is commented or not
-let g:NERDToggleCheckAllLines = 1
 
 " Start interactive EasyAlign in visual mode (e.g. vipga)
 xmap ga <Plug>(EasyAlign)
@@ -1425,3 +1319,8 @@ function map(mode, lhs, rhs, opts)
 
   vim.api.nvim_set_keymap(mode, lhs, rhs, options)
 end
+
+vim.defer_fn(function()
+  vim.cmd [[highlight! NormalFloat guibg=#282a36]]
+  vim.cmd [[highlight! FloatBorder guifg=#6272a4 guibg=#282a36]]
+end, 1000)

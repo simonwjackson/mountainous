@@ -100,7 +100,7 @@ vim.keymap.set({ 'n', 'x' }, '<ScrollWheelDown>', "<Cmd>lua Scroll('<ScrollWheel
 -- LSP_KEYMAPS:
 
 -- LSP go-to-definition:
-vim.keymap.set('n', 'gd', "<Cmd>lua Scroll('definition')<CR>")
+-- vim.keymap.set('n', 'gd', "<Cmd>lua Scroll('definition')<CR>")
 
 -- LSP go-to-declaration:
-vim.keymap.set('n', 'gD', "<Cmd>lua Scroll('declaration')<CR>")
+-- vim.keymap.set('n', 'gD', "<Cmd>lua Scroll('declaration')<CR>")

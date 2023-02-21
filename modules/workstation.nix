@@ -53,7 +53,6 @@
   environment.systemPackages = with pkgs; [
     neovim
     wget
-    firefox
     bluez
     bluez-tools
     xsettingsd
@@ -62,11 +61,10 @@
     kitty
 
     # make the tailscale command usable to users
-    pkgs.tailscale
-
-    # enable the tailscale service
+    tailscale
   ];
 
+  # enable the tailscale service
   services.tailscale.enable = true;
 
   systemd.services.tailscale-autoconnect = {
@@ -92,8 +90,7 @@
       fi
 
       # otherwise authenticate with tailscale
-      ${tailscale}/bin/tailscale up -authkey tskey-auth-kSLeVZ6CNTRL-t1VPgppAXmSrPxUBHicSuSPXuqZmC2on
-    '';
+      ${tailscale}/bin/tailscale up -authkey '' + builtins.getEnv "TAILSCALE_AUTHKEY";
   };
-
 }
+
