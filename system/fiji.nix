@@ -12,7 +12,7 @@ in
     ../modules/hidpi.nix
     ../modules/laptop.nix
     ../modules/workstation.nix
-    ../modules/wireguard-client.nix
+    # ../modules/wireguard-client.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -38,6 +38,7 @@ in
   services.nfs.server.enable = true;
 
   #boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_2;
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
@@ -110,7 +111,6 @@ in
 
   networking.interfaces.wifi.useDHCP = lib.mkDefault true;
 
-  #powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
   # Sleep
@@ -142,6 +142,7 @@ in
 
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
+
     KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
   '';
 
@@ -161,12 +162,12 @@ in
     allowedTCPPorts = [ 24800 ];
   };
 
-  networking.wireguard.interfaces = {
-    mtn = {
-      ips = [ "192.18.2.10/32" ];
-      privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
-    };
-  };
+  # networking.wireguard.interfaces = {
+  #   mtn = {
+  #     ips = [ "192.18.2.10/32" ];
+  #     privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
+  #   };
+  # };
 
   services.autofs.enable = true;
   services.autofs.autoMaster = ''
@@ -177,7 +178,7 @@ in
     overrideDevices = true;
     overrideFolders = true;
     devices = {
-      kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
+      kuro.id = "4YUE3JH-CUR4TTS-RVTNUHZ-2HDENB3-FH3VWIJ-TMCW3X5-JSPKLXB-H2QUEAP";
       ushiro.id = builtins.getEnv "SYNCTHING_USHIRO_ID";
       pixel.id = "3JIMY3T-PU4S3LS-UOIFSEY-2XJ52XF-J6HPOIW-TZTSDBB-AA3K2KB-ULNE3AZ";
       ultra.id = "DWTWS42-OIDSJUJ-UGSE6BV-Q2Z3YWB-IKB3SHE-DKRFXC7-XLMR2Z5-MD27BAJ";
