@@ -57,12 +57,12 @@ super + x
 
 # Toggle fullscreen mode
 super + m
-  wm monocle
+  wm monocle awesome
 
 
 # Resize the window {,(slowly)} to the {west,south,north,east}
 super + shift + {Left,Down,Up,Right}
-  wm {grow,grow,shrink,shrink}
+  wm {grow,grow,shrink,shrink} awesome
   
 # super + shift {_,+ ctrl} + {Left,Down,Up,Right}
 # STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
@@ -127,12 +127,12 @@ super + comma
 
 # onePassword
 super + v
-  op item list --vault Private | rofi -dmenu
+  op item list --vault Private | rofi -dmenu -i
 
 
 # List: All apps
 super + space
-  rofi -show drun -p Apps
+  ~/code/simonwjackson/nix-config/main/rofi-my-apps.sh
 
 
 # Sxhkdrc Cheat Sheet
@@ -163,7 +163,7 @@ XF86AudioMute
 
 # {Raise,Lower} volume
 XF86Audio{Raise,Lower}Volume
-  pulseaudio-ctl {up,down} 2
+  pamixer --{increase,decrease} 5
 
 
 
@@ -232,7 +232,7 @@ super + {_, ctrl +, alt +} Return
 
 
 # start firefox
-super + b; {_, super +}b
+super + b
   firefox
 
 
@@ -292,7 +292,7 @@ super + r; b
 
 # Activate blutooth device
 super + t
-  bt list | rofi -dmenu | awk '{print $1}' | xargs bt activate
+  cmd_p.sh
 
 
 
