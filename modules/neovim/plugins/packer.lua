@@ -27,7 +27,7 @@ function! Preserve(command)
 
     " Restore the previous window position.
     call setpos('.', window_position)
-    normal! zt                  
+    normal! zt
 
     " Restore the previous cursor position.
     call setpos('.', cursor_position)
@@ -171,7 +171,8 @@ require('packer').startup(function(use)
     config = function()
       require("scrollbar.handlers.search").setup({
         -- If you want to leave only search marks and disable virtual text:
-        override_lens = function() end,
+        override_lens = function()
+        end,
       })
     end,
   }
@@ -244,7 +245,7 @@ require('packer').startup(function(use)
     config = function()
       vim.g.asterisk_no_default_mappings = 1
       vim.cmd([[
-        let g:asterisk#keeppos = 1 
+        let g:asterisk#keeppos = 1
 
         " Show more like under cursor
         map *   <Plug>(asterisk-*)
@@ -252,7 +253,7 @@ require('packer').startup(function(use)
         map g*  <Plug>(asterisk-g*)
         map g#  <Plug>(asterisk-g#)
         map z*  <Plug>(asterisk-z*)
-        map gz* <Plug>(asterisk-gz*)    
+        map gz* <Plug>(asterisk-gz*)
         map z#  <Plug>(asterisk-z#)
         map gz# <Plug>(asterisk-gz#)
       ]])
@@ -323,25 +324,25 @@ require('packer').startup(function(use)
         let g:windowswap_map_keys = 0 "prevent default bindings
 
         function! DoSwapLeft()
-            call WindowSwap#MarkWindowSwap() 
-            wincmd h 
+            call WindowSwap#MarkWindowSwap()
+            wincmd h
             call WindowSwap#DoWindowSwap()
         endfunction
 
         function! DoSwapDown()
-            call WindowSwap#MarkWindowSwap() 
+            call WindowSwap#MarkWindowSwap()
             wincmd j
             call WindowSwap#DoWindowSwap()
         endfunction
 
         function! DoSwapUp()
-            call WindowSwap#MarkWindowSwap() 
+            call WindowSwap#MarkWindowSwap()
             wincmd k
             call WindowSwap#DoWindowSwap()
         endfunction
 
         function! DoSwapRight()
-            call WindowSwap#MarkWindowSwap() 
+            call WindowSwap#MarkWindowSwap()
             wincmd l
             call WindowSwap#DoWindowSwap()
         endfunction
@@ -365,12 +366,28 @@ require('packer').startup(function(use)
     }
   }
 
+  -- use {
+  --   "zbirenbaum/copilot.lua",
+  --   config = function()
+  --     vim.defer_fn(function()
+  --     end, 100)
+  --   end
+  -- }
+
   use {
     "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "InsertEnter",
     config = function()
-      vim.defer_fn(function()
-        require("plugins/copilot")
-      end, 100)
+      require("plugins/copilot")
+    end,
+  }
+
+  use {
+    "zbirenbaum/copilot-cmp",
+    after = { "copilot.lua" },
+    config = function()
+      require("copilot_cmp").setup({})
     end
   }
 
@@ -500,9 +517,10 @@ require('packer').startup(function(use)
     "luukvbaal/stabilize.nvim",
     config = function()
       require("stabilize").setup({
-        force = true, -- stabilize window even when current cursor position will be hidden behind new window
+        force = true,    -- stabilize window even when current cursor position will be hidden behind new window
         forcemark = nil, -- set context mark to register on force event which can be jumped to with '<forcemark>
-        ignore = { -- do not manage windows matching these file/buftypes
+        ignore = {
+          -- do not manage windows matching these file/buftypes
           filetype = { "help", "list", "Trouble" },
           buftype = { "terminal", "quickfix", "loclist" }
         },
@@ -537,7 +555,6 @@ require('packer').startup(function(use)
       require 'regexplainer'.setup({
         mode = 'narrative',
         auto = true,
-
         -- filetypes (i.e. extensions) in which to run the autocommand
         filetypes = {
           'html',
@@ -550,13 +567,10 @@ require('packer').startup(function(use)
           'cjsx',
           'mjsx',
         },
-
         -- Whether to log debug messages
         debug = false,
-
         -- 'split', 'popup'
         display = 'popup',
-
         mappings = {
           toggle = 'gR',
           -- examples, not defaults:
@@ -565,7 +579,6 @@ require('packer').startup(function(use)
           -- show_split = 'gP',
           -- show_popup = 'gU',
         },
-
         narrative = {
           separator = '\n',
         },
@@ -595,7 +608,7 @@ require('packer').startup(function(use)
           ';',
           ':',
           's', -- Space
-          't' -- Tab
+          't'  -- Tab
         }
       })
     end
@@ -640,8 +653,8 @@ require('packer').startup(function(use)
         min_jump         = 30,
         popup            = {
           delay_ms = 0, -- delay before popup displays
-          inc_ms = 10, -- time increments used for fade/resize effects
-          blend = 10, -- starting blend, between 0-100 (fully transparent), see :h winblend
+          inc_ms = 10,  -- time increments used for fade/resize effects
+          blend = 10,   -- starting blend, between 0-100 (fully transparent), see :h winblend
           width = 10,
           winhl = "PMenu",
           fader = require('specs').linear_fader,
@@ -790,7 +803,7 @@ require('packer').startup(function(use)
 end);
 
 vim.cmd([[
-  highlight FloatBorder guifg=#000000 guibg=none 
+  highlight FloatBorder guifg=#000000 guibg=none
   " set completeopt=menu,menuone,noselect
 ]])
 
@@ -883,7 +896,7 @@ set updatetime=300
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Use RipGrep for grepping
-set grepprg=rg\ --vimgrep 
+set grepprg=rg\ --vimgrep
 
 " Ignore case when searching
 set ignorecase
@@ -892,7 +905,7 @@ set ignorecase
 set smartcase
 
 " Makes search act like search in modern browsers
-set incsearch 
+set incsearch
 
 " For regular expressions turn magic on
 set magic
@@ -902,16 +915,16 @@ set magic
 " => Undo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-set undolevels=1000                     
-set undoreload=10000                    
+set undolevels=1000
+set undoreload=10000
 
-" Persistent undo                       
-if has("persistent_undo")               
-    set undofile            
+" Persistent undo
+if has("persistent_undo")
+    set undofile
     set undodir=~/.local/share/nvim/undo
     set backupdir=~/.local/share/nvim/backup
     set directory=~/.local/share/nvim/backup
-endif 
+endif
 
 " ============================================================================
 "  => Spell checking
@@ -921,7 +934,7 @@ endif
 nnoremap <leader>ss :setlocal spell!<cr>
 
 " Show a list of spelling suggestions
-nnoremap <leader>sc :<C-u>Telescope spell_suggest <CR> 
+nnoremap <leader>sc :<C-u>Telescope spell_suggest <CR>
 
 " Automatically fix the last misspelled word and jump back to where you were.
 nnoremap <leader>sp :normal! mz[s1z=`z<CR>
@@ -972,7 +985,7 @@ endif
 
 " ============================================================================
 "  => VIM user interface
-" ============================================================================ 
+" ============================================================================
 
 " Update term title but restore old title after leaving Vim
 set title
@@ -990,10 +1003,10 @@ set titleold=
 set splitbelow
 
 " split right, not left
-set splitright            
+set splitright
 
 " Show substitutions live
-set inccommand=split      
+set inccommand=split
 
 " Keep lines above/below cursor
 set scrolloff=5
@@ -1053,18 +1066,18 @@ set softtabstop=0
 local wk = require("which-key")
 
 wk.register({
-  ["<A-h>"] = { '<cmd>TmuxNavigateLeft<cr>', "Navigate left" },
-  ["<A-j>"] = { '<cmd>TmuxNavigateDown<cr>', "Navigate down" },
-  ["<A-k>"] = { '<cmd>TmuxNavigateUp<cr>', "Navigate up" },
-  ["<A-l>"] = { '<cmd>TmuxNavigateRight<cr>', "Navigate right" },
-  ["<A-S-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
-  ["<A-S-C-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
-  ["<A-S-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
-  ["<A-S-C-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
-  ["<A-S-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
-  ["<A-S-C-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
-  ["<A-S-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
-  ["<A-S-C-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
+      ["<A-h>"] = { '<cmd>TmuxNavigateLeft<cr>', "Navigate left" },
+      ["<A-j>"] = { '<cmd>TmuxNavigateDown<cr>', "Navigate down" },
+      ["<A-k>"] = { '<cmd>TmuxNavigateUp<cr>', "Navigate up" },
+      ["<A-l>"] = { '<cmd>TmuxNavigateRight<cr>', "Navigate right" },
+      ["<A-S-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
+      ["<A-S-C-Left>"] = { '<cmd>TmuxResizeLeft<cr>', "Resize left" },
+      ["<A-S-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
+      ["<A-S-C-Down>"] = { '<cmd>TmuxResizeDown<cr>', "Resize down" },
+      ["<A-S-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
+      ["<A-S-C-Up>"] = { '<cmd>TmuxResizeUp<cr>', "Resize up" },
+      ["<A-S-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
+      ["<A-S-C-Right>"] = { '<cmd>TmuxResizeRight<cr>', "Resize right" },
 }, { noremap = true })
 
 vim.g.tmux_navigator_no_mappings = 1
@@ -1106,14 +1119,14 @@ let g:maplocalleader = ','
 
 wk.register({
   -- Finding code
-  ["<F1>"] = { '<cmd>Spectre<cr>', "Find and Replace (Global)" },
-  ["<F2>"] = { '<cmd>Telescope live_grep<cr>', "Grep Project" },
-  ["<F3>"] = { '<cmd>TodoTelescope<cr>', "Project Todos" },
-  ["<F4>"] = { '<cmd>Telescope keymaps<cr>', "Telescope keymaps" },
+      ["<F1>"] = { '<cmd>Spectre<cr>', "Find and Replace (Global)" },
+      ["<F2>"] = { '<cmd>Telescope live_grep<cr>', "Grep Project" },
+      ["<F3>"] = { '<cmd>TodoTelescope<cr>', "Project Todos" },
+      ["<F4>"] = { '<cmd>Telescope keymaps<cr>', "Telescope keymaps" },
   -- Finding Files
-  ["<F6>"] = { '<cmd>call LazyGitPopup()<cr>', "Open Lazygit" },
-  ['<F8>'] = { "<cmd>lua require('telescope.builtin').buffers()<cr>", "Show open buffers" },
-  ['<F10>'] = { "<cmd>Telescope oldfiles<CR><cr>", "Show recent files" },
+      ["<F6>"] = { '<cmd>call LazyGitPopup()<cr>', "Open Lazygit" },
+      ['<F8>'] = { "<cmd>lua require('telescope.builtin').buffers()<cr>", "Show open buffers" },
+      ['<F10>'] = { "<cmd>Telescope oldfiles<CR><cr>", "Show recent files" },
 }, { noremap = true, silent = true })
 
 
@@ -1123,7 +1136,7 @@ vim.cmd([[
 " ============================================================================
 
 " Switch CWD to the directory of the open buffer
-map <leader>cd :cd %:p:h<cr>:pwd<cr>  
+map <leader>cd :cd %:p:h<cr>:pwd<cr>
 
 " When text is wrapped, move by terminal rows, not lines, unless a count is provided
 noremap <silent> <expr> j (v:count == 0 ? 'gj' : 'j')
@@ -1199,7 +1212,7 @@ hi CursorColumn         guibg=None guifg=None
 hi SpellBad cterm=underline
 hi SpellLocal cterm=underline
 hi SpellRare cterm=underline
-hi SpellCap cterm=underline 
+hi SpellCap cterm=underline
 
 hi HighlightedYankRegion guifg=none guibg=#413C55 ctermbg=235 ctermfg=170
 
@@ -1232,11 +1245,11 @@ augroup CursorLineOnlyInActiveWindow
     autocmd!
     autocmd VimEnter,WinEnter,BufWinEnter * setlocal cursorline
     autocmd WinLeave * setlocal nocursorline
-augroup END  
+augroup END
 
 augroup TodayFile
     autocmd FileReadPre,BufWritePost ${HOME}/Documents/notes/Today.md execute "silent !gawk -i inplace 'BEGIN {p=1} /Agenda/ {print;system(\"echo; khal list; echo\");p=0} /^-+$/ {p=1} p' %" | edit
-augroup END  
+augroup END
 
 
 

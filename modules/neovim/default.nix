@@ -76,6 +76,8 @@
 
     # https://github.com/ray-x/navigator.lua
 
+    # https://github.com/anuvyklack/hydra.nvim
+    # https://github.com/kiyoon/telescope-insert-path.nvim
 
     # TODO: Checkout these plugins
     # https://nvchad.com/quickstart/install

@@ -29,15 +29,17 @@ cmp.setup({
     end,
   },
   mapping = cmp.mapping.preset.insert({
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
-    ['<C-Space>'] = cmp.mapping(cmp.mapping.complete({
-      reason = cmp.ContextReason.Auto,
-    }), { 'i', 's', }),
-    ['<C-e>'] = cmp.mapping.abort(),
-    ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+        ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+        ['<C-f>'] = cmp.mapping.scroll_docs(4),
+        ['<C-Space>'] = cmp.mapping.complete(),
+    -- ['<C-Space>'] = cmp.mapping(cmp.mapping.complete({
+    --   reason = cmp.ContextReason.Auto,
+    -- }), { 'i', 's', }),
+        ['<C-e>'] = cmp.mapping.abort(),
+        ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
   }),
   sources = cmp.config.sources({
+    { name = "copilot", group_index = 9 },
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
     { name = 'nvim_lua' },
@@ -47,23 +49,18 @@ cmp.setup({
       option = {
         -- Source from all panes in session instead of adjacent panes
         all_panes = false,
-
         -- Completion popup label
         label = '[tmux]',
-
         -- Trigger character
         trigger_characters = { '.' },
-
         -- Specify trigger characters for filetype(s)
         -- { filetype = { '.' } }
         trigger_characters_ft = {},
-
         -- Keyword patch mattern
         keyword_pattern = [[\w\+]],
       }
     },
     { name = 'emoji' },
-    { name = "copilot", group_index = 2 },
     {
       name = 'spell',
       option = {
