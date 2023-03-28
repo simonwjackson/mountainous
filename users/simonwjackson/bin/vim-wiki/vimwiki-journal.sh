@@ -39,4 +39,4 @@ if [[ ! -f "${file}" ]] || [[ ! -s "${file}" ]]; then
   echo "${doc}" | tee "${file}"
 fi
 
-nvim  +'VimwikiIndex' +"VimwikiGoto ${wiki_path}" +'Goyo' -c 'nnoremap <M-x> :xa!<CR>'
+nvim +'VimwikiIndex' +"VimwikiGoto ${wiki_path}" -c 'nnoremap <M-x> :xa!<CR> | :Gitsigns detach | :setlocal nofoldenable | :ScrollbarHide' "${file}"
