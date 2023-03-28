@@ -21,12 +21,6 @@
   programs.lazygit = {
     enable = true;
 
-    settings = {
-      promptToReturnFromSubprocess = false;
-      git.paging = {
-        colorArg = "always";
-        pager = "delta --dark --paging=never";
-      };
-    };
+    settings = import ./lazygit.nix;
   };
 }
