@@ -3,6 +3,4 @@
 
 set -e
 
-if ! op account get; then
-  eval "$(op signin)"
-fi
+[[ $(op account get) ]] || eval "$(op signin)"

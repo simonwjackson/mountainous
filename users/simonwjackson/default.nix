@@ -1,7 +1,5 @@
 { config, pkgs, ... }:
-let
-  # sgv = pkgs.callPackage ./sgv.nix { inherit pkgs; };
-in
+
 {
   imports = [
     ./desktop
@@ -9,6 +7,7 @@ in
     ../../modules/neovim
 
     # Scripts
+    ./bin/rofi-tabs
     ./bin/wikis
     ./bin/scale-desktop
     ./bin/kill-or-close

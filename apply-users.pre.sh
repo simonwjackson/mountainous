@@ -40,11 +40,11 @@ lineinfile () {
   }
 
 # Rofi
-mkdir -p "${HOME}/.config/rofi"
-touch "${HOME}/.config/rofi/config.rasi"
-lineinfile '@import "config.base.rasi' '@import "config.base.rasi"' "${HOME}/.config/rofi/config.rasi"
-ifnotset   '^@theme\s*' '@theme "themes/dracula/config1.rasi"' "${HOME}/.config/rofi/config.rasi"
-lineinfile '@import "overrides.rasi' '@import "overrides.rasi"' "${HOME}/.config/rofi/config.rasi"
+# mkdir -p "${HOME}/.config/rofi"
+# touch "${HOME}/.config/rofi/config.rasi"
+# lineinfile '@import "config.base.rasi' '@import "config.base.rasi"' "${HOME}/.config/rofi/config.rasi"
+# ifnotset   '^@theme\s*' '@theme "themes/dracula/config1.rasi"' "${HOME}/.config/rofi/config.rasi"
+# lineinfile '@import "overrides.rasi' '@import "overrides.rasi"' "${HOME}/.config/rofi/config.rasi"
 
 # if file not exist, curl it into the file
 # Usage: curlifnotexist URL FILE

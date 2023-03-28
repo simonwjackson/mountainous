@@ -1,0 +1,8 @@
+#!/nix/store/wnrc4daqbd6v5ifqlxsj75ky8556zy0p-python3-3.9.12/bin/python3.9
+# -*- coding: utf-8 -*-
+import re
+import sys
+from termgraph.termgraph import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())

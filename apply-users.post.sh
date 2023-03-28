@@ -20,3 +20,5 @@ nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 
 npm install --global \
   @tailwindcss/language-server
+
+systemctl --user enable rofi-server.service
