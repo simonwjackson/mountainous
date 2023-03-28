@@ -122,12 +122,19 @@
       # Graph who and when.
       lw = "log --color --graph --pretty=format:'%C(214)%h%C(reset)%C(196)%d%C(reset) %s %C(35)(%cr)%C(27) <%an>%C(reset)'";
       # Escape < and > for github markdown, (useful for generating changelogs).
-      changelog = "! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit \"$@\" | perl -0 -p -e 's/(^|[^\\\\])([<>])/\\1\\\\\\2/g ; s/(\\s*\\n)+\\*/\\n\\n*/g' #";
+      changelog = "! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit \"$@\" | perl -0 -p -e 's/(^|[^\\\\])([<>])/\\1\\\\\\2/g ; s/(\\s*\\n)+\\*/\\n*/g' #";
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
       # Squash all unpushed commits with a new message
       squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
       s = "squash";
+
+      trunkit = "!f(){ git stash --include-untracked && git fetch --all && git pull && git stash pop && git add --all && git commit --message \"\${1}\" && git push ; };f";
+
+      # Worktree
+      wta = "!f(){ git worktree add --track -b \"\${1}\" \"\${1}\" \"\${2}\"; };f";
+      wtr = "!f(){ git worktree remove \"\${1}\" \"\${1}\"; };f";
+      wtc = "!f(){ mkdir $(basename \"\${1}\" .git); cd $(basename \"\${1}\" .git); git clone --bare \"\${1}\" .bare; echo 'gitdir: ./.bare' > .git; git worktree add main main; };f";
     };
 
     extraConfig = {
@@ -140,7 +147,7 @@
       };
 
       push = {
-        default = "simple";
+        default = "current";
       };
 
       pull = {
@@ -250,7 +257,7 @@
   };
 
   programs.direnv = {
-      enable = true;
-      nix-direnv.enable = true;
+    enable = true;
+    nix-direnv.enable = true;
   };
 }
