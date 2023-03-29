@@ -93,7 +93,7 @@
   home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
   services.picom = {
-    enable = true;
+    enable = false;
     extraArgs = [ "--experimental-backend" ];
     settings = import ./picom/picom.nix;
 

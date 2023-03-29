@@ -19,6 +19,7 @@
   ];
 
   # TODO: Find a way to enable this dynamicaly by system type
+
   xresources = {
     properties = {
       "Xcursor.size" = 46;
@@ -28,8 +29,8 @@
       "Xft.hinting" = 1;
       "Xft.antialias" = 1;
       "Xft.rgba" = "r=b";
-      "Xft.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "192" else "96";
-      "*.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "192" else "96";
+      "Xft.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
+      "*.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
     };
   };
 

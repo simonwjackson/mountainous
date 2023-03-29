@@ -10,8 +10,8 @@
 
   outputs = { home-manager, nixpkgs, nixos-hardware, ... }:
     let
-      system = "x86_64-linux";
-      # system = "aarch64-linux";
+      # system = "x86_64-linux";
+      system = "aarch64-linux";
 
       pkgs = import nixpkgs {
         inherit system;
@@ -42,20 +42,28 @@
       };
 
       nixosConfigurations = {
-        nixos = lib.nixosSystem {
+        # nixos = lib.nixosSystem {
+        #   inherit system;
+        #
+        #   modules = [
+        #     ./system/yari.nix
+        #   ];
+        # };
+        #
+        # fiji = lib.nixosSystem {
+        #   inherit system;
+        #
+        #   modules = [
+        #     ./system/fiji.nix
+        #     nixos-hardware.nixosModules.dell-xps-13-9310
+        #   ];
+        # };
+
+        ushiro = lib.nixosSystem {
           inherit system;
 
           modules = [
-            ./system/yari.nix
-          ];
-        };
-
-        fiji = lib.nixosSystem {
-          inherit system;
-
-          modules = [
-            ./system/fiji.nix
-            nixos-hardware.nixosModules.dell-xps-13-9310
+            /etc/nixos/configuration.nix
           ];
         };
       };
