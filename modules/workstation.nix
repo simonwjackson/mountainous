@@ -3,6 +3,7 @@
 {
   services.udev.packages = with pkgs; [ gnome.gnome-settings-daemon ];
   services.dbus.packages = [ pkgs.dconf ];
+
   # X11
   services.xserver = {
     enable = true;

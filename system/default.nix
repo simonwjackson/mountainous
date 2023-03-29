@@ -13,17 +13,10 @@
 
   imports = [
     ../packages/ex
-    ../packages/clockify-cli
+    # ../packages/clockify-cli
   ];
 
-  # Enable the X11 windowing system.
-  # Enable the GNOME Desktop Environment.
-  # services.xserver.desktopManager.gnome.enable = true;
-
   networking.networkmanager.enable = true;
-  # The global useDHCP flag is deprecated, therefore explicitly set to false here.
-  # Per-interface useDHCP will be mandatory in the future, so this generated config
-  # replicates the default behaviour.
   networking.useDHCP = lib.mkDefault false;
 
   # Select internationalisation properties.
@@ -46,9 +39,6 @@
   };
 
   # List packages installed in system profile. To search, run:
-  #environment.variables.EDITOR = "nvim";
-  #programs.neovim.enable = true;
-  #programs.neovim.viAlias = true;
   environment.systemPackages = with pkgs; [
     # Other
     wget
@@ -78,5 +68,5 @@
   # programs.ssh.hostKeyAlgorithms = [ "ssh-ed25519" "ssh-rsa" ];
   # programs.ssh.pubkeyAcceptedKeyTypes = [ "ssh-rsa" ];
 
-  system.stateVersion = "22.05";
+  system.stateVersion = "23.05";
 }

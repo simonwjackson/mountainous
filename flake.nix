@@ -42,28 +42,20 @@
       };
 
       nixosConfigurations = {
-        # nixos = lib.nixosSystem {
-        #   inherit system;
-        #
-        #   modules = [
-        #     ./system/yari.nix
-        #   ];
-        # };
-        #
-        # fiji = lib.nixosSystem {
-        #   inherit system;
-        #
-        #   modules = [
-        #     ./system/fiji.nix
-        #     nixos-hardware.nixosModules.dell-xps-13-9310
-        #   ];
-        # };
+        fiji = lib.nixosSystem {
+          inherit system;
+
+          modules = [
+            ./system/fiji.nix
+            nixos-hardware.nixosModules.dell-xps-13-9310
+          ];
+        };
 
         ushiro = lib.nixosSystem {
           inherit system;
 
           modules = [
-            /etc/nixos/configuration.nix
+            ./system/ushiro.nix
           ];
         };
       };
