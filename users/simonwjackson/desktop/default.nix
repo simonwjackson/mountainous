@@ -43,6 +43,8 @@
     enable = true;
   };
 
+  home.file.".config/awesome/rc.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/rc.lua;
+
   xsession = {
     enable = true;
     scriptPath = ".hm-xsession";
