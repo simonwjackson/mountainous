@@ -132,7 +132,7 @@
       trunkit = "!f(){ git stash --include-untracked && git fetch --all && git pull && git stash pop && git add --all && git commit --message \"\${1}\" && git push ; };f";
 
       # Worktree
-      wta = "!f(){ git worktree add --track -b \"\${1}\" \"\${1}\" \"\${2}\"; };f";
+      wta = "!f() { git show-ref --verify --quiet refs/heads/$1; local_branch_exists=$?; git ls-remote --exit-code --heads origin $1 > /dev/null 2>&1; remote_branch_exists=$?; if [ $local_branch_exists -eq 0 ]; then git worktree add $1 $1; elif [ $remote_branch_exists -eq 0 ]; then git worktree add -b $1 --track origin/$1 $1; else git worktree add -b $1 $1; fi }; f";
       wtr = "!f(){ git worktree remove \"\${1}\" \"\${1}\"; };f";
       wtc = "!f(){ mkdir $(basename \"\${1}\" .git); cd $(basename \"\${1}\" .git); git clone --bare \"\${1}\" .bare; echo 'gitdir: ./.bare' > .git; git worktree add main main; };f";
     };
