@@ -5,41 +5,18 @@
 # ██████╔╝███████╗███████║██║  ██╗   ██║   ╚██████╔╝██║     ███████║
 # ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝
 # ==================================================================
-                                                                                                    
+                                                                             
+# View tag only
+super + {4-6}
+  awesome-client "local s = require('awful').screen.focused(); local t = s.tags[{1-3}]; if t then t:view_only() end"
 
-# Cycle through desktops
-super + {Down,Up}
-  bspc desktop -f {prev,next}.local
-
-
-# (?) focus the next or previous desktop
-super + shift + {Down,Up}
-  bspc node -d next
-
-
-# move window to another desktop
-super + apostrophe
-  bspc node -m next --follow
-
-# Move desktop to another monitor 
-super + alt + apostrophe
-  desk=`bspc query -D -d focused`; bspc desktop -m {prev,next}; bspc desktop -f $desk
-
-
-
-
-# ███████╗ ██████╗██████╗ ███████╗███████╗███╗   ██╗███████╗
-# ██╔════╝██╔════╝██╔══██╗██╔════╝██╔════╝████╗  ██║██╔════╝
-# ███████╗██║     ██████╔╝█████╗  █████╗  ██╔██╗ ██║███████╗
-# ╚════██║██║     ██╔══██╗██╔══╝  ██╔══╝  ██║╚██╗██║╚════██║
-# ███████║╚██████╗██║  ██║███████╗███████╗██║ ╚████║███████║
-# ╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝
-# ==========================================================
-
-# Switch to the {Left,Right} Screen
-super + {Left,Right}
-  bspc monitor {west,east} --focus
-
+# Move client to tag
+super + shift + {4-6}
+  awesome-client "if client.focus then local t = client.focus.screen.tags[{1-3}]; if t then client.focus:move_to_tag(t) end end"
+      
+# go back
+super + Escape
+    awesome-client "require('awful').tag.history.restore()"                                                                       l
 
 
 
@@ -51,69 +28,55 @@ super + {Left,Right}
 #  ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝
 # ==========================================================
 
-# Kill Focused Window
-super + x
-  kill-or-close
-
-# Toggle fullscreen mode
-super + m
-  wm monocle awesome
-
-
-# Resize the window {,(slowly)} to the {west,south,north,east}
-super + shift + {Left,Down,Up,Right}
-  wm {grow,grow,shrink,shrink} awesome
-  
-# super + shift {_,+ ctrl} + {Left,Down,Up,Right}
-# STEP={100,20}; SELECTION={1,2,3,4}; bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
-
-
-# Switch to the {previous,next} window
-super + {i,o}
-  awesome-client 'require("awful").client.focus.history.previous()'
-  # bspc node -f {prev,next}.local
-
 # Switch to the {west,south,north,east} window
 super + {h,j,k,l}
   awesome-client 'require("awful").client.focus.bydirection("{left,down,up,right}")'
 
-# super + {h,j,k,l}
-  # [[ $(bspc query -T -d | jq -er '.layout == "tiled"') == "true" ]] && bspc node -f {west,south,north,east}.local || bspc node {prev.!hidden.window.local,next.!hidden.window.local,prev.!hidden.window.local,next.!hidden.window.local} --focus
+# close
+super + x
+  kill-or-close
 
+# select next
+# super + space
+#     awesome-client "require('awful').layout.inc(1)"
 
-# Nav: {Switch to,Send window} {,to} desktop {I,II,III,VII,VIII,IX}
-# super + {_,alt + }{1-3,7-9}
-#  bspc {desktop -f,node -d} {I,II,III,VII,VIII,IX}
+# toggle floating
+super + ctrl + space
+    awesome-client "require('awful').client.floating.toggle(client.focus)"
 
+# move to master
+super + ctrl + Return
+    awesome-client "client.focus:swap(require('awful').client.getmaster())"
+#
+ Toggle between awful.layout.suit.tile and awful.layout.suit.tile.left
+super + t
+    awesome-client "local awful = require('awful'); local cur_layout = awful.layout.getname(); if cur_layout == 'tile' then awful.layout.set(awful.layout.suit.tile.left); else awful.layout.set(awful.layout.suit.tile); end"
 
-# Move window to the {Left,Right} monitor
-super + alt + ctrl + {h,l} 
-  bspc node --to-monitor {west,east} --follow
+# toggle keep on top
+# super + t
+#     awesome-client "local c = client.focus; c.ontop = not c.ontop"
 
+# Toggle between max layout and previous layout
+super + m
+    awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max); else awful.layout.set(prev_layout); end'
 
-# Nav: Move the window {west,south,north,east}
-super + ctrl + {h,j,k,l}
-  bspc node -s {west,south,north,east}
+# Toggle between fullscreen layout and previous layout
+super + shift + m
+    awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max.fullscreen") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max.fullscreen); else awful.layout.set(prev_layout); end'
 
+super + Tab
+    awesome-client "require('awful').client.focus.byidx(1)"
 
-# Nav: Create a location ({west,south,north,east}) for the next window
-super + shift + {h,j,k,l}
-  bspc node -p {west,south,north,east}
+super + shift + Tab
+    awesome-client "require('awful').client.focus.byidx(-1)"
 
+# Resize the window {,(slowly)} to the {west,south,north,east}
+super + shift + {Left,Down,Up,Right}
+  wm {grow,grow,shrink,shrink} awesome
 
-# Nav: Jump to the {previous,next} window
-super + {o,i}
-  bspc wm -h off; bspc node {older,newer} -f; bspc wm -h on
-
-
-# Cycle windows {Counter,Clock}wise
-super + alt + {Left,Right}
-  bspc node @/ -C {backward,forward}
-
-# Resize window to 16:9
+# Resize the current window to 16:9 aspect ratio
 super + comma
-  resize-window 16 9
-
+    awesome-client "local awful = require('awful'); local c = client.focus; if c then local width = c.width; local height = math.floor(width * 9 / 16); c:geometry({height = height}); end"
 
 
 
@@ -126,19 +89,16 @@ super + comma
 # ====================================
 
 # onePassword
-super + v
-  op item list --vault Private | rofi -dmenu -i
-
+# super + v
+#   op item list --vault Private | rofi -dmenu -i
 
 # List: All apps
-super + space
-  ~/code/simonwjackson/nix-config/main/rofi-my-apps.sh
-
+# super + space
+#   ~/code/simonwjackson/nix-config/main/rofi-my-apps.sh
 
 # Sxhkdrc Cheat Sheet
-super + period
-  ${HOME}/.local/bin/hkhelper.py | rofi -dmenu -i | awk -F '[[:space:]][[:space:]]+' '{print $3}' | xargs xargs
-
+# super + period
+#   ${HOME}/.local/bin/hkhelper.py | rofi -dmenu -i | awk -F '[[:space:]][[:space:]]+' '{print $3}' | xargs xargs
 
 
 
@@ -164,7 +124,6 @@ XF86AudioMute
 # {Raise,Lower} volume
 XF86Audio{Raise,Lower}Volume
   pamixer --{increase,decrease} 5
-
 
 
 
@@ -198,7 +157,6 @@ super + w; {_, super +}M
 
 
 
-
 # ████████╗██╗  ██╗███████╗███╗   ███╗███████╗███████╗
 # ╚══██╔══╝██║  ██║██╔════╝████╗ ████║██╔════╝██╔════╝
 #    ██║   ███████║█████╗  ██╔████╔██║█████╗  ███████╗
@@ -208,12 +166,12 @@ super + w; {_, super +}M
 # ====================================================
 
 # Light Mode
-super + XF86MonBrightnessUp
-  ~/light.sh
+# super + XF86MonBrightnessUp
+#   ~/light.sh
 
 # Dark Mode
-super + {_, ctrl} + XF86MonBrightnessDown
-  {~/dark.sh,~/black.sh}
+# super + {_, ctrl} + XF86MonBrightnessDown
+#   {~/dark.sh,~/black.sh}
 
 
 
@@ -267,6 +225,7 @@ super + g; {_, super +}l
 
 
 
+
 # ██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗
 # ██║  ██║██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝
 # ███████║███████║██████╔╝██║  ██║██║ █╗ ██║███████║██████╔╝█████╗  
@@ -286,13 +245,19 @@ XF86MonBrightnessDown
 
 
 # Bluetooth Devices
-super + r; b
-  kitty-popup bluetooth-devices
+# super + r; b
+#   kitty-popup bluetooth-devices
 
 
-# Activate blutooth device
-super + t
-  cmd_p.sh
+
+
+
+
+
+
+
+
+
 
 
 
@@ -304,21 +269,17 @@ super + t
 # ██║ ╚═╝ ██║██║███████║╚██████╗
 # ╚═╝     ╚═╝╚═╝╚══════╝ ╚═════╝
 # ==============================
+ 
+super + t
+  cmd_p.sh
 
-# Reload polybar
-super + shift + r; p
-  polybar-msg cmd restart
+# open a terminal
+super + Return
+    kitty tmux
 
-
-# Reload sxhkdrc
-super + shift + r; s
-  pkill -usr1 -x sxhkd
-
-
-# Reload bspwmrc
-super + shift + r; b
-  ${HOME}/.config/bspwm/bspwmrc
-
+# reload awesome
+super + ctrl + r
+    awesome-client "awesome.restart()"
 
 # Generate password
 super + r ; g ; p
@@ -333,3 +294,145 @@ super + r ; j
 # Scale Desktop
 super + alt + ctrl + j
   kitty-popup xrandr-scale
+
+
+
+
+# Switch to different layouts using sequence keybindings
+# Cascade all windows and resize windows bigger than 75% of the screen size
+super + alt + l; f
+    awesome-client "local awful = require('awful'); local capi = {client = client}; local t = awful.screen.focused().selected_tag; local x_offset = 100; local y_offset = 100; local wa = awful.screen.focused().workarea; local x = wa.x + x_offset; local y = wa.y + y_offset; local max_width = wa.width * 0.75 local max_height = wa.height * 0.75; for i, c in ipairs(t:clients()) do if not c.floating and not c.minimized then local width = c.width; local height = c.height; if width > max_width then width = max_width; end; if height > max_height then height = max_height; end; c:geometry({x = x, y = y, width = width, height = height}); x = x + x_offset; y = y + y_offset; end; end; awful.layout.set(awful.layout.suit.floating);"
+
+super + alt + l; t
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile)"
+
+super + alt + l; L
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.left)"
+
+super + alt + l; b
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.bottom)"
+
+super + alt + l; T
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.top)"
+
+super + alt + l; a
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair)"
+
+super + alt + l; A
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair.horizontal)"
+
+super + alt + l; s
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral)"
+
+super + alt + l; S
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral.dwindle)"
+
+super + alt + l; m
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max)"
+
+super + alt + l; M
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max.fullscreen)"
+
+super + alt + l; g
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.magnifier)"
+
+super + alt + l; n
+    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.corner.nw)"
+wful').layout.set(awful.layout.suit.corner.nw)"
+
+# Toggle tag on focused client
+#     awesome-client "if client.focus then local t = client.focus.screen.tags[{4-6}]; if t then client.focus:toggle_tag(t) end end"
+
+# view next
+#     awesome-client "require('awful').tag.viewnext()"
+
+# go back
+#     awesome-client "require('awful').tag.history.restore()"
+
+# focus next by index
+#     awesome-client "require('awful').client.focus.byidx(1)"
+
+# focus previous by index
+#     awesome-client "require('awful').client.focus.byidx(-1)"
+
+# swap with next client by index
+#     awesome-client "require('awful').client.swap.byidx(1)"
+
+# swap with previous client by index
+#     awesome-client "require('awful').client.swap.byidx(-1)"
+
+# focus the next screen
+#     awesome-client "require('awful').screen.focus_relative(1)"
+
+# focus the previous screen
+#     awesome-client "require('awful').screen.focus_relative(-1)"
+
+# jump to urgent client
+#     awesome-client "require('awful').client.urgent.jumpto()"
+
+# go back
+#     awesome-client "require('awful').client.focus.history.previous(); if client.focus then client.focus:raise() end"
+
+# view previous
+#     awesome-client "require('awful').tag.viewprev()"
+
+# view next
+#     awesome-client "require('awful').tag.viewnext()"
+
+# (un)maximize vertically
+#     awesome-client "local c = client.focus; c.maximized_vertical = not c.maximized_vertical; c:raise()"
+
+# (un)maximize horizontally
+#     awesome-client "local c = client.focus; c.maximized_horizontal = not c.maximized_horizontal; c:raise()"
+
+# Toggle tag display
+#     awesome-client "local s = require('awful').screen.focused(); local t = s.tags[{4-6}]; if t then require('awful').tag.viewtoggle(t) end"
+
+# select previous
+#     awesome-client "require('awful').layout.inc(-1)"
+
+# restore minimized
+#     awesome-client "local c = awful.client.restore(); if c then c:emit_signal('request::activate', 'key.unminimize', {raise = true}) end"
+
+# run prompt
+#     awesome-client "require('awful').screen.focused().mypromptbox:run()"
+
+# lua execute prompt
+#     awesome-client "require('awful').prompt.run {prompt = 'Run Lua code: ', textbox = require('awful').screen.focused().mypromptbox.widget, exe_callback = require('awful').util.eval, history_path = require('awful').util.get_cache_dir() .. '/history_eval'}"
+
+# quit awesome
+# super + shift + q
+#     awesome-client "awesome.quit()"
+
+# increase master width factor
+# super + l
+#     awesome-client "require('awful').tag.incmwfact(0.05)"
+
+# decrease master width factor
+# super + h
+#     awesome-client "require('awful').tag.incmwfact(-0.05)"
+
+# increase the number of master clients
+# super + shift + h
+#     awesome-client "require('awful').tag.incnmaster(1, nil, true)"
+
+# decrease the number of master clients
+# super + shift + l
+#     awesome-client "require('awful').tag.incnmaster(-1, nil, true)"
+
+# increase the number of columns
+# super + ctrl + h
+#     awesome-client "require('awful').tag.incncol(1, nil, true)"
+
+# decrease the number of columns
+# super + ctrl + l
+#     awesome-client "require('awful').tag.incncol(-1, nil, true)"
+
+# move to screen
+# super + o
+#     awesome-client "client.focus:move_to_screen()"
+
+# minimize
+# super + n
+#     awesome-client "client.focus.minimized = true"
+
