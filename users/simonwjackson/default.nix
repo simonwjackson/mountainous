@@ -16,8 +16,10 @@
     ./bin/virtual-term
     ./bin/activate-or-open-tab
     ./bin/dual-screen-with-tablet
+    ./fuzzy-music
   ];
 
+  programs.fuzzy-music.enable = true;
   # TODO: Find a way to enable this dynamicaly by system type
 
   xresources = {
@@ -154,4 +156,16 @@
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
+
+  programs.beets = {
+    enable = true;
+    settings = {
+      plugins = lib.strings.concatStringsSep " " [
+        "bpd"
+        "export"
+      ];
+      directory = "/run/media/simonwjackson/microsd/Music";
+      library = "~/.local/share/musiclibrary.db";
+    };
+  };
 }

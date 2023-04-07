@@ -88,7 +88,7 @@
     enable = true;
 
     config = {
-      input-ipc-server = "/tmp/mpv.socket";
+      input-ipc-server = "/run/user/1000/mpv.socket";
       panscan = "1.0";
     };
   };
