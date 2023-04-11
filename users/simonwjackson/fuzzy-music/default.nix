@@ -2,7 +2,6 @@
 
 let
   cfg = config.programs.fuzzy-music;
-
 in
 {
   options.programs.fuzzy-music = {
@@ -10,6 +9,15 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = config.home.sessionVariables
+          ? MPV_SOCKET
+          && config.home.sessionVariables.MPV_SOCKET != "";
+        message = "MPV_SOCKET must be set in home.sessionVariables when enabling media-control.";
+      }
+    ];
+
     home.packages = with pkgs; [
       beets
       jq

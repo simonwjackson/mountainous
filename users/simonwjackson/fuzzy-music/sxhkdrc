@@ -1,2 +1,2 @@
 super + p
-   kitty fuzzy-music 
+   kitty --class=floater fuzzy-music 

@@ -13,9 +13,6 @@
 # Set the shell to exit immediately if any command exits with a non-zero status
 set -e
 
-# Location of the MPV socket file can be defined in the mpv.conf file
-socket_file="/run/user/1000/mpv.socket"
-
 # Define the remote hosts. The remote hosts must have `beet` installed
 remote_host="unzen"
 
@@ -37,6 +34,8 @@ function usage() {
 EOF
 }
 
+# ⟱
+
 # Parse the command line options
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -56,7 +55,14 @@ done
 function beet_export() {
   location="$1"
   beet_include='id,year,album,albumartist'
-  album_json='{ "data": del(.id), "meta": { "source": "beets", "id": .id, "location": "'$location'"} }' 
+  album_json='{
+    "data": del(.id),
+    "meta": {
+      "source": "beets",
+      "id": .id,
+      "location": "'$location'"
+    }
+  }'
 
   # Run the beet export command and process the JSON output
   ( ssh "$location" -- beet export \
@@ -113,7 +119,14 @@ function only_json_column () {
 
 # Define a function to prefer local files when there are duplicates
 function prefer_local_files () {
-  query='group_by(.data) | map( if length > 1 then map(select(.meta.location == "local")) | add else .[0] end) | .[]';
+  query='group_by(.data)
+    | map(
+        if length > 1
+          then map(select(.meta.location == "local")) | add
+        else .[0]
+        end
+      )
+    | .[]';
 
   ( jq \
     --slurp \
@@ -125,26 +138,27 @@ function prefer_local_files () {
 # Run the beet_export function for `localhost` and `unzen in parallel and prefer local files
 { beet_export "localhost" & \
   beet_export $remote_host & 
-} | prefer_local_files \
+} | shuf \
+  | prefer_local_files \
   | fzf_format \
   | {
   # Display the header row in fzf
   cat & \
-  echo "Album - Artist [Year]" &
-} | fzf_prompt \
-  | only_json_column \
-  | {
-  while read -r json; do
-    # Get the album ID and host from the JSON data
-    album_id=$(jq -r '.meta.id' <<< "$json")
-    # Get the host from the JSON data
-    host=$(jq -r '.meta.location' <<< "$json")
-    # Format the path for MPV
-    format="\"sftp://${host}/\\\$path\""
+    echo "Album - Artist [Year]" &
+  } | fzf_prompt \
+    | only_json_column \
+    | {
+    while read -r json; do
+      # Get the album ID and host from the JSON data
+      album_id=$(jq -r '.meta.id' <<< "$json")
+      # Get the host from the JSON data
+      host=$(jq -r '.meta.location' <<< "$json")
+      # Format the path for MPV
+      format="\"sftp://${host}/\\\$path\""
 
     # Send commands to MPV using the socket, to stop the current playlist and clear the playlist
-    echo '{ "command": ["stop"] }' | socat - "$socket_file"
-    echo '{ "command": ["playlist-clear"] }' | socat - "$socket_file"
+    echo '{ "command": ["stop"] }' | socat - "$MPV_SOCKET"
+    echo '{ "command": ["playlist-clear"] }' | socat - "$MPV_SOCKET"
 
     # Get the list of songs for the selected album and send them to MPV
     ( ssh -n "$host" \
@@ -153,7 +167,7 @@ function prefer_local_files () {
       album_id:"$album_id" \
       | tr '\n' '\0' \
       | xargs -0 -I {} echo '{ "command": ["loadfile", "{}", "append-play"] }' \
-      | socat - "$socket_file"
+      | socat - "$MPV_SOCKET"
     )
   done
 }
