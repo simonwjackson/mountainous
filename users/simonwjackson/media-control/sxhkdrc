@@ -1,0 +1,8 @@
+XF86AudioPlay
+    media-control "XF86AudioPlay"
+
+XF86AudioNext
+    media-control "XF86AudioNext"
+
+XF86AudioPrev
+    media-control "XF86AudioPrev"
