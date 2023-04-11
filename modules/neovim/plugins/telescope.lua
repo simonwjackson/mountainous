@@ -19,7 +19,7 @@ telescope.setup {
   defaults = {
     mappings = {
       i = {
-        ["<esc>"] = actions.close
+            ["<esc>"] = actions.close
       },
     },
     layout_strategy = "vertical",
@@ -40,14 +40,22 @@ telescope.setup {
       previewer = false,
       mappings = {
         i = {
-          ["<c-d>"] = actions.delete_buffer,
+              ["<c-d>"] = actions.delete_buffer,
         },
         n = {
-          ["<c-d>"] = actions.delete_buffer,
+              ["<c-d>"] = actions.delete_buffer,
         }
       }
     },
     find_files = {
+      find_command = {
+        'rg',
+        '--hidden',
+        '--files',
+        '--follow',
+        '--glob',
+        '!.git'
+      },
     },
   },
 }
