@@ -1,4 +1,4 @@
- Media Control
+# Media Control
 
 This NixOS module provides a media control script that allows you to control media playback for various applications using media keys on your keyboard. The supported applications include Music Player Daemon (mpd), mpv, and Firefox.
 
