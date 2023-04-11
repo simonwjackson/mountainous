@@ -182,4 +182,6 @@ else
     export EDITOR="nvim"
 fi
 
+(cat ~/.cache/wal/sequences &)
+
 # PROMPT=$([[ -n $IN_NIX_SHELL ]] && echo "❄ | $PROMPT")
