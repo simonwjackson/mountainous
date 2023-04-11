@@ -125,6 +125,7 @@
       changelog = "! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit \"$@\" | perl -0 -p -e 's/(^|[^\\\\])([<>])/\\1\\\\\\2/g ; s/(\\s*\\n)+\\*/\\n*/g' #";
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
+      gpt = "!f() { git diff --staged | sgpt --model gpt-4 \"Generate multiline git commit message, for my changes. title is prepended with an appropriate emoji. use conventional commits as a template.\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
       # Squash all unpushed commits with a new message
       squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
       s = "squash";
