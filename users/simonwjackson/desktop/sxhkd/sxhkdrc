@@ -16,8 +16,16 @@ super + shift + {4-6}
       
 # go back
 super + Escape
-    awesome-client "require('awful').tag.history.restore()"                                                                       l
+  awesome-client "require('awful').tag.history.restore()"                                                                       l
 
+super + 0
+  awesome-client 'Set_Inner_Padding(0)' && awesome-client 'Set_Outer_Margin(0)'
+
+super + {KP_Add,minus}
+  awesome-client 'Inc_Inner_Padding({10,-10})'
+
+super + shift + {KP_Add,minus}
+  awesome-client 'Inc_Outer_Margin({10,-10})'
 
 
 # ██╗    ██╗██╗███╗   ██╗██████╗  ██████╗ ██╗    ██╗███████╗
@@ -36,39 +44,33 @@ super + {h,j,k,l}
 super + x
   kill-or-close
 
-# select next
-# super + space
-#     awesome-client "require('awful').layout.inc(1)"
 
 # toggle floating
 super + ctrl + space
-    awesome-client "require('awful').client.floating.toggle(client.focus)"
+  awesome-client "require('awful').client.floating.toggle(client.focus)"
 
 # move to master
 super + ctrl + Return
-    awesome-client "client.focus:swap(require('awful').client.getmaster())"
+  awesome-client "client.focus:swap(require('awful').client.getmaster())"
 #
  Toggle between awful.layout.suit.tile and awful.layout.suit.tile.left
 super + t
-    awesome-client "local awful = require('awful'); local cur_layout = awful.layout.getname(); if cur_layout == 'tile' then awful.layout.set(awful.layout.suit.tile.left); else awful.layout.set(awful.layout.suit.tile); end"
+  awesome-client "local awful = require('awful'); local cur_layout = awful.layout.getname(); if cur_layout == 'tile' then awful.layout.set(awful.layout.suit.tile.left); else awful.layout.set(awful.layout.suit.tile); end"
 
-# toggle keep on top
-# super + t
-#     awesome-client "local c = client.focus; c.ontop = not c.ontop"
 
 # Toggle between max layout and previous layout
 super + m
-    awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max); else awful.layout.set(prev_layout); end'
+  awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max); else awful.layout.set(prev_layout); end'
 
 # Toggle between fullscreen layout and previous layout
 super + shift + m
-    awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max.fullscreen") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max.fullscreen); else awful.layout.set(prev_layout); end'
+  awesome-client 'local awful = require("awful"); if not string.match(awful.layout.getname(), "max.fullscreen") then prev_layout = awful.layout.get(); awful.layout.set(awful.layout.suit.max.fullscreen); else awful.layout.set(prev_layout); end'
 
 super + Tab
-    awesome-client "require('awful').client.focus.byidx(1)"
+  awesome-client "require('awful').client.focus.byidx(1)"
 
 super + shift + Tab
-    awesome-client "require('awful').client.focus.byidx(-1)"
+  awesome-client "require('awful').client.focus.byidx(-1)"
 
 # Resize the window {,(slowly)} to the {west,south,north,east}
 super + shift + {Left,Down,Up,Right}
@@ -76,7 +78,7 @@ super + shift + {Left,Down,Up,Right}
 
 # Resize the current window to 16:9 aspect ratio
 super + comma
-    awesome-client "local awful = require('awful'); local c = client.focus; if c then local width = c.width; local height = math.floor(width * 9 / 16); c:geometry({height = height}); end"
+  awesome-client "local awful = require('awful'); local c = client.focus; if c then local width = c.width; local height = math.floor(width * 9 / 16); c:geometry({height = height}); end"
 
 
 
@@ -279,7 +281,7 @@ super + Return
 
 # reload awesome
 super + ctrl + r
-    awesome-client "awesome.restart()"
+  awesome-client "CustomReload()"
 
 # Generate password
 super + r ; g ; p
@@ -301,43 +303,43 @@ super + alt + ctrl + j
 # Switch to different layouts using sequence keybindings
 # Cascade all windows and resize windows bigger than 75% of the screen size
 super + alt + l; f
-    awesome-client "local awful = require('awful'); local capi = {client = client}; local t = awful.screen.focused().selected_tag; local x_offset = 100; local y_offset = 100; local wa = awful.screen.focused().workarea; local x = wa.x + x_offset; local y = wa.y + y_offset; local max_width = wa.width * 0.75 local max_height = wa.height * 0.75; for i, c in ipairs(t:clients()) do if not c.floating and not c.minimized then local width = c.width; local height = c.height; if width > max_width then width = max_width; end; if height > max_height then height = max_height; end; c:geometry({x = x, y = y, width = width, height = height}); x = x + x_offset; y = y + y_offset; end; end; awful.layout.set(awful.layout.suit.floating);"
+  awesome-client "local awful = require('awful'); local capi = {client = client}; local t = awful.screen.focused().selected_tag; local x_offset = 100; local y_offset = 100; local wa = awful.screen.focused().workarea; local x = wa.x + x_offset; local y = wa.y + y_offset; local max_width = wa.width * 0.75 local max_height = wa.height * 0.75; for i, c in ipairs(t:clients()) do if not c.floating and not c.minimized then local width = c.width; local height = c.height; if width > max_width then width = max_width; end; if height > max_height then height = max_height; end; c:geometry({x = x, y = y, width = width, height = height}); x = x + x_offset; y = y + y_offset; end; end; awful.layout.set(awful.layout.suit.floating);"
 
 super + alt + l; t
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile)"
 
 super + alt + l; L
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.left)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.left)"
 
 super + alt + l; b
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.bottom)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.bottom)"
 
 super + alt + l; T
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.top)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.tile.top)"
 
 super + alt + l; a
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair)"
 
 super + alt + l; A
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair.horizontal)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.fair.horizontal)"
 
 super + alt + l; s
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral)"
 
 super + alt + l; S
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral.dwindle)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.spiral.dwindle)"
 
 super + alt + l; m
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max)"
 
 super + alt + l; M
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max.fullscreen)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.max.fullscreen)"
 
 super + alt + l; g
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.magnifier)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.magnifier)"
 
 super + alt + l; n
-    awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.corner.nw)"
+  awesome-client "local awful = require('awful'); awful.layout.set(awful.layout.suit.corner.nw)"
 wful').layout.set(awful.layout.suit.corner.nw)"
 
 # Toggle tag on focused client
@@ -436,3 +438,9 @@ wful').layout.set(awful.layout.suit.corner.nw)"
 # super + n
 #     awesome-client "client.focus.minimized = true"
 
+# toggle keep on top
+#     awesome-client "local c = client.focus; c.ontop = not c.ontop"
+#
+# select next
+#     awesome-client "require('awful').layout.inc(1)"
+#
