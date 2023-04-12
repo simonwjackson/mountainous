@@ -2,15 +2,11 @@
 
 {
   imports = [
-    ./polybar
+    # ./polybar
     # ./bspwm
   ];
 
   home = {
-    sessionVariables = {
-      MPV_SOCKET = "/tmp/mpv.socket";
-    };
-
     file = {
       "./.local/bin" = {
         source = ../../../modules/cmd_p;
@@ -26,6 +22,7 @@
     };
 
     packages = with pkgs; [
+      nerdfonts
       brightnessctl
       tridactyl-native
       xfce.xfwm4
@@ -36,15 +33,15 @@
       tridactyl-native
       pamixer
       rofi
-    ];
+    ] ++ [ ];
   };
 
   xsession.windowManager.awesome = {
     enable = true;
   };
 
-  home.file.".config/awesome/rc.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/rc.lua;
-  home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
+  # home.file.".config/awesome/rc.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/rc.lua;
+  # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
   xsession = {
     enable = true;
@@ -88,32 +85,34 @@
     enable = true;
 
     config = {
-      input-ipc-server = "/run/user/1000/mpv.socket";
       panscan = "1.0";
+      af = "equalizer=f=1000:width_type=h:width=200:g=-2,equalizer=f=2000:width_type=h:width=200:g=-4,equalizer=f=4000:width_type=h:width=200:g=-6,equalizer=f=8000:width_type=h:width=200:g=-8,equalizer=f=16000:width_type=h:width=200:g=-10";
     };
   };
 
   home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
   services.picom = {
-    enable = false;
-    extraArgs = [ "--experimental-backend" ];
+    enable = true;
     settings = import ./picom/picom.nix;
 
-    package = pkgs.picom.overrideAttrs (o: {
-      src = pkgs.fetchFromGitHub {
-        repo = "picom";
-        owner = "jonaburg";
-        rev = "e3c19cd7d1108d114552267f302548c113278d45";
-        sha256 = "4voCAYd0fzJHQjJo4x3RoWz5l3JJbRvgIXn1Kg6nz6Y=";
-      };
-    });
+    # extraArgs = [ "--experimental-backend" ];
+    # package = pkgs.picom.overrideAttrs (o: {
+    #   src = pkgs.fetchFromGitHub {
+    #     repo = "picom";
+    #     owner = "jonaburg";
+    #     rev = "e3c19cd7d1108d114552267f302548c113278d45";
+    #     sha256 = "4voCAYd0fzJHQjJo4x3RoWz5l3JJbRvgIXn1Kg6nz6Y=";
+    #   };
+    # });
   };
 
   services.sxhkd = {
     enable = true;
 
-    extraConfig = builtins.readFile (./sxhkd/sxhkdrc);
+    extraConfig = lib.mkMerge [
+      (builtins.readFile (./sxhkd/sxhkdrc))
+    ];
   };
 
   programs.firefox = {

@@ -1,6 +1,7 @@
 { config, pkgs, lib, ... }:
 
 {
+  programs.zsh.enable = true;
   nixpkgs.config.allowUnfree = true;
   nix = {
     package = pkgs.nixFlakes;
@@ -16,7 +17,8 @@
     # ../packages/clockify-cli
   ];
 
-  networking.networkmanager.enable = true;
+  services.automatic-timezoned.enable = true;
+
   networking.useDHCP = lib.mkDefault false;
 
   # Select internationalisation properties.

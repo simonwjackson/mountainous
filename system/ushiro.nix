@@ -19,6 +19,7 @@ in
     ../modules/laptop.nix
     ./apple-silicon-support
     ./default.nix
+    ./headphones.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
@@ -29,15 +30,6 @@ in
 
   hardware.bluetooth.enable = true;
   services.flatpak.enable = true;
-  # xdg = {
-  #   portal = {
-  #     enable = true;
-  #     extraPortals = with pkgs; [
-  #       xdg-desktop-portal-gtk
-  #     ];
-  #     gtkUsePortal = true;
-  #   };
-  # };
 
   services.udev.packages = [
     (pkgs.writeTextFile {
@@ -55,24 +47,16 @@ in
     KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
   '';
 
-  # Enable the X11 windowing system.
-  # services.xserver.enable = true;
-  #
-  # services.xserver = {
-  #   displayManager = {
-  #     sddm.enable = true;
-  #     defaultSession = "none+awesome";
-  #   };
-  #
-  #   windowManager.awesome = {
-  #     enable = true;
-  #   };
-  # };
-
   # List packages installed in system profile. To search, run:
   environment.systemPackages = with pkgs; [
     neovim
     git
+    f2fs-tools
+    cryptsetup
+    fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
+    mergerfs
+    mergerfs-tools
+    nfs-utils
   ];
 
   # Enable the OpenSSH daemon.
@@ -86,7 +70,21 @@ in
 
   boot.initrd.availableKernelModules = [ "usb_storage" "sdhci_pci" ];
   boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ ];
+  # boot.kernelModules = [ ];
+  # boot.kernelPatches = [{
+  #   name = "f2fs";
+  #   patch = null;
+  #   extraConfig = ''
+  #     CONFIG_F2FS_FS y
+  #     CONFIG_F2FS_STAT_FS y
+  #     CONFIG_F2FS_FS_XATTR y
+  #     CONFIG_F2FS_FS_POSIX_ACL y
+  #     CONFIG_F2FS_FS_SECURITY y
+  #     CONFIG_F2FS_CHECK_FS y
+  #     CONFIG_F2FS_FS_ENCRYPTION y
+  #     CONFIG_F2FS_FAULT_INJECTION y
+  #   '';
+  # }];
   boot.kernelParams = [
     "apple_dcp.show_notch=1"
   ];
@@ -121,4 +119,61 @@ in
   powerManagement.cpuFreqGovernor = lib.mkDefault "ondemand";
   # high-resolution display
   # hardware.video.hidpi.enable = lib.mkDefault true;
+  hardware.asahi.addEdgeKernelConfig = true;
+
+  services.dbus.packages = [
+    (pkgs.writeTextFile {
+      name = "dbus-monitor-policy";
+      text = ''
+        <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+          "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+        <busconfig>
+          <policy user="simonwjackson">
+            <allow send_destination="org.freedesktop.DBus" send_interface="org.freedesktop.DBus.Monitoring" />
+            <allow send_type="method_call" send_interface="org.freedesktop.DBus.Monitoring"/>
+            <allow send_type="signal" send_interface="org.freedesktop.DBus.Properties" send_member="PropertiesChanged" send_path="/org/bluez"/>
+          </policy>
+        </busconfig>
+      '';
+      destination = "/etc/dbus-1/system.d/dbus-monitor-policy.conf";
+    })
+  ];
+
+  services.syncthing = {
+    overrideDevices = true;
+    overrideFolders = true;
+    enable = true;
+    user = "simonwjackson";
+    dataDir = "/tank"; # Default folder for new synced folders
+    configDir = "/home/simonwjackson/.config/syncthing";
+
+    devices = {
+      ushiro.id = "MIB5GJT-FQWMJ35-EWHDI2O-3IHBOLC-6H5RC6I-I7MEVY7-FQ7MEPO-P3YMCQJ";
+      unzen.id = "QKHBVLD-BCDANSP-ED76TFN-JN4U6CF-KOHSUFP-YREMPYV-V7BZG32-BRXV2AV";
+      kuro.id = "4YUE3JH-CUR4TTS-RVTNUHZ-2HDENB3-FH3VWIJ-TMCW3X5-JSPKLXB-H2QUEAP";
+      haku.id = "XAQBGPZ-5CVMY23-43CAQ5P-QFGGPJS-LCYKSE6-HEFFQM7-XRAIF6E-5XHAWQT";
+    };
+
+    extraFlags = [
+      "--no-default-folder"
+    ];
+
+    extraOptions = {
+      ignores = {
+        "line" = [
+          "**/node_modules"
+          "**/build"
+          "**/cache"
+        ];
+      };
+    };
+
+    folders = {
+      documents.path = "/home/simonwjackson/documents";
+      documents.devices = [ "kuro" "unzen" ];
+
+      code.path = "/home/simonwjackson/code";
+      code.devices = [ "ushiro" "unzen" ];
+    };
+  };
 }

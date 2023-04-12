@@ -126,6 +126,7 @@
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
       gpt = "!f() { git diff --staged | sgpt --model gpt-4 \"Generate multiline git commit message, for my changes. title is prepended with an appropriate emoji. use conventional commits as a template.\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
+
       # Squash all unpushed commits with a new message
       squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
       s = "squash";
@@ -235,6 +236,10 @@
   };
 
   home.file = {
+    "./.config/direnv/direnv.toml" = {
+      source = ./direnv/direnv.toml;
+    };
+
     "./.config/tmux/share.tmux.conf" = {
       source = ./tmux/share.tmux.conf;
     };
