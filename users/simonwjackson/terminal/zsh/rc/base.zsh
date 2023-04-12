@@ -182,6 +182,34 @@ else
     export EDITOR="nvim"
 fi
 
+function make_readme () {
+  readme_location=$1;
+  shift;
+  what_to_cat=("$@")
+
+  # if what_to_cat is empty
+  if [ ${#what_to_cat[@]} -eq 0 ]; then
+    echo "Usage: make_readme <files_to_cat> <readme_location>"
+    return 1
+  fi
+
+  ( temp_file=$(mktemp) \
+    && cat $what_to_cat \
+    | sgpt \
+      --model gpt-4 \
+      "create a short README for the application code" \
+    | tee /dev/tty > $temp_file \
+    && mv $temp_file $readme_location/README.md \
+    || rm -f $temp_file \
+    && $EDITOR $readme_location/README.md \
+  )
+}
+
+function docker-run-to-nix () {
+   sgpt --code --model gpt-4 'convert this docker command into a nix config block. Example: virtualisation.oci-containers= { backend = "podman"; containers = { hass = { image = "homeassistant/home-assistant:0.117.5"; user = "1000:1000";environment = { MY_VAR = "value"; }; ports = ["0.0.0.0:8123:8123"]; volumes = [ "/etc/localtime:/etc/localtime:ro" "/external:/internal" ]; }; }; };'
+ }
+
+
 (cat ~/.cache/wal/sequences &)
 
 # PROMPT=$([[ -n $IN_NIX_SHELL ]] && echo "❄ | $PROMPT")
