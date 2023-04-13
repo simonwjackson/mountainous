@@ -4,9 +4,7 @@ let
   audioDownloads = /tank/downloads/soulseek/downloads;
 in
 {
-  imports = [
-    ./syncthing.nix
-  ];
+  imports = [ ];
 
   fileSystems."/" =
     {
