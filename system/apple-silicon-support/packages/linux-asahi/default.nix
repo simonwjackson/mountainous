@@ -51,21 +51,26 @@ let
 
       _kernelPatches = kernelPatches;
 
+      # used to (ostensibly) keep compatibility for those running stable versions of nixos
+      rustOlder = version: withRust && (lib.versionOlder rustPlatform.rust.rustc.version version);
+      bindgenOlder = version: withRust && (lib.versionOlder rustPlatform.rust.rustc.version version);
+
+      # used to fix issues when nixpkgs gets ahead of the kernel
       rustAtLeast = version: withRust && (lib.versionAtLeast rustPlatform.rust.rustc.version version);
       bindgenAtLeast = version: withRust && (lib.versionAtLeast rust-bindgen.unwrapped.version version);
     in
     (linuxKernel.manualConfig rec {
       inherit stdenv lib;
 
-      version = "6.1.0-asahi";
+      version = "6.2.0-asahi";
       modDirVersion = version;
 
       src = fetchFromGitHub {
-        # tracking: https://github.com/AsahiLinux/PKGBUILDs/blob/stable/linux-asahi/PKGBUILD
+        # tracking: https://github.com/AsahiLinux/PKGBUILDs/blob/main/linux-asahi/PKGBUILD
         owner = "AsahiLinux";
         repo = "linux";
-        rev = "asahi-6.1-2";
-        hash = "sha256-grQytmYoAlPxRI8mYQjZFduD3BH7PA7rz1hyInJb4JA=";
+        rev = "asahi-6.2-11";
+        hash = "sha256-5ns8ilv+Kee2BHhpWm7CnNHf3+mcXCywkLhx4oh9rZk=";
       };
 
       kernelPatches = [
@@ -84,36 +89,31 @@ let
         { name = "default-pagesize-16k";
           patch = ./default-pagesize-16k.patch;
         }
-      ] ++ lib.optionals (rustAtLeast "1.66.0") [
+      ] ++ lib.optionals (rustOlder "1.66.0") [
         { name = "rust-1.66.0";
           patch = ./rust_1_66_0.patch;
+          reverse = true;
         }
       ] ++ lib.optionals (bindgenAtLeast "0.63.0") [
         { name = "rust-bindgen";
           patch = ./rust-bindgen-fix.patch;
         }
-      ] ++ lib.optionals (rustAtLeast "1.67.0") [
+      ] ++ lib.optionals (rustOlder "1.67.0") [
         { name = "rust-1.67.0";
           patch = ./rust_1_67_0.patch;
+          reverse = true;
         }
       ] ++ _kernelPatches;
 
       inherit configfile;
       config = readConfig configfile;
 
-      extraMeta.branch = "6.1";
+      extraMeta.branch = "6.2";
     } // (args.argsOverride or {})).overrideAttrs (old: if withRust then {
       nativeBuildInputs = (old.nativeBuildInputs or []) ++ [
         rust-bindgen
         rustfmt
-        # rustc 1.66.x has problems relating to the sad old aarch64 GCC9.
-        # we need it to pass -lgcc to gcc through the nix machinery but only when rustc
-        # is running, so we give the kernel build a rustc that wraps the real rustc
-        # while setting the appropriate environment variable during its execution.
-        # https://github.com/NixOS/nixpkgs/pull/209113
-        (writeShellScriptBin "rustc" ''
-          NIX_LDFLAGS=-lgcc ${rustPlatform.rust.rustc}/bin/rustc "$@"
-        '')
+        rustPlatform.rust.rustc
       ];
       RUST_LIB_SRC = rustPlatform.rustLibSrc;
     } else {});
