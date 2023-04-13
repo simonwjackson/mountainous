@@ -1,6 +1,10 @@
 { pkgs, lib, ... }:
 
 {
+  imports = [
+    ../modules/tailscale.nix
+  ];
+
   networking.useDHCP = lib.mkDefault false;
   nixpkgs.config.allowUnfree = true;
   programs.zsh.enable = true;
