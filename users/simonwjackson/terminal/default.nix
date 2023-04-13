@@ -126,6 +126,7 @@
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
       gpt = "!f() { git diff --staged | sgpt --model gpt-4 --temperature .5 \"Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>\n\n[optional body]\n\n[optional footer(s)]'. Prepend first line with a gitmoji directly related to the type. ideally, first line is 50 chars or less\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
+      gpt-pr = "!f() { git log main..HEAD --pretty=format:\"%h %s%n%n%b\" | sgpt --model gpt-4 \"Here are my commit messages. Use them to write a detailed pull request. include both title and body.\"; }; f";
 
       # Squash all unpushed commits with a new message
       squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
