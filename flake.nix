@@ -3,62 +3,32 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    # home-manager.url = "github:nix-community/home-manager";
-    # home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
-  outputs = { nixpkgs, nixos-hardware, ... }:
-    let
-      #   # system = "x86_64-linux";
-      #
-      #   pkgs = import nixpkgs {
-      #     inherit system;
-      #
-      #     config = {
-      #       allowUnfree = true;
-      #     };
-      #   };
-      #
-      #   lib = nixpkgs.lib;
-      username = "simonwjackson";
-      #
-    in
-    {
-      # homeConfigurations.${username} = home-manager.lib.homeManagerConfiguration {
-      #   #inherit pkgs username system;
-      #   # system = "aarch64-linux";
-      #   pkgs = nixpkgs.legacyPackages.${system};
-      #   modules = [
-      #     ./users/${username}
-      #     {
-      #       home = {
-      #         homeDirectory = "/home/${username}";
-      #         stateVersion = "22.05";
-      #       };
-      #     }
-      #   ];
-      # };
+  outputs = { nixpkgs, ... }: {
+    nixosConfigurations = {
+      ushiro = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
 
-      nixosConfigurations = {
-        # fiji = lib.nixosSystem {
-        #   inherit system;
-        #
-        #   modules = [
-        #     ./system/fiji.nix
-        #     nixos-hardware.nixosModules.dell-xps-13-9310
-        #   ];
-        # };
-        #
-        ushiro = nixpkgs.lib.nixosSystem {
-          system = "aarch64-linux";
+        modules = [
+          ./hardware/apple-m1.nix
+          ./systems/ushiro.nix
+          ./users/simonwjackson
+        ];
+      };
 
-          modules = [
-            ./hardware/apple-m1.nix
-            ./systems/ushiro.nix
-            ./users/simonwjackson
-          ];
-        };
+      unzen = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+
+        modules = [
+          ./hardware/intel.nix
+          ./hardware/qemu.nix
+          ./systems/unzen.nix
+        ];
       };
     };
+  };
 }
+
+
