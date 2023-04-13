@@ -1,4 +1,4 @@
-{ config, pkgs, modulesPath, lib, home, ... }:
+{ pkgs, ... }:
 
 {
   console = {

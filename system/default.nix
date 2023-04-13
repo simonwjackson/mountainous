@@ -31,16 +31,8 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  users.defaultUserShell = pkgs.zsh;
-  users.users.simonwjackson = {
-    shell = pkgs.zsh;
-    isNormalUser = true;
-    extraGroups = [
-      "adbusers"
-      "wheel"
-    ]; # Enable ‘sudo’ for the user.
-  };
 
+  users.defaultUserShell = pkgs.zsh;
   # List packages installed in system profile. To search, run:
   environment.systemPackages = with pkgs; [
     # Other
