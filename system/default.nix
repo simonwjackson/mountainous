@@ -1,6 +1,7 @@
 { config, pkgs, lib, ... }:
 
 {
+  system.copySystemConfiguration = true;
   programs.zsh.enable = true;
   nixpkgs.config.allowUnfree = true;
   nix = {
@@ -66,6 +67,9 @@
   services.udev.packages = [
     pkgs.android-udev-rules
   ];
+
+  # TTY mouse
+  services.gpm.enable = true;
 
   # programs.ssh.hostKeyAlgorithms = [ "ssh-ed25519" "ssh-rsa" ];
   # programs.ssh.pubkeyAcceptedKeyTypes = [ "ssh-rsa" ];
