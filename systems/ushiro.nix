@@ -9,7 +9,7 @@ let
 in
 {
   imports = [
-    # Include the necessary packages and configuration for Apple Silicon support.
+    ../modules/syncthing.nix
     ../modules/workstation.nix
     ../modules/hidpi.nix
     ../modules/laptop.nix
@@ -89,40 +89,11 @@ in
   ];
 
   services.syncthing = {
-    overrideDevices = true;
-    overrideFolders = true;
-    enable = true;
-    user = "simonwjackson";
-    dataDir = "/tank"; # Default folder for new synced folders
-    configDir = "/home/simonwjackson/.config/syncthing";
-
-    devices = {
-      ushiro.id = "MIB5GJT-FQWMJ35-EWHDI2O-3IHBOLC-6H5RC6I-I7MEVY7-FQ7MEPO-P3YMCQJ";
-      unzen.id = "QKHBVLD-BCDANSP-ED76TFN-JN4U6CF-KOHSUFP-YREMPYV-V7BZG32-BRXV2AV";
-      kuro.id = "4YUE3JH-CUR4TTS-RVTNUHZ-2HDENB3-FH3VWIJ-TMCW3X5-JSPKLXB-H2QUEAP";
-      haku.id = "XAQBGPZ-5CVMY23-43CAQ5P-QFGGPJS-LCYKSE6-HEFFQM7-XRAIF6E-5XHAWQT";
-    };
-
-    extraFlags = [
-      "--no-default-folder"
-    ];
-
-    extraOptions = {
-      ignores = {
-        "line" = [
-          "**/node_modules"
-          "**/build"
-          "**/cache"
-        ];
-      };
-    };
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
     folders = {
       documents.path = "/home/simonwjackson/documents";
-      documents.devices = [ "kuro" "unzen" ];
-
       code.path = "/home/simonwjackson/code";
-      code.devices = [ "ushiro" "unzen" ];
     };
   };
 }
