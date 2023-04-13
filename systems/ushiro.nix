@@ -1,8 +1,4 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ modulesPath, stdenv, config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 
 let
   wifi = {
@@ -17,18 +13,11 @@ in
     ../modules/workstation.nix
     ../modules/hidpi.nix
     ../modules/laptop.nix
-    ./apple-silicon-support
     ./default.nix
     ./headphones.nix
-    (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.efi.canTouchEfiVariables = false;
-
   networking.hostName = "ushiro"; # Define your hostname.
-
-  hardware.bluetooth.enable = true;
   services.flatpak.enable = true;
 
   services.udev.packages = [
@@ -64,35 +53,6 @@ in
 
   networking.firewall.enable = false;
 
-  # Copy the NixOS configuration file and link it from the resulting system
-  # (/run/current-system/configuration.nix). This is useful in case you
-  # accidentally delete configuration.nix.
-
-  boot.initrd.availableKernelModules = [ "usb_storage" "sdhci_pci" ];
-  boot.initrd.kernelModules = [ ];
-  # boot.kernelModules = [ ];
-  # boot.kernelPatches = [{
-  #   name = "f2fs";
-  #   patch = null;
-  #   extraConfig = ''
-  #     CONFIG_F2FS_FS y
-  #     CONFIG_F2FS_STAT_FS y
-  #     CONFIG_F2FS_FS_XATTR y
-  #     CONFIG_F2FS_FS_POSIX_ACL y
-  #     CONFIG_F2FS_FS_SECURITY y
-  #     CONFIG_F2FS_CHECK_FS y
-  #     CONFIG_F2FS_FS_ENCRYPTION y
-  #     CONFIG_F2FS_FAULT_INJECTION y
-  #   '';
-  # }];
-  boot.kernelParams = [
-    "apple_dcp.show_notch=1"
-  ];
-  boot.extraModulePackages = [ ];
-  boot.extraModprobeConfig = ''
-    options hid_apple iso_layout=0
-  '';
-
   fileSystems."/" =
     {
       device = "/dev/disk/by-uuid/d7028fc7-5930-45f4-8fbd-acbecd278703";
@@ -107,19 +67,8 @@ in
 
   swapDevices = [ ];
 
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  # networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.eth0.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlp1s0f0.useDHCP = lib.mkDefault true;
-
-  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
-  powerManagement.cpuFreqGovernor = lib.mkDefault "ondemand";
-  # high-resolution display
-  # hardware.video.hidpi.enable = lib.mkDefault true;
-  hardware.asahi.addEdgeKernelConfig = true;
+  networking.interfaces.eth0.useDHCP = lib.mkDefault true;
+  networking.interfaces.wifi.useDHCP = lib.mkDefault true;
 
   services.dbus.packages = [
     (pkgs.writeTextFile {

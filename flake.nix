@@ -54,19 +54,9 @@
           system = "aarch64-linux";
 
           modules = [
-            ./system/ushiro.nix
-            ./users/simonwjackson # home-manager.nixosModules.home-manager
-            # {
-            #   home-manager.useGlobalPkgs = true;
-            #   home-manager.useUserPackages = true;
-            #   home-manager.users.${username} = import ./users/${username};
-            #
-            #   home.homeDirectory = "/home/${username}";
-            #   home.stateVersion = "23.05";
-            #
-            #   # Optionally, use home-manager.extraSpecialArgs to pass
-            #   # arguments to home.nix
-            # }
+            ./hardware/apple-m1.nix
+            ./systems/ushiro.nix
+            ./users/simonwjackson
           ];
         };
       };
