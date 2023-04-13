@@ -9,17 +9,14 @@ let
 in
 {
   imports = [
-    ../modules/misc.nix
-    ../modules/syncthing.nix
-    ../modules/workstation.nix
-    ../modules/hidpi.nix
-    ../modules/laptop.nix
     ./default.nix
-    ./headphones.nix
+    ../modules/hidpi.nix
+    ../profiles/laptop.nix
+    ../profiles/workstation.nix
+    ../profiles/gui.nix
   ];
 
   networking.hostName = "ushiro"; # Define your hostname.
-  services.flatpak.enable = true;
 
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
@@ -28,9 +25,6 @@ in
 
   # List packages installed in system profile. To search, run:
   environment.systemPackages = with pkgs; [
-    neovim
-    git
-    f2fs-tools
     cryptsetup
     fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
     mergerfs
@@ -57,8 +51,8 @@ in
 
   swapDevices = [ ];
 
-  networking.interfaces.eth0.useDHCP = lib.mkDefault true;
-  networking.interfaces.wifi.useDHCP = lib.mkDefault true;
+  # networking.interfaces.eth0.useDHCP = lib.mkDefault true;
+  # networking.interfaces.wifi.useDHCP = lib.mkDefault true;
 
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
@@ -68,4 +62,6 @@ in
       code.path = "/home/simonwjackson/code";
     };
   };
+
+  system.stateVersion = "23.05";
 }

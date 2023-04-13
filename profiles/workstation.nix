@@ -1,43 +1,13 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
-  services.udev.packages = with pkgs; [ gnome.gnome-settings-daemon ];
-  services.dbus.packages = [ pkgs.dconf ];
-
-  # X11
-  services.xserver = {
-    enable = true;
-    layout = "us";
-    # INFO: Needed for gtk light/dark mode switch
-    desktopManager.gnome3.enable = true;
-
-    displayManager = {
-      lightdm.enable = true;
-      gdm.enable = false;
-      defaultSession = "home-manager";
-      autoLogin = {
-        enable = true;
-        user = "simonwjackson";
-      };
-    };
-
-    desktopManager = {
-      session = [{
-        name = "home-manager";
-        start = ''
-          ${pkgs.runtimeShell} $HOME/.hm-xsession &
-          waitPID=$!
-        '';
-      }];
-    };
-  };
-
-  # Required when building a custom desktop env
-  programs.dconf.enable = true;
+  imports = [
+    ../modules/syncthing.nix
+  ];
 
   hardware.pulseaudio.enable = false;
-  # rtkit is optional but recommended
-  security.rtkit.enable = true;
+  security.rtkit.enable = true; # rtkit is optional but recommended
+
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -59,11 +29,8 @@
     bluez-tools
     xsettingsd
     gsettings-desktop-schemas
-    # INFO: `sxhkd` can't find kitty without adding here as well
-    kitty
-
-    # make the tailscale command usable to users
-    tailscale
+    kitty # INFO: `sxhkd` can't find kitty without adding here as well
+    tailscale # make the tailscale command usable to users
   ];
 
   # enable the tailscale service

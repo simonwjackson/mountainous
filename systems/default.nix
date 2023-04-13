@@ -1,9 +1,15 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 
 {
-  system.copySystemConfiguration = true;
-  programs.zsh.enable = true;
+  networking.useDHCP = lib.mkDefault false;
   nixpkgs.config.allowUnfree = true;
+  programs.zsh.enable = true;
+  security.sudo.wheelNeedsPassword = false;
+  services.automatic-timezoned.enable = true;
+  services.gpm.enable = true; # TTY mouse
+  system.copySystemConfiguration = true;
+  users.defaultUserShell = pkgs.zsh;
+
   nix = {
     package = pkgs.nixFlakes;
     extraOptions = ''
@@ -13,15 +19,6 @@
     '';
   };
 
-  imports = [
-    ../packages/ex
-    # ../packages/clockify-cli
-  ];
-
-  services.automatic-timezoned.enable = true;
-
-  networking.useDHCP = lib.mkDefault false;
-
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
   console = {
@@ -29,11 +26,6 @@
     keyMap = "us";
   };
 
-  security.sudo.wheelNeedsPassword = false;
-
-
-  users.defaultUserShell = pkgs.zsh;
-  # List packages installed in system profile. To search, run:
   environment.systemPackages = with pkgs; [
     # Other
     wget
@@ -43,7 +35,6 @@
     tmux
     lf
     _1password
-    # obsidian
   ];
 
   # Enable the OpenSSH daemon.
@@ -60,11 +51,22 @@
     pkgs.android-udev-rules
   ];
 
-  # TTY mouse
-  services.gpm.enable = true;
-
-  # programs.ssh.hostKeyAlgorithms = [ "ssh-ed25519" "ssh-rsa" ];
-  # programs.ssh.pubkeyAcceptedKeyTypes = [ "ssh-rsa" ];
-
-  system.stateVersion = "23.05";
+  services.flatpak.enable = true;
+  services.dbus.packages = [
+    (pkgs.writeTextFile {
+      name = "dbus-monitor-policy";
+      text = ''
+        <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+          "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+        <busconfig>
+          <policy user="simonwjackson">
+            <allow send_destination="org.freedesktop.DBus" send_interface="org.freedesktop.DBus.Monitoring" />
+            <allow send_type="method_call" send_interface="org.freedesktop.DBus.Monitoring"/>
+            <allow send_type="signal" send_interface="org.freedesktop.DBus.Properties" send_member="PropertiesChanged" send_path="/org/bluez"/>
+          </policy>
+        </busconfig>
+      '';
+      destination = "/etc/dbus-1/system.d/dbus-monitor-policy.conf";
+    })
+  ];
 }
