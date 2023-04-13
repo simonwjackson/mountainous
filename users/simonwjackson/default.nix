@@ -162,6 +162,19 @@
         **/dist
       '';
     };
+    "./.config/shell_gpt/.sgptrc" = {
+      text = ''
+        OPENAI_API_HOST=https://api.openai.com
+        CHAT_CACHE_LENGTH=100
+        CHAT_CACHE_PATH=${config.home.homeDirectory}/.cache/shell_gpt/chat_cache
+        CACHE_LENGTH=100
+        CACHE_PATH=${config.home.homeDirectory}/.cache/shell_gpt/cache
+        REQUEST_TIMEOUT=60
+        DEFAULT_MODEL=gpt-4
+        DEFAULT_COLOR=magenta
+      '';
+    };
+
   };
 
   # Let Home Manager install and manage itself.
