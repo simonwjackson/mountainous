@@ -26,6 +26,8 @@
   home.sessionVariables = {
     FZF_DEFAULT_OPTS = "--reverse --layout=reverse --color=bg+:-1 --ansi --marker='❖' --pointer='❯' --prompt='  '";
     MPV_SOCKET = "/run/user/\$(id -u)/mpv.socket";
+    GITHUB_TOKEN = builtins.getEnv ("GITHUB_TOKEN");
+    GITHUB_USER = builtins.getEnv ("GITHUB_USER");
     OPENAI_API_KEY = builtins.getEnv ("OPENAI_API_KEY");
     GDK_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 2 else 1;
     GDK_DPI_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 0.5 else 1;
