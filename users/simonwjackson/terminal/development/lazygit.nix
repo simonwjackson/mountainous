@@ -8,7 +8,7 @@
     {
       key = "G";
       description = "GPT Commit";
-      command = "git gpt";
+      command = "[[ $TMUX ]] && tmux display-popup -e PATH=$PATH -d \"$(pwd)\" git gpt || git gpt";
       context = "global";
       subprocess = true;
     }
