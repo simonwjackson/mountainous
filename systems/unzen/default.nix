@@ -440,6 +440,7 @@
       books.path = "/tank/books";
       gaming-profiles-simonwjackson.path = "/tank/gaming/profiles/simonwjackson";
       music.path = "/tank/music";
+      music-lossy.path = "/tank/music-lossy";
       code.path = "/tank/code";
 
       documents.devices = [ "kuro" "unzen" "ushiro" ];
