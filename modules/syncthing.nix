@@ -1,8 +1,8 @@
 {
   services.syncthing = {
+    enable = true;
     overrideDevices = true;
     overrideFolders = true;
-    enable = true;
     user = "simonwjackson";
     configDir = "/home/simonwjackson/.config/syncthing";
 
@@ -28,8 +28,12 @@
     };
 
     folders = {
-      documents.devices = [ "kuro" "unzen" ];
-      code.devices = [ "ushiro" "unzen" ];
+      documents.devices = [ "kuro" "unzen" "ushiro" ];
+      audiobooks.devices = [ "unzen" ];
+      books.devices = [ "kuro" "unzen" ];
+      gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
+      music.devices = [ "unzen" ];
+      code.devices = [ "unzen" "ushiro" ];
     };
   };
 }

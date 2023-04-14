@@ -24,6 +24,9 @@
       ip = "ip --color=auto";
       someday = "task add proj:someday";
 
+      unzen = "mosh unzen -- sh -c 'tmux attach || tmux new-session'";
+      ushiro = "mosh ushiro -- sh -c 'tmux attach || tmux new-session'";
+
       h = "fzf-history-widget";
       more = "less";
       ll = "exa --long --header --git ";

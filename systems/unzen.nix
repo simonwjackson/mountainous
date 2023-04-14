@@ -4,7 +4,9 @@ let
   audioDownloads = /tank/downloads/soulseek/downloads;
 in
 {
-  imports = [ ];
+  imports = [
+    ../modules/syncthing.nix
+  ];
 
   fileSystems."/" =
     {
@@ -15,7 +17,6 @@ in
   swapDevices = [ ];
 
   networking.useDHCP = lib.mkDefault true;
-  # Bootloader.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.useOSProber = true;
@@ -402,7 +403,9 @@ in
       dockerCompat = true;
 
       # Required for containers under podman-compose to be able to talk to each other.
-      defaultNetwork.dnsname.enable = true;
+      # defaultNetwork.dnsname.enable = true;
+
+      defaultNetwork.settings.dns_enabled = true;
     };
     oci-containers = {
       backend = "podman";
@@ -565,7 +568,6 @@ in
     };
   };
 
-
   services.taskserver = {
     enable = true;
     fqdn = "unzen";
@@ -574,35 +576,12 @@ in
   };
 
   services.syncthing = {
-    enable = true;
-    overrideDevices = true;
-    overrideFolders = true;
-    user = "simonwjackson";
     dataDir = "/tank"; # Default folder for new synced folders
-    configDir = "/home/simonwjackson/.config/syncthing";
-    extraFlags = [
+    extraFlags = mkMerge [
       "-gui-address=0.0.0.0:8384"
-      "--no-default-folder"
     ];
 
-    extraOptions = {
-      ignores = {
-        "line" = [
-          "**/node_modules"
-          "**/build"
-          "**/cache"
-        ];
-      };
-    };
-
     folders = {
-      documents.devices = [ "kuro" "unzen" "ushiro" ];
-      audiobooks.devices = [ "unzen" ];
-      books.devices = [ "kuro" "unzen" ];
-      gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
-      music.devices = [ "unzen" ];
-      code.devices = [ "unzen" "ushiro" ];
-
       documents.path = "/tank/documents";
       audiobooks.path = "/tank/audiobooks";
       books.path = "/tank/books";
@@ -610,12 +589,6 @@ in
       music.path = "/tank/music";
       code.path = "/tank/code";
     };
-
-    devices = {
-      ushiro.id = builtins.getEnv "SYNCTHING_USHIRO_ID";
-      unzen.id = builtins.getEnv "SYNCTHING_UNZEN_ID";
-      kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
-      haku.id = builtins.getEnv "SYNCTHING_HAKU_ID";
-    };
-  };
+  }
 }
+
