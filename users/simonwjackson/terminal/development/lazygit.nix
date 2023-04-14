@@ -15,7 +15,7 @@
     {
       key = "t";
       description = "Trunkit!";
-      command = "git trunkit {{index .PromptResponses 0}}";
+      command = "[[ $TMUX ]] && tmux display-popup -E -e PATH=$PATH -d \"$(pwd)\" git trunkit {{index .PromptResponses 0}} || git trunkit {{index .PromptResponses 0}}";
       context = "global";
       prompts = [{
         type = "input";
