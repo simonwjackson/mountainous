@@ -23,7 +23,7 @@ in
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     imports = [ ];
 
-    shellAliases = {
+    home.shellAliases = {
       someday = "task add proj:someday";
 
       unzen = "mosh unzen -- sh -c 'tmux attach || tmux new-session'";
