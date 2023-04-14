@@ -127,14 +127,14 @@
       changelog = "! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit \"$@\" | perl -0 -p -e 's/(^|[^\\\\])([<>])/\\1\\\\\\2/g ; s/(\\s*\\n)+\\*/\\n*/g' #";
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
-      gpt = "!f() { git diff --staged | sgpt --model gpt-4 --temperature .5 \"Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>\n\n[optional body]\n\n[optional footer(s)]'. Prepend first line with a gitmoji directly related to the type. ideally, first line is 50 chars or less\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
+      gpt = "!f() { git diff --staged | tr -s '[:space:]' '\n' | head -n 3500 | tr -s '[:space:]' ' ' | sgpt --model gpt-4 --temperature .5 \"Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>\n\n[optional body]'. Body is a list Prepend first line with a gitmoji directly related to the type. ideally, first line is lowercase 50 chars or less\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
       gpt-pr = "!f() { git log main..HEAD --pretty=format:\"%h %s%n%n%b\" | sgpt --model gpt-4 \"Here are my commit messages. Use them to write a detailed pull request. include both title and body.\"; }; f";
 
       # Squash all unpushed commits with a new message
       squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
       s = "squash";
 
-      trunkit = "!f(){ git stash --include-untracked && git fetch --all && git pull && git stash pop && git add --all && git commit --message \"\${1}\" && git push ; };f";
+      trunkit = "!f() { git stash --include-untracked && git fetch --all && git pull && git stash pop && git add --all && { [ -z \"$1\" ] && git gpt || git commit --message \"$1\"; } && git push; };f";
 
       # Worktree
       wta = "!f() { git show-ref --verify --quiet refs/heads/$1; local_branch_exists=$?; git ls-remote --exit-code --heads origin $1 > /dev/null 2>&1; remote_branch_exists=$?; if [ $local_branch_exists -eq 0 ]; then git worktree add $1 $1; elif [ $remote_branch_exists -eq 0 ]; then git worktree add -b $1 --track origin/$1 $1; else git worktree add -b $1 $1; fi }; f";
