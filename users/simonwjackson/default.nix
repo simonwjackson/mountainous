@@ -11,7 +11,6 @@ in
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     imports = [
       ./terminal
-      ../../modules/neovim
       ./services/github-prs
       # Scripts
       ./bin/rofi-tabs
