@@ -4,6 +4,7 @@
   imports = [
     ../modules/tailscale.nix
     ../modules/main-user.nix
+    ../modules/zsh
   ];
 
   networking.firewall.allowPing = true;
@@ -12,7 +13,6 @@
   networking.useDHCP = lib.mkDefault true;
   nixpkgs.config.allowUnfree = true;
   programs.mosh.enable = true;
-  programs.zsh.enable = true;
   security.sudo.wheelNeedsPassword = false;
   services.automatic-timezoned.enable = true;
   services.gpm.enable = true; # TTY mouse
