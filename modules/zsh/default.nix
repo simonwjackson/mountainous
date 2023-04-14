@@ -1,54 +1,74 @@
-{ pkgs, ... }:
+{ ... }:
 
+let
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
+in
 {
-  imports = [ ];
+  imports = [
+    (import "${home-manager}/nixos")
+  ];
 
-  home.file = {
-    "./.config/zsh/.p10k.zsh" = {
-      source = ./rc/p10k.zsh;
-    };
+  hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  sound.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    jack.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
   };
 
-  programs.zsh = {
-    enable = true;
-    autocd = true;
-    dotDir = ".config/zsh";
-    enableSyntaxHighlighting = true;
-    enableAutosuggestions = true;
-    enableCompletion = true;
+  home-manager.users.simonwjackson = { config, pkgs, ... }: {
+    imports = [ ];
 
-    initExtraBeforeCompInit = ''
-      POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
-
-      source ~/.config/zsh/.p10k.zsh
-    '';
-
-    plugins = with pkgs; [
-      {
-        file = "powerlevel10k.zsh-theme";
-        name = "powerlevel10k";
-        src = "${zsh-powerlevel10k}/share/zsh-powerlevel10k";
-      }
-    ];
-
-    dirHashes = {
-      docs = "$HOME/Documents";
-      dl = "$HOME/Downloads";
+    home.file = {
+      "./.config/zsh/.p10k.zsh" = {
+        source = ./rc/p10k.zsh;
+      };
     };
 
-    # oh-my-zsh = {
-    #   enable = true;
-    #   plugins = [ "git" "vi-mode" ];
-    #   theme = "robbyrussell";
-    # };
+    programs.zsh = {
+      enable = true;
+      autocd = true;
+      dotDir = ".config/zsh";
+      enableSyntaxHighlighting = true;
+      enableAutosuggestions = true;
+      enableCompletion = true;
 
-    initExtra =
-      builtins.readFile (./rc/base.zsh) +
-      builtins.readFile (./rc/bindings.zsh);
+      initExtraBeforeCompInit = ''
+        POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 
-    history = {
-      save = 999999999;
-      size = 999999999;
+        source ~/.config/zsh/.p10k.zsh
+      '';
+
+      plugins = with pkgs; [
+        {
+          file = "powerlevel10k.zsh-theme";
+          name = "powerlevel10k";
+          src = "${zsh-powerlevel10k}/share/zsh-powerlevel10k";
+        }
+      ];
+
+      dirHashes = {
+        docs = "$HOME/Documents";
+        dl = "$HOME/Downloads";
+      };
+
+      # oh-my-zsh = {
+      #   enable = true;
+      #   plugins = [ "git" "vi-mode" ];
+      #   theme = "robbyrussell";
+      # };
+
+      initExtra =
+        builtins.readFile (./rc/base.zsh) +
+        builtins.readFile (./rc/bindings.zsh);
+
+      history = {
+        save = 999999999;
+        size = 999999999;
+      };
     };
   };
 }

@@ -48,9 +48,6 @@
   services.xserver.displayManager.autoLogin.enable = true;
   services.xserver.displayManager.autoLogin.user = "simonwjackson";
 
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
   environment.systemPackages = [
     pkgs.sunshine
     pkgs.pkgs.cifs-utils
