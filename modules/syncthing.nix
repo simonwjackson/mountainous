@@ -32,7 +32,8 @@
       audiobooks.devices = [ "unzen" ];
       books.devices = [ "kuro" "unzen" ];
       gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
-      music.devices = [ "unzen" ];
+      music.devices = [ "unzen" "ushiro" ];
+      music-lossy.devices = [ "unzen" "kuro" ];
       code.devices = [ "unzen" "ushiro" ];
     };
   };

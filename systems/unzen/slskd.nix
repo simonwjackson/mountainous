@@ -1,8 +1,8 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 with lib;
 let
-  cfg = config.services.hello;
+  cfg = config.services.slskd;
   audioDownloads = /tank/downloads/soulseek/downloads;
 in
 {

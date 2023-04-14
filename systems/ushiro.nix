@@ -60,6 +60,7 @@ in
     folders = {
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
+      music.path = "/run/media/simonwjackson/microsd/music";
     };
   };
 

@@ -13,7 +13,7 @@
       TERM = "tmux-256color";
       TERMINAL = "kitty";
       EDITOR = "nvim";
-      PAGER = "nvimpager";
+      # PAGER = "nvimpager";
     };
 
     shellAliases = {
@@ -31,7 +31,6 @@
       more = "less";
       ll = "exa --long --header --git ";
       top = "btop";
-      paru = "paru --noconfirm";
       lan = "nmap -n -sn 192.18.1.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
       wgn = "nmap -n -sn 192.18.2.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
       all_links = "xidel --extract \"//a/resolve-uri(@href, base-uri())\" \"{$1}\" | xclip -selection clipboard";
@@ -46,7 +45,7 @@
     dialog
     nmap
     fd
-    nvimpager
+    # nvimpager
   ];
 
   programs.bat = {

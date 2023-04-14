@@ -1,10 +1,8 @@
-{ pkgs, lib, ... }:
-
-{
+{ pkgs, lib, ... }: {
   imports = [
-    ../modules/syncthing.nix
+    ../../modules/syncthing.nix
+    ./slskd.nix
   ];
-
   fileSystems."/" =
     {
       device = "/dev/disk/by-uuid/472d17fc-6e31-4af2-8e9c-064fcfdce3ed";

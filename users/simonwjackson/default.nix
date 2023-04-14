@@ -224,7 +224,7 @@ in
           singleton = "Non-Album/$artist - $title";
           comp = "Compilations/$album%aunique{} [$year]/$track - $title";
         };
-        directory = "/run/media/simonwjackson/microsd/Music";
+        directory = "/run/media/simonwjackson/microsd/music";
         library = "~/.local/share/musiclibrary.db";
       };
     };

@@ -24,7 +24,7 @@
         modules = [
           ./hardware/intel.nix
           ./hardware/qemu.nix
-          ./systems/unzen.nix
+          ./systems/unzen
         ];
       };
     };
