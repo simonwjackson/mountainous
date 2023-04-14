@@ -53,6 +53,16 @@
     ];
   };
 
+  services.flatpak.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [
+      # xdg-desktop-portal-wlr
+      xdg-desktop-portal-kde
+      # xdg-desktop-portal-gtk
+    ];
+  };
+
   # Enable automatic login for the user.
   services.xserver.displayManager.autoLogin.enable = true;
   services.xserver.displayManager.autoLogin.user = "simonwjackson";
@@ -81,10 +91,6 @@
   # };
 
   # List services that you want to enable:
-
-  services.flatpak = {
-    enable = true;
-  };
 
   # Copy the NixOS configuration file and link it from the resulting system
   # (/run/current-system/configuration.nix). This is useful in case you

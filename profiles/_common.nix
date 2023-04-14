@@ -73,10 +73,6 @@
     pkgs.android-udev-rules
   ];
 
-  services.flatpak.enable = true;
-  xdg.portal = {
-    enable = true;
-  };
   services.dbus.packages = [
     (pkgs.writeTextFile {
       name = "dbus-monitor-policy";
