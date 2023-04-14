@@ -5,4 +5,5 @@ set -e
 
 source _pre.sh
 
-./apply-system.sh && ./apply-users.sh
+./apply-system.sh 
+#&& ./apply-users.sh

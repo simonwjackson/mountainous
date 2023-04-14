@@ -577,7 +577,7 @@ in
 
   services.syncthing = {
     dataDir = "/tank"; # Default folder for new synced folders
-    extraFlags = mkMerge [
+    extraFlags = [
       "-gui-address=0.0.0.0:8384"
     ];
 
@@ -589,6 +589,5 @@ in
       music.path = "/tank/music";
       code.path = "/tank/code";
     };
-  }
+  };
 }
-
