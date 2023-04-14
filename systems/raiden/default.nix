@@ -5,6 +5,7 @@
     ./disks.nix
     ./networking
     ../../modules/audio.nix
+    ../../profiles/_common.nix
   ];
 
   programs.steam = {
@@ -17,14 +18,6 @@
 
   networking.hostName = "raiden";
 
-
-  # console = {
-  #   font = "Lat2-Terminus16";
-  #   keyMap = "us";
-  #   useXkbConfig = true; # use xkbOptions in tty.
-  # };
-
-  # Enable the X11 windowing system.
   services.xserver.enable = true;
 
   # Enable the Plasma 5 Desktop Environment.
@@ -70,11 +63,8 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # List packages installed in system profile. To search, run:
   environment.systemPackages = [
     pkgs.sunshine
-    pkgs.neovim
-    pkgs.git
     pkgs.pkgs.cifs-utils
     pkgs.xfsprogs
     pkgs.fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
@@ -82,26 +72,5 @@
     pkgs.mergerfs-tools
   ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Copy the NixOS configuration file and link it from the resulting system
-  # (/run/current-system/configuration.nix). This is useful in case you
-  # accidentally delete configuration.nix.
-  system.copySystemConfiguration = true;
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 }
