@@ -20,7 +20,6 @@ in
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     home.stateVersion = "23.05";
     imports = [
-      ./desktop
       ./terminal
       ../../modules/neovim
       ./services/github-prs

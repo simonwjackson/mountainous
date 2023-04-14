@@ -28,13 +28,7 @@
     };
 
     folders = {
-      documents.devices = [ "kuro" "unzen" "ushiro" ];
-      audiobooks.devices = [ "unzen" ];
-      books.devices = [ "kuro" "unzen" ];
-      gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
-      music.devices = [ "unzen" "ushiro" ];
-      music-lossy.devices = [ "unzen" "kuro" ];
-      code.devices = [ "unzen" "ushiro" ];
+      # TODO: Add toggles for each folder
     };
   };
 }

@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 
 let
   wifi = {
@@ -12,8 +12,9 @@ in
     ./default.nix
     ../modules/hidpi.nix
     ../profiles/laptop.nix
+    ../profiles/audio.nix
     ../profiles/workstation.nix
-    ../profiles/gui.nix
+    ../profiles/gui
   ];
 
   networking.hostName = "ushiro"; # Define your hostname.
@@ -61,6 +62,10 @@ in
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
       music.path = "/run/media/simonwjackson/microsd/music";
+
+      documents.devices = [ "kuro" "unzen" "ushiro" ];
+      music.devices = [ "unzen" "ushiro" ];
+      code.devices = [ "unzen" "ushiro" ];
     };
   };
 

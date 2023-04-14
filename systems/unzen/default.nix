@@ -546,6 +546,14 @@
       gaming-profiles-simonwjackson.path = "/tank/gaming/profiles/simonwjackson";
       music.path = "/tank/music";
       code.path = "/tank/code";
+
+      documents.devices = [ "kuro" "unzen" "ushiro" ];
+      audiobooks.devices = [ "unzen" ];
+      books.devices = [ "kuro" "unzen" ];
+      gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
+      music.devices = [ "unzen" "ushiro" ];
+      music-lossy.devices = [ "unzen" "kuro" ];
+      code.devices = [ "unzen" "ushiro" ];
     };
   };
 }
