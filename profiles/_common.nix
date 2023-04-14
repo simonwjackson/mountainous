@@ -2,8 +2,9 @@
 
 {
   imports = [
-    ../modules/tailscale.nix
+    ../modules/git.nix
     ../modules/main-user.nix
+    ../modules/tailscale.nix
     ../modules/zsh
   ];
 
