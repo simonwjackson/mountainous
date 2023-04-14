@@ -65,22 +65,6 @@ in
     };
 
     home = {
-      username = "simonwjackson";
-      homeDirectory = "/home/simonwjackson";
-
-      shellAliases = {
-        merge-pdfs = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf *.pdf";
-        website-to-pdf = "wkhtmltopdf --page-size A4 --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 --print-media-type";
-        try = "nix-shell -p";
-        run = "nix-shell -p $1 --run $1";
-        cat = "bat --style=plain";
-        sl = "exa";
-        ls = "exa";
-        l = "exa -l";
-        la = "exa -la";
-        ip = "ip --color=auto";
-      };
-
       packages = [
         pkgs.git-crypt
         pkgs.p7zip

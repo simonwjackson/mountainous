@@ -22,5 +22,10 @@ in
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     home.stateVersion = "23.05";
+
+    home = {
+      username = "simonwjackson";
+      homeDirectory = "/home/simonwjackson";
+    };
   };
 }
