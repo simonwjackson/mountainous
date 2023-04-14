@@ -130,49 +130,13 @@ in
       enable = true;
     };
 
-    systemd.user = {
-      services.xsettingsd = {
-        Unit = {
-          Description = "xsettingsd";
-        };
-        Service = {
-          Type = "simple";
-          ExecStart = "${pkgs.xsettingsd}/bin/xsettingsd";
-          ExecStop = "pkill xsettingsd";
-        };
-        Install = {
-          WantedBy = [ "multi-user.target" ];
-        };
-      };
 
-      services.xsettingsd-watcher = {
-        Unit = {
-          Description = "xsettingsd restarter";
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.systemd}/bin/systemctl --user restart xsettingsd.service";
-        };
-        Install = {
-          WantedBy = [ "multi-user.target" ];
-        };
-      };
 
-      paths.xsettingsd-watcher = {
-        Path = {
-          PathModified = "/home/simonwjackson/.xsettingsd";
-        };
-        Install = {
-          WantedBy = [ "multi-user.target" ];
-        };
-      };
-    };
-
-    # TODO: Place this next to syncthing config
     home.file = {
       ".npmrc" = {
         source = ./npmrc;
       };
+      # TODO: Place this next to syncthing config
       "./code/.stignore" = {
         text = ''
           **/node_modules

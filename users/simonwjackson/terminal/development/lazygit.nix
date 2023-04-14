@@ -4,16 +4,25 @@
   disableStartupPopups = false;
   notARepository = "prompt"; # one of= "prompt" | "create" | "skip" | "quit"
   promptToReturnFromSubprocess = false; # display confirmation when subprocess terminates
-  customCommands = [{
-    key = "t";
-    description = "Trunkit!";
-    command = "git trunkit {{index .PromptResponses 0}}";
-    context = "global";
-    prompts = [{
-      type = "input";
-      title = "Trunkit: Message";
-    }];
-  }];
+  customCommands = [
+    {
+      key = "G";
+      description = "GPT Commit";
+      command = "git gpt";
+      context = "global";
+      subprocess = true;
+    }
+    {
+      key = "t";
+      description = "Trunkit!";
+      command = "git trunkit {{index .PromptResponses 0}}";
+      context = "global";
+      prompts = [{
+        type = "input";
+        title = "Trunkit: Message";
+      }];
+    }
+  ];
   gui = {
     # stuff relating to the UI
     scrollHeight = 2; # how many lines you scroll by
