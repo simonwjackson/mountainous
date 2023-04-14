@@ -8,6 +8,7 @@ in
     (import "${home-manager}/nixos")
   ];
 
+  programs.zsh.enable = true;
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   sound.enable = true;
