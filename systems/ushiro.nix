@@ -9,12 +9,12 @@ let
 in
 {
   imports = [
-    ./default.nix
     ../modules/hidpi.nix
-    ../profiles/laptop.nix
+    ../profiles/_common.nix
     ../profiles/audio.nix
-    ../profiles/workstation.nix
     ../profiles/gui
+    ../profiles/laptop.nix
+    ../profiles/workstation.nix
   ];
 
   networking.hostName = "ushiro"; # Define your hostname.
@@ -32,11 +32,6 @@ in
     mergerfs-tools
     nfs-utils
   ];
-
-  # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-
-  networking.firewall.enable = false;
 
   fileSystems."/" =
     {

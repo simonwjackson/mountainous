@@ -5,8 +5,12 @@
     ../modules/tailscale.nix
   ];
 
-  networking.useDHCP = lib.mkDefault false;
+  networking.firewall.allowPing = true;
+  networking.firewall.enable = false;
+  networking.networkmanager.enable = true;
+  networking.useDHCP = lib.mkDefault true;
   nixpkgs.config.allowUnfree = true;
+  programs.mosh.enable = true;
   programs.zsh.enable = true;
   security.sudo.wheelNeedsPassword = false;
   services.automatic-timezoned.enable = true;
@@ -31,7 +35,9 @@
   };
 
   environment.systemPackages = with pkgs; [
-    # Other
+    neovim
+    git
+    tmux
     wget
     git
     w3m
