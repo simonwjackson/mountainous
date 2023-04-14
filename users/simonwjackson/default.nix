@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ lib, ... }:
 
 let
   home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
@@ -8,17 +8,7 @@ in
     (import "${home-manager}/nixos")
   ];
 
-  users.users.simonwjackson = {
-    shell = pkgs.zsh;
-    isNormalUser = true;
-    extraGroups = [
-      "adbusers"
-      "wheel"
-    ];
-  };
-
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
-    home.stateVersion = "23.05";
     imports = [
       ./terminal
       ../../modules/neovim

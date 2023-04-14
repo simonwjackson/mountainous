@@ -3,6 +3,7 @@
 {
   imports = [
     ../modules/tailscale.nix
+    ../modules/main-user.nix
   ];
 
   networking.firewall.allowPing = true;

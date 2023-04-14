@@ -18,15 +18,6 @@
 
   networking.hostName = "unzen"; # Define your hostname.
 
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    description = "simonwjackson";
-    extraGroups = [ "docker" "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      beets
-    ];
-  };
-
   environment.systemPackages = with pkgs; [
     fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
     mergerfs

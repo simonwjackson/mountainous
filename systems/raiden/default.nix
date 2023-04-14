@@ -4,7 +4,7 @@
     ./sunshine.nix
     ./disks.nix
     ./networking
-    ../../modules/audio.nix
+    ../../profiles/audio.nix
     ../../profiles/_common.nix
   ];
 
@@ -33,18 +33,6 @@
 
   # Enable touchpad support (enabled default in most desktopManager).
   services.xserver.libinput.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    description = "Simon W. Jackson";
-    extraGroups = [ "input" "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      firefox
-      kate
-      neovim
-    ];
-  };
 
   services.flatpak.enable = true;
   xdg.portal = {
