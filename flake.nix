@@ -27,6 +27,15 @@
           ./systems/unzen
         ];
       };
+
+      raiden = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+
+        modules = [
+          ./hardware/intel.nix
+          ./systems/raiden
+        ];
+      };
     };
   };
 }

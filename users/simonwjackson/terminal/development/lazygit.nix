@@ -29,8 +29,8 @@
     scrollPastBottom = true; # enable scrolling past the bottom
     sidePanelWidth = 0.3333; # number from 0 to 1
     expandFocusedSidePanel = false;
-    mainPanelSplitMode = "flexible"; # one of "horizontal" | "flexible" | "vertical"
-    language = "en"; # one of "auto" | "en" | "zh" | "pl" | "nl" | "ja" | "ko"
+    mainPanelSplitMode = "flexible";
+    language = "en";
     timeFormat = "02 Jan 06 15:04 MST"; # https://pkg.go.dev/time#Time.Format
     theme = {
       activeBorderColor = [ "green" "bold" ];
