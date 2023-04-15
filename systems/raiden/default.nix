@@ -1,5 +1,11 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+
+let
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
+in
+{
   imports = [
+    (import "${home-manager}/nixos")
     ./dell-9710
     ./sunshine.nix
     ./disks.nix
@@ -68,7 +74,9 @@
     };
   };
 
-  home.file.".local/share/Cemu/mlc01".source = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
+  home-manager.users.simonwjackson = { config, pkgs, ... }: {
+    home.file.".local/share/Cemu/mlc01".source = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
+  };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
