@@ -68,6 +68,7 @@
     };
   };
 
+  home.file.".local/share/Cemu/mlc01".source = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
