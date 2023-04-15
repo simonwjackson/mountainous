@@ -430,6 +430,7 @@
       audiobooks.path = "/tank/audiobooks";
       books.path = "/tank/books";
       gaming-profiles-simonwjackson.path = "/tank/gaming/profiles/simonwjackson";
+      gaming.path = "/tank/gaming";
       music.path = "/tank/music";
       music-lossy.path = "/tank/music-lossy";
       code.path = "/tank/code";
@@ -438,6 +439,7 @@
       audiobooks.devices = [ "unzen" ];
       books.devices = [ "kuro" "unzen" ];
       gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
+      gaming.devices = [ "unzen" "raiden" ];
       music.devices = [ "unzen" "ushiro" ];
       music-lossy.devices = [ "unzen" "kuro" ];
       code.devices = [ "unzen" "ushiro" ];
