@@ -57,5 +57,17 @@
     pkgs.mergerfs-tools
   ];
 
+  services.syncthing = {
+    dataDir = "/storage"; # Default folder for new synced folders
+    extraFlags = [ ];
+
+    folders = {
+      gaming.path = "/storage/gaming";
+
+      gaming.devices = [ "unzen" "raiden" ];
+    };
+  };
+
+
   system.stateVersion = "23.05"; # Did you read the comment?
 }
