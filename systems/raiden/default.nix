@@ -4,6 +4,7 @@
     ./sunshine.nix
     ./disks.nix
     ./networking
+    ../modules/syncthing.nix
     ../../profiles/audio.nix
     ../../profiles/_common.nix
   ];

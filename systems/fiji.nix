@@ -12,7 +12,6 @@ in
     ../modules/hidpi.nix
     ../modules/laptop.nix
     ../modules/workstation.nix
-    # ../modules/wireguard-client.nix
     ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -161,13 +160,6 @@ in
     allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
     allowedTCPPorts = [ 24800 ];
   };
-
-  # networking.wireguard.interfaces = {
-  #   mtn = {
-  #     ips = [ "192.18.2.10/32" ];
-  #     privateKey = builtins.getEnv "WIREGUARD_FIJI_PRIVATE";
-  #   };
-  # };
 
   services.autofs.enable = true;
   services.autofs.autoMaster = ''
