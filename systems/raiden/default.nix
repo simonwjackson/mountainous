@@ -70,7 +70,7 @@
     };
   };
 
-  "/home/simonwjackson/.local/share/Cemu/mlc01" = {
+  fileSystems."/home/simonwjackson/.local/share/Cemu/mlc01" = {
     device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
     options = [ "bind" ];
   };
