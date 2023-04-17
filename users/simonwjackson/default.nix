@@ -104,6 +104,8 @@ in
       };
       "./.config/shell_gpt/.sgptrc" = {
         text = ''
+          NIXPKGS_ALLOW_INSECURE=1
+          NIXPKGS_ALLOW_UNFREE=1
           OPENAI_API_HOST=https://api.openai.com
           CHAT_CACHE_LENGTH=100
           CHAT_CACHE_PATH=${config.home.homeDirectory}/.cache/shell_gpt/chat_cache
