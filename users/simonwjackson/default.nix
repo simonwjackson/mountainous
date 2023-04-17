@@ -114,6 +114,44 @@ in
           REQUEST_TIMEOUT=60
           DEFAULT_MODEL=gpt-4
           DEFAULT_COLOR=magenta
+          ROLE_STORAGE_PATH=/home/simonwjackson/.config/shell_gpt/roles
+          SYSTEM_ROLES=false
+        '';
+      };
+      "./.config/shell_gpt/roles/code.json" = {
+        text = ''
+          {
+            "name": "code",
+            "expecting": "Code",
+            "variables": null,
+            "role": "Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting such as ```.\nIf there is a lack of details, provide most logical solution.\nYou are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion."
+          }
+        '';
+      };
+      "./.config/shell_gpt/roles/shell.json" = {
+        text = ''
+          {
+            "name": "shell",
+            "expecting": "Command",
+            "variables": {
+              "shell": "zsh",
+              "os": "Linux/NixOS unstable"
+            },
+            "role": "Provide only bash, zsh or POSIX compliant commands for Linux/NixOS unstable without any description.\nIf there is a lack of details, provide most logical solution.\nEnsure the output is a valid shell command.\nIf multiple steps required try to combine them together as a single pipeline."
+          }
+        '';
+      };
+      "./.config/shell_gpt/roles/default.json" = {
+        text = ''
+          {
+            "name": "default",
+            "expecting": "Answer",
+            "variables": {
+              "shell": "zsh",
+              "os": "Linux/NixOS 23.05 (Stoat)"
+            },
+            "role": "You are Command Line App ShellGPT, a programming and system administration assistant.\nYou are managing Linux/NixOS 23.05 (Stoat) operating system with zsh shell.\nProvide only plain text without Markdown formatting.\nDo not show any warnings or information regarding your capabilities.\nIf you need to store any data, assume it will be stored in the chat."
+          }
         '';
       };
 
