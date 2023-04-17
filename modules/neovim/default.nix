@@ -14,7 +14,7 @@ in
     home.packages = with pkgs; [
       nodejs-16_x
       bun
-      deno
+      # deno
       neovim-remote
     ];
 
