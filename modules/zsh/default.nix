@@ -28,10 +28,9 @@ in
 
       unzen = "mosh unzen -- sh -c 'tmux attach || tmux new-session'";
       ushiro = "mosh ushiro -- sh -c 'tmux attach || tmux new-session'";
+      raiden = "mosh raiden -- sh -c 'tmux attach || tmux new-session'";
 
       h = "fzf-history-widget";
-      more = "less";
-      ll = "exa --long --header --git ";
       top = "btop";
       lan = "nmap -n -sn 192.18.1.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
       wgn = "nmap -n -sn 192.18.2.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
@@ -41,12 +40,16 @@ in
       website-to-pdf = "wkhtmltopdf --page-size A4 --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 --print-media-type";
       try = "nix-shell -p";
       run = "nix-shell -p $1 --run $1";
-      cat = "bat --style=plain";
-      sl = "exa";
+      less = "bat --paging=always";
+      more = "bat --paging=always";
+      ip = "ip --color=auto";
+
+      lt = "exa -lT";
+      lat = "exa -laT";
+      ll = "exa --long --header --git";
       ls = "exa";
       l = "exa -l";
       la = "exa -la";
-      ip = "ip --color=auto";
     };
 
     home.file = {
