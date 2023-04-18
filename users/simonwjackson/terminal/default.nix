@@ -119,7 +119,40 @@
 
   programs.lf = {
     enable = true;
+    commands = {
+      "open" = "xdg-open";
+      "push" = "git add %s && git commit -m 'push %s'";
+      "touch" = "%touch $1 && lf -remote \"send $id load\" && lf -remote \"send $id select $1\"";
+    };
+    settings = {
+      icons = true;
+      tabstop = 4;
+      number = false;
+      ratios = "1:1:3";
+    };
+    cmdKeybindings = { };
+    keybindings = {
+      D = "delete";
+      T = "push :touch<space>";
+      gh = "cd ~";
+      i = "$less $f";
+      U = "!du -sh";
+      "<enter>" = "open";
+      "." = "set hidden!";
+    };
     extraConfig = builtins.readFile ./lf/lfrc;
+    previewer.source = pkgs.writeShellScript "pv.sh" ''
+      #!/bin/sh
+
+      case "$1" in
+          *.tar*) tar tf "$1";;
+          *.zip) 7z l "$1";;
+          *.rar) 7z l "$1";;
+          *.7z) 7z l "$1";;
+          *.pdf) pdftotext "$1" -;;
+          *) bat --color always --style=plain --paging=never "$1";;
+      esac
+    '';
   };
 
   programs.direnv = {
