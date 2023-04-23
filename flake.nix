@@ -17,7 +17,7 @@
           ./users/simonwjackson
         ];
       };
-
+      
       unzen = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
@@ -28,12 +28,21 @@
         ];
       };
 
+      yakushi = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+
+        modules = [
+          ./systems/yakushi
+        ];
+      };
+
       raiden = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         modules = [
           ./hardware/intel.nix
           ./systems/raiden
+          # nixos-hardware.nixosModules.dell-xps-17-9710
         ];
       };
     };

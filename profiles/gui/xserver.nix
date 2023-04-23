@@ -32,6 +32,20 @@
     # home.file.".config/awesome/rc.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/rc.lua;
     # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
+    xresources = {
+      properties = {
+        "Xcursor.size" = 46;
+        "Xft.autohint" = 0;
+        "Xft.lcdfilter" = "lcddefault";
+        "Xft.hintstyle" = "hintfull";
+        "Xft.hinting" = 1;
+        "Xft.antialias" = 1;
+        "Xft.rgba" = "r=b";
+        "Xft.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
+        "*.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
+      };
+    };
+
     xsession.windowManager.awesome = {
       enable = true;
     };

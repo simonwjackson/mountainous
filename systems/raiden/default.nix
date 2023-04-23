@@ -7,8 +7,11 @@
     ./disks.nix
     ./networking
     ../../modules/syncthing.nix
+    ../../profiles/gui
     ../../profiles/audio.nix
+    ../../profiles/workstation.nix
     ../../profiles/_common.nix
+    ../../users/simonwjackson
   ];
 
   programs.steam = {
@@ -21,19 +24,12 @@
 
   networking.hostName = "raiden";
 
-  services.xserver.enable = true;
-
-  # Enable the Plasma 5 Desktop Environment.
-  services.xserver.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma5.enable = true;
-
   # Configure keymap in X11
   services.xserver = {
     layout = "us";
     xkbVariant = "";
   };
 
-  # Enable touchpad support (enabled default in most desktopManager).
   services.xserver.libinput.enable = true;
 
   services.flatpak.enable = true;
@@ -46,9 +42,6 @@
     ];
   };
 
-  # Enable automatic login for the user.
-  services.xserver.displayManager.autoLogin.enable = true;
-  services.xserver.displayManager.autoLogin.user = "simonwjackson";
 
   environment.systemPackages = [
     pkgs.sunshine
@@ -61,19 +54,18 @@
 
   services.syncthing = {
     dataDir = "/storage"; # Default folder for new synced folders
-    extraFlags = [ ];
 
-    folders = {
-      gaming.path = "/storage/gaming";
-
-      gaming.devices = [ "unzen" "raiden" ];
-    };
+    # folders = {
+    #   gaming.path = "/storage/gaming";
+    #
+    #   gaming.devices = [ "unzen" "raiden" ];
+    # };
   };
 
-  fileSystems."/home/simonwjackson/.local/share/Cemu/mlc01" = {
-    device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
-    options = [ "bind" ];
-  };
+  # "/home/simonwjackson/.local/share/Cemu/mlc01" = {
+  #   device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
+  #   options = [ "bind" ];
+  # };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
