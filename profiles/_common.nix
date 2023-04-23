@@ -7,6 +7,7 @@
     ../modules/tailscale.nix
     ../modules/zsh
     ../modules/neovim
+    ../modules/terminal
   ];
 
   networking.firewall.allowPing = true;

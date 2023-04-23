@@ -34,20 +34,6 @@ in
 
     # TODO: Find a way to enable this dynamicaly by system type
 
-    xresources = {
-      properties = {
-        "Xcursor.size" = 46;
-        "Xft.autohint" = 0;
-        "Xft.lcdfilter" = "lcddefault";
-        "Xft.hintstyle" = "hintfull";
-        "Xft.hinting" = 1;
-        "Xft.antialias" = 1;
-        "Xft.rgba" = "r=b";
-        "Xft.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
-        "*.dpi" = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then "144" else "96";
-      };
-    };
-
     home = {
       packages = [
         pkgs.git-crypt
@@ -84,11 +70,9 @@ in
       };
     };
 
-    services.udiskie = {
-      enable = true;
-    };
-
-
+    # services.udiskie = {
+    #   enable = true;
+    # };
 
     home.file = {
       ".npmrc" = {
@@ -119,36 +103,36 @@ in
     # Let Home Manager install and manage itself.
     programs.home-manager.enable = true;
 
-    programs.beets = {
-      enable = true;
-      settings = {
-        match = {
-          strong_rec_thresh = 0.20;
-        };
-        clutter = [ "*" ];
-        plugins = lib.strings.concatStringsSep " " [
-          "bpd"
-          "export"
-          "duplicates"
-          "missing"
-        ];
-        import = {
-          duplicate_action = "merge";
-        };
-        duplicates = {
-          tiebreak = {
-            items = [ "bitrate" ];
-          };
-        };
-        paths = {
-          default = "$album - $albumartist [$year]/$track - $title";
-          singleton = "Non-Album/$artist - $title";
-          comp = "Compilations/$album%aunique{} [$year]/$track - $title";
-        };
-        directory = "/run/media/simonwjackson/microsd/music";
-        library = "~/.local/share/musiclibrary.db";
-      };
-    };
+    # programs.beets = {
+    #   enable = true;
+    #   settings = {
+    #     match = {
+    #       strong_rec_thresh = 0.20;
+    #     };
+    #     clutter = [ "*" ];
+    #     plugins = lib.strings.concatStringsSep " " [
+    #       "bpd"
+    #       "export"
+    #       "duplicates"
+    #       "missing"
+    #     ];
+    #     import = {
+    #       duplicate_action = "merge";
+    #     };
+    #     duplicates = {
+    #       tiebreak = {
+    #         items = [ "bitrate" ];
+    #       };
+    #     };
+    #     paths = {
+    #       default = "$album - $albumartist [$year]/$track - $title";
+    #       singleton = "Non-Album/$artist - $title";
+    #       comp = "Compilations/$album%aunique{} [$year]/$track - $title";
+    #     };
+    #     directory = "/run/media/simonwjackson/microsd/music";
+    #     library = "~/.local/share/musiclibrary.db";
+    #   };
+    # };
 
     programs.taskwarrior = {
       enable = true;
