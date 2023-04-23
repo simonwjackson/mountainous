@@ -94,4 +94,10 @@
       destination = "/etc/dbus-1/system.d/dbus-monitor-policy.conf";
     })
   ];
+
+  services.autofs.enable = true;
+  services.autofs.autoMaster = ''
+    /net -hosts --timeout=60
+  '';
+
 }
