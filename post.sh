@@ -3,6 +3,8 @@
 
 set -e
 
+[[ $(op account get) ]] || eval "$(op signin)"
+
 echo "${SSH_PERSONAL_RSA_PRIVATE}" > "${HOME}/.ssh/id_rsa"
 echo "${SSH_CLERK_ED25519_PRIVATE}" > "${HOME}/.ssh/id_ed25519"
 
@@ -18,7 +20,7 @@ ssh-keygen -y -f ~/.ssh/id_ed25519 >> "${HOME}/.ssh/authorized_keys"
 # Install packer plugins
 nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 
-npm install --global \
-  @tailwindcss/language-server
+# npm install --global \
+#  @tailwindcss/language-server
 
-systemctl --user enable rofi-server.service
+#systemctl --user enable rofi-server.service
