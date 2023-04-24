@@ -36,9 +36,17 @@ super + shift + {KP_Add,minus}
 #  ╚══╝╚══╝ ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚══════╝
 # ==========================================================
 
-# Switch to the {west,south,north,east} window
-super + {h,j,k,l}
-  awesome-client 'require("awful").client.focus.bydirection("{left,down,up,right}")'
+# Switch to the {west,east} window
+super + {h,l}
+  awesome-client 'require("awful").client.focus.bydirection("{left,right}")'
+
+# Move north
+super + k
+  awesome-client 'local awful = require("awful"); local screen = awful.screen; local client = client; local c = client.focus; local above = c:geometry().y - c:geometry().height; local target; for _, cl in ipairs(client.get()) do if cl:geometry().y <= above and (not target or cl:geometry().y > target:geometry().y) then target = cl end end if target then client.focus = target end'
+
+# Move south
+super + j
+  awesome-client 'local awful = require("awful"); local screen = awful.screen; local client = client; local c = client.focus; local below = c:geometry().y + c:geometry().height; local target; for _, cl in ipairs(client.get()) do if cl:geometry().y >= below and (not target or cl:geometry().y < target:geometry().y) then target = cl end end if target then client.focus = target end'
 
 # close
 super + x
