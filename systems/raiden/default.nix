@@ -6,6 +6,7 @@
     ./sunshine.nix
     ./disks.nix
     ./networking
+    ./screens.nix
     ../../modules/syncthing.nix
     ../../profiles/gui
     ../../profiles/audio.nix
