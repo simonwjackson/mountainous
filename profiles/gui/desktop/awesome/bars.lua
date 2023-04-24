@@ -44,6 +44,7 @@ end
 awful.widget.watch("cat /tmp/bluetooth_status.fifo", 1, update_widget, fifo_widget)
 
 awful.screen.connect_for_each_screen(function(s)
+  -- if s ~= screen.primary then
   -- Each screen has its own tag table.
   awful.tag({ "●", "●", "●" }, s, awful.layout.layouts[1])
 
@@ -107,11 +108,11 @@ awful.screen.connect_for_each_screen(function(s)
 
   -- Create the wibox
   s.mywibox = awful.wibar({
-    height = 64,
+    height = 46,
     position = "top",
     screen = s,
     type = "dock",
-    width = s.geometry.width - 80,
+    width = s.geometry.width - 20,
   })
 
   s.mywibox.bg = "#00000000" -- Replace with your desired background color
@@ -138,5 +139,6 @@ awful.screen.connect_for_each_screen(function(s)
       mytextclock,
     },
   }
+  -- end
 end)
 -- }}}

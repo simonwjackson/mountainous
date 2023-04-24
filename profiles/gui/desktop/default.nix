@@ -33,7 +33,7 @@
     };
 
 
-    home.file.".config/awesome/rc.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/rc.lua;
+    home.file.".config/awesome".source = config.lib.file.mkOutOfStoreSymlink ./awesome;
     # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
     # dconf.enable = true;
