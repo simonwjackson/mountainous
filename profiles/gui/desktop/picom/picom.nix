@@ -1,12 +1,15 @@
 {
+  backend = "glx";
+  vsync = true;
+
   shadow = true;
+  clear-shadow = true;
   no-dnd-shadow = true;
   no-dock-shadow = true;
-  clear-shadow = true;
-  shadow-radius = 50;
-  shadow-offset-x = -30;
-  shadow-offset-y = -30;
-  shadow-opacity = 0.8;
+  shadow-radius = 25;
+  shadow-offset-x = -25;
+  shadow-offset-y = -25;
+  shadow-opacity = 0.25;
   shadow-exclude = [
     "class_g = 'Awesome'"
     "! name~=''"
@@ -23,4 +26,5 @@
     "class_g = 'awesome'"
     "class_g = 'Xfce4-panel'"
   ];
+  xinerama-shadow-crop = true;
 }
