@@ -53,20 +53,24 @@
     pkgs.mergerfs-tools
   ];
 
-  services.syncthing = {
-    dataDir = "/storage"; # Default folder for new synced folders
-
-    # folders = {
-    #   gaming.path = "/storage/gaming";
-    #
-    #   gaming.devices = [ "unzen" "raiden" ];
-    # };
-  };
-
   # "/home/simonwjackson/.local/share/Cemu/mlc01" = {
   #   device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
   #   options = [ "bind" ];
   # };
+
+  services.syncthing = {
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
+
+    folders = {
+      documents.path = "/home/simonwjackson/documents";
+      code.path = "/home/simonwjackson/code";
+      # gaming.path = "/storage/gaming";
+
+      # gaming.devices = [ "unzen" "raiden" ];
+      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" ];
+      code.devices = [ "unzen" "ushiro" "raiden" ];
+    };
+  };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }

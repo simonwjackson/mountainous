@@ -58,9 +58,9 @@ in
       code.path = "/home/simonwjackson/code";
       music.path = "/run/media/simonwjackson/microsd/music";
 
-      documents.devices = [ "kuro" "unzen" "ushiro" ];
+      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" ];
       music.devices = [ "unzen" "ushiro" ];
-      code.devices = [ "unzen" "ushiro" ];
+      code.devices = [ "unzen" "ushiro" "raiden" ];
     };
   };
 
