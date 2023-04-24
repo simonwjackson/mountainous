@@ -120,12 +120,12 @@ require('packer').startup(function(use)
     end
   }
 
-  use {
-    "folke/twilight.nvim",
-    config = function()
-      require("plugins/twilight")
-    end
-  }
+  -- use {
+  --   "folke/twilight.nvim",
+  --   config = function()
+  --     require("plugins/twilight")
+  --   end
+  -- }
 
   use {
     "folke/zen-mode.nvim",
