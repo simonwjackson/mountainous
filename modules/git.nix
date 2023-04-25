@@ -330,7 +330,7 @@ in
         changelog = "! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit \"$@\" | perl -0 -p -e 's/(^|[^\\\\])([<>])/\\1\\\\\\2/g ; s/(\\s*\\n)+\\*/\\n*/g' #";
         sync = "! git fetch --tags && git rebase --autostash && git push";
 
-        gpt = "!f() { git diff --staged | tr -s '[:space:]' '\n' | head -n 3500 | tr -s '[:space:]' ' ' | sgpt --model gpt-4 --temperature .5 \"Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>\n\n[optional body]'. Body is a list Prepend first line with a gitmoji directly related to the type. ideally, first line is lowercase 50 chars or less\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
+        gpt = "!f() { git diff --staged | tr -s '[:space:]' '\n' | head -n 3500 | tr -s '[:space:]' ' ' | sgpt --model gpt-4 --temperature .5 \"Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>\n\n[optional body]'. Body is a list. Prepend first line with a gitmoji directly related to the type. ideally, first line is lowercase 50 chars or less\" | tee /dev/tty | (git commit -F - --edit || true); }; f";
         gpt-pr = "!f() { git log main..HEAD --pretty=format:\"%h %s%n%n%b\" | sgpt --model gpt-4 \"Here are my commit messages. Use them to write a summary and a list summarized chages. Each item will be prepended with an emoji and commit  hash. Write informally and imperatively. Format: <summary>\n\n<list>\"; }; f";
 
         # Squash all unpushed commits with a new message
