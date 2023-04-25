@@ -2,8 +2,22 @@
   backend = "glx";
   vsync = true;
 
+  corner-radius = 8;
+
+  active-opacity = .8;
+  inactive-opacity = .8;
+  blur-background = true;
+  blur-method = "dual_kawase";
+  blur-strength = 8;
+  blur-background-exclude = [
+    "window_type = 'dock'"
+  ];
+
+  fading = true;
+  fading-delta = 4;
+  no-fading-openclose = false;
+
   shadow = true;
-  clear-shadow = true;
   no-dnd-shadow = true;
   no-dock-shadow = true;
   shadow-radius = 25;

@@ -64,7 +64,7 @@
       enable = true;
       settings = import ./picom/picom.nix;
 
-      # extraArgs = [ "--experimental-backend" ];
+      extraArgs = [ "--experimental-backend" ];
       # package = pkgs.picom.overrideAttrs (o: {
       #   src = pkgs.fetchFromGitHub {
       #     repo = "picom";
