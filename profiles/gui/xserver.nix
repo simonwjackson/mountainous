@@ -40,7 +40,7 @@
         GDK_SCALE = 1;
         GDK_DPI_SCALE = 1;
         QT_AUTO_SCREEN_SET_FACTOR = 1;
-        QT_QPA_PLATFORMTHEME = "qt5ct";
+        # QT_QPA_PLATFORMTHEME = "qt5ct";
         QT_SCALE_FACTOR = 1;
         QT_FONT_DPI = 96;
       };

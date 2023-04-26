@@ -36,27 +36,27 @@
     home.file.".config/awesome".source = config.lib.file.mkOutOfStoreSymlink ./awesome;
     # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
-    # dconf.enable = true;
-    # gtk = {
-    #   enable = true;
-    #   theme.package = pkgs.gnome.gnome-themes-extra;
-    #   theme.name = "Adwaita";
+    dconf.enable = true;
+    gtk = {
+      enable = true;
+      theme.package = pkgs.gnome.gnome-themes-extra;
+      theme.name = "Adwaita";
 
-    #   gtk4.extraConfig = {
-    #     gtk-application-prefer-dark-theme = 1;
-    #   };
+      gtk4.extraConfig = {
+        gtk-application-prefer-dark-theme = 1;
+      };
 
-    #   gtk3.extraConfig = {
-    #     gtk-application-prefer-dark-theme = 1;
-    #   };
-    # };
+      gtk3.extraConfig = {
+        gtk-application-prefer-dark-theme = 1;
+      };
+    };
 
-    # qt = {
-    #   enable = true;
-    #   platformTheme = "gnome";
-    #   style.package = pkgs.adwaita-qt;
-    #   style.name = "adwaita-dark";
-    # };
+    qt = {
+      enable = true;
+      platformTheme = "gnome";
+      style.package = pkgs.adwaita-qt;
+      style.name = "adwaita-dark";
+    };
 
     home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
@@ -106,21 +106,46 @@
         };
 
         userChrome = ''
-          /* Hide back/forward buttons */
-          #back-button, #forward-button, #home-button { display:none!important; }
-        
-          /* Hide tab bar */
-          #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
-            opacity: 0;
-            pointer-events: none;
+          :root[titlepreface*="᠎"] #nav-bar {
+            visibility: inherit !important;
           }
-
-          #main-window:not([tabsintitlebar="true"]) #TabsToolbar {
-            visibility: collapse !important;
-          }
-
-          #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar .titlebar-spacer {
-            border-inline-end: none;
+          
+          /* Here all specific rules for user interface, extensions UI… */
+          @-moz-document url(chrome://browser/content/browser.xul),
+            url(chrome://browser/content/browser.xhtml),
+            url(chrome://browser/content/places/bookmarksSidebar.xhtml),
+            url(chrome://browser/content/webext-panels.xhtml),
+            url(chrome://browser/content/places/places.xhtml) {
+          
+            /* Hide back, forward & home buttons */
+            #back-button,
+            #forward-button,
+            #home-button,
+            #PersonalToolbar {
+              display: none !important;
+            }
+          
+            #nav-bar {
+              visibility: collapse !important;
+            }
+          
+            /* #urlbar-container {
+              visibility: collapse !important;
+            } */
+          
+            /* Hide tab bar */
+            #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
+              opacity: 0;
+              pointer-events: none;
+            }
+          
+            #main-window:not([tabsintitlebar="true"]) #TabsToolbar {
+              visibility: collapse !important;
+            }
+          
+            #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar .titlebar-spacer {
+              border-inline-end: none;
+            }
           }
         '';
 
