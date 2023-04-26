@@ -4,7 +4,7 @@ sanitise tridactyllocal tridactylsync
 
 " General Settings
 set modeindicator false
-set editorcmd kitty-popup "nvim -f %f -c 'set noruler | set laststatus=0 | set noshowcmd | set cmdheight=1 | nnoremap <ENTER> :x<ENTER> | nnoremap <ESC><ESC> :q!<ENTER> | nnoremap <C-s> :xa!<ENTER> | inoremap <C-s> <C-o>:x<CR>'"
+set editorcmd kitty -- sh -c "nvim -f %f -c 'set noruler | set laststatus=0 | set noshowcmd | set cmdheight=1 | nnoremap <ENTER> :x<ENTER> | nnoremap <ESC><ESC> :q| nnoremap <C-s> :xa| inoremap <C-s> <C-o>:x<CR>'"
 set theme shydactyl
 
 set searchurls.google   https://encrypted.google.com/search?q=%s
@@ -14,7 +14,7 @@ set searchengine google
 unbind d
 unbind B
 unbind b
-unbind T
+" unbind T
 unbind gf 
 
 " bind gi composite focusinput -l | editor
@@ -253,6 +253,6 @@ bind 'gv hint -W mpvvideo
 "bind 'gA hint -W mpvaudioenque
 
 "" Taskwarrior
-bind t composite get_current_url | js -p tri.excmds.fillcmdline(`! task add url:"${JS_ARG}"`)
+" bind t composite get_current_url | js -p tri.excmds.fillcmdline(`! task add url:"${JS_ARG}"`)
 
 " vim: set filetype=vim:
