@@ -292,6 +292,19 @@ in
           features = "side-by-side line-numbers decorations";
           whitespace-error-style = "22 reverse";
           side-by-side = false;
+
+          color = {
+            commit = "auto";
+            file = "auto";
+            hunk = "auto";
+            minus = "auto";
+            minus-emph = "auto";
+            minus-non-emph = "auto";
+            plus = "auto";
+            plus-emph = "auto";
+            plus-non-emph = "auto";
+            whitespace = "auto reverse";
+          };
         };
       };
 
@@ -366,6 +379,7 @@ in
         init = {
           defaultBranch = "main";
         };
+
         safe = {
           directory = [
             "/etc/nixos"
