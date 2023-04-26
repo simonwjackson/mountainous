@@ -15,8 +15,8 @@ local border = {
 
 -- LSP settings (for overriding per client)
 local handlers = {
-      ["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, { border = border }),
-      ["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, { border = border }),
+  ["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, { border = border }),
+  ["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, { border = border }),
 }
 
 -- Use an on_attach function to only map the following keys
@@ -80,12 +80,12 @@ local on_attach = function(client, bufnr)
   wk.register({
     K = { vim.lsp.buf.hover, "Do hover", unpack(bufopts) },
     gk = { vim.diagnostic.open_float, "Show lsp popup", unpack(bufopts) },
-        ["<C-S>k"] = { "<cmd>lua vim.lsp.buf.signature_help()", "Show signature", unpack(bufopts) },
+    ["<C-S>k"] = { "<cmd>lua vim.lsp.buf.signature_help()", "Show signature", unpack(bufopts) },
     gD = { '<cmd>Telescope lsp_type_definitions<cr>', "Go to type definition", unpack(bufopts) },
     gd = { '<cmd>Telescope lsp_definitions<cr>', "Go to definition", unpack(bufopts) },
     gi = { '<cmd>Telescope lsp_implementations', "Go to implimentation<cr>", unpack(bufopts) },
     gr = { ":Telescope lsp_references<cr>", "Go to references<cr>", unpack(bufopts) },
-        ['<leader>'] = {
+    ['<leader>'] = {
       rn = { vim.lsp.buf.rename, "Rename symbol", unpack(bufopts) },
       ca = { vim.lsp.buf.code_action, "code actions", unpack(bufopts) },
       cd = { vim.diagnostic.open_float, "code diagnostics", unpack(bufopts) },
@@ -189,7 +189,7 @@ require('lspconfig').nil_ls.setup {
   handlers = handlers,
   filetypes = { "nix" },
   settings = {
-        ["nil"] = {
+    ["nil"] = {
       formatting = {
         command = { "nixpkgs-fmt" }
       }
@@ -222,7 +222,7 @@ vim.diagnostic.config({ virtual_text = false })
 -- ]])
 
 vim.defer_fn(function()
-  vim.api.nvim_set_hl(0, 'LspSignatureActiveParameter', { fg = require("dracula").colors().purple, bg = "NONE", })
+  -- vim.api.nvim_set_hl(0, 'LspSignatureActiveParameter', { fg = require("dracula").colors().purple, bg = "NONE", })
 end, 1000)
 
 -- vim.defer_fn(function() end, 10000)

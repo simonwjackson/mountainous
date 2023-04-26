@@ -204,12 +204,12 @@ require('packer').startup(function(use)
   -- - Themes
   ------------------------------------------------------
 
-  use 'flrnprz/plastic.vim'
-  use 'lifepillar/vim-solarized8'
-  use {
-    'Mofiqul/dracula.nvim',
-    config = function() vim.cmd([[ colorscheme dracula ]]) end,
-  }
+  -- use 'flrnprz/plastic.vim'
+  -- use 'lifepillar/vim-solarized8'
+  -- -- use {
+  --   'Mofiqul/dracula.nvim',
+  --   config = function() vim.cmd([[ colorscheme dracula ]]) end,
+  -- }
   ------------------------------------------------------
   -- - Language Support
   ------------------------------------------------------
@@ -269,7 +269,7 @@ require('packer').startup(function(use)
 
   --FocusGained and FocusLost for vim inside Tmux
   --This is a plugin for Vim to dim inactive windows.
-  use 'tmux-plugins/vim-tmux-focus-events'
+  -- use 'tmux-plugins/vim-tmux-focus-events'
 
   --An eye friendly plugin that fades your inactive buffers and preserves your syntax highlighting!
   --use 'TaDaa/vimade'
@@ -312,6 +312,14 @@ require('packer').startup(function(use)
   --use 'rcarriga/vim-ultest', { 'do': ':UpdateRemoteuseins' }
 
   use 'tpope/vim-obsession'
+
+  use {
+    'AlphaTechnolog/pywal.nvim',
+    as = 'pywal',
+    config = function()
+      vim.cmd [[ colorscheme pywal ]]
+    end
+  }
 
   use 'camgraff/telescope-tmux.nvim'
   use 'RyanMillerC/better-vim-tmux-resizer'
@@ -1229,7 +1237,7 @@ endif
 " endif
 
 if (has("termguicolors"))
-    set termguicolors
+    " set termguicolors
     let $NVIM_TUI_ENABLE_TRUE_COLOR=1
 endif
 
@@ -1238,8 +1246,6 @@ set t_Co=256
 
 " Enable syntax highlighting
 syntax enable
-
-colorscheme dracula
 
 hi! Pmenu ctermbg=None ctermfg=None guibg=#111111 guifg=None
 hi! SignColumn ctermfg=None ctermbg=None guibg=None
@@ -1375,3 +1381,7 @@ vim.defer_fn(function()
   vim.cmd [[highlight! NormalFloat guibg=#282a36]]
   vim.cmd [[highlight! FloatBorder guifg=#6272a4 guibg=#282a36]]
 end, 1000)
+
+vim.defer_fn(function()
+  vim.cmd [[ colorscheme pywal ]]
+end, 10)

@@ -29,14 +29,14 @@ cmp.setup({
     end,
   },
   mapping = cmp.mapping.preset.insert({
-        ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-        ['<C-f>'] = cmp.mapping.scroll_docs(4),
-        ['<C-Space>'] = cmp.mapping.complete(),
+    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-Space>'] = cmp.mapping.complete(),
     -- ['<C-Space>'] = cmp.mapping(cmp.mapping.complete({
     --   reason = cmp.ContextReason.Auto,
     -- }), { 'i', 's', }),
-        ['<C-e>'] = cmp.mapping.abort(),
-        ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+    ['<C-e>'] = cmp.mapping.abort(),
+    ['<CR>'] = cmp.mapping.confirm({ select = true }),     -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
   }),
   sources = cmp.config.sources({
     { name = "copilot", group_index = 9 },
@@ -124,7 +124,7 @@ vim.opt.spelllang = { 'en_us' }
 vim.defer_fn(function()
   vim.api.nvim_set_hl(0, 'BorderBG', {
     -- WARN: Color will be incorrect if theme switches
-    fg = require("dracula").colors().comment,
+    -- fg = require("dracula").colors().comment,
     bg = "NONE",
   })
 end, 1000)
