@@ -79,5 +79,13 @@
       #       exec kitty
       # '';
     };
+
+    services.unclutter = {
+      enable = true;
+      extraOptions = [
+        "exclude-root"
+        "ignore-scrolling"
+      ];
+    };
   };
 }
