@@ -1,1 +1,16 @@
 # vim:ft=conf
+
+map D delete
+map <enter> open
+map T push :touch<space>
+map . set hidden!
+map w wallpaper
+
+cmd touch %touch $1 && lf -remote "send $id load" && lf -remote "send $id select $1"
+cmd wallpaper ${{
+  nohup wallpaper-span $f > /dev/null 2>&1 & disown
+  lf -remote "send $id echo Setting wallpaper.."
+}}
+
+set previewer ~/.local/bin/pv
+set icons on
