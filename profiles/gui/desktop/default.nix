@@ -1,9 +1,37 @@
-{ lib, ... }:
+{ ... }:
 
 {
-  home-manager.users.simonwjackson = { config, pkgs, ... }: {
+  home-manager.users.simonwjackson = { lib, config, pkgs, ... }: {
+    programs.vscode = {
+      enable = true;
+      userSettings = {
+        "workbench.colorTheme" = "Wal Bordered";
+        "window.menuBarVisibility" = "toggle";
+        "editor.minimap.enabled" = false;
+      };
+    };
+
     home = {
+      activation = {
+        vscodeExtension = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          # Install
+          comm -23 <(cat ~/.config/Code/extensions.txt | sort) <(${pkgs.vscode}/bin/code --list-extensions | sort) | xargs ${pkgs.vscode}/bin/code  --install-extension
+          # Uninstall
+          comm -23 <(${pkgs.vscode}/bin/code  --list-extensions | sort) <(cat ~/.config/Code/extensions.txt | sort) | xargs ${pkgs.vscode}/bin/code --uninstall-extension
+        '';
+      };
+
       file = {
+        "./.config/Code/extensions.txt" = {
+          text = ''
+            bbenoist.Nix
+            dlasagno.wal-theme
+            GitHub.copilot
+            asvetliakov.vscode-neovim
+            ms-vsliveshare.vsliveshare
+          '';
+        };
+
         "./.local/bin" = {
           source = ../../../modules/cmd_p;
           recursive = true;
@@ -12,9 +40,22 @@
         "./.config/tridactyl/tridactylrc" = {
           source = ./tridactylrc;
         };
+
         "./.local/bin/wm" = {
           source = pkgs.writeScript "wm" (builtins.readFile ./wm.sh);
         };
+
+        "./.local/bin/wallpaper-span" = {
+          source = pkgs.writeScript "wallpaper-span" ''
+            ${pkgs.feh}/bin/feh --bg-scale "$1" --no-xinerama
+            IMAGE=$1 bash -c '${pkgs.python3Packages.pywal}/bin/wal -q -n -i $IMAGE' &
+            for nvim_instance in $(nvr --serverlist); do
+              nvr --nostart --servername "$nvim_instance" +':colorscheme pywal'
+            done
+            pywalfox update
+          '';
+        };
+
       };
 
       packages = with pkgs; [
