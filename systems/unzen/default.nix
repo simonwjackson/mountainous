@@ -435,14 +435,14 @@
       music-lossy.path = "/tank/music-lossy";
       code.path = "/tank/code";
 
-      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" ];
+      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" "yari" ];
+      code.devices = [ "unzen" "ushiro" "raiden" "yari" ];
       audiobooks.devices = [ "unzen" ];
       books.devices = [ "kuro" "unzen" ];
       gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
       gaming.devices = [ "unzen" "raiden" ];
       music.devices = [ "unzen" "ushiro" ];
       music-lossy.devices = [ "unzen" "kuro" ];
-      code.devices = [ "unzen" "ushiro" "raiden" ];
     };
   };
 

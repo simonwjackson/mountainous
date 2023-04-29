@@ -36,13 +36,21 @@
         ];
       };
 
+      yari = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+
+        modules = [
+          ./hardware/intel.nix
+          ./systems/yari
+        ];
+      };
+
       raiden = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         modules = [
           ./hardware/intel.nix
           ./systems/raiden
-          # nixos-hardware.nixosModules.dell-xps-17-9710
         ];
       };
     };

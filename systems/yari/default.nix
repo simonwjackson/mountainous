@@ -6,7 +6,6 @@
     ./sunshine.nix
     ./disks.nix
     ./networking
-    ./screens.nix
     ../../modules/syncthing.nix
     ../../profiles/gui
     ../../profiles/audio.nix
@@ -23,7 +22,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "raiden";
+  networking.hostName = "yari";
 
   # Configure keymap in X11
   services.xserver = {
@@ -72,5 +71,7 @@
     };
   };
 
-  system.stateVersion = "23.05"; # Did you read the comment?
+  system.stateVersion = "23.05";
+
+  hardware.xpadneo.enable = true;
 }
