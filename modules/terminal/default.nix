@@ -111,6 +111,16 @@ in
         source = ./tmux/share.tmux.conf;
       };
 
+      "./.local/bin/find-then-edit" = {
+        source = ./find-then-edit.sh;
+        executable = true;
+      };
+
+      "./.local/bin/grep-then-edit" = {
+        executable = true;
+        source = ./grep-then-edit.sh;
+      };
+
       "./.local/bin/pv" = {
         source = ./lf/pv.sh;
       };
