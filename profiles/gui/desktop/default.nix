@@ -13,11 +13,8 @@
 
     home = {
       activation = {
-        vscodeExtension = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          # Install
-          comm -23 <(cat ~/.config/Code/extensions.txt | sort) <(${pkgs.vscode}/bin/code --list-extensions | sort) | xargs ${pkgs.vscode}/bin/code  --install-extension
-          # Uninstall
-          comm -23 <(${pkgs.vscode}/bin/code  --list-extensions | sort) <(cat ~/.config/Code/extensions.txt | sort) | xargs ${pkgs.vscode}/bin/code --uninstall-extension
+        missingPythonPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          nix-shell -p python3Packages.pip --run 'pip install --user pywalfox shell_gpt'
         '';
       };
 
