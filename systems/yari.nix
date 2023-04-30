@@ -1,17 +1,19 @@
-{ config, lib, pkgs, modulesPath, ... }: {
+{ config, lib, pkgs, modulesPath, ... }:
+
+{
   imports = [
-    ../../hardware/bluetooth.nix
-    ../../hardware/nvidia.nix
-    ../../modules/networking.nix
-    ../../modules/syncthing.nix
-    ../../modules/sunshine.nix
-    ../../modules/tailscale.nix
-    ../../profiles/gui
-    ../../profiles/gaming.nix
-    ../../profiles/audio.nix
-    ../../profiles/workstation.nix
-    ../../profiles/_common.nix
-    ../../users/simonwjackson
+    ../hardware/bluetooth.nix
+    ../hardware/nvidia.nix
+    ../modules/networking.nix
+    ../modules/syncthing.nix
+    ../modules/sunshine.nix
+    ../modules/tailscale.nix
+    ../profiles/gui
+    ../profiles/gaming.nix
+    ../profiles/audio.nix
+    ../profiles/workstation.nix
+    ../profiles/_common.nix
+    ../users/simonwjackson
     <nixos-hardware/dell/xps/17-9700/nvidia>
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -48,7 +50,6 @@
       xdg-desktop-portal-kde
     ];
   };
-
 
   environment.systemPackages = [
     pkgs.pkgs.cifs-utils
