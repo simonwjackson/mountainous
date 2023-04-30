@@ -13,11 +13,11 @@
 
         modules = [
           ./hardware/apple-m1.nix
-          ./systems/ushiro.nix
+          ./systems/ushiro
           ./users/simonwjackson
         ];
       };
-      
+
       unzen = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
@@ -41,6 +41,7 @@
 
         modules = [
           ./hardware/intel.nix
+          ./hardware/nvidia.nix
           ./systems/yari
         ];
       };
@@ -50,6 +51,7 @@
 
         modules = [
           ./hardware/intel.nix
+          ./hardware/nvidia.nix
           ./systems/raiden
         ];
       };
