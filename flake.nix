@@ -42,7 +42,7 @@
         modules = [
           ./hardware/intel.nix
           ./hardware/nvidia.nix
-          ./systems/yari
+          ./systems/yari.nix
         ];
       };
 
