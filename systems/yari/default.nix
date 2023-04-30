@@ -4,8 +4,10 @@
     ../../hardware/nvidia.nix
     ../../modules/networking.nix
     ../../modules/syncthing.nix
+    ../../modules/sunshine.nix
     ../../modules/tailscale.nix
     ../../profiles/gui
+    ../../profiles/gaming.nix
     ../../profiles/audio.nix
     ../../profiles/workstation.nix
     ../../profiles/_common.nix
@@ -27,10 +29,6 @@
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  programs.steam = {
-    enable = true;
-  };
-
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -46,18 +44,16 @@
   services.xserver.libinput.enable = true;
 
   services.flatpak.enable = true;
+
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [
-      # xdg-desktop-portal-wlr
       xdg-desktop-portal-kde
-      # xdg-desktop-portal-gtk
     ];
   };
 
 
   environment.systemPackages = [
-    pkgs.sunshine
     pkgs.pkgs.cifs-utils
     pkgs.xfsprogs
     pkgs.fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
@@ -65,26 +61,17 @@
     pkgs.mergerfs-tools
   ];
 
-  # "/home/simonwjackson/.local/share/Cemu/mlc01" = {
-  #   device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
-  #   options = [ "bind" ];
-  # };
-
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
     folders = {
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
-      # gaming.path = "/storage/gaming";
 
-      # gaming.devices = [ "unzen" "raiden" ];
       documents.devices = [ "kuro" "unzen" "ushiro" "raiden" "yari" ];
       code.devices = [ "unzen" "ushiro" "raiden" "yari" ];
     };
   };
-
-  hardware.xpadneo.enable = true;
 
   fileSystems."/" =
     {
