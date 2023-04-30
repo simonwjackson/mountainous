@@ -5,8 +5,9 @@
     ./dell-9710
     ./sunshine.nix
     ./disks.nix
-    ./networking
+    ../../modules/networking.nix
     ../../modules/syncthing.nix
+    ../../modules/tailscale.nix
     ../../profiles/gui
     ../../profiles/audio.nix
     ../../profiles/workstation.nix

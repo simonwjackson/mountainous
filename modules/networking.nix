@@ -1,21 +1,15 @@
 { config, pkgs, ... }:
 {
-  imports =
-    [ 
-      ./tailscale.nix
-      ./hotspot.nix
-    ];
-
   services.avahi.enable = true;
   services.avahi.wideArea = false;
 
-  programs.mosh.enable = true; 
+  programs.mosh.enable = true;
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
 
   # Easiest to use and most distros use this by default.
-  networking.networkmanager.enable = true;  
+  networking.networkmanager.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
