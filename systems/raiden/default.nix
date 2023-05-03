@@ -5,7 +5,6 @@
     ./dell-9710
     ./sunshine.nix
     ./disks.nix
-    ./networking
     ./screens.nix
     ../../modules/syncthing.nix
     ../../profiles/gui
@@ -14,6 +13,9 @@
     ../../profiles/_common.nix
     ../../users/simonwjackson
   ];
+
+  services.avahi.enable = true;
+  services.avahi.wideArea = false;
 
   programs.steam = {
     enable = true;
@@ -42,7 +44,6 @@
       # xdg-desktop-portal-gtk
     ];
   };
-
 
   environment.systemPackages = [
     pkgs.sunshine

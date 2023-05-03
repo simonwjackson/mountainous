@@ -120,12 +120,12 @@ require('packer').startup(function(use)
     end
   }
 
-  -- use {
-  --   "folke/twilight.nvim",
-  --   config = function()
-  --     require("plugins/twilight")
-  --   end
-  -- }
+  use {
+    "folke/twilight.nvim",
+    config = function()
+      require("plugins/twilight")
+    end
+  }
 
   use {
     "folke/zen-mode.nvim",
@@ -198,6 +198,11 @@ require('packer').startup(function(use)
   use {
     'tools-life/taskwiki',
     requires = 'vimwiki/vimwiki',
+    config = function()
+      vim.cmd [[
+        let g:taskwiki_extra_warriors={'H': {'data_location': '~/.local/share/task', 'taskrc_location': '~/.config/task/taskrc'}}
+      ]]
+    end
   }
 
   ------------------------------------------------------
