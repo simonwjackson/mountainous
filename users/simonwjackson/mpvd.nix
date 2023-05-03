@@ -2,11 +2,10 @@
 
 let
   cfg = config.programs.mpvd;
-
 in
 {
   options.programs.mpvd = {
-    enable = lib.mkEnableOption "fuzzy-music";
+    enable = lib.mkEnableOption "mvpd";
   };
 
   config = lib.mkIf cfg.enable {
