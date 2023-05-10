@@ -8,7 +8,7 @@ in
     (import "${home-manager}/nixos")
   ];
 
-  home-manager.users.simonwjackson = { config, pkgs, ... }: {
+  home-manager.users.simonwjackson = { lib, config, pkgs, ... }: {
     imports = [
       ./development
     ];
@@ -99,7 +99,6 @@ in
       ];
 
       extraConfig = builtins.readFile (./tmux/tmux.conf);
-
     };
 
     home.file = {
