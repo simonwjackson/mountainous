@@ -56,7 +56,12 @@
       };
 
       packages = with pkgs; [
-        nerdfonts
+        (pkgs.nerdfonts.override {
+          fonts = [
+            "BitstreamVeraSansMono"
+            "Noto"
+          ];
+        })
         brightnessctl
         tridactyl-native
         xfce.xfwm4
