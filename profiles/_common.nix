@@ -1,14 +1,24 @@
 { pkgs, lib, ... }:
 
+let
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
+in
 {
   imports = [
+    (import "${home-manager}/nixos")
     ../modules/git.nix
     ../modules/main-user.nix
     ../modules/tailscale.nix
     ../modules/zsh
     ../modules/neovim
     ../modules/terminal
+    ../modules/tmux-all-sessions
   ];
+
+  home-manager.users.simonwjackson = { config, pkgs, ... }: {
+    # Custom Scripts
+    programs.tmux-all-sessions.enable = true;
+  };
 
   networking.firewall.allowPing = true;
   networking.firewall.enable = false;
