@@ -26,6 +26,7 @@ in
       ./mpvd.nix
       ./linear-taskwarrior-sync.nix
       ./unzen-taskwarrior-sync.nix
+
     ];
 
     programs.mpvd.enable = true;
