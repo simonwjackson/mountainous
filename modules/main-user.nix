@@ -18,6 +18,9 @@ in
       "networkmanager"
       "wheel"
     ];
+    packages = with pkgs; [
+      beets
+    ];
   };
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
