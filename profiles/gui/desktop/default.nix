@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{ ... }: {
   home-manager.users.simonwjackson = { lib, config, pkgs, ... }: {
     programs.vscode = {
       enable = true;
@@ -13,8 +11,9 @@
 
     home = {
       activation = {
-        missingPythonPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        miscPostInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
           nix-shell -p python3Packages.pip --run 'pip install --user pywalfox shell_gpt'
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
         '';
       };
 
@@ -72,6 +71,7 @@
         tridactyl-native
         pamixer
         rofi
+        pywal
       ] ++ [ ];
     };
 
@@ -107,7 +107,7 @@
       enable = true;
       settings = import ./picom/picom.nix;
 
-      extraArgs = [ "--experimental-backend" ];
+      # extraArgs = [ "--experimental-backend" ];
       # package = pkgs.picom.overrideAttrs (o: {
       #   src = pkgs.fetchFromGitHub {
       #     repo = "picom";

@@ -9,7 +9,7 @@ in
   ];
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
-    systemd.user.services.autorandr = {
+    systemd.user.services.pywal-restore = {
       Unit = {
         Description = "Set pywal wallpaper at startup";
         After = "graphical-session.target";

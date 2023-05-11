@@ -310,3 +310,5 @@ awesome.connect_signal("toggle_hello", function()
   hello_wibox.visible = not hello_wibox.visible
   echo_test()
 end)
+
+awful.spawn("systemctl --user start pywal-restore")

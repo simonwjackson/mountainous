@@ -8,6 +8,7 @@ in
     (import "${home-manager}/nixos")
     ./desktop
     ./xserver.nix
+    ../../modules/theme.nix
   ];
 
   services.udev.packages = with pkgs; [ gnome.gnome-settings-daemon ];
