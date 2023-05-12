@@ -65,12 +65,12 @@ in
       tmux.enableShellIntegration = true;
     };
 
-    home.file = {
-      "./.config/tmux/themes" = {
-        recursive = true;
-        source = ./tmux/themes;
-      };
-    };
+    # home.file = {
+    #   "./.config/tmux/themes" = {
+    #     recursive = true;
+    #     source = ./tmux/themes;
+    #   };
+    # };
 
     programs.tmux = {
       enable = true;
