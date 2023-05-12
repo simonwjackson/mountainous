@@ -326,6 +326,8 @@ require('packer').startup(function(use)
     end
   }
 
+  use({ 'rose-pine/neovim', as = 'rose-pine' })
+
   use 'camgraff/telescope-tmux.nvim'
   use 'RyanMillerC/better-vim-tmux-resizer'
 
