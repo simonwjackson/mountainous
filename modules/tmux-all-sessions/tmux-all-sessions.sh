@@ -42,7 +42,7 @@ to_csv() {
 
 export -f to_csv
 
-selection=$(fd -t d -H '.bare' --search-path ~/code \
+selection=$(fd --type directory --hidden '^.bare$|^.git$' --search-path ~/code \
   | xargs -I {} dirname {} \
   | xargs -I {} bash -c 'to_csv "{}"' \
   | replace_delimiter_with_spaces ',' 2 \
@@ -78,7 +78,7 @@ then
   # cols=$(tput cols);
   # lines=$(tput lines);
   # printf "\033[$((lines/2));$(((cols-${#msg})/2))H%s" "$msg"
-  sleep 0.5
+
 fi
 
 if [[ -z "$TMUX" ]]; then
