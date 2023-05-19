@@ -1384,6 +1384,40 @@ function map(mode, lhs, rhs, opts)
   vim.api.nvim_set_keymap(mode, lhs, rhs, options)
 end
 
+function _G.sgpt_command(refactor_code)
+  -- store the selected text into a variable
+  local selected_text = vim.fn.getreg('"')
+
+  -- create temporary files
+  local output_file = vim.fn.tempname()
+  local input_file = vim.fn.tempname()
+
+  -- write the selected text into input_file
+  vim.fn.writefile(vim.split(selected_text, "\n"), input_file)
+
+  -- the command to run
+  local cmd = string.format(
+    'cat %s | sgpt --code %s | tee /dev/tty > %s && nvr %s +\'set ft=%s\'',
+    input_file,
+    refactor_code,
+    output_file,
+    output_file,
+    vim.bo.filetype
+  )
+
+  -- run the command in a new split
+  vim.cmd('vnew | terminal ' .. cmd)
+end
+
+-- wrap the Lua function in a Vimscript command
+vim.cmd([[
+  command! -range -nargs=1 Sgpt execute "normal! `<v`>y" | let outputFile = tempname() | let inputFile = tempname() | call writefile(split(@", "\n"), inputFile) | silent execute "vsp | terminal cat " . inputFile . " | sgpt --code '".<q-args>."' | tee /dev/tty > " . outputFile . " && nvr " . outputFile . " +'set ft=" . &filetype . "'"
+]])
+
+vim.cmd([[
+  xnoremap <leader>, :Sgpt<space>
+]])
+
 vim.defer_fn(function()
   vim.cmd [[highlight! NormalFloat guibg=#282a36]]
   vim.cmd [[highlight! FloatBorder guifg=#6272a4 guibg=#282a36]]
