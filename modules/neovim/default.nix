@@ -1,4 +1,4 @@
-{ lib, config, pkgs, ... }:
+{ ... }:
 
 let
   home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
@@ -39,24 +39,27 @@ in
       ]);
 
       extraPackages = with pkgs; [
-        # Language Servers
-        nodePackages.typescript-language-server
-        nodePackages.vscode-langservers-extracted
-        # nodePackages.vim-language-server
-        # nodePackages.eslint_d
-        # nodePackages.typescript
-        # jsonnet-language-server
-        sumneko-lua-language-server
-      ] ++ [
-    # nix
+        # nix
         nil
         nixpkgs-fmt
       ] ++ [
-        # shell scripting
+        # Shell
         nodePackages.bash-language-server
         shellcheck
         shfmt
       ] ++ [
+        # Lua
+        sumneko-lua-language-server
+        stylua
+      ] ++ [
+        # JS
+        nodePackages_latest.prettier
+        deno
+        nodejs
+        nodePackages.typescript-language-server
+        nodePackages.vscode-langservers-extracted
+      ] ++ [
+        # misc
         neovim-remote
         ripgrep
         # xclip
@@ -65,14 +68,10 @@ in
         gh
         taskwarrior
         clang-tools
-        deno
-        stylua
-        nodePackages_latest.prettier
         zig
-        nodejs
       ];
 
-      plugins = with pkgs.vimPlugins; [ ];
+      # plugins = with pkgs.vimPlugins; [ ];
     };
   };
 }
