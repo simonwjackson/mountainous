@@ -1,8 +1,8 @@
 #! /usr/bin/env nix-shell
 #! nix-shell -i bash -p _1password
 
-ifnotset () {
-  if [[ $# != 3 ]];then
+ifnotset() {
+  if [[ $# != 3 ]]; then
     local THIS_FUNC_NAME="${funcstack[1]-}${FUNCNAME[0]-}"
     echo "$THIS_FUNC_NAME - 3 arguments are expected. given $#. args=[$@]" >&2
     echo "usage: $THIS_FUNC_NAME PATTERN LINE FILE" >&2
@@ -14,14 +14,14 @@ ifnotset () {
   local FILE="$3"
 
   if grep -E -q "${PATTERN}" "${FILE}"; then
-    echo '' 
+    echo ''
   else
-    echo "$LINE" >> "$FILE";
+    echo "$LINE" >>"$FILE"
   fi
 }
 
-lineinfile () {
-  if [[ $# != 3 ]];then
+lineinfile() {
+  if [[ $# != 3 ]]; then
     local THIS_FUNC_NAME="${funcstack[1]-}${FUNCNAME[0]-}"
     echo "$THIS_FUNC_NAME - 3 arguments are expected. given $#. args=[$@]" >&2
     echo "usage: $THIS_FUNC_NAME PATTERN LINE FILE" >&2
@@ -32,12 +32,12 @@ lineinfile () {
   local LINE="$2"
   local FILE="$3"
 
-  if grep -E -q "${PATTERN}" "${FILE}" ;then
+  if grep -E -q "${PATTERN}" "${FILE}"; then
     PATTERN="${PATTERN}" LINE="${LINE}" perl -i -nle 'if(/$ENV{"PATTERN"}/){print $ENV{"LINE"}}else{print}' "${FILE}"
   else
-    echo "$LINE" >> "$FILE"
-    fi
-  }
+    echo "$LINE" >>"$FILE"
+  fi
+}
 
 # Rofi
 # mkdir -p "${HOME}/.config/rofi"
@@ -45,11 +45,12 @@ lineinfile () {
 # lineinfile '@import "config.base.rasi' '@import "config.base.rasi"' "${HOME}/.config/rofi/config.rasi"
 # ifnotset   '^@theme\s*' '@theme "themes/dracula/config1.rasi"' "${HOME}/.config/rofi/config.rasi"
 # lineinfile '@import "overrides.rasi' '@import "overrides.rasi"' "${HOME}/.config/rofi/config.rasi"
+#
 
 # if file not exist, curl it into the file
 # Usage: curlifnotexist URL FILE
-curlifnotexist () {
-  if [[ $# != 2 ]];then
+curlifnotexist() {
+  if [[ $# != 2 ]]; then
     local THIS_FUNC_NAME="${funcstack[1]-}${FUNCNAME[0]-}"
     echo "$THIS_FUNC_NAME - 2 arguments are expected. given $#. args=[$@]" >&2
     echo "usage: $THIS_FUNC_NAME URL FILE" >&2
@@ -61,7 +62,7 @@ curlifnotexist () {
 
   if [[ ! -f "${FILE}" ]]; then
     mkdir -p "$(dirname "${FILE}")"
-    curl -s "${URL}" > "${FILE}"
+    curl -s "${URL}" >"${FILE}"
   fi
 }
 
