@@ -9,17 +9,10 @@ in
   ];
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
-    imports = [ ];
-
     home.packages = with pkgs; [
-      nodejs-16_x
-      bun
-      # deno
       neovim-remote
     ];
 
-    # Home Manager needs a bit of information about you and the
-    # paths it should manage.
     home = {
       shellAliases = {
         nvim = "nvim --listen /tmp/nvimsocket";
@@ -27,9 +20,9 @@ in
     };
 
     home.file = {
-      "./.config/nvim/lua/plugins" = {
+      "./.config/nvim" = {
         recursive = true;
-        source = ./plugins;
+        source = ./config;
       };
     };
 
@@ -47,83 +40,39 @@ in
 
       extraPackages = with pkgs; [
         # Language Servers
-        nil
-        nixpkgs-fmt
         nodePackages.typescript-language-server
         nodePackages.vscode-langservers-extracted
-        nodePackages.vim-language-server
-        nodePackages.bash-language-server
-        nodePackages.eslint_d
-        nodePackages.typescript
-        jsonnet-language-server
+        # nodePackages.vim-language-server
+        # nodePackages.eslint_d
+        # nodePackages.typescript
+        # jsonnet-language-server
         sumneko-lua-language-server
-        rnix-lsp
+      ] ++ [
+    # nix
+        nil
+        nixpkgs-fmt
+      ] ++ [
+        # shell scripting
+        nodePackages.bash-language-server
         shellcheck
-
+        shfmt
+      ] ++ [
         neovim-remote
         ripgrep
-        xclip
+        # xclip
         lf
-        luaformatter
-        tree-sitter
+        # luaformatter
         gh
-
         taskwarrior
+        clang-tools
+        deno
+        stylua
+        nodePackages_latest.prettier
+        zig
+        nodejs
       ];
 
-      #   extraConfig = ''
-      #     lua EOF <<
-      #
-      # >>
-      #   '';
-
-      # TODO: Decide on these
-      # Still in beta
-      # Give it another try, integrates neovim into firefox
-      # https://github.com/glacambre/firenvim
-
-      # https://github.com/ray-x/navigator.lua
-
-      # https://github.com/anuvyklack/hydra.nvim
-      # https://github.com/kiyoon/telescope-insert-path.nvim
-
-      # TODO: Checkout these plugins
-      # https://nvchad.com/quickstart/install
-
-
-      plugins = with pkgs.vimPlugins; [
-        {
-          plugin = packer-nvim;
-          type = "lua";
-          config = builtins.readFile ./plugins/packer.lua;
-        }
-
-        {
-          plugin = nvim-treesitter.withAllGrammars;
-          type = "lua";
-          config = builtins.readFile (./plugins/treesitter.lua);
-        }
-
-        cmp-nvim-lsp
-        cmp-buffer
-        cmp-path
-        cmp-nvim-lua
-        cmp-zsh
-        cmp-tmux
-        cmp-spell
-        cmp-npm
-        cmp-emoji
-        cmp-copilot
-        cmp-cmdline-history
-        cmp-cmdline
-        cmp_luasnip
-
-        {
-          plugin = nvim-cmp;
-          type = "lua";
-          config = builtins.readFile (./plugins/cmp.lua);
-        }
-      ];
+      plugins = with pkgs.vimPlugins; [ ];
     };
   };
 }

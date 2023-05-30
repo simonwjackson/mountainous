@@ -14,7 +14,7 @@ vim.cmd([[
       au BufReadPost,BufNewFile *.md*,*.txt,*.tex ScrollbarHide
       au BufReadPost,BufNewFile *.md*,*.txt,*.tex Gitsigns detach
   augroup END
-
+  autocmd BufWinEnter *.md setlocal syntax=markdown
 
   let personal = {}
   let personal.path = "$HOME/documents/notes"

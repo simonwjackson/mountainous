@@ -63,28 +63,33 @@ endfunction
 
 
 require('packer').startup(function(use)
+  -- Done
   use {
     "folke/which-key.nvim",
     config = function() require('plugins/which-key') end
   }
 
+  -- done
   use {
     'neovim/nvim-lspconfig',
     config = function() require('plugins/lspconfig') end,
     requires = { 'folke/which-key.nvim', opt = true }
   }
 
+  -- done 
   use {
     'nvim-lualine/lualine.nvim',
     config = function() require('plugins/lualine') end,
     requires = { 'kyazdani42/nvim-web-devicons', opt = true }
   }
 
+  -- done
   use {
     "L3MON4D3/LuaSnip",
     tag = "v<CurrentMajor>.*"
   }
 
+  -- done
   use {
     'rmagatti/goto-preview',
     config = function() require('plugins/goto-preview') end,
@@ -92,9 +97,11 @@ require('packer').startup(function(use)
   }
 
   -- editorconfig support in vim
+  -- xxx
   use "editorconfig/editorconfig-vim"
 
   -- incremental search improved
+  -- done
   use "haya14busa/is.vim"
 
   -- use {
@@ -112,6 +119,7 @@ require('packer').startup(function(use)
   --   }
   -- }
 
+  -- Done
   use {
     'phaazon/hop.nvim',
     branch = 'v2', -- optional but strongly recommended
@@ -120,6 +128,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "folke/twilight.nvim",
     config = function()
@@ -127,6 +136,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     "folke/zen-mode.nvim",
     config = function()
@@ -134,6 +144,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- xxx
   use {
     "stevearc/dressing.nvim",
     config = function()
@@ -141,6 +152,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "folke/trouble.nvim",
     requires = "kyazdani42/nvim-web-devicons",
@@ -149,6 +161,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- Done
   use {
     "folke/todo-comments.nvim",
     requires = "nvim-lua/plenary.nvim",
@@ -157,6 +170,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "rest-nvim/rest.nvim",
     requires = { "nvim-lua/plenary.nvim" },
@@ -165,6 +179,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "kevinhwang91/nvim-hlslens",
     requires = "petertriho/nvim-scrollbar",
@@ -177,6 +192,7 @@ require('packer').startup(function(use)
     end,
   }
 
+  -- Done
   use {
     'lewis6991/gitsigns.nvim',
     requires = "petertriho/nvim-scrollbar",
@@ -186,6 +202,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- Done
   use {
     'vimwiki/vimwiki',
     config = function()
@@ -193,8 +210,7 @@ require('packer').startup(function(use)
     end
   }
 
-  -- Proper project management in vim.
-  -- INFO: dificult (impossible to install?) in packer
+  -- Done
   use {
     'tools-life/taskwiki',
     requires = 'vimwiki/vimwiki',
@@ -220,21 +236,28 @@ require('packer').startup(function(use)
   ------------------------------------------------------
 
 
+  -- XXX
   use "peterhoeg/vim-qml"
+  -- XXX
   use 'nvim-treesitter/playground'
 
   --Rofi
+  -- XXX
   use 'Fymyte/rasi.vim'
 
+  -- XXX
   use 'nikolvs/vim-sunbather'
 
   --MDX
+  -- Done
   use 'jxnblk/vim-mdx-js'
 
   --Seamless navigation between tmux panes and vim splits
+  -- XXX
   use 'christoomey/vim-tmux-navigator'
 
   --Vim sugar for the UNIX shell commands that need it the most
+  -- Done
   use 'tpope/vim-eunuch'
 
   ------------------------------------------------------------------------------
@@ -242,9 +265,11 @@ require('packer').startup(function(use)
   ------------------------------------------------------------------------------
 
   --Adds file type icons to Vim plugins
+  -- XXX
   use 'ryanoasis/vim-devicons'
 
   --Improved * motions
+  -- XXX
   use {
     'haya14busa/vim-asterisk',
     config = function()
@@ -266,9 +291,11 @@ require('packer').startup(function(use)
   }
 
   --Briefly highlight which text was yanked.
+  -- Done
   use 'machakann/vim-highlightedyank'
 
   --Modify * to also work with visual selections.
+  -- Done
   use 'nelstrom/vim-visual-star-search'
 
 
@@ -283,41 +310,51 @@ require('packer').startup(function(use)
   --use 'farseer90718/vim-taskwarrior'
 
   --Zettelkasten for VIM
+  -- XXX
   use 'michal-h21/vim-zettel'
 
+  -- XXX
   use 'nvim-lua/popup.nvim'
 
-  --INFO: This is a generic/global plugin for lua. Please delete with caution.
+  -- INFO: This is a generic/global plugin for lua. Please delete with caution.
+  -- Done
   use 'nvim-lua/plenary.nvim'
 
   --Icons
+  -- Done
   use 'kyazdani42/nvim-web-devicons'
 
   --Auto Sessions
   --use 'rmagatti/auto-session'
   --use 'rmagatti/session-lens'
 
-  --LazyGit
+  -- XXX
   use {
     'kdheepak/lazygit.nvim',
     requires = 'nvim-telescope/telescope.nvim',
   }
 
   --expand region (+/-)
+  -- Done
   use 'terryma/vim-expand-region'
 
   --Ultisnips: Text Expansion
+  -- XXX
   use 'SirVer/ultisnips'
 
   --A multi-language debugging system for Vim
+  --XXX
   use 'puremourning/vimspector'
 
   --VIM Test
+  -- XXX
   use 'vim-test/vim-test'
   --use 'rcarriga/vim-ultest', { 'do': ':UpdateRemoteuseins' }
 
+  -- XXX
   use 'tpope/vim-obsession'
 
+  -- XXX
   use {
     'AlphaTechnolog/pywal.nvim',
     as = 'pywal',
@@ -326,12 +363,19 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use({ 'rose-pine/neovim', as = 'rose-pine' })
 
+  -- Done
+  use 'voldikss/vim-floaterm'
+
+  -- XXX
   use 'camgraff/telescope-tmux.nvim'
+  -- XXX
   use 'RyanMillerC/better-vim-tmux-resizer'
 
   --Swap windows without ruining your layout!
+  --Done
   use {
     'wesQ3/vim-windowswap',
     config = function()
@@ -370,6 +414,7 @@ require('packer').startup(function(use)
     end
   }
 
+  --done
   use {
     'nvim-telescope/telescope.nvim',
     tag = '0.1.0',
@@ -389,6 +434,7 @@ require('packer').startup(function(use)
   --   end
   -- }
 
+  -- Done
   use {
     "zbirenbaum/copilot.lua",
     cmd = "Copilot",
@@ -398,6 +444,7 @@ require('packer').startup(function(use)
     end,
   }
 
+  -- Done
   use {
     "zbirenbaum/copilot-cmp",
     after = { "copilot.lua" },
@@ -407,6 +454,7 @@ require('packer').startup(function(use)
   }
 
   -- TODO: Depends on cmp
+  -- done
   use {
     "onsails/lspkind.nvim",
     config = function()
@@ -414,6 +462,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use({
     "ThePrimeagen/git-worktree.nvim",
     config = function()
@@ -426,6 +475,7 @@ require('packer').startup(function(use)
     }
   })
 
+  -- Done
   use({
     "lmburns/lf.nvim",
     config = function()
@@ -450,11 +500,13 @@ require('packer').startup(function(use)
 
   -- use 'glacambre/firenvim', { 'do': { _ -> firenvim#install(0) } }
 
+  -- XXX
   use 'MunifTanjim/eslint.nvim'
 
   -- TODO: Disabled for now due to performance issues
   -- use 'https://git.sr.ht/~whynothugo/lsp_lines.nvim'
 
+  -- done
   use {
     'JoosepAlviste/nvim-ts-context-commentstring',
     config = function()
@@ -466,6 +518,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- Done
   use {
     'numToStr/Comment.nvim',
     config = function()
@@ -473,6 +526,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "LudoPinelli/comment-box.nvim",
     config = function()
@@ -480,6 +534,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     'pwntester/octo.nvim',
     requires = {
@@ -493,8 +548,10 @@ require('packer').startup(function(use)
   }
 
   -- Interactive theme creator
+  -- xxx
   use 'rktjmp/lush.nvim'
 
+  -- Done
   use {
     'nvim-treesitter/nvim-treesitter',
     config = function()
@@ -506,6 +563,7 @@ require('packer').startup(function(use)
     end,
   }
 
+  -- done
   use({
     "kylechui/nvim-surround",
     tag = "*",
@@ -514,20 +572,25 @@ require('packer').startup(function(use)
     end
   })
 
-  --  Git Blame plugin for Neovim written in Lua
+  -- Git Blame plugin for Neovim written in Lua
+  -- xxx
   use 'f-person/git-blame.nvim'
 
   -- Displays coverage information in the sign column.
+  -- coverage
+  -- xxx
   use({
     "andythigpen/nvim-coverage",
     requires = "nvim-lua/plenary.nvim",
     config = function() require("plugins/nvim-coverage") end,
   })
 
+  -- done
   use "ray-x/lsp_signature.nvim"
 
   -- NOTE: Built into nvim v0.9
   -- set splitkeep=screen
+  -- xxx
   use {
     "luukvbaal/stabilize.nvim",
     config = function()
@@ -544,6 +607,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     'sindrets/winshift.nvim',
     config = function()
@@ -555,6 +619,7 @@ require('packer').startup(function(use)
     end,
   }
 
+  -- Done
   use {
     'rmagatti/auto-session',
     config = function()
@@ -565,6 +630,7 @@ require('packer').startup(function(use)
     end
   }
 
+  --done
   use { 'bennypowers/nvim-regexplainer',
     config = function()
       require 'regexplainer'.setup({
@@ -613,6 +679,7 @@ require('packer').startup(function(use)
   --   end
   -- }
 
+  --done
   use({
     'sQVe/sort.nvim',
     config = function()
@@ -629,6 +696,7 @@ require('packer').startup(function(use)
     end
   })
 
+  -- done
   use {
     'nvim-treesitter/nvim-treesitter-context',
     requires = 'nvim-treesitter/nvim-treesitter',
@@ -637,6 +705,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     'haringsrob/nvim_context_vt',
     requires = 'nvim-treesitter/nvim-treesitter',
@@ -645,6 +714,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     'monaqa/dial.nvim',
     config = function()
@@ -652,6 +722,7 @@ require('packer').startup(function(use)
     end
   }
 
+  --done
   use {
     'windwp/nvim-ts-autotag',
     config = function()
@@ -659,6 +730,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     'edluffy/specs.nvim',
     config = function()
@@ -683,6 +755,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     "petertriho/nvim-scrollbar",
     config = function()
@@ -690,6 +763,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use({
     "ziontee113/color-picker.nvim",
     config = function()
@@ -697,6 +771,7 @@ require('packer').startup(function(use)
     end,
   })
 
+  -- done
   use {
     'sindrets/diffview.nvim',
     requires = 'nvim-lua/plenary.nvim',
@@ -705,6 +780,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- XXX
   use {
     'cljoly/telescope-repo.nvim',
     config = function()
@@ -727,6 +803,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- done
   use {
     'windwp/nvim-spectre',
     requires = 'nvim-lua/plenary.nvim',
@@ -735,6 +812,7 @@ require('packer').startup(function(use)
     end
   }
 
+  -- xxx
   use({
     "jackMort/ChatGPT.nvim",
     config = function()
@@ -1384,39 +1462,45 @@ function map(mode, lhs, rhs, opts)
   vim.api.nvim_set_keymap(mode, lhs, rhs, options)
 end
 
-function _G.sgpt_command(refactor_code)
-  -- store the selected text into a variable
-  local selected_text = vim.fn.getreg('"')
+function Sgpt(type, prompt)
+  -- Get the current selection
+  local selection = vim.fn.getreg("v")
 
-  -- create temporary files
+  -- Determine the range to use based on the selection
+  local range_start, range_end
+  if selection ~= '' then -- If selection is not empty, it means some text has been selected.
+    vim.api.nvim_command('echo "SELECTION MADE!"')
+
+    range_start = vim.api.nvim_buf_get_mark(0, '<')
+    range_end = vim.api.nvim_buf_get_mark(0, '>')
+
+    range_start = { range_start[1], range_start[2] }
+    range_end = { range_end[1], range_end[2] }
+  else
+    range_start, range_end = 1, vim.fn.line("$")
+  end
+
+  -- Yank the specified range
+  vim.api.nvim_command(range_start .. ',' .. range_end .. 'y')
+
+  -- Create temporary files
   local output_file = vim.fn.tempname()
   local input_file = vim.fn.tempname()
 
-  -- write the selected text into input_file
-  vim.fn.writefile(vim.split(selected_text, "\n"), input_file)
+  -- Write yanked text to the input file
+  vim.fn.writefile(vim.fn.split(vim.fn.getreg('"'), "\n"), input_file)
 
-  -- the command to run
+  -- local cmd = string.format(
+  --   "cat %s | sgpt %s '%s' | tee /dev/tty > %s && nvr %s +'set ft=%s' +'edit'",
+  --   input_file, type, prompt, output_file, output_file, vim.bo.filetype)
+
   local cmd = string.format(
-    'cat %s | sgpt --code %s | tee /dev/tty > %s && nvr %s +\'set ft=%s\'',
-    input_file,
-    refactor_code,
-    output_file,
-    output_file,
-    vim.bo.filetype
-  )
+    "cat %s",
+    input_file)
 
-  -- run the command in a new split
-  vim.cmd('vnew | terminal ' .. cmd)
+  -- Execute the terminal command
+  vim.api.nvim_command('vsp | terminal ' .. cmd)
 end
-
--- wrap the Lua function in a Vimscript command
-vim.cmd([[
-  command! -range -nargs=1 Sgpt execute "normal! `<v`>y" | let outputFile = tempname() | let inputFile = tempname() | call writefile(split(@", "\n"), inputFile) | silent execute "vsp | terminal cat " . inputFile . " | sgpt --code '".<q-args>."' | tee /dev/tty > " . outputFile . " && nvr " . outputFile . " +'set ft=" . &filetype . "'"
-]])
-
-vim.cmd([[
-  xnoremap <leader>, :Sgpt<space>
-]])
 
 vim.defer_fn(function()
   vim.cmd [[highlight! NormalFloat guibg=#282a36]]
