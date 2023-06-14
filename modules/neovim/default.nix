@@ -11,6 +11,7 @@ in
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     home.packages = with pkgs; [
       neovim-remote
+      xclip
     ];
 
     home = {

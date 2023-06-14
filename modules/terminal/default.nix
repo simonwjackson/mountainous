@@ -62,7 +62,7 @@ in
       enableZshIntegration = true;
       enableBashIntegration = true;
       defaultCommand = "rg --files --hidden --follow --glob '!.git'";
-      tmux.enableShellIntegration = true;
+      # tmux.enableShellIntegration = true;
     };
 
     # home.file = {
@@ -77,25 +77,7 @@ in
 
       plugins = with pkgs.tmuxPlugins; [
         sensible
-        jump
         extrakto
-        tmux-fzf
-        {
-          plugin = resurrect;
-          extraConfig = ''
-            set -g @resurrect-strategy-nvim 'session'
-            set -g @resurrect-save 'a'
-            set -g @resurrect-restore 'A'
-          '';
-        }
-        {
-          plugin = continuum;
-          extraConfig = ''
-            set -g @continuum-restore 'on'
-            set -g @continuum-boot 'on'
-            set -g @continuum-save-interval '60' # minutes
-          '';
-        }
       ];
 
       extraConfig = builtins.readFile (./tmux/tmux.conf);

@@ -3,69 +3,69 @@ local overrides = require("custom.configs.overrides")
 ---@type NvPluginSpec[]
 local plugins = {
 
-  -- Override plugin definition options
+	-- Override plugin definition options
 
-  {
-    "neovim/nvim-lspconfig",
-    dependencies = {
-      -- format & linting
-      {
-        "jose-elias-alvarez/null-ls.nvim",
-        config = function()
-          require "custom.configs.null-ls"
-        end,
-      },
-    },
-    config = function()
-      require "plugins.configs.lspconfig"
-      require "custom.configs.lspconfig"
-    end, -- Override to setup mason-lspconfig
-  },
+	{
+		"neovim/nvim-lspconfig",
+		dependencies = {
+			-- format & linting
+			{
+				"jose-elias-alvarez/null-ls.nvim",
+				config = function()
+					require("custom.configs.null-ls")
+				end,
+			},
+		},
+		config = function()
+			require("plugins.configs.lspconfig")
+			require("custom.configs.lspconfig")
+		end, -- Override to setup mason-lspconfig
+	},
 
-  -- override plugin configs
-  {
-    "williamboman/mason.nvim",
-    opts = overrides.mason
-  },
+	-- override plugin configs
+	{
+		"williamboman/mason.nvim",
+		opts = overrides.mason,
+	},
 
-  {
-    "nvim-treesitter/nvim-treesitter",
-    opts = overrides.treesitter,
-  },
+	{
+		"nvim-treesitter/nvim-treesitter",
+		opts = overrides.treesitter,
+	},
 
-  {
-    "nvim-tree/nvim-tree.lua",
-    opts = overrides.nvimtree,
-  },
+	{
+		"nvim-tree/nvim-tree.lua",
+		opts = overrides.nvimtree,
+	},
 
-  -- Install a plugin
-  {
-    "max397574/better-escape.nvim",
-    event = "InsertEnter",
-    config = function()
-      require("better_escape").setup()
-    end,
-  },
+	-- Install a plugin
+	{
+		"max397574/better-escape.nvim",
+		event = "InsertEnter",
+		config = function()
+			require("better_escape").setup()
+		end,
+	},
 
-  {
-    ft = "markdown.mdx",
-    'jxnblk/vim-mdx-js'
-  },
+	{
+		ft = "markdown.mdx",
+		"jxnblk/vim-mdx-js",
+	},
 
-  {
-    "folke/todo-comments.nvim",
-    requires = "nvim-lua/plenary.nvim",
-    lazy = false,
-    config = function()
-      require "plugins.configs.todo-comments"
-    end
-  },
+	{
+		"folke/todo-comments.nvim",
+		requires = "nvim-lua/plenary.nvim",
+		lazy = false,
+		config = function()
+			require("plugins.configs.todo-comments")
+		end,
+	},
 
-  {
-    'vimwiki/vimwiki',
-    lazy=false,
-    init = function()
-      vim.cmd([[
+	{
+		"vimwiki/vimwiki",
+		lazy = false,
+		init = function()
+			vim.cmd([[
         let g:vimwiki_global_ext = 0
         let g:vimwiki_markdown_link_ext = 1
         let g:vimwiki_links_space_char = '-'
@@ -99,20 +99,20 @@ local plugins = {
           \ '.mdown': 'markdown'
           \ }
       ]])
-    end
-  },
+		end,
+	},
 
-  {
-    'tools-life/taskwiki',
-    lazy=false,
-    -- requires = 'vimwiki/vimwiki',
-    -- config = function()
-    --   vim.cmd [[
-    --     let g:taskwiki_extra_warriors={'H': {'data_location': '~/.local/share/task', 'taskrc_location': '~/.config/task/taskrc'}}
-    --   ]]
-    -- end
-  }
-  -- All NvChad plugins are lazy-loaded by default
+	{
+		"tools-life/taskwiki",
+		lazy = false,
+		requires = "vimwiki/vimwiki",
+		init = function()
+			vim.cmd([[
+        let g:taskwiki_extra_warriors={'H': {'data_location': '~/.local/share/task', 'taskrc_location': '~/.config/task/taskrc'}}
+      ]])
+		end,
+	},
+	-- All NvChad plugins are lazy-loaded by default
 }
 
 return plugins

@@ -69,6 +69,12 @@ function! Format()
       let save_cursor = getcurpos()
       :silent %!nixpkgs-fmt
       call setpos('.', save_cursor)
+    elseif (&ft=='astro')
+      if (filereadable('prettier.config.mjs') || filereadable('prettier.config.cjs') || filereadable('prettier.config.js'))
+        let save_cursor = getcurpos()
+        :silent %!prettier --parser astro
+        call setpos('.', save_cursor)
+      endif
     elseif (&ft=='sh')
       :Shfmt
     elseif (&ft=='lua')
