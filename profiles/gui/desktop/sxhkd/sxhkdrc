@@ -195,8 +195,8 @@ super + w; {_, super +}M
 # ================================
 
 # New {Tmux Window,Shell Window, Shell Popup}
-super + {_, ctrl +, alt +} Return
-  {kitty tmux, kitty, kitty-popup $SHELL}
+# super + {_, ctrl +, alt +} Return
+#   {kitty tmux, kitty, kitty-popup $SHELL}
 
 
 # start firefox
@@ -285,7 +285,7 @@ super + t
 
 # open a terminal
 super + Return
-    kitty tmux
+  kitty -o allow_remote_control=yes
 
 # reload awesome
 super + ctrl + r
@@ -304,8 +304,6 @@ super + r ; j
 # Scale Desktop
 super + alt + ctrl + j
   kitty-popup xrandr-scale
-
-
 
 
 # Switch to different layouts using sequence keybindings
