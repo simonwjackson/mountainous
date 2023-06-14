@@ -11,10 +11,11 @@
 
     home = {
       activation = {
-        miscPostInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          nix-shell -p python3Packages.pip --run 'pip install --user pywalfox shell_gpt'
-          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        '';
+        # miscPostInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        #   nix-shell -p python3Packages.pip --run 'pip install --user pywalfox shell_gpt'
+        #   # TODO: Needs sudo
+        #   # ${pkgs.flatpak}/bin/flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        # '';
       };
 
       file = {
