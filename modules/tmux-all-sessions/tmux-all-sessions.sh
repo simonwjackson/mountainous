@@ -73,12 +73,12 @@ tmux new-session -d -c "$path" -s "$name" "$command" > /dev/null 2>&1
 if [ "$creating_session" = true ];
 then
   # msg="$(Creating session: $name | boxes -d unicornthink)"
+  msg="$(Creating session: "$name")"
 
-  # printf "\033[0;0H\033[2J";
-  # cols=$(tput cols);
-  # lines=$(tput lines);
-  # printf "\033[$((lines/2));$(((cols-${#msg})/2))H%s" "$msg"
-
+  printf "\033[0;0H\033[2J";
+  cols=$(tput cols);
+  lines=$(tput lines);
+  printf "\033[$((lines/2));$(((cols-${#msg})/2))H%s" "$msg"
 fi
 
 if [[ -z "$TMUX" ]]; then
