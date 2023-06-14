@@ -231,6 +231,7 @@
         "/home/simonwjackson/.local/share/nvim/plugged/ultisnips/after",
         "/home/simonwjackson/.local/share/nvim/plugged/octo.nvim/after",
         "${3rd}/love2d/library",
-        "${3rd}/luassert/library"
+        "${3rd}/luassert/library",
+        "${3rd}/luv/library"
     ]
 }
