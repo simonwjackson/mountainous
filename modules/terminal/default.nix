@@ -31,6 +31,7 @@ in
       dialog
       nmap
       fd
+      shell_gpt
       # nvimpager
     ];
 
