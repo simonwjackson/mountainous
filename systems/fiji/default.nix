@@ -1,255 +1,98 @@
-{ config, pkgs, modulesPath, lib, ... }:
+{ config, lib, pkgs, modulesPath, ... }:
 
-let
-  wifi = {
-    mac = "c4:23:60:9f:f2:1d";
-    name = "wifi";
-  };
-
-in
 {
   imports = [
-    ../modules/hidpi.nix
-    ../modules/laptop.nix
-    ../modules/workstation.nix
-    ./default.nix
     (modulesPath + "/installer/scan/not-detected.nix")
+    # ./screens.nix
+    ../../modules/syncthing.nix
+    ../../modules/tailscale.nix
+    ../../modules/networking.nix
+    ../../profiles/gui
+    ../../profiles/audio.nix
+    ../../profiles/workstation.nix
+    ../../profiles/_common.nix
+    ../../users/simonwjackson
   ];
+
+  networking.hostName = "fiji";
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  networking.hostName = "fiji"; # Define your hostname.
-
-  environment.systemPackages = with pkgs; [
-    cryptsetup
-    fuse3 # for nofail option on mergerfs (fuse defaults to fuse2)
-    mergerfs
-    mergerfs-tools
-    snapraid
-    nfs-utils
-    # rpcbind
-    # lsof
-  ];
-
-  # services.rpcbind.enable = true;
-  services.nfs.server.enable = true;
-
-  #boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.kernelPackages = pkgs.linuxPackages_6_2;
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems = {
-    "/" = {
-      device = "/dev/disk/by-label/nixos";
-      fsType = "ext4";
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+      fsType = "btrfs";
     };
 
-    # "/boot" = {
-    #   device = "/dev/disk/by-label/boot";
-    #   fsType = "vfat";
-    # };
-
-    "/run/media/nvme" = {
-      device = "/dev/disk/by-label/nvme";
-      # options = [ "defaults" "user" "rw" "utf8" ];
+  fileSystems."/home" =
+    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+      fsType = "btrfs";
+      options = [ "subvol=home" "compress=zstd" ];
     };
 
-    "/run/media/microsd" = {
-      device = "/dev/disk/by-label/microsd";
-      # options = [ "defaults" "user" "rw" "utf8" ];
+  fileSystems."/storage" =
+    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+      fsType = "btrfs";
+      options = [ "subvol=storage" "compress=zstd" ];
     };
 
-    "/home" = {
-      device = "/run/media/nvme/home";
-      options = [ "bind" ];
+  fileSystems."/nix" =
+    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+      fsType = "btrfs";
+      options = [ "subvol=nix" "compress=zstd" "noatime" ];
     };
 
-    "/tmp" = {
-      device = "/run/media/nvme/tmp";
-      options = [ "bind" ];
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/7C20-94CC";
+      fsType = "vfat";
     };
-
-    # mergerfs: merge drives
-    "/tank" = {
-      device = "/run/media/nvme:/run/media/microsd";
-      fsType = "fuse.mergerfs";
-      options = [
-        "defaults"
-        "allow_other"
-        "use_ino"
-        "cache.files=partial"
-        "dropcacheonclose=true"
-        "category.create=epff"
-        "nofail"
-      ];
-    };
-
-    "/storage" = {
-      device = "/tank/storage:/net/192.18.1.123/mnt/user";
-      fsType = "fuse.mergerfs";
-      options = [
-        "defaults"
-        "allow_other"
-        "use_ino"
-        "cache.files=partial"
-        "dropcacheonclose=true"
-        "category.create=epff"
-        "nofail"
-      ];
-    };
-  };
 
   swapDevices = [{
-    device = "/dev/disk/by-label/swap";
+    device = "/dev/nvme0n1p2"; 
   }];
 
-  networking.interfaces.wifi.useDHCP = lib.mkDefault true;
+  # users.users.simonwjackson = {
+  #   initialPassword = "asdfasdfasdf";
+  #   isNormalUser = true;
+  #   extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+  #   packages = with pkgs; [
+  #     firefox
+  #     neovim
+  #     tmux
+  #     git
+  #     mosh
+  #     kitty
+  #   ];
+  # };
 
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  # Sleep
-  systemd.sleep.extraConfig = ''
-    # 15min delay
-    HibernateDelaySec=900
-  '';
-
-  services.logind.lidSwitch = "suspend-then-hibernate";
-  services.logind.lidSwitchExternalPower = "suspend";
-
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend-then-hibernate
-    HandleSuspendKey=suspend-then-hibernate
-    HandleHibernateKey=suspend-then-hibernate
-  '';
-
-  powerManagement.enable = true;
-  powerManagement.powertop.enable = true;
-  powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
-
-  # hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-  hardware.bluetooth.enable = true;
-
-  # Screen tearing
-  # https://nixos.org/manual/nixos/unstable/index.html#sec-x11--graphics-cards-intel
-  services.xserver.videoDrivers = [ "modesetting" ];
-  # services.xserver.useGlamor = true;
-
-  services.udev.extraRules = ''
-    KERNEL=="wlan*", ATTR{address}=="${wifi.mac}", NAME = "${wifi.name}"
-
-    KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
-  '';
-
-  # 2nd udev rule for sunshine
-
-  # systemd.services.iptsd.enable = false;
-
-  services.avahi = {
-    enable = true;
-    nssmdns = true;
-    wideArea = true;
+  # Configure keymap in X11
+  services.xserver = {
+    layout = "us";
+    xkbVariant = "";
   };
 
-  networking.firewall = {
-    enable = false;
-    allowedUDPPorts = [ 51820 ]; # Clients and peers can use the same port, see listenport
-    allowedTCPPorts = [ 24800 ];
-  };
-
-  services.autofs.enable = true;
-  services.autofs.autoMaster = ''
-    /net -hosts --timeout=10
-  '';
+  services.xserver.libinput.enable = true;
 
   services.syncthing = {
-    overrideDevices = true;
-    overrideFolders = true;
-    devices = {
-      kuro.id = "4YUE3JH-CUR4TTS-RVTNUHZ-2HDENB3-FH3VWIJ-TMCW3X5-JSPKLXB-H2QUEAP";
-      ushiro.id = builtins.getEnv "SYNCTHING_USHIRO_ID";
-      pixel.id = "3JIMY3T-PU4S3LS-UOIFSEY-2XJ52XF-J6HPOIW-TZTSDBB-AA3K2KB-ULNE3AZ";
-      ultra.id = "DWTWS42-OIDSJUJ-UGSE6BV-Q2Z3YWB-IKB3SHE-DKRFXC7-XLMR2Z5-MD27BAJ";
-    };
-  };
-
-  # TODO: Move to user config
-  services.syncthing = {
-    enable = true;
-    user = "simonwjackson";
-    dataDir = "/tank"; # Default folder for new synced folders
-    configDir = "/home/simonwjackson/.config/syncthing";
-
-    extraFlags = [
-      "--no-default-folder"
-    ];
-
-    extraOptions = {
-      ignores = {
-        "line" = [
-          "**/node_modules"
-          "**/build"
-          "**/cache"
-        ];
-      };
-    };
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
     folders = {
-      "documents" = {
-        path = "/home/simonwjackson/documents";
-        devices = [ "kuro" "pixel" "ultra" ];
-        # ignorePerms = false;
-      };
-
-      "audiobooks" = {
-        path = "/tank/storage/audiobooks";
-        devices = [ "kuro" ];
-        # ignorePerms = false;
-      };
-
-      "books" = {
-        path = "/tank/storage/books";
-        devices = [ "kuro" "pixel" "ultra" ];
-        # ignorePerms = false;
-      };
-
-      "music" = {
-        path = "/tank/storage/music";
-        devices = [ "kuro" ];
-        # ignorePerms = false;
-      };
-
-      "code" = {
-        path = "/home/simonwjackson/code";
-        devices = [ "ushiro" ];
-      };
+      documents.path = "/home/simonwjackson/documents";
+      documents.devices = [ "kuro" "unzen" "zao" "fiji" ];
+      
+      code.path = "/home/simonwjackson/code";
+      code.devices = [ "kuro" "unzen" "zao" "fiji" ];
     };
   };
 
-  services.flatpak.enable = true;
-
-  services.printing.enable = true;
-  services.printing.drivers = with pkgs; [ brlaser ];
-
-  services.mpd = {
-    enable = true;
-    user = "simonwjackson";
-    group = "users";
-    musicDirectory = "/tank/storage/music";
-    extraConfig = ''
-      audio_output {
-        type "pulse"
-        name "Pulseaudio"
-        server "127.0.0.1" # add this line - MPD must connect to the local sound server
-      }
-    '';
-
-    # Optional:
-    network.listenAddress = "127.0.0.1"; # if you want to allow non-localhost connections
-    startWhenNeeded = true; # systemd feature: only start MPD service upon connection to its socket
-  };
+  system.stateVersion = "23.05"; # Did you read the comment?
 }
