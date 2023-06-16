@@ -8,16 +8,7 @@
 
   outputs = { nixpkgs, ... }: {
     nixosConfigurations = {
-      ushiro = nixpkgs.lib.nixosSystem {
-        system = "aarch64-linux";
-
-        modules = [
-          ./hardware/apple-m1.nix
-          ./systems/ushiro
-          ./users/simonwjackson
-        ];
-      };
-
+      # Dual XEON Server
       unzen = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
@@ -28,32 +19,25 @@
         ];
       };
 
-      yakushi = nixpkgs.lib.nixosSystem {
+      # XPS 17 (headless)
+      zao = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
-        modules = [
-          ./systems/yakushi
-        ];
+        modules = [ ./systems/zao ];
       };
 
-      yari = nixpkgs.lib.nixosSystem {
+      # Lenovo i9 dual
+      fiji = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
-        modules = [
-          ./hardware/intel.nix
-          ./hardware/nvidia.nix
-          ./systems/yari.nix
-        ];
+        modules = [ ./systems/fiji ];
       };
 
-      raiden = nixpkgs.lib.nixosSystem {
+      # Lenovo desktop
+      kita = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
-        modules = [
-          ./hardware/intel.nix
-          ./hardware/nvidia.nix
-          ./systems/raiden
-        ];
+        modules = [ ./systems/kita ];
       };
     };
   };
