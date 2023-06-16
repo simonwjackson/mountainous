@@ -150,45 +150,32 @@
         };
 
         userChrome = ''
-          :root[titlepreface*="᠎"] #nav-bar {
-            visibility: inherit !important;
-          }
-          
           /* Here all specific rules for user interface, extensions UI… */
           @-moz-document url(chrome://browser/content/browser.xul),
             url(chrome://browser/content/browser.xhtml),
             url(chrome://browser/content/places/bookmarksSidebar.xhtml),
             url(chrome://browser/content/webext-panels.xhtml),
             url(chrome://browser/content/places/places.xhtml) {
-          
-            /* Hide back, forward & home buttons */
-            #back-button,
-            #forward-button,
-            #home-button,
-            #PersonalToolbar {
-              display: none !important;
-            }
-          
-            #nav-bar {
-              visibility: collapse !important;
-            }
-          
-            /* #urlbar-container {
-              visibility: collapse !important;
-            } */
-          
-            /* Hide tab bar */
-            #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar > .toolbar-items {
+            :root[titlepreface*="᠎"] #TabsToolbar > .toolbar-items {
               opacity: 0;
               pointer-events: none;
             }
-          
-            #main-window:not([tabsintitlebar="true"]) #TabsToolbar {
+            
+            :root[titlepreface*="᠎"] #TabsToolbar {
               visibility: collapse !important;
             }
-          
-            #main-window[tabsintitlebar="true"]:not([extradragspace="true"]) #TabsToolbar .titlebar-spacer {
+            
+            :root[titlepreface*="᠎"] #TabsToolbar .titlebar-spacer {
               border-inline-end: none;
+            }
+
+            :root[titlepreface*="᠎"] #nav-bar {
+              visibility: inherit !important;
+              visibility: collapse !important;
+            }
+
+            #home-button {
+              display: none !important;
             }
           }
         '';
