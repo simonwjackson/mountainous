@@ -9,6 +9,7 @@ in
   ];
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
+    # BUG: Fails on first install
     systemd.user.services.pywal-restore = {
       Unit = {
         Description = "Set pywal wallpaper at startup";
