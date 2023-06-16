@@ -1,13 +1,12 @@
 { pkgs, ... }:
 
 {
-  imports = [
-    ../modules/syncthing.nix
-  ];
+  imports = [ ];
+
+  services.udisks2.enable = true;
 
   security.rtkit.enable = true; # rtkit is optional but recommended
   environment.variables.BROWSER = "firefox";
-  programs.mosh.enable = true;
 
   environment.systemPackages = with pkgs; [
     neovim
