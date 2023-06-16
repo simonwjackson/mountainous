@@ -11,8 +11,8 @@
       unzen.id = builtins.getEnv "SYNCTHING_UNZEN_ID";
       kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
       haku.id = builtins.getEnv "SYNCTHING_HAKU_ID";
-      raiden.id = builtins.getEnv "SYNCTHING_RAIDEN_ID";
-      yari.id = builtins.getEnv "SYNCTHING_YARI_ID";
+      zao.id = builtins.getEnv "SYNCTHING_RAIDEN_ID";
+      fiji.id = builtins.getEnv "SYNCTHING_YARI_ID";
     };
 
     extraFlags = [
