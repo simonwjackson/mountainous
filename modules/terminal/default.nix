@@ -66,31 +66,13 @@ in
       # tmux.enableShellIntegration = true;
     };
 
-    # home.file = {
-    #   "./.config/tmux/themes" = {
-    #     recursive = true;
-    #     source = ./tmux/themes;
-    #   };
-    # };
-
-    programs.tmux = {
-      enable = true;
-
-      plugins = with pkgs.tmuxPlugins; [
-        sensible
-        extrakto
-      ];
-
-      extraConfig = builtins.readFile (./tmux/tmux.conf);
-    };
-
     home.file = {
       "./.config/direnv/direnv.toml" = {
         source = ./direnv/direnv.toml;
       };
 
-      "./.config/tmux/share.tmux.conf" = {
-        source = ./tmux/share.tmux.conf;
+      "./.config/tmux/tmux.conf" = {
+        source = ./tmux/tmux.conf;
       };
 
       "./.local/bin/find-then-edit" = {
