@@ -33,6 +33,13 @@
         modules = [ ./systems/fiji ];
       };
 
+      # virtual headless workstation
+      yari = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+
+        modules = [ ./systems/yari ];
+      };
+
       # Lenovo desktop
       kita = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
