@@ -1,10 +1,12 @@
-function replace_delimiter_with_spaces () {
+function replace_delimiter_with_spaces() {
   local delimiter="$1"
   local num_spaces="$2"
   local spaces=$(printf '\u2007%.0s' $(seq 1 "$num_spaces"))
 
   sed -u "s/${delimiter}/${spaces}/g"
 }
+
+export -f replace_delimiter_with_spaces
 
 function replace_spaces_with_delimiter() {
   local delimiter="$1"
@@ -14,12 +16,13 @@ function replace_spaces_with_delimiter() {
   sed -u "s/${spaces}/${delimiter}/g"
 }
 
+export -f replace_spaces_with_delimiter
+
 display_icon() {
   icon_inactive=""
   icon_active=""
 
-  if [ "$1" ];
-  then
+  if [ "$1" ]; then
     echo "$icon_active"
   else
     echo "$icon_inactive"
@@ -28,61 +31,76 @@ display_icon() {
 
 export -f display_icon
 
-to_csv() {
-  dir="$1"
-
-  session_name="$(basename "$(dirname "$dir")")/$(basename "$dir")"
-  tmux_status=$( \
-    tmux has-session -t "$session_name" > /dev/null 2>&1 \
-    && display_icon "$?"
+fzf_format_entry() {
+  json_obj="$1"
+  session_name=$(jq -r '.session' <<<"$json_obj")
+  tmux_status=$(
+    tmux has-session -t "$session_name" >/dev/null 2>&1 &&
+      echo "" ||
+      echo ""
   )
 
-  printf "%s,code,%s,%s\n" "$dir" "$tmux_status" "$session_name"
+  printf "%s;%s;%s\n" "$json_obj" "$tmux_status" "$session_name" |
+    replace_delimiter_with_spaces ';' 2
 }
 
-export -f to_csv
+export -f fzf_format_entry
 
-selection=$(fd --type directory --hidden '^.bare$|^.git$' --search-path ~/code \
-  | xargs -I {} dirname {} \
-  | xargs -I {} bash -c 'to_csv "{}"' \
-  | replace_delimiter_with_spaces ',' 2 \
-  | fzf \
-  --bind 'ctrl-c:abort' \
-  --delimiter=$'\u2007' \
-  --with-nth=4.. \
-  | replace_spaces_with_delimiter ',' 2 \
+get_code_projects() {
+  fd \
+    --type directory \
+    --hidden '^.bare$|^.git$' \
+    --search-path ~/code |
+    xargs dirname |
+    xargs \
+      -I {} \
+      sh -c 'fzf_format_entry "{ \"path\": \"{}\", \"type\": \"code\", \"session\": \"$(echo "$(basename "$(dirname "{}")")/$(basename "{}")")\" }"'
+}
+
+selection=$(
+  {
+    get_code_projects
+  } |
+    fzf \
+      --bind 'ctrl-c:abort' \
+      --delimiter=$'\u2007' \
+      --with-nth=2.. |
+    replace_spaces_with_delimiter ';' 2 |
+    awk -F';' '{print $1}'
 )
 
 [ -z "$selection" ] && exit 1
 
-path=$(cut -d',' -f1 <<< "$selection");
-type=$(cut -d',' -f2 <<< "$selection");
-name=$(cut -d',' -f4 <<< "$selection");
+# path=$(cut -d';' -f1 <<<"$selection")
+type=$(echo "$selection" | jq -r '.type')
+path=$(echo "$selection" | jq -r '.path')
+session=$(echo "$selection" | jq -r '.session')
 
 if [ "$type" = "code" ]; then
-  command="tmux split-window -h -p 20 && tmux split-window -v -t 0 && tmux send-keys -t 1 \"nvim; exec ${SHELL:-/bin/sh}\" Enter"
+  # command="tmux split-window -h -p 20 && tmux split-window -v -t 0 && tmux send-keys -t 1 \"nvim; exec ${SHELL:-/bin/sh}\" Enter"
+  command="nvim"
+elif [ "$type" = "journal" ]; then
+  command="nvim"
 fi
 
-if ! tmux has-session -t "$name" 2>/dev/null;
-then
-  creating_session=true
-fi
+# if ! tmux has-session -t "$name" 2>/dev/null; then
+#   creating_session=true
+# fi
 
-tmux new-session -d -c "$path" -s "$name" "$command" > /dev/null 2>&1
+tmux new-session -d -c "$path" -s "$session" "$command" >/dev/null 2>&1
 
-if [ "$creating_session" = true ];
-then
-  # msg="$(Creating session: $name | boxes -d unicornthink)"
-  msg="$(Creating session: "$name")"
-
-  printf "\033[0;0H\033[2J";
-  cols=$(tput cols);
-  lines=$(tput lines);
-  printf "\033[$((lines/2));$(((cols-${#msg})/2))H%s" "$msg"
-fi
+# if [ "$creating_session" = true ]; then
+#   # msg="$(Creating session: $name | boxes -d unicornthink)"
+#   msg="$(Creating session: "$name")"
+#
+#   printf "\033[0;0H\033[2J"
+#   cols=$(tput cols)
+#   lines=$(tput lines)
+#   printf "\033[$((lines / 2));$(((cols - ${#msg}) / 2))H%s" "$msg"
+# fi
 
 if [[ -z "$TMUX" ]]; then
-  tmux attach-session -t "$name"
+  tmux attach-session -t "$session"
 else
-  tmux switch-client -t "$name"
+  tmux switch-client -t "$session"
 fi
