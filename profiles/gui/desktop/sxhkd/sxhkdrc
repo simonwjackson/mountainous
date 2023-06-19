@@ -283,9 +283,9 @@ XF86MonBrightnessDown
 super + t
   cmd_p.sh
 
-# open a terminal
+# Open (or switch to) the main terminal
 super + Return
-  kitty -o allow_remote_control=yes
+  xdotool search --name "main-term" windowactivate || kitty -o allow_remote_control=yes --title=main-term sh -c 'tmux -f ~/.config/tmux/tmux.host.conf attach-session -t terminals || tmux -f ~/.config/tmux/tmux.host.conf new-session -s terminals nvim -c "terminal" -c "startinsert"'
 
 # reload awesome
 super + ctrl + r
