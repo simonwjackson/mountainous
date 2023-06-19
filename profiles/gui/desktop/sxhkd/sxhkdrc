@@ -58,8 +58,8 @@ super + ctrl + space
   awesome-client "require('awful').client.floating.toggle(client.focus)"
 
 # move to master
-super + ctrl + Return
-  awesome-client "client.focus:swap(require('awful').client.getmaster())"
+# super + ctrl + Return
+  # awesome-client "client.focus:swap(require('awful').client.getmaster())"
 #
  Toggle between awful.layout.suit.tile and awful.layout.suit.tile.left
 super + t
@@ -283,9 +283,12 @@ XF86MonBrightnessDown
 super + t
   cmd_p.sh
 
+super + ctrl + Return
+  kitty
+
 # Open (or switch to) the main terminal
 super + Return
-  xdotool search --name "main-term" windowactivate || kitty -o allow_remote_control=yes --title=main-term sh -c 'tmux -f ~/.config/tmux/tmux.host.conf attach-session -t terminals || tmux -f ~/.config/tmux/tmux.host.conf new-session -s terminals nvim -c "terminal" -c "startinsert"'
+  tmux -f ~/.config/tmux/tmux.host.conf new-session -d -c "$HOME" -s "$(hostname)" sh -c 'unset TMUX; tmux new-session -s terminals ''tmux source-file ~/.config/tmux/tmux.workspace.conf; nvim -c "terminal" -c "startinsert"'''; kitty -o allow_remote_control=yes --title=main-term sh -c 'tmux attach-session -t "$(hostname)"'
 
 # reload awesome
 super + ctrl + r
