@@ -288,7 +288,7 @@ super + ctrl + Return
 
 # Open (or switch to) the main terminal
 super + Return
-  tmux -f ~/.config/tmux/tmux.host.conf new-session -d -c "$HOME" -s "$(hostname)" sh -c 'unset TMUX; tmux new-session -s terminals ''tmux source-file ~/.config/tmux/tmux.workspace.conf; nvim -c "terminal" -c "startinsert"'''; kitty -o allow_remote_control=yes --title=main-term sh -c 'tmux attach-session -t "$(hostname)"'
+  tmux -f ~/.config/tmux/tmux.host.conf -L HOST new-session -d -c "$HOME" -s "$(hostname)" mosh localhost -- sh -c 'tmux -f ~/.config/tmux/tmux.workspace.conf -L WORKSPACE new-session -s terminals nvim -c "terminal" -c "startinsert"'; xdotool search --name "main-term" windowactivate || kitty -o allow_remote_control=yes --title=main-term sh -c 'tmux -L HOST attach-session -t "$(hostname)"'
 
 # reload awesome
 super + ctrl + r
