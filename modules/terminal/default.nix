@@ -71,8 +71,16 @@ in
         source = ./direnv/direnv.toml;
       };
 
-      "./.config/tmux/tmux.conf" = {
-        source = ./tmux/tmux.conf;
+      "./.config/tmux/tmux.shared.conf" = {
+        source = ./tmux/tmux.shared.conf;
+      };
+
+      "./.config/tmux/tmux.host.conf" = {
+        source = ./tmux/tmux.host.conf;
+      };
+
+      "./.config/tmux/tmux.workspace.conf" = {
+        source = ./tmux/tmux.workspace.conf;
       };
 
       "./.local/bin/find-then-edit" = {
