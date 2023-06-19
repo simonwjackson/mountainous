@@ -13,11 +13,13 @@ in
     ../modules/neovim
     ../modules/terminal
     ../modules/tmux-all-sessions
+    ../modules/tmux-all-servers
   ];
 
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     # Custom Scripts
     programs.tmux-all-sessions.enable = true;
+    programs.tmux-all-servers.enable = true;
   };
 
   networking.firewall.allowPing = true;
