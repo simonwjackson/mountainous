@@ -4,7 +4,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     # ./screens.nix
-    ../../modules/syncthing.nix
+    # ../../modules/syncthing.nix
     ../../modules/tailscale.nix
     ../../modules/networking.nix
     ../../profiles/gui
@@ -25,28 +25,97 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
+    {
+      device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
       fsType = "btrfs";
       options = [ "subvol=root" "compress=zstd" ];
     };
 
   fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
+    {
+      device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
       fsType = "btrfs";
       options = [ "subvol=home" "compress=zstd" ];
     };
 
   fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
+    {
+      device = "/dev/disk/by-uuid/7d40286e-c82d-4340-ae60-8896085c945c";
       fsType = "btrfs";
       options = [ "subvol=nix" "compress=zstd" "noatime" ];
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/E167-5889";
+    {
+      device = "/dev/disk/by-uuid/E167-5889";
       fsType = "vfat";
     };
- 
+
+  fileSystems."/home/simonwjackson/code" = {
+    device = "unzen:/tank/code";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/documents" = {
+    device = "unzen:/tank/documents";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/audiobooks" = {
+    device = "unzen:/net/unzen/tank/audiobooks";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/music" = {
+    device = "unzen:/net/unzen/tank/music";
+    fsType = "nfs";
+  };
+
+  systemd.services.ensureNzbgetDownloadDir = {
+    script = ''
+      install -d -o simonwjackson -g users -m 770 /home/simonwjackson/videos
+    '';
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+
+  fileSystems."/home/simonwjackson/videos/series" = {
+    device = "unzen:/net/unzen/tank/series";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/videos/films" = {
+    device = "unzen:/net/unzen/tank/series";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/gaming" = {
+    device = "unzen:/net/unzen/tank/gaming";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/books" = {
+    device = "unzen:/net/unzen/tank/books";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/comics" = {
+    device = "unzen:/net/unzen/tank/comics";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/downloads" = {
+    device = "unzen:/net/unzen/tank/downloads";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/photos" = {
+    device = "unzen:/net/unzen/tank/photos";
+    fsType = "nfs";
+  };
+
   swapDevices = [ ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
@@ -60,18 +129,6 @@
   };
 
   services.xserver.libinput.enable = true;
-
-  services.syncthing = {
-    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
-
-    folders = {
-      documents.path = "/home/simonwjackson/documents";
-      documents.devices = [ "kuro" "unzen" "zao" "fiji" ];
-      
-      code.path = "/home/simonwjackson/code";
-      code.devices = [ "kuro" "unzen" "zao" "fiji" ];
-    };
-  };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
