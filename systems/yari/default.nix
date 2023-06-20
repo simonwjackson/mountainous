@@ -23,11 +23,10 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" =
-    {
-      device = "/dev/disk/by-uuid/b8fa3f29-0374-4570-97c0-9bf6af48c0ad";
-      fsType = "ext4";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/b8fa3f29-0374-4570-97c0-9bf6af48c0ad";
+    fsType = "ext4";
+  };
 
   fileSystems."/home/simonwjackson/code" = {
     device = "unzen:/tank/code";
@@ -45,7 +44,6 @@
   };
 
   users.users.simonwjackson = {
-    initialPassword = "asdfasdfasdf";
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
