@@ -1,16 +1,25 @@
-{ pkgs, ... }: {
+{ pkgs, modulesPath, ... }: {
   imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
     ../../modules/syncthing.nix
     ../../profiles/_common.nix
     ./slskd.nix
   ];
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/472d17fc-6e31-4af2-8e9c-064fcfdce3ed";
-    fsType = "ext4";
-  };
+  boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "virtio_pci" "virtio_scsi" "sd_mod" "sr_mod" ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ ];
+  boot.extraModulePackages = [ ];
 
-  swapDevices = [ ];
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/7d101547-1cde-4fe7-8e30-a83632d34b97";
+      fsType = "ext4";
+    };
+
+  swapDevices =
+    [{
+      device = "/dev/disk/by-uuid/c5156a1d-5f59-478d-8f8e-77a19cad2681";
+    }];
 
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
@@ -435,13 +444,13 @@
       music-lossy.path = "/tank/music-lossy";
       code.path = "/tank/code";
 
-      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" "yari" ];
-      code.devices = [ "unzen" "ushiro" "raiden" "yari" ];
+      documents.devices = [ "kuro" "unzen" "fiji" ];
+      code.devices = [ "unzen" "fiji" ];
       audiobooks.devices = [ "unzen" ];
       books.devices = [ "kuro" "unzen" ];
       gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
-      gaming.devices = [ "unzen" "raiden" ];
-      music.devices = [ "unzen" "ushiro" ];
+      gaming.devices = [ "unzen" ];
+      music.devices = [ "unzen" ];
       music-lossy.devices = [ "unzen" "kuro" ];
     };
   };
