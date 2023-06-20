@@ -24,9 +24,25 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/b8fa3f29-0374-4570-97c0-9bf6af48c0ad";
+    {
+      device = "/dev/disk/by-uuid/b8fa3f29-0374-4570-97c0-9bf6af48c0ad";
       fsType = "ext4";
     };
+
+  fileSystems."/home/simonwjackson/code" = {
+    device = "unzen:/tank/code";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/documents" = {
+    device = "unzen:/tank/documents";
+    fsType = "nfs";
+  };
+
+  fileSystems."/home/simonwjackson/downloads" = {
+    device = "unzen:/tank/downloads";
+    fsType = "nfs";
+  };
 
   users.users.simonwjackson = {
     initialPassword = "asdfasdfasdf";

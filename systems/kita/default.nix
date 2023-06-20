@@ -62,12 +62,12 @@
   };
 
   fileSystems."/home/simonwjackson/audiobooks" = {
-    device = "unzen:/net/unzen/tank/audiobooks";
+    device = "unzen:/tank/audiobooks";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/music" = {
-    device = "unzen:/net/unzen/tank/music";
+    device = "unzen:/tank/music";
     fsType = "nfs";
   };
 
@@ -82,37 +82,37 @@
   };
 
   fileSystems."/home/simonwjackson/videos/series" = {
-    device = "unzen:/net/unzen/tank/series";
+    device = "unzen:/tank/series";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/videos/films" = {
-    device = "unzen:/net/unzen/tank/series";
+    device = "unzen:/tank/series";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/gaming" = {
-    device = "unzen:/net/unzen/tank/gaming";
+    device = "unzen:/tank/gaming";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/books" = {
-    device = "unzen:/net/unzen/tank/books";
+    device = "unzen:/tank/books";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/comics" = {
-    device = "unzen:/net/unzen/tank/comics";
+    device = "unzen:/tank/comics";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/downloads" = {
-    device = "unzen:/net/unzen/tank/downloads";
+    device = "unzen:/tank/downloads";
     fsType = "nfs";
   };
 
   fileSystems."/home/simonwjackson/photos" = {
-    device = "unzen:/net/unzen/tank/photos";
+    device = "unzen:/tank/photos";
     fsType = "nfs";
   };
 
