@@ -87,7 +87,7 @@
   };
 
   fileSystems."/home/simonwjackson/videos/films" = {
-    device = "unzen:/tank/series";
+    device = "unzen:/tank/films";
     fsType = "nfs";
   };
 
