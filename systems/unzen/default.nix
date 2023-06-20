@@ -11,15 +11,14 @@
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/7d101547-1cde-4fe7-8e30-a83632d34b97";
-      fsType = "ext4";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/7d101547-1cde-4fe7-8e30-a83632d34b97";
+    fsType = "ext4";
+  };
 
-  swapDevices =
-    [{
-      device = "/dev/disk/by-uuid/c5156a1d-5f59-478d-8f8e-77a19cad2681";
-    }];
+  swapDevices = [{
+    device = "/dev/disk/by-uuid/c5156a1d-5f59-478d-8f8e-77a19cad2681";
+  }];
 
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/sda";
@@ -233,6 +232,7 @@
         "dropcacheonclose=true"
         "category.create=epff"
         "nofail"
+        "nfsopenhack=all"
       ];
     };
   };
@@ -242,10 +242,26 @@
     /net -hosts --timeout=60
   '';
 
+  systemd.services.ensureExportExists = {
+    script = ''
+      install -d -o nobody -g nogroup -m 770 /export
+    '';
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+
+  fileSystems."/export/tank" = {
+    device = "/tank";
+    options = [ "bind" ];
+  };
+
   services.nfs.server = {
     enable = true;
     exports = ''
-      /tank  192.18.0.0/16(rw,fsid=0,sync,crossmnt)
+      /export         192.18.0.0/16(rw,fsid=0,no_subtree_check,crossmnt)  100.0.0.0/8(rw,fsid=0,no_subtree_check,crossmnt)
+      /export/tank    192.18.0.0/16(fsid=1,insecure,rw,sync,no_subtree_check)    100.0.0.0/8(fsid=1,insecure,rw,sync,no_subtree_check)
     '';
     # fixed rpc.statd port; for firewall
     # lockdPort = 4001;
