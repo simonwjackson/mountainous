@@ -1,4 +1,4 @@
-{ config, lib, pkgs, modulesPath, ... }:
+{ config, lib, modulesPath, ... }:
 
 {
   imports = [
@@ -19,56 +19,49 @@
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [
+    "xhci_pci"
+    "thunderbolt"
+    "nvme"
+    "usb_storage"
+    "sd_mod"
+    "rtsx_pci_sdmmc"
+  ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
-      fsType = "btrfs";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+    fsType = "btrfs";
+  };
 
-  fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
-      fsType = "btrfs";
-      options = [ "subvol=home" "compress=zstd" ];
-    };
+  fileSystems."/home" = {
+    device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+    fsType = "btrfs";
+    options = [ "subvol=home" "compress=zstd" ];
+  };
 
-  fileSystems."/storage" =
-    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
-      fsType = "btrfs";
-      options = [ "subvol=storage" "compress=zstd" ];
-    };
+  fileSystems."/storage" = {
+    device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+    fsType = "btrfs";
+    options = [ "subvol=storage" "compress=zstd" ];
+  };
 
-  fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
-      fsType = "btrfs";
-      options = [ "subvol=nix" "compress=zstd" "noatime" ];
-    };
+  fileSystems."/nix" = {
+    device = "/dev/disk/by-uuid/71fdf463-2584-4413-9aed-4c1478a5056a";
+    fsType = "btrfs";
+    options = [ "subvol=nix" "compress=zstd" "noatime" ];
+  };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/7C20-94CC";
-      fsType = "vfat";
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/7C20-94CC";
+    fsType = "vfat";
+  };
 
   swapDevices = [{
-    device = "/dev/nvme0n1p2"; 
+    device = "/dev/nvme0n1p2";
   }];
-
-  # users.users.simonwjackson = {
-  #   initialPassword = "asdfasdfasdf";
-  #   isNormalUser = true;
-  #   extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
-  #   packages = with pkgs; [
-  #     firefox
-  #     neovim
-  #     tmux
-  #     git
-  #     mosh
-  #     kitty
-  #   ];
-  # };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
@@ -87,10 +80,10 @@
 
     folders = {
       documents.path = "/home/simonwjackson/documents";
-      documents.devices = [ "kuro" "unzen" "zao" "fiji" ];
-      
+      documents.devices = [ "kuro" "unzen" "fiji" ];
+
       code.path = "/home/simonwjackson/code";
-      code.devices = [ "kuro" "unzen" "zao" "fiji" ];
+      code.devices = [ "unzen" "fiji" ];
     };
   };
 
