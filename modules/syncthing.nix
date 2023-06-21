@@ -10,7 +10,7 @@
       unzen.id = builtins.getEnv "SYNCTHING_UNZEN_ID";
       kuro.id = builtins.getEnv "SYNCTHING_KURO_ID";
       haku.id = builtins.getEnv "SYNCTHING_HAKU_ID";
-      zao.id = builtins.getEnv "SYNCTHING_RAIDEN_ID";
+      zao.id = builtins.getEnv "SYNCTHING_ZAO_ID";
       fiji.id = builtins.getEnv "SYNCTHING_FIJI_ID";
     };
 
