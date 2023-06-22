@@ -4,7 +4,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     # ./screens.nix
-    # ../../modules/syncthing.nix
+    ../../modules/syncthing.nix
     ../../modules/tailscale.nix
     ../../modules/networking.nix
     ../../profiles/gui
@@ -50,11 +50,6 @@
       device = "/dev/disk/by-uuid/E167-5889";
       fsType = "vfat";
     };
-
-  fileSystems."/home/simonwjackson/code" = {
-    device = "unzen:/tank/code";
-    fsType = "nfs";
-  };
 
   fileSystems."/home/simonwjackson/documents" = {
     device = "unzen:/tank/documents";
@@ -129,6 +124,19 @@
   };
 
   services.xserver.libinput.enable = true;
+
+  services.syncthing = {
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
+    extraFlags = [
+      "-gui-address=0.0.0.0:8384"
+    ];
+
+    folders = {
+      code.path = "/home/simonwjackson/code";
+
+      code.devices = [ "fiji" "kita" "unzen" "yari" ];
+    };
+  };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
