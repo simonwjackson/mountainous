@@ -235,6 +235,16 @@
         "nfsopenhack=all"
       ];
     };
+
+    "/home/simonwjackson/code" = {
+      device = "/tank/code";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/documents" = {
+      device = "/tank/documents";
+      options = [ "bind" ];
+    };
   };
 
   services.autofs.enable = true;
@@ -242,7 +252,7 @@
     /net -hosts --timeout=60
   '';
 
-  systemd.services.ensureExportExists = {
+  systemd.services.ensureNfsRoot = {
     script = ''
       install -d -o nobody -g nogroup -m 770 /export
     '';
@@ -263,11 +273,8 @@
       /export         192.18.0.0/16(rw,fsid=0,no_subtree_check,crossmnt)  100.0.0.0/8(rw,fsid=0,no_subtree_check,crossmnt)
       /export/tank    192.18.0.0/16(fsid=1,insecure,rw,sync,no_subtree_check)    100.0.0.0/8(fsid=1,insecure,rw,sync,no_subtree_check)
     '';
-    # fixed rpc.statd port; for firewall
-    # lockdPort = 4001;
-    # mountdPort = 4002;
-    # statdPort = 4000;
-    # extraNfsdConfig = '''';
+    # /export       192.18.0.0/16(rw,fsid=0,no_subtree_check) 100.0.0.0/8(rw,fsid=0,no_subtree_check)
+    # /export/tank  192.18.0.0/16(rw,fsid=1,sync,crossmnt) 100.0.0.0/8(rw,fsid=1,sync,crossmnt)
   };
 
 
