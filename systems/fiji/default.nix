@@ -83,7 +83,7 @@
       code.path = "/home/simonwjackson/code";
 
       documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
-      code.devices = [ "fiji" "unzen" "yari" ];
+      code.devices = [ "fiji" "unzen" "yari" "kita" ];
     };
   };
 
