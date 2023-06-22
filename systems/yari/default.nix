@@ -33,6 +33,11 @@
     fsType = "nfs";
   };
 
+  fileSystems."/home/simonwjackson/documents" = {
+    device = "unzen:/tank/documents";
+    fsType = "nfs";
+  };
+
   users.users.simonwjackson = {
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
@@ -61,11 +66,8 @@
     ];
 
     folders = {
-      documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
-
-      documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
-      code.devices = [ "fiji" "unzen" "yari" ];
+      code.devices = [ "fiji" "unzen" "yari" "kita" ];
     };
   };
 
