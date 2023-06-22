@@ -56,13 +56,16 @@
 
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
+    extraFlags = [
+      "-gui-address=0.0.0.0:8384"
+    ];
 
     folders = {
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
 
-      documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
-      code.devices = [ "fiji" "kita" "unzen" "yari" ];
+      documents.devices = [ "fiji" "kuro" "unzen" ];
+      code.devices = [ "fiji" "unzen" ];
     };
   };
 
