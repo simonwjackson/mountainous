@@ -59,18 +59,6 @@
     pkgs.mergerfs-tools
   ];
 
-  services.syncthing = {
-    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
-
-    folders = {
-      documents.path = "/home/simonwjackson/documents";
-      code.path = "/home/simonwjackson/code";
-
-      documents.devices = [ "kuro" "unzen" "ushiro" "raiden" "yari" ];
-      code.devices = [ "unzen" "ushiro" "raiden" "yari" ];
-    };
-  };
-
   fileSystems."/" =
     {
       device = "/dev/nvme0n1p2";

@@ -28,16 +28,6 @@
     fsType = "ext4";
   };
 
-  fileSystems."/home/simonwjackson/code" = {
-    device = "unzen:/tank/code";
-    fsType = "nfs";
-  };
-
-  fileSystems."/home/simonwjackson/documents" = {
-    device = "unzen:/tank/documents";
-    fsType = "nfs";
-  };
-
   fileSystems."/home/simonwjackson/downloads" = {
     device = "unzen:/tank/downloads";
     fsType = "nfs";
@@ -62,6 +52,18 @@
   services.xserver = {
     layout = "us";
     xkbVariant = "";
+  };
+
+  services.syncthing = {
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
+
+    folders = {
+      documents.path = "/home/simonwjackson/documents";
+      code.path = "/home/simonwjackson/code";
+
+      documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
+      code.devices = [ "fiji" "kita" "unzen" "yari" ];
+    };
   };
 
   services.xserver.libinput.enable = true;
