@@ -80,10 +80,10 @@
 
     folders = {
       documents.path = "/home/simonwjackson/documents";
-      documents.devices = [ "kuro" "unzen" "fiji" ];
-
       code.path = "/home/simonwjackson/code";
-      code.devices = [ "unzen" "fiji" ];
+
+      documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
+      code.devices = [ "fiji" "unzen" "yari" ];
     };
   };
 
