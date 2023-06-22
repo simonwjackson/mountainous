@@ -82,7 +82,7 @@
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
 
-      documents.devices = [ "fiji" "kuro" "unzen" "yari" ];
+      documents.devices = [ "fiji" "kuro" "unzen" ];
       code.devices = [ "fiji" "kita" "unzen" "yari" ];
     };
   };

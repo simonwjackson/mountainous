@@ -467,8 +467,8 @@
       music-lossy.path = "/tank/music-lossy";
       code.path = "/tank/code";
 
-      documents.devices = [ "kuro" "unzen" "fiji" ];
-      code.devices = [ "unzen" "fiji" ];
+      documents.devices = [ "fiji" "kuro" "unzen" ];
+      code.devices = [ "fiji" "kita" "unzen" "yari" ];
       audiobooks.devices = [ "unzen" ];
       books.devices = [ "kuro" "unzen" ];
       gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
