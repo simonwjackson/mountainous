@@ -309,7 +309,7 @@ awesome.connect_signal("toggle_hello", function()
 	echo_test()
 end)
 
-function rotate_screens(direction)
+function Rotate_Screens(direction)
 	local current_screen = awful.screen.focused()
 	local initial_scren = current_screen
 
