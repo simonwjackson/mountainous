@@ -34,15 +34,25 @@
 
     home = {
       sessionVariables = {
-        # GDK_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 2 else 1;
-        # GDK_DPI_SCALE = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 0.5 else 1;
-        # QT_SCALE_FACTOR = if (builtins.getEnv ("NIX_CONFIG_HIDPI") == "1") then 2 else 1;
-        GDK_SCALE = 2;
-        GDK_DPI_SCALE = 0.5;
-        QT_AUTO_SCREEN_SET_FACTOR = 2;
+        GDK_SCALE =
+          if (builtins.getEnv ("GDK_SCALE") == "")
+          then "1"
+          else builtins.getEnv ("GDK_SCALE");
+        GDK_DPI_SCALE =
+          if (builtins.getEnv ("GDK_DPI_SCALE") == "")
+          then "1"
+          else builtins.getEnv ("GDK_DPI_SCALE");
+        QT_SCALE_FACTOR =
+          if (builtins.getEnv ("QT_SCALE_FACTOR") == "")
+          then "1"
+          else builtins.getEnv ("QT_SCALE_FACTOR");
+        QT_FONT_DPI =
+          if (builtins.getEnv ("QT_FONT_DPI") == "")
+          then "96"
+          else builtins.getEnv ("QT_FONT_DPI");
+        # honor screen DPI
+        QT_AUTO_SCREEN_SET_FACTOR = 1;
         # QT_QPA_PLATFORMTHEME = "qt5ct";
-        QT_SCALE_FACTOR = 1;
-        QT_FONT_DPI = 96;
       };
     };
 
