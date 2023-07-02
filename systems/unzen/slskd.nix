@@ -30,30 +30,30 @@ in
       };
     };
 
-    systemd.services.slskd-beets-import = {
-      description = "When a slskd download completes, run `beet import`";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
-      serviceConfig = {
-        Type = "simple";
-        User = "simonwjackson";
-        Group = "users";
-        Restart = "on-failure";
-        ExecStart = "${pkgs.writeScript "slskd-beets-import.sh" ''
-          #!/bin/sh
-
-          EVENTS="create,moved_to"
-
-          ${pkgs.inotify-tools}/bin/inotifywait -m -r -e $EVENTS "${toString audioDownloads}" | while read -r watched_path event file; do
-            echo "[$(date)] Event: $event, File: $watched_path$file"
-
-            ${pkgs.beets}/bin/beet import -m -q ${toString audioDownloads} \
-            && ${pkgs.beets}/bin/beet duplicates --delete \
-            && ${pkgs.beets}/bin/beet update \
-            && ${pkgs.beets}/bin/beet convert -y
-          done
-        ''}";
-      };
-    };
+    # systemd.services.slskd-beets-import = {
+    #   description = "When a slskd download completes, run `beet import`";
+    #   wantedBy = [ "multi-user.target" ];
+    #   after = [ "network.target" ];
+    #   serviceConfig = {
+    #     Type = "simple";
+    #     User = "simonwjackson";
+    #     Group = "users";
+    #     Restart = "on-failure";
+    #     ExecStart = "${pkgs.writeScript "slskd-beets-import.sh" ''
+    #       #!/bin/sh
+    #
+    #       EVENTS="create,moved_to"
+    #
+    #       ${pkgs.inotify-tools}/bin/inotifywait -m -r -e $EVENTS "${toString audioDownloads}" | while read -r watched_path event file; do
+    #         echo "[$(date)] Event: $event, File: $watched_path$file"
+    #
+    #         ${pkgs.beets}/bin/beet import -m -q ${toString audioDownloads} \
+    #         && ${pkgs.beets}/bin/beet duplicates --delete \
+    #         && ${pkgs.beets}/bin/beet update \
+    #         && ${pkgs.beets}/bin/beet convert -y
+    #       done
+    #     ''}";
+    #   };
+    # };
   };
 }
