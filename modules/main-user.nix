@@ -19,7 +19,7 @@ in
       "wheel"
     ];
     packages = with pkgs; [
-      beets
+      # beets
     ];
   };
 

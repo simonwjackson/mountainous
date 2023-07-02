@@ -22,7 +22,7 @@ in
       ./bin/activate-or-open-tab
       ./bin/dual-screen-with-tablet
       ./media-control
-      ./fuzzy-music
+      # ./fuzzy-music
       ./mpvd.nix
       ./linear-taskwarrior-sync.nix
       ./unzen-taskwarrior-sync.nix
@@ -31,7 +31,7 @@ in
 
     programs.mpvd.enable = true;
     programs.media-control.enable = true;
-    programs.fuzzy-music.enable = true;
+    # programs.fuzzy-music.enable = true;
 
     # TODO: Find a way to enable this dynamicaly by system type
 
