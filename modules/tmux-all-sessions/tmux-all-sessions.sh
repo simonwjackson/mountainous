@@ -74,7 +74,7 @@ selection=$(
 # path=$(cut -d';' -f1 <<<"$selection")
 type=$(echo "$selection" | jq -r '.type')
 path=$(echo "$selection" | jq -r '.path')
-session=$(echo "$selection" | jq -r '.session')
+session=$(echo "$selection" | jq -r '.session' | sed 's/\./_/')
 
 if [ "$type" = "code" ]; then
   # command="tmux split-window -h -p 20 && tmux split-window -v -t 0 && tmux send-keys -t 1 \"nvim; exec ${SHELL:-/bin/sh}\" Enter"
