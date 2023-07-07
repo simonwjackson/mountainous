@@ -62,8 +62,8 @@ super + ctrl + space
   # awesome-client "client.focus:swap(require('awful').client.getmaster())"
 #
  Toggle between awful.layout.suit.tile and awful.layout.suit.tile.left
-super + t
-  awesome-client "local awful = require('awful'); local cur_layout = awful.layout.getname(); if cur_layout == 'tile' then awful.layout.set(awful.layout.suit.tile.left); else awful.layout.set(awful.layout.suit.tile); end"
+# super + t
+  # awesome-client "local awful = require('awful'); local cur_layout = awful.layout.getname(); if cur_layout == 'tile' then awful.layout.set(awful.layout.suit.tile.left); else awful.layout.set(awful.layout.suit.tile); end"
 
 
 # Toggle between max layout and previous layout
@@ -284,15 +284,35 @@ XF86MonBrightnessDown
 # ╚═╝     ╚═╝╚═╝╚══════╝ ╚═════╝
 # ==============================
  
-super + t
-  cmd_p.sh
+# super + t
+  # cmd_p.sh
 
 super + ctrl + Return
   kitty
 
 # Open (or switch to) the main terminal
-super + Return
-  tmux -f ~/.config/tmux/tmux.workspace.conf -L WORKSPACE new-session -d -s terminals nvim -c "terminal" -c "startinsert"; tmux -f ~/.config/tmux/tmux.host.conf -L HOST new-session -d -c "$HOME" -s "$(hostname)" mosh localhost -- sh -c 'tmux -L WORKSPACE attach-session -t terminals'; xdotool search --name "main-term" windowactivate || kitty -o allow_remote_control=yes --title=main-term sh -c 'cat ~/.cache/wal/sequences; tmux -L HOST attach-session -t "$(hostname)"'
+super + t
+  tmux \
+    -f ~/.config/tmux/tmux.workspace.conf \
+    -L WORKSPACE new-session \
+    -d \
+    -s terminals \
+    nvim -c "terminal" -c "startinsert"; \
+  tmux \
+    -f ~/.config/tmux/tmux.host.conf \
+    -L HOST \
+    new-session \
+    -d \
+    -c "$HOME" \
+    -s "$(hostname)" \
+    mosh localhost -- sh -c 'tmux -L WORKSPACE attach-session -t terminals'; \
+  xdotool search \
+    --name "main-term" \
+    windowactivate || \
+    kitty \
+      -o allow_remote_control=yes \
+      --title=main-term \
+      sh -c 'cat ~/.cache/wal/sequences; tmux -L HOST attach-session -t "$(hostname)"'
 
 # reload awesome
 super + ctrl + r
