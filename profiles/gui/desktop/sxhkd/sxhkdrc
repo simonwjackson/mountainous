@@ -88,6 +88,10 @@ super + shift + {Left,Down,Up,Right}
 super + comma
   awesome-client "local awful = require('awful'); local c = client.focus; if c then local width = c.width; local height = math.floor(width * 9 / 16); c:geometry({height = height}); end"
 
+super + d
+  awesome-client 'local screens = screen:count() local clients_per_screen = {} for s=1, screens do clients_per_screen[s] = client.get(s) end for s=1, screens do local next_screen = s % screens + 1 for _, c in ipairs(clients_per_screen[s]) do c:move_to_screen(next_screen) end end'
+   
+
 
 
 # ██╗     ██╗███████╗████████╗███████╗
