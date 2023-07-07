@@ -31,7 +31,7 @@ in
 
     programs.mpvd.enable = true;
     programs.media-control.enable = true;
-    # programs.fuzzy-music.enable = true;
+    #programs.fuzzy-music.enable = true;
 
     # TODO: Find a way to enable this dynamicaly by system type
 
