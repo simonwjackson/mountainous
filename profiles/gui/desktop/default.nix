@@ -102,7 +102,7 @@
       style.name = "adwaita-dark";
     };
 
-    home.file.".config/kitty/kitty.base.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
+    home.file.".config/kitty/kitty.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
     services.picom = {
       enable = true;
