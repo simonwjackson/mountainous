@@ -4,6 +4,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./screens.nix
+    ../../modules/journal
     ../../modules/syncthing.nix
     ../../modules/tailscale.nix
     ../../modules/networking.nix
@@ -13,6 +14,25 @@
     ../../profiles/_common.nix
     ../../users/simonwjackson
   ];
+
+  programs.journal.enable = true;
+
+  services.xserver = {
+    enable = true;
+    exportConfiguration = true;
+
+    # WARN: Not sure if this actually works
+    inputClassSections = [
+      ''
+        Identifier "calibration"
+        MatchProduct "INGENIC Gadget Serial and keyboard"
+        Option "MinX" "-256"
+        Option "MaxX" "65869"
+        Option "MinY" "720"
+        Option "MaxY" "65597"
+      ''
+    ];
+  };
 
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
@@ -30,7 +50,8 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
-  boot.kernelPackages = pkgs.linuxPackages_6_3;
+  # boot.kernelPackages = pkgs.linuxPackages_6_3;
+  boot.kernelPackages = pkgs.linuxPackages_6_4;
   boot.kernelParams = [ "acpi=force" ];
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -135,3 +156,4 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 }
+
