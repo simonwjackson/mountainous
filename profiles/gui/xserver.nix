@@ -70,10 +70,6 @@
       };
     };
 
-    xsession.windowManager.awesome = {
-      enable = true;
-    };
-
     xsession = {
       enable = true;
       scriptPath = ".hm-xsession";

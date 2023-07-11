@@ -1,5 +1,10 @@
 { ... }: {
   home-manager.users.simonwjackson = { lib, config, pkgs, ... }: {
+
+    imports = [
+      ./bspwm
+    ];
+
     programs.vscode = {
       enable = true;
       userSettings = {
@@ -77,7 +82,7 @@
     };
 
 
-    home.file.".config/awesome".source = config.lib.file.mkOutOfStoreSymlink ./awesome;
+    # home.file.".config/awesome".source = config.lib.file.mkOutOfStoreSymlink ./awesome;
     # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
     dconf.enable = true;
