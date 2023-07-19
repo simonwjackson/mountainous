@@ -18,7 +18,10 @@ if ! grep --quiet --perl-regexp --only-matching --null-data "${currentDate}\n===
 fi
 
 function to_atx_markdown() {
-  pandoc -f markdown -t markdown
+  pandoc \
+    --from=markdown \
+    --to=markdown \
+    --wrap=none
 }
 
 function to_setext_markdown() {
