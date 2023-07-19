@@ -1,7 +1,23 @@
 # xrandr --auto &
 
-bspc monitor DP-1 -d terminal
-bspc monitor HDMI-2 -d browser logs
+# HACK: This is a hack to get the monitors to get apps to see the displays
+export DISPLAY=:0
+
+
+# TODO: upgrade this logic to couple logic with device rather than hostname
+# lshw, dmidecode and hostname
+myhostname=$(hostname)
+
+# Check the hostname
+if [ "$myhostname" == "kita" ]; then
+    bspc monitor DP-1 -d terminal
+    bspc monitor HDMI-2 -d browser
+elif [ "$myhostname" == "fiji" ]; then
+    # HACK
+    ~/layout.sh
+    bspc monitor eDP-1 -d terminal
+    bspc monitor eDP-2 -d browser
+fi
 
 # Various settings
 bspc config gapless_monocle       true
@@ -15,58 +31,19 @@ bspc config active_border_color '#000000'
 bspc config normal_border_color '#000000'
 bspc config focused_border_color '#222222'
 
+
+export GAP=50;
+export PADDING=20;
+bspc config top_padding "$((0))"
+bspc config bottom_padding "$((0))"
+bspc config left_padding "$((0))"
+bspc config right_padding "$((0))"
+bspc config window_gap "${GAP}"
+
 bspc desktop -l monocle
-
-# Define 'main-term' once
-main_term="main-term"
-
-# Start a terminal named 'main-term' on the desktop 'terminal'
-bspc rule -a $main_term desktop='^terminal$'
-
-# WARN: What happens when i reload the config? Does this rule get applied again?
-# Listen for window creation events
-bspc subscribe node_add | while read -a msg ; do
-    # Check if the new window was created on the 'terminal' desktop
-    desk_id=$(bspc query -D -d)
-    desk_name=$(bspc query -D -d $desk_id --names)
-    win_name=$(xprop -id "${msg[2]}" | awk -F\" '/WM_NAME/{print $2}' | head -n 1)
-    
-    if [ "$desk_name" = "terminal" ] && [ "${msg[0]}" = "node_add" ] && [ "$win_name" != "$main_term" ]; then
-        # Find the ID of the next available desktop
-        next_desk_id=$(bspc query -D | awk -v curr=$desk_id '$0 != curr {print; exit}')
-        # Move the new window to the next available desktop
-        bspc node "${msg[4]}" -d "$next_desk_id"
-    fi
-done &
-
-# WARN: What happens when i reload the config? Does this rule get applied again?
-while true; do
-    # Get the list of all windows in the 'terminal' desktop
-    windows=$(bspc query -W -d terminal)
-
-    # Initialize a flag to track if the 'main-term' window is found
-    main_term_found=0
-
-    # Iterate over each window
-    for window in $windows; do
-        # Get the window's name
-        window_name=$(xprop -id $window | awk -F\" '/WM_NAME/ {print $2}' | head -n 1)
-
-        # If the window's name is 'main-term', set the flag to 1
-        if [[ $window_name == "main-term" ]]; then
-            main_term_found=1
-            break
-        fi
-    done
-
-    # If the 'main-term' window was not found, launch the script
-    if [[ $main_term_found -eq 0 ]]; then
-        /path/to/main-term.sh
-    fi
-
-    # Wait for a while before the next check
-    sleep 5
-done &
+# BUG: PATH should be available in bspwmrc
+pgrep --full --list-name better-monocle-mode || ${HOME}/.local/bin/better-monocle-mode &
+pgrep --full --list-name terminal-desktop-bspwm || ${HOME}/.local/bin/terminal-desktop-bspwm &
 
 # BUG: This will be too large on non-HIDPI displays
 # bspc rule -a 'floating-term' state=floating follow=on focus=on rectangle=${2000:-1000}x${2000:-1000}+0+0 center=true

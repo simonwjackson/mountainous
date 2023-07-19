@@ -22,7 +22,7 @@
   ];
 
   fading = true;
-  fading-delta = 4;
+  fading-delta = 1;
   no-fading-openclose = false;
 
   shadow = true;

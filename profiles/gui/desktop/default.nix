@@ -34,13 +34,177 @@
           '';
         };
 
-        "./.local/bin" = {
-          source = ../../../modules/cmd_p;
-          recursive = true;
-        };
+        # "./.local/bin" = {
+        #   source = ../../../modules/cmd_p;
+        #   recursive = true;
+        # };
 
         "./.config/tridactyl/tridactylrc" = {
           source = ./tridactylrc;
+        };
+
+        "./.local/bin/all-monitors-brightnessctl" = {
+          source = pkgs.writeScript "all-monitors-brightnessctl" ''
+            brightnessctl -l \
+              | awk -F"'" '/backlight/ {print $2}' \
+              | grep backlight \
+              | xargs -I '@' brightnessctl -d '@' $@
+          '';
+        };
+
+        "./.local/bin/terminal-desktop-bspwm" = {
+          source = pkgs.writeScript "terminal-desktop-bspwm" ''
+            # Define 'main-term' once
+            # main_term="main-term"
+
+            # Start a terminal named 'main-term' on the desktop 'terminal'
+            # bspc rule -a $main_term desktop='^terminal$'
+            bspc rule --add "*:*:main-term" desktop='terminal'
+
+            # Listen for window creation events
+
+            bspc subscribe node_add | while read -r event _ windowId _ nodeId; do
+              # Check if the new window was created on the 'terminal' desktop
+              desk_id=$(bspc query -D -d)
+              desk_name=$(bspc query -D -d "$desk_id" --names)
+              win_name=$(xprop -id "$windowId" | awk -F\" '/WM_NAME/{print $2}' | head -n 1)
+
+              if [ "$desk_name" = "terminal" ] && [ "$event" = "node_add" ] && [ "$win_name" != "main-term" ]; then
+                # Find the ID of the next available desktop
+                next_desk_id=$(bspc query -D | awk -v curr="$desk_id" '$0 != curr {print; exit}')
+                # Move the new window to the next available desktop
+                bspc node "$nodeId" -d "$next_desk_id"
+              fi
+            done &
+
+            # while true; do
+            #   # Get the list of all windows in the 'terminal' desktop
+            #   windows="$(bspc query -W -d terminal)"
+            #
+            #   # Initialize a flag to track if the 'main-term' window is found
+            #   main_term_found=0
+            #
+            #   # Iterate over each window
+            #   for window in $windows; do
+            #     # Get the window's name
+            #     window_name=$(xprop -id "$window" | awk -F\" '/WM_NAME/ {print $2}' | head -n 1)
+            #
+            #     # If the window's name is 'main-term', set the flag to 1
+            #     if [[ $window_name == "main-term" ]]; then
+            #       main_term_found=1
+            #       break
+            #     fi
+            #   done
+            #
+            #   # If the 'main-term' window was not found, launch the script
+            #   if [[ $main_term_found -eq 0 ]]; then
+            #     /path/to/main-term.sh
+            #   fi
+            #
+            #   # Wait for a while before the next check
+            #   sleep 5
+            # done &
+
+            # Handle script termination
+            cleanup() {
+              jobs -p | xargs kill
+            }
+
+            trap cleanup EXIT
+
+            # Wait for subscriptions
+            wait
+          '';
+        };
+
+        "./.local/bin/better-monocle-mode" = {
+          source = pkgs.writeScript "better-monocle-mode" ''
+            # Function to change the opacity of a window
+            set_opacity() {
+              picom-trans -w "$1" "$2"
+            }
+
+            get_currently_focused_window() {
+              bspc query -N -n
+            }
+
+            get_all_windows_current_desktop() {
+              bspc query -N -d
+            }
+
+            opacity="90%"
+
+            set_opacity_based_on_layout() {
+              local now_focused=$(get_currently_focused_window)
+              local all_windows=$(get_all_windows_current_desktop)
+
+              for win in $all_windows; do
+                if [ "$win" == "$now_focused" ]; then
+                  set_opacity "$win" "$opacity"
+                else
+                  set_opacity "$win" "0"
+                fi
+              done
+            }
+
+            set_opacity_all_windows() {
+              for win in $(get_all_windows_current_desktop); do set_opacity "$win" "$opacity"; done
+            }
+
+            handle_node_focus_change() {
+              if [ "$(bspc query -T -d | jq -r '.layout')" == "monocle" ]; then
+                set_opacity_based_on_layout
+              fi
+            }
+
+            handle_desktop_layout_change() {
+              if [ "$layout" == "monocle" ]; then
+                set_opacity_based_on_layout
+              else
+                set_opacity_all_windows
+              fi
+            }
+
+            # Subscribe to changes
+            bspc subscribe node_focus | while read -r; do handle_node_focus_change; done &
+            bspc subscribe desktop_layout | while read -r _ _ _ layout; do handle_desktop_layout_change; done &
+
+            # Handle script termination
+            cleanup() {
+              jobs -p | xargs kill
+            }
+
+            trap cleanup EXIT
+
+            # Wait for subscriptions
+            wait
+          '';
+        };
+
+        "./.local/bin/main-term" = {
+          source = pkgs.writeScript "main-term" ''
+            tmux \
+              -f ~/.config/tmux/tmux.workspace.conf \
+              -L WORKSPACE new-session \
+              -d \
+              -s terminals \
+              nvim -c "terminal" -c "startinsert"; \
+            tmux \
+              -f ~/.config/tmux/tmux.host.conf \
+              -L HOST \
+              new-session \
+              -d \
+              -c "$HOME" \
+              -s "$(hostname)" \
+              mosh localhost -- sh -c 'tmux -L WORKSPACE attach-session -t terminals'; \
+            xdotool search \
+              --name "main-term" \
+              windowactivate || \
+              ${pkgs.kitty}/bin/kitty \
+                -o allow_remote_control=yes \
+                --title=main-term \
+                sh -c 'cat ~/.cache/wal/sequences; tmux -L HOST attach-session -t "$(hostname)"'
+          '';
         };
 
         "./.local/bin/wm" = {
