@@ -16,6 +16,9 @@ in
     ../modules/tmux-all-servers
   ];
 
+  # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
+  systemd.services.NetworkManager-wait-online.enable = false;
+
   home-manager.users.simonwjackson = { config, pkgs, ... }: {
     # Custom Scripts
     programs.tmux-all-sessions.enable = true;
