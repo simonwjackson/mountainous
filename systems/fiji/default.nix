@@ -51,7 +51,8 @@
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
   # boot.kernelPackages = pkgs.linuxPackages_6_3;
-  boot.kernelPackages = pkgs.linuxPackages_6_4;
+  # boot.kernelPackages = pkgs.linuxPackages_6_4;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.kernelParams = [ "acpi=force" ];
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
