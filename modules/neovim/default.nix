@@ -14,6 +14,12 @@ in
       neovim-remote
       xclip
     ];
+    
+    nixpkgs.overlays = [
+      (import (builtins.fetchTarball {
+        url = https://github.com/nix-community/neovim-nightly-overlay/archive/master.tar.gz;
+      }))
+    ];
 
     home = {
       shellAliases = {
@@ -38,6 +44,7 @@ in
         six
         packaging
         tasklib
+        pynvim
       ]);
 
       extraPackages = with pkgs; [
@@ -51,6 +58,7 @@ in
         shfmt
       ] ++ [
         # Lua
+	      luajitPackages.luacheck
         sumneko-lua-language-server
         stylua
       ] ++ [
@@ -71,6 +79,7 @@ in
         taskwarrior
         clang-tools
         zig
+	      cargo
       ];
 
       # plugins = with pkgs.vimPlugins; [ ];
