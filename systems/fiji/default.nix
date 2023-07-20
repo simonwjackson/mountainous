@@ -1,38 +1,88 @@
-{ pkgs, config, lib, modulesPath, ... }:
+# Edit this configuration file to define what should be installed on
+# your system.  Help is available in the configuration.nix(5) man page
+# and in the NixOS manual (accessible by running `nixos-help`).
+
+{ config, pkgs, ... }:
 
 {
-  imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-    ./screens.nix
-    ../../modules/journal
-    ../../modules/syncthing.nix
-    ../../modules/tailscale.nix
-    ../../modules/networking.nix
-    ../../profiles/gui
-    ../../profiles/audio.nix
-    ../../profiles/workstation.nix
-    ../../profiles/_common.nix
-    ../../users/simonwjackson
-  ];
-
-  programs.journal.enable = true;
-
-  services.xserver = {
-    enable = true;
-    exportConfiguration = true;
-
-    # WARN: Not sure if this actually works
-    inputClassSections = [
-      ''
-        Identifier "calibration"
-        MatchProduct "INGENIC Gadget Serial and keyboard"
-        Option "MinX" "-256"
-        Option "MaxX" "65869"
-        Option "MinY" "720"
-        Option "MaxY" "65597"
-      ''
+  imports =
+    [ # Include the results of the hardware scan.
+      ./hardware-configuration.nix
+      ../../modules/journal
+      ../../modules/syncthing.nix
+      ../../modules/tailscale.nix
+      ../../modules/networking.nix
+      ../../profiles/gui
+      ../../profiles/audio.nix
+      ../../profiles/workstation.nix
+      ../../profiles/_common.nix
+      ../../users/simonwjackson
     ];
-  };
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  networking.hostName = "fiji"; # Define your hostname.
+  networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
+
+  nixpkgs.config.allowUnfree = true;
+
+  # Enable automatic login for the user.
+  services.getty.autologinUser = "simonwjackson";
+
+  # Set your time zone.
+  time.timeZone = "America/Chicago";
+
+  # Configure network proxy if necessary
+  # networking.proxy.default = "http://user:password@proxy:port/";
+  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+
+  # Select internationalisation properties.
+  # i18n.defaultLocale = "en_US.UTF-8";
+  # console = {
+  #   font = "Lat2-Terminus16";
+  #   keyMap = "us";
+  #   useXkbConfig = true; # use xkbOptions in tty.
+  # };
+
+  # Configure keymap in X11
+  # services.xserver.layout = "us";
+  # services.xserver.xkbOptions = "eurosign:e,caps:escape";
+
+  # Enable CUPS to print documents.
+  services.printing.enable = true;
+
+  # Enable touchpad support (enabled default in most desktopManager).
+  services.xserver.libinput.enable = true;
+
+  # List packages installed in system profile. To search, run:
+  # $ nix search wget
+  # environment.systemPackages = with pkgs; [
+  #   vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+  #   wget
+  # ];
+
+  # Some programs need SUID wrappers, can be configured further or are
+  # started in user sessions.
+  # programs.mtr.enable = true;
+  # programs.gnupg.agent = {
+  #   enable = true;
+  #   enableSSHSupport = true;
+  # };
+
+  # List services that you want to enable:
+
+  # Open ports in the firewall.
+  # networking.firewall.allowedTCPPorts = [ ... ];
+  # networking.firewall.allowedUDPPorts = [ ... ];
+  # Or disable the firewall altogether.
+  networking.firewall.enable = false;
+
+  # Copy the NixOS configuration file and link it from the resulting system
+  # (/run/current-system/configuration.nix). This is useful in case you
+  # accidentally delete configuration.nix.
+  # system.copySystemConfiguration = true;
 
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
@@ -46,115 +96,13 @@
     };
   };
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "uas" "usbhid" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
-  # boot.kernelPackages = pkgs.linuxPackages_6_3;
-  # boot.kernelPackages = pkgs.linuxPackages_6_4;
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.kernelParams = [ "acpi=force" ];
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/afbeee3c-2b3f-4387-be15-af977b2aa119";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/BE0A-A496";
-    fsType = "vfat";
-  };
-
-  swapDevices = [{
-    device = "/dev/disk/by-uuid/4c16b3d7-d271-484e-b9b3-791c84cef45d";
-  }];
-
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp0s13f0u2u1c2.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlp0s20f3.useDHCP = lib.mkDefault true;
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
-  networking.hostName = "fiji"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-
-  # Configure network proxy if necessary
-
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-  # Enable networking
-  networking.networkmanager.enable = true;
-
-  # Set your time zone.
-  time.timeZone = "America/Chicago";
-
-  # services.xserver.enable = true;
-  # services.xserver.displayManager.sddm.enable = true;
-  # services.xserver.desktopManager.plasma5.enable = true;
-
-  # Configure keymap in X11
-  services.xserver = {
-    layout = "us";
-    xkbVariant = "";
-  };
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  # users.users.simonwjackson = {
-  #   isNormalUser = true;
-  #   description = "simonwjackson";
-  #   extraGroups = [ "networkmanager" "wheel" ];
-  #   packages = with pkgs; [];
-  # };
-
-  # Enable automatic login for the user.
-  services.getty.autologinUser = "simonwjackson";
-
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    neovim
-    git
-    tmux
-    kitty
-  ];
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  services.openssh.enable = true;
-  programs.mosh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  networking.firewall.enable = false;
-
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
+  # on your system were taken. It's perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
+
 }
 
