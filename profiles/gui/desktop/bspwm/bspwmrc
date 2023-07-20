@@ -13,10 +13,7 @@ if [ "$myhostname" == "kita" ]; then
     bspc monitor DP-1 -d terminal
     bspc monitor HDMI-2 -d browser
 elif [ "$myhostname" == "fiji" ]; then
-    # HACK
-    ~/layout.sh
-    bspc monitor eDP-1 -d terminal
-    bspc monitor eDP-2 -d browser
+    bspc monitor eDP-1 -d terminal browser
 fi
 
 # Various settings
