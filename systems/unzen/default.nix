@@ -10,6 +10,7 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
+  boot.supportedFilesystems = [ "bcachefs" ];
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/7d101547-1cde-4fe7-8e30-a83632d34b97";
