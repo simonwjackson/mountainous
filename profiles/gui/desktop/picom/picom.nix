@@ -2,7 +2,7 @@
   backend = "glx";
   vsync = true;
 
-  corner-radius = 8;
+  corner-radius = 12;
 
   active-opacity = .8;
   inactive-opacity = .8;
@@ -22,7 +22,9 @@
   ];
 
   fading = true;
-  fading-delta = 1;
+  fade-delta = 10; # The time between steps in a fade in milliseconds
+  fade-in-step = 0.04; # Opacity change between steps while fading in
+  fade-out-step = 0.08; # Opacity change between steps while fading out
   no-fading-openclose = false;
 
   shadow = true;
