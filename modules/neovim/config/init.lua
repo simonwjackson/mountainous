@@ -1141,7 +1141,7 @@ require("lazy").setup({
 		end,
 	},
 
-	{ "lukas-reineke/indent-blankline.nvim" },
+	-- { "lukas-reineke/indent-blankline.nvim" },
 	{
 		"lewis6991/gitsigns.nvim",
 		init = function()
