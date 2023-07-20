@@ -228,7 +228,7 @@ super + b
 # # App: google Calendar
 # super + g; {_, super +}c
 #   activate-or-open-tab 'https://calendar.google.com' -p 'Calendar' -u 'calendar.google.com'
-#
+
 #
 # # App: Linear
 # super + g; {_, super +}l
@@ -247,7 +247,7 @@ super + b
 
 # Brightness {Down,Up}
 {XF86MonBrightnessDown,XF86MonBrightnessUp}
-  all-monitors-brightnessctl --exponent set 5%{-,+}
+  brightnessctl --device='*' --exponent set 5%{-,+}
 
 # Bluetooth Devices
 # super + r; b
