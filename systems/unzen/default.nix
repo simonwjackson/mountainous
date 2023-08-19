@@ -3,7 +3,7 @@
     (modulesPath + "/profiles/qemu-guest.nix")
     ../../modules/syncthing.nix
     ../../profiles/_common.nix
-    ./slskd.nix
+    # ./slskd.nix
   ];
 
   boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "virtio_pci" "virtio_scsi" "sd_mod" "sr_mod" ];
@@ -16,6 +16,11 @@
     device = "/dev/disk/by-uuid/7d101547-1cde-4fe7-8e30-a83632d34b97";
     fsType = "ext4";
   };
+
+  # fileSystems."/mnt" = {
+  #   device = "/dev/sdc:/dev/sdd:/dev/sdh:/dev/sdj";
+  #   fsType = "bcachefs";
+  # };
 
   swapDevices = [{
     device = "/dev/disk/by-uuid/c5156a1d-5f59-478d-8f8e-77a19cad2681";
@@ -209,21 +214,21 @@
       device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi3-part1";
     };
 
-    "/run/media/pool/scsi4" = {
-      device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4-part1";
-    };
+    # "/run/media/pool/scsi4" = {
+    #   device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi4-part1";
+    # };
+    #
+    # "/run/media/pool/scsi5" = {
+    #   device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5-part1";
+    # };
 
-    "/run/media/pool/scsi5" = {
-      device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi5-part1";
-    };
-
-    "/run/media/pool/scsi6" = {
-      device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi6-part1";
-    };
+    # "/run/media/pool/scsi6" = {
+    #   device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_drive-scsi6-part1";
+    # };
 
     # mergerfs: merge drives
-    "/tank" = {
-      device = "/run/media/pool/scsi3:/run/media/pool/scsi4:/run/media/pool/scsi5:/run/media/pool/scsi6";
+    "/tank-old" = {
+      device = "/run/media/pool/scsi3";
       fsType = "fuse.mergerfs";
       options = [
         "defaults"
@@ -244,6 +249,17 @@
 
     "/home/simonwjackson/documents" = {
       device = "/tank/documents";
+      options = [ "bind" ];
+    };
+
+     ## haku games
+    "/tank/gaming/devices/haku/games/gameboy-advance" = {
+      device = "/tank/gaming/games/gameboy-advance";
+      options = [ "bind" ];
+    };
+
+    "/tank/gaming/devices/haku/profiles" = {
+      device = "/tank/gaming/profiles";
       options = [ "bind" ];
     };
   };
@@ -311,7 +327,7 @@
     };
   };
 
-  services.slskd.enable = true;
+  # services.slskd.enable = true;
 
   virtualisation = {
     podman = {
@@ -452,31 +468,33 @@
     organisations.mountainous.users = [ "simonwjackson" ];
   };
 
-  services.syncthing = {
-    dataDir = "/tank"; # Default folder for new synced folders
-    extraFlags = [
-      "-gui-address=0.0.0.0:8384"
-    ];
+   services.syncthing = {
+     dataDir = "/tank"; # Default folder for new synced folders
+     extraFlags = [
+       "-gui-address=0.0.0.0:8384"
+     ];
 
-    folders = {
-      documents.path = "/tank/documents";
-      audiobooks.path = "/tank/audiobooks";
-      books.path = "/tank/books";
-      gaming-profiles-simonwjackson.path = "/tank/gaming/profiles/simonwjackson";
-      gaming.path = "/tank/gaming";
-      music.path = "/tank/music";
-      music-lossy.path = "/tank/music-lossy";
-      code.path = "/tank/code";
-
-      documents.devices = [ "fiji" "kuro" "unzen" ];
-      code.devices = [ "fiji" "kita" "unzen" "yari" ];
-      audiobooks.devices = [ "unzen" ];
-      books.devices = [ "kuro" "unzen" ];
-      gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
-      gaming.devices = [ "unzen" ];
-      music.devices = [ "unzen" ];
-      music-lossy.devices = [ "unzen" "kuro" ];
-    };
+  #    folders = {
+  #      documents.path = "/tank/documents";
+  #     audiobooks.path = "/tank/audiobooks";
+  #     books.path = "/tank/books";
+  #     # gaming-profiles-simonwjackson.path = "/tank/gaming/profiles/simonwjackson";
+  #     gaming-kita.path = "/tank/gaming/devices/kita";
+  #     gaming.path = "/tank/gaming";
+  #     music.path = "/tank/music";
+  #     music-lossy.path = "/tank/music-lossy";
+  #     code.path = "/tank/code";
+  #
+  #      documents.devices = [ "fiji" "kuro" "unzen" ];
+  #     code.devices = [ "fiji" "unzen" "yari" ];
+  #     audiobooks.devices = [ "unzen" ];
+  #     books.devices = [ "kuro" "unzen" ];
+  #     # gaming-profiles-simonwjackson.devices = [ "unzen" "kuro" "haku" ];
+  #     gaming-kita.devices = [ "unzen" "kita" ];
+  #     gaming.devices = [ "unzen" ];
+  #     music.devices = [ "unzen" ];
+  #     music-lossy.devices = [ "unzen" "kuro" ];
+  #   };
   };
 
   system.stateVersion = "22.05"; # Did you read the comment?
