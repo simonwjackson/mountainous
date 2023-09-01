@@ -1,11 +1,27 @@
 { config, lib, pkgs, modulesPath, ... }: {
-  services.udev.extraRules = ''
+    services.udev.extraRules = ''
     KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
+    KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
   '';
 
   environment.systemPackages = [
     pkgs.sunshine
   ];
+
+  security.wrappers.sunshine = {
+    owner = "root";
+    group = "root";
+    capabilities = "cap_sys_admin+p";
+    source = "${pkgs.sunshine}/bin/sunshine";
+  };
+
+  systemd.user.services.sunshine = {
+    description = "sunshine";
+    wantedBy = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart = "${config.security.wrapperDir}/sunshine";
+    };
+  };
 
   services.xserver.displayManager.setupCommands = ''
     # Note 9
