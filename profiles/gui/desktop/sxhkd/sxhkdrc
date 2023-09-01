@@ -5,7 +5,7 @@
 # ██████╔╝███████╗███████║██║  ██╗   ██║   ╚██████╔╝██║     ███████║
 # ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝
 # ==================================================================
-                                                                             
+
 # View tag only
 # super + {4-6}
 #   awesome-client "local s = require('awful').screen.focused(); local t = s.tags[{1-3}]; if t then t:view_only() end"
@@ -13,7 +13,7 @@
 # Move client to tag
 # super + shift + {4-6}
 #   awesome-client "if client.focus then local t = client.focus.screen.tags[{1-3}]; if t then client.focus:move_to_tag(t) end end"
-      
+
 # go back
 # super + Escape
 #   awesome-client "require('awful').tag.history.restore()"                                                                       l
@@ -87,7 +87,7 @@ super + {h,j,k,l}
 
 # super + d
 #   awesome-client 'local screens = screen:count() local clients_per_screen = {} for s=1, screens do clients_per_screen[s] = client.get(s) end for s=1, screens do local next_screen = s % screens + 1 for _, c in ipairs(clients_per_screen[s]) do c:move_to_screen(next_screen) end end'
-   
+
 
 
 
@@ -113,19 +113,19 @@ super + {h,j,k,l}
 
 
 
-# ███╗   ███╗███████╗██████╗ ██╗ █████╗ 
+# ███╗   ███╗███████╗██████╗ ██╗ █████╗
 # ████╗ ████║██╔════╝██╔══██╗██║██╔══██╗
 # ██╔████╔██║█████╗  ██║  ██║██║███████║
 # ██║╚██╔╝██║██╔══╝  ██║  ██║██║██╔══██║
 # ██║ ╚═╝ ██║███████╗██████╔╝██║██║  ██║
 # ╚═╝     ╚═╝╚══════╝╚═════╝ ╚═╝╚═╝  ╚═╝
 # ======================================
-                                      
+
 
 # {Toggle Playback,Next Track,Previous Track}
 XF86Audio{Play,Next,Prev}
   media-control {toggle,next,prev}
-  
+
 
 # Toggle mute
 XF86AudioMute
@@ -145,7 +145,7 @@ XF86Audio{Raise,Lower}Volume
 # ╚███╔███╔╝██║██║  ██╗██║
 #  ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚═╝
 # ========================
-                        
+
 # Vimwiki: Weekly Journal
 # super + w; {_, super +}w
 #   kitty-popup vimwiki-journal-weekly
@@ -201,7 +201,7 @@ XF86Audio{Raise,Lower}Volume
 
 
 # switch to (or start) firefox
-super + b
+super + w
   wmctrl -xa firefox || firefox
 
 
@@ -239,8 +239,8 @@ super + b
 
 # ██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗ █████╗ ██████╗ ███████╗
 # ██║  ██║██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔════╝
-# ███████║███████║██████╔╝██║  ██║██║ █╗ ██║███████║██████╔╝█████╗  
-# ██╔══██║██╔══██║██╔══██╗██║  ██║██║███╗██║██╔══██║██╔══██╗██╔══╝  
+# ███████║███████║██████╔╝██║  ██║██║ █╗ ██║███████║██████╔╝█████╗
+# ██╔══██║██╔══██║██╔══██╗██║  ██║██║███╗██║██╔══██║██╔══██╗██╔══╝
 # ██║  ██║██║  ██║██║  ██║██████╔╝╚███╔███╔╝██║  ██║██║  ██║███████╗
 # ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
 # ==================================================================
@@ -257,12 +257,12 @@ super + b
 
 # ███╗   ███╗██╗███████╗ ██████╗
 # ████╗ ████║██║██╔════╝██╔════╝
-# ██╔████╔██║██║███████╗██║     
-# ██║╚██╔╝██║██║╚════██║██║     
+# ██╔████╔██║██║███████╗██║
+# ██║╚██╔╝██║██║╚════██║██║
 # ██║ ╚═╝ ██║██║███████║╚██████╗
 # ╚═╝     ╚═╝╚═╝╚══════╝ ╚═════╝
 # ==============================
- 
+
 super + ctrl + Return
   kitty
 
