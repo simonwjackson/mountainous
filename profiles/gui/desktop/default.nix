@@ -2,7 +2,7 @@
   home-manager.users.simonwjackson = { lib, config, pkgs, ... }: {
 
     imports = [
-      ./bspwm
+      # ./bspwm
     ];
 
     programs.vscode = {
@@ -43,14 +43,14 @@
           source = ./tridactylrc;
         };
 
-        "./.local/bin/all-monitors-brightnessctl" = {
-          source = pkgs.writeScript "all-monitors-brightnessctl" ''
-            brightnessctl -l \
-              | awk -F"'" '/backlight/ {print $2}' \
-              | grep backlight \
-              | xargs -I '@' brightnessctl -d '@' $@
-          '';
-        };
+        # "./.local/bin/all-monitors-brightnessctl" = {
+        #   source = pkgs.writeScript "all-monitors-brightnessctl" ''
+        #     brightnessctl -l \
+        #       | awk -F"'" '/backlight/ {print $2}' \
+        #       | grep backlight \
+        #       | xargs -I '@' brightnessctl -d '@' $@
+        #   '';
+        # };
 
         "./.local/bin/terminal-desktop-bspwm" = {
           source = pkgs.writeScript "terminal-desktop-bspwm" ''
@@ -249,44 +249,44 @@
     # home.file.".config/awesome".source = config.lib.file.mkOutOfStoreSymlink ./awesome;
     # home.file.".config/awesome/scratch.lua".source = config.lib.file.mkOutOfStoreSymlink ./awesome/scratch.lua;
 
-    dconf.enable = true;
-    gtk = {
-      enable = true;
-      theme.package = pkgs.gnome.gnome-themes-extra;
-      theme.name = "Adwaita";
+    # dconf.enable = true;
+    # gtk = {
+    #   enable = true;
+    #   theme.package = pkgs.gnome.gnome-themes-extra;
+    #   theme.name = "Adwaita";
 
-      gtk4.extraConfig = {
-        gtk-application-prefer-dark-theme = 1;
-      };
+    #   gtk4.extraConfig = {
+    #     gtk-application-prefer-dark-theme = 1;
+    #   };
 
-      gtk3.extraConfig = {
-        gtk-application-prefer-dark-theme = 1;
-      };
-    };
+    #   gtk3.extraConfig = {
+    #     gtk-application-prefer-dark-theme = 1;
+    #   };
+    # };
 
-    qt = {
-      enable = true;
-      platformTheme = "gnome";
-      style.package = pkgs.adwaita-qt;
-      style.name = "adwaita-dark";
-    };
+    # qt = {
+    #   enable = true;
+    #   platformTheme = "gnome";
+    #   style.package = pkgs.adwaita-qt;
+    #   style.name = "adwaita-dark";
+    # };
 
     home.file.".config/kitty/kitty.conf".source = config.lib.file.mkOutOfStoreSymlink ./kitty/kitty.conf;
 
-    services.picom = {
-      enable = true;
-      settings = import ./picom/picom.nix;
+    # services.picom = {
+    #   enable = true;
+    #   settings = import ./picom/picom.nix;
 
-      # extraArgs = [ "--experimental-backend" ];
-      # package = pkgs.picom.overrideAttrs (o: {
-      #   src = pkgs.fetchFromGitHub {
-      #     repo = "picom";
-      #     owner = "jonaburg";
-      #     rev = "e3c19cd7d1108d114552267f302548c113278d45";
-      #     sha256 = "4voCAYd0fzJHQjJo4x3RoWz5l3JJbRvgIXn1Kg6nz6Y=";
-      #   };
-      # });
-    };
+    #   # extraArgs = [ "--experimental-backend" ];
+    #   # package = pkgs.picom.overrideAttrs (o: {
+    #   #   src = pkgs.fetchFromGitHub {
+    #   #     repo = "picom";
+    #   #     owner = "jonaburg";
+    #   #     rev = "e3c19cd7d1108d114552267f302548c113278d45";
+    #   #     sha256 = "4voCAYd0fzJHQjJo4x3RoWz5l3JJbRvgIXn1Kg6nz6Y=";
+    #   #   };
+    #   # });
+    # };
 
     services.sxhkd = {
       enable = true;
