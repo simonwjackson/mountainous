@@ -8,10 +8,11 @@
     [ (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
+  boot.supportedFilesystems = [ "bcachefs" ];
+  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "uas" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/1bbefcf6-7111-4df2-b1fc-07b01459f116";
