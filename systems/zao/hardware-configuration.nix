@@ -20,6 +20,10 @@
   # boot.supportedFilesystems=["bcachefs"];
   # hardware.xone.enable = true; environment.systemPackages = with pkgs; [ linuxKernel.packages.linux_zen.xone ];
 
+  environment.systemPackages = with pkgs; [
+    nfs-utils
+    cifs-utils
+  ];
   # boot.extraModulePackages = [
   #   config.boot.kernelPackages.rtl88x2bu
   #   config.boot.kernelPackages.rtl8814au
