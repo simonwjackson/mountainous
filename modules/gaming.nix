@@ -58,7 +58,7 @@
     };
 
     "/home/simonwjackson/.local/share/yuzu/nand" = {
-      device = "/glacier/snowscape/gaming/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
+      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
       options = [ "bind" ];
     };
   };
