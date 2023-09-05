@@ -99,8 +99,31 @@
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
-      documents.path = "/home/simonwjackson/documents";
-      code.path = "/home/simonwjackson/code";
+    folders = {                                         
+      documents.path = "/glacier/snowscape/documents";
+      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
+      gaming-games.path = "/glacier/snowscape/gaming/games";
+      taskwarrior.path = "/home/simonwjackson/.local/share/task";
+      # code.path = "/home/simonwjackson/code";
+                                                                                                   
+      documents.devices = [ "fiji" "unzen" "zao" ];
+      gaming-profiles.devices = [ "fiji" "unzen" "zao" ];
+      taskwarrior.devices = [ "fiji" "unzen" "zao" ];
+      gaming-games.devices = [ 
+        "zao"
+        # "fiji" "unzen" "zao" "yari" "haku"
+      ];
+      # code.devices = [ "fiji" "kita" "unzen" "yari" ];
+
+      gaming-profiles.versioning = {
+        type = "staggered";                             
+        params = {                                
+          cleanInterval = "3600";                                                     
+          maxAge = "31536000";                                                                    
+        };
+      };
+    };
+  };
 
   systemd.services.hiltonProxy = {
     description = "Hilton Dev Proxy";
