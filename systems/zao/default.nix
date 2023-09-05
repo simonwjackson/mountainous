@@ -182,6 +182,42 @@
   # accidentally delete configuration.nix.
   system.copySystemConfiguration = true;
 
+# services.create_ap = {
+#   enable = false;
+#   settings = {
+#     FREQ_BAND = 5;
+#     HT_CAPAB = "[HT20][HT40-][HT40+][SHORT-GI-20][SHORT-GI-40][TX-STBC][MAX-AMSDU-7935][DSSS_CCK-40][PSMP]";
+#     VHT_CAPAB = "[MAX-MPDU-11454][RXLDPC][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1][MAX-A-MPDU-LEN-EXP0]";
+#     IEEE80211AC = true;
+#     IEEE80211N = true;
+#     GATEWAY = "192.18.5.1";
+#     PASSPHRASE = "asdfasdfasdf";
+#     INTERNET_IFACE = "wlp0s20f0u3";
+#     WIFI_IFACE = "wlp0s20f3";
+#     SSID = "hopstop";
+#   };
+# };
+
+# networking.wlanInterfaces = {
+#   "wlan-station0" = { device = "wlp0s2";};
+#   "wlan-ap0"      = { device = "wlp0s2"; mac = "08:11:96:0e:08:0a"; };
+# };
+# 
+# networking.networkmanager.unmanaged = [ "interface-name:wlp*" ]
+#     ++ lib.optional config.services.hostapd.enable "interface-name:${config.services.hostapd.interface}";
+# 
+# services.hostapd = {
+#   enable        = true;
+#   interface     = "wlan-ap0";
+#   hwMode        = "g";
+#   ssid          = "nix";
+#   wpaPassphrase = "mysekret";
+# };
+# 
+# services.haveged.enable = config.services.hostapd.enable;
+# 
+# networking.interfaces."wlan-ap0".ipv4.addresses =
+#   lib.optionals config.services.hostapd.enable [{ address = "192.168.12.1"; prefixLength = 24; }];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
