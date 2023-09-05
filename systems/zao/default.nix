@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running `nixos-help`).
 
-{ config, pkgs, ... }:
+{ lib, config, pkgs, ... }:
 
 {
   imports =
@@ -16,10 +16,43 @@
       ../../modules/tailscale.nix
     ];
 
-  # "/home/simonwjackson/.local/share/Cemu/mlc01" = {
-  #   device = "/storage/gaming/profiles/simonwjackson/progress/saves/wiiu/";
-  #   options = [ "bind" ];
-  # };
+
+  fileSystems = {
+    "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
+      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/dolphin-emu/Wii/title" = {
+      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/Cemu/mlc01/usr" = {
+      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-wiiu/";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/yuzu/sdmc" = {
+      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/sdmc";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/yuzu/shader" = {
+      device = "/glacier/snowscape/gaming/emulators/yuzu/shader";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/yuzu/keys" = {
+      device = "/glacier/snowscape/gaming/systems/nintendo-switch/keys";
+      options = [ "bind" ];
+    };
+
+    "/home/simonwjackson/.local/share/yuzu/nand" = {
+      device = "/glacier/snowscape/gaming/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
+      options = [ "bind" ];
+    };
+  };
 
   services.flatpak.enable = true;
   xdg.portal = {
