@@ -100,8 +100,16 @@
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
 
-      documents.devices = [ "fiji" "kuro" "unzen" ];
-      code.devices = [ "fiji" "kita" "unzen" "yari" ];
+  systemd.services.mountSnowscape = {
+    script = ''
+      install -d -o simonwjackson -g users -m 770 /glacier/snowscape
+
+      ${pkgs.util-linux}/bin/mountpoint -q /glacier/snowscape || ${pkgs.mount}/bin/mount -t bcachefs /dev/disk/by-partuuid/b12cf721-2465-4853-8342-53f2ced215ee:/dev/disk/by-partuuid/ebf24e43-c194-4fd9-aff8-14daa54495c1 /glacier/snowscape
+    '';
+
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
     };
   };
 
