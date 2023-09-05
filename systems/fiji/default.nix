@@ -10,6 +10,7 @@
       ./hardware-configuration.nix
       ../../modules/journal
       ../../modules/syncthing.nix
+      ../../modules/sunshine.nix
       ../../modules/tailscale.nix
       ../../modules/networking.nix
       ../../profiles/gui
