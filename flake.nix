@@ -8,43 +8,25 @@
 
   outputs = { nixpkgs, ... }: {
     nixosConfigurations = {
-      # Dual XEON Server
+      # Home Server
       unzen = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
-        modules = [
-          ./hardware/intel.nix
-          ./hardware/qemu.nix
-          ./systems/unzen
-        ];
+        modules = [ ./systems/unzen ];
       };
 
-      # XPS 17 (headless)
+      # Gaming
       zao = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         modules = [ ./systems/zao ];
       };
 
-      # Lenovo i9 dual
+      # Laptop
       fiji = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
 
         modules = [ ./systems/fiji ];
-      };
-
-      # virtual headless workstation
-      yari = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-
-        modules = [ ./systems/yari ];
-      };
-
-      # Lenovo desktop
-      kita = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-
-        modules = [ ./systems/kita ];
       };
     };
   };

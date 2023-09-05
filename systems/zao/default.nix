@@ -9,6 +9,7 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../modules/syncthing.nix
+      ../../modules/tailscale.nix
       # ../../modules/terminal
       # ../../modules/neovim
       ../../modules/timezone.nix
