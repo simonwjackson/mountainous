@@ -27,6 +27,14 @@
   networking.hostName = "fiji"; # Define your hostname.
   networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
 
+
+  services.flatpak.enable = true;
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [
+      xdg-desktop-portal-kde
+    ];
+  };
   nixpkgs.config.allowUnfree = true;
 
   # Enable automatic login for the user.
