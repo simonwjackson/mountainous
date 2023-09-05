@@ -25,6 +25,7 @@
   #   config.boot.kernelPackages.rtl8814au
   # ];
 
+
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
       fsType = "btrfs";
@@ -37,7 +38,7 @@
       options = [ "subvol=home" "compress=zstd" ];
     };
 
-  fileSystems."/storage" =
+  fileSystems."/glacier/snowscape" =
     { device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
       fsType = "btrfs";
       options = [ "subvol=storage" "compress=zstd" ];
@@ -49,17 +50,17 @@
       options = [ "subvol=nix" "compress=zstd" "noatime" ];
     };
 
-  fileSystems."/sdcard" = {
-    device = "/dev/mmcblk0";
-    fsType = "f2fs"; 
-    options = [
-      "compress_algorithm=zstd:6"
-      "compress_chksum"
-      "atgc"
-      "gc_merge"
-      "lazytime"
-    ];
-  };
+  # fileSystems."/sdcard" = {
+  #   device = "/dev/mmcblk0";
+  #   fsType = "f2fs"; 
+  #   options = [
+  #     "compress_algorithm=zstd:6"
+  #     "compress_chksum"
+  #     "atgc"
+  #     "gc_merge"
+  #     "lazytime"
+  #   ];
+  # };
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/D21E-0411";
