@@ -10,7 +10,9 @@
     (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "usbhid" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "usbhid" "sd_mod"
+  # "rtsx_pci_sdmmc"
+  ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [
     "kvm-intel"
@@ -18,6 +20,10 @@
   ];
   boot.extraModulePackages = [ ];
   boot.kernelPackages = pkgs.linuxPackages_zen;
+  # boot.extraModulePackages = [
+  #   config.boot.kernelPackages.rtl88x2bu
+  #   config.boot.kernelPackages.rtl8814au
+  # ];
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
