@@ -54,6 +54,17 @@
     };
   };
 
+  systemd.services.mountSteamAppsOverlay = {
+    after = [ "mountTank.service" ];
+    script = ''
+      ${pkgs.util-linux}/bin/mountpoint -q /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps || ${pkgs.mount}/bin/mount --bind /glacier/snowscape/gaming/games/steam/steamapps /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps
+    '';
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+
   services.flatpak.enable = true;
   xdg.portal = {
     enable = true;
