@@ -1,5 +1,5 @@
 { config, lib, pkgs, modulesPath, ... }: {
-    services.udev.extraRules = ''
+  services.udev.extraRules = ''
     KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
     KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
   '';
@@ -25,7 +25,6 @@
 
   services.xserver.displayManager.setupCommands = ''
     # Note 9
-      
     ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2960x1440_60.00"  361.00  2960 3176 3496 4032  1440 1443 1453 1493 -hsync +vsync
     ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2960x1440_60.00"
       

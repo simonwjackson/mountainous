@@ -12,6 +12,8 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../modules/tailscale.nix
+      ../../modules/sunshine.nix
+      ../../modules/gaming-host.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
@@ -83,7 +85,6 @@
       yuzu
       cemu
       retroarchFull
-      sunshine
       dolphinEmu
     ];
   };
@@ -136,30 +137,6 @@
   };
 
   hardware.bluetooth.enable = true;
-
-  services.udev.extraRules = ''
-    KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
-    KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
-  '';
-
-  environment.systemPackages = [
-    pkgs.sunshine
-  ];
-
-  security.wrappers.sunshine = {
-    owner = "root";
-    group = "root";
-    capabilities = "cap_sys_admin+p";
-    source = "${pkgs.sunshine}/bin/sunshine";
-  };
-
-  systemd.user.services.sunshine = {
-    description = "sunshine";
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStart = "${config.security.wrapperDir}/sunshine";
-    };
-  };
 
   services.zerotierone.enable = true;
   services.zerotierone.joinNetworks = [ "abfd31bd47735e14" ]; # ZT NETWORK ID

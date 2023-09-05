@@ -54,18 +54,6 @@
     };
   };
 
-  systemd.services.mountSteamAppsOverlay = {
-    after = [ "mountSnowscape.service" ];
-    script = ''
-      ${pkgs.util-linux}/bin/mountpoint -q /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps || ${pkgs.mount}/bin/mount --bind /glacier/snowscape/gaming/games/steam/steamapps /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps
-    '';
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-    };
-  };
-
-
   swapDevices = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking

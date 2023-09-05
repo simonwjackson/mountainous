@@ -5,11 +5,12 @@
 { lib, config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
+  imports = [
+  # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../modules/syncthing.nix
       ../../modules/tailscale.nix
+      ../../modules/gaming-host.nix
       # ../../modules/terminal
       # ../../modules/neovim
       ../../modules/timezone.nix
@@ -17,63 +18,6 @@
       ../../modules/tailscale.nix
     ];
 
-
-  fileSystems = {
-    "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
-      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/dolphin-emu/Wii/title" = {
-      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/Cemu/mlc01/usr" = {
-      device = "/storage/gaming/profiles/simonwjackson/progress/saves/nintendo-wiiu/";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/yuzu/sdmc" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/sdmc";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/yuzu/shader" = {
-      device = "/glacier/snowscape/gaming/emulators/yuzu/shader";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/yuzu/keys" = {
-      device = "/glacier/snowscape/gaming/systems/nintendo-switch/keys";
-      options = [ "bind" ];
-    };
-
-    "/home/simonwjackson/.local/share/yuzu/nand" = {
-      device = "/glacier/snowscape/gaming/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
-      options = [ "bind" ];
-    };
-  };
-
-  systemd.services.mountSteamAppsOverlay = {
-    after = [ "mountTank.service" ];
-    script = ''
-      ${pkgs.util-linux}/bin/mountpoint -q /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps || ${pkgs.mount}/bin/mount --bind /glacier/snowscape/gaming/games/steam/steamapps /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps
-    '';
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-    };
-  };
-
-  services.flatpak.enable = true;
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-kde
-    ];
-  };
-  
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -148,12 +92,7 @@
       git
       tmux
       neovim
-      yuzu
-      cemu
-      retroarchFull
       kitty
-      sunshine
-      dolphinEmu
     ];
   };
 

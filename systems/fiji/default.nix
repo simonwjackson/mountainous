@@ -11,6 +11,7 @@
       ../../modules/journal
       ../../modules/syncthing.nix
       ../../modules/sunshine.nix
+      ../../modules/gaming.nix
       ../../modules/tailscale.nix
       ../../modules/networking.nix
       ../../profiles/gui
