@@ -27,6 +27,9 @@
   networking.hostName = "fiji"; # Define your hostname.
   networking.networkmanager.enable = true;  # Easiest to use and most distros use this by default.
 
+  networking.extraHosts = ''
+    100.76.86.139 www.local.hilton.com
+  '';
 
   services.flatpak.enable = true;
   xdg.portal = {
@@ -96,9 +99,19 @@
   services.syncthing = {
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
-    folders = {
       documents.path = "/home/simonwjackson/documents";
       code.path = "/home/simonwjackson/code";
+
+  systemd.services.hiltonProxy = {
+    description = "Hilton Dev Proxy";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      User = "simonwjackson";
+      Environment = "AUTOSSH_GATETIME=0";
+      ExecStart = "${pkgs.autossh}/bin/autossh -M 0 -N -o 'ServerAliveInterval 30' -o 'ServerAliveCountMax 3' -D 9999 -L 5400:localhost:5400 sjackson217@ushiro";
+    };
+  };
 
   systemd.services.mountSnowscape = {
     script = ''
