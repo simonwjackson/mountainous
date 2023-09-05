@@ -153,10 +153,9 @@
       retroarchFull
       kitty
       sunshine
+      dolphinEmu
     ];
   };
-
-  programs.steam.enable = true;
 
   security.sudo.wheelNeedsPassword = false;
 
