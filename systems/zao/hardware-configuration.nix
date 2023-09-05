@@ -4,11 +4,10 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [ 
+  imports = [ 
     <nixos-hardware/dell/xps/17-9700/nvidia>
     (modulesPath + "/installer/scan/not-detected.nix")
-    ];
+  ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "usbhid" "sd_mod"
   # "rtsx_pci_sdmmc"
@@ -18,13 +17,17 @@
     "kvm-intel"
     "uinput"
   ];
-  boot.extraModulePackages = [ ];
-  boot.kernelPackages = pkgs.linuxPackages_zen;
+  # boot.supportedFilesystems=["bcachefs"];
+  # hardware.xone.enable = true; environment.systemPackages = with pkgs; [ linuxKernel.packages.linux_zen.xone ];
+
   # boot.extraModulePackages = [
   #   config.boot.kernelPackages.rtl88x2bu
   #   config.boot.kernelPackages.rtl8814au
   # ];
 
+  # boot.kernelPackages = pkgs.linuxPackages_zen;
+  # boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_1;
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
@@ -49,18 +52,6 @@
       fsType = "btrfs";
       options = [ "subvol=nix" "compress=zstd" "noatime" ];
     };
-
-  # fileSystems."/sdcard" = {
-  #   device = "/dev/mmcblk0";
-  #   fsType = "f2fs"; 
-  #   options = [
-  #     "compress_algorithm=zstd:6"
-  #     "compress_chksum"
-  #     "atgc"
-  #     "gc_merge"
-  #     "lazytime"
-  #   ];
-  # };
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/D21E-0411";
