@@ -9,7 +9,7 @@
     devices = {
       fiji = {
         id = builtins.getEnv "SYNCTHING_FIJI_ID";
-	name = "laptop (fiji)";
+        name = "laptop (fiji)";
       };
 
       unzen = {
@@ -19,7 +19,7 @@
 
       zao = {
         id = builtins.getEnv "SYNCTHING_ZAO_ID";
-	name = "gaming (zao)";
+        name = "gaming (zao)";
       };
 
       haku = {
