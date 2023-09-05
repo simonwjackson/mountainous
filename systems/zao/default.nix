@@ -73,7 +73,6 @@
     ];
   };
   
-
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -159,15 +158,6 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  services.syncthing = {
-    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
-
-    folders = {
-      gaming.path = "/storage/gaming";
-      gaming.devices = [ "unzen" ];
-    };
-  };
-
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
@@ -192,6 +182,7 @@
   # accidentally delete configuration.nix.
   system.copySystemConfiguration = true;
 
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave
@@ -199,6 +190,36 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
+  
 
+  services.syncthing = {
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
+
+    folders = {
+      documents.path = "/glacier/snowscape/documents";
+      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
+      gaming-games.path = "/glacier/snowscape/gaming/games";
+      taskwarrior.path = "/home/simonwjackson/.local/share/task";
+      # code.path = "/home/simonwjackson/code";
+
+      documents.devices = [ "fiji" "unzen" "zao" "yari" "haku" ];
+      gaming-profiles.devices = [ "fiji" "unzen" "zao" "yari" "haku" ];
+      gaming-games.devices = [ 
+        "zao"
+        # "fiji" "unzen" "zao" "yari" "haku"
+      ];
+      taskwarrior.devices = [ "fiji" "unzen" "zao" ];
+      # code.devices = [ "fiji" "kita" "unzen" "yari" ];
+
+      # gaming-profiles.versioning = 
+
+      gaming-profiles.versioning = {
+        type = "staggered";
+        params = {
+          cleanInterval = "3600";
+          maxAge = "31536000";
+        };
+      };
+    };
+  };
 }
-
