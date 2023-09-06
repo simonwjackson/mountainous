@@ -112,7 +112,8 @@
       taskwarrior.devices = [ "fiji" "unzen" "zao" ];
       gaming-games.devices = [ 
         "zao"
-        # "fiji" "unzen" "zao" "yari" "haku"
+        "fiji"
+        # "unzen" "zao" "yari" "haku"
       ];
       # code.devices = [ "fiji" "kita" "unzen" "yari" ];
 

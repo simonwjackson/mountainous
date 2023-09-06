@@ -183,7 +183,8 @@
       gaming-profiles.devices = [ "fiji" "unzen" "zao" "yari" "haku" ];
       gaming-games.devices = [ 
         "zao"
-        # "fiji" "unzen" "zao" "yari" "haku"
+        "fiji"
+        # "unzen" "zao" "yari" "haku"
       ];
       taskwarrior.devices = [ "fiji" "unzen" "zao" ];
       # code.devices = [ "fiji" "kita" "unzen" "yari" ];
