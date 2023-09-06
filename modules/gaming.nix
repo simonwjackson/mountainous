@@ -48,7 +48,7 @@
     };
 
     "/home/simonwjackson/.local/share/yuzu/shader" = {
-      device = "/glacier/snowscape/gaming/emulators/yuzu/shader";
+      device = "/glacier/snowscape/gaming/launchers/yuzu/shader";
       options = [ "bind" ];
     };
 

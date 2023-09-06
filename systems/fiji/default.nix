@@ -101,21 +101,21 @@
     dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
     folders = {                                         
+      code.path = "/home/simonwjackson/code";
       documents.path = "/glacier/snowscape/documents";
-      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
       gaming-games.path = "/glacier/snowscape/gaming/games";
+      gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
+      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
+      gaming-systems.path = "/glacier/snowscape/gaming/systems";
       taskwarrior.path = "/home/simonwjackson/.local/share/task";
-      # code.path = "/home/simonwjackson/code";
                                                                                                    
+      code.devices = [ "fiji" "unzen" "yari" ];
       documents.devices = [ "fiji" "unzen" "zao" ];
-      gaming-profiles.devices = [ "fiji" "unzen" "zao" ];
-      taskwarrior.devices = [ "fiji" "unzen" "zao" ];
-      gaming-games.devices = [ 
-        "zao"
-        "fiji"
-        # "unzen" "zao" "yari" "haku"
-      ];
-      # code.devices = [ "fiji" "kita" "unzen" "yari" ];
+      gaming-games.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-launchers.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-profiles.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-systems.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      taskwarrior.devices = ["fiji" "unzen" "zao" ];
 
       gaming-profiles.versioning = {
         type = "staggered";                             

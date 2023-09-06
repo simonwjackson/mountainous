@@ -206,18 +206,6 @@
     };
   };
 
-  systemd.user.services.startSteam = {
-    path = with pkgs; [ flatpak ];
-    description = "Start Steam Flatpak app";
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    after = [ "mountSteamAppsOverlay.service" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.flatpak}/bin/flatpak run com.valvesoftware.Steam";
-      Restart = "on-failure";
-    };
-  };
-
   services.borgbackup.jobs = {
     gaming-profiles = {
       paths = "lacier/snowscape/gaming/profiles";
@@ -247,48 +235,24 @@
   };
 
   services.syncthing = {
-    enable = true;
-    overrideDevices = true;
-    overrideFolders = true;
-    user = "simonwjackson";
-    configDir = "/home/simonwjackson/.config/syncthing";
-
-    devices = {
-      fiji.id = "MW4FWKE-NPIP5BP-LAB7Y75-5JOVKKO-PBVZPIF-DMPGRP3-3GUSVII-SMWDFQY";
-      unzen.id = "ETEYYE4-C3P2L34-HIV54WA-XQRERGB-LXL5ZRZ-FVA4EXR-YUDRQVL-HV2FDQA";
-      zao.id = "CTOOG4Z-5WK7MDW-UQ3KHOI-YEMDGQF-D6JSIMG-BNPJZWN-MPN3RTO-TBFKRAN";
-    };
-
-    extraFlags = [
-      "--no-default-folder"
-      "--gui-address=0.0.0.0:8384"
-    ];
-
-    extraOptions = {
-      gui = {
-        user = "simonwjackson";
-        password = "asdfasdfasdf";
-      };
-
-      ignores = {
-        "line" = [
-          "**/node_modules"
-          "**/build"
-          "**/cache"
-        ];
-      };
-    };
+    dataDir = "/home/simonwjackson"; # Default folder for new synced folders
 
     folders = {
-      documents.path = "/glacier/snowscape/documents";
-      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
-      taskwarrior.path = "/home/simonwjackson/.local/share/task";
       code.path = "/home/simonwjackson/code";
-
-      documents.devices = [ "fiji" "unzen" "zao" ];
-      gaming-profiles.devices = [ "fiji" "unzen" "zao" ];
-      taskwarrior.devices = [ "fiji" "unzen" "zao" ];
+      documents.path = "/glacier/snowscape/documents";
+      gaming-games.path = "/glacier/snowscape/gaming/games";
+      gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
+      gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
+      gaming-systems.path = "/glacier/snowscape/gaming/systems";
+      taskwarrior.path = "/home/simonwjackson/.local/share/task";
+                                                                                                   
       code.devices = [ "fiji" "unzen" "zao" ];
+      documents.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-games.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-launchers.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-profiles.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-systems.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      taskwarrior.devices = [ "fiji" "unzen" "zao" ];
 
       gaming-profiles.versioning = {
         type = "staggered";
