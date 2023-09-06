@@ -112,9 +112,9 @@
       code.devices = [ "fiji" "unzen" "yari" ];
       documents.devices = [ "fiji" "unzen" "zao" ];
       gaming-games.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
-      gaming-launchers.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
       gaming-profiles.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
-      gaming-systems.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-systems.devices = [ "fiji" "unzen" "zao" ];
       taskwarrior.devices = ["fiji" "unzen" "zao" ];
 
       gaming-profiles.versioning = {

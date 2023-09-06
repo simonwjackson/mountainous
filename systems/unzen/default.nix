@@ -13,6 +13,7 @@
       ./hardware-configuration.nix
       ../../modules/tailscale.nix
       ../../modules/sunshine.nix
+      ../../modules/syncthing.nix
       ../../modules/gaming-host.nix
     ];
 
@@ -249,9 +250,9 @@
       code.devices = [ "fiji" "unzen" "zao" ];
       documents.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
       gaming-games.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
-      gaming-launchers.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
       gaming-profiles.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
-      gaming-systems.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-systems.devices = [ "fiji" "unzen" "zao" ];
       taskwarrior.devices = [ "fiji" "unzen" "zao" ];
 
       gaming-profiles.versioning = {
