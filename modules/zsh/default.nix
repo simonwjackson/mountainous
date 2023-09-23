@@ -44,12 +44,12 @@ in
       more = "bat --paging=always";
       ip = "ip --color=auto";
 
-      lt = "exa -lT";
-      lat = "exa -laT";
-      ll = "exa --long --header --git";
-      ls = "exa";
-      l = "exa -l";
-      la = "exa -la";
+      lt = "eza -lT";
+      lat = "eza -laT";
+      ll = "eza --long --header --git";
+      ls = "eza";
+      l = "eza -l";
+      la = "eza -la";
     };
 
     home.file = {

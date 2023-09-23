@@ -26,7 +26,7 @@ in
 
     home.packages = with pkgs; [
       # Terminal Utils
-      exa
+      eza
       btop
       dialog
       nmap
