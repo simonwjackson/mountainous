@@ -5,8 +5,7 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
+  imports = [
       ./hardware-configuration.nix
       ../../modules/journal
       ../../modules/syncthing.nix
@@ -19,11 +18,16 @@
       ../../profiles/workstation.nix
       ../../profiles/_common.nix
       ../../users/simonwjackson
+    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
+  ];
 
   fileSystems."/home/simonwjackson/documents" = {
     device = "/glacier/snowscape/documents";
     options = [ "bind" ];
   };
+
+  services.vscode-server.enable = true;
+
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
