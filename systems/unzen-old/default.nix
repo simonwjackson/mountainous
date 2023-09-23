@@ -328,20 +328,6 @@
       containers = {
         # TODO: ensure directorys exists before running
 
-        # TODO: Need to setup taskwarrior locally first
-        # taskwarrior-web = {
-        #   autoStart = true;
-        #   image = "dcsunset/taskwarrior-webui";
-        #   ports = [ "0.0.0.0:8080:80" ];
-        #   environment = {
-        #     TAKSRC="$HOME/.taskrc";
-        #     TASKDATA="$HOME/.task";
-        #   };
-        #   volumes = [
-        #     "/home/simonwjackson/.taskrc:$HOME/.taskrc"
-        #     "/home/simonwjackson/.task:$HOME/.task"
-        #   ];
-        # };
 
         jackett = {
           autoStart = true;
