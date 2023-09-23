@@ -162,5 +162,9 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 
+
+  services.xserver.libinput.touchpad.disableWhileTyping = true;
+  # services.xserver.libinput.enable = true;
+  services.xserver.libinput.tapping = true;
 }
 
