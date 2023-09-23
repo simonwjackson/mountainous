@@ -25,46 +25,45 @@
 
   services.xserver.displayManager.setupCommands = ''
     # Note 9
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2960x1440_60.00"  361.00  2960 3176 3496 4032  1440 1443 1453 1493 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2960x1440_60.00"
-      
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2960x1440_30.00"  169.00  2960 3096 3400 3840  1440 1443 1453 1468 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2960x1440_30.00"
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2960x1440_60.00"  361.00  2960 3176 3496 4032  1440 1443 1453 1493 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2960x1440_60.00"
+    #   
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2960x1440_30.00"  169.00  2960 3096 3400 3840  1440 1443 1453 1468 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2960x1440_30.00"
 
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2216x1078_60.00"  199.00  2216 2360 2592 2968  1078 1081 1091 1118 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2216x1078_60.00" 
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2216x1078_60.00"  199.00  2216 2360 2592 2968  1078 1081 1091 1118 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2216x1078_60.00" 
 
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2096x1020_60.00"  177.50  2096 2232 2448 2800  1020 1023 1033 1058 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2096x1020_60.00"
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2096x1020_60.00"  177.50  2096 2232 2448 2800  1020 1023 1033 1058 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2096x1020_60.00"
 
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1480x720_60.00"   86.25  1480 1552 1704 1928  720 723 733 748 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1480x720_60.00"
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1480x720_60.00"   86.25  1480 1552 1704 1928  720 723 733 748 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1480x720_60.00"
 
     # Z Fold 4
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2176x1812_120.00"  708.75  2176 2368 2608 3040  1812 1815 1825 1944 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2176x1812_120.00"
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2176x1812_120.00"  708.75  2176 2368 2608 3040  1812 1815 1825 1944 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2176x1812_120.00"
 
 
-    ## 25%
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1088x906"  173.75  1088 1176 1288 1488  906 909 919 974 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1088x906"  
+    # ## 25%
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1088x906"  173.75  1088 1176 1288 1488  906 909 919 974 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1088x906"  
 
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "872x726"  110.00  872 936 1024 1176  726 729 739 781 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "872x726"  
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "872x726"  110.00  872 936 1024 1176  726 729 739 781 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "872x726"  
 
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1296x1080_120.00"  249.25  1296 1408 1544 1792  1080 1083 1093 1160 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1296x1080_120.00"
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1296x1080_120.00"  249.25  1296 1408 1544 1792  1080 1083 1093 1160 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1296x1080_120.00"
 
-    # Pixel 3
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2160x1080_60.00"  194.50  2160 2304 2528 2896  1080 1083 1093 1120 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2160x1080_60.00"
+    # # Pixel 3
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2160x1080_60.00"  194.50  2160 2304 2528 2896  1080 1083 1093 1120 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2160x1080_60.00"
 
-    ## 0.5x
-    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1080x540_60.00"   46.00  1080 1120 1224 1368  540 543 553 562 -hsync +vsync
-    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1080x540_60.00"
+    # ## 0.5x
+    # ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1080x540_60.00"   46.00  1080 1120 1224 1368  540 543 553 562 -hsync +vsync
+    # ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1080x540_60.00"
 
     # Galaxy Tab 8
-
 
     ## 17% (~720p)
     ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1152x721"  145.75  1152 1240 1360 1568  721 724 734 776 -hsync +vsync
@@ -88,5 +87,20 @@
 
     ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1960x1226"  428.00  1960 2128 2336 2712  1226 1229 1239 1316 -hsync +vsync
     ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1960x1226"
+
+    # Redmagic 8s Pro
+
+    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2480x1116"  494.50  2480 2688 2960 3440  1116 1119 1129 1199 -hsync +vsync
+    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2480x1116"
+
+    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2152x968"  370.25  2152 2328 2560 2968  968 971 981 1040 -hsync +vsync
+    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2152x968"
+
+    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "2016x907"  323.50  2016 2176 2392 2768  907 910 920 975 -hsync +vsync
+    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "2016x907"
+
+    ${pkgs.xorg.xrandr}/bin/xrandr --newmode "1760x792"  245.00  1760 1896 2080 2400  792 795 805 852 -hsync +vsync
+    ${pkgs.xorg.xrandr}/bin/xrandr --addmode "DP-1" "1760x792"
+
   '';
 }
