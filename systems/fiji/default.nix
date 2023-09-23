@@ -19,8 +19,11 @@
       ../../profiles/workstation.nix
       ../../profiles/_common.nix
       ../../users/simonwjackson
-    ];
 
+  fileSystems."/home/simonwjackson/documents" = {
+    device = "/glacier/snowscape/documents";
+    options = [ "bind" ];
+  };
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
