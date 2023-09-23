@@ -162,6 +162,18 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 
+  programs.proxychains = {
+    enable = true;
+    quietMode = true;
+    proxies = {
+      local = {
+        enable = true;
+        type = "socks5";
+        host = "127.0.0.1";
+        port = 9999;
+      };
+    };
+  };
 
   services.xserver.libinput.touchpad.disableWhileTyping = true;
   # services.xserver.libinput.enable = true;
