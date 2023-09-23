@@ -22,9 +22,9 @@
         name = "gaming (zao)";
       };
 
-      haku = {
-        id = builtins.getEnv "SYNCTHING_HAKU_ID";
-        name = "phone (haku)";
+      usu = {
+        id = builtins.getEnv "SYNCTHING_USU_ID";
+        name = "main phone (usu)";
       };
 
       yari = {

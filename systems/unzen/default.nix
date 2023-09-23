@@ -248,10 +248,10 @@
       taskwarrior.path = "/home/simonwjackson/.local/share/task";
                                                                                                    
       code.devices = [ "fiji" "unzen" "zao" ];
-      documents.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
-      gaming-games.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      documents.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
+      gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
       gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
-      gaming-profiles.devices = [ "fiji" "haku" "unzen" "yari" "zao" ];
+      gaming-profiles.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
       gaming-systems.devices = [ "fiji" "unzen" "zao" ];
       taskwarrior.devices = [ "fiji" "unzen" "zao" ];
 
