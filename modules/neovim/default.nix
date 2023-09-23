@@ -122,6 +122,8 @@ in
         nodejs
         nodePackages.typescript-language-server
         nodePackages.vscode-langservers-extracted
+        bun
+        deno
       ] ++ [
         # misc
         neovim-remote
