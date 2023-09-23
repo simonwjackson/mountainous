@@ -287,4 +287,9 @@
   };
 
   programs.mosh.enable = true;
+
+  # TODO: Add this to general networking config
+  # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
+  systemd.services.NetworkManager-wait-online.enable = false;
+
 }
