@@ -4,9 +4,10 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
-    ];
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+    ../../hardware/bluetooth.nix
+  ];
 
   boot.supportedFilesystems = [ "bcachefs" ];
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_latest;
