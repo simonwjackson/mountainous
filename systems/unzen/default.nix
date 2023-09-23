@@ -208,13 +208,31 @@
   };
 
   services.borgbackup.jobs = {
+    taskwarrior = {
+      paths = "/home/simonwjackson/.local/share/task";
+      repo = "/glacier/iceberg/permafrost/taskwarrior";
+      encryption.mode = "none";
+      compression = "zstd,22";
+      startAt = "hourly";
+      prune = {
+        keep = {
+          within = "7d"; 
+        };
+      };
+    };
+
     gaming-profiles = {
-      paths = "lacier/snowscape/gaming/profiles";
+      paths = "/glacier/snowscape/gaming/profiles";
       repo = "/glacier/iceberg/permafrost/gaming/profiles";
       encryption.mode = "none";
       compression = "zstd,22";
       startAt = "daily"; # every day
       exclude = [ ];
+      prune = {
+        keep = {
+          within = "30d"; 
+        };
+      };
     };
 
     photos = {
@@ -223,7 +241,6 @@
       encryption.mode = "none";
       compression = "zstd,22";
       startAt = "daily"; # every day
-      exclude = [ ];
     };
 
     notes = {
@@ -231,7 +248,11 @@
       repo = "/glacier/iceberg/permafrost/notes";
       encryption.mode = "none";
       startAt = "daily"; # every day
-      exclude = [ ];
+      prune = {
+        keep = {
+          within = "30d"; 
+        };
+      };
     };
   };
 
