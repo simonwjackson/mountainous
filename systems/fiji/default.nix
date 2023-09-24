@@ -6,18 +6,18 @@
 
 {
   imports = [
-      ./hardware-configuration.nix
-      ../../modules/journal
-      ../../modules/syncthing.nix
-      ../../modules/sunshine.nix
-      ../../modules/gaming.nix
-      ../../modules/tailscale.nix
-      ../../modules/networking.nix
-      ../../profiles/gui
-      ../../profiles/audio.nix
-      ../../profiles/workstation.nix
-      ../../profiles/_common.nix
-      ../../users/simonwjackson
+    ./hardware-configuration.nix
+    ../../modules/journal
+    ../../modules/syncthing.nix
+    ../../modules/sunshine.nix
+    ../../modules/gaming.nix
+    ../../modules/tailscale.nix
+    ../../modules/networking.nix
+    ../../profiles/gui
+    ../../profiles/audio.nix
+    ../../profiles/workstation.nix
+    ../../profiles/_common.nix
+    ../../users/simonwjackson
     (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
   ];
 

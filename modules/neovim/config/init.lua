@@ -379,6 +379,15 @@ require("lazy").setup({
 			g.taskwiki_taskrc_location = "~/.config/task/taskrc"
 			g.taskwiki_data_location = "~/.local/share/task"
 			g.taskwiki_dont_fold = "yes"
+      g.taskwiki_sort_orders = { U = "urgency-" }
+      -- TODO: These seem to lockup neovim
+      -- vim.api.nvim_exec([[
+      --   augroup TaskWiki
+      --     autocmd!
+      --     autocmd BufWritePost ~/documents/notes/REVIEW.md silent ! generate-tasks-review-markdown
+      --     autocmd BufWritePost ~/documents/notes/NEXT.md silent ! generate-tasks-next-markdown
+      --   augroup END
+      -- ]], false)
 		end,
 	},
 	{
@@ -497,9 +506,9 @@ require("lazy").setup({
 			require("lint").linters_by_ft = {
 				markdown = { "vale" },
 				lua = { "luacheck" },
-				typescript = { "eslint_d" },
-				javascript = { "eslint_d" },
-				typescriptreact = { "eslint_d" },
+        -- typescript = { "eslint_d" },
+				-- javascript = { "eslint_d" },
+				-- typescriptreact = { "eslint_d" },
 				json = { "jsonlint" },
 				nix = { "nix" },
 				yaml = { "yamllint" },
