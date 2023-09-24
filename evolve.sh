@@ -10,7 +10,7 @@ set -e
     --extra-experimental-features nix-command \
     --extra-experimental-features flakes &&
   op run \
-    --env-file="./systems/$(hostname)/system.env" --env-file=.env \
+    --env-file="./hosts/$(hostname)/system.env" --env-file=.env \
     -- sudo -E nixos-rebuild --impure -v switch --flake '.#' &&
   op run \
     --env-file=.env \
