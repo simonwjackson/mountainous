@@ -19,6 +19,7 @@
 
       ssh-to-age
       age
+      agenix
       just
       husky
       nix-output-monitor

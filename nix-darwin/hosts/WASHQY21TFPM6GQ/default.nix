@@ -3,9 +3,13 @@
     name = "sjackson217";
     home = "/Users/sjackson217";
   };
+
   environment.systemPackages = with pkgs; [
     kitty
   ];
+
+  # INFO: nix-darwin switch without password
+  # https://github.com/LnL7/nix-darwin/issues/165#issuecomment-829492913
   environment.etc = {
     "sudoers.d/10-nix-commands".text =
       let
