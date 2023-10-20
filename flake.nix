@@ -172,7 +172,7 @@
       darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
 
       nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
-        specialArgs = { inherit inputs outputs rootPath self; };
+        # specialArgs = { inherit inputs outputs rootPath self; };
         modules = [ ./nix-on-droid/hosts/usu ];
       };
 
