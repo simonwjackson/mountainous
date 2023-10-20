@@ -148,22 +148,23 @@
         };
       };
 
-          # Build darwin flake using:
-    # $ darwin-rebuild build --flake .#WASHQY21TFPM6GQ
-    darwinConfigurations."WASHQY21TFPM6GQ" = nix-darwin.lib.darwinSystem {
-      modules = [ 
-        ./nix-darwin/hosts/WASHQY21TFPM6GQ
-        home-manager.darwinModules.home-manager {
-          # home-manager.useGlobalPkgs = true;
-          # home-manager.useUserPackages = true;
-          home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+      # Build darwin flake using:
+      # $ darwin-rebuild build --flake .#WASHQY21TFPM6GQ
+      darwinConfigurations."WASHQY21TFPM6GQ" = nix-darwin.lib.darwinSystem {
+        modules = [
+          ./nix-darwin/hosts/WASHQY21TFPM6GQ
+          home-manager.darwinModules.home-manager
+          {
+            # home-manager.useGlobalPkgs = true;
+            # home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
 
-          home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/WASHQY21TFPM6GQ;
-        }
-      ];
-    };
-    # Expose the package set, including overlays, for convenience.
-    # darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
+            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/WASHQY21TFPM6GQ;
+          }
+        ];
+      };
+      # Expose the package set, including overlays, for convenience.
+      # darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
 
 
       # Standalone home-manager configuration entrypoint
