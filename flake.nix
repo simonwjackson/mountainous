@@ -8,7 +8,7 @@
     # Nixpkgs
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    
+
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -37,7 +37,7 @@
     };
   };
 
-  outputs = { agenix, self, nixpkgs, home-manager, hardware, ... }@inputs:
+  outputs = { agenix, self, nixpkgs, home-manager, hardware, nix-darwin, ... }@inputs:
     let
       inherit (self) outputs;
       lib = nixpkgs.lib // home-manager.lib;
@@ -148,18 +148,36 @@
         };
       };
 
+          # Build darwin flake using:
+    # $ darwin-rebuild build --flake .#WASHQY21TFPM6GQ
+    darwinConfigurations."WASHQY21TFPM6GQ" = nix-darwin.lib.darwinSystem {
+      modules = [ 
+        ./nix-darwin/hosts/WASHQY21TFPM6GQ
+        home-manager.darwinModules.home-manager {
+          # home-manager.useGlobalPkgs = true;
+          # home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+
+          home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/WASHQY21TFPM6GQ;
+        }
+      ];
+    };
+    # Expose the package set, including overlays, for convenience.
+    # darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
+
+
       # Standalone home-manager configuration entrypoint
       # Available through 'home-manager <action> --flake .#simonwjackson'
-      homeConfigurations = {
-        # Desktops
-        "simonwjackson@fiji" = lib.homeManagerConfiguration {
-          modules = [
-            ./home-manager/users/simonwjackson/hosts/fiji
-            agenix.homeManagerModules.age
-          ];
-          pkgs = pkgsFor.x86_64-linux // outputs.packages;
-          extraSpecialArgs = { inherit inputs outputs; };
-        };
-      };
+      # homeConfigurations = {
+      #   # Desktops
+      #   "simonwjackson@fiji" = lib.homeManagerConfiguration {
+      #     modules = [
+      #       ./home-manager/users/simonwjackson/hosts/fiji
+      #       agenix.homeManagerModules.age
+      #     ];
+      #     pkgs = pkgsFor.x86_64-linux // outputs.packages;
+      #     extraSpecialArgs = { inherit inputs outputs; };
+      #   };
+      # };
     };
 }

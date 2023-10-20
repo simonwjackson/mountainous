@@ -299,7 +299,7 @@
     aliases = {
       d = "difftool";
       mt = "mergetool";
-      up = "!f() { git checkout ${1-main} && git pull origin ${1-main} && git checkout - && git rebase ${1-main}; }; f";
+      up = "!f() { git checkout main && git pull origin main && git checkout - && git rebase main; }; f";
 
       c = "! git commit --message";
       u = "! git add --update";

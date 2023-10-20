@@ -108,12 +108,10 @@
     ];
   };
 
-  programs.xpo = {
-    enable = true;
-    defaultServer = "unzen";
-  };
-
-  services.udiskie.enable = true;
+  # programs.xpo = {
+  #   enable = true;
+  #   defaultServer = "unzen";
+  # };
 
   # Nicely reload system units when changing configs
   systemd.user.startServices = "sd-switch";
