@@ -154,22 +154,22 @@
       };
 
       # Build darwin flake using:
-      # $ darwin-rebuild build --flake .#WASHQY21TFPM6GQ
-      darwinConfigurations."WASHQY21TFPM6GQ" = nix-darwin.lib.darwinSystem {
+      # $ darwin-rebuild build --flake .#ushiro
+      darwinConfigurations."ushiro" = nix-darwin.lib.darwinSystem {
         specialArgs = { inherit inputs outputs rootPath self; };
         modules = [
-          ./nix-darwin/hosts/WASHQY21TFPM6GQ
+          ./nix-darwin/hosts/ushiro
           agenix.nixosModules.default
           home-manager.darwinModules.home-manager
           {
             home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
-            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/WASHQY21TFPM6GQ;
+            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
           }
         ];
       };
 
       # Expose the package set, including overlays, for convenience.
-      darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
+      darwinPackages = self.darwinConfigurations."ushiro".pkgs;
 
       nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
         extraSpecialArgs = { inherit inputs outputs rootPath self; };

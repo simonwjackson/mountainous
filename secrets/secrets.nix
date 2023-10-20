@@ -14,10 +14,10 @@ let
   # yabashi = builtins.readFile ../nixos/hosts/yabashi/ssh_host_rsa_key.pub;
   zao = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC+2bu1jg44vklG0Aq2/Whg1N2GI9kJzfowEYh8UHEgIBrW+/tHcHlSRrp54PHDDpLafQhVU9sZyH8ua1snL6qIhURfb8XPMlA7R/s3UQW9UupromsiJ08Gwu/CQANSij68o+ve+Fa+pWvI1KXK8NPduA+sC4AS8IFifCfj0e7pjmKYlkIoQjMAhXkQtV9LGyJOv3pMXR2sOrWsM3xRUXxQWB6ZueckAGaxJvmGaK3SFQn1Y+cJ7zFfU6vkDMo4/6MHpryzdlRaCOdRcI3fmGW8f7Y7nRblvfo37HL40QTaYsSezHr5gnt2PiUCb7N4tXcycXJ+LHN0l122Fk5hlOhnxT5IvEFUgxg8iAx7tOZJi7Mkm6klaXbzvE2czlUSm14dsiuU0BHDNu7+F1i/8Sn9vREgFi0iU3lFcKpRt2l6FkNxhRyFLKRhB7BZ4Oc8h/a98Y9TXEW4qlLXQlWzyWNDphZGAYQa5zYZjwML7J+AA8gH7jFnKAe7lcNc58RPRZGcugcGxcTctKK0hRC4TWhBiSDSlb2Neu7XjG0DpGgj+bUk5Gu3JdAGrlE3xzZ8reI1edBM0pJFYBwuCWhR/tbcSUv2xFiXnKZr2PzzSF6zU5klM49X+5nFEctA9wXf8gvafs0X3/JB6cgfw79uMvMk9RA9v0RoY636q16MBC1V+w==";
   # zao = builtins.readFile ../nixos/hosts/zao/ssh_host_rsa_key.pub;
-  WASHQY21TFPM6GQ = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU=";
-  # WASHQY21TFPM6GQ = builtins.readFile ../nix-darwin/hosts/WASHQY21TFPM6GQ/ssh_host_rsa_key.pub;
+  ushiro = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU=";
+  # ushiro = builtins.readFile ../nix-darwin/hosts/ushiro/ssh_host_rsa_key.pub;
 
-  systems = [ fiji unzen rakku yabashi zao WASHQY21TFPM6GQ ];
+  systems = [ fiji unzen rakku yabashi zao ushiro ];
 in
 {
   "user-simonwjackson.age".publicKeys = users ++ systems;
