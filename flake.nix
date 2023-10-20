@@ -12,6 +12,11 @@
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
+    nix-on-droid = {
+      url = "github:t184256/nix-on-droid/release-23.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     agenix.url = "github:ryantm/agenix";
     hardware.url = "github:nixos/nixos-hardware";
     nix-colors.url = "github:misterio77/nix-colors";
@@ -37,11 +42,11 @@
     };
   };
 
-  outputs = { agenix, self, nixpkgs, home-manager, hardware, nix-darwin, ... }@inputs:
+  outputs = { agenix, self, nixpkgs, home-manager, hardware, nix-darwin, nix-on-droid, ... }@inputs:
     let
       inherit (self) outputs;
       lib = nixpkgs.lib // home-manager.lib;
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forEachSystem = f: lib.genAttrs systems (system: f pkgsFor.${system});
       pkgsFor = lib.genAttrs systems (system: import nixpkgs {
         inherit system;
@@ -84,10 +89,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/fiji;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath; };
+              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath; };
+          specialArgs = { inherit inputs outputs rootPath self; };
         };
 
         # Remote Server
@@ -98,10 +103,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/yabashi;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath; };
+              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath; };
+          specialArgs = { inherit inputs outputs rootPath self; };
         };
 
         # Home Server
@@ -112,10 +117,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/unzen;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath; };
+              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath; };
+          specialArgs = { inherit inputs outputs rootPath self; };
         };
 
         # router
@@ -126,10 +131,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/rakku;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath; };
+              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath; };
+          specialArgs = { inherit inputs outputs rootPath self; };
         };
 
         # portable gaming rig
@@ -141,31 +146,35 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/zao;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath; };
+              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath; };
+          specialArgs = { inherit inputs outputs rootPath self; };
         };
       };
 
       # Build darwin flake using:
       # $ darwin-rebuild build --flake .#WASHQY21TFPM6GQ
       darwinConfigurations."WASHQY21TFPM6GQ" = nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit inputs outputs rootPath self; };
         modules = [
           ./nix-darwin/hosts/WASHQY21TFPM6GQ
+          agenix.nixosModules.default
           home-manager.darwinModules.home-manager
           {
-            # home-manager.useGlobalPkgs = true;
-            # home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
-
             home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/WASHQY21TFPM6GQ;
           }
         ];
       };
-      # Expose the package set, including overlays, for convenience.
-      # darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
 
+      # Expose the package set, including overlays, for convenience.
+      darwinPackages = self.darwinConfigurations."WASHQY21TFPM6GQ".pkgs;
+
+      nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
+        specialArgs = { inherit inputs outputs rootPath self; };
+        modules = [ ./nix-on-droid/hosts/usu ];
+      };
 
       # Standalone home-manager configuration entrypoint
       # Available through 'home-manager <action> --flake .#simonwjackson'
