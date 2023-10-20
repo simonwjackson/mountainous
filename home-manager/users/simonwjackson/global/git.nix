@@ -299,6 +299,7 @@
     aliases = {
       d = "difftool";
       mt = "mergetool";
+      up = "!f() { git checkout ${1-main} && git pull origin ${1-main} && git checkout - && git rebase ${1-main}; }; f";
 
       c = "! git commit --message";
       u = "! git add --update";
@@ -334,6 +335,8 @@
         ! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit "$@" | perl -0 -p -e 's/(^|[^\\])([<>])/\1\\\2/g ; s/(\s*\n)+\*/\n*/g' #'';
       sync = "! git fetch --tags && git rebase --autostash && git push";
 
+      # TODO: export this to a file
+      # ex '!sh /path/to/gpt.sh'
       gpt = ''
         !f() { git diff --staged | tr -s '[:space:]' '
         ' | head -n 3500 | tr -s '[:space:]' ' ' | sgpt --model gpt-4 --temperature .5 "Generate a conventional commit from these chages. template: ':emoji: <type>[optional scope]: <description>
