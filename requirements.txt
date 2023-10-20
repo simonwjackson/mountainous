@@ -1,5 +1,0 @@
-setuptools
-sxhkhm
-six
-pynvim
-tasklib

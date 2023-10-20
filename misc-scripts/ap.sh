@@ -1,1 +1,0 @@
-sudo create_ap --freq-band 5 --ht_capab="[HT20][HT40-][HT40+][SHORT-GI-20][SHORT-GI-40][TX-STBC][MAX-AMSDU-7935][DSSS_CCK-40][PSMP]" --vht_capab="[MAX-MPDU-11454][RXLDPC][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1][MAX-A-MPDU-LEN-EXP0]" --ieee80211ac --ieee80211n -g 192.18.5.1 wlp0s20f3 wlp0s20f0u3 hopstop password

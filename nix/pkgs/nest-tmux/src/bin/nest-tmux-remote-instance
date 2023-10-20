@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+TMUX_REMOTE_INSTANCE_SOCKET=${TMUX_REMOTE_INSTANCE_SOCKET:-"workspace"}
+TMUX_CONFIG=${TMUX_CONFIG:-"/etc/nest-tmux/remote.tmux.conf"}
+COMMAND='nvim -c "terminal" -c "startinsert" >/dev/null 2>&1'
+
+tmux \
+  -L "${TMUX_REMOTE_INSTANCE_SOCKET}" \
+  -f "${TMUX_CONFIG}" \
+  attach-session \
+  -t terminals \
+|| tmux \
+  -L "${TMUX_REMOTE_INSTANCE_SOCKET}" \
+  -f "${TMUX_CONFIG}" \
+  new-session \
+  -s terminals \
+  nvim -c "terminal" -c "startinsert" >/dev/null 2>&1

@@ -1,3 +1,4 @@
-result
-.nvimlog
-users/simonwjackson/bin/rofi-tabs/target
+.direnv
+result*
+*.qcow2
+.nixie
