@@ -1,6 +1,9 @@
 { config, lib, pkgs, ... }:
 
 {
+  imports = [
+    ../../global
+  ];
   # Read the changelog before changing this value
   home.stateVersion = "23.05";
 
