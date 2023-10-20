@@ -175,11 +175,26 @@
         extraSpecialArgs = { inherit inputs outputs rootPath self; };
         modules = [
           ./nix-on-droid/hosts/usu
-          home-manager.darwinModules.home-manager
           {
-            home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
-            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/usu;
+            home-manager = {
+              backupFileExtension = "hm-bak";
+              useGlobalPkgs = true;
+
+              config =
+                { config, lib, pkgs, ... }:
+                {
+                  # Read the changelog before changing this value
+                  home.stateVersion = "23.05";
+
+                  # insert home-manager config
+                };
+            };
           }
+          # home-manager.darwinModules.home-manager
+          # {
+          #   home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+          #   home-manager.users.nix-on-droid = import ./home-manager/users/simonwjackson/hosts/usu;
+          # }
         ];
       };
 
