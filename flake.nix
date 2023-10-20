@@ -177,8 +177,8 @@
           ./nix-on-droid/hosts/usu
           {
             home-manager = {
-              backupFileExtension = "hm-bak";
-              useGlobalPkgs = true;
+              # backupFileExtension = "hm-bak";
+              # useGlobalPkgs = true;
 
               config =
                 { config, lib, pkgs, ... }:
