@@ -21,6 +21,7 @@
       age
       just
       husky
+      nix-output-monitor
     ];
   };
 }
