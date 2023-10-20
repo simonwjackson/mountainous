@@ -173,7 +173,14 @@
 
       nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
         extraSpecialArgs = { inherit inputs outputs rootPath self; };
-        modules = [ ./nix-on-droid/hosts/usu ];
+        modules = [
+          ./nix-on-droid/hosts/usu
+          home-manager.darwinModules.home-manager
+          {
+            home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/usu;
+          }
+        ];
       };
 
       # Standalone home-manager configuration entrypoint
