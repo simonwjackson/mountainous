@@ -13,8 +13,9 @@
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
     nix-on-droid = {
-      url = "github:t184256/nix-on-droid/release-23.05";
+      url = "github:nix-community/nix-on-droid/release-23.05";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
     };
 
     agenix.url = "github:ryantm/agenix";
@@ -28,8 +29,8 @@
 
     home-manager = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:nix-community/home-manager/release-23.05";
-      # url = "github:nix-community/home-manager/master";
+      # url = "github:nix-community/home-manager/release-23.05";
+      url = "github:nix-community/home-manager/master";
     };
 
     hyprland = {
