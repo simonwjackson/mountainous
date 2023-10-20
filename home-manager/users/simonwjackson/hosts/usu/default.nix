@@ -13,7 +13,6 @@
     homeDirectory = lib.mkForce "/data/data/com.termux.nix/files/home";
     packages = with pkgs; [
       jq
-      ex
     ];
   };
 }
