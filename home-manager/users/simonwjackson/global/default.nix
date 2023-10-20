@@ -24,7 +24,7 @@
     packages = [
       pkgs.killall
       pkgs.jq
-      pkgs.ex
+      # pkgs.ex
     ];
   };
 
