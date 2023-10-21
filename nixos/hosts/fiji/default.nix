@@ -33,7 +33,7 @@
 
     windowManager.icewm.enable = true;
 
-    displayManager.defaultSession = "none+icewm";
+    displayManager.defaultSession = "xfce";
   };
 
   boot.supportedFilesystems = [ "xfs" ];
@@ -41,7 +41,7 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   # FIXME
-  # services.vscode-server.enable = true; 
+  # services.vscode-server.enable = true;
 
   services.vpn-proxy = {
     enable = true;
@@ -51,7 +51,7 @@
     localPort = 9999;
   };
 
-  # boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-intel" ];
@@ -126,6 +126,11 @@
   services.udev.extraRules = ''
     KERNEL=="wlan*", ATTR{address}=="d4:d8:53:90:2b:6c", NAME = "wifi"
   '';
+
+  environment.systemPackages = with pkgs; [
+    yuzu
+    moonlight-qt
+  ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

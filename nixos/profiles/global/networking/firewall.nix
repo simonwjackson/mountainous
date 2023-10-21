@@ -5,6 +5,10 @@
     enable = true;
     allowPing = true;
 
+    extraCommands = ''
+      iptables -I INPUT -p all -s 192.168.166.0/24 -j ACCEPT
+    '';
+
     allowedTCPPorts = [
       ## DNS
       53
@@ -15,7 +19,7 @@
       67
       68
 
-      # DNS 
+      # DNS
       53
 
       # NTP

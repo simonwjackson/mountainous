@@ -6,10 +6,8 @@
     ../../profiles/systemd-boot.nix
     ../../users/simonwjackson
     # ../../modules/syncthing.nix
-    # ../../modules/gaming-host.nix
-    # ../../modules/terminal
-    # ../../modules/neovim
-    # ../../modules/timezone.nix
+    ../../profiles/gaming/gaming-host.nix
+    ../../profiles/gaming/gaming.nix
   ];
 
   services.sunshine.enable = true;
@@ -46,7 +44,7 @@
     "kvm-intel"
     "uinput"
   ];
-  # hardware.xone.enable = true; 
+  # hardware.xone.enable = true;
   environment.systemPackages = with pkgs; [
     # linuxKernel.packages.linux_zen.xone
     nfs-utils
@@ -182,10 +180,10 @@
   #   "wlan-station0" = { device = "wlp0s2";};
   #   "wlan-ap0"      = { device = "wlp0s2"; mac = "08:11:96:0e:08:0a"; };
   # };
-  # 
+  #
   # networking.networkmanager.unmanaged = [ "interface-name:wlp*" ]
   #     ++ lib.optional config.services.hostapd.enable "interface-name:${config.services.hostapd.interface}";
-  # 
+  #
   # services.hostapd = {
   #   enable        = true;
   #   interface     = "wlan-ap0";
@@ -193,9 +191,9 @@
   #   ssid          = "nix";
   #   wpaPassphrase = "mysekret";
   # };
-  # 
+  #
   # services.haveged.enable = config.services.hostapd.enable;
-  # 
+  #
   # networking.interfaces."wlan-ap0".ipv4.addresses =
   #   lib.optionals config.services.hostapd.enable [{ address = "192.168.12.1"; prefixLength = 24; }];
 
