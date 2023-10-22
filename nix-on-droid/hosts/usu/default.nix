@@ -4,6 +4,10 @@
   # TODO: Remote building
   # https://github.com/nix-community/nix-on-droid/issues/62
 
+  imports = [
+    ./sshd.nix
+  ];
+
   # Simply install just the packages
   environment.packages = with pkgs; [
     # User-facing stuff that you really really want to have
