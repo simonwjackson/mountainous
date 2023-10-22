@@ -111,6 +111,7 @@
 
     settings.paths = {
       documents = "/glacier/snowscape/documents";
+      notes = "/glacier/snowscape/notes";
       # code = "/glacier/snowscape/code";
     };
   };

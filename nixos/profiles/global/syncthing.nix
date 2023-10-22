@@ -18,13 +18,19 @@
       };
 
       folderSettings = {
+        notes = {
+          devices = [ "fiji" "unzen" ];
+        };
+
         documents = {
           devices = [ "fiji" "unzen" ];
         };
+
         code = {
           devices = [ "fiji" ];
           # devices = [ "fiji" "unzen" "yari" ];
         };
+
         taskwarrior = {
           devices = [ "fiji" ];
           # devices = ["fiji" "unzen" "zao" ];
