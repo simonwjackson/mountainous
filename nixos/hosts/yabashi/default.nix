@@ -5,6 +5,9 @@
     ../../users/simonwjackson
   ];
 
+  age.secrets.yabashi-syncthing-key.file = ../../../secrets/yabashi-syncthing-key.age;
+  age.secrets.yabashi-syncthing-cert.file = ../../../secrets/yabashi-syncthing-cert.age;
+
   boot = {
     tmp.cleanOnBoot = true;
     loader.grub.device = "/dev/vda";
@@ -27,12 +30,12 @@
 
   services.syncthing = {
     enable = true;
-    # key = config.age.secrets.unzen-syncthing-key.path;
-    # cert = config.age.secrets.unzen-syncthing-cert.path;
+    key = config.age.secrets.yabashi-syncthing-key.path;
+    cert = config.age.secrets.yabashi-syncthing-cert.path;
 
     settings.paths = {
-      # documents = "/glacier/snowscape/documents";
-      # notes = "/glacier/snowscape/notes";
+      documents = "/home/simonwjackson/documents";
+      notes = "/home/simonwjackson/notes";
     };
   };
 
