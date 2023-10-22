@@ -61,7 +61,7 @@
         };
 
         yabashi = {
-          id = "";
+          id = "MX3MDCS-DBIX5DN-4KCI7IF-DY652C3-FYO3V33-HWPPUQU-HL4USN5-4JOQKQD";
           name = "remote server (yabashi)";
         };
 
