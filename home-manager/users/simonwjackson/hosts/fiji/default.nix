@@ -14,6 +14,32 @@
     ./kitty
   ];
 
+  home.packages = [
+    pkgs.matcha-gtk-theme
+  ];
+
+  gtk = {
+    enable = true;
+    # iconTheme = {
+    #   name = "xfce4-icon-theme";
+    #   package = pkgs.xfce.xfce4-icon-theme;
+    # };
+    theme = {
+      name = "matcha-dark-sea";
+      package = pkgs.matcha-gtk-theme;
+    };
+    gtk3.extraConfig = {
+      Settings = ''
+        gtk-application-prefer-dark-theme=1
+      '';
+    };
+    gtk4.extraConfig = {
+      Settings = ''
+        gtk-application-prefer-dark-theme=1
+      '';
+    };
+  };
+
   # INFO: https://github.com/nix-community/home-manager/issues/1011#issuecomment-1452920285
   xdg.configFile."plasma-workspace/env/hm-session-vars.sh".text = ''
     . "${config.home.profileDirectory}/etc/profile.d/hm-session-vars.sh"
