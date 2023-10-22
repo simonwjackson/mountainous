@@ -111,8 +111,7 @@
 
     settings.paths = {
       documents = "/glacier/snowscape/documents";
-      code = "/glacier/snowscape/code";
-      taskwarrior = "/home/simonwjackson/.local/share/task";
+      # code = "/glacier/snowscape/code";
     };
   };
 

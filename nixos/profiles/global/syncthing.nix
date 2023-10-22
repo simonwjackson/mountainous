@@ -19,7 +19,7 @@
 
       folderSettings = {
         documents = {
-          devices = [ "fiji" ];
+          devices = [ "fiji" "unzen" ];
         };
         code = {
           devices = [ "fiji" ];
@@ -49,10 +49,10 @@
           name = "laptop (fiji)";
         };
 
-        #   unzen = {
-        #     id = "";
-        #     name = "home server (unzen)";
-        #   };
+        unzen = {
+          id = "ETEYYE4-C3P2L34-HIV54WA-XQRERGB-LXL5ZRZ-FVA4EXR-YUDRQVL-HV2FDQA";
+          name = "home server (unzen)";
+        };
 
         #   zao = {
         #     id = "";

@@ -8,6 +8,9 @@
     ./services/paperless-ngx.nix
   ];
 
+  age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
+  age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
+
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
     fsType = "btrfs";
@@ -236,6 +239,17 @@
     };
   };
 
+  services.syncthing = {
+    enable = true;
+    key = config.age.secrets.unzen-syncthing-key.path;
+    cert = config.age.secrets.unzen-syncthing-cert.path;
+
+    settings.paths = {
+      documents = "/glacier/snowscape/documents";
+      # code = "/glacier/snowscape/code";
+    };
+  };
+
   # services.syncthing = {
   #   dataDir = "/home/simonwjackson"; # Default folder for new synced folders
   #
@@ -247,7 +261,7 @@
   #     gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
   #     gaming-systems.path = "/glacier/snowscape/gaming/systems";
   #     taskwarrior.path = "/home/simonwjackson/.local/share/task";
-  #                                                                                                  
+  #
   #     code.devices = [ "fiji" "unzen" "zao" ];
   #     documents.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
   #     gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
@@ -265,11 +279,6 @@
   #     };
   #   };
   # };
-
-  # TODO: Add this to general networking config
-  # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
-  systemd.services.NetworkManager-wait-online.enable = false;
-
 
   services.printing.enable = true;
   services.printing.drivers = with pkgs; [ brlaser ];
