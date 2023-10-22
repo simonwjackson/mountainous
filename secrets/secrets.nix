@@ -28,6 +28,9 @@ in
   "tandoor_env.age".publicKeys = users ++ systems;
   "paperless_ngx_env.age".publicKeys = users ++ systems;
 
+  "unzen-syncthing-key.age".publicKeys = users ++ [ unzen ];
+  "unzen-syncthing-cert.age".publicKeys = users ++ [ unzen ];
+
   "fiji-syncthing-key.age".publicKeys = users ++ [ fiji ];
   "fiji-syncthing-cert.age".publicKeys = users ++ [ fiji ];
 }
