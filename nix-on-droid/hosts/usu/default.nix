@@ -8,6 +8,15 @@
     ./sshd.nix
   ];
 
+  # HACK: DNS ersolution fix
+  # https://github.com/ettom/dnshack
+  home.file.".bashrc".text =
+    let dnshack = pkgs.callPackage (builtins.fetchTarball "https://github.com/ettom/dnshack/tarball/master") { };
+    in ''
+      export DNSHACK_RESOLVER_CMD="${dnshack}/bin/dnshackresolver"
+      export LD_PRELOAD="${dnshack}/lib/libdnshackbridge.so"
+    '';
+
   # Simply install just the packages
   environment.packages = with pkgs; [
     # User-facing stuff that you really really want to have

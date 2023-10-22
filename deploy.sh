@@ -10,8 +10,9 @@ if [ -z "$hosts" ]; then
 fi
 
 for host in ${hosts//,/ }; do
-  nixos-rebuild --flake .\#$host switch --target-host $host --use-remote-sudo --use-substitutes $@ --log-format internal-json -v |& nom --json
+  nixos-rebuild --flake .\#$host switch --target-host $host --use-remote-sudo --use-substitutes $@
+    # --log-format internal-json -v |& nom --json
 done
 
 # Darwin
-# nix run nix-darwin -- switch --flake .# 
+# nix run nix-darwin -- switch --flake .#
