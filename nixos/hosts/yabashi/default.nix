@@ -22,12 +22,19 @@
   networking.hostName = "yabashi";
 
   environment.systemPackages = with pkgs; [
-    # tailscale # make the tailscale command usable to users
-    neovim
-    git
-    tmux
-    mosh
+
   ];
+
+  services.syncthing = {
+    enable = true;
+    # key = config.age.secrets.unzen-syncthing-key.path;
+    # cert = config.age.secrets.unzen-syncthing-cert.path;
+
+    settings.paths = {
+      # documents = "/glacier/snowscape/documents";
+      # notes = "/glacier/snowscape/notes";
+    };
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

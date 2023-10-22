@@ -19,11 +19,11 @@
 
       folderSettings = {
         notes = {
-          devices = [ "fiji" "unzen" ];
+          devices = [ "fiji" "unzen" "yabashi" ];
         };
 
         documents = {
-          devices = [ "fiji" "unzen" ];
+          devices = [ "fiji" "unzen" "yabashi" ];
         };
 
         code = {
@@ -58,6 +58,11 @@
         unzen = {
           id = "ETEYYE4-C3P2L34-HIV54WA-XQRERGB-LXL5ZRZ-FVA4EXR-YUDRQVL-HV2FDQA";
           name = "home server (unzen)";
+        };
+
+        yabashi = {
+          id = "";
+          name = "remote server (yabashi)";
         };
 
         #   zao = {
