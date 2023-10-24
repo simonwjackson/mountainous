@@ -3,6 +3,8 @@
 , lib
 , config
 , pkgs
+, age
+, rootPath
 , ...
 }: {
   imports = [
@@ -16,6 +18,8 @@
     ./tmux
     ./zsh
   ] ++ (builtins.attrValues outputs.homeManagerModules);
+
+  age.secrets.atuin.file = rootPath + /secrets/atuin.age;
 
   # TODO: Set your username from $mainUser
   home = {
@@ -41,12 +45,6 @@
       # Workaround for https://github.com/nix-community/home-manager/issues/2942
       allowUnfreePredicate = _: true;
     };
-  };
-
-  programs.mcfly = {
-    enable = true;
-    enableZshIntegration = config.programs.zsh.enable;
-    enableBashIntegration = config.programs.bash.enable;
   };
 
   programs.bat = {
@@ -106,6 +104,19 @@
       "fiji"
       "zao"
     ];
+  };
+
+  programs.atuin = {
+    enable = true;
+    enableBashIntegration = true;
+    enableZshIntegration = true;
+    settings = {
+      auto_sync = true;
+      sync_frequency = "5m";
+      sync_address = "https://api.atuin.sh";
+      search_mode = "prefix";
+      key_path = config.age.secrets.atuin.path;
+    };
   };
 
   # programs.xpo = {
