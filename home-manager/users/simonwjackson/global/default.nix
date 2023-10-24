@@ -17,9 +17,8 @@
     ./neovim
     ./tmux
     ./zsh
-  ] ++ (builtins.attrValues outputs.homeManagerModules);
-  
-  age.secretsDir = lib.mkIf pkgs.stdenv.isDarwin (config.home.homeDirectory + "/.local/share/keys");
+  ]
+  ++ (builtins.attrValues outputs.homeManagerModules);
 
   age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
   age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
@@ -110,7 +109,7 @@
   };
 
   programs.atuin = {
-    enable = true;
+    enable = false;
     enableBashIntegration = true;
     enableZshIntegration = true;
     settings = {
@@ -121,6 +120,10 @@
       filter_mode_shell_up_key_binding = "directory";
       session_path = config.age.secrets.atuin_session.path;
       key_path = config.age.secrets.atuin_key.path;
+      inline_height = "10";
+      style = "compact";
+      secrets_filter = "false";
+      enter_accept = "true";
     };
   };
 
