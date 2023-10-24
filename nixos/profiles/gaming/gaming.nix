@@ -1,7 +1,8 @@
 { config, pkgs, ... }: {
 
   environment.systemPackages = with pkgs; [
-    yuzu
+    # yuzu
+    yuzu-early-access
     cemu
     retroarchFull
     dolphinEmu
