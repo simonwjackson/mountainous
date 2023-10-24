@@ -1,4 +1,5 @@
 { pkgs, ... }: {
+
   users.users.sjackson217 = {
     name = "sjackson217";
     home = "/Users/sjackson217";

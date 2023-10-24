@@ -18,8 +18,11 @@
     ./tmux
     ./zsh
   ] ++ (builtins.attrValues outputs.homeManagerModules);
+  
+  age.secretsDir = lib.mkIf pkgs.stdenv.isDarwin (config.home.homeDirectory + "/.local/share/keys");
 
-  age.secrets.atuin.file = rootPath + /secrets/atuin.age;
+  age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
+  age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
 
   # TODO: Set your username from $mainUser
   home = {
@@ -115,7 +118,9 @@
       sync_frequency = "5m";
       sync_address = "https://api.atuin.sh";
       search_mode = "prefix";
-      key_path = config.age.secrets.atuin.path;
+      filter_mode_shell_up_key_binding = "directory";
+      session_path = config.age.secrets.atuin_session.path;
+      key_path = config.age.secrets.atuin_key.path;
     };
   };
 
