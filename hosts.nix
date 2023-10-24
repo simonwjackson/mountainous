@@ -1,6 +1,8 @@
-# nix-instantiate --json --eval -E 'builtins.toJSON (import ./hosts.nix)' | jq -r      
+# nix-instantiate --json --eval -E 'builtins.toJSON (import ./hosts.nix)' | jq -r
 {
   hosts = {
-    machine1 = { wan = "aaa"; };
+    fiji = {
+      os = "nixos";
+    };
   };
 }
