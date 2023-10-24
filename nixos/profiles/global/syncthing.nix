@@ -26,6 +26,18 @@
           devices = [ "fiji" "unzen" "yabashi" ];
         };
 
+        audiobooks = {
+          devices = [ "fiji" "unzen" ];
+        };
+
+        books = {
+          devices = [ "fiji" "unzen" ];
+        };
+
+        comics = {
+          devices = [ "fiji" "unzen" ];
+        };
+
         code = {
           devices = [ "fiji" ];
           # devices = [ "fiji" "unzen" "yari" ];
