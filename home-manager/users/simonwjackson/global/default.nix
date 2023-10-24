@@ -114,16 +114,16 @@
     enableZshIntegration = true;
     settings = {
       auto_sync = true;
-      sync_frequency = "5m";
-      sync_address = "https://api.atuin.sh";
-      search_mode = "prefix";
-      filter_mode_shell_up_key_binding = "directory";
-      session_path = config.age.secrets.atuin_session.path;
-      key_path = config.age.secrets.atuin_key.path;
-      inline_height = 10;
-      style = "compact";
-      secrets_filter = false;
       enter_accept = true;
+      filter_mode_shell_up_key_binding = "directory";
+      inline_height = 10;
+      key_path = config.age.secrets.atuin_key.path;
+      search_mode = "prefix";
+      secrets_filter = false;
+      session_path = config.age.secrets.atuin_session.path;
+      style = "compact";
+      sync_address = "https://api.atuin.sh";
+      sync_frequency = "5m";
     };
   };
 
