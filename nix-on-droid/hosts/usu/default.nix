@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
-
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   # TODO: Remote building
   # https://github.com/nix-community/nix-on-droid/issues/62
 
@@ -10,12 +13,12 @@
 
   # HACK: DNS ersolution fix
   # https://github.com/ettom/dnshack
-  home.file.".bashrc".text =
-    let dnshack = pkgs.callPackage (builtins.fetchTarball "https://github.com/ettom/dnshack/tarball/master") { };
-    in ''
-      export DNSHACK_RESOLVER_CMD="${dnshack}/bin/dnshackresolver"
-      export LD_PRELOAD="${dnshack}/lib/libdnshackbridge.so"
-    '';
+  home.file.".bashrc".text = let
+    dnshack = pkgs.callPackage (builtins.fetchTarball "https://github.com/ettom/dnshack/tarball/master") {};
+  in ''
+    export DNSHACK_RESOLVER_CMD="${dnshack}/bin/dnshackresolver"
+    export LD_PRELOAD="${dnshack}/lib/libdnshackbridge.so"
+  '';
 
   # Simply install just the packages
   environment.packages = with pkgs; [
@@ -42,5 +45,4 @@
 
   # Set your time zone
   #time.timeZone = "Europe/Berlin";
-
 }

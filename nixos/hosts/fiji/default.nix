@@ -1,4 +1,11 @@
-{ config, pkgs, inputs, lib, modulesPath, ... }: {
+{
+  config,
+  pkgs,
+  inputs,
+  lib,
+  modulesPath,
+  ...
+}: {
   imports = [
     ../../profiles/global
     ../../profiles/sound
@@ -36,7 +43,7 @@
     displayManager.defaultSession = "xfce";
   };
 
-  boot.supportedFilesystems = [ "xfs" ];
+  boot.supportedFilesystems = ["xfs"];
   networking.hostName = "fiji";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
@@ -52,9 +59,9 @@
   };
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
+  boot.initrd.kernelModules = [];
+  boot.kernelModules = ["kvm-intel"];
 
   # HACK: using `fileSystems` with bcachefs does not seem to work yet.
   # systemd.services.mountSnowscape = {
@@ -71,19 +78,19 @@
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
     fsType = "btrfs";
-    options = [ "subvol=root" "compress=zstd" ];
+    options = ["subvol=root" "compress=zstd"];
   };
 
   fileSystems."/home" = {
     device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
     fsType = "btrfs";
-    options = [ "subvol=home" "compress=zstd" ];
+    options = ["subvol=home" "compress=zstd"];
   };
 
   fileSystems."/nix" = {
     device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
     fsType = "btrfs";
-    options = [ "subvol=nix" "compress=zstd" "noatime" ];
+    options = ["subvol=nix" "compress=zstd" "noatime"];
   };
 
   fileSystems."/boot" = {
@@ -96,9 +103,11 @@
     fsType = "xfs";
   };
 
-  swapDevices = [{
-    device = "/dev/disk/by-label/swap";
-  }];
+  swapDevices = [
+    {
+      device = "/dev/disk/by-label/swap";
+    }
+  ];
 
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
@@ -121,7 +130,7 @@
 
   fileSystems."/home/simonwjackson/documents" = {
     device = "/glacier/snowscape/documents";
-    options = [ "bind" ];
+    options = ["bind"];
   };
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";

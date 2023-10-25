@@ -6,34 +6,32 @@
       confirmOnQuit = false;
       customCommands = [
         {
-          command =
-            "[[ ''$TMUX ]] && tmux display-popup -E -e PATH=''$PATH -d \"''$(pwd)\" git gpt || git gpt";
+          command = "[[ ''$TMUX ]] && tmux display-popup -E -e PATH=''$PATH -d \"''$(pwd)\" git gpt || git gpt";
           context = "global";
           description = "GPT Commit";
           key = "G";
           subprocess = true;
         }
         {
-          command =
-            "[[ ''$TMUX ]] && tmux display-popup -E -e PATH=''$PATH -d \"''$(pwd)\" git trunkit {{index .PromptResponses 0}} || git trunkit {{index .PromptResponses 0}}";
+          command = "[[ ''$TMUX ]] && tmux display-popup -E -e PATH=''$PATH -d \"''$(pwd)\" git trunkit {{index .PromptResponses 0}} || git trunkit {{index .PromptResponses 0}}";
           context = "global";
           description = "Trunkit!";
           key = "t";
-          prompts = [{
-            title = "Trunkit: Message";
-            type = "input";
-          }];
+          prompts = [
+            {
+              title = "Trunkit: Message";
+              type = "input";
+            }
+          ];
         }
       ];
       disableStartupPopups = false;
       git = {
-        allBranchesLogCmd =
-          "git log --graph --all --color=always --abbrev-commit --decorate --date=relative  --pretty=medium";
+        allBranchesLogCmd = "git log --graph --all --color=always --abbrev-commit --decorate --date=relative  --pretty=medium";
         autoFetch = true;
         autoRefresh = true;
-        branchLogCmd =
-          "git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --";
-        commit = { signOff = false; };
+        branchLogCmd = "git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --";
+        commit = {signOff = false;};
         disableForcePushing = false;
         fetchAll = true;
         log = {
@@ -41,7 +39,7 @@
           showGraph = "when-maximised";
           showWholeGraph = false;
         };
-        mainBranches = [ "master" "main" ];
+        mainBranches = ["master" "main"];
         merging = {
           args = "";
           manualCommit = false;
@@ -59,7 +57,7 @@
         animateExplosion = true;
         border = "rounded";
         commandLogSize = 8;
-        commitLength = { show = true; };
+        commitLength = {show = true;};
         expandFocusedSidePanel = false;
         language = "auto";
         mainPanelSplitMode = "flexible";
@@ -84,16 +82,16 @@
         skipStashWarning = false;
         splitDiff = "auto";
         theme = {
-          activeBorderColor = [ "green" "bold" ];
-          inactiveBorderColor = [ "white" ];
-          searchingActiveBorderColor = [ "cyan" "bold" ];
-          optionsTextColor = [ "blue" ];
-          selectedLineBgColor = [ "blue" ];
-          selectedRangeBgColor = [ "blue" ];
-          cherryPickedCommitBgColor = [ "cyan" ];
-          cherryPickedCommitFgColor = [ "blue" ];
-          unstagedChangesColor = [ "red" ];
-          defaultFgColor = [ "default" ];
+          activeBorderColor = ["green" "bold"];
+          inactiveBorderColor = ["white"];
+          searchingActiveBorderColor = ["cyan" "bold"];
+          optionsTextColor = ["blue"];
+          selectedLineBgColor = ["blue"];
+          selectedRangeBgColor = ["blue"];
+          cherryPickedCommitBgColor = ["cyan"];
+          cherryPickedCommitFgColor = ["blue"];
+          unstagedChangesColor = ["red"];
+          defaultFgColor = ["default"];
         };
         timeFormat = "02 Jan 06";
         windowSize = "normal";
@@ -114,7 +112,7 @@
           viewGitFlowOptions = "i";
           viewPullRequestOptions = "O";
         };
-        commitFiles = { checkoutCommitFile = "c"; };
+        commitFiles = {checkoutCommitFile = "c";};
         commits = {
           amendToCommit = "A";
           checkoutCommit = "<space>";
@@ -200,7 +198,7 @@
           gotoBottom = ">";
           gotoTop = "<";
           increaseContextInDiffView = "}";
-          jumpToBlock = [ "1" "2" "3" "4" "5" ];
+          jumpToBlock = ["1" "2" "3" "4" "5"];
           new = "n";
           nextBlock = "<right>";
           nextItem = "<down>";
@@ -328,8 +326,7 @@
       # Graph log all as shortlist: tag/branch/labelled commits.
       las = "log --graph --decorate --oneline --all --simplify-by-decoration";
       # Graph who and when.
-      lw =
-        "log --color --graph --pretty=format:'%C(214)%h%C(reset)%C(196)%d%C(reset) %s %C(35)(%cr)%C(27) <%an>%C(reset)'";
+      lw = "log --color --graph --pretty=format:'%C(214)%h%C(reset)%C(196)%d%C(reset) %s %C(35)(%cr)%C(27) <%an>%C(reset)'";
       # Escape < and > for github markdown, (useful for generating changelogs).
       changelog = ''
         ! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit "$@" | perl -0 -p -e 's/(^|[^\\])([<>])/\1\\\2/g ; s/(\s*\n)+\*/\n*/g' #'';
@@ -355,8 +352,7 @@
         <list>"; }; f'';
 
       # Squash all unpushed commits with a new message
-      squash =
-        "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
+      squash = "! git reset --soft HEAD~$(git log origin/main..main | grep commit | wc -l | awk '{$1=$1};1') && git commit";
       s = "squash";
 
       trunkit = ''
@@ -364,8 +360,7 @@
 
       # Worktree
       wtl = "worktree list";
-      wta =
-        "!f() { git show-ref --verify --quiet refs/heads/$1; local_branch_exists=$?; git ls-remote --exit-code --heads origin $1 > /dev/null 2>&1; remote_branch_exists=$?; if [ $local_branch_exists -eq 0 ]; then git worktree add $1 $1; elif [ $remote_branch_exists -eq 0 ]; then git worktree add -b $1 --track origin/$1 $1; else git worktree add -b $1 $1; fi }; f";
+      wta = "!f() { git show-ref --verify --quiet refs/heads/$1; local_branch_exists=$?; git ls-remote --exit-code --heads origin $1 > /dev/null 2>&1; remote_branch_exists=$?; if [ $local_branch_exists -eq 0 ]; then git worktree add $1 $1; elif [ $remote_branch_exists -eq 0 ]; then git worktree add -b $1 --track origin/$1 $1; else git worktree add -b $1 $1; fi }; f";
       wtr = ''
         !f() { printf "Are you sure you want to remove branch (local & remote)? (y/n) " && read -r REPLY && [ "$REPLY" = "y" -o "$REPLY" = "Y" ] && git worktree remove "$1" && git worktree prune && git branch -D "$1" && git push origin --delete "$1"; }; f'';
       wtc = ''
@@ -373,18 +368,18 @@
     };
 
     extraConfig = {
-      difftool = { prompt = false; };
+      difftool = {prompt = false;};
 
-      diff = { tool = "vimdiff"; };
+      diff = {tool = "vimdiff";};
 
-      push = { default = "current"; };
+      push = {default = "current";};
 
-      pull = { ff = "only"; };
+      pull = {ff = "only";};
 
-      init = { defaultBranch = "main"; };
+      init = {defaultBranch = "main";};
 
       safe = {
-        directory = [ "/etc/nixos" "/home/simonwjackson/nix-config" ];
+        directory = ["/etc/nixos" "/home/simonwjackson/nix-config"];
       };
     };
 
@@ -404,7 +399,7 @@
       # VIM session
       "Session.vim"
 
-      # VIM: netrw.vim: Network oriented reading, writing, browsing (eg: ftp scp) 
+      # VIM: netrw.vim: Network oriented reading, writing, browsing (eg: ftp scp)
       ".netrwhist"
     ];
   };

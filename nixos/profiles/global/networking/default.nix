@@ -1,6 +1,10 @@
-{ config, inputs, pkgs, lib, ... }:
-
 {
+  config,
+  inputs,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ./autofs.nix
     ./firewall.nix

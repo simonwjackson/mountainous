@@ -1,9 +1,12 @@
-{ config, pkgs, lib, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.programs.xpo;
   package = pkgs.xpo;
-in
-{
+in {
   options.programs.xpo = {
     enable = lib.mkEnableOption "xpo";
 
@@ -18,7 +21,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home = {
-      packages = [ package ];
+      packages = [package];
       sessionVariables.XPO_SERVER = lib.optionalString (cfg.defaultServer != null) cfg.defaultServer;
     };
   };

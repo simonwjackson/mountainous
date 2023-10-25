@@ -1,4 +1,8 @@
-{ lib, config, ... }: {
+{
+  lib,
+  config,
+  ...
+}: {
   programs.beets = {
     enable = true;
     settings = {
@@ -6,7 +10,7 @@
         strong_rec_thresh = 0.20;
       };
 
-      clutter = [ "*" ];
+      clutter = ["*"];
       plugins = lib.strings.concatStringsSep " " [
         "bpd"
         "export"
@@ -20,7 +24,7 @@
 
       duplicates = {
         tiebreak = {
-          items = [ "bitrate" ];
+          items = ["bitrate"];
         };
       };
 

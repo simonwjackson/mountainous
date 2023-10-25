@@ -1,9 +1,12 @@
-{ config, pkgs, lib, ... }:
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.programs.vinyl-vault;
   package = pkgs.vinyl-vault;
-in
-{
+in {
   options.programs.vinyl-vault = {
     enable = lib.mkEnableOption "vinyl-vault";
 
@@ -11,14 +14,14 @@ in
       default = null;
       type = with lib.types; nullOr str;
       description = ''
-        
+
       '';
     };
   };
 
   config = lib.mkIf cfg.enable {
     home = {
-      packages = [ package ];
+      packages = [package];
       sessionVariables.VINYL_VAULT_DOWNLOAD_DIR = lib.optionalString (cfg.rootDownloadPath != null) cfg.rootDownloadPath;
     };
   };

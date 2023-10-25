@@ -1,6 +1,10 @@
-{ age, config, lib, pkgs, ... }:
-
 {
+  age,
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ../../global
   ];

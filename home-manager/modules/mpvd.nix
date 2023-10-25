@@ -1,17 +1,19 @@
-{ config, lib, pkgs, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
   cfg = config.services.mpvd;
   mpv = "${pkgs.mpv}/bin/mpv";
-in
-{
+in {
   options.services.mpvd = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
       description = ''
         Whether to enable the MPV background service.
-        
+
         Once the service is running, you can interact with it by sending commands to the socket specified by `socketLocation`.
         For example, you can use `echo '{ "command": ["play"] }' | socat - $MPVD_SOCKET_PATH` to start playback.
       '';
@@ -41,7 +43,7 @@ in
         PrivateTmp = true;
       };
       Install = {
-        WantedBy = [ "graphical-session.target" ];
+        WantedBy = ["graphical-session.target"];
       };
     };
   };

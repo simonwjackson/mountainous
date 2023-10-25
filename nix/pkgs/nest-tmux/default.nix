@@ -1,18 +1,18 @@
-{ bash
-, coreutils
-, fd
-, findutils
-, fzf
-, gawk
-, gnused
-, jq
-, nettools
-, pkgs
-, resholve
-, stdenv
-, tmux
+{
+  bash,
+  coreutils,
+  fd,
+  findutils,
+  fzf,
+  gawk,
+  gnused,
+  jq,
+  nettools,
+  pkgs,
+  resholve,
+  stdenv,
+  tmux,
 }:
-
 resholve.mkDerivation {
   pname = "nest-tmux";
   version = "unstable";
@@ -81,7 +81,6 @@ resholve.mkDerivation {
   #   platforms = platforms.linux;
   # };
 }
-
 # let
 #   host-config = pkgs.writeTextDir "etc/nest-tmux/host.config.tmux.conf" (builtins.readFile ./src/etc/nest-tmux/host.tmux.conf);
 #   remote-config = pkgs.writeTextDir "etc/nest-tmux/remote.config.tmux.conf" (builtins.readFile ./src/etc/nest-tmux/remote.tmux.conf);
@@ -106,8 +105,6 @@ resholve.mkDerivation {
 #     remote-config
 #   ];
 # }
-
-
 # stdenv.mkDerivation rec {
 #   name = "nest-tmux";
 #   src = ./src;
@@ -154,3 +151,4 @@ resholve.mkDerivation {
 #     # cp $src/*.tmux.conf $out/etc/nest-tmux
 #   '';
 # }
+

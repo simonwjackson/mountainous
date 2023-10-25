@@ -1,6 +1,11 @@
-{ config, pkgs, inputs, lib, modulesPath, ... }:
-
-let
+{
+  config,
+  pkgs,
+  inputs,
+  lib,
+  modulesPath,
+  ...
+}: let
   enp1s0 = {
     mac = "40:62:31:12:ac:8f";
     name = "lan";
@@ -17,8 +22,7 @@ let
     mac = "40:62:31:12:ac:92";
     name = "wan";
   };
-in
-{
+in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
@@ -32,25 +36,22 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.efi.efiSysMountPoint = "/boot/efi";
-  boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "ehci_pci" "usbhid" "usb_storage" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
+  boot.initrd.availableKernelModules = ["ahci" "xhci_pci" "ehci_pci" "usbhid" "usb_storage" "sd_mod"];
+  boot.initrd.kernelModules = [];
+  boot.kernelModules = ["kvm-intel"];
+  boot.extraModulePackages = [];
 
-  fileSystems."/" =
-    {
-      device = "/dev/disk/by-uuid/0cac5392-d283-4522-9905-9bd25c0d6a10";
-      fsType = "ext4";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/0cac5392-d283-4522-9905-9bd25c0d6a10";
+    fsType = "ext4";
+  };
 
-  fileSystems."/boot/efi" =
-    {
-      device = "/dev/disk/by-uuid/A767-7F22";
-      fsType = "vfat";
-    };
+  fileSystems."/boot/efi" = {
+    device = "/dev/disk/by-uuid/A767-7F22";
+    fsType = "vfat";
+  };
 
-  swapDevices =
-    [{ device = "/dev/disk/by-uuid/7b5f0141-23f7-4e88-a6b1-2fa7f1752443"; }];
+  swapDevices = [{device = "/dev/disk/by-uuid/7b5f0141-23f7-4e88-a6b1-2fa7f1752443";}];
 
   time.timeZone = "America/Chicago";
 
@@ -69,7 +70,7 @@ in
     ];
   };
 
-  networking.firewall.trustedInterfaces = lib.mkAfter [ "lan" "raiden" "server" "mtn" ];
+  networking.firewall.trustedInterfaces = lib.mkAfter ["lan" "raiden" "server" "mtn"];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
@@ -146,11 +147,13 @@ in
   };
 
   networking.nat.enable = true;
-  networking.nat.internalInterfaces = [ "lan" "mtn" ];
+  networking.nat.internalInterfaces = ["lan" "mtn"];
   networking.nat.externalInterface = "wan";
 
-  networking.interfaces.lan.ipv4.addresses = [{
-    address = "192.18.1.1";
-    prefixLength = 24;
-  }];
+  networking.interfaces.lan.ipv4.addresses = [
+    {
+      address = "192.18.1.1";
+      prefixLength = 24;
+    }
+  ];
 }

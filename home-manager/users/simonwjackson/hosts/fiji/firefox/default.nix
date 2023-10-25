@@ -1,6 +1,4 @@
-{ pkgs, ... }:
-
-{
+{pkgs, ...}: {
   home.file."./.config/tridactyl/tridactylrc" = {
     source = ./tridactylrc;
   };

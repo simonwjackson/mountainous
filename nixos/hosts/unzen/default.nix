@@ -1,4 +1,12 @@
-{ config, pkgs, inputs, lib, modulesPath, age, ... }: {
+{
+  config,
+  pkgs,
+  inputs,
+  lib,
+  modulesPath,
+  age,
+  ...
+}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
@@ -14,19 +22,19 @@
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
     fsType = "btrfs";
-    options = [ "subvol=root" ];
+    options = ["subvol=root"];
   };
 
   fileSystems."/home" = {
     device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
     fsType = "btrfs";
-    options = [ "subvol=home" ];
+    options = ["subvol=home"];
   };
 
   fileSystems."/nix" = {
     device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
     fsType = "btrfs";
-    options = [ "subvol=nix" ];
+    options = ["subvol=nix"];
   };
 
   fileSystems."/boot" = {
@@ -37,7 +45,7 @@
   fileSystems."/glacier/iceberg" = {
     device = "/dev/disk/by-label/iceberg";
     fsType = "btrfs";
-    options = [ "compress=zstd" "noatime" "autodefrag" "space_cache=v2" ];
+    options = ["compress=zstd" "noatime" "autodefrag" "space_cache=v2"];
   };
 
   systemd.services.mountSnowscape = {
@@ -45,13 +53,13 @@
       install -d -o simonwjackson -g users -m 770 /glacier/snowscape
       ${pkgs.util-linux}/bin/mountpoint -q /glacier/snowscape || ${pkgs.mount}/bin/mount -t bcachefs /dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0RA01126_1-part1:/dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650_1-part1:/dev/disk/by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C-part1:/dev/disk/by-id/ata-WDC_WD80EFBX-68AZZN0_VRJVWS3K-part1:/dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH3KRAG-part1:/dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH13XMG-part1:/dev/disk/by-partuuid/4c63c6a0-ca41-e64f-bf66-1b8ea170e5f9:/dev/disk/by-partuuid/a65978da-998d-db4c-aaef-d7e3321d11c3:/dev/disk/by-partuuid/99bd5d36-9353-4754-837b-008e0d92fe28:/dev/disk/by-partuuid/1627228d-5821-3a40-8e29-0d48928b5852 /glacier/snowscape
     '';
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "oneshot";
     };
   };
 
-  swapDevices = [ ];
+  swapDevices = [];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
@@ -67,11 +75,11 @@
   # hardware.opengl.enable = true;
   # services.xserver.videoDrivers = [ "nvidia" ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-intel" ];
-  boot.extraModulePackages = [ ];
-  boot.supportedFilesystems = [ "bcachefs" ];
+  boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod"];
+  boot.initrd.kernelModules = [];
+  boot.kernelModules = ["kvm-intel"];
+  boot.extraModulePackages = [];
+  boot.supportedFilesystems = ["bcachefs"];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -91,11 +99,10 @@
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
-
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.simonwjackson = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
+    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       mpv
       neovim
@@ -134,7 +141,7 @@
     script = ''
       install -d -o nobody -g nogroup -m 770 /export
     '';
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "oneshot";
     };
@@ -142,12 +149,12 @@
 
   fileSystems."/export/snowscape" = {
     device = "/glacier/snowscape";
-    options = [ "bind" ];
+    options = ["bind"];
   };
 
   fileSystems."/home/simonwjackson/code" = {
     device = "/glacier/snowscape/code";
-    options = [ "bind" ];
+    options = ["bind"];
   };
 
   services.nfs.server = {
@@ -210,7 +217,7 @@
       encryption.mode = "none";
       compression = "zstd,22";
       startAt = "daily"; # every day
-      exclude = [ ];
+      exclude = [];
       prune = {
         keep = {
           within = "30d";
@@ -265,19 +272,19 @@
   # };
 
   services.printing.enable = true;
-  services.printing.drivers = with pkgs; [ brlaser ];
+  services.printing.drivers = with pkgs; [brlaser];
 
   # Enable automatic discovery of the printer from other Linux systems with avahi running.
   services.avahi.enable = true;
   services.avahi.publish.enable = true;
   services.avahi.publish.userServices = true;
   services.printing.browsing = true;
-  services.printing.listenAddresses = [ "*:631" ]; # Not 100% sure this is needed and you might want to restrict to the local network
-  services.printing.allowFrom = [ "all" ]; # this gives access to anyone on the interface you might want to limit it see the official documentation
+  services.printing.listenAddresses = ["*:631"]; # Not 100% sure this is needed and you might want to restrict to the local network
+  services.printing.allowFrom = ["all"]; # this gives access to anyone on the interface you might want to limit it see the official documentation
   services.printing.defaultShared = true; # If you want
 
   networking.firewall.enable = lib.mkForce false;
 
-  networking.firewall.allowedUDPPorts = [ 631 ];
-  networking.firewall.allowedTCPPorts = [ 631 ];
+  networking.firewall.allowedUDPPorts = [631];
+  networking.firewall.allowedTCPPorts = [631];
 }

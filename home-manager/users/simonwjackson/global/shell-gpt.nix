@@ -1,8 +1,13 @@
-{ config, age, inputs, pkgs, rootPath, ... }:
-let
-  shellGptRoot = "./.config/shell_gpt";
-in
 {
+  config,
+  age,
+  inputs,
+  pkgs,
+  rootPath,
+  ...
+}: let
+  shellGptRoot = "./.config/shell_gpt";
+in {
   age.secrets.user-simonwjackson-openai-api-key.file = rootPath + /secrets/user-simonwjackson-openai-api-key.age;
   home.sessionVariables.OPENAI_API_KEY = "$(${pkgs.coreutils}/bin/cat ${config.age.secrets.user-simonwjackson-openai-api-key.path})";
 

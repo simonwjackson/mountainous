@@ -1,11 +1,13 @@
-{ outputs, lib, config, ... }:
-
-let
+{
+  outputs,
+  lib,
+  config,
+  ...
+}: let
   inherit (config.networking) hostName;
   hosts = outputs.nixosConfigurations;
   pubKey = host: builtins.readFile ../../../hosts/${host}/ssh_host_rsa_key.pub;
-in
-{
+in {
   services.openssh = {
     enable = true;
     openFirewall = false;
@@ -23,11 +25,13 @@ in
 
   programs.ssh = {
     # Each hosts public key
-    knownHosts = builtins.mapAttrs
+    knownHosts =
+      builtins.mapAttrs
       (name: _: {
         publicKey = pubKey name;
         extraHostNames =
-          (lib.optional (name == hostName) "localhost") ++ [
+          (lib.optional (name == hostName) "localhost")
+          ++ [
             "${name}.hummingbird-lake.ts.net"
             "${name}.mountain.ous"
           ];

@@ -1,13 +1,10 @@
-{ config, ... }:
-
-let
+{config, ...}: let
   allowedMacAddresses = [
     "AC:74:B1:8A:DB:EE" # zao
     "D4:D8:53:90:2B:6C" # fiji
     "DC:F0:90:55:42:FD" # usu
   ];
-in
-{
+in {
   networking.firewall = {
     enable = true;
     allowPing = true;

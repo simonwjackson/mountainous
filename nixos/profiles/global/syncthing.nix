@@ -1,6 +1,8 @@
-{ config, lib, ... }:
-
 {
+  config,
+  lib,
+  ...
+}: {
   services.syncthing = {
     overrideDevices = true;
     overrideFolders = true;
@@ -19,32 +21,32 @@
 
       folderSettings = {
         notes = {
-          devices = [ "fiji" "unzen" "yabashi" ];
+          devices = ["fiji" "unzen" "yabashi"];
         };
 
         documents = {
-          devices = [ "fiji" "unzen" "yabashi" ];
+          devices = ["fiji" "unzen" "yabashi"];
         };
 
         audiobooks = {
-          devices = [ "fiji" "unzen" ];
+          devices = ["fiji" "unzen"];
         };
 
         books = {
-          devices = [ "fiji" "unzen" ];
+          devices = ["fiji" "unzen"];
         };
 
         comics = {
-          devices = [ "fiji" "unzen" ];
+          devices = ["fiji" "unzen"];
         };
 
         code = {
-          devices = [ "fiji" ];
+          devices = ["fiji"];
           # devices = [ "fiji" "unzen" "yari" ];
         };
 
         taskwarrior = {
-          devices = [ "fiji" ];
+          devices = ["fiji"];
           # devices = ["fiji" "unzen" "zao" ];
         };
       };
@@ -52,13 +54,13 @@
       # Only setup shares that have been enabled in the host's config file
       folders = lib.mkMerge (
         lib.mapAttrsToList
-          (name: value: {
-            "${name}" = {
-              path = value;
-              devices = config.services.syncthing.settings.folderSettings."${name}".devices;
-            };
-          })
-          config.services.syncthing.settings.paths
+        (name: value: {
+          "${name}" = {
+            path = value;
+            devices = config.services.syncthing.settings.folderSettings."${name}".devices;
+          };
+        })
+        config.services.syncthing.settings.paths
       );
 
       devices = {
@@ -104,12 +106,10 @@
 # gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
 # gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
 # gaming-systems.path = "/glacier/snowscape/gaming/systems";
-
 # gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
 # gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
 # gaming-profiles.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
 # gaming-systems.devices = [ "fiji" "unzen" "zao" ];
-
 # gaming-profiles.versioning = {
 #   type = "staggered";
 #   params = {
@@ -117,3 +117,4 @@
 #     maxAge = "31536000";
 #   };
 # };
+

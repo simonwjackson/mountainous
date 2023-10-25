@@ -1,4 +1,10 @@
-{ config, pkgs, modulesPath, lib, ... }: {
+{
+  config,
+  pkgs,
+  modulesPath,
+  lib,
+  ...
+}: {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
     ../../profiles/global
@@ -15,19 +21,21 @@
     loader.grub.device = "/dev/vda";
 
     initrd = {
-      availableKernelModules = [ "ata_piix" "uhci_hcd" "xen_blkfront" "vmw_pvscsi" ];
-      kernelModules = [ "nvme" ];
+      availableKernelModules = ["ata_piix" "uhci_hcd" "xen_blkfront" "vmw_pvscsi"];
+      kernelModules = ["nvme"];
     };
   };
 
-  fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
-  swapDevices = [{ device = "/dev/vda2"; }];
+  fileSystems."/" = {
+    device = "/dev/vda1";
+    fsType = "ext4";
+  };
+  swapDevices = [{device = "/dev/vda2";}];
   zramSwap.enable = false;
 
   networking.hostName = "yabashi";
 
   environment.systemPackages = with pkgs; [
-
   ];
 
   services.syncthing = {

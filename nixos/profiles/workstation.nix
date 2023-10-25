@@ -1,6 +1,8 @@
-{ pkgs, lib, ... }:
-
 {
+  pkgs,
+  lib,
+  ...
+}: {
   services.udev.packages = [
     pkgs.android-udev-rules
   ];

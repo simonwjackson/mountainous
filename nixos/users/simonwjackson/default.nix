@@ -1,12 +1,14 @@
-{ pkgs, config, inputs, outputs, ... }:
-let
-  username = builtins.baseNameOf ./.;
-  ifTheyExist =
-    groups: builtins.filter (group: builtins.hasAttr group config.users.groups) groups;
-in
 {
+  pkgs,
+  config,
+  inputs,
+  outputs,
+  ...
+}: let
+  username = builtins.baseNameOf ./.;
+  ifTheyExist = groups: builtins.filter (group: builtins.hasAttr group config.users.groups) groups;
+in {
   imports = [
-
   ];
 
   age.secrets."user-${username}".file = ../../../secrets/user-${username}.age;
@@ -15,14 +17,18 @@ in
 
   security.sudo = {
     wheelNeedsPassword = false;
-    extraRules = [{
-      users = [ username ];
+    extraRules = [
+      {
+        users = [username];
 
-      commands = [{
-        command = "ALL";
-        options = [ "NOPASSWD" "SETENV" ];
-      }];
-    }];
+        commands = [
+          {
+            command = "ALL";
+            options = ["NOPASSWD" "SETENV"];
+          }
+        ];
+      }
+    ];
   };
 
   # Move up one level. ex: default.nix
@@ -64,8 +70,7 @@ in
     packages = with pkgs; [
       home-manager
     ];
-
   };
 
-  environment.pathsToLink = [ "/share/zsh" ];
+  environment.pathsToLink = ["/share/zsh"];
 }

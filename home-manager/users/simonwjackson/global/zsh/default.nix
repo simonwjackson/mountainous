@@ -1,6 +1,9 @@
-{ config, pkgs, lib, ... }:
-
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ./p10k
   ];
@@ -45,14 +48,14 @@
       save = 999999;
       share = true;
       path = "${config.xdg.dataHome}/zsh/history";
-      ignorePatterns = [ "rm *" "pkill *" ];
+      ignorePatterns = ["rm *" "pkill *"];
     };
 
     zplug = {
       enable = true;
       plugins = [
-        { name = "zsh-users/zsh-syntax-highlighting"; }
-        { name = "zsh-users/zsh-autosuggestions"; } # Simple plugin installation
+        {name = "zsh-users/zsh-syntax-highlighting";}
+        {name = "zsh-users/zsh-autosuggestions";} # Simple plugin installation
         # { name = "romkatv/powerlevel10k"; tags = [ as:theme depth:1 ]; } # Installations with additional options. For the list of options, please refer to Zplug README.
       ];
     };

@@ -1,6 +1,8 @@
-{ config, pkgs, ... }:
-
 {
+  config,
+  pkgs,
+  ...
+}: {
   home.shellAliases = {
     lt = "eza -lT";
     lat = "eza -laT";

@@ -1,24 +1,26 @@
-{ inputs
-, outputs
-, lib
-, config
-, pkgs
-, age
-, rootPath
-, ...
+{
+  inputs,
+  outputs,
+  lib,
+  config,
+  pkgs,
+  age,
+  rootPath,
+  ...
 }: {
-  imports = [
-    inputs.nix-colors.homeManagerModules.default
-    inputs.agenix.homeManagerModules.age
-    ./git.nix
-    ./shell-gpt.nix
-    ./eza.nix
-    ./lf
-    ./neovim
-    ./tmux
-    ./zsh
-  ]
-  ++ (builtins.attrValues outputs.homeManagerModules);
+  imports =
+    [
+      inputs.nix-colors.homeManagerModules.default
+      inputs.agenix.homeManagerModules.age
+      ./git.nix
+      ./shell-gpt.nix
+      ./eza.nix
+      ./lf
+      ./neovim
+      ./tmux
+      ./zsh
+    ]
+    ++ (builtins.attrValues outputs.homeManagerModules);
 
   age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
   age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
@@ -59,7 +61,8 @@
           repo = "sublime"; # Bat uses sublime syntax for its themes
           rev = "26c57ec282abcaa76e57e055f38432bd827ac34e";
           sha256 = "019hfl4zbn4vm4154hh3bwk6hm7bdxbr1hdww83nabxwjn99ndhv";
-        } + "/Dracula.tmTheme");
+        }
+        + "/Dracula.tmTheme");
     };
 
     config = {

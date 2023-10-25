@@ -1,4 +1,11 @@
-{ config, pkgs, inputs, lib, modulesPath, ... }: {
+{
+  config,
+  pkgs,
+  inputs,
+  lib,
+  modulesPath,
+  ...
+}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
@@ -39,7 +46,7 @@
     "sd_mod"
     # "rtsx_pci_sdmmc"
   ];
-  boot.initrd.kernelModules = [ ];
+  boot.initrd.kernelModules = [];
   boot.kernelModules = [
     "kvm-intel"
     "uinput"
@@ -63,25 +70,25 @@
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
     fsType = "btrfs";
-    options = [ "subvol=root" "compress=zstd" ];
+    options = ["subvol=root" "compress=zstd"];
   };
 
   fileSystems."/home" = {
     device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
     fsType = "btrfs";
-    options = [ "subvol=home" "compress=zstd" ];
+    options = ["subvol=home" "compress=zstd"];
   };
 
   fileSystems."/glacier/snowscape" = {
     device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
     fsType = "btrfs";
-    options = [ "subvol=storage" "compress=zstd" ];
+    options = ["subvol=storage" "compress=zstd"];
   };
 
   fileSystems."/nix" = {
     device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
     fsType = "btrfs";
-    options = [ "subvol=nix" "compress=zstd" "noatime" ];
+    options = ["subvol=nix" "compress=zstd" "noatime"];
   };
 
   fileSystems."/boot" = {
@@ -89,14 +96,14 @@
     fsType = "vfat";
   };
 
-  swapDevices = [{ device = "/dev/nvme0n1p2"; }];
+  swapDevices = [{device = "/dev/nvme0n1p2";}];
 
   # Includes the Wi-Fi and Bluetooth firmware
   hardware.enableRedistributableFirmware = true;
 
   # hardware.opengl.enable = true;
   hardware.nvidia.prime.offload.enable = lib.mkForce true;
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = ["nvidia"];
 
   # Optionally, you may need to select the appropriate driver version for your specific GPU.
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.production;
@@ -131,7 +138,6 @@
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
-
   # Enable the Plasma 5 Desktop Environment.
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
@@ -150,7 +156,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.simonwjackson = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     packages = with pkgs; [
       firefox
       git

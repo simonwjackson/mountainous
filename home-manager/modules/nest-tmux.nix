@@ -1,15 +1,17 @@
-{ config, pkgs, lib, ... }:
-
-let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   cfg = config.programs.nest-tmux;
   package = pkgs.nest-tmux;
-in
-{
+in {
   options.programs.nest-tmux = {
     enable = lib.mkEnableOption "nest-tmux";
 
     servers = lib.mkOption {
-      default = [ "unzen" "fiji" ];
+      default = ["unzen" "fiji"];
       type = with lib.types; listOf str; # list of strings
       description = ''
         Show a list of all servers that can be switched to
@@ -19,7 +21,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home = {
-      packages = [ package ];
+      packages = [package];
       sessionVariables.TMUX_ALL_SERVERS = builtins.concatStringsSep "\n" cfg.servers;
     };
   };

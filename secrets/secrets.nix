@@ -2,7 +2,7 @@ let
   # simonwjackson = (builtins.readFile ../users/simonwjackson/id_rsa.pub);
   simonwjackson = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ==";
 
-  users = [ simonwjackson ];
+  users = [simonwjackson];
 
   fiji = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCqiviW+vYBWWD/t9ZjdHMW4nSVmvjC8Qn2XfAAMG3YmEzTXfS7c3HEY0hQeDwfwdLhz7FwAT/mwDeqh7cNDz9wfJgffXKbHdIKINqSSHLAGIyue6AVBtYT3Dy4ERY6xnzbikbcC6c/qWp0zydZaL9DiWR6PTbgyT4gWwr7d4amLjoQ3Nyh0C1zujFRjt0jMXNeRK5ziIAVoA1jPjJLhgw9E5MhH2j0t02Usatmfwb9cX7G+VQksNTJ58NxhCdDDVuPR/yO2wDb3d5fI33dLXCskE411tRGJLFiRlbbLhiH7FBK6NqUDH29zYNjuzpceEGjuDsnLosriFxuuGXmzq0JwY6zBK3h7w+0FaPmGnZn0gMbqhFx1/8Y+3xkG1GCKUqPgVtaQgiL7+RmAq7npcLnaTG+bV4xicUT4lwbyWo9EhBTTvGgf8DOCaL3dnI6hH64uO0gR4n42KRTwPFnI2sEVRcQ5mD/WEJ6wHfBgOEaHRewwyvRJThNjmD1Xe1Xwbo2opX1Al3jbox6mkK5qEzZ2l2mhMVmspB36VpLb23FFDY58rzy+RkE5aHxw74OQiENHj7gWV0M8xHWkNHsSinVMg1SHZwVWmMuEqLfmX77exZgG1OS4QBJ3Qij8LK7k5o4zoAwPPPnsPv4cVsKX9cd2Zmn0CaHfSq2mXnElybA7Q==";
   # fiji = builtins.readFile ../nixos/hosts/fiji/ssh_host_rsa_key.pub;
@@ -17,9 +17,8 @@ let
   ushiro = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU=";
   # ushiro = builtins.readFile ../nix-darwin/hosts/ushiro/ssh_host_rsa_key.pub;
 
-  systems = [ fiji unzen rakku yabashi zao ushiro ];
-in
-{
+  systems = [fiji unzen rakku yabashi zao ushiro];
+in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
 
@@ -30,12 +29,12 @@ in
   "atuin_key.age".publicKeys = users ++ systems;
   "atuin_session.age".publicKeys = users ++ systems;
 
-  "yabashi-syncthing-key.age".publicKeys = users ++ [ yabashi ];
-  "yabashi-syncthing-cert.age".publicKeys = users ++ [ yabashi ];
+  "yabashi-syncthing-key.age".publicKeys = users ++ [yabashi];
+  "yabashi-syncthing-cert.age".publicKeys = users ++ [yabashi];
 
-  "unzen-syncthing-key.age".publicKeys = users ++ [ unzen ];
-  "unzen-syncthing-cert.age".publicKeys = users ++ [ unzen ];
+  "unzen-syncthing-key.age".publicKeys = users ++ [unzen];
+  "unzen-syncthing-cert.age".publicKeys = users ++ [unzen];
 
-  "fiji-syncthing-key.age".publicKeys = users ++ [ fiji ];
-  "fiji-syncthing-cert.age".publicKeys = users ++ [ fiji ];
+  "fiji-syncthing-key.age".publicKeys = users ++ [fiji];
+  "fiji-syncthing-cert.age".publicKeys = users ++ [fiji];
 }

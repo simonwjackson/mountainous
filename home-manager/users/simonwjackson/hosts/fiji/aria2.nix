@@ -1,6 +1,10 @@
-{ config, age, inputs, pkgs, ... }:
-
 {
+  config,
+  age,
+  inputs,
+  pkgs,
+  ...
+}: {
   age.secrets.aria2-rpc-secret.file = ../../../../../secrets/aria2-rpc-secret.age;
   programs.aria2 = {
     enable = true;
@@ -38,7 +42,7 @@
       Restart = "always";
     };
     Install = {
-      WantedBy = [ "network-online.target" "default.target" ];
+      WantedBy = ["network-online.target" "default.target"];
     };
   };
 }

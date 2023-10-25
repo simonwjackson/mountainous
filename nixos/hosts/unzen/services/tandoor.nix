@@ -1,6 +1,9 @@
-{ config, pkgs, age, ... }:
-
 {
+  config,
+  pkgs,
+  age,
+  ...
+}: {
   age.secrets.tandoor_env.file = ../../../../secrets/tandoor_env.age;
 
   virtualisation.oci-containers.containers = {
@@ -60,14 +63,14 @@
         POSTGRES_USER = "djangodb";
         POSTGRES_DB = "djangodb";
       };
-      ports = [ "0.0.0.0:7426:8080" ];
+      ports = ["0.0.0.0:7426:8080"];
       volumes = [
         "/glacier/snowscape/services/tandoor/mediafiles:/opt/recipes/mediafiles"
         "/glacier/snowscape/services/tandoor/staticfiles:/opt/recipes/staticfiles"
         # Do not make this a bind mount, see https://docs.tandoor.dev/install/docker/#volumes-vs-bind-mounts
         # "nginx_config:/opt/recipes/nginx/conf.d"
       ];
-      dependsOn = [ "tandoor_db" ];
+      dependsOn = ["tandoor_db"];
     };
   };
 }

@@ -1,17 +1,24 @@
 # This file (and the global directory) holds config that i use on all hosts
-{ lib, inputs, outputs, pkgs, config, ... }:
-
 {
-  imports = [
-    inputs.home-manager.nixosModules.home-manager
-    ./networking
-    ./nix.nix
-    ./locale.nix
-    ./printing.nix
-    ./syncthing.nix
-  ] ++ (builtins.attrValues outputs.nixosModules);
+  lib,
+  inputs,
+  outputs,
+  pkgs,
+  config,
+  ...
+}: {
+  imports =
+    [
+      inputs.home-manager.nixosModules.home-manager
+      ./networking
+      ./nix.nix
+      ./locale.nix
+      ./printing.nix
+      ./syncthing.nix
+    ]
+    ++ (builtins.attrValues outputs.nixosModules);
 
-  home-manager.extraSpecialArgs = { inherit inputs outputs; };
+  home-manager.extraSpecialArgs = {inherit inputs outputs;};
 
   # services.flatpak.enable = true;
   services.udisks2.enable = true;

@@ -1,8 +1,14 @@
-{ lib, writeShellApplication, yt-dlp }: (writeShellApplication {
+{
+  lib,
+  writeShellApplication,
+  yt-dlp,
+}:
+(writeShellApplication {
   name = "vinyl-vault";
-  runtimeInputs = [ yt-dlp ];
+  runtimeInputs = [yt-dlp];
   text = builtins.readFile ./vinyl-vault.sh;
-}) // {
+})
+// {
   meta = with lib; {
     licenses = licenses.mit;
     platforms = platforms.all;

@@ -1,4 +1,4 @@
-{ lib, ... }: {
+{lib, ...}: {
   home = {
     sessionVariables = {
       TERMINAL = "kitty";

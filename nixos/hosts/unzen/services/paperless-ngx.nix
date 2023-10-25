@@ -1,6 +1,9 @@
-{ age, config, pkgs, ... }:
-
 {
+  age,
+  config,
+  pkgs,
+  ...
+}: {
   age.secrets.paperless_ngx_env.file = ../../../../secrets/paperless_ngx_env.age;
 
   virtualisation.oci-containers.containers = {
@@ -34,7 +37,7 @@
         "paperless-ngx_db"
         "paperless-ngx_broker"
       ];
-      ports = [ "0.0.0.0:9493:8000" ];
+      ports = ["0.0.0.0:9493:8000"];
       volumes = [
         "/glacier/snowscape/services/paperless-ngx/data:/usr/src/paperless/data"
         "/glacier/snowscape/services/paperless-ngx/media:/usr/src/paperless/media"
