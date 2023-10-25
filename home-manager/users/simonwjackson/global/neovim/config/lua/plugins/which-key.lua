@@ -217,7 +217,7 @@ return {
 				["<A-k>"] = { "<C-w>k", "Window up" },
 
 				-- save
-				["<C-s>"] = { "<cmd>FormatWrite<CR>", "Save file (if modified)" },
+				["<C-s>"] = { ":update<CR>", "Save file (if modified)" },
 
 				-- Allow moving the cursor through wrapped lines with j, k, <Up> and <Down>
 				-- http://www.reddit.com/r/vim/comments/2k4cbr/problem_with_gj_and_gk/

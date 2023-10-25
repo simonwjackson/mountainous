@@ -1,9 +1,42 @@
 -- A format runner for Neovim.
 
+local ecma = {
+	function()
+		return {
+			exe = "prettier",
+			args = {
+				"--config-precedence",
+				"prefer-file",
+				"--stdin-filepath",
+				vim.fn.shellescape(vim.api.nvim_buf_get_name(0)),
+			},
+			stdin = true,
+		}
+	end,
+	function()
+		return {
+			exe = "eslint_d",
+			args = {
+				"--stdin",
+				"--stdin-filename",
+				vim.api.nvim_buf_get_name(0),
+				"--fix-to-stdout",
+			},
+			stdin = true,
+		}
+	end,
+}
+
 return {
 	{
 		"mhartington/formatter.nvim",
 		init = function()
+			vim.api.nvim_command([[
+        augroup FormatAutogroup
+        autocmd!
+          autocmd BufWritePost * FormatWrite
+          augroup END
+      ]])
 			-- Utilities for creating configurations
 			local util = require("formatter.util")
 
@@ -28,6 +61,15 @@ return {
 						-- "lua" filetype
 						require("formatter.filetypes.nix").alejandra,
 					},
+
+					sh = {
+						require("formatter.filetypes.sh").shfmt,
+					},
+
+					typescript = ecma,
+					typescriptreact = ecma,
+					javascript = ecma,
+					javascriptreact = ecma,
 
 					-- Use the special "*" filetype for defining formatter configurations on
 					-- any filetype
