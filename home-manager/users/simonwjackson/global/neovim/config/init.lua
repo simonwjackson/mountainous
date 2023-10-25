@@ -1,6 +1,7 @@
 local opt = vim.opt
 local g = vim.g
 local api = vim.api
+local cmd = vim.api.nvim_command
 
 -------------------------------------- globals -----------------------------------------
 
@@ -95,6 +96,13 @@ require("lazy").setup({
 		"folke/which-key.nvim",
 		init = function()
 			local wk = require("which-key")
+
+      function _G.my_lazygit()
+          cmd("tabnew")
+          cmd("LualineRenameTab LazyGit")
+          cmd("terminal nvr -c 'terminal lazygit' -c 'startinsert' '+let g:auto_session_enabled = v:false'")
+      end
+
 			wk.register({
 				["<A-s>"] = {
 					"<C-\\><C-n>:silent! !tmux choose-tree<cr>",
@@ -104,11 +112,7 @@ require("lazy").setup({
 			}, { mode = "t" })
 
 			wk.register({
-				["<F6>"] = {
-					":tabnew | execute 'LualineRenameTab LazyGit' | term nvr -c 'terminal lazygit' -c 'startinsert' '+let g:auto_session_enabled = v:false'<CR>",
-					"Open lazygit",
-					opts = { nowait = true },
-				},
+				["<leader>gg"] = { _G.my_lazygit, "Open lazygit", opts = { nowait = true } },
 				["<A-s>"] = { ":silent! !tmux choose-tree<cr>", "show tmux sessions", opts = { nowait = true } },
 				["<A-1>"] = { ":silent! tabn 1<cr>", "Go to tab 1", opts = { nowait = true } },
 				["<A-2>"] = { ":silent! tabn 2<cr>", "Go to tab 2", opts = { nowait = true } },
@@ -2125,6 +2129,7 @@ require("lazy").setup({
 })
 
 vim.cmd([[ colorscheme onedark ]])
+vim.cmd([[ autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * if mode() != 'c' | checktime | endif ]])
 
 -- vim.cmd([[
 -- function! Format()
