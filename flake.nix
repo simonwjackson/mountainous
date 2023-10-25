@@ -78,7 +78,7 @@
 
       # Formatter for your nix files, available through 'nix fmt'
       # Other options beside 'alejandra' include 'nixpkgs-fmt'
-      formatter = forEachSystem (pkgs: pkgs.nixpkgs-fmt);
+      formatter = forEachSystem (pkgs: pkgs.alejandra);
 
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild <action> --flake .#your-hostname'
@@ -197,7 +197,7 @@
             # agenix.homeManagerModules.age
           ];
           pkgs = pkgsFor.x86_64-linux // outputs.packages;
-          extraSpecialArgs = commonSpecialArgs;
+    extraSpecialArgs = commonSpecialArgs;
         };
 
         # Laptop
