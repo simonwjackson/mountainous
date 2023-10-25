@@ -1,4 +1,13 @@
 -- A format runner for Neovim.
+local shell = {
+	function()
+		return {
+			exe = "shfmt",
+			args = { "-i", 2 },
+			stdin = true,
+		}
+	end,
+}
 
 local ecma = {
 	function()
@@ -13,6 +22,7 @@ local ecma = {
 			stdin = true,
 		}
 	end,
+
 	function()
 		return {
 			exe = "eslint_d",
@@ -55,14 +65,13 @@ return {
 						require("formatter.filetypes.nix").alejandra,
 					},
 
-					sh = {
-						require("formatter.filetypes.sh").shfmt,
-					},
+					sh = shell,
+					zsh = shell,
 
-					typescript = ecma,
-					typescriptreact = ecma,
-					javascript = ecma,
-					javascriptreact = ecma,
+					ts = ecma,
+					tsx = ecma,
+					js = ecma,
+					jsx = ecma,
 
 					-- Use the special "*" filetype for defining formatter configurations on
 					-- any filetype
@@ -74,12 +83,14 @@ return {
 				},
 			})
 
-			vim.api.nvim_command([[
-        augroup FormatAutogroup
-        autocmd!
-          autocmd BufWritePost * FormatWrite
-          augroup END
-      ]])
+			local formatgroup = vim.api.nvim_create_augroup("FormatAutoGroup", { clear = true })
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				callback = function()
+					vim.cmd("FormatWrite")
+				end,
+				group = formatgroup,
+				desc = "Format document with formatters",
+			})
 		end,
 	},
 }
