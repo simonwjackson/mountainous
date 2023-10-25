@@ -30,14 +30,7 @@ local ecma = {
 return {
 	{
 		"mhartington/formatter.nvim",
-		init = function()
-			vim.api.nvim_command([[
-        augroup FormatAutogroup
-        autocmd!
-          autocmd BufWritePost * FormatWrite
-          augroup END
-      ]])
-			-- Utilities for creating configurations
+		init = function() -- Utilities for creating configurations
 			local util = require("formatter.util")
 
 			-- Provides the Format, FormatWrite, FormatLock, and FormatWriteLock commands
@@ -80,6 +73,13 @@ return {
 					},
 				},
 			})
+
+			vim.api.nvim_command([[
+        augroup FormatAutogroup
+        autocmd!
+          autocmd BufWritePost * FormatWrite
+          augroup END
+      ]])
 		end,
 	},
 }
