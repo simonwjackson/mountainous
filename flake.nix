@@ -54,6 +54,7 @@
         config.allowUnfree = true;
       });
       rootPath = ./.;
+      commonSpecialArgs = { inherit inputs outputs rootPath self; };
     in
     {
       inherit lib;
@@ -84,16 +85,16 @@
       nixosConfigurations = {
         # Main desktop
         fiji = lib.nixosSystem {
+          specialArgs = commonSpecialArgs;
           modules = [
             ./nixos/hosts/fiji
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/fiji;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              home-manager.extraSpecialArgs = commonSpecialArgs;
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath self; };
         };
 
         # Remote Server
@@ -104,10 +105,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/yabashi;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              home-manager.extraSpecialArgs = commonSpecialArgs;
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath self; };
+          specialArgs = commonSpecialArgs;
         };
 
         # Home Server
@@ -118,10 +119,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/unzen;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              home-manager.extraSpecialArgs = commonSpecialArgs;
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath self; };
+          specialArgs = commonSpecialArgs;
         };
 
         # router
@@ -132,10 +133,10 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/rakku;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              home-manager.extraSpecialArgs = commonSpecialArgs;
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath self; };
+          specialArgs = commonSpecialArgs;
         };
 
         # portable gaming rig
@@ -147,23 +148,23 @@
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/zao;
-              home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              home-manager.extraSpecialArgs = commonSpecialArgs;
             }
           ];
-          specialArgs = { inherit inputs outputs rootPath self; };
+          specialArgs = commonSpecialArgs;
         };
       };
 
       # Build darwin flake using:
       # $ darwin-rebuild build --flake .#ushiro
       darwinConfigurations."ushiro" = nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit inputs outputs rootPath self; };
+        specialArgs = commonSpecialArgs;
         modules = [
           ./nix-darwin/hosts/ushiro
           agenix.nixosModules.default
           home-manager.darwinModules.home-manager
           {
-            home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
+            home-manager.extraSpecialArgs = commonSpecialArgs;
             home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
           }
         ];
@@ -173,36 +174,31 @@
       darwinPackages = self.darwinConfigurations."ushiro".pkgs;
 
       nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
-        extraSpecialArgs = { inherit inputs outputs rootPath self; };
+        extraSpecialArgs = commonSpecialArgs;
         modules = [
           ./nix-on-droid/hosts/usu
           {
             home-manager = {
               backupFileExtension = "hm-bak";
-              extraSpecialArgs = { inherit inputs outputs rootPath self; };
+              extraSpecialArgs = commonSpecialArgs;
               config = import ./home-manager/users/simonwjackson/hosts/usu;
             };
           }
-          # home-manager.darwinModules.home-manager
-          # {
-          #   home-manager.extraSpecialArgs = { inherit inputs outputs rootPath self; };
-          #   home-manager.users.nix-on-droid = import ./home-manager/users/simonwjackson/hosts/usu;
-          # }
         ];
       };
 
       # Standalone home-manager configuration entrypoint
       # Available through 'home-manager <action> --flake .#simonwjackson'
-      # homeConfigurations = {
-      #   # Desktops
-      #   "simonwjackson@fiji" = lib.homeManagerConfiguration {
-      #     modules = [
-      #       ./home-manager/users/simonwjackson/hosts/fiji
-      #       agenix.homeManagerModules.age
-      #     ];
-      #     pkgs = pkgsFor.x86_64-linux // outputs.packages;
-      #     extraSpecialArgs = { inherit inputs outputs; };
-      #   };
-      # };
+      homeConfigurations = {
+        # Laptop
+        "simonwjackson@fiji" = lib.homeManagerConfiguration {
+          modules = [
+            ./home-manager/users/simonwjackson/hosts/fiji
+            # agenix.homeManagerModules.age
+          ];
+          pkgs = pkgsFor.x86_64-linux // outputs.packages;
+          extraSpecialArgs = commonSpecialArgs;
+        };
+      };
     };
 }
