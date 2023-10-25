@@ -2,6 +2,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
+    ../../profiles/tailscale-exit-node.nix
     ../../profiles/systemd-boot.nix
     ../../users/simonwjackson/default.nix
     ./services/tandoor.nix
@@ -294,6 +295,8 @@
   services.printing.listenAddresses = [ "*:631" ]; # Not 100% sure this is needed and you might want to restrict to the local network
   services.printing.allowFrom = [ "all" ]; # this gives access to anyone on the interface you might want to limit it see the official documentation
   services.printing.defaultShared = true; # If you want
+
+  networking.firewall.enable = lib.mkForce false;
 
   networking.firewall.allowedUDPPorts = [ 631 ];
   networking.firewall.allowedTCPPorts = [ 631 ];
