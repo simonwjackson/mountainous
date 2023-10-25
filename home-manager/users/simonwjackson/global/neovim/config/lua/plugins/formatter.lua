@@ -84,7 +84,7 @@ return {
 			})
 
 			local formatgroup = vim.api.nvim_create_augroup("FormatAutoGroup", { clear = true })
-			vim.api.nvim_create_autocmd("BufWritePre", {
+			vim.api.nvim_create_autocmd("BufWritePost", {
 				callback = function()
 					vim.cmd("FormatWrite")
 				end,
