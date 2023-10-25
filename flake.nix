@@ -162,11 +162,11 @@
         modules = [
           ./nix-darwin/hosts/ushiro
           agenix.nixosModules.default
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.extraSpecialArgs = commonSpecialArgs;
-            home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
-          }
+          # home-manager.darwinModules.home-manager
+          # {
+          #   home-manager.extraSpecialArgs = commonSpecialArgs;
+          #   home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
+          # }
         ];
       };
 
@@ -197,6 +197,16 @@
             # agenix.homeManagerModules.age
           ];
           pkgs = pkgsFor.x86_64-linux // outputs.packages;
+          extraSpecialArgs = commonSpecialArgs;
+        };
+
+        # Laptop
+        "sjackson217@ushiro" = lib.homeManagerConfiguration {
+          modules = [
+            ./home-manager/users/simonwjackson/hosts/ushiro
+            # agenix.homeManagerModules.age
+          ];
+          pkgs = pkgsFor.aarch64-darwin // outputs.packages;
           extraSpecialArgs = commonSpecialArgs;
         };
       };
