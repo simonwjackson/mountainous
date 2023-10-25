@@ -4,7 +4,7 @@ with lib;
 let
   cfg = config.services.tailscaled;
   args = cfg.extraArgs + " "
-    + "--advertise-exit-node=" (if cfg.exit-node then "true" else "false");
+    + "--advertise-exit-node=" + (if cfg.exit-node then "true" else "false");
 in
 {
   options.services.tailscaled = {
