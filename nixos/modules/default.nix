@@ -3,4 +3,5 @@
 {
   vpn-proxy = import ./vpn-proxy.nix;
   sunshine = import ./sunshine.nix;
+  tailscaled = import ./tailscaled.nix;
 }

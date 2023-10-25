@@ -5,6 +5,8 @@
     ../../users/simonwjackson
   ];
 
+  services.tailscaled.exit-node = true;
+
   age.secrets.yabashi-syncthing-key.file = ../../../secrets/yabashi-syncthing-key.age;
   age.secrets.yabashi-syncthing-cert.file = ../../../secrets/yabashi-syncthing-cert.age;
 

@@ -2,12 +2,13 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
-    ../../profiles/tailscale-exit-node.nix
     ../../profiles/systemd-boot.nix
     ../../users/simonwjackson/default.nix
     ./services/tandoor.nix
     ./services/paperless-ngx.nix
   ];
+
+  services.tailscaled.exit-node = true;
 
   age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
   age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
