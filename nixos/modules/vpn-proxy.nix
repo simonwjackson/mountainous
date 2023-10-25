@@ -8,21 +8,6 @@ in
   options.services.vpn-proxy = {
     enable = mkEnableOption "VPN Proxy";
 
-    # steamcmdPackage = mkOption {
-    #   type = types.package;
-    #   default = pkgs.steamcmd;
-    #   defaultText = "pkgs.steamcmd";
-    #   description = ''
-    #     The package implementing SteamCMD
-    #   '';
-    # };
-
-    # dataDir = mkOption {
-    #   type = types.path;
-    #   description = "Directory to store game server";
-    #   default = "/var/lib/satisfactory";
-    # };
-
     host = mkOption {
       type = types.str;
       description = "Remote host";
@@ -45,14 +30,6 @@ in
       type = types.int;
       description = "Local port";
     };
-
-    # openFirewall = mkOption {
-    #   type = types.bool;
-    #   default = false;
-    #   description = ''
-    #     Whether to open ports in the firewall for the server
-    #   '';
-    # };
   };
 
   config = mkIf cfg.enable {

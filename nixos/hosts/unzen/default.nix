@@ -8,8 +8,6 @@
     ./services/paperless-ngx.nix
   ];
 
-  services.tailscaled.exit-node = true;
-
   age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
   age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
 
@@ -256,25 +254,6 @@
   };
 
   # services.syncthing = {
-  #   dataDir = "/home/simonwjackson"; # Default folder for new synced folders
-  #
-  #   folders = {
-  #     code.path = "/home/simonwjackson/code";
-  #     documents.path = "/glacier/snowscape/documents";
-  #     gaming-games.path = "/glacier/snowscape/gaming/games";
-  #     gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
-  #     gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
-  #     gaming-systems.path = "/glacier/snowscape/gaming/systems";
-  #     taskwarrior.path = "/home/simonwjackson/.local/share/task";
-  #
-  #     code.devices = [ "fiji" "unzen" "zao" ];
-  #     documents.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
-  #     gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
-  #     gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
-  #     gaming-profiles.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
-  #     gaming-systems.devices = [ "fiji" "unzen" "zao" ];
-  #     taskwarrior.devices = [ "fiji" "unzen" "zao" ];
-  #
   #     gaming-profiles.versioning = {
   #       type = "staggered";
   #       params = {

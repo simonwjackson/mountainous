@@ -34,7 +34,6 @@
     Service = {
       # HACK
       #Environment = "XDG_RUNTIME_DIR=/run/user/1000";
-      #ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.aria2}/bin/aria2c --rpc-secret=$(${pkgs.coreutils}/bin/cat ${config.age.secrets.user-simonwjackson-openai-api-key.path})'";
       ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.aria2}/bin/aria2c --rpc-secret=$(${pkgs.coreutils}/bin/cat /run/user/1000/agenix/aria2-rpc-secret)'";
       Restart = "always";
     };
