@@ -26,6 +26,7 @@ in
     ../../users/simonwjackson
   ];
 
+  services.tailscaled.exit-node = true;
   networking.hostName = "rakku"; # Define your hostname.
 
   boot.loader.systemd-boot.enable = true;
@@ -120,27 +121,27 @@ in
       # dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
 
       dhcp-range=192.18.1.1,192.18.1.254,255.255.255.0,4h
-  
+
       #expand-hosts
       #domain=lan
-  
+
       # Cloudflare
       server=1.1.1.1
       server=1.0.0.1
       #server=2606:4700:4700::1111
       #server=2606:4700:4700::1001
-       
+
       # Google
       server=8.8.8.8
       server=8.8.4.4
-       
+
       # OpenDNS
       server=208.67.220.220
       server=208.67.222.220
       server=208.67.220.222
       #server=2620:119:35::35
       #server=2620:119:53::53
-  
+
     '';
   };
 
