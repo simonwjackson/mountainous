@@ -299,7 +299,7 @@
     aliases = {
       d = "difftool";
       mt = "mergetool";
-      up = "!f() { git checkout main && git pull origin main && git checkout - && git rebase main; }; f";
+      sync-up = "!f() { git checkout \${1:-main} && git pull origin \${1:-main} && git checkout - && git rebase \${1:-main}; }; f";
 
       c = "! git commit --message";
       u = "! git add --update";
@@ -334,6 +334,13 @@
       changelog = ''
         ! git log --pretty=format:'* %h - %s %n%w(76,4,4)%b%n' --abbrev-commit "$@" | perl -0 -p -e 's/(^|[^\\])([<>])/\1\\\2/g ; s/(\s*\n)+\*/\n*/g' #'';
       sync = "! git fetch --tags && git rebase --autostash && git push";
+      stash-flakes = ''
+        !f() { git update-index --no-assume-unchanged -- flake.nix flake.lock .envrc .gitignore; git reset --keep && git stash push -u -m nix; };f
+      '';
+      pop-flakes = ''
+        !f() { git stash pop stash@\{0\} && git add --intent-to-add -- flake.nix flake.lock .envrc && git update-index --assume-unchanged -- flake.nix flake.lock .envrc .gitignore; };f
+      '';
+      sync-up-ext = " !f() { git stash-flakes && git sync-up \${1:-main} && git pop-flakes; };f";
 
       # TODO: export this to a file
       # ex '!sh /path/to/gpt.sh'
