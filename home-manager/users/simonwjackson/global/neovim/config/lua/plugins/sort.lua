@@ -4,17 +4,15 @@ return {
 	{
 		"sQVe/sort.nvim",
 		lazy = false,
-		config = function()
-			require("sort").setup({
-				delimiters = {
-					",",
-					"|",
-					";",
-					":",
-					"s", -- Space
-					"t", -- Tab
-				},
-			})
-		end,
+		opts = {
+			delimiters = {
+				",",
+				"|",
+				";",
+				":",
+				"s", -- Space
+				"t", -- Tab
+			},
+		},
 	},
 }

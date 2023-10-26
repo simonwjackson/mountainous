@@ -7,20 +7,16 @@ return {
 	-- Floating terminal plugin for Vim
 	{
 		"voldikss/vim-floaterm",
-		lazy = false,
 	},
 
 	-- Vim sugar for the UNIX shell commands
-	{ lazy = false, "tpope/vim-eunuch" },
+	{ "tpope/vim-eunuch" },
 
 	-- Start a * or # search from a visual selection
-	{ lazy = false, "nelstrom/vim-visual-star-search" },
-
-	-- Highlight yanked region
-	{ lazy = false, "machakann/vim-highlightedyank" },
+	{ "nelstrom/vim-visual-star-search" },
 
 	-- Visually select increasingly larger regions of text
-	{ lazy = false, "terryma/vim-expand-region" },
+	{ "terryma/vim-expand-region" },
 
 	-- Incremental search improved in Vim
 	{ "haya14busa/is.vim", lazy = false },
@@ -47,22 +43,6 @@ return {
 	{
 		ft = "markdown.mdx",
 		"jxnblk/vim-mdx-js",
-	},
-
-	-- Comment toggling for Neovim
-	{
-		"numToStr/Comment.nvim",
-		config = function()
-			require("Comment").setup()
-		end,
-	},
-
-	-- Git signs written in pure Lua
-	{
-		"lewis6991/gitsigns.nvim",
-		init = function()
-			require("gitsigns").setup()
-		end,
 	},
 
 	-- Surroundings in Neovim with ease

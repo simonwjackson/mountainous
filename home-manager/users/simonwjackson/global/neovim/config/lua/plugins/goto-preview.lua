@@ -1,10 +1,7 @@
--- A small Neovim plugin for previewing native LSP’s goto definition, type definition, implementation, declaration
--- and references calls in floating windows.
-
 return {
 	{
 		"rmagatti/goto-preview",
-		lazy = false,
+		keys = {},
 		config = function()
 			local wk = require("which-key")
 			local gp = require("goto-preview")
@@ -21,7 +18,8 @@ return {
 				references = { -- Configure the telescope UI for slowing the references cycling window.
 					telescope = require("telescope.themes").get_dropdown({ hide_preview = false }),
 				},
-				-- These two configs can also be passed down to the goto-preview definition and implementation calls for one off "peak" functionality.
+				-- These two configs can also be passed down to the goto-preview definition and
+				-- implementation calls for one off "peak" functionality.
 				focus_on_open = true, -- Focus the floating window when opening it.
 				dismiss_on_move = false, -- Dismiss the floating window when moving the cursor.
 				force_close = true, -- passed into vim.api.nvim_win_close's second argument. See :h nvim_win_close
@@ -59,6 +57,6 @@ return {
 				},
 			}, { mode = "n" })
 		end,
-		requires = { "folke/which-key.nvim" },
 	},
+	requires = { "folke/which-key.nvim" },
 }

@@ -18,16 +18,15 @@ return {
 			g.vimwiki_folding = ""
 
 			vim.cmd([[
+        let notes = {}
+        let notes.path = "$HOME/documents/notes"
 
-    let notes = {}
-    let notes.path = "$HOME/documents/notes"
-
-    let g:vimwiki_list = [notes]
-    let g:vimwiki_ext2syntax = {
-      \ '.md': 'markdown',
-      \ '.markdown': 'markdown',
-      \ '.mdown': 'markdown'
-      \ }
+        let g:vimwiki_list = [notes]
+        let g:vimwiki_ext2syntax = {
+          \ '.md': 'markdown',
+          \ '.markdown': 'markdown',
+          \ '.mdown': 'markdown'
+          \ }
       ]])
 		end,
 	},

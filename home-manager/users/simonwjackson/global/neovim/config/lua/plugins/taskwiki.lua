@@ -6,7 +6,6 @@ return {
 	{
 		"tools-life/taskwiki",
 		lazy = false,
-		enabled = true,
 		dependencies = {
 			"vimwiki/vimwiki",
 		},
