@@ -111,7 +111,7 @@ in {
       ]
       ++ [
         # Shell
-        nodePackages.bash-language-server
+        nodePackages_latest.bash-language-server
         shellcheck
         shfmt
       ]
@@ -126,8 +126,9 @@ in {
         nodePackages_latest.prettier
         deno
         nodejs
-        nodePackages.typescript-language-server
-        nodePackages.vscode-langservers-extracted
+        nodePackages_latest.typescript-language-server
+        nodePackages_latest.typescript
+        nodePackages_latest.vscode-langservers-extracted
         bun
         deno
       ]

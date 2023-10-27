@@ -3,7 +3,6 @@
 return {
 	{
 		"nvim-lualine/lualine.nvim",
-		requires = { "nvim-tree/nvim-web-devicons", opt = true },
 		lazy = false,
 		config = function()
 			vim.g.my_global_var = true

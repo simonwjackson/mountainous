@@ -15,7 +15,7 @@ return {
 				desc = "Create worktree",
 			},
 		},
-		requires = {
+		dependencies = {
 			"folke/which-key.nvim",
 			"plenary.nvim",
 			"nvim-telescope/telescope.nvim",

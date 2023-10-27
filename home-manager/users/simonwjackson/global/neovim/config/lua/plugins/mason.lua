@@ -25,7 +25,6 @@ return {
 	-- 				"html",
 	-- 				-- Broken "hls",
 	-- 				"jsonls",
-	-- 				"tsserver",
 	-- 				"zk",
 	-- 				"marksman",
 	-- 				"remark_ls",

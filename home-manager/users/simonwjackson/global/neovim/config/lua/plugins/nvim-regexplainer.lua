@@ -35,7 +35,7 @@ return {
 				separator = "\n",
 			},
 		},
-		requires = {
+		dependencies = {
 			"nvim-treesitter/nvim-treesitter",
 			"MunifTanjim/nui.nvim",
 		},

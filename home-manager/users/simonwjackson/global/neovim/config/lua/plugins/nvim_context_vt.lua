@@ -4,7 +4,9 @@ return {
 	{
 		"haringsrob/nvim_context_vt",
 		lazy = false,
-		requires = "nvim-treesitter/nvim-treesitter",
+		dependencies = {
+			"nvim-treesitter/nvim-treesitter",
+		},
 		opts = {
 			-- Enable by default. You can disable and use :NvimContextVtToggle to maually enable.
 			-- Default: true
