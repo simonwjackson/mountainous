@@ -106,8 +106,7 @@ in {
     extraPackages = with pkgs;
       [
         # nix
-        nil
-        nixpkgs-fmt
+        nixd
         alejandra
       ]
       ++ [
