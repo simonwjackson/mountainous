@@ -83,16 +83,19 @@ return {
 			"David-Kunz/cmp-npm",
 			"L3MON4D3/LuaSnip",
 			"saadparwaiz1/cmp_luasnip",
+			"zbirenbaum/copilot-cmp",
 		},
 		init = function()
 			local cmp = require("cmp")
 			local lspkind = require("lspkind")
+			require("copilot_cmp").setup()
 
 			vim.opt.completeopt = { "menu", "menuone", "noselect" }
 
 			cmp.setup({
 				formatting = {
 					format = lspkind.cmp_format({
+						symbol_map = { Copilot = "" },
 						mode = "symbol", -- show only symbol annotations
 						-- prevent the popup from showing more than provided characters (e.g 50 will not show more than 50 characters)
 						maxwidth = 50,
@@ -123,11 +126,12 @@ return {
 					["<CR>"] = cmp.mapping.confirm({ select = true }),
 				}),
 				sources = cmp.config.sources({
-					{ name = "nvim_lsp_signature_help" },
-					{ name = "nvim_lsp" },
-					{ name = "treesitter" },
+					{ name = "nvim_lsp_signature_help", group_index = 2 },
+					{ name = "nvim_lsp", group_index = 2 },
+					{ name = "treesitter", group_index = 2 },
 					{
 						name = "spell",
+						group_index = 2,
 						option = {
 							keep_all_entries = false,
 							enable_in_context = function()
@@ -135,6 +139,7 @@ return {
 							end,
 						},
 					},
+					{ name = "copilot", group_index = 2 },
 				}, {
 					{ name = "buffer" },
 					{ name = "nvim_lua" },
@@ -176,33 +181,6 @@ return {
 					},
 				}),
 			})
-		end,
-	},
-	{ "folke/neodev.nvim", opts = {} },
-	{
-		"L3MON4D3/LuaSnip",
-		-- follow latest release.
-		version = "v2.*", -- Replace <CurrentMajor> by the latest released major (first number of latest release)
-		-- install jsregexp (optional!).
-		build = "make install_jsregexp",
-		init = function()
-			local ls = require("luasnip")
-
-			vim.keymap.set({ "i" }, "<C-K>", function()
-				ls.expand()
-			end, { silent = true })
-			vim.keymap.set({ "i", "s" }, "<C-L>", function()
-				ls.jump(1)
-			end, { silent = true })
-			vim.keymap.set({ "i", "s" }, "<C-J>", function()
-				ls.jump(-1)
-			end, { silent = true })
-
-			vim.keymap.set({ "i", "s" }, "<C-E>", function()
-				if ls.choice_active() then
-					ls.change_choice(1)
-				end
-			end, { silent = true })
 		end,
 	},
 }
