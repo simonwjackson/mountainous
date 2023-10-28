@@ -3,7 +3,7 @@
 return {
 	{
 		"lewis6991/gitsigns.nvim",
-		depends = {
+		dependencies = {
 			"folke/which-key.nvim",
 		},
 		config = function()
