@@ -134,7 +134,7 @@
     # focus padding mode
     # herbstclient pad 0 200 500 200 500
     extraConfig = let
-      padding = 25;
+      padding = "25";
     in ''
       herbstclient set_layout max
       herbstclient detect_monitors
@@ -146,9 +146,10 @@
   services.sxhkd = {
     enable = true;
     keybindings = let
-      popup = "${pkgs.herbstluftwm-popup}/bin/herbstluftwm-popup";
+      max-toggle = "${pkgs.herbstluftwm-scripts}/bin/herb-max-toggle";
+      popup = "${pkgs.herbstluftwm-scripts}/bin/herb-popup";
       kitty = "${pkgs.kitty}/bin/kitty";
-      term-popup = "${pkgs.herbstluftwm-popup}/bin/herbstluftwm-popup ${kitty} --";
+      term-popup = "${popup} ${kitty} --";
       hc = "${pkgs.herbstluftwm}/bin/herbstclient";
       brightnessctl = "${pkgs.brightnessctl}/bin/brightnessctl";
     in {
@@ -156,7 +157,7 @@
         ${term-popup} nmtui
       '';
       "super + ctrl + space" = ''
-        ${hc} cycle_layout 1 horizontal max
+        ${max-toggle}
       '';
       "super + {_, shift} + Tab" = ''
         ${hc} cycle_all {+,-}1
