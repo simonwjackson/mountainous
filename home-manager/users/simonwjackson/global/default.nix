@@ -121,7 +121,7 @@
       filter_mode_shell_up_key_binding = "workspace";
       inline_height = 10;
       key_path = config.age.secrets.atuin_key.path;
-      search_mode = "prefix";
+      search_mode = "fuzzy";
       secrets_filter = false;
       session_path = config.age.secrets.atuin_session.path;
       style = "compact";
