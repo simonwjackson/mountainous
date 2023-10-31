@@ -85,6 +85,27 @@
     '';
   };
 
+  # home.file."toggle-wm" = {
+  #   executable = true;
+  #   text = ''
+  #     #!/usr/bin/env bash
+  #
+  #     # while true; do
+  #           # Get the current window manager
+  #           current_wm=$(${pkgs.wmctrl}/bin/wmctrl -m | grep Name | awk '{print $2}')
+  #           current_pid=$(${pkgs.wmctrl}/bin/wmctrl -m | grep PID | awk '{print $2}')
+  #
+  #           kill -9 $current_pid
+  #           sleep 1
+  #           # Switch to the other window manager
+  #           if [[ $current_wm == "bspwm" ]]; then
+  #             ${pkgs.xfce.xfwm4}/bin/xfwm4
+  #           else
+  #             ${pkgs.bspwm}/bin/bspwm -c /home/simonwjackson/bspwmrc
+  #           fi
+  #     # done
+  #   '';
+  # };
 
   xresources = {
     properties = {
