@@ -161,15 +161,210 @@
     };
   };
 
+  fonts.fontconfig.enable = true;
+  home.packages = [
+    pkgs."material-icons"
+    (pkgs.nerdfonts.override {
+      fonts = [
+        "Noto"
+        "BitstreamVeraSansMono"
+        # "Droid"
+        "Iosevka"
+        "FantasqueSansMono"
+        "DroidSansMono"
+        "Terminus"
+      ];
+    })
+  ];
 
+  services.polybar = {
+    enable = true;
+    # package = inputs.nixpkgs-unstable.polybar.override {
+    #   alsaSupport = true;
+    #   pulseSupport = true;
+    # };
+    script = "polybar top &";
+    settings = let
+      icons = {
+        vpn = {
+          active = "";
+          inactive = "";
+        };
+        cpu = "";
+        memory = "";
+        date = "";
+        microphone = "";
+        microphone-muted = "";
+        microphone-disconnected = "";
+        wifi = "";
+        up = "";
+        down = "";
+        ethernet = "";
+        envelope = "";
+      };
 
+      background = "#99000000";
+      background-alt = "#99000000";
 
+      foreground = "#ffdddddd";
+      foreground-alt = "#ffdddddd";
 
+      primary = "#ff006633";
+      secondary = "#ff003333";
+      alert = "#ff330000";
+      fonts = {
+        font = [
+          "DroidSansM Nerd Font Mono:style=Regular:pixelsize=12:antialias=true;0"
+          # "NotoSansM Nerd Font Mono:antialias=true"
+        ];
+      };
+    in {
+      "bar/top" =
+        fonts
+        // {
+          monitor = "\${env:MONITOR:eDP-1}";
+          width = "100%";
+          height = 20;
+          offset-y = 26;
+          # offset-x = 25;
+          radius = 0;
+          module-margin = 1;
+          modules = {
+            left = "empty-module tailscale xwindow";
+            center = "time";
+            right = "battery wlan empty-module";
+          };
+          # offset.y = 30;
+        };
 
+      "module/empty-module" = {
+        type = "custom/text";
+        content = " ";
+        width = 25;
+      };
 
+      "module/xwindow" = {
+        type = "internal/xwindow";
+        label = "%title:0:30:...%";
+      };
 
+      "module/wlan" = {
+        type = "internal/network";
+        interval = "3.0";
+        interface.type = "wireless";
 
+        format-connected = "<ramp-signal> <label-connected>";
+        label-connected = "%essid%";
 
+        ramp = {
+          signal = [
+            "󰤯"
+            "󰤟"
+            "󰤢"
+            "󰤥"
+            "󰤨"
+          ];
+          signal-foreground = foreground-alt;
+        };
+      };
 
+      "module/battery" = {
+        type = "internal/battery";
+        battery = "BAT1";
+        adapter = "ADP1";
+        full-at = "98";
 
+        format.charging = "<ramp-capacity> <label-discharging>";
+        format.discharging = "<ramp-capacity> <label-discharging>";
+        format.full-prefix = " ";
+        format-full-prefix-foreground = foreground;
+
+        ramp.capacity = ["" "" ""];
+        ramp-capacity-foreground = foreground;
+      };
+
+      # "module/notmuch" = {
+      #   type = "custom/script";
+      #   exec = "echo -n '${icons.envelope} '; ${pkgs.notmuch}/bin/notmuch search tag:unread | wc -l";
+      #   tail = true;
+      #   interval = 10;
+      #   click-left = "${pkgs.astroid}/bin/astroid";
+      # };
+      #
+      "module/tailscale" = {
+        type = "custom/script";
+        exec =
+          # TODO: Move to own script file
+          (pkgs.writeScriptBin "tailscale-check" ''
+            #!/usr/bin/env bash
+            # echo -n " ";
+            # ${pkgs.tailscale}/bin/tailscale status | grep -o 'Connected' | wc -l
+
+            ICON_ACTIVE="${icons.vpn.active}"
+            ICON_INACTIVE="${icons.vpn.inactive}"
+
+            status=$(curl --silent --fail --unix-socket /var/run/tailscale/tailscaled.sock http://local-tailscaled.sock/localapi/v0/status)
+
+            # bail out if curl had non-zero exit code
+            if [ $? != 0 ]; then
+                exit 0
+            fi
+
+            # check if it's stopped (down)
+            if [ "$(echo $status | jq --raw-output .BackendState)" = "Stopped" ]; then
+                echo "$ICON_INACTIVE VPN down"
+                exit 0
+            fi
+
+            # if an exit node is active, show its hostname
+            exit_node_hostname="$(echo $status | jq --raw-output '.Peer[] | select(.ExitNode) | .HostName')"
+            if [ -n "$exit_node_hostname" ]; then
+                echo "$ICON_ACTIVE $exit_node_hostname"
+            else
+                echo "$ICON_ACTIVE"
+            fi
+          '')
+          + "/bin/tailscale-check";
+        tail = true;
+        interval = 10;
+        # click-left = "${pkgs.astroid}/bin/astroid";
+      };
+
+      # "module/headsetswitch" = let
+      #   pactl = "${pkgs.pulseaudioLight}/bin/pactl";
+      #   grep = "${pkgs.gnugrep}/bin/grep";
+      #   sed = "${pkgs.gnused}/bin/sed";
+      # in {
+      #   type = "custom/script";
+      #   format-underline = "#0628FF";
+      #   label = "%output%";
+      #   exec = __concatStringsSep " " [
+      #     "${pactl} info"
+      #     "| ${grep} 'Default Sink'"
+      #     "| ${sed} 's/.*analog-stereo//'"
+      #     "| ${sed} 's/.*analog-stereo//'"
+      #     "| ${sed} 's/.*auto_null/${icons.microphone-disconnected}/'"
+      #     "| ${sed} 's/.*hdmi-stereo-extra.*/HDMI/'"
+      #     "| ${sed} 's/.*headset_head_unit/${icons.microphone}/'"
+      #     "| ${sed} 's/.*a2dp_sink/${icons.microphone-muted}/'"
+      #     "| ${sed} 's/.*hdmi-stereo/HDMI/'"
+      #   ];
+      #
+      #   tail = true;
+      #   interval = 2;
+      #   click-left = "${pactl} set-card-profile bluez_card.2C_41_A1_83_C7_98 a2dp_sink";
+      #   click-right = "${pactl} set-card-profile bluez_card.2C_41_A1_83_C7_98 headset_head_unit";
+      # };
+
+      "module/time" = {
+        type = "internal/date";
+        interval = "5";
+
+        time = "%I:%M";
+
+        format-underline = "#2406E8";
+        label = "%time%";
+      };
+    };
+  };
 }
