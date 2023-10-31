@@ -3,4 +3,5 @@
   vinyl-vault = pkgs.callPackage ./vinyl-vault {};
   # ex = pkgs.callPackage ./ex { };
   nest-tmux = pkgs.callPackage ./nest-tmux {};
+  # mpvd = pkgs.callPackage ./mvpd {};
 }
