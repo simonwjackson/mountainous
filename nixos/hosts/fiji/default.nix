@@ -27,20 +27,32 @@
     ];
   };
 
-  # programs.hyprland = {
+  # services.xserver = {
   #   enable = true;
-  #   package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  #   desktopManager = {
+  #     xfce.enable = true;
+  #   };
+  #
+  #   windowManager.icewm.enable = true;
+  #
+  #   displayManager.defaultSession = "xfce";
   # };
 
   services.xserver = {
     enable = true;
-    desktopManager = {
-      xfce.enable = true;
-    };
-
-    windowManager.icewm.enable = true;
-
-    displayManager.defaultSession = "xfce";
+    # Log in automatically
+    displayManager.autoLogin.user = "simonwjackson";
+    displayManager.defaultSession = "home-manager";
+    # We need to create at least one session for auto login to work
+    desktopManager.session = [
+      {
+        name = "home-manager";
+        start = ''
+          ${pkgs.runtimeShell} $HOME/.hm-xsession &
+          waitPID=$!
+        '';
+      }
+    ];
   };
 
   boot.supportedFilesystems = ["xfs"];

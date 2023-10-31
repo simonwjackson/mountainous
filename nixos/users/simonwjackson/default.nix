@@ -33,7 +33,8 @@ in {
 
   # Move up one level. ex: default.nix
   # Enable automatic login for the user.
-  services.getty.autologinUser = "${username}";
+  # services.getty.autologinUser = "${username}";
+  # services.getty.tty1.autologin = true;
 
   programs.zsh.enable = true;
 
