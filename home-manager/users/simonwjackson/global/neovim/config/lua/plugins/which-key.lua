@@ -197,13 +197,6 @@ return {
 				-- empty mode is same as using <cmd> :map
 				-- also don't use g[j|k] when in operator pending mode, so it doesn't alter d, y or c behaviour
 
-				-- ["<Down>"] = {
-				--   function()
-				--     vim.api.nvim_exec(vim.v.count == 0 and "normal! gj" or "normal! j", false)
-				--   end,
-				--   "Move up",
-				--   opts = { expr = true },
-				-- },
 				["j"] = {
 					function()
 						vim.api.nvim_exec(vim.v.count == 0 and "normal! gj" or "normal! j", false)
@@ -211,13 +204,6 @@ return {
 					"Move up",
 					opts = { expr = true },
 				},
-				-- ["<Up>"] = {
-				--   function()
-				--     vim.api.nvim_exec(vim.v.count == 0 and "normal! gk" or "normal! k", false)
-				--   end,
-				--   "Move up",
-				--   opts = { expr = true },
-				-- },
 				["k"] = {
 					function()
 						vim.api.nvim_exec(vim.v.count == 0 and "normal! gk" or "normal! k", false)
