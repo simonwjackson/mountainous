@@ -75,6 +75,16 @@
   #   };
   # };
 
+  systemd.services.fixSamsungGalaxyBook3Speakers = {
+    path = [pkgs.alsa-tools];
+    script = builtins.readFile ./fix-audio.sh;
+    wantedBy = ["multi-user.target" "post-resume.target"];
+    after = ["multi-user.target" "post-resume.target"];
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
     fsType = "btrfs";
