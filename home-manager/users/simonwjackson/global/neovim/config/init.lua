@@ -40,7 +40,7 @@ opt.scrollback = 100000
 
 opt.showtabline = 0
 
-opt.spell = true
+opt.spell = false
 opt.spelllang = { "en_us" }
 -- interval for writing swap file to disk, also used by gitsigns
 opt.updatetime = 250
