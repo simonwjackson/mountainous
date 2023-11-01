@@ -72,6 +72,17 @@
   };
 
   xdg.desktopEntries = {
+    lf = {
+      type = "Application";
+      name = "lf";
+      comment = "Launches the lf file manager";
+      icon = "utilities-terminal";
+      terminal = false;
+      exec = "kitty --  lf";
+      # categories = "ConsoleOnly;System;FileTools;FileManager";
+      # mimeType = "inode/directory";
+      # keywords = "File;Manager;Browser;Explorer;Launcher;Vi;Vim;Python";
+    };
     # obsidian = {
     #   name = "Obsidian";
     #   genericName = "Link Your Thinking";
