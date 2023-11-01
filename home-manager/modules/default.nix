@@ -1,4 +1,5 @@
 {
+  work-mode = import ./work-mode.nix;
   snowscape = import ./snowscape.nix;
   mpvd = import ./mpvd.nix;
   nest-tmux = import ./nest-tmux.nix;
