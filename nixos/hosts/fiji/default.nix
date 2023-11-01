@@ -19,6 +19,8 @@
   age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
   age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
 
+  programs.dconf.enable = true;
+
   xdg.portal = {
     enable = true;
 
