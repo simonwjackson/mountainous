@@ -141,6 +141,21 @@
     };
   };
 
+  programs.ssh = {
+    enable = true;
+    compression = true;
+    controlMaster = "auto";
+    forwardAgent = true;
+    matchBlocks = {
+      "*" = {
+        sendEnv = ["TZ"];
+      };
+      "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountain.ous" = {
+        user = "sjackson217";
+      };
+    };
+  };
+
   # programs.xpo = {
   #   enable = true;
   #   defaultServer = "unzen";
