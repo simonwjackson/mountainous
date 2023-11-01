@@ -11,10 +11,10 @@ in {
     enable = lib.mkEnableOption "vinyl-vault";
 
     rootDownloadPath = lib.mkOption {
-      default = null;
-      type = with lib.types; nullOr str;
+      default = config.xdg.userDirs.music;
+      type = lib.types.str;
       description = ''
-
+        Where to download the music files to.
       '';
     };
   };
