@@ -91,6 +91,20 @@
     # NixOS configuration entrypoint
     # Available through 'nixos-rebuild <action> --flake .#your-hostname'
     nixosConfigurations = {
+      # gpd win
+      yari = lib.nixosSystem {
+        specialArgs = commonSpecialArgs;
+        modules = [
+          ./nixos/hosts/yari
+          agenix.nixosModules.default
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/yari;
+            home-manager.extraSpecialArgs = commonSpecialArgs;
+          }
+        ];
+      };
+
       # Main desktop
       fiji = lib.nixosSystem {
         specialArgs = commonSpecialArgs;
