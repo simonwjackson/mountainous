@@ -15,6 +15,7 @@
     ./kitty
   ];
 
+  services.dunst.enable = true;
   programs.vinyl-vault.enable = true;
   programs.work-mode.enable = true;
   services.mpvd.enable = true;
