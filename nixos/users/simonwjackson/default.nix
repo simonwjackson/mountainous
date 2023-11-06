@@ -70,8 +70,30 @@ in {
 
     packages = with pkgs; [
       home-manager
+      ex
     ];
   };
+
+  security.pam.loginLimits = [
+    {
+      domain = "@wheel";
+      type = "-";
+      item = "memlock";
+      value = "unlimited";
+    }
+    {
+      domain = "simonwjackson";
+      type = "soft";
+      item = "memlock";
+      value = "unlimited";
+    }
+    {
+      domain = "simonwjackson";
+      type = "hard";
+      item = "memlock";
+      value = "unlimited";
+    }
+  ];
 
   environment.pathsToLink = ["/share/zsh"];
 }
