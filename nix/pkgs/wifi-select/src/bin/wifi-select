@@ -12,7 +12,9 @@ wl() {
     nmcli device wifi list |
       tail -n +2 |
       grep -v '^  *\B--\B' |
-      fzf -m --bind="ctrl-m:become(FAKE={} $nmtui_cmd > /dev/tty)" |
+      fzf \
+        --header='Enter to select, Ctrl-N for nmtui' \
+        --bind="enter:accept,ctrl-n:become(${nmtui_cmd} > /dev/tty)" |
       sed 's/^ *\*//' |
       awk '{print $1}'
   )
