@@ -1,4 +1,7 @@
 -- A small automated session manager for Neovim.
+
+-- vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,localoptions"
+
 return {
 	{
 		"rmagatti/auto-session",
