@@ -8,6 +8,7 @@
 }: {
   imports = [
     ../../profiles/global
+    ../../profiles/gaming/gaming.nix
     ../../profiles/sound
     ../../profiles/laptop
     # ../../profiles/plasma.nix
@@ -19,6 +20,14 @@
   age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
   age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
 
+  services.flatpak.enable = true;
+  # system.activationScripts.flatpakConfig = {
+  #   text = ''
+  #     ${pkgs.flatpak}/bin/flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  #     ${pkgs.flatpak}/bin/flatpak update --assumeyes com.valvesoftware.Steam.CompatibilityTool.Proton-GE || ${pkgs.flatpak}/bin/flatpak install --assumeyes com.valvesoftware.Steam.CompatibilityTool.Proton-GE
+  #     ${pkgs.flatpak}/bin/flatpak update --assumeyes com.valvesoftware.Steam || ${pkgs.flatpak}/bin/flatpak install --assumeyes com.valvesoftware.Steam
+  #   '';
+  # };
   programs.dconf.enable = true;
 
   xdg.portal = {
@@ -29,20 +38,8 @@
     ];
   };
 
-  # services.xserver = {
-  #   enable = true;
-  #   desktopManager = {
-  #     xfce.enable = true;
-  #   };
-  #
-  #   windowManager.icewm.enable = true;
-  #
-  #   displayManager.defaultSession = "xfce";
-  # };
-
   services.xserver = {
     enable = true;
-    # Log in automatically
     displayManager.autoLogin.user = "simonwjackson";
     displayManager.defaultSession = "home-manager";
     # We need to create at least one session for auto login to work
@@ -61,12 +58,9 @@
   networking.hostName = "fiji";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  # FIXME
-  # services.vscode-server.enable = true;
-
   services.vpn-proxy = {
     enable = true;
-    host = "100.76.86.139";
+    host = "ushiro";
     localUser = "simonwjackson";
     remoteUser = "sjackson217";
     localPort = 9999;
