@@ -5,7 +5,7 @@ return {
 		"NvChad/nvterm",
 		keys = {
 			{
-				"<A-.>",
+				"<A-C-.>",
 				function()
 					require("nvterm.terminal").toggle("vertical")
 				end,
@@ -13,7 +13,7 @@ return {
 				desc = "Vertical Split Terminal",
 			},
 			{
-				"<A-C-.>",
+				"<A-.>",
 				function()
 					require("nvterm.terminal").toggle("horizontal")
 				end,
