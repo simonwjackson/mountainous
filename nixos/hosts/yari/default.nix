@@ -7,8 +7,10 @@
   ...
 }: {
   imports = [
+    (modulesPath + "/hardware/network/broadcom-43xx.nix")
+    (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
-    ../../profiles/gaming/gaming.nix
+    # ../../profiles/gaming/gaming.nix
     ../../profiles/sound
     ../../profiles/laptop
     ../../profiles/home-manager-xsession.nix
@@ -18,10 +20,31 @@
     ../../users/simonwjackson/default.nix
   ];
 
-  age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
-  age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
+  # age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
+  # age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
 
   networking.hostName = "yari";
+
+  boot.initrd.availableKernelModules = ["xhci_pci" "usbhid" "uas" "sd_mod" "sdhci_acpi"];
+  boot.initrd.kernelModules = [];
+  boot.kernelModules = ["kvm-intel"];
+  boot.extraModulePackages = [];
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/8f35219e-9c26-4c44-8e22-cce3182d8a95";
+    fsType = "ext4";
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/39C1-4A79";
+    fsType = "vfat";
+  };
+
+  swapDevices = [
+    {device = "/dev/disk/by-uuid/0c595307-aa18-4887-be44-0142fd1d9fce";}
+  ];
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   services.flatpak.enable = true;
 
@@ -43,13 +66,7 @@
     ];
   };
 
-  boot.supportedFilesystems = ["xfs"];
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = ["kvm-intel"];
 
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
