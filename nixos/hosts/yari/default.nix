@@ -25,6 +25,7 @@
 
   networking.hostName = "yari";
 
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = ["xhci_pci" "usbhid" "uas" "sd_mod" "sdhci_acpi"];
   boot.initrd.kernelModules = [];
   boot.kernelModules = ["kvm-intel"];
