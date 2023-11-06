@@ -2,14 +2,20 @@
   config,
   pkgs,
   ...
-}: {
+}: let
+  snowscape = "/glacier/snowscape";
+  steamApps = "${snowscape}/gaming/games/steam/steamapps";
+  steamAppsOverlay = "/home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps";
+  mountpoint = "${pkgs.util-linux}/bin/mountpoint";
+  mount = "${pkgs.mount}/bin/mount";
+in {
   environment.systemPackages = with pkgs; [
-    # yuzu
     ryujinx
     yuzu-early-access
     cemu
     retroarchFull
     dolphinEmu
+    rpcs3
   ];
 
   services.flatpak.enable = true;
@@ -21,9 +27,9 @@
   };
 
   systemd.services.mountSteamAppsOverlay = {
-    after = ["mountTank.service"];
+    # after = ["mountSnowscape.service"];
     script = ''
-      ${pkgs.util-linux}/bin/mountpoint -q /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps || ${pkgs.mount}/bin/mount --bind /glacier/snowscape/gaming/games/steam/steamapps /home/simonwjackson/.var/app/com.valvesoftware.Steam/data/Steam/steamapps
+      ${mountpoint} -q ${steamAppsOverlay} || ${mount} --bind ${steamApps} ${steamAppsOverlay}
     '';
     wantedBy = ["multi-user.target"];
     serviceConfig = {
@@ -33,37 +39,37 @@
 
   fileSystems = {
     "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/dolphin-emu/Wii/title" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/Cemu/mlc01/usr" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-wiiu/";
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-wiiu/";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/yuzu/sdmc" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/sdmc";
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/sdmc";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/yuzu/shader" = {
-      device = "/glacier/snowscape/gaming/launchers/yuzu/shader";
+      device = "${snowscape}/gaming/launchers/yuzu/shader";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/yuzu/keys" = {
-      device = "/glacier/snowscape/gaming/systems/nintendo-switch/keys";
+      device = "${snowscape}/gaming/systems/nintendo-switch/keys";
       options = ["bind"];
     };
 
     "/home/simonwjackson/.local/share/yuzu/nand" = {
-      device = "/glacier/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-switch/nand";
       options = ["bind"];
     };
   };

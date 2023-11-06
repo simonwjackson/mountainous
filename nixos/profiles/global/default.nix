@@ -20,7 +20,6 @@
 
   home-manager.extraSpecialArgs = {inherit inputs outputs;};
 
-  # services.flatpak.enable = true;
   services.udisks2.enable = true;
 
   # TODO: Move to (desktop?) profile
