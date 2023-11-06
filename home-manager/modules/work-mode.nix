@@ -790,7 +790,7 @@ in {
           ${bspc} node --to-desktop {dev} --follow
         '';
 
-        "super + button3" = ''
+        "super + button2" = ''
           ${bspc} node --state '~floating'
         '';
         "super + r" = ''
