@@ -15,11 +15,17 @@
     enableCompletion = true;
     # dotDir = ".config/zsh";
 
-    # initExtra = ''
-    #
-    # '' + lib.optionalString config.programs.nest-tmux.enable ''
-    #   SERVER=$(hostname) ${pkgs.nest-tmux}/bin/tmux-connect-server
-    # '';
+    # TODO: Set this next to nvr
+    initExtra = ''
+      # Enable responsive manpage
+      export MANWIDTH=999
+
+      if [[ -n $NVIM ]]; then
+        export MANPAGER="nvr +Man! -"
+      else
+        export MANPAGER="nvim +Man! -"
+      fi
+    '';
 
     dirHashes = {
       docs = "${config.home.homeDirectory}/documents";
@@ -35,7 +41,9 @@
       run = "nix run nixpkgs#$1";
       pkg = "nix search $1";
       merge-pdfs = "gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=merged.pdf *.pdf";
+      # TODO: These should be send to <device>
       website-to-pdf = "wkhtmltopdf --page-size A4 --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 --print-media-type";
+
       all_links = "xidel --extract \"//a/resolve-uri(@href, base-uri())\" \"{$1}\" | xclip -selection clipboard";
       lan = "nmap -n -sn 192.18.1.0/24 -oG - | awk '/Up$/{print $2}' | sort -V";
     };
