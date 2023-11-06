@@ -4,6 +4,7 @@ local api = vim.api
 local cmd = vim.api.nvim_command
 
 -------------------------------------- options ------------------------------------------
+vim.autocmd([[ TermClose * execute 'bdelete! ' . expand('<abuf>') ]])
 opt.laststatus = 3 -- global statusline
 opt.showmode = false
 
