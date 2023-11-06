@@ -10,6 +10,14 @@
 in {
   options.programs.work-mode = {
     enable = lib.mkEnableOption "work-mode";
+
+    monitor = lib.mkOption {
+      default = "eDP-1";
+      type = lib.types.str;
+      description = ''
+        Main monitor
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -57,7 +65,7 @@ in {
           bspc subscribe all > ~/bspc-report.log &
         '';
         monitors = {
-          eDP-1 = ["dev" "games"];
+          "${cfg.monitor}" = ["dev" "games"];
         };
         settings = let
           padding = 25;
@@ -853,7 +861,7 @@ in {
         "bar/top" =
           fonts
           // {
-            monitor = "\${env:MONITOR:eDP-1}";
+            monitor = "\${env:MONITOR:${cfg.monitor}}";
             width = "100%";
             height = 20;
             offset-y = 26;
@@ -1037,8 +1045,8 @@ in {
             awk = "${pkgs.gawk}/bin/awk";
           in
             (pkgs.writeShellScriptBin "invert-screen" ''
-              rotation=$(${xrandr} --query --verbose | ${grep} 'eDP-1 connected primary' | ${awk} '{print $6}')
-              screen="eDP-1"
+              rotation=$(${xrandr} --query --verbose | ${grep} '${cfg.monitor} connected primary' | ${awk} '{print $6}')
+              screen="${cfg.monitor}"
               device="GXTP7936:00 27C6:0123"
 
               # Rotate screen and touchscreen input based on the current state
