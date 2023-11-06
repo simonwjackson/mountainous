@@ -17,7 +17,9 @@ let
   ushiro = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU=";
   # ushiro = builtins.readFile ../nix-darwin/hosts/ushiro/ssh_host_rsa_key.pub;
 
-  systems = [fiji unzen rakku yabashi zao ushiro];
+  yari = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDG0hq02YviodZfWJetwVCvVB+m+15u4tDTaodZdjAmFb7Q/td9doiJsa//FjnT5ALsDgqGd0wz+RVmHozDYn2ubQ8iIxXsA7FtpWAG8x5OuedynlZY3oXrmYXtrxVb2cGsnTE8Cm8OfRllyTCVcsrZDRESDpsglsmXEl2+cGvrhQNKzgV+2Ivspef5zfA9eV/mgg9MUPv0GVY9Bk8VuJ/2X2PVEcnH2WVqLauI2TlGyRRAPuaKcKtbiAPAxoHVcWG72bbVgxyT31M9hFFDz8BcuHL2vf0Ys8tz8+o1rmbJ6OXiqzsbGRuym1lmyKSuwPwiCs0iO0+8VFgITl1ioPK+x+fQXFCt0JBiZhZCWur/KaGAHqPVU2U9qbVXB5jFCSXvy/hfK0V/p6I4Q1DZoIMj6bUpG9y8MjOxT5iDOFHaaa+d5/QYrrRe/l41mHDG7R130/juZ/+V62tP9HTGo37az8DB9sVdKfWeevsjYIPEIuorYLqtN7UnkvDzkSQqSdbXL1Q4SFCPo9JMJIurSAoWomw0rlQoij7Zg3RVgNT/AaODYHDN/moAPnc4QVqCTnhPkaFeEfJIguJhVHrWIUVXy7OrfAL3mO1fP8DmMWYaLoZzYom6cRH+eHgfar1rmI2TNXjZmEXtY/CXTkRsZNr7w/MOuW6JPN3IcelGhL5ANw==";
+
+  systems = [fiji unzen rakku yabashi zao ushiro yari];
 in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
