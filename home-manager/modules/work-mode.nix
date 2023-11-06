@@ -743,7 +743,7 @@ in {
           ${bsp-layout} next --layouts rtall,monocle
         '';
         "super + {_, shift} + Tab" = ''
-          ${bspc} node -f {next,prev}.local
+          ${bspc} node -f '{next,prev}.!hidden.window.local'
         '';
         "super + Return" = ''
           ${kitty}
