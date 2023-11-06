@@ -41,7 +41,7 @@ return {
 			behavior = {
 				autoclose_on_quit = {
 					enabled = false,
-					confirm = true,
+					confirm = false,
 				},
 				close_on_exit = true,
 				auto_insert = true,
