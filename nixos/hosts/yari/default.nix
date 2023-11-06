@@ -44,8 +44,6 @@
     {device = "/dev/disk/by-uuid/0c595307-aa18-4887-be44-0142fd1d9fce";}
   ];
 
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-
   services.flatpak.enable = true;
 
   system.activationScripts.flatpakConfig = {
