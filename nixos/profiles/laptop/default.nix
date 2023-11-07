@@ -25,5 +25,7 @@
     HandlePowerKey=suspend-then-hibernate
     HandleSuspendKey=suspend-then-hibernate
     HandleHibernateKey=suspend-then-hibernate
+    IdleAction=hibernate
+    IdleActionSec=15min
   '';
 }
