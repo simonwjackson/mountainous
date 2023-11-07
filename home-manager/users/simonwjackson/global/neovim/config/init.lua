@@ -5,10 +5,10 @@ local cmd = vim.api.nvim_command
 
 -------------------------------------- options ------------------------------------------
 
-vim.api.nvim_create_autocmd({"TermClose"}, {
-  pattern = {"*"},
-  command = "execute 'bdelete! ' . expand('<abuf>')",
-})
+-- vim.api.nvim_create_autocmd({"TermClose"}, {
+--   pattern = {"*"},
+--   command = "execute 'bdelete! ' . expand('<abuf>')",
+-- })
 
 opt.laststatus = 3 -- global statusline
 opt.showmode = false
