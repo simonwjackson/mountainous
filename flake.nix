@@ -2,6 +2,11 @@
   description = "My NixOS configuration";
 
   inputs = {
+    nixos-generators = {
+      url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
@@ -51,6 +56,7 @@
     hardware,
     nix-darwin,
     nix-on-droid,
+    nixos-generators,
     ...
   } @ inputs: let
     inherit (self) outputs;
