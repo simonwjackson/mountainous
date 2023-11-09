@@ -17,13 +17,14 @@ let
   ushiro = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU=";
   # ushiro = builtins.readFile ../nix-darwin/hosts/ushiro/ssh_host_rsa_key.pub;
 
-  yari = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDG0hq02YviodZfWJetwVCvVB+m+15u4tDTaodZdjAmFb7Q/td9doiJsa//FjnT5ALsDgqGd0wz+RVmHozDYn2ubQ8iIxXsA7FtpWAG8x5OuedynlZY3oXrmYXtrxVb2cGsnTE8Cm8OfRllyTCVcsrZDRESDpsglsmXEl2+cGvrhQNKzgV+2Ivspef5zfA9eV/mgg9MUPv0GVY9Bk8VuJ/2X2PVEcnH2WVqLauI2TlGyRRAPuaKcKtbiAPAxoHVcWG72bbVgxyT31M9hFFDz8BcuHL2vf0Ys8tz8+o1rmbJ6OXiqzsbGRuym1lmyKSuwPwiCs0iO0+8VFgITl1ioPK+x+fQXFCt0JBiZhZCWur/KaGAHqPVU2U9qbVXB5jFCSXvy/hfK0V/p6I4Q1DZoIMj6bUpG9y8MjOxT5iDOFHaaa+d5/QYrrRe/l41mHDG7R130/juZ/+V62tP9HTGo37az8DB9sVdKfWeevsjYIPEIuorYLqtN7UnkvDzkSQqSdbXL1Q4SFCPo9JMJIurSAoWomw0rlQoij7Zg3RVgNT/AaODYHDN/moAPnc4QVqCTnhPkaFeEfJIguJhVHrWIUVXy7OrfAL3mO1fP8DmMWYaLoZzYom6cRH+eHgfar1rmI2TNXjZmEXtY/CXTkRsZNr7w/MOuW6JPN3IcelGhL5ANw==";
+  yari = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/cgeOInJ0fP/nCM9ThKgyUn9Kxfy04MuLlVYHbID7R1dSVJ45BNqV6zTwiqXJyHDeMbOjqxSrsqnyL55rYqdf/jqMURMtWvftBh0j7lkhfDUNwMnrRFpeG/0EsZ/Q7atvk9ugMOWwrrd/53NdHl5kVtWtC9dtqTNVUmGfuIw4U98aIKYmDSOcpfPHAZbmefa10oM3t+sOXzn+7j69M0GzzDUG0u/GyAeWdbD8f5cj9IjQUiWPMXH/co4xcSqMV3W0j4UB0IzOnmyjgJQl/cihhpEVR6caCC965UiL7V2oNOq6Ky+Qu5bxzbrXridp427ikLcktwhtOMrwmemuY+3s3EhCwABZysX1h7bqrYwyfL97j8uGoGZcRrIRXDbzqXEJj5t2Gz6HVBKtz+ARbqUtVNiNfZY8nZZ3+oKIjXKsrB3ePt0ItOIthKGf4bkO+42XQ2HfmJvCGTLdPPKm9xCpPY26LnxWNq3QbcjIIKv/laI25B7UPspOBXEo98KBA22ninewfYrIa8pVgah6GHGTzfZ9/izI4z26Leg5fGJbNmzvBJRvR33MMaAmG1C/EBcWuQDBc4QreFrrO4uBdVb5DaZMdbHvUGFLhC63nj18vXqUZr8thicO+uFie9U9pSkrxcwJUyD1W1/59WLiTF5nKFKdST8Ec13WbfGemKEXBw==";
 
   systems = [fiji unzen rakku yabashi zao ushiro yari];
 in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
   "user-simonwjackson-instapaper.age".publicKeys = users ++ systems;
+  "user-simonwjackson-gmail.age".publicKeys = users ++ systems;
 
   "aria2-rpc-secret.age".publicKeys = users ++ systems;
   "tailscale.age".publicKeys = users ++ systems;
