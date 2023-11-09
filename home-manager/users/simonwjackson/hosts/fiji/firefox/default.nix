@@ -1,10 +1,6 @@
 {pkgs, ...}: {
-  home.file."./.config/tridactyl/tridactylrc" = {
-    source = ./tridactylrc;
-  };
-
-  home.packages = with pkgs; [
-    tridactyl-native
+  imports = [
+    ./tridactyl
   ];
 
   programs.firefox = {

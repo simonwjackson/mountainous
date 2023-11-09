@@ -23,6 +23,7 @@ let
 in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
+  "user-simonwjackson-instapaper.age".publicKeys = users ++ systems;
 
   "aria2-rpc-secret.age".publicKeys = users ++ systems;
   "tailscale.age".publicKeys = users ++ systems;
