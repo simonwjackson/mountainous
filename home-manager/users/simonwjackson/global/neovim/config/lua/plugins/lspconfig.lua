@@ -83,12 +83,12 @@ return {
 			"David-Kunz/cmp-npm",
 			"L3MON4D3/LuaSnip",
 			"saadparwaiz1/cmp_luasnip",
-			"zbirenbaum/copilot-cmp",
+			-- "zbirenbaum/copilot-cmp",
 		},
 		init = function()
 			local cmp = require("cmp")
 			local lspkind = require("lspkind")
-			require("copilot_cmp").setup()
+			-- require("copilot_cmp").setup()
 
 			vim.opt.completeopt = { "menu", "menuone", "noselect" }
 
@@ -139,7 +139,7 @@ return {
 							end,
 						},
 					},
-					{ name = "copilot", group_index = 2 },
+					-- { name = "copilot", group_index = 2 },
 				}, {
 					{ name = "buffer" },
 					{ name = "nvim_lua" },
