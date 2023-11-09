@@ -21,6 +21,41 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # programs.mbsync.enable = true;
+    # programs.notmuch.enable = true;
+    #
+    # accounts.email = {
+    #   maildirBasePath = "/glacier/snowscape/email";
+    #   accounts = {
+    #     "gmail" = {
+    #       primary = true;
+    #       address = "simon.jackson@gmail.com";
+    #       userName = "simon.jackson@gmail.com";
+    #       realName = "Simon W. Jackson";
+    #       passwordCommand = "echo 'ahxt gqzc afnj xmfr'";
+    #       imap.host = "imap.gmail.com";
+    #       smtp.host = "smtp.gmail.com";
+    #       mbsync = {
+    #         enable = true;
+    #         create = "both";
+    #         expunge = "both";
+    #         patterns = ["*" "![Gmail]*" "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail"];
+    #         extraConfig = {
+    #           channel = {
+    #             Sync = "All";
+    #           };
+    #           account = {
+    #             Timeout = 120;
+    #             PipelineDepth = 1;
+    #           };
+    #         };
+    #       };
+    #       notmuch.enable = true;
+    #       msmtp.enable = true;
+    #     };
+    #   };
+    # };
+
     gtk = {
       enable = true;
       # iconTheme = {
@@ -646,18 +681,18 @@ in {
       });
     };
 
-    home.activation = {
-      reloadDesktop = let
-        pgrep = "${pkgs.procps}/bin/pgrep";
-        bspc = "${pkgs.bspwm}/bin/bspc";
-        sxhkd = "${pkgs.sxhkd}/bin/sxhkd";
-        killall = "${pkgs.killall}/bin/killall";
-      in
-        lib.hm.dag.entryAfter ["writeBoundary"] ''
-          ${pgrep} bspwm > /dev/null && ${bspc} wm --restart &
-          ${pgrep} sxhkd > /dev/null && ${killall} sxhkd; ${sxhkd} &
-        '';
-    };
+    # home.activation = {
+    #   reloadDesktop = let
+    #     pgrep = "${pkgs.procps}/bin/pgrep";
+    #     bspc = "${pkgs.bspwm}/bin/bspc";
+    #     sxhkd = "${pkgs.sxhkd}/bin/sxhkd";
+    #     killall = "${pkgs.killall}/bin/killall";
+    #   in
+    #     lib.hm.dag.entryAfter ["writeBoundary"] ''
+    #       ${pgrep} bspwm > /dev/null && ${bspc} wm --restart &
+    #       ${pgrep} sxhkd > /dev/null && ${killall} sxhkd; ${sxhkd} &
+    #     '';
+    # };
 
     services.sxhkd = {
       enable = true;
@@ -747,7 +782,7 @@ in {
         "super + space" = ''
           ${popup-term} ${pkgs.wifi-select}/bin/wifi-select
         '';
-        "super + ctrl + space" = ''
+        "super + m" = ''
           ${bsp-layout} next --layouts rtall,monocle
         '';
         "super + {_, shift} + Tab" = ''
