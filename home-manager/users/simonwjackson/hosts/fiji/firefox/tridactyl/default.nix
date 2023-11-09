@@ -54,8 +54,6 @@
       " command! addtask jsb -p tri.prompt("Enter task description").then(desc => tri.excmds.sh("task add " + desc + " annotate " + window.location.href))
       " bind --mode=normal s addtask
       " bind gi composite focusinput -l | editor
-
-      " Foo syntax highlighting see https://github.com/tridactyl/vim-tridactyl
     '';
 
     modules = {
