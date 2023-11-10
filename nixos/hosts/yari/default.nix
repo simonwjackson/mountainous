@@ -101,27 +101,25 @@
 
   hardware.bluetooth.enable = true;
 
-  # services.syncthing = {
-  #   enable = true;
-  #   key = config.age.secrets.fiji-syncthing-key.path;
-  #   cert = config.age.secrets.fiji-syncthing-cert.path;
-  #
-  #   settings.paths = {
-  #     documents = "/glacier/snowscape/documents";
-  #     notes = "/glacier/snowscape/notes";
-  #     audiobooks = "/glacier/snowscape/audiobooks";
-  #     books = "/glacier/snowscape/books";
-  #     comics = "/glacier/snowscape/comics";
-  #     # code = "/glacier/snowscape/code";
-  #   };
-  # };
-  #
-  # fileSystems."/home/simonwjackson/documents" = {
-  #   device = "/glacier/snowscape/documents";
-  #   options = ["bind"];
-  # };
+  services.syncthing = {
+    enable = true;
+    #   key = config.age.secrets.fiji-syncthing-key.path;
+    #   cert = config.age.secrets.fiji-syncthing-cert.path;
 
-  # powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
+    settings.paths = {
+      #     documents = "/glacier/snowscape/documents";
+      #     notes = "/glacier/snowscape/notes";
+      #     audiobooks = "/glacier/snowscape/audiobooks";
+      #     books = "/glacier/snowscape/books";
+      #     comics = "/glacier/snowscape/comics";
+      #     # code = "/glacier/snowscape/code";
+      #   };
+    };
+
+    # fileSystems."/home/simonwjackson/documents" = {
+    #   device = "/glacier/snowscape/documents";
+    #   options = ["bind"];
+  };
 
   # services.udev.extraRules = ''
   #   KERNEL=="wlan*", ATTR{address}=="d4:d8:53:90:2b:6c", NAME = "wifi"
@@ -134,6 +132,7 @@
   services.udev.extraRules = ''
     ACTION=="change", SUBSYSTEM=="drm", RUN+="${pkgs.autorandr}/bin/autorandr --change"
   '';
+
   services.autorandr = {
     enable = true;
     defaultTarget = "gpd";
