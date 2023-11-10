@@ -37,6 +37,7 @@ in {
     };
   };
 
+  # BUG: if dirs dont exist, they are owned by root
   fileSystems = {
     "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
       device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
