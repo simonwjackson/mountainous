@@ -100,7 +100,8 @@ in {
           bspc subscribe all > ~/bspc-report.log &
         '';
         monitors = {
-          "${cfg.monitor}" = ["dev" "games"];
+          "${cfg.monitor}" = ["dev"];
+          # "${cfg.monitor}" = ["dev" "games"];
         };
         settings = let
           padding = 25;

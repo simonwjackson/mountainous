@@ -9,7 +9,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ../../profiles/global
-    # ../../profiles/gaming/gaming.nix
+    ../../profiles/gaming/gaming.nix
     ../../profiles/sound
     ../../profiles/laptop
     ../../profiles/home-manager-xsession.nix
@@ -21,6 +21,8 @@
 
   # age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
   # age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
+
+  services.xserver.deviceSection = ''Option "TearFree" "true"''; # For amdgpu.
 
   networking.hostName = "yari";
 
@@ -128,6 +130,58 @@
   environment.systemPackages = with pkgs; [
     moonlight-qt
   ];
+
+  services.udev.extraRules = ''
+    ACTION=="change", SUBSYSTEM=="drm", RUN+="${pkgs.autorandr}/bin/autorandr --change"
+  '';
+  services.autorandr = {
+    enable = true;
+    defaultTarget = "gpd";
+    profiles = let
+      gpd = "00ffffffffffff001e0498050100000024200104a50d08780f0dc9a05747982712484c000000010001000101010101010101010101016734806070381d404808d300844b0000001e4b27806070381d404808d300844b0000001e000000fd001e4b1e96110100000000000000000000fc0047313631382d30340a2020202000e4";
+      nreal = "00ffffffffffff003647323100888888081c0103800c07780a0dc9a05747982712484c00000001010101010101010101010101010101023a801871382d40582c450080387400001e023a801871382d40582c450080387400001e000000fd003282143c3c000a202020202020000000fc006e7265616c206169720a20202000f3";
+      fhd = {
+        crtc = 0;
+        enable = true;
+        mode = "1920x1080";
+        position = "0x0";
+        primary = true;
+        rate = "60.00";
+      };
+    in {
+      "gpd" = {
+        fingerprint = {
+          eDP-1 = gpd;
+        };
+        config = {
+          eDP-1 = fhd;
+        };
+        # hooks.postswitch = readFile ./work-postswitch.sh;
+      };
+      "nreal (bottom)" = {
+        fingerprint = {
+          eDP-1 = gpd;
+          DP-3 = nreal;
+        };
+        config = {
+          eDP-1.enable = false;
+          DP-3 = fhd;
+        };
+        # hooks.postswitch = readFile ./work-postswitch.sh;
+      };
+      "nreal (top)" = {
+        fingerprint = {
+          eDP-1 = gpd;
+          DP-2 = nreal;
+        };
+        config = {
+          eDP-1.enable = false;
+          DP-2 = fhd;
+        };
+        # hooks.postswitch = readFile ./work-postswitch.sh;
+      };
+    };
+  };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

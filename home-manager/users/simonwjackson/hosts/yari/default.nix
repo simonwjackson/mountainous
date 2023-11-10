@@ -16,10 +16,7 @@
   ];
 
   programs.vinyl-vault.enable = true;
-  programs.work-mode = {
-    enable = true;
-    monitor = "DSI-1";
-  };
+  programs.work-mode.enable = true;
   services.mpvd.enable = true;
   services.udiskie.enable = true;
   simonwjackson.snowscape.enable = true;
