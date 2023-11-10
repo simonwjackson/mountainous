@@ -33,6 +33,9 @@ in {
   "atuin_key.age".publicKeys = users ++ systems;
   "atuin_session.age".publicKeys = users ++ systems;
 
+  "yari-syncthing-key.age".publicKeys = users ++ [yari];
+  "yari-syncthing-cert.age".publicKeys = users ++ [yari];
+
   "yabashi-syncthing-key.age".publicKeys = users ++ [yabashi];
   "yabashi-syncthing-cert.age".publicKeys = users ++ [yabashi];
 
