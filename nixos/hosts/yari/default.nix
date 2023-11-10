@@ -19,8 +19,8 @@
     ../../users/simonwjackson/default.nix
   ];
 
-  # age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
-  # age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
+  age.secrets.yari-syncthing-key.file = ../../../secrets/yari-syncthing-key.age;
+  age.secrets.yari-syncthing-cert.file = ../../../secrets/yari-syncthing-cert.age;
 
   services.xserver.deviceSection = ''Option "TearFree" "true"''; # For amdgpu.
 
@@ -103,10 +103,11 @@
 
   services.syncthing = {
     enable = true;
-    #   key = config.age.secrets.fiji-syncthing-key.path;
-    #   cert = config.age.secrets.fiji-syncthing-cert.path;
+    key = config.age.secrets.yari-syncthing-key.path;
+    cert = config.age.secrets.yari-syncthing-cert.path;
 
     settings.paths = {
+      gaming-games = "/glacier/snowscape/gaming/games/";
       #     documents = "/glacier/snowscape/documents";
       #     notes = "/glacier/snowscape/notes";
       #     audiobooks = "/glacier/snowscape/audiobooks";
