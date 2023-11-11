@@ -80,7 +80,7 @@
 
         usu = {
           id = "LEL2HXW-XITF63G-DL5326X-R6AVRN7-HKDY7NE-ZZE2TB6-UIFEDVF-KDT7VAU";
-          name = "remote server (yabashi)";
+          name = "phone";
         };
 
         yabashi = {
