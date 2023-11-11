@@ -2,12 +2,14 @@
   config,
   pkgs,
   inputs,
+  outputs,
   lib,
   modulesPath,
   ...
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
+    inputs.nixos-generators.nixosModules.all-formats
     ../../profiles/global
     ../../profiles/gaming/gaming.nix
     ../../profiles/sound
