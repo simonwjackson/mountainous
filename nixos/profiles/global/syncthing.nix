@@ -21,7 +21,7 @@
 
       folderSettings = {
         notes = {
-          devices = ["fiji" "unzen" "yabashi"];
+          devices = ["fiji" "unzen" "yabashi" "usu"];
         };
 
         documents = {
@@ -76,6 +76,11 @@
         unzen = {
           id = "ETEYYE4-C3P2L34-HIV54WA-XQRERGB-LXL5ZRZ-FVA4EXR-YUDRQVL-HV2FDQA";
           name = "home server (unzen)";
+        };
+
+        usu = {
+          id = "LEL2HXW-XITF63G-DL5326X-R6AVRN7-HKDY7NE-ZZE2TB6-UIFEDVF-KDT7VAU";
+          name = "remote server (yabashi)";
         };
 
         yabashi = {
