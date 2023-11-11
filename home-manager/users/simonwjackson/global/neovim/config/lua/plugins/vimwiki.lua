@@ -19,7 +19,7 @@ return {
 
 			vim.cmd([[
         let notes = {}
-        let notes.path = "$HOME/documents/notes"
+        let notes.path = "/glacier/snowscape/notes"
 
         let g:vimwiki_list = [notes]
         let g:vimwiki_ext2syntax = {

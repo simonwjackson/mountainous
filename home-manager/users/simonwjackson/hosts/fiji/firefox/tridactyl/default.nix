@@ -11,6 +11,7 @@
   # };
 
   age.secrets."user-simonwjackson-instapaper".file = rootPath + /secrets/user-simonwjackson-instapaper.age;
+
   home.file.".local/state/nix/profile/bin/instapaper-add" = {
     text = ''
       CURL=${pkgs.curl}/bin/curl
