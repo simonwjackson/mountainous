@@ -93,11 +93,6 @@
         #     name = "gaming (zao)";
         #   };
 
-        #   usu = {
-        #     id = "";
-        #     name = "main phone (usu)";
-        #   };
-
         yari = {
           id = "RITJY22-5ZFVZAN-IZIOFFV-SQ7QRUC-2YC6MAQ-3B56QM4-IGD36WN-47SI4QM";
           name = "gpd win (yari)";
