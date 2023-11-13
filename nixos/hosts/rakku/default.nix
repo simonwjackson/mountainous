@@ -6,6 +6,7 @@
   modulesPath,
   ...
 }: let
+  # TODO: This needs to be a configurable module
   enp1s0 = {
     mac = "40:62:31:12:ac:8f";
     name = "lan";

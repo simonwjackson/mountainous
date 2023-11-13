@@ -115,30 +115,30 @@
   };
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
+    label = "root";
     fsType = "btrfs";
     options = ["subvol=root" "compress=zstd"];
   };
 
   fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
+    label = "root";
     fsType = "btrfs";
     options = ["subvol=home" "compress=zstd"];
   };
 
   fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/59571b0c-3ed8-4650-96e4-82e72a1af75e";
+    label = "root";
     fsType = "btrfs";
     options = ["subvol=nix" "compress=zstd" "noatime"];
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/1483-B118";
+    label = "BOOT";
     fsType = "vfat";
   };
 
   fileSystems."/glacier/snowscape" = {
-    device = "/dev/disk/by-uuid/7f8f9daa-affe-47c9-8555-3373626f1180";
+    label = "snowscape";
     fsType = "xfs";
   };
 
