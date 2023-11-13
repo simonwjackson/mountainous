@@ -81,7 +81,7 @@
 
   services.vpn-proxy = {
     enable = true;
-    host = "ushiro";
+    host = "100.67.246.135";
     localUser = "simonwjackson";
     remoteUser = "sjackson217";
     localPort = 9999;
