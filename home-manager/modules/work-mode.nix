@@ -12,6 +12,7 @@ in {
     enable = lib.mkEnableOption "work-mode";
 
     monitor = lib.mkOption {
+      # TODO: This needs tp be "required" (no default
       default = "eDP-1";
       type = lib.types.str;
       description = ''

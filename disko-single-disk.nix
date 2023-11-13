@@ -19,6 +19,8 @@
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
+                # WARN: I've never tested extraArgs here
+                extraArgs = "-n BOOT";
               };
             };
             swap = {

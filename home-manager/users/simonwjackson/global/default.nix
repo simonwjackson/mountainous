@@ -18,6 +18,7 @@
       ./lf
       ./neovim
       ./tmux
+      ./taskwarrior.nix
       ./zsh
     ]
     ++ (builtins.attrValues outputs.homeManagerModules);
@@ -109,7 +110,6 @@
     # '';
   };
 
-  programs.taskwarrior.enable = true;
   programs.home-manager.enable = true;
 
   programs.bash.enable = true;
