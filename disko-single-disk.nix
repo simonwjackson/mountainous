@@ -1,6 +1,6 @@
 # nix run --extra-experimental-features nix-command --extra-experimental-features flakes github:nix-community/disko -- --mode disko ./disko-config.nix --arg disks '[ "/dev/nvme0n1" ]' --arg swapSize "$(free | grep Mem | awk '{print $2}')"
 {
-  disks,
+  disks ? ["/dev/null"],
   swapSize,
   ...
 }: {
