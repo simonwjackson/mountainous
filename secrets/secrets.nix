@@ -19,6 +19,7 @@ in {
   "user-simonwjackson-taskserver-ca.cert.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-private.key.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-public.cert.age".publicKeys = users ++ systems;
+  "user-simonwjackson-github-token.age".publicKeys = users ++ systems;
 
   "aria2-rpc-secret.age".publicKeys = users ++ systems;
   "tailscale.age".publicKeys = users ++ systems;
