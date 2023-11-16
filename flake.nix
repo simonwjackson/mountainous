@@ -7,6 +7,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    cuttlefish.url = "github:simonwjackson/cuttlefi.sh";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
