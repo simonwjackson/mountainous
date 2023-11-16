@@ -1,9 +1,10 @@
 {
   config,
-  pkgs,
   inputs,
   lib,
   modulesPath,
+  pkgs,
+  rootPath,
   ...
 }: {
   imports = [
@@ -17,8 +18,8 @@
     ../../users/simonwjackson/default.nix
   ];
 
-  age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
-  age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
+  age.secrets.fiji-syncthing-key.file = rootPath + /secrets/fiji-syncthing-key.age;
+  age.secrets.fiji-syncthing-cert.file = rootPath + /secrets/fiji-syncthing-cert.age;
 
   services.tlp = {
     enable = true;

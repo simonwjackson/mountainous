@@ -1,10 +1,11 @@
 {
   config,
-  pkgs,
   inputs,
-  outputs,
   lib,
   modulesPath,
+  outputs,
+  pkgs,
+  rootPath,
   ...
 }: {
   imports = [
@@ -21,8 +22,8 @@
     ../../users/simonwjackson/default.nix
   ];
 
-  age.secrets.yari-syncthing-key.file = ../../../secrets/yari-syncthing-key.age;
-  age.secrets.yari-syncthing-cert.file = ../../../secrets/yari-syncthing-cert.age;
+  age.secrets.yari-syncthing-key.file = rootPath + /secrets/yari-syncthing-key.age;
+  age.secrets.yari-syncthing-cert.file = rootPath + /secrets/yari-syncthing-cert.age;
 
   services.xserver.deviceSection = ''Option "TearFree" "true"''; # For amdgpu.
 
