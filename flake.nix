@@ -7,7 +7,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    cuttlefish.url = "github:simonwjackson/cuttlefi.sh";
+    cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
@@ -37,27 +37,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:nix-community/home-manager/master";
     };
-
-    hyprland = {
-      url = "github:hyprwm/hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    hyprwm-contrib = {
-      url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {
     agenix,
-    self,
-    nixpkgs,
-    home-manager,
+    cuttlefish,
     hardware,
+    home-manager,
     nix-darwin,
     nix-on-droid,
     nixos-generators,
+    nixpkgs,
+    self,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -98,6 +89,20 @@
     # NixOS configuration entrypoint
     # Available through 'nixos-rebuild <action> --flake .#your-hostname'
     nixosConfigurations = {
+      # HP Tablet
+      ontake = lib.nixosSystem {
+        specialArgs = commonSpecialArgs;
+        modules = [
+          ./nixos/hosts/ontake
+          agenix.nixosModules.default
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/ontake;
+            home-manager.extraSpecialArgs = commonSpecialArgs;
+          }
+        ];
+      };
+
       # gpd win
       yari = lib.nixosSystem {
         specialArgs = commonSpecialArgs;

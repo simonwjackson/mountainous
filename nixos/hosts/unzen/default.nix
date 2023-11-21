@@ -275,8 +275,7 @@
   services.printing.enable = true;
   services.printing.drivers = with pkgs; [brlaser];
 
-  # Enable automatic discovery of the printer from other Linux systems with avahi running.
-  services.avahi.enable = true;
+  # Enable automatic discovery of the printer from other Linux systems with avahi running. services.avahi.enable = true;
   services.avahi.publish.enable = true;
   services.avahi.publish.userServices = true;
   services.printing.browsing = true;
@@ -288,4 +287,20 @@
 
   networking.firewall.allowedUDPPorts = [631];
   networking.firewall.allowedTCPPorts = [631];
+
+  services.cuttlefish = {
+    enable = true;
+    package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
+    settings = {
+      root_dir = "/glacier/snowscape/podcasts";
+      subscriptions = {
+        "The Morning Stream" = {
+          url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
+        };
+        "Conan O’Brien Needs A Friend" = {
+          url = "https://feeds.simplecast.com/dHoohVNH";
+        };
+      };
+    };
+  };
 }

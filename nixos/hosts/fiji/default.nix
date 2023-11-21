@@ -184,6 +184,23 @@
     moonlight-qt
   ];
 
+  services.cuttlefish = {
+    enable = true;
+    package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
+    settings = {
+      root-dir = "/glacier/snowscape/podcasts";
+      logs-dir = "/glacier/snowscape/podcasts";
+      subscriptions = {
+        "The Morning Stream" = {
+          url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
+        };
+        "Conan O’Brien Needs A Friend" = {
+          url = "https://feeds.simplecast.com/dHoohVNH";
+        };
+      };
+    };
+  };
+
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave
