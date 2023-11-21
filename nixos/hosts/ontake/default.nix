@@ -24,8 +24,6 @@
   # age.secrets.yari-syncthing-key.file = rootPath + /secrets/yari-syncthing-key.age;
   # age.secrets.yari-syncthing-cert.file = rootPath + /secrets/yari-syncthing-cert.age;
 
-
-
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -40,24 +38,24 @@
   # Enable networking
   networking.networkmanager.enable = true;
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "usb_storage" "sd_mod" "sdhci_acpi" ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ ];
-  boot.extraModulePackages = [ ];
+  boot.initrd.availableKernelModules = ["xhci_pci" "usb_storage" "sd_mod" "sdhci_acpi"];
+  boot.initrd.kernelModules = [];
+  boot.kernelModules = [];
+  boot.extraModulePackages = [];
 
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/99731bd8-aa68-4b7b-8b24-bfed73b6f6c7";
-      fsType = "ext4";
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/99731bd8-aa68-4b7b-8b24-bfed73b6f6c7";
+    fsType = "ext4";
+  };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/92BA-46DD";
-      fsType = "vfat";
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/92BA-46DD";
+    fsType = "vfat";
+  };
 
-  swapDevices =
-    [ { device = "/dev/disk/by-uuid/dfeebec5-4cc3-43d3-9b9b-9613bf311a9a"; }
-    ];
+  swapDevices = [
+    {device = "/dev/disk/by-uuid/dfeebec5-4cc3-43d3-9b9b-9613bf311a9a";}
+  ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
@@ -69,6 +67,8 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+  services.flatpak.enable = true;
 
   system.activationScripts.flatpakConfig = {
     text = ''
