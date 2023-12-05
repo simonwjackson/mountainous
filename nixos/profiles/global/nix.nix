@@ -39,26 +39,26 @@
       #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
       #   mandatoryFeatures = [];
       # }
-      {
-        hostName = "unzen";
-        sshUser = "simonwjackson";
-        system = "x86_64-linux";
-        protocol = "ssh-ng";
-        maxJobs = 4;
-        speedFactor = 9;
-        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-        mandatoryFeatures = [];
-      }
-      {
-        hostName = "fiji";
-        sshUser = "simonwjackson";
-        systems = ["x86_64-linux" "aarch64-linux" "arm-linux" "armv7l-linux" "armv7-linux"];
-        protocol = "ssh-ng";
-        maxJobs = 14;
-        speedFactor = 8;
-        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-        mandatoryFeatures = [];
-      }
+      # {
+      #   hostName = "unzen";
+      #   sshUser = "simonwjackson";
+      #   system = "x86_64-linux";
+      #   protocol = "ssh-ng";
+      #   maxJobs = 4;
+      #   speedFactor = 9;
+      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+      #   mandatoryFeatures = [];
+      # }
+      # {
+      #   hostName = "fiji";
+      #   sshUser = "simonwjackson";
+      #   systems = ["x86_64-linux" "aarch64-linux" "arm-linux" "armv7l-linux" "armv7-linux"];
+      #   protocol = "ssh-ng";
+      #   maxJobs = 14;
+      #   speedFactor = 8;
+      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+      #   mandatoryFeatures = [];
+      # }
       # {
       #   hostName = "yabashi";
       #   sshUser = "simonwjackson";
