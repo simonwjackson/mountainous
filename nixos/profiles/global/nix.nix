@@ -6,7 +6,7 @@
 }: {
   nix = {
     settings = {
-      trusted-users = ["root" "@wheel"];
+      trusted-users = ["root" "@wheel" "simonwjackson"];
       auto-optimise-store = lib.mkDefault true;
       experimental-features = ["nix-command" "flakes" "repl-flake"];
       warn-dirty = false;
@@ -52,7 +52,7 @@
       {
         hostName = "fiji";
         sshUser = "simonwjackson";
-        system = "x86_64-linux";
+        systems = ["x86_64-linux" "aarch64-linux" "arm-linux" "armv7l-linux" "armv7-linux"];
         protocol = "ssh-ng";
         maxJobs = 14;
         speedFactor = 8;
