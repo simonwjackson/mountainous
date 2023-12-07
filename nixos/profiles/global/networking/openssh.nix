@@ -12,14 +12,17 @@ in {
     enable = true;
     openFirewall = false;
     settings = {
-      PermitUserEnvironment = "yes";
+      # PermitUserEnvironment = "yes";
       # Harden
       PasswordAuthentication = false;
       PermitRootLogin = "no";
       # Automatically remove stale sockets
       StreamLocalBindUnlink = "yes";
       # Allow forwarding ports to everywhere
-      GatewayPorts = "clientspecified";
+      # GatewayPorts = "clientspecified";
+      X11Forwarding = "yes";
+      X11DisplayOffset = 10;
+      X11UseLocalhost = "yes";
     };
   };
 

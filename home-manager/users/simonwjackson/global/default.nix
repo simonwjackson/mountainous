@@ -144,13 +144,13 @@
 
   programs.ssh = {
     enable = true;
-    compression = true;
-    controlMaster = "auto";
-    forwardAgent = true;
+    # compression = true;
+    # controlMaster = "auto";
+    # forwardAgent = true;
     matchBlocks = {
-      "*" = {
-        sendEnv = ["TZ"];
-      };
+      # "*" = {
+      #   sendEnv = ["TZ"];
+      # };
       "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountain.ous" = {
         user = "sjackson217";
       };
