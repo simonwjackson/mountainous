@@ -18,7 +18,6 @@
   ];
 
   nixpkgs.config.allowUnfree = true;
-
   programs.gamescope.enable = true;
   programs.steam = {
     enable = true;
