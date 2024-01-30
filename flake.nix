@@ -94,7 +94,7 @@
         specialArgs = commonSpecialArgs;
         modules = [
           ./nixos/hosts/kita
-          hardware.nixosModules.gpd-win-2
+          # hardware.nixosModules.gpd-win-2
           agenix.nixosModules.default
           home-manager.nixosModules.home-manager
           {
