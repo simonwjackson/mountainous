@@ -89,35 +89,21 @@
     # NixOS configuration entrypoint
     # Available through 'nixos-rebuild <action> --flake .#your-hostname'
     nixosConfigurations = {
-      # HP Tablet
-      ontake = lib.nixosSystem {
+      # GPD Win Mini
+      kita = lib.nixosSystem {
         specialArgs = commonSpecialArgs;
         modules = [
-          ./nixos/hosts/ontake
+          ./nixos/hosts/kita
           agenix.nixosModules.default
           home-manager.nixosModules.home-manager
           {
-            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/ontake;
+            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/kita;
             home-manager.extraSpecialArgs = commonSpecialArgs;
           }
         ];
       };
 
-      # gpd win
-      yari = lib.nixosSystem {
-        specialArgs = commonSpecialArgs;
-        modules = [
-          ./nixos/hosts/yari
-          agenix.nixosModules.default
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/yari;
-            home-manager.extraSpecialArgs = commonSpecialArgs;
-          }
-        ];
-      };
-
-      # Main desktop
+      # Main laptop
       fiji = lib.nixosSystem {
         specialArgs = commonSpecialArgs;
         modules = [
@@ -191,35 +177,37 @@
 
     # Build darwin flake using:
     # $ darwin-rebuild build --flake .#ushiro
-    darwinConfigurations."ushiro" = nix-darwin.lib.darwinSystem {
-      specialArgs = commonSpecialArgs;
-      modules = [
-        ./nix-darwin/hosts/ushiro
-        agenix.nixosModules.default
-        # home-manager.darwinModules.home-manager
-        # {
-        #   home-manager.extraSpecialArgs = commonSpecialArgs;
-        #   home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
-        # }
-      ];
-    };
+    # INFO: Disabled
+    # darwinConfigurations."ushiro" = nix-darwin.lib.darwinSystem {
+    #   specialArgs = commonSpecialArgs;
+    #   modules = [
+    #     ./nix-darwin/hosts/ushiro
+    #     agenix.nixosModules.default
+    #     # home-manager.darwinModules.home-manager
+    #     # {
+    #     #   home-manager.extraSpecialArgs = commonSpecialArgs;
+    #     #   home-manager.users.sjackson217 = import ./home-manager/users/simonwjackson/hosts/ushiro;
+    #     # }
+    #   ];
+    # };
 
     # Expose the package set, including overlays, for convenience.
-    darwinPackages = self.darwinConfigurations."ushiro".pkgs;
+    # darwinPackages = self.darwinConfigurations."ushiro".pkgs;
 
-    nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
-      extraSpecialArgs = commonSpecialArgs;
-      modules = [
-        ./nix-on-droid/hosts/usu
-        {
-          home-manager = {
-            backupFileExtension = "hm-bak";
-            extraSpecialArgs = commonSpecialArgs;
-            config = import ./home-manager/users/simonwjackson/hosts/usu;
-          };
-        }
-      ];
-    };
+    # INFO: Disabled
+    # nixOnDroidConfigurations.default = nix-on-droid.lib.nixOnDroidConfiguration {
+    #   extraSpecialArgs = commonSpecialArgs;
+    #   modules = [
+    #     ./nix-on-droid/hosts/usu
+    #     {
+    #       home-manager = {
+    #         backupFileExtension = "hm-bak";
+    #         extraSpecialArgs = commonSpecialArgs;
+    #         config = import ./home-manager/users/simonwjackson/hosts/usu;
+    #       };
+    #     }
+    #   ];
+    # };
 
     # Standalone home-manager configuration entrypoint
     # Available through 'home-manager <action> --flake .#simonwjackson'

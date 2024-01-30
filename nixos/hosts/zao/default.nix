@@ -175,7 +175,7 @@
   #     IEEE80211AC = true;
   #     IEEE80211N = true;
   #     GATEWAY = "192.18.5.1";
-  #     PASSPHRASE = "asdfasdfasdf";
+  #     PASSPHRASE = "";
   #     INTERNET_IFACE = "wlp0s20f0u3";
   #     WIFI_IFACE = "wlp0s20f3";
   #     SSID = "hopstop";
