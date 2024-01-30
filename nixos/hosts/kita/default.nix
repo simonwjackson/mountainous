@@ -8,7 +8,6 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    <nixos-hardware/gpd/win-2>
     # ../../profiles/global
     ../../profiles/sound
     # ../../profiles/systemd-boot.nix
