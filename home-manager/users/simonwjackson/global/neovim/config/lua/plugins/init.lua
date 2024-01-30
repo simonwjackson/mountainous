@@ -4,6 +4,8 @@ local api = vim.api
 local cmd = vim.api.nvim_command
 
 return {
+	{ "rose-pine/neovim", name = "rose-pine" },
+
 	-- Floating terminal plugin for Vim
 	{
 		"voldikss/vim-floaterm",

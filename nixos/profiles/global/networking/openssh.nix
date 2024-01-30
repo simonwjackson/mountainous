@@ -20,9 +20,9 @@ in {
       StreamLocalBindUnlink = "yes";
       # Allow forwarding ports to everywhere
       # GatewayPorts = "clientspecified";
-      X11Forwarding = "yes";
+      X11Forwarding = true;
       X11DisplayOffset = 10;
-      X11UseLocalhost = "yes";
+      X11UseLocalhost = true;
     };
   };
 
