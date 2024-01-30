@@ -158,28 +158,28 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
-  hardware.bluetooth.enable = true;
+  # hardware.bluetooth.enable = true;
 
   # services.sunshine.enable = true;
 
-  services.xserver.libinput.enable = true;
-  services.xserver.libinput.touchpad.disableWhileTyping = true;
-  services.xserver.libinput.touchpad.tapping = true;
-
-  services.geoclue2.enable = true;
-
-  powerManagement.enable = true;
-  powerManagement.powertop.enable = true;
-
-  services.logind.lidSwitch = "suspend-then-hibernate";
-  services.logind.lidSwitchExternalPower = "suspend";
-
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend-then-hibernate
-    HandleSuspendKey=suspend-then-hibernate
-    HandleHibernateKey=suspend-then-hibernate
-  '';
-
+  # services.xserver.libinput.enable = true;
+  # services.xserver.libinput.touchpad.disableWhileTyping = true;
+  # services.xserver.libinput.touchpad.tapping = true;
+  #
+  # services.geoclue2.enable = true;
+  #
+  # powerManagement.enable = true;
+  # powerManagement.powertop.enable = true;
+  #
+  # services.logind.lidSwitch = "suspend-then-hibernate";
+  # services.logind.lidSwitchExternalPower = "suspend";
+  #
+  # services.logind.extraConfig = ''
+  #   HandlePowerKey=suspend-then-hibernate
+  #   HandleSuspendKey=suspend-then-hibernate
+  #   HandleHibernateKey=suspend-then-hibernate
+  # '';
+  #
   systemd.sleep.extraConfig = "HibernateDelaySec=5m";
 
   # services.logind = {
