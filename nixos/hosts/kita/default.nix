@@ -181,15 +181,15 @@
     HandleHibernateKey=suspend-then-hibernate
   '';
 
-  services.logind = {
-    # TODO: only when on battery power
-    extraConfig = ''
-      IdleAction=suspend-then-hibernate
-      IdleActionSec=5m
-      HandlePowerKey=suspend
-    '';
-  };
   systemd.sleep.extraConfig = "HibernateDelaySec=5m";
+
+  # services.logind = {
+  #   # TODO: only when on battery power
+  #   extraConfig = ''
+  #     IdleAction=suspend-then-hibernate
+  #     IdleActionSec=5m
+  #   '';
+  # };
 
   # # services.syncthing = {
   # #   dataDir = "/home/simonwjackson"; # Default folder for new synced folders
