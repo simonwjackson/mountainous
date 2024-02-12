@@ -151,6 +151,8 @@
 
   hardware.bluetooth.enable = true;
 
+  services.jellyfin.enable = true;
+
   systemd.services.ensureNfsRoot = {
     script = ''
       install -d -o nobody -g nogroup -m 770 /export
