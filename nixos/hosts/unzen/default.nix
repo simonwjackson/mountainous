@@ -48,7 +48,7 @@
     options = ["compress=zstd" "noatime" "autodefrag" "space_cache=v2"];
   };
 
-  services.audiobookshelf  = {
+  services.audiobookshelf = {
     user = "simonwjackson";
     enable = true;
     port = 8000;
@@ -57,7 +57,7 @@
 
   fileSystems."/glacier/snowscape/services/audiobookshelf" = {
     depends = [
-        "/glacier/snowscape"
+      "/glacier/snowscape"
     ];
     device = "/var/lib/audiobookshelf";
     fsType = "none";
