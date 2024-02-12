@@ -48,6 +48,25 @@
     options = ["compress=zstd" "noatime" "autodefrag" "space_cache=v2"];
   };
 
+  services.audiobookshelf  = {
+    user = "simonwjackson";
+    enable = true;
+    port = 8000;
+    host = "0.0.0.0";
+  };
+
+  fileSystems."/glacier/snowscape/services/audiobookshelf" = {
+    depends = [
+        "/glacier/snowscape"
+    ];
+    device = "/var/lib/audiobookshelf";
+    fsType = "none";
+    options = [
+      "bind"
+      "ro"
+    ];
+  };
+
   systemd.services.mountSnowscape = {
     script = ''
       install -d -o simonwjackson -g users -m 770 /glacier/snowscape
@@ -111,11 +130,6 @@
       git
       firefox
       btop
-
-      yuzu
-      cemu
-      retroarchFull
-      dolphinEmu
     ];
   };
 
