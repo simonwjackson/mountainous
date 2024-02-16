@@ -12,8 +12,15 @@
     ../../profiles/global
     ../../profiles/systemd-boot.nix
     ../../users/simonwjackson/default.nix
-    ./services/tandoor.nix
+    ./services/films.nix
     ./services/paperless-ngx.nix
+    ./services/series.nix
+    ./services/tandoor.nix
+    ./services/indexers.nix
+    ./services/torrents.nix
+    ./services/usenet.nix
+    ./services/vpn.nix
+    ./services/youtube.nix
   ];
 
   age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
@@ -151,7 +158,11 @@
 
   hardware.bluetooth.enable = true;
 
-  services.jellyfin.enable = true;
+  services.jellyfin = {
+    enable = true;
+    user = "simonwjackson";
+    group = "users";
+  };
 
   systemd.services.ensureNfsRoot = {
     script = ''
