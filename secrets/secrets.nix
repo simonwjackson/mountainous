@@ -24,10 +24,13 @@ in {
 
   "aria2-rpc-secret.age".publicKeys = users ++ systems;
   "tailscale.age".publicKeys = users ++ systems;
+  "tailscale_env.age".publicKeys = users ++ systems;
   "tandoor_env.age".publicKeys = users ++ systems;
   "paperless_ngx_env.age".publicKeys = users ++ systems;
   "atuin_key.age".publicKeys = users ++ systems;
   "atuin_session.age".publicKeys = users ++ systems;
+
+  "gluetun_env.age".publicKeys = users ++ systems;
 
   "yari-syncthing-key.age".publicKeys = users ++ [yari];
   "yari-syncthing-cert.age".publicKeys = users ++ [yari];
