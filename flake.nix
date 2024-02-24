@@ -6,7 +6,7 @@
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
+    nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-gaming.url = "github:fufexan/nix-gaming";
     cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
@@ -47,6 +47,7 @@
     home-manager,
     nix-darwin,
     nix-on-droid,
+    nix-flatpak,
     nixos-generators,
     nixpkgs,
     self,
@@ -63,6 +64,7 @@
       });
     rootPath = ./.;
     commonSpecialArgs = {inherit inputs outputs rootPath self;};
+    commonNixOsModules = [nix-flatpak.nixosModules.nix-flatpak];
   in {
     inherit lib;
 
@@ -93,15 +95,17 @@
       # GPD Win Mini
       kita = lib.nixosSystem {
         specialArgs = commonSpecialArgs;
-        modules = [
-          ./nixos/hosts/kita
-          agenix.nixosModules.default
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/kita;
-            home-manager.extraSpecialArgs = commonSpecialArgs;
-          }
-        ];
+        modules =
+          [
+            ./nixos/hosts/kita
+            agenix.nixosModules.default
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.users.simonwjackson = import ./home-manager/users/simonwjackson/hosts/kita;
+              home-manager.extraSpecialArgs = commonSpecialArgs;
+            }
+          ]
+          ++ commonNixOsModules;
       };
 
       # Main laptop

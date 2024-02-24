@@ -1,4 +1,5 @@
 {
+  lib,
   config,
   pkgs,
   ...
@@ -24,6 +25,18 @@ in {
       xdg-desktop-portal-kde
     ];
   };
+  services.flatpak.remotes = lib.mkOptionDefault [
+    {
+      name = "flathub";
+      location = "https://dl.flathub.org/repo/flathub.flatpakrepo";
+    }
+  ];
+  services.flatpak.packages = [
+    "com.valvesoftware.Steam"
+    "com.valvesoftware.Steam.CompatibilityTool.Proton-GE"
+    "org.freedesktop.Platform.VulkanLayer.MangoHud/x86_64/23.08"
+    "org.freedesktop.Platform.VulkanLayer.gamescope/x86_64/23.08"
+  ];
 
   systemd.services.mountSteamAppsOverlay = {
     # after = ["mountSnowscape.service"];
