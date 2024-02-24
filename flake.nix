@@ -7,13 +7,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-gaming.url = "github:fufexan/nix-gaming";
     cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     # Nixpkgs
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-23.05";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
 
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -35,7 +36,7 @@
 
     home-manager = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:nix-community/home-manager/master";
+      url = "github:nix-community/home-manager/release-23.11";
     };
   };
 
@@ -94,7 +95,6 @@
         specialArgs = commonSpecialArgs;
         modules = [
           ./nixos/hosts/kita
-          # hardware.nixosModules.gpd-win-2
           agenix.nixosModules.default
           home-manager.nixosModules.home-manager
           {
