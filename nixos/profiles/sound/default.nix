@@ -1,6 +1,5 @@
 {
   sound.enable = true;
-  security.rtkit.enable = true;
   hardware.pulseaudio.enable = false;
 
   services.pipewire = {
@@ -9,5 +8,7 @@
     alsa.support32Bit = true;
     pulse.enable = true;
     jack.enable = true;
+    wireplumber.enable = true;
+    # lowLatency.enable = true;
   };
 }

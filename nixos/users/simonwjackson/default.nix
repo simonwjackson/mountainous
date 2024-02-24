@@ -15,6 +15,7 @@ in {
 
   users.mutableUsers = false;
 
+  security.rtkit.enable = true;
   security.sudo = {
     wheelNeedsPassword = false;
     extraRules = [
