@@ -14,7 +14,7 @@
     partOf = ["graphical-session.target"];
     after = ["mountSteamAppsOverlay.service"];
     serviceConfig = {
-      ExecStart = "${pkgs.flatpak}/bin/flatpak run com.valvesoftware.Steam";
+      ExecStart = "${pkgs.flatpak}/bin/flatpak run com.valvesoftware.Steam -forcedesktopscaling=1.5 -silent";
       Restart = "on-failure";
     };
   };
