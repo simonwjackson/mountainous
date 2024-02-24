@@ -10,7 +10,6 @@
   mount = "${pkgs.mount}/bin/mount";
 in {
   environment.systemPackages = with pkgs; [
-    ryujinx
     yuzu-early-access
     cemu
     retroarchFull
@@ -39,15 +38,15 @@ in {
 
   # BUG: if dirs dont exist, they are owned by root
   fileSystems = {
-    # "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
-    #   device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
-    #   options = ["bind"];
-    # };
-    #
-    # "/home/simonwjackson/.local/share/dolphin-emu/Wii/title" = {
-    #   device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
-    #   options = ["bind"];
-    # };
+    "/home/simonwjackson/.local/share/dolphin-emu/GC" = {
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-gamecube/";
+      options = ["bind"];
+    };
+
+    "/home/simonwjackson/.local/share/dolphin-emu/Wii/title" = {
+      device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-wii/";
+      options = ["bind"];
+    };
 
     "/home/simonwjackson/.local/share/Cemu/mlc01/usr" = {
       device = "${snowscape}/gaming/profiles/simonwjackson/progress/saves/nintendo-wiiu/";
