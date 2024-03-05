@@ -29,6 +29,7 @@ in {
   "paperless_ngx_env.age".publicKeys = users ++ systems;
   "atuin_key.age".publicKeys = users ++ systems;
   "atuin_session.age".publicKeys = users ++ systems;
+  "game-collection-sync.age".publicKeys = users ++ systems;
 
   "gluetun_env.age".publicKeys = users ++ systems;
 
