@@ -18,31 +18,14 @@
     ../../users/simonwjackson/default.nix
   ];
 
+  services.laptop.enable = true;
+
+  age.secrets.game-collection-sync.file = rootPath + /secrets/game-collection-sync.age;
   age.secrets.fiji-syncthing-key.file = rootPath + /secrets/fiji-syncthing-key.age;
   age.secrets.fiji-syncthing-cert.file = rootPath + /secrets/fiji-syncthing-cert.age;
 
-  services.tlp = {
-    enable = true;
-    settings = {
-      # Extend battery runtime
-      CPU_BOOST_ON_AC = 1;
-      CPU_BOOST_ON_BAT = 0;
-      CPU_ENERGY_PERF_POLICY_ON_AC = "balance_performance";
-      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-      CPU_HWP_DYN_BOOST_ON_AC = 1;
-      CPU_HWP_DYN_BOOST_ON_BAT = 0;
-      CPU_SCALING_GOVERNOR_ON_AC = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-      PLATFORM_PROFILE_ON_AC = "balanced";
-      PLATFORM_PROFILE_ON_BAT = "low-power";
-
-      # Charge till 80% and then stop charging
-      START_CHARGE_THRESH_BAT0 = 0;
-      STOP_CHARGE_THRESH_BAT0 = 1;
-    };
-  };
-
   services.flatpak.enable = true;
+
   # system.activationScripts.flatpakConfig = {
   #   text = ''
   #     ${pkgs.flatpak}/bin/flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -50,6 +33,7 @@
   #     ${pkgs.flatpak}/bin/flatpak update --assumeyes com.valvesoftware.Steam || ${pkgs.flatpak}/bin/flatpak install --assumeyes com.valvesoftware.Steam
   #   '';
   # };
+
   programs.dconf.enable = true;
 
   xdg.portal = {
@@ -80,13 +64,13 @@
   networking.hostName = "fiji";
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  services.vpn-proxy = {
-    enable = true;
-    host = "100.67.246.135";
-    localUser = "simonwjackson";
-    remoteUser = "sjackson217";
-    localPort = 9999;
-  };
+  # services.vpn-proxy = {
+  #   enable = true;
+  #   host = "100.67.246.135";
+  #   localUser = "simonwjackson";
+  #   remoteUser = "sjackson217";
+  #   localPort = 9999;
+  # };
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
@@ -180,26 +164,26 @@
   '';
 
   environment.systemPackages = with pkgs; [
-    yuzu
+    # yuzu
     moonlight-qt
   ];
 
-  services.cuttlefish = {
-    enable = true;
-    package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
-    settings = {
-      root-dir = "/glacier/snowscape/podcasts";
-      logs-dir = "/glacier/snowscape/podcasts";
-      subscriptions = {
-        "The Morning Stream" = {
-          url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
-        };
-        "Conan O’Brien Needs A Friend" = {
-          url = "https://feeds.simplecast.com/dHoohVNH";
-        };
-      };
-    };
-  };
+  # services.cuttlefish = {
+  #   enable = true;
+  #   package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
+  #   settings = {
+  #     root-dir = "/glacier/snowscape/podcasts";
+  #     logs-dir = "/glacier/snowscape/podcasts";
+  #     subscriptions = {
+  #       "The Morning Stream" = {
+  #         url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
+  #       };
+  #       "Conan O’Brien Needs A Friend" = {
+  #         url = "https://feeds.simplecast.com/dHoohVNH";
+  #       };
+  #     };
+  #   };
+  # };
 
   programs.adb.enable = true;
   users.users.simonwjackson.extraGroups = ["adbusers"];
