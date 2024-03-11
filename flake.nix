@@ -7,12 +7,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # myflake.url = "path:/glacier/snowscape/code/sandbox/gaming-yl-database";
-    # inputs.myflake.nixosModules.x86_64-linux.default
-
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     nix-gaming.url = "github:fufexan/nix-gaming";
-    cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
     vscode-server.url = "github:nix-community/nixos-vscode-server";
 
@@ -33,10 +29,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:nix-community/home-manager/master";
     };
+
+    # My Apps
+    cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
+    gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
   };
 
   outputs = {
-    agenix,
     hardware,
     home-manager,
     nixpkgs,
@@ -58,7 +57,9 @@
         modules =
           [
             (./nixos/hosts + "/${hostName}")
-            agenix.nixosModules.default
+            inputs.agenix.nixosModules.default
+            inputs.gamerack.nixosModules."${system}".default
+            inputs.cuttlefish.nixosModules."${system}".default
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import (./home-manager/users/simonwjackson/hosts + "/${hostName}");
@@ -72,7 +73,14 @@
 
     # Reusable nixos modules you might want to export
     # These are usually stuff you would upstream into nixpkgs
-    nixosModules = import ./nixos/modules;
+    nixosModules = let
+      moduleFiles =
+        lib.filterAttrs
+        (name: type: type == "regular" && builtins.match ".*\\.nix" name != null)
+        (builtins.readDir ./nixos/modules);
+      modules = lib.mapAttrs (name: value: import (./nixos/modules + "/${name}")) moduleFiles;
+    in
+      modules;
 
     # Reusable home-manager modules you might want to export
     # These are usually stuff you would upstream into home-manager
