@@ -5,6 +5,7 @@
   lib,
   modulesPath,
   age,
+  rootPath,
   ...
 }: {
   imports = [
@@ -23,8 +24,23 @@
     ./services/youtube.nix
   ];
 
-  age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
-  age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
+  age.secrets.unzen-syncthing-key.file = rootPath + /secrets/unzen-syncthing-key.age;
+  age.secrets.unzen-syncthing-cert.file = rootPath + /secrets/unzen-syncthing-cert.age;
+  age.secrets.game-collection-sync.file = rootPath + /secrets/game-collection-sync.age;
+
+  services.gamerack = {
+    enable = true;
+    database = "/glacier/snowscape/gaming/profiles/simonwjackson/games.yaml";
+    environmentFiles = [
+      config.age.secrets.game-collection-sync.path
+    ];
+    environment = {
+      STEAM_ID = "76561198041190539";
+      MOBY_USERNAME = "simonwjackson";
+      MOBY_COLLECTION_ID = "333655";
+      MOBY_COOKIE_FILE = "/tmp/mobygames-cookie.txt";
+    };
+  };
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
