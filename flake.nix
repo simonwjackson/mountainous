@@ -19,6 +19,7 @@
     agenix.url = "github:ryantm/agenix";
     hardware.url = "github:nixos/nixos-hardware";
     nix-colors.url = "github:misterio77/nix-colors";
+    simple-nixos-mailserver.url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-23.11";
 
     firefox-addons = {
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
@@ -31,7 +32,7 @@
     };
 
     # My Apps
-    cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
+    # cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
   };
 
@@ -58,8 +59,9 @@
           [
             (./nixos/hosts + "/${hostName}")
             inputs.agenix.nixosModules.default
+            inputs.simple-nixos-mailserver.nixosModule
             inputs.gamerack.nixosModules."${system}".default
-            inputs.cuttlefish.nixosModules."${system}".default
+            # inputs.cuttlefish.nixosModules."${system}".default
             home-manager.nixosModules.home-manager
             {
               home-manager.users.simonwjackson = import (./home-manager/users/simonwjackson/hosts + "/${hostName}");

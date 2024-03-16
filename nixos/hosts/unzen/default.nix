@@ -331,19 +331,19 @@
   networking.firewall.allowedUDPPorts = [631];
   networking.firewall.allowedTCPPorts = [631];
 
-  services.cuttlefish = {
-    enable = true;
-    package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
-    settings = {
-      root_dir = "/glacier/snowscape/podcasts";
-      subscriptions = {
-        "The Morning Stream" = {
-          url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
-        };
-        "Conan O’Brien Needs A Friend" = {
-          url = "https://feeds.simplecast.com/dHoohVNH";
-        };
-      };
-    };
-  };
+  # services.cuttlefish = {
+  #   enable = true;
+  #   package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
+  #   settings = {
+  #     root_dir = "/glacier/snowscape/podcasts";
+  #     subscriptions = {
+  #       "The Morning Stream" = {
+  #         url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
+  #       };
+  #       "Conan O’Brien Needs A Friend" = {
+  #         url = "https://feeds.simplecast.com/dHoohVNH";
+  #       };
+  #     };
+  #   };
+  # };
 }

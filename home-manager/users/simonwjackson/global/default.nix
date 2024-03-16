@@ -33,7 +33,7 @@
     packages = [
       pkgs.killall
       pkgs.jq
-      inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh"
+      # inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh"
       # pkgs.ex
     ];
   };
