@@ -8,7 +8,7 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    inputs.nix-gaming.nixosModules.steamCompat
+    # inputs.nix-gaming.nixosModules.steamCompat
 
     ../../profiles/global
     ../../profiles/sound
@@ -38,25 +38,25 @@
     unitConfig = {DefaultDependencies = "false";};
   };
 
-  systemd.services.power-maximum-tdp = {
-    description = "Change TDP to maximum TDP when on AC power";
-    wantedBy = ["ac.target"];
-    unitConfig = {RefuseManualStart = true;};
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=28000 --fast-limit=28000 --slow-limit=28000 --tctl-temp=90";
-    };
-  };
-
-  systemd.services.power-saving-tdp = {
-    description = "Change TDP to power saving TDP when on battery power";
-    wantedBy = ["battery.target"];
-    unitConfig = {RefuseManualStart = true;};
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=3000 --fast-limit=3000 --slow-limit=3000 --tctl-temp=90";
-    };
-  };
+  # systemd.services.power-maximum-tdp = {
+  #   description = "Change TDP to maximum TDP when on AC power";
+  #   wantedBy = ["ac.target"];
+  #   unitConfig = {RefuseManualStart = true;};
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=28000 --fast-limit=28000 --slow-limit=28000 --tctl-temp=90";
+  #   };
+  # };
+  #
+  # systemd.services.power-saving-tdp = {
+  #   description = "Change TDP to power saving TDP when on battery power";
+  #   wantedBy = ["battery.target"];
+  #   unitConfig = {RefuseManualStart = true;};
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=3000 --fast-limit=3000 --slow-limit=3000 --tctl-temp=90";
+  #   };
+  # };
 
   systemd.services.powertop = {
     # description = "Auto-tune Power Management with powertop";
@@ -124,8 +124,6 @@
 
   # Switch controllers
   services.joycond.enable = true;
-
-  nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
     undervolt

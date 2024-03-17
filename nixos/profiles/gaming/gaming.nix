@@ -11,7 +11,7 @@
   mount = "${pkgs.mount}/bin/mount";
 in {
   environment.systemPackages = with pkgs; [
-    yuzu-early-access
+    yuzu-mainline
     cemu
     retroarchFull
     dolphinEmu
