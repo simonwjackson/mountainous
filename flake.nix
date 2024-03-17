@@ -8,13 +8,12 @@
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
-    nix-gaming.url = "github:fufexan/nix-gaming";
+    # nix-gaming.url = "github:fufexan/nix-gaming";
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
-    vscode-server.url = "github:nix-community/nixos-vscode-server";
 
     # Nixpkgs
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-23.05";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
 
     agenix.url = "github:ryantm/agenix";
     hardware.url = "github:nixos/nixos-hardware";
@@ -28,7 +27,7 @@
 
     home-manager = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:nix-community/home-manager/master";
+      url = "github:nix-community/home-manager/release-23.11";
     };
 
     # My Apps
@@ -59,6 +58,7 @@
           [
             (./nixos/hosts + "/${hostName}")
             inputs.agenix.nixosModules.default
+            inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.simple-nixos-mailserver.nixosModule
             inputs.gamerack.nixosModules."${system}".default
             # inputs.cuttlefish.nixosModules."${system}".default
@@ -120,7 +120,6 @@
       rakku = mkSystem "rakku" "x86_64-linux" [];
 
       # portable gaming rig
-      zao = mkSystem "zao" "x86_64-linux" [hardware.nixosModules.dell-xps-17-9700-nvidia];
     };
   };
 }

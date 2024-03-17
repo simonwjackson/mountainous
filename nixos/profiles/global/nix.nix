@@ -28,60 +28,30 @@
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
     buildMachines = [
-      # {
-      #   hostName = "zao";
-      #   sshUser = "simonwjackson";
-      #   system = "x86_64-linux";
-      #   protocol = "ssh-ng";
-      #   # systems = ["x86_64-linux" "aarch64-linux"];
-      #   maxJobs = 4;
-      #   speedFactor = 10;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
-      # {
-      #   hostName = "unzen";
-      #   sshUser = "simonwjackson";
-      #   system = "x86_64-linux";
-      #   protocol = "ssh-ng";
-      #   maxJobs = 4;
-      #   speedFactor = 9;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
-      # {
-      #   hostName = "fiji";
-      #   sshUser = "simonwjackson";
-      #   systems = ["x86_64-linux" "aarch64-linux" "arm-linux" "armv7l-linux" "armv7-linux"];
-      #   protocol = "ssh-ng";
-      #   maxJobs = 14;
-      #   speedFactor = 8;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
-      # {
-      #   hostName = "yabashi";
-      #   sshUser = "simonwjackson";
-      #   system = "x86_64-linux";
-      #   protocol = "ssh-ng";
-      #   maxJobs = 1;
-      #   speedFactor = 2;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
-      # {
-      #   hostName = "rakku";
-      #   sshUser = "simonwjackson";
-      #   system = "x86_64-linux";
-      #   protocol = "ssh-ng";
-      #   maxJobs = 1;
-      #   speedFactor = 1;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
+      {
+        hostName = "zao";
+        sshUser = "simonwjackson";
+        system = "x86_64-linux";
+        protocol = "ssh-ng";
+        # systems = ["x86_64-linux" "aarch64-linux"];
+        maxJobs = 12;
+        speedFactor = 10;
+        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+        mandatoryFeatures = [];
+      }
+      {
+        hostName = "unzen";
+        sshUser = "simonwjackson";
+        system = "x86_64-linux";
+        protocol = "ssh-ng";
+        maxJobs = 6;
+        speedFactor = 9;
+        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+        mandatoryFeatures = [];
+      }
     ];
 
-    distributedBuilds = false;
+    distributedBuilds = true;
 
     # optional, useful when the builder has a faster internet connection than yours
     extraOptions = ''
