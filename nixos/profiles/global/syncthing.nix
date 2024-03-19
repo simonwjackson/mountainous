@@ -24,35 +24,30 @@
           devices = ["fiji" "unzen" "yabashi" "usu"];
         };
 
-        documents = {
-          devices = ["fiji" "unzen" "yabashi"];
-        };
-
-        audiobooks = {
-          devices = ["fiji" "unzen"];
-        };
-
-        books = {
-          devices = ["fiji" "unzen"];
-        };
-
-        gaming-games = {
-          devices = ["yari" "unzen"];
-        };
-
-        comics = {
-          devices = ["fiji" "unzen"];
-        };
-
-        code = {
-          devices = ["fiji"];
-          # devices = [ "fiji" "unzen" "yari" ];
-        };
-
-        taskwarrior = {
-          devices = ["fiji"];
-          # devices = ["fiji" "unzen" "zao" ];
-        };
+        # documents = {
+        #   devices = ["fiji" "unzen" "yabashi"];
+        # };
+        #
+        # audiobooks = {
+        #   devices = ["fiji" "unzen"];
+        # };
+        #
+        # books = {
+        #   devices = ["fiji" "unzen"];
+        # };
+        #
+        # gaming-games = {
+        #   devices = ["yari" "unzen"];
+        # };
+        #
+        # comics = {
+        #   devices = ["fiji" "unzen"];
+        # };
+        #
+        # code = {
+        #   devices = ["fiji"];
+        #   # devices = [ "fiji" "unzen" "yari" ];
+        # };
       };
 
       # Only setup shares that have been enabled in the host's config file
@@ -79,8 +74,8 @@
         };
 
         usu = {
-          id = "LEL2HXW-XITF63G-DL5326X-R6AVRN7-HKDY7NE-ZZE2TB6-UIFEDVF-KDT7VAU";
-          name = "phone";
+          id = "OHG43Z6-BVJN3ZT-GIM226G-5KX3PWJ-OBDDH5X-EMJPI7K-A3SGNCM-XVACBAG";
+          name = "phone (usu)";
         };
 
         yabashi = {
@@ -93,10 +88,10 @@
         #     name = "gaming (zao)";
         #   };
 
-        yari = {
-          id = "RITJY22-5ZFVZAN-IZIOFFV-SQ7QRUC-2YC6MAQ-3B56QM4-IGD36WN-47SI4QM";
-          name = "gpd win (yari)";
-        };
+        # kita = {
+        #   id = "";
+        #   name = "gpd win (kita)";
+        # };
       };
     };
 

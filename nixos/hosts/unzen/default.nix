@@ -295,12 +295,12 @@
     cert = config.age.secrets.unzen-syncthing-cert.path;
 
     settings.paths = {
-      gaming-games = "/glacier/snowscape/gaming/games/";
-      documents = "/glacier/snowscape/documents";
+      # gaming-games = "/glacier/snowscape/gaming/games/";
+      # documents = "/glacier/snowscape/documents";
       notes = "/glacier/snowscape/notes";
-      audiobooks = "/glacier/snowscape/audiobooks";
-      books = "/glacier/snowscape/books";
-      comics = "/glacier/snowscape/comics";
+      # audiobooks = "/glacier/snowscape/audiobooks";
+      # books = "/glacier/snowscape/books";
+      # comics = "/glacier/snowscape/comics";
     };
   };
 

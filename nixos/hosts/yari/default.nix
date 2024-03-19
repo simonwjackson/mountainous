@@ -110,7 +110,7 @@
     cert = config.age.secrets.yari-syncthing-cert.path;
 
     settings.paths = {
-      gaming-games = "/glacier/snowscape/gaming/games/";
+      # gaming-games = "/glacier/snowscape/gaming/games/";
       #     documents = "/glacier/snowscape/documents";
       #     notes = "/glacier/snowscape/notes";
       #     audiobooks = "/glacier/snowscape/audiobooks";
