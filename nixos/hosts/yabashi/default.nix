@@ -24,12 +24,12 @@
 
   services.syncthing = {
     enable = true;
-    key = config.age.secrets.yabashi-syncthing-key.path;
-    cert = config.age.secrets.yabashi-syncthing-cert.path;
+    # key = config.age.secrets.yabashi-syncthing-key.path;
+    # cert = config.age.secrets.yabashi-syncthing-cert.path;
 
     settings.paths = {
-      documents = "/home/simonwjackson/documents";
-      notes = "/home/simonwjackson/notes";
+      #   documents = "/home/simonwjackson/documents";
+      #   notes = "/home/simonwjackson/notes";
     };
   };
 

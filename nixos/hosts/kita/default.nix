@@ -1,4 +1,5 @@
 {
+  rootPath,
   config,
   lib,
   pkgs,
@@ -17,6 +18,9 @@
     # # ../../modules/syncthing.nix
     ../../profiles/gaming/gaming-host.nix
   ];
+
+  age.secrets.kita-syncthing-key.file = rootPath + /secrets/kita-syncthing-key.age;
+  age.secrets.kita-syncthing-cert.file = rootPath + /secrets/kita-syncthing-cert.age;
 
   services.auto-cpufreq.enable = true;
   services.power-profiles-daemon.enable = false;
@@ -290,11 +294,12 @@
 
   services.syncthing = {
     enable = true;
-    key = config.age.secrets.fiji-syncthing-key.path;
-    cert = config.age.secrets.fiji-syncthing-cert.path;
+    key = config.age.secrets.kita-syncthing-key.path;
+    cert = config.age.secrets.kita-syncthing-cert.path;
 
     settings.paths = {
       notes = "/glacier/snowscape/notes";
+      gaming-profiles = "/glacier/snowscape/gaming/profiles";
     };
   };
 

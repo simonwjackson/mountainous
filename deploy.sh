@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 export NIX_SSHOPTS="-A"
 
-build_remote=false
 hosts="$1"
 shift
 
@@ -10,7 +9,14 @@ if [ -z "$hosts" ]; then
 fi
 
 for host in ${hosts//,/ }; do
-  nixos-rebuild --flake .\#$host switch --target-host $host --use-remote-sudo --use-substitutes $@
+  nixos-rebuild \
+    --flake ".#$host" \
+    switch \
+    --target-host "$host" \
+    --use-remote-sudo \
+    --use-substitutes \
+    --max-jobs 0 \
+    "$@"
   # --log-format internal-json -v |& nom --json
 done
 
