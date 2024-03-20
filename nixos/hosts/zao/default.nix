@@ -1,4 +1,5 @@
 {
+  rootPath,
   config,
   pkgs,
   inputs,
@@ -16,6 +17,9 @@
     ../../profiles/gaming/gaming-host.nix
     ../../profiles/gaming/gaming.nix
   ];
+
+  age.secrets.zao-syncthing-key.file = rootPath + /secrets/zao-syncthing-key.age;
+  age.secrets.zao-syncthing-cert.file = rootPath + /secrets/zao-syncthing-cert.age;
 
   services.sunshine.enable = true;
 
@@ -44,28 +48,20 @@
     "usb_storage"
     "usbhid"
     "sd_mod"
-    # "rtsx_pci_sdmmc"
   ];
   boot.initrd.kernelModules = [];
   boot.kernelModules = [
     "kvm-intel"
     "uinput"
   ];
-  # hardware.xone.enable = true;
+
   environment.systemPackages = with pkgs; [
-    # linuxKernel.packages.linux_zen.xone
     nfs-utils
     cifs-utils
     acpi
   ];
-  # boot.extraModulePackages = [
-  #   config.boot.kernelPackages.rtl88x2bu
-  #   config.boot.kernelPackages.rtl8814au
-  # ];
 
   boot.kernelPackages = pkgs.linuxPackages_zen;
-  # boot.kernelPackages = pkgs.linuxPackages_latest;
-  # boot.kernelPackages = pkgs.linuxPackages_6_1;
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/015bf7c2-0912-4d69-8e08-8e18d1ac287a";
@@ -216,9 +212,9 @@
     # key = config.age.secrets.fiji-syncthing-key.path;
     # cert = config.age.secrets.fiji-syncthing-cert.path;
     #
-    # settings.paths = {
-    #   notes = "/glacier/snowscape/notes";
-    # };
+    settings.paths = {
+      notes = "/glacier/snowscape/notes";
+    };
   };
 
   # services.syncthing = {

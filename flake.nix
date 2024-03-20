@@ -120,6 +120,7 @@
       rakku = mkSystem "rakku" "x86_64-linux" [];
 
       # portable gaming rig
+      zao = mkSystem "zao" "x86_64-linux" [hardware.nixosModules.dell-xps-17-9700-nvidia];
     };
   };
 }
