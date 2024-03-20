@@ -214,6 +214,7 @@
     #
     settings.paths = {
       notes = "/glacier/snowscape/notes";
+      gaming-profiles = "/glacier/snowscape/gaming/profiles";
     };
   };
 

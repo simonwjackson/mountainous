@@ -21,7 +21,7 @@
 
       folderSettings = {
         notes = {
-          devices = ["fiji" "unzen" "yabashi" "usu"];
+          devices = ["fiji" "unzen" "yabashi" "usu" "kita"];
         };
 
         # documents = {
@@ -35,11 +35,11 @@
         # books = {
         #   devices = ["fiji" "unzen"];
         # };
-        #
-        # gaming-games = {
-        #   devices = ["yari" "unzen"];
-        # };
-        #
+
+        gaming-profiles = {
+          devices = ["kita" "zao" "unzen"];
+        };
+
         # comics = {
         #   devices = ["fiji" "unzen"];
         # };
@@ -83,15 +83,15 @@
           name = "remote server (yabashi)";
         };
 
-        #   zao = {
-        #     id = "";
-        #     name = "gaming (zao)";
-        #   };
+        zao = {
+          id = "CTOOG4Z-5WK7MDW-UQ3KHOI-YEMDGQF-D6JSIMG-BNPJZWN-MPN3RTO-TBFKRAN";
+          name = "gaming (zao)";
+        };
 
-        # kita = {
-        #   id = "";
-        #   name = "gpd win (kita)";
-        # };
+        kita = {
+          id = "J6JEBGV-GDLTLZA-JKIS5PM-EYJ6IS5-QBDM3KP-LSGBR2D-S5VXSYE-TWMVYQ5";
+          name = "gpd win (kita)";
+        };
       };
     };
 
