@@ -15,9 +15,8 @@ for host in ${hosts//,/ }; do
     --target-host "$host" \
     --use-remote-sudo \
     --use-substitutes \
-    --max-jobs 0 \
-    "$@"
-  # --log-format internal-json -v |& nom --json
+    "$@" \
+  --log-format internal-json -v |& nom --json
 done
 
 # Darwin

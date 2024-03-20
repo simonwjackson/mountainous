@@ -84,11 +84,11 @@
       },
       "locked": {
         "dir": "pkgs/firefox-addons",
-        "lastModified": 1710821046,
-        "narHash": "sha256-MgXYQjFu21qc2LcB6EGaiLc6HeBNnVuzml2kese1A0o=",
+        "lastModified": 1710907433,
+        "narHash": "sha256-vgYcXo35O4ZtKokAs4HjyUtGxgcTyu8l/a4w/KLcE0c=",
         "owner": "rycee",
         "repo": "nur-expressions",
-        "rev": "319f4424a6e8e66e8776c06b9c75e564a351348b",
+        "rev": "8abf86f90cb3eafb34461323e7b9402ba992dd40",
         "type": "gitlab"
       },
       "original": {
@@ -547,11 +547,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1710695816,
-        "narHash": "sha256-3Eh7fhEID17pv9ZxrPwCLfqXnYP006RKzSs0JptsN84=",
+        "lastModified": 1710838473,
+        "narHash": "sha256-RLvwdQSENKOaLdKhNie8XqHmTXzNm00/M/THj6zplQo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "614b4613980a522ba49f0d194531beddbb7220d3",
+        "rev": "fa9f817df522ac294016af3d40ccff82f5fd3a63",
         "type": "github"
       },
       "original": {

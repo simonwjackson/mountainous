@@ -36,7 +36,6 @@
         sshUser = "simonwjackson";
         system = "x86_64-linux";
         protocol = "ssh-ng";
-        # systems = ["x86_64-linux" "aarch64-linux"];
         maxJobs = 12;
         speedFactor = 10;
         supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
@@ -51,6 +50,11 @@
         speedFactor = 9;
         supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
         mandatoryFeatures = [];
+      }
+      {
+        hostName = "kita";
+        system = "x86_64-linux";
+        maxJobs = 0;
       }
     ];
 

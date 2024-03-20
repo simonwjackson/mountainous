@@ -37,7 +37,7 @@
         # };
 
         gaming-profiles = {
-          devices = ["kita" "zao" "unzen"];
+          devices = ["usu" "kita" "zao" "unzen"];
         };
 
         # comics = {
@@ -97,7 +97,7 @@
 
     extraFlags = [
       "--no-default-folder"
-      "--gui-address=0.0.0.0:8384"
+      # "--gui-address=0.0.0.0:8384"
     ];
   };
 }
