@@ -33,8 +33,8 @@ in {
 
   "gluetun_env.age".publicKeys = users ++ systems;
 
-  "yari-syncthing-key.age".publicKeys = users ++ [yari];
-  "yari-syncthing-cert.age".publicKeys = users ++ [yari];
+  "zao-syncthing-key.age".publicKeys = users ++ [zao];
+  "zao-syncthing-cert.age".publicKeys = users ++ [zao];
 
   # "yabashi-syncthing-key.age".publicKeys = users ++ [yabashi];
   # "yabashi-syncthing-cert.age".publicKeys = users ++ [yabashi];
@@ -44,4 +44,7 @@ in {
 
   "fiji-syncthing-key.age".publicKeys = users ++ [fiji];
   "fiji-syncthing-cert.age".publicKeys = users ++ [fiji];
+
+  "kita-syncthing-key.age".publicKeys = users ++ [kita];
+  "kita-syncthing-cert.age".publicKeys = users ++ [kita];
 }

@@ -288,6 +288,16 @@
   #
   # systemd.sleep.extraConfig = "HibernateDelaySec=5m";
 
+  services.syncthing = {
+    enable = true;
+    key = config.age.secrets.fiji-syncthing-key.path;
+    cert = config.age.secrets.fiji-syncthing-cert.path;
+
+    settings.paths = {
+      notes = "/glacier/snowscape/notes";
+    };
+  };
+
   system.stateVersion = "23.11"; # Did you read the comment?
 }
 #   # services.logind = {

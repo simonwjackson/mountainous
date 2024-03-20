@@ -211,6 +211,16 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 
+  services.syncthing = {
+    enable = true;
+    # key = config.age.secrets.fiji-syncthing-key.path;
+    # cert = config.age.secrets.fiji-syncthing-cert.path;
+    #
+    # settings.paths = {
+    #   notes = "/glacier/snowscape/notes";
+    # };
+  };
+
   # services.syncthing = {
   #   dataDir = "/home/simonwjackson"; # Default folder for new synced folders
   #
