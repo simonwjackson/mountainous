@@ -38,7 +38,7 @@
         "--network=container:gluetun"
       ];
 
-      dependsOn = ["gluetun"];
+      # dependsOn = ["gluetun"];
     };
 
     ts-series = {
@@ -87,7 +87,8 @@
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SERVE_CONFIG = "/config/tailscale.json";
       };
-      dependsOn = ["gluetun" "sonarr"];
+      # dependsOn = ["sonarr"];
+      # dependsOn = ["gluetun" "sonarr"];
     };
   };
 }

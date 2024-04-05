@@ -64,7 +64,8 @@
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SERVE_CONFIG = "/config/tailscale.json";
       };
-      dependsOn = ["gluetun" "radarr"];
+      # dependsOn = ["gluetun" "radarr"];
+      # dependsOn = ["radarr"];
     };
 
     radarr = {
@@ -82,7 +83,6 @@
       extraOptions = [
         "--network=container:gluetun"
       ];
-      dependsOn = ["gluetun"];
     };
   };
 }

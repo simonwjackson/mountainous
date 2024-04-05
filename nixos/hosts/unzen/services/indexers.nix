@@ -34,7 +34,7 @@
         "--network=container:gluetun"
       ];
 
-      dependsOn = ["gluetun"];
+      # dependsOn = ["gluetun"];
     };
 
     ts-indexers = {
@@ -48,7 +48,7 @@
       ];
       volumes = let
         configPath = pkgs.writeTextFile {
-          name = "ts-usenet-proxy";
+          name = "ts-usenet";
           destination = "/tailscale.json";
           text = ''
             {
@@ -83,7 +83,7 @@
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SERVE_CONFIG = "/config/tailscale.json";
       };
-      dependsOn = ["sonarr"];
+      # dependsOn = ["sonarr"];
     };
   };
 }

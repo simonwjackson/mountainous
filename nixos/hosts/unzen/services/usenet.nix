@@ -65,7 +65,8 @@
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SERVE_CONFIG = "/config/tailscale.json";
       };
-      dependsOn = ["gluetun" "sabnzbd"];
+      # dependsOn = ["gluetun" "sabnzbd"];
+      # dependsOn = ["sabnzbd"];
     };
 
     sabnzbd = {
@@ -85,7 +86,7 @@
         "--network=container:gluetun"
       ];
 
-      dependsOn = ["gluetun"];
+      # dependsOn = ["gluetun"];
     };
   };
 }

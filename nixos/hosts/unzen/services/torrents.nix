@@ -61,7 +61,7 @@
         "/glacier/snowscape/services/rtorrent/data:/data"
         "/glacier/snowscape/services/rtorrent/passwd:/passwd"
       ];
-      dependsOn = ["gluetun"];
+      # dependsOn = ["gluetun"];
     };
 
     flood = {
@@ -79,7 +79,8 @@
         "/glacier/snowscape/services/flood/config:/config"
         "/glacier/snowscape/services/flood/state:/data"
       ];
-      dependsOn = ["rtorrent" "gluetun"];
+      # dependsOn = ["rtorrent" "gluetun"];
+      # dependsOn = ["rtorrent"];
     };
 
     ts-torrents = {
@@ -129,7 +130,8 @@
         TS_STATE_DIR = "/var/lib/tailscale";
         TS_SERVE_CONFIG = "/config/tailscale.json";
       };
-      dependsOn = ["gluetun" "flood"];
+      # dependsOn = ["gluetun" "flood"];
+      # dependsOn = ["flood"];
     };
   };
 }
