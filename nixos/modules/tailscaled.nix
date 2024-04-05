@@ -52,10 +52,7 @@ in {
     };
 
     networking.firewall = {
-      # always allow traffic from your Tailscale network
       trustedInterfaces = lib.mkAfter ["tailscale0"];
-
-      # allow the Tailscale UDP port through the firewall
       allowedUDPPorts = [config.services.tailscale.port];
     };
 
@@ -67,10 +64,8 @@ in {
       wants = ["network-pre.target" "tailscale.service"];
       wantedBy = ["multi-user.target"];
 
-      # set this service as a oneshot job
       serviceConfig.Type = "oneshot";
 
-      # have the job run this shell script
       script = with pkgs;
         ''
           # wait for tailscaled to settle

@@ -21,11 +21,11 @@
 
       folderSettings = {
         notes = {
-          devices = ["fiji" "unzen" "yabashi" "usu" "kita"];
+          devices = ["fiji" "unzen" "usu" "kita"];
         };
 
         # documents = {
-        #   devices = ["fiji" "unzen" "yabashi"];
+        #   devices = ["fiji" "unzen" ];
         # };
         #
         # audiobooks = {

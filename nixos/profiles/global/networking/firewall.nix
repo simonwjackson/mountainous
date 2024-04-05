@@ -6,7 +6,6 @@
   ];
 in {
   networking.firewall = {
-    enable = false;
     allowPing = true;
 
     extraCommands = ''

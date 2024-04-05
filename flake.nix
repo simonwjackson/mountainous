@@ -110,8 +110,8 @@
       # Main laptop
       fiji = mkSystem "fiji" "x86_64-linux" [];
 
-      # Remote Server
-      yabashi = mkSystem "yabashi" "x86_64-linux" [];
+      # VPS
+      yari = mkSystem "yari" "x86_64-linux" [];
 
       # Home Server
       unzen = mkSystem "unzen" "x86_64-linux" [];

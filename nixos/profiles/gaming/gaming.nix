@@ -12,6 +12,7 @@
 in {
   environment.systemPackages = with pkgs; [
     yuzu-mainline
+    citra-canary
     cemu
     retroarchFull
     dolphinEmu
