@@ -25,6 +25,25 @@
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
 
+  services.tmesh = {
+    enable = true;
+    settings = {
+      hosts = ["unzen" "zao" "fiji" "kita"];
+      local-tmesh-server = {
+        command = "${lib.meta.getExe pkgs.neovim} -c 'silent! autocmd TermClose * qa' -c 'terminal' -c 'startinsert'";
+        plugins = {
+          apps = ["btop"];
+          projects = [
+            {
+              identifier = ".bare$|^.git$";
+              root = "/glacier/snowscape/code";
+            }
+          ];
+        };
+      };
+    };
+  };
+
   nixpkgs = {
     overlays = [
       # Add overlays your own flake exports (from overlays and pkgs dir):
@@ -32,7 +51,7 @@
       outputs.overlays.modifications
 
       # You can also add overlays exported from other flakes:
-      inputs.neovim-nightly-overlay.overlays.default
+      # inputs.neovim-nightly-overlay.overlays.default
 
       # Or define it inline, for example:
       # (final: prev: {

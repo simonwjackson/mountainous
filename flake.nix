@@ -9,7 +9,7 @@
 
     nix-flatpak.url = "github:gmodena/nix-flatpak";
     # nix-gaming.url = "github:fufexan/nix-gaming";
-    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    # neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
 
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
@@ -33,6 +33,7 @@
     # My Apps
     # cuttlefish.url = "https://flakehub.com/f/simonwjackson/cuttlefi.sh/*.tar.gz";
     gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
+    tmesh.url = "github:simonwjackson/tmesh";
   };
 
   outputs = {
@@ -61,6 +62,7 @@
             inputs.nix-flatpak.nixosModules.nix-flatpak
             inputs.simple-nixos-mailserver.nixosModule
             inputs.gamerack.nixosModules."${system}".default
+            inputs.tmesh.nixosModules."${system}".default
             # inputs.cuttlefish.nixosModules."${system}".default
             home-manager.nixosModules.home-manager
             {

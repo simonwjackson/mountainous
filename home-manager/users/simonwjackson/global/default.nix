@@ -117,14 +117,6 @@
   programs.home-manager.enable = true;
 
   programs.bash.enable = true;
-  programs.nest-tmux = {
-    enable = true;
-    servers = [
-      "unzen"
-      "fiji"
-      "zao"
-    ];
-  };
 
   programs.atuin = {
     enable = true;

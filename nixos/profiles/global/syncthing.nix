@@ -24,30 +24,9 @@
           devices = ["fiji" "unzen" "usu" "kita"];
         };
 
-        # documents = {
-        #   devices = ["fiji" "unzen" ];
-        # };
-        #
-        # audiobooks = {
-        #   devices = ["fiji" "unzen"];
-        # };
-        #
-        # books = {
-        #   devices = ["fiji" "unzen"];
-        # };
-
         gaming-profiles = {
           devices = ["usu" "kita" "zao" "unzen"];
         };
-
-        # comics = {
-        #   devices = ["fiji" "unzen"];
-        # };
-        #
-        # code = {
-        #   devices = ["fiji"];
-        #   # devices = [ "fiji" "unzen" "yari" ];
-        # };
       };
 
       # Only setup shares that have been enabled in the host's config file
@@ -101,14 +80,6 @@
     ];
   };
 }
-# gaming-games.path = "/glacier/snowscape/gaming/games";
-# gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
-# gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
-# gaming-systems.path = "/glacier/snowscape/gaming/systems";
-# gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
-# gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
-# gaming-profiles.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
-# gaming-systems.devices = [ "fiji" "unzen" "zao" ];
 # gaming-profiles.versioning = {
 #   type = "staggered";
 #   params = {
