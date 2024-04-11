@@ -31,16 +31,16 @@
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
     buildMachines = [
-      {
-        hostName = "zao";
-        sshUser = "simonwjackson";
-        system = "x86_64-linux";
-        protocol = "ssh-ng";
-        maxJobs = 12;
-        speedFactor = 10;
-        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-        mandatoryFeatures = [];
-      }
+      # {
+      #   hostName = "zao";
+      #   sshUser = "simonwjackson";
+      #   system = "x86_64-linux";
+      #   protocol = "ssh-ng";
+      #   maxJobs = 12;
+      #   speedFactor = 10;
+      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+      #   mandatoryFeatures = [];
+      # }
       {
         hostName = "unzen";
         sshUser = "simonwjackson";
