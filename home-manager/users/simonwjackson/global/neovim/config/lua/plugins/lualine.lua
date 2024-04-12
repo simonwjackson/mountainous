@@ -1,5 +1,23 @@
 -- A statusline plugin written for neovim. It’s primarily written in lua.
 
+local function hostname()
+	local f = io.popen("/run/current-system/sw/bin/hostname")
+	local hostname = f:read("*a") or ""
+	f:close()
+	hostname = string.gsub(hostname, "\n$", "")
+	return hostname
+end
+
+local function tmux_session()
+	local cmd = "tmux display-message -p '#S'"
+	local session = vim.fn.system(cmd)
+	if session then
+		session = string.gsub(session, "\n$", "")
+		return session
+	end
+	return ""
+end
+
 return {
 	{
 		"nvim-lualine/lualine.nvim",
@@ -56,7 +74,7 @@ return {
 					},
 				},
 				sections = {
-					lualine_a = { "mode" },
+					lualine_a = { hostname, tmux_session, "mode" },
 					lualine_b = { "branch", "diff", "diagnostics" },
 					lualine_c = { "filename" },
 

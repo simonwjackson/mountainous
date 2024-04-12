@@ -63,6 +63,7 @@ in {
 
   home.packages = with pkgs;
     [
+      tmux # For my custom lua plugin
       unzip
       neovim-remote
       xclip
