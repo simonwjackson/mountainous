@@ -41,21 +41,21 @@
       #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
       #   mandatoryFeatures = [];
       # }
-      {
-        hostName = "unzen";
-        sshUser = "simonwjackson";
-        system = "x86_64-linux";
-        protocol = "ssh-ng";
-        maxJobs = 6;
-        speedFactor = 9;
-        supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-        mandatoryFeatures = [];
-      }
-      {
-        hostName = "kita";
-        system = "x86_64-linux";
-        maxJobs = 0;
-      }
+      # {
+      #   hostName = "unzen";
+      #   sshUser = "simonwjackson";
+      #   system = "x86_64-linux";
+      #   protocol = "ssh-ng";
+      #   maxJobs = 6;
+      #   speedFactor = 9;
+      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
+      #   mandatoryFeatures = [];
+      # }
+      # {
+      #   hostName = "kita";
+      #   system = "x86_64-linux";
+      #   maxJobs = 0;
+      # }
     ];
 
     distributedBuilds = true;

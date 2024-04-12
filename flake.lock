@@ -541,11 +541,11 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1712860611,
-        "narHash": "sha256-Je6NXLqGwp5HSGDHfonSQnY1m8755vAkMC4/V/AosMw=",
+        "lastModified": 1712882829,
+        "narHash": "sha256-kzSCkXVnhXuVo/sa+GlXhIJ6Q/nklI/G9ZscqtUQAWE=",
         "owner": "simonwjackson",
         "repo": "tmesh",
-        "rev": "f45c40296d29b8ab05d919e2c9fbe6d41edf8286",
+        "rev": "5d592cac6595536217f26e2b7e17ac6675ff157d",
         "type": "github"
       },
       "original": {
