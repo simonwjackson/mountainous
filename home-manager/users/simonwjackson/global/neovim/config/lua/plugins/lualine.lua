@@ -1,6 +1,6 @@
 -- A statusline plugin written for neovim. It’s primarily written in lua.
 
-local function hostname()
+local function host()
 	local f = io.popen("/run/current-system/sw/bin/hostname")
 	local hostname = f:read("*a") or ""
 	f:close()
@@ -74,15 +74,15 @@ return {
 					},
 				},
 				sections = {
-					lualine_a = { hostname, tmux_session, "mode" },
+					lualine_a = { tmux_session, "mode" },
 					lualine_b = { "branch", "diff", "diagnostics" },
 					lualine_c = { "filename" },
 
-					lualine_x = { tabs, "filetype" },
+					lualine_x = { tabs },
 					lualine_y = {
 						-- "progress"
 					},
-					lualine_z = { "location" },
+					lualine_z = { "location", host },
 				},
 				inactive_sections = {
 					lualine_a = {},

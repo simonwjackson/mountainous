@@ -28,7 +28,7 @@
   services.tmesh = {
     enable = true;
     settings = {
-      hosts = ["unzen" "zao" "fiji" "kita"];
+      hosts = ["unzen" "zao" "fiji" "kita" "yari"];
       local-tmesh-server = {
         command = "${lib.meta.getExe pkgs.neovim} -c 'silent! autocmd TermClose * qa' -c 'terminal' -c 'startinsert'";
         plugins = {
