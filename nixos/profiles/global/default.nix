@@ -25,8 +25,57 @@
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
 
-  services.tmesh = {
+  services.tmesh = let
+    common = ''
+      set -g status off
+
+      # Switch to another session if last window closed
+      set-option -g detach-on-destroy off
+
+      # Auto resize to the smallest screen connected
+      set-option -g window-size smallest
+
+      # Disable right click menu
+      unbind-key -T root MouseDown3Pane
+
+      # Respond to focus events
+      set-option -g focus-events on
+
+      # address vim mode switching delay (http://superuser.com/a/252717/65504)
+      set-option -s escape-time 0
+
+      # silent
+      set-option -g visual-activity off
+      set-option -g visual-bell off
+      set-option -g visual-silence off
+      set-option -g bell-action none
+
+      # Ignore window notifications
+      set-window-option -g monitor-activity off
+
+    '';
+  in {
     enable = true;
+    tmeshServerTmuxConfig = ''
+      # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
+      set -s set-clipboard on
+
+      # set -as terminal-features ',tmux-256color:clipboard'
+
+      ${common}
+    '';
+    tmeshTmuxConfig = ''
+      # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
+      set -s set-clipboard on
+      # #set -as terminal-features ',xterm-kitty:clipboard'
+
+      # tmesh uses c-a
+      set -g prefix C-a
+      unbind-key C-b
+      bind-key C-a send-prefix
+
+      ${common}
+    '';
     settings = {
       hosts = ["unzen" "zao" "fiji" "kita" "yari"];
       local-tmesh-server = {
