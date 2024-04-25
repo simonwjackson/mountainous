@@ -27,6 +27,9 @@
 
   services.tmesh = let
     common = ''
+      # allow passthrough of escape sequences
+      set -g allow-passthrough on
+
       set -g status off
 
       # Switch to another session if last window closed
@@ -58,7 +61,7 @@
     enable = true;
     tmeshServerTmuxConfig = ''
       # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
-      set -s set-clipboard on
+      # set -s set-clipboard on
 
       # set -as terminal-features ',tmux-256color:clipboard'
 
@@ -79,7 +82,7 @@
     settings = {
       hosts = ["unzen" "zao" "fiji" "kita" "yari"];
       local-tmesh-server = {
-        command = "${lib.meta.getExe pkgs.neovim} -c 'silent! autocmd TermClose * qa' -c 'terminal' -c 'startinsert'";
+        command = "nvim -c 'silent! autocmd TermClose * qa' -c 'terminal' -c 'startinsert'";
         plugins = {
           apps = ["btop"];
           projects = [
@@ -100,7 +103,7 @@
       outputs.overlays.modifications
 
       # You can also add overlays exported from other flakes:
-      # inputs.neovim-nightly-overlay.overlays.default
+      inputs.neovim-nightly-overlay.overlays.default
 
       # Or define it inline, for example:
       # (final: prev: {

@@ -12,8 +12,19 @@ in {
   ];
 
   age.secrets."user-${username}".file = ../../../secrets/user-${username}.age;
+  age.secrets."user-simonwjackson-anthropic" = {
+    file = ../../../secrets/user-simonwjackson-anthropic.age;
+    owner = "simonwjackson";
+    group = "users";
+  };
 
   users.mutableUsers = false;
+  programs.myNeovim = {
+    enable = true;
+    environmentFiles = [
+      config.age.secrets."user-simonwjackson-anthropic".path
+    ];
+  };
 
   security.rtkit.enable = true;
   security.sudo = {

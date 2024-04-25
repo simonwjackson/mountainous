@@ -16,8 +16,7 @@
       ./shell-gpt.nix
       ./eza.nix
       ./lf
-      ./neovim
-      ./tmux
+      # ./neovim
       ./taskwarrior.nix
       ./zsh
     ]
@@ -28,6 +27,9 @@
 
   # TODO: Set your username from $mainUser
   home = {
+    sessionVariables = {
+      EDITOR = "nvim";
+    };
     username = "simonwjackson";
     homeDirectory = "/home/simonwjackson";
     packages = [

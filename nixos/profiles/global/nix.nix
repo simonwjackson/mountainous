@@ -2,8 +2,11 @@
   config,
   inputs,
   lib,
+  rootPath,
   ...
 }: {
+  age.secrets."user-simonwjackson-github-token-nix".file = rootPath + /secrets/user-simonwjackson-github-token-nix.age;
+
   nix = {
     optimise.automatic = true;
     settings = {
@@ -63,6 +66,7 @@
     # optional, useful when the builder has a faster internet connection than yours
     extraOptions = ''
       builders-use-substitutes = true
+      !include ${config.age.secrets."user-simonwjackson-github-token-nix".path};
     '';
   };
 }
