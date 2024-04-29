@@ -1,7 +1,6 @@
 {
   pkgs,
   config,
-  rootPath,
   ...
 }: {
   # INFO: compile this with fullpaths to binaries
@@ -10,7 +9,7 @@
   #   recursive = true;
   # };
 
-  age.secrets."user-simonwjackson-instapaper".file = rootPath + /secrets/user-simonwjackson-instapaper.age;
+  age.secrets."user-simonwjackson-instapaper".file = ../../../../secrets/user-simonwjackson-instapaper.age;
 
   home.file.".local/state/nix/profile/bin/instapaper-add" = {
     text = ''

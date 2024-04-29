@@ -1,7 +1,7 @@
 {config, ...}: {
-  age.secrets."user-simonwjackson-taskserver-private.key".file = ../../secrets/user-simonwjackson-taskserver-private.key.age;
-  age.secrets."user-simonwjackson-taskserver-public.cert".file = ../../secrets/user-simonwjackson-taskserver-public.cert.age;
-  age.secrets."user-simonwjackson-taskserver-ca.cert".file = ../../secrets/user-simonwjackson-taskserver-ca.cert.age;
+  age.secrets."user-simonwjackson-taskserver-private.key".file = ../../../secrets/user-simonwjackson-taskserver-private.key.age;
+  age.secrets."user-simonwjackson-taskserver-public.cert".file = ../../../secrets/user-simonwjackson-taskserver-public.cert.age;
+  age.secrets."user-simonwjackson-taskserver-ca.cert".file = ../../../secrets/user-simonwjackson-taskserver-ca.cert.age;
 
   programs.taskwarrior = {
     enable = true;
