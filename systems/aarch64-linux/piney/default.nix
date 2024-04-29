@@ -18,6 +18,7 @@
 }: {
   imports = [
     ./hardware-configuration.nix
+    (import "${inputs.mobile-nixos}/examples/phosh/phosh.nix")
   ];
 
   programs.myNeovim = {

@@ -43,16 +43,10 @@
       };
 
       snowfall = {
-        # Choose a namespace to use for your flake's packages, library,
-        # and overlays.
         namespace = "mountainous";
 
-        # Add flake metadata that can be processed by tools like Snowfall Frost.
         meta = {
-          # A slug to use in documentation when displaying things like file paths.
           name = "mountainous";
-
-          # A title to show for your flake, typically the name.
           title = "My System Configs";
         };
       };
