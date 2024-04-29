@@ -3,16 +3,11 @@
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
-    # home-manager = {
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    #   url = "github:nix-community/home-manager/release-23.11";
-    # };
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -26,6 +21,10 @@
       url = "github:NixOS/mobile-nixos";
       flake = false;
     };
+    darwin = {
+      url = "github:lnl7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs:
@@ -38,6 +37,10 @@
         home-manager.nixosModules.home-manager
         myNeovim.nixosModules.default
         agenix.nixosModules.default
+      ];
+
+      systems.modules.darwin = with inputs; [
+        home-manager.darwinModules.home-manager
       ];
 
       homes.modules = with inputs; [
