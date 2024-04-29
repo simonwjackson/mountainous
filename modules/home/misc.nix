@@ -8,33 +8,26 @@
   rootPath,
   ...
 }: {
-  imports =
-    [
-      # inputs.agenix.homeManagerModules.age
-    ]
-    ++ (builtins.attrValues outputs.homeManagerModules);
+  # imports =
+  #   [
+  #     # inputs.agenix.homeManagerModules.age
+  #   ]
+  #   ++ (builtins.attrValues outputs.homeManagerModules);
 
-  # age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
-  # age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
+  age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
+  age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
 
   # TODO: Set your username from $mainUser
   home = {
     sessionVariables = {
       EDITOR = "${pkgs.neovim}";
     };
-    # username = "simonwjackson";
-    # homeDirectory = "/home/simonwjackson";
     packages = [
-      pkgs.killall
-      pkgs.jq
-      # inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh"
-      # pkgs.ex
     ];
   };
 
   nixpkgs = {
     config = {
-      # Disable if you don't want unfree packages
       allowUnfree = true;
       # Workaround for https://github.com/nix-community/home-manager/issues/2942
       allowUnfreePredicate = _: true;
@@ -62,33 +55,6 @@
       theme = "Dracula";
       italic-text = "always";
     };
-  };
-
-  xdg.desktopEntries = {
-    lf = {
-      type = "Application";
-      name = "lf";
-      comment = "Launches the lf file manager";
-      icon = "utilities-terminal";
-      terminal = false;
-      exec = "kitty --  lf";
-      # categories = "ConsoleOnly;System;FileTools;FileManager";
-      # mimeType = "inode/directory";
-      # keywords = "File;Manager;Browser;Explorer;Launcher;Vi;Vim;Python";
-    };
-    # obsidian = {
-    #   name = "Obsidian";
-    #   genericName = "Link Your Thinking";
-    #   exec = "nix run --impure \"nixpkgs#obsidian\"";
-    #   terminal = true;
-    # };
-
-    # vscode = {
-    #   name = "VS Code";
-    #   genericName = "VS Code";
-    #   exec = "nix run --impure nixpkgs\#vscode";
-    #   terminal = false;
-    # };
   };
 
   programs.direnv = {

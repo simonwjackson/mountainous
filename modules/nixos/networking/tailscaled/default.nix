@@ -49,7 +49,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # age.secrets."tailscale".file = rootPath + /secrets/tailscale.age;
+    age.secrets."tailscale".file = rootPath + /secrets/tailscale.age;
 
     environment.systemPackages = with pkgs; [
       tailscale # make the tailscale command usable to users
@@ -90,20 +90,20 @@ in {
 
       serviceConfig.Type = "oneshot";
 
-      script = with pkgs; ''
-        # wait for tailscaled to settle
-        sleep 2
+      script = with pkgs;
+        ''
+           # wait for tailscaled to settle
+           sleep 2
 
-        # check if we are already authenticated to tailscale
-        status="$(${tailscale}/bin/tailscale status -json | ${jq}/bin/jq -r .BackendState)"
-        if [ $status = "Running" ]; then # if so, then do nothing
-          exit 0
-        fi
+           # check if we are already authenticated to tailscale
+           status="$(${tailscale}/bin/tailscale status -json | ${jq}/bin/jq -r .BackendState)"
+           if [ $status = "Running" ]; then # if so, then do nothing
+             exit 0
+           fi
 
-        # otherwise authenticate with tailscale
-        ${tailscale}/bin/tailscale up ${args} --authkey tskey-auth-kDi36L3CNTRL-PSUjvxq19t16qg1EGPKvz13AMmdReYU9f'';
-      # ${tailscale}/bin/tailscale up ${args} --authkey file:
-      # + config.age.secrets."tailscale".path;
+           # otherwise authenticate with tailscale
+          ${tailscale}/bin/tailscale up ${args} --authkey file:''
+        + config.age.secrets."tailscale".path;
     };
   };
 }

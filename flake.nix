@@ -3,6 +3,7 @@
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    agenix.url = "github:ryantm/agenix";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -26,6 +27,11 @@
       systems.modules.nixos = with inputs; [
         home-manager.nixosModules.home-manager
         myNeovim.nixosModules.default
+        inputs.agenix.nixosModules.default
+      ];
+
+      homes.modules = with inputs; [
+        inputs.agenix.homeManagerModules.age
       ];
 
       systems.hosts.piney.modules = with inputs; [

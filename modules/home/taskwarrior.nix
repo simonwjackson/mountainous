@@ -3,18 +3,18 @@
   config,
   ...
 }: {
-  # age.secrets."user-simonwjackson-taskserver-private.key".file = rootPath + /secrets/user-simonwjackson-taskserver-private.key.age;
-  # age.secrets."user-simonwjackson-taskserver-public.cert".file = rootPath + /secrets/user-simonwjackson-taskserver-public.cert.age;
-  # age.secrets."user-simonwjackson-taskserver-ca.cert".file = rootPath + /secrets/user-simonwjackson-taskserver-ca.cert.age;
+  age.secrets."user-simonwjackson-taskserver-private.key".file = rootPath + /secrets/user-simonwjackson-taskserver-private.key.age;
+  age.secrets."user-simonwjackson-taskserver-public.cert".file = rootPath + /secrets/user-simonwjackson-taskserver-public.cert.age;
+  age.secrets."user-simonwjackson-taskserver-ca.cert".file = rootPath + /secrets/user-simonwjackson-taskserver-ca.cert.age;
 
   programs.taskwarrior = {
     enable = true;
     config = {
       confirmation = false;
       taskd = {
-        # certificate = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
-        # key = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
-        # ca = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
+        certificate = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
+        key = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
+        ca = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
         server = "yari:53589";
         credentials = "mountainous/simonwjackson/430e9d17-bc5e-4534-9c37-c1dcab337dbe";
       };
