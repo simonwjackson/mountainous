@@ -8,14 +8,7 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    # inputs.nix-gaming.nixosModules.steamCompat
-
-    ../../profiles/global
-    ../../profiles/sound
-    # ../../profiles/systemd-boot.nix
-    ../../users/simonwjackson
-    # # ../../modules/syncthing.nix
-    ../../profiles/gaming/gaming-host.nix
+    ../../../modules/nixos/gaming/gaming-host.nix
   ];
 
   age.secrets.kita-syncthing-key.file = ../../../secrets/kita-syncthing-key.age;
