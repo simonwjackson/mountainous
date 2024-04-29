@@ -1,0 +1,2 @@
+/* Hide scrollbar in FF Quantum */
+* { scrollbar-width: none !important }
