@@ -11,8 +11,6 @@
   ...
 }: {
   imports = [
-    (import "${inputs.mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
-    (import "${inputs.mobile-nixos}/examples/phosh/phosh.nix")
     ./hardware-configuration.nix
   ];
 
