@@ -3,11 +3,17 @@
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+    # home-manager = {
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    #   url = "github:nix-community/home-manager/release-23.11";
+    # };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,6 +41,10 @@
       ];
 
       homes.modules = with inputs; [
+      ];
+
+      systems.hosts.fiji.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
       ];
 
       systems.hosts.piney.modules = with inputs; [

@@ -15,6 +15,7 @@
       identityPaths =
         options.age.identityPaths.default
         ++ [
+          # TODO: Pull this value from somewhere else in the config
           "${config.home.homeDirectory}/.ssh/agenix"
         ];
     };

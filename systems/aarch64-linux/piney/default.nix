@@ -18,10 +18,7 @@
     enable = true;
   };
 
-  mountainous.networking.tailscaled = {
-    enable = true;
-    isMobileNixos = true;
-  };
+  mountainous.networking.tailscaled.isMobileNixos = true;
 
   # nixpkgs.config.allowUnfree = true;
   nix = {

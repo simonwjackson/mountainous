@@ -2,25 +2,19 @@
 {
   lib,
   inputs,
-  outputs,
   pkgs,
   config,
   ...
 }: {
-  imports =
-    [
-      inputs.home-manager.nixosModules.home-manager
-      ./networking
-      ./nix.nix
-      ./locale.nix
-      ./printing.nix
-      ./syncthing.nix
-    ]
-    ++ (builtins.attrValues outputs.nixosModules);
-
-  home-manager.extraSpecialArgs = {inherit inputs outputs;};
+  # home-manager.extraSpecialArgs = {inherit inputs outputs;};
+  mountainous.networking.tailscaled.enable = true;
+  networking.useDHCP = lib.mkDefault true;
 
   services.udisks2.enable = true;
+  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
+
+  # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
+  systemd.services.NetworkManager-wait-online.enable = false;
 
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
@@ -96,31 +90,10 @@
     };
   };
 
-  nixpkgs = {
-    overlays = [
-      # Add overlays your own flake exports (from overlays and pkgs dir):
-      outputs.overlays.additions
-      outputs.overlays.modifications
-
-      # You can also add overlays exported from other flakes:
-      inputs.neovim-nightly-overlay.overlays.default
-
-      # Or define it inline, for example:
-      # (final: prev: {
-      #   hi = final.hello.overrideAttrs (oldAttrs: {
-      #     patches = [ ./change-hello-to-hi.patch ];
-      #   });
-      # })
-    ];
-    config = {
-      allowUnfree = true;
-    };
-  };
-
   # environment.enableAllTerminfo = true;
 
   hardware.enableRedistributableFirmware = true;
-  networking.domain = "mountain.ous";
+  networking.domain = "mountaino.us";
 
   # $ nix search wget
   # TODO: dont hardcode system type
@@ -144,10 +117,10 @@
     }
   ];
 
-  console = {
-    font = lib.mkDefault "Lat2-Terminus16";
-    keyMap = lib.mkDefault "us";
-  };
+  # console = {
+  #   font = lib.mkDefault "Lat2-Terminus16";
+  #   keyMap = lib.mkDefault "us";
+  # };
 
   services.gpm.enable = true; # TTY mouse
 }

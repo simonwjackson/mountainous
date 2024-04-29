@@ -3,11 +3,6 @@
   config,
   ...
 }: {
-  console = {
-    useXkbConfig = true;
-    earlySetup = false;
-  };
-
   boot = {
     # plymouth = {
     #   enable = true;

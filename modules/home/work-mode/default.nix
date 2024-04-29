@@ -5,11 +5,11 @@
   pkgs,
   ...
 }: let
-  cfg = config.programs.work-mode;
+  cfg = config.mountainous.work-mode;
   package = pkgs.work-mode;
   popup-term = "${pkgs.mountainous.popup-term}/bin/popup-term";
 in {
-  options.programs.work-mode = {
+  options.mountainous.work-mode = {
     enable = lib.mkEnableOption "work-mode";
 
     monitor = lib.mkOption {
@@ -783,7 +783,7 @@ in {
           + "/bin/bsp-layout";
       in {
         "super + space" = ''
-          ${popup-term} ${pkgs.wifi-select}/bin/wifi-select
+          ${popup-term} ${pkgs.mountainous.wifi-select}/bin/wifi-select
         '';
         "super + m" = ''
           ${bsp-layout} next --layouts rtall,monocle
@@ -975,7 +975,7 @@ in {
           interval = "3.0";
           interface.type = "wireless";
 
-          format-connected = "%{A1:${popup-term} ${pkgs.wifi-select}/bin/wifi-select:}<ramp-signal> <label-connected>%{A}";
+          format-connected = "%{A1:${popup-term} ${pkgs.mountainous.wifi-select}/bin/wifi-select:}<ramp-signal> <label-connected>%{A}";
           label-connected = "%essid%";
 
           ramp = {
@@ -1014,7 +1014,7 @@ in {
         # };
 
         "module/cpu-profile" = let
-          cpu-profile = "${pkgs.cpu-profile}/bin/cpu-profile";
+          cpu-profile = "${pkgs.mountainous.cpu-profile}/bin/cpu-profile";
         in {
           type = "custom/script";
           exec =
