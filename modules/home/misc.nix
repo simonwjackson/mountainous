@@ -1,21 +1,29 @@
 {
-  inputs,
-  outputs,
+  # Snowfall Lib provides a customized `lib` instance with access to your flake's library
+  # as well as the libraries available from your flake's inputs.
   lib,
-  config,
+  # An instance of `pkgs` with your overlays and packages applied is also available.
   pkgs,
-  age,
-  rootPath,
+  # You also have access to your flake's inputs.
+  inputs,
+  # Additional metadata is provided by Snowfall Lib.
+  home, # The home architecture for this host (eg. `x86_64-linux`).
+  target, # The Snowfall Lib target for this home (eg. `x86_64-home`).
+  format, # A normalized name for the home target (eg. `home`).
+  virtual, # A boolean to determine whether this home is a virtual target using nixos-generators.
+  host, # The host name for this home.
+  # All other arguments come from the home home.
+  config,
   ...
 }: {
   # imports =
   #   [
-  #     # inputs.agenix.homeManagerModules.age
+  #     inputs.agenix.homeManagerModules.age
   #   ]
   #   ++ (builtins.attrValues outputs.homeManagerModules);
 
-  age.secrets.atuin_key.file = rootPath + /secrets/atuin_key.age;
-  age.secrets.atuin_session.file = rootPath + /secrets/atuin_session.age;
+  age.secrets.atuin_key.file = ../../secrets/atuin_key.age;
+  age.secrets.atuin_session.file = ../../secrets/atuin_session.age;
 
   # TODO: Set your username from $mainUser
   home = {

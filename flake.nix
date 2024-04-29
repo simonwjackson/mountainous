@@ -27,11 +27,12 @@
       systems.modules.nixos = with inputs; [
         home-manager.nixosModules.home-manager
         myNeovim.nixosModules.default
-        inputs.agenix.nixosModules.default
+        agenix.nixosModules.default
       ];
 
-      homes.modules = with inputs; [
-        inputs.agenix.homeManagerModules.age
+      homes.modules.darwin = with inputs; [
+        # WARN: This might not work
+        agenix.homeManagerModules.age
       ];
 
       systems.hosts.piney.modules = with inputs; [

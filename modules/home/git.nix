@@ -1,9 +1,5 @@
-{
-  rootPath,
-  config,
-  ...
-}: {
-  age.secrets."user-simonwjackson-github-token".file = rootPath + /secrets/user-simonwjackson-github-token.age;
+{config, ...}: {
+  age.secrets."user-simonwjackson-github-token".file = ../../secrets/user-simonwjackson-github-token.age;
   home.sessionVariables = {
     GITHUB_USER = "simonwjackson";
     GITHUB_TOKEN = config.age.secrets."user-simonwjackson-github-token".path;
