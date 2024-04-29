@@ -6,10 +6,10 @@
   ...
 }:
 with lib; let
-  cfg = config.services.sunshine;
+  cfg = config.mountainous.gaming.sunshine;
   devices = ["DP-1" "DP-2" "DP-3" "DP-4" "HDMI-1"];
 in {
-  options.services.sunshine = {
+  options.mountainous.gaming.sunshine = {
     enable = mkEnableOption "Sunshine";
   };
 
