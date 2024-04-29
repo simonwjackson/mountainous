@@ -3,12 +3,15 @@
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     snowfall-lib = {
       url = "github:snowfallorg/lib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     mobile-nixos = {
-      # url = "github:matthewcroughan/mobile-nixos";
       url = "github:NixOS/mobile-nixos";
       flake = false;
     };
@@ -21,7 +24,8 @@
 
       # Add modules to all NixOS systems.
       systems.modules.nixos = with inputs; [
-        inputs.myNeovim.nixosModules.default
+        home-manager.nixosModules.home-manager
+        myNeovim.nixosModules.default
       ];
 
       systems.hosts.piney.modules = with inputs; [
