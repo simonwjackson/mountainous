@@ -1,12 +1,13 @@
 {
   config,
-  pkgs,
+  inputs,
   lib,
+  pkgs,
   ...
 }: let
   cfg = config.programs.work-mode;
   package = pkgs.work-mode;
-  popup-term = "${pkgs.popup-term}/bin/popup-term";
+  popup-term = "${pkgs.mountainous.popup-term}/bin/popup-term";
 in {
   options.programs.work-mode = {
     enable = lib.mkEnableOption "work-mode";
