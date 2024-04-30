@@ -7,7 +7,7 @@
 deploy:
     #!/usr/bin/env bash
     if [ "$(uname)" == "Darwin" ]; then \
-        nix run nix-darwin -- switch --flake .; \
+        sudo nix run nix-darwin -- switch --flake .; \
     else \
         nixos-rebuild switch --flake . --use-remote-sudo; \
     fi

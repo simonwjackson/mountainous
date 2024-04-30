@@ -44,6 +44,8 @@
 
       systems.modules.darwin = with inputs; [
         home-manager.darwinModules.home-manager
+        myNeovim.nixosModules.default
+        tmesh.nixosModules.aarch64-darwin.default
       ];
 
       homes.modules = with inputs; [

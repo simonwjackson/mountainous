@@ -1,7 +1,20 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  inputs,
+  ...
+}: {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
-  environment.systemPackages = with pkgs; [kitty yarn nodejs_20 python3];
+  environment.systemPackages = with pkgs; [
+    kitty
+    yarn
+    nodejs_20
+    python3
+  ];
+
+  programs.myNeovim = {
+    enable = true;
+  };
 
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
