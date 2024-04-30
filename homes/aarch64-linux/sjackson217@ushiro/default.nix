@@ -17,10 +17,6 @@
   # TODO: Create an activation script to create this folder
   age.secretsDir = "${config.home.homeDirectory}/.keys";
 
-  home.sessionVariables = {
-    # EDITOR = "emacs";
-  };
-
   home = {
     homeDirectory = "/Users/sjackson217";
     stateVersion = "23.11"; # WARN: Changing this might break things. Just leave it.

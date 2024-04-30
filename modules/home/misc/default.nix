@@ -24,7 +24,7 @@
 
     home = {
       sessionVariables = {
-        EDITOR = "${lib.getExe pkgs.neovim}";
+        EDITOR = "nvim";
       };
       packages = [
       ];
