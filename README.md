@@ -11,7 +11,9 @@
     <img alt="Static Badge" src="https://img.shields.io/badge/Powered_by-Endless_nights-79c0ff?style=for-the-badge&logo=nuke&logoColor=79c0ff&labelColor=161B22">
 </div>
 
-Here's a quick and incomplete tour of what is going on in the repository:
+<p>
+  Here's a quick and incomplete tour of what is going on in the repository:
+</p>
 
 | Directory   | Purpose                                                                                                                              |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
