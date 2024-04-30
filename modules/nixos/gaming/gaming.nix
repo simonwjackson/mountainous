@@ -1,7 +1,9 @@
 {
-  lib,
   config,
+  inputs,
+  lib,
   pkgs,
+  system,
   ...
 }: let
   snowscape = "/glacier/snowscape";
@@ -11,8 +13,7 @@
   mount = "${pkgs.mount}/bin/mount";
 in {
   environment.systemPackages = with pkgs; [
-    yuzu-mainline
-    citra-canary
+    inputs.suyu.packages."${system}".suyu
     cemu
     retroarchFull
     dolphinEmu

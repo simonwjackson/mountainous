@@ -2,7 +2,9 @@
   inputs = {
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    suyu.url = "github:Noodlez1232/suyu-flake";
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -37,6 +39,7 @@
         home-manager.nixosModules.home-manager
         myNeovim.nixosModules.default
         agenix.nixosModules.default
+        nix-flatpak.nixosModules.nix-flatpak
       ];
 
       systems.modules.darwin = with inputs; [
@@ -46,7 +49,12 @@
       homes.modules = with inputs; [
       ];
 
+      # HACK: tmesh needs a better default
       systems.hosts.fiji.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
+      systems.hosts.kita.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];
 
