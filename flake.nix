@@ -5,9 +5,12 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     suyu.url = "github:Noodlez1232/suyu-flake";
+    simple-nixos-mailserver.url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-23.11";
 
     agenix = {
-      url = "github:ryantm/agenix";
+      # HACK: https://github.com/ryantm/agenix/issues/248
+      url = "github:ryantm/agenix?ref=0.15.0";
+      # url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
@@ -49,6 +52,7 @@
         myNeovim.nixosModules.default
         agenix.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
+        simple-nixos-mailserver.nixosModule
       ];
 
       systems.modules.darwin = with inputs; [
@@ -65,9 +69,14 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
 
+      systems.hosts.yari.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
       systems.hosts.kita.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];
+      # HACK: END
 
       systems.hosts.piney.modules = [
         (import "${inputs.mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
