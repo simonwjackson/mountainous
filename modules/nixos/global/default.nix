@@ -7,7 +7,9 @@
   ...
 }: {
   # home-manager.extraSpecialArgs = {inherit inputs outputs;};
-  mountainous.networking.tailscaled.enable = true;
+  mountainous.networking.tailscaled.enable = lib.mkDefault true;
+  mountainous.networking.zerotierone.enable = lib.mkDefault true;
+
   networking.useDHCP = lib.mkDefault true;
 
   services.udisks2.enable = true;

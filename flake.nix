@@ -69,9 +69,9 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
 
-      systems.hosts.piney.modules = with inputs; [
-        (import "${mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
-        (import "${mobile-nixos}/examples/phosh/phosh.nix")
+      systems.hosts.piney.modules = [
+        (import "${inputs.mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
+        (import "${inputs.mobile-nixos}/examples/phosh/phosh.nix")
       ];
 
       overlays = with inputs; [

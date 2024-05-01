@@ -9,8 +9,7 @@
   systems,
   config,
   ...
-}:
-with lib; let
+}: let
   cfg = config.mountainous.networking.tailscaled;
   args =
     cfg.extraArgs
@@ -23,24 +22,24 @@ with lib; let
     );
 in {
   options.mountainous.networking.tailscaled = {
-    enable = mkEnableOption "Tailscale Daemon";
+    enable = lib.mkEnableOption "Tailscale Daemon";
 
-    isMobileNixos = mkOption {
-      type = types.bool;
+    isMobileNixos = lib.mkOption {
+      type = lib.types.bool;
       default = false;
       description = ''
         Mobile Nixos 2024-04-27: This kernel does not support rpfilter
       '';
     };
 
-    extraArgs = mkOption {
-      type = types.str;
+    extraArgs = lib.mkOption {
+      type = lib.types.str;
       description = "Extra args";
       default = "";
     };
 
-    exit-node = mkOption {
-      type = types.bool;
+    exit-node = lib.mkOption {
+      type = lib.types.bool;
       default = false;
       description = ''
         Exit node
@@ -48,14 +47,14 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     age.secrets."tailscale".file = ../../../../secrets/tailscale.age;
 
     environment.systemPackages = with pkgs; [
       tailscale # make the tailscale command usable to users
     ];
 
-    systemd.services.mobileNixosTailscaled = mkIf cfg.isMobileNixos {
+    systemd.services.mobileNixosTailscaled = lib.mkIf cfg.isMobileNixos {
       description = "Tailscale Daemon";
       after = ["network.target"];
       wantedBy = ["multi-user.target"];
@@ -67,7 +66,7 @@ in {
       };
     };
 
-    services.tailscale = mkIf (!cfg.isMobileNixos) {
+    services.tailscale = lib.mkIf (!cfg.isMobileNixos) {
       enable = true;
       useRoutingFeatures =
         if cfg.exit-node
@@ -90,19 +89,19 @@ in {
 
       serviceConfig.Type = "oneshot";
 
-      script = with pkgs;
+      script =
         ''
            # wait for tailscaled to settle
            sleep 2
 
            # check if we are already authenticated to tailscale
-           status="$(${tailscale}/bin/tailscale status -json | ${jq}/bin/jq -r .BackendState)"
+           status="$(${pkgs.tailscale}/bin/tailscale status -json | ${pkgs.jq}/bin/jq -r .BackendState)"
            if [ $status = "Running" ]; then # if so, then do nothing
              exit 0
            fi
 
            # otherwise authenticate with tailscale
-          ${tailscale}/bin/tailscale up ${args} --authkey file:''
+          ${pkgs.tailscale}/bin/tailscale up ${pkgs.args} --authkey file:''
         + config.age.secrets."tailscale".path;
     };
   };

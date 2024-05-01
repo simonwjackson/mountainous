@@ -206,7 +206,7 @@ in {
   # Auto tune the CPU based on usage
   services.auto-cpufreq.enable = true;
 
-  # INFO: Hacky, non-reliable way to check if host is intel
+  # HACK: non-reliable way to check if host is intel
   services.thermald.enable = lib.mkIf (config.hardware.cpu.intel.updateMicrocode) true;
 
   environment.pathsToLink = ["/share/zsh"];

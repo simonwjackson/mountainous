@@ -18,6 +18,7 @@
     enable = true;
   };
 
+  mountainous.networking.zerotierone.enable = false;
   mountainous.networking.tailscaled.isMobileNixos = true;
 
   # nixpkgs.config.allowUnfree = true;
