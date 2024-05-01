@@ -4,33 +4,62 @@
 #
 ############################################################################
 
-deploy:
+# Default recipe
+default:
+    @just --list
+
+deploy *ARGS:
     #!/usr/bin/env bash
     if [ "$(uname)" == "Darwin" ]; then \
-        sudo nix run nix-darwin -- switch --flake .; \
+        echo "MacOS is unsupported at this time."
     else \
-        nixos-rebuild switch --flake . --use-remote-sudo; \
+        nixos-rebuild switch --flake ".#$(hostname)" --target-host "$(hostname)" --use-remote-sudo --use-substitutes {{ ARGS }}; \
     fi
 
-dry:
+switch *ARGS:
     #!/usr/bin/env bash
     if [ "$(uname)" == "Darwin" ]; then \
-        nix build .#darwinConfigurations.$(hostname).config.system.build.toplevel; \
+        sudo nix run nix-darwin -- switch --flake ".#$(hostname)" {{ ARGS }}; \
     else \
-        nix build .#nixosConfigurations.$(hostname).config.system.build.toplevel; \
+        nixos-rebuild switch --flake ".#$(hostname)" --target-host "$(hostname)" --use-remote-sudo --use-substitutes   {{ ARGS }}; \
     fi
 
-debug:
-    nixos-rebuild switch --flake . --use-remote-sudo --show-trace --verbose
+build *ARGS:
+    #!/usr/bin/env bash
+    if [ "$(uname)" == "Darwin" ]; then \
+        sudo nix run nix-darwin -- build --flake ".#$(hostname)" {{ ARGS }}; \
+    else \
+        nixos-rebuild build --flake ".#$(hostname)" --target-host "$(hostname)" --use-remote-sudo --use-substitutes {{ ARGS }};
+    fi
+
+dry *ARGS:
+    #!/usr/bin/env bash
+    if [ "$(uname)" == "Darwin" ]; then \
+        nix build ".#darwinConfigurations.$(hostname).config.system.build.toplevel" {{ ARGS }}; \
+    else \
+        nix build ".#nixosConfigurations.$(hostname).config.system.build.toplevel" {{ ARGS }}; \
+    fi
+
+debug *ARGS:
+    just switch --show-trace --verbose {{ ARGS }}
+
+evolve *ARGS:
+    just up
+    just switch {{ ARGS }}
+
+evolve-all *ARGS:
+    #!/usr/bin/env bash
+    just up && \
+    sh -c './scripts/deploy.sh'
 
 up:
     nix flake update
 
 # Update specific input
 
-# usage: make upp i=home-manager
-up-this:
-    nix flake lock --update-input $(i)
+# usage: make up-this home-manager
+up-this *ARGS:
+    nix flake lock --update-input {{ ARGS }}
 
 history:
     nix profile history --profile /nix/var/nix/profiles/system

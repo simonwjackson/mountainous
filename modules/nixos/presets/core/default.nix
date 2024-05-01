@@ -99,9 +99,10 @@
 #   };
 # }
 {
-  pkgs,
   config,
   inputs,
+  lib,
+  pkgs,
   ...
 }: let
   ifTheyExist = groups: builtins.filter (group: builtins.hasAttr group config.users.groups) groups;
@@ -119,6 +120,9 @@ in {
   users.mutableUsers = false;
   programs.myNeovim = {
     enable = true;
+    environment = {
+      NOTES_DIR = "/glacier/snowscape/notes";
+    };
     environmentFiles = [
       config.age.secrets."user-simonwjackson-anthropic".path
     ];
@@ -174,7 +178,7 @@ in {
     ];
 
     packages = with pkgs; [
-      pkgs.mountainous.ex
+      mountainous.ex
     ];
   };
 
@@ -198,6 +202,12 @@ in {
       value = "unlimited";
     }
   ];
+
+  # Auto tune the CPU based on usage
+  services.auto-cpufreq.enable = true;
+
+  # INFO: Hacky, non-reliable way to check if host is intel
+  services.thermald.enable = lib.mkIf (config.hardware.cpu.intel.updateMicrocode) true;
 
   environment.pathsToLink = ["/share/zsh"];
 }

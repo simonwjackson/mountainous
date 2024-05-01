@@ -2,17 +2,17 @@
     <img src="./.github/assets/mountainous-logo.jpg" width="300px"/>
 </h3>
 <h1 align="center">
-    Mountainous | <a href="https://nixos.org">NixOS</a> flake built with <a href="https://github.com/snowfallorg/lib">Snowfall</a>
+    Mountainous ｜ <a href="https://nixos.org">NixOS</a> flake built with <a href="https://github.com/snowfallorg/lib">Snowfall</a>
 </h1>
 
 <div align="center">
     <img alt="Static Badge" src="https://img.shields.io/badge/NixOS-unstable-d2a8ff?style=for-the-badge&logo=NixOS&logoColor=cba6f7&labelColor=161B22">
     <img alt="Static Badge" src="https://img.shields.io/badge/State-Forever_WIP-ff7b72?style=for-the-badge&logo=fireship&logoColor=ff7b72&labelColor=161B22">
-    <a href="https://github.com/simonwjackson/nix-config/pulse">
+    <a href="https://github.com/epwalsh/obsidian.nvim/pulse">
       <img alt="Last commit" src="https://img.shields.io/github/last-commit/simonwjackson/nix-config?style=for-the-badge&logo=github&logoColor=D9E0EE&labelColor=302D41&color=9fdf9f"/>
     </a>
     <img alt="Static Badge" src="https://img.shields.io/badge/Powered_by-Endless_nights-79c0ff?style=for-the-badge&logo=nuke&logoColor=79c0ff&labelColor=161B22">
-    <a href="https://github.com/simonwjackson/nix-config/tree/main/LICENSE">
+    <a href="https://github.com/jh-devv/luminara/tree/main/LICENSE">
       <img alt="License" src="https://img.shields.io/badge/License-MIT-907385605422448742?style=for-the-badge&logo=agpl&color=DDB6F2&logoColor=D9E0EE&labelColor=302D41">
     </a>
     <a href="https://www.buymeacoffee.com/simonwjackson">
