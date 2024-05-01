@@ -5,6 +5,7 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     suyu.url = "github:Noodlez1232/suyu-flake";
+
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -15,14 +16,22 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     snowfall-lib = {
       url = "github:snowfallorg/lib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    snowfall-frost = {
+      url = "github:snowfallorg/frost";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     mobile-nixos = {
       url = "github:NixOS/mobile-nixos";
       flake = false;
     };
+
     darwin = {
       url = "github:lnl7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -63,6 +72,10 @@
       systems.hosts.piney.modules = with inputs; [
         (import "${mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
         (import "${mobile-nixos}/examples/phosh/phosh.nix")
+      ];
+
+      overlays = with inputs; [
+        snowfall-frost.overlays.default
       ];
 
       channels-config = {
