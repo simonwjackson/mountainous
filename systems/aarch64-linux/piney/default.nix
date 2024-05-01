@@ -21,46 +21,6 @@
   mountainous.networking.zerotierone.enable = false;
   mountainous.networking.tailscaled.isMobileNixos = true;
 
-  # nixpkgs.config.allowUnfree = true;
-  nix = {
-    optimise.automatic = true;
-    settings = {
-      trusted-users = ["root" "@wheel" "simonwjackson"];
-      auto-optimise-store = lib.mkDefault true;
-      experimental-features = ["nix-command" "flakes"];
-      warn-dirty = false;
-      flake-registry = ""; # Disable global flake registry
-    };
-
-    # This will add each flake input as a registry
-    # To make nix3 commands consistent with your flake
-    # registry = lib.mapAttrs (_: value: {flake = value;}) inputs;
-
-    # This will additionally add your inputs to the system's legacy channels
-    # Making legacy nix commands consistent as well, awesome!
-    # nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
-
-    buildMachines = [
-      # {
-      #   hostName = "unzen";
-      #   sshUser = "simonwjackson";
-      #   systems = ["x86_64-linux" "aarch64-linux"];
-      #   protocol = "ssh-ng";
-      #   maxJobs = 6;
-      #   speedFactor = 9;
-      #   supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-      #   mandatoryFeatures = [];
-      # }
-    ];
-
-    distributedBuilds = true;
-
-    # optional, useful when the builder has a faster internet connection than yours
-    # extraOptions = ''
-    #   builders-use-substitutes = true
-    # '';
-  };
-
   programs.mosh.enable = true;
   services.openssh = {
     enable = true;

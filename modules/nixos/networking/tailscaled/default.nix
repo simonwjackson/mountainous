@@ -101,7 +101,7 @@ in {
            fi
 
            # otherwise authenticate with tailscale
-          ${pkgs.tailscale}/bin/tailscale up ${pkgs.args} --authkey file:''
+          ${pkgs.tailscale}/bin/tailscale up ${args} --authkey file:''
         + config.age.secrets."tailscale".path;
     };
   };
