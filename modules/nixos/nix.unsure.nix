@@ -5,31 +5,13 @@
   rootPath,
   ...
 }: {
-  age.secrets."user-simonwjackson-github-token-nix".file = rootPath + /secrets/user-simonwjackson-github-token-nix.age;
-
   nix = {
-    optimise.automatic = true;
-    settings = {
-      trusted-users = ["root" "@wheel" "simonwjackson"];
-      auto-optimise-store = lib.mkDefault true;
-      experimental-features = ["nix-command" "flakes"];
-      warn-dirty = false;
-      flake-registry = ""; # Disable global flake registry
-    };
     # gc = {
     #   automatic = true;
     #   dates = "weekly";
     #   # Keep the last 3 generations
     #   options = "--delete-older-than +3";
     # };
-
-    # This will add each flake input as a registry
-    # To make nix3 commands consistent with your flake
-    registry = lib.mapAttrs (_: value: {flake = value;}) inputs;
-
-    # This will additionally add your inputs to the system's legacy channels
-    # Making legacy nix commands consistent as well, awesome!
-    nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
     buildMachines = [
       # {
@@ -58,13 +40,5 @@
       #   maxJobs = 0;
       # }
     ];
-
-    distributedBuilds = true;
-
-    # optional, useful when the builder has a faster internet connection than yours
-    extraOptions = ''
-      builders-use-substitutes = true
-      !include ${config.age.secrets."user-simonwjackson-github-token-nix".path};
-    '';
   };
 }
