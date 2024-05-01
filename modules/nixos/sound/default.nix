@@ -1,6 +1,9 @@
-{...}: {
+{pkgs, ...}: {
   sound.enable = true;
   hardware.pulseaudio.enable = false;
+
+  # Bluetooth audio
+  hardware.pulseaudio.package = pkgs.pulseaudioFull;
 
   services.pipewire = {
     enable = true;

@@ -39,13 +39,10 @@
   networking.networkmanager.enable = true;
 
   # Use PulseAudio
-  hardware.pulseaudio.enable = true;
+  # hardware.pulseaudio.enable = true;
 
   # Enable Bluetooth
   hardware.bluetooth.enable = true;
-
-  # Bluetooth audio
-  hardware.pulseaudio.package = pkgs.pulseaudioFull;
 
   # Enable power management options
   powerManagement.enable = true;
