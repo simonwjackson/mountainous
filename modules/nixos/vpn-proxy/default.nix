@@ -3,38 +3,37 @@
   lib,
   pkgs,
   ...
-}:
-with lib; let
-  cfg = config.services.vpn-proxy;
+}: let
+  cfg = config.mountainous.vpn-proxy;
 in {
-  options.services.vpn-proxy = {
-    enable = mkEnableOption "VPN Proxy";
+  options.mountainous.vpn-proxy = {
+    enable = lib.mkEnableOption "VPN Proxy";
 
-    host = mkOption {
-      type = types.str;
+    host = lib.mkOption {
+      type = lib.types.str;
       description = "Remote host";
       default = "";
     };
 
-    localUser = mkOption {
-      type = types.str;
+    localUser = lib.mkOption {
+      type = lib.types.str;
       description = "Local user";
       default = "";
     };
 
-    remoteUser = mkOption {
-      type = types.str;
+    remoteUser = lib.mkOption {
+      type = lib.types.str;
       description = "Remote user";
       default = "${cfg.localUser}";
     };
 
-    localPort = mkOption {
-      type = types.int;
+    localPort = lib.mkOption {
+      type = lib.types.int;
       description = "Local port";
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     systemd.services.vpn-proxy = let
       autossh = "${pkgs.autossh}/bin/autossh";
     in {

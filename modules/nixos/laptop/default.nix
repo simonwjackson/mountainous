@@ -3,19 +3,18 @@
   lib,
   pkgs,
   ...
-}:
-with lib; let
-  cfg = config.services.laptop;
+}: let
+  cfg = config.mountainous.laptop;
 in {
-  options.services.laptop = {
-    enable = mkEnableOption "Power management configuration";
+  options.mountainous.laptop = {
+    enable = lib.mkEnableOption "Power management configuration";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.auto-cpufreq.enable = true;
 
     # INFO: Hacky, non-reliable way to check if host is intel
-    services.thermald.enable = mkIf (config.hardware.cpu.intel.updateMicrocode) true;
+    services.thermald.enable = lib.mkIf (config.hardware.cpu.intel.updateMicrocode) true;
 
     systemd.targets.ac = {
       conflicts = ["battery.target"];

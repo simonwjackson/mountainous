@@ -78,7 +78,7 @@
 
   # END: From old modules
 
-  services.laptop.enable = true;
+  mountainous.laptop.enable = true;
 
   age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
   age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;

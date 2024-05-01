@@ -2,18 +2,16 @@
   config,
   lib,
   pkgs,
-  modulesPath,
   ...
-}:
-with lib; let
+}: let
   cfg = config.mountainous.gaming.sunshine;
   devices = ["DP-1" "DP-2" "DP-3" "DP-4" "HDMI-1"];
 in {
   options.mountainous.gaming.sunshine = {
-    enable = mkEnableOption "Sunshine";
+    enable = lib.mkEnableOption "Sunshine";
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.udev.extraRules = ''
       KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
       KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
