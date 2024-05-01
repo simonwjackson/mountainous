@@ -470,15 +470,16 @@
     "git-worktree-nvim": {
       "flake": false,
       "locked": {
-        "lastModified": 1699392961,
-        "narHash": "sha256-+RBoa1NS/W6XMhaIg3/Qw38VnL2imTQZ6bR88bZzV1c=",
-        "owner": "ThePrimeagen",
+        "lastModified": 1714420982,
+        "narHash": "sha256-CC9+h1i+l9TbE60LABZnwjkHy94VGQ7Hqd5jVHEW+mw=",
+        "owner": "awerebea",
         "repo": "git-worktree.nvim",
-        "rev": "f247308e68dab9f1133759b05d944569ad054546",
+        "rev": "a3917d0b7ca32e7faeed410cd6b0c572bf6384ac",
         "type": "github"
       },
       "original": {
-        "owner": "ThePrimeagen",
+        "owner": "awerebea",
+        "ref": "handle_changes_in_telescope_api",
         "repo": "git-worktree.nvim",
         "type": "github"
       }
@@ -584,11 +585,11 @@
         "vim-visual-star-search": "vim-visual-star-search"
       },
       "locked": {
-        "lastModified": 1714578346,
-        "narHash": "sha256-BjcI30AD3bppKNgYzKFYuZMzrya72Rit3uAfudRbvWw=",
+        "lastModified": 1714589852,
+        "narHash": "sha256-zrCP6QdFl49xEh10PK7NXR79Hx7rDyudewlvZdtZqJw=",
         "owner": "simonwjackson",
         "repo": "neovim-nix-config",
-        "rev": "2f6662bb1c00fe03a971e42abf5a181beea8db16",
+        "rev": "ac004fcb7db78a45a67fd85668a003d7f4305b01",
         "type": "github"
       },
       "original": {
