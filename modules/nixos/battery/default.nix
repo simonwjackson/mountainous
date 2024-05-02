@@ -4,10 +4,10 @@
   pkgs,
   ...
 }: let
-  cfg = config.mountainous.laptop;
+  cfg = config.mountainous.battery;
 in {
-  options.mountainous.laptop = {
-    enable = lib.mkEnableOption "Power management configuration";
+  options.mountainous.battery = {
+    enable = lib.mkEnableOption "Enable battery systemd targets";
   };
 
   config = lib.mkIf cfg.enable {
@@ -48,16 +48,7 @@ in {
     #   };
     # };
 
-    systemd.services.powertop = {
-      # description = "Auto-tune Power Management with powertop";
-      unitConfig = {RefuseManualStart = true;};
-      wantedBy = ["battery.target" "ac.target"];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "${pkgs.powertop}/bin/powertop --auto-tune";
-      };
-    };
-
+    # WARN: only tested on GPD Win mini
     services.udev.extraRules = ''
       SUBSYSTEM=="power_supply", KERNEL=="ACAD", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl start ac.target"
       SUBSYSTEM=="power_supply", KERNEL=="ACAD", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl start battery.target"

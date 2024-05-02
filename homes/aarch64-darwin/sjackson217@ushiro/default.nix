@@ -13,9 +13,14 @@
   home.packages = [
   ];
 
-  # HACK: This is needed on mac. Atuin has issues wit the file existing elsewhere
-  # TODO: Create an activation script to create this folder
-  age.secretsDir = "${config.home.homeDirectory}/.keys";
+  # HACK: This is needed with hom manager on mac. Atuin has issues with
+  # the file(s) existing elsewhere
+  # https://github.com/ryantm/agenix/issues/50
+  # TODO: Create an activation script to create these folders
+  age = {
+    secretsDir = "${config.home.homeDirectory}/.agenix/agenix";
+    secretsMountPoint = "${config.home.homeDirectory}/.agenix/agenix.d";
+  };
 
   home = {
     homeDirectory = "/Users/sjackson217";

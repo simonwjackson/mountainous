@@ -8,8 +8,6 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ../../../modules/nixos/gaming/gaming-host.nix
-    ../../../modules/nixos/gaming/gaming.nix
   ];
 
   # INFO: moved from imports
@@ -23,6 +21,21 @@
   };
   # INFO: end
 
+  mountainous = {
+    gaming = {
+      core = {
+        enable = true;
+        isHost = true;
+      };
+
+      emulation.enable = true;
+      steam.enable = true;
+    };
+
+    battery.enable = true;
+    performance.enable = true;
+  };
+
   age.secrets.zao-syncthing-key.file = ../../../secrets/zao-syncthing-key.age;
   age.secrets.zao-syncthing-cert.file = ../../../secrets/zao-syncthing-cert.age;
 
@@ -33,9 +46,6 @@
   services.xserver.libinput.touchpad.disableWhileTyping = true;
   services.xserver.libinput.touchpad.tapping = true;
   services.geoclue2.enable = true;
-
-  powerManagement.enable = true;
-  powerManagement.powertop.enable = true;
 
   services.logind.lidSwitch = "suspend-then-hibernate";
   services.logind.lidSwitchExternalPower = "suspend";

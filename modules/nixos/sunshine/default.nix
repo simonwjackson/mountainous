@@ -5,6 +5,7 @@
   ...
 }: let
   cfg = config.mountainous.gaming.sunshine;
+  # HACK: this iz device (zao) specific
   devices = ["DP-1" "DP-2" "DP-3" "DP-4" "HDMI-1"];
 in {
   options.mountainous.gaming.sunshine = {

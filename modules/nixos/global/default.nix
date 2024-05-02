@@ -1,5 +1,6 @@
 # This file (and the global directory) holds config that i use on all hosts
 {
+  system,
   lib,
   inputs,
   pkgs,
@@ -100,7 +101,7 @@
   # $ nix search wget
   # TODO: dont hardcode system type
   environment.systemPackages = [
-    inputs.agenix.packages."x86_64-linux".default
+    inputs.agenix.packages."${system}".default
   ];
 
   # Increase open file limit for sudoers
