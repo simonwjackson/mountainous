@@ -39,7 +39,7 @@ in {
       };
     };
 
-    mountainous.gaming.sunshine.enabled = cfg.isHost;
+    mountainous.gaming.sunshine.enable = cfg.isHost;
     systemd.user.services.startSteam = lib.mkIf (cfg.isHost) {
       path = [pkgs.flatpak];
       description = "Start Steam Flatpak app";

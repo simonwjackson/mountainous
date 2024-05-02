@@ -6,10 +6,10 @@
   system,
   ...
 }: let
-  cfg = config.mountainous.gaming;
+  cfg = config.mountainous.gaming.emulation;
   snowscape = "/glacier/snowscape";
 in {
-  options.mountainous.gaming = {
+  options.mountainous.gaming.emulation = {
     enable = lib.mkEnableOption "Enable emulation";
   };
 

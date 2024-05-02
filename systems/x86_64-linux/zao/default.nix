@@ -39,8 +39,6 @@
   age.secrets.zao-syncthing-key.file = ../../../secrets/zao-syncthing-key.age;
   age.secrets.zao-syncthing-cert.file = ../../../secrets/zao-syncthing-cert.age;
 
-  services.sunshine.enable = true;
-
   # Enable touchpad support (enabled default in most desktopManager).
   services.xserver.libinput.enable = true;
   services.xserver.libinput.touchpad.disableWhileTyping = true;

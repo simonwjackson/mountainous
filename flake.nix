@@ -8,6 +8,10 @@
     suyu.url = "github:Noodlez1232/suyu-flake";
     simple-nixos-mailserver.url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-23.11";
 
+    # Generate System Images
+    nixos-generators.url = "github:nix-community/nixos-generators";
+    nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
+
     agenix = {
       # HACK: https://github.com/ryantm/agenix/issues/248
       url = "github:ryantm/agenix?ref=0.15.0";

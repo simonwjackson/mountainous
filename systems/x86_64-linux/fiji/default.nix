@@ -45,8 +45,10 @@
   services.libinput.touchpad.tapping = true;
   services.geoclue2.enable = true;
 
-  powerManagement.enable = true;
-  powerManagement.powertop.enable = true;
+  mountainous = {
+    battery.enable = true;
+    performance.enable = true;
+  };
 
   # Sleep
   systemd.sleep.extraConfig = ''
@@ -81,8 +83,6 @@
   };
 
   # END: From old modules
-
-  mountainous.laptop.enable = true;
 
   age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
   age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
