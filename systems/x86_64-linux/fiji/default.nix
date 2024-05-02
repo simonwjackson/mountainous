@@ -7,6 +7,10 @@
   pkgs,
   ...
 }: {
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+  ];
+
   age = {
     identityPaths =
       options.age.identityPaths.default

@@ -13,7 +13,7 @@ deploy *ARGS:
     if [ "$(uname)" == "Darwin" ]; then \
         echo "MacOS is unsupported at this time."
     else \
-        nixos-rebuild switch --flake ".#$(hostname)" --target-host "$(hostname)" --use-remote-sudo --use-substitutes {{ ARGS }}; \
+        ./scripts/deploy.sh
     fi
 
 switch *ARGS:

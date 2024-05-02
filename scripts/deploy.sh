@@ -16,6 +16,7 @@ for host in ${hosts//,/ }; do
       --flake ".#$host" \
       switch \
       --target-host "$host" \
+      --build-host "zao" \
       --use-remote-sudo \
       --use-substitutes \
       "$@"

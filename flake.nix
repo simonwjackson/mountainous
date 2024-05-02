@@ -2,6 +2,7 @@
   inputs = {
     tmesh.url = "github:simonwjackson/tmesh";
     myNeovim.url = "github:simonwjackson/neovim-nix-config";
+    gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     suyu.url = "github:Noodlez1232/suyu-flake";
@@ -73,7 +74,20 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
 
+      systems.hosts.zao.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
+      systems.hosts.unzen.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+        gamerack.nixosModules.x86_64-linux.default
+      ];
+
       systems.hosts.kita.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
+      systems.hosts.rakku.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];
       # HACK: END
