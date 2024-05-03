@@ -7,7 +7,7 @@
 
 <div align="center">
   <a href="https://github.com/simonwjackson/neovim-nix-config">
-      <img alt="Static Badge" src="https://img.shields.io/badge/Made_with-Neovim-ff7b72?style=for-the-badge&logo=neovim&logoColor=ff7b72&labelColor=161B22">
+      <img alt="Static Badge" src="https://img.shields.io/badge/Made_with-Neovim-57A143?style=for-the-badge&logo=neovim&logoColor=57A143&labelColor=161B22">
     </a>
     <img alt="Static Badge" src="https://img.shields.io/badge/NixOS-unstable-d2a8ff?style=for-the-badge&logo=NixOS&logoColor=cba6f7&labelColor=161B22">
     <img alt="Static Badge" src="https://img.shields.io/badge/State-Forever_WIP-ff7b72?style=for-the-badge&logo=fireship&logoColor=ff7b72&labelColor=161B22">
