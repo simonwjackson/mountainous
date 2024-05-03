@@ -14,7 +14,7 @@
     <a href="https://github.com/simonwjackson/mountainous/pulse">
       <img alt="Last commit" src="https://img.shields.io/github/last-commit/simonwjackson/mountainous?style=for-the-badge&logo=github&logoColor=D9E0EE&labelColor=302D41&color=9fdf9f"/>
     </a>
-    <img alt="Static Badge" src="https://img.shields.io/badge/Powered_by-Endless_nights-79c0ff?style=for-the-badge&logo=nuke&logoColor=79c0ff&labelColor=161B22">
+    <img alt="Static Badge" src="https://img.shields.io/badge/Powered_by-Electrolytes-79c0ff?style=for-the-badge&logo=nuke&logoColor=79c0ff&labelColor=161B22">
     <a href="https://github.com/simonwjackson/mountainous/tree/main/LICENSE">
       <img alt="License" src="https://img.shields.io/badge/License-MIT-907385605422448742?style=for-the-badge&logo=agpl&color=DDB6F2&logoColor=D9E0EE&labelColor=302D41">
     </a>
