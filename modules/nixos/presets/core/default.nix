@@ -107,9 +107,6 @@
 }: let
   ifTheyExist = groups: builtins.filter (group: builtins.hasAttr group config.users.groups) groups;
 in {
-  imports = [
-  ];
-
   age.secrets."user-simonwjackson".file = ../../../../secrets/user-simonwjackson.age;
   age.secrets."user-simonwjackson-anthropic" = {
     file = ../../../../secrets/user-simonwjackson-anthropic.age;
@@ -117,7 +114,6 @@ in {
     group = "users";
   };
 
-  users.mutableUsers = false;
   programs.myNeovim = {
     enable = true;
     environment = {
@@ -130,39 +126,11 @@ in {
 
   programs.zsh.enable = true;
 
-  users.users.simonwjackson = {
-    createHome = true;
-    group = "users";
-    isNormalUser = true;
-    hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
-    uid = 1000;
-    shell = pkgs.zsh;
-
-    extraGroups = ifTheyExist [
-      "audio"
-      "deluge"
-      "dialout"
-      "disk"
-      "docker"
-      "git"
-      "i2c"
-      "libvirtd"
-      "minecraft"
-      "network"
-      "networkmanager"
-      "podman"
-      "video"
-      "wheel"
-    ];
-
-    openssh.authorizedKeys.keys = [
-      (builtins.readFile ./id_rsa.pub)
-      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU="
-    ];
-
-    packages = with pkgs; [
-      mountainous.ex
-    ];
+  mountainous = {
+    user = {
+      name = "simonwjackson";
+      hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
+    };
   };
 
   environment.pathsToLink = ["/share/zsh"];
