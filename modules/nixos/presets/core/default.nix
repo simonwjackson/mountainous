@@ -128,23 +128,6 @@ in {
     ];
   };
 
-  security.rtkit.enable = true;
-  security.sudo = {
-    wheelNeedsPassword = false;
-    extraRules = [
-      {
-        users = ["simonwjackson"];
-
-        commands = [
-          {
-            command = "ALL";
-            options = ["NOPASSWD" "SETENV"];
-          }
-        ];
-      }
-    ];
-  };
-
   programs.zsh.enable = true;
 
   users.users.simonwjackson = {
@@ -181,33 +164,6 @@ in {
       mountainous.ex
     ];
   };
-
-  security.pam.loginLimits = [
-    {
-      domain = "@wheel";
-      type = "-";
-      item = "memlock";
-      value = "unlimited";
-    }
-    {
-      domain = "simonwjackson";
-      type = "soft";
-      item = "memlock";
-      value = "unlimited";
-    }
-    {
-      domain = "simonwjackson";
-      type = "hard";
-      item = "memlock";
-      value = "unlimited";
-    }
-  ];
-
-  # Auto tune the CPU based on usage
-  services.auto-cpufreq.enable = true;
-
-  # HACK: non-reliable way to check if host is intel
-  services.thermald.enable = lib.mkIf (config.hardware.cpu.intel.updateMicrocode) true;
 
   environment.pathsToLink = ["/share/zsh"];
 }
