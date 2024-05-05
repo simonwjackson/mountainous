@@ -7,17 +7,39 @@
   config,
   ...
 }: {
-  # home-manager.extraSpecialArgs = {inherit inputs outputs;};
-  mountainous.networking.tailscaled.enable = lib.mkDefault true;
-  mountainous.networking.zerotierone.enable = lib.mkDefault true;
+  age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
+  age.secrets."user-simonwjackson-anthropic" = {
+    file = ../../../secrets/user-simonwjackson-anthropic.age;
+    owner = "simonwjackson";
+    group = "users";
+  };
 
-  networking.useDHCP = lib.mkDefault true;
+  programs.myNeovim = {
+    enable = true;
+    environment = {
+      NOTES_DIR = "/glacier/snowscape/notes";
+    };
+    environmentFiles = [
+      config.age.secrets."user-simonwjackson-anthropic".path
+    ];
+  };
+
+  programs.zsh.enable = true;
+
+  mountainous = {
+    user = {
+      name = "simonwjackson";
+      hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
+    };
+    networking = {
+      tailscaled.enable = lib.mkDefault true;
+      zerotierone.enable = lib.mkDefault true;
+    };
+  };
+
+  environment.pathsToLink = ["/share/zsh"];
 
   services.udisks2.enable = true;
-  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
-
-  # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
-  systemd.services.NetworkManager-wait-online.enable = false;
 
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
@@ -96,28 +118,11 @@
   # environment.enableAllTerminfo = true;
 
   hardware.enableRedistributableFirmware = true;
-  networking.domain = "mountaino.us";
 
   # $ nix search wget
   # TODO: dont hardcode system type
   environment.systemPackages = [
     inputs.agenix.packages."${system}".default
-  ];
-
-  # Increase open file limit for sudoers
-  security.pam.loginLimits = [
-    {
-      domain = "@wheel";
-      item = "nofile";
-      type = "soft";
-      value = "524288";
-    }
-    {
-      domain = "@wheel";
-      item = "nofile";
-      type = "hard";
-      value = "1048576";
-    }
   ];
 
   # console = {

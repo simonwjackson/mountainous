@@ -11,19 +11,19 @@ in {
   options.mountainous.user = {
     name = lib.mkOption {
       type = lib.types.str;
-      default = "short";
+      default = "admin";
       description = "The name to use for the user account.";
     };
 
     fullName = lib.mkOption {
       type = lib.types.str;
-      default = "Jake Hamilton";
+      default = "Admin";
       description = "The full name of the user.";
     };
 
     email = lib.mkOption {
       type = lib.types.str;
-      default = "jake.hamilton@hey.com";
+      default = "admin@localhost";
       description = "The email of the user.";
     };
 
@@ -125,7 +125,7 @@ in {
         isNormalUser = true;
 
         openssh.authorizedKeys.keys = [
-          (builtins.readFile ../presets/core/id_rsa.pub)
+          (builtins.readFile ./id_rsa.pub)
           "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU="
         ];
 
