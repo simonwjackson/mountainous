@@ -11,11 +11,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    services.auto-cpufreq.enable = true;
-
-    # INFO: Hacky, non-reliable way to check if host is intel
-    services.thermald.enable = lib.mkIf (config.hardware.cpu.intel.updateMicrocode) true;
-
     systemd.targets.ac = {
       conflicts = ["battery.target"];
       description = "On AC power";

@@ -9,13 +9,13 @@
     simple-nixos-mailserver.url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-23.11";
 
     # Generate System Images
-    nixos-generators.url = "github:nix-community/nixos-generators";
-    nixos-generators.inputs.nixpkgs.follows = "nixpkgs";
+    nixos-generators = {
+      url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     agenix = {
-      # HACK: https://github.com/ryantm/agenix/issues/248
-      url = "github:ryantm/agenix?ref=0.15.0";
-      # url = "github:ryantm/agenix";
+      url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
@@ -70,6 +70,10 @@
       ];
 
       # HACK: tmesh needs a better default
+      systems.hosts.blanc.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
       systems.hosts.fiji.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];
