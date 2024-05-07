@@ -32,6 +32,7 @@
       hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
     };
     networking = {
+      core.enable = true;
       tailscaled.enable = lib.mkDefault true;
       zerotierone.enable = lib.mkDefault true;
     };

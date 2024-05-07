@@ -1,5 +1,6 @@
 {lib, ...}: {
   services.automatic-timezoned.enable = true;
+  services.geoclue2.enable = true;
 
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

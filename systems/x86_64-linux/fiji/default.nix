@@ -11,6 +11,10 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
+  age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
+  age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
+
   age = {
     identityPaths =
       options.age.identityPaths.default
@@ -21,51 +25,29 @@
   };
 
   # START: From old modules
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      consoleMode = "max";
-    };
 
-    efi.canTouchEfiVariables = true;
+  mountainous = {
+    hardware.kmonad = {
+      enable = true;
+      deviceID = "/dev/input/by-path/platform-i8042-serio-0-event-kbd";
+    };
+    battery.enable = true;
+    performance.enable = true;
+    profiles.laptop.enable = true;
+    boot.quiet = false;
+    networking.core.names = [
+      {
+        name = "wifi";
+        mac = "d4:d8:53:90:2b:6c";
+      }
+    ];
   };
+
   console = {
     useXkbConfig = true;
     earlySetup = false;
   };
 
-  programs.hyprland.enable = true;
-  programs.hyprland.xwayland.enable = true;
-
-  # services.getty.autologinUser = "simonwjackson";
-  # services.getty.tty1.autologin = true;
-
-  services.libinput.enable = true;
-  services.libinput.touchpad.disableWhileTyping = true;
-  services.libinput.touchpad.tapping = true;
-  services.geoclue2.enable = true;
-
-  mountainous = {
-    battery.enable = true;
-    performance.enable = true;
-  };
-
-  # Sleep
-  systemd.sleep.extraConfig = ''
-    # 15min delay
-    HibernateDelaySec=900
-  '';
-
-  services.logind.lidSwitch = "suspend-then-hibernate";
-  services.logind.lidSwitchExternalPower = "suspend";
-
-  services.logind.extraConfig = ''
-    HandlePowerKey=suspend-then-hibernate
-    HandleSuspendKey=suspend-then-hibernate
-    HandleHibernateKey=suspend-then-hibernate
-    IdleAction=hibernate
-    IdleActionSec=15min
-  '';
   services = {
     xserver.enable = true;
     displayManager.autoLogin.user = "simonwjackson";
@@ -84,11 +66,7 @@
 
   # END: From old modules
 
-  age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
-  age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
-  age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
-
-  services.flatpak.enable = true;
+  # services.flatpak.enable = true;
 
   programs.dconf.enable = true;
 
@@ -188,16 +166,6 @@
     device = "/glacier/snowscape/documents";
     options = ["bind"];
   };
-
-  powerManagement.cpuFreqGovernor = lib.mkDefault "balanced";
-
-  services.udev.extraRules = ''
-    KERNEL=="wlan*", ATTR{address}=="d4:d8:53:90:2b:6c", NAME = "wifi"
-  '';
-
-  environment.systemPackages = with pkgs; [
-    acpi
-  ];
 
   # services.cuttlefish = {
   #   enable = true;

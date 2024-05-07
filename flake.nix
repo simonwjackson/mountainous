@@ -6,7 +6,16 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     suyu.url = "github:Noodlez1232/suyu-flake";
-    simple-nixos-mailserver.url = "gitlab:simple-nixos-mailserver/nixos-mailserver/nixos-23.11";
+
+    simple-nixos-mailserver = {
+      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    kmonad = {
+      url = "github:kmonad/kmonad?dir=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # Generate System Images
     nixos-generators = {
@@ -58,6 +67,7 @@
         agenix.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         simple-nixos-mailserver.nixosModule
+        kmonad.nixosModules.default
       ];
 
       systems.modules.darwin = with inputs; [
