@@ -20,16 +20,21 @@
     ./services/youtube.nix
   ];
 
-  # INFO: moved from imports
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      consoleMode = "max";
-    };
-
-    efi.canTouchEfiVariables = true;
+  mountainous = {
+    battery.enable = true;
+    performance.enable = true;
+    profiles.laptop.enable = true;
+    networking.core.names = [
+      {
+        name = "eth-primary";
+        mac = "70:85:c2:c3:ff:09";
+      }
+      {
+        name = "eth-secondary";
+        mac = "00:e0:4c:68:01:39";
+      }
+    ];
   };
-  # INFO: end
 
   age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
   age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
@@ -110,19 +115,7 @@
 
   swapDevices = [];
 
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.eno1.useDHCP = lib.mkDefault true;
-
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
-  # hardware.opengl.enable = true;
-  # services.xserver.videoDrivers = [ "nvidia" ];
 
   boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod"];
   boot.initrd.kernelModules = [];
@@ -131,16 +124,7 @@
   boot.supportedFilesystems = ["bcachefs"];
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  # Enable the Plasma 5 Desktop Environment.
-  services.xserver.desktopManager.plasma5.enable = true;
-
-  services.xserver.displayManager = {
-    sddm.enable = true;
-    autoLogin.enable = true;
-    autoLogin.user = "simonwjackson";
-  };
-
-  networking.hostName = "unzen"; # Define your hostname.
+  # networking.hostName = "unzen"; # Define your hostname.
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;

@@ -24,13 +24,7 @@
       ];
   };
 
-  # START: From old modules
-
   mountainous = {
-    hardware.kmonad = {
-      enable = true;
-      deviceID = "/dev/input/by-path/platform-i8042-serio-0-event-kbd";
-    };
     battery.enable = true;
     performance.enable = true;
     profiles.laptop.enable = true;
@@ -43,6 +37,7 @@
     ];
   };
 
+  # START: From old modules
   console = {
     useXkbConfig = true;
     earlySetup = false;
