@@ -62,6 +62,10 @@
     };
   };
 
+  # HACK: https://gitlab.com/simple-nixos-mailserver/nixos-mailserver/-/issues/275#note_1746383655
+  # services.dovecot2.sieve.extensions = lib.mkForce ["fileinto"];
+  # services.dovecot2.sieve.globalExtensions = lib.mkForce ["fileinto"];
+
   security.acme.acceptTerms = true;
   security.acme.defaults.email = "security@simonwjackson.io";
 

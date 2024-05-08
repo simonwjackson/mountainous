@@ -8,8 +8,10 @@
     suyu.url = "github:Noodlez1232/suyu-flake";
 
     simple-nixos-mailserver = {
-      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "gitlab:simple-nixos-mailserver/nixos-mailserver/master";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
     };
 
     kmonad = {
@@ -66,7 +68,7 @@
         myNeovim.nixosModules.default
         agenix.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
-        simple-nixos-mailserver.nixosModule
+        simple-nixos-mailserver.nixosModules.default
         kmonad.nixosModules.default
       ];
 

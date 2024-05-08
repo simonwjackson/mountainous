@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  pkgs,
   inputs,
   ...
 }: {
@@ -8,6 +9,7 @@
     age.secrets."user-simonwjackson-github-token-nix".file = ../../../secrets/user-simonwjackson-github-token-nix.age;
     # Allow unfree packages
     nix = {
+      package = pkgs.nixVersions.latest;
       # This will add each flake input as a registry
       # To make nix3 commands consistent with your flake
       registry = lib.mapAttrs (_: value: {flake = value;}) inputs;

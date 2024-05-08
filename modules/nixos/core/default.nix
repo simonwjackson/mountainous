@@ -6,7 +6,9 @@
   pkgs,
   config,
   ...
-}: {
+}: let
+  inherit (lib) mkDefault;
+in {
   age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
   age.secrets."user-simonwjackson-anthropic" = {
     file = ../../../secrets/user-simonwjackson-anthropic.age;
@@ -27,17 +29,17 @@
   programs.zsh.enable = true;
 
   mountainous = {
-    printing.enable = true;
-    performance.enable = true;
-    sound.enable = true;
+    printing.enable = mkDefault true;
+    performance.enable = mkDefault true;
+    sound.enable = mkDefault true;
     user = {
       name = "simonwjackson";
       hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
     };
     networking = {
       core.enable = true;
-      tailscaled.enable = lib.mkDefault true;
-      zerotierone.enable = lib.mkDefault true;
+      tailscaled.enable = mkDefault true;
+      zerotierone.enable = mkDefault true;
     };
   };
 

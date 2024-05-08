@@ -151,7 +151,6 @@
     extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       mpv
-      neovim
       tmux
       kitty
       git
