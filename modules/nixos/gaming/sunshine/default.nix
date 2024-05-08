@@ -4,15 +4,16 @@
   pkgs,
   ...
 }: let
+  inherit (lib) mkIf mkEnableOption;
   cfg = config.mountainous.gaming.sunshine;
   # HACK: this iz device (zao) specific
   devices = ["DP-1" "DP-2" "DP-3" "DP-4" "HDMI-1"];
 in {
   options.mountainous.gaming.sunshine = {
-    enable = lib.mkEnableOption "Sunshine";
+    enable = mkEnableOption "Whether to enable Sunshine";
   };
 
-  config = lib.mkIf cfg.enable {
+  config = mkIf cfg.enable {
     services.udev.extraRules = ''
       KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
       KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
