@@ -629,18 +629,20 @@
       },
       "locked": {
         "dir": "nix",
-        "lastModified": 1714145921,
-        "narHash": "sha256-8uwqfjbTjeO1GLe8X5qRLlU9bidhDeM0Vx3j1DFmFB0=",
-        "owner": "kmonad",
-        "repo": "kmonad",
-        "rev": "1a229b1a2a2d8077123e23c7c2c2866a97fe10d7",
-        "type": "github"
+        "lastModified": 1715058553,
+        "narHash": "sha256-uuKqUobZyFlySocfZtLn4JRQwbmxZ4xSYgXsdBMtneM=",
+        "ref": "refs/heads/master",
+        "rev": "8efcc8f7f7369a5e684d201c0263416db2a5df60",
+        "revCount": 789,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/kmonad/kmonad?dir=nix"
       },
       "original": {
         "dir": "nix",
-        "owner": "kmonad",
-        "repo": "kmonad",
-        "type": "github"
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/kmonad/kmonad?dir=nix"
       }
     },
     "lspkind-nvim": {
