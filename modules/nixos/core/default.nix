@@ -27,6 +27,9 @@
   programs.zsh.enable = true;
 
   mountainous = {
+    printing.enable = true;
+    performance.enable = true;
+    sound.enable = true;
     user = {
       name = "simonwjackson";
       hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
