@@ -43,9 +43,5 @@
         !include ${config.age.secrets."user-simonwjackson-github-token-nix".path};
       '';
     };
-    # nix.gc = {
-    #   automatic = true;
-    #   dates = "weekly";
-    # };
   };
 }

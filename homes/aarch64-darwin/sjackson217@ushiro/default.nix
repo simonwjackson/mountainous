@@ -10,8 +10,7 @@
   config,
   ...
 }: {
-  home.packages = [
-  ];
+  home.packages = [];
 
   # HACK: This is needed with hom manager on mac. Atuin has issues with
   # the file(s) existing elsewhere
@@ -21,6 +20,14 @@
     secretsDir = "${config.home.homeDirectory}/.agenix/agenix";
     secretsMountPoint = "${config.home.homeDirectory}/.agenix/agenix.d";
   };
+
+  # mountainous.firefox.enable = true;
+  programs.firefox = {
+    enable = true;
+    package = pkgs.firefox-bin;
+  };
+
+  nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay];
 
   home = {
     homeDirectory = "/Users/sjackson217";

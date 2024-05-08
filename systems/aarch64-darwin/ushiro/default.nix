@@ -3,8 +3,6 @@
   inputs,
   ...
 }: {
-  # List packages installed in system profile. To search by name, run:
-  # $ nix-env -qaP | grep wget
   environment.systemPackages = with pkgs; [
     kitty
     yarn
@@ -21,6 +19,7 @@
       # config.age.secrets."user-simonwjackson-anthropic".path
     ];
   };
+
   environment.etc = {
     "sudoers.d/10-nix-commands".text = let
       commands = [
@@ -38,25 +37,22 @@
 
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
-  services.karabiner-elements.enable = true;
   # nix.package = pkgs.nix;
 
   # Necessary for using flakes on this system.
   nix.settings.experimental-features = "nix-command flakes";
+  nix.package = pkgs.nixVersions.latest;
+
   nixpkgs.config.allowUnsupportedSystem = true;
 
   # Create /etc/zshrc that loads the nix-darwin environment.
   programs.zsh.enable = true; # default shell on catalina
-
-  # The platform the configuration will be used on.
-  nixpkgs.hostPlatform = "aarch64-darwin";
 
   users.users.sjackson217 = {
     name = "sjackson217";
     home = "/Users/sjackson217";
   };
 
-  # Used for backwards compatibility, please read the changelog before changing.
-  # $ darwin-rebuild changelog
+  nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 4;
 }

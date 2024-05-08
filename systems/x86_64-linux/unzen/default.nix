@@ -149,7 +149,6 @@
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "23.05"; # Did you read the comment?
 
   services.flatpak.enable = true;
   xdg.portal = {
@@ -329,4 +328,6 @@
   #     };
   #   };
   # };
+
+  system.stateVersion = "23.05"; # Did you read the comment?
 }

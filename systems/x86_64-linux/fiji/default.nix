@@ -61,8 +61,6 @@
 
   # END: From old modules
 
-  # services.flatpak.enable = true;
-
   programs.dconf.enable = true;
 
   xdg.portal = {
@@ -75,24 +73,11 @@
 
   boot.supportedFilesystems = ["xfs"];
   networking.hostName = "fiji";
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
   boot.initrd.kernelModules = [];
   boot.kernelModules = ["kvm-intel"];
-
-  # HACK: using `fileSystems` with bcachefs does not seem to work yet.
-  # systemd.services.mountSnowscape = {
-  #   script = ''
-  #     install -d -o simonwjackson -g users -m 770 /glacier/snowscape
-  #      ${pkgs.util-linux}/bin/mountpoint -q /glacier/snowscape || ${pkgs.mount}/bin/mount -t bcachefs /dev/nvme0n1p4:/dev/sda1 /glacier/snowscape
-  #   '';
-  #   wantedBy = [ "multi-user.target" ];
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #   };
-  # };
 
   systemd.services.fixSamsungGalaxyBook3Speakers = {
     path = [pkgs.alsa-tools];
@@ -185,11 +170,6 @@
     pkgs.android-udev-rules
   ];
 
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It's perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   system.stateVersion = "23.05"; # Did you read the comment?
 }
