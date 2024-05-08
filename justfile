@@ -16,12 +16,21 @@ deploy *ARGS:
         ./scripts/deploy.sh
     fi
 
-switch *ARGS:
+switch +HOSTNAME="":
     #!/usr/bin/env bash
+    if [ -z "$HOSTNAME" ]; then \
+        HOSTNAME=$(hostname); \
+    fi; \
     if [ "$(uname)" == "Darwin" ]; then \
-        sudo nix run nix-darwin -- switch --flake ".#$(hostname)" {{ ARGS }}; \
+        nix run nix-darwin \
+        -- switch --flake ".#$HOSTNAME"; \
     else \
-        nixos-rebuild switch --flake ".#$(hostname)" --target-host "$(hostname)" --use-remote-sudo --use-substitutes   {{ ARGS }}; \
+        nixos-rebuild switch \
+          --flake ".#$HOSTNAME" \
+          --target-host "$HOSTNAME" \
+          --build-host "$HOSTNAME" \
+          --use-remote-sudo \
+          --use-substitutes; \
     fi
 
 build *ARGS:
