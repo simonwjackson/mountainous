@@ -6,10 +6,10 @@
 }: let
   inherit (lib) mkEnableOption mkIf;
 
-  cfg = config.mountainous.networking.zerotierone;
+  cfg = config.mountainous.sound;
 in {
-  options.mountainous.networking.zerotierone = {
-    enable = mkEnableOption "Toggle zerotierone daemon";
+  options.mountainous.sound = {
+    enable = mkEnableOption "Whether to enable the zerotierone daemon";
   };
 
   config = mkIf cfg.enable {

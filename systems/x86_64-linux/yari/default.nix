@@ -15,6 +15,12 @@
   zramSwap.enable = true;
   networking.hostName = "yari";
   mountainous.networking.tailscaled.exit-node = true;
+  mountainous.networking.core.names = [
+    {
+      name = "eth";
+      mac = "00:16:3e:c6:25:3e";
+    }
+  ];
 
   # age.secrets.yabashi-syncthing-key.file = ../../../secrets/yabashi-syncthing-key.age;
   # age.secrets.yabashi-syncthing-cert.file = ../../../secrets/yabashi-syncthing-cert.age;
