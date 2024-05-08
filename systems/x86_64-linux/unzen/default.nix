@@ -130,18 +130,18 @@
   services.xserver.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
-    packages = with pkgs; [
-      mpv
-      tmux
-      kitty
-      git
-      firefox
-      btop
-    ];
-  };
+  # users.users.simonwjackson = {
+  #   isNormalUser = true;
+  #   extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
+  #   packages = with pkgs; [
+  #     mpv
+  #     tmux
+  #     kitty
+  #     git
+  #     firefox
+  #     btop
+  #   ];
+  # };
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
