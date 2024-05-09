@@ -13,6 +13,17 @@
   mountainous = {
     performance.enable = true;
     profiles.laptop.enable = true;
+    gaming = {
+      core = {
+        enable = true;
+        isHost = true;
+      };
+
+      emulation.enable = true;
+      steam.enable = true;
+    };
+
+    hardware.battery.enable = true;
   };
 
   age.secrets.kita-syncthing-key.file = ../../../secrets/kita-syncthing-key.age;
@@ -38,7 +49,6 @@
   environment.systemPackages = with pkgs; [
     undervolt
     mergerfs
-    neovim
     git
     moonlight-qt
     kitty
