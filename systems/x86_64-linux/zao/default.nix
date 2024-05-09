@@ -32,7 +32,8 @@
       steam.enable = true;
     };
 
-    battery.enable = true;
+    hardware.battery.enable = true;
+    hardware.cpu.type = "intel";
     performance.enable = true;
   };
 
@@ -62,7 +63,6 @@
     "usbhid"
     "sd_mod"
   ];
-  boot.initrd.kernelModules = [];
   boot.kernelModules = [
     "kvm-intel"
     "uinput"
@@ -164,64 +164,6 @@
     pulse.enable = true;
   };
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    extraGroups = ["wheel"];
-    packages = with pkgs; [
-      firefox
-      git
-      tmux
-      neovim
-      kitty
-    ];
-  };
-
-  # services.create_ap = {
-  #   enable = false;
-  #   settings = {
-  #     FREQ_BAND = 5;
-  #     HT_CAPAB = "[HT20][HT40-][HT40+][SHORT-GI-20][SHORT-GI-40][TX-STBC][MAX-AMSDU-7935][DSSS_CCK-40][PSMP]";
-  #     VHT_CAPAB = "[MAX-MPDU-11454][RXLDPC][SHORT-GI-80][TX-STBC-2BY1][RX-STBC-1][MAX-A-MPDU-LEN-EXP0]";
-  #     IEEE80211AC = true;
-  #     IEEE80211N = true;
-  #     GATEWAY = "192.18.5.1";
-  #     PASSPHRASE = "";
-  #     INTERNET_IFACE = "wlp0s20f0u3";
-  #     WIFI_IFACE = "wlp0s20f3";
-  #     SSID = "hopstop";
-  #   };
-  # };
-
-  # networking.wlanInterfaces = {
-  #   "wlan-station0" = { device = "wlp0s2";};
-  #   "wlan-ap0"      = { device = "wlp0s2"; mac = "08:11:96:0e:08:0a"; };
-  # };
-  #
-  # networking.networkmanager.unmanaged = [ "interface-name:wlp*" ]
-  #     ++ lib.optional config.services.hostapd.enable "interface-name:${config.services.hostapd.interface}";
-  #
-  # services.hostapd = {
-  #   enable        = true;
-  #   interface     = "wlan-ap0";
-  #   hwMode        = "g";
-  #   ssid          = "nix";
-  #   wpaPassphrase = "mysekret";
-  # };
-  #
-  # services.haveged.enable = config.services.hostapd.enable;
-  #
-  # networking.interfaces."wlan-ap0".ipv4.addresses =
-  #   lib.optionals config.services.hostapd.enable [{ address = "192.168.12.1"; prefixLength = 24; }];
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It's perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "23.05"; # Did you read the comment?
-
   services.syncthing = {
     enable = true;
     # key = config.age.secrets.fiji-syncthing-key.path;
@@ -229,33 +171,5 @@
     #
   };
 
-  # services.syncthing = {
-  #   dataDir = "/home/simonwjackson"; # Default folder for new synced folders
-  #
-  #   folders = {
-  #     code.path = "/home/simonwjackson/code";
-  #     documents.path = "/glacier/snowscape/documents";
-  #     gaming-games.path = "/glacier/snowscape/gaming/games";
-  #     gaming-launchers.path = "/glacier/snowscape/gaming/launchers";
-  #     gaming-profiles.path = "/glacier/snowscape/gaming/profiles";
-  #     gaming-systems.path = "/glacier/snowscape/gaming/systems";
-  #     taskwarrior.path = "/home/simonwjackson/.local/share/task";
-  #
-  #     code.devices = [ "fiji" "unzen" "yari" ];
-  #     documents.devices = [ "fiji" "unzen" "zao" ];
-  #     gaming-games.devices = [ "fiji" "unzen" "yari" "zao" ];
-  #     gaming-launchers.devices = [ "fiji" "unzen" "zao" ];
-  #     gaming-profiles.devices = [ "fiji" "usu" "unzen" "yari" "zao" ];
-  #     gaming-systems.devices = [ "fiji" "unzen" "zao" ];
-  #     taskwarrior.devices = [ "fiji" "unzen" "zao" ];
-  #
-  #     gaming-profiles.versioning = {
-  #       type = "staggered";
-  #       params = {
-  #         cleanInterval = "3600";
-  #         maxAge = "31536000";
-  #       };
-  #     };
-  #   };
-  # };
+  system.stateVersion = "23.05"; # Did you read the comment?
 }
