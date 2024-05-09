@@ -11,6 +11,7 @@
   ];
 
   mountainous = {
+    hardware.devices.gpd-win-mini.enable = true;
     performance.enable = true;
     profiles.laptop.enable = true;
     gaming = {
@@ -22,8 +23,6 @@
       emulation.enable = true;
       steam.enable = true;
     };
-
-    hardware.battery.enable = true;
   };
 
   age.secrets.kita-syncthing-key.file = ../../../secrets/kita-syncthing-key.age;
@@ -165,7 +164,6 @@
     };
     enableAllFirmware = true;
     bluetooth = {enable = true;};
-    cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
     steam-hardware.enable = true;
   };
 

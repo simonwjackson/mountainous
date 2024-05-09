@@ -22,8 +22,10 @@ in {
       hardware.cpu.intel.updateMicrocode = true;
       # boot.kernelModules = (config.boot.kernelModules or []) ++ ["kvm-intel"];
     })
+
     (lib.mkIf (cfg.type == "amd") {
       boot.kernelModules = ["kvm-amd"];
+      hardware.cpu.amd.updateMicrocode = true;
 
       environment.systemPackages = with pkgs; [
         ryzenadj
