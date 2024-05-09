@@ -227,10 +227,6 @@
     # key = config.age.secrets.fiji-syncthing-key.path;
     # cert = config.age.secrets.fiji-syncthing-cert.path;
     #
-    settings.paths = {
-      notes = "/glacier/snowscape/notes";
-      gaming-profiles = "/glacier/snowscape/gaming/profiles";
-    };
   };
 
   # services.syncthing = {

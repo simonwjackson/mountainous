@@ -279,11 +279,6 @@
     enable = true;
     key = config.age.secrets.unzen-syncthing-key.path;
     cert = config.age.secrets.unzen-syncthing-cert.path;
-
-    settings.paths = {
-      notes = "/glacier/snowscape/notes";
-      gaming-profiles = "/glacier/snowscape/gaming/profiles";
-    };
   };
 
   # services.syncthing = {

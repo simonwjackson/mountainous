@@ -288,11 +288,6 @@
     enable = true;
     key = config.age.secrets.kita-syncthing-key.path;
     cert = config.age.secrets.kita-syncthing-cert.path;
-
-    settings.paths = {
-      notes = "/glacier/snowscape/notes";
-      gaming-profiles = "/glacier/snowscape/gaming/profiles";
-    };
   };
 
   system.stateVersion = "23.11"; # Did you read the comment?

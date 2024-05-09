@@ -25,10 +25,7 @@
   };
 
   mountainous = {
-    hardware = {
-      bluetooth.enable = true;
-      cpu.type = "intel";
-    };
+    hardware.devices.samsung-galaxy-book3-360.enable = true;
     performance.enable = true;
     profiles.laptop.enable = true;
     boot.quiet = false;
@@ -74,16 +71,6 @@
   boot.kernelModules = ["kvm-intel"];
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
-
-  systemd.services.fixSamsungGalaxyBook3Speakers = {
-    path = [pkgs.alsa-tools];
-    script = builtins.readFile ./fix-audio.sh;
-    wantedBy = ["multi-user.target" "post-resume.target"];
-    after = ["multi-user.target" "post-resume.target"];
-    serviceConfig = {
-      Type = "oneshot";
-    };
-  };
 
   disko.devices.disk.nvme0n1 = {
     type = "disk";
@@ -172,29 +159,11 @@
     options = ["bind"];
   };
 
-  # services.cuttlefish = {
-  #   enable = true;
-  #   package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
-  #   settings = {
-  #     root-dir = "/glacier/snowscape/podcasts";
-  #     logs-dir = "/glacier/snowscape/podcasts";
-  #     subscriptions = {
-  #       "The Morning Stream" = {
-  #         url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
-  #       };
-  #       "Conan O’Brien Needs A Friend" = {
-  #         url = "https://feeds.simplecast.com/dHoohVNH";
-  #       };
-  #     };
-  #   };
-  # };
-
   programs.adb.enable = true;
   users.users.simonwjackson.extraGroups = ["adbusers"];
   services.udev.packages = [
     pkgs.android-udev-rules
   ];
 
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   system.stateVersion = "23.05"; # Did you read the comment?
 }
