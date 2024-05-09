@@ -12,9 +12,19 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
+    services.ananicy = {
+      enable = true;
+      package = pkgs.ananicy-cpp;
+    };
+
     services.auto-cpufreq.enable = true;
-    powerManagement.enable = true;
-    powerManagement.powertop.enable = true;
+
+    powerManagement = {
+      enable = true;
+      powertop.enable = true;
+      cpuFreqGovernor = pkgs.lib.mkDefault "powersave";
+    };
 
     # INFO: Hacky, non-reliable way to check if host is intel
     services.thermald.enable = config.hardware.cpu.intel.updateMicrocode;

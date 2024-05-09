@@ -15,6 +15,11 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # services.input-remapper.enable = false;
+
+    # Switch controllers
+    services.joycond.enable = true;
+
     # WARN: untested
     programs.gamemode = {
       enable = true;
