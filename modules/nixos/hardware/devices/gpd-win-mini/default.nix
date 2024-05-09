@@ -8,7 +8,7 @@
 
   cfg = config.mountainous.hardware.devices.gpd-win-mini;
 in {
-  options.mountainous.hardware.devices.devices.gpd-win-mini = {
+  options.mountainous.hardware.devices.gpd-win-mini = {
     enable = mkEnableOption "Whether to enable GPD Win Mini adjustments";
   };
 
