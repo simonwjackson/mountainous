@@ -22,7 +22,7 @@ switch +HOSTNAME="":
         HOSTNAME=$(hostname); \
     fi; \
     if [ "$(uname)" == "Darwin" ]; then \
-        nix run nix-darwin \
+        sudo nix run nix-darwin \
         -- switch --flake ".#$HOSTNAME"; \
     else \
         nixos-rebuild switch \
