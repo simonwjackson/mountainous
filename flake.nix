@@ -7,6 +7,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     suyu.url = "github:Noodlez1232/suyu-flake";
     nixpkgs-firefox-darwin.url = "github:bandithedoge/nixpkgs-firefox-darwin";
+    disko.url = "github:nix-community/disko";
 
     simple-nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver/master";
@@ -71,6 +72,7 @@
         nix-flatpak.nixosModules.nix-flatpak
         simple-nixos-mailserver.nixosModules.default
         kmonad.nixosModules.default
+        disko.nixosModules.default
       ];
 
       systems.modules.darwin = with inputs; [

@@ -7,10 +7,12 @@
   cfg = config.mountainous.profiles.laptop;
 in {
   options.mountainous.profiles.laptop = {
-    enable = lib.mkEnableOption "Wether to enable laptop configurations";
+    enable = lib.mkEnableOption "Whether to enable laptop configurations";
   };
 
   config = lib.mkIf cfg.enable {
+    mountainous.hardware.battery.enable = true;
+
     # Sleep
     systemd.sleep.extraConfig = ''
       # 15min delay

@@ -124,6 +124,7 @@ in {
   # environment.enableAllTerminfo = true;
 
   hardware.enableRedistributableFirmware = true;
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
   # $ nix search wget
   # TODO: dont hardcode system type

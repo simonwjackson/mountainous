@@ -19,7 +19,7 @@ in {
     # INFO: Hacky, non-reliable way to check if host is intel
     services.thermald.enable = config.hardware.cpu.intel.updateMicrocode;
 
-    systemd.services.powertop = lib.mkIf config.mountainous.battery.enable {
+    systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {
       # description = "Auto-tune Power Management with powertop";
       unitConfig = {RefuseManualStart = true;};
       wantedBy = ["battery.target" "ac.target"];

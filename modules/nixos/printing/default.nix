@@ -8,7 +8,7 @@
   cfg = config.mountainous.printing;
 in {
   options.mountainous.printing = {
-    enable = mkEnableOption "Wether to enable printing";
+    enable = mkEnableOption "Whether to enable printing";
   };
 
   config = mkIf cfg.enable {

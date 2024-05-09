@@ -25,7 +25,10 @@
   };
 
   mountainous = {
-    battery.enable = true;
+    hardware = {
+      bluetooth.enable = true;
+      cpu.type = "intel";
+    };
     performance.enable = true;
     profiles.laptop.enable = true;
     boot.quiet = false;
@@ -37,12 +40,7 @@
     ];
   };
 
-  # START: From old modules
-  console = {
-    useXkbConfig = true;
-    earlySetup = false;
-  };
-
+  # DESKTOP
   services = {
     xserver.enable = true;
     displayManager.autoLogin.user = "simonwjackson";
@@ -59,8 +57,6 @@
     ];
   };
 
-  # END: From old modules
-
   programs.dconf.enable = true;
 
   xdg.portal = {
@@ -70,14 +66,14 @@
       xdg-desktop-portal-kde
     ];
   };
+  # END: DESKTOP
 
-  boot.supportedFilesystems = ["xfs"];
-  networking.hostName = "fiji";
+  # boot.supportedFilesystems = ["xfs"];
+  # networking.hostName = "fiji";
 
+  boot.kernelModules = ["kvm-intel"];
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = ["kvm-intel"];
 
   systemd.services.fixSamsungGalaxyBook3Speakers = {
     path = [pkgs.alsa-tools];
@@ -89,43 +85,72 @@
     };
   };
 
-  fileSystems."/" = {
-    label = "root";
-    fsType = "btrfs";
-    options = ["subvol=root" "compress=zstd"];
+  disko.devices.disk.nvme0n1 = {
+    type = "disk";
+    device = "/dev/disk/by-id/nvme-WDSN740-SDDPNQD-1T00-1004_22501B805583";
+    content = {
+      type = "table";
+      format = "gpt";
+      partitions = [
+        {
+          name = "BOOT";
+          start = "0";
+          end = "1G";
+          fs-type = "vfat";
+          bootable = true;
+          content = {
+            type = "filesystem";
+            format = "vfat";
+            mountpoint = "/boot";
+          };
+        }
+        {
+          name = "swap";
+          start = "1G";
+          end = "17G";
+          part-type = "primary";
+          content = {
+            type = "swap";
+            randomEncryption = true;
+          };
+        }
+        {
+          name = "root";
+          start = "17G";
+          end = "145G";
+          part-type = "primary";
+          content = {
+            type = "btrfs";
+            subvolumes = {
+              "/" = {
+                mountpoint = "/";
+                mountOptions = ["compress=zstd"];
+              };
+              "/home" = {
+                mountpoint = "/home";
+                mountOptions = ["compress=zstd"];
+              };
+              "/nix" = {
+                mountpoint = "/nix";
+                mountOptions = ["compress=zstd" "noatime"];
+              };
+            };
+          };
+        }
+        {
+          name = "snowscape";
+          start = "145G";
+          end = "100%";
+          part-type = "primary";
+          content = {
+            type = "filesystem";
+            format = "xfs";
+            mountpoint = "/glacier/snowscape";
+          };
+        }
+      ];
+    };
   };
-
-  fileSystems."/home" = {
-    label = "root";
-    fsType = "btrfs";
-    options = ["subvol=home" "compress=zstd"];
-  };
-
-  fileSystems."/nix" = {
-    label = "root";
-    fsType = "btrfs";
-    options = ["subvol=nix" "compress=zstd" "noatime"];
-  };
-
-  fileSystems."/boot" = {
-    label = "BOOT";
-    fsType = "vfat";
-  };
-
-  fileSystems."/glacier/snowscape" = {
-    label = "snowscape";
-    fsType = "xfs";
-  };
-
-  swapDevices = [
-    {
-      device = "/dev/disk/by-label/swap";
-    }
-  ];
-
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
-  hardware.bluetooth.enable = true;
 
   services.syncthing = {
     enable = true;

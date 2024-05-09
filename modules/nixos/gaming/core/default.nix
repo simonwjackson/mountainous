@@ -11,7 +11,7 @@
 in {
   options.mountainous.gaming.core = {
     enable = lib.mkEnableOption "Enable gaming";
-    isHost = lib.mkEnableOption "Wether or not device will be used for game streaming";
+    isHost = lib.mkEnableOption "Whether or not device will be used for game streaming";
   };
 
   config = lib.mkIf cfg.enable {
