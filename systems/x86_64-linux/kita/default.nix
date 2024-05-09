@@ -10,106 +10,22 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  mountainous.hardware.cpu.type = "amd";
+  mountainous = {
+    performance.enable = true;
+    profiles.laptop.enable = true;
+  };
 
   age.secrets.kita-syncthing-key.file = ../../../secrets/kita-syncthing-key.age;
   age.secrets.kita-syncthing-cert.file = ../../../secrets/kita-syncthing-cert.age;
 
-  services.auto-cpufreq.enable = true;
   services.power-profiles-daemon.enable = false;
-  services.input-remapper.enable = false;
-  services.thermald.enable = true;
   virtualisation.waydroid.enable = true;
+
   programs.xwayland.enable = true;
   programs.ccache.enable = true;
 
-  systemd.targets.ac = {
-    conflicts = ["battery.target"];
-    description = "On AC power";
-    unitConfig = {DefaultDependencies = "false";};
-  };
-
-  systemd.targets.battery = {
-    conflicts = ["ac.target"];
-    description = "On battery power";
-    unitConfig = {DefaultDependencies = "false";};
-  };
-
-  # systemd.services.power-maximum-tdp = {
-  #   description = "Change TDP to maximum TDP when on AC power";
-  #   wantedBy = ["ac.target"];
-  #   unitConfig = {RefuseManualStart = true;};
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #     ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=28000 --fast-limit=28000 --slow-limit=28000 --tctl-temp=90";
-  #   };
-  # };
-  #
-  # systemd.services.power-saving-tdp = {
-  #   description = "Change TDP to power saving TDP when on battery power";
-  #   wantedBy = ["battery.target"];
-  #   unitConfig = {RefuseManualStart = true;};
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #     ExecStart = "${pkgs.ryzenadj}/bin/ryzenadj --stapm-limit=3000 --fast-limit=3000 --slow-limit=3000 --tctl-temp=90";
-  #   };
-  # };
-
-  systemd.services.powertop = {
-    # description = "Auto-tune Power Management with powertop";
-    unitConfig = {RefuseManualStart = true;};
-    wantedBy = ["battery.target" "ac.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.powertop}/bin/powertop --auto-tune";
-    };
-  };
-
-  services.udev.extraRules = ''
-    SUBSYSTEM=="power_supply", KERNEL=="ACAD", ATTR{online}=="1", RUN+="${pkgs.systemd}/bin/systemctl start ac.target"
-    SUBSYSTEM=="power_supply", KERNEL=="ACAD", ATTR{online}=="0", RUN+="${pkgs.systemd}/bin/systemctl start battery.target"
-  '';
-
-  powerManagement = {
-    enable = true;
-    cpuFreqGovernor = pkgs.lib.mkDefault "powersave";
-  };
-
-  # programs.steam = {
-  #   gamescopeSession = {
-  #     enable = true;
-  #     args = ["--rt"];
-  #     env = {ENABLE_GAMESCOPE_WSI = "1";};
-  #     #steamArgs = [ "-pipewire-dmabuf" ];
-  #   };
-  #   enable = true;
-  #   remotePlay.openFirewall = true;
-  # };
-
-  # programs.gamescope = {
-  #   env = {
-  #     ENABLE_GAMESCOPE_WSI = "1";
-  #     __GLX_VENDOR_LIBRARY_NAME = "mesa";
-  #   };
-  #   enable = true;
-  #   # package = pkgs.gamescope_git;
-  #   args = ["--rt"];
-  # };
-
   zramSwap.enable = true;
   services.resolved.enable = true;
-  console = {
-    earlySetup = true;
-    font = "${pkgs.terminus_font}/share/consolefonts/ter-132n.psf.gz";
-    packages = with pkgs; [terminus_font];
-    keyMap = "pl2";
-  };
-
-  # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
-  services.ananicy = {
-    enable = true;
-    package = pkgs.ananicy-cpp;
-  };
 
   programs.dconf.enable = true;
 
@@ -119,9 +35,6 @@
 
   xdg.portal.enable = true;
 
-  # Switch controllers
-  services.joycond.enable = true;
-
   environment.systemPackages = with pkgs; [
     undervolt
     mergerfs
@@ -130,29 +43,6 @@
     moonlight-qt
     kitty
   ];
-
-  boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usbhid" "usb_storage" "sd_mod"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = ["kvm-amd"];
-  boot.extraModulePackages = [];
-  # boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.kernelPackages = pkgs.linuxPackages_zen;
-
-  # *might* fix white/flashing screens
-  # kernelParams = ["amdgpu.sg_display=0"];
-  # WARNING: promises better energy efficency but This *might* cause lower fps. kernel 6.3 or higher
-  # kernelParams = [ "amd_pstate=active" ];
-  boot.kernelParams = [
-    "fbcon=rotate:1"
-    "video=eDP-1:panel_orientation=right_side_up"
-  ];
-
-  # Required for grub to properly display the boot menu.
-  boot.loader.grub.gfxmodeEfi = lib.mkDefault "1080x1920x32";
-
-  # services.xserver.deviceSection = ''
-  #   Option "TearFree" "true"
-  # '';
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
@@ -215,13 +105,12 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "kita";
-  networking.networkmanager.enable = true; # Easiest to use and most distros use this by default.
+  # networking.hostName = "kita";
 
   services.xserver.enable = true;
   services.xserver.displayManager.sddm.enable = true;
   services.xserver.displayManager.autoLogin.enable = true;
-  services.xserver.displayManager.autoLogin.user = "simonwjackson";
+  services.xserver.displayManager.autoLogin.user = config.mountainous.user.name;
   services.xserver.desktopManager.plasma5.enable = true;
   services.xserver.displayManager.defaultSession = "plasmawayland";
   services.xserver.displayManager.sddm.wayland.enable = true;
