@@ -6,7 +6,9 @@
   options,
   pkgs,
   ...
-}: {
+}: let
+  inherit (lib.mountainous) enabled;
+in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -25,10 +27,9 @@
   };
 
   mountainous = {
-    hardware.devices.samsung-galaxy-book3-360.enable = true;
-    performance.enable = true;
-    profiles.laptop.enable = true;
-    boot.quiet = false;
+    hardware.devices.samsung-galaxy-book3-360 = enabled;
+    performance = enabled;
+    profiles.laptop = enabled;
     networking.core.names = [
       {
         name = "wifi";
@@ -64,9 +65,6 @@
     ];
   };
   # END: DESKTOP
-
-  # boot.supportedFilesystems = ["xfs"];
-  # networking.hostName = "fiji";
 
   boot.kernelModules = ["kvm-intel"];
   boot.kernelPackages = pkgs.linuxPackages_latest;

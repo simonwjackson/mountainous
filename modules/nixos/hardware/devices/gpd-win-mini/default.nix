@@ -39,5 +39,20 @@ in {
     # services.xserver.deviceSection = ''
     #   Option "TearFree" "true"
     # '';
+    hardware = {
+      sensor.iio.enable = true;
+      opengl = {
+        driSupport = true;
+        driSupport32Bit = true;
+        extraPackages = with pkgs; [
+          rocm-opencl-icd
+          vaapiVdpau
+          rocm-opencl-runtime
+          libvdpau-va-gl
+        ];
+      };
+      enableAllFirmware = true;
+      steam-hardware.enable = true;
+    };
   };
 }

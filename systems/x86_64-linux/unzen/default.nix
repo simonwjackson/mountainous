@@ -21,9 +21,9 @@
   ];
 
   mountainous = {
-    battery.enable = true;
     performance.enable = true;
     profiles.laptop.enable = true;
+    hardware.cpu.type = "intel";
     networking.core.names = [
       {
         name = "eth-primary";
@@ -54,33 +54,63 @@
     };
   };
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
-    fsType = "btrfs";
-    options = ["subvol=root"];
-  };
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
+  #   fsType = "btrfs";
+  #   options = ["subvol=root"];
+  # };
+  #
+  # fileSystems."/home" = {
+  #   device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
+  #   fsType = "btrfs";
+  #   options = ["subvol=home"];
+  # };
+  #
+  # fileSystems."/nix" = {
+  #   device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
+  #   fsType = "btrfs";
+  #   options = ["subvol=nix"];
+  # };
 
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
-    fsType = "btrfs";
-    options = ["subvol=home"];
-  };
-
-  fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
-    fsType = "btrfs";
-    options = ["subvol=nix"];
+  disko.devices = {
+    disk = {
+      iceberg = {
+        type = "disk";
+        device = "/dev/disk/by-label/iceberg";
+        content = {
+          type = "filesystem";
+          format = "btrfs";
+          mountOptions = ["compress=zstd" "noatime" "autodefrag" "space_cache=v2"];
+          mountpoint = "/glacier/iceberg";
+        };
+      };
+      nvme = {
+        type = "disk";
+        device = "/dev/disk/by-uuid/e7992d4c-23f6-453e-99b8-b68a717a6156";
+        content = {
+          type = "btrfs";
+          subvolumes = {
+            "/root" = {
+              mountpoint = "/";
+              mountOptions = ["compress=zstd"];
+            };
+            "/home" = {
+              mountpoint = "/home";
+              mountOptions = ["compress=zstd"];
+            };
+            "/nix" = {
+              mountpoint = "/nix";
+              mountOptions = ["compress=zstd" "noatime"];
+            };
+          };
+        };
+      };
+    };
   };
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/A777-1B40";
     fsType = "vfat";
-  };
-
-  fileSystems."/glacier/iceberg" = {
-    device = "/dev/disk/by-label/iceberg";
-    fsType = "btrfs";
-    options = ["compress=zstd" "noatime" "autodefrag" "space_cache=v2"];
   };
 
   services.audiobookshelf = {
@@ -113,52 +143,10 @@
     };
   };
 
-  swapDevices = [];
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-
   boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod"];
-  boot.initrd.kernelModules = [];
   boot.kernelModules = ["kvm-intel"];
-  boot.extraModulePackages = [];
   boot.supportedFilesystems = ["bcachefs"];
   boot.kernelPackages = pkgs.linuxPackages_latest;
-
-  # networking.hostName = "unzen"; # Define your hostname.
-
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  # users.users.simonwjackson = {
-  #   isNormalUser = true;
-  #   extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
-  #   packages = with pkgs; [
-  #     mpv
-  #     tmux
-  #     kitty
-  #     git
-  #     firefox
-  #     btop
-  #   ];
-  # };
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It's perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-
-  services.flatpak.enable = true;
-  xdg.portal = {
-    enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-kde
-    ];
-  };
-
-  hardware.bluetooth.enable = true;
 
   services.jellyfin = {
     enable = true;
@@ -281,17 +269,6 @@
     cert = config.age.secrets.unzen-syncthing-cert.path;
   };
 
-  # services.syncthing = {
-  #     gaming-profiles.versioning = {
-  #       type = "staggered";
-  #       params = {
-  #         cleanInterval = "3600";
-  #         maxAge = "31536000";
-  #       };
-  #     };
-  #   };
-  # };
-
   services.printing.enable = true;
   services.printing.drivers = with pkgs; [brlaser];
 
@@ -302,27 +279,6 @@
   services.printing.listenAddresses = ["*:631"]; # Not 100% sure this is needed and you might want to restrict to the local network
   services.printing.allowFrom = ["all"]; # this gives access to anyone on the interface you might want to limit it see the official documentation
   services.printing.defaultShared = true; # If you want
-
-  networking.firewall.enable = lib.mkForce false;
-
-  networking.firewall.allowedUDPPorts = [631];
-  networking.firewall.allowedTCPPorts = [631];
-
-  # services.cuttlefish = {
-  #   enable = true;
-  #   package = inputs.cuttlefish.packages."x86_64-linux"."cuttlefi.sh";
-  #   settings = {
-  #     root_dir = "/glacier/snowscape/podcasts";
-  #     subscriptions = {
-  #       "The Morning Stream" = {
-  #         url = "https://feeds.acast.com/public/shows/6500eec59654d100127e79b4";
-  #       };
-  #       "Conan O’Brien Needs A Friend" = {
-  #         url = "https://feeds.simplecast.com/dHoohVNH";
-  #       };
-  #     };
-  #   };
-  # };
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }
