@@ -89,6 +89,10 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
 
+      systems.hosts.asahi.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
       systems.hosts.fiji.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];

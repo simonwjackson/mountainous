@@ -29,7 +29,7 @@
           "https://nix-community.cachix.org"
           "https://simonwjackson.cachix.org"
         ];
-        trusted-users = ["root" "@wheel" "simonwjackson"];
+        trusted-users = ["root" "@wheel" "simonwjackson" "admin"];
         trusted-public-keys = [
           "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
           "simonwjackson.cachix.org-1:MtG0AE8J6bjFO/wD04X5h8MlQh7Sbee8KAJrAsPJydI="
