@@ -21,7 +21,7 @@ in {
       };
     };
 
-    boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usbhid" "usb_storage" "sd_mod"];
+    boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usbhid" "usb_storage" "uas" "sd_mod"];
     boot.kernelPackages = pkgs.linuxPackages_zen;
 
     # *might* fix white/flashing screens
