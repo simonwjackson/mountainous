@@ -141,15 +141,6 @@ in {
     enable = true;
     key = config.age.secrets.fiji-syncthing-key.path;
     cert = config.age.secrets.fiji-syncthing-cert.path;
-
-    settings.paths = {
-      # documents = "/glacier/snowscape/documents";
-      notes = "/glacier/snowscape/notes";
-      # audiobooks = "/glacier/snowscape/audiobooks";
-      # books = "/glacier/snowscape/books";
-      # comics = "/glacier/snowscape/comics";
-      # code = "/glacier/snowscape/code";
-    };
   };
 
   fileSystems."/home/simonwjackson/documents" = {

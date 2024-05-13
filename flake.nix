@@ -70,7 +70,6 @@
         myNeovim.nixosModules.default
         agenix.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
-        simple-nixos-mailserver.nixosModules.default
         kmonad.nixosModules.default
         disko.nixosModules.default
       ];
@@ -99,6 +98,7 @@
 
       systems.hosts.yari.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
+        simple-nixos-mailserver.nixosModules.default
       ];
 
       systems.hosts.zao.modules = with inputs; [
