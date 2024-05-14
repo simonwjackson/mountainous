@@ -3,8 +3,12 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  cfg = config.mountainous.boot;
+in {
   options.mountainous.boot = {
+    enable = lib.mkEnableOption "Wether to enable common boot options";
+
     type = lib.mkOption {
       type = with lib.types; enum ["bios" "uefi" "lanzaboote"];
       default = "uefi";
@@ -21,10 +25,10 @@
   };
 
   config = let
-    inherit (config.mountainous.boot) type quiet;
+    inherit (cfg) type quiet;
     # inherit (config.networking) hostName;
   in
-    lib.mkMerge [
+    lib.mkIf cfg.enable (lib.mkMerge [
       {
         console = {
           earlySetup = true;
@@ -87,5 +91,5 @@
           };
         };
       })
-    ];
+    ]);
 }

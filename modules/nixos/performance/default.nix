@@ -26,7 +26,6 @@ in {
       cpuFreqGovernor = pkgs.lib.mkDefault "powersave";
     };
 
-    # INFO: Hacky, non-reliable way to check if host is intel
     services.thermald.enable = config.mountainous.hardware.cpu.type == "intel";
 
     systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {

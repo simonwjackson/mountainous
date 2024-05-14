@@ -17,6 +17,7 @@
       # This will additionally add your inputs to the system's legacy channels
       # Making legacy nix commands consistent as well, awesome!
       nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
+
       optimise.automatic = true;
       settings = {
         flake-registry = ""; # Disable global flake registry

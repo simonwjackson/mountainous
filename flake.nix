@@ -48,6 +48,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # INFO: https://github.com/snowfallorg/lib/issues/54#issuecomment-2067533982
+    nixpkgs-mobile-nixos.url = "github:nixos/nixpkgs/0c56c244409eb4424611f37953bfd03c2534bcce";
+
     mobile-nixos = {
       url = "github:NixOS/mobile-nixos";
       flake = false;
@@ -73,6 +76,14 @@
         kmonad.nixosModules.default
         disko.nixosModules.default
       ];
+
+      systems.hosts.naka = {
+        modules = with inputs; [
+          tmesh.nixosModules.x86_64-linux.default
+        ];
+
+        channelName = "nixpkgs-mobile-nixos";
+      };
 
       systems.modules.darwin = with inputs; [
         home-manager.darwinModules.home-manager
@@ -118,11 +129,6 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
       # HACK: END
-
-      systems.hosts.piney.modules = [
-        (import "${inputs.mobile-nixos}/lib/configuration.nix" {device = "pine64-pinephone";})
-        (import "${inputs.mobile-nixos}/examples/phosh/phosh.nix")
-      ];
 
       overlays = with inputs; [
         snowfall-frost.overlays.default

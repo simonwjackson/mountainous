@@ -33,11 +33,11 @@ in {
     performance.enable = mkDefault true;
     sound.enable = mkDefault true;
     user = {
-      name = "simonwjackson";
-      hashedPasswordFile = config.age.secrets."user-simonwjackson".path;
+      name = mkDefault "simonwjackson";
+      hashedPasswordFile = mkDefault config.age.secrets."user-simonwjackson".path;
     };
     networking = {
-      core.enable = true;
+      core.enable = mkDefault true;
       tailscaled.enable = mkDefault true;
       zerotierone.enable = mkDefault true;
     };
@@ -45,7 +45,7 @@ in {
 
   environment.pathsToLink = ["/share/zsh"];
 
-  services.udisks2.enable = true;
+  # services.udisks2.enable = true;
 
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
@@ -123,8 +123,7 @@ in {
 
   # environment.enableAllTerminfo = true;
 
-  hardware.enableRedistributableFirmware = true;
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.enableRedistributableFirmware = mkDefault true;
 
   # $ nix search wget
   # TODO: dont hardcode system type
