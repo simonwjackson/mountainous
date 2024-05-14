@@ -5,6 +5,10 @@
   target,
   ...
 }: let
+  inherit (lib.mountainous) enabled;
+
+  cfg = config.mountainous.syncthing;
+
   findHosts = arch:
     lib.flatten (lib.mapAttrsToList
       (host: _:
@@ -38,32 +42,49 @@
       };
     });
 in {
-  services.syncthing = {
-    overrideDevices = true;
-    overrideFolders = true;
-    user = config.mountainous.user.name;
-    configDir = "/home/${config.mountainous.user.name}/.config/syncthing";
-
-    settings = {
-      ignores.line = [
-        "**/node_modules"
-        "**/build"
-        "**/cache"
-      ];
-
-      folders = lib.mkMerge (getHostFolders
-        (import ../../../systems/${target}/${config.networking.hostName}/syncthing.nix {
-          inherit config;
-          host = "${config.networking.hostName}";
-        })
-        .paths);
-
-      devices = lib.mapAttrs (name: config: config.device) syncthingConfigs;
+  options.mountainous.syncthing = {
+    enable = lib.mkEnableOption "Whether to enable laptop configurations";
+    key = lib.mkOption {
+      type = lib.types.str;
+      description = "Syncthing key";
     };
+    cert = lib.mkOption {
+      type = lib.types.str;
+      description = "Syncthing certificate";
+    };
+  };
 
-    extraFlags = [
-      "--no-default-folder"
-      # "--gui-address=0.0.0.0:8384"
-    ];
+  config = lib.mkIf cfg.enable {
+    services.syncthing = {
+      enable = true;
+      overrideDevices = true;
+      overrideFolders = true;
+      key = cfg.key;
+      cert = cfg.cert;
+      user = config.mountainous.user.name;
+      configDir = "/home/${config.mountainous.user.name}/.config/syncthing";
+
+      settings = {
+        ignores.line = [
+          "**/node_modules"
+          "**/build"
+          "**/cache"
+        ];
+
+        folders = lib.mkMerge (getHostFolders
+          (import ../../../systems/${target}/${config.networking.hostName}/syncthing.nix {
+            inherit config;
+            host = "${config.networking.hostName}";
+          })
+          .paths);
+
+        devices = lib.mapAttrs (name: config: config.device) syncthingConfigs;
+      };
+
+      extraFlags = [
+        "--no-default-folder"
+        # "--gui-address=0.0.0.0:8384"
+      ];
+    };
   };
 }

@@ -1,6 +1,7 @@
 # This file (and the global directory) holds config that i use on all hosts
 {
   system,
+  options,
   lib,
   inputs,
   pkgs,
@@ -15,6 +16,15 @@ in {
     file = ../../../secrets/user-simonwjackson-anthropic.age;
     owner = "simonwjackson";
     group = "users";
+  };
+
+  age = {
+    identityPaths =
+      options.age.identityPaths.default
+      ++ [
+        # TODO: Pull this value from somewhere else in the config
+        "/home/simonwjackson/.ssh/agenix"
+      ];
   };
 
   programs.myNeovim = {
@@ -44,6 +54,7 @@ in {
       tailscaled.enable = mkDefault true;
       zerotierone.enable = mkDefault true;
     };
+    syncthing = mkDefault enabled;
   };
 
   environment.pathsToLink = ["/share/zsh"];

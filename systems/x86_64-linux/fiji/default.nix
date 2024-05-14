@@ -17,15 +17,6 @@ in {
   age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
   age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
 
-  age = {
-    identityPaths =
-      options.age.identityPaths.default
-      ++ [
-        # TODO: Pull this value from somewhere else in the config
-        "/home/simonwjackson/.ssh/agenix"
-      ];
-  };
-
   mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
     performance = enabled;
@@ -36,6 +27,10 @@ in {
         mac = "d4:d8:53:90:2b:6c";
       }
     ];
+    syncthing = {
+      key = config.age.secrets.fiji-syncthing-key.path;
+      cert = config.age.secrets.fiji-syncthing-cert.path;
+    };
   };
 
   # DESKTOP
@@ -131,12 +126,6 @@ in {
         }
       ];
     };
-  };
-
-  services.syncthing = {
-    enable = true;
-    key = config.age.secrets.fiji-syncthing-key.path;
-    cert = config.age.secrets.fiji-syncthing-cert.path;
   };
 
   fileSystems."/home/simonwjackson/documents" = {
