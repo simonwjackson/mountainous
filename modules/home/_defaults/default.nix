@@ -2,25 +2,21 @@
   config,
   inputs,
   lib,
-  options,
   pkgs,
   ...
-}: {
+}: let
+  inherit (lib.mountainous) enabled;
+  inherit (lib) mkDefault;
+in {
   imports = [
     inputs.agenix.homeManagerModules.age
   ];
 
   config = {
-    age = {
-      identityPaths =
-        options.age.identityPaths.default
-        ++ [
-          # TODO: Pull this value from somewhere else in the config
-          "${config.home.homeDirectory}/.ssh/agenix"
-        ];
+    mountainous = {
+      agenix = mkDefault enabled;
+      atuin = mkDefault enabled;
     };
-    age.secrets.atuin_key.file = ../../../secrets/atuin_key.age;
-    age.secrets.atuin_session.file = ../../../secrets/atuin_session.age;
 
     home = {
       sessionVariables = {
@@ -29,17 +25,6 @@
       packages = [
       ];
     };
-
-    # nixpkgs = {
-    #   config = {
-    #     allowUnfree = true;
-    #     # Workaround for https://github.com/nix-community/home-manager/issues/2942
-    #     allowUnfreePredicate = _: true;
-    #     permittedInsecurePackages = [
-    #       # "nix-2.16.2"
-    #     ];
-    #   };
-    # };
 
     programs.bat = {
       enable = true;
@@ -74,25 +59,6 @@
 
     programs.bash.enable = true;
 
-    programs.atuin = {
-      enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
-      settings = {
-        auto_sync = true;
-        enter_accept = true;
-        filter_mode_shell_up_key_binding = "workspace";
-        inline_height = 10;
-        key_path = config.age.secrets.atuin_key.path;
-        search_mode = "fuzzy";
-        secrets_filter = false;
-        session_path = config.age.secrets.atuin_session.path;
-        style = "compact";
-        sync_address = "https://api.atuin.sh";
-        sync_frequency = "5m";
-      };
-    };
-
     programs.ssh = {
       enable = true;
       compression = true;
@@ -102,16 +68,11 @@
         "*" = {
           sendEnv = ["TZ"];
         };
-        "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountain.ous" = {
+        "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountaino.us" = {
           user = "sjackson217";
         };
       };
     };
-
-    # programs.xpo = {
-    #   enable = true;
-    #   defaultServer = "unzen";
-    # };
 
     # Nicely reload system units when changing configs
     systemd.user.startServices = "sd-switch";

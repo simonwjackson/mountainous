@@ -8,6 +8,7 @@
   ...
 }: let
   inherit (lib) mkDefault;
+  inherit (lib.mountainous) enabled;
 in {
   age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
   age.secrets."user-simonwjackson-anthropic" = {
@@ -29,8 +30,10 @@ in {
   programs.zsh.enable = true;
 
   mountainous = {
-    printing.enable = mkDefault true;
+    adb = mkDefault enabled;
+    boot = mkDefault enabled;
     performance.enable = mkDefault true;
+    printing.enable = mkDefault true;
     sound.enable = mkDefault true;
     user = {
       name = mkDefault "simonwjackson";

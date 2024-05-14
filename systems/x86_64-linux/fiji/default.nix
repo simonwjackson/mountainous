@@ -66,11 +66,7 @@ in {
   };
   # END: DESKTOP
 
-  boot.kernelModules = ["kvm-intel"];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
-
-  disko.devices.disk.nvme0n1 = {
+  disko.devices.disk.main = {
     type = "disk";
     device = "/dev/disk/by-id/nvme-WDSN740-SDDPNQD-1T00-1004_22501B805583";
     content = {
@@ -147,12 +143,6 @@ in {
     device = "/glacier/snowscape/documents";
     options = ["bind"];
   };
-
-  programs.adb.enable = true;
-  users.users.simonwjackson.extraGroups = ["adbusers"];
-  services.udev.packages = [
-    pkgs.android-udev-rules
-  ];
 
   system.stateVersion = "23.05"; # Did you read the comment?
 }

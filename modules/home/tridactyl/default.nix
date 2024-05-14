@@ -3,9 +3,11 @@
   lib,
   pkgs,
   ...
-}:
-with lib; let
-  cfg = config.programs.tridactyl;
+}: let
+  inherit (lib) concatMapStrings concatStringsSep mapAttrsToList isAttrs mkEnableOption mkOption recursiveUpdate mkIf;
+  inherit (lib.types) str attrs attrsOf;
+
+  cfg = config.mountainous.tridactyl;
 
   # Define a function to handle the conversion of the 'unbind' list.
   handleUnbind = value:
@@ -78,29 +80,33 @@ with lib; let
         recursiveUpdateWithClashDetection [name] acc (modules.${name})
     ) {} (lib.attrNames modules);
 in {
-  options.programs.tridactyl = {
+  options.mountainous.tridactyl = {
     enable = mkEnableOption "Tridactyl browser extension";
 
     settings = mkOption {
       default = {};
-      type = types.attrs;
+      type = attrs;
       description = "Miscellaneous settings for Tridactyl.";
     };
 
     modules = mkOption {
       default = {};
-      type = types.attrsOf types.attrs;
+      type = attrsOf attrs;
       description = "Tridactyl modules configuration.";
     };
 
     extraSettings = mkOption {
       default = "";
-      type = types.str;
+      type = str;
       description = "Additional plain string settings to be appended at the end of the tridactylrc file.";
     };
   };
 
   config = mkIf cfg.enable {
+    # home.packages = with pkgs; [
+    #   tridactyl-native
+    # ];
+
     # Combine settings with the modules
     home.file.".config/tridactyl/tridactylrc".text = let
       combinedSettings = recursiveUpdate cfg.settings (mergeModules cfg.modules);

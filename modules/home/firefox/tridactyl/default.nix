@@ -1,38 +1,36 @@
 {
-  pkgs,
   config,
   inputs,
+  lib,
+  pkgs,
   ...
 }: {
-  # INFO: compile this with fullpaths to binaries
-  # home.file."./.config/tridactyl" = {
-  #   source = ./src;
-  #   recursive = true;
-  # };
-
   age.secrets."user-simonwjackson-instapaper".file = ../../../../secrets/user-simonwjackson-instapaper.age;
 
   home.file.".local/state/nix/profile/bin/instapaper-add" = {
-    text = ''
-      CURL=${pkgs.curl}/bin/curl
-      user="simon@simonwjackson.com"
-      password=$(cat ${config.age.secrets.user-simonwjackson-instapaper.path})
-      url="$1"
+    text =
+      /*
+      bash
+      */
+      ''
+        CURL=${lib.getExe pkgs.curl}
+        user="simon@simonwjackson.com"
+        password=$(cat ${config.age.secrets.user-simonwjackson-instapaper.path})
+        url="$1"
 
-      $CURL \
-        -s \
-        -d username="$user" \
-        -d password="$password" \
-        -d url="$url" \
-        https://www.instapaper.com/api/add
-    '';
+        $CURL \
+          -s \
+          -d username="$user" \
+          -d password="$password" \
+          -d url="$url" \
+          https://www.instapaper.com/api/add
+      '';
     executable = true;
   };
 
-  programs.tridactyl = {
+  mountainous.tridactyl = {
     enable = true;
     extraSettings = ''
-
       " "" Send to phone
       " alias send_to_phone composite get_current_url | !s \$HOME/bin/url-to-phone
       " bind gp send_to_phone
@@ -429,8 +427,4 @@
       ];
     };
   };
-
-  home.packages = with pkgs; [
-    tridactyl-native
-  ];
 }

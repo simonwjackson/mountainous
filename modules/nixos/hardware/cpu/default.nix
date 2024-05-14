@@ -20,7 +20,7 @@ in {
   config = lib.mkMerge [
     (lib.mkIf (cfg.type == "intel") {
       hardware.cpu.intel.updateMicrocode = true;
-      # boot.kernelModules = (config.boot.kernelModules or []) ++ ["kvm-intel"];
+      boot.kernelModules = ["kvm-intel"];
     })
 
     (lib.mkIf (cfg.type == "amd") {

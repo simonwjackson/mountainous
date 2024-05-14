@@ -4,7 +4,7 @@
   lib,
   ...
 }: let
-  inherit (lib) mkIf mkEnableOption;
+  inherit (lib) mkIf mkEnableOption mkDefault;
 
   cfg = config.mountainous.hardware.devices.samsung-galaxy-book3-360;
 in {
@@ -19,6 +19,10 @@ in {
         cpu.type = "intel";
       };
     };
+
+    boot.kernelPackages = mkDefault pkgs.linuxPackages_latest;
+
+    boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
 
     systemd.services.fixSamsungGalaxyBook3Speakers = {
       path = [pkgs.alsa-tools];
