@@ -42,17 +42,19 @@ in {
   mountainous = {
     adb = mkDefault enabled;
     boot = mkDefault enabled;
-    performance.enable = mkDefault true;
-    printing.enable = mkDefault true;
-    sound.enable = mkDefault true;
+    performance = mkDefault enabled;
+    printing = mkDefault enabled;
+    sound = mkDefault enabled;
     user = {
+      enable = mkDefault true;
       name = mkDefault "simonwjackson";
       hashedPasswordFile = mkDefault config.age.secrets."user-simonwjackson".path;
     };
     networking = {
-      core.enable = mkDefault true;
-      tailscaled.enable = mkDefault true;
-      zerotierone.enable = mkDefault true;
+      core = mkDefault enabled;
+      secure-shell = mkDefault enabled;
+      tailscaled = mkDefault enabled;
+      zerotierone = mkDefault enabled;
     };
     syncthing = mkDefault enabled;
   };

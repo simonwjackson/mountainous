@@ -6,7 +6,7 @@
   ...
 }: {
   config = {
-    age.secrets."user-simonwjackson-github-token-nix".file = ../../../secrets/user-simonwjackson-github-token-nix.age;
+    age.secrets."user-simonwjackson-github-token-nix".file = ../../../../secrets/user-simonwjackson-github-token-nix.age;
     # Allow unfree packages
     nix = {
       package = pkgs.nixVersions.latest;

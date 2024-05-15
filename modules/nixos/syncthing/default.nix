@@ -44,10 +44,12 @@
 in {
   options.mountainous.syncthing = {
     enable = lib.mkEnableOption "Whether to enable laptop configurations";
+
     key = lib.mkOption {
       type = lib.types.str;
       description = "Syncthing key";
     };
+
     cert = lib.mkOption {
       type = lib.types.str;
       description = "Syncthing certificate";

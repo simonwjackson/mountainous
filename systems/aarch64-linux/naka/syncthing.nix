@@ -4,15 +4,10 @@
   ...
 }: {
   device = {
-    id = "XBVHUQR-BIPNGCS-W7RGGEV-HBA3R4C-UWQAYWQ-KCBPJ6D-PIPLQYU-CXHOWAD";
+    id = "6SDMTLX-5YQ3QIK-5ZJNOQV-IZZK5O2-VC2QYK2-VKEAKY5-G5PZBXK-AV6RXAR";
     name = "Nixos Phone (${host})";
   };
   paths = {
-    # documents = "/glacier/snowscape/documents";
-    # notes = "/glacier/snowscape/notes";
-    # audiobooks = "/glacier/snowscape/audiobooks";
-    # books = "/glacier/snowscape/books";
-    # comics = "/glacier/snowscape/comics";
-    # code = "/glacier/snowscape/code";
+    notes = "/home/simonwjackson/notes";
   };
 }

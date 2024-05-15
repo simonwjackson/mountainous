@@ -55,11 +55,11 @@ in {
   "zao-syncthing-key.age".publicKeys = users ++ [zao];
   "zao-syncthing-cert.age".publicKeys = users ++ [zao];
 
-  # "yari-syncthing-key.age".publicKeys = users ++ [yari];
-  # "yari-syncthing-cert.age".publicKeys = users ++ [yari];
-
   "unzen-syncthing-key.age".publicKeys = users ++ [unzen];
   "unzen-syncthing-cert.age".publicKeys = users ++ [unzen];
+
+  "naka-syncthing-key.age".publicKeys = users ++ [naka];
+  "naka-syncthing-cert.age".publicKeys = users ++ [naka];
 
   "fiji-syncthing-key.age".publicKeys = users ++ [fiji];
   "fiji-syncthing-cert.age".publicKeys = users ++ [fiji];
