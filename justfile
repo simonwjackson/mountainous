@@ -79,12 +79,13 @@ evolve-all *ARGS:
     sh -c './scripts/deploy.sh'
 
 # Update the flake inputs
-up:
-    nix flake update
+# Usage:
+#   just up          # Update all flake inputs
+#   just up INPUT1   # Update a specific flake input named INPUT1
 
-# Update a specific flake input
-up-this *ARGS:
-    nix flake lock --update-input {{ ARGS }}
+# Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
+up *ARGS:
+    nix flake update {{ ARGS }}
 
 # Show the system profile history
 history:
