@@ -17,6 +17,8 @@ in {
       agenix = mkDefault enabled;
       atuin = mkDefault enabled;
       lf = mkDefault enabled;
+      eza = mkDefault enabled;
+      git = mkDefault enabled;
     };
 
     home = {
