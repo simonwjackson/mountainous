@@ -1,20 +1,36 @@
-{...}: {
-  programs.lf = {
-    enable = true;
-    extraConfig = builtins.readFile ./lfrc;
+{
+  config,
+  lib,
+  options,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption;
+
+  cfg = config.mountainous.lf;
+in {
+  options.mountainous.lf = {
+    enable = mkEnableOption "Whether to enable lf";
   };
 
-  home.file = {
-    "./.local/bin/pv" = {
-      source = ./pv.sh;
+  config = lib.mkIf cfg.enable {
+    programs.lf = {
+      enable = true;
+      extraConfig = builtins.readFile ./lfrc;
     };
 
-    "./.config/lf/colors" = {
-      source = ./colors;
-    };
+    home.file = {
+      "./.local/bin/pv" = {
+        source = ./pv.sh;
+      };
 
-    "./.config/lf/icons" = {
-      source = ./icons;
+      "./.config/lf/colors" = {
+        source = ./colors;
+      };
+
+      "./.config/lf/icons" = {
+        source = ./icons;
+      };
     };
   };
 }

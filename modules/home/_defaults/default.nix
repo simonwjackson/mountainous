@@ -16,6 +16,7 @@ in {
     mountainous = {
       agenix = mkDefault enabled;
       atuin = mkDefault enabled;
+      lf = mkDefault enabled;
     };
 
     home = {
