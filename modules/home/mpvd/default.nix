@@ -4,10 +4,10 @@
   pkgs,
   ...
 }: let
-  cfg = config.services.mpvd;
-  mpv = "${pkgs.mpv}/bin/mpv";
+  cfg = config.mountainous.mpvd;
+  mpv = lib.getExe pkgs.mpv;
 in {
-  options.services.mpvd = {
+  options.mountainous.mpvd = {
     enable = lib.mkOption {
       type = lib.types.bool;
       default = false;

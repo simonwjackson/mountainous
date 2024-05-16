@@ -1,12 +1,28 @@
-{lib, ...}: {
-  home = {
-    sessionVariables = {
-      TERMINAL = "kitty";
-    };
+{
+  config,
+  lib,
+  options,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption;
+
+  cfg = config.mountainous.kitty;
+in {
+  options.mountainous.kitty = {
+    enable = mkEnableOption "Whether to enable kitty";
   };
 
-  programs.kitty = {
-    enable = true;
-    extraConfig = builtins.readFile ./kitty.conf;
+  config = lib.mkIf cfg.enable {
+    home = {
+      sessionVariables = {
+        TERMINAL = "kitty";
+      };
+    };
+
+    programs.kitty = {
+      enable = true;
+      extraConfig = builtins.readFile ./kitty.conf;
+    };
   };
 }

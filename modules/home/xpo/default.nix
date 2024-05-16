@@ -4,10 +4,10 @@
   lib,
   ...
 }: let
-  cfg = config.programs.xpo;
-  package = pkgs.xpo;
+  cfg = config.mountainous.xpo;
+  package = pkgs.mountainous.xpo;
 in {
-  options.programs.xpo = {
+  options.mountainous.xpo = {
     enable = lib.mkEnableOption "xpo";
 
     defaultServer = lib.mkOption {

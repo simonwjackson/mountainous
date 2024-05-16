@@ -5,19 +5,23 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption;
+  inherit (lib) mkEnableOption mkOption;
 
   cfg = config.mountainous.git;
 in {
   options.mountainous.git = {
     enable = mkEnableOption "Whether to enable git";
+
+    github-token = mkOption {
+      type = lib.types.str;
+      description = "";
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    age.secrets."user-simonwjackson-github-token".file = ../../../secrets/user-simonwjackson-github-token.age;
     home.sessionVariables = {
       GITHUB_USER = "simonwjackson";
-      GITHUB_TOKEN = config.age.secrets."user-simonwjackson-github-token".path;
+      GITHUB_TOKEN = cfg.github-token;
     };
 
     programs.lazygit = {

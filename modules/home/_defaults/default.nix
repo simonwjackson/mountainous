@@ -5,7 +5,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib.mountainous) enabled;
+  inherit (lib.mountainous) enabled disabled;
   inherit (lib) mkDefault;
 in {
   imports = [
@@ -13,12 +13,47 @@ in {
   ];
 
   config = {
+    age.secrets."user-simonwjackson-taskserver-private.key".file = ../../../secrets/user-simonwjackson-taskserver-private.key.age;
+    age.secrets."user-simonwjackson-taskserver-public.cert".file = ../../../secrets/user-simonwjackson-taskserver-public.cert.age;
+    age.secrets."user-simonwjackson-taskserver-ca.cert".file = ../../../secrets/user-simonwjackson-taskserver-ca.cert.age;
+    age.secrets.atuin_key.file = ../../../secrets/atuin_key.age;
+    age.secrets.atuin_session.file = ../../../secrets/atuin_session.age;
+    age.secrets."user-simonwjackson-github-token".file = ../../../secrets/user-simonwjackson-github-token.age;
+
     mountainous = {
       agenix = mkDefault enabled;
-      atuin = mkDefault enabled;
-      lf = mkDefault enabled;
+      atuin = {
+        enable = true;
+        key_path = config.age.secrets.atuin_key.path;
+        session_path = config.age.secrets.atuin_session.path;
+      };
+      bat = mkDefault enabled;
       eza = mkDefault enabled;
-      git = mkDefault enabled;
+      direnv = mkDefault enabled;
+      git = {
+        enable = mkDefault true;
+        github-token = config.age.secrets."user-simonwjackson-github-token".path;
+      };
+      kitty = mkDefault enabled;
+      lf = mkDefault enabled;
+      mpvd = mkDefault enabled;
+      secure-shell = mkDefault enabled;
+      tank = {
+        enable = mkDefault true;
+        path = mkDefault "/glacier/snowscape/";
+      };
+      taskwarrior-sync = {
+        enable = mkDefault true;
+        publicCertFile = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
+        privateKeyFile = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
+        caCertFile = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
+        server = "yari:53589";
+        credentials = "mountainous/simonwjackson/430e9d17-bc5e-4534-9c37-c1dcab337dbe";
+      };
+      tridactyl = mkDefault enabled;
+      work-mode = mkDefault disabled;
+      xpo = mkDefault enabled;
+      zsh = mkDefault enabled;
     };
 
     home = {
@@ -29,53 +64,7 @@ in {
       ];
     };
 
-    programs.bat = {
-      enable = true;
-
-      themes = {
-        dracula = builtins.readFile (pkgs.fetchFromGitHub
-          {
-            owner = "dracula";
-            repo = "sublime"; # Bat uses sublime syntax for its themes
-            rev = "26c57ec282abcaa76e57e055f38432bd827ac34e";
-            sha256 = "019hfl4zbn4vm4154hh3bwk6hm7bdxbr1hdww83nabxwjn99ndhv";
-          }
-          + "/Dracula.tmTheme");
-      };
-
-      config = {
-        theme = "Dracula";
-        italic-text = "always";
-      };
-    };
-
-    programs.direnv = {
-      enable = true;
-      nix-direnv.enable = true;
-      enableZshIntegration = config.programs.zsh.enable;
-      enableBashIntegration = config.programs.bash.enable;
-      # config = ''
-      #   [whitelist]
-      #   prefix = [ "/home/simonwjackson/code" ]
-      # '';
-    };
-
     programs.bash.enable = true;
-
-    programs.ssh = {
-      enable = true;
-      compression = true;
-      controlMaster = "auto";
-      forwardAgent = true;
-      matchBlocks = {
-        "*" = {
-          sendEnv = ["TZ"];
-        };
-        "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountaino.us" = {
-          user = "sjackson217";
-        };
-      };
-    };
 
     # Nicely reload system units when changing configs
     systemd.user.startServices = "sd-switch";

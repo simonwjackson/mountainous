@@ -27,9 +27,8 @@
   # programs.vinyl-vault.enable = true;
   mountainous.work-mode.enable = true;
   mountainous.firefox.enable = true;
-  services.mpvd.enable = true;
-  services.udiskie.enable = true;
-  simonwjackson.snowscape.enable = true;
+  # services.udiskie.enable = true;
+  # simonwjackson.snowscape.enable = true;
 
   home = {
     homeDirectory = "/home/${config.home.username}";

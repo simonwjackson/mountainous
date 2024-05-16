@@ -4,15 +4,15 @@
   lib,
   ...
 }: let
-  cfg = config.simonwjackson.snowscape;
-  package = pkgs.snowscape;
+  inherit (lib.types) str;
+
+  cfg = config.mountainous.tank;
 in {
-  options.simonwjackson.snowscape = {
-    enable = lib.mkEnableOption "snowscape";
+  options.mountainous.tank = {
+    enable = lib.mkEnableOption "Whether to enable a centralized location for your data";
 
     path = lib.mkOption {
-      default = "/glacier/snowscape/";
-      type = with lib.types; str;
+      type = str;
       description = ''
         Path to a common mass storage area
       '';

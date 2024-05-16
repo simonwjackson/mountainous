@@ -4,30 +4,51 @@
   lib,
   ...
 }: let
-  inherit (lib) mkEnableOption;
+  inherit (lib) mkEnableOption mkOption;
+  inherit (lib.types) str;
 
   cfg = config.mountainous.taskwarrior-sync;
 in {
   options.mountainous.taskwarrior-sync = {
-    enable = mkEnableOption "Whether to enable the service";
+    enable = mkEnableOption "Whether to enable the taskwarrior sync service";
+
+    privateKeyFile = mkOption {
+      type = str;
+      description = "";
+    };
+
+    publicCertFile = mkOption {
+      type = str;
+      description = "";
+    };
+
+    caCertFile = mkOption {
+      type = str;
+      description = "";
+    };
+
+    server = mkOption {
+      type = str;
+      description = "";
+    };
+
+    credentials = mkOption {
+      type = str;
+      description = "";
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    # Add your module configuration here
-    age.secrets."user-simonwjackson-taskserver-private.key".file = ../../../secrets/user-simonwjackson-taskserver-private.key.age;
-    age.secrets."user-simonwjackson-taskserver-public.cert".file = ../../../secrets/user-simonwjackson-taskserver-public.cert.age;
-    age.secrets."user-simonwjackson-taskserver-ca.cert".file = ../../../secrets/user-simonwjackson-taskserver-ca.cert.age;
-
     programs.taskwarrior = {
       enable = true;
       config = {
         confirmation = false;
         taskd = {
-          certificate = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
-          key = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
-          ca = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
-          server = "yari:53589";
-          credentials = "mountainous/simonwjackson/430e9d17-bc5e-4534-9c37-c1dcab337dbe";
+          certificate = cfg.publicCertFile;
+          key = cfg.privateKeyFile;
+          ca = cfg.caCertFile;
+          server = cfg.server;
+          credentials = cfg.credentials;
         };
       };
     };

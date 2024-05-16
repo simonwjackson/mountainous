@@ -4,18 +4,25 @@
   lib,
   ...
 }: let
-  inherit (lib) mkEnableOption;
+  inherit (lib) mkEnableOption mkOption;
 
   cfg = config.mountainous.atuin;
 in {
   options.mountainous.atuin = {
     enable = mkEnableOption "Whether to enable atuin";
+
+    key_path = mkOption {
+      type = lib.types.str;
+      description = "";
+    };
+
+    session_path = mkOption {
+      type = lib.types.str;
+      description = "";
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    age.secrets.atuin_key.file = ../../../secrets/atuin_key.age;
-    age.secrets.atuin_session.file = ../../../secrets/atuin_session.age;
-
     programs.atuin = {
       enable = true;
       enableBashIntegration = true;
@@ -25,10 +32,10 @@ in {
         enter_accept = true;
         filter_mode_shell_up_key_binding = "workspace";
         inline_height = 10;
-        key_path = config.age.secrets.atuin_key.path;
+        key_path = cfg.key_path;
         search_mode = "fuzzy";
         secrets_filter = false;
-        session_path = config.age.secrets.atuin_session.path;
+        session_path = cfg.session_path;
         style = "compact";
         sync_address = "https://api.atuin.sh";
         sync_frequency = "5m";
