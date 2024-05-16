@@ -20,7 +20,10 @@ in {
   mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
     performance = enabled;
-    profiles.laptop = enabled;
+    profiles = {
+      laptop = enabled;
+      workspace = enabled;
+    };
     networking.core.names = [
       {
         name = "wifi";
@@ -32,34 +35,6 @@ in {
       cert = config.age.secrets.fiji-syncthing-cert.path;
     };
   };
-
-  # DESKTOP
-  services = {
-    xserver.enable = true;
-    displayManager.autoLogin.user = "simonwjackson";
-    displayManager.defaultSession = "home-manager";
-    # We need to create at least one session for auto login to work
-    xserver.desktopManager.session = [
-      {
-        name = "home-manager";
-        start = ''
-          ${pkgs.runtimeShell} $HOME/.hm-xsession &
-          waitPID=$!
-        '';
-      }
-    ];
-  };
-
-  programs.dconf.enable = true;
-
-  xdg.portal = {
-    enable = true;
-
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-kde
-    ];
-  };
-  # END: DESKTOP
 
   disko.devices.disk.main = {
     type = "disk";

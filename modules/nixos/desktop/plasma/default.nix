@@ -15,7 +15,7 @@
   cfg = config.mountainous.desktop.plasma;
 in {
   options.mountainous.desktop.plasma = {
-    enable = lib.mkEnableOption "Wether to enable the plasma desktop";
+    enable = lib.mkEnableOption "Whether to enable the plasma desktop";
   };
 
   config = lib.mkIf cfg.enable {

@@ -7,12 +7,14 @@
   cfg = config.mountainous.hardware.hybrid-sleep;
 in {
   options.mountainous.hardware.hybrid-sleep = {
-    enable = lib.mkEnableOption "Whether to enable laptop configurations";
+    enable = lib.mkEnableOption "Whether to enable hybrid sleep";
+
     delay = lib.mkOption {
       type = lib.types.int;
       default = 15;
       description = "Delay in minutes for idle action and hibernate delay";
     };
+
     hibernate = lib.mkOption {
       type = lib.types.bool;
       default = true;

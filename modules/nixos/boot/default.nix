@@ -7,7 +7,7 @@
   cfg = config.mountainous.boot;
 in {
   options.mountainous.boot = {
-    enable = lib.mkEnableOption "Wether to enable common boot options";
+    enable = lib.mkEnableOption "Whether to enable common boot options";
 
     type = lib.mkOption {
       type = with lib.types; enum ["bios" "uefi" "lanzaboote"];

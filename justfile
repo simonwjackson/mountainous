@@ -78,11 +78,6 @@ evolve-all *ARGS:
     just up && \
     sh -c './scripts/deploy.sh'
 
-# Update the flake inputs
-# Usage:
-#   just up          # Update all flake inputs
-#   just up INPUT1   # Update a specific flake input named INPUT1
-
 # Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
 up *ARGS:
     nix flake update {{ ARGS }}
