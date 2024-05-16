@@ -1,49 +1,59 @@
 {
-  options,
   config,
-  pkgs,
   lib,
+  options,
+  pkgs,
   ...
-}: {
-  security = {
-    rtkit.enable = true;
+}: let
+  inherit (lib) mkEnableOption mkOption;
 
-    sudo = {
-      wheelNeedsPassword = false;
-      extraRules = [
+  cfg = config.mountainous.security;
+in {
+  options.mountainous.security = {
+    enable = mkEnableOption "Whether to enable security";
+  };
+
+  config = lib.mkIf cfg.enable {
+    security = {
+      rtkit.enable = true;
+
+      sudo = {
+        wheelNeedsPassword = false;
+        extraRules = [
+          {
+            users = ["${config.mountainous.user.name}"];
+
+            commands = [
+              {
+                command = "ALL";
+                options = ["NOPASSWD" "SETENV"];
+              }
+            ];
+          }
+        ];
+      };
+
+      # Increase open file limit for sudoers
+      pam.loginLimits = [
         {
-          users = ["${config.mountainous.user.name}"];
-
-          commands = [
-            {
-              command = "ALL";
-              options = ["NOPASSWD" "SETENV"];
-            }
-          ];
+          domain = "@wheel";
+          type = "-";
+          item = "memlock";
+          value = "unlimited";
+        }
+        {
+          domain = "${config.mountainous.user.name}";
+          type = "soft";
+          item = "memlock";
+          value = "unlimited";
+        }
+        {
+          domain = "${config.mountainous.user.name}";
+          type = "hard";
+          item = "memlock";
+          value = "unlimited";
         }
       ];
     };
-
-    # Increase open file limit for sudoers
-    pam.loginLimits = [
-      {
-        domain = "@wheel";
-        type = "-";
-        item = "memlock";
-        value = "unlimited";
-      }
-      {
-        domain = "${config.mountainous.user.name}";
-        type = "soft";
-        item = "memlock";
-        value = "unlimited";
-      }
-      {
-        domain = "${config.mountainous.user.name}";
-        type = "hard";
-        item = "memlock";
-        value = "unlimited";
-      }
-    ];
   };
 }

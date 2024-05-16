@@ -9,7 +9,7 @@
   ...
 }: let
   inherit (lib) mkDefault;
-  inherit (lib.mountainous) enabled;
+  inherit (lib.mountainous) enabled disabled;
 in {
   age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
   age.secrets."user-simonwjackson-anthropic" = {
@@ -41,6 +41,13 @@ in {
 
   mountainous = {
     boot = mkDefault enabled;
+    hardware = {
+      battery = mkDefault disabled;
+      bluetooth = mkDefault disabled;
+      cpu = mkDefault enabled;
+      hybrid-sleep = mkDefault disabled;
+      touchpad = mkDefault disabled;
+    };
     networking = {
       core = mkDefault enabled;
       secure-shell = mkDefault enabled;
