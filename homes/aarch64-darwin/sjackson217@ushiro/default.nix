@@ -9,7 +9,9 @@
   host,
   config,
   ...
-}: {
+}: let
+  user = "sjackson217";
+in {
   home.packages = [];
 
   # HACK: This is needed with hom manager on mac. Atuin has issues with
@@ -29,8 +31,16 @@
 
   nixpkgs.overlays = [inputs.nixpkgs-firefox-darwin.overlay];
 
+  programs.ssh = {
+    matchBlocks = {
+      "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountaino.us" = {
+        user = user;
+      };
+    };
+  };
+
   home = {
-    homeDirectory = "/Users/sjackson217";
+    homeDirectory = "/Users/${user}";
     stateVersion = "23.11"; # WARN: Changing this might break things. Just leave it.
   };
 }

@@ -23,9 +23,6 @@ in {
         "*" = {
           sendEnv = ["TZ"];
         };
-        "ushiro,ushiro.hummingbird-lake.ts.net,ushiro.mountaino.us" = {
-          user = "sjackson217";
-        };
       };
     };
   };

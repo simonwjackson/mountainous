@@ -32,7 +32,10 @@ in {
         mac = "e4:60:17:d1:e6:d8";
       }
     ];
-    hardware.devices.gpd-win-mini = enabled;
+    hardware = {
+      bluetooth = enabled;
+      devices.gpd-win-mini = enabled;
+    };
     performance = enabled;
     profiles.laptop = enabled;
     syncthing = {

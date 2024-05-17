@@ -35,23 +35,16 @@ in {
         };
     };
 
-    # FIX: Get list of managed hosts
-    # programs.ssh = {
-    #   # Each hosts public key
-    #   knownHosts =
-    #     builtins.mapAttrs
-    #     (name: _: {
-    #       publicKey = pubKey name;
-    #       extraHostNames =
-    #         (lib.optional (name == hostName) "localhost")
-    #         ++ [
-    #           "${name}.hummingbird-lake.ts.net"
-    #           # TODO: Grab this from somwhere else in to config
-    #           "${name}.mountaino.us"
-    #         ];
-    #     })
-    #     allManagedHosts;
-    # };
+    programs.ssh = {
+      knownHosts = lib.mountainous.knownHostsBuilder {
+        domains = [
+          "hummingbird-lake.ts.net"
+          "mountaino.us"
+        ];
+
+        localhost = hostName;
+      };
+    };
 
     security.pam.sshAgentAuth.enable = true;
     programs.mosh.enable = true;
