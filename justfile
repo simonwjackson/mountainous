@@ -69,6 +69,6 @@ clean DAYS='7':
 
 # Garbage collect all unused Nix store entries
 garbage-collect HOST='$(hostname)':
-    ssh sudo nix-collect-garbage --delete-old
+    ssh {{ HOST }} sudo nix-collect-garbage --delete-old
 
 alias gc := garbage-collect
