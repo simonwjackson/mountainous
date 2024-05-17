@@ -37,8 +37,8 @@
     performance.enable = true;
   };
 
-  age.secrets.zao-syncthing-key.file = ../../../secrets/zao-syncthing-key.age;
-  age.secrets.zao-syncthing-cert.file = ../../../secrets/zao-syncthing-cert.age;
+  # age.secrets.zao-syncthing-key.file = ../../../secrets/zao-syncthing-key.age;
+  # age.secrets.zao-syncthing-cert.file = ../../../secrets/zao-syncthing-cert.age;
 
   # Enable touchpad support (enabled default in most desktopManager).
   services.xserver.libinput.enable = true;

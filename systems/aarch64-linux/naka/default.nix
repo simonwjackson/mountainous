@@ -17,9 +17,9 @@ in {
   ];
 
   config = {
-    age.secrets."user-simonwjackson-pin".file = ../../../secrets/user-simonwjackson-pin.age;
-    age.secrets."naka-syncthing-key".file = ../../../secrets/naka-syncthing-key.age;
-    age.secrets."naka-syncthing-cert".file = ../../../secrets/naka-syncthing-cert.age;
+    # age.secrets."user-simonwjackson-pin".file = ../../../secrets/user-simonwjackson-pin.age;
+    # age.secrets."naka-syncthing-key".file = ../../../secrets/naka-syncthing-key.age;
+    # age.secrets."naka-syncthing-cert".file = ../../../secrets/naka-syncthing-cert.age;
 
     mountainous = {
       boot = mkForce disabled;

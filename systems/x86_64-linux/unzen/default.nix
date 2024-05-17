@@ -36,9 +36,9 @@
     ];
   };
 
-  age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
-  age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
-  age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
+  # age.secrets.unzen-syncthing-key.file = ../../../secrets/unzen-syncthing-key.age;
+  # age.secrets.unzen-syncthing-cert.file = ../../../secrets/unzen-syncthing-cert.age;
+  # age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
 
   services.gamerack = {
     enable = true;

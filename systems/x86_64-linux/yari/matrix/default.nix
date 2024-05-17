@@ -15,7 +15,7 @@
   '';
 in {
   age.secrets.matrix-shared-secret = {
-    file = ../../../secrets/matrix-shared-secret.age;
+    # file = ../../../secrets/matrix-shared-secret.age;
     owner = "matrix-synapse";
     group = "matrix-synapse";
   };

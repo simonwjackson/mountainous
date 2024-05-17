@@ -11,21 +11,12 @@
   inherit (lib) mkDefault;
   inherit (lib.mountainous) enabled disabled;
 in {
-  age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
-  age.secrets."user-simonwjackson-anthropic" = {
-    file = ../../../secrets/user-simonwjackson-anthropic.age;
-    owner = "simonwjackson";
-    group = "users";
-  };
-
-  age = {
-    identityPaths =
-      options.age.identityPaths.default
-      ++ [
-        # TODO: Pull this value from somewhere else in the config
-        "/home/simonwjackson/.ssh/agenix"
-      ];
-  };
+  # age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
+  # age.secrets."user-simonwjackson-anthropic" = {
+  #   file = ../../../secrets/user-simonwjackson-anthropic.age;
+  #   owner = "simonwjackson";
+  #   group = "users";
+  # };
 
   programs.myNeovim = {
     enable = true;
@@ -40,6 +31,7 @@ in {
   programs.zsh.enable = true;
 
   mountainous = {
+    agenix = mkDefault enabled;
     boot = mkDefault enabled;
     hardware = {
       battery = mkDefault disabled;

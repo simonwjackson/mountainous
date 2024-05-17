@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  age.secrets.gluetun_env.file = ../../../../secrets/gluetun_env.age;
+  # age.secrets.gluetun_env.file = ../../../../secrets/gluetun_env.age;
 
   virtualisation.oci-containers.containers = {
     gluetun = {

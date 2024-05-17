@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  age.secrets.tailscale_env.file = ../../../../secrets/tailscale_env.age;
+  # age.secrets.tailscale_env.file = ../../../../secrets/tailscale_env.age;
 
   systemd.services.ensureQbitorrentRoot = {
     script = ''

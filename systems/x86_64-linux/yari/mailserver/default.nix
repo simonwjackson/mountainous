@@ -1,6 +1,6 @@
 {config, ...}: {
-  age.secrets.user-simonwjackson-email.file = ../../../secrets/user-simonwjackson-email.age;
-  age.secrets.ntfy-htpasswd.file = ../../../secrets/ntfy-htpasswd.age;
+  # age.secrets.user-simonwjackson-email.file = ../../../secrets/user-simonwjackson-email.age;
+  # age.secrets.ntfy-htpasswd.file = ../../../secrets/ntfy-htpasswd.age;
 
   mailserver = {
     enable = true;

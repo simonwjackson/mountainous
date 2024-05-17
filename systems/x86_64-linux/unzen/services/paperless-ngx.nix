@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  age.secrets.paperless_ngx_env.file = ../../../../secrets/paperless_ngx_env.age;
+  # age.secrets.paperless_ngx_env.file = ../../../../secrets/paperless_ngx_env.age;
 
   virtualisation.oci-containers.containers = {
     paperless-ngx_broker = {
