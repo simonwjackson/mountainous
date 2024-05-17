@@ -36,14 +36,21 @@ in {
     };
 
     programs.ssh = {
-      knownHosts = lib.mountainous.knownHostsBuilder {
-        domains = [
-          "hummingbird-lake.ts.net"
-          "mountaino.us"
-        ];
+      knownHosts =
+        lib.mountainous.knownHostsBuilder {
+          domains = [
+            "hummingbird-lake.ts.net"
+            "mountaino.us"
+          ];
 
-        localhost = hostName;
-      };
+          localhost = hostName;
+        }
+        // {
+          "github.com" = {
+            extraHostNames = ["ssh.github.com"];
+            publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+          };
+        };
     };
 
     security.pam.sshAgentAuth.enable = true;
