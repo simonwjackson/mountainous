@@ -29,13 +29,14 @@ else
 
   # If any builder is online and localhost is on battery power, do not build locally
   BUILD_LOCALLY="auto"
-  if [ -n "$BUILDERS" ]; then
-    if nix run nixpkgs\#acpi &>/dev/null; then
-      if nix run nixpkgs\#acpi -- -a | grep -q 'off-line'; then
-        BUILD_LOCALLY="0"
-      fi
-    fi
-  fi
+  # FIX: Battery check isnt working
+  # if [ -n "$BUILDERS" ]; then
+  #   if nix run nixpkgs\#acpi &>/dev/null; then
+  #     if nix run nixpkgs\#acpi -- -a | grep -q 'off-line'; then
+  #       BUILD_LOCALLY="0"
+  #     fi
+  #   fi
+  # fi
 
   # Switch each host and keep track of successful and offline hosts
   SWITCHED_HOSTS=()
