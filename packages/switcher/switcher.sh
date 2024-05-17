@@ -3,7 +3,7 @@ HOSTNAME="${2:-}"
 BUILD_HOSTS="${3:-}"
 
 if [ -z "$BUILD_HOSTS" ]; then
-  BUILD_HOSTS=$(nix flake show --json | nix run nixpkgs\#jq -- --raw-output '.nixosConfigurations | keys | join(",")')
+  BUILD_HOSTS=$(nix flake show --json | nix run nixpkgs\#jq -- --raw-output '.nixosConfigurations | keys | join(";")')
 fi
 
 if [ "$(uname)" == "Darwin" ]; then
@@ -12,7 +12,7 @@ if [ "$(uname)" == "Darwin" ]; then
 else
   # Convert comma-separated hosts to an array
   IFS=',' read -ra HOSTS_ARRAY <<<"$HOSTNAME"
-  IFS=',' read -ra BUILD_HOSTS_ARRAY <<<"$BUILD_HOSTS"
+  IFS=';' read -ra BUILD_HOSTS_ARRAY <<<"$BUILD_HOSTS"
 
   # Check the status of each host and add online hosts to the builders list
   BUILDERS=""
@@ -27,16 +27,17 @@ else
     fi
   done
 
+  echo "Builders: ${BUILDERS}"
+
   # If any builder is online and localhost is on battery power, do not build locally
   BUILD_LOCALLY="auto"
-  # FIX: Battery check isnt working
-  # if [ -n "$BUILDERS" ]; then
-  #   if nix run nixpkgs\#acpi &>/dev/null; then
-  #     if nix run nixpkgs\#acpi -- -a | grep -q 'off-line'; then
-  #       BUILD_LOCALLY="0"
-  #     fi
-  #   fi
-  # fi
+  if [ -n "$BUILDERS" ]; then
+    if nix run nixpkgs\#acpi &>/dev/null; then
+      if nix run nixpkgs\#acpi -- -a | grep -q 'off-line'; then
+        BUILD_LOCALLY="0"
+      fi
+    fi
+  fi
 
   # Switch each host and keep track of successful and offline hosts
   SWITCHED_HOSTS=()
