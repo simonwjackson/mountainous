@@ -12,9 +12,6 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  # age.secrets.kita-syncthing-key.file = ../../../secrets/kita-syncthing-key.age;
-  # age.secrets.kita-syncthing-cert.file = ../../../secrets/kita-syncthing-cert.age;
-
   mountainous = {
     desktop.plasma = enabled;
     gaming = {

@@ -48,8 +48,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # age.secrets."tailscale".file = ../../../../secrets/tailscale.age;
-
     environment.systemPackages = with pkgs; [
       tailscale # make the tailscale command usable to users
     ];

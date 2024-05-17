@@ -4,8 +4,6 @@
   pkgs,
   ...
 }: {
-  # age.secrets.tailscale_env.file = ../../../../secrets/tailscale_env.age;
-
   systemd.services.ensureIndexerRoots = {
     script = ''
       install -d -o simonwjackson -g users -m 770 /glacier/snowscape/services/prowlarr/config

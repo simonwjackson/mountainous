@@ -4,8 +4,6 @@
   age,
   ...
 }: {
-  # age.secrets.tandoor_env.file = ../../../../secrets/tandoor_env.age;
-
   virtualisation.oci-containers.containers = {
     # TODO: Move vod2pod
     # vod2pod_web = {

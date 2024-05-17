@@ -13,10 +13,6 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  # age.secrets.game-collection-sync.file = ../../../secrets/game-collection-sync.age;
-  # age.secrets.fiji-syncthing-key.file = ../../../secrets/fiji-syncthing-key.age;
-  # age.secrets.fiji-syncthing-cert.file = ../../../secrets/fiji-syncthing-cert.age;
-
   mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
     performance = enabled;

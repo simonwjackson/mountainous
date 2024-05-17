@@ -13,13 +13,6 @@ in {
   ];
 
   config = {
-    age.secrets."user-simonwjackson-taskserver-private.key".file = ../../../secrets/user-simonwjackson-taskserver-private.key.age;
-    age.secrets."user-simonwjackson-taskserver-public.cert".file = ../../../secrets/user-simonwjackson-taskserver-public.cert.age;
-    age.secrets."user-simonwjackson-taskserver-ca.cert".file = ../../../secrets/user-simonwjackson-taskserver-ca.cert.age;
-    age.secrets.atuin_key.file = ../../../secrets/atuin_key.age;
-    age.secrets.atuin_session.file = ../../../secrets/atuin_session.age;
-    age.secrets."user-simonwjackson-github-token".file = ../../../secrets/user-simonwjackson-github-token.age;
-
     mountainous = {
       agenix = mkDefault enabled;
       atuin = {

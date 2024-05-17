@@ -4,8 +4,6 @@
   pkgs,
   ...
 }: {
-  # age.secrets.tailscale_env.file = ../../../../secrets/tailscale_env.age;
-
   systemd.services.ensureQbitorrentRoot = {
     script = ''
       install -d -o simonwjackson -g users -m 770 /glacier/snowscape/downloads/sonarr

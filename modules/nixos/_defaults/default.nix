@@ -11,13 +11,6 @@
   inherit (lib) mkDefault;
   inherit (lib.mountainous) enabled disabled;
 in {
-  # age.secrets."user-simonwjackson".file = ../../../secrets/user-simonwjackson.age;
-  # age.secrets."user-simonwjackson-anthropic" = {
-  #   file = ../../../secrets/user-simonwjackson-anthropic.age;
-  #   owner = "simonwjackson";
-  #   group = "users";
-  # };
-
   programs.myNeovim = {
     enable = true;
     environment = {

@@ -4,8 +4,6 @@
   pkgs,
   ...
 }: {
-  # age.secrets.paperless_ngx_env.file = ../../../../secrets/paperless_ngx_env.age;
-
   virtualisation.oci-containers.containers = {
     paperless-ngx_broker = {
       image = "docker.io/library/redis:7";

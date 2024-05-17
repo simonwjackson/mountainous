@@ -5,8 +5,6 @@
   pkgs,
   ...
 }: {
-  age.secrets."user-simonwjackson-instapaper".file = ../../../../secrets/user-simonwjackson-instapaper.age;
-
   home.file.".local/state/nix/profile/bin/instapaper-add" = {
     text =
       /*

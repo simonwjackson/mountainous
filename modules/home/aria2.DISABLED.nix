@@ -5,7 +5,6 @@
   pkgs,
   ...
 }: {
-  age.secrets.aria2-rpc-secret.file = ../../../../../secrets/aria2-rpc-secret.age;
   programs.aria2 = {
     enable = true;
     settings = {
