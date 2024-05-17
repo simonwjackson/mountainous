@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  options,
   target,
   ...
 }: let
@@ -9,24 +10,33 @@
 
   cfg = config.mountainous.syncthing;
 
-  findHosts = arch:
-    lib.flatten (lib.mapAttrsToList
-      (host: _:
-        lib.optional (builtins.pathExists ../../../systems/${arch}/${host}/syncthing.nix) {
-          name = host;
-          arch = arch;
-        })
-      (builtins.readDir ../../../systems/${arch}));
+  systems = ../../../systems;
+  architectures = builtins.attrNames (builtins.readDir systems);
 
-  hosts = findHosts "x86_64-linux" ++ findHosts "aarch64-linux";
+  getHosts = arch: builtins.attrNames (builtins.readDir (systems + "/${arch}"));
 
-  importSyncthingConfig = host: arch: (import ../../../systems/${arch}/${host}/syncthing.nix {inherit config host;});
+  importSyncthingConfig = arch: host: let
+    syncthingPath = systems + "/${arch}/${host}/syncthing.nix";
+  in
+    if builtins.pathExists syncthingPath
+    then import syncthingPath {inherit config host;}
+    else null;
 
-  syncthingConfigs = builtins.listToAttrs (map (host: {
-      name = host.name;
-      value = importSyncthingConfig host.name host.arch;
-    })
-    hosts);
+  syncthingConfigs = builtins.listToAttrs (builtins.concatMap (
+      arch:
+        builtins.filter (item: item != null) (map (
+          host: let
+            config = importSyncthingConfig arch host;
+          in
+            if config != null
+            then {
+              name = host;
+              value = config;
+            }
+            else null
+        ) (getHosts arch))
+    )
+    architectures);
 
   getFolderDevices = name:
     lib.flatten (lib.mapAttrsToList
@@ -42,19 +52,11 @@
       };
     });
 in {
-  options.mountainous.syncthing = {
-    enable = lib.mkEnableOption "Whether to enable laptop configurations";
-
-    key = lib.mkOption {
-      type = lib.types.str;
-      description = "Syncthing key";
-    };
-
-    cert = lib.mkOption {
-      type = lib.types.str;
-      description = "Syncthing certificate";
-    };
-  };
+  options.mountainous.syncthing =
+    {
+      enable = lib.mkEnableOption "Whether to enable syncthing";
+    }
+    // options.services.syncthing;
 
   config = lib.mkIf cfg.enable {
     services.syncthing = {
@@ -73,12 +75,9 @@ in {
           "**/cache"
         ];
 
-        folders = lib.mkMerge (getHostFolders
-          (import ../../../systems/${target}/${config.networking.hostName}/syncthing.nix {
-            inherit config;
-            host = "${config.networking.hostName}";
-          })
-          .paths);
+        folders =
+          lib.mkMerge (getHostFolders
+            (importSyncthingConfig target config.networking.hostName).paths);
 
         devices = lib.mapAttrs (name: config: config.device) syncthingConfigs;
       };
