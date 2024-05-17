@@ -4,6 +4,8 @@
   pkgs,
   ...
 }: let
+  inherit (lib.mountainous) enabled;
+
   cfg = config.mountainous.performance;
   powertop = lib.getExe pkgs.powertop;
 in {
@@ -12,13 +14,16 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
-    services.ananicy = {
-      enable = true;
-      package = pkgs.ananicy-cpp;
+    services = {
+      auto-cpufreq = enabled;
+      power-profiles-daemon = enabled;
+      thermald.enable = config.mountainous.hardware.cpu.type == "intel";
+      # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
+      ananicy = {
+        enable = true;
+        package = pkgs.ananicy-cpp;
+      };
     };
-
-    services.auto-cpufreq.enable = true;
 
     powerManagement = {
       enable = true;
@@ -26,7 +31,7 @@ in {
       cpuFreqGovernor = pkgs.lib.mkDefault "powersave";
     };
 
-    services.thermald.enable = config.mountainous.hardware.cpu.type == "intel";
+    programs.ccache = enabled;
 
     systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {
       # description = "Auto-tune Power Management with powertop";
@@ -37,5 +42,7 @@ in {
         ExecStart = "${powertop} --auto-tune";
       };
     };
+
+    zramSwap = enabled;
   };
 }

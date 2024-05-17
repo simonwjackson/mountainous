@@ -6,77 +6,50 @@
 
 # Default recipe
 default:
-    @just --list
+    @just --list --unsorted
 
-# Deploy the system configuration
-deploy *ARGS:
-    #!/usr/bin/env bash
-    if [ "$(uname)" == "Darwin" ]; then \
-        echo "MacOS is unsupported at this time."
-    else \
-        ./scripts/deploy.sh
-    fi
+# TODO: Rethink this script. There is quite a bit of overlap between this
+# and `switch`. How can they work together?
+# # Deploy the system configuration
+# deploy *ARGS:
+#     #!/usr/bin/env bash
+#     if [ "$(uname)" == "Darwin" ]; then \
+#         echo "MacOS is unsupported at this time."
+#     else \
+#         ./scripts/deploy.sh
+#     fi
 
-# Switch to the system configuration for the specified hostname
-switch +HOSTNAME="":
-    #!/usr/bin/env bash
-    if [ -z "$HOSTNAME" ]; then \
-        HOSTNAME=$(hostname); \
-    fi; \
-    if [ "$(uname)" == "Darwin" ]; then \
-        sudo nix run nix-darwin \
-        -- switch --flake ".#$HOSTNAME"; \
-    else \
-        nixos-rebuild switch \
-          --flake ".#$HOSTNAME" \
-          --target-host "$HOSTNAME" \
-          --build-host "$HOSTNAME" \
-          --use-remote-sudo \
-          --use-substitutes; \
-    fi
+# Switch to the system configuration for the specified hostname, optionally providing comma-separated build hosts (defaults to the hostname if not provided)
+switch HOST='$(hostname)' BUILD_HOSTS='':
+    nix run .#switcher switch {{ HOST }} {{ BUILD_HOSTS }}
 
 # Build the system configuration for the specified hostname
-build +HOSTNAME="":
-    #!/usr/bin/env bash
-    if [ -z "$HOSTNAME" ]; then \
-        HOSTNAME=$(hostname); \
-    fi; \
-    if [ "$(uname)" == "Darwin" ]; then \
-        sudo nix run nix-darwin -- build --flake ".#$HOSTNAME"; \
-    else \
-        nixos-rebuild build --flake ".#$HOSTNAME" --target-host "$HOSTNAME" --use-remote-sudo --use-substitutes;
-    fi
+build HOST='$(hostname)' BUILD_HOSTS='':
+    nix run .#switcher build {{ HOST }} {{ BUILD_HOSTS }}
 
 # Perform a dry run of the system configuration for the specified hostname
-dry-run +HOSTNAME="":
+dry-run HOST='$(hostname)':
     #!/usr/bin/env bash
-    if [ -z "$HOSTNAME" ]; then \
-        HOSTNAME=$(hostname); \
-    fi; \
-    if [ "$(uname)" == "Darwin" ]; then \
+
+    HOSTNAME="{{ HOST }}"; \
+
+    if [ "$(uname)" == "Darwin" ]; then
         nix build ".#darwinConfigurations.$HOSTNAME.config.system.build.toplevel"; \
     else \
         nix build ".#nixosConfigurations.$HOSTNAME.config.system.build.toplevel"; \
     fi
 
-# Alias for dry-run
-
 alias dry := dry-run
 
+# FIX: `just switch` also accepts a host name
 # Debug the system configuration with additional arguments
-debug *ARGS:
-    just switch --show-trace --verbose {{ ARGS }}
+# debug *ARGS:
+#     just switch --show-trace --verbose {{ ARGS }}
 
 # Update the flake and switch to the new configuration
 evolve *ARGS:
     just up
     just switch {{ ARGS }}
-
-# Update the flake and deploy the new configuration to all systems
-evolve-all *ARGS:
-    #!/usr/bin/env bash
-    just up && \
-    sh -c './scripts/deploy.sh'
 
 # Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
 up *ARGS:
@@ -90,10 +63,12 @@ history:
 repl:
     nix repl -f flake:nixpkgs
 
-# Remove all system generations older than 7 days
-clean:
-    sudo nix profile wipe-history --profile /nix/var/nix/profiles/system  --older-than 7d
+# Remove all system generations older than {{ DAYS }}
+clean DAYS='7':
+    sudo nix profile wipe-history --profile /nix/var/nix/profiles/system --older-than {{ DAYS }}d
 
 # Garbage collect all unused Nix store entries
-gc:
-    sudo nix-collect-garbage --delete-old
+garbage-collect HOST='$(hostname)':
+    ssh sudo nix-collect-garbage --delete-old
+
+alias gc := garbage-collect

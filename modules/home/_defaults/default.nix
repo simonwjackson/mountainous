@@ -29,6 +29,7 @@ in {
       };
       bat = mkDefault enabled;
       eza = mkDefault enabled;
+      firefox = mkDefault enabled;
       direnv = mkDefault enabled;
       git = {
         enable = mkDefault true;

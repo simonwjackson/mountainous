@@ -3,7 +3,10 @@
   lib,
   ...
 }: let
+  inherit (lib.mountainous) enabled;
+
   cfg = config.mountainous.networking.core;
+
   generateUdevRules = interfaces: let
     generateRule = {
       name,
@@ -36,11 +39,15 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    services.udev.extraRules = generateUdevRules cfg.names;
     networking = {
       useDHCP = lib.mkDefault true;
       domain = "mountaino.us";
       networkmanager.enable = true;
+    };
+
+    services = {
+      udev.extraRules = generateUdevRules cfg.names;
+      resolved = enabled;
     };
 
     # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects

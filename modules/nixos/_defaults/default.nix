@@ -56,6 +56,7 @@ in {
     };
     performance = mkDefault enabled;
     printing = mkDefault enabled;
+    security = mkDefault enabled;
     sound = mkDefault enabled;
     syncthing = mkDefault enabled;
     user = {

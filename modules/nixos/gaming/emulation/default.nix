@@ -35,6 +35,7 @@ in {
       ]
       ++ lib.optionals cfg.gen-8 gen-7
       ++ lib.optionals cfg.gen-8 gen-8;
+
     # BUG: if dirs dont exist, they are owned by root
     fileSystems = {
       "${share}/dolphin-emu/GC" = {
