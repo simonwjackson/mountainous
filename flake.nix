@@ -99,6 +99,10 @@
         tmesh.nixosModules.x86_64-linux.default
       ];
 
+      systems.hosts.haku.modules = with inputs; [
+        tmesh.nixosModules.x86_64-linux.default
+      ];
+
       systems.hosts.asahi.modules = with inputs; [
         tmesh.nixosModules.x86_64-linux.default
       ];
