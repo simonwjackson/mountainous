@@ -69,70 +69,28 @@
 
       # Add modules to all NixOS systems.
       systems.modules.nixos = with inputs; [
-        home-manager.nixosModules.home-manager
-        myNeovim.nixosModules.default
         agenix.nixosModules.default
-        nix-flatpak.nixosModules.nix-flatpak
-        kmonad.nixosModules.default
         disko.nixosModules.default
+        home-manager.nixosModules.home-manager
+        kmonad.nixosModules.default
+        myNeovim.nixosModules.default
+        nix-flatpak.nixosModules.nix-flatpak
+        tmesh.nixosModules.default
       ];
-
-      systems.hosts.naka = {
-        modules = with inputs; [
-          tmesh.nixosModules.x86_64-linux.default
-        ];
-
-        channelName = "nixpkgs-mobile-nixos";
-      };
 
       systems.modules.darwin = with inputs; [
         home-manager.darwinModules.home-manager
         myNeovim.nixosModules.default
-        tmesh.nixosModules.aarch64-darwin.default
+        # tmesh.nixosModules.default
       ];
 
       homes.modules = with inputs; [
+        # tmesh.nixosModules.default
       ];
 
-      # HACK: tmesh needs a better default
-      systems.hosts.blanc.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.haku.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.asahi.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.fiji.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.yari.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-        simple-nixos-mailserver.nixosModules.default
-      ];
-
-      systems.hosts.zao.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.unzen.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-        gamerack.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.kita.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-
-      systems.hosts.rakku.modules = with inputs; [
-        tmesh.nixosModules.x86_64-linux.default
-      ];
-      # HACK: END
+      systems.hosts.naka = {
+        channelName = "nixpkgs-mobile-nixos";
+      };
 
       overlays = with inputs; [
         snowfall-frost.overlays.default

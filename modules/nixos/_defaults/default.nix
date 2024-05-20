@@ -58,7 +58,14 @@ in {
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";
 
-  services.tmesh = let
+  programs.tmesh = let
+    systems = ../../../systems;
+    architectures = builtins.attrNames (builtins.readDir systems);
+    getHosts = arch:
+      builtins.attrNames (builtins.readDir (systems + "/${arch}"));
+
+    allHosts = lib.flatten (map (arch: getHosts arch) architectures);
+
     common = ''
       # allow passthrough of escape sequences
       set -g allow-passthrough on
@@ -113,7 +120,7 @@ in {
       ${common}
     '';
     settings = {
-      hosts = ["unzen" "zao" "fiji" "kita" "yari"];
+      hosts = allHosts;
       local-tmesh-server = {
         command = "nvim -c 'silent! autocmd TermClose * qa' -c 'terminal' -c 'startinsert'";
         plugins = {
