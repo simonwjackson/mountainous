@@ -41,6 +41,8 @@ in {
     systemd.services.mountSteamAppsOverlay = {
       # after = ["mountSnowscape.service"];
       script = ''
+        install -d -o ${config.mountainous.user.name} -g users -m 770 ${steamApps}
+        install -d -o ${config.mountainous.user.name} -g users -m 770 /home/${config.mountainous.user.name}/.var/app/com.valvesoftware.Steam/data/Steam/steamapps
         ${mountpoint} -q ${steamAppsOverlay} || ${mount} --bind ${steamApps} ${steamAppsOverlay}
       '';
       wantedBy = ["multi-user.target"];

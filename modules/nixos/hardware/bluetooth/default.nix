@@ -12,7 +12,13 @@ in {
   };
 
   config = mkIf cfg.enable {
-    hardware.bluetooth.enable = true;
+    hardware = {
+      bluetooth = {
+        enable = true;
+        powerOnBoot = true; # powers up the default Bluetooth controller on boot
+      };
+    };
+
     services.blueman.enable = true;
   };
 }
