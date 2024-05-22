@@ -15,6 +15,7 @@ in {
 
   mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
+    boot = enabled;
     performance = enabled;
     profiles = {
       laptop = enabled;
@@ -58,7 +59,7 @@ in {
           part-type = "primary";
           content = {
             type = "swap";
-            randomEncryption = true;
+            randomEncryption = false;
           };
         }
         {
