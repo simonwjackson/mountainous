@@ -14,7 +14,7 @@
     ./hardware-configuration.nix
   ];
 
-  programs.myNeovim = {
+  programs.icho = {
     enable = true;
   };
 

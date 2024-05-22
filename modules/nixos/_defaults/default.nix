@@ -11,7 +11,7 @@
   inherit (lib) mkDefault;
   inherit (lib.mountainous) enabled disabled;
 in {
-  programs.myNeovim = {
+  programs.icho = {
     enable = true;
     environment = {
       NOTES_DIR = "/glacier/snowscape/notes";

@@ -10,7 +10,7 @@
     python3
   ];
 
-  programs.myNeovim = {
+  programs.icho = {
     enable = true;
     environment = {
       NOTES_DIR = "/Users/sjackson217/notes";

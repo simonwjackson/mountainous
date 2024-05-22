@@ -1,7 +1,7 @@
 {
   inputs = {
     tmesh.url = "github:simonwjackson/tmesh";
-    myNeovim.url = "github:simonwjackson/neovim-nix-config";
+    icho.url = "github:simonwjackson/icho";
     gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=v0.4.1";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -71,17 +71,17 @@
       systems.modules.nixos = with inputs; [
         agenix.nixosModules.default
         disko.nixosModules.default
-        home-manager.nixosModules.home-manager
+        home-manager.nixosModules.default
         kmonad.nixosModules.default
-        myNeovim.nixosModules.default
+        icho.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         tmesh.nixosModules.default
       ];
 
       systems.modules.darwin = with inputs; [
-        home-manager.darwinModules.home-manager
-        myNeovim.nixosModules.default
-        # tmesh.nixosModules.default
+        home-manager.darwinModules.default
+        icho.nixosModules.default
+        tmesh.nixosModules.default
       ];
 
       homes.modules = with inputs; [
