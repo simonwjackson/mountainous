@@ -26,7 +26,7 @@ in {
 
     # *might* fix white/flashing screens
     # kernelParams = ["amdgpu.sg_display=0"];
-    # WARNING: promises better energy efficency but This *might* cause lower fps. kernel 6.3 or higher
+    # WARN: promises better energy efficency but This *might* cause lower fps. kernel 6.3 or higher
     # kernelParams = [ "amd_pstate=active" ];
     boot.kernelParams = [
       "fbcon=rotate:1"
@@ -39,8 +39,25 @@ in {
     # services.xserver.deviceSection = ''
     #   Option "TearFree" "true"
     # '';
+
+    # TODO: Add extra wayland support
+    # systemd.user = {
+    #   sessionVariables = {
+    #     CLUTTER_BACKEND = "wayland";
+    #     GDK_BACKEND = "wayland,x11";
+    #     QT_QPA_PLATFORM = "wayland;xcb";
+    #     MOZ_ENABLE_WAYLAND = "1";
+    #     _JAVA_AWT_WM_NONREPARENTING = "1";
+    #     STEAM_EXTRA_COMPAT_TOOL_PATHS = "/home/eddie/.local/share/Steam/compatibilitytools.d/SteamTinkerLaunch/";
+    #   };
+    # };
+
+    # INFO: Jovian NixOS steam module
+    # https://github.com/Jovian-Experiments/Jovian-NixOS/blob/development/modules/steam/steam.nix
+
     hardware = {
       sensor.iio.enable = true;
+      # WARN: opengl or steam-hardware might be causing issues with fsr
       opengl = {
         driSupport = true;
         driSupport32Bit = true;

@@ -27,6 +27,10 @@ switch HOST='$(hostname)' BUILD_HOSTS='':
 build HOST='$(hostname)' BUILD_HOSTS='':
     nix run .#switcher build {{ HOST }} {{ BUILD_HOSTS }}
 
+# Check the entire flake configuration is up to snuff.
+check:
+    nix flake check
+
 # Perform a dry run of the system configuration for the specified hostname
 dry-run HOST='$(hostname)':
     #!/usr/bin/env bash
