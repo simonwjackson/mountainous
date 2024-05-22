@@ -56,7 +56,7 @@ in {
   # services.udisks2.enable = true;
 
   # TODO: Move to (desktop?) profile
-  environment.variables.BROWSER = "firefox";
+  environment.variables.BROWSER = "firefox-esr";
 
   programs.tmesh = let
     systems = ../../../systems;
