@@ -1,5 +1,6 @@
 {
   config,
+  system,
   inputs,
   lib,
   pkgs,
@@ -8,6 +9,7 @@
   cfg = config.mountainous.work-mode;
   package = pkgs.work-mode;
   popup-term = "${pkgs.mountainous.popup-term}/bin/popup-term";
+  tmesh = lib.getExe inputs.tmesh.packages.${system}.default;
 in {
   options.mountainous.work-mode = {
     enable = lib.mkEnableOption "work-mode";
@@ -95,7 +97,7 @@ in {
         enable = true;
         startupPrograms = [
           "xsetroot -solid black"
-          "pgrep -f 'main-term' > /dev/null || kitty --class main-term"
+          "pgrep -f 'main-term' > /dev/null || kitty --class main-term ${tmesh}"
           "pgrep firefox || firefox"
         ];
         extraConfig = ''
@@ -798,7 +800,7 @@ in {
           ${pamixer} --{increase,decrease} 5
         '';
         "super + t" = ''
-          ${wmctrl} -xa main-term || kitty --class main-term
+          ${wmctrl} -xa main-term || kitty --class main-term ${tmesh}
         '';
         "super + w" = ''
           ${wmctrl} -xa $BROWSER || $BROWSER

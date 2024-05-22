@@ -95,7 +95,6 @@ in {
 
       # Ignore window notifications
       set-window-option -g monitor-activity off
-
     '';
   in {
     enable = true;

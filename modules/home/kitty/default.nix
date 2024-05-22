@@ -11,6 +11,10 @@
 in {
   options.mountainous.kitty = {
     enable = mkEnableOption "Whether to enable kitty";
+    shellIntegration = {
+      enableBashIntegration = true;
+      enableZshIntegration = true;
+    };
   };
 
   config = lib.mkIf cfg.enable {
