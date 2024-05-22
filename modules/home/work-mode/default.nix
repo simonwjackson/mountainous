@@ -98,7 +98,8 @@ in {
         startupPrograms = [
           "xsetroot -solid black"
           "pgrep -f 'main-term' > /dev/null || kitty --class main-term ${tmesh}"
-          "pgrep firefox || firefox"
+          # HACK: bin is firefox-esr but name is firefox
+          "pgrep firefox || $BROWSER"
         ];
         extraConfig = ''
           bspc subscribe all > ~/bspc-report.log &
@@ -823,12 +824,12 @@ in {
         # "super + ctrl + {h,j,k,l}" = ''
         #   ${hc} split {left,bottom,top,right} 0.382
         # '';
-        "super + {4}" = ''
-          ${bspc} desktop --focus {dev}
-        '';
-        "super + shift + {4}" = ''
-          ${bspc} node --to-desktop {dev} --follow
-        '';
+        # "super + {4}" = ''
+        #   ${bspc} desktop --focus {dev}
+        # '';
+        # "super + shift + {4}" = ''
+        #   ${bspc} node --to-desktop {dev} --follow
+        # '';
 
         "super + button2" = ''
           ${bspc} node --state '~floating'
@@ -911,7 +912,7 @@ in {
             modules = {
               left = "empty-module bspwm xwindow";
               center = "time";
-              right = "cpu-profile rotate tailscale battery wlan empty-module";
+              right = "cpu-profile rotate tailscale battery-alt wlan empty-module";
             };
             # offset.y = 30;
           };
@@ -990,6 +991,14 @@ in {
             ];
             signal-foreground = foreground-alt;
           };
+        };
+
+        "module/battery-alt" = {
+          type = "custom/script";
+          exec = "${lib.getExe pkgs.acpi} | ${lib.getExe pkgs.gawk} -F ' ' '{print $4}' | ${lib.getExe pkgs.gnused} 's/,//' 2>/dev/null";
+          interval = "30";
+          tail = "true";
+          format.prefix = " ";
         };
 
         "module/battery" = {
