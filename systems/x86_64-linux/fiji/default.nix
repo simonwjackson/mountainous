@@ -7,30 +7,33 @@
   pkgs,
   ...
 }: let
-  inherit (lib.mountainous) enabled;
+  inherit (lib.backpacker) enabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  mountainous = {
-    hardware.devices.samsung-galaxy-book3-360 = enabled;
+  backpacker = {
     boot = enabled;
-    performance = enabled;
-    profiles = {
-      laptop = enabled;
-      workspace = enabled;
-    };
     networking.core.names = [
       {
         name = "wifi";
         mac = "d4:d8:53:90:2b:6c";
       }
     ];
+    performance = enabled;
+    profiles = {
+      laptop = enabled;
+      workspace = enabled;
+    };
     syncthing = {
       key = config.age.secrets.fiji-syncthing-key.path;
       cert = config.age.secrets.fiji-syncthing-cert.path;
     };
+  };
+
+  mountainous = {
+    hardware.devices.samsung-galaxy-book3-360 = enabled;
   };
 
   disko.devices.disk.main = {

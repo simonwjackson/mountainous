@@ -2,6 +2,7 @@
   config,
   lib,
   options,
+  inputs,
   pkgs,
   ...
 }: let
@@ -18,6 +19,9 @@
 
   cfg = config.mountainous.agenix;
 in {
+  imports = [
+    inputs.agenix.homeManagerModules.age
+  ];
   # imports = [ragenix.nixosModules.default];
 
   options.mountainous.agenix = {

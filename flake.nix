@@ -16,6 +16,12 @@
       };
     };
 
+    backpacker = {
+      url = "github:simonwjackson/backpacker";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     kmonad = {
       url = "git+https://github.com/kmonad/kmonad?submodules=1&dir=nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -69,6 +75,35 @@
 
       # Add modules to all NixOS systems.
       systems.modules.nixos = with inputs; [
+        backpacker.nixosModules."_profiles/laptop"
+        backpacker.nixosModules."_profiles/workspace"
+        backpacker.nixosModules."desktop/plasma"
+        backpacker.nixosModules."gaming/core"
+        backpacker.nixosModules."gaming/emulation"
+        backpacker.nixosModules."gaming/steam"
+        backpacker.nixosModules."gaming/sunshine"
+        backpacker.nixosModules."hardware/battery"
+        backpacker.nixosModules."hardware/bluetooth"
+        backpacker.nixosModules."hardware/cpu"
+        backpacker.nixosModules."hardware/hybrid-sleep"
+        backpacker.nixosModules."hardware/touchpad"
+        backpacker.nixosModules."networking/core"
+        backpacker.nixosModules."networking/secure-shell"
+        backpacker.nixosModules."networking/tailscaled"
+        backpacker.nixosModules."networking/zerotierone"
+        backpacker.nixosModules.adb
+        backpacker.nixosModules.agenix
+        backpacker.nixosModules.boot
+        backpacker.nixosModules.nix
+        backpacker.nixosModules.performance
+        backpacker.nixosModules.printing
+        backpacker.nixosModules.security
+        backpacker.nixosModules.sound
+        backpacker.nixosModules.syncthing
+        backpacker.nixosModules.user
+        backpacker.nixosModules.vpn-proxy
+        backpacker.nixosModules.waydroid
+
         agenix.nixosModules.default
         disko.nixosModules.default
         home-manager.nixosModules.default
@@ -82,10 +117,6 @@
         home-manager.darwinModules.default
         icho.nixosModules.default
         tmesh.nixosModules.default
-      ];
-
-      homes.modules = with inputs; [
-        # tmesh.nixosModules.default
       ];
 
       systems.hosts.naka = {
@@ -112,7 +143,6 @@
 
       snowfall = {
         namespace = "mountainous";
-
         meta = {
           name = "mountainous";
           title = "My System Configs";

@@ -6,7 +6,7 @@
   pkgs,
   ...
 }: {
-  mountainous = {
+  backpacker = {
     hardware.cpu.type = "intel";
     hardware.battery.enable = true;
     performance.enable = true;

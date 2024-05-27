@@ -6,15 +6,18 @@
   modulesPath,
   ...
 }: let
-  inherit (lib.mountainous) enabled;
+  inherit (lib.backpacker) enabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
   mountainous = {
-    desktop.plasma = enabled;
     hardware.devices.dell-9710 = enabled;
+  };
+
+  backpacker = {
+    desktop.plasma = enabled;
     gaming = {
       core = {
         enable = true;

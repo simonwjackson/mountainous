@@ -17,7 +17,7 @@
   ...
 }: {
   mountainous.firefox.enable = true;
-  services.mpvd.enable = true;
+  # services.mpvd.enable = true;
 
   home = {
     homeDirectory = "/home/${config.home.username}";

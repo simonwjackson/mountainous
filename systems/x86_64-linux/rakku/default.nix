@@ -39,7 +39,7 @@ in {
   };
   # INFO: end
 
-  mountainous.networking.tailscaled.exit-node = true;
+  backpacker.networking.tailscaled.exit-node = true;
   networking.hostName = "rakku"; # Define your hostname.
 
   boot.loader.efi.efiSysMountPoint = "/boot/efi";

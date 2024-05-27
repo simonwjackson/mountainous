@@ -20,7 +20,7 @@
     ./services/youtube.nix
   ];
 
-  mountainous = {
+  backpacker = {
     performance.enable = true;
     profiles.laptop.enable = true;
     hardware.cpu.type = "intel";

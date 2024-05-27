@@ -13,7 +13,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    mountainous = {
+    backpacker = {
       hardware = {
         bluetooth.enable = true;
         battery.enable = true;

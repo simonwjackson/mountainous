@@ -6,14 +6,14 @@
   inputs,
   ...
 }: let
-  inherit (lib.mountainous) enabled;
+  inherit (lib.backpacker) enabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  mountainous = {
-    desktop.plasma = enabled;
+  backpacker = {
+    performance = enabled;
     gaming = {
       core = enabled;
       emulation = {
@@ -29,17 +29,22 @@ in {
         mac = "e4:60:17:d1:e6:d8";
       }
     ];
-    hardware = {
-      bluetooth = enabled;
-      devices.gpd-win-mini = enabled;
-    };
-    performance = enabled;
     profiles.laptop = enabled;
     syncthing = {
       key = config.age.secrets.kita-syncthing-key.path;
       cert = config.age.secrets.kita-syncthing-cert.path;
     };
     waydriod = enabled;
+    hardware = {
+      bluetooth = enabled;
+    };
+    desktop.plasma = enabled;
+  };
+
+  mountainous = {
+    hardware = {
+      devices.gpd-win-mini = enabled;
+    };
   };
 
   # HACK: mergerfs mount appears to be broken

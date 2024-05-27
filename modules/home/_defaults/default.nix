@@ -9,10 +9,14 @@
   inherit (lib) mkDefault;
 in {
   imports = [
-    inputs.agenix.homeManagerModules.age
+    inputs.backpacker.homeModules.lf
   ];
 
   config = {
+    backpacker = {
+      lf = mkDefault enabled;
+    };
+
     mountainous = {
       agenix = mkDefault enabled;
       atuin = {
@@ -29,7 +33,6 @@ in {
         github-token = config.age.secrets."user-simonwjackson-github-token".path;
       };
       kitty = mkDefault enabled;
-      lf = mkDefault enabled;
       mpvd = mkDefault enabled;
       secure-shell = mkDefault enabled;
       tank = {

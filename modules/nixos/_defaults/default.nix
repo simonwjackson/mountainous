@@ -8,6 +8,7 @@
   config,
   ...
 }: let
+  inherit (lib.snowfall.fs) get-file;
   inherit (lib) mkDefault;
   inherit (lib.mountainous) enabled disabled;
   inherit (lib.mountainous.syncthing) otherDevices;
@@ -24,8 +25,16 @@ in {
 
   programs.zsh.enable = true;
 
-  mountainous = {
-    agenix = mkDefault enabled;
+  backpacker = {
+    adb = {
+      enable = mkDefault true;
+      user = "simonwjackson";
+    };
+    agenix = {
+      enable = true;
+      secretsDir = get-file "secrets";
+      user = "simonwjackson";
+    };
     boot = mkDefault enabled;
     hardware = {
       battery = mkDefault disabled;
@@ -36,22 +45,39 @@ in {
     };
     networking = {
       core = mkDefault enabled;
-      secure-shell = mkDefault enabled;
       tailscaled = mkDefault enabled;
       zerotierone = mkDefault enabled;
+      secure-shell = {
+        enable = true;
+        systemsDir = get-file "systems";
+      };
     };
     performance = mkDefault enabled;
     printing = mkDefault enabled;
-    security = mkDefault enabled;
+    profiles = {
+      laptop = mkDefault disabled;
+      workspace = {
+        enable = mkDefault false;
+        user = "simonwjackson";
+      };
+    };
+    security = {
+      enable = mkDefault true;
+      user = "simonwjackson";
+    };
     sound = mkDefault enabled;
     syncthing = {
       inherit otherDevices;
       enable = mkDefault true;
+      systemsDir = get-file "systems";
+      hostName = config.networking.hostName;
+      user = "simonwjackson";
     };
     user = {
       enable = mkDefault true;
       name = mkDefault "simonwjackson";
       hashedPasswordFile = mkDefault config.age.secrets."user-simonwjackson".path;
+      authorizedKeys = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ==" "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDlS7mK1MSLJviO83iAxwE5FQOu6FU9IeY6qcj6qYZ1s8qevcgj94CKhLq/ud/TexZ3qWVHkidmX0idQ4eo10lCYhAMynxT4YbtXDvHzWeeAYVN9JGyBdl4+HNctzdIKDrdOZzu+MBKgXjshuSntMUIabe7Bes+5B75ppwWqANFNPMKUSqTENxvmZ6mHF+KdwOI1oXYvOHD5y3t1dtWWcLMrot6F/ZUae5L7sRp+PqykOV4snI06uTeUxs0cTZJULDwNgngqIG9qs72BCfVvuOOwYosezUoajikPzzbBOJBl6l3M7MSJQfilVgvT/gHAxJKuZ1RzrPrssYBCbVanEL6dXuhiI25yxQvIqxDJmLzI9hvVwGgJJzov9BduO+vvPX/AwMd1oLxScgISkK/y+6+VHz+ey88gVniw22mSG0ueG11eebtp9c/lmBpNxZ30gmaINbgxZn4sM99RtC3E8eJ+KmKet8L+tFtVdeCYB7pgk8k/h06s9s3r34TGJ+SmrU="];
     };
     vpn-proxy = mkDefault disabled;
   };

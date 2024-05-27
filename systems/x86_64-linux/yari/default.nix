@@ -26,9 +26,12 @@
 
   zramSwap.enable = true;
 
-  mountainous = {
-    boot.type = "bios";
+  backpacker = {
     printing.enable = false;
+  };
+
+  backpacker = {
+    boot.type = "bios";
     hardware.cpu.type = "intel";
     networking = {
       tailscaled.exit-node = true;
