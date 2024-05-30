@@ -1,4 +1,13 @@
 {
+  nixConfig = {
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    ];
+  };
+
   inputs = {
     tmesh.url = "github:simonwjackson/tmesh";
     icho.url = "github:simonwjackson/icho";
@@ -8,6 +17,11 @@
     suyu.url = "github:Noodlez1232/suyu-flake";
     nixpkgs-firefox-darwin.url = "github:bandithedoge/nixpkgs-firefox-darwin";
     disko.url = "github:nix-community/disko";
+
+    hyprland = {
+      url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     simple-nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver/master";
