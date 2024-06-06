@@ -7,7 +7,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib.backpacker) enabled;
+  inherit (lib.backpacker) enabled disabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -15,6 +15,13 @@ in {
 
   backpacker = {
     boot = enabled;
+    desktops = {
+      plasma = {
+        enable = true;
+        autoLogin = true;
+      };
+      hyprland = enabled;
+    };
     networking.core.names = [
       {
         name = "wifi";
@@ -24,7 +31,7 @@ in {
     performance = enabled;
     profiles = {
       laptop = enabled;
-      workspace = enabled;
+      workspace = disabled;
     };
     syncthing = {
       key = config.age.secrets.fiji-syncthing-key.path;

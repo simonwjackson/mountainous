@@ -1,12 +1,14 @@
 {
-  nixConfig = {
-    extra-substituters = [
-      "https://nix-community.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-    ];
-  };
+  # nixConfig = {
+  #   extra-substituters = [
+  #     "https://nix-community.cachix.org"
+  #   ];
+  #   extra-trusted-public-keys = [
+  #     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+  #     "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+  #     "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
+  #   ];
+  # };
 
   inputs = {
     tmesh.url = "github:simonwjackson/tmesh";
@@ -17,11 +19,6 @@
     suyu.url = "github:Noodlez1232/suyu-flake";
     nixpkgs-firefox-darwin.url = "github:bandithedoge/nixpkgs-firefox-darwin";
     disko.url = "github:nix-community/disko";
-
-    hyprland = {
-      url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     simple-nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver/master";
@@ -91,7 +88,8 @@
       systems.modules.nixos = with inputs; [
         backpacker.nixosModules."_profiles/laptop"
         backpacker.nixosModules."_profiles/workspace"
-        backpacker.nixosModules."desktop/plasma"
+        backpacker.nixosModules."desktops/hyprland"
+        backpacker.nixosModules."desktops/plasma"
         backpacker.nixosModules."gaming/core"
         backpacker.nixosModules."gaming/emulation"
         backpacker.nixosModules."gaming/steam"

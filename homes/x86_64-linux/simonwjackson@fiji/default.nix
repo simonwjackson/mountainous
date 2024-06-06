@@ -25,8 +25,9 @@
 
   services.dunst.enable = true;
   # programs.vinyl-vault.enable = true;
-  mountainous.work-mode.enable = true;
+  # mountainous.work-mode.enable = true;
   mountainous.firefox.enable = true;
+  # backpacker.desktops.hyprland.enable = false;
   # services.udiskie.enable = true;
   # simonwjackson.snowscape.enable = true;
 
