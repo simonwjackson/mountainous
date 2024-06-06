@@ -13,8 +13,7 @@
   inherit (lib.modules) mkDefault;
   inherit (lib.strings) removeSuffix;
 
-  # secretsDir = "${config.snowflake.hostDir}/secrets";
-  secretsDir = ../../../secrets;
+  secretsDir = lib.snowfall.fs.get-file "secrets";
   secretsFile = "${secretsDir}/secrets.nix";
 
   cfg = config.mountainous.agenix;

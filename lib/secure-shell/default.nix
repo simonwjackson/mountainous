@@ -6,7 +6,7 @@
     domains,
     localhost,
   }: let
-    systems = ../../systems;
+    systems = lib.snowfall.fs.get-file "systems";
     architectures = builtins.attrNames (builtins.readDir systems);
 
     readPublicKey = arch: name: let

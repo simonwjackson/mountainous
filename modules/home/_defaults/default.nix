@@ -35,18 +35,18 @@ in {
       kitty = mkDefault enabled;
       mpvd = mkDefault enabled;
       secure-shell = mkDefault enabled;
-      tank = {
-        enable = mkDefault true;
-        path = mkDefault "/glacier/snowscape/";
-      };
-      taskwarrior-sync = {
-        enable = mkDefault true;
-        publicCertFile = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
-        privateKeyFile = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
-        caCertFile = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
-        server = "yari:53589";
-        credentials = "mountainous/simonwjackson/430e9d17-bc5e-4534-9c37-c1dcab337dbe";
-      };
+      # tank = {
+      #   enable = mkDefault true;
+      #   path = mkDefault "/glacier/snowscape/";
+      # };
+      # taskwarrior-sync = {
+      #   enable = mkDefault true;
+      #   publicCertFile = config.age.secrets."user-simonwjackson-taskserver-public.cert".path;
+      #   privateKeyFile = config.age.secrets."user-simonwjackson-taskserver-private.key".path;
+      #   caCertFile = config.age.secrets."user-simonwjackson-taskserver-ca.cert".path;
+      #   server = "yari:53589";
+      #   credentials = "mountainous/simonwjackson/430e9d17-bc5e-4534-9c37-c1dcab337dbe";
+      # };
       tridactyl = mkDefault enabled;
       work-mode = mkDefault disabled;
       xpo = mkDefault enabled;

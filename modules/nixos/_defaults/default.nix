@@ -90,7 +90,7 @@ in {
   environment.variables.BROWSER = "firefox-esr";
 
   programs.tmesh = let
-    systems = ../../../systems;
+    systems = lib.snowfall.fs.get-file "systems";
     architectures = builtins.attrNames (builtins.readDir systems);
     getHosts = arch:
       builtins.attrNames (builtins.readDir (systems + "/${arch}"));
