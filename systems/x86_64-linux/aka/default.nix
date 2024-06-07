@@ -18,18 +18,21 @@ in {
   backpacker = {
     hardware.cpu.type = "amd";
     boot = disabled;
-    # gaming = {
-    #   core = {
-    #     enable = true;
-    #     isHost = true;
-    #   };
-    #   emulation = {
-    #     enable = true;
-    #     gen-7 = true;
-    #     gen-8 = true;
-    #   };
-    #   steam = enabled;
-    # };
+    gaming = {
+      core = {
+        enable = true;
+        isHost = true;
+      };
+      # emulation = {
+      #   enable = true;
+      #   gen-7 = true;
+      #   gen-8 = true;
+      # };
+      steam = {
+        enable = true;
+        steamApps = "/snowscape/gaming/games/steam/steamapps";
+      };
+    };
     desktops = {
       plasma = {
         enable = true;
@@ -193,6 +196,7 @@ in {
     supportedFilesystems = ["btrfs"];
   };
 
+  services.xserver.enable = true;
   services.xserver.videoDrivers = ["amdgpu"];
 
   system.stateVersion = "24.05";

@@ -118,11 +118,11 @@
         "tmesh": "tmesh"
       },
       "locked": {
-        "lastModified": 1717694517,
-        "narHash": "sha256-jjWh72P7iNq/s3wzqzXpeP+63pZG5Cb9xiNcuWUKbUE=",
+        "lastModified": 1717698606,
+        "narHash": "sha256-U/ynhXETGVZl4mB9XYX0tHGrjD+wo4JHZvcdUVz8fA4=",
         "owner": "simonwjackson",
         "repo": "backpacker",
-        "rev": "1448badb90128b890973a0efb013586d0e76e64d",
+        "rev": "a18ddbc7e3ab616583449da2c2a53a0571cb52a9",
         "type": "github"
       },
       "original": {
@@ -2177,11 +2177,11 @@
         "nixpkgs": "nixpkgs_17"
       },
       "locked": {
-        "lastModified": 1717634709,
-        "narHash": "sha256-Md+bsxS1MoLJ2r5kQzDRm9fgkp79YzYWl1v5uxSjEUQ=",
+        "lastModified": 1717721353,
+        "narHash": "sha256-Q+Plp4bM7rqAbHEl0NgizajHnvM70vnO59vwbg81omI=",
         "owner": "bandithedoge",
         "repo": "nixpkgs-firefox-darwin",
-        "rev": "801c9a2672964002cf56b2034ced78d688e3a487",
+        "rev": "b82255d4782aeb88223f2821fe2140db94499b9e",
         "type": "github"
       },
       "original": {
@@ -2304,11 +2304,11 @@
     },
     "nixpkgs_16": {
       "locked": {
-        "lastModified": 1717196966,
-        "narHash": "sha256-yZKhxVIKd2lsbOqYd5iDoUIwsRZFqE87smE2Vzf6Ck0=",
+        "lastModified": 1717602782,
+        "narHash": "sha256-pL9jeus5QpX5R+9rsp3hhZ+uplVHscNJh8n8VpqscM0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "57610d2f8f0937f39dbd72251e9614b1561942d8",
+        "rev": "e8057b67ebf307f01bdcc8fba94d94f75039d1f6",
         "type": "github"
       },
       "original": {

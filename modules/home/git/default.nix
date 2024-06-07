@@ -25,7 +25,7 @@ in {
     };
 
     programs.lazygit = {
-      enable = true;
+      enable = false;
 
       settings = {
         confirmOnQuit = false;
