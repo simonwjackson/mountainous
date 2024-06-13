@@ -98,8 +98,7 @@ in {
         startupPrograms = [
           "xsetroot -solid black"
           "pgrep -f 'main-term' > /dev/null || kitty --class main-term ${tmesh}"
-          # HACK: bin is firefox-esr but name is firefox
-          "pgrep firefox || $BROWSER"
+          "pgrep $BROWSER || $BROWSER"
         ];
         extraConfig = ''
           bspc subscribe all > ~/bspc-report.log &
