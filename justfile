@@ -40,7 +40,7 @@ dry-run HOST='$(hostname)':
     if [ "$(uname)" == "Darwin" ]; then
         nix build ".#darwinConfigurations.$HOSTNAME.config.system.build.toplevel"; \
     else \
-        nix build ".#nixosConfigurations.$HOSTNAME.config.system.build.toplevel"; \
+        nixos-rebuild dry-activate --flake .#$HOSTNAME
     fi
 
 alias dry := dry-run

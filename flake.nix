@@ -104,6 +104,7 @@
         backpacker.nixosModules."networking/tailscaled"
         backpacker.nixosModules."networking/zerotierone"
         backpacker.nixosModules.adb
+        backpacker.nixosModules.locale
         backpacker.nixosModules.agenix
         backpacker.nixosModules.boot
         backpacker.nixosModules.nix
