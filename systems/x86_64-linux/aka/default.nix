@@ -34,11 +34,11 @@ in {
       };
     };
     desktops = {
-      plasma = {
+      hyprland = {
         enable = true;
         autoLogin = true;
       };
-      hyprland = enabled;
+      plasma = enabled;
     };
     networking.core.names = [
       {
@@ -53,10 +53,6 @@ in {
     ];
     # BUG: ccache broken
     performance = disabled;
-    #   syncthing = {
-    #     key = config.age.secrets.fiji-syncthing-key.path;
-    #     cert = config.age.secrets.fiji-syncthing-cert.path;
-    #   };
   };
 
   # mountainous = {
@@ -165,11 +161,13 @@ in {
     };
   };
 
+  time.timeZone = "America/Chicago";
+
   boot = {
     extraModulePackages = [];
     initrd = {
       availableKernelModules = ["nvme" "xhci_pci" "ahci" "usbhid" "uas" "sd_mod"];
-      kernelModules = ["dm-snapshot" "amdgpu"];
+      kernelModules = ["dm-snapshot" "amdgpu" "i2c-dev"];
       luks = {
         devices = {
           root = {

@@ -4,15 +4,10 @@
   ...
 }: {
   device = {
-    id = "0000000-0000000-0000000-0000000-0000000-0000000-0000000-0000000";
+    id = "DIVKBPA-VNVTEK5-FH7C2SB-QCSK6ZC-N4OE7AQ-3JX63AR-BDR6WMP-JQZ3KAK";
     name = "Desktop (${host})";
   };
   paths = {
-    # documents = "/glacier/snowscape/documents";
-    # notes = "/glacier/snowscape/notes";
-    # audiobooks = "/glacier/snowscape/audiobooks";
-    # books = "/glacier/snowscape/books";
-    # comics = "/glacier/snowscape/comics";
-    # code = "/glacier/snowscape/code";
+    notes = "/snowscape/notes";
   };
 }

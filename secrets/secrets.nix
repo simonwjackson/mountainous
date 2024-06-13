@@ -1,6 +1,6 @@
 let
-  simonwjackson = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ==";
-  users = [simonwjackson];
+  main_user = builtins.readFile ../rsa.pub;
+  users = [main_user];
 
   aka = builtins.readFile ../systems/x86_64-linux/aka/ssh_host_rsa_key.pub;
   asahi = builtins.readFile ../systems/x86_64-linux/asahi/ssh_host_rsa_key.pub;
@@ -60,6 +60,9 @@ in {
 
   "naka-syncthing-key.age".publicKeys = users ++ [naka];
   "naka-syncthing-cert.age".publicKeys = users ++ [naka];
+
+  "aka-syncthing-key.age".publicKeys = users ++ [aka];
+  "aka-syncthing-cert.age".publicKeys = users ++ [aka];
 
   "fiji-syncthing-key.age".publicKeys = users ++ [fiji];
   "fiji-syncthing-cert.age".publicKeys = users ++ [fiji];
