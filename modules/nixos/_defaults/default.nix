@@ -17,7 +17,7 @@ in {
   programs.icho = {
     enable = true;
     environment = {
-      NOTES_DIR = mkDefault "/glacier/snowscape/notes";
+      NOTES_DIR = mkDefault "/snowscape/notes";
     };
     environmentFiles = [
       config.age.secrets."user-simonwjackson-anthropic".path
@@ -153,7 +153,7 @@ in {
           projects = [
             {
               identifier = ".bare$|^.git$";
-              root = "/glacier/snowscape/code";
+              root = "/snowscape/code";
             }
           ];
         };

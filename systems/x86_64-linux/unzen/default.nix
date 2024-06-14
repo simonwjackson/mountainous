@@ -144,6 +144,10 @@
   boot.supportedFilesystems = ["bcachefs"];
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
+  environment.systemPackages = with pkgs; [
+    lazydocker
+  ];
+
   services.jellyfin = {
     enable = true;
     user = "simonwjackson";
