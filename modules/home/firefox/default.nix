@@ -10,6 +10,7 @@
 in {
   imports = [
     ./tridactyl
+    ./extensions.nix
   ];
 
   options.mountainous.firefox = {
@@ -33,9 +34,24 @@ in {
         AutofillCreditCardEnabled = false;
         DisableAppUpdate = true;
         DisableFirefoxAccounts = true;
+        # DisableFirefoxStudies = true;
         DisablePocket = true;
         DisableTelemetry = true;
         DontCheckDefaultBrowser = true;
+        # FirefoxSuggest = {
+        #   WebSuggestions = false;
+        #   SponsoredSuggestions = false;
+        #   ImproveSuggest = false;
+        #   Locked = true;
+        # };
+        # EnableTrackingProtection = {
+        #   Value = true;
+        #   Locked = true;
+        #   Cryptomining = true;
+        #   Fingerprinting = true;
+        #   EmailTracking = true;
+        #   # Exceptions = ["https://example.com"]
+        # };
         ExtensionSettings = {
           # Augmented Steam
           "{1be309c5-3e4f-4b99-927d-bb500eb4fa88}" = {
@@ -128,73 +144,74 @@ in {
         PasswordManagerEnabled = false;
       };
 
-      profiles.simonwjackson = {
+      # profiles."${config.backpacker.user.name}" = {
+      profiles."simonwjackson" = {
         isDefault = true;
         settings = {
-          "browser.uiCustomization.state" = ''
-            {
-               "placements": {
-                 "widget-overflow-fixed-list": [],
-                 "unified-extensions-area": [
-                   "firenvim_lacamb_re-browser-action",
-                   "_44df5123-f715-9146-bfaa-c6e8d4461d44_-browser-action",
-                   "7esoorv3_alefvanoon_anonaddy_me-browser-action",
-                   "idcac-pub_guus_ninja-browser-action",
-                   "jid1-mnnxcxisbpnsxq_jetpack-browser-action",
-                   "smart-referer_meh_paranoid_pk-browser-action",
-                   "ublock0_raymondhill_net-browser-action",
-                   "_7a7a4a92-a2a0-41d1-9fd7-1e92480d612d_-browser-action",
-                   "_c607c8df-14a7-4f28-894f-29e8722976af_-browser-action",
-                   "sponsorblocker_ajay_app-browser-action"
-                 ],
-                 "nav-bar": [
-                   "customizableui-special-spring1",
-                   "urlbar-container",
-                   "customizableui-special-spring2",
-                   "fxa-toolbar-menu-button",
-                   "unified-extensions-button",
-                   "addon_darkreader_org-browser-action",
-                   "_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action"
-                 ],
-                 "toolbar-menubar": [
-                   "menubar-items"
-                 ],
-                 "TabsToolbar": [
-                   "firefox-view-button",
-                   "tabbrowser-tabs",
-                   "new-tab-button",
-                   "alltabs-button"
-                 ],
-                 "PersonalToolbar": [
-                   "personal-bookmarks"
-                 ]
-               },
-               "seen": [
-                 "firenvim_lacamb_re-browser-action",
-                 "_44df5123-f715-9146-bfaa-c6e8d4461d44_-browser-action",
-                 "7esoorv3_alefvanoon_anonaddy_me-browser-action",
-                 "addon_darkreader_org-browser-action",
-                 "idcac-pub_guus_ninja-browser-action",
-                 "jid1-mnnxcxisbpnsxq_jetpack-browser-action",
-                 "smart-referer_meh_paranoid_pk-browser-action",
-                 "ublock0_raymondhill_net-browser-action",
-                 "_7a7a4a92-a2a0-41d1-9fd7-1e92480d612d_-browser-action",
-                 "_c607c8df-14a7-4f28-894f-29e8722976af_-browser-action",
-                 "sponsorblocker_ajay_app-browser-action",
-                 "_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action",
-                 "developer-button"
-               ],
-               "dirtyAreaCache": [
-                 "unified-extensions-area",
-                 "nav-bar",
-                 "toolbar-menubar",
-                 "TabsToolbar",
-                 "PersonalToolbar"
-               ],
-               "currentVersion": 20,
-               "newElementCount": 3
-             }
-          '';
+          # "browser.uiCustomization.state" = ''
+          #   {
+          #      "placements": {
+          #        "widget-overflow-fixed-list": [],
+          #        "unified-extensions-area": [
+          #          "firenvim_lacamb_re-browser-action",
+          #          "_44df5123-f715-9146-bfaa-c6e8d4461d44_-browser-action",
+          #          "7esoorv3_alefvanoon_anonaddy_me-browser-action",
+          #          "idcac-pub_guus_ninja-browser-action",
+          #          "jid1-mnnxcxisbpnsxq_jetpack-browser-action",
+          #          "smart-referer_meh_paranoid_pk-browser-action",
+          #          "ublock0_raymondhill_net-browser-action",
+          #          "_7a7a4a92-a2a0-41d1-9fd7-1e92480d612d_-browser-action",
+          #          "_c607c8df-14a7-4f28-894f-29e8722976af_-browser-action",
+          #          "sponsorblocker_ajay_app-browser-action"
+          #        ],
+          #        "nav-bar": [
+          #          "customizableui-special-spring1",
+          #          "urlbar-container",
+          #          "customizableui-special-spring2",
+          #          "fxa-toolbar-menu-button",
+          #          "unified-extensions-button",
+          #          "addon_darkreader_org-browser-action",
+          #          "_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action"
+          #        ],
+          #        "toolbar-menubar": [
+          #          "menubar-items"
+          #        ],
+          #        "TabsToolbar": [
+          #          "firefox-view-button",
+          #          "tabbrowser-tabs",
+          #          "new-tab-button",
+          #          "alltabs-button"
+          #        ],
+          #        "PersonalToolbar": [
+          #          "personal-bookmarks"
+          #        ]
+          #      },
+          #      "seen": [
+          #        "firenvim_lacamb_re-browser-action",
+          #        "_44df5123-f715-9146-bfaa-c6e8d4461d44_-browser-action",
+          #        "7esoorv3_alefvanoon_anonaddy_me-browser-action",
+          #        "addon_darkreader_org-browser-action",
+          #        "idcac-pub_guus_ninja-browser-action",
+          #        "jid1-mnnxcxisbpnsxq_jetpack-browser-action",
+          #        "smart-referer_meh_paranoid_pk-browser-action",
+          #        "ublock0_raymondhill_net-browser-action",
+          #        "_7a7a4a92-a2a0-41d1-9fd7-1e92480d612d_-browser-action",
+          #        "_c607c8df-14a7-4f28-894f-29e8722976af_-browser-action",
+          #        "sponsorblocker_ajay_app-browser-action",
+          #        "_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action",
+          #        "developer-button"
+          #      ],
+          #      "dirtyAreaCache": [
+          #        "unified-extensions-area",
+          #        "nav-bar",
+          #        "toolbar-menubar",
+          #        "TabsToolbar",
+          #        "PersonalToolbar"
+          #      ],
+          #      "currentVersion": 20,
+          #      "newElementCount": 3
+          #    }
+          # '';
           # Firefox onebar
           "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
           "browser.tabs.firefox-view" = false;
@@ -223,7 +240,7 @@ in {
           # with tiling WMs on wayland
           "privacy.webrtc.legacyGlobalIndicator" = false;
 
-          # Actual settings
+          # Actual setting
           "app.shield.optoutstudies.enabled" = false;
           "app.update.auto" = false;
           "browser.bookmarks.restore_default_bookmarks" = false;

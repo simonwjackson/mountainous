@@ -16,18 +16,18 @@
   config,
   ...
 }: {
-  xresources = {
-    properties = {
-      "Xft.dpi" = "128";
-      "Xcursor.size" = "32";
-    };
-  };
+  # xresources = {
+  #   properties = {
+  #     "Xft.dpi" = "128";
+  #     "Xcursor.size" = "32";
+  #   };
+  # };
 
   services.dunst.enable = true;
   # programs.vinyl-vault.enable = true;
   # mountainous.work-mode.enable = true;
   mountainous.firefox.enable = true;
-  # backpacker.desktops.hyprland.enable = false;
+  backpacker.desktops.hyprland.enable = true;
   # services.udiskie.enable = true;
   # simonwjackson.snowscape.enable = true;
 

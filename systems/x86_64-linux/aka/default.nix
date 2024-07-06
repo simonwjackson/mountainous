@@ -14,6 +14,10 @@ in {
   ];
 
   services.joycond.enable = true;
+  virtualisation.waydroid.enable = true;
+
+  services.kavita.enable = true;
+  services.kavita.tokenKeyFile = ./kavita.key;
 
   backpacker = {
     hardware.cpu.type = "amd";
@@ -38,7 +42,7 @@ in {
         enable = true;
         autoLogin = true;
       };
-      plasma = enabled;
+      plasma = disabled;
     };
     networking.core.names = [
       {
@@ -193,6 +197,8 @@ in {
     };
     supportedFilesystems = ["btrfs"];
   };
+
+  programs.firejail.enable = true;
 
   services.xserver.enable = true;
   services.xserver.videoDrivers = ["amdgpu"];

@@ -16,11 +16,10 @@ in {
   backpacker = {
     boot = enabled;
     desktops = {
-      plasma = {
+      hyprland = {
         enable = true;
         autoLogin = true;
       };
-      hyprland = enabled;
     };
     networking.core.names = [
       {

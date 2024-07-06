@@ -136,6 +136,10 @@
         channelName = "nixpkgs-mobile-nixos";
       };
 
+      homes.modules = with inputs; [
+        backpacker.homeModules."desktops/hyprland"
+      ];
+
       overlays = with inputs; [
         snowfall-frost.overlays.default
       ];
