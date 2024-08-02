@@ -294,7 +294,7 @@ in {
     programs.git = {
       enable = true;
       userName = "Simon W. Jackson";
-      userEmail = "hello@simonwjackson.io";
+      userEmail = "189379+simonwjackson@users.noreply.github.com";
 
       delta = {
         enable = true;
