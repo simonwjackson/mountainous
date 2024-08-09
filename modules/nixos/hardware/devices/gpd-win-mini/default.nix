@@ -59,8 +59,8 @@ in {
       sensor.iio.enable = true;
       # WARN: opengl or steam-hardware might be causing issues with fsr
       opengl = {
-        driSupport = true;
-        driSupport32Bit = true;
+        # driSupport = true;
+        # driSupport32Bit = true;
         extraPackages = with pkgs; [
           rocm-opencl-icd
           vaapiVdpau

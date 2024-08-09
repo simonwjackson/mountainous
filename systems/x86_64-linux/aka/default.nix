@@ -34,7 +34,7 @@ in {
       # };
       steam = {
         enable = true;
-        steamApps = "/snowscape/gaming/games/steam/steamapps";
+        # steamApps = "/snowscape/gaming/games/steam/steamapps";
       };
     };
     desktops = {
@@ -154,8 +154,8 @@ in {
       };
     };
     opengl = {
-      driSupport = true; # This is already enabled by default
-      driSupport32Bit = true; # For 32 bit applications
+      # driSupport = true; # This is already enabled by default
+      # driSupport32Bit = true; # For 32 bit applications
       extraPackages = with pkgs; [
         amdvlk
       ];
@@ -199,6 +199,8 @@ in {
   };
 
   programs.firejail.enable = true;
+
+  #
 
   services.xserver.enable = true;
   services.xserver.videoDrivers = ["amdgpu"];

@@ -20,6 +20,7 @@ in {
         enable = true;
         gen-7 = true;
         gen-8 = true;
+        gamingDir = "/glacier/snowscape/gaming";
       };
       steam = enabled;
     };
@@ -38,7 +39,7 @@ in {
     hardware = {
       bluetooth = enabled;
     };
-    desktop.plasma = enabled;
+    desktops.plasma = enabled;
   };
 
   mountainous = {
