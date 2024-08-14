@@ -11,6 +11,17 @@
   # };
 
   inputs = {
+    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+    nur.url = "github:nix-community/NUR";
+    nix-gaming = {
+      url = "github:fufexan/nix-gaming";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    auto-cpufreq = {
+      url = "github:AdnanHodzic/auto-cpufreq";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     tmesh.url = "github:simonwjackson/tmesh";
     icho.url = "github:simonwjackson/icho";
     gamerack.url = "https://flakehub.com/f/simonwjackson/gamerack/*.tar.gz";
@@ -124,6 +135,8 @@
         icho.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         tmesh.nixosModules.default
+        chaotic.nixosModules.default
+        nur.nixosModules.nur
       ];
 
       systems.modules.darwin = with inputs; [
@@ -142,6 +155,8 @@
 
       overlays = with inputs; [
         snowfall-frost.overlays.default
+        chaotic.overlays.default
+        nur.overlay
       ];
 
       channels-config = {

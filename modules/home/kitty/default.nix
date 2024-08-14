@@ -28,5 +28,18 @@ in {
       enable = true;
       extraConfig = builtins.readFile ./kitty.conf;
     };
+
+    # xdg.systemDirs.data = ["/usr/share" "/var/lib/flatpak/exports/share" "$HOME/.local/share/flatpak/exports/share"];
+    #
+    # systemd.user = {
+    #   sessionVariables = {
+    #     CLUTTER_BACKEND = "wayland";
+    #     GDK_BACKEND = "wayland,x11";
+    #     QT_QPA_PLATFORM = "wayland;xcb";
+    #     MOZ_ENABLE_WAYLAND = "1";
+    #     _JAVA_AWT_WM_NONREPARENTING = "1";
+    #     STEAM_EXTRA_COMPAT_TOOL_PATHS = "/home/simonwjackson/.local/share/Steam/compatibilitytools.d/SteamTinkerLaunch/";
+    #   };
+    # };
   };
 }
