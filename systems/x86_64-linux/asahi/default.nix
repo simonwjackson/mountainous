@@ -19,7 +19,7 @@
     ];
   };
 
-  services.flatpak.enable = true;
+  # services.flatpak.enable = true;
   virtualisation.waydroid.enable = true;
 
   # Enable the X11 windowing system.
