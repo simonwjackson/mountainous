@@ -1,18 +1,12 @@
 {
-  # nixConfig = {
-  #   extra-substituters = [
-  #     "https://nix-community.cachix.org"
-  #   ];
-  #   extra-trusted-public-keys = [
-  #     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-  #     "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-  #     "hydra.nixos.org-1:CNHJZBh9K4tP3EKF6FkkgeVYsS3ohTl+oS0Qa8bezVs="
-  #   ];
-  # };
-
   inputs = {
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     nur.url = "github:nix-community/NUR";
+
+    # elevate = {
+    #   url = "github:simonwjackson/elevate";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
+
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -135,7 +129,6 @@
         icho.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         tmesh.nixosModules.default
-        chaotic.nixosModules.default
         nur.nixosModules.nur
       ];
 
@@ -151,11 +144,11 @@
 
       homes.modules = with inputs; [
         backpacker.homeModules."desktops/hyprland"
+        # elevate.homeModules.service
       ];
 
       overlays = with inputs; [
         snowfall-frost.overlays.default
-        chaotic.overlays.default
         nur.overlay
       ];
 

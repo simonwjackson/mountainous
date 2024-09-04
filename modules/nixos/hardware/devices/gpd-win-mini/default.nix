@@ -21,15 +21,6 @@ in {
       };
     };
 
-    chaotic.mesa-git.enable = true;
-    chaotic.mesa-git.fallbackSpecialisation = true;
-    # chaotic.appmenu-gtk3-module.enable = true;
-    chaotic.steam.extraCompatPackages = with pkgs; [
-      proton-ge-custom
-      gamescope
-      mangohud
-    ];
-
     boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usbhid" "usb_storage" "uas" "sd_mod"];
     boot.kernelPackages = pkgs.linuxPackages_zen;
 
@@ -68,51 +59,14 @@ in {
         updateMicrocode = true;
         ryzen-smu.enable = true;
       };
-      steam-hardware.enable = true;
     };
-    nixpkgs = {
-      config = {
-        steam = pkgs.steam.override {
-          extraPkgs = pkgs:
-            with pkgs; [
-              gamescope-wsi_git
-              gamescope_git
-              # stable.gamescope
-              xorg.libXcursor
-              xorg.libXi
-              xorg.libXinerama
-              xorg.libXScrnSaver
-              libpng
-              libpulseaudio
-              libvorbis
-              stdenv.cc.cc.lib
-              libkrb5
-              keyutils
-              mangohud
-            ];
-        };
-        allowUnfree = true;
-        permittedInsecurePackages = ["python-2.7.18.6"];
-      };
-    };
+
     programs = {
-      #gamescope.package = pkgs.stable.gamescope;
-      gamemode.enable = true;
       xwayland.enable = true;
-      steam = {
-        # gamescopeSession = {
-        #   enable = true;
-        #   args = ["--rt" "-H 1600" "-h 720" "-b" "-f" "-F fsr"];
-        #   env = {ENABLE_GAMESCOPE_WSI = "1";};
-        #   #steamArgs = [ "-pipewire-dmabuf" ];
-        # };
-        enable = true;
-        remotePlay.openFirewall = true;
-      };
-      gamescope = {
-        enable = true;
-        # args = ["--rt" "-H 1080" "-h 720" "-f" "-F fsr"];
-      };
+      # gamescope = {
+      #   enable = true;
+      #   # args = ["--rt" "-H 1080" "-h 720" "-f" "-F fsr"];
+      # };
     };
   };
 }
