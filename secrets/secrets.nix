@@ -8,9 +8,10 @@ let
   haku = builtins.readFile ../systems/x86_64-linux/haku/ssh_host_rsa_key.pub;
   kita = builtins.readFile ../systems/x86_64-linux/kita/ssh_host_rsa_key.pub;
   naka = builtins.readFile ../systems/aarch64-linux/naka/ssh_host_rsa_key.pub;
+  nyu = builtins.readFile ../systems/x86_64-linux/nyu/ssh_host_rsa_key.pub;
   rakku = builtins.readFile ../systems/x86_64-linux/rakku/ssh_host_rsa_key.pub;
   unzen = builtins.readFile ../systems/x86_64-linux/unzen/ssh_host_rsa_key.pub;
-  ushiro = builtins.readFile ../systems/aarch64-darwin/ushiro/ssh_host_rsa_key.pub;
+  # ushiro = builtins.readFile ../systems/aarch64-darwin/ushiro/ssh_host_rsa_key.pub;
   yari = builtins.readFile ../systems/x86_64-linux/yari/ssh_host_rsa_key.pub;
   zao = builtins.readFile ../systems/x86_64-linux/zao/ssh_host_rsa_key.pub;
 
@@ -21,9 +22,10 @@ let
     haku
     kita
     naka
+    nyu
     rakku
     unzen
-    ushiro
+    # ushiro
     yari
     zao
   ];
