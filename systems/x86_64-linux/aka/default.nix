@@ -13,11 +13,20 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  mountainous = {
+    bluetooth-tether = {
+      enable = true;
+      devices = [
+        {
+          name = "usu";
+          macAddress = "F0:05:1B:E2:42:8C";
+        }
+      ];
+    };
+  };
+
   services.joycond.enable = true;
   virtualisation.waydroid.enable = true;
-
-  services.kavita.enable = true;
-  services.kavita.tokenKeyFile = ./kavita.key;
 
   backpacker = {
     hardware.cpu.type = "amd";
@@ -65,11 +74,6 @@ in {
 
   hardware.bluetooth.enable = true; # enables support for Bluetooth
   hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
-  hardware.bluetooth.settings = {
-    General = {
-      Enable = "Source,Sink,Media,Socket";
-    };
-  };
   systemd.user.services.mpris-proxy = {
     description = "Mpris proxy";
     after = ["network.target" "sound.target"];
