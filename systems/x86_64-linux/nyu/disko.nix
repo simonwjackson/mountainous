@@ -38,10 +38,10 @@
                     mountpoint = "/nix";
                     mountOptions = ["compress=zstd:3" "noatime" "discard=async" "space_cache=v2"];
                   };
-                  # "/snowscape" = {
-                  #   mountpoint = "/snowscape";
-                  #   mountOptions = ["compress=zstd:3" "discard=async" "space_cache=v2"];
-                  # };
+                  "/swap" = {
+                    mountpoint = "/swap";
+                    mountOptions = ["noatime"];
+                  };
                 };
               };
             };
@@ -50,4 +50,6 @@
       };
     };
   };
+
+  swapDevices = [{device = "/swap/swapfile";}];
 }
