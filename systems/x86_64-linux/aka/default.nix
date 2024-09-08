@@ -32,9 +32,12 @@ in {
     hardware.cpu.type = "amd";
     boot = disabled;
     gaming = {
+      sunshine = {
+        enable = true;
+      };
       core = {
         enable = true;
-        isHost = true;
+        isHost = false;
       };
       # emulation = {
       #   enable = true;
@@ -47,6 +50,7 @@ in {
       };
     };
     desktops = {
+      hyprlandControl = enabled;
       hyprland = {
         enable = true;
         autoLogin = true;
