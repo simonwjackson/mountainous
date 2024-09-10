@@ -5,7 +5,7 @@ in {
     otherDevices = {
       "Android Phone (usu)" = {
         device = {
-          id = "OHG43Z6-BVJN3ZT-GIM226G-5KX3PWJ-OBDDH5X-EMJPI7K-A3SGNCM-XVACBAG";
+          id = "CZA4RS5-6DZRRHR-4EMUXGK-WZO7KUR-5AUAOAX-TV6CCUX-MLCMBKY-64NJ4AC";
         };
         folders = [
           "notes"

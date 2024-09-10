@@ -21,6 +21,7 @@ in {
         gen-7 = true;
         gen-8 = true;
         gamingDir = "/glacier/snowscape/gaming";
+        saves = "/glacier/blizzard/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = enabled;
     };

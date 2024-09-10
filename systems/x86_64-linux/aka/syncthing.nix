@@ -9,5 +9,6 @@
   };
   paths = {
     notes = "/snowscape/notes";
+    gaming-profiles = "/snowscape/gaming/profiles/simonwjackson";
   };
 }
