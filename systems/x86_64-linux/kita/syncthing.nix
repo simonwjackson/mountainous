@@ -8,7 +8,8 @@
     name = "GPD Win (${host})";
   };
   paths = {
-    notes = "/glacier/snowscape/notes";
-    gaming-profiles = "/glacier/snowscape/gaming/profiles";
+    notes = "/snowscape/notes";
+    gaming-profiles = "/snowscape/gaming/profiles";
+    games = "/snowscape/gaming/games";
   };
 }

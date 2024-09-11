@@ -20,8 +20,8 @@ in {
         enable = true;
         gen-7 = true;
         gen-8 = true;
-        gamingDir = "/glacier/snowscape/gaming";
-        saves = "/glacier/blizzard/gaming/profiles/simonwjackson/progress/saves";
+        gamingDir = "/snowscape/gaming";
+        saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = enabled;
     };
@@ -50,26 +50,29 @@ in {
   };
 
   # HACK: mergerfs mount appears to be broken
-  fileSystems."/glacier/snowscape" = {
-    device = "/glacier/blizzard";
-    options = ["bind"];
-  };
-
   # fileSystems."/glacier/snowscape" = {
-  #   # depends = ["/glacier/blizzard" "/glacier/sleet"];
-  #   depends = ["/glacier/blizzard"];
   #   device = "/glacier/blizzard";
-  #   # device = "/glacier/blizzard:/glacier/sleet";
-  #   fsType = "fuse.mergerfs";
-  #   options = [
-  #     "minfreespace=1G"
-  #     "category.create=ff"
-  #     "category.search=ff"
-  #     "attr_timeout=60"
-  #     "ignorepponrename=true"
-  #     "moveonenospc=true"
-  #   ];
+  #   options = ["bind"];
   # };
+
+  environment.systemPackages = [pkgs.mergerfs];
+  fileSystems."/snowscape" = {
+    device = "/glacier/blizzard:/glacier/sleet";
+    fsType = "fuse.mergerfs";
+    options = [
+      "minfreespace=4G"
+      "use_ino"
+      "cache.files=partial"
+      "dropcacheonclose=true"
+      "allow_other"
+      "category.create=ff"
+      "fsname=snowscape"
+      "nonempty"
+      "defaults"
+      "allow_other"
+      "nofail"
+    ];
+  };
 
   fileSystems."/glacier/sleet" = {
     device = "/dev/disk/by-label/sleet";
