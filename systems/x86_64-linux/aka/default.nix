@@ -39,11 +39,13 @@ in {
         enable = true;
         isHost = false;
       };
-      # emulation = {
-      #   enable = true;
-      #   gen-7 = true;
-      #   gen-8 = true;
-      # };
+      emulation = {
+        enable = true;
+        gen-7 = true;
+        gen-8 = true;
+        gamingDir = "/snowscape/gaming";
+        saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
+      };
       steam = {
         enable = true;
         # steamApps = "/snowscape/gaming/games/steam/steamapps";
@@ -55,7 +57,10 @@ in {
         enable = true;
         autoLogin = true;
       };
-      plasma = disabled;
+      # plasma = {
+      #   enable = true;
+      #   autoLogin = true;
+      # };
     };
     networking.core.names = [
       {
