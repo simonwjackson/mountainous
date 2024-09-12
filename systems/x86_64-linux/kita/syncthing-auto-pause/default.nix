@@ -15,10 +15,39 @@
   };
 
   networkDispatcherScript = pkgs.writeShellApplication {
-    name = "syncthing-auto-pause-dispatcher";
+    name = "network-dispatcher";
     runtimeInputs = [pkgs.networkmanager syncthingToggleScript];
-    text = builtins.readFile ./syncthing-auto-pause-dispatcher.sh;
+    text = builtins.readFile ./network-dispatcher.sh;
   };
+
+  myToggleScript = pkgs.writeShellApplication {
+    name = "myToggleScript";
+    runtimeInputs = [];
+    text = ''
+      #!/usr/bin/env bash
+
+      export SHARES=(${builtins.concatStringsSep " " cfg.managedShares})
+
+      case "$1" in
+      true)
+        echo "Metered connection detected. Taking appropriate actions..."
+        /snowscape/code/github/simonwjackson/mountainous/main/systems/x86_64-linux/kita/syncthing-auto-pause/syncthing-toggle.sh pause "''${SHARES[@]}"
+
+        ;;
+      false)
+        echo "No metered connection detected. Proceeding with normal operations..."
+        /snowscape/code/github/simonwjackson/mountainous/main/systems/x86_64-linux/kita/syncthing-auto-pause/syncthing-toggle.sh resume "''${SHARES[@]}"
+
+        ;;
+      *)
+        echo "Error: Unexpected input. Expected 'true' or 'false'."
+        exit 1
+        ;;
+      esac
+    '';
+  };
+
+  customDispatch = "${networkDispatcherScript}/bin/network-dispatcher --execute ${myToggleScript}/bin/myToggleScript";
 in {
   options.services.syncthing-auto-pause = {
     enable = mkEnableOption "Syncthing auto-pause service";
@@ -35,7 +64,7 @@ in {
     networking.networkmanager.dispatcherScripts = mkMerge [
       [
         {
-          source = "${networkDispatcherScript}/bin/syncthing-auto-pause-dispatcher";
+          source = customDispatch;
           type = "basic";
         }
       ]
@@ -49,7 +78,7 @@ in {
 
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${networkDispatcherScript}/bin/syncthing-auto-pause-dispatcher";
+        ExecStart = customDispatch;
       };
     };
   };

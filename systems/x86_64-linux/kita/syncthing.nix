@@ -8,6 +8,7 @@
     name = "GPD Win (${host})";
   };
   paths = {
+    scripts = "/home/simonwjackson/.local/scripts";
     notes = "/snowscape/notes";
     gaming-profiles = "/snowscape/gaming/profiles";
     games = "/snowscape/gaming/games";

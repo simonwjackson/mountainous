@@ -8,6 +8,7 @@
     name = "Gaming (${host})";
   };
   paths = {
+    scripts = "/home/simonwjackson/.local/scripts";
     notes = "/glacier/snowscape/notes";
     gaming-profiles = "/glacier/snowscape/gaming/profiles";
   };

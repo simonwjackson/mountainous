@@ -18,6 +18,7 @@ toggle_share() {
   local share="$1"
   local current_state
   current_state=$(get_paused_state "$share")
+
   if [ "$current_state" = "true" ]; then
     set_paused_state "$share" false
     echo "Unpaused share: $share"
@@ -30,7 +31,7 @@ toggle_share() {
 # Main script
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <action> <share1> [<share2> ...]"
-  echo "Actions: pause, unpause, toggle"
+  echo "Actions: pause, resume, toggle"
   exit 1
 fi
 
@@ -44,7 +45,7 @@ pause)
     echo "Paused share: $share"
   done
   ;;
-unpause)
+resume)
   for share in "$@"; do
     set_paused_state "$share" false
     echo "Unpaused share: $share"
@@ -57,7 +58,7 @@ toggle)
   ;;
 *)
   echo "Invalid action: $action"
-  echo "Valid actions are: pause, unpause, toggle"
+  echo "Valid actions are: pause, resume, toggle"
   exit 1
   ;;
 esac
