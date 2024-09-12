@@ -15,11 +15,15 @@ in {
   services.autofs = {
     enable = true;
     autoMaster = let
-      mapConf = pkgs.writeText "auto.nfs" ''
+      akaConf = pkgs.writeText "auto.aka" ''
+        snowscape -fstype=nfs,rw,sync,soft,intr aka:/snowscape
+      '';
+      kitaConf = pkgs.writeText "auto.kita" ''
         snowscape -fstype=nfs,rw,sync,soft,intr kita:/snowscape
       '';
     in ''
-      /nfs ${mapConf}
+      /nfs/aka ${akaConf}
+      /nfs/kita ${kitaConf}
     '';
   };
 
