@@ -9,8 +9,9 @@
   };
   paths = {
     scripts = "/home/simonwjackson/.local/scripts";
-    notes = "/snowscape/notes";
+    notes = "/storage/blizzard/notes";
     gaming-profiles = "/snowscape/gaming/profiles";
     games = "/snowscape/gaming/games";
+    code = "/storage/blizzard/code";
   };
 }

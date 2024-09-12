@@ -22,6 +22,7 @@ in {
     performance = enabled;
     gaming = {
       core = enabled;
+      sunshine.enable = true;
       emulation = {
         enable = true;
         gen-7 = true;
@@ -47,6 +48,7 @@ in {
       bluetooth = enabled;
     };
     desktops.plasma = enabled;
+    desktops.hyprland = enabled;
   };
 
   mountainous = {
@@ -55,15 +57,9 @@ in {
     };
   };
 
-  # HACK: mergerfs mount appears to be broken
-  # fileSystems."/glacier/snowscape" = {
-  #   device = "/glacier/blizzard";
-  #   options = ["bind"];
-  # };
-
   environment.systemPackages = [pkgs.mergerfs];
   fileSystems."/snowscape" = {
-    device = "/glacier/blizzard:/glacier/sleet";
+    device = "/storage/blizzard:/storage/sleet";
     fsType = "fuse.mergerfs";
     options = [
       "minfreespace=4G"
@@ -76,11 +72,11 @@ in {
       "nonempty"
       "defaults"
       "allow_other"
-      "nofail"
+      # "nofail"
     ];
   };
 
-  fileSystems."/glacier/sleet" = {
+  fileSystems."/storage/sleet" = {
     device = "/dev/disk/by-label/sleet";
     fsType = "ext4";
   };
@@ -115,7 +111,7 @@ in {
     options = ["subvol=nix" "compress=zstd" "discard=async" "noatime"];
   };
 
-  fileSystems."/glacier/blizzard" = {
+  fileSystems."/storage/blizzard" = {
     device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
     fsType = "btrfs";
     options = ["subvol=blizzard" "discard=async" "compress=zstd"];
