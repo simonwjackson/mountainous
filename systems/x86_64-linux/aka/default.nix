@@ -13,6 +13,50 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  services.autofs = {
+    enable = true;
+    autoMaster = let
+      mapConf = pkgs.writeText "auto.nfs" ''
+        snowscape -fstype=nfs,rw,sync,soft,intr aka:/snowscape
+      '';
+    in ''
+      /nfs ${mapConf}
+    '';
+  };
+
+  environment.systemPackages = with pkgs; [
+    nfs-utils
+    mergerfs
+  ];
+
+  services.rpcbind.enable = true;
+
+  services.nfs.server = {
+    enable = true;
+    exports = ''
+      /snowscape 192.168.1.0/24(rw,sync,no_subtree_check) \
+                 100.64.0.0/10(rw,sync,no_subtree_check) \
+                 172.16.0.0/12(rw,sync,no_subtree_check)
+    '';
+  };
+
+  fileSystems."/glacier" = {
+    device = "/snowscape:/nfs/kita/snowscape";
+    fsType = "fuse.mergerfs";
+    options = [
+      "defaults"
+      "allow_other"
+      "use_ino"
+      "cache.files=off"
+      "dropcacheonclose=true"
+      "category.create=mfs"
+      "minfreespace=4G"
+      "fsname=glacier"
+      "async_read=false"
+      "nofail"
+    ];
+  };
+
   mountainous = {
     bluetooth-tether = {
       enable = true;

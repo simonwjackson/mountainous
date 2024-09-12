@@ -12,6 +12,29 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  services.autofs = {
+    enable = true;
+    autoMaster = let
+      mapConf = pkgs.writeText "auto.nfs" ''
+        snowscape -fstype=nfs,rw,sync,soft,intr kita:/snowscape
+      '';
+    in ''
+      /nfs ${mapConf}
+    '';
+  };
+
+  environment.systemPackages = [pkgs.nfs-utils pkgs.mergerfs];
+  services.rpcbind.enable = true;
+
+  services.nfs.server = {
+    enable = true;
+    exports = ''
+      /snowscape 192.168.1.0/24(rw,sync,no_subtree_check) \
+                 100.64.0.0/10(rw,sync,no_subtree_check) \
+                 172.16.0.0/12(rw,sync,no_subtree_check)
+    '';
+  };
+
   services.syncthing-auto-pause = {
     enable = true;
     managedShares = ["games"];
@@ -56,7 +79,6 @@ in {
     };
   };
 
-  environment.systemPackages = [pkgs.mergerfs];
   fileSystems."/snowscape" = {
     device = "/storage/blizzard:/storage/sleet";
     fsType = "fuse.mergerfs";
