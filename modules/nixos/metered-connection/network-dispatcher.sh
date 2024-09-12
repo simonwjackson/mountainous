@@ -41,7 +41,7 @@ execute_commands=()
 networks=()
 
 # Add commands from EXECUTE environment variable
-if [ -n "$EXECUTE" ]; then
+if [ -n "${EXECUTE:-}" ]; then
   IFS=',' read -ra ENV_COMMANDS <<<"$EXECUTE"
   for cmd in "${ENV_COMMANDS[@]}"; do
     execute_commands+=("$cmd")
@@ -92,17 +92,21 @@ while IFS= read -r connection; do
     break
   fi
 
+  if nmcli connection show "$connection" | grep -q 'metered:.*yes'; then
+    echo "Metered connection found: $connection"
+    is_metered=true
+  fi
+
   # Check if the connection is marked as metered by NetworkManager
   metered_status=$(
     nmcli connection show "$connection" |
       grep metered |
-      grep yes
+      grep -q yes && echo "yes" || echo "no"
   )
 
-  if [ -n "$metered_status" ]; then
+  if [ "$metered_status" = "yes" ]; then
     echo "Metered connection found: $connection"
     is_metered=true
-    break
   fi
 done <<<"$connections"
 

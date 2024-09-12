@@ -10,7 +10,6 @@
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./syncthing-auto-pause
   ];
 
   services.syncthing-auto-pause = {

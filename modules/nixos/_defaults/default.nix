@@ -25,6 +25,9 @@ in {
   };
 
   programs.zsh.enable = true;
+  services.metered-connection.networks = lib.mkAfter [
+    "usu"
+  ];
 
   backpacker = {
     adb = mkDefault enabled;
