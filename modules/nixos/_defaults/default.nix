@@ -29,6 +29,25 @@ in {
     "usu"
   ];
 
+  services.nfsAutofsModule = {
+    enable = true;
+    hosts = {
+      aka = {
+        hostname = "aka";
+        shareName = "snowscape";
+      };
+      kita = {
+        hostname = "kita";
+        shareName = "snowscape";
+      };
+    };
+    ipRanges = [
+      "192.168.1.0/24"
+      "100.64.0.0/10"
+      "172.16.0.0/12"
+    ]; # Optional, these are the default values
+  };
+
   backpacker = {
     adb = mkDefault enabled;
     agenix = {

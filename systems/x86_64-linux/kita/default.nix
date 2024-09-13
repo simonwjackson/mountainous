@@ -12,62 +12,6 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  services.autofs = {
-    enable = true;
-    autoMaster = let
-      timeout = 10;
-    in ''
-      /net    /etc/auto.net    --timeout=${toString timeout} --ghost
-    '';
-  };
-
-  environment.etc."auto.net" = {
-    text = ''
-      *    -fstype=autofs    :/etc/auto.&
-    '';
-    mode = "0644";
-  };
-
-  environment.etc."auto.aka" = {
-    text = ''
-      nfs    -fstype=autofs    :/etc/auto.aka.nfs
-    '';
-    mode = "0644";
-  };
-
-  environment.etc."auto.aka.nfs" = {
-    text = ''
-      snowscape    -fstype=nfs,rw,soft,intr    aka:/snowscape
-    '';
-    mode = "0644";
-  };
-
-  environment.etc."auto.kita" = {
-    text = ''
-      nfs    -fstype=autofs    :/etc/auto.kita.nfs
-    '';
-    mode = "0644";
-  };
-
-  environment.etc."auto.kita.nfs" = {
-    text = ''
-      snowscape    -fstype=nfs,rw,soft,intr    kita:/snowscape
-    '';
-    mode = "0644";
-  };
-
-  environment.systemPackages = [pkgs.nfs-utils pkgs.mergerfs];
-  services.rpcbind.enable = true;
-
-  services.nfs.server = {
-    enable = true;
-    exports = ''
-      /snowscape 192.168.1.0/24(rw,sync,no_subtree_check,fsid=0) \
-                 100.64.0.0/10(rw,sync,no_subtree_check,fsid=0) \
-                 172.16.0.0/12(rw,sync,no_subtree_check,fsid=0)
-    '';
-  };
-
   services.syncthing-auto-pause = {
     enable = true;
     managedShares = ["games"];
@@ -112,6 +56,8 @@ in {
     };
   };
 
+  environment.systemPackages = [pkgs.mergerfs];
+
   fileSystems."/snowscape" = {
     device = "/storage/blizzard:/storage/sleet";
     fsType = "fuse.mergerfs";
@@ -126,12 +72,12 @@ in {
       "nonempty"
       "defaults"
       "allow_other"
-      # "nofail"
     ];
+    noCheck = true;
   };
 
   fileSystems."/glacier" = {
-    device = "/snowscape:/nfs/aka/nfs/snowscape";
+    device = "/snowscape:/net/aka/nfs/snowscape";
     fsType = "fuse.mergerfs";
     options = [
       "defaults"
@@ -143,8 +89,8 @@ in {
       "minfreespace=4G"
       "fsname=glacier"
       "async_read=false"
-      "nofail"
     ];
+    noCheck = true;
   };
 
   fileSystems."/storage/sleet" = {
