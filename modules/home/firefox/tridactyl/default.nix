@@ -74,7 +74,6 @@
 
       google = {
         set = {
-          searchengine = "google";
           "searchurls.google" = "https://encrypted.google.com/search?q=%s";
         };
 
@@ -142,8 +141,11 @@
         };
       };
       set = {
-        modeindicator = false;
+        searchengine = "kagi";
+        modeindicator = "false";
         # editorcmd = '' ${pkgs.mountainous.popup-term}/bin/popup-term "nvim -f %f -c 'set noruler | set laststatus=0 | set noshowcmd | set cmdheight=1 | nnoremap <ENTER> :x<ENTER> | nnoremap <ESC><ESC> :q| nnoremap <C-s> :xa| inoremap <C-s> <C-o>:x<CR>'"'';
+        "searchurls.default" = "https://kagi.com/search?q=";
+        "searchurls.kagi" = "https://kagi.com/search?q=";
         "searchurls.amazon" = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=";
         "searchurls.github" = "https://github.com/search?utf8=✓&q=";
         "searchurls.wikipedia" = "https://en.wikipedia.org/wiki/Special:Search/";
