@@ -15,16 +15,45 @@ in {
   services.autofs = {
     enable = true;
     autoMaster = let
-      akaConf = pkgs.writeText "auto.aka" ''
-        snowscape -fstype=nfs,rw,sync,soft,intr,noresvport,timeo=30,retrans=10,retry=0 aka:/snowscape
-      '';
-      kitaConf = pkgs.writeText "auto.kita" ''
-        snowscape -fstype=nfs,rw,sync,soft,intr,noresvport,timeo=30,retrans=10,retry=0 kita:/snowscape
-      '';
+      timeout = 10;
     in ''
-      /nfs/aka ${akaConf}
-      /nfs/kita ${kitaConf}
+      /net    /etc/auto.net    --timeout=${toString timeout} --ghost
     '';
+  };
+
+  environment.etc."auto.net" = {
+    text = ''
+      *    -fstype=autofs    :/etc/auto.&
+    '';
+    mode = "0644";
+  };
+
+  environment.etc."auto.aka" = {
+    text = ''
+      nfs    -fstype=autofs    :/etc/auto.aka.nfs
+    '';
+    mode = "0644";
+  };
+
+  environment.etc."auto.aka.nfs" = {
+    text = ''
+      snowscape    -fstype=nfs,rw,soft,intr    aka:/snowscape
+    '';
+    mode = "0644";
+  };
+
+  environment.etc."auto.kita" = {
+    text = ''
+      nfs    -fstype=autofs    :/etc/auto.kita.nfs
+    '';
+    mode = "0644";
+  };
+
+  environment.etc."auto.kita.nfs" = {
+    text = ''
+      snowscape    -fstype=nfs,rw,soft,intr    kita:/snowscape
+    '';
+    mode = "0644";
   };
 
   environment.systemPackages = [pkgs.nfs-utils pkgs.mergerfs];
@@ -98,6 +127,23 @@ in {
       "defaults"
       "allow_other"
       # "nofail"
+    ];
+  };
+
+  fileSystems."/glacier" = {
+    device = "/snowscape:/nfs/aka/nfs/snowscape";
+    fsType = "fuse.mergerfs";
+    options = [
+      "defaults"
+      "allow_other"
+      "use_ino"
+      "cache.files=off"
+      "dropcacheonclose=true"
+      "category.create=mfs"
+      "minfreespace=4G"
+      "fsname=glacier"
+      "async_read=false"
+      "nofail"
     ];
   };
 
