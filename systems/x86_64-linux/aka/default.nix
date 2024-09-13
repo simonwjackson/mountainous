@@ -17,16 +17,17 @@ in {
     enable = true;
     autoMaster = let
       akaConf = pkgs.writeText "auto.aka" ''
-        snowscape -fstype=nfs,rw,sync,soft,intr,timeo=15,retry=5 aka:/snowscape
+        snowscape -fstype=nfs,rw,sync,soft,intr,noresvport,timeo=30,retrans=10,retry=0 aka:/snowscape
       '';
       kitaConf = pkgs.writeText "auto.kita" ''
-        snowscape -fstype=nfs,rw,sync,soft,intr,timeo=15,retry=5 kita:/snowscape
+        snowscape -fstype=nfs,rw,sync,soft,intr,noresvport,timeo=30,retrans=10,retry=0 kita:/snowscape
       '';
     in ''
       /nfs/aka ${akaConf}
       /nfs/kita ${kitaConf}
     '';
   };
+
   environment.systemPackages = with pkgs; [
     nfs-utils
     mergerfs
