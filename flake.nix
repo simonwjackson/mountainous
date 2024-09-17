@@ -7,6 +7,11 @@
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
 
+    nix-on-droid = {
+      url = "github:nix-community/nix-on-droid/release-24.05";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-gaming = {
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -84,53 +89,24 @@
     };
   };
 
-  outputs = inputs:
-    inputs.snowfall-lib.mkFlake {
+  outputs = inputs: let
+    snowfallOutputs = inputs.snowfall-lib.mkFlake {
       inherit inputs;
       src = ./.;
 
-      # Add modules to all NixOS systems.
-      systems.modules.nixos = with inputs; [
-        backpacker.nixosModules."_profiles/laptop"
-        backpacker.nixosModules."_profiles/workspace"
-        backpacker.nixosModules."desktops/hyprland"
-        backpacker.nixosModules."desktops/plasma"
-        backpacker.nixosModules."gaming/core"
-        backpacker.nixosModules."gaming/emulation"
-        backpacker.nixosModules."gaming/steam"
-        backpacker.nixosModules."gaming/sunshine"
-        backpacker.nixosModules."hardware/battery"
-        backpacker.nixosModules."hardware/bluetooth"
-        backpacker.nixosModules."hardware/cpu"
-        backpacker.nixosModules."hardware/hybrid-sleep"
-        backpacker.nixosModules."hardware/touchpad"
-        backpacker.nixosModules."networking/core"
-        backpacker.nixosModules."networking/secure-shell"
-        backpacker.nixosModules."networking/tailscaled"
-        backpacker.nixosModules."networking/zerotierone"
-        backpacker.nixosModules.adb
-        backpacker.nixosModules.locale
-        backpacker.nixosModules.agenix
-        backpacker.nixosModules.boot
-        backpacker.nixosModules.nix
-        backpacker.nixosModules.performance
-        backpacker.nixosModules.printing
-        backpacker.nixosModules.security
-        backpacker.nixosModules.sound
-        backpacker.nixosModules.syncthing
-        backpacker.nixosModules.user
-        backpacker.nixosModules.vpn-proxy
-        backpacker.nixosModules.waydroid
-
-        agenix.nixosModules.default
-        disko.nixosModules.default
-        home-manager.nixosModules.default
-        kmonad.nixosModules.default
-        icho.nixosModules.default
-        nix-flatpak.nixosModules.nix-flatpak
-        tmesh.nixosModules.default
-        nur.nixosModules.nur
-      ];
+      systems.modules.nixos =
+        # Include all backpacker NixOS modules
+        (builtins.attrValues inputs.backpacker.nixosModules)
+        ++ [
+          inputs.agenix.nixosModules.default
+          inputs.disko.nixosModules.default
+          inputs.home-manager.nixosModules.default
+          inputs.kmonad.nixosModules.default
+          inputs.icho.nixosModules.default
+          inputs.nix-flatpak.nixosModules.nix-flatpak
+          inputs.tmesh.nixosModules.default
+          inputs.nur.nixosModules.nur
+        ];
 
       systems.modules.darwin = with inputs; [
         home-manager.darwinModules.default
@@ -174,4 +150,13 @@
         };
       };
     };
+
+    nixOnDroidOutputs = {
+      nixOnDroidConfigurations.default = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+        pkgs = import inputs.nixpkgs {system = "aarch64-linux";};
+        modules = [./nix-on-droid.nix];
+      };
+    };
+  in
+    snowfallOutputs // nixOnDroidOutputs;
 }

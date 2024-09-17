@@ -11,6 +11,7 @@
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
+    ./sunshine.nix
   ];
 
   environment.systemPackages = with pkgs; [
@@ -36,9 +37,7 @@ in {
     hardware.cpu.type = "amd";
     boot = disabled;
     gaming = {
-      sunshine = {
-        enable = true;
-      };
+      gamepad-proxy = enabled;
       core = {
         enable = true;
         isHost = false;

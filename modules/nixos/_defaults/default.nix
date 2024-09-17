@@ -48,6 +48,20 @@ in {
     ]; # Optional, these are the default values
   };
 
+  services.sunshine = {
+    openFirewall = lib.mkDefault true;
+    capSysAdmin = lib.mkDefault true;
+    settings = {
+      log_path = lib.mkDefault "/tmp/sunshine.log";
+      key_rightalt_to_key_win = lib.mkDefault "enabled";
+    };
+    autoStart = lib.mkDefault false;
+  };
+  services.udev.extraRules = ''
+    KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
+    KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
+  '';
+
   backpacker = {
     adb = mkDefault enabled;
     agenix = {
