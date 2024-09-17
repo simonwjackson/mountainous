@@ -16,6 +16,7 @@
       url = "github:fufexan/nix-gaming";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     auto-cpufreq = {
       url = "github:AdnanHodzic/auto-cpufreq";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -151,12 +152,62 @@
       };
     };
 
-    nixOnDroidOutputs = {
-      nixOnDroidConfigurations.default = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-        pkgs = import inputs.nixpkgs {system = "aarch64-linux";};
-        modules = [./nix-on-droid.nix];
+    nixOnDroidOutputs.nixOnDroidConfigurations = let
+      systemsDir = ./systems/aarch64-droid;
+      systemFiles = builtins.attrNames (builtins.readDir systemsDir);
+      systemNames = map (file: builtins.head (builtins.split "\\." file)) systemFiles;
+
+      homeManagerDroid = {
+        home-manager = {
+          backupFileExtension = "hm-bak";
+          useGlobalPkgs = true;
+          config = {
+            config,
+            lib,
+            pkgs,
+            ...
+          }: {
+            imports = (
+              let
+                # Function to find default.nix files, stopping at each found default.nix
+                findDefaultNix = dir: let
+                  contents = builtins.readDir dir;
+                  hasDefaultNix = builtins.hasAttr "default.nix" contents && contents."default.nix" == "regular";
+                in
+                  if hasDefaultNix
+                  then [(dir + "/default.nix")]
+                  else let
+                    subdirs = lib.filterAttrs (n: v: v == "directory") contents;
+                    subdirPaths = map (n: dir + "/${n}") (builtins.attrNames subdirs);
+                  in
+                    lib.concatMap findDefaultNix subdirPaths;
+              in
+                findDefaultNix ./modules/home
+            );
+          };
+        };
       };
-    };
+
+      mkConfig = name:
+        inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+          pkgs = import inputs.nixpkgs {system = "aarch64-linux";};
+          modules = [
+            (systemsDir + "/${name}")
+            homeManagerDroid
+            {
+              home-manager.config = import (./homes/aarch64-droid + "/nix-on-droid@${name}");
+            }
+          ];
+        };
+    in
+      builtins.listToAttrs (
+        map
+        (name: {
+          inherit name;
+          value = mkConfig name;
+        })
+        systemNames
+      );
   in
     snowfallOutputs // nixOnDroidOutputs;
 }
