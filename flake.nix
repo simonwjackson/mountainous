@@ -182,7 +182,7 @@
                   in
                     lib.concatMap findDefaultNix subdirPaths;
               in
-                findDefaultNix ./modules/home
+                findDefaultNix ./modules/home-droid
             );
           };
         };
