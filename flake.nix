@@ -159,6 +159,7 @@
 
       homeManagerDroid = {
         home-manager = {
+          extraSpecialArgs = {inherit inputs;};
           backupFileExtension = "hm-bak";
           useGlobalPkgs = true;
           config = {
