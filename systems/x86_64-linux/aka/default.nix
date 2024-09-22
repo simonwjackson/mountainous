@@ -18,6 +18,14 @@ in {
     mergerfs
   ];
 
+  ####
+  # Sound
+  ####
+  boot.blacklistedKernelModules = ["snd_hda_intel"];
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
+  '';
+
   mountainous = {
     bluetooth-tether = {
       enable = true;
