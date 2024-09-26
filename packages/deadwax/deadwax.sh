@@ -137,6 +137,32 @@ process_entries() {
 # Command Functions
 #######################
 
+sync_command() {
+  local input_file="$1"
+  shift
+
+  # Check if musicull is available
+  if ! command -v musicull &>/dev/null; then
+    echo "Error: musicull command not found. Please ensure it's installed and in your PATH." >&2
+    exit 1
+  fi
+
+  ensure_file_exists "$input_file"
+
+  dump_command "$input_file" "jsonl" | jq --raw-output --compact-output --monochrome-output '
+    .ids.youtube as $yt |
+    del(.ids) |
+    . + {id: $yt} |
+    with_entries(
+      if .key == "album" or .key == "artist" then
+        .value |= @sh
+      else
+        .
+      end
+    )
+  ' | musicull "$@"
+}
+
 ids_command() {
   local input_file="$1"
   local source="$2"
@@ -304,6 +330,9 @@ ids)
   ;;
 dump)
   dump_command "$DB" "$format"
+  ;;
+sync)
+  sync_command "$DB" "$@"
   ;;
 *)
   echo "Error: Unknown subcommand '$subcommand'" >&2

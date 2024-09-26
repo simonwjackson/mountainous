@@ -30,6 +30,7 @@ resholve.writeScriptBin "deadwax" {
   fake = {
     external = [
       "getopt"
+      "musicull"
     ];
   };
 } (builtins.readFile ./deadwax.sh)
