@@ -5,21 +5,23 @@
 #########
 
 print_usage() {
-  echo "Usage: $0 [--database|-d <database_file>] <subcommand>" >&2
-  echo "Global options:" >&2
-  echo "  -d, --database    Specify the input YAML file (default: $XDG_DATA_HOME/deadwax/db.yaml)" >&2
-  echo "" >&2
-  echo "Subcommands:" >&2
-  echo "  refresh    Refresh metadata for entries in the database" >&2
-  echo "  add        Add a new entry to the database" >&2
-  echo "             Usage: add <key> <value>" >&2
-  echo "             Example: add youtube OLAK5uy_example1234" >&2
-  echo "  ids        List all unique IDs for a given source" >&2
-  echo "             Usage: ids <source>" >&2
-  echo "             Example: ids youtube" >&2
-  echo "  dump       Dump the database content" >&2
-  echo "             Usage: dump [--format <format>]" >&2
-  echo "             Supported formats: json (default), jsonl" >&2
+  cat <<EOF
+Usage: $0 [--database|-d <database_file>] <subcommand>
+Global options:
+  -d, --database    Specify the input YAML file (default: $XDG_DATA_HOME/deadwax/db.yaml)
+
+Subcommands:
+  refresh    Refresh metadata for entries in the database
+  add        Add a new entry to the database
+             Usage: add <key> <value>
+             Example: add youtube OLAK5uy_example1234
+  ids        List all unique IDs for a given source
+             Usage: ids <source>
+             Example: ids youtube
+  dump       Dump the database content
+             Usage: dump [--format <format>]
+             Supported formats: json (default), jsonl
+EOF
 }
 
 format_date() {
@@ -36,12 +38,12 @@ format_date() {
 
 read_yaml_as_json() {
   local input_file="$1"
-  yq --output-format json '.[]' "$input_file" | jq -c 'to_entries | sort_by(.key) | from_entries'
+  yq eval-all --output-format=json "$input_file" | jq -c
 }
 
 write_json_as_yaml() {
   local output_file="$1"
-  jq -s '.' | yq --input-format json --output-format yaml >"$output_file"
+  yq eval-all --input-format=json --output-format=yaml >"$output_file"
 }
 
 ensure_file_exists() {
@@ -58,7 +60,7 @@ ensure_file_exists() {
 
   # Create file if it doesn't exist
   if [ ! -f "$file_path" ]; then
-    echo "[]" >"$file_path"
+    echo "" >"$file_path"
     echo "Created empty YAML file: $file_path" >&2
   fi
 }
@@ -175,9 +177,10 @@ ids_command() {
     exit 1
   fi
 
-  yq --output-format json '.[]' "$input_file" |
+  yq eval-all --output-format=json "$input_file" |
     jq -r --arg source "$source" '.ids[$source] // empty' |
-    sort | uniq
+    sort |
+    uniq
 }
 
 dump_command() {
@@ -188,10 +191,10 @@ dump_command() {
 
   case "$format" in
   json)
-    yq --output-format json '.' "$input_file"
+    yq eval-all --output-format=json "$input_file"
     ;;
   jsonl)
-    yq --output-format json '.' "$input_file" | jq -c '.[]'
+    yq eval-all --output-format=json "$input_file" | jq -c
     ;;
   *)
     echo "Error: Unsupported format '$format'. Supported formats are 'json' and 'jsonl'." >&2
