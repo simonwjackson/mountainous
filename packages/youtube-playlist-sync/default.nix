@@ -3,7 +3,7 @@
   resholve,
   pkgs,
 }:
-resholve.writeScriptBin "musicull" {
+resholve.writeScriptBin "youtube-playlist-sync" {
   inputs = with pkgs; [
     bash
     beets
@@ -46,4 +46,4 @@ resholve.writeScriptBin "musicull" {
     external = [
     ];
   };
-} (builtins.readFile ./musicull.sh)
+} (builtins.readFile ./youtube-playlist-sync.sh)
