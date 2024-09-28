@@ -346,11 +346,6 @@ process_audio() {
   year=${date%%-*} # Extract year from the date
   thumbnail_url=$(echo "$metadata" | jq -r '.thumbnail_url')
 
-  if file_exists "$metadata"; then
-    log info "Skipping download for existing file: $title by $artist"
-    return 0
-  fi
-
   sanitized_album=$(sanitize_string "$album")
   sanitized_artist=$(sanitize_string "$artist")
   sanitized_title=$(sanitize_string "$title")
@@ -358,6 +353,12 @@ process_audio() {
   output_dir="$DIRECTORY/${sanitized_album:+${sanitized_album} [${year}] - }${sanitized_artist}"
   output_file="${sanitized_title}.mp3"
   full_output_path="${output_dir}/${output_file}"
+
+  if file_exists "$metadata"; then
+    PROCESSED_FILES+=("$full_output_path")
+    log info "Skipping download for existing file: $title by $artist"
+    return 0
+  fi
 
   if [[ $DRY_RUN == true ]]; then
     log debug "[DRY RUN] Would create directory: $output_dir"
