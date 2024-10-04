@@ -29,6 +29,9 @@
     games = {
       path = "/snowscape/gaming/games";
       type = "sendreceive";
+      blacklist = [
+        "steam/**"
+      ];
     };
     code = {
       path = "/storage/blizzard/code";
@@ -37,7 +40,7 @@
     };
     videos = {
       path = "/snowscape/videos";
-      whitelist = true;
+      whitelist = [];
     };
   };
 }
