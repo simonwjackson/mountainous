@@ -35,5 +35,9 @@
       type = "sendreceive";
       ignorePerms = false;
     };
+    videos = {
+      path = "/snowscape/videos";
+      whitelist = true;
+    };
   };
 }

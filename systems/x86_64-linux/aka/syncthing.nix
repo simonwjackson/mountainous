@@ -31,5 +31,9 @@
       path = "/snowscape/gaming/games";
       type = "sendreceive";
     };
+    videos = {
+      path = "/snowscape/videos";
+      whitelist = false;
+    };
   };
 }
