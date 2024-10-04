@@ -87,7 +87,12 @@ in {
     # BUG: ccache broken
     performance = disabled;
   };
-
+  # programs.ssh.askPassword = lib.mkForce "false";
+  #
+  # services.xserver = {
+  #   desktopManager.gnome.enable = true;
+  # };
+  #
   # mountainous = {
   #   hardware.devices.samsung-galaxy-book3-360 = enabled;
   # };

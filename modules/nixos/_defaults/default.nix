@@ -94,7 +94,7 @@ in {
     security = mkDefault enabled;
     sound = mkDefault enabled;
     syncthing = rec {
-      inherit otherDevices;
+      # inherit otherDevices;
 
       cert = mkIf config.backpacker.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-cert".path);
       enable = mkDefault true;
