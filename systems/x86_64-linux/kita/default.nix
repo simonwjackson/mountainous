@@ -23,7 +23,7 @@ in {
   mountainous = {
     desktops.hyprland = enabled;
     desktops.hyprlandControl = enabled;
-    desktops.plasma = enabled;
+    # desktops.plasma = enabled;
     gaming = {
       core = enabled;
       emulation = {
