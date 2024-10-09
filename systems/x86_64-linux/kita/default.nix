@@ -9,6 +9,7 @@
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
+    ./sunshine.nix
   ];
 
   services.syncthing-auto-pause = {
@@ -21,15 +22,15 @@ in {
 
   mountainous = {
     desktops.hyprland = enabled;
+    desktops.hyprlandControl = enabled;
     desktops.plasma = enabled;
     gaming = {
       core = enabled;
-      sunshine.enable = true;
       emulation = {
         enable = true;
+        gamingDir = "/snowscape/gaming";
         gen-7 = true;
         gen-8 = true;
-        gamingDir = "/snowscape/gaming";
         saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = enabled;
