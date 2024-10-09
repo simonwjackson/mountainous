@@ -19,12 +19,15 @@ in {
       cpu.type = "intel";
       bluetooth = enabled;
     };
-    desktop.plasma = enabled;
+    desktops.plasma = enabled;
+    # desktops.hyprland = enabled;
     gaming = {
       core = enabled;
       emulation = {
         enable = true;
         gen-7 = true;
+        gamingDir = "/home/simonwjackson/gaming";
+        saves = "/home/simonwjackson/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = enabled;
     };
@@ -45,7 +48,7 @@ in {
   #  swapDevices = [ { device = "/swap/swapfile"; } ];
 
   boot.initrd.availableKernelModules = ["xhci_pci" "nvme" "usbhid" "usb_storage" "sd_mod"];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_zen;
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/e0301dfa-9f5a-4342-a1ae-8864536430ee";
