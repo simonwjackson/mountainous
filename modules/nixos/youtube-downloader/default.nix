@@ -7,8 +7,10 @@
   cfg = config.services.youtube-dl-subscriptions;
 
   subscriptionsFile =
-    if builtins.isList cfg.subscriptions
-    then pkgs.writeText "youtube-dl-subscriptions.txt" (lib.concatStringsSep "\n" cfg.subscriptions)
+    if cfg.subscriptions == null
+    then "${cfg.dataDir}/subscriptions.txt"
+    else if builtins.isList cfg.subscriptions
+    then pkgs.writeText "subscriptions.txt" (lib.concatStringsSep "\n" cfg.subscriptions)
     else cfg.subscriptions;
 
   archiveFile =
@@ -16,10 +18,10 @@
     then "${cfg.dataDir}/archive.txt"
     else cfg.archive;
 
-  fileTemplate =
-    if cfg.fileTemplate == null
-    then "%(uploader)s/%(title)s.%(ext)s"
-    else cfg.fileTemplate;
+  downloadDir =
+    if cfg.tmpDir == null
+    then cfg.dataDir
+    else cfg.tmpDir;
 in {
   options.services.youtube-dl-subscriptions = {
     enable = lib.mkEnableOption "YouTube-DL subscriptions service";
@@ -38,8 +40,16 @@ in {
 
     dataDir = lib.mkOption {
       type = lib.types.path;
-      default = "/var/lib/youtube-dl";
+
+      default = "/var/lib/youtube-downloader";
       description = "Directory to store YouTube-DL data.";
+    };
+
+    tmpDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Temporary directory for downloads. If null, downloads directly to dataDir.";
+      example = "/tmp/youtube-dl-downloads";
     };
 
     interval = lib.mkOption {
@@ -49,8 +59,9 @@ in {
     };
 
     subscriptions = lib.mkOption {
-      type = lib.types.either (lib.types.listOf lib.types.str) lib.types.path;
-      description = "List of subscriptions or path to subscriptions file.";
+      type = lib.types.nullOr (lib.types.either (lib.types.listOf lib.types.str) lib.types.path);
+      default = null;
+      description = "List of subscriptions, path to subscriptions file, or null to use default file.";
       example = [
         "https://www.youtube.com/user/example1"
         "https://www.youtube.com/user/example2"
@@ -72,8 +83,8 @@ in {
     };
 
     fileTemplate = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
+      type = lib.types.str;
+      default = "%(uploader)s/%(upload_date>%Y-%m-%d)s - %(title).220B.%(ext)s";
       description = "Output filename template. If null, defaults to '%(uploader)s/%(title)s.%(ext)s'";
       example = "%(upload_date)s-%(title)s.%(ext)s";
     };
@@ -86,16 +97,28 @@ in {
         Type = "oneshot";
         ExecStart = let
           inherit (pkgs) writeShellScript yt-dlp;
-        in "${writeShellScript "youtube-dl-script" ''
-          ${yt-dlp}/bin/yt-dlp \
-            --ignore-errors \
-            --no-overwrites \
-            --playlist-end 1 \
-            --download-archive ${archiveFile} \
-            -o '${cfg.dataDir}/${fileTemplate}' \
-            --batch-file ${subscriptionsFile} \
-            ${lib.escapeShellArgs cfg.extraArgs}
-        ''}";
+        in "${writeShellScript "youtube-downloader"
+          # bash
+          ''
+            ${yt-dlp}/bin/yt-dlp \
+              --ignore-errors \
+              --no-overwrites \
+              --verbose \
+              ${toString cfg.extraArgs} \
+              --download-archive ${archiveFile} \
+              --output '${downloadDir}/${cfg.fileTemplate}' \
+              --batch-file ${subscriptionsFile}
+
+            ${lib.optionalString (cfg.tmpDir != null)
+              # bash
+              ''
+                # Clean up any empty directories in the temp folder
+                find ${cfg.tmpDir} -type d -empty -delete
+              ''}
+          ''}";
+        # --replace-in-metadata "uploader" "[^\w\s\-]" "" \
+        # --replace-in-metadata "title" "[^\w\s\-]" "" \
+        # --exec "${pkgs.coreutils}/bin/mkdir -p '${cfg.dataDir}/$(${pkgs.coreutils}/bin/dirname $(echo '${downloadDir}/${cfg.fileTemplate}' | ${pkgs.gnused}/bin/sed 's|^${downloadDir}/||'))' && ${pkgs.coreutils}/bin/mv -f '${downloadDir}/${cfg.fileTemplate}' '${cfg.dataDir}/$(${pkgs.coreutils}/bin/dirname $(echo '${downloadDir}/${cfg.fileTemplate}' | ${pkgs.gnused}/bin/sed 's|^${downloadDir}/||'))/'" \
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = cfg.dataDir;
@@ -110,21 +133,21 @@ in {
       };
     };
 
-    users.users.${cfg.user} = {
-      isSystemUser = true;
-      group = cfg.group;
-      home = cfg.dataDir;
-      createHome = true;
-    };
-
     users.groups.${cfg.group} = {};
 
     system.activationScripts = {
       youtube-dl-setup = ''
-        mkdir -p ${cfg.dataDir}
-        ${lib.optionalString (cfg.archive == null) "touch ${archiveFile}"}
-        chown -R ${cfg.user}:${cfg.group} ${cfg.dataDir}
-        ${lib.optionalString (cfg.archive != null) "chown ${cfg.user}:${cfg.group} ${cfg.archive}"}
+        ${pkgs.coreutils}/bin/mkdir -p ${cfg.dataDir}
+        ${pkgs.coreutils}/bin/chown -R ${cfg.user}:${cfg.group} ${cfg.dataDir}
+
+        ${lib.optionalString (cfg.tmpDir != null) "${pkgs.coreutils}/bin/mkdir -p ${cfg.tmpDir}"}
+        ${lib.optionalString (cfg.tmpDir != null) "${pkgs.coreutils}/bin/chown -R ${cfg.user}:${cfg.group} ${cfg.tmpDir}"}
+
+        ${lib.optionalString (cfg.archive == null) "${pkgs.coreutils}/bin/touch ${archiveFile}"}
+        ${lib.optionalString (cfg.archive != null) "${pkgs.coreutils}/bin/chown ${cfg.user}:${cfg.group} ${cfg.archive}"}
+
+        ${lib.optionalString (cfg.subscriptions == null) "${pkgs.coreutils}/bin/touch ${subscriptionsFile}"}
+
       '';
     };
   };

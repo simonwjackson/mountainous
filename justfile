@@ -27,24 +27,21 @@ switch HOST='$(hostname)' BUILD_HOSTS='':
 build HOST='$(hostname)' BUILD_HOSTS='':
     nix run .#switcher build {{ HOST }} {{ BUILD_HOSTS }}
 
-# Check the entire flake configuration is up to snuff.
-check:
-    nix flake check
-
+# switch HOST='$(hostname)' BUILD_HOSTS='':
+#     nix run .#switcher switch {{ HOST }} {{ BUILD_HOSTS }}
 # Perform a dry run of the system configuration for the specified hostname
-dry-run HOST='$(hostname)':
-    #!/usr/bin/env bash
-
-    HOSTNAME="{{ HOST }}"; \
-
-    if [ "$(uname)" == "Darwin" ]; then
-        nix build ".#darwinConfigurations.$HOSTNAME.config.system.build.toplevel"; \
-    else \
-        nixos-rebuild dry-activate --flake .#$HOSTNAME
-    fi
-
-alias dry := dry-run
-
+# dry-run HOST='$(hostname)':
+#     #!/usr/bin/env bash
+#
+#     HOSTNAME="{{ HOST }}"; \
+#
+#     if [ "$(uname)" == "Darwin" ]; then
+#         nix build ".#darwinConfigurations.$HOSTNAME.config.system.build.toplevel"; \
+#     else \
+#         # nixos-rebuild dry-activate --flake .#$HOSTNAME
+#         # nix build ".#nixosConfigurations.$HOSTNAME.config.system.build.toplevel"; \
+#     fi
+# alias dry := dry-run
 # FIX: `just switch` also accepts a host name
 # Debug the system configuration with additional arguments
 # debug *ARGS:

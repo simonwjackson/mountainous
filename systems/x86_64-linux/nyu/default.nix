@@ -7,7 +7,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib.backpacker) enabled disabled;
+  inherit (lib.mountainous) enabled disabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -67,12 +67,6 @@ in {
       # };
       steam = enabled;
     };
-    desktops = {
-      plasma = {
-        enable = true;
-        autoLogin = false;
-      };
-    };
     networking.core.names = [
       {
         name = "wifi";
@@ -82,6 +76,15 @@ in {
 
     # BUG: ccache broken
     performance = disabled;
+  };
+
+  mountainous = {
+    desktops = {
+      plasma = {
+        enable = true;
+        autoLogin = false;
+      };
+    };
   };
 
   networking.firewall.enable = false;

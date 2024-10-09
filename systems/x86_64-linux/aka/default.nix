@@ -7,20 +7,36 @@
   pkgs,
   ...
 }: let
-  inherit (lib.backpacker) enabled disabled;
+  inherit (lib.mountainous) enabled disabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./sunshine.nix
   ];
 
+  services.youtube-dl-subscriptions = {
+    enable = true;
+    interval = "*:0/30";
+    user = "simonwjackson";
+    group = "users";
+    dataDir = "/snowscape/videos/youtube";
+
+    extraArgs = [
+      "--playlist-reverse"
+      "--playlist-end 5"
+      "--write-auto-sub"
+      "--sub-format vtt"
+      "--sponsorblock-remove sponsor,selfpromo,interaction,intro,outro"
+    ];
+  };
+
   environment.systemPackages = with pkgs; [
     mergerfs
   ];
 
-  ####
-  # Sound
-  ####
+  #######################
+  # Disable onboard audio
+  #######################
   boot.blacklistedKernelModules = ["snd_hda_intel"];
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
@@ -36,14 +52,33 @@ in {
         }
       ];
     };
+    hardware.cpu.type = "amd";
+    # BUG: ccache broken
+    performance = disabled;
   };
 
   services.joycond.enable = true;
   virtualisation.waydroid.enable = true;
 
-  backpacker = {
-    hardware.cpu.type = "amd";
+  # programs.ssh.askPassword = lib.mkForce "false";
+  #
+  # services.xserver = {
+  #   desktopManager.gnome.enable = true;
+  # };
+
+  mountainous = {
     boot = disabled;
+    desktops = {
+      hyprlandControl = enabled;
+      hyprland = {
+        enable = true;
+        autoLogin = true;
+      };
+      # plasma = {
+      #   enable = true;
+      #   autoLogin = true;
+      # };
+    };
     gaming = {
       gamepad-proxy = enabled;
       core = {
@@ -62,17 +97,6 @@ in {
         # steamApps = "/snowscape/gaming/games/steam/steamapps";
       };
     };
-    desktops = {
-      hyprlandControl = enabled;
-      hyprland = {
-        enable = true;
-        autoLogin = true;
-      };
-      # plasma = {
-      #   enable = true;
-      #   autoLogin = true;
-      # };
-    };
     networking.core.names = [
       {
         name = "wifi";
@@ -84,19 +108,7 @@ in {
         mac = "10:7c:61:4d:e4:11";
       }
     ];
-    # BUG: ccache broken
-    performance = disabled;
   };
-  # programs.ssh.askPassword = lib.mkForce "false";
-  #
-  # services.xserver = {
-  #   desktopManager.gnome.enable = true;
-  # };
-  #
-  # mountainous = {
-  #   hardware.devices.samsung-galaxy-book3-360 = enabled;
-  # };
-
   hardware.bluetooth.enable = true; # enables support for Bluetooth
   hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
   systemd.user.services.mpris-proxy = {

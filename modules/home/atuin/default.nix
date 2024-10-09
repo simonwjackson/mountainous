@@ -12,13 +12,11 @@ in {
     enable = mkEnableOption "Whether to enable atuin";
 
     key_path = mkOption {
-      # type = lib.types.path;
       type = lib.types.str;
       description = "";
     };
 
     session_path = mkOption {
-      # type = lib.types.path;
       type = lib.types.str;
       description = "";
     };

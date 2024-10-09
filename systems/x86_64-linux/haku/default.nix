@@ -8,7 +8,7 @@
   modulesPath,
   ...
 }: let
-  inherit (lib.backpacker) enabled;
+  inherit (lib.mountainous) enabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")

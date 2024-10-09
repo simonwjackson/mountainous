@@ -40,7 +40,10 @@
     };
     videos = {
       path = "/snowscape/videos";
-      whitelist = [];
+      blacklist = [
+        "**/*.ytdl"
+        "**/*.part"
+      ];
     };
   };
 }

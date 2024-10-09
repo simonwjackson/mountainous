@@ -6,7 +6,7 @@
   ...
 }: let
   inherit (lib) mkForce mkDefault;
-  inherit (lib.backpacker) disabled;
+  inherit (lib.mountainous) disabled;
 
   system_type = config.mobile.system.type;
 in {
@@ -45,11 +45,11 @@ in {
     hardware.enableRedistributableFirmware = mkForce true;
 
     services.xserver.desktopManager.phosh = {
-      user = config.backpacker.user.name;
+      user = config.mountainous.user.name;
     };
 
     services.displayManager.autoLogin = {
-      user = config.backpacker.user.name;
+      user = config.mountainous.user.name;
     };
 
     # Ensures any rndis config from stage-1 is not clobbered by NetworkManager

@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkIf mkEnableOption mkDefault;
-  inherit (lib.backpacker) enabled;
+  inherit (lib.mountainous) enabled;
 
   cfg = config.mountainous.hardware.devices.dell-9710;
 in {
@@ -14,7 +14,7 @@ in {
   };
 
   config = mkIf cfg.enable {
-    backpacker = {
+    mountainous = {
       hardware = {
         bluetooth.enable = true;
         cpu.type = "intel";

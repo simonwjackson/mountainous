@@ -53,7 +53,7 @@
     };
   };
 
-  # FILE="$HOME/.mozilla/firefox/${config.backpacker.user.name}/extension-settings.json"
+  # FILE="$HOME/.mozilla/firefox/${config.mountainous.user.name}/extension-settings.json"
   # BUG: If a precedenceList is empty, the object wont append
   updateScript = pkgs.writeScript "update-firefox-extension-settings" ''
     #!${pkgs.stdenv.shell}

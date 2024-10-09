@@ -30,6 +30,9 @@
     games = {
       path = "/snowscape/gaming/games";
       type = "sendreceive";
+      blacklist = [
+        "steam/**"
+      ];
     };
     videos = {
       path = "/snowscape/videos";

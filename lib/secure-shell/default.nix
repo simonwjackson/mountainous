@@ -1,23 +1,23 @@
 {
   lib,
   inputs,
-}: {
+}: let
+  inherit (lib.snowfall.fs) get-file;
+in rec {
   knownHostsBuilder = {
     domains,
     localhost,
+    systemsDir,
   }: let
-    systems = lib.snowfall.fs.get-file "systems";
-    architectures = builtins.attrNames (builtins.readDir systems);
+    architectures = builtins.attrNames (builtins.readDir systemsDir);
+    getHosts = arch: builtins.attrNames (builtins.readDir "${systemsDir}/${arch}");
 
     readPublicKey = arch: name: let
-      keyPath = systems + "/${arch}/${name}/ssh_host_rsa_key.pub";
+      keyPath = "${systemsDir}/${arch}/${name}/ssh_host_rsa_key.pub";
     in
       if builtins.pathExists keyPath
       then builtins.readFile keyPath
       else null;
-
-    getHosts = arch:
-      builtins.attrNames (builtins.readDir (systems + "/${arch}"));
 
     generateExtraHostNames = name:
       (

@@ -144,7 +144,7 @@ in {
         PasswordManagerEnabled = false;
       };
 
-      # profiles."${config.backpacker.user.name}" = {
+      # profiles."${config.mountainous.user.name}" = {
       profiles."simonwjackson" = {
         isDefault = true;
         settings = {

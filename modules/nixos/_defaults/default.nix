@@ -63,13 +63,16 @@ in {
     KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
   '';
 
-  backpacker = {
+  mountainous = {
     adb = mkDefault enabled;
     agenix = {
       enable = true;
       secretsDir = get-file "secrets";
     };
     boot = mkDefault enabled;
+    desktops = {
+      hyprland = mkDefault disabled;
+    };
     hardware = {
       battery = mkDefault disabled;
       bluetooth = mkDefault disabled;
@@ -93,16 +96,16 @@ in {
       workspace = mkDefault disabled;
     };
     security = mkDefault enabled;
-    sound = mkDefault enabled;
     syncthing = rec {
       # inherit otherDevices;
 
-      cert = mkIf config.backpacker.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-cert".path);
+      cert = mkIf config.mountainous.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-cert".path);
       enable = mkDefault true;
       hostName = host;
-      key = mkIf config.backpacker.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-key".path);
+      key = mkIf config.mountainous.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-key".path);
       systemsDir = get-file "systems";
     };
+    sound = mkDefault enabled;
     user = {
       enable = mkDefault true;
       name = mkDefault "simonwjackson";
@@ -115,8 +118,6 @@ in {
   };
 
   environment.pathsToLink = ["/share/zsh"];
-
-  # services.udisks2.enable = true;
 
   # TODO: Move to (desktop?) profile
   environment.variables.BROWSER = "firefox";

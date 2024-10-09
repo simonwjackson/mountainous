@@ -7,7 +7,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib.backpacker) enabled disabled;
+  inherit (lib.mountainous) enabled disabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -15,12 +15,6 @@ in {
 
   backpacker = {
     boot = enabled;
-    desktops = {
-      hyprland = {
-        enable = true;
-        autoLogin = true;
-      };
-    };
     networking.core.names = [
       {
         name = "wifi";
@@ -40,6 +34,12 @@ in {
 
   mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
+    desktops = {
+      hyprland = {
+        enable = true;
+        autoLogin = true;
+      };
+    };
   };
 
   disko.devices.disk.main = {

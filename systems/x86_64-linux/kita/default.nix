@@ -3,10 +3,9 @@
   lib,
   pkgs,
   modulesPath,
-  inputs,
   ...
 }: let
-  inherit (lib.backpacker) enabled;
+  inherit (lib.mountainous) enabled;
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
@@ -14,11 +13,15 @@ in {
 
   services.syncthing-auto-pause = {
     enable = true;
-    managedShares = ["games"];
+    managedShares = [
+      "games"
+      "videos"
+    ];
   };
 
-  backpacker = {
-    performance = enabled;
+  mountainous = {
+    desktops.hyprland = enabled;
+    desktops.plasma = enabled;
     gaming = {
       core = enabled;
       sunshine.enable = true;
@@ -31,28 +34,21 @@ in {
       };
       steam = enabled;
     };
+    hardware = {
+      bluetooth = enabled;
+      devices.gpd-win-mini = enabled;
+    };
     networking.core.names = [
       {
         name = "wifi";
         mac = "e4:60:17:d1:e6:d8";
       }
     ];
+    performance = enabled;
     profiles.laptop = enabled;
     syncthing = {
       key = config.age.secrets.kita-syncthing-key.path;
       cert = config.age.secrets.kita-syncthing-cert.path;
-    };
-    waydriod = enabled;
-    hardware = {
-      bluetooth = enabled;
-    };
-    desktops.plasma = enabled;
-    desktops.hyprland = enabled;
-  };
-
-  mountainous = {
-    hardware = {
-      devices.gpd-win-mini = enabled;
     };
   };
 
