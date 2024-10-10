@@ -3749,6 +3749,7 @@
         "nixpkgs-mobile-nixos": "nixpkgs-mobile-nixos",
         "nur": "nur",
         "ryujinx": "ryujinx",
+        "secrets": "secrets",
         "simple-nixos-mailserver": "simple-nixos-mailserver_2",
         "snowfall-frost": "snowfall-frost_5",
         "snowfall-lib": "snowfall-lib_11",
@@ -3917,6 +3918,22 @@
       "original": {
         "owner": "andreymatin",
         "repo": "scss-reset",
+        "type": "github"
+      }
+    },
+    "secrets": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1728581249,
+        "narHash": "sha256-ftBn4BlLRlHRgvDK6yODX4DAVuLdJQME6VK+EEmkT8A=",
+        "owner": "simonwjackson",
+        "repo": "secrets",
+        "rev": "b0af13b301b1c937ff7f6157bc5346f3bad59e34",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "secrets",
         "type": "github"
       }
     },

@@ -13,7 +13,7 @@
   inherit (lib.modules) mkDefault;
   inherit (lib.strings) removeSuffix;
 
-  secretsDir = lib.snowfall.fs.get-file "secrets";
+  secretsDir = "${inputs.secrets}/agenix/";
   secretsFile = "${secretsDir}/secrets.nix";
 
   cfg = config.mountainous.agenix;

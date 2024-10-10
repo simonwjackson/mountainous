@@ -13,7 +13,7 @@ in rec {
     getHosts = arch: builtins.attrNames (builtins.readDir "${systemsDir}/${arch}");
 
     readPublicKey = arch: name: let
-      keyPath = "${systemsDir}/${arch}/${name}/ssh_host_rsa_key.pub";
+      keyPath = "${inputs.secrets}/keys/hosts/${arch}_${name}_ssh_host_rsa_key.pub";
     in
       if builtins.pathExists keyPath
       then builtins.readFile keyPath

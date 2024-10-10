@@ -69,7 +69,7 @@ in {
     adb = mkDefault enabled;
     agenix = {
       enable = true;
-      secretsDir = get-file "secrets";
+      secretsDir = "${inputs.secrets}/agenix";
     };
     boot = mkDefault enabled;
     desktops = {
@@ -112,9 +112,13 @@ in {
       enable = mkDefault true;
       name = mkDefault "simonwjackson";
       hashedPasswordFile = mkDefault config.age.secrets."user-simonwjackson".path;
-      authorizedKeys = [
-        (builtins.readFile (builtins.toPath ../../../rsa.pub))
-      ];
+      authorizedKeys = let
+        keysDir = "${inputs.secrets}/keys/users";
+        isPublicKey = name: type: type == "regular" && lib.hasSuffix ".pub" name;
+        pubKeyFiles = lib.filterAttrs isPublicKey (builtins.readDir keysDir);
+        keys = lib.mapAttrsToList (name: _: builtins.readFile (keysDir + "/${name}")) pubKeyFiles;
+      in
+        keys;
     };
     vpn-proxy = mkDefault disabled;
   };

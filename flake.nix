@@ -1,5 +1,10 @@
 {
   inputs = {
+    secrets = {
+      url = "github:simonwjackson/secrets";
+      flake = false;
+    };
+
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
