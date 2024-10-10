@@ -54,7 +54,12 @@ in {
       sessionVariables = {
         EDITOR = "nvim";
       };
-      packages = [
+      packages = with pkgs; [
+        fd
+        ripgrep
+        lazygit
+        jq
+        yq-go
       ];
     };
 
