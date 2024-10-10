@@ -14,7 +14,7 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  backpacker = {
+  mountainous = {
     hardware = {
       cpu.type = "intel";
       bluetooth = enabled;

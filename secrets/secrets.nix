@@ -33,6 +33,7 @@ in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
   "user-simonwjackson-pin.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
+  "deepseek-api-key.age".publicKeys = users ++ systems;
   "user-simonwjackson-instapaper.age".publicKeys = users ++ systems;
   "user-simonwjackson-gmail.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-ca.cert.age".publicKeys = users ++ systems;

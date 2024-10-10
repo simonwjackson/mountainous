@@ -2,11 +2,12 @@
   config,
   lib,
   options,
+  inputs,
+  system,
   pkgs,
   ...
 }: let
   inherit (lib) mkEnableOption mkOption;
-  # inherit (inputs) ragenix;
   inherit (builtins) filter pathExists;
   inherit (lib.attrsets) mapAttrs' nameValuePair;
   inherit (lib.modules) mkDefault;
@@ -16,8 +17,6 @@
 
   cfg = config.mountainous.agenix;
 in {
-  # imports = [ragenix.nixosModules.default];
-
   options.mountainous.agenix = {
     enable = mkEnableOption "Whether to enable agenix";
     secretsDir = mkOption {
@@ -32,7 +31,9 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # environment.systemPackages = [ragenix.packages.x86_64-linux.default];
+    environment.systemPackages = [
+      inputs.agenix.packages."${system}".default
+    ];
     age = {
       identityPaths =
         options.age.identityPaths.default;

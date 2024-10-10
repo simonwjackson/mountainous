@@ -53,18 +53,9 @@ in {
       ];
     };
     hardware.cpu.type = "amd";
-    # BUG: ccache broken
-    performance = disabled;
   };
 
   services.joycond.enable = true;
-  virtualisation.waydroid.enable = true;
-
-  # programs.ssh.askPassword = lib.mkForce "false";
-  #
-  # services.xserver = {
-  #   desktopManager.gnome.enable = true;
-  # };
 
   mountainous = {
     boot = disabled;
@@ -74,10 +65,6 @@ in {
         enable = true;
         autoLogin = true;
       };
-      # plasma = {
-      #   enable = true;
-      #   autoLogin = true;
-      # };
     };
     gaming = {
       gamepad-proxy = enabled;
@@ -110,7 +97,6 @@ in {
     ];
   };
   hardware.bluetooth.enable = true; # enables support for Bluetooth
-  hardware.bluetooth.powerOnBoot = true; # powers up the default Bluetooth controller on boot
   systemd.user.services.mpris-proxy = {
     description = "Mpris proxy";
     after = ["network.target" "sound.target"];
@@ -238,10 +224,6 @@ in {
     };
     supportedFilesystems = ["btrfs"];
   };
-
-  programs.firejail.enable = true;
-
-  #
 
   services.xserver.enable = true;
   services.xserver.videoDrivers = ["amdgpu"];

@@ -21,7 +21,10 @@ in {
   };
 
   mountainous = {
-    desktops.hyprland = enabled;
+    desktops.hyprland = {
+      enable = true;
+      autoLogin = true;
+    };
     desktops.hyprlandControl = enabled;
     # desktops.plasma = enabled;
     gaming = {

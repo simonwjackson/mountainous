@@ -62,6 +62,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-gaming = {
+      url = "github:fufexan/nix-gaming";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixos-generators = {
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -75,6 +80,8 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     nur.url = "github:nix-community/NUR";
+
+    ryujinx.url = "github:Naxdy/Ryujinx";
 
     simple-nixos-mailserver = {
       url = "gitlab:simple-nixos-mailserver/nixos-mailserver/master";
@@ -92,11 +99,6 @@
     };
 
     tmesh.url = "github:simonwjackson/tmesh";
-
-    nix-gaming = {
-      url = "github:fufexan/nix-gaming";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs: let
@@ -114,6 +116,7 @@
         tmesh.nixosModules.default
         nur.nixosModules.nur
         chaotic.nixosModules.default
+        ryujinx.nixosModules.default
       ];
 
       systems.modules.darwin = with inputs; [

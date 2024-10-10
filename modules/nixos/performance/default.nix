@@ -15,32 +15,25 @@ in {
 
   config = lib.mkIf cfg.enable {
     services = {
-      # auto-cpufreq = enabled;
-      thermald.enable = config.mountainous.hardware.cpu.type == "intel";
-      # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
+      auto-cpufreq = enabled;
       ananicy = {
+        # a shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rule
         enable = true;
         package = pkgs.ananicy-cpp;
       };
     };
 
-    powerManagement = {
-      enable = true;
-      powertop.enable = true;
-      cpuFreqGovernor = pkgs.lib.mkDefault "powersave";
-    };
-
     programs.ccache = enabled;
 
-    systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {
-      # description = "Auto-tune Power Management with powertop";
-      unitConfig = {RefuseManualStart = true;};
-      wantedBy = ["battery.target" "ac.target"];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "${powertop} --auto-tune";
-      };
-    };
+    # systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {
+    #   # description = "Auto-tune Power Management with powertop";
+    #   unitConfig = {RefuseManualStart = true;};
+    #   wantedBy = ["battery.target" "ac.target"];
+    #   serviceConfig = {
+    #     Type = "oneshot";
+    #     ExecStart = "${powertop} --auto-tune";
+    #   };
+    # };
 
     zramSwap = enabled;
   };
