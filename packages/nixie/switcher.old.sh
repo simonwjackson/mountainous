@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ACTION="${1:-}"
 HOSTNAME="${2:-}"
 BUILD_HOSTS="${3:-}"
@@ -20,7 +22,6 @@ else
   OFFLINE_BUILD_HOSTS=()
   for host in "${BUILD_HOSTS_ARRAY[@]}"; do
     if ssh -o ConnectTimeout=1 "$host" "exit"; then
-      # TODO: Setup dedicated builder
       BUILDERS+="$(whoami)@$host "
     else
       OFFLINE_BUILD_HOSTS+=("$host")

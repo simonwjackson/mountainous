@@ -4,53 +4,62 @@
 #
 ############################################################################
 
+HOSTS := env_var_or_default('HOSTS', '')
+BUILDERS := env_var_or_default('BUILDERS', '')
+
 # Default recipe
 default:
     @just --list --unsorted
 
-# TODO: Rethink this script. There is quite a bit of overlap between this
-# and `switch`. How can they work together?
-# # Deploy the system configuration
-# deploy *ARGS:
-#     #!/usr/bin/env bash
-#     if [ "$(uname)" == "Darwin" ]; then \
-#         echo "MacOS is unsupported at this time."
-#     else \
-#         ./scripts/deploy.sh
-#     fi
+# Common function to handle shared logic
+_run_nixie_command ACTION *ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
 
-# Switch to the system configuration for the specified hostname, optionally providing comma-separated build hosts (defaults to the hostname if not provided)
-switch HOST='$(hostname)' BUILD_HOSTS='':
-    nix run .#switcher switch {{ HOST }} {{ BUILD_HOSTS }}
+    # Strip leading and trailing spaces from ARGS
+    ARGS_STRIPPED=$(echo "{{ ARGS }}" | xargs)
 
-# Build the system configuration for the specified hostname
-build HOST='$(hostname)' BUILD_HOSTS='':
-    nix run .#switcher build {{ HOST }} {{ BUILD_HOSTS }}
+    # Check if ARGS starts with -a or --all
+    if [[ "$ARGS_STRIPPED" =~ ^(-a|--all) ]]; then
+        # Remove -a or --all from ARGS
+        ARGS_STRIPPED=$(echo "$ARGS_STRIPPED" | sed 's/^-a\s*//; s/^--all\s*//')
+        # Set HOSTS to @all
+        HOSTS_VALUE="@all"
+    else
+        HOSTS_VALUE="{{ HOSTS }}"
+    fi
 
-# switch HOST='$(hostname)' BUILD_HOSTS='':
-#     nix run .#switcher switch {{ HOST }} {{ BUILD_HOSTS }}
-# Perform a dry run of the system configuration for the specified hostname
-# dry-run HOST='$(hostname)':
-#     #!/usr/bin/env bash
-#
-#     HOSTNAME="{{ HOST }}"; \
-#
-#     if [ "$(uname)" == "Darwin" ]; then
-#         nix build ".#darwinConfigurations.$HOSTNAME.config.system.build.toplevel"; \
-#     else \
-#         # nixos-rebuild dry-activate --flake .#$HOSTNAME
-#         # nix build ".#nixosConfigurations.$HOSTNAME.config.system.build.toplevel"; \
-#     fi
-# alias dry := dry-run
-# FIX: `just switch` also accepts a host name
-# Debug the system configuration with additional arguments
-# debug *ARGS:
-#     just switch --show-trace --verbose {{ ARGS }}
+    COMMAND="nix run .#nixie -- {{ ACTION }} $ARGS_STRIPPED"
 
-# Update the flake and switch to the new configuration
-evolve *ARGS:
-    just up
-    just switch {{ ARGS }}
+    get_all_hosts() {
+        nix flake show --json | nix run nixpkgs#jq -- --raw-output '.nixosConfigurations | keys | join(",")'
+    }
+
+    # Check for various "all systems" triggers
+    if [ "$HOSTS_VALUE" = "@all" ] || [ "$HOSTS_VALUE" = "*" ]; then
+        COMMAND="HOSTS='$(get_all_hosts)' $COMMAND"
+    elif [ -n "$HOSTS_VALUE" ]; then
+        COMMAND="HOSTS='$HOSTS_VALUE' $COMMAND"
+    fi
+
+    if [ -n "{{ BUILDERS }}" ]; then
+        COMMAND="BUILDERS='{{ BUILDERS }}' $COMMAND"
+    fi
+
+    echo "Executing: $COMMAND"
+    eval $COMMAND
+
+switch *ARGS:
+    just _run_nixie_command switch {{ ARGS }}
+
+test *ARGS:
+    just _run_nixie_command test {{ ARGS }}
+
+boot *ARGS:
+    just _run_nixie_command boot {{ ARGS }}
+
+build *ARGS:
+    just _run_nixie_command build {{ ARGS }}
 
 # Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
 up *ARGS:
@@ -67,6 +76,7 @@ repl:
 # Remove all system generations older than {{ DAYS }}
 clean DAYS='7':
     sudo nix profile wipe-history --profile /nix/var/nix/profiles/system --older-than {{ DAYS }}d
+    just garbage-collect
 
 # Garbage collect all unused Nix store entries
 garbage-collect HOST='$(hostname)':

@@ -31,7 +31,7 @@ in {
       };
       steam = enabled;
     };
-    performance = enabled;
+    performance = false;
     networking.core.names = [
       {
         name = "primary";
