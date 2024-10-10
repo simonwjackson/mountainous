@@ -4,16 +4,16 @@
   options,
   inputs,
   pkgs,
+  system,
   ...
 }: let
   inherit (lib) mkEnableOption mkOption;
-  # inherit (inputs) ragenix;
   inherit (builtins) filter pathExists;
   inherit (lib.attrsets) mapAttrs' nameValuePair;
   inherit (lib.modules) mkDefault;
   inherit (lib.strings) removeSuffix;
 
-  secretsDir = "${inputs.secrets}/agenix/";
+  secretsDir = "${inputs.secrets}/agenix";
   secretsFile = "${secretsDir}/secrets.nix";
 
   cfg = config.mountainous.agenix;
@@ -21,34 +21,39 @@ in {
   imports = [
     inputs.agenix.homeManagerModules.age
   ];
-  # imports = [ragenix.nixosModules.default];
 
   options.mountainous.agenix = {
     enable = mkEnableOption "Whether to enable agenix";
+    secretSymlinks = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to create symlinks for age secrets by default.";
+    };
+    secretMode = lib.mkOption {
+      type = lib.types.str;
+      default = "0400";
+      description = "Default mode for age secrets.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
-    # environment.systemPackages = [ragenix.packages.x86_64-linux.default];
+    home.packages = with pkgs; [
+      inputs.agenix.packages.${system}.default
+    ];
+
     age = {
-      identityPaths =
-        options.age.identityPaths.default;
-      # ++ [
-      #   "${config.home.homeDirectory}/.ssh/agenix"
-      # ];
+      identityPaths = options.age.identityPaths.default;
 
       secrets =
         if pathExists secretsFile
         then
-          mapAttrs' (n: _:
-            nameValuePair (removeSuffix ".age" n) {
-              file = "${secretsDir}/${n}";
+          mapAttrs' (key: _:
+            nameValuePair (removeSuffix ".age" key) {
+              file = "${secretsDir}/${key}";
+              symlink = cfg.secretSymlinks;
+              mode = cfg.secretMode;
             }) (import secretsFile)
         else {};
     };
-
-    # age.identityPaths = options.age.identityPaths.default ++ (filter pathExists [
-    #   "${config.user.home}/.ssh/id_ed25519"
-    #   "${config.user.home}/.ssh/id_rsa"
-    # ]);
   };
 }
