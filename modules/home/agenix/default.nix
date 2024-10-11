@@ -24,11 +24,13 @@ in {
 
   options.mountainous.agenix = {
     enable = mkEnableOption "Whether to enable agenix";
+
     secretSymlinks = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Whether to create symlinks for age secrets by default.";
     };
+
     secretMode = lib.mkOption {
       type = lib.types.str;
       default = "0400";
