@@ -99,7 +99,7 @@ in {
     };
     security = mkDefault enabled;
     syncthing = rec {
-      # inherit otherDevices;
+      inherit otherDevices;
 
       cert = mkIf config.mountainous.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-cert".path);
       enable = mkDefault true;
