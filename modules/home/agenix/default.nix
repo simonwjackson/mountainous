@@ -13,9 +13,6 @@
   inherit (lib.modules) mkDefault;
   inherit (lib.strings) removeSuffix;
 
-  secretsDir = "${inputs.secrets}/agenix";
-  secretsFile = "${secretsDir}/secrets.nix";
-
   cfg = config.mountainous.agenix;
 in {
   imports = [
@@ -24,6 +21,12 @@ in {
 
   options.mountainous.agenix = {
     enable = mkEnableOption "Whether to enable agenix";
+
+    secretsDir = mkOption {
+      type = lib.types.str;
+      default = "${inputs.secrets}/agenix";
+      description = "Directory containing agenix secrets";
+    };
 
     secretSymlinks = lib.mkOption {
       type = lib.types.bool;
@@ -46,12 +49,14 @@ in {
     age = {
       identityPaths = options.age.identityPaths.default;
 
-      secrets =
+      secrets = let
+        secretsFile = "${cfg.secretsDir}/secrets.nix";
+      in
         if pathExists secretsFile
         then
           mapAttrs' (key: _:
             nameValuePair (removeSuffix ".age" key) {
-              file = "${secretsDir}/${key}";
+              file = "${cfg.secretsDir}/${key}";
               symlink = cfg.secretSymlinks;
               mode = cfg.secretMode;
             }) (import secretsFile)
