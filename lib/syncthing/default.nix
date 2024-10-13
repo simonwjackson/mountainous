@@ -3,15 +3,27 @@
 in {
   syncthing = rec {
     otherDevices = {
+      "Tab Ultra (naka)" = {
+        device = {
+          id = "6SDMTLX-5YQ3QIK-5ZJNOQV-IZZK5O2-VC2QYK2-VKEAKY5-G5PZBXK-AV6RXAR";
+        };
+        shares = [
+          "notes"
+          "games"
+          "gaming-profiles"
+        ];
+      };
+
       "Retroid 5 Mini (sobo)" = {
         device = {
-          id = "YFTZMZQ-SRZHXL7-2T4US52-KFPRR6K-VRBEQSN-E2L2KTE-W2HPERO-PJXILQX";
+          id = "KLO2TTI-WXWHNGD-TVMIUIH-4VF7ERL-NMPWDVU-NN7BLIY-BA42ELZ-RO4VBQK";
         };
         shares = [
           "gaming-profiles"
           "games"
         ];
       };
+
       "Phone (usu)" = {
         device = {
           id = "53O3J7A-V6MHS3X-VFV5S36-SOIAQBF-YMNE7FK-YQRRRKG-VISKFD7-XWSQPQD";
