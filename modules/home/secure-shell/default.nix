@@ -23,6 +23,18 @@ in {
         "*" = {
           sendEnv = ["TZ"];
         };
+
+        # TODO: generate from hosts names
+        "usu naka sobo bandi" = {
+          user = "nix-on-droid";
+          port = 2222;
+        };
+
+        # TODO: generate from hosts names
+        "aka asahi fiji haku kita nyu rakku unzen yari zao" = {
+          user = "simonwjackson";
+          port = 22;
+        };
       };
     };
   };
