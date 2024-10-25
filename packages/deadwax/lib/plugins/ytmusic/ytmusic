@@ -1,0 +1,349 @@
+##!/usr/bin/env -S nix shell nixpkgs#bash nixpkgs#curl nixpkgs#gnugrep nixpkgs#gum nixpkgs#yt-dlp nixpkgs#mpv -c bash
+# shellcheck shell=bash
+
+# Get script's directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PLUGIN_VERSION="0.1.0"
+DRY_RUN=false
+TAG="all"
+FORMAT="json"
+
+plugin_doc="YouTube Music related Plugin ${PLUGIN_VERSION}
+
+Extract playlists from YouTube Music based on various input types.
+
+Usage:
+  ytme related [options] <url|id>
+
+Options:
+  --tag <tag>    Specify a tag for song or album playlists
+                 (e.g., familiar, discover, popular, deep, etc.)
+"
+
+encodeTagId() {
+  case "$1" in
+  familiar) echo "iY" ;;
+  discover) echo "iX" ;;
+  popular) echo "pY" ;;
+  deep) echo "pX" ;;
+  sleep) echo "mf" ;;
+  focus) echo "ma" ;;
+  chill) echo "mX" ;;
+  electronic) echo "gi" ;;
+  pump-up) echo "mY" ;;
+  metal) echo "g6X" ;;
+  rock) echo "gFX" ;;
+  instrumental) echo "nX" ;;
+  romance) echo "md" ;;
+  jazz) echo "gy" ;;
+  *)
+    echo "Error: Unsupported Tag" >&2
+    return 1
+    ;;
+  esac
+}
+
+buildTaggedPlaylistIdFromSong() {
+  local videoId=$1
+  local tag=$2
+
+  if [ -z "$videoId" ] || [ -z "$tag" ]; then
+    echo "Error: Both videoId and tag are required" >&2
+    return 1
+  fi
+
+  local id="RD"
+
+  if [ "$tag" = "all" ]; then
+    id="${id}AMVM"
+  else
+    encoded_tag=$(encodeTagId "$tag")
+    id="${id}AT${encoded_tag}v"
+  fi
+
+  id="${id}${videoId}"
+
+  echo "$id"
+}
+
+buildTaggedPlaylistIdFromAlbum() {
+  local albumId=$1
+  local tag=$2
+
+  if [ -z "$albumId" ] || [ -z "$tag" ]; then
+    echo "Error: Both albumId and tag are required" >&2
+    return 1
+  fi
+
+  local id="RD"
+
+  if [ "$tag" = "all" ]; then
+    id="${id}AMPL"
+  else
+    encoded_tag=$(encodeTagId "$tag")
+    id="${id}AT${encoded_tag}b9X"
+  fi
+
+  id="${id}${albumId}"
+
+  echo "$id"
+}
+
+getJsonPlaylist() {
+  local extraJson=$1
+
+  # Placeholder function for album handling
+  log info "Processing.."
+
+  curl \
+    'https://music.youtube.com/youtubei/v1/next?prettyPrint=false' \
+    --compressed \
+    -X POST \
+    -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0' \
+    -H 'Accept: */*' \
+    -H 'Accept-Language: en-US,en;q=0.5' \
+    -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+    -H 'Content-Type: application/json' \
+    -H 'X-Youtube-Bootstrap-Logged-In: false' \
+    -H 'X-Youtube-Client-Name: 67' \
+    -H 'X-Youtube-Client-Version: 1.20241016.01.00' \
+    -H 'Origin: https://music.youtube.com' \
+    -H 'DNT: 1' \
+    -H 'Sec-GPC: 1' \
+    -H 'Connection: keep-alive' \
+    -H 'Sec-Fetch-Dest: empty' \
+    -H 'Sec-Fetch-Mode: same-origin' \
+    -H 'Sec-Fetch-Site: same-origin' \
+    -H 'Priority: u=0' \
+    -H 'TE: trailers' \
+    --data-raw "$(
+      jq -s '.[0] * .[1]' "${SCRIPT_DIR}/data.json" <(echo "$extraJson")
+    )" |
+    jq -r '{
+      playlist_name: "YouTube Music",
+      encoding: "UTF-8",
+      tracks: [
+        .contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content.musicQueueRenderer.content.playlistPanelRenderer.contents[] |
+        select(.playlistPanelVideoRenderer != null) | .playlistPanelVideoRenderer | {
+          title: .title.runs[0].text,
+          artist: .longBylineText.runs[0].text,
+          album: (.longBylineText.runs[2].text // "Unknown"),
+          duration: ((.lengthText.runs[0].text | split(":") | map(tonumber) | .[0] * 60 + .[1]) | tostring),
+          year: (.longBylineText.runs[4].text // "Unknown"),
+          genre: "Unknown",
+          thumbnail: .thumbnail.thumbnails[-1].url,
+          video_id: .videoId,
+          url: "https://www.youtube.com/watch?v=\(.videoId)"
+        }
+      ]
+    }'
+}
+
+# TODO: To support tags, you must first grab the "all" playlist (as we are now), then parse the special ablum id for tags found here:
+# "contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs.0.tabRenderer.content.musicQueueRenderer.subHeaderChipCloud.chipCloudRenderer.chips[X].chipCloudChipRenderer.navigationEndpoint.queueUpdateCommand.fetchContentsCommand.watchEndpoint.playlistId"
+# ex: RDATpYa04qmrEz
+# a is likley the separator, so the rest would be the id
+getPlaylistFromArtist() {
+  local channel_id="$1"
+  local channel_data
+
+  log info "Fetching artist data for $channel_id"
+  channel_data=$(curl -s 'https://music.youtube.com/channel/'"$channel_id" \
+    --compressed \
+    -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0')
+
+  log debug "Channel data length: ${#channel_data} characters"
+
+  if [[ "$DEBUG" == true ]]; then
+    echo "$channel_data" >debug_channel_data.txt
+    log debug "Channel data saved to debug_channel_data.txt"
+  fi
+
+  local playlist_id
+  # local video_id
+
+  # video_id="$(
+  #   echo "$channel_data" |
+  #     grep -oP '(?<=\\x22videoId\\x22:\\x22)[^\\x22]*(?=\\x22)' |
+  #     head -n 1
+  # )"
+  playlist_id="$(
+    echo "$channel_data" |
+      grep -oP '(?<=\\x22playlistId\\x22:\\x22)RDEM\w+-\w+' |
+      head -n 1
+  )"
+
+  log debug "Extracted playlist ID: ${playlist_id:-<empty>}"
+  # log debug "Extracted video ID: ${video_id:-<empty>}"
+
+  if [[ -z "$playlist_id" ]]; then
+    log error "Failed to extract playlist or video ID"
+    log error "Please check the channel URL and try again"
+    log error "If the problem persists, run with --debug and check debug_channel_data.txt"
+    exit 1
+  fi
+
+  log debug "${video_id} ${playlist_id}"
+
+  local url
+  url="https://music.youtube.com/watch?list=${playlist_id}"
+
+  log debug "$url"
+
+  getJsonPlaylist '{
+    "playlistId": "'"$playlist_id"'"
+  }'
+}
+
+getPlaylistFromSong() {
+  local videoId=$1
+  local tag=$2
+
+  getJsonPlaylist '{
+    "videoId": "'"$videoId"'",
+    "playlistId": "'"$(buildTaggedPlaylistIdFromSong "$videoId" "$tag")"'"
+  }'
+}
+
+getPlaylistFromAlbum() {
+  local albumId=$1
+  local tag=$2
+
+  getJsonPlaylist '{
+    "playlistId": "'"$(buildTaggedPlaylistIdFromAlbum "$albumId" "$tag")"'"
+  }'
+}
+
+log info "Generating ${FORMAT} playlist with tag: ${TAG}"
+
+if [[ "$DRY_RUN" == true ]]; then
+  log info "Dry run mode: Showing what would be done without executing"
+  echo "Input: $input"
+  echo "Format: $FORMAT"
+  echo "Debug mode: $DEBUG"
+  echo "Tag: $TAG"
+  exit 0
+fi
+
+extract_id() {
+  local url="$1"
+  local pattern="$2"
+  echo "$url" | grep -oP "$pattern"
+}
+
+# Function to handle artist input
+handle_artist() {
+  local input="$1"
+  local channel_id
+
+  if [[ -n "$TAG" && "$TAG" != "all" ]]; then
+    log warn "Tags are not supported for artist radio. Ignoring --tag option."
+  fi
+
+  if [[ "$input" =~ ^https://music\.youtube\.com/channel/UC ]]; then
+    channel_id=$(extract_id "$input" '(?<=channel/)UC[\w-]{22}$')
+  elif [[ "$input" =~ ^UC[\w-]{22}$ ]]; then
+    channel_id="$input"
+  else
+    return 1
+  fi
+
+  getPlaylistFromArtist "$channel_id"
+}
+
+# Function to handle album input
+handle_album() {
+  local input="$1"
+  local album_id
+
+  if [[ "$input" =~ ^https://music\.youtube\.com/playlist\?list=OLAK5uy_[a-zA-Z0-9_-]+ ]]; then
+    album_id=$(extract_id "$input" '(?<=list=)OLAK5uy_[a-zA-Z0-9_-]+(?=&|$)')
+  elif [[ "$input" =~ ^OLAK5uy_[\w-]{34}$ ]]; then
+    album_id="$input"
+  else
+    return 1
+  fi
+
+  getPlaylistFromAlbum "$album_id" "$TAG"
+}
+
+# Function to handle MPREb album input
+handle_mpreb_album() {
+  local input="$1"
+  local mpreb_album_id
+
+  if [[ "$input" =~ ^https://music\.youtube\.com/browse/MPREb_ ]]; then
+    mpreb_album_id=$(extract_id "$input" 'MPREb_[\w-]{11}$')
+  elif [[ "$input" =~ ^MPREb_[\w-]{11}$ ]]; then
+    mpreb_album_id="$input"
+  else
+    return 1
+  fi
+
+  local album_id
+  album_id=$(get_album_id_from_mpreb "$mpreb_album_id")
+  getPlaylistFromAlbum "$album_id" "$TAG"
+}
+
+# Function to handle song input
+handle_song() {
+  local input="$1"
+  local video_id
+
+  if [[ "$input" =~ ^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]{11}) ]]; then
+    video_id=$(extract_id "$input" '(?<=v=)[a-zA-Z0-9_-]{11}')
+  elif [[ "$input" =~ ^[a-zA-Z0-9_-]{11}$ ]]; then
+    video_id="$input"
+  else
+    return 1
+  fi
+
+  getPlaylistFromSong "$video_id" "$TAG"
+}
+
+process_input() {
+  local input="$1"
+  local response
+
+  response=$(handle_artist "$input") ||
+    response=$(handle_album "$input") ||
+    response=$(handle_mpreb_album "$input") ||
+    response=$(handle_song "$input") ||
+    {
+      log error "Invalid input. Please provide a valid YouTube Music artist/album/song URL or ID."
+      exit 1
+    }
+
+  echo "$response"
+}
+
+##########
+# external
+##########
+
+related() {
+  local tag="all"
+  local input
+
+  # Parse plugin-specific options
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+    --tag)
+      tag="$2"
+      shift 2
+      ;;
+    *)
+      input="$1"
+      shift
+      ;;
+    esac
+  done
+
+  if [[ -z "${input:-}" ]]; then
+    log error "Missing input URL or ID"
+    echo "$plugin_doc"
+    exit 1
+  fi
+
+  process_input "$input" "$tag"
+}

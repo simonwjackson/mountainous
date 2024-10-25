@@ -13,7 +13,7 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  backpacker = {
+  mountainous = {
     boot = enabled;
     networking.core.names = [
       {
@@ -30,9 +30,6 @@ in {
       key = config.age.secrets.fiji-syncthing-key.path;
       cert = config.age.secrets.fiji-syncthing-cert.path;
     };
-  };
-
-  mountainous = {
     hardware.devices.samsung-galaxy-book3-360 = enabled;
     desktops = {
       hyprland = {

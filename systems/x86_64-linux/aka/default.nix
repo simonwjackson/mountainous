@@ -32,6 +32,9 @@ in {
 
   environment.systemPackages = with pkgs; [
     mergerfs
+    mpvScripts.uosc
+    mpv
+    # gamescope
   ];
 
   #######################
@@ -42,9 +45,11 @@ in {
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
   '';
 
+  services.joycond.enable = true;
+
   mountainous = {
     bluetooth-tether = {
-      enable = true;
+      enable = false;
       devices = [
         {
           name = "usu";
@@ -53,11 +58,6 @@ in {
       ];
     };
     hardware.cpu.type = "amd";
-  };
-
-  services.joycond.enable = true;
-
-  mountainous = {
     boot = disabled;
     desktops = {
       hyprlandControl = enabled;
@@ -96,6 +96,7 @@ in {
       }
     ];
   };
+
   hardware.bluetooth.enable = true; # enables support for Bluetooth
   systemd.user.services.mpris-proxy = {
     description = "Mpris proxy";
@@ -181,8 +182,7 @@ in {
       };
     };
     opengl = {
-      # driSupport = true; # This is already enabled by default
-      # driSupport32Bit = true; # For 32 bit applications
+      driSupport32Bit = true;
       extraPackages = with pkgs; [
         amdvlk
       ];

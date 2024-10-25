@@ -44,11 +44,6 @@
 
     icho.url = "github:simonwjackson/icho";
 
-    kmonad = {
-      url = "git+https://github.com/kmonad/kmonad?submodules=1&dir=nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     mobile-nixos = {
       url = "github:NixOS/mobile-nixos";
       flake = false;
@@ -109,12 +104,10 @@
         agenix.nixosModules.default
         disko.nixosModules.default
         home-manager.nixosModules.default
-        kmonad.nixosModules.default
         icho.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         tmesh.nixosModules.default
         nur.nixosModules.nur
-        chaotic.nixosModules.default
         ryujinx.nixosModules.default
       ];
 
@@ -135,7 +128,11 @@
       overlays = with inputs; [
         snowfall-frost.overlays.default
         nur.overlay
-        chaotic.overlays.default
+        (final: prev: {
+          proton-ge-custom = chaotic.packages.${prev.system}.proton-ge-custom;
+          gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
+          gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
+        })
       ];
 
       channels-config = {

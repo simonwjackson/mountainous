@@ -3,6 +3,15 @@
 in {
   syncthing = rec {
     otherDevices = {
+      "Watch (bandi)" = {
+        device = {
+          id = "HMVJB6K-VYTB4ZV-EVUJLXF-A55M67M-FFW3CUP-Q73NHVD-GBNHWNL-SFOD4QQ";
+        };
+        shares = [
+          "music"
+        ];
+      };
+
       "Tab Ultra (naka)" = {
         device = {
           id = "6SDMTLX-5YQ3QIK-5ZJNOQV-IZZK5O2-VC2QYK2-VKEAKY5-G5PZBXK-AV6RXAR";
@@ -11,16 +20,18 @@ in {
           "notes"
           "games"
           "gaming-profiles"
+          "music"
         ];
       };
 
       "Retroid 5 Mini (sobo)" = {
         device = {
-          id = "KLO2TTI-WXWHNGD-TVMIUIH-4VF7ERL-NMPWDVU-NN7BLIY-BA42ELZ-RO4VBQK";
+          id = "BPLYMBL-HBATFIY-N57S56U-MHCQ3IU-BE7LGEY-TCA726B-IGMIRRL-HSO4CAV";
         };
         shares = [
           "gaming-profiles"
           "games"
+          "music"
         ];
       };
 
@@ -31,18 +42,9 @@ in {
         shares = [
           "notes"
           "gaming-profiles"
+          "music"
         ];
       };
-
-      # "Android Phone (usu)" = {
-      #   device = {
-      #     id = "CZA4RS5-6DZRRHR-4EMUXGK-WZO7KUR-5AUAOAX-TV6CCUX-MLCMBKY-64NJ4AC";
-      #   };
-      #   shares = [
-      #     "notes"
-      #     "gaming-profiles"
-      #   ];
-      # };
     };
   };
 }

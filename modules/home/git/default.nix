@@ -1,8 +1,6 @@
 {
   config,
   lib,
-  options,
-  pkgs,
   ...
 }: let
   inherit (lib) mkEnableOption mkOption;

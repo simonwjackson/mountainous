@@ -28,7 +28,7 @@ in {
   config = lib.mkIf cfg.enable {
     environment.systemPackages = let
       gen-7 = [
-        pkgs.dolphinEmu
+        pkgs.dolphin-emu
         pkgs.rpcs3
       ];
       gen-8 = [

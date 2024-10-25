@@ -36,7 +36,7 @@ in {
         package = pkgs.steam.override {
           extraPkgs = pkgs:
             with pkgs; [
-              mangohud_git
+              # mangohud_git
               gamescope-wsi_git
               gamescope_git
             ];

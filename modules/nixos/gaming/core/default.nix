@@ -17,7 +17,7 @@ in {
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
       inputs.elevate.packages.${system}.moonbeam
-      mangohud_git
+      # mangohud_git
       gamescope-wsi_git
       gamescope_git
     ];

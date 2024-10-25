@@ -38,5 +38,9 @@
       path = "/snowscape/videos";
       whitelist = false;
     };
+    music = {
+      path = "/snowscape/music";
+      whitelist = false;
+    };
   };
 }

@@ -1,0 +1,136 @@
+{
+  "enablePersistentPlaylistPanel": true,
+  "tunerSettingValue": "AUTOMIX_SETTING_NORMAL",
+  "params": "wAEB",
+  "loggingContext": {
+    "vssLoggingContext": {}
+  },
+  "watchEndpointMusicSupportedConfigs": {
+    "watchEndpointMusicConfig": {
+      "musicVideoType": "MUSIC_VIDEO_TYPE_ATV"
+    }
+  },
+  "isAudioOnly": true,
+  "responsiveSignals": {
+    "videoInteraction": []
+  },
+  "queueContextParams": "",
+  "context": {
+    "client": {
+      "hl": "en",
+      "gl": "US",
+      "remoteHost": "1.1.1.1",
+      "deviceMake": "",
+      "deviceModel": "",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0,gzip(gfe)",
+      "clientName": "WEB_REMIX",
+      "clientVersion": "1.20241016.01.00",
+      "osName": "X11",
+      "osVersion": "",
+      "platform": "DESKTOP",
+      "clientFormFactor": "UNKNOWN_FORM_FACTOR",
+      "configInfo": {},
+      "browserName": "Firefox",
+      "browserVersion": "131.0",
+      "acceptHeader": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+      "screenWidthPoints": 1350,
+      "screenHeightPoints": 755,
+      "screenPixelDensity": 1,
+      "screenDensityFloat": 1,
+      "utcOffsetMinutes": -300,
+      "userInterfaceTheme": "USER_INTERFACE_THEME_DARK",
+      "timeZone": "America/Chicago",
+      "musicAppInfo": {
+        "pwaInstallabilityStatus": "PWA_INSTALLABILITY_STATUS_UNKNOWN",
+        "webDisplayMode": "WEB_DISPLAY_MODE_BROWSER",
+        "storeDigitalGoodsApiSupportStatus": {
+          "playStoreDigitalGoodsApiSupportStatus": "DIGITAL_GOODS_API_SUPPORT_STATUS_UNSUPPORTED"
+        }
+      }
+    },
+    "user": {
+      "lockedSafetyMode": false
+    },
+    "request": {
+      "useSsl": true,
+      "internalExperimentFlags": [],
+      "consistencyTokenJars": []
+    },
+    "clickTracking": {},
+    "adSignalsInfo": {
+      "params": [
+        {
+          "key": "dt",
+          "value": "1729444628707"
+        },
+        {
+          "key": "flash",
+          "value": "0"
+        },
+        {
+          "key": "frm",
+          "value": "0"
+        },
+        {
+          "key": "u_tz",
+          "value": "-300"
+        },
+        {
+          "key": "u_his",
+          "value": "7"
+        },
+        {
+          "key": "u_h",
+          "value": "1440"
+        },
+        {
+          "key": "u_w",
+          "value": "2560"
+        },
+        {
+          "key": "u_ah",
+          "value": "1440"
+        },
+        {
+          "key": "u_aw",
+          "value": "2560"
+        },
+        {
+          "key": "u_cd",
+          "value": "24"
+        },
+        {
+          "key": "bc",
+          "value": "31"
+        },
+        {
+          "key": "bih",
+          "value": "755"
+        },
+        {
+          "key": "biw",
+          "value": "1350"
+        },
+        {
+          "key": "brdim",
+          "value": "0,0,0,0,2560,0,1350,1280,1350,755"
+        },
+        {
+          "key": "vis",
+          "value": "1"
+        },
+        {
+          "key": "wgl",
+          "value": "true"
+        },
+        {
+          "key": "ca_type",
+          "value": "image"
+        }
+      ]
+    },
+    "activePlayers": [
+      {}
+    ]
+  }
+}

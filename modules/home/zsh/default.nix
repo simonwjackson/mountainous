@@ -26,16 +26,30 @@ in {
       # dotDir = ".config/zsh";
 
       # TODO: Set this next to nvr
-      initExtra = ''
-        # Enable responsive manpage
-        export MANWIDTH=999
+      initExtra =
+        # bash
+        ''
+          serve() {
+            nix run nixpkgs#fd -- --type f --hidden --no-ignore | nix run nixpkgs#entr -- -r nix run nixpkgs#python3 -- -m http.server
+          }
 
-        if [[ -n $NVIM ]]; then
-          export MANPAGER="nvr +Man! -"
-        else
-          export MANPAGER="nvim +Man! -"
-        fi
-      '';
+          mtn() {
+            ssh \
+              -tt \
+              -o SendEnv=TERM \
+              aka \
+              "cd /snowscape/code/github/simonwjackson/mountainous/main && TERM=xterm-256color nix develop --command just $*"
+          }
+
+          # Enable responsive manpage
+          export MANWIDTH=999
+
+          if [[ -n $NVIM ]]; then
+            export MANPAGER="nvr +Man! -"
+          else
+            export MANPAGER="nvim +Man! -"
+          fi
+        '';
 
       dirHashes = {
         docs = "${config.home.homeDirectory}/documents";

@@ -1,36 +1,39 @@
-{
-  lib,
-  resholve,
-  pkgs,
-}:
-resholve.writeScriptBin "deadwax" {
-  inputs = with pkgs; [
-    coreutils
+{pkgs, ...}: let
+  dependencies = with pkgs; [
+    bash
     curl
     gnugrep
-    gnused
     gum
-    jq
-    yq-go
     yt-dlp
+    mpv
+    jq
+    coreutils
   ];
-  interpreter = "${pkgs.bash}/bin/bash";
-  execer = [
-    "cannot:${pkgs.coreutils}/bin/mkdir"
-    "cannot:${pkgs.coreutils}/bin/rm"
-    "cannot:${pkgs.curl}/bin/curl"
-    "cannot:${pkgs.getopt}/bin/getopt"
-    "cannot:${pkgs.gnugrep}/bin/grep"
-    "cannot:${pkgs.gnused}/bin/sed"
-    "cannot:${pkgs.gum}/bin/gum"
-    "cannot:${pkgs.jq}/bin/jq"
-    "cannot:${pkgs.yq-go}/bin/yq"
-    "cannot:${pkgs.yt-dlp}/bin/yt-dlp"
-  ];
-  fake = {
-    external = [
-      "getopt"
-      "musicull"
+in
+  pkgs.stdenv.mkDerivation {
+    name = "deadwax";
+    src = ./.;
+
+    nativeBuildInputs = with pkgs; [
+      makeWrapper
     ];
-  };
-} (builtins.readFile ./deadwax.sh)
+
+    buildInputs = dependencies;
+
+    installPhase = ''
+      # Create directories
+      mkdir -p $out/bin $out/lib
+
+      # Copy all files preserving structure
+      cp -r bin/. $out/bin/
+      cp -r lib/. $out/lib/
+
+      # Make scripts executable
+      find $out -type f -name "*.sh" -exec chmod +x {} +
+      find $out/lib/plugins -type f -not -name "*.json" -exec chmod +x {} +
+
+      # Wrap main script with runtime dependencies
+      makeWrapper $out/bin/deadwax.sh $out/bin/deadwax \
+        --prefix PATH : ${pkgs.lib.makeBinPath dependencies}
+    '';
+  }
