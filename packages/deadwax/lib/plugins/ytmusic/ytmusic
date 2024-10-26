@@ -1,24 +1,44 @@
-##!/usr/bin/env -S nix shell nixpkgs#bash nixpkgs#curl nixpkgs#gnugrep nixpkgs#gum nixpkgs#yt-dlp nixpkgs#mpv -c bash
-# shellcheck shell=bash
-
-# Get script's directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_VERSION="0.1.0"
-DRY_RUN=false
-TAG="all"
-FORMAT="json"
 
-plugin_doc="YouTube Music related Plugin ${PLUGIN_VERSION}
+log() {
+  :
+  # gum log --level info "$@"
+}
 
-Extract playlists from YouTube Music based on various input types.
+evolve_id() {
+  local string=$1
+  local type=""
+  local id=""
 
-Usage:
-  ytme related [options] <url|id>
+  if [[ "$string" =~ ^https://music\.youtube\.com/channel/UC || "$string" =~ ^UC[\w-]{22}$ ]]; then
+    type="artist"
+    id=$(extract_id "$string" '(?<=channel/)UC[\w-]{22}$') || id="$string"
+  elif [[ "$string" =~ ^(https://music\.youtube\.com/playlist\?list=)?OLAK5uy_[A-Za-z0-9_-]{33}$ ]]; then
+    type="album"
+    id=$(extract_id "$string" '(?<=list=)OLAK5uy_[A-Za-z0-9_-]{33}(?=&|$)') || id="$string"
+  elif [[ "$string" =~ ^https://music\.youtube\.com/browse/MPREb_ || "$string" =~ ^MPREb_[a-zA-Z0-9_-]+$ ]]; then
+    type="album"
+    mpreb_album_id=$(extract_id "$string" 'MPREb_[a-zA-Z0-9_-]+') || id="$string"
+    id=$(get_album_id_from_mpreb "$mpreb_album_id")
+  elif [[ "$string" =~ ^https://music\.youtube\.com/playlist\?list= || "$string" =~ ^PL ]]; then
+    type="playlist"
+    id=$(extract_id "$string" '(?<=list=)[a-zA-Z0-9_-]+(?=&|$)') || id="$string"
+  elif [[ "$string" =~ ^https://music\.youtube\.com/watch\?v= || "$string" =~ ^[a-zA-Z0-9_-]{11}$ ]]; then
+    type="song"
+    id=$(extract_id "$string" '(?<=v=)[a-zA-Z0-9_-]{11}') || id="$string"
+  else
+    echo '{ "error": "Invalid id format" }' >&2
+    return 1
+  fi
 
-Options:
-  --tag <tag>    Specify a tag for song or album playlists
-                 (e.g., familiar, discover, popular, deep, etc.)
-"
+  jq -n \
+    --arg type "$type" \
+    --arg id "$id" '{
+      type: $type,
+      value: $id,
+    }'
+}
 
 encodeTagId() {
   case "$1" in
@@ -89,7 +109,79 @@ buildTaggedPlaylistIdFromAlbum() {
   echo "$id"
 }
 
-getJsonPlaylist() {
+get_album_id_from_mpreb () {
+  local mpreb=$1
+
+  curl \
+  'https://music.youtube.com/youtubei/v1/browse?prettyPrint=false' \
+  --compressed \
+  -X POST \
+  -H 'Accept-Encoding: gzip, deflate, br, zstd' \
+  -H 'Accept-Language: en-US,en;q=0.5' \
+  -H 'Accept: */*' \
+  -H 'Alt-Used: music.youtube.com' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -H 'DNT: 1' \
+  -H 'Origin: https://music.youtube.com' \
+  -H 'Priority: u=0' \
+  -H 'Referer: https://music.youtube.com/library' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: same-origin' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'Sec-GPC: 1' \
+  -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0' \
+  -H 'X-Goog-AuthUser: 0' \
+  -H 'X-Origin: https://music.youtube.com' \
+  -H 'X-Youtube-Client-Name: 67' \
+  -H 'X-Youtube-Client-Version: 1.20241023.01.00' \
+    --data-raw '{
+    "browseId": "'"$mpreb"'",
+    "context": {
+      "client": {
+        "hl": "en",
+        "gl": "US",
+        "remoteHost": "15.0.93.55",
+        "deviceMake": "",
+        "deviceModel": "",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0,gzip(gfe)",
+        "clientName": "WEB_REMIX",
+        "clientVersion": "1.20241023.01.00",
+        "osName": "X11",
+        "osVersion": "",
+        "originalUrl": "https://music.youtube.com/library",
+        "platform": "DESKTOP",
+        "clientFormFactor": "UNKNOWN_FORM_FACTOR",
+        "configInfo": { },
+        "userInterfaceTheme": "USER_INTERFACE_THEME_DARK",
+        "timeZone": "America/Chicago",
+        "browserName": "Firefox",
+        "browserVersion": "131.0",
+        "acceptHeader": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+      },
+      "activePlayers": []
+    }
+  }' |
+  jq --raw-output '
+    .contents
+    .twoColumnBrowseResultsRenderer
+    .secondaryContents
+    .sectionListRenderer
+    .contents[0]
+    .musicShelfRenderer
+    .contents[0]
+    .musicResponsiveListItemRenderer
+    .overlay
+    .musicItemThumbnailOverlayRenderer
+    .content
+    .musicPlayButtonRenderer
+    .playNavigationEndpoint
+    .watchEndpoint
+    .playlistId
+  '
+}
+
+getRawJsonPlaylist() {
   local extraJson=$1
 
   # Placeholder function for album handling
@@ -99,44 +191,26 @@ getJsonPlaylist() {
     'https://music.youtube.com/youtubei/v1/next?prettyPrint=false' \
     --compressed \
     -X POST \
-    -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0' \
-    -H 'Accept: */*' \
-    -H 'Accept-Language: en-US,en;q=0.5' \
     -H 'Accept-Encoding: gzip, deflate, br, zstd' \
-    -H 'Content-Type: application/json' \
-    -H 'X-Youtube-Bootstrap-Logged-In: false' \
-    -H 'X-Youtube-Client-Name: 67' \
-    -H 'X-Youtube-Client-Version: 1.20241016.01.00' \
-    -H 'Origin: https://music.youtube.com' \
-    -H 'DNT: 1' \
-    -H 'Sec-GPC: 1' \
+    -H 'Accept-Language: en-US,en;q=0.5' \
+    -H 'Accept: */*' \
     -H 'Connection: keep-alive' \
+    -H 'Content-Type: application/json' \
+    -H 'DNT: 1' \
+    -H 'Origin: https://music.youtube.com' \
+    -H 'Priority: u=0' \
     -H 'Sec-Fetch-Dest: empty' \
     -H 'Sec-Fetch-Mode: same-origin' \
     -H 'Sec-Fetch-Site: same-origin' \
-    -H 'Priority: u=0' \
+    -H 'Sec-GPC: 1' \
     -H 'TE: trailers' \
+    -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0' \
+    -H 'X-Youtube-Bootstrap-Logged-In: false' \
+    -H 'X-Youtube-Client-Name: 67' \
+    -H 'X-Youtube-Client-Version: 1.20241016.01.00' \
     --data-raw "$(
       jq -s '.[0] * .[1]' "${SCRIPT_DIR}/data.json" <(echo "$extraJson")
-    )" |
-    jq -r '{
-      playlist_name: "YouTube Music",
-      encoding: "UTF-8",
-      tracks: [
-        .contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content.musicQueueRenderer.content.playlistPanelRenderer.contents[] |
-        select(.playlistPanelVideoRenderer != null) | .playlistPanelVideoRenderer | {
-          title: .title.runs[0].text,
-          artist: .longBylineText.runs[0].text,
-          album: (.longBylineText.runs[2].text // "Unknown"),
-          duration: ((.lengthText.runs[0].text | split(":") | map(tonumber) | .[0] * 60 + .[1]) | tostring),
-          year: (.longBylineText.runs[4].text // "Unknown"),
-          genre: "Unknown",
-          thumbnail: .thumbnail.thumbnails[-1].url,
-          video_id: .videoId,
-          url: "https://www.youtube.com/watch?v=\(.videoId)"
-        }
-      ]
-    }'
+    )"
 }
 
 # TODO: To support tags, you must first grab the "all" playlist (as we are now), then parse the special ablum id for tags found here:
@@ -190,40 +264,38 @@ getPlaylistFromArtist() {
 
   log debug "$url"
 
-  getJsonPlaylist '{
+  getRawJsonPlaylist '{
     "playlistId": "'"$playlist_id"'"
-  }'
+  }' |
+    jq -r '{
+      playlist_name: "YouTube Music",
+      encoding: "UTF-8",
+      tracks: [
+        .contents
+        .singleColumnMusicWatchNextResultsRenderer
+        .tabbedRenderer
+        .watchNextTabbedResultsRenderer
+        .tabs[0]
+        .tabRenderer
+        .content
+        .musicQueueRenderer
+        .content
+        .playlistPanelRenderer
+        .contents[] |
+          select(.playlistPanelVideoRenderer != null) | .playlistPanelVideoRenderer | {
+            title: .title.runs[0].text,
+            artist: .longBylineText.runs[0].text,
+            album: (.longBylineText.runs[2].text // "Unknown"),
+            duration: ((.lengthText.runs[0].text | split(":") | map(tonumber) | .[0] * 60 + .[1]) | tostring),
+            year: (.longBylineText.runs[4].text // "Unknown"),
+            genre: "Unknown",
+            thumbnail: .thumbnail.thumbnails[-1].url,
+            video_id: .videoId,
+            url: "https://www.youtube.com/watch?v=\(.videoId)"
+          }
+      ]
+    }'
 }
-
-getPlaylistFromSong() {
-  local videoId=$1
-  local tag=$2
-
-  getJsonPlaylist '{
-    "videoId": "'"$videoId"'",
-    "playlistId": "'"$(buildTaggedPlaylistIdFromSong "$videoId" "$tag")"'"
-  }'
-}
-
-getPlaylistFromAlbum() {
-  local albumId=$1
-  local tag=$2
-
-  getJsonPlaylist '{
-    "playlistId": "'"$(buildTaggedPlaylistIdFromAlbum "$albumId" "$tag")"'"
-  }'
-}
-
-log info "Generating ${FORMAT} playlist with tag: ${TAG}"
-
-if [[ "$DRY_RUN" == true ]]; then
-  log info "Dry run mode: Showing what would be done without executing"
-  echo "Input: $input"
-  echo "Format: $FORMAT"
-  echo "Debug mode: $DEBUG"
-  echo "Tag: $TAG"
-  exit 0
-fi
 
 extract_id() {
   local url="$1"
@@ -231,119 +303,222 @@ extract_id() {
   echo "$url" | grep -oP "$pattern"
 }
 
-# Function to handle artist input
-handle_artist() {
-  local input="$1"
-  local channel_id
-
-  if [[ -n "$TAG" && "$TAG" != "all" ]]; then
-    log warn "Tags are not supported for artist radio. Ignoring --tag option."
-  fi
-
-  if [[ "$input" =~ ^https://music\.youtube\.com/channel/UC ]]; then
-    channel_id=$(extract_id "$input" '(?<=channel/)UC[\w-]{22}$')
-  elif [[ "$input" =~ ^UC[\w-]{22}$ ]]; then
-    channel_id="$input"
-  else
-    return 1
-  fi
-
-  getPlaylistFromArtist "$channel_id"
-}
-
-# Function to handle album input
-handle_album() {
-  local input="$1"
-  local album_id
-
-  if [[ "$input" =~ ^https://music\.youtube\.com/playlist\?list=OLAK5uy_[a-zA-Z0-9_-]+ ]]; then
-    album_id=$(extract_id "$input" '(?<=list=)OLAK5uy_[a-zA-Z0-9_-]+(?=&|$)')
-  elif [[ "$input" =~ ^OLAK5uy_[\w-]{34}$ ]]; then
-    album_id="$input"
-  else
-    return 1
-  fi
-
-  getPlaylistFromAlbum "$album_id" "$TAG"
-}
-
-# Function to handle MPREb album input
-handle_mpreb_album() {
-  local input="$1"
-  local mpreb_album_id
-
-  if [[ "$input" =~ ^https://music\.youtube\.com/browse/MPREb_ ]]; then
-    mpreb_album_id=$(extract_id "$input" 'MPREb_[\w-]{11}$')
-  elif [[ "$input" =~ ^MPREb_[\w-]{11}$ ]]; then
-    mpreb_album_id="$input"
-  else
-    return 1
-  fi
-
-  local album_id
-  album_id=$(get_album_id_from_mpreb "$mpreb_album_id")
-  getPlaylistFromAlbum "$album_id" "$TAG"
-}
-
-# Function to handle song input
-handle_song() {
-  local input="$1"
-  local video_id
-
-  if [[ "$input" =~ ^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]{11}) ]]; then
-    video_id=$(extract_id "$input" '(?<=v=)[a-zA-Z0-9_-]{11}')
-  elif [[ "$input" =~ ^[a-zA-Z0-9_-]{11}$ ]]; then
-    video_id="$input"
-  else
-    return 1
-  fi
-
-  getPlaylistFromSong "$video_id" "$TAG"
-}
-
-process_input() {
-  local input="$1"
+direct() {
+  local obj="$1"
+  local type
+  local id
   local response
 
-  response=$(handle_artist "$input") ||
-    response=$(handle_album "$input") ||
-    response=$(handle_mpreb_album "$input") ||
-    response=$(handle_song "$input") ||
-    {
-      log error "Invalid input. Please provide a valid YouTube Music artist/album/song URL or ID."
-      exit 1
-    }
+  eval "$(jq -r '@sh "
+    type=\(.id.type)
+    id=\(.id.value)
+    tag=\(.args.tag)
+  "' <<<"$obj")"
+
+  case "$type" in
+  "album")
+    response="$(
+      getRawJsonPlaylist '{
+        "playlistId": "'"$id"'"
+      }' |
+      jq -r '
+        .contents.singleColumnMusicWatchNextResultsRenderer
+          .tabbedRenderer.watchNextTabbedResultsRenderer
+          .tabs[0].tabRenderer.content
+          .musicQueueRenderer.header
+          .musicQueueHeaderRenderer.subtitle
+          .runs[0].text as $album |
+
+        .contents.singleColumnMusicWatchNextResultsRenderer
+          .tabbedRenderer.watchNextTabbedResultsRenderer
+          .tabs[0].tabRenderer.content
+          .musicQueueRenderer.content
+          .playlistPanelRenderer.contents |
+
+        # Get the length for range
+        length as $total |
+
+        # Create range of indices
+        range(0; $total) as $i |
+
+        .[$i] |
+        select(.playlistPanelVideoRenderer != null) |
+        .playlistPanelVideoRenderer |
+        {
+          track: ($i + 1),
+          album: $album,
+          title: .title.runs[0].text,
+          artist: .longBylineText.runs[0].text,
+          duration: (
+            .lengthText.runs[0].text |
+            split(":") |
+            map(tonumber) |
+            .[0] * 60 + .[1] |
+            tostring
+          ),
+          thumbnail: .thumbnail.thumbnails[-1].url,
+          source_id: .videoId,
+          url: "https://www.youtube.com/watch?v=\(.videoId)"
+        } | tojson
+      '
+    )"
+    ;;
+  "song")
+    response="$(
+      yt-dlp \
+        -j \
+        "https://www.youtube.com/watch?v=$id" |
+        jq '{
+          id: .id,
+          title: .title,
+          length: .duration,
+          artist: .artist,
+          thumbnail: .thumbnail,
+          url: "https://www.youtube.com/watch?v='"$id"'"
+        }'
+    )"
+    ;;
+  *)
+    echo "{ \"error\": \"Unsupported content type: $type\" }" >&2
+    return 1
+    ;;
+  esac
 
   echo "$response"
 }
 
-##########
-# external
-##########
-
 related() {
-  local tag="all"
-  local input
+  local obj="$1"
+  local type
+  local id
+  local response
 
-  # Parse plugin-specific options
-  while [[ $# -gt 0 ]]; do
-    case $1 in
-    --tag)
-      tag="$2"
-      shift 2
-      ;;
-    *)
-      input="$1"
-      shift
-      ;;
-    esac
-  done
+  eval "$(jq -r '@sh "
+    type=\(.id.type)
+    id=\(.id.value)
+    tag=\(.args.tag)
+  "' <<<"$obj")"
 
-  if [[ -z "${input:-}" ]]; then
-    log error "Missing input URL or ID"
-    echo "$plugin_doc"
+  case "$type" in
+  "artist")
+    response="$(getPlaylistFromArtist "$id")"
+    ;;
+  "album")
+    response="$(
+      getRawJsonPlaylist '{
+        "playlistId": "'"$(buildTaggedPlaylistIdFromAlbum "$id" "$tag")"'"
+      }' |
+      jq -r '{
+        playlist_name: "YouTube Music",
+        encoding: "UTF-8",
+        tracks: [
+          .contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content.musicQueueRenderer.content.playlistPanelRenderer.contents[] |
+          select(.playlistPanelVideoRenderer != null) | .playlistPanelVideoRenderer | {
+            title: .title.runs[0].text,
+            artist: .longBylineText.runs[0].text,
+            album: (.longBylineText.runs[2].text // "Unknown"),
+            duration: ((.lengthText.runs[0].text | split(":") | map(tonumber) | .[0] * 60 + .[1]) | tostring),
+            year: (.longBylineText.runs[4].text // "Unknown"),
+            genre: "Unknown",
+            thumbnail: .thumbnail.thumbnails[-1].url,
+            video_id: .videoId,
+            url: "https://www.youtube.com/watch?v=\(.videoId)"
+          }
+        ]
+      }'
+    )"
+    ;;
+  "song")
+    response="$(
+      getRawJsonPlaylist '{
+          "videoId": "'"$videoId"'",
+          "playlistId": "'"$(buildTaggedPlaylistIdFromSong "$videoId" "$tag")"'"
+      }' |
+      jq -r '{
+        playlist_name: "YouTube Music",
+        encoding: "UTF-8",
+        tracks: [
+          .contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content.musicQueueRenderer.content.playlistPanelRenderer.contents[] |
+          select(.playlistPanelVideoRenderer != null) | .playlistPanelVideoRenderer | {
+            title: .title.runs[0].text,
+            artist: .longBylineText.runs[0].text,
+            album: (.longBylineText.runs[2].text // "Unknown"),
+            duration: ((.lengthText.runs[0].text | split(":") | map(tonumber) | .[0] * 60 + .[1]) | tostring),
+            year: (.longBylineText.runs[4].text // "Unknown"),
+            genre: "Unknown",
+            thumbnail: .thumbnail.thumbnails[-1].url,
+            video_id: .videoId,
+            url: "https://www.youtube.com/watch?v=\(.videoId)"
+          }
+        ]
+      }'
+    )"
+    ;;
+  *)
+    echo "{ \"error\": \"Unsupported content type: $type\" }" >&2
+    return 1
+    ;;
+  esac
+
+  echo "$response"
+}
+
+execute_command() {
+  local input="$1"
+  local command
+  local response
+
+  # Extract command from input
+  command=$(echo "$input" | jq -r '.command')
+
+  # Validate that the command function exists
+  if ! declare -F "$command" >/dev/null; then
+    echo "{ \"error\": \"Unknown command: $command\" }" >&2
+    return 1
+  fi
+
+  # Execute the command function
+  response=$("$command" "$input")
+
+  # Check if command execution was successful
+  if [ $? -ne 0 ]; then
+    echo "$response" >&2
+    return 1
+  fi
+
+  echo "$response"
+}
+
+# Main execution flow
+main() {
+  local json_input
+  local id_obj
+  local new_input
+  local response
+
+  # Read JSON input
+  json_input=$(cat)
+
+  # Get and validate the ID
+  original_id=$(echo "$json_input" | jq -r '.id')
+  id_obj=$(evolve_id "$original_id")
+
+  # If evolve_id failed, exit with error
+  if [ $? -ne 0 ]; then
+    echo "$id_obj" >&2
     exit 1
   fi
 
-  process_input "$input" "$tag"
+  new_input="$(echo "$json_input" | jq --argjson id_obj "$id_obj" '.id = $id_obj')"
+  response=$(execute_command "$new_input")
+
+  # Check if command execution was successful
+  if [ $? -ne 0 ]; then
+    echo "$response" >&2
+    exit 1
+  fi
+
+  echo "$response"
 }
+
+main
