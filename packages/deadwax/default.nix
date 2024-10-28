@@ -7,6 +7,7 @@
     yt-dlp
     mpv
     jq
+    fzf
     coreutils
   ];
 in

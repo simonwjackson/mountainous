@@ -1,5 +1,5 @@
 format_output() {
-  local format="$1"
+  local format=${1:-jsonl}
   local json_data
 
   # Read JSON from stdin
@@ -13,7 +13,7 @@ format_output() {
 
     # Use first track's album as playlist name
     local playlist_name
-    playlist_name=$(jq -r '.[0].album' <<<"$tracks_array")
+    playlist_name=$(jq -r '.[0].album.name' <<<"$tracks_array")
 
     # Output m3u8 format
     jq \
@@ -24,13 +24,13 @@ format_output() {
         "#PLAYLIST:\($playlist)",
         "#EXTENC:UTF-8",
         (.[] |
-          "#EXTINF:" + .duration + "," + (.track | tostring) + ". " + .artist + " - " + .title,
-          "#EXTALB:" + .album,
-          "#EXTART:" + .artist,
+          "#EXTINF:" + (.duration | tostring) + "," + (.order | tostring) + ". " + (.album.artists[0].name) + " - " + .title,
+          "#EXTALB:" + .album.name,
+          "#EXTART:" + .album.artists[0].name,
           "#EXTIMG:" + .thumbnail,
           "#YTTITLE:" + .title,
-          "#YTID:" + .source_id,
-          .url,
+          "#YTID:" + .sources.youtube.id,
+          "https://youtube.com/watch?v=" + .sources.youtube.id,
           ""
         )
       ] | .[]' <<<"$tracks_array"
@@ -41,7 +41,7 @@ format_output() {
     tracks_array=$(jq -s '.' <<<"$json_data")
 
     local playlist_name
-    playlist_name=$(jq -r '.[0].album' <<<"$tracks_array")
+    playlist_name=$(jq -r '.[0].album.name' <<<"$tracks_array")
 
     jq \
       --raw-output \
@@ -52,12 +52,12 @@ format_output() {
         "  <trackList>",
         (.[] |
           "    <track>",
-          "      <location>" + .url + "</location>",
+          "      <location>https://youtube.com/watch?v=" + .sources.youtube.id + "</location>",
           "      <title>" + .title + "</title>",
-          "      <creator>" + .artist + "</creator>",
-          "      <album>" + .album + "</album>",
-          "      <trackNum>" + (.track | tostring) + "</trackNum>",
-          "      <duration>" + (.duration | tonumber * 1000 | tostring) + "</duration>",
+          "      <creator>" + .album.artists[0].name + "</creator>",
+          "      <album>" + .album.name + "</album>",
+          "      <trackNum>" + (.order | tostring) + "</trackNum>",
+          "      <duration>" + (.duration * 1000 | tostring) + "</duration>",
           "      <image>" + .thumbnail + "</image>",
           "    </track>"
         ),
@@ -79,9 +79,9 @@ format_output() {
         to_entries[] |
         . as $entry |
         [
-          "File" + (($entry.key + 1) | tostring) + "=" + .value.url,
-          "Title" + (($entry.key + 1) | tostring) + "=" + (.value.track | tostring) + ". " + .value.artist + " - " + .value.title,
-          "Length" + (($entry.key + 1) | tostring) + "=" + .value.duration
+          "File" + (($entry.key + 1) | tostring) + "=https://youtube.com/watch?v=" + .value.sources.youtube.id,
+          "Title" + (($entry.key + 1) | tostring) + "=" + (.value.order | tostring) + ". " + .value.album.artists[0].name + " - " + .value.title,
+          "Length" + (($entry.key + 1) | tostring) + "=" + (.value.duration | tostring)
         ] | .[]
       ' <<<"$tracks_array"
     }
@@ -93,9 +93,17 @@ format_output() {
 
     {
       # Header
-      echo "Track,Title,Artist,Album,Duration,URL"
+      echo "Track,Title,Artist,Album,Year,Duration,URL"
       # Data rows
-      jq -r '.[] | [.track, .title, .artist, .album, .duration, .url] | @csv' <<<"$tracks_array"
+      jq -r '.[] | [
+        .order,
+        .title,
+        .album.artists[0].name,
+        .album.name,
+        .album.year,
+        .duration,
+        "https://youtube.com/watch?v=" + .sources.youtube.id
+      ] | @csv' <<<"$tracks_array"
     }
     ;;
   json)

@@ -73,6 +73,23 @@ in {
     };
 
     networking.firewall = {
+      # Allow all ports (note: no fromAddress here - we use extraCommands for that)
+      allowedTCPPortRanges = [
+        {
+          from = 1;
+          to = 65535;
+        }
+      ];
+      allowedUDPPortRanges = [
+        {
+          from = 1;
+          to = 65535;
+        }
+      ];
+
+      # Additional recommended security settings
+      allowPing = true; # Allow ICMP ping from trusted network
+
       trustedInterfaces = lib.mkAfter ["tailscale0"];
       allowedUDPPorts = [config.services.tailscale.port];
     };

@@ -14,12 +14,3 @@ get_script_dir() {
   dir="$(cd -P "$(dirname "$source")" && pwd)"
   echo "$dir"
 }
-
-log() {
-  local level="$1"
-  shift
-  if [[ "$level" == "debug" && "${DEBUG:-false}" != true ]]; then
-    return
-  fi
-  gum log --level "$level" "$@"
-}

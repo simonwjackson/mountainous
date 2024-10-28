@@ -1,0 +1,77 @@
+I need to update the user API for deadwax. here is what im thinking. keep in mind, some of the functions have not been implemented
+
+```bash
+deadwax [options] artists        [--related]           <song|album|artist> [--tag]
+deadwax [options] artists                              <song|album|artist|playlist>
+deadwax [options] artists search                       <query>
+deadwax [options] albums         [--related]           <song|album|artist> [--tag]
+deadwax [options] albums                               <song|album|artist|playlist>
+deadwax [options] albums  search                       <query>
+deadwax [options] songs          [--related|--shuffle] <album|artist> [--tag]
+deadwax [options] songs                                <song|album|artist|playlist>
+deadwax [options] songs   search                       <query>
+deadwax [options] search                               <query>
+```
+
+## examples
+
+```bash
+deadwax artists --related <song> --tag jazz
+# list artists objects related to a song that are of the jazz genre
+
+deadwax search "thursday"
+# search for all songs, albums, artists, playlist with the query 'thursday'
+```
+
+Notes:
+ * --related, --shuffle & --tag: incompatible with playlist
+ * use nix shebang
+ * assume `mpreb_to_olak()` exists
+ * when an incompatible combo of commands, flags and id types are passed, use `gum log` for warnings and errors
+ * the artist|album|playlist|song
+
+```bash
+extract_id() {
+  local url="$1"
+  local pattern="$2"
+
+  echo "$url" | grep -oP "$pattern"
+}
+
+evolve_id() {
+  local string=$1
+  local type=""
+  local id=""
+
+  if [[ "$string" =~ ^https://music\.youtube\.com/channel/UC[a-zA-Z0-9_-]{22}($|\?) ]] || [[ "$string" =~ ^UC[a-zA-Z0-9_-]{22}$ ]]; then
+    type="artist"
+    id=$(extract_id "$string" 'UC[a-zA-Z0-9_-]{22}') || id="$string"
+  elif [[ "$string" =~ ^(https://music\.youtube\.com/playlist\?list=)?OLAK5uy_[A-Za-z0-9_-]{33}$ ]]; then
+    type="album"
+    id=$(extract_id "$string" '(?<=list=)OLAK5uy_[A-Za-z0-9_-]{33}(?=&|$)') || id="$string"
+  elif [[ "$string" =~ ^https://music\.youtube\.com/browse/MPREb_ || "$string" =~ ^MPREb_[a-zA-Z0-9_-]+$ ]]; then
+    type="album"
+    mpreb_album_id=$(extract_id "$string" 'MPREb_[a-zA-Z0-9_-]+') || id="$string"
+    id=$(mpreb_to_olak "$mpreb_album_id")
+  elif [[ "$string" =~ ^https://music\.youtube\.com/playlist\?list=RDCLAK5uy_[A-Za-z0-9_-]{33}($|\?) ]] || [[ "$string" =~ ^RDCLAK5uy_[A-Za-z0-9_-]{33}$ ]]; then
+    type="playlist"
+    id=$(extract_id "$string" 'RDCLAK5uy_[A-Za-z0-9_-]{33}') || id="$string"
+  elif [[ "$string" =~ ^https://music\.youtube\.com/playlist\?list=PL[A-Za-z0-9_-]{32}($|\?) ]] || [[ "$string" =~ ^PL[A-Za-z0-9_-]{32}$ ]]; then
+    type="playlist"
+    id=$(extract_id "$string" 'PL[A-Za-z0-9_-]{32}') || id="$string"
+  elif [[ "$string" =~ ^https://music\.youtube\.com/watch\?v= || "$string" =~ ^[a-zA-Z0-9_-]{11}$ ]]; then
+    type="song"
+    id=$(extract_id "$string" '(?<=v=)[a-zA-Z0-9_-]{11}') || id="$string"
+  else
+    echo '{ "error": "Invalid id format" }' >&2
+    return 1
+  fi
+
+  jq -n \
+    --arg type "$type" \
+    --arg id "$id" '{
+      type: $type,
+      value: $id,
+    }'
+}
+```

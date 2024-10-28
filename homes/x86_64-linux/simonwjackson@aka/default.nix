@@ -20,6 +20,12 @@
   # programs.vinyl-vault.enable = true;
   # mountainous.work-mode.enable = true;
   mountainous.firefox.enable = true;
+  mountainous.hyprpaper-watcher.enable = true;
+  mountainous.auto-blur-image = {
+    enable = true;
+    input = "/home/${config.home.username}/.cache/wallpapers/album.png";
+    output = "/home/${config.home.username}/.cache/wallpapers/watched-image.png";
+  };
   # backpacker.desktops.hyprland.enable = false;
   # services.udiskie.enable = true;
   # simonwjackson.snowscape.enable = true;

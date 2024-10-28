@@ -32,9 +32,11 @@ get_plugin_dirs() {
 }
 
 pass_to_plugins() {
-  local obj="$1"
+  local obj
   local result=""
   local found_plugin=false
+
+  obj="$(cat)"
 
   # Get all plugin directories
   mapfile -t plugin_dirs < <(get_plugin_dirs)

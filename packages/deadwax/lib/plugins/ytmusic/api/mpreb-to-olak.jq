@@ -1,0 +1,15 @@
+.contents
+.twoColumnBrowseResultsRenderer
+.secondaryContents
+.sectionListRenderer
+.contents[0]
+.musicShelfRenderer
+.contents[0]
+.musicResponsiveListItemRenderer
+.overlay
+.musicItemThumbnailOverlayRenderer
+.content
+.musicPlayButtonRenderer
+.playNavigationEndpoint
+.watchEndpoint
+.playlistId
