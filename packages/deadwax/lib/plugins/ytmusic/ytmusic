@@ -5,7 +5,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 source "${ROOT_DIR}/api/main.sh"
 source "${ROOT_DIR}/api/utils.sh"
-source "${ROOT_DIR}/api/artist/main.sh"
 
 create_song_list() {
   local obj="$1"
@@ -31,7 +30,7 @@ create_song_list() {
         }'
     )"
   elif [ "$recommend" == "false" ] && [ "$type" == "artist" ]; then
-    get_artist_songs "$id"
+    get_all_artist_songs "$id"
     return
   else
     playlistId=$(buildPlaylistId "$obj")
@@ -44,7 +43,13 @@ create_song_list() {
     )"
   fi
 
-  ytapi next "$extraJson" |
+  # Add --cache flag when recommend is false and type is album
+  local cache_flag=""
+  if [ "$recommend" == "false" ] && [ "$type" == "album" ]; then
+    cache_flag="--cache"
+  fi
+
+  ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
       --raw-output \
@@ -74,10 +79,13 @@ create_search_list() {
   elif [ "$type" == "album" ]; then
     album_search "$query"
     return
+  elif [ "$type" == "all" ]; then
+    all_search "$query"
+    return
   else
-    search "query"
+    gum log --level error "Invalid search type: $type"
+    return 1
   fi
-
 }
 
 create_playlist_list() {
@@ -134,6 +142,18 @@ create_playlist_list() {
   }' <(echo "$album") <(echo "$songs")
 }
 
+all_to_olak() {
+  while read -r json; do
+    album_id=$(echo "$json" | jq -r '.album.id')
+    if [ "$album_id" != "null" ]; then
+      new_id=$(mpreb_to_olak "$album_id")
+      echo "$json" | jq --arg new_id "$new_id" '.album.id = $new_id'
+    else
+      echo "$json"
+    fi
+  done
+}
+
 create_album_list() {
   local obj="$1"
   local id
@@ -168,10 +188,16 @@ create_album_list() {
     )"
   fi
 
-  ytapi next "$extraJson" |
+  local cache_flag=""
+  if [ "$recommend" == "false" ] && [ "$type" == "album" ]; then
+    cache_flag="--cache"
+  fi
+
+  ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
       --from-file "${ROOT_DIR}/api/playlist-to-songs.jq" |
+    all_to_olak |
     jq \
       --slurp \
       --compact-output \
@@ -213,7 +239,13 @@ create_artist_list() {
     )"
   fi
 
-  ytapi next "$extraJson" |
+  # Add --cache flag when recommend is false and type is album
+  local cache_flag=""
+  if [ "$recommend" == "false" ] && [ "$type" == "album" ]; then
+    cache_flag="--cache"
+  fi
+
+  ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
       --from-file "${ROOT_DIR}/api/playlist-to-songs.jq" |
@@ -221,6 +253,7 @@ create_artist_list() {
       --slurp \
       --compact-output \
       --from-file "$(dirname "${BASH_SOURCE[0]}")/api/songs-to-albums.jq" |
+    all_to_olak |
     jq \
       --compact-output \
       --from-file "$(dirname "${BASH_SOURCE[0]}")/api/albums-to-artists.jq"
@@ -244,10 +277,13 @@ validate_options() {
 
 process_input() {
   local json="$1"
+  local request
+  local target
+  local recommend
 
-  local request=$(echo "$json" | jq -r '.request')
-  local target=$(echo "$json" | jq -r '.target')
-  local recommend=$(echo "$json" | jq -r '.options.recommend // false')
+  request=$(echo "$json" | jq -r '.request')
+  target=$(echo "$json" | jq -r '.target')
+  recommend=$(echo "$json" | jq -r '.options.recommend // false')
 
   # Check if target is already evolved (has type and value fields)
   if [ "$request" != "search" ] && ! echo "$target" | jq -e 'has("type") and has("value")' >/dev/null 2>&1; then

@@ -1,8 +1,14 @@
 mpreb_to_olak() {
-  local mpreb=$1
+  local str=$1
 
-  ytapi browse '{
-    "browseId": "'"$mpreb"'",
+  # Return input string if it doesn't start with MPREb_
+  if [[ ! "$str" =~ ^MPREb_ ]]; then
+    echo "$str"
+    return
+  fi
+
+  ytapi --cache browse '{
+    "browseId": "'"$str"'",
     "context": {
       "client": {
         "originalUrl": "https://music.youtube.com/library"
@@ -15,6 +21,7 @@ mpreb_to_olak() {
       --raw-output \
       --from-file "$(dirname "${BASH_SOURCE[0]}")/mpreb-to-olak.jq"
 }
+export -f mpreb_to_olak
 
 get_special_artist_id() {
   local artist_id="$1"
