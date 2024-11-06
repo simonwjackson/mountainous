@@ -91,7 +91,7 @@ all_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/search-all-to-all.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-all.jq"
 }
 
 album_search() {
@@ -109,7 +109,7 @@ album_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/album-search.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-album.jq"
 }
 
 playlist_search() {
@@ -140,7 +140,7 @@ playlist_search() {
   } |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/playlist-search.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-playlist.jq"
 }
 
 song_search() {
@@ -158,7 +158,7 @@ song_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/song-search.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-song.jq"
 }
 
 artist_search() {
@@ -176,7 +176,7 @@ artist_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/artist-search.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-artist.jq"
 }
 
 artist_albums() {
@@ -194,7 +194,7 @@ artist_albums() {
     jq \
       --compact-output \
       --arg artistId "$artistId" \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/artist-albums.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-artist-to-albums.jq"
 }
 
 get_continuation() {
@@ -407,5 +407,5 @@ get_all_artist_songs() {
   } |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/browse-to-songs.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-all-albums-to-songs.jq"
 }

@@ -53,7 +53,7 @@ create_song_list() {
     jq \
       --compact-output \
       --raw-output \
-      --from-file "${ROOT_DIR}/api/playlist-to-songs.jq"
+      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq"
 }
 
 create_search_list() {
@@ -132,7 +132,7 @@ create_playlist_list() {
 
   songs=$(
     echo "$json" |
-      jq --from-file "${ROOT_DIR}/api/playlist-to-songs.jq" | jq -s
+      jq --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" | jq -s
   )
 
   jq -s '{
@@ -196,12 +196,12 @@ create_album_list() {
   ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
-      --from-file "${ROOT_DIR}/api/playlist-to-songs.jq" |
+      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
     all_to_olak |
     jq \
       --slurp \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/songs-to-albums.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-songs-to-albums.jq"
 }
 
 create_artist_list() {
@@ -248,15 +248,15 @@ create_artist_list() {
   ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
-      --from-file "${ROOT_DIR}/api/playlist-to-songs.jq" |
+      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
     jq \
       --slurp \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/songs-to-albums.jq" |
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-songs-to-albums.jq" |
     all_to_olak |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/albums-to-artists.jq"
+      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-albums-to-artists.jq"
 }
 
 validate_options() {
