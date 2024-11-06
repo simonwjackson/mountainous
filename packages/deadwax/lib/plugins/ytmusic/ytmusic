@@ -1,10 +1,15 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p jq gum
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export YTMUSIC_PLUGIN_BASE_DIR
+YTMUSIC_PLUGIN_BASE_DIR=${YTMUSIC_PLUGIN_BASE_DIR:-$(
+  dirname "$(
+    readlink -f "${BASH_SOURCE[0]}"
+  )"
+)}
 
-source "${ROOT_DIR}/api/main.sh"
-source "${ROOT_DIR}/api/utils.sh"
+source "${YTMUSIC_PLUGIN_BASE_DIR}/api/main.sh"
+source "${YTMUSIC_PLUGIN_BASE_DIR}/api/utils.sh"
 
 create_song_list() {
   local obj="$1"
@@ -53,7 +58,7 @@ create_song_list() {
     jq \
       --compact-output \
       --raw-output \
-      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-playlist-to-songs.jq"
 }
 
 create_search_list() {
@@ -132,7 +137,7 @@ create_playlist_list() {
 
   songs=$(
     echo "$json" |
-      jq --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" | jq -s
+      jq --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-playlist-to-songs.jq" | jq -s
   )
 
   jq -s '{
@@ -196,12 +201,12 @@ create_album_list() {
   ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
-      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
     all_to_olak |
     jq \
       --slurp \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-songs-to-albums.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/deadwax-songs-to-albums.jq"
 }
 
 create_artist_list() {
@@ -248,15 +253,15 @@ create_artist_list() {
   ytapi $cache_flag next "$extraJson" |
     jq \
       --compact-output \
-      --from-file "${ROOT_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-playlist-to-songs.jq" |
     jq \
       --slurp \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-songs-to-albums.jq" |
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/deadwax-songs-to-albums.jq" |
     all_to_olak |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/api/jq/ytmusic-albums-to-artists.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-albums-to-artists.jq"
 }
 
 validate_options() {

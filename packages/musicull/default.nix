@@ -3,7 +3,7 @@
   resholve,
   pkgs,
 }:
-resholve.writeScriptBin "deadwax" {
+resholve.writeScriptBin "musicull" {
   inputs = with pkgs; [
     coreutils
     curl

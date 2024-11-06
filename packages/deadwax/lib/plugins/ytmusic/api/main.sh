@@ -62,7 +62,7 @@ ytapi() {
       -s \
       --compact-output \
       '.[0] * .[1]' \
-      "$(dirname "${BASH_SOURCE[0]}")/data-raw.json" <(echo "$data_raw")
+      "${YTMUSIC_PLUGIN_BASE_DIR}/api/data-raw.json" <(echo "$data_raw")
   )")
 
   # Execute curl and handle caching if enabled
@@ -91,7 +91,7 @@ all_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-all.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-search-all.jq"
 }
 
 album_search() {
@@ -109,7 +109,7 @@ album_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-album.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-search-album.jq"
 }
 
 playlist_search() {
@@ -140,7 +140,7 @@ playlist_search() {
   } |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-playlist.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-search-playlist.jq"
 }
 
 song_search() {
@@ -158,7 +158,7 @@ song_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-song.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-search-song.jq"
 }
 
 artist_search() {
@@ -176,7 +176,7 @@ artist_search() {
     --header "Referer: https://music.youtube.com/library" |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-search-artist.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-search-artist.jq"
 }
 
 artist_albums() {
@@ -194,7 +194,7 @@ artist_albums() {
     jq \
       --compact-output \
       --arg artistId "$artistId" \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-artist-to-albums.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-artist-to-albums.jq"
 }
 
 get_continuation() {
@@ -407,5 +407,5 @@ get_all_artist_songs() {
   } |
     jq \
       --compact-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-all-albums-to-songs.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-all-albums-to-songs.jq"
 }

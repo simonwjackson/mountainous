@@ -2,7 +2,6 @@
 
 get_plugin_dirs() {
   local script_dir
-  script_dir="$(get_script_dir)"
   local -A seen_plugins # Associative array to track basenames
   local plugin_dirs=()
   local dir
@@ -22,7 +21,7 @@ get_plugin_dirs() {
   fi
 
   # Builtin plugins directory (only add if basenames not already seen)
-  local relative_path="$script_dir/../lib/plugins"
+  local relative_path="${DEADWAX_BASE_DIR}/../lib/plugins"
   if [[ -d "$relative_path" ]]; then
     plugin_dirs+=("$(cd "$relative_path" && pwd)")
   fi

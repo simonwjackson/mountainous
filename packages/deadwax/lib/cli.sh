@@ -17,7 +17,9 @@ Options:
                    Can optionally specify a tag: --recommend rock
   -h, --help       Show this screen"
 
-# Constants for improved maintainability
+source "${DEADWAX_BASE_DIR}/../lib/core.sh"
+source "${DEADWAX_BASE_DIR}/../lib/plugins.sh"
+
 declare -r VALID_REQUESTS=("song" "album" "artist" "playlist")
 declare -r VALID_SEARCH_TYPES=("artist" "album" "song" "playlist" "all")
 
@@ -113,19 +115,18 @@ create_json_output() {
   jq -n \
     --arg request "$request" \
     --argjson target "$target_json" \
-    --arg recommend "$recommend" \
-    '{
-            request: $request,
-            target: $target,
-            options: {
-                recommend: (
-                    if $recommend == "false" then false
-                    elif $recommend == "true" then true
-                    else $recommend
-                    end
-                )
-            }
-        }'
+    --arg recommend "$recommend" '{
+        request: $request,
+        target: $target,
+        options: {
+            recommend: (
+                if $recommend == "false" then false
+                elif $recommend == "true" then true
+                else $recommend
+                end
+            )
+        }
+    }'
 }
 
 process_args() {
@@ -164,3 +165,7 @@ cli() {
   json=$(process_args "$@")
   echo "$json" | pass_to_plugins
 }
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  cli "$@"
+fi

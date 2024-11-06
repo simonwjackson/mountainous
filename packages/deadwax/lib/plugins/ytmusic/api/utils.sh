@@ -19,7 +19,7 @@ mpreb_to_olak() {
     jq \
       --compact-output \
       --raw-output \
-      --from-file "$(dirname "${BASH_SOURCE[0]}")/jq/ytmusic-mpreb-to-olak.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-mpreb-to-olak.jq"
 }
 export -f mpreb_to_olak
 
