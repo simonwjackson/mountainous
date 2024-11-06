@@ -18,15 +18,8 @@ Options:
   -h, --help       Show this screen"
 
 # Constants for improved maintainability
-declare -r VALID_REQUESTS=("songs" "albums" "artists" "playlists")
-declare -r VALID_SEARCH_TYPES=("artist" "artists" "album" "albums" "song" "songs" "playlist" "playlists" "all")
-
-# Helper functions
-normalize_type() {
-  local type="$1"
-  # Remove trailing 's' if present
-  echo "${type%s}"
-}
+declare -r VALID_REQUESTS=("song" "album" "artist" "playlist")
+declare -r VALID_SEARCH_TYPES=("artist" "album" "song" "playlist" "all")
 
 validate_search_type() {
   local search_type="$1"
@@ -57,9 +50,6 @@ handle_search_request() {
   validate_search_type "$_search_type" || {
     log fatal "Invalid search type. Must be one of: ${VALID_SEARCH_TYPES[*]}"
   }
-
-  # Normalize the search type to singular form
-  _search_type=$(normalize_type "$_search_type")
 
   _target="$2"
 }

@@ -326,16 +326,16 @@ process_input() {
   )
 
   case "$request" in
-  "songs")
+  "song")
     create_song_list "$obj"
     ;;
-  "albums")
+  "album")
     create_album_list "$obj"
     ;;
-  "artists")
+  "artist")
     create_artist_list "$obj"
     ;;
-  "playlists")
+  "playlist")
     create_playlist_list "$obj"
     ;;
   "search")

@@ -29,27 +29,17 @@ log() {
   fi
 }
 
-normalize_type() {
-  local type="$1"
-  # Remove trailing 's' if present and convert to singular form
-  type="${type%s}"
-  echo "$type"
-}
-
 validate_request() {
   local req="$1"
   case "$req" in
-  songs | albums | artists | playlists | search) return 0 ;;
+  song | album | artist | playlist | search) return 0 ;;
   *) return 1 ;;
   esac
 }
 
 validate_search_type() {
   local type="$1"
-  local normalized_type
-  normalized_type=$(normalize_type "$type")
-
-  case "$normalized_type" in
+  case "$type" in
   artist | album | song | playlist | all) return 0 ;;
   *) return 1 ;;
   esac
