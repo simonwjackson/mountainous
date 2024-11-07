@@ -3,7 +3,11 @@ if type != "array" then [.] else . end
     .artists[] as $artist
     | {
         name: $artist.name,
-        id: $artist.id,
+        sources: {
+          ytmusic: {
+            id: $artist.id
+          }
+        },
         albums: [{
             name: .name,
             year: .year,

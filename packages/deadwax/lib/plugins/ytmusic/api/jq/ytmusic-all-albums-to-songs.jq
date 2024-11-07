@@ -46,7 +46,11 @@ def extract_artist_data:
   )
   | {
       name: .text,
-      id: .navigationEndpoint.browseEndpoint.browseId
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      }
     };
 
 def get_name:

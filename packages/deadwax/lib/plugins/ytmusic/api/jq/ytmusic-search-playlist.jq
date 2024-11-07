@@ -17,11 +17,15 @@
       .runs[0]
       .text
     ),
-    id: (
-      .navigationEndpoint
-      .browseEndpoint
-      .browseId
-    ),
+    sources: {
+      ytmusic: {
+        id: (
+          .navigationEndpoint
+          .browseEndpoint
+          .browseId
+        )
+      }
+    },
     thumbnail:
       .thumbnail
       .musicThumbnailRenderer

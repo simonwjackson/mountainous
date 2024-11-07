@@ -8,12 +8,16 @@
 .musicShelfRenderer
 .contents[] | {
     type: "artist",
-    id: (
-      .musicResponsiveListItemRenderer
-      .navigationEndpoint
-      .browseEndpoint
-      .browseId
-    ),
+    sources: {
+      ytmusic: {
+        id: (
+          .musicResponsiveListItemRenderer
+          .navigationEndpoint
+          .browseEndpoint
+          .browseId
+        )
+      }
+    },
     name: (
       .musicResponsiveListItemRenderer
       .flexColumns[0]

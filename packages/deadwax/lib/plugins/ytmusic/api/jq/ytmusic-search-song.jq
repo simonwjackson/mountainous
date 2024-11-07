@@ -52,8 +52,12 @@ def extract_artist_data:
   )
   | {
       name: .text,
-      id: .navigationEndpoint.browseEndpoint.browseId
-  };
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      }
+    };
 
 # Song-related functions
 def extract_song_data($type):
@@ -85,7 +89,6 @@ def get_contents:
   .musicShelfRenderer
   .contents[];
 
-# Main transformation
 get_contents
 | .musicResponsiveListItemRenderer
 | {
@@ -94,12 +97,20 @@ get_contents
     duration: extract_duration,
     album: {
       name: (get_flex_column_runs | get_album_name),
-      id: (get_flex_column_runs | get_album_id),
+      sources: {
+        ytmusic: {
+          id: (get_flex_column_runs | get_album_id)
+        }
+      },
       artists: [
         get_flex_column_runs
         | extract_artist_data
       ],
     },
     name: extract_song_data("name"),
-    id: extract_song_data("id"),
+    sources: {
+      youtube: {
+        id: extract_song_data("id")
+      }
+    }
   }

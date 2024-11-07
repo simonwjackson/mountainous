@@ -58,56 +58,38 @@ def parse_playlist($item):
   $item
   | {
       type: "playlist",
-      id:
-        .navigationEndpoint
-        .browseEndpoint
-        .browseId,
-      name:
-        .flexColumns[0]
-        .musicResponsiveListItemFlexColumnRenderer
-        .text
-        .runs[0]
-        .text
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      },
+      name: .flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].text
     };
 
 def parse_artist($item):
   $item
   | {
       type: "artist",
-      name:
-        .flexColumns[0]
-        .musicResponsiveListItemFlexColumnRenderer
-        .text
-        .runs[0]
-        .text,
-      id:
-        .navigationEndpoint
-        .browseEndpoint
-        .browseId
+      name: .flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].text,
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      }
     };
 
 def parse_album($item):
   $item
   | {
       type: "album",
-      id:
-        .navigationEndpoint
-        .browseEndpoint
-        .browseId,
-      name:
-        .flexColumns[0]
-        .musicResponsiveListItemFlexColumnRenderer
-        .text
-        .runs[0]
-        .text,
-      year: ((
-        .flexColumns[1]
-        .musicResponsiveListItemFlexColumnRenderer
-        .text
-        .runs[]
-        | select(.text | test("^[0-9]{4}$"))
-        .text
-      ) // null),
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      },
+      name: .flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].text,
+      year: ((.flexColumns[1].musicResponsiveListItemFlexColumnRenderer.text.runs[]
+        | select(.text | test("^[0-9]{4}$")).text) // null),
       thumbnail: get_thumbnail,
       artists: extract_artists
     };

@@ -8,7 +8,11 @@ def extract_artist($run):
   )
   | {
       name: .text,
-      id: .navigationEndpoint.browseEndpoint.browseId
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      }
     };
 
 .contents
@@ -45,15 +49,23 @@ def extract_artist($run):
       ))
     | map({
         name: .text,
-        id: .navigationEndpoint.browseEndpoint.browseId
+        sources: {
+          ytmusic: {
+            id: .navigationEndpoint.browseEndpoint.browseId
+          }
+        }
       })
   ),
-  id: (
-    $item
-    .navigationEndpoint
-    .browseEndpoint
-    .browseId
-  ),
+  sources: {
+    ytmusic: {
+      id: (
+        $item
+        .navigationEndpoint
+        .browseEndpoint
+        .browseId
+      )
+    }
+  },
   name: (
     $item
     .flexColumns[0]
@@ -74,3 +86,4 @@ def extract_artist($run):
     // null
   )
 }
+

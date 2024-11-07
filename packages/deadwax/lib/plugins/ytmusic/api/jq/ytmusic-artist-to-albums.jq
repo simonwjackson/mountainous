@@ -39,11 +39,15 @@ def artist_name:
   type: "album",
   name: .title
          | first_run_text,
-  id: .title
-      .runs[0]
-      .navigationEndpoint
-      .browseEndpoint
-      .browseId,
+  sources: {
+    ytmusic: {
+      id: .title
+          .runs[0]
+          .navigationEndpoint
+          .browseEndpoint
+          .browseId
+    }
+  },
   thumbnail: (
     .thumbnailRenderer
     .musicThumbnailRenderer
@@ -57,6 +61,10 @@ def artist_name:
   artists: [{
     name: $root
           | artist_name,
-    id: $artistId
+    sources: {
+      ytmusic: {
+        id: $artistId
+      }
+    }
   }]
 }

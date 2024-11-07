@@ -102,7 +102,7 @@ choose() {
   case "$type" in
   "artist")
     preview_text+="$([[ "$DEADWAX_TARGET_OUTPUT" == "artist" ]] && echo "get artist" || echo "view album")"
-    jq_filter='"\(.id)\t\(.name)"'
+    jq_filter='"\(.sources[].id)\t\(.name)"'
     if [[ "$DEADWAX_TARGET_OUTPUT" == "artist" ]]; then
       action_command="echo {+1} | xargs -I % bash -c 'get artist \"%\"'"
     else
@@ -111,7 +111,7 @@ choose() {
     ;;
   "album")
     preview_text+="$([[ "$DEADWAX_TARGET_OUTPUT" == "album" ]] && echo "get album" || echo "view song")"
-    jq_filter='"\(.id)\t\(.name) (\(.year)) - \(.artists | map(.name) | join(", "))"'
+    jq_filter='"\(.sources[].id)\t\(.name) (\(.year)) - \(.artists | map(.name) | join(", "))"'
     if [[ "$DEADWAX_TARGET_OUTPUT" == "album" ]]; then
       action_command="echo {+1} | xargs -I % bash -c 'get album \"%\"'"
     else
@@ -120,7 +120,7 @@ choose() {
     ;;
   "song")
     preview_text+="$([[ "$DEADWAX_TARGET_OUTPUT" == "song" ]] && echo "get song" || echo "view artist")"
-    jq_filter='"\(.sources.youtube.id)\t\(.order) \(.title)"'
+    jq_filter='"\(.sources[].id)\t\(.order) \(.title)"'
     if [[ "$DEADWAX_TARGET_OUTPUT" == "song" ]]; then
       action_command="echo {+1} | xargs -I % bash -c 'get song \"%\"'"
     else
@@ -129,7 +129,7 @@ choose() {
     ;;
   "playlist")
     preview_text+="$([[ "$DEADWAX_TARGET_OUTPUT" == "playlist" ]] && echo "get playlist" || echo "view playlist")"
-    jq_filter='"\(.id)\t\(.name)"'
+    jq_filter='"\(.sources[].id)\t\(.name)"'
     if [[ "$DEADWAX_TARGET_OUTPUT" == "playlist" ]]; then
       action_command="echo {+1} | xargs -I % bash -c 'get playlist \"%\"'"
     else

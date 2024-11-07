@@ -18,8 +18,12 @@ def extract_artist_data:
   )
   | {
       name: .text,
-      id: .navigationEndpoint.browseEndpoint.browseId
-  };
+      sources: {
+        ytmusic: {
+          id: .navigationEndpoint.browseEndpoint.browseId
+        }
+      }
+    };
 
 def get_artists:
   .longBylineText.runs[]
@@ -80,7 +84,11 @@ def get_album_year:
 def get_album_data($root):
   {
     name: get_album_name($root),
-    id: get_album_id,
+    sources: {
+      ytmusic: {
+        id: get_album_id
+      }
+    },
     year: get_album_year,
     artists: [get_artists]
   };
