@@ -98,9 +98,11 @@ if type != "array" then [.] else . end
 | map({
     name: .value | get_name,
     duration: .value | get_duration,
-    thumbnail: .value | get_thumbnail,
+    thumbnail: {
+      url: .value | get_thumbnail,
+    },
     sources: {
-      youtube: {
+      ytmusic: {
         id: .value | get_video_id
       }
     },

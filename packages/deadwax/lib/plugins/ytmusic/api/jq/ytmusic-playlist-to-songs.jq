@@ -114,9 +114,11 @@ def get_album_data($root):
     title: .value.title.runs[0].text,
     album: .value | get_album_data($root),
     duration: .value.lengthText.runs[0].text | duration_to_seconds,
-    thumbnail: .value.thumbnail.thumbnails[-1].url,
+    thumbnail: {
+      url: .value.thumbnail.thumbnails[-1].url
+    },
     sources: {
-      youtube: {
+      ytmusic: {
         id: .value.videoId
       }
     }

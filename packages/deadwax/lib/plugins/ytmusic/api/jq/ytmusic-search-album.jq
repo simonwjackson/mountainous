@@ -25,15 +25,17 @@ def extract_artist($run):
 .musicResponsiveListItemRenderer as $item |
 {
   type: "album",
-  thumbnail: (
-    $item
-    .thumbnail
-    .musicThumbnailRenderer
-    .thumbnail
-    .thumbnails
-    | max_by(.width)
-    | .url
-  ),
+  thumbnail: {
+    url: (
+      $item
+      .thumbnail
+      .musicThumbnailRenderer
+      .thumbnail
+      .thumbnails
+      | max_by(.width)
+      | .url
+    )
+  },
   artists: (
     $item
     .flexColumns[1]
@@ -86,4 +88,3 @@ def extract_artist($run):
     // null
   )
 }
-

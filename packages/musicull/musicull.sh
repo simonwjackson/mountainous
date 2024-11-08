@@ -1,286 +1,260 @@
 #!/usr/bin/env bash
 
-#########
-# Utility
-#########
+###############################################################################
+# Environment Variables
+###############################################################################
 
-print_usage() {
+: "${XDG_DATA_HOME:=$HOME/.local/share}"
+: "${MUSICULL_DATABASE:=$XDG_DATA_HOME/musicull/db.yaml}"
+export FZF_DEFAULT_OPTS="
+  --pointer='›' \
+  --marker='›' \
+  --color=prompt:#7353db,pointer:#ad5d93,fg+:#c569a7,bg:-1,bg+:-1,gutter:-1,marker:#e178be,info:-1 \
+  --preview-window='up:2:border-none' \
+  --layout=reverse \
+  --no-info \
+  --header-first \
+  --no-separator \
+  ${FZF_DEFAULT_OPTS}
+"
+
+###############################################################################
+# Help Documentation
+###############################################################################
+
+output_help() {
   cat <<EOF
 Usage: $0 [--database|-d <database_file>] <subcommand>
 Global options:
-  -d, --database    Specify the input YAML file (default: $XDG_DATA_HOME/deadwax/db.yaml)
+  -d, --database    Specify the input YAML file (default: ${MUSICULL_DATABASE})
 
 Subcommands:
-  refresh    Refresh metadata for entries in the database
-  add        Add a new entry to the database
+  add        Add a new entry to the database (placeholder)
              Usage: add <key> <value>
-             Example: add youtube OLAK5uy_example1234
-  ids        List all unique IDs for a given source
-             Usage: ids <source>
-             Example: ids youtube
+             Example: add ytmusic OLAK5uy_example1234
   dump       Dump the database content
-             Usage: dump [--format <format>]
+             Usage: dump [format]
              Supported formats: json (default), jsonl
+  delete     Delete entries by their source IDs
+             Usage: del [<id> ...]
+             If no IDs are provided, opens an interactive selection menu
+             Example: del OLAK5uy_example1234 OLAK5uy_another5678
 EOF
 }
 
-format_date() {
-  local date_string="$1"
-  case ${#date_string} in
-  8) echo "${date_string:0:4}-${date_string:4:2}-${date_string:6:2}" ;;
-  10) echo "$date_string" ;;
-  *)
-    echo "Invalid date format" >&2
-    echo "$date_string"
-    ;;
-  esac
-}
+###############################################################################
+# File Operations
+###############################################################################
 
-read_yaml_as_json() {
-  local input_file="$1"
-  yq eval-all --output-format=json "$input_file" | jq -c
-}
-
-write_json_as_yaml() {
-  local output_file="$1"
-  yq eval-all --input-format=json --output-format=yaml >"$output_file"
-}
-
-ensure_file_exists() {
+check_and_create_file() {
   local file_path="$1"
   local dir_path
 
   dir_path=$(dirname "$file_path")
 
-  # Create directory if it doesn't exist
   if [ ! -d "$dir_path" ]; then
     mkdir -p "$dir_path"
-    echo "Created directory: $dir_path" >&2
+    gum log --level info "Created directory: $dir_path"
   fi
 
-  # Create file if it doesn't exist
   if [ ! -f "$file_path" ]; then
-    echo "" >"$file_path"
-    echo "Created empty YAML file: $file_path" >&2
+    echo "---" >"$file_path"
+    gum log --level info "Created YAML file: $file_path"
+  fi
+
+  # Validate YAML
+  if ! yq eval-all '.' "$file_path" &>/dev/null; then
+    gum log --level error "Invalid YAML file: $file_path"
+    exit 1
   fi
 }
 
-#######################
-# Metadata Handling
-#######################
+###############################################################################
+# Interactive Selection Functions
+###############################################################################
 
-fetch_metadata() {
-  local id="$1"
-  local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/yt-dlp/"
-  local cache_file="$cache_dir/$id.json"
-
-  mkdir -p "$cache_dir"
-
-  if [[ -f "$cache_file" ]]; then
-    cat "$cache_file"
-  else
-    yt-dlp --dump-single-json --flat-playlist "$id" | tee "$cache_file"
-  fi
+format_artists() {
+  local artists="$1"
+  echo "$artists" | jq -r '
+    map(.name) |
+    if length == 1 then
+      .[0]
+    elif length == 2 then
+      join(" & ")
+    else
+      .[0:-1] | join(", ") | . + " & " + .[-1]
+    end
+  '
 }
 
-process_entry() {
-  local entry="$1"
-  local youtube_id
-
-  youtube_id=$(echo "$entry" | jq -r '.ids.youtube // ""')
-
-  if [ -n "$youtube_id" ]; then
-    current_artist=$(echo "$entry" | jq -r '.artist // ""')
-    current_album=$(echo "$entry" | jq -r '.album // ""')
-    current_date=$(echo "$entry" | jq -r '.date // ""')
-
-    if [ -z "$current_artist" ] || [ -z "$current_album" ] || [ -z "$current_date" ]; then
-      metadata=$(fetch_metadata "$youtube_id")
-
-      first_video_id=$(echo "$metadata" | jq -r '.entries[0].id // ""')
-      item_metadata=$(fetch_metadata "$first_video_id")
-
-      [ -z "$current_artist" ] && current_artist=$(echo "$item_metadata" | jq -r '.artist // ""')
-      [ -z "$current_album" ] && current_album=$(echo "$item_metadata" | jq -r '.album // ""')
-      [ -z "$current_date" ] && {
-        current_date=$(echo "$item_metadata" | jq -r '.release_date // .upload_date // ""')
-        current_date=$(format_date "$current_date")
-      }
-
-      entry=$(
-        echo "$entry" |
-          jq -c \
-            --arg artist "$current_artist" \
-            --arg album "$current_album" \
-            --arg date "$current_date" \
-            '. + {artist: $artist, album: $album, date: $date} | to_entries | sort_by(.key) | from_entries'
-      )
-    fi
-  fi
-
-  echo "$entry"
-}
-
-process_entries() {
+get_interactive_selections() {
   local input_file="$1"
+
+  # Process YAML to create formatted menu items and corresponding IDs
   local temp_file
-  temp_file="$(mktemp)"
+  temp_file=$(mktemp)
+  local preview_text=""
 
-  read_yaml_as_json "$input_file" |
-    while read -r entry; do
-      process_entry "$entry"
-    done >"$temp_file"
-
-  write_json_as_yaml "$input_file" <"$temp_file"
-  rm "$temp_file"
+  yq eval-all \
+    --output-format=json \
+    "$input_file" |
+    jq \
+      --raw-output \
+      '"\(.sources[].id)\t\(.name)\(.year | if . != null then " (" + tostring + ")" else "" end) - \(.artists | map(.name) | join(", "))"' |
+    fzf \
+      --multi \
+      --with-nth 2.. \
+      --prompt="Choose Album(s): " \
+      --preview $'echo "\033[38;2;100;100;100m'"$preview_text"$'\033[0m"' \
+      --preview-window=top:1 |
+    cut -f1
 }
 
-#######################
-# Command Functions
-#######################
+###############################################################################
+# Command Implementations
+###############################################################################
 
-sync_command() {
-  local input_file="$1"
+process_deadwax_output() {
+  local command="$1"
   shift
 
-  # Check if musicull is available
-  if ! command -v musicull &>/dev/null; then
-    echo "Error: musicull command not found. Please ensure it's installed and in your PATH." >&2
-    exit 1
-  fi
+  {
+    yq --output-format=json "$MUSICULL_DATABASE"
+    DEADWAX_TARGET_OUTPUT=album \
+      DEADWAX_MENU_ITEMS=artist,album \
+      deadwax "$command" "$@" |
+      jq '
+        select(.)
+        | del(.songs, .thumbnail)
+      '
+  } |
+    jq --slurp '
+      # Group by source IDs from any platform
+      group_by(
+        (.sources | to_entries | map(.value.id) | sort)[0]
+      )
 
-  ensure_file_exists "$input_file"
-
-  dump_command "$input_file" "jsonl" | jq --raw-output --compact-output --monochrome-output '
-    .ids.youtube as $yt |
-    del(.ids) |
-    . + {id: $yt} |
-    with_entries(
-      if .key == "album" or .key == "artist" then
-        .value |= @sh
-      else
-        .
-      end
-    )
-  ' | musicull "$@"
+      # Merge objects in each group
+      | map(
+          reduce .[1:][] as $item (.[0];
+            . * $item
+          )
+        )
+      | .[]
+    ' |
+    yq \
+      eval-all \
+      --input-format=json \
+      --output-format=yaml |
+    sponge "$MUSICULL_DATABASE"
 }
 
-ids_command() {
-  local input_file="$1"
-  local source="$2"
+convert() {
+  local format="$1"
+  local input_file="$2"
 
-  ensure_file_exists "$input_file"
-
-  if [ -z "$source" ]; then
-    echo "Error: Source not specified for 'ids' command." >&2
-    print_usage
-    exit 1
-  fi
-
-  yq eval-all --output-format=json "$input_file" |
-    jq -r --arg source "$source" '.ids[$source] // empty' |
-    sort |
-    uniq
-}
-
-dump_command() {
-  local input_file="$1"
-  local format="$2"
-
-  ensure_file_exists "$input_file"
+  check_and_create_file "$input_file"
 
   case "$format" in
+  yaml)
+    yq --output-format=yaml "$input_file"
+    ;;
   json)
-    yq eval-all --output-format=json "$input_file"
+    yq --output-format=json "$input_file" | jq --slurp
     ;;
   jsonl)
-    yq eval-all --output-format=json "$input_file" | jq -c
+    yq --output-format=json "$input_file" | jq --compact-output
     ;;
   *)
-    echo "Error: Unsupported format '$format'. Supported formats are 'json' and 'jsonl'." >&2
+    gum log --level error "Unsupported format '$format'. Supported formats are 'json' and 'jsonl'."
     exit 1
     ;;
   esac
 }
 
-refresh_command() {
+delete_entries() {
   local input_file="$1"
+  shift
+  local ids=("$@")
 
-  ensure_file_exists "$input_file"
-
-  echo "Processing entries..." >&2
-  process_entries "$input_file"
-  echo "Processing complete. Updated entries have been written to $input_file" >&2
-}
-
-add_command() {
-  local input_file="$1"
-  local key="$2"
-  local value="${3:-}"
-
-  ensure_file_exists "$input_file"
-
-  if [ -z "${input_file:-}" ] || [ ! -f "$input_file" ]; then
-    echo "Error: Input file '$input_file' not found or not specified." >&2
-    print_usage
-    exit 1
-  fi
-
-  # If only one parameter is provided, try to parse it
-  if [ -z "$value" ]; then
-    if [[ "$key" == *"youtube.com"* || "$key" == *"youtu.be"* ]]; then
-      value=$(echo "$key" | sed -n 's/.*[?&]list=\([^&]*\).*/\1/p')
-      key="youtube"
-      if [ -z "$value" ]; then
-        echo "Error: Could not extract playlist ID from the URL." >&2
-        exit 1
-      fi
-    else
-      echo "Error: Invalid input. Please provide either a key and value, or a YouTube playlist URL." >&2
-      exit 1
+  # If no IDs provided, use interactive selection
+  if [ ${#ids[@]} -eq 0 ]; then
+    local selected_ids
+    selected_ids=$(get_interactive_selections "$input_file")
+    if [ -z "$selected_ids" ]; then
+      gum log --level warn "No entries selected for deletion."
+      exit 0
     fi
+    # Convert newline-separated IDs to array
+    IFS=$'\n' read -d '' -r -a ids <<<"$selected_ids"
   fi
 
-  # Check if entry already exists
-  if read_yaml_as_json "$input_file" | jq -e "select(.ids.$key == \"$value\")" >/dev/null 2>&1; then
-    echo "Error: An entry with $key = $value already exists in the database." >&2
-    exit 1
+  # Convert ids array to JQ-compatible format
+  local jq_ids_array
+  printf -v jq_ids_array '"%s",' "${ids[@]}"
+  jq_ids_array="[${jq_ids_array%,}]"
+
+  # Create a temporary file
+  local temp_file
+  temp_file=$(mktemp)
+
+  # Process each YAML document separately and maintain document separators
+  yq eval-all --output-format=json "$input_file" |
+    jq --arg ids "$jq_ids_array" --compact-output '
+      def has_matching_id(entry; ids):
+        entry.sources as $sources
+        | (
+            $sources
+            | to_entries
+            | map(.value.id)
+          ) as $entry_ids
+        | (
+            $ids
+            | fromjson
+          )
+          as $target_ids
+        | (
+            $entry_ids
+            | any(
+                . as $id
+                | $target_ids
+                | contains([$id])
+              )
+          )
+        | not;
+
+      select(has_matching_id(.; $ids))
+    ' |
+    while read -r line; do
+      echo "$line" | yq eval --input-format=json --output-format=yaml - >>"$temp_file"
+      echo "---" >>"$temp_file"
+    done
+
+  # Remove trailing separator if file is not empty
+  if [ -s "$temp_file" ]; then
+    sed -i '$ d' "$temp_file"
   fi
 
-  new_entry=$(jq -c -n --arg key "$key" --arg value "$value" '{ids: {($key): $value}}')
-  temp_file="$(mktemp)"
+  # Move temporary file to original location
+  mv "$temp_file" "$input_file"
 
-  read_yaml_as_json "$input_file" >"$temp_file"
-  process_entry "$new_entry" >>"$temp_file"
-
-  write_json_as_yaml "$input_file" <"$temp_file"
-  rm "$temp_file"
-
-  echo "New entry added and processed. Updated file: $input_file" >&2
+  gum log --level info "Deleted entries with matching IDs: ${ids[*]}"
 }
 
-######
-# Main
-######
+###############################################################################
+# Command Line Argument Processing
+###############################################################################
 
-DB="${XDG_DATA_HOME:-$HOME/.local/share}/deadwax/db.yaml"
-
-if ! options=$(getopt -o d: -l database:,format: -- "$@"); then
-  print_usage
+if ! options=$(getopt -o d: -l database: -- "$@"); then
+  output_help
   exit 1
 fi
 eval set -- "$options"
 
-format="json"
-
 while true; do
   case "$1" in
   -d | --database)
-    DB="$2"
-    shift 2
-    ;;
-  --format)
-    format="$2"
+    MUSICULL_DATABASE="$2"
     shift 2
     ;;
   --)
@@ -288,58 +262,46 @@ while true; do
     break
     ;;
   *)
-    print_usage
+    output_help
     exit 1
     ;;
   esac
 done
 
+###############################################################################
+# Main Command Router
+###############################################################################
+
 # Check if a subcommand was provided
 if [ $# -eq 0 ]; then
-  echo "Error: No subcommand specified." >&2
-  print_usage
+  gum log --level error "No subcommand specified."
+  output_help
   exit 1
 fi
 
-ensure_file_exists "$DB"
+check_and_create_file "$MUSICULL_DATABASE"
 
 # Parse subcommand
 subcommand="$1"
 shift
 
 case "$subcommand" in
-refresh)
-  refresh_command "$DB"
+search)
+  process_deadwax_output "search" "$@"
   ;;
 add)
-  if [ $# -eq 1 ]; then
-    add_command "$DB" "$1"
-  elif [ $# -eq 2 ]; then
-    add_command "$DB" "$1" "$2"
-  else
-    echo "Error: The 'add' subcommand requires either one or two arguments." >&2
-    print_usage
-    exit 1
-  fi
-  ;;
-ids)
-  if [ $# -eq 1 ]; then
-    ids_command "$DB" "$1"
-  else
-    echo "Error: The 'ids' subcommand requires exactly one argument." >&2
-    print_usage
-    exit 1
-  fi
+  process_deadwax_output "show" "$@"
   ;;
 dump)
-  dump_command "$DB" "$format"
+  format="${1:-jsonl}"
+  convert "$format" "$MUSICULL_DATABASE"
   ;;
-sync)
-  sync_command "$DB" "$@"
+del | d | delete)
+  delete_entries "$MUSICULL_DATABASE" "$@"
   ;;
 *)
-  echo "Error: Unknown subcommand '$subcommand'" >&2
-  print_usage
+  gum log --level error "Unknown subcommand '$subcommand'"
+  output_help
   exit 1
   ;;
 esac

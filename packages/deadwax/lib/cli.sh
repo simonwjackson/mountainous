@@ -1,16 +1,17 @@
+# lib/cli.sh update
 doc="Deadwax CLI - Music metadata extraction.
 
 Usage:
-  $(basename "$0") <request> [options] <id>
+  $(basename "$0") show <type> [options] <id>
   $(basename "$0") search <type> <query>
   $(basename "$0") -h | --help
 
 Arguments:
-  request       Type of request (songs|albums|artists|playlists)
-  search        Search mode
-  type          Type to search for (artist(s)|album(s)|song(s)|playlist(s))
-  query         Search query
-  id            YouTube Music ID (video, playlist, channel) or URL
+  show           Show details for a specific resource
+  search         Search mode
+  type           Resource type (artist(s)|album(s)|song(s)|playlist(s))
+  query          Search query
+  id             YouTube Music ID (video, playlist, channel) or URL
 
 Options:
   --recommend      Get recommendations based on the ID
@@ -20,17 +21,17 @@ Options:
 source "${DEADWAX_BASE_DIR}/../lib/core.sh"
 source "${DEADWAX_BASE_DIR}/../lib/plugins.sh"
 
-declare -r VALID_REQUESTS=("song" "album" "artist" "playlist")
-declare -r VALID_SEARCH_TYPES=("artist" "album" "song" "playlist" "all")
+declare -r VALID_TYPES=("album" "artist" "playlist" "song")
+declare -r VALID_SEARCH_TYPES=("album" "all" "artist" "playlist" "song")
 
 validate_search_type() {
   local search_type="$1"
   [[ " ${VALID_SEARCH_TYPES[*]} " =~ ${search_type} ]]
 }
 
-validate_request() {
-  local request="$1"
-  [[ " ${VALID_REQUESTS[*]} " =~ ${request} ]]
+validate_type() {
+  local type="$1"
+  [[ " ${VALID_TYPES[*]} " =~ ${type} ]]
 }
 
 show_help() {
@@ -56,6 +57,24 @@ handle_search_request() {
   _target="$2"
 }
 
+# Parse show-specific arguments
+handle_show_request() {
+  local -n _type=$1
+  local -n _target=$2
+  shift 2
+
+  if [[ $# -lt 2 ]]; then
+    log fatal "Show requires a type and ID"
+  fi
+
+  _type="$1"
+  validate_type "$_type" || {
+    log fatal "Invalid type. Must be one of: ${VALID_TYPES[*]}"
+  }
+
+  # The target will be set later after parsing options
+}
+
 # Parse command options
 parse_options() {
   local -n _recommend=$1
@@ -78,20 +97,22 @@ parse_options() {
       show_help
       ;;
     *)
-      # For non-search requests, last argument should be the ID
-      if [[ "$is_search" == "false" ]]; then
-        if [[ $# -eq 1 ]]; then
-          _target="$1"
-          shift
-        else
-          log fatal "Unknown option: $1"
-        fi
+      # Last argument should be the ID/target
+      if [[ $# -eq 1 ]]; then
+        _target="$1"
+        shift
       else
         log fatal "Unknown option: $1"
       fi
       ;;
     esac
   done
+
+  if [[ -z "$_target" ]]; then
+    if [[ "$is_search" == "false" ]]; then
+      log fatal "No ID provided"
+    fi
+  fi
 }
 
 # Create JSON output
@@ -100,12 +121,12 @@ create_json_output() {
   local target="$2"
   local recommend="$3"
   local is_search="$4"
-  local search_type="$5"
+  local type="$5"
 
   local target_json
   if [[ "$is_search" == "true" ]]; then
     target_json=$(jq -n \
-      --arg type "$search_type" \
+      --arg type "$type" \
       --arg value "$target" \
       '{ type: $type, value: $value }')
   else
@@ -136,28 +157,40 @@ process_args() {
   local TARGET=""
   local RECOMMEND="false"
   local IS_SEARCH="false"
-  local SEARCH_TYPE=""
+  local TYPE=""
 
-  # Check if this is a search request
-  if [[ "$1" == "search" ]]; then
+  case "$1" in
+  search)
     IS_SEARCH="true"
     REQUEST="search"
     shift
-    handle_search_request SEARCH_TYPE TARGET "$@"
+    handle_search_request TYPE TARGET "$@"
     shift 2
-  else
-    REQUEST="$1"
+    ;;
+  show)
+    REQUEST="show"
     shift
-    validate_request "$REQUEST" || {
-      log fatal "Invalid request type. Must be one of: ${VALID_REQUESTS[*]}"
-    }
-  fi
+    handle_show_request TYPE TARGET "$@"
+    shift
+    ;;
+  -h | --help)
+    show_help
+    ;;
+  *)
+    log fatal "Invalid command. Use 'show' or 'search'"
+    ;;
+  esac
 
   # Parse remaining options
   parse_options RECOMMEND TARGET "$IS_SEARCH" "$@"
 
+  # For show requests, use the type as the request
+  if [[ "$REQUEST" == "show" ]]; then
+    REQUEST="$TYPE"
+  fi
+
   # Generate and return JSON output
-  create_json_output "$REQUEST" "$TARGET" "$RECOMMEND" "$IS_SEARCH" "$SEARCH_TYPE"
+  create_json_output "$REQUEST" "$TARGET" "$RECOMMEND" "$IS_SEARCH" "$TYPE"
 }
 
 cli() {

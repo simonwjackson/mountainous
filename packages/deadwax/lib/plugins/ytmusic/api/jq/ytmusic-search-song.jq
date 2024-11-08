@@ -93,7 +93,9 @@ get_contents
 | .musicResponsiveListItemRenderer
 | {
     type: "song",
-    thumbnail: .thumbnail.musicThumbnailRenderer.thumbnail.thumbnails[-1].url,
+    thumbnail: {
+      url: .thumbnail.musicThumbnailRenderer.thumbnail.thumbnails[-1].url,
+    },
     duration: extract_duration,
     album: {
       name: (get_flex_column_runs | get_album_name),
@@ -109,7 +111,7 @@ get_contents
     },
     name: extract_song_data("name"),
     sources: {
-      youtube: {
+      ytmusic: {
         id: extract_song_data("id")
       }
     }

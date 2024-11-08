@@ -90,7 +90,9 @@ def parse_album($item):
       name: .flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].text,
       year: ((.flexColumns[1].musicResponsiveListItemFlexColumnRenderer.text.runs[]
         | select(.text | test("^[0-9]{4}$")).text) // null),
-      thumbnail: get_thumbnail,
+      thumbnail: {
+        url: get_thumbnail
+      },
       artists: extract_artists
     };
 
@@ -138,9 +140,11 @@ def parse_song($item):
         artists: extract_artists
       },
       duration: parse_duration,
-      thumbnail: get_thumbnail,
+      thumbnail: {
+        url: get_thumbnail
+      },
       sources: {
-        youtube: {
+        ytmusic: {
           id: .playlistItemData.videoId
         }
       }

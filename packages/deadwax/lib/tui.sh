@@ -14,7 +14,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Validate DEADWAX_TARGET_OUTPUT if provided
 if [ -n "$DEADWAX_TARGET_OUTPUT" ]; then
   case "$DEADWAX_TARGET_OUTPUT" in
   artist | album | playlist | song) ;;
@@ -52,9 +51,8 @@ list() {
   song | playlist | album | artist)
     echo "$ids" |
       tr ' ' '\n' |
-      xargs -I {} bash -c "get $type {}" |
+      xargs -P8 -I{} sh -c "get $type {}" |
       choose "${type}"
-    # xargs -P8 -I{} sh -c "get $type {}" |
     ;;
   *)
     echo "Error: Invalid type. Must be one of: song, playlist, album, artist" >&2
@@ -77,7 +75,7 @@ get() {
   song | artist | playlist | album)
     echo "$ids" |
       tr ' ' '\n' |
-      xargs -P8 -I{} "${DEADWAX_BASE_DIR}/../lib/cli.sh" "$resource" "{}"
+      xargs -P8 -I{} "${DEADWAX_BASE_DIR}/../lib/cli.sh" show "$resource" "{}"
     ;;
   *)
     echo "Error: Invalid resource type. Must be one of: song, artist, playlist, album" >&2

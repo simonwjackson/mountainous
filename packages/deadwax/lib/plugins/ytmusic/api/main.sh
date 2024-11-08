@@ -194,7 +194,8 @@ artist_albums() {
     jq \
       --compact-output \
       --arg artistId "$artistId" \
-      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-artist-to-albums.jq"
+      --from-file "${YTMUSIC_PLUGIN_BASE_DIR}/api/jq/ytmusic-artist-to-albums.jq" |
+    all_to_olak
 }
 
 get_continuation() {

@@ -3,28 +3,28 @@
   inputs,
   lib,
   pkgs,
+  system,
   ...
-}: {
-  home.file.".local/state/nix/profile/bin/instapaper-add" = {
-    text =
-      /*
-      bash
-      */
-      ''
-        CURL=${lib.getExe pkgs.curl}
-        user="simon@simonwjackson.com"
-        password=$(cat ${config.age.secrets.user-simonwjackson-instapaper.path})
-        url="$1"
-
-        $CURL \
-          -s \
-          -d username="$user" \
-          -d password="$password" \
-          -d url="$url" \
-          https://www.instapaper.com/api/add
-      '';
-    executable = true;
-  };
+}: let
+  inherit (inputs.self.packages.${system}) musicull;
+in {
+  #    home.file.".local/state/nix/profile/bin/instapaper-add" = {
+  #      text = ''
+  # #!/bin/bash
+  #          CURL=${lib.getExe pkgs.curl}
+  #          user="simon@simonwjackson.com"
+  #          password=$(cat ${config.age.secrets.user-simonwjackson-instapaper.path})
+  #          url="$1"
+  #
+  #          $CURL \
+  #            -s \
+  #            -d username="$user" \
+  #           -d password="$password" \
+  #            -d url="$url" \
+  #            https://www.instapaper.com/api/add
+  #        '';
+  #      executable = true;
+  #   };
 
   mountainous.tridactyl = {
     enable = true;
@@ -93,6 +93,17 @@
           ";M" = "composite hint -Jpipe img src | tabopen images.google.com/searchbyimage?image_url=";
           "'M" = "composite hint -pipe img src | jsb -p tri.excmds.tabopen('images.google.com/searchbyimage?image_url=' + JS_ARG)";
           "'m" = "composite hint -pipe img src | js -p tri.excmds.open('images.google.com/searchbyimage?image_url=' + JS_ARG)";
+        };
+      };
+
+      musicull = {
+        command = {
+          musicull-add = ''
+            composite hint -W [href^='https://music.youtube.com/playlist?list=OLAK5uy_'],[href^='https://music.youtube.com/browse/MPREb_'] | js -p tri.excmds.shellescape(JS_ARG).then(url => tri.excmds.exclaim_quiet(`${musicull}/bin/musicull add "$${url}"`))
+          '';
+        };
+        bind = {
+          "'a" = "musicull-add";
         };
       };
 
@@ -249,7 +260,7 @@
         "'S" = "hint -S";
         "'T" = "hint -W fillcmdline_notrail tabopen";
         "'W" = "hint -W fillcmdline_notrail winopen";
-        "'a" = "hint -a";
+        # "'a" = "hint -a";
         "'b" = "hint -b";
         "'g#" = "hint -q#";
         "'g;" = "hint -q;";
@@ -292,7 +303,8 @@
         ";W" = "hint -W fillcmdline_notrail winopen";
         ";X" = ''hint -F e => { const pos = tri.dom.getAbsoluteCentre(e); tri.excmds.exclaim_quiet('xdotool mousemove --sync ' + window.devicePixelRatio * pos.x + ' ' + window.devicePixelRatio * pos.y + '; xdotool keydown ctrl+shift; xdotool click 1; xdotool keyup ctrl+shift')} '';
         ";Y" = "hint -cF img i => tri.excmds.yankimage(tri.urlutils.getAbsoluteURL(i.src))";
-        ";a" = "hint -a";
+        # ";a" = "hint -a";
+        # ";a" = "hint -a";
         ";b" = "hint -b";
         ";g#" = "hint -q#";
         ";g;" = "hint -q;";

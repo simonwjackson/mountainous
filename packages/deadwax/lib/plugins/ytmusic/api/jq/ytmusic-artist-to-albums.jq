@@ -48,13 +48,15 @@ def artist_name:
           .browseId
     }
   },
-  thumbnail: (
-    .thumbnailRenderer
-    .musicThumbnailRenderer
-    .thumbnail
-    .thumbnails
-    | largest_square_thumbnail
-  ),
+  thumbnail: {
+    url: (
+      .thumbnailRenderer
+      .musicThumbnailRenderer
+      .thumbnail
+      .thumbnails
+      | largest_square_thumbnail
+    )
+  },
   year: .subtitle.runs[]
         | extract_year
         | tonumber,

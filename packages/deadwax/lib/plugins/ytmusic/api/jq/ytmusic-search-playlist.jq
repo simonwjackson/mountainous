@@ -26,10 +26,12 @@
         )
       }
     },
-    thumbnail:
-      .thumbnail
-      .musicThumbnailRenderer
-      .thumbnail
-      .thumbnails[0]
-      .url
+    thumbnail: {
+      url:
+        .thumbnail
+        .musicThumbnailRenderer
+        .thumbnail
+        .thumbnails[0]
+        .url
+    }
   }

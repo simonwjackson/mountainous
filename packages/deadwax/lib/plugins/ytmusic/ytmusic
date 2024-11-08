@@ -149,10 +149,10 @@ create_playlist_list() {
 
 all_to_olak() {
   while read -r json; do
-    album_id=$(echo "$json" | jq -r '.album.id')
+    album_id=$(echo "$json" | jq -r '.album.sources.ytmusic.id')
     if [ "$album_id" != "null" ]; then
       new_id=$(mpreb_to_olak "$album_id")
-      echo "$json" | jq --arg new_id "$new_id" '.album.id = $new_id'
+      echo "$json" | jq --arg new_id "$new_id" '.album.sources.ytmusic.id = $new_id'
     else
       echo "$json"
     fi
