@@ -34,27 +34,51 @@ in {
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      curl
-      wget
       iproute2
       wireguard-tools
     ];
 
-    networking = {
-      defaultGateway = cfg.gateway;
+    networking = let
+      server = "10.2.0.1";
+    in {
       useHostResolvConf = false;
-      nameservers = ["10.2.0.1"];
+      nameservers = [server];
+
+      interfaces.protonvpn = {
+        ipv4.routes = [
+          {
+            address = "0.0.0.0";
+            prefixLength = 1;
+            via = server;
+          }
+        ];
+      };
 
       firewall = {
         enable = true;
         allowPing = true;
-        allowedUDPPorts = [51820];
+        allowedUDPPorts = [
+          51820 # WireGuard port
+          41641 # Tailscale port
+        ];
       };
 
       wg-quick.interfaces.protonvpn = {
         address = ["10.2.0.2/32"];
-        dns = ["10.2.0.1"];
+        dns = [server];
         privateKeyFile = cfg.privateKeyFile;
+
+        preUp = ''
+          ip route del default || true
+          ip route add default via ${cfg.gateway}
+          ip route del ${builtins.head (lib.splitString ":" cfg.endpoint)} || true
+          ip route add ${builtins.head (lib.splitString ":" cfg.endpoint)} via ${cfg.gateway}
+        '';
+
+        preDown = ''
+          ip route del default || true
+          ip route del ${cfg.endpoint} || true
+        '';
 
         peers = [
           {
