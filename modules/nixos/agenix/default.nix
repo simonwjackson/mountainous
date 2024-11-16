@@ -36,11 +36,11 @@ in {
     ];
     age = {
       identityPaths =
-        options.age.identityPaths.default;
-      # ++ [
-      #   # TODO: Pull this value from somewhere else in the config
-      #   "/home/${cfg.user}/.ssh/agenix"
-      # ];
+        options.age.identityPaths.default
+        ++ [
+          # TODO: Pull this value from somewhere else in the config
+          "/home/${cfg.user}/.ssh/id_rsa"
+        ];
 
       secrets =
         if pathExists secretsFile

@@ -22,9 +22,9 @@ in {
   config = lib.mkIf cfg.enable {
     hardware = {
       steam-hardware.enable = true;
-      opengl = {
+      graphics = {
         enable = true;
-        driSupport32Bit = true;
+        enable32Bit = true;
       };
     };
 
