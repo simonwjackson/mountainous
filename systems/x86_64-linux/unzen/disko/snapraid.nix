@@ -47,5 +47,29 @@
         };
       };
     };
+
+    hdd02 = {
+      type = "disk";
+      device = "/dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH3KRAG";
+      content = {
+        type = "gpt";
+        partitions = {
+          tank00 = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "xfs";
+              mountpoint = "/data/tank/00";
+              mountOptions = [
+                "defaults"
+                "nofail"
+                "noatime"
+                "logbufs=8"
+              ];
+            };
+          };
+        };
+      };
+    };
   };
 }
