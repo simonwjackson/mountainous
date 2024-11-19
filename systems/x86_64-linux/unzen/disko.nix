@@ -1,44 +1,19 @@
-{...}: {
+{ disks ? [ "/dev/vda" ], ... }: {
   disko.devices = {
     disk = {
-      # # Data disks
-      # data1 = {
-      #   type = "disk";
-      #   device = "/dev/sda";
-      #   content = {
-      #     type = "gpt";
-      #     parts = {
-      #       data = {
-      #         size = "100%";
-      #         content = {
-      #           type = "filesystem";
-      #           format = "xfs";
-      #           mountpoint = "/mnt/data1";
-      #           mountOptions = [
-      #             "defaults"
-      #             "nofail"
-      #             "noatime"
-      #             "logbufs=8"
-      #           ];
-      #         };
-      #       };
-      #     };
-      #   };
-      # };
-
       # Parity disks
-      parity0 = {
+      parity00 = {
         type = "disk";
         device = "/dev/disk-by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C";
         content = {
           type = "gpt";
-          parts = {
-            parity = {
+          partitions = {
+            parity00 = {
               size = "100%";
               content = {
                 type = "filesystem";
                 format = "xfs";
-                mountpoint = "/data/parity/0";
+                mountpoint = "/data/parity/00";
                 mountOptions = [
                   "defaults"
                   "nofail"
