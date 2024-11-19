@@ -2164,11 +2164,11 @@
     "secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1728912101,
-        "narHash": "sha256-QFWMUThIIm846uL7ZmevLZFG1K17wEBQ3c5/vWzxdcM=",
+        "lastModified": 1732036523,
+        "narHash": "sha256-mvqSQqpcdFvrMG0Y22gPaLm60fYgtKFkJxB3YBbUTVU=",
         "owner": "simonwjackson",
         "repo": "secrets",
-        "rev": "748d671b075192785604a55a31d19d3f7f594b8b",
+        "rev": "2b58a30935c0fb1f6102015f166ba28943857d09",
         "type": "github"
       },
       "original": {

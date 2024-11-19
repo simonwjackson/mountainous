@@ -12,13 +12,13 @@
       path = "/home/simonwjackson/.local/scripts";
       type = "sendreceive";
     };
-    notes = {
-      path = "/glacier/snowscape/notes";
-      type = "sendreceive";
-    };
-    gaming-profiles = {
-      path = "/glacier/snowscape/gaming/profiles";
-      type = "sendreceive";
-    };
+    # notes = {
+    #   path = "/glacier/snowscape/notes";
+    #   type = "sendreceive";
+    # };
+    # gaming-profiles = {
+    #   path = "/glacier/snowscape/gaming/profiles";
+    #   type = "sendreceive";
+    # };
   };
 }
