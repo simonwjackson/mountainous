@@ -9,7 +9,8 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./disko.nix
+    ./disko/main.nix
+    ./disko/snapraid.nix
     #   ./services/films.nix
     #   ./services/paperless-ngx.nix
     #   ./services/series.nix
