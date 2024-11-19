@@ -2,7 +2,7 @@
   disko.devices.disk = {
     parity00 = {
       type = "disk";
-      device = "/dev/disk-by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C";
+      device = "/dev/disk/by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C";
       content = {
         type = "gpt";
         partitions = {
