@@ -105,6 +105,7 @@ in {
               "video"
               "wheel"
               "steamcmd"
+              "media"
             ]
             ++ cfg.extraGroups;
           shell = pkgs.zsh;

@@ -8,17 +8,18 @@
   ...
 }: {
   imports = [
-     (modulesPath + "/installer/scan/not-detected.nix")
-  #   ./services/films.nix
-  #   ./services/paperless-ngx.nix
-  #   ./services/series.nix
-  #   ./services/tandoor.nix
-  #   ./services/indexers.nix
-  #   ./services/torrents.nix
-  #   ./services/usenet.nix
-  #   ./services/vpn.nix
-  #   ./services/youtube.nix
-   ];
+    (modulesPath + "/installer/scan/not-detected.nix")
+    ./disko.nix
+    #   ./services/films.nix
+    #   ./services/paperless-ngx.nix
+    #   ./services/series.nix
+    #   ./services/tandoor.nix
+    #   ./services/indexers.nix
+    #   ./services/torrents.nix
+    #   ./services/usenet.nix
+    #   ./services/vpn.nix
+    #   ./services/youtube.nix
+  ];
 
   # backpacker = {
   #   performance.enable = true;
@@ -307,72 +308,72 @@
 
   networking.useDHCP = lib.mkDefault true;
 
-  disko.devices = {
-    disk = {
-      main = {
-        type = "disk";
-        device = "/dev/nvme0n1";
-        content = {
-          type = "gpt";
-          partitions = {
-            ESP = {
-              priority = 1;
-              name = "ESP";
-              start = "1M";
-              end = "512M";
-              type = "EF00";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-                mountOptions = ["umask=0077"];
-              };
-            };
-            root = {
-              size = "100%";
-              content = {
-                type = "btrfs";
-                extraArgs = ["-f"]; # Override existing partition
-                # Subvolumes must set a mountpoint in order to be mounted,
-                # unless their parent is mounted
-                subvolumes = {
-                  # Subvolume name is different from mountpoint
-                  "/root" = {
-                    mountpoint = "/";
-                  };
-                  # Subvolume name is the same as the mountpoint
-                  "/var" = {
-                    mountOptions = ["compress=zstd"];
-                    mountpoint = "/var";
-                  };
-                  "/home" = {
-                    mountOptions = ["compress=zstd"];
-                    mountpoint = "/home";
-                  };
-                  "/nix" = {
-                    mountOptions = ["compress=zstd" "noatime"];
-                    mountpoint = "/nix";
-                  };
-                  # Subvolume for the swapfile
-                  "/swap" = {
-                    mountpoint = "/swap";
-                    swap = {
-                      swapfile.size = "64G";
-                    };
-                  };
-                };
+  services.snapraid = {
+    enable = false;
 
-                mountpoint = "/root";
-                swap = {
-                  swapfile = {
-                    size = "64G";
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
+    dataDisks = {
+      hdd00 = "/data/hdd/00";
+    };
+
+    parityFiles = [
+      "/data/parity/0/snapraid.0.parity"
+      "/data/parity/1/snapraid.1.parity"
+    ];
+
+    contentFiles = [
+      "/var/lib/snapraid/snapraid.content"
+      "/data/hdd/00/snapraid.content"
+    ];
+
+    # Set up common exclusions
+    exclude = [
+      "*.tmp"
+      "/tmp/"
+      "/lost+found/"
+      ".Trash-*/"
+      "*.unrecoverable"
+    ];
+
+    sync.interval = "03:00";
+
+    scrub = {
+      interval = "Mon *-*-* 04:00:00"; # Weekly on Monday at 4 AM
+      plan = 8; # Check 8% of the array
+      olderThan = 10; # Only scrub data not checked in the last 10 days
+    };
+
+    extraConfig = ''
+      # Block and hash size optimization
+      blocksize 256
+      hashsize 16
+
+      # Autosave after every 500 GB
+      autosave 500
+
+      # Enable smart reporting
+      smartctl d1 /dev/disk-by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C
+
+      # Don't hide hidden files
+      nohidden
+
+      # Pool directory for merging all snapraid content
+      pool /mnt/pool
+    '';
+  };
+
+  # # Ensure required tools are available
+  # environment.systemPackages = with pkgs; [
+  #   xfsprogs # XFS tools
+  #   smartmontools # For SMART monitoring
+  # ];
+
+  # Enable SMART monitoring
+  services.smartd = {
+    enable = true;
+    autodetect = true; # Monitor all devices that support SMART
+    notifications = {
+      x11.enable = true;
+      mail.enable = true;
     };
   };
 

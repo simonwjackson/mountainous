@@ -19,6 +19,10 @@ in {
         battery.enable = true;
         cpu.type = "amd";
       };
+      gaming.steam = {
+        enable = true;
+        # steamApps = "/snowscape/gaming/games/steam/steamapps";
+      };
     };
 
     boot.initrd.availableKernelModules = ["nvme" "xhci_pci" "thunderbolt" "usbhid" "usb_storage" "uas" "sd_mod"];
@@ -47,12 +51,6 @@ in {
       sensor.iio.enable = true;
       graphics = {
         enable32Bit = true;
-        extraPackages = with pkgs; [
-          rocm-opencl-icd
-          vaapiVdpau
-          rocm-opencl-runtime
-          libvdpau-va-gl
-        ];
       };
       enableAllFirmware = true;
       cpu.amd = {

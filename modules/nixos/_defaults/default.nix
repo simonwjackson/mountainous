@@ -34,6 +34,10 @@ in {
   services.nfsAutofsModule = {
     enable = true;
     hosts = {
+      unzen = {
+        hostname = "unzen";
+        shareName = "snowscape";
+      };
       aka = {
         hostname = "aka";
         shareName = "snowscape";
@@ -78,7 +82,7 @@ in {
     hardware = {
       battery = mkDefault disabled;
       bluetooth = mkDefault disabled;
-      cpu = mkDefault enabled;
+      # cpu = mkDefault enabled;
       hybrid-sleep = mkDefault disabled;
       touchpad = mkDefault disabled;
     };

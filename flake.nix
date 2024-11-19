@@ -1,5 +1,10 @@
 {
   inputs = {
+    resonance = {
+      url = "github:simonwjackson/resonance";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     secrets = {
       url = "github:simonwjackson/secrets";
       flake = false;
