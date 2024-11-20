@@ -9,8 +9,8 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./disko/main.nix
-    ./disko/snapraid.nix
+    ./disko.nix
+    ./snowscape
     #   ./services/films.nix
     #   ./services/paperless-ngx.nix
     #   ./services/series.nix
@@ -308,65 +308,6 @@
   boot.extraModulePackages = [];
 
   networking.useDHCP = lib.mkDefault true;
-
-  services.snapraid = {
-    enable = false;
-
-    dataDisks = {
-      hdd00 = "/data/hdd/00";
-    };
-
-    parityFiles = [
-      "/data/parity/0/snapraid.0.parity"
-      "/data/parity/1/snapraid.1.parity"
-    ];
-
-    contentFiles = [
-      "/var/lib/snapraid/snapraid.content"
-      "/data/hdd/00/snapraid.content"
-    ];
-
-    # Set up common exclusions
-    exclude = [
-      "*.tmp"
-      "/tmp/"
-      "/lost+found/"
-      ".Trash-*/"
-      "*.unrecoverable"
-    ];
-
-    sync.interval = "03:00";
-
-    scrub = {
-      interval = "Mon *-*-* 04:00:00"; # Weekly on Monday at 4 AM
-      plan = 8; # Check 8% of the array
-      olderThan = 10; # Only scrub data not checked in the last 10 days
-    };
-
-    extraConfig = ''
-      # Block and hash size optimization
-      blocksize 256
-      hashsize 16
-
-      # Autosave after every 500 GB
-      autosave 500
-
-      # Enable smart reporting
-      smartctl d1 /dev/disk-by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C
-
-      # Don't hide hidden files
-      nohidden
-
-      # Pool directory for merging all snapraid content
-      pool /mnt/pool
-    '';
-  };
-
-  # # Ensure required tools are available
-  # environment.systemPackages = with pkgs; [
-  #   xfsprogs # XFS tools
-  #   smartmontools # For SMART monitoring
-  # ];
 
   # Enable SMART monitoring
   services.smartd = {
