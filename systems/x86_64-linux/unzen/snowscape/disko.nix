@@ -1,4 +1,10 @@
-{...}: {
+{pkgs, ...}: let
+  diskBase = "/avalanche/disks/";
+  owner = "media";
+  uid = "333";
+  group = "media";
+  gid = "333";
+in {
   disko.devices.disk = {
     iceberg00 = {
       type = "disk";
@@ -100,7 +106,9 @@
       };
     };
 
-    blizzard02 = {
+    blizzard02 = let
+      mountpoint = "${diskBase}/blizzard/02/0";
+    in {
       type = "disk";
       device = "/dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650";
       content = {
@@ -109,9 +117,9 @@
           "blizzard02.0" = {
             size = "100%";
             content = {
+              inherit mountpoint;
               type = "filesystem";
               format = "xfs";
-              mountpoint = "/avalanche/disks/blizzard/02/0";
               mountOptions = [
                 "defaults"
                 "nofail"
@@ -127,5 +135,21 @@
         };
       };
     };
+  };
+
+  # Move the post-mount configuration to a systemd service
+  systemd.services.configure-snowscape = {
+    description = "Configure Snowscape directory permissions";
+    wantedBy = ["multi-user.target"];
+    after = ["local-fs.target"];
+    script = let
+      snowscape = "${diskBase}/blizzard/02/0/snowscape";
+    in ''
+      ${pkgs.coreutils}/bin/mkdir -p ${snowscape}
+      ${pkgs.coreutils}/bin/chown ${owner}:${group} ${snowscape}
+      ${pkgs.coreutils}/bin/chmod u=rwx,g=rwx,o=rx,g+s,+t ${snowscape}
+      ${pkgs.acl}/bin/setfacl -R -d -m u:${owner}:rwx ${snowscape}
+      ${pkgs.acl}/bin/setfacl -R -d -m g:${group}:rwx ${snowscape}
+    '';
   };
 }
