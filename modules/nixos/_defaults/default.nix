@@ -15,6 +15,19 @@
   inherit (lib.mountainous.util) allHosts;
   inherit (lib.mountainous.syncthing) otherDevices;
 in {
+  users = {
+    groups.media = {
+      gid = lib.mkForce 333;
+    };
+
+    users.media = {
+      homeMode = "770";
+      group = "media";
+      uid = lib.mkForce 333;
+      isNormalUser = false;
+    };
+  };
+
   programs.icho = {
     enable = true;
     environment = {
@@ -88,7 +101,10 @@ in {
     };
     networking = {
       core = mkDefault enabled;
-      tailscaled = mkDefault enabled;
+      tailscaled = {
+        enable = true;
+        authKeyFile = config.age.secrets."tailscale".path;
+      };
       zerotierone = mkDefault enabled;
       secure-shell = {
         enable = true;
