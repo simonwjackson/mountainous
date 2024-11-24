@@ -23,7 +23,7 @@ Options:
 
 Environment Variables:
   HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
-  BUILDERS               Comma-separated list of builders to use. Used if no builders are specified.
+  NIXIE_BUILDERS        Comma-separated list of builders to use. Used if no builders are specified.
 "
 
 ACTION=""
@@ -87,7 +87,7 @@ Options:
 
 Environment Variables:
   HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
-  BUILDERS               Comma-separated list of builders to use. Used if no builders are specified.
+  NIXIE_BUILDERS        Comma-separated list of builders to use. Used if no builders are specified.
 "
 
 ACTION=""
@@ -182,8 +182,8 @@ parse_arguments() {
 
   # If no builders specified, use the BUILDERS environment variable or the current host
   if [[ ${#BUILDERS_ARRAY[@]} -eq 0 ]]; then
-    if [[ -n "${BUILDERS:-}" ]]; then
-      IFS=',' read -ra BUILDERS_ARRAY <<<"$BUILDERS"
+    if [[ -n "${NIXIE_BUILDERS:-}" ]]; then
+      IFS=',' read -ra BUILDERS_ARRAY <<<"$NIXIE_BUILDERS"
     else
       mapfile -t BUILDERS_ARRAY < <(hostname)
     fi

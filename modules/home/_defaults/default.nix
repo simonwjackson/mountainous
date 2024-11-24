@@ -53,6 +53,7 @@ in {
     home = {
       sessionVariables = {
         EDITOR = "nvim";
+        NIXIE_BUILDERS = "unzen,kita,zao";
       };
       packages = with pkgs; [
         fd
