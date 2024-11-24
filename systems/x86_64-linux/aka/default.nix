@@ -1,9 +1,9 @@
 {
+  system,
   config,
   inputs,
   lib,
   modulesPath,
-  options,
   pkgs,
   ...
 }: let
@@ -12,7 +12,36 @@ in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./sunshine.nix
+    ./web-app.nix
   ];
+
+  fileSystems."/run/media/walkman" = {
+    device = "/dev/disk/by-uuid/FE19-B029";
+    fsType = "exfat";
+    options = [
+      "uid=333"
+      "gid=333"
+      "fmask=113"
+      "dmask=002"
+      "defaults"
+      "nofail"
+      "x-systemd.automount"
+    ];
+  };
+
+  fileSystems."/run/media/mazda-media" = {
+    device = "/dev/disk/by-uuid/3833-6538";
+    fsType = "exfat";
+    options = [
+      "uid=333"
+      "gid=333"
+      "fmask=113"
+      "dmask=002"
+      "defaults"
+      "nofail"
+      "x-systemd.automount"
+    ];
+  };
 
   services.youtube-dl-subscriptions = {
     enable = true;
@@ -35,6 +64,38 @@ in {
     mpvScripts.uosc
     mpv
     # gamescope
+  ];
+
+  fileSystems."/avalanche/groups/glacier" = {
+    device = "/net/aka/nfs/snowscape:/net/unzen/nfs/snowscape";
+    fsType = "fuse.mergerfs";
+    options = [
+      "defaults"
+      "allow_other"
+      "use_ino"
+      "cache.files=partial"
+      "dropcacheonclose=true"
+      "category.create=mfs" # Most Free Space for new files
+      "category.search=ff" # First Found - faster searching
+      "moveonenospc=true"
+      "minfreespace=1G"
+      "fsname=mergerfs-remote"
+      # Network optimizations
+      "posix_acl=true"
+      "atomic_o_trunc=true"
+      "big_writes=true"
+      "auto_cache=true"
+      "cache.symlinks=true" # Cache symlinks for better performance
+      "cache.readdir=true" # Cache directory entries
+      "uid=333" # media user UID
+      "gid=333" # media group GID
+      "umask=002" # rwxrwxr-x permissions
+    ];
+    noCheck = true;
+  };
+
+  systemd.tmpfiles.rules = [
+    "L+ /glacier - - - - /avalanche/groups/glacier"
   ];
 
   #######################
@@ -181,8 +242,8 @@ in {
         updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
       };
     };
-    opengl = {
-      driSupport32Bit = true;
+    graphics = {
+      enable32Bit = true;
       extraPackages = with pkgs; [
         amdvlk
       ];
@@ -208,7 +269,7 @@ in {
         };
       };
     };
-    kernelModules = ["kvm-amd"];
+    kernelModules = ["kvm-amd" "tun"];
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
       efi = {
@@ -219,11 +280,26 @@ in {
         efiSupport = true;
         enable = true;
         enableCryptodisk = true;
-        version = 2;
       };
     };
     supportedFilesystems = ["btrfs"];
   };
+
+  ##########################################################
+
+  programs.webapps = {
+    "photopea" = {
+      windowState = "normal";
+      name = "photopea";
+      url = "https://photopea.com";
+    };
+
+    "youtube" = {
+      name = "youtube";
+      url = "https://youtube.com";
+    };
+  };
+  ##########################################################
 
   services.xserver.enable = true;
   services.xserver.videoDrivers = ["amdgpu"];
