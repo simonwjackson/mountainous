@@ -12,8 +12,8 @@
     ];
 
     dataDisks = {
-      iceberg02 = "/avalanche/disks/iceberg/02/0/";
-      blizzard02 = "/avalanche/disks/blizzard/02/0/";
+      iceberg02 = "/avalanche/disks/iceberg/02/0";
+      blizzard02 = "/avalanche/disks/blizzard/02/0";
     };
 
     contentFiles = [
@@ -41,15 +41,20 @@
       # Autosave after every 500 GB
       autosave 500
 
-      # Enable smart reporting
-      smartctl d1 /dev/disk/by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C
-      smartctl d2 /dev/disk/by-id/ata-WDC_WD80EFBX-68AZZN0_VRJVWS3K
-      smartctl d3 /dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH3KRAG
-      smartctl d4 /dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650
-
       # Don't hide hidden files
       nohidden
     '';
+  };
+
+  # Enable smart reporting - using unique identifiers
+  # smartctl d1 /dev/disk/by-id/ata-WDC_WD80EFAX-68LHPN0_7SGKDA3C
+  # smartctl d2 /dev/disk/by-id/ata-WDC_WD80EFBX-68AZZN0_VRJVWS3K
+  # smartctl d3 /dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH3KRAG
+  # smartctl d4 /dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650
+
+  boot.kernel.sysctl = {
+    "fs.inotify.max_user_watches" = 524288;
+    "fs.inotify.max_user_instances" = 512;
   };
 
   environment.systemPackages = with pkgs; [
@@ -159,6 +164,7 @@
   };
 
   systemd.tmpfiles.rules = [
+    "d /var/lib/snapraid 0755 root root -"
     "d /avalanche/groups/snowscape 0775 - - -"
     "L+ /snowscape 0775 media media - /avalanche/groups/snowscape"
     "L+ /glacier 0775 media media - /avalanche/groups/glacier"
