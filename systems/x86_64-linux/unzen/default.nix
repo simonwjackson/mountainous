@@ -43,7 +43,15 @@
   containers = let
     fastestVpnPrivateKeyFile = config.age.secrets."fastestvpn".path;
     fastestVpnPublicKey = "658QxufMbjOTmB61Z7f+c7Rjg7oqWLnepTalqBERjF0=";
-    fastestVpnEndpoint = "167.160.88.250:51820";
+    fastestVpnEndpoint = "139.28.179.82:51820";
+
+    proton0PrivateKeyFile = config.age.secrets."proton-0".path;
+    proton0PublicKey = "7KAAj4pUAexy8s+S01hn1g61oyhfVpA18GrPD0Q8vnM=";
+    protonAddress = "10.2.0.2/32";
+    protonDns = "10.2.0.1";
+    protonServer = "95.173.217.2";
+    protonPort = 51820;
+
     tailscaleEphemeralAuthFile = config.age.secrets."tailscale-ephemeral".path;
     tailscaleMagicDns = "hummingbird-lake.ts.net";
     hostAddress = "192.168.100.1";
@@ -59,25 +67,16 @@
       enableTun = true;
 
       bindMounts = {
-        "${tailscaleEphemeralAuthFile}" = {
-          hostPath = tailscaleEphemeralAuthFile;
-          isReadOnly = true;
-        };
-        "${slskdEnvFile}" = {
-          hostPath = slskdEnvFile;
-          isReadOnly = true;
-        };
-        "${fastestVpnPrivateKeyFile}" = {
-          hostPath = fastestVpnPrivateKeyFile;
-          isReadOnly = true;
-        };
+        "${tailscaleEphemeralAuthFile}".hostPath = tailscaleEphemeralAuthFile;
+        "${slskdEnvFile}".hostPath = slskdEnvFile;
+        "${proton0PrivateKeyFile}".hostPath = proton0PrivateKeyFile;
       };
 
       config = {...}: {
         system.stateVersion = "24.11";
 
         imports = [
-          inputs.self.nixosModules.container-fastest-vpn
+          inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
         ];
 
@@ -91,12 +90,16 @@
         };
 
         mountainous = {
-          container-fastest-vpn = {
+          wg-killswitch = {
             enable = true;
-            privateKeyFile = fastestVpnPrivateKeyFile;
-            publicKey = fastestVpnPublicKey;
-            endpoint = fastestVpnEndpoint;
+            name = "protonvpn";
+            address = protonAddress;
+            dns = protonDns;
             gateway = hostAddress;
+            privateKeyFile = proton0PrivateKeyFile;
+            publicKey = proton0PublicKey;
+            server = protonServer;
+            port = protonPort;
           };
 
           networking = {
@@ -105,6 +108,12 @@
               authKeyFile = tailscaleEphemeralAuthFile;
               serve = 5030;
             };
+          };
+        };
+
+        systemd.services.slskd = {
+          serviceConfig = {
+            UMask = "0002";
           };
         };
 
@@ -310,7 +319,9 @@
       };
     };
 
-    search = {
+    search = let
+      searxEnvFile = config.age.secrets."searx-env".path;
+    in {
       inherit hostAddress;
 
       localAddress = "192.168.100.13";
@@ -319,6 +330,10 @@
       enableTun = true;
 
       bindMounts = {
+        "${searxEnvFile}" = {
+          hostPath = searxEnvFile;
+          isReadOnly = true;
+        };
         "${tailscaleEphemeralAuthFile}" = {
           hostPath = tailscaleEphemeralAuthFile;
           isReadOnly = true;
@@ -1019,20 +1034,6 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  networking.networkmanager.enable = true;
-
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    extraGroups = ["wheel"]; # Enable ‘sudo’ for the user.
-  };
-
-  environment.systemPackages = with pkgs; [
-    neovim
-    git
-    tmux
-  ];
-
-  services.openssh.enable = true;
 
   boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod"];
   boot.initrd.kernelModules = [];

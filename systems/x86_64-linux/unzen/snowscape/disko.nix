@@ -23,6 +23,8 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
+                # "dmask=0002"
+                # "fmask=0113"
               ];
             };
           };
@@ -47,6 +49,8 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
+                # "dmask=0002"
+                # "fmask=0113"
               ];
             };
           };
@@ -71,6 +75,8 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
+                # "dmask=0002"
+                # "fmask=0113"
               ];
             };
           };
@@ -99,6 +105,8 @@ in {
                 "noatime" # Don't update access times
                 "nodiratime" # Don't update directory access times
                 "discard" # Enable TRIM/discard support for SSD
+                # "dmask=0002"
+                # "fmask=0113"
               ];
             };
           };
@@ -129,6 +137,8 @@ in {
                 "largeio" # Enable larger I/O sizes
                 "inode64" # Enable large inode numbers
                 "swalloc" # Enable stripe-width allocation
+                # "dmask=0002"
+                # "fmask=0113"
               ];
             };
           };
@@ -137,19 +147,44 @@ in {
     };
   };
 
-  # Move the post-mount configuration to a systemd service
-  systemd.services.configure-snowscape = {
-    description = "Configure Snowscape directory permissions";
-    wantedBy = ["multi-user.target"];
-    after = ["local-fs.target"];
-    script = let
-      snowscape = "${diskBase}/blizzard/02/0/snowscape";
-    in ''
-      ${pkgs.coreutils}/bin/mkdir -p ${snowscape}
-      ${pkgs.coreutils}/bin/chown ${owner}:${group} ${snowscape}
-      ${pkgs.coreutils}/bin/chmod u=rwx,g=rwx,o=rx,g+s,+t ${snowscape}
-      ${pkgs.acl}/bin/setfacl -R -d -m u:${owner}:rwx ${snowscape}
-      ${pkgs.acl}/bin/setfacl -R -d -m g:${group}:rwx ${snowscape}
-    '';
-  };
+  # systemd.services.configure-snowscape = {
+  #   description = "Configure Snowscape directory permissions";
+  #   wantedBy = ["multi-user.target"];
+  #   after = ["local-fs.target"];
+  #   script = let
+  #     snowscape = "${diskBase}/blizzard/02/0/snowscape";
+  #   in ''
+  #     # Create directory with correct permissions in one go
+  #     ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 ${snowscape}
+  #
+  #     # Set ACLs for directories to include sticky bit
+  #     ${pkgs.acl}/bin/setfacl -R -d -m u:${owner}:rwx,d:u:${owner}:rwx ${snowscape}
+  #     ${pkgs.acl}/bin/setfacl -R -d -m g:${group}:rwx,d:g:${group}:rwx ${snowscape}
+  #
+  #     # Find all existing directories and set permissions
+  #     ${pkgs.findutils}/bin/find ${snowscape} -type d -exec ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 {} \;
+  #
+  #     # Monitor for new directories
+  #     # ${pkgs.inotify-tools}/bin/inotifywait -m -r -e create ${snowscape} | while read path action file; do
+  #     #   if [ -d "$path/$file" ]; then
+  #     #     ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 "$path/$file"
+  #     #     ${pkgs.acl}/bin/setfacl -d -m u:${owner}:rwx,d:u:${owner}:rwx "$path/$file"
+  #     #     ${pkgs.acl}/bin/setfacl -d -m g:${group}:rwx,d:g:${group}:rwx "$path/$file"
+  #     #   fi
+  #     # done &
+  #   '';
+  #   serviceConfig = {
+  #     Type = "simple";
+  #     Restart = "always";
+  #     RestartSec = "10";
+  #   };
+  # };
+
+  # systemd.paths.monitor-snowscape = {
+  #   wantedBy = ["multi-user.target"];
+  #   pathConfig = {
+  #     PathModified = "${diskBase}/blizzard/02/0/snowscape";
+  #     Unit = "configure-snowscape.service";
+  #   };
+  # };
 }

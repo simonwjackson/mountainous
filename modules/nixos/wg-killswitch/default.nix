@@ -77,7 +77,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Add assertions for interface name validation
     assertions = [
       {
         assertion = builtins.match "[a-zA-Z0-9_-]+" cfg.name != null;
@@ -100,42 +99,41 @@ in {
         ];
       };
 
-      wg-quick.interfaces = {
-        "${cfg.name}" =
-          {
-            privateKeyFile = cfg.privateKeyFile;
-            address = [cfg.address];
-            dns = [cfg.dns];
+      wg-quick.interfaces."${cfg.name}" = mkMerge [
+        {
+          address = [cfg.address];
+          dns = [cfg.dns];
+          privateKeyFile = cfg.privateKeyFile;
 
-            peers = [
-              {
-                publicKey = cfg.publicKey;
-                allowedIPs = cfg.allowedIPs;
-                endpoint = "${cfg.server}:${toString cfg.port}";
-              }
-            ];
-          }
-          // (mkIf cfg.killswitch {
-            preUp = ''
-              ip route del default || true
-              ip route add default via ${cfg.gateway}
-              ip route del ${cfg.server} || true
-              ip route add ${cfg.server} via ${cfg.gateway}
-            '';
+          peers = [
+            {
+              publicKey = cfg.publicKey;
+              allowedIPs = cfg.allowedIPs;
+              endpoint = "${cfg.server}:${toString cfg.port}";
+            }
+          ];
+        }
+        (mkIf cfg.killswitch {
+          preUp = ''
+            ip route del default || true
+            ip route add default via ${cfg.gateway}
+            ip route del ${cfg.server} || true
+            ip route add ${cfg.server} via ${cfg.gateway}
+          '';
 
-            postUp = ''
-              resolvectl dns ${cfg.name} ${cfg.dns}
-              resolvectl domain ${cfg.name} "~."
-              resolvectl default-route ${cfg.name} true
-            '';
+          postUp = ''
+            resolvectl dns ${cfg.name} ${cfg.dns}
+            resolvectl domain ${cfg.name} "~."
+            resolvectl default-route ${cfg.name} true
+          '';
 
-            preDown = ''
-              ip route del default || true
-              ip route del ${cfg.server} || true
-              resolvectl revert ${cfg.name}
-            '';
-          });
-      };
+          preDown = ''
+            ip route del default || true
+            ip route del ${cfg.server} || true
+            resolvectl revert ${cfg.name}
+          '';
+        })
+      ];
     };
 
     boot.kernel.sysctl = {

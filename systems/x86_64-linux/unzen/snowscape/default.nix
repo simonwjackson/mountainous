@@ -72,9 +72,7 @@
       "minfreespace=250G" # Minimum free space before considering full
       "fsname=mergerfs-iceberg"
       # Optimizations for HDDs
-      # "posix_acl=true"
-      "uid=333" # Force new files to be owned by UID 333
-      "gid=333" # Force new files to be owned by GID 333
+      "posix_acl=true"
       "atomic_o_trunc=true"
       "big_writes=true"
       "auto_cache=true" # Enable caching for better HDD performance
@@ -98,9 +96,7 @@
       "minfreespace=100G" # Lower minimum for SSDs
       "fsname=mergerfs-blizzard"
       # Optimizations for NVMe
-      # "posix_acl=true"
-      "uid=333" # Force new files to be owned by UID 333
-      "gid=333" # Force new files to be owned by GID 333
+      "posix_acl=true"
       "atomic_o_trunc=true"
       "big_writes=true"
       "auto_cache=false" # Disable auto cache for SSDs
@@ -127,9 +123,7 @@
       "minfreespace=100G"
       "fsname=mergerfs-snowscape"
       # General optimizations
-      # "posix_acl=true"
-      "uid=333" # Force new files to be owned by UID 333
-      "gid=333" # Force new files to be owned by GID 333
+      "posix_acl=true"
       "atomic_o_trunc=true"
       "big_writes=true"
       "auto_cache=true"
@@ -154,9 +148,7 @@
       "minfreespace=1G"
       "fsname=mergerfs-remote"
       # Network optimizations
-      # "posix_acl=true"
-      "uid=333" # Force new files to be owned by UID 333
-      "gid=333" # Force new files to be owned by GID 333
+      "posix_acl=true"
       "atomic_o_trunc=true"
       "big_writes=true"
       "auto_cache=true"
@@ -167,7 +159,7 @@
   };
 
   systemd.tmpfiles.rules = [
-    "d /avalanche/groups/snowscape 0775 media media -"
+    "d /avalanche/groups/snowscape 0775 - - -"
     "L+ /snowscape 0775 media media - /avalanche/groups/snowscape"
     "L+ /glacier 0775 media media - /avalanche/groups/glacier"
   ];

@@ -67,7 +67,7 @@ in {
   ];
 
   fileSystems."/avalanche/groups/glacier" = {
-    device = "/net/aka/nfs/snowscape:/net/unzen/nfs/snowscape";
+    device = "/snowscape:/net/unzen/nfs/snowscape";
     fsType = "fuse.mergerfs";
     options = [
       "defaults"
@@ -87,9 +87,6 @@ in {
       "auto_cache=true"
       "cache.symlinks=true" # Cache symlinks for better performance
       "cache.readdir=true" # Cache directory entries
-      "uid=333" # media user UID
-      "gid=333" # media group GID
-      "umask=002" # rwxrwxr-x permissions
     ];
     noCheck = true;
   };
