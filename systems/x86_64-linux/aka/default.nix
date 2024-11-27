@@ -43,21 +43,21 @@ in {
     ];
   };
 
-  services.youtube-dl-subscriptions = {
-    enable = true;
-    interval = "*:0/30";
-    user = "simonwjackson";
-    group = "users";
-    dataDir = "/snowscape/videos/youtube";
-
-    extraArgs = [
-      "--playlist-reverse"
-      "--playlist-end 5"
-      "--write-auto-sub"
-      "--sub-format vtt"
-      "--sponsorblock-remove sponsor,selfpromo,interaction,intro,outro"
-    ];
-  };
+  # services.youtube-dl-subscriptions = {
+  #   enable = true;
+  #   interval = "*:0/30";
+  #   user = "simonwjackson";
+  #   group = "users";
+  #   dataDir = "/snowscape/videos/youtube";
+  #
+  #   extraArgs = [
+  #     "--playlist-reverse"
+  #     "--playlist-end 5"
+  #     "--write-auto-sub"
+  #     "--sub-format vtt"
+  #     "--sponsorblock-remove sponsor,selfpromo,interaction,intro,outro"
+  #   ];
+  # };
 
   environment.systemPackages = with pkgs; [
     mergerfs
