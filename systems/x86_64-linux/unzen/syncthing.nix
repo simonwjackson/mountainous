@@ -10,15 +10,22 @@
   shares = {
     scripts = {
       path = "/home/simonwjackson/.local/scripts";
+      versioning = {
+        type = "simple";
+        params = {
+          keep = "5";
+        };
+      };
+      type = "sendreceive";
+      copyOwnershipFromParent = true;
+    };
+    notes = {
+      path = "/snowscape/notes";
       type = "sendreceive";
     };
-    # notes = {
-    #   path = "/glacier/snowscape/notes";
-    #   type = "sendreceive";
-    # };
-    # gaming-profiles = {
-    #   path = "/glacier/snowscape/gaming/profiles";
-    #   type = "sendreceive";
-    # };
+    gaming-profiles = {
+      path = "/snowscape/gaming/profiles";
+      type = "sendreceive";
+    };
   };
 }

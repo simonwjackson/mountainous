@@ -44,20 +44,6 @@
                   mountOptions = ["compress=zstd" "noatime"];
                   mountpoint = "/nix";
                 };
-                # Subvolume for the swapfile
-                "/swap" = {
-                  mountpoint = "/swap";
-                  swap = {
-                    swapfile.size = "64G";
-                  };
-                };
-              };
-
-              mountpoint = "/root";
-              swap = {
-                swapfile = {
-                  size = "64G";
-                };
               };
             };
           };

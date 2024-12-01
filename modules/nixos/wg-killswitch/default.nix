@@ -56,6 +56,7 @@ in {
     port = mkOption {
       type = types.port;
       description = "WireGuard server port";
+      default = 51820;
       example = 51820;
     };
 
