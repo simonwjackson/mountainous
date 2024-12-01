@@ -26,6 +26,7 @@ in {
       autoLogin = true;
     };
     desktops.hyprlandControl = enabled;
+    services.gamescope-reaper.duration = 20;
     gaming = {
       core = enabled;
       emulation = {

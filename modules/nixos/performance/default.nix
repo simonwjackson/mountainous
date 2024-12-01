@@ -25,16 +25,6 @@ in {
 
     programs.ccache = enabled;
 
-    # systemd.services.powertop = lib.mkIf config.mountainous.hardware.battery.enable {
-    #   # description = "Auto-tune Power Management with powertop";
-    #   unitConfig = {RefuseManualStart = true;};
-    #   wantedBy = ["battery.target" "ac.target"];
-    #   serviceConfig = {
-    #     Type = "oneshot";
-    #     ExecStart = "${powertop} --auto-tune";
-    #   };
-    # };
-
     zramSwap = enabled;
   };
 }
