@@ -1,4 +1,4 @@
-{pkgs, ...}: let
+{...}: let
   diskBase = "/avalanche/disks/";
   owner = "media";
   uid = "333";
@@ -23,8 +23,6 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
-                # "dmask=0002"
-                # "fmask=0113"
               ];
             };
           };
@@ -49,8 +47,6 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
-                # "dmask=0002"
-                # "fmask=0113"
               ];
             };
           };
@@ -75,8 +71,79 @@ in {
                 "nofail"
                 "noatime"
                 "logbufs=8"
-                # "dmask=0002"
-                # "fmask=0113"
+              ];
+            };
+          };
+        };
+      };
+    };
+
+    iceberg03 = {
+      type = "disk";
+      device = "/dev/disk/by-id/ata-WDC_WD80EDAZ-11TA3A0_VGH13XMG";
+      content = {
+        type = "gpt";
+        partitions = {
+          "iceberg02.0" = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "xfs";
+              mountpoint = "/avalanche/disks/iceberg/03/0";
+              mountOptions = [
+                "defaults"
+                "nofail"
+                "noatime"
+                "logbufs=8"
+              ];
+            };
+          };
+        };
+      };
+    };
+
+    iceberg04 = {
+      type = "disk";
+      device = "/dev/disk/by-id/ata-WDC_WD80EMZZ-11B4FB0_WD-CA081PBK";
+
+      content = {
+        type = "gpt";
+        partitions = {
+          "iceberg02.0" = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "xfs";
+              mountpoint = "/avalanche/disks/iceberg/04/0";
+              mountOptions = [
+                "defaults"
+                "nofail"
+                "noatime"
+                "logbufs=8"
+              ];
+            };
+          };
+        };
+      };
+    };
+
+    iceberg05 = {
+      type = "disk";
+      device = "/dev/disk/by-id/ata-WDC_WD80EFAX-68LHPN0_7SGK9H0C";
+      content = {
+        type = "gpt";
+        partitions = {
+          "iceberg02.0" = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "xfs";
+              mountpoint = "/avalanche/disks/iceberg/05/0";
+              mountOptions = [
+                "defaults"
+                "nofail"
+                "noatime"
+                "logbufs=8"
               ];
             };
           };
@@ -105,8 +172,6 @@ in {
                 "noatime" # Don't update access times
                 "nodiratime" # Don't update directory access times
                 "discard" # Enable TRIM/discard support for SSD
-                # "dmask=0002"
-                # "fmask=0113"
               ];
             };
           };
@@ -137,8 +202,6 @@ in {
                 "largeio" # Enable larger I/O sizes
                 "inode64" # Enable large inode numbers
                 "swalloc" # Enable stripe-width allocation
-                # "dmask=0002"
-                # "fmask=0113"
               ];
             };
           };

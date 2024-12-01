@@ -13,6 +13,9 @@
 
     dataDisks = {
       iceberg02 = "/avalanche/disks/iceberg/02/0";
+      iceberg03 = "/avalanche/disks/iceberg/03/0";
+      iceberg04 = "/avalanche/disks/iceberg/04/0";
+      iceberg05 = "/avalanche/disks/iceberg/05/0";
       blizzard02 = "/avalanche/disks/blizzard/02/0";
     };
 
@@ -21,6 +24,9 @@
       "/avalanche/disks/iceberg/00/0/snapraid.content"
       "/avalanche/disks/iceberg/01/0/snapraid.content"
       "/avalanche/disks/iceberg/02/0/snapraid.content"
+      "/avalanche/disks/iceberg/03/0/snapraid.content"
+      "/avalanche/disks/iceberg/04/0/snapraid.content"
+      "/avalanche/disks/iceberg/05/0/snapraid.content"
       "/avalanche/disks/blizzard/02/0/snapraid.content" # Added content file for blizzard02
     ];
 
@@ -54,6 +60,7 @@
 
   boot.kernel.sysctl = {
     "fs.inotify.max_user_watches" = 524288;
+    "fs.inotify.max_queued_events" = 50000; # Optional: increase if needed
     "fs.inotify.max_user_instances" = 512;
   };
 
@@ -64,7 +71,7 @@
 
   # MergerFS mount for iceberg drives (HDDs)
   fileSystems."/avalanche/merged/iceberg" = {
-    device = "/avalanche/disks/iceberg/02/0"; # Will expand as you add iceberg03-05
+    device = "/avalanche/disks/iceberg/02/0:/avalanche/disks/iceberg/03/0:/avalanche/disks/iceberg/04/0:/avalanche/disks/iceberg/05/0";
     fsType = "fuse.mergerfs";
     options = [
       "defaults"
@@ -112,9 +119,8 @@
     noCheck = true;
   };
 
-  # Final merged pool (blizzard overlaying iceberg)
-  fileSystems."/avalanche/groups/snowscape" = {
-    device = "/avalanche/merged/blizzard/snowscape:/avalanche/merged/iceberg/snowscape";
+  fileSystems."/avalanche/groups/local" = {
+    device = "/avalanche/merged/blizzard:/avalanche/merged/iceberg";
     fsType = "fuse.mergerfs";
     options = [
       "defaults"
@@ -126,7 +132,7 @@
       "category.search=ff" # First Found - faster searching
       "moveonenospc=true"
       "minfreespace=100G"
-      "fsname=mergerfs-snowscape"
+      "fsname=mergerfs-local"
       # General optimizations
       "posix_acl=true"
       "atomic_o_trunc=true"
@@ -165,8 +171,8 @@
 
   systemd.tmpfiles.rules = [
     "d /var/lib/snapraid 0755 root root -"
-    "d /avalanche/groups/snowscape 0775 - - -"
-    "L+ /snowscape 0775 media media - /avalanche/groups/snowscape"
+    "d /avalanche/groups/local 0775 - - -"
+    "L+ /snowscape 0775 media media - /avalanche/groups/local/snowscape"
     "L+ /glacier 0775 media media - /avalanche/groups/glacier"
   ];
 }

@@ -26,7 +26,6 @@ in {
       autoLogin = true;
     };
     desktops.hyprlandControl = enabled;
-    # desktops.plasma = enabled;
     gaming = {
       core = enabled;
       emulation = {
