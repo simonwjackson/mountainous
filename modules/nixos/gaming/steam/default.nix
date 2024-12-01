@@ -11,15 +11,19 @@
   # mountpoint = "${pkgs.util-linux}/bin/mountpoint";
   # mount = "${pkgs.mount}/bin/mount";
 in {
-  options.mountainous.gaming.steam = {
-    enable = lib.mkEnableOption "Enable steam";
-    # steamApps = lib.mkOption {
-    #   type = lib.types.path;
-    #   description = "";
-    # };
+  options.mountainous = {
+    gaming.steam = {
+      enable = lib.mkEnableOption "Enable steam";
+      # steamApps = lib.mkOption {
+      #   type = lib.types.path;
+      #   description = "";
+      # };
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    mountainous.services.gamescope-reaper.enable = true;
+
     hardware = {
       steam-hardware.enable = true;
       graphics = {
