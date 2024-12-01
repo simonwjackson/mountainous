@@ -1,30 +1,72 @@
-import evdev
-from evdev import UInput, AbsInfo, ecodes as ec
+import asyncio
 import os
 import sys
-import traceback
 import time
-import asyncio
+import traceback
+
+import evdev
+from evdev import AbsInfo, UInput
+from evdev import ecodes as ec
+
 
 def create_virtual_joystick():
     capabilities = {
-        ec.EV_KEY: [ec.BTN_A, ec.BTN_B, ec.BTN_X, ec.BTN_Y, ec.BTN_TL, ec.BTN_TR,
-                   ec.BTN_SELECT, ec.BTN_START, ec.BTN_THUMBL, ec.BTN_THUMBR],
+        ec.EV_KEY: [
+            ec.BTN_A,
+            ec.BTN_B,
+            ec.BTN_X,
+            ec.BTN_Y,
+            ec.BTN_TL,
+            ec.BTN_TR,
+            ec.BTN_SELECT,
+            ec.BTN_START,
+            ec.BTN_MODE,
+            ec.BTN_THUMBL,
+            ec.BTN_THUMBR,
+            ec.BTN_TL2,
+            ec.BTN_TR2,
+        ],
         ec.EV_ABS: [
-            (ec.ABS_X, AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0)),
-            (ec.ABS_Y, AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0)),
-            (ec.ABS_RX, AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0)),
-            (ec.ABS_RY, AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0)),
+            (
+                ec.ABS_X,
+                AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ec.ABS_Y,
+                AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ec.ABS_RX,
+                AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ec.ABS_RY,
+                AbsInfo(value=0, min=-32768, max=32767, fuzz=0, flat=0, resolution=0),
+            ),
             (ec.ABS_Z, AbsInfo(value=0, min=0, max=255, fuzz=0, flat=0, resolution=0)),
             (ec.ABS_RZ, AbsInfo(value=0, min=0, max=255, fuzz=0, flat=0, resolution=0)),
-            (ec.ABS_HAT0X, AbsInfo(value=0, min=-1, max=1, fuzz=0, flat=0, resolution=0)),
-            (ec.ABS_HAT0Y, AbsInfo(value=0, min=-1, max=1, fuzz=0, flat=0, resolution=0)),
-        ]
+            (
+                ec.ABS_HAT0X,
+                AbsInfo(value=0, min=-1, max=1, fuzz=0, flat=0, resolution=0),
+            ),
+            (
+                ec.ABS_HAT0Y,
+                AbsInfo(value=0, min=-1, max=1, fuzz=0, flat=0, resolution=0),
+            ),
+        ],
     }
-    virtual_device = UInput(capabilities, name="Virtual Gamepad Proxy", vendor=0x045e, product=0x028e, version=0x110)
+    virtual_device = UInput(
+        capabilities,
+        name="Virtual Gamepad Proxy",
+        vendor=0x045E,
+        product=0x028E,
+        version=0x110,
+        bustype=0x0003,
+    )
 
     print(f"Created virtual device: {virtual_device.device.path}")
     return virtual_device
+
 
 async def proxy_events(source_device, virtual_device):
     try:
@@ -36,12 +78,14 @@ async def proxy_events(source_device, virtual_device):
         return False
     return True
 
+
 def find_joystick_device():
     devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
     for device in devices:
-        if device.name.lower().find('microsoft') != -1:
+        if device.name.lower().find("microsoft") != -1:
             return device.path
     return None
+
 
 async def main():
     virtual_device = None
@@ -75,6 +119,7 @@ async def main():
     finally:
         if virtual_device:
             virtual_device.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
