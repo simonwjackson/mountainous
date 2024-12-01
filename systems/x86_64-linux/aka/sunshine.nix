@@ -27,8 +27,7 @@
     export HYPRLAND_INSTANCE_SIGNATURE
 
     hyprctl dispatch dpms on DP-1
-    hyprctl dispatch moveworkspacetomonitor 2 DP-1 &&
-      hyprctl dispatch workspace 2 &&
+    hyprctl dispatch moveworkspacetomonitor "2" "DP-1" &&
       hyprctl dispatch dpms off HDMI-A-2
   '';
 
@@ -38,9 +37,10 @@
     HYPRLAND_INSTANCE_SIGNATURE=$(${getHyprlandSignature})
     export HYPRLAND_INSTANCE_SIGNATURE
 
+    hyprctl dispatch workspace 2
+    sleep 1
     hyprctl dispatch dpms on HDMI-A-2
-    hyprctl dispatch moveworkspacetomonitor 2 HDMI-A-2 &&
-      hyprctl dispatch workspace 2 &&
+    hyprctl dispatch moveworkspacetomonitor "2" "HDMI-A-2" &&
       hyprctl dispatch dpms off DP-1
   '';
 in {
