@@ -179,75 +179,34 @@ in {
       };
     };
 
-    blizzard02 = let
-      mountpoint = "${diskBase}/blizzard/02/0";
-    in {
-      type = "disk";
-      device = "/dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650";
-      content = {
-        type = "gpt";
-        partitions = {
-          "blizzard02.0" = {
-            size = "100%";
-            content = {
-              inherit mountpoint;
-              type = "filesystem";
-              format = "xfs";
-              mountOptions = [
-                "defaults"
-                "nofail"
-                "noatime"
-                "logbufs=8"
-                "allocsize=1m" # Optimized for large files
-                "largeio" # Enable larger I/O sizes
-                "inode64" # Enable large inode numbers
-                "swalloc" # Enable stripe-width allocation
-              ];
-            };
-          };
-        };
-      };
-    };
+    # blizzard02 = let
+    #   mountpoint = "${diskBase}/blizzard/02/0";
+    # in {
+    #   type = "disk";
+    #   device = "/dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650";
+    #   content = {
+    #     type = "gpt";
+    #     partitions = {
+    #       "blizzard02.0" = {
+    #         size = "100%";
+    #         content = {
+    #           inherit mountpoint;
+    #           type = "filesystem";
+    #           format = "xfs";
+    #           mountOptions = [
+    #             "defaults"
+    #             "nofail"
+    #             "noatime"
+    #             "logbufs=8"
+    #             "allocsize=1m" # Optimized for large files
+    #             "largeio" # Enable larger I/O sizes
+    #             "inode64" # Enable large inode numbers
+    #             "swalloc" # Enable stripe-width allocation
+    #           ];
+    #         };
+    #       };
+    #     };
+    #   };
+    # };
   };
-
-  # systemd.services.configure-snowscape = {
-  #   description = "Configure Snowscape directory permissions";
-  #   wantedBy = ["multi-user.target"];
-  #   after = ["local-fs.target"];
-  #   script = let
-  #     snowscape = "${diskBase}/blizzard/02/0/snowscape";
-  #   in ''
-  #     # Create directory with correct permissions in one go
-  #     ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 ${snowscape}
-  #
-  #     # Set ACLs for directories to include sticky bit
-  #     ${pkgs.acl}/bin/setfacl -R -d -m u:${owner}:rwx,d:u:${owner}:rwx ${snowscape}
-  #     ${pkgs.acl}/bin/setfacl -R -d -m g:${group}:rwx,d:g:${group}:rwx ${snowscape}
-  #
-  #     # Find all existing directories and set permissions
-  #     ${pkgs.findutils}/bin/find ${snowscape} -type d -exec ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 {} \;
-  #
-  #     # Monitor for new directories
-  #     # ${pkgs.inotify-tools}/bin/inotifywait -m -r -e create ${snowscape} | while read path action file; do
-  #     #   if [ -d "$path/$file" ]; then
-  #     #     ${pkgs.coreutils}/bin/install -d -o ${owner} -g ${group} -m 3775 "$path/$file"
-  #     #     ${pkgs.acl}/bin/setfacl -d -m u:${owner}:rwx,d:u:${owner}:rwx "$path/$file"
-  #     #     ${pkgs.acl}/bin/setfacl -d -m g:${group}:rwx,d:g:${group}:rwx "$path/$file"
-  #     #   fi
-  #     # done &
-  #   '';
-  #   serviceConfig = {
-  #     Type = "simple";
-  #     Restart = "always";
-  #     RestartSec = "10";
-  #   };
-  # };
-
-  # systemd.paths.monitor-snowscape = {
-  #   wantedBy = ["multi-user.target"];
-  #   pathConfig = {
-  #     PathModified = "${diskBase}/blizzard/02/0/snowscape";
-  #     Unit = "configure-snowscape.service";
-  #   };
-  # };
 }

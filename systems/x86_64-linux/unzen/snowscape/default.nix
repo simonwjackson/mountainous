@@ -16,7 +16,6 @@
       iceberg03 = "/avalanche/disks/iceberg/03/0";
       iceberg04 = "/avalanche/disks/iceberg/04/0";
       iceberg05 = "/avalanche/disks/iceberg/05/0";
-      blizzard02 = "/avalanche/disks/blizzard/02/0";
     };
 
     contentFiles = [
@@ -27,7 +26,6 @@
       "/avalanche/disks/iceberg/03/0/snapraid.content"
       "/avalanche/disks/iceberg/04/0/snapraid.content"
       "/avalanche/disks/iceberg/05/0/snapraid.content"
-      "/avalanche/disks/blizzard/02/0/snapraid.content" # Added content file for blizzard02
     ];
 
     exclude = [
@@ -95,7 +93,7 @@
 
   # MergerFS mount for blizzard drives (NVMes)
   fileSystems."/avalanche/merged/blizzard" = {
-    device = "/avalanche/disks/blizzard/01/0:/avalanche/disks/blizzard/02/0";
+    device = "/avalanche/disks/blizzard/01/0";
     fsType = "fuse.mergerfs";
     options = [
       "defaults"

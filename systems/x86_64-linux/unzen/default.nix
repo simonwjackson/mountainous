@@ -15,7 +15,7 @@
 
   boot.kernel.sysctl = {
     "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 1;
+    "net.ipv6.conf.all.forwarding" = 0;
   };
 
   networking = {
@@ -38,6 +38,11 @@
     "d /snowscape/videos 0775 media media -"
     "d /snowscape/books 0775 media media -"
     "d /snowscape/comics 0775 media media -"
+
+    # Borg
+    "d /avalanche/groups/local/snowscape/backup/gaming-profiles 0750 root root -"
+    "d /avalanche/groups/local/snowscape/backup/notes 0750 root root -"
+    "d /avalanche/groups/local/snowscape/backup/media-services 0750 root root -"
   ];
 
   containers = let
@@ -45,20 +50,21 @@
     fastestVpnPublicKey = "658QxufMbjOTmB61Z7f+c7Rjg7oqWLnepTalqBERjF0=";
     fastestVpnEndpoint = "139.28.179.82:51820";
 
-    proton0PrivateKeyFile = config.age.secrets."proton-0".path;
-    proton0PublicKey = "7KAAj4pUAexy8s+S01hn1g61oyhfVpA18GrPD0Q8vnM=";
+    proton0SoulseekPrivateKeyFile = config.age.secrets."proton-0-soulseek".path;
     protonAddress = "10.2.0.2/32";
     protonDns = "10.2.0.1";
-    protonServer = "95.173.217.2";
     protonPort = 51820;
 
     tailscaleEphemeralAuthFile = config.age.secrets."tailscale-ephemeral".path;
     tailscaleMagicDns = "hummingbird-lake.ts.net";
     hostAddress = "192.168.100.1";
   in {
+    #####
+    # File Transfer
+    #####
+
     soulseek = let
       slskdEnvFile = config.age.secrets."slskd_env".path;
-      fastestVpnPrivateKeyFile = config.age.secrets."fastestvpn".path;
     in {
       inherit hostAddress;
       localAddress = "192.168.100.50";
@@ -69,7 +75,7 @@
       bindMounts = {
         "${tailscaleEphemeralAuthFile}".hostPath = tailscaleEphemeralAuthFile;
         "${slskdEnvFile}".hostPath = slskdEnvFile;
-        "${proton0PrivateKeyFile}".hostPath = proton0PrivateKeyFile;
+        "${proton0SoulseekPrivateKeyFile}".hostPath = proton0SoulseekPrivateKeyFile;
       };
 
       config = {...}: {
@@ -96,9 +102,9 @@
             address = protonAddress;
             dns = protonDns;
             gateway = hostAddress;
-            privateKeyFile = proton0PrivateKeyFile;
-            publicKey = proton0PublicKey;
-            server = protonServer;
+            privateKeyFile = proton0SoulseekPrivateKeyFile;
+            publicKey = "jqu/dcZfEtote0IN1H4ZFneR8p4sZ7juna+eUndhRgs=";
+            server = "89.187.175.132";
             port = protonPort;
           };
 
@@ -143,6 +149,7 @@
     };
 
     usenet = let
+      proton0UsenetPrivateKeyFile = config.age.secrets."proton-0-usenet".path;
       newsDemonUserFile = config.age.secrets."newsdemon-user".path;
       newsDemonPassFile = config.age.secrets."newsdemon-pass".path;
       apiKeyFile = config.age.secrets."sabnzbd-api-key".path;
@@ -229,27 +236,21 @@
       bindMounts = {
         "${tailscaleEphemeralAuthFile}" = {
           hostPath = tailscaleEphemeralAuthFile;
-          isReadOnly = true;
         };
-        "${fastestVpnPrivateKeyFile}" = {
-          hostPath = fastestVpnPrivateKeyFile;
-          isReadOnly = true;
+        "${proton0UsenetPrivateKeyFile}" = {
+          hostPath = proton0UsenetPrivateKeyFile;
         };
         "${newsDemonUserFile}" = {
           hostPath = newsDemonUserFile;
-          isReadOnly = true;
         };
         "${newsDemonPassFile}" = {
           hostPath = newsDemonPassFile;
-          isReadOnly = true;
         };
         "${apiKeyFile}" = {
           hostPath = apiKeyFile;
-          isReadOnly = true;
         };
         "${nzbKeyFile}" = {
           hostPath = nzbKeyFile;
-          isReadOnly = true;
         };
       };
 
@@ -257,7 +258,7 @@
         system.stateVersion = "24.11";
 
         imports = [
-          inputs.self.nixosModules.container-fastest-vpn
+          inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
         ];
 
@@ -273,12 +274,16 @@
         };
 
         mountainous = {
-          container-fastest-vpn = {
+          wg-killswitch = {
             enable = true;
-            privateKeyFile = fastestVpnPrivateKeyFile;
-            publicKey = fastestVpnPublicKey;
-            endpoint = fastestVpnEndpoint;
+            name = "protonvpn";
+            address = protonAddress;
+            dns = protonDns;
             gateway = hostAddress;
+            privateKeyFile = proton0UsenetPrivateKeyFile;
+            publicKey = "IV0rNO3lSM0n0yEbCUtEwFnO0vPUbUNurIFnO6AxRhI=";
+            server = "45.134.140.59";
+            port = protonPort;
           };
           networking = {
             tailscaled = {
@@ -295,6 +300,12 @@
             ${setupScript}
           '';
           deps = ["var" "users" "groups"];
+        };
+
+        systemd.services.sabnzbd = {
+          serviceConfig = {
+            UMask = "0002";
+          };
         };
 
         services.sabnzbd = {
@@ -318,6 +329,286 @@
         };
       };
     };
+
+    downloads = let
+      privateKeyFile = config.age.secrets."proton-0-downloads".path;
+      aria2RpcSecretFile = config.age.secrets."aria2-rpc-secret".path;
+    in {
+      inherit hostAddress;
+
+      localAddress = "192.168.100.88";
+      privateNetwork = true;
+      autoStart = true;
+      enableTun = true;
+
+      bindMounts = {
+        "${tailscaleEphemeralAuthFile}".hostPath = tailscaleEphemeralAuthFile;
+        "${privateKeyFile}".hostPath = privateKeyFile;
+        "${aria2RpcSecretFile}".hostPath = aria2RpcSecretFile;
+      };
+
+      config = {pkgs, ...}: {
+        system.stateVersion = "24.11";
+
+        imports = [
+          ./aria2-custom.nix
+          # ./ariaNg.nix
+          # inputs.self.nixosModules.mylar3
+          inputs.self.nixosModules.wg-killswitch
+          inputs.self.nixosModules."networking/tailscaled"
+        ];
+
+        networking = {
+          useHostResolvConf = false;
+        };
+
+        services.resolved = {
+          enable = true;
+          dnssec = "false";
+        };
+
+        mountainous = {
+          # mylar3 = {
+          #   enable = true;
+          # };
+          wg-killswitch = {
+            inherit privateKeyFile;
+
+            enable = true;
+            name = "protonvpn";
+            address = protonAddress;
+            dns = protonDns;
+            gateway = hostAddress;
+            publicKey = "vsquyHHSbv76cOqCMZCREGur05Mp5XM0lbCAzrGDs2w=";
+            server = "149.22.94.86";
+          };
+          networking = {
+            tailscaled = {
+              enable = true;
+              authKeyFile = tailscaleEphemeralAuthFile;
+              serve = 8000;
+            };
+          };
+        };
+
+        boot.kernel.sysctl = {
+          "net.core.rmem_max" = 4194304;
+          "net.core.wmem_max" = 1048576;
+        };
+
+        # services.ariang = {
+        #   enable = true;
+        #   user = "media";
+        #   group = "media";
+        # };
+
+        services.aria2-custom = {
+          enable = true;
+          user = "media";
+          group = "media";
+          rpcSecretFile = aria2RpcSecretFile;
+          settings = {};
+        };
+
+        users = {
+          groups.media = {
+            gid = lib.mkForce 333;
+          };
+
+          users.media = {
+            group = "media";
+            uid = lib.mkForce 333;
+          };
+        };
+      };
+    };
+
+    torrents = let
+      privateKeyFile = config.age.secrets."proton-0-torrents".path;
+    in {
+      inherit hostAddress;
+
+      localAddress = "192.168.100.77";
+      privateNetwork = true;
+      autoStart = true;
+      enableTun = true;
+
+      bindMounts = {
+        "${tailscaleEphemeralAuthFile}".hostPath = tailscaleEphemeralAuthFile;
+        "${privateKeyFile}".hostPath = privateKeyFile;
+      };
+
+      config = {pkgs, ...}: {
+        system.stateVersion = "24.11";
+
+        imports = [
+          inputs.self.nixosModules.wg-killswitch
+          inputs.self.nixosModules."networking/tailscaled"
+        ];
+
+        networking = {
+          useHostResolvConf = false;
+        };
+
+        services.resolved = {
+          enable = true;
+          dnssec = "false";
+        };
+
+        mountainous = {
+          wg-killswitch = {
+            inherit privateKeyFile;
+
+            enable = true;
+            name = "protonvpn";
+            address = protonAddress;
+            dns = protonDns;
+            gateway = hostAddress;
+            publicKey = "KkUoHrIzkuQ4msZulqCFyRC1Gqcx8oMgbDFRn8wW1X8=";
+            server = "95.173.221.65";
+          };
+          networking = {
+            tailscaled = {
+              enable = true;
+              authKeyFile = tailscaleEphemeralAuthFile;
+              serve = 3000;
+            };
+          };
+        };
+
+        services.flood.enable = true;
+        systemd.services.flood = {
+          serviceConfig = {
+            UMask = "0002";
+            DynamicUser = lib.mkForce false;
+            User = "media";
+            Group = "media";
+            StateDirectoryMode = "770";
+          };
+        };
+
+        boot.kernel.sysctl = {
+          "net.core.rmem_max" = 4194304;
+          "net.core.wmem_max" = 1048576;
+        };
+
+        systemd.services.transmission.serviceConfig = {
+          UMask = lib.mkForce "0002";
+          # INFO: Needed to start without failure
+          RootDirectory = lib.mkForce "";
+          RootDirectoryStartOnly = lib.mkForce false;
+          StateDirectoryMode = "770";
+        };
+
+        services.transmission = {
+          enable = true;
+          user = "media";
+          group = "media";
+          settings = {
+            # Basic settings
+            umask = 2;
+            # Upload restrictions
+            "speed-limit-up" = 1; # KB/s
+            "speed-limit-up-enabled" = true;
+            "upload-slots-per-torrent" = 1;
+            # Ratio limits
+            "ratio-limit" = 0;
+            "ratio-limit-enabled" = true;
+            "seedRatioLimit" = 0.0;
+            "seedRatioLimited" = true;
+            # Peer settings
+            "peer-limit-per-torrent" = 10;
+            # Queue settings
+            "seed-queue-enabled" = false;
+          };
+        };
+
+        users = {
+          groups.media = {
+            gid = lib.mkForce 333;
+          };
+
+          users.media = {
+            group = "media";
+            uid = lib.mkForce 333;
+          };
+        };
+      };
+    };
+
+    index = let
+      proton0IndexPrivateKeyFile = config.age.secrets."proton-0-index".path;
+    in {
+      inherit hostAddress;
+
+      localAddress = "192.168.100.17";
+      privateNetwork = true;
+      autoStart = true;
+      enableTun = true;
+
+      bindMounts = {
+        "${tailscaleEphemeralAuthFile}" = {
+          hostPath = tailscaleEphemeralAuthFile;
+          isReadOnly = true;
+        };
+        "${proton0IndexPrivateKeyFile}" = {
+          hostPath = proton0IndexPrivateKeyFile;
+          isReadOnly = true;
+        };
+      };
+
+      config = {pkgs, ...}: {
+        system.stateVersion = "24.11";
+
+        imports = [
+          inputs.self.nixosModules.wg-killswitch
+          inputs.self.nixosModules."networking/tailscaled"
+        ];
+
+        networking = {
+          useHostResolvConf = false;
+        };
+
+        services.resolved = {
+          enable = true;
+          dnssec = "false";
+        };
+
+        mountainous = {
+          wg-killswitch = {
+            enable = true;
+            name = "protonvpn";
+            address = protonAddress;
+            dns = protonDns;
+            gateway = hostAddress;
+            privateKeyFile = proton0IndexPrivateKeyFile;
+            publicKey = "ntBhUr1CJmbVydw6cgccMFGSzEcPugiikF/l4NuDygA=";
+            server = "79.127.136.65";
+            port = protonPort;
+          };
+          networking = {
+            tailscaled = {
+              enable = true;
+              authKeyFile = tailscaleEphemeralAuthFile;
+              serve = 9696;
+            };
+          };
+        };
+
+        systemd.services.prowlarr = {
+          serviceConfig = {
+            UMask = "0002";
+          };
+        };
+
+        services.prowlarr.enable = true;
+        # services.flaresolverr.enable = true;
+      };
+    };
+
+    ########
+    # Apps
+    ########
 
     search = let
       searxEnvFile = config.age.secrets."searx-env".path;
@@ -401,6 +692,10 @@
           hostPath = "/var/lib/nixos-containers/usenet/var/lib/sabnzbd/Downloads/complete";
           isReadOnly = false;
         };
+        "/var/lib/transmission/Downloads" = {
+          hostPath = "/var/lib/nixos-containers/torrents/var/lib/transmission/Downloads";
+          isReadOnly = false;
+        };
       };
 
       config = {...}: {
@@ -430,6 +725,13 @@
             };
           };
         };
+
+        nixpkgs.config.permittedInsecurePackages = [
+          "aspnetcore-runtime-6.0.36"
+          "aspnetcore-runtime-wrapped-6.0.36"
+          "dotnet-sdk-wrapped-6.0.428"
+          "dotnet-sdk-6.0.428"
+        ];
 
         services.sonarr = {
           enable = true;
@@ -466,6 +768,10 @@
           hostPath = tailscaleEphemeralAuthFile;
           isReadOnly = true;
         };
+        "/snowscape/music/albums" = {
+          hostPath = "/snowscape/music/albums";
+          isReadOnly = false;
+        };
         "/snowscape/videos" = {
           hostPath = "/snowscape/videos";
           isReadOnly = false;
@@ -473,6 +779,8 @@
       };
 
       config = {...}: {
+        system.stateVersion = "24.11";
+
         imports = [
           inputs.self.nixosModules."networking/tailscaled"
         ];
@@ -490,6 +798,16 @@
           enable = true;
           user = "media";
           group = "media";
+        };
+
+        systemd.services.jellyfin = {
+          serviceConfig = {
+            LimitNOFILE = 65536;
+          };
+        };
+
+        boot.kernel.sysctl = {
+          "fs.inotify.max_user_watches" = 524288;
         };
 
         users = {
@@ -539,9 +857,13 @@
           hostPath = "/var/lib/nixos-containers/usenet/var/lib/sabnzbd/Downloads/complete";
           isReadOnly = false;
         };
+        "/var/lib/transmission/Downloads" = {
+          hostPath = "/var/lib/nixos-containers/torrents/var/lib/transmission/Downloads";
+          isReadOnly = false;
+        };
       };
 
-      config = {pkgs, ...}: {
+      config = {...}: {
         system.stateVersion = "24.11";
 
         imports = [
@@ -589,63 +911,6 @@
       };
     };
 
-    index = {
-      inherit hostAddress;
-
-      localAddress = "192.168.100.17";
-      privateNetwork = true;
-      autoStart = true;
-      enableTun = true;
-
-      bindMounts = {
-        "${tailscaleEphemeralAuthFile}" = {
-          hostPath = tailscaleEphemeralAuthFile;
-          isReadOnly = true;
-        };
-        "${fastestVpnPrivateKeyFile}" = {
-          hostPath = fastestVpnPrivateKeyFile;
-          isReadOnly = true;
-        };
-      };
-
-      config = {pkgs, ...}: {
-        system.stateVersion = "24.11";
-
-        imports = [
-          inputs.self.nixosModules.container-fastest-vpn
-          inputs.self.nixosModules."networking/tailscaled"
-        ];
-
-        networking = {
-          useHostResolvConf = false;
-        };
-
-        services.resolved = {
-          enable = true;
-          dnssec = "false";
-        };
-
-        mountainous = {
-          container-fastest-vpn = {
-            enable = true;
-            privateKeyFile = fastestVpnPrivateKeyFile;
-            publicKey = fastestVpnPublicKey;
-            endpoint = fastestVpnEndpoint;
-            gateway = hostAddress;
-          };
-          networking = {
-            tailscaled = {
-              enable = true;
-              authKeyFile = tailscaleEphemeralAuthFile;
-              serve = 9696;
-            };
-          };
-        };
-
-        services.prowlarr.enable = true;
-      };
-    };
-
     music = {
       inherit hostAddress;
 
@@ -662,6 +927,8 @@
       };
 
       config = {...}: {
+        system.stateVersion = "24.11";
+
         imports = [
           inputs.self.nixosModules."networking/tailscaled"
           ./resonance.nix
@@ -734,6 +1001,8 @@
       };
 
       config = {...}: {
+        system.stateVersion = "24.11";
+
         imports = [
           inputs.self.nixosModules."networking/tailscaled"
         ];
@@ -796,6 +1065,8 @@
       config = {...}: let
         port = 8080;
       in {
+        system.stateVersion = "24.11";
+
         imports = [
           inputs.self.nixosModules."networking/tailscaled"
         ];
@@ -859,6 +1130,8 @@
       };
 
       config = {...}: {
+        system.stateVersion = "24.11";
+
         imports = [
           inputs.self.nixosModules."networking/tailscaled"
         ];
@@ -939,9 +1212,9 @@
   #   enable = true;
   #   securityType = "user";
   #   extraConfig = ''
-  #     workgroup = WORKGROUP
-  #     server string = smbnix
-  #     netbios name = smbnix
+  #     workgroup = MOUNTAINOUS
+  #     server string = unzen
+  #     netbios name = unzen
   #     security = user
   #     #use sendfile = yes
   #     #max protocol = smb2
@@ -966,60 +1239,91 @@
   #   };
   # };
   #
-  # services.borgbackup.jobs = {
-  #   taskwarrior = {
-  #     paths = "/home/simonwjackson/.local/share/task";
-  #     repo = "/glacier/iceberg/permafrost/taskwarrior";
-  #     encryption.mode = "none";
-  #     compression = "zstd,22";
-  #     startAt = "hourly";
-  #     prune = {
-  #       keep = {
-  #         within = "7d";
-  #       };
-  #     };
-  #   };
-  #
-  #   gaming-profiles = {
-  #     paths = "/glacier/snowscape/gaming/profiles";
-  #     repo = "/glacier/iceberg/permafrost/gaming/profiles";
-  #     encryption.mode = "none";
-  #     compression = "zstd,22";
-  #     startAt = "daily"; # every day
-  #     exclude = [];
-  #     prune = {
-  #       keep = {
-  #         within = "30d";
-  #       };
-  #     };
-  #   };
-  #
-  #   photos = {
-  #     paths = "/glacier/snowscape/photos";
-  #     repo = "/glacier/iceberg/permafrost/photos";
-  #     encryption.mode = "none";
-  #     compression = "zstd,22";
-  #     startAt = "daily"; # every day
-  #   };
-  #
-  #   notes = {
-  #     paths = "/glacier/snowscape/documents/notes";
-  #     repo = "/glacier/iceberg/permafrost/notes";
-  #     encryption.mode = "none";
-  #     startAt = "daily"; # every day
-  #     prune = {
-  #       keep = {
-  #         within = "30d";
-  #       };
-  #     };
-  #   };
-  # };
-  #
-  # services.syncthing = {
-  #   enable = true;
-  #   key = config.age.secrets.unzen-syncthing-key.path;
-  #   cert = config.age.secrets.unzen-syncthing-cert.path;
-  # };
+
+  services.borgbackup.jobs = {
+    gaming-profiles = {
+      paths = "/snowscape/gaming/profiles";
+      repo = "/avalanche/groups/local/snowscape/backup/gaming-profiles";
+      encryption.mode = "none";
+      compression = "zstd,3";
+      startAt = "*:0/5";
+      exclude = [];
+      prune = {
+        keep = {
+          within = "1d"; # Keep all within 1 day
+          daily = 7; # Keep 7 daily backups
+          weekly = 4; # Keep 4 weekly backups
+          monthly = 6; # Keep 6 monthly backups
+          yearly = 1; # Keep 1 yearly backup
+        };
+      };
+    };
+
+    media-services = {
+      paths = [
+        "/var/lib/nixos-containers/series/var/lib/sonarr"
+        "/var/lib/nixos-containers/films/var/lib/radarr"
+        "/var/lib/nixos-containers/index/var/lib/prowlarr"
+        "/var/lib/nixos-containers/watch/var/lib/jellyfin"
+      ];
+      repo = "/avalanche/groups/local/snowscape/backup/media-services";
+      encryption.mode = "none";
+      compression = "lz4";
+      startAt = "daily";
+      exclude = [
+        # Jellyfin excludes
+        "**/jellyfin/log/*"
+        "**/jellyfin/data/cache*"
+        "**/jellyfin/data/transcoding-temp"
+        "**/jellyfin/.aspnet"
+        "**/jellyfin/plugins"
+        "**/jellyfin/root"
+        "**/jellyfin/Subtitle Edit"
+
+        # Common patterns across *arr services
+        "**/asp/**" # ASP.NET temporary files
+        "**/logs/**" # Log directories
+        "**/logs.db*" # Log database files
+        "**/*.pid" # Process ID files
+        "**/Sentry/**" # Sentry crash reporting
+        "**/*db-shm" # SQLite shared memory files
+        "**/*db-wal" # SQLite write-ahead logs
+        "**/MediaCover/**" # Can be regenerated from metadata
+      ];
+      prune = {
+        keep = {
+          daily = 7;
+          weekly = 4;
+          monthly = 6;
+          yearly = 2;
+        };
+      };
+    };
+
+    notes = {
+      paths = "/snowscape/notes";
+      repo = "/avalanche/groups/local/snowscape/backup/notes";
+      encryption.mode = "none";
+      compression = "zstd,3";
+      startAt = "*:0/5";
+      exclude = [];
+      prune = {
+        keep = {
+          within = "1d"; # Keep all within 1 day
+          daily = 7; # Keep 7 daily backups
+          weekly = 4; # Keep 4 weekly backups
+          monthly = 6; # Keep 6 monthly backups
+          yearly = 1; # Keep 1 yearly backup
+        };
+      };
+    };
+  };
+
+  services.syncthing = {
+    enable = true;
+    key = config.age.secrets.unzen-syncthing-key.path;
+    cert = config.age.secrets.unzen-syncthing-cert.path;
+  };
 
   services.printing.enable = true;
   services.printing.drivers = with pkgs; [brlaser];
@@ -1048,13 +1352,11 @@
     enable = true;
     autodetect = true; # Monitor all devices that support SMART
     notifications = {
-      x11.enable = true;
       mail.enable = true;
     };
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
   system.stateVersion = "23.05"; # Did you read the comment?
