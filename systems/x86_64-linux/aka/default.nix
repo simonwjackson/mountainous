@@ -1,7 +1,5 @@
 {
-  system,
   config,
-  inputs,
   lib,
   modulesPath,
   pkgs,
@@ -13,35 +11,36 @@ in {
     (modulesPath + "/installer/scan/not-detected.nix")
     ./sunshine.nix
     ./web-app.nix
+    ./disko.nix
   ];
 
-  fileSystems."/run/media/walkman" = {
-    device = "/dev/disk/by-uuid/FE19-B029";
-    fsType = "exfat";
-    options = [
-      "uid=333"
-      "gid=333"
-      "fmask=113"
-      "dmask=002"
-      "defaults"
-      "nofail"
-      "x-systemd.automount"
-    ];
-  };
-
-  fileSystems."/run/media/mazda-media" = {
-    device = "/dev/disk/by-uuid/3833-6538";
-    fsType = "exfat";
-    options = [
-      "uid=333"
-      "gid=333"
-      "fmask=113"
-      "dmask=002"
-      "defaults"
-      "nofail"
-      "x-systemd.automount"
-    ];
-  };
+  # fileSystems."/run/media/walkman" = {
+  #   device = "/dev/disk/by-uuid/FE19-B029";
+  #   fsType = "exfat";
+  #   options = [
+  #     "uid=333"
+  #     "gid=333"
+  #     "fmask=113"
+  #     "dmask=002"
+  #     "defaults"
+  #     "nofail"
+  #     "x-systemd.automount"
+  #   ];
+  # };
+  #
+  # fileSystems."/run/media/mazda-media" = {
+  #   device = "/dev/disk/by-uuid/3833-6538";
+  #   fsType = "exfat";
+  #   options = [
+  #     "uid=333"
+  #     "gid=333"
+  #     "fmask=113"
+  #     "dmask=002"
+  #     "defaults"
+  #     "nofail"
+  #     "x-systemd.automount"
+  #   ];
+  # };
 
   # services.youtube-dl-subscriptions = {
   #   enable = true;
@@ -98,6 +97,7 @@ in {
   #######################
   # Disable onboard audio
   #######################
+
   boot.blacklistedKernelModules = ["snd_hda_intel"];
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
@@ -252,31 +252,43 @@ in {
 
   time.timeZone = "America/Chicago";
 
+  environment.etc."mdadm.conf".text = ''
+    MAILADDR root@localhost
+    PROGRAM /run/current-system/sw/bin/mdadm-monitor
+  '';
+
   boot = {
+    swraid.enable = true;
     extraModulePackages = [];
     initrd = {
-      availableKernelModules = ["nvme" "xhci_pci" "ahci" "usbhid" "uas" "sd_mod"];
+      availableKernelModules = [
+        "ahci"
+        "nvme"
+        "sd_mod"
+        "uas"
+        "usb_storage"
+        "usbhid"
+        "xhci_pci"
+      ];
       kernelModules = ["dm-snapshot" "amdgpu" "i2c-dev"];
-      luks = {
-        devices = {
-          root = {
-            device = "/dev/disk/by-uuid/8814fd7c-f350-41de-b205-83feaca5ec41";
-            preLVM = true;
-          };
-        };
-      };
     };
     kernelModules = ["kvm-amd" "tun"];
     kernelPackages = pkgs.linuxPackages_latest;
     loader = {
       efi = {
-        canTouchEfiVariables = true;
+        canTouchEfiVariables = false;
+        efiSysMountPoint = "/boot";
       };
       grub = {
-        device = "nodev";
-        efiSupport = true;
         enable = true;
-        enableCryptodisk = true;
+        devices = [
+          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0374219080022724-0:0"
+          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0374219080022992-0:0"
+        ];
+        efiSupport = true;
+        efiInstallAsRemovable = true;
+        copyKernels = true;
+        fsIdentifier = "uuid";
       };
     };
     supportedFilesystems = ["btrfs"];
@@ -296,6 +308,9 @@ in {
       url = "https://youtube.com";
     };
   };
+
+  boot.binfmt.emulatedSystems = ["aarch64-linux"];
+
   ##########################################################
 
   services.xserver.enable = true;
