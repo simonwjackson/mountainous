@@ -144,8 +144,7 @@
         allowUnfree = true;
         # allowUnsupportedSystem = true;
 
-        permittedInsecurePackages = [
-        ];
+        permittedInsecurePackages = [];
 
         # Additional configuration for specific packages.
         config = {
