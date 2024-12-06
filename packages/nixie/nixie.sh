@@ -10,7 +10,7 @@ Usage:
 
 Arguments:
   <action>               Action supported by nixos-rebuild (switch, test, build, etc)
-  [host1,host2,...]      Optional: List of hosts. If blank, defaults to the HOSTS environment variable or the current machine.
+  [host1,host2,...]      Optional: List of hosts. If blank, defaults to the NIXIE_HOSTS environment variable or the current machine.
 
 Options:
   -h, --help             Show this screen.
@@ -38,11 +38,7 @@ UPDATE_FLAKE=false
 GENERATE_REPORT=true
 EXTRA_OPTS=()
 BUILDERS_ARRAY=()
-
-# Add a flag to track if the script should exit
 SHOULD_EXIT=false
-
-# Add arrays to track successful and failed hosts
 SUCCESSFUL_HOSTS=()
 FAILED_HOSTS=()
 
@@ -50,7 +46,6 @@ log() {
   gum log --level "$1" "$2"
 }
 
-# Function to handle SIGINT (Ctrl+C)
 handle_sigint() {
   log warn "Received SIGINT. Terminating all processes..."
   SHOULD_EXIT=true
@@ -59,51 +54,7 @@ handle_sigint() {
   exit 1
 }
 
-# Set up the SIGINT trap
 trap handle_sigint SIGINT
-
-#!/usr/bin/env bash
-
-set -euo pipefail
-
-doc="Nixer Script
-
-Usage:
-  $(basename "$0") <action> [host1,...] [options]
-  $(basename "$0") -h | --help
-
-Arguments:
-  <action>               Action supported by nixos-rebuild (switch, test, build, etc)
-  [host1,host2,...]      Optional: List of hosts. If blank, defaults to the NIXIE_HOSTS environment variable or the current machine.
-
-Options:
-  -h, --help             Show this screen.
-  --[no-]local-build     Use local build (default: --local-build)
-  --[no-]check-battery   Check if builders are on battery power (default: --check-battery)
-  --[no-]update          Run 'nix flake update' before building (default: --no-update)
-  --[no-]report          Generate and display a summary report (default: --report)
-  --builders             Comma-separated list of builders to use
-  [extra options]        All other options are passed to the final command.
-
-Environment Variables:
-  NIXIE_HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
-  NIXIE_BUILDERS        Comma-separated list of builders to use. Used if no builders are specified.
-"
-
-ACTION=""
-HOSTS_ARG=""
-HOSTS_ENV="${HOSTS:-}"
-HOSTS_ARRAY=()
-ONLINE_HOSTS=()
-OFFLINE_HOSTS=()
-LOCAL_BUILD=true
-CHECK_BATTERY=true
-UPDATE_FLAKE=false
-GENERATE_REPORT=true
-EXTRA_OPTS=()
-BUILDERS_ARRAY=()
-
-# ... (rest of the script remains unchanged until the parse_arguments function)
 
 parse_arguments() {
   if [[ $# -lt 1 ]]; then
