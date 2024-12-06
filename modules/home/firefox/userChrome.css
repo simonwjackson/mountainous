@@ -65,6 +65,14 @@ url(chrome://browser/content/places/places.xhtml)
     flex-grow: 1;
   }
 
+  #toolbar-menubar {
+    &[autohide="true"] {
+      &[inactive]:not([customizing]) {
+        flex: 0 !important;
+      }
+    }
+  }
+
   :root:not([privatebrowsingmode], [firefoxviewhidden])
     :is(toolbarbutton, toolbarpaletteitem)
     + #tabbrowser-tabs,
