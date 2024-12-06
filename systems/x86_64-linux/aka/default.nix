@@ -181,57 +181,6 @@ in {
 
   nixpkgs.config.allowUnfree = true;
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    options = ["subvol=root" "compress=zstd" "noatime"];
-  };
-
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    options = ["subvol=home" "compress=zstd" "noatime"];
-  };
-
-  fileSystems."/snowscape" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    # neededForBoot = false;
-    options = ["subvol=snowscape" "compress=zstd" "noatime"];
-  };
-
-  fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    options = ["subvol=nix" "compress=zstd" "noatime"];
-  };
-
-  fileSystems."/persist" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    options = ["subvol=persist" "compress=zstd" "noatime"];
-    neededForBoot = true;
-  };
-
-  fileSystems."/var/log" = {
-    device = "/dev/disk/by-uuid/bae6059a-0fb6-4363-9ada-c3c18c0a48c7";
-    fsType = "btrfs";
-    options = ["subvol=log" "compress=zstd" "noatime"];
-    neededForBoot = true;
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/0DB7-D50C";
-    fsType = "vfat";
-    options = ["fmask=0022" "dmask=0022"];
-  };
-
-  swapDevices = [
-    {
-      device = "/dev/disk/by-uuid/09ded7e9-8687-4e56-a71c-99d24de97ca5";
-    }
-  ];
-
   hardware = {
     enableAllFirmware = true;
     cpu = {
@@ -291,7 +240,6 @@ in {
         fsIdentifier = "uuid";
       };
     };
-    supportedFilesystems = ["btrfs"];
   };
 
   ##########################################################
