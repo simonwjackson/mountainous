@@ -22,13 +22,13 @@ Options:
   [extra options]        All other options are passed to the final command.
 
 Environment Variables:
-  HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
+  NIXIE_HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
   NIXIE_BUILDERS        Comma-separated list of builders to use. Used if no builders are specified.
 "
 
 ACTION=""
 HOSTS_ARG=""
-HOSTS_ENV="${HOSTS:-}"
+HOSTS_ENV="${NIXIE_HOSTS:-}"
 HOSTS_ARRAY=()
 ONLINE_HOSTS=()
 OFFLINE_HOSTS=()
@@ -74,7 +74,7 @@ Usage:
 
 Arguments:
   <action>               Action supported by nixos-rebuild (switch, test, build, etc)
-  [host1,host2,...]      Optional: List of hosts. If blank, defaults to the HOSTS environment variable or the current machine.
+  [host1,host2,...]      Optional: List of hosts. If blank, defaults to the NIXIE_HOSTS environment variable or the current machine.
 
 Options:
   -h, --help             Show this screen.
@@ -86,7 +86,7 @@ Options:
   [extra options]        All other options are passed to the final command.
 
 Environment Variables:
-  HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
+  NIXIE_HOSTS                  Comma-separated list of hosts to build for. Used if no hosts are specified.
   NIXIE_BUILDERS        Comma-separated list of builders to use. Used if no builders are specified.
 "
 
@@ -222,7 +222,7 @@ check_hosts_online() {
 
   if [[ ${#ONLINE_HOSTS[@]} -eq 0 ]]; then
     log error "No hosts are online. Exiting."
-    exit 1
+    # exit 1
   fi
 
   log info "Online hosts: ${ONLINE_HOSTS[*]}"
