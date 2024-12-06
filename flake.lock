@@ -85,11 +85,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1728408362,
-        "narHash": "sha256-zGvdh+z3+Ic58lQl4ldC1k/py9bDhX+u1rRBBiqPDEo=",
+        "lastModified": 1728149106,
+        "narHash": "sha256-LKsE6GVa53BISOb5oP2ilKy3tozT218CCwER9vcPMNE=",
         "owner": "m15a",
         "repo": "flake-awesome-neovim-plugins",
-        "rev": "04cdde69b0fbeaf61103d444382e00a648721238",
+        "rev": "15f055d6187f450defab878edc9112d92882815f",
         "type": "github"
       },
       "original": {
@@ -331,11 +331,11 @@
     "codecompanion-nvim": {
       "flake": false,
       "locked": {
-        "lastModified": 1728411051,
-        "narHash": "sha256-IhIVkUoGR3uCeQs8rxVvetU/VJfdCgj+NxwlQOWdH6Q=",
+        "lastModified": 1728232977,
+        "narHash": "sha256-24SPdHJ2yPySwppqbmdUtKYtGxwc66B2fOTezpUmi/A=",
         "owner": "olimorris",
         "repo": "codecompanion.nvim",
-        "rev": "c5c741d55b9edca658160db5d11db84df8788719",
+        "rev": "b46bff0a04db45e26f175ac1321f9feece451182",
         "type": "github"
       },
       "original": {
@@ -460,11 +460,11 @@
     "fd": {
       "flake": false,
       "locked": {
-        "lastModified": 1728246302,
-        "narHash": "sha256-WGOTPEUEgZNyn6XSm+4Rx8p1NmJl4mrzjT30aqNYmrA=",
+        "lastModified": 1727886625,
+        "narHash": "sha256-ks3ru/8D8BGti5snlxrviYA16QNpWC8AZA5iAwBUvnE=",
         "owner": "sharkdp",
         "repo": "fd",
-        "rev": "202e32953c645c234d7c4db7183b053061da4230",
+        "rev": "3d0d1865c8fd5f8fa20742fe01d9af399bece093",
         "type": "github"
       },
       "original": {
@@ -1075,22 +1075,6 @@
         "type": "github"
       }
     },
-    "hmts-nvim": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1727357627,
-        "narHash": "sha256-8FJlLw5LApQs7S8xEh2UE9wdYCAweZTbvgozCGPfQJc=",
-        "owner": "calops",
-        "repo": "hmts.nvim",
-        "rev": "1ecb68b9f89abdb23d2754f9d69f90eab2d33eaa",
-        "type": "github"
-      },
-      "original": {
-        "owner": "calops",
-        "repo": "hmts.nvim",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -1337,10 +1321,8 @@
         "edgy-nvim": "edgy-nvim",
         "fd": "fd",
         "git-worktree-nvim": "git-worktree-nvim",
-        "hmts-nvim": "hmts-nvim",
         "lspkind-nvim": "lspkind-nvim",
         "m_taskwarriror_d": "m_taskwarriror_d",
-        "mdx-nvim": "mdx-nvim",
         "middleclass": "middleclass",
         "nixpkgs": "nixpkgs_5",
         "nvim-osc52": "nvim-osc52",
@@ -1355,11 +1337,11 @@
         "vim-visual-star-search": "vim-visual-star-search"
       },
       "locked": {
-        "lastModified": 1728956457,
-        "narHash": "sha256-E5YkCNlRyM4Uy2D2xaDVZpCaEJOboCNbuiNckGhaPj4=",
+        "lastModified": 1733436784,
+        "narHash": "sha256-tFPPU5GYXZDoIiXtqzJDsI96Y+rMRNhm68pEALAiXmQ=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "44661c193ccf69833b045e01010909fd29bb4849",
+        "rev": "a1c54fd99521934eeeed56cdeeb1ada0e8847610",
         "type": "github"
       },
       "original": {
@@ -1419,22 +1401,6 @@
       "original": {
         "owner": "simonwjackson",
         "repo": "m_taskwarrior_d.nvim",
-        "type": "github"
-      }
-    },
-    "mdx-nvim": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1708579602,
-        "narHash": "sha256-CYcL+s1634UgquwUYp70iAD2xC6r87j6w5jYv90mUAg=",
-        "owner": "davidmh",
-        "repo": "mdx.nvim",
-        "rev": "61b93f6576cb5229020723c7a81f5a01d2667d05",
-        "type": "github"
-      },
-      "original": {
-        "owner": "davidmh",
-        "repo": "mdx.nvim",
         "type": "github"
       }
     },
@@ -1839,11 +1805,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1728241625,
-        "narHash": "sha256-yumd4fBc/hi8a9QgA9IT8vlQuLZ2oqhkJXHPKxH/tRw=",
+        "lastModified": 1728018373,
+        "narHash": "sha256-NOiTvBbRLIOe5F6RbHaAh6++BNjsb149fGZd1T4+KBg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "c31898adf5a8ed202ce5bea9f347b1c6871f32d1",
+        "rev": "bc947f541ae55e999ffdb4013441347d83b00feb",
         "type": "github"
       },
       "original": {
