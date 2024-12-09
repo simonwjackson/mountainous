@@ -53,7 +53,9 @@ in {
     home = {
       sessionVariables = {
         EDITOR = "nvim";
-        NIXIE_BUILDERS = "unzen,kita,zao";
+        NIXIE_BUILDERS = "aka,unzen,zao,haku";
+        NIXPKGS_ALLOW_UNFREE = 1;
+        MOSH_TITLE_NOPREFIX = 1; # Disable mosh banner when there is a stuck process.
       };
       packages = with pkgs; [
         fd
