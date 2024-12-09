@@ -9,9 +9,15 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./disko.nix
     ./snowscape
+    ./disko.nix
+    ./iceberg.1.nix
   ];
+
+  services.cuttlefish = {
+    enable = true;
+    configFile = "/snowscape/podcasts/subscriptions.yaml";
+  };
 
   boot.kernel.sysctl = {
     "net.ipv4.ip_forward" = 1;
@@ -46,17 +52,13 @@
   ];
 
   containers = let
-    fastestVpnPrivateKeyFile = config.age.secrets."fastestvpn".path;
-    fastestVpnPublicKey = "658QxufMbjOTmB61Z7f+c7Rjg7oqWLnepTalqBERjF0=";
-    fastestVpnEndpoint = "139.28.179.82:51820";
-
-    proton0SoulseekPrivateKeyFile = config.age.secrets."proton-0-soulseek".path;
     protonAddress = "10.2.0.2/32";
     protonDns = "10.2.0.1";
     protonPort = 51820;
 
     tailscaleEphemeralAuthFile = config.age.secrets."tailscale-ephemeral".path;
     tailscaleMagicDns = "hummingbird-lake.ts.net";
+
     hostAddress = "192.168.100.1";
   in {
     #####
@@ -64,6 +66,7 @@
     #####
 
     soulseek = let
+      proton0SoulseekPrivateKeyFile = config.age.secrets."proton-0-soulseek".path;
       slskdEnvFile = config.age.secrets."slskd_env".path;
     in {
       inherit hostAddress;
@@ -1336,15 +1339,105 @@
   services.printing.allowFrom = ["all"]; # this gives access to anyone on the interface you might want to limit it see the official documentation
   services.printing.defaultShared = true; # If you want
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot = {
+    # EFI and bootloader configuration
+    loader = {
+      systemd-boot.enable = true;
+      efi.canTouchEfiVariables = true;
+    };
 
-  boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = ["kvm-intel"];
-  boot.extraModulePackages = [];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+    # Kernel modules configuration
+    initrd = {
+      availableKernelModules = [
+        "xhci_pci"
+        "ahci"
+        "nvme"
+        "usbhid"
+        "usb_storage"
+        "sd_mod"
+      ];
+      kernelModules = [];
+    };
 
+    # General kernel configuration
+    kernelModules = ["kvm-intel"];
+    extraModulePackages = [];
+    supportedFilesystems = ["zfs"];
+    kernelPackages = pkgs.linuxPackages_6_6;
+
+    zfs = {
+      extraPools = ["iceberg.1"];
+      forceImportRoot = false;
+    };
+  };
+
+  services.zfs = {
+    zed.settings = {
+      ZED_DEBUG_LOG = "/var/log/zed.log";
+      ZED_EMAIL_ADDR = "unzen@simonwjackson.io";
+      ZED_EMAIL_PROG = "mail";
+      ZED_EMAIL_OPTS = "-s '@SUBJECT@' @ADDRESS@";
+    };
+    trim.enable = false;
+    autoSnapshot = {
+      enable = true;
+      flags = "-k -p --utc";
+      frequent = 8;
+      hourly = 24;
+      daily = 14;
+      weekly = 8;
+      monthly = 12;
+    };
+    autoScrub = {
+      enable = true;
+      interval = "weekly";
+    };
+  };
+
+  systemd.services.zfs-setup = {
+    description = "Configure ZFS dataset properties";
+    wantedBy = ["multi-user.target"];
+    after = ["zfs.target" "zfs-mount.service"];
+    requires = ["zfs.target" "zfs-mount.service"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "zfs-setup" ''
+        # Create necessary directories
+        mkdir -p /avalanche/merged/photos
+
+        # Pool-level properties
+        ${pkgs.zfs}/bin/zfs set compression=zstd iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set atime=off iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set xattr=sa iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set recordsize=1M iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set "com.sun:auto-snapshot"=false iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set relatime=off iceberg.1 || true
+        ${pkgs.zfs}/bin/zfs set acltype=posixacl iceberg.1 || true
+
+        # Photos dataset
+        ${pkgs.zfs}/bin/zfs create -p iceberg.1/photos 2>/dev/null || true
+        ${pkgs.zfs}/bin/zfs set compression=zstd iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set atime=off iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set recordsize=1M iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set mountpoint=/avalanche/merged/photos iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set xattr=sa iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set "com.sun:auto-snapshot"=true iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set canmount=on iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set relatime=off iceberg.1/photos || true
+        ${pkgs.zfs}/bin/zfs set acltype=posixacl iceberg.1/photos || true
+
+        # Set permissions
+        ${pkgs.coreutils}/bin/chown media:media /avalanche/merged/photos
+        ${pkgs.coreutils}/bin/chmod 2775 /avalanche/merged/photos
+
+        # Ensure datasets are mounted
+        ${pkgs.zfs}/bin/zfs mount iceberg.1/photos 2>/dev/null || true
+      '';
+    };
+  };
+
+  networking.hostId = "174c321a";
   networking.useDHCP = lib.mkDefault true;
 
   # Enable SMART monitoring
