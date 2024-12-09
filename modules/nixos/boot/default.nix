@@ -26,7 +26,6 @@ in {
 
   config = let
     inherit (cfg) type quiet;
-    # inherit (config.networking) hostName;
   in
     lib.mkIf cfg.enable (lib.mkMerge [
       {
