@@ -39,6 +39,13 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    boot.kernel.sysctl = {
+      "net.ipv4.ip_forward" = 1;
+      "net.ipv6.conf.all.forwarding" = 1;
+      "net.ipv6.conf.all.disable_ipv6" = 1;
+      "net.ipv6.conf.default.disable_ipv6" = 1;
+    };
+
     networking = {
       useDHCP = lib.mkDefault true;
       domain = "mountaino.us";
