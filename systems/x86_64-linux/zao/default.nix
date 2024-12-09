@@ -64,11 +64,11 @@ in {
         };
       };
       watch = {
+        enable = true;
         address = {
           host = "192.168.200.1";
           client = "192.168.200.11";
         };
-        enable = true;
         paths = {
           music = "/net/unzen/nfs/snowscape/music/albums";
           videos = "/net/unzen/nfs/snowscape/videos";

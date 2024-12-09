@@ -29,6 +29,7 @@ in {
       authFile = mkOption {
         type = types.path;
         description = "Path to the Tailscale auth key file";
+        default = config.age.secrets."tailscale-ephemeral".path;
       };
     };
 
@@ -43,66 +44,62 @@ in {
         description = "Path to videos directory";
       };
     };
+  };
 
-    containers = let
-      inherit (cfg) paths;
-      inherit (cfg.address) host client;
-      inherit (cfg.tailscale) authFile;
-    in {
-      watch = {
-        hostAddress = host;
-        localAddress = client;
-        privateNetwork = true;
-        autoStart = true;
-        enableTun = true;
+  config = lib.mkIf cfg.enable {
+    containers.watch = {
+      hostAddress = cfg.address.host;
+      localAddress = cfg.address.client;
+      privateNetwork = true;
+      autoStart = true;
+      enableTun = true;
 
-        bindMounts = {
-          "${authFile}" = {
-            hostPath = authFile;
-            isReadOnly = true;
-          };
-          "/snowscape/music/albums" = {
-            hostPath = paths.music;
-            isReadOnly = false;
-          };
-          "/snowscape/videos" = {
-            hostPath = paths.videos;
-            isReadOnly = false;
+      bindMounts = {
+        "${cfg.tailscale.authFile}" = {
+          hostPath = cfg.tailscale.authFile;
+          isReadOnly = true;
+        };
+        "/snowscape/music/albums" = {
+          hostPath = cfg.paths.music;
+          isReadOnly = false;
+        };
+        "/snowscape/videos" = {
+          hostPath = cfg.paths.videos;
+          isReadOnly = false;
+        };
+      };
+
+      config = {...}: {
+        imports = [
+          inputs.self.nixosModules."networking/tailscaled"
+          inputs.self.nixosModules."_profiles/container"
+        ];
+
+        services.jellyfin = {
+          enable = true;
+          user = "media";
+          group = "media";
+        };
+
+        systemd.services.jellyfin = {
+          serviceConfig = {
+            LimitNOFILE = 65535;
           };
         };
 
-        config = {...}: {
-          imports = [
-            inputs.self.nixosModules."networking/tailscaled"
-            inputs.self.nixosModules."_profiles/container"
-          ];
+        mountainous = {
+          profiles.container.enable = true;
 
-          services.jellyfin = {
-            enable = true;
-            user = "media";
-            group = "media";
-          };
-
-          systemd.services.jellyfin = {
-            serviceConfig = {
-              LimitNOFILE = 65536;
+          networking = {
+            tailscaled = {
+              enable = true;
+              authKeyFile = cfg.tailscale.authFile;
+              serve = 8096;
             };
           };
-
-          mountainous = {
-            profiles.container.enable = true;
-
-            networking = {
-              tailscaled = {
-                enable = true;
-                authKeyFile = authFile;
-                serve = 8096;
-              };
-            };
-          };
-
-          system.stateVersion = "24.11";
         };
+
+        system.stateVersion = "24.11";
       };
     };
   };

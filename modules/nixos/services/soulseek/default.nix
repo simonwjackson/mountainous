@@ -59,18 +59,11 @@ in {
         imports = [
           inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
+          inputs.self.nixosModules."_profiles/container"
         ];
 
-        networking = {
-          useHostResolvConf = false;
-        };
-
-        services.resolved = {
-          enable = true;
-          dnssec = "false";
-        };
-
         mountainous = {
+          profiles.container.enable = true;
           wg-killswitch = {
             enable = true;
             name = "protonvpn";
@@ -105,20 +98,6 @@ in {
           environmentFile = slskdEnvFile;
           domain = null;
           settings.shares.directories = [];
-        };
-
-        users = {
-          groups.media = {
-            gid = lib.mkForce 333;
-          };
-
-          users.media = {
-            home = "/var/lib/slskd";
-            homeMode = "770";
-            group = "media";
-            uid = lib.mkForce 333;
-            isNormalUser = false;
-          };
         };
       };
     };

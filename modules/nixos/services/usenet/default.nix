@@ -140,23 +140,16 @@ in {
       config = {pkgs, ...}: {
         system.stateVersion = "24.11";
 
+        nixpkgs.config.allowUnfree = true;
+
         imports = [
           inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
+          inputs.self.nixosModules."_profiles/container"
         ];
 
-        nixpkgs.config.allowUnfree = true;
-
-        networking = {
-          useHostResolvConf = false;
-        };
-
-        services.resolved = {
-          enable = true;
-          dnssec = "false";
-        };
-
         mountainous = {
+          profiles.container.enable = true;
           wg-killswitch = {
             enable = true;
             name = "protonvpn";
@@ -195,20 +188,6 @@ in {
           enable = true;
           user = "media";
           group = "media";
-        };
-
-        users = {
-          groups.media = {
-            gid = lib.mkForce 333;
-          };
-
-          users.media = {
-            home = "/var/lib/sabnzbd";
-            homeMode = "770";
-            group = "media";
-            uid = lib.mkForce 333;
-            isNormalUser = false;
-          };
         };
       };
     };

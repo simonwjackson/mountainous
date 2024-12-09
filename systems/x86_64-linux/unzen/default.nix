@@ -97,7 +97,6 @@
 
         imports = [
           ./aria2-custom.nix
-          # ./ariaNg.nix
           inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
         ];
@@ -112,9 +111,6 @@
         };
 
         mountainous = {
-          # mylar3 = {
-          #   enable = true;
-          # };
           wg-killswitch = {
             inherit privateKeyFile;
 
@@ -139,12 +135,6 @@
           "net.core.rmem_max" = 4194304;
           "net.core.wmem_max" = 1048576;
         };
-
-        # services.ariang = {
-        #   enable = true;
-        #   user = "media";
-        #   group = "media";
-        # };
 
         services.aria2-custom = {
           enable = true;
