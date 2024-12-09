@@ -55,7 +55,7 @@ in {
       ZED_EMAIL_PROG = "mail";
       ZED_EMAIL_OPTS = "-s '@SUBJECT@' @ADDRESS@";
     };
-    trim.enable = true;
+    trim.enable = false;
     autoSnapshot = {
       enable = true;
       flags = "-k -p --utc";
