@@ -47,16 +47,24 @@ in {
   services.nfsAutofsModule = {
     enable = true;
     hosts = {
-      unzen = {
-        hostname = "unzen";
-        shareName = "snowscape";
-      };
       aka = {
         hostname = "aka";
         shareName = "snowscape";
       };
+      fiji = {
+        hostname = "fiji";
+        shareName = "snowscape";
+      };
       kita = {
         hostname = "kita";
+        shareName = "snowscape";
+      };
+      unzen = {
+        hostname = "unzen";
+        shareName = "snowscape";
+      };
+      zao = {
+        hostname = "zao";
         shareName = "snowscape";
       };
     };
