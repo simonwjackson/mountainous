@@ -15,13 +15,8 @@
   ];
 
   services.cuttlefish = {
-    enable = true;
-    configFile = "/snowscape/podcasts/subscriptions.yaml";
-  };
-
-  boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 0;
+    enable = false;
+    # configFile = "/snowscape/podcasts/subscriptions.yaml";
   };
 
   networking = {
@@ -33,6 +28,18 @@
 
     firewall = {
       enable = true;
+    };
+  };
+
+  mountainous = {
+    services = {
+      soulseek = {
+        enable = true;
+        address = {
+          host = "192.168.100.1"; # Your host address
+          client = "192.168.100.50"; # Your client address
+        };
+      };
     };
   };
 
@@ -64,92 +71,6 @@
     #####
     # File Transfer
     #####
-
-    soulseek = let
-      proton0SoulseekPrivateKeyFile = config.age.secrets."proton-0-soulseek".path;
-      slskdEnvFile = config.age.secrets."slskd_env".path;
-    in {
-      inherit hostAddress;
-      localAddress = "192.168.100.50";
-      privateNetwork = true;
-      autoStart = true;
-      enableTun = true;
-
-      bindMounts = {
-        "${tailscaleEphemeralAuthFile}".hostPath = tailscaleEphemeralAuthFile;
-        "${slskdEnvFile}".hostPath = slskdEnvFile;
-        "${proton0SoulseekPrivateKeyFile}".hostPath = proton0SoulseekPrivateKeyFile;
-      };
-
-      config = {...}: {
-        system.stateVersion = "24.11";
-
-        imports = [
-          inputs.self.nixosModules.wg-killswitch
-          inputs.self.nixosModules."networking/tailscaled"
-        ];
-
-        networking = {
-          useHostResolvConf = false;
-        };
-
-        services.resolved = {
-          enable = true;
-          dnssec = "false";
-        };
-
-        mountainous = {
-          wg-killswitch = {
-            enable = true;
-            name = "protonvpn";
-            address = protonAddress;
-            dns = protonDns;
-            gateway = hostAddress;
-            privateKeyFile = proton0SoulseekPrivateKeyFile;
-            publicKey = "jqu/dcZfEtote0IN1H4ZFneR8p4sZ7juna+eUndhRgs=";
-            server = "89.187.175.132";
-            port = protonPort;
-          };
-
-          networking = {
-            tailscaled = {
-              enable = true;
-              authKeyFile = tailscaleEphemeralAuthFile;
-              serve = 5030;
-            };
-          };
-        };
-
-        systemd.services.slskd = {
-          serviceConfig = {
-            UMask = "0002";
-          };
-        };
-
-        services.slskd = {
-          enable = true;
-          user = "media";
-          group = "media";
-          environmentFile = slskdEnvFile;
-          domain = null;
-          settings.shares.directories = [];
-        };
-
-        users = {
-          groups.media = {
-            gid = lib.mkForce 333;
-          };
-
-          users.media = {
-            home = "/var/lib/slskd";
-            homeMode = "770";
-            group = "media";
-            uid = lib.mkForce 333;
-            isNormalUser = false;
-          };
-        };
-      };
-    };
 
     usenet = let
       proton0UsenetPrivateKeyFile = config.age.secrets."proton-0-usenet".path;
