@@ -40,6 +40,13 @@
           client = "192.168.100.50"; # Your client address
         };
       };
+      usenet = {
+        enable = true;
+        address = {
+          host = "192.168.100.1";
+          client = "192.168.100.11";
+        };
+      };
     };
   };
 
@@ -68,192 +75,6 @@
 
     hostAddress = "192.168.100.1";
   in {
-    #####
-    # File Transfer
-    #####
-
-    usenet = let
-      proton0UsenetPrivateKeyFile = config.age.secrets."proton-0-usenet".path;
-      newsDemonUserFile = config.age.secrets."newsdemon-user".path;
-      newsDemonPassFile = config.age.secrets."newsdemon-pass".path;
-      apiKeyFile = config.age.secrets."sabnzbd-api-key".path;
-      nzbKeyFile = config.age.secrets."sabnzbd-nzb-key".path;
-
-      sabnzbdTemplateConfig = pkgs.writeTextFile {
-        name = "sabnzbd-template.ini";
-        text = import ./sabnzbd-config.nix {
-          rootDir = "/var/lib/sabnzbd";
-          hosts = [
-            "usenet.${tailscaleMagicDns}"
-            "usenet"
-            "localhost"
-          ];
-        };
-      };
-
-      setupScript = pkgs.writeShellScript "setup-sabnzbd-config" ''
-        ${pkgs.coreutils}/bin/set -euo pipefail
-
-        ${pkgs.coreutils}/bin/echo "Starting SABnzbd config setup..."
-
-        # Ensure directory exists
-        ${pkgs.coreutils}/bin/mkdir -p /var/lib/sabnzbd
-
-        # Debug: Check template file exists and has content
-        ${pkgs.coreutils}/bin/echo "Template file path: ${sabnzbdTemplateConfig}"
-        if [ ! -f "${sabnzbdTemplateConfig}" ]; then
-          ${pkgs.coreutils}/bin/echo "Error: Template file not found!"
-          ${pkgs.coreutils}/bin/exit 1
-        fi
-
-        # Debug: Check age secret files exist
-        ${pkgs.coreutils}/bin/echo "Checking age secret files..."
-        if [ ! -f "${config.age.secrets."newsdemon-user".path}" ]; then
-          ${pkgs.coreutils}/bin/echo "Error: User secret file not found!"
-          ${pkgs.coreutils}/bin/exit 1
-        fi
-        if [ ! -f "${config.age.secrets."newsdemon-pass".path}" ]; then
-          ${pkgs.coreutils}/bin/echo "Error: Password secret file not found!"
-          ${pkgs.coreutils}/bin/exit 1
-        fi
-
-        # Read credentials from age-encrypted files
-        ${pkgs.coreutils}/bin/echo "Reading credentials..."
-        USER=$(${pkgs.coreutils}/bin/cat ${newsDemonUserFile})
-        PASS=$(${pkgs.coreutils}/bin/cat ${newsDemonPassFile})
-        API=$(${pkgs.coreutils}/bin/cat ${apiKeyFile})
-        NZB=$(${pkgs.coreutils}/bin/cat ${nzbKeyFile})
-
-        # Debug: Check if credentials were read (length only, don't print values)
-        ${pkgs.coreutils}/bin/echo "Credential lengths - User: ''${#USER}, Pass: ''${#PASS}"
-
-        # Create final config with substituted credentials
-        ${pkgs.coreutils}/bin/echo "Creating final config..."
-        ${pkgs.gnused}/bin/sed \
-          -e "s|@@NEWSDEMON_USER@@|$USER|g" \
-          -e "s|@@NEWSDEMON_PASS@@|$PASS|g" \
-          -e "s|@@API_KEY@@|$API|g" \
-          -e "s|@@NZB_KEY@@|$NZB|g" \
-          "${sabnzbdTemplateConfig}" > /var/lib/sabnzbd/sabnzbd.ini
-
-        # Check if the file was created and has content
-        if [ ! -s /var/lib/sabnzbd/sabnzbd.ini ]; then
-          ${pkgs.coreutils}/bin/echo "Error: Generated config file is empty!"
-          ${pkgs.coreutils}/bin/exit 1
-        fi
-
-        ${pkgs.coreutils}/bin/echo "Setting permissions..."
-        # Set correct ownership and permissions
-        ${pkgs.coreutils}/bin/chown sabnzbd:sabnzbd /var/lib/sabnzbd/sabnzbd.ini
-        ${pkgs.coreutils}/bin/chmod 400 /var/lib/sabnzbd/sabnzbd.ini
-
-        ${pkgs.coreutils}/bin/echo "SABnzbd config setup complete."
-      '';
-    in {
-      inherit hostAddress;
-
-      localAddress = "192.168.100.11";
-      privateNetwork = true;
-      autoStart = true;
-      enableTun = true;
-
-      bindMounts = {
-        "${tailscaleEphemeralAuthFile}" = {
-          hostPath = tailscaleEphemeralAuthFile;
-        };
-        "${proton0UsenetPrivateKeyFile}" = {
-          hostPath = proton0UsenetPrivateKeyFile;
-        };
-        "${newsDemonUserFile}" = {
-          hostPath = newsDemonUserFile;
-        };
-        "${newsDemonPassFile}" = {
-          hostPath = newsDemonPassFile;
-        };
-        "${apiKeyFile}" = {
-          hostPath = apiKeyFile;
-        };
-        "${nzbKeyFile}" = {
-          hostPath = nzbKeyFile;
-        };
-      };
-
-      config = {pkgs, ...}: {
-        system.stateVersion = "24.11";
-
-        imports = [
-          inputs.self.nixosModules.wg-killswitch
-          inputs.self.nixosModules."networking/tailscaled"
-        ];
-
-        nixpkgs.config.allowUnfree = true;
-
-        networking = {
-          useHostResolvConf = false;
-        };
-
-        services.resolved = {
-          enable = true;
-          dnssec = "false";
-        };
-
-        mountainous = {
-          wg-killswitch = {
-            enable = true;
-            name = "protonvpn";
-            address = protonAddress;
-            dns = protonDns;
-            gateway = hostAddress;
-            privateKeyFile = proton0UsenetPrivateKeyFile;
-            publicKey = "IV0rNO3lSM0n0yEbCUtEwFnO0vPUbUNurIFnO6AxRhI=";
-            server = "45.134.140.59";
-            port = protonPort;
-          };
-          networking = {
-            tailscaled = {
-              enable = true;
-              authKeyFile = tailscaleEphemeralAuthFile;
-              serve = 8080;
-            };
-          };
-        };
-
-        system.activationScripts.setupSabnzbd = {
-          text = ''
-            echo "Running SABnzbd setup activation script..."
-            ${setupScript}
-          '';
-          deps = ["var" "users" "groups"];
-        };
-
-        systemd.services.sabnzbd = {
-          serviceConfig = {
-            UMask = "0002";
-          };
-        };
-
-        services.sabnzbd = {
-          enable = true;
-          user = "media";
-          group = "media";
-        };
-
-        users = {
-          groups.media = {
-            gid = lib.mkForce 333;
-          };
-
-          users.media = {
-            home = "/var/lib/sabnzbd";
-            homeMode = "770";
-            group = "media";
-            uid = lib.mkForce 333;
-            isNormalUser = false;
-          };
-        };
-      };
-    };
-
     downloads = let
       privateKeyFile = config.age.secrets."proton-0-downloads".path;
       aria2RpcSecretFile = config.age.secrets."aria2-rpc-secret".path;
@@ -277,7 +98,6 @@
         imports = [
           ./aria2-custom.nix
           # ./ariaNg.nix
-          # inputs.self.nixosModules.mylar3
           inputs.self.nixosModules.wg-killswitch
           inputs.self.nixosModules."networking/tailscaled"
         ];
