@@ -153,7 +153,12 @@ parse_hosts() {
 
 check_host_online() {
   local host=$1
-  if ssh -o ConnectTimeout=1 -o BatchMode=yes -o StrictHostKeyChecking=no "$host" exit 2>/dev/null; then
+
+  if ssh \
+    -o ConnectTimeout=1 \
+    -o BatchMode=yes \
+    -o StrictHostKeyChecking=no \
+    "$host" exit 2>/dev/null; then
     echo "$host"
   fi
 }

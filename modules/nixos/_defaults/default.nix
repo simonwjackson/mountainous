@@ -29,7 +29,7 @@ in {
   };
 
   programs.icho = {
-    enable = true;
+    enable = lib.mkDefault true;
     environment = {
       NOTES_DIR = mkDefault "/snowscape/notes";
     };
