@@ -1,5 +1,9 @@
 {
   inputs = {
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
+    impermanence.url = "github:nix-community/impermanence";
+
     resonance = {
       url = "github:simonwjackson/resonance";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -110,10 +114,11 @@
         disko.nixosModules.default
         home-manager.nixosModules.default
         icho.nixosModules.default
+        impermanence.nixosModules.impermanence
         nix-flatpak.nixosModules.nix-flatpak
-        tmesh.nixosModules.default
         nur.nixosModules.nur
         ryujinx.nixosModules.default
+        tmesh.nixosModules.default
       ];
 
       systems.modules.darwin = with inputs; [
