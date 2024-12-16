@@ -12,6 +12,7 @@
   inherit (lib.mountainous) knownHostsBuilder;
 
   cfg = config.mountainous.networking.secure-shell;
+  impermanence = config.mountainous.impermanence;
 in {
   options.mountainous.networking.secure-shell = {
     enable = mkEnableOption "Whether to enable ssh and mosh";
@@ -38,13 +39,10 @@ in {
     services.openssh = {
       enable = true;
       openFirewall = false;
-      settings =
-        {
-        }
-        // optionalAttrs cfg.harden {
-          PasswordAuthentication = false;
-          PermitRootLogin = "no";
-        };
+      settings = optionalAttrs cfg.harden {
+        PasswordAuthentication = false;
+        PermitRootLogin = "no";
+      };
     };
 
     programs.ssh = {
@@ -64,5 +62,26 @@ in {
 
     security.pam.sshAgentAuth.enable = true;
     programs.mosh.enable = true;
+
+    fileSystems = mkIf impermanence.enable {
+      "/etc/ssh".neededForBoot = true;
+    };
+
+    environment.persistence."/persist" = mkIf impermanence.enable {
+      directories = [
+        {
+          directory = "/etc/ssh";
+          mode = "0755";
+        }
+      ];
+      users."${config.mountainous.user.name}" = {
+        directories = [
+          {
+            directory = ".ssh";
+            mode = "0600";
+          }
+        ];
+      };
+    };
   };
 }

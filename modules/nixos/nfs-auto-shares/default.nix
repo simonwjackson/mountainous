@@ -6,7 +6,7 @@
 }: let
   inherit (lib) mkEnableOption mkOption types mkIf mkMerge mapAttrs' mapAttrs nameValuePair concatStringsSep;
 
-  cfg = config.services.nfsAutofsModule;
+  cfg = config.mountainous.services.nfs-auto-shares;
 
   genAutoFiles =
     mapAttrs' (
@@ -32,7 +32,7 @@
     )
     cfg.hosts;
 in {
-  options.services.nfsAutofsModule = {
+  options.mountainous.services.nfs-auto-shares = {
     enable = mkEnableOption "NFS and AutoFS configuration";
 
     timeout = mkOption {

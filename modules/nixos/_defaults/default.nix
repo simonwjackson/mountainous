@@ -44,19 +44,19 @@ in {
     "usu"
   ];
 
-  services.nfsAutofsModule = {
+  mountainous.services.nfs-auto-shares = {
     enable = true;
     hosts = {
       aka = {
         hostname = "aka";
         shareName = "snowscape";
       };
-      fiji = {
-        hostname = "fiji";
+      fuji = {
+        hostname = "fuji";
         shareName = "snowscape";
       };
-      kita = {
-        hostname = "kita";
+      hira = {
+        hostname = "hira";
         shareName = "snowscape";
       };
       unzen = {
@@ -91,7 +91,7 @@ in {
   '';
 
   mountainous = {
-    adb = mkDefault enabled;
+    adb = mkDefault disabled;
     agenix = {
       enable = true;
       secretsDir = "${inputs.secrets}/agenix";

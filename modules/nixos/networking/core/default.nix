@@ -49,7 +49,16 @@ in {
     networking = {
       useDHCP = lib.mkDefault true;
       domain = "mountaino.us";
-      networkmanager.enable = true;
+      networkmanager = {
+        enable = true;
+      };
+    };
+
+    age.secrets.wifi-vrackie = {
+      path = lib.mkForce "/etc/NetworkManager/system-connections/Vrackie.nmconnection";
+      owner = lib.mkForce "root";
+      group = lib.mkForce "root";
+      mode = lib.mkForce "0600";
     };
 
     services = {
