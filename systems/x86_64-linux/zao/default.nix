@@ -93,5 +93,23 @@ in {
     };
   };
 
+  systemd.services."container@watch" = {
+    requires = ["autofs.service"];
+    after = ["autofs.service"];
+    preStart = ''
+      ls /net/unzen/nfs/snowscape >/dev/null 2>&1 || true
+      sleep 10
+    '';
+  };
+
+  systemd.services."container@photos" = {
+    requires = ["autofs.service"];
+    after = ["autofs.service"];
+    preStart = ''
+      ls /net/unzen/nfs/snowscape >/dev/null 2>&1 || true
+      sleep 10
+    '';
+  };
+
   system.stateVersion = "24.11";
 }
