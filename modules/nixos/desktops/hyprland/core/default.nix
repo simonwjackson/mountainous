@@ -14,7 +14,6 @@
 
   cfg = config.mountainous.desktops.hyprland;
 in {
-  imports = [./hyprlandControl.nix];
   options.mountainous.desktops.hyprland = {
     enable = lib.mkEnableOption "Whether to enable the hyprland desktop";
 
@@ -31,11 +30,7 @@ in {
       pkgs.ddcutil
       pkgs.eww
       # HACK
-      pkgs.slurp
-      pkgs.pngquant
-      pkgs.grim
       pkgs.jq
-      pkgs.swappy
       pkgs.wl-clipboard
     ];
 

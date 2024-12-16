@@ -98,14 +98,14 @@ in {
               "git"
               "i2c"
               "libvirtd"
+              "media"
               "minecraft"
               "network"
               "networkmanager"
               "podman"
+              "steamcmd"
               "video"
               "wheel"
-              "steamcmd"
-              "media"
             ]
             ++ cfg.extraGroups;
           shell = pkgs.zsh;

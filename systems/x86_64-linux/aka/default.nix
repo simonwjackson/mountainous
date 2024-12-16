@@ -118,7 +118,7 @@ in {
     hardware.cpu.type = "amd";
     boot = disabled;
     desktops = {
-      hyprlandControl = enabled;
+      hyprctl-api = enabled;
       hyprland = {
         enable = true;
         autoLogin = true;
@@ -222,7 +222,8 @@ in {
       kernelModules = ["dm-snapshot" "amdgpu" "i2c-dev"];
     };
     kernelModules = ["kvm-amd" "tun"];
-    kernelPackages = pkgs.linuxPackages_latest;
+    # kernelPackages = pkgs.linuxPackages_latest;
+    boot.kernelPackages = pkgs.linuxPackages_zen;
     loader = {
       efi = {
         canTouchEfiVariables = false;

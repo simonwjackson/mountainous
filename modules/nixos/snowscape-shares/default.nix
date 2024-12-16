@@ -92,7 +92,7 @@ in {
     services.nfs.server = {
       enable = true;
       exports = ''
-        /snowscape ${concatStringsSep " " (map (range: "${range}(rw,sync,no_subtree_check,fsid=0)") cfg.ipRanges)}
+        /snowscape 127.0.0.0/8(rw,sync,no_subtree_check,fsid=0,crossmnt) ${concatStringsSep " " (map (range: "${range}(rw,sync,no_subtree_check,fsid=0,crossmnt)") cfg.ipRanges)}
       '';
     };
   };

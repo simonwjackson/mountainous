@@ -51,7 +51,7 @@
   };
 
   systemd.tmpfiles.rules = [
-    "d /snowscape 0775 media media -"
+    # "d /snowscape 0775 media media -"
     "d /snowscape/audiobooks 0775 media media -"
     "d /snowscape/music 0775 media media -"
     "d /snowscape/podcasts 0775 media media -"

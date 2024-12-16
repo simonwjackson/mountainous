@@ -171,7 +171,7 @@ in {
                   concurrency = 2;
                 };
                 thumbnailGeneration = {
-                  concurrency = 3;
+                  concurrency = 9;
                 };
                 videoConversion = {
                   concurrency = 1;

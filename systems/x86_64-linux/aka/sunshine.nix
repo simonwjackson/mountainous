@@ -71,4 +71,20 @@ in {
       ];
     };
   };
+
+  # Create a custom target for Hyprland
+  systemd.user.targets.hyprland-session = {
+    description = "Hyprland compositor session";
+    documentation = ["man:systemd.special(7)"];
+    bindsTo = ["graphical-session.target"];
+    wants = ["graphical-session-pre.target"];
+    after = ["graphical-session-pre.target"];
+  };
+
+  # Modify the Sunshine service to use our custom target
+  systemd.user.services.sunshine = {
+    after = ["hyprland-session.target"];
+    requires = ["hyprland-session.target"];
+    partOf = ["graphical-session.target"];
+  };
 }
