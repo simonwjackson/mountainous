@@ -6,13 +6,17 @@
   ...
 }: let
   inherit (lib.mountainous) enabled disabled;
-  inherit (lib) mkDefault;
+  inherit (lib) mkDefault mkEnableOption mkIf;
 in {
   imports = [
     inputs.agenix.homeManagerModules.age
   ];
 
-  config = {
+  options.mountainous.profiles.workstation = {
+    enable = mkEnableOption "Enable workstation";
+  };
+
+  config = mkIf config.mountainous.profiles.workstation.enable {
     mountainous = {
       agenix = mkDefault enabled;
       atuin = {
@@ -22,6 +26,7 @@ in {
       };
       bat = mkDefault enabled;
       direnv = mkDefault enabled;
+      desktops.hyprland = mkDefault enabled;
       eza = mkDefault enabled;
       firefox = mkDefault enabled;
       git = {
@@ -63,6 +68,7 @@ in {
         lazygit
         jq
         yq-go
+        wl-clipboard
       ];
     };
 

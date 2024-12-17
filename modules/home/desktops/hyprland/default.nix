@@ -6,336 +6,422 @@
   system,
   ...
 }: let
-  inherit (lib) mkIf mkEnableOption mkOpt;
+  inherit (lib) mkIf mkEnableOption mkOption types;
 
-  tmesh = lib.getExe inputs.tmesh.packages.${system}.default;
-  cfg = config.backpacker.desktops.hyprland;
+  cfg = config.mountainous.desktops.hyprland;
 in {
   imports = [
     inputs.hyprland.homeManagerModules.default
   ];
-  # ++ lib.snowfall.fs.get-non-default-nix-files ./.;
 
-  options.backpacker.desktops.hyprland = {
+  options.mountainous.desktops.hyprland = {
     enable = mkEnableOption "enable hyprland window manager";
 
-    autoLogin = lib.mkEnableOption "Whether to auto login to the plasma desktop";
+    # Add new option for custom settings
+    extraSettings = mkOption {
+      type = types.attrs;
+      default = {};
+      description = "Additional settings to merge with the default configuration";
+    };
   };
 
-  # FIX: this hack to use nix catppuccin module: https://github.com/catppuccin/nix/issues/102
-  # options.wayland.windowManager.hyprland = {
-  #   settings = mkEnableOption "enable hyprland window manager";
-  # };
-
   config = lib.mkIf cfg.enable {
-    # nix.settings = {
-    #   trusted-substituters = lib.mkAfter [
-    #   ];
-    #   trusted-public-keys = lib.mkAfter [
-    #   ];
-    # };
-
-    # wayland.windowManager.hyprland.systemd.variables = ["-all"];
-
-    wayland.windowManager.hyprland = {
+    programs.hyprlock = {
       enable = true;
-      extraConfig = ''
-        source=b.conf
-      '';
-
       settings = {
-        # https://wiki.hyprland.org/Configuring/Variables/#misc
-
-        misc = {
-          # Set to 0 or 1 to disable the anime mascot wallpapers
-          force_default_wallpaper = 0;
-          # If true disables the random hyprland logo / anime girl background. :(
-          disable_hyprland_logo = true;
-        };
-
-        monitor = [
-          # Recommended rule for quickly plugging in random monitors
-          ",preferred,auto,1"
-        ];
-
-        ###################
-        ### MY PROGRAMS ###
-        ###################
-
-        # See https://wiki.hyprland.org/Configuring/Keywords/
-
-        "$terminal" = "$TERMINAL";
-        "$mainTerm" = "$terminal --class main-term tmesh";
-        "$fileManager" = "$terminal -- lf";
-        "$mod" = "SUPER";
-
-        #################
-        ### AUTOSTART ###
-        #################
-
-        exec-once = [
-          (lib.getExe pkgs.firefox)
-        ];
-
-        #####################
-        ### LOOK AND FEEL ###
-        #####################
-
-        # Refer to https://wiki.hyprland.org/Configuring/Variables/
-        # https://wiki.hyprland.org/Configuring/Variables/#general
-
         general = {
-          gaps_in = 10;
-          gaps_out = 0;
-
-          border_size = 0;
-
-          # Set to true enable resizing windows by clicking and dragging on borders and gaps
-          resize_on_border = false;
-
-          # Please see https://wiki.hyprland.org/Configuring/Tearing/ before you turn this on
-          allow_tearing = false;
-
-          layout = "master";
+          disable_loading_bar = true;
+          grace = 0;
+          hide_cursor = true;
+          no_fade_in = false;
         };
 
-        # https://wiki.hyprland.org/Configuring/Variables/#decoration
-        decoration = {
-          rounding = 5;
-
-          # Change transparency of focused and unfocused windows
-          active_opacity = 1;
-          inactive_opacity = 1;
-
-          drop_shadow = true;
-          shadow_range = 4;
-          shadow_render_power = 3;
-          "col.shadow" = "rgba(1a1a1aee)";
-
-          # https://wiki.hyprland.org/Configuring/Variables/#blur
-          blur = {
-            enabled = true;
-            size = 3;
-            passes = 1;
-
-            vibrancy = 0.1696;
-          };
-        };
-
-        # https://wiki.hyprland.org/Configuring/Variables/#animations
-        animations = {
-          enabled = true;
-
-          # Default animations, see https://wiki.hyprland.org/Configuring/Animations/ for more
-
-          bezier = "myBezier, 0.05, 0.9, 0.1, 1.05";
-
-          animation = [
-            "windows, 1, 7, myBezier"
-            "windowsOut, 1, 7, default, popin 80%"
-            "border, 1, 10, default"
-            "borderangle, 1, 8, default"
-            "fade, 1, 7, default"
-            "workspaces, 1, 6, default"
-          ];
-        };
-
-        # See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
-        dwindle = {
-          pseudotile = true; # Master switch for pseudotiling. Enabling is bound to mainMod + P in the keybinds section below
-          preserve_split = true; # You probably want this
-        };
-
-        # See https://wiki.hyprland.org/Configuring/Master-Layout/ for more
-        master = {
-          new_is_master = false;
-          mfact = 0.66;
-          orientation = "right";
-          new_on_top = 0;
-        };
-
-        #############################
-        ### ENVIRONMENT VARIABLES ###
-        #############################
-
-        # See https://wiki.hyprland.org/Configuring/Environment-variables/
-
-        env = [
-          "XCURSOR_SIZE,24"
-          "HYPRCURSOR_SIZE,24"
+        background = [
+          {
+            path = "screenshot";
+            blur_passes = 3;
+            blur_size = 8;
+          }
         ];
 
-        #############
-        ### INPUT ###
-        #############
-
-        # https://wiki.hyprland.org/Configuring/Variables/#input
-        input = {
-          kb_layout = "us";
-          kb_variant = "";
-          kb_model = "";
-          kb_options = "";
-          kb_rules = "";
-
-          follow_mouse = 1;
-
-          sensitivity = 0; # -1.0 - 1.0, 0 means no modification.
-
-          touchpad = {
-            natural_scroll = false;
-          };
-        };
-
-        # https://wiki.hyprland.org/Configuring/Variables/#gestures
-        gestures = {
-          workspace_swipe = false;
-        };
-
-        # Example per-device config
-        # See https://wiki.hyprland.org/Configuring/Keywords/#per-device-input-configs for more
-        device = {
-          name = "epic-mouse-v1";
-          sensitivity = "-0.5";
-        };
-
-        ####################
-        ### KEYBINDINGSS ###
-        ####################
-
-        # See https://wiki.hyprland.org/Configuring/Keywords/
-        "$mainMod" = "SUPER"; # Sets "Windows" key as main modifier
-
-        # Example binds, see https://wiki.hyprland.org/Configuring/Binds/ for more
-        bind = [
-          "$mainMod, A, layoutmsg, swapwithmaster"
-          "$mainMod, W, exec, hyprctl clients | grep -q 'firefox' && hyprctl dispatch focuswindow firefox || firefox"
-          "$mainMod, T, exec, hyprctl clients | grep -q 'main-term' && hyprctl dispatch focuswindow main-term || $mainTerm"
-          "$mainMod, G, exec, hyprctl dispatch workspace 10; hyprctl clients | grep -q 'steam' && hyprctl dispatch focuswindow steam || flatpak run com.valvesoftware.Steam"
-          "$mainMod, C, killactive,"
-          "$mainMod, F, exec, $fileManager"
-          "$mainMod, V, togglefloating,"
-          "$mainMod, R, exec, $menu"
-          # bind = $mainMod, P, pseudo, # dwindle
-          "$mainMod SHIFT, Tab, cyclenext"
-          "$mainMod, Tab, cyclenext, -1"
-          #$mainMod, P, togglesplit #, dwindle
-          "$mainMod, M, fullscreen, 1"
-          # Toggle pseudo-fullscreen mode for the focused window
-          "$mainMod SHIFT, M, fullscreen, 0"
-          # Move focus with mainMod + arrow keys
-          "$mainMod, H, movefocus, l"
-          "$mainMod, J, movefocus, d"
-          "$mainMod, K, movefocus, u"
-          "$mainMod, L, movefocus, r"
-
-          "$mainMod SHIFT, left, resizeactive, -20 0"
-          "$mainMod SHIFT, right, resizeactive, 20 0"
-          "$mainMod SHIFT, up, resizeactive, 0 -20"
-          "$mainMod SHIFT, down, resizeactive, 0 20"
-
-          "$mainMod, left, swapwindow, l"
-          "$mainMod, right, swapwindow, r"
-          "$mainMod, up, swapwindow, u"
-          "$mainMod, down, swapwindow, d"
-
-          ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-          ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-          ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-          ", XF86MonBrightnessUp, exec, sudo ddcutil setvcp 10 + 5"
-          ", XF86MonBrightnessDown, exec, sudo ddcutil setvcp 10 - 5"
-
-          # Example special workspace (scratchpad)
-          "$mainMod, S, togglespecialworkspace, magic"
-          "$mainMod SHIFT, S, movetoworkspace, special:magic"
+        input-field = [
+          {
+            size = "200, 50";
+            position = "0, -80";
+            monitor = "";
+            dots_center = true;
+            fade_on_empty = false;
+            font_color = "rgb(202, 211, 245)";
+            inner_color = "rgb(91, 96, 120)";
+            outer_color = "rgb(24, 25, 38)";
+            outline_thickness = 5;
+            placeholder_text = ''<span foreground="##cad3f5">Password...</span>'';
+            shadow_passes = 2;
+          }
         ];
-
-        windowrule = [
-          "tile,^(kitty)$"
-        ];
-
-        windowrulev2 = [
-          "tag +steam, class:(steam)"
-
-          # You'll probably like this.
-          "suppressevent maximize, class:.*"
-
-          "float,class:^(kitty)$,title:^(kitty)$"
-        ];
-
-        bindm = [
-          # Move/resize windows with mainMod + LMB/RMB and dragging
-          "$mainMod, mouse:272, movewindow"
-          "$mainMod, mouse:273, resizewindow"
-        ];
-
-        #   windowrule = [
-        #     "tile,^(kitty)$"
-        #   ];
-        #   animation = [
-        #     "workspaces,1,8,default"
-        #     "windows,0"
-        #     "fade,0"
-        #   ];
-        #   monitor = [
-        #     "DP-1,2560x1440@360,0x0,1"
-        #     "DP-1,addreserved,50,50,400,400"
-        #     "DP-2,2560x1440@360,0x0,1"
-        #     "DP-2,addreserved,50,50,400,400"
-        #     "DP-3,2560x1440@360,0x0,1"
-        #     "DP-3,addreserved,50,50,400,400"
-        #     "DP-4,2560x1440@360,0x0,1"
-        #     "DP-4,addreserved,50,50,400,400"
-        #   ];
-        #   bindm = [
-        #     "$mod, mouse:272, moveactive"
-        #     "$mod, mouse:273, resizewindow"
-        #   ];
-        #   bind =
-        #     [
-        #       # Focus windows
-        #       "$mod, h, movefocus, l"
-        #       "$mod, j, movefocus, d"
-        #       "$mod, k, movefocus, u"
-        #       "$mod, l, movefocus, r"
-        #
-        #       # Apps
-        #       "$mod, w, exec, firefox-esr"
-        #       # "$mod, p, exec, ${pkgs.procps}/bin/pgrep -f 'main-term' > /dev/null || ${lib.getExe pkgs.kitty} --class main-term ${tmesh}"
-        #       "$mod, t, exec, ${lib.getExe pkgs.kitty}"
-        #
-        #       # Toggle monocle mode for the focused window
-        #       "$mod, m, fullscreen, 1"
-        #
-        #       # Toggle pseudo-fullscreen mode for the focused window
-        #       "$mod_SHIFT, f, fullscreen, 0"
-        #
-        #       # Cycle through windows
-        #       "$mod, Tab, cyclenext"
-        #       "$mod_SHIFT, Tab, cyclenext, prev"
-        #
-        #       # Cycle through windows in all workspaces
-        #       "$mod_ALT_CTRL, Tab, cyclenext, allworkspaces"
-        #       "$mod_ALT_CTRL_SHIFT, Tab, cyclenext, prev, allworkspaces"
-        #     ]
-        #     ++ (
-        #       # workspaces
-        #       # binds $mod + [shift +] {1..10} to [move to] workspace {1..10}
-        #       builtins.concatLists (builtins.genList (
-        #           x: let
-        #             ws = let
-        #               c = (x + 1) / 10;
-        #             in
-        #               builtins.toString (x + 1 - (c * 10));
-        #           in [
-        #             "$mod, ${ws}, workspace, ${toString (x + 1)}"
-        #             "$mod SHIFT, ${ws}, movetoworkspace, ${toString (x + 1)}"
-        #           ]
-        #         )
-        #         10)
-        #     );
       };
     };
 
-    # xdg.configFile."hypr".recursive = true;
+    services.hypridle = {
+      enable = true;
+      settings = {
+        general = {
+          after_sleep_cmd = "hyprctl dispatch dpms on";
+          ignore_dbus_inhibit = false;
+          lock_cmd = "hyprlock";
+        };
+
+        listener = [
+          {
+            timeout = 180;
+            on-timeout = "hyprlock";
+          }
+          {
+            timeout = 120;
+            on-timeout = "hyprctl dispatch dpms off";
+            on-resume = "hyprctl dispatch dpms on";
+          }
+        ];
+      };
+    };
+
+    wayland.windowManager.hyprland = let
+      brillo = "${pkgs.brillo}/bin/brillo";
+      curl = "${pkgs.curl}/bin/curl";
+      date = "${pkgs.coreutils}/bin/date";
+      grep = "${pkgs.gnugrep}/bin/grep";
+      grim = "${pkgs.grim}/bin/grim";
+      hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+      jq = "${pkgs.jq}/bin/jq";
+      playerctl = "${pkgs.playerctl}/bin/playerctl";
+      pngquant = "${pkgs.pngquant}/bin/pngquant";
+      slurp = "${pkgs.slurp}/bin/slurp";
+      steam = "${pkgs.steam}/bin/steam";
+      swappy = "${pkgs.swappy}/bin/swappy";
+      wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
+      wpctl = "${pkgs.wireplumber}/bin/wpctl";
+      xargs = "${pkgs.findutils}/bin/xargs";
+      firefox = "${pkgs.firefox}/bin/firefox";
+      kitty = "${pkgs.kitty}/bin/kitty";
+      lf = "${pkgs.lf}/bin/lf";
+    in {
+      enable = true;
+
+      settings =
+        lib.recursiveUpdate {
+          monitor = [",preferred,auto,auto"];
+
+          "$terminal" = "${kitty}";
+          "$fileManager" = "${kitty} -- ${lf}";
+          "$mainMod" = "SUPER";
+          "$screenshotTmpl" = ''/home/simonwjackson/Pictures/$(${date} +"%Y-%m-%dT%H:%M:%S").png'';
+
+          env = [
+            "XCURSOR_SIZE,24"
+            "HYPRCURSOR_SIZE,24"
+          ];
+
+          general = {
+            gaps_out = 0;
+            gaps_in = 5;
+            border_size = 0;
+            allow_tearing = false;
+            layout = "master";
+          };
+
+          decoration = {
+            rounding = 10;
+            active_opacity = 1.0;
+            inactive_opacity = 1.0;
+
+            blur = {
+              enabled = true;
+              size = 3;
+              passes = 1;
+              vibrancy = 0.1696;
+            };
+
+            shadow = {
+              enabled = true;
+              range = 4;
+              render_power = 3;
+              color = "rgba(1a1a1aee)";
+            };
+          };
+
+          animations = {
+            enabled = true;
+
+            bezier = [
+              "easeOutQuint,0.23,1,0.32,1"
+              "easeInOutCubic,0.65,0.05,0.36,1"
+              "linear,0,0,1,1"
+              "almostLinear,0.5,0.5,0.75,1.0"
+              "quick,0.15,0,0.1,1"
+            ];
+
+            animation = [
+              "global, 1, 10, default"
+              "border, 1, 5.39, easeOutQuint"
+              "windows, 1, 4.79, easeOutQuint"
+              "windowsIn, 1, 4.1, easeOutQuint, popin 87%"
+              "windowsOut, 1, 1.49, linear, popin 87%"
+              "fadeIn, 1, 1.73, almostLinear"
+              "fadeOut, 1, 1.46, almostLinear"
+              "fade, 1, 3.03, quick"
+              "layers, 1, 3.81, easeOutQuint"
+              "layersIn, 1, 4, easeOutQuint, fade"
+              "layersOut, 1, 1.5, linear, fade"
+              "fadeLayersIn, 1, 1.79, almostLinear"
+              "fadeLayersOut, 1, 1.39, almostLinear"
+              "workspaces, 1, 1.94, almostLinear, fade"
+              "workspacesIn, 1, 1.21, almostLinear, fade"
+              "workspacesOut, 1, 1.94, almostLinear, fade"
+            ];
+          };
+
+          dwindle = {
+            pseudotile = true;
+            preserve_split = true;
+          };
+
+          master = {
+            new_status = "master";
+            orientation = "right";
+          };
+
+          misc = {
+            force_default_wallpaper = -1;
+            disable_hyprland_logo = true;
+            disable_autoreload = false;
+            disable_splash_rendering = true;
+          };
+
+          input = {
+            kb_layout = "us";
+            follow_mouse = 1;
+            sensitivity = 0;
+
+            touchpad = {
+              natural_scroll = false;
+            };
+          };
+
+          gestures = {
+            workspace_swipe = false;
+          };
+
+          device = {
+            name = "epic-mouse-v1";
+            sensitivity = -0.5;
+          };
+
+          # Keybindings
+          bind = [
+            "$mainMod, E, exec, kitty"
+            "$mainMod, A, layoutmsg, swapwithmaster"
+            "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
+            "$mainMod, T, exec, ${hyprctl} clients | grep -q 'main-term' && ${hyprctl} dispatch focuswindow main-term || $mainTerm"
+            "$mainMod, G, exec, ${hyprctl} dispatch workspace 2;"
+            "$mainMod SHIFT, G, exec, ${hyprctl} clients | ${grep} -q 'steam' && ${hyprctl} dispatch focuswindow steam || ${steam}"
+
+            "$mainMod, C, killactive,"
+            "$mainMod SHIFT, C, exec, ${hyprctl} activewindow -j | ${jq} '.pid' | ${xargs} -r kill -9"
+            "$mainMod, F, exec, $fileManager"
+            "$mainMod, V, togglefloating,"
+            "$mainMod SHIFT, Tab, cyclenext"
+            "$mainMod, Tab, cyclenext, -1"
+            "$mainMod, M, exec, hyprctl activewindow -j | jq -r '.fullscreen' | grep -q '2' && hyprctl dispatch fullscreen 0 || hyprctl dispatch fullscreen 1"
+            "$mainMod SHIFT, M, fullscreen, 0"
+
+            # Focus movement
+            "$mainMod, H, movefocus, l"
+            "$mainMod, J, movefocus, d"
+            "$mainMod, K, movefocus, u"
+            "$mainMod, L, movefocus, r"
+
+            "$mainMod SHIFT, left, resizeactive, -20 0"
+            "$mainMod SHIFT, right, resizeactive, 20 0"
+            "$mainMod SHIFT, up, resizeactive, 0 -20  "
+            "$mainMod SHIFT, down, resizeactive, 0 20 "
+
+            "$mainMod, left, swapwindow, l"
+            "$mainMod, right, swapwindow, r"
+            "$mainMod, up, swapwindow, u"
+            "$mainMod, down, swapwindow, d"
+
+            # Special workspace
+            "$mainMod, S, togglespecialworkspace, magic"
+            "$mainMod SHIFT, S, movetoworkspace, special:magic"
+          ];
+
+          # Binding elements (for media keys)
+          bindel = [
+            ",XF86AudioRaiseVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%+"
+            ",XF86AudioLowerVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+            ",XF86AudioMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle"
+            ",XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+            ",XF86MonBrightnessUp, exec, sudo ${brillo} -A 5"
+            ",XF86MonBrightnessDown, exec, sudo ${brillo} -U 5"
+          ];
+
+          # Binding with latches (for media control)
+          bindl = [
+            ", XF86AudioNext, exec, ${playerctl} next"
+            ", XF86AudioPause, exec, ${playerctl} play-pause"
+            ", XF86AudioPlay, exec, ${playerctl} play-pause"
+            ", XF86AudioPrev, exec, ${playerctl} previous"
+          ];
+
+          # Mouse bindings
+          bindm = [
+            "$mainMod, mouse:272, movewindow"
+            "$mainMod, mouse:273, resizewindow"
+          ];
+
+          # Window rules
+          windowrulev2 = [
+            "suppressevent maximize, class:.*"
+            "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
+          ];
+        }
+        cfg.extraSettings;
+    };
   };
 }
+# "$resetSubmap" = "${hyprctl} dispatch submap reset";
+# "$getWindow" = ''$resetSubmap; ${hyprctl} activewindow -j | ${jq} -r ". | \"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])\"" | ${xargs} -I '%' ${grim} -g '%' -'';
+# "$getMonitor" = "$resetSubmap; ${hyprctl} monitors -j | ${jq} -r '.[] | select(.focused==true) | .name' | ${xargs} -I '%' ${grim} -o '%' -";
+# "$getRegion" = "$resetSubmap; ${grim} -g \"$(${slurp})\" -";
+# "$compressThenSave" = "${pngquant} - > $screenshotTmpl";
+# "$publishToInternet" = "${curl} -s -F'file=@-' https://0x0.st | tee >(${wl-copy})";
+# "$markup" = "${swappy} -f - -o -";
+/*
+# Hyprland Screenshot Key Combinations
+
+## Full Key Combination Table
+
+| Base Combo        | Next Key | Final Key | Description |
+|-------------------|----------|-----------|-------------|
+| Super + S         |    W     |    F      | Save window screenshot with compression |
+| Super + S         |          |    C      | Copy window screenshot to clipboard |
+| Super + S         |          |    I      | Upload window screenshot to 0x0.st and copy URL |
+| Super + S         |    M     |    F      | Save monitor/screen screenshot with compression |
+| Super + S         |          |    C      | Copy monitor/screen screenshot to clipboard |
+| Super + S         |          |    I      | Upload monitor/screen screenshot to 0x0.st and copy URL |
+| Super + S         |    R     |    F      | Save region/selection screenshot with compression |
+| Super + S         |          |    C      | Copy region/selection screenshot to clipboard |
+| Super + S         |          |    I      | Upload region/selection screenshot to 0x0.st and copy URL |
+| Super + Shift + S |    W     |    F      | Save window screenshot with markup/editing and compression |
+| Super + Shift + S |          |    C      | Copy window screenshot with markup/editing to clipboard |
+| Super + Shift + S |          |    I      | Upload window screenshot with markup/editing to 0x0.st and copy URL |
+| Super + Shift + S |    M     |    F      | Save monitor screenshot with markup/editing and compression |
+| Super + Shift + S |          |    C      | Copy monitor screenshot with markup/editing to clipboard |
+| Super + Shift + S |          |    I      | Upload monitor screenshot with markup/editing to 0x0.st and copy URL |
+| Super + Shift + S |    R     |    F      | Save region screenshot with markup/editing and compression |
+| Super + Shift + S |          |    C      | Copy region screenshot with markup/editing to clipboard |
+| Super + Shift + S |          |    I      | Upload region screenshot with markup/editing to 0x0.st and copy URL |
+
+## Quick Reference
+
+### First Key (W/M/R)
+- **W** = Window (current active window)
+- **M** = Monitor (full screen)
+- **R** = Region (select area)
+
+### Final Key (F/C/I)
+- **F** = File (save to disk)
+- **C** = Copy to clipboard
+- **I** = Upload to Internet (0x0.st)
+
+### Notes
+- Press Escape at any time to cancel the screenshot operation
+- Adding Shift to the base combo (Super + Shift + S) enables markup/editing mode
+- All saved files are automatically compressed using pngquant
+- Internet uploads automatically copy the URL to your clipboard
+*/
+# Screenshot submaps and their bindings
+# submap = {
+#   screenshot = {
+#     bind = [
+#       ", W, submap, screenshot-window"
+#       ", M, submap, screenshot-monitor"
+#       ", R, submap, screenshot-region"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-window" = {
+#     bind = [
+#       ", F, exec, $getWindow | $compressThenSave"
+#       ", C, exec, $getWindow | ${wl-copy}"
+#       ", I, exec, $getWindow | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-monitor" = {
+#     bind = [
+#       ", F, exec, $getMonitor | $compressThenSave"
+#       ", C, exec, $getMonitor | ${wl-copy}"
+#       ", I, exec, $getMonitor | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-region" = {
+#     bind = [
+#       ", F, exec, $getRegion | $compressThenSave"
+#       ", C, exec, $getRegion | ${wl-copy}"
+#       ", I, exec, $getRegion | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-markup" = {
+#     bind = [
+#       ", W, submap, screenshot-markup-window"
+#       ", M, submap, screenshot-markup-monitor"
+#       ", R, submap, screenshot-markup-region"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-markup-window" = {
+#     bind = [
+#       ", F, exec, $getWindow | $markup | $compressThenSave"
+#       ", C, exec, $getWindow | $markup | ${wl-copy}"
+#       ", I, exec, $getWindow | $markup | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-markup-monitor" = {
+#     bind = [
+#       ", F, exec, $getMonitor | $markup | $compressThenSave"
+#       ", C, exec, $getMonitor | $markup | ${wl-copy}"
+#       ", I, exec, $getMonitor | $markup | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   "screenshot-markup-region" = {
+#     bind = [
+#       ", F, exec, $getRegion | $markup | $compressThenSave"
+#       ", C, exec, $getRegion | $markup | ${wl-copy}"
+#       ", I, exec, $getRegion | $markup | $publishToInternet"
+#       ", escape, submap, reset"
+#       ", _, submap, reset"
+#     ];
+#   };
+#
+#   reset = {};
+# };
+
