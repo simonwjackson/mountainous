@@ -16,19 +16,32 @@
   config,
   ...
 }: {
-  # services.dunst.enable = true;
-  # programs.vinyl-vault.enable = true;
-  # mountainous.work-mode.enable = true;
-  mountainous.firefox.enable = true;
-  mountainous.hyprpaper-watcher.enable = true;
-  mountainous.auto-blur-image = {
-    enable = true;
-    input = "/home/${config.home.username}/.cache/wallpapers/album.png";
-    output = "/home/${config.home.username}/.cache/wallpapers/watched-image.png";
+  # mountainous.hyprpaper-watcher.enable = true;
+  # mountainous.auto-blur-image = {
+  #   enable = true;
+  #   input = "/home/${config.home.username}/.cache/wallpapers/album.png";
+  #   output = "/home/${config.home.username}/.cache/wallpapers/watched-image.png";
+  # };
+
+  mountainous = {
+    profiles.workstation.enable = true;
+    desktops.hyprland = {
+      extraSettings = {
+        monitor = [
+          ",preferred,auto,auto"
+          "DP-1,2560x1440@240,auto,auto"
+          "HDMI-A-2,1920x1080@60,auto,auto"
+        ];
+        exec-once = [
+          "systemctl --user start hyprland-session.target"
+        ];
+        general = {
+          gaps_in = 20;
+          gaps_out = "20,200";
+        };
+      };
+    };
   };
-  # backpacker.desktops.hyprland.enable = false;
-  # services.udiskie.enable = true;
-  # simonwjackson.snowscape.enable = true;
 
   home = {
     homeDirectory = "/home/${config.home.username}";

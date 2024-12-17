@@ -10,20 +10,18 @@
   config,
   ...
 }: {
-  # simonwjackson.snowscape.enable = true;
-
-  # services.elevate = {
-  #   enable = true;
-  #   port = 8080;
-  #   extraPackages = with pkgs; [
-  #     ryzenadj
-  #     gamescope
-  #     gamemode
-  #     moonlight-qt
-  #     mangohud
-  #     proton-ge-custom
-  #   ];
-  # };
+  mountainous = {
+    profiles.workstation.enable = true;
+    desktops.hyprland = {
+      extraSettings = {
+        monitor = [
+          ",preferred,auto,auto"
+          "eDP-1,1080x1920@120,0x0,1.5,transform,3"
+          "DP-1,1920x1080@60,0x0,1.5"
+        ];
+      };
+    };
+  };
 
   home = {
     homeDirectory = "/home/${config.home.username}";
