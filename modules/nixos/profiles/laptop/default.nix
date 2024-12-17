@@ -21,6 +21,14 @@ in {
       };
     };
 
+    services.syncthing-auto-pause = {
+      enable = true;
+      managedShares = [
+        "games"
+        "videos"
+      ];
+    };
+
     environment.systemPackages = with pkgs; [
       acpi
     ];
