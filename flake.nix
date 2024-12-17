@@ -116,7 +116,7 @@
         icho.nixosModules.default
         impermanence.nixosModules.impermanence
         nix-flatpak.nixosModules.nix-flatpak
-        nur.nixosModules.nur
+        nur.modules.nixos.default
         ryujinx.nixosModules.default
         tmesh.nixosModules.default
       ];
@@ -137,9 +137,8 @@
 
       overlays = with inputs; [
         snowfall-frost.overlays.default
-        nur.overlay
+        nur.overlays.default
         (final: prev: {
-          proton-ge-custom = chaotic.packages.${prev.system}.proton-ge-custom;
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
         })

@@ -65,35 +65,6 @@ in {
     # gamescope
   ];
 
-  fileSystems."/avalanche/groups/glacier" = {
-    device = "/snowscape:/net/unzen/nfs/snowscape";
-    fsType = "fuse.mergerfs";
-    options = [
-      "defaults"
-      "allow_other"
-      "use_ino"
-      "cache.files=partial"
-      "dropcacheonclose=true"
-      "category.create=mfs" # Most Free Space for new files
-      "category.search=ff" # First Found - faster searching
-      "moveonenospc=true"
-      "minfreespace=1G"
-      "fsname=mergerfs-remote"
-      # Network optimizations
-      "posix_acl=true"
-      "atomic_o_trunc=true"
-      "big_writes=true"
-      "auto_cache=true"
-      "cache.symlinks=true" # Cache symlinks for better performance
-      "cache.readdir=true" # Cache directory entries
-    ];
-    noCheck = true;
-  };
-
-  systemd.tmpfiles.rules = [
-    "L+ /glacier - - - - /avalanche/groups/glacier"
-  ];
-
   #######################
   # Disable onboard audio
   #######################
@@ -102,8 +73,6 @@ in {
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
   '';
-
-  services.joycond.enable = true;
 
   mountainous = {
     bluetooth-tether = {
@@ -115,15 +84,7 @@ in {
         }
       ];
     };
-    hardware.cpu.type = "amd";
     boot = disabled;
-    desktops = {
-      hyprctl-api = enabled;
-      hyprland = {
-        enable = true;
-        autoLogin = true;
-      };
-    };
     gaming = {
       gamepad-proxy = enabled;
       core = {
@@ -137,52 +98,30 @@ in {
         gamingDir = "/snowscape/gaming";
         saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
       };
-      steam = {
-        enable = true;
-        # steamApps = "/snowscape/gaming/games/steam/steamapps";
-      };
+      steam = {enable = true;};
     };
+    hardware.cpu.type = "amd";
     networking.core.names = [
       {
         name = "wifi";
         mac = "fc:b0:de:7e:9f:5d";
       }
-
       {
         name = "eth";
         mac = "10:7c:61:4d:e4:11";
       }
     ];
-  };
-
-  hardware.bluetooth.enable = true; # enables support for Bluetooth
-  systemd.user.services.mpris-proxy = {
-    description = "Mpris proxy";
-    after = ["network.target" "sound.target"];
-    wantedBy = ["default.target"];
-    serviceConfig.ExecStart = "${pkgs.bluez}/bin/mpris-proxy";
-  };
-  services.pipewire.wireplumber.extraConfig = {
-    "monitor.bluez.properties" = {
-      "bluez5.enable-sbc-xq" = true;
-      "bluez5.enable-msbc" = true;
-      "bluez5.enable-hw-volume" = true;
-      "bluez5.roles" = ["hsp_hs" "hsp_ag" "hfp_hf" "hfp_ag"];
+    profiles.workstation = enabled;
+    snowscape = {
+      enable = true;
+      glacier = "unzen";
+      paths = [
+        "/snowscape"
+      ];
     };
   };
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    jack.enable = true;
-  };
-
-  nixpkgs.config.allowUnfree = true;
 
   hardware = {
-    enableAllFirmware = true;
     cpu = {
       amd = {
         updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
@@ -198,8 +137,6 @@ in {
       ];
     };
   };
-
-  time.timeZone = "America/Chicago";
 
   environment.etc."mdadm.conf".text = ''
     MAILADDR root@localhost
@@ -222,8 +159,7 @@ in {
       kernelModules = ["dm-snapshot" "amdgpu" "i2c-dev"];
     };
     kernelModules = ["kvm-amd" "tun"];
-    # kernelPackages = pkgs.linuxPackages_latest;
-    boot.kernelPackages = pkgs.linuxPackages_zen;
+    kernelPackages = pkgs.linuxPackages_zen;
     loader = {
       efi = {
         canTouchEfiVariables = false;
@@ -244,19 +180,6 @@ in {
   };
 
   ##########################################################
-
-  programs.webapps = {
-    "photopea" = {
-      windowState = "normal";
-      name = "photopea";
-      url = "https://photopea.com";
-    };
-
-    "youtube" = {
-      name = "youtube";
-      url = "https://youtube.com";
-    };
-  };
 
   boot.binfmt.emulatedSystems = ["aarch64-linux"];
 

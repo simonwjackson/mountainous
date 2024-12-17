@@ -67,7 +67,7 @@ in {
       "/etc/ssh".neededForBoot = true;
     };
 
-    environment.persistence."/persist" = mkIf impermanence.enable {
+    environment.persistence."${impermanence.persistPath}" = mkIf impermanence.enable {
       directories = [
         {
           directory = "/etc/ssh";

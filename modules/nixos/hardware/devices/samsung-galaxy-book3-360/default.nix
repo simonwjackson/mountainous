@@ -9,20 +9,37 @@
   cfg = config.mountainous.hardware.devices.samsung-galaxy-book3-360;
 in {
   options.mountainous.hardware.devices.samsung-galaxy-book3-360 = {
-    enable = mkEnableOption "Whether to enable bluetooth";
+    enable = mkEnableOption "Enable Samsung Galaxy Book3 360 support";
   };
 
   config = mkIf cfg.enable {
+    boot = {
+      kernelPackages = pkgs.linuxPackages_6_6;
+      kernelParams = [
+        "video=efifb:2880x1800" # Match your native resolution
+        "video=efifb:scale" # HiDPI scaling
+        "fbcon=nodefer"
+        "i915.fastboot=1"
+        "i915.force_probe=all" # Force early i915 initialization
+      ];
+      initrd = {
+        kernelModules = ["i915"];
+        availableKernelModules = [
+          "xhci_pci"
+          "thunderbolt"
+          "nvme"
+          "usb_storage"
+          "sd_mod"
+        ];
+      };
+    };
+
     mountainous = {
       hardware = {
         bluetooth.enable = true;
         cpu.type = "intel";
       };
     };
-
-    boot.kernelPackages = mkDefault pkgs.linuxPackages_latest;
-
-    boot.initrd.availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "usb_storage" "sd_mod"];
 
     systemd.services.fixSamsungGalaxyBook3Speakers = {
       path = [pkgs.alsa-tools];

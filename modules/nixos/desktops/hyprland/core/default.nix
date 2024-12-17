@@ -29,19 +29,13 @@ in {
     environment.systemPackages = [
       pkgs.ddcutil
       pkgs.eww
-      # HACK
-      pkgs.jq
-      pkgs.wl-clipboard
     ];
 
     xdg.portal = enabled;
-    # programs.xwayland = enabled;
+
+    security.pam.services.hyprlock = {};
 
     services = {
-      # xserver = {
-      #   enable = true;
-      # };
-
       displayManager.sddm.wayland = enabled;
       displayManager.sddm.enable = true;
       displayManager.defaultSession = lib.mkIf cfg.autoLogin "hyprland";

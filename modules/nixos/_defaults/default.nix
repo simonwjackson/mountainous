@@ -28,17 +28,6 @@ in {
     };
   };
 
-  programs.icho = {
-    enable = lib.mkDefault true;
-    environment = {
-      NOTES_DIR = mkDefault "/snowscape/notes";
-    };
-    environmentFiles = [
-      config.age.secrets."user-simonwjackson-anthropic".path
-      config.age.secrets."deepseek-api-key".path
-    ];
-  };
-
   programs.zsh.enable = true;
   services.metered-connection.networks = lib.mkAfter [
     "usu"
@@ -110,7 +99,7 @@ in {
     networking = {
       core = mkDefault enabled;
       tailscaled = {
-        enable = true;
+        enable = false;
         authKeyFile = config.age.secrets."tailscale".path;
       };
       zerotierone = mkDefault enabled;
@@ -218,14 +207,13 @@ in {
     };
   };
 
-  # environment.enableAllTerminfo = true;
+  time.timeZone = "America/Chicago";
+  hardware = {
+    enableRedistributableFirmware = mkDefault true;
+    enableAllFirmware = true;
+  };
 
-  hardware.enableRedistributableFirmware = mkDefault true;
-
-  # console = {
-  #   font = lib.mkDefault "Lat2-Terminus16";
-  #   keyMap = lib.mkDefault "us";
-  # };
+  home-manager.backupFileExtension = "bak";
 
   services.gpm.enable = true; # TTY mouse
 }

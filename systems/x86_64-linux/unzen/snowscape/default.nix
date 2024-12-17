@@ -142,35 +142,50 @@
     noCheck = true;
   };
 
-  fileSystems."/avalanche/groups/glacier" = {
-    device = "/net/unzen/nfs/snowscape:/net/aka/nfs/snowscape";
-    fsType = "fuse.mergerfs";
-    options = [
-      "defaults"
-      "allow_other"
-      "use_ino"
-      "cache.files=partial"
-      "dropcacheonclose=true"
-      "category.create=mfs" # Most Free Space for new files
-      "category.search=ff" # First Found - faster searching
-      "moveonenospc=true"
-      "minfreespace=1G"
-      "fsname=mergerfs-remote"
-      # Network optimizations
-      "posix_acl=true"
-      "atomic_o_trunc=true"
-      "big_writes=true"
-      "auto_cache=true"
-      "cache.symlinks=true" # Cache symlinks for better performance
-      "cache.readdir=true" # Cache directory entries
-    ];
-    noCheck = true;
+  fileSystems."/snowscape" = {
+    device = "/avalanche/groups/local/snowscape";
+    options = ["bind"];
+    depends = ["/avalanche/groups/local"];
   };
+
+  fileSystems."/snowscape/photos" = {
+    device = "/avalanche/merged/photos";
+    options = ["bind"];
+    depends = [
+      "/avalanche/groups/local"
+      "/avalanche/merged/photos"
+    ];
+  };
+
+  # fileSystems."/avalanche/groups/glacier" = {
+  #   device = "/net/unzen/nfs/snowscape:/net/aka/nfs/snowscape";
+  #   fsType = "fuse.mergerfs";
+  #   options = [
+  #     "defaults"
+  #     "allow_other"
+  #     "use_ino"
+  #     "cache.files=partial"
+  #     "dropcacheonclose=true"
+  #     "category.create=mfs" # Most Free Space for new files
+  #     "category.search=ff" # First Found - faster searching
+  #     "moveonenospc=true"
+  #     "minfreespace=1G"
+  #     "fsname=mergerfs-remote"
+  #     # Network optimizations
+  #     "posix_acl=true"
+  #     "atomic_o_trunc=true"
+  #     "big_writes=true"
+  #     "auto_cache=true"
+  #     "cache.symlinks=true" # Cache symlinks for better performance
+  #     "cache.readdir=true" # Cache directory entries
+  #   ];
+  #   noCheck = true;
+  # };
 
   systemd.tmpfiles.rules = [
     "d /var/lib/snapraid 0755 root root -"
     "d /avalanche/groups/local 0775 - - -"
-    "L+ /snowscape 0775 media media - /avalanche/groups/local/snowscape"
-    "L+ /glacier 0775 media media - /avalanche/groups/glacier"
+    # "L+ /snowscape 0775 media media - /avalanche/groups/local/snowscape"
   ];
+  # "L+ /glacier 0775 media media - /avalanche/groups/glacier"
 }

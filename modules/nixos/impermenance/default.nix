@@ -46,7 +46,6 @@ in {
       files = [
         "/etc/machine-id"
         "/etc/adjtime"
-        "/var/lib/tailscale/tailscaled.state"
       ];
       users."${config.mountainous.user.name}" = {
         directories = [

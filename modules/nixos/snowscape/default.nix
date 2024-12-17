@@ -25,6 +25,18 @@ with lib; let
     "cache.symlinks=true"
     "cache.readdir=true"
   ];
+
+  # Helper to determine if we need MergerFS
+  needsMergerFS = length cfg.paths > 1;
+
+  # Helper to determine if we need a bind mount
+  needsBindMount =
+    cfg.mountPath
+    != (
+      if needsMergerFS
+      then cfg.poolPath
+      else head cfg.paths
+    );
 in {
   options.mountainous.snowscape = {
     enable = mkEnableOption "MergerFS pools configuration";
@@ -70,25 +82,44 @@ in {
   };
 
   config = mkIf cfg.enable {
-    fileSystems = mkMerge [
+    # Validate that paths is not empty
+    assertions = [
       {
-        "${cfg.mountPath}" = {
-          device = cfg.poolPath;
-          options = ["bind"];
-        };
-
-        "${cfg.poolPath}" = {
-          device = concatStringsSep ":" cfg.paths;
-          fsType = "fuse.mergerfs";
-          options =
-            commonMergerFSOptions
-            ++ [
-              "fsname=pools-snowscape"
-            ];
-          noCheck = true;
-        };
+        assertion = cfg.paths != [];
+        message = "mountainous.snowscape.paths must not be empty";
       }
+    ];
 
+    fileSystems = mkMerge [
+      # Main storage configuration
+      (
+        if needsBindMount
+        then {
+          "${cfg.mountPath}" = {
+            device =
+              if needsMergerFS
+              then cfg.poolPath
+              else head cfg.paths;
+            options = ["bind"];
+          };
+        }
+        else {}
+      )
+
+      (
+        if needsMergerFS
+        then {
+          "${cfg.poolPath}" = {
+            device = concatStringsSep ":" cfg.paths;
+            fsType = "fuse.mergerfs";
+            options = commonMergerFSOptions ++ ["fsname=pools-snowscape"];
+            noCheck = true;
+          };
+        }
+        else {}
+      )
+
+      # Glacier configuration (unchanged)
       (mkIf (cfg.glacier != null) {
         "/glacier" = {
           device = "/avalanche/pools/glacier";
@@ -124,7 +155,6 @@ in {
             mkdir -p ${path}/snowscape
             chmod 2775 ${path}/snowscape
             chown ${cfg.user}:${cfg.group} ${path}/snowscape
-            # DELETE
           '')
           cfg.paths}
       '';
