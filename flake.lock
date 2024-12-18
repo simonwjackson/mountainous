@@ -1379,11 +1379,11 @@
         "vim-visual-star-search": "vim-visual-star-search"
       },
       "locked": {
-        "lastModified": 1733436784,
-        "narHash": "sha256-tFPPU5GYXZDoIiXtqzJDsI96Y+rMRNhm68pEALAiXmQ=",
+        "lastModified": 1734554172,
+        "narHash": "sha256-rgc+qTTsNEGxU1ZboF0XfHr/bUoYwoXpPEc/LOSU3LM=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "a1c54fd99521934eeeed56cdeeb1ada0e8847610",
+        "rev": "51ad65ed21e04b0d24747b65ecdb553fc0b155e6",
         "type": "github"
       },
       "original": {
