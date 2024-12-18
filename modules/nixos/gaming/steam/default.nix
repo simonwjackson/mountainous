@@ -7,8 +7,6 @@
   ...
 }: let
   cfg = config.mountainous.gaming.steam;
-
-  inherit (inputs.elevate.packages.${system}) proton-ge-custom steam-launch;
 in {
   options.mountainous = {
     gaming.steam = {
@@ -18,10 +16,6 @@ in {
 
   config = lib.mkIf cfg.enable {
     mountainous.services.gamescope-reaper.enable = true;
-
-    environment.systemPackages = with pkgs; [
-      steam-launch
-    ];
 
     hardware = {
       steam-hardware.enable = true;
@@ -45,7 +39,7 @@ in {
             ];
         };
         extraCompatPackages = [
-          proton-ge-custom
+          inputs.elevate.packages.${system}.proton-ge-custom
         ];
       };
     };
