@@ -25,16 +25,16 @@ in {
   };
 
   mountainous = {
-    impermanence = enabled;
     boot = enabled;
-    snowscape = {
-      enable = true;
-      glacier = "unzen";
-      paths = [
-        "/avalanche/volumes/blizzard"
-        "/avalanche/disks/sleet/0/00"
-      ];
+    gaming = {
+      core = enabled;
+      steam = enabled;
     };
+    hardware = {
+      bluetooth.device = "D4:D8:53:90:2B:70";
+      devices.samsung-galaxy-book3-360 = enabled;
+    };
+    impermanence = enabled;
     networking.core.names = [
       {
         name = "wifi";
@@ -46,13 +46,17 @@ in {
       workspace = disabled;
       workstation = enabled;
     };
+    snowscape = {
+      enable = true;
+      glacier = "unzen";
+      paths = [
+        "/avalanche/volumes/blizzard"
+        "/avalanche/disks/sleet/0/00"
+      ];
+    };
     syncthing = {
       key = config.age.secrets.fuji-syncthing-key.path;
       cert = config.age.secrets.fuji-syncthing-cert.path;
-    };
-    hardware = {
-      devices.samsung-galaxy-book3-360 = enabled;
-      bluetooth.device = "D4:D8:53:90:2B:70";
     };
   };
 

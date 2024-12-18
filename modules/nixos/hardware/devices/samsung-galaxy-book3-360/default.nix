@@ -21,6 +21,8 @@ in {
         "fbcon=nodefer"
         "i915.fastboot=1"
         "i915.force_probe=all" # Force early i915 initialization
+        "i915.enable_fbc=1"
+        "i915.enable_psr=2"
       ];
       initrd = {
         kernelModules = ["i915"];
@@ -32,6 +34,18 @@ in {
           "sd_mod"
         ];
       };
+    };
+
+    hardware.opengl = {
+      enable = true;
+      driSupport32Bit = true;
+      extraPackages = with pkgs; [
+        intel-media-driver # This is crucial for Iris Xe
+        intel-compute-runtime # OpenCL support
+        vaapiIntel
+        vaapiVdpau
+        libvdpau-va-gl
+      ];
     };
 
     mountainous = {
