@@ -56,6 +56,13 @@ in {
     };
 
     home = {
+      pointerCursor = {
+        package = pkgs.catppuccin-cursors.frappeBlue;
+        name = "Catppuccin-Frappe-Blue-Cursors";
+        size = 24; # Adjust size as needed
+        gtk.enable = true;
+        x11.enable = true;
+      };
       sessionVariables = {
         EDITOR = "nvim";
         NIXIE_BUILDERS = "aka,unzen,zao,haku";
@@ -73,6 +80,7 @@ in {
     };
 
     programs.bash.enable = true;
+    programs.bash.enableCompletion = true;
 
     # Nicely reload system units when changing configs
     systemd.user.startServices = "sd-switch";

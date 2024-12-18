@@ -17,7 +17,6 @@ in {
     services.playerctld = enabled;
 
     boot = {
-      earlyVconsoleSetup = true;
       kernelParams = [
         "quiet" # Reduce boot messages
         "splash" # Enable splash screen

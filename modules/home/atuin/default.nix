@@ -27,6 +27,7 @@ in {
       enable = true;
       enableBashIntegration = true;
       enableZshIntegration = true;
+      daemon.enable = true;
       settings = {
         auto_sync = true;
         enter_accept = true;

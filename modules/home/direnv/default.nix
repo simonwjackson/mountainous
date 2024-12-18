@@ -19,11 +19,6 @@ in {
       nix-direnv.enable = true;
       enableZshIntegration = config.programs.zsh.enable;
       enableBashIntegration = config.programs.bash.enable;
-      # TODO: check for tank here
-      # config = ''
-      #   [whitelist]
-      #   prefix = [ "/home/simonwjackson/code" ]
-      # '';
     };
   };
 }

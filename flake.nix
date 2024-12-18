@@ -65,11 +65,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-gaming = {
-      url = "github:fufexan/nix-gaming";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nixos-generators = {
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -82,7 +77,7 @@
 
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    nur.url = "github:nix-community/NUR";
+    # nur.url = "github:nix-community/NUR";
 
     ryujinx.url = "github:Naxdy/Ryujinx";
 
@@ -116,7 +111,7 @@
         icho.nixosModules.default
         impermanence.nixosModules.impermanence
         nix-flatpak.nixosModules.nix-flatpak
-        nur.modules.nixos.default
+        # nur.modules.nixos.default
         ryujinx.nixosModules.default
         tmesh.nixosModules.default
       ];
@@ -137,7 +132,7 @@
 
       overlays = with inputs; [
         snowfall-frost.overlays.default
-        nur.overlays.default
+        # nur.overlays.default
         (final: prev: {
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;

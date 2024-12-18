@@ -194,8 +194,8 @@ in {
     );
 
     environment.persistence."${impermanence.persistPath}" = mkIf impermanence.enable {
-      files = [
-        "/var/lib/tailscale/tailscaled.state"
+      directories = [
+        "/var/lib/tailscale"
       ];
     };
   };

@@ -27,6 +27,7 @@ in {
     programs.kitty = {
       enable = true;
       extraConfig = builtins.readFile ./kitty.conf;
+      themeFile = "Catppuccin-Frappe";
     };
 
     # xdg.systemDirs.data = ["/usr/share" "/var/lib/flatpak/exports/share" "$HOME/.local/share/flatpak/exports/share"];

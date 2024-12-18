@@ -18,6 +18,16 @@
 }: {
   mountainous = {
     profiles.workstation.enable = true;
+    desktops.hyprland = {
+      extraSettings = {
+        monitor = [
+          "eDP-1,preferred,auto,1.5"
+        ];
+        exec-once = [
+          "systemctl --user start hyprland-session.target"
+        ];
+      };
+    };
   };
 
   home = {
