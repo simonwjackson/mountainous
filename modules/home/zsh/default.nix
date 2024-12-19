@@ -180,6 +180,23 @@ in {
           setopt MENU_COMPLETE
           setopt NO_NOMATCH
 
+          # Watch a file for changes and show the differences
+          watchfile() {
+              if [[ $# -eq 0 ]]; then
+                  echo "Usage: watchfile <file>"
+                  return 1
+              fi
+
+              local file="$1"
+              local tmpfile="/tmp/$(${pkgs.coreutils}/bin/basename "$file")-last"
+
+              # Create initial copy if it doesn't exist
+              ${pkgs.coreutils}/bin/cp "$file" "$tmpfile" 2>/dev/null
+
+              # Watch for changes
+              echo "$file" | ${pkgs.entr}/bin/entr -n ${pkgs.bash}/bin/sh -c "${pkgs.diffutils}/bin/diff <(${pkgs.coreutils}/bin/cat '$tmpfile') '$file' 2>/dev/null | ${pkgs.gnugrep}/bin/grep -v '^[0-9]'; ${pkgs.coreutils}/bin/cp '$file' '$tmpfile'"
+          }
+
           serve() {
             nix run nixpkgs#fd -- --type f --hidden --no-ignore | nix run nixpkgs#entr -- -r nix run nixpkgs#python3 -- -m http.server
           }
