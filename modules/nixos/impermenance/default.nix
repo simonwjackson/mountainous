@@ -28,11 +28,11 @@ in {
         device = "none";
         fsType = "tmpfs";
         options = ["defaults" "size=${cfg.rootSize}" "mode=755"];
+        neededForBoot = true;
       };
       "${cfg.persistPath}".neededForBoot = true;
       "/nix".neededForBoot = true;
       "/boot".neededForBoot = true;
-      "/home".neededForBoot = true;
       "/var/log".neededForBoot = true;
     };
 
@@ -42,6 +42,7 @@ in {
         "/var/lib/systemd/coredump"
         "/var/lib/bluetooth"
         "/var/lib/nixos"
+        "/var/log"
       ];
       files = [
         "/etc/machine-id"
@@ -51,6 +52,11 @@ in {
         directories = [
           ".mozilla"
           ".config"
+          ".cache"
+          ".local/state"
+          ".local/share"
+          ".local/share/Steam"
+          "Downloads"
         ];
       };
     };
