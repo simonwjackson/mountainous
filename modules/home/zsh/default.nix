@@ -180,6 +180,11 @@ in {
           setopt MENU_COMPLETE
           setopt NO_NOMATCH
 
+          watchfolder() {
+            inotifywait -m -r ~/.local/share/Steam --format '%w%f' -e modify |
+              grep '\.vdf$'
+            }
+
           # Watch a file for changes and show the differences
           watchfile() {
               if [[ $# -eq 0 ]]; then
