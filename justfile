@@ -83,3 +83,7 @@ garbage-collect HOST='$(hostname)':
     ssh {{ HOST }} sudo nix-collect-garbage --delete-old
 
 alias gc := garbage-collect
+
+# Scaffold a new system and home configuration
+scaffold *ARGS:
+    nix run .#scaffold -- {{ ARGS }}
