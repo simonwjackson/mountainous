@@ -7,7 +7,6 @@
   inherit (lib) mkEnableOption mkOption types mkIf;
 
   cfg = config.mountainous.gaming.gamepad-proxy;
-  pythonWithPackages = pkgs.python3.withPackages (ps: with ps; [evdev]);
 in {
   options.mountainous.gaming.gamepad-proxy = {
     enable = mkEnableOption "Virtual Gamepad Proxy service";
@@ -32,10 +31,7 @@ in {
       after = ["network.target"];
 
       serviceConfig = {
-        ExecStart = "${pkgs.writeScriptBin "gamepad-proxy" ''
-          #!${pythonWithPackages}/bin/python3
-          ${builtins.readFile ./gamepad-proxy.py}
-        ''}/bin/gamepad-proxy";
+        ExecStart = "${pkgs.mountainous.gamepad-proxy}/bin/gamepad-proxy";
         User = cfg.user;
         Group = cfg.group;
         Restart = "on-failure";
