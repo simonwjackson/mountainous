@@ -242,6 +242,10 @@ generate_host_keys() {
 
     # Call update_secrets_nix function
     update_secrets_nix "$hostname"
+
+    # Rekey the agenix directory after generating new host keys
+    echo "Rekeying agenix secrets..."
+    cd "${BASE_DIR}/secrets/agenix" && agenix --rekey
   fi
 }
 
