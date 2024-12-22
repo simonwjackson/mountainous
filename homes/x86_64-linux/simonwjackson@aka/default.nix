@@ -30,7 +30,10 @@
         monitor = [
           ",preferred,auto,auto"
           "DP-1,2560x1440@240,auto,auto"
-          "HDMI-A-2,1920x1080@60,auto,auto"
+          "HDMI-A-2,preferred,auto,1.5"
+        ];
+        workspace = [
+          "2,gapsout:0,monitor:[HDMI-A-2],gapsin:5 "
         ];
         exec-once = [
           "systemctl --user start hyprland-session.target"
@@ -40,6 +43,29 @@
           gaps_out = "20,200";
         };
       };
+    };
+  };
+
+  programs.hyprlock = {
+    enable = lib.mkForce false;
+  };
+
+  services.hypridle = lib.mkForce {
+    enable = true;
+    settings = {
+      general = {
+        after_sleep_cmd = "hyprctl dispatch dpms on";
+        ignore_dbus_inhibit = false;
+        lock_cmd = "hyprlock";
+      };
+
+      listener = [
+        {
+          timeout = 120;
+          on-timeout = "hyprctl dispatch dpms off DP-1";
+          on-resume = "hyprctl dispatch dpms on DP-1";
+        }
+      ];
     };
   };
 

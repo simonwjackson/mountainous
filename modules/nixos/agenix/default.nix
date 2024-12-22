@@ -40,6 +40,7 @@ in {
         ++ [
           # TODO: Pull this value from somewhere else in the config
           "/home/${cfg.user}/.ssh/id_rsa"
+          "/tundra/igloo/id_rsa"
         ];
 
       secrets =
@@ -53,10 +54,5 @@ in {
             }) (import secretsFile)
         else {};
     };
-
-    # age.identityPaths = options.age.identityPaths.default ++ (filter pathExists [
-    #   "${config.user.home}/.ssh/id_ed25519"
-    #   "${config.user.home}/.ssh/id_rsa"
-    # ]);
   };
 }

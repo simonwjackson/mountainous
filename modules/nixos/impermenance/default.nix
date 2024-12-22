@@ -24,16 +24,16 @@ in {
     programs.fuse.userAllowOther = true;
 
     fileSystems = {
-      "/" = {
-        device = "none";
-        fsType = "tmpfs";
-        options = ["defaults" "size=${cfg.rootSize}" "mode=755"];
-        neededForBoot = true;
-      };
+      # "/" = {
+      #   device = "none";
+      #   fsType = "tmpfs";
+      #   options = ["defaults" "size=${cfg.rootSize}" "mode=755"];
+      #   neededForBoot = true;
+      # };
       "${cfg.persistPath}".neededForBoot = true;
-      "/nix".neededForBoot = true;
-      "/boot".neededForBoot = true;
-      "/var/log".neededForBoot = true;
+      # "/nix".neededForBoot = true;
+      # "/boot".neededForBoot = true;
+      # "/var/log".neededForBoot = true;
     };
 
     environment.persistence."${cfg.persistPath}" = {
@@ -42,7 +42,7 @@ in {
         "/var/lib/systemd/coredump"
         "/var/lib/bluetooth"
         "/var/lib/nixos"
-        "/var/log"
+        "/var/lib/fprint"
       ];
       files = [
         "/etc/machine-id"
