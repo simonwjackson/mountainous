@@ -36,6 +36,10 @@ in {
   mountainous.services.nfs-auto-shares = {
     enable = true;
     hosts = {
+      cho = {
+        hostname = "cho";
+        shareName = "snowscape";
+      };
       aka = {
         hostname = "aka";
         shareName = "snowscape";
@@ -118,10 +122,16 @@ in {
     syncthing = rec {
       inherit otherDevices;
 
-      cert = mkIf config.mountainous.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-cert".path);
       enable = mkDefault true;
+
+      cert =
+        mkIf (config.mountainous.syncthing.enable && builtins.hasAttr "${host}-syncthing-cert" config.age.secrets)
+        (mkDefault config.age.secrets."${host}-syncthing-cert".path);
+      key =
+        mkIf (config.mountainous.syncthing.enable && builtins.hasAttr "${host}-syncthing-key" config.age.secrets)
+        (mkDefault config.age.secrets."${host}-syncthing-key".path);
+
       hostName = host;
-      key = mkIf config.mountainous.syncthing.enable (mkDefault config.age.secrets."${host}-syncthing-key".path);
       systemsDir = get-file "systems";
     };
     sound = mkDefault enabled;
@@ -206,6 +216,10 @@ in {
       };
     };
   };
+
+  environment.systemPackages = with pkgs; [
+    inputs.nixos-anywhere.packages.${system}.nixos-anywhere
+  ];
 
   time.timeZone = "America/Chicago";
   hardware = {
