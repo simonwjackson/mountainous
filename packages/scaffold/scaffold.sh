@@ -10,7 +10,7 @@ BASE_DIR="$(git rev-parse --show-toplevel)"
 
 # Usage function
 show_usage() {
-  echo "Usage: scaffold [username@]<system-name> [--arch <architecture>]"
+  echo "Usage: scaffold [username@]<system-name> <ip> [--arch <architecture>]"
   echo "Default architecture: $DEFAULT_ARCH"
   echo "Default username: $DEFAULT_USERNAME"
   exit 1
@@ -42,17 +42,18 @@ parse_system_arg() {
 }
 
 # Validate arguments
-if [ $# -lt 1 ] || [ $# -gt 3 ]; then
+if [ $# -lt 2 ] || [ $# -gt 4 ]; then
   show_usage
 fi
 
 USERNAME=""
 SYSTEM_NAME=""
 parse_system_arg "$1" USERNAME SYSTEM_NAME
+IP="$2"
 ARCH="$DEFAULT_ARCH"
 
-# Parse arguments
-shift
+# Parse optional arguments
+shift 2
 while [[ $# -gt 0 ]]; do
   case $1 in
   --arch)
@@ -114,7 +115,7 @@ EOF
 # Home configuration template
 HOME_CONFIG=$(
   cat <<'EOF'
-{ lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -122,8 +123,32 @@ HOME_CONFIG=$(
   ];
 
   home = {
-    homeDirectory = "/home/${config.home.username}";
+    homeDirectory = "/home/\${config.home.username}";
     stateVersion = "$STATE_VERSION"; # WARN: Changing this might break things. Just leave it.
+  };
+}
+EOF
+)
+
+# Syncthing configuration template
+SYNCTHING_CONFIG=$(
+  cat <<EOF
+{
+  config,
+  host,
+  ...
+}: {
+  device = {
+    # TODO: Add your syncthing device id here
+    id = "0000000-0000000-0000000-0000000-0000000-0000000-0000000-0000000";
+    name = "(\${host})";
+  };
+  shares = {
+    # TODO: Add your syncthing shares here
+    #  shareName= {
+    #   path = "/path/to/share";
+    #   type = "sendreceive";
+    # };
   };
 }
 EOF
@@ -141,4 +166,20 @@ create_config \
   "$BASE_DIR/homes/$ARCH/$USERNAME@$SYSTEM_NAME/default.nix" \
   "$HOME_CONFIG"
 
+# Create syncthing configuration
+create_config \
+  "$BASE_DIR/systems/$ARCH/$SYSTEM_NAME" \
+  "$BASE_DIR/systems/$ARCH/$SYSTEM_NAME/syncthing.nix" \
+  "$SYNCTHING_CONFIG"
+
 echo "Successfully scaffolded system and home for $USERNAME@$SYSTEM_NAME with architecture $ARCH"
+echo
+echo "TODOs:"
+echo "1. Add your syncthing device ID in systems/$ARCH/$SYSTEM_NAME/syncthing.nix"
+echo "2. Configure your syncthing shares in systems/$ARCH/$SYSTEM_NAME/syncthing.nix"
+echo "3. Configure syncthing keys in systems/$ARCH/$SYSTEM_NAME/default.nix"
+echo 
+echo "Warning: you need to run the following command inside your secrets repo:"
+echo "1 ./get-pub-key.sh $SYSTEM_NAME $IP"
+echo "2. Commit and push your changes in the secrets repo"
+echo "3. Run 'just up secrets' to update your secrets"
