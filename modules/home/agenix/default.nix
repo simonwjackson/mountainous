@@ -47,7 +47,12 @@ in {
     ];
 
     age = {
-      identityPaths = options.age.identityPaths.default;
+      identityPaths =
+        options.age.identityPaths.default
+        ++ [
+          # TODO: Pull this value from somewhere else in the config
+          "/tundra/igloo/id_rsa"
+        ];
 
       secrets = let
         secretsFile = "${cfg.secretsDir}/secrets.nix";
