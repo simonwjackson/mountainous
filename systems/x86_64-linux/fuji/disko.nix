@@ -1,61 +1,29 @@
 # TODO: Yubi key
 # https://haseebmajid.dev/posts/2024-07-30-how-i-setup-btrfs-and-luks-on-nixos-using-disko/
-{
+{device}: {
+  fileSystems = {
+    "/".neededForBoot = true;
+    "/tundra/igloo".neededForBoot = true;
+    "/nix".neededForBoot = true;
+    "/boot".neededForBoot = true;
+    "/var/log".neededForBoot = true;
+  };
   disko.devices = {
-    disk = {
-      main = {
-        type = "disk";
-        device = "/dev/nvme0n1";
-        content = {
-          type = "gpt";
-          partitions = {
-            boot = {
-              size = "1G";
-              type = "EF00";
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-              };
-            };
-            luks = {
-              size = "100%";
-              content = {
-                type = "luks";
-                name = "crypted";
-                # extraOpenArgs = [
-                #   "--allow-discards"
-                #   "--perf-no_read_workqueue"
-                #   "--perf-no_write_workqueue"
-                # ];
-                # settings = {crypttabExtraOpts = ["fido2-device=auto" "token-timeout=10"];};
-                content = {
-                  type = "btrfs";
-                  extraArgs = ["-f"];
-                  # extraArgs = ["-L" "nixos" "-f"];
-                  subvolumes = {
-                    "/nix" = {
-                      mountpoint = "/nix";
-                      mountOptions = ["compress=zstd" "noatime"];
-                    };
-                    # "/log" = {
-                    #   mountpoint = "/var/log";
-                    #   mountOptions = ["subvol=log" "compress=zstd" "noatime"];
-                    # };
-                    "/persist/system" = {
-                      mountpoint = "/persist";
-                      mountOptions = ["compress=zstd" "noatime"];
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
+    nodev = {
+      "/" = {
+        fsType = "tmpfs";
+        mountOptions = [
+          "defaults"
+          "mode=755"
+          "size=2G"
+        ];
       };
-      sleet0 = {
+    };
+
+    disk = {
+      sleet = {
         type = "disk";
-        device = "/dev/sda";
+        device = "/dev/disk/by-id/usb-Generic_STORAGE_DEVICE_000000000819-0:0";
         content = {
           type = "gpt";
           partitions = {
@@ -64,8 +32,124 @@
               content = {
                 type = "filesystem";
                 format = "f2fs";
-                mountpoint = "/avalanche/disks/sleet/0/00";
+                mountpoint = "/tundra/sleet";
                 mountOptions = ["noatime"];
+              };
+            };
+          };
+        };
+      };
+
+      main = {
+        inherit device;
+
+        type = "disk";
+        content = {
+          type = "gpt";
+          partitions = {
+            mukluk = {
+              size = "512M";
+              type = "EF00";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+                mountOptions = ["defaults"];
+              };
+            };
+
+            frostbite = {
+              size = "100%";
+              content = {
+                type = "luks";
+                name = "frostbite";
+                askPassword = true;
+                extraOpenArgs = ["--allow-discards"];
+                settings = {
+                  allowDiscards = true;
+                  bypassWorkqueues = true;
+                };
+                content = {
+                  type = "btrfs";
+                  extraArgs = ["-f"];
+                  subvolumes = {
+                    "/nix" = {
+                      mountpoint = "/nix";
+                      mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/var/log" = {
+                      mountpoint = "/var/log";
+                      mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/swap" = {
+                      mountpoint = "/swap";
+                      mountOptions = ["noatime" "discard=async" "space_cache=v2"];
+                      swap.swapfile.size = "32G";
+                    };
+
+                    # Identity
+                    "/tundra/igloo" = {
+                      mountpoint = "/tundra/igloo";
+                      mountOptions = [
+                        "compress=zstd:3" # Higher compression ratio since config files compress well
+                        "noatime" # Keep this, good for performance
+                        "discard=async" # Keep this, good for SSD health
+                        "space_cache=v2" # Keep this, good for performance
+                        "autodefrag" # Help prevent fragmentation of small files
+                        "nosuid" # Security: prevent setuid programs in home dir
+                        "nodev" # Security: prevent device files in home dir
+                      ];
+                    };
+
+                    # Persist
+                    "/tundra/permafrost" = {
+                      mountpoint = "/tundra/permafrost";
+                      mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                    };
+
+                    # Snowscape
+                    "/tundra/frostbite/snowscape" = {
+                      mountpoint = "/tundra/frostbite/snowscape";
+                      mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/code" = {
+                      mountpoint = "/tundra/frostbite/snowscape/code";
+                      mountOptions = ["compress=zstd:1" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/video" = {
+                      mountpoint = "/tundra/frostbite/snowscape/video";
+                      mountOptions = ["nodatacow" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/music" = {
+                      mountpoint = "/tundra/frostbite/snowscape/music";
+                      mountOptions = ["compress=zstd:1" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/audiobooks" = {
+                      mountpoint = "/tundra/frostbite/snowscape/audiobooks";
+                      mountOptions = ["compress=zstd:1" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/photos" = {
+                      mountpoint = "/tundra/frostbite/snowscape/photos";
+                      mountOptions = ["compress=zstd:3" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/notes" = {
+                      mountpoint = "/tundra/frostbite/snowscape/notes";
+                      mountOptions = ["compress=zstd:3" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/gaming" = {
+                      mountpoint = "/tundra/frostbite/snowscape/gaming";
+                      mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/gaming/games" = {
+                      mountpoint = "/tundra/frostbite/snowscape/gaming/games";
+                      mountOptions = ["nodatacow" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                    "/tundra/frostbite/snowscape/gaming/profiles" = {
+                      mountpoint = "/tundra/frostbite/snowscape/gaming/profiles";
+                      mountOptions = ["compress=zstd:1" "noatime" "discard=async" "space_cache=v2"];
+                    };
+                  };
+                };
               };
             };
           };

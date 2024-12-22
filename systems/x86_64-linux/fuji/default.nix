@@ -8,19 +8,39 @@
   inherit (lib.mountainous) enabled disabled;
 in {
   imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
-    ./disko.nix
+    (import ./disko.nix {
+      device = "/dev/disk/by-id/nvme-WDSN740-SDDPNQD-1T00-1004_22501B805583";
+    })
   ];
 
   boot = {
+    supportedFilesystems = ["btrfs"]; # Keep your existing filesystems
+    kernelModules = [
+      "cryptd"
+      "aesni_intel"
+      "dm_mod"
+      "nvme"
+    ];
     loader = {
-      systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
+      efi.efiSysMountPoint = "/boot";
+      systemd-boot = {
+        enable = true;
+      };
     };
-    initrd.luks.devices."crypted" = lib.mkForce {
-      device = "/dev/disk/by-uuid/b688fe42-16eb-49f7-a9c9-c3a4210288e1";
-      preLVM = true;
-      allowDiscards = true;
+    initrd = {
+      availableKernelModules = [
+        "ahci"
+        "btrfs"
+        "cryptd"
+        "crypto_aes"
+        "ehci_pci"
+        "sd_mod"
+        "uas"
+        "usb_storage"
+        "usbhid"
+        "xhci_pci"
+      ];
     };
   };
 
@@ -34,7 +54,10 @@ in {
       bluetooth.device = "D4:D8:53:90:2B:70";
       devices.samsung-galaxy-book3-360 = enabled;
     };
-    impermanence = enabled;
+    impermanence = {
+      enable = true;
+      persistPath = "/tundra/permafrost";
+    };
     networking.core.names = [
       {
         name = "wifi";
