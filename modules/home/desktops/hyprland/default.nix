@@ -196,14 +196,11 @@ in {
           ];
         };
 
-        dwindle = {
-          pseudotile = true;
-          preserve_split = true;
-        };
-
         master = {
-          new_status = "master";
           orientation = "right";
+          mfact = "0.61803";
+          new_status = "slave";
+          inherit_fullscreen = "false";
         };
 
         misc = {
@@ -233,7 +230,7 @@ in {
         };
 
         bind = [
-          "$mainMod, E, exec, kitty"
+          "$mainMod, E, exec, ${kitty}"
           "$mainMod, A, layoutmsg, swapwithmaster"
           "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
           "$mainMod, T, exec, ${hyprctl} clients | grep -q 'main-term' && ${hyprctl} dispatch focuswindow main-term || $mainTerm"
