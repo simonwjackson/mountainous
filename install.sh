@@ -12,25 +12,6 @@ HOSTNAME="$1"
 TARGET="$2"
 SSH_KEY="${3:-$HOME/.ssh/id_rsa}"
 
-# Add new section to check and generate host keys
-echo "Checking host keys for $HOSTNAME..."
-HOST_KEY_PATH="secrets/keys/hosts/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key"
-if [ ! -f "$HOST_KEY_PATH" ]; then
-  echo "Generating new host keys for $HOSTNAME..."
-  ssh-keygen -t rsa -N "" -f "$HOST_KEY_PATH"
-
-  # Update secrets.nix
-  echo "Updating secrets.nix..."
-  SECRETS_FILE="secrets/agenix/secrets.nix"
-
-  # Add host variable declaration
-  sed -i "/let/a\  ${HOSTNAME} = builtins.readFile ..\/keys\/hosts\/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key.pub;" "$SECRETS_FILE"
-
-  # Add to systems list
-  sed -i "/systems = \[/a\    ${HOSTNAME}" "$SECRETS_FILE"
-fi
-
-#SERNAME=$(echo "$TARGET" | cut -d'@' -f1)
 IP=$(echo "$TARGET" | cut -d'@' -f2)
 
 # Create a temporary directory for our extra files
@@ -49,11 +30,22 @@ install -d -m700 "$temp/$USER_HOME/.ssh"
 install -d -m700 "$temp/tundra/igloo"
 install -d -m755 "$temp/etc/ssh"
 
-# Generate host keys locally
+# Decrypt and place host SSH key
+HOST_KEY_ENC="secrets/keys/hosts/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key.age"
+if [ -f "$HOST_KEY_ENC" ]; then
+  echo "Decrypting host SSH key..."
+  age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" > "$temp/etc/ssh/ssh_host_rsa_key"
+  chmod 600 "$temp/etc/ssh/ssh_host_rsa_key"
+  cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
+  chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
+else
+  echo "Error: Host SSH key not found at $HOST_KEY_ENC"
+  exit 1
+fi
+
+# Copy SSH keys
 cp "$SSH_KEY" "$temp/tundra/igloo/"
 cp "$SSH_KEY" "$temp/$USER_HOME/.ssh/"
-
-ls -laR "${temp}"
 
 # echo "Updating secrets..."
 # if ! just up secrets; then

@@ -4,6 +4,7 @@ let
 
   aka = builtins.readFile ../keys/hosts/x86_64-linux_aka_ssh_host_rsa_key.pub;
   asahi = builtins.readFile ../keys/hosts/x86_64-linux_asahi_ssh_host_rsa_key.pub;
+  cho = builtins.readFile ../keys/hosts/x86_64-linux_cho_ssh_host_rsa_key.pub;
   fuji = builtins.readFile ../keys/hosts/x86_64-linux_fuji_ssh_host_rsa_key.pub;
   haku = builtins.readFile ../keys/hosts/x86_64-linux_haku_ssh_host_rsa_key.pub;
   hira = builtins.readFile ../keys/hosts/x86_64-linux_hira_ssh_host_rsa_key.pub;
@@ -15,17 +16,15 @@ let
   usu = builtins.readFile ../keys/hosts/x86_64-linux_usu_ssh_host_rsa_key.pub;
   yari = builtins.readFile ../keys/hosts/x86_64-linux_yari_ssh_host_rsa_key.pub;
   zao = builtins.readFile ../keys/hosts/x86_64-linux_zao_ssh_host_rsa_key.pub;
-  cho = builtins.readFile ../keys/hosts/x86_64-linux_cho_ssh_host_rsa_key.pub;
 
   systems = [
-    fuji
-    cho
     aka
     asahi
+    cho
     fuji
     haku
-    kita
     hira
+    kita
     naka
     nyu
     rakku
