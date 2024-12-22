@@ -70,6 +70,13 @@ in {
   # INFO: Needed to use this system as a nixos-anywhere insatller
   system.nixos.variant_id = lib.mkDefault "installer";
 
+  services.openssh = {
+    settings = lib.mkForce {
+      # HACK: Needed for nixos-anywhere
+      PermitRootLogin = "yes";
+    };
+  };
+
   mountainous = {
     boot = enabled;
     gaming = {
