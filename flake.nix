@@ -1,6 +1,7 @@
 {
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    nixos-anywhere.url = "github:nix-community/nixos-anywhere";
 
     impermanence.url = "github:nix-community/impermanence";
 
@@ -10,7 +11,7 @@
     };
 
     secrets = {
-      url = "github:simonwjackson/secrets";
+      url = "./secrets";
       flake = false;
     };
 
@@ -51,7 +52,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    icho.url = "github:simonwjackson/icho";
+    icho = {
+      url = "github:simonwjackson/icho";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     mobile-nixos = {
       url = "github:NixOS/mobile-nixos";
@@ -136,6 +140,7 @@
         (final: prev: {
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
+          scaffold = prev.callPackage ./packages/scaffold {};
         })
       ];
 
