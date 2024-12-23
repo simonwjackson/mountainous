@@ -10,7 +10,10 @@
   config,
   ...
 }: {
-  # simonwjackson.snowscape.enable = true;
+  profiles = {
+    base.enable = true;
+    workstation.enable = true;
+  };
 
   # services.elevate = {
   #   enable = true;

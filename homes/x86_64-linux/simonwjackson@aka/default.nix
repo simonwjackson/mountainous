@@ -24,6 +24,7 @@
   # };
 
   mountainous = {
+    profiles.base.enable = true;
     profiles.workstation.enable = true;
     desktops.hyprland = {
       extraSettings = {

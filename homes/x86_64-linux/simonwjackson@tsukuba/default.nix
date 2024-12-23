@@ -1,17 +1,13 @@
 {
+  config,
   lib,
   pkgs,
-  inputs,
-  home,
-  target,
-  format,
-  virtual,
-  host,
-  config,
   ...
 }: {
-  profiles = {
-    base.enable = true;
+  imports = [];
+
+  mountainous = {
+    profiles.base.enable = true;
   };
 
   home = {

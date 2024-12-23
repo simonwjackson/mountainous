@@ -10,7 +10,9 @@
   config,
   ...
 }: {
-  # simonwjackson.snowscape.enable = true;
+  profiles = {
+    base.enable = true;
+  };
 
   home = {
     homeDirectory = "/home/${config.home.username}";

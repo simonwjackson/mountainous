@@ -17,7 +17,10 @@
   ...
 }: {
   mountainous = {
-    profiles.workstation.enable = true;
+    profiles = {
+      base.enable = true;
+      workstation.enable = true;
+    };
     desktops.hyprland = {
       extraSettings = {
         monitor = [

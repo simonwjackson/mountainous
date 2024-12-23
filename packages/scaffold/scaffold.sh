@@ -5,7 +5,6 @@ set -euo pipefail
 # Constants
 DEFAULT_ARCH="x86_64-linux"
 DEFAULT_USERNAME="simonwjackson"
-STATE_VERSION="24.11"
 BASE_DIR="$(git rev-parse --show-toplevel)"
 SSH_KEY=""
 SECRETS_FILE="${BASE_DIR}/secrets/agenix/secrets.nix"
@@ -118,7 +117,7 @@ in {
   ];
 
   mountainous = {
-    boot = enabled;
+    boot = disabled;
     gaming = {
       core = disabled;
       steam = disabled;
@@ -141,7 +140,7 @@ in {
     };
   };
 
-  system.stateVersion = "$STATE_VERSION";
+  system.stateVersion = "24.11";
 }
 EOF
 )
@@ -149,16 +148,21 @@ EOF
 # Home configuration template
 HOME_CONFIG=$(
   cat <<'EOF'
-{ config, lib, pkgs, ... }:
-
 {
-  imports = [
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
+  imports = [];
 
-  ];
+  mountainous = {
+    profiles.base.enable = true;
+  };
 
   home = {
-    homeDirectory = "/home/\${config.home.username}";
-    stateVersion = "$STATE_VERSION"; # WARN: Changing this might break things. Just leave it.
+    homeDirectory = "/home/${config.home.username}";
+    stateVersion = "24.11"; # WARN: Changing this might break things. Just leave it.
   };
 }
 EOF
@@ -240,9 +244,6 @@ generate_host_keys() {
     # clean up temporary directory and all its contents
     rm -rf "$temp_dir"
 
-    # Call update_secrets_nix function
-    update_secrets_nix "$hostname"
-
     # Rekey the agenix directory after generating new host keys
     echo "Rekeying agenix secrets..."
     cd "${BASE_DIR}/secrets/agenix" && agenix --rekey
@@ -269,6 +270,7 @@ create_config \
 
 # Add SSH host key generation before the final echo statements
 generate_host_keys "$SYSTEM_NAME"
+update_secrets_nix "$SYSTEM_NAME"
 
 echo "Successfully scaffolded system and home for $USERNAME@$SYSTEM_NAME with architecture $ARCH"
 echo
