@@ -29,6 +29,8 @@ in {
   mountainous.tridactyl = {
     enable = true;
     extraSettings = ''
+      blacklistkeys ^.*novnc.*$
+
       " "" Send to phone
       " alias send_to_phone composite get_current_url | !s \$HOME/bin/url-to-phone
       " bind gp send_to_phone
