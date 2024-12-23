@@ -48,6 +48,7 @@ create_config() {
     echo "Creating $file..."
     mkdir -p "$dir"
     echo "$content" >"$file"
+    git add "$file"
   elif [[ "$file" == *.nix ]]; then
     echo "Nix configuration file already exists: $file"
   fi
@@ -135,10 +136,12 @@ EOF
   age --encrypt --identity "$SSH_KEY" \
     --output "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-key.age" \
     "$key_path"
+  git add "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-key.age"
 
   age --encrypt --identity "$SSH_KEY" \
     --output "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-cert.age" \
     "$cert_path"
+  git add "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-cert.age"
 
   # Clean up
   rm -rf "$temp_dir"
@@ -180,9 +183,11 @@ generate_host_keys() {
 
     # encrypt the private key with age and save to the target path
     age --encrypt --identity "$SSH_KEY" --output "$host_key_enc" "$temp_key"
+    git add "$host_key_enc"
 
     # copy the public key to the expected location
     cp "${temp_key}.pub" "${host_key_enc%.age}.pub"
+    git add "${host_key_enc%.age}.pub"
 
     # clean up temporary directory and all its contents
     rm -rf "$temp_dir"

@@ -2356,12 +2356,12 @@
       "flake": false,
       "locked": {
         "lastModified": 1,
-        "narHash": "sha256-Hl2Jl1HYYHxop+PWFnpBKxVPBbcGxNjrohR81Mn5qNY=",
-        "path": "/nix/store/qykmqbcj7haw8lrqqbis4nzgiakcf9dz-source/secrets",
+        "narHash": "sha256-AV1TXVznKqF3XEF3MV2fWHZ+JcbdJuuDfW3GbSugabI=",
+        "path": "/nix/store/z8d0wazniga3v49blh2nz7dbb5h0ck8f-source/secrets",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/qykmqbcj7haw8lrqqbis4nzgiakcf9dz-source/secrets",
+        "path": "/nix/store/z8d0wazniga3v49blh2nz7dbb5h0ck8f-source/secrets",
         "type": "path"
       }
     },
