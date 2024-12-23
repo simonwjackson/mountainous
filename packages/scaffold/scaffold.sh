@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#! /usr/bin/env -S nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#openssl nixpkgs#age nixpkgs#gnused --command bash
 
 set -euo pipefail
 
@@ -17,7 +17,7 @@ show_usage() {
   exit 1
 }
 
-# Add this function after the show_usage function
+# Check SSH key
 check_ssh_key() {
   local default_key="$HOME/.ssh/id_rsa"
 
@@ -48,8 +48,8 @@ create_config() {
     echo "Creating $file..."
     mkdir -p "$dir"
     echo "$content" >"$file"
-  else
-    echo "File already exists: $file"
+  elif [[ "$file" == *.nix ]]; then
+    echo "Nix configuration file already exists: $file"
   fi
 }
 
@@ -68,37 +68,159 @@ parse_system_arg() {
   fi
 }
 
-# Validate arguments
-if [ $# -lt 1 ]; then
-  show_usage
-fi
+# Generate and encrypt Syncthing keys
+generate_syncthing_keys() {
+  local hostname="$1"
 
-USERNAME=""
-SYSTEM_NAME=""
-parse_system_arg "$1" USERNAME SYSTEM_NAME
-ARCH="$DEFAULT_ARCH"
+  # Get device ID
+  local device_id="0000000-0000000-0000000-0000000-0000000-0000000-0000000-0000000"
 
-# Parse optional arguments
-shift
-while [[ $# -gt 0 ]]; do
-  case $1 in
-  --arch)
-    ARCH="$2"
-    shift 2
-    ;;
-  --identity)
-    SSH_KEY="$2"
-    shift 2
-    ;;
-  *)
-    echo "Unknown argument: $1"
+  echo "Syncthing device ID: $device_id"
+
+  # Create Syncthing config regardless of key existence
+  local SYNCTHING_CONFIG
+  SYNCTHING_CONFIG=$(
+    cat <<EOF
+{
+  config,
+  host,
+  ...
+}: {
+  device = {
+    # id = "${device_id}";
+    name = "(\${host})";
+  };
+  shares = {
+    # TODO: Add your syncthing shares here
+    #  shareName= {
+    #   path = "/path/to/share";
+    #   type = "sendreceive";
+    # };
+  };
+}
+EOF
+  )
+
+  # Create syncthing configuration with the correct device ID
+  create_config \
+    "$BASE_DIR/systems/$ARCH/$hostname" \
+    "$BASE_DIR/systems/$ARCH/$hostname/syncthing.nix" \
+    "$SYNCTHING_CONFIG"
+
+  # Check if files already exist
+  if [[ -f "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-key.age" ]] ||
+    [[ -f "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-cert.age" ]]; then
+    echo "Syncthing keys already exist for ${hostname}. Skipping generation."
+    return 0
+  fi
+
+  local temp_dir
+  temp_dir=$(mktemp -d)
+  local key_path="${temp_dir}/device.key"
+  local cert_path="${temp_dir}/cert.pem"
+  local combined_path="${temp_dir}/key.pem"
+
+  echo "Generating Syncthing keys for $hostname..."
+
+  # Generate private key (ECDSA with P-521 curve)
+  openssl ecparam -genkey -name secp521r1 -noout -out "$key_path"
+
+  # Generate self-signed certificate (valid for 10 years)
+  openssl req -new -x509 -key "$key_path" -out "$cert_path" -days 3650 -subj "/CN=syncthing"
+
+  # Combine key and cert
+  cat "$key_path" "$cert_path" >"$combined_path"
+
+  # Encrypt the files with age
+  age --encrypt --identity "$SSH_KEY" \
+    --output "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-key.age" \
+    "$key_path"
+
+  age --encrypt --identity "$SSH_KEY" \
+    --output "${BASE_DIR}/secrets/agenix/${hostname}-syncthing-cert.age" \
+    "$cert_path"
+
+  # Clean up
+  rm -rf "$temp_dir"
+}
+
+# Update secrets.nix for syncthing keys
+update_secrets_nix_syncthing() {
+  local hostname="$1"
+
+  # Ensure host definition exists first
+  update_secrets_nix "$hostname"
+
+  echo "Checking/adding Syncthing entries to secrets.nix..."
+  for type in "key" "cert"; do
+    local entry="\"${hostname}-syncthing-${type}.age\".publicKeys = users ++ [${hostname}];"
+    if ! grep -q "\"${hostname}-syncthing-${type}\.age\"" "$SECRETS_FILE"; then
+      sed -i "/^}$/i \  $entry" "$SECRETS_FILE"
+    else
+      echo "Entry for ${hostname}-syncthing-${type} already exists in secrets.nix"
+    fi
+  done
+}
+
+# Generate and encrypt host keys
+generate_host_keys() {
+  local hostname="$1"
+  local host_key_enc="${BASE_DIR}/secrets/keys/hosts/x86_64-linux_${hostname}_ssh_host_rsa_key.age"
+
+  echo "checking host keys for $hostname..."
+  if [ ! -f "$host_key_enc" ]; then
+    echo "generating new host keys for $hostname..."
+
+    # create temporary directory
+    temp_dir=$(mktemp -d)
+    temp_key="${temp_dir}/ssh_host_key"
+
+    # Simplified ssh-keygen command
+    ssh-keygen -t rsa -f "$temp_key" -N ""
+
+    # encrypt the private key with age and save to the target path
+    age --encrypt --identity "$SSH_KEY" --output "$host_key_enc" "$temp_key"
+
+    # copy the public key to the expected location
+    cp "${temp_key}.pub" "${host_key_enc%.age}.pub"
+
+    # clean up temporary directory and all its contents
+    rm -rf "$temp_dir"
+
+    # Rekey the agenix directory after generating new host keys
+    echo "Rekeying agenix secrets..."
+    cd "${BASE_DIR}/secrets/agenix" && agenix --rekey
+  fi
+}
+
+# Update secrets.nix for host keys
+update_secrets_nix() {
+  local hostname="$1"
+
+  # Check if secrets.nix exists
+  if [ ! -f "${SECRETS_FILE}" ]; then
+    echo "Error: ${SECRETS_FILE} not found"
     exit 1
-    ;;
-  esac
-done
+  fi
 
-# Replace the existing SSH key validation block with a call to check_ssh_key
-check_ssh_key
+  echo "Checking secrets.nix configuration..."
+
+  # Only add the host definition if it doesn't already exist
+  if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*=" "${SECRETS_FILE}"; then
+    echo "Adding host definition for ${hostname}..."
+    sed -i "/^let/a\\  ${hostname} = builtins.readFile ../keys/hosts/x86_64-linux_${hostname}_ssh_host_rsa_key.pub;" "${SECRETS_FILE}"
+  else
+    echo "Host definition for ${hostname} already exists"
+  fi
+
+  # Only add to systems list if not already present
+  if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*$" "${SECRETS_FILE}"; then
+    echo "Adding ${hostname} to systems list..."
+    sed -i "/systems = \[/a\\    ${hostname}" "${SECRETS_FILE}"
+  else
+    echo "System ${hostname} already in systems list"
+  fi
+}
 
 # System configuration template
 SYSTEM_CONFIG=$(
@@ -133,11 +255,6 @@ in {
       laptop = disabled;
       workstation = enabled;
     };
-    # TODO: encrypt generated syncthing keys
-    syncthing = {
-      # key = config.age.secrets.$SYSTEM_NAME-syncthing-key.path;
-      # cert = config.age.secrets.$SYSTEM_NAME-syncthing-cert.path;
-    };
   };
 
   system.stateVersion = "24.11";
@@ -168,87 +285,37 @@ HOME_CONFIG=$(
 EOF
 )
 
-# Syncthing configuration template
-SYNCTHING_CONFIG=$(
-  cat <<EOF
-{
-  config,
-  host,
-  ...
-}: {
-  device = {
-    # TODO: Add your syncthing device id here
-    id = "0000000-0000000-0000000-0000000-0000000-0000000-0000000-0000000";
-    name = "(\${host})";
-  };
-  shares = {
-    # TODO: Add your syncthing shares here
-    #  shareName= {
-    #   path = "/path/to/share";
-    #   type = "sendreceive";
-    # };
-  };
-}
-EOF
-)
+# Validate arguments
+if [ $# -lt 1 ]; then
+  show_usage
+fi
 
-update_secrets_nix() {
-  local hostname="$1"
+USERNAME=""
+SYSTEM_NAME=""
+parse_system_arg "$1" USERNAME SYSTEM_NAME
+ARCH="$DEFAULT_ARCH"
 
-  # Check if secrets.nix exists
-  if [ ! -f "${SECRETS_FILE}" ]; then
-    echo "Error: ${SECRETS_FILE} not found"
+# Parse optional arguments
+shift
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  --arch)
+    ARCH="$2"
+    shift 2
+    ;;
+  --identity)
+    SSH_KEY="$2"
+    shift 2
+    ;;
+  *)
+    echo "Unknown argument: $1"
     exit 1
-  fi
+    ;;
+  esac
+done
 
-  echo "Checking secrets.nix configuration..."
-
-  # Only add the host definition if it doesn't already exist
-  if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*=" "${SECRETS_FILE}"; then
-    echo "Adding host definition for ${hostname}..."
-    sed -i "/^let/a\\  ${hostname} = builtins.readFile ../keys/hosts/x86_64-linux_${hostname}_ssh_host_rsa_key.pub;" "${SECRETS_FILE}"
-  else
-    echo "Host definition for ${hostname} already exists"
-  fi
-
-  # Only add to systems list if not already present
-  if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*$" "${SECRETS_FILE}"; then
-    echo "Adding ${hostname} to systems list..."
-    sed -i "/systems = \[/a\\    ${hostname}" "${SECRETS_FILE}"
-  else
-    echo "System ${hostname} already in systems list"
-  fi
-}
-
-generate_host_keys() {
-  local hostname="$1"
-  local host_key_enc="${BASE_DIR}/secrets/keys/hosts/x86_64-linux_${hostname}_ssh_host_rsa_key.age"
-
-  echo "checking host keys for $hostname..."
-  if [ ! -f "$host_key_enc" ]; then
-    echo "generating new host keys for $hostname..."
-
-    # create temporary directory
-    temp_dir=$(mktemp -d)
-    temp_key="${temp_dir}/ssh_host_key"
-
-    # Simplified ssh-keygen command
-    ssh-keygen -t rsa -f "$temp_key" -N ""
-
-    # encrypt the private key with age and save to the target path
-    age --encrypt --identity "$SSH_KEY" --output "$host_key_enc" "$temp_key"
-
-    # copy the public key to the expected location
-    cp "${temp_key}.pub" "${host_key_enc%.age}.pub"
-
-    # clean up temporary directory and all its contents
-    rm -rf "$temp_dir"
-
-    # Rekey the agenix directory after generating new host keys
-    echo "Rekeying agenix secrets..."
-    cd "${BASE_DIR}/secrets/agenix" && agenix --rekey
-  fi
-}
+# Check SSH key
+check_ssh_key
 
 # Create system configuration
 create_config \
@@ -262,19 +329,10 @@ create_config \
   "$BASE_DIR/homes/$ARCH/$USERNAME@$SYSTEM_NAME/default.nix" \
   "$HOME_CONFIG"
 
-# Create syncthing configuration
-create_config \
-  "$BASE_DIR/systems/$ARCH/$SYSTEM_NAME" \
-  "$BASE_DIR/systems/$ARCH/$SYSTEM_NAME/syncthing.nix" \
-  "$SYNCTHING_CONFIG"
-
-# Add SSH host key generation before the final echo statements
+# Generate and encrypt keys
 generate_host_keys "$SYSTEM_NAME"
 update_secrets_nix "$SYSTEM_NAME"
+generate_syncthing_keys "$SYSTEM_NAME"
+update_secrets_nix_syncthing "$SYSTEM_NAME"
 
 echo "Successfully scaffolded system and home for $USERNAME@$SYSTEM_NAME with architecture $ARCH"
-echo
-echo "TODOs:"
-echo "1. Add your syncthing device ID in systems/$ARCH/$SYSTEM_NAME/syncthing.nix"
-echo "2. Configure your syncthing shares in systems/$ARCH/$SYSTEM_NAME/syncthing.nix"
-echo "3. Configure syncthing keys in systems/$ARCH/$SYSTEM_NAME/default.nix"

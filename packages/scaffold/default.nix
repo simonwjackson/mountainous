@@ -5,6 +5,9 @@ pkgs.writeShellApplication {
     coreutils
     git
     age
+    openssl
+    gnused
+    unixtools.xxd
   ];
   text = builtins.readFile ./scaffold.sh;
 }
