@@ -1,4 +1,5 @@
 let
+  tsukuba = builtins.readFile ../keys/hosts/x86_64-linux_tsukuba_ssh_host_rsa_key.pub;
   main_user = builtins.readFile ../keys/users/rsa.pub;
   users = [main_user];
 
@@ -18,6 +19,7 @@ let
   zao = builtins.readFile ../keys/hosts/x86_64-linux_zao_ssh_host_rsa_key.pub;
 
   systems = [
+    tsukuba
     aka
     asahi
     cho
