@@ -1664,6 +1664,21 @@
         "type": "github"
       }
     },
+    "nixos-facter-modules": {
+      "locked": {
+        "lastModified": 1734596637,
+        "narHash": "sha256-MRqwVAe3gsb88u4ME1UidmZFVCx+FEnoob0zkpO9DMY=",
+        "owner": "numtide",
+        "repo": "nixos-facter-modules",
+        "rev": "536472754982bf03079b4b4e0261838a760587c0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "nixos-facter-modules",
+        "type": "github"
+      }
+    },
     "nixos-generators": {
       "inputs": {
         "nixlib": "nixlib",
@@ -2239,6 +2254,7 @@
         "nix-flatpak": "nix-flatpak",
         "nix-on-droid": "nix-on-droid",
         "nixos-anywhere": "nixos-anywhere",
+        "nixos-facter-modules": "nixos-facter-modules",
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_7",
@@ -2340,12 +2356,12 @@
       "flake": false,
       "locked": {
         "lastModified": 1,
-        "narHash": "sha256-VeA7vzwz5alzez3PfN0a/K9IoVAv7LmlAWSnScMIHLY=",
-        "path": "/nix/store/p3sv6gnj01dv6nc81sx0fcpp3nmx4dqj-source/secrets",
+        "narHash": "sha256-3jf1mPAWZYimuHjumYZKxFXJdLexNWg0w6P3aPpACAw=",
+        "path": "/nix/store/4n1mm1lpilkd1v79x61v9cq8gqkzxidr-source/secrets",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/p3sv6gnj01dv6nc81sx0fcpp3nmx4dqj-source/secrets",
+        "path": "/nix/store/4n1mm1lpilkd1v79x61v9cq8gqkzxidr-source/secrets",
         "type": "path"
       }
     },

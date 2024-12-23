@@ -2,6 +2,7 @@
   inputs = {
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixos-anywhere.url = "github:nix-community/nixos-anywhere";
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
 
     impermanence.url = "github:nix-community/impermanence";
 
@@ -81,8 +82,6 @@
 
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    # nur.url = "github:nix-community/NUR";
-
     ryujinx.url = "github:Naxdy/Ryujinx";
 
     simple-nixos-mailserver = {
@@ -115,7 +114,7 @@
         icho.nixosModules.default
         impermanence.nixosModules.impermanence
         nix-flatpak.nixosModules.nix-flatpak
-        # nur.modules.nixos.default
+        nixos-facter-modules.nixosModules.facter
         ryujinx.nixosModules.default
         tmesh.nixosModules.default
       ];
@@ -136,7 +135,6 @@
 
       overlays = with inputs; [
         snowfall-frost.overlays.default
-        # nur.overlays.default
         (final: prev: {
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
@@ -146,7 +144,6 @@
 
       channels-config = {
         allowUnfree = true;
-        # allowUnsupportedSystem = true;
 
         permittedInsecurePackages = [];
 
