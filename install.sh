@@ -1,4 +1,4 @@
-#!/usr/bin/env -S /run/current-system/sw/bin/nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#openssh -c bash
+#!/usr/bin/env -S /run/current-system/sw/bin/nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#openssh nixpkgs#age -c bash
 
 set -euo pipefail
 
@@ -34,7 +34,7 @@ install -d -m755 "$temp/etc/ssh"
 HOST_KEY_ENC="secrets/keys/hosts/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key.age"
 if [ -f "$HOST_KEY_ENC" ]; then
   echo "Decrypting host SSH key..."
-  age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" > "$temp/etc/ssh/ssh_host_rsa_key"
+  age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" >"$temp/etc/ssh/ssh_host_rsa_key"
   chmod 600 "$temp/etc/ssh/ssh_host_rsa_key"
   cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
   chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
@@ -78,6 +78,6 @@ echo "Setting correct ownership of directories..."
 ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  "$TARGET" "sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && sudo reboot"
+  "$TARGET" "echo 'chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && reboot' | su -c bash"
 
 echo "Installation complete! The system will reboot automatically."
