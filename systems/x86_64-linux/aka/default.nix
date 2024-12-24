@@ -111,7 +111,7 @@ in {
         mac = "10:7c:61:4d:e4:11";
       }
     ];
-    profiles.workstation = enabled;
+    profiles.workspace = enabled;
     snowscape = {
       enable = true;
       glacier = "unzen";

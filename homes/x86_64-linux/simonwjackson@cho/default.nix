@@ -7,7 +7,7 @@
   mountainous = {
     profiles = {
       base.enable = true;
-      workstation.enable = true;
+      workspace.enable = true;
     };
     desktops.hyprland = {
       extraSettings = {

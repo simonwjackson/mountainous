@@ -4,52 +4,72 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkDefault;
+  inherit (lib) mkEnableOption mkDefault mkOption types;
   inherit (lib.mountainous) enabled;
 
   cfg = config.mountainous.profiles.workspace;
 in {
   options.mountainous.profiles.workspace = {
-    enable = mkEnableOption "Whether to enable workspace configurations";
-    user = lib.mkOption {
-      type = lib.types.str;
-      default = config.mountainous.user.name;
-      description = "";
+    enable = mkEnableOption "Enable workspace profile";
+    desktop = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable desktop environment";
     };
   };
 
   config = lib.mkIf cfg.enable {
-    mountainous = {
-      # adb = mkDefault enabled;
+    services.playerctld = enabled;
+
+    boot = {
+      kernelParams = [
+        "quiet" # Reduce boot messages
+        "splash" # Enable splash screen
+      ];
+
+      plymouth = {
+        enable = true;
+        theme = "spinner";
+        logo = ../../../../public/mountainous-tiny.png;
+      };
     };
 
-    services = {
-      xserver.enable = true;
-      displayManager = {
-        autoLogin.user = cfg.user;
-        defaultSession = "home-manager";
+    console = {
+      earlySetup = true;
+    };
+
+    programs.icho = {
+      enable = lib.mkDefault true;
+      environment = {
+        NOTES_DIR = mkDefault "/snowscape/notes";
+      };
+      environmentFiles = [
+        config.age.secrets."user-simonwjackson-anthropic".path
+        config.age.secrets."deepseek-api-key".path
+      ];
+    };
+
+    programs.webapps = lib.mkIf cfg.desktop.enable {
+      "photopea" = {
+        windowState = "normal";
+        name = "photopea";
+        url = "https://photopea.com";
       };
 
-      # NOTE: We need to create at least one session for auto login to work
-      xserver.desktopManager.session = [
-        {
-          name = "home-manager";
-          start = ''
-            ${pkgs.runtimeShell} $HOME/.hm-xsession &
-            waitPID=$!
-          '';
-        }
-      ];
+      "youtube" = {
+        name = "youtube";
+        url = "https://youtube.com";
+      };
     };
 
-    programs.dconf.enable = true;
-
-    xdg.portal = {
-      enable = true;
-
-      extraPortals = with pkgs; [
-        xdg-desktop-portal-kde
-      ];
+    mountainous = {
+      desktops = lib.mkIf cfg.desktop {
+        hyprctl-api = enabled;
+        hyprland = {
+          enable = true;
+          autoLogin = true;
+        };
+      };
     };
   };
 }

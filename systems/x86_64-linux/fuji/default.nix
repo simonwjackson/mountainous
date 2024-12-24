@@ -66,7 +66,7 @@ in {
     profiles = {
       base = enabled;
       laptop = enabled;
-      workstation = enabled;
+      workspace = enabled;
     };
     snowscape = {
       enable = true;

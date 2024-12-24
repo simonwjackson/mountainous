@@ -26,7 +26,7 @@ in {
     impermanence = enabled;
     profiles = {
       base = enabled;
-      workstation = enabled;
+      workspace = enabled;
     };
   };
   #

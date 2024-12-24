@@ -33,7 +33,7 @@ in {
     profiles = {
       base = enabled;
       laptop = disabled;
-      workstation = disabled;
+      workspace = disabled;
     };
     # TODO: encrypt generated syncthing keys
     syncthing = {

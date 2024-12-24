@@ -12,11 +12,11 @@ in {
     inputs.agenix.homeManagerModules.age
   ];
 
-  options.mountainous.profiles.workstation = {
-    enable = mkEnableOption "Enable workstation";
+  options.mountainous.profiles.workspace = {
+    enable = mkEnableOption "Enable workspace";
   };
 
-  config = mkIf config.mountainous.profiles.workstation.enable {
+  config = mkIf config.mountainous.profiles.workspace.enable {
     mountainous = {
       agenix = mkDefault enabled;
       atuin = {

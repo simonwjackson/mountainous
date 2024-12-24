@@ -89,7 +89,7 @@ in {
     };
     profiles = {
       laptop = enabled;
-      workstation = enabled;
+      workspace = enabled;
     };
     # TODO: encrypt generated syncthing keys
     syncthing = {

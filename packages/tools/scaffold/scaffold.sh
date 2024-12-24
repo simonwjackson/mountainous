@@ -266,7 +266,7 @@ in {
     profiles = {
     base = enabled;
       laptop = disabled;
-      workstation = enabled;
+      workspace = enabled;
     };
   };
 

@@ -37,7 +37,7 @@ in {
     ];
     profiles = {
       laptop = enabled;
-      workstation = enabled;
+      workspace = enabled;
     };
     syncthing = {
       key = config.age.secrets.kita-syncthing-key.path;
