@@ -81,7 +81,9 @@ in {
       type = nullOr (either int (either (submodule portOptions) (listOf (submodule portOptions))));
       default = null;
       example = [
-        {from = 8080;}
+        {
+          from = 8080;
+        }
         {
           from = 3000;
           to = 8443;
@@ -222,6 +224,43 @@ in {
           );
         message = "Tailscale funnel configurations must have unique 'to' ports and only use ports 443, 8443, or 10000";
       }
+      {
+        assertion =
+          cfg.serve
+          == null
+          || cfg.funnel == null
+          || (
+            let
+              serveList =
+                if builtins.isInt cfg.serve
+                then [
+                  {
+                    from = cfg.serve;
+                    to = 443;
+                  }
+                ]
+                else if builtins.isList cfg.serve
+                then cfg.serve
+                else [cfg.serve];
+              funnelList =
+                if builtins.isInt cfg.funnel
+                then [
+                  {
+                    from = cfg.funnel;
+                    to = 443;
+                  }
+                ]
+                else if builtins.isList cfg.funnel
+                then cfg.funnel
+                else [cfg.funnel];
+              servePorts = map (x: x.to) serveList;
+              funnelPorts = map (x: x.to) funnelList;
+              sharedPorts = lib.intersectLists servePorts funnelPorts;
+            in
+              lib.length sharedPorts == 0
+          );
+        message = "Tailscale serve and funnel configurations cannot share 'to' ports";
+      }
     ];
 
     networking.firewall = {
@@ -268,7 +307,6 @@ in {
 
     boot.kernel.sysctl = mkIf cfg.exitNode {
       "net.ipv4.ip_forward" = 1;
-      "net.ipv6.conf.all.forwarding" = 1;
     };
 
     environment.persistence."${impermanence.persistPath}" = mkIf impermanence.enable {
@@ -277,9 +315,9 @@ in {
       ];
     };
 
-    # HACK: Containers have issue with this for some reason
     systemd.services =
       {
+        # HACK: Containers have issue with this for some reason
         tailscaled-autoconnect.enable = cfg.authKeyFile != null && !config.boot.isContainer;
       }
       // (

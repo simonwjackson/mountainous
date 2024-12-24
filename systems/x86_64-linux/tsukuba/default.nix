@@ -75,14 +75,6 @@ in {
       autoStart = true;
       enableTun = true;
 
-      forwardPorts = [
-        {
-          containerPort = 8888;
-          hostPort = 8888;
-          protocol = "tcp";
-        }
-      ];
-
       bindMounts = {
         "${searxEnvFile}" = {
           hostPath = searxEnvFile;
@@ -105,13 +97,9 @@ in {
 
         nixpkgs.config.allowUnfree = true;
 
-        boot.kernel.sysctl = {
-          "net.ipv6.conf.all.disable_ipv6" = 1;
-          "net.ipv6.conf.default.disable_ipv6" = 1;
-        };
-
         networking = {
           useHostResolvConf = false;
+          enableIPv6 = false;
         };
 
         services.resolved = {

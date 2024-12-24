@@ -2357,11 +2357,11 @@
       "locked": {
         "lastModified": 1,
         "narHash": "sha256-8UNHW7zve3UJvuWnXJsKKyzj2hFJMZ0xnxaepxlSKiI=",
-        "path": "/nix/store/jnbh4lcr5q50gn9f1sqmhisrms7knaya-source/secrets",
+        "path": "/nix/store/1nq9i0idzn2hd03lcipsa0a6y7yl4cm4-source/secrets",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/jnbh4lcr5q50gn9f1sqmhisrms7knaya-source/secrets",
+        "path": "/nix/store/1nq9i0idzn2hd03lcipsa0a6y7yl4cm4-source/secrets",
         "type": "path"
       }
     },
