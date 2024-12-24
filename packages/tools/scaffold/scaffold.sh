@@ -245,6 +245,13 @@ in {
 
   mountainous = {
     boot = disabled;
+    disks = {
+      frostbite = {
+        enable = true;
+        # device = "/dev/disk/by-id/<disk>";
+        swapSize = "4G";
+      };
+    };
     gaming = {
       core = disabled;
       steam = disabled;
@@ -257,6 +264,7 @@ in {
     #   }
     # ];
     profiles = {
+    base = enabled;
       laptop = disabled;
       workstation = enabled;
     };

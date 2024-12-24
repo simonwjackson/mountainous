@@ -87,3 +87,6 @@ alias gc := garbage-collect
 # Scaffold a new system and home configuration
 scaffold *ARGS:
     nix run .#scaffold -- {{ ARGS }}
+
+deploy *ARGS:
+    nix run .#deploy -- {{ ARGS }}

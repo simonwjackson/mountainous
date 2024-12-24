@@ -1,4 +1,4 @@
-#!/usr/bin/env -S /run/current-system/sw/bin/nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#openssh nixpkgs#age -c bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -11,8 +11,6 @@ fi
 HOSTNAME="$1"
 TARGET="$2"
 SSH_KEY="${3:-$HOME/.ssh/id_rsa}"
-
-IP=$(echo "$TARGET" | cut -d'@' -f2)
 
 # Create a temporary directory for our extra files
 temp=$(mktemp -d)
@@ -47,12 +45,6 @@ fi
 cp "$SSH_KEY" "$temp/tundra/igloo/"
 cp "$SSH_KEY" "$temp/$USER_HOME/.ssh/"
 
-# echo "Updating secrets..."
-# if ! just up secrets; then
-#   echo "Error: Failed to update secrets"
-#   exit 1
-# fi
-
 # Copy authorized keys and set permissions
 ssh \
   -o StrictHostKeyChecking=no \
@@ -67,7 +59,7 @@ ssh \
 
 # Deploy NixOS configuration
 echo "Deploying NixOS configuration..."
-nix run github:simonwjackson/nixos-anywhere -- \
+nixos-anywhere \
   --flake ".#$HOSTNAME" \
   --extra-files "$temp" \
   --phases kexec,disko,install \
@@ -75,9 +67,9 @@ nix run github:simonwjackson/nixos-anywhere -- \
 
 # Set correct ownership of directories
 echo "Setting correct ownership of directories..."
-ssh \
+echo ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  -t "$TARGET" "sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && sudo reboot"
+  -t "$TARGET" "su -c 'chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && reboot'"
 
 echo "Installation complete! The system will reboot automatically."

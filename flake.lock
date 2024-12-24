@@ -2373,12 +2373,12 @@
       "flake": false,
       "locked": {
         "lastModified": 1,
-        "narHash": "sha256-YSuXS1d+TjqDg9jEnJVg+7SqSqs0Ni7XFdk6UCAdPvg=",
-        "path": "/nix/store/wrl6ab9051kkb7q38pjc9jwnjvclalfc-source/secrets",
+        "narHash": "sha256-08JwCfwyKSOoHD/68wYOBxusie/FK3H4B2uonqTgUtQ=",
+        "path": "/nix/store/sv56d7wqb36wpdda7r4c49ykc8gapdig-source/secrets",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/wrl6ab9051kkb7q38pjc9jwnjvclalfc-source/secrets",
+        "path": "/nix/store/sv56d7wqb36wpdda7r4c49ykc8gapdig-source/secrets",
         "type": "path"
       }
     },
