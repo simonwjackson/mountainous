@@ -9,25 +9,51 @@
 in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./sunshine.nix
   ];
+
+  # disko.devices.disk.sleet = {
+  #   type = "disk";
+  #   device = "/dev/disk/by-id/usb-Generic_MassStorageClass_000000002958-0:0";
+  #   content = {
+  #     type = "gpt";
+  #     partitions = {
+  #       data = {
+  #         size = "100%";
+  #         content = {
+  #           type = "filesystem";
+  #           format = "f2fs";
+  #           mountpoint = "/tundra/sleet";
+  #           mountOptions = ["noatime"];
+  #         };
+  #       };
+  #     };
+  #   };
+  # };
 
   mountainous = {
     services.gamescope-reaper.duration = 20;
+    disks = {
+      frostbite = {
+        enable = true;
+        encrypt = false;
+        device = "/dev/disk/by-id/nvme-WD_PC_SN740_SDDPTQE-2T00_23328D402812";
+        swapSize = "16G";
+      };
+    };
     gaming = {
       core = enabled;
       emulation = {
         enable = true;
-        gamingDir = "/snowscape/gaming";
         gen-7 = true;
         gen-8 = true;
-        saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = enabled;
     };
     hardware = {
-      bluetooth.device = "E4:60:17:D1:E6:DC";
       devices.gpd-win-mini = enabled;
+    };
+    impermanence = {
+      enable = true;
     };
     networking.core.names = [
       {
@@ -36,63 +62,19 @@ in {
       }
     ];
     profiles = {
+      base = enabled;
       laptop = enabled;
       workspace = enabled;
     };
-    syncthing = {
-      key = config.age.secrets.kita-syncthing-key.path;
-      cert = config.age.secrets.kita-syncthing-cert.path;
-    };
-    snowscape = {
-      enable = true;
-      glacier = "unzen";
-      paths = [
-        "/avalanche/volumes/blizzard"
-        "/avalanche/disks/sleet/0/00"
-      ];
-    };
+    # snowscape = {
+    #   enable = true;
+    #   glacier = "unzen";
+    #   paths = [
+    #     "/avalanche/volumes/blizzard"
+    #     "/avalanche/disks/sleet/0/00"
+    #   ];
+    # };
   };
-
-  fileSystems."/avalanche/disks/sleet/0/00" = {
-    device = "/dev/disk/by-label/sleet";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/5067-7886";
-    fsType = "vfat";
-    options = ["fmask=0022" "dmask=0022"];
-  };
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
-    fsType = "btrfs";
-    options = ["subvol=root" "discard=async" "compress=zstd"];
-  };
-
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
-    fsType = "btrfs";
-    options = ["subvol=home" "discard=async" "compress=zstd"];
-  };
-
-  fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
-    fsType = "btrfs";
-    options = ["subvol=nix" "compress=zstd" "discard=async" "noatime"];
-  };
-
-  fileSystems."/avalanche/volumes/blizzard" = {
-    device = "/dev/disk/by-uuid/899ac974-c586-4021-8509-10313660cc3f";
-    fsType = "btrfs";
-    options = ["subvol=blizzard" "discard=async" "compress=zstd"];
-  };
-
-  swapDevices = [
-    {
-      device = "/dev/disk/by-uuid/3873bb31-f29c-4a3b-98f9-10f2334c55a8";
-    }
-  ];
 
   # WARN: Do not change this unless reinstalling
   system.stateVersion = "23.11";

@@ -67,9 +67,9 @@ nixos-anywhere \
 
 # Set correct ownership of directories
 echo "Setting correct ownership of directories..."
-echo ssh \
+ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  -t "$TARGET" "su -c 'chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && reboot'"
+  -t "$TARGET" "sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && sudo reboot"
 
 echo "Installation complete! The system will reboot automatically."

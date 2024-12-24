@@ -2374,11 +2374,11 @@
       "locked": {
         "lastModified": 1,
         "narHash": "sha256-08JwCfwyKSOoHD/68wYOBxusie/FK3H4B2uonqTgUtQ=",
-        "path": "/nix/store/sv56d7wqb36wpdda7r4c49ykc8gapdig-source/secrets",
+        "path": "/nix/store/xmr6vgw05fydi3dwv4cdabzlrixhpmri-source/secrets",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/sv56d7wqb36wpdda7r4c49ykc8gapdig-source/secrets",
+        "path": "/nix/store/xmr6vgw05fydi3dwv4cdabzlrixhpmri-source/secrets",
         "type": "path"
       }
     },

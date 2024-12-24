@@ -49,18 +49,18 @@ in {
       ];
     };
 
-    programs.webapps = lib.mkIf cfg.desktop.enable {
-      "photopea" = {
-        windowState = "normal";
-        name = "photopea";
-        url = "https://photopea.com";
-      };
-
-      "youtube" = {
-        name = "youtube";
-        url = "https://youtube.com";
-      };
-    };
+    # programs.webapps = lib.mkIf cfg.desktop.enable {
+    #   "photopea" = {
+    #     windowState = "normal";
+    #     name = "photopea";
+    #     url = "https://photopea.com";
+    #   };
+    #
+    #   "youtube" = {
+    #     name = "youtube";
+    #     url = "https://youtube.com";
+    #   };
+    # };
 
     mountainous = {
       desktops = lib.mkIf cfg.desktop {
