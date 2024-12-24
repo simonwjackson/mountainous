@@ -9,14 +9,12 @@
   boot = {
     kernelModules = [
       "cryptd"
-      # "aesni_intel"
       "dm_mod"
     ];
     loader = {
       grub = {
         enableCryptodisk = true;
       };
-      #   efi.efiSysMountPoint = "/boot";
     };
   };
 
