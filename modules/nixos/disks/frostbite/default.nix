@@ -24,6 +24,11 @@ in {
       default = null;
       description = "Size of the swap file. If null, no swap will be created.";
     };
+    encrypted = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to enable LUKS encryption for the main partition";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -77,16 +82,8 @@ in {
 
               frostbite = {
                 size = "100%";
-                content = {
-                  type = "luks";
-                  name = "${config.networking.hostName}-frostbite";
-                  askPassword = true;
-                  extraOpenArgs = ["--allow-discards"];
-                  settings = {
-                    allowDiscards = true;
-                    bypassWorkqueues = true;
-                  };
-                  content = {
+                content = let
+                  btrfsConfig = {
                     type = "btrfs";
                     extraArgs = ["-f"];
                     subvolumes = {
@@ -171,7 +168,17 @@ in {
                       };
                     };
                   };
-                };
+                in if cfg.encrypted then {
+                  type = "luks";
+                  name = "${config.networking.hostName}-frostbite";
+                  askPassword = true;
+                  extraOpenArgs = ["--allow-discards"];
+                  settings = {
+                    allowDiscards = true;
+                    bypassWorkqueues = true;
+                  };
+                  content = btrfsConfig;
+                } else btrfsConfig;
               };
             };
           };
