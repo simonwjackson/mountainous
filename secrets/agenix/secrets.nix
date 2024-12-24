@@ -149,4 +149,6 @@ in {
   "bluetooth-fuji-sony-ote.age".publicKeys = users ++ systems;
   "tsukuba-syncthing-key.age".publicKeys = users ++ [tsukuba];
   "tsukuba-syncthing-cert.age".publicKeys = users ++ [tsukuba];
+  "nyu-syncthing-key.age".publicKeys = users ++ [nyu];
+  "nyu-syncthing-cert.age".publicKeys = users ++ [nyu];
 }

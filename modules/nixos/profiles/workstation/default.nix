@@ -65,14 +65,6 @@ in {
           autoLogin = true;
         };
       };
-      networking = {
-        tailscale = {
-          enable = true;
-          interfaceName = "tailscale";
-        };
-        tailscaled.enable = lib.mkForce false;
-      };
-      performance = enabled;
     };
   };
 }
