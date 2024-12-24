@@ -1,6 +1,20 @@
 # TODO: Yubi key
 # https://haseebmajid.dev/posts/2024-07-30-how-i-setup-btrfs-and-luks-on-nixos-using-disko/
 {device}: {
+  mountainous.impermanence = {
+    enable = true;
+    persistPath = "/tundra/permafrost";
+  };
+
+  boot = {
+    supportedFilesystems = ["btrfs"];
+    kernelModules = [
+      "cryptd"
+      # "aesni_intel"
+      "dm_mod"
+    ];
+  };
+
   fileSystems = {
     "/".neededForBoot = true;
     "/tundra/igloo".neededForBoot = true;
@@ -21,24 +35,7 @@
     };
 
     disk = {
-      sleet = {
-        type = "disk";
-        device = "/dev/disk/by-id/usb-Generic_STORAGE_DEVICE_000000000819-0:0";
-        content = {
-          type = "gpt";
-          partitions = {
-            data = {
-              size = "100%";
-              content = {
-                type = "filesystem";
-                format = "f2fs";
-                mountpoint = "/tundra/sleet";
-                mountOptions = ["noatime"];
-              };
-            };
-          };
-        };
-      };
+ 
 
       main = {
         inherit device;
@@ -48,13 +45,19 @@
           type = "gpt";
           partitions = {
             mukluk = {
+              name = "boot";
+              size = "1M";
+              type = "EF02";
+            };
+
+            esp = {
+              name = "ESP";
               size = "512M";
               type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = ["defaults"];
               };
             };
 

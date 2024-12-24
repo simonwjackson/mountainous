@@ -15,6 +15,10 @@ in {
 
   config = lib.mkIf cfg.enable {
     mountainous = {
+      impermanence = {
+        enable = mkDefault false;
+        persistPath = "/tundra/permafrost";
+      };
       networking = {
         core = mkDefault enabled;
         tailscale = {

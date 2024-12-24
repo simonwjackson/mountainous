@@ -107,6 +107,16 @@ in {
 
   services.fstrim.enable = true; # Enable periodic TRIM
 
+  disko.devices.disk.main.content.partitions.flurry = {
+    size = "64G";
+    content = {
+      type = "filesystem";
+      format = "vfat";
+      mountpoint = "/tundra/flurry";
+      mountOptions = ["defaults" "uid=333" "gid=333"];
+    };
+  };
+
   # # Reduce writes to disk
   # services.journald.extraConfig = ''
   #   Storage=volatile

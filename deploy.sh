@@ -78,6 +78,6 @@ echo "Setting correct ownership of directories..."
 ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  "$TARGET" "echo 'chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && reboot' | su -c bash"
+  -t "$TARGET" "sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && sudo reboot"
 
 echo "Installation complete! The system will reboot automatically."

@@ -26,13 +26,19 @@
           type = "gpt";
           partitions = {
             mukluk = {
+              name = "boot";
+              size = "1M";
+              type = "EF02";
+            };
+
+            esp = {
+              name = "ESP";
               size = "512M";
               type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = ["defaults"];
               };
             };
 
@@ -46,11 +52,11 @@
               };
             };
 
-            frostbite = {
+            cho-frostbite = {
               size = "100%";
               content = {
                 type = "luks";
-                name = "frostbite";
+                name = "cho-frostbite";
                 askPassword = true;
                 extraOpenArgs = ["--allow-discards"];
                 settings = {
