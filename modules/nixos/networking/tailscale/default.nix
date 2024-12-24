@@ -6,7 +6,7 @@
 }: let
   inherit (config.networking) hostName;
   inherit (lib) mkOption mkEnableOption mkIf optionalAttrs;
-  inherit (lib.types) listOf bool str path int submodule;
+  inherit (lib.types) listOf bool str path int submodule either nullOr;
   inherit (lib.mountainous) knownHostsBuilder;
 
   cfg = config.mountainous.networking.tailscale;
@@ -15,46 +15,50 @@
   # Port configuration type
   portOptions = {...}: {
     options = {
-      local = mkOption {
+      from = mkOption {
         type = int;
-        description = "Local port to serve";
+        description = "Local port to serve from";
       };
-      remote = mkOption {
+      to = mkOption {
         type = int;
-        default = null;
-        description = "Remote port to map to (defaults to local port if not specified)";
-      };
-      funnel = mkOption {
-        type = bool;
-        default = false;
-        description = "Whether to expose this port via Tailscale Funnel";
+        default = 443;
+        description = "HTTPS port to serve to (defaults to 443)";
       };
     };
   };
 
   # Generate systemd service for a port mapping
-  makeServeService = portCfg: let
-    local = toString portCfg.local;
-    remote = toString (
-      if portCfg.remote == null
-      then portCfg.local
-      else portCfg.remote
-    );
-    funnelFlag =
-      if portCfg.funnel
-      then " --funnel"
-      else "";
-  in {
-    name = "tailscale-serve-from-${local}-to-${remote}";
+  makeServeService = portCfg: {
+    name = "tailscale-serve-${toString portCfg.from}";
     value = {
-      description = "Tailscale serve for port ${local} -> ${remote}${lib.optionalString portCfg.funnel " (funneled)"}";
+      description = "Tailscale serve for port ${toString portCfg.from}";
       wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
       after = ["network-online.target" "tailscaled.service"];
       requires = ["tailscaled.service"];
 
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${pkgs.tailscale}/bin/tailscale serve${funnelFlag} ${local} ${remote}";
+        ExecStart = "${pkgs.tailscale}/bin/tailscale serve --https=${toString portCfg.to} ${toString portCfg.from}";
+        Restart = "always";
+        RestartSec = "5s";
+      };
+    };
+  };
+
+  # Generate systemd service for a funnel mapping
+  makeFunnelService = portCfg: {
+    name = "tailscale-funnel-${toString portCfg.from}";
+    value = {
+      description = "Tailscale funnel for port ${toString portCfg.from}";
+      wantedBy = ["multi-user.target"];
+      wants = ["network-online.target"];
+      after = ["network-online.target" "tailscaled.service"];
+      requires = ["tailscaled.service"];
+
+      serviceConfig = {
+        Type = "simple";
+        ExecStart = "${pkgs.tailscale}/bin/tailscale funnel --https=${toString portCfg.to} ${toString portCfg.from}";
         Restart = "always";
         RestartSec = "5s";
       };
@@ -74,27 +78,40 @@ in {
     };
 
     serve = mkOption {
-      type = listOf (submodule portOptions);
-      default = [];
+      type = nullOr (either int (either (submodule portOptions) (listOf (submodule portOptions))));
+      default = null;
       example = [
-        {
-          local = 443;
-          funnel = true;
-        }
-        {
-          local = 8443;
-          remote = 443;
-          funnel = true;
-        }
+        { from = 8080; }
+        { from = 3000; to = 8443; }
       ];
       description = ''
-        List of ports to serve via Tailscale.
-        Each entry is an attribute set with:
-          * local: Local port to serve
-          * remote: Remote port to map to (optional, defaults to local port)
-          * funnel: Whether to expose via Tailscale Funnel (optional, defaults to false)
+        Port configurations to serve via Tailscale.
+        Can be:
+          - A single port number (will serve from this port to HTTPS 443)
+          - A single port configuration
+          - A list of port configurations
+        Each port configuration should be an attribute set with:
+          - from: Local port to serve from
+          - to: HTTPS port to serve to (defaults to 443)
+      '';
+    };
 
-        This option can be declared in multiple modules and the lists will be concatenated.
+    funnel = mkOption {
+      type = nullOr (either int (either (submodule portOptions) (listOf (submodule portOptions))));
+      default = null;
+      example = [
+        { from = 8080; }
+        { from = 3000; to = 8443; }
+      ];
+      description = ''
+        Port configurations to funnel via Tailscale.
+        Can be:
+          - A single port number (will funnel from this port to HTTPS 443)
+          - A single port configuration
+          - A list of port configurations
+        Each port configuration should be an attribute set with:
+          - from: Local port to funnel from
+          - to: HTTPS port to funnel to (defaults to 443, must be 443, 8443, or 10000)
       '';
     };
 
@@ -136,9 +153,53 @@ in {
         When enabled, other nodes in the network can route their traffic through this node.
       '';
     };
+
+    authKeyFile = mkOption {
+      type = lib.types.nullOr path;
+      default = config.age.secrets."tailscale".path;
+      description = ''
+        Path to the file containing the Tailscale authentication key.
+        Defaults to the age-encrypted tailscale secret.
+        Set to null to disable automatic authentication.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.serve == null || (
+          let 
+            serveList = if builtins.isInt cfg.serve
+              then [{ from = cfg.serve; to = 443; }]
+              else if builtins.isList cfg.serve 
+              then cfg.serve 
+              else [cfg.serve];
+            toPorts = map (x: x.to) serveList;
+            uniqueToPorts = lib.unique toPorts;
+          in
+          lib.length toPorts == lib.length uniqueToPorts
+        );
+        message = "Tailscale serve configurations must have unique 'to' ports";
+      }
+      {
+        assertion = cfg.funnel == null || (
+          let 
+            funnelList = if builtins.isInt cfg.funnel
+              then [{ from = cfg.funnel; to = 443; }]
+              else if builtins.isList cfg.funnel 
+              then cfg.funnel 
+              else [cfg.funnel];
+            toPorts = map (x: x.to) funnelList;
+            uniqueToPorts = lib.unique toPorts;
+            validPorts = lib.all (x: builtins.elem x [443 8443 10000]) toPorts;
+          in
+          lib.length toPorts == lib.length uniqueToPorts && validPorts
+        );
+        message = "Tailscale funnel configurations must have unique 'to' ports and only use ports 443, 8443, or 10000";
+      }
+    ];
+
     networking.firewall = {
       allowedTCPPortRanges = [
         {
@@ -170,7 +231,7 @@ in {
 
     services.tailscale = {
       enable = true;
-      authKeyFile = config.age.secrets."tailscale".path;
+      authKeyFile = cfg.authKeyFile;
       interfaceName = cfg.interfaceName;
       useRoutingFeatures =
         if cfg.exitNode
@@ -181,22 +242,81 @@ in {
       extraDaemonFlags = cfg.extraDaemonFlags;
     };
 
-    # Configure exit node if enabled
     boot.kernel.sysctl = mkIf cfg.exitNode {
-      # Enable IP forwarding
       "net.ipv4.ip_forward" = 1;
       "net.ipv6.conf.all.forwarding" = 1;
     };
-
-    # Generate systemd services for port forwarding
-    systemd.services = lib.mkIf (cfg.serve != []) (
-      builtins.listToAttrs (map makeServeService cfg.serve)
-    );
 
     environment.persistence."${impermanence.persistPath}" = mkIf impermanence.enable {
       directories = [
         "/var/lib/tailscale"
       ];
     };
+
+    # HACK: Containers have issue with this for some reason
+    systemd.services =
+      {
+        tailscaled-autoconnect.enable = cfg.authKeyFile != null && !config.boot.isContainer;
+      }
+      // (if cfg.serve != null 
+          then lib.listToAttrs (map makeServeService (
+            if builtins.isInt cfg.serve 
+            then [{ from = cfg.serve; to = 443; }]
+            else if builtins.isList cfg.serve 
+            then cfg.serve 
+            else [cfg.serve]
+          ))
+          else {})
+      // (if cfg.funnel != null 
+          then lib.listToAttrs (map makeFunnelService (
+            if builtins.isInt cfg.funnel 
+            then [{ from = cfg.funnel; to = 443; }]
+            else if builtins.isList cfg.funnel 
+            then cfg.funnel 
+            else [cfg.funnel]
+          ))
+          else {});
+
+    # Replace the default tailscaled-autoconnect with our custom implementation
+    # systemd.services.tailscaled-autoconnect-container = mkIf (cfg.authKeyFile != null && config.boot.isContainer) {
+    #   description = "Automatic connection to Tailscale network for containers";
+    #
+    #   after = ["network-online.target" "tailscaled.service"];
+    #   wants = ["network-online.target"];
+    #   requires = ["tailscaled.service"];
+    #   wantedBy = ["multi-user.target"];
+    #
+    #   serviceConfig = {
+    #     Type = "oneshot";
+    #     RemainAfterExit = true;
+    #     Restart = "on-failure";
+    #     RestartSec = "5s";
+    #     TimeoutStartSec = "60s";
+    #
+    #     ExecStart = let
+    #       statusCommand = "${lib.getExe pkgs.tailscale} status --json --peers=false | ${lib.getExe pkgs.jq} -r '.BackendState'";
+    #     in
+    #       pkgs.writeShellScript "tailscale-autoconnect" ''
+    #         # Wait for tailscaled to be ready
+    #         for i in $(seq 1 13); do
+    #           if ${lib.getExe pkgs.tailscale} status >/dev/null 2>&1; then
+    #             break
+    #           fi
+    #           echo "Waiting for tailscaled to be ready... ($i/12)"
+    #           sleep 5
+    #         done
+    #
+    #         # Check current login state
+    #         status="$(${statusCommand})"
+    #
+    #         # Authenticate if needed
+    #         if [[ "$status" == "NeedsLogin" || "$status" == "NeedsMachineAuth" || "$status" == "NoState" ]]; then
+    #           ${lib.getExe pkgs.tailscale} up --auth-key "$(cat ${cfg.authKeyFile})"
+    #         fi
+    #       '';
+    #   };
+    # };
+
+    # Add this section to create the serve services
   };
 }
