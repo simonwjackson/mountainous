@@ -4,8 +4,7 @@
   ...
 }: {
   device = {
-    # TODO: Add your syncthing device id here
-    id = "0000000-0000000-0000000-0000000-0000000-0000000-0000000-0000000";
+    id = "3MQV5AY-BLAHP2R-NUGK6I3-JK4MBF7-57WNFEI-ZQQ4ODA-ERQJDPS-YILKQQ2";
     name = "(${host})";
   };
   shares = {

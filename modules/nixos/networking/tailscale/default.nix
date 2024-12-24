@@ -81,8 +81,11 @@ in {
       type = nullOr (either int (either (submodule portOptions) (listOf (submodule portOptions))));
       default = null;
       example = [
-        { from = 8080; }
-        { from = 3000; to = 8443; }
+        {from = 8080;}
+        {
+          from = 3000;
+          to = 8443;
+        }
       ];
       description = ''
         Port configurations to serve via Tailscale.
@@ -100,8 +103,11 @@ in {
       type = nullOr (either int (either (submodule portOptions) (listOf (submodule portOptions))));
       default = null;
       example = [
-        { from = 8080; }
-        { from = 3000; to = 8443; }
+        {from = 8080;}
+        {
+          from = 3000;
+          to = 8443;
+        }
       ];
       description = ''
         Port configurations to funnel via Tailscale.
@@ -168,34 +174,52 @@ in {
   config = mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.serve == null || (
-          let 
-            serveList = if builtins.isInt cfg.serve
-              then [{ from = cfg.serve; to = 443; }]
-              else if builtins.isList cfg.serve 
-              then cfg.serve 
-              else [cfg.serve];
-            toPorts = map (x: x.to) serveList;
-            uniqueToPorts = lib.unique toPorts;
-          in
-          lib.length toPorts == lib.length uniqueToPorts
-        );
+        assertion =
+          cfg.serve
+          == null
+          || (
+            let
+              serveList =
+                if builtins.isInt cfg.serve
+                then [
+                  {
+                    from = cfg.serve;
+                    to = 443;
+                  }
+                ]
+                else if builtins.isList cfg.serve
+                then cfg.serve
+                else [cfg.serve];
+              toPorts = map (x: x.to) serveList;
+              uniqueToPorts = lib.unique toPorts;
+            in
+              lib.length toPorts == lib.length uniqueToPorts
+          );
         message = "Tailscale serve configurations must have unique 'to' ports";
       }
       {
-        assertion = cfg.funnel == null || (
-          let 
-            funnelList = if builtins.isInt cfg.funnel
-              then [{ from = cfg.funnel; to = 443; }]
-              else if builtins.isList cfg.funnel 
-              then cfg.funnel 
-              else [cfg.funnel];
-            toPorts = map (x: x.to) funnelList;
-            uniqueToPorts = lib.unique toPorts;
-            validPorts = lib.all (x: builtins.elem x [443 8443 10000]) toPorts;
-          in
-          lib.length toPorts == lib.length uniqueToPorts && validPorts
-        );
+        assertion =
+          cfg.funnel
+          == null
+          || (
+            let
+              funnelList =
+                if builtins.isInt cfg.funnel
+                then [
+                  {
+                    from = cfg.funnel;
+                    to = 443;
+                  }
+                ]
+                else if builtins.isList cfg.funnel
+                then cfg.funnel
+                else [cfg.funnel];
+              toPorts = map (x: x.to) funnelList;
+              uniqueToPorts = lib.unique toPorts;
+              validPorts = lib.all (x: builtins.elem x [443 8443 10000]) toPorts;
+            in
+              lib.length toPorts == lib.length uniqueToPorts && validPorts
+          );
         message = "Tailscale funnel configurations must have unique 'to' ports and only use ports 443, 8443, or 10000";
       }
     ];
@@ -258,65 +282,39 @@ in {
       {
         tailscaled-autoconnect.enable = cfg.authKeyFile != null && !config.boot.isContainer;
       }
-      // (if cfg.serve != null 
-          then lib.listToAttrs (map makeServeService (
-            if builtins.isInt cfg.serve 
-            then [{ from = cfg.serve; to = 443; }]
-            else if builtins.isList cfg.serve 
-            then cfg.serve 
+      // (
+        if cfg.serve != null
+        then
+          lib.listToAttrs (map makeServeService (
+            if builtins.isInt cfg.serve
+            then [
+              {
+                from = cfg.serve;
+                to = 443;
+              }
+            ]
+            else if builtins.isList cfg.serve
+            then cfg.serve
             else [cfg.serve]
           ))
-          else {})
-      // (if cfg.funnel != null 
-          then lib.listToAttrs (map makeFunnelService (
-            if builtins.isInt cfg.funnel 
-            then [{ from = cfg.funnel; to = 443; }]
-            else if builtins.isList cfg.funnel 
-            then cfg.funnel 
+        else {}
+      )
+      // (
+        if cfg.funnel != null
+        then
+          lib.listToAttrs (map makeFunnelService (
+            if builtins.isInt cfg.funnel
+            then [
+              {
+                from = cfg.funnel;
+                to = 443;
+              }
+            ]
+            else if builtins.isList cfg.funnel
+            then cfg.funnel
             else [cfg.funnel]
           ))
-          else {});
-
-    # Replace the default tailscaled-autoconnect with our custom implementation
-    # systemd.services.tailscaled-autoconnect-container = mkIf (cfg.authKeyFile != null && config.boot.isContainer) {
-    #   description = "Automatic connection to Tailscale network for containers";
-    #
-    #   after = ["network-online.target" "tailscaled.service"];
-    #   wants = ["network-online.target"];
-    #   requires = ["tailscaled.service"];
-    #   wantedBy = ["multi-user.target"];
-    #
-    #   serviceConfig = {
-    #     Type = "oneshot";
-    #     RemainAfterExit = true;
-    #     Restart = "on-failure";
-    #     RestartSec = "5s";
-    #     TimeoutStartSec = "60s";
-    #
-    #     ExecStart = let
-    #       statusCommand = "${lib.getExe pkgs.tailscale} status --json --peers=false | ${lib.getExe pkgs.jq} -r '.BackendState'";
-    #     in
-    #       pkgs.writeShellScript "tailscale-autoconnect" ''
-    #         # Wait for tailscaled to be ready
-    #         for i in $(seq 1 13); do
-    #           if ${lib.getExe pkgs.tailscale} status >/dev/null 2>&1; then
-    #             break
-    #           fi
-    #           echo "Waiting for tailscaled to be ready... ($i/12)"
-    #           sleep 5
-    #         done
-    #
-    #         # Check current login state
-    #         status="$(${statusCommand})"
-    #
-    #         # Authenticate if needed
-    #         if [[ "$status" == "NeedsLogin" || "$status" == "NeedsMachineAuth" || "$status" == "NoState" ]]; then
-    #           ${lib.getExe pkgs.tailscale} up --auth-key "$(cat ${cfg.authKeyFile})"
-    #         fi
-    #       '';
-    #   };
-    # };
-
-    # Add this section to create the serve services
+        else {}
+      );
   };
 }
