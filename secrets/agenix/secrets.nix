@@ -1,4 +1,5 @@
 let
+  onishi = builtins.readFile ../keys/hosts/x86_64-linux_onishi_ssh_host_rsa_key.pub;
   tsukuba = builtins.readFile ../keys/hosts/x86_64-linux_tsukuba_ssh_host_rsa_key.pub;
   main_user = builtins.readFile ../keys/users/rsa.pub;
   users = [main_user];
@@ -19,6 +20,7 @@ let
   zao = builtins.readFile ../keys/hosts/x86_64-linux_zao_ssh_host_rsa_key.pub;
 
   systems = [
+    onishi
     tsukuba
     aka
     asahi
@@ -37,6 +39,7 @@ let
   ];
 in {
   "user-simonwjackson.age".publicKeys = users ++ systems;
+  "user-simonwjackson-kita.age".publicKeys = users ++ systems;
   "user-simonwjackson-pin.age".publicKeys = users ++ systems;
   "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
   "deepseek-api-key.age".publicKeys = users ++ systems;
@@ -151,4 +154,6 @@ in {
   "tsukuba-syncthing-cert.age".publicKeys = users ++ [tsukuba];
   "nyu-syncthing-key.age".publicKeys = users ++ [nyu];
   "nyu-syncthing-cert.age".publicKeys = users ++ [nyu];
+  "onishi-syncthing-key.age".publicKeys = users ++ [onishi];
+  "onishi-syncthing-cert.age".publicKeys = users ++ [onishi];
 }
