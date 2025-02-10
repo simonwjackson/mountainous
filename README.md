@@ -2,7 +2,7 @@
     <img src="./.github/assets/mountainous-logo.jpg" width="300px"/>
 </h3>
 <h1 align="center">
-    Mountainous | <a href="https://nixos.org">NixOS</a> flake built with <a href="https://github.com/snowfallorg/lib">Snowfall</a> 🏔️
+    Mountainous | My <a href="https://nixos.org">NixOS</a> homelab configs. Built with <a href="https://github.com/snowfallorg/lib">Snowfall</a> 🏔️
 </h1>
 
 <div align="center">
