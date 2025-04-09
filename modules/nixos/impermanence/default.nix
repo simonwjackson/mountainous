@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }: let
   cfg = config.mountainous.impermanence;
@@ -49,7 +48,9 @@ in {
         "/etc/adjtime"
       ];
       users."${config.mountainous.user.name}" = {
+        files = [];
         directories = [
+          ".supermaven"
           ".mozilla"
           ".config"
           ".cache"

@@ -30,12 +30,16 @@ in {
   #   };
   # };
 
+  users.users.${config.mountainous.user.name} = {
+    hashedPasswordFile = config.age.secrets."user-simonwjackson-kita".path;
+  };
+
   mountainous = {
     services.gamescope-reaper.duration = 20;
     disks = {
       frostbite = {
         enable = true;
-        encrypt = false;
+        encrypt = true;
         device = "/dev/disk/by-id/nvme-WD_PC_SN740_SDDPTQE-2T00_23328D402812";
         swapSize = "16G";
       };

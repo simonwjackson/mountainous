@@ -5,7 +5,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib.mountainous) enabled disabled;
+  inherit (lib.mountainous) enabled;
   inherit (lib) mkDefault mkEnableOption mkIf;
 in {
   imports = [
@@ -38,7 +38,6 @@ in {
       mpvd = mkDefault enabled;
       secure-shell = mkDefault enabled;
       tridactyl = mkDefault enabled;
-      work-mode = mkDefault disabled;
       xpo = mkDefault enabled;
       zsh = mkDefault enabled;
       tank = {

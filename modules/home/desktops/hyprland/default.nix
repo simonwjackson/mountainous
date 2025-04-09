@@ -6,7 +6,7 @@
   system,
   ...
 }: let
-  inherit (lib) mkIf mkEnableOption mkOption types;
+  inherit (lib) mkEnableOption mkOption types;
 
   cfg = config.mountainous.desktops.hyprland;
 in {
@@ -100,17 +100,17 @@ in {
 
     wayland.windowManager.hyprland = let
       brillo = "${pkgs.brillo}/bin/brillo";
-      curl = "${pkgs.curl}/bin/curl";
+      # curl = "${pkgs.curl}/bin/curl";
       date = "${pkgs.coreutils}/bin/date";
       grep = "${pkgs.gnugrep}/bin/grep";
-      grim = "${pkgs.grim}/bin/grim";
+      # grim = "${pkgs.grim}/bin/grim";
       hyprctl = "${pkgs.hyprland}/bin/hyprctl";
       jq = "${pkgs.jq}/bin/jq";
       playerctl = "${pkgs.playerctl}/bin/playerctl";
-      pngquant = "${pkgs.pngquant}/bin/pngquant";
-      slurp = "${pkgs.slurp}/bin/slurp";
-      swappy = "${pkgs.swappy}/bin/swappy";
-      wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
+      # pngquant = "${pkgs.pngquant}/bin/pngquant";
+      # slurp = "${pkgs.slurp}/bin/slurp";
+      # swappy = "${pkgs.swappy}/bin/swappy";
+      # wl-copy = "${pkgs.wl-clipboard}/bin/wl-copy";
       wpctl = "${pkgs.wireplumber}/bin/wpctl";
       xargs = "${pkgs.findutils}/bin/xargs";
       firefox = "${pkgs.firefox}/bin/firefox";
@@ -119,7 +119,7 @@ in {
       swaybg = "${pkgs.swaybg}/bin/swaybg";
 
       defaultSettings = {
-        monitor = [",preferred,auto,auto"];
+        # monitor = [",preferred,auto,auto"];
 
         "$terminal" = "${kitty}";
         "$fileManager" = "${kitty} -- ${lf}";
@@ -149,12 +149,15 @@ in {
           rounding = 10;
           active_opacity = 1.0;
           inactive_opacity = 1.0;
+          dim_special = 0.8; # Value between 0 and 1, higher = darker
 
           blur = {
             enabled = true;
-            size = 3;
-            passes = 1;
+            special = true;
+            size = 1;
+            passes = 2;
             vibrancy = 0.1696;
+            new_optimizations = true;
           };
 
           shadow = {
@@ -218,6 +221,11 @@ in {
           touchpad = {
             natural_scroll = false;
           };
+
+          touchdevice = {
+            # output = "desc:YHB YHB02P25 0x20240901";
+            # transform = 1;
+          };
         };
 
         gestures = {
@@ -230,19 +238,48 @@ in {
         };
 
         bind = [
-          "$mainMod, E, exec, ${kitty}"
+          # Switch workspaces with mainMod + [0-9]
+          "$mainMod, 1, workspace, 1"
+          "$mainMod, 2, workspace, 2"
+          "$mainMod, 3, workspace, 3"
+          "$mainMod, 4, workspace, 4"
+          "$mainMod, 5, workspace, 5"
+          "$mainMod, 6, workspace, 6"
+          "$mainMod, 7, workspace, 7"
+          "$mainMod, 8, workspace, 8"
+          "$mainMod, 9, workspace, 9"
+          "$mainMod, 0, workspace, 10"
+
+          #active window to a workspace with mainMod + SHIFT + [0-9]
+
+          "$mainMod SHIFT, 1, movetoworkspace, 1"
+          "$mainMod SHIFT, 2, movetoworkspace, 2"
+          "$mainMod SHIFT, 3, movetoworkspace, 3"
+          "$mainMod SHIFT, 4, movetoworkspace, 4"
+          "$mainMod SHIFT, 5, movetoworkspace, 5"
+          "$mainMod SHIFT, 6, movetoworkspace, 6"
+          "$mainMod SHIFT, 7, movetoworkspace, 7"
+          "$mainMod SHIFT, 8, movetoworkspace, 8"
+          "$mainMod SHIFT, 9, movetoworkspace, 9"
+          "$mainMod SHIFT, 0, movetoworkspace, 10"
+
+          "$mainMod, D, togglespecialworkspace, magic"
+          "$mainMod CTRL, O, exec, hyprctl activewindow -j | ${pkgs.jq}/bin/jq -r '.fullscreen' | ${pkgs.gnugrep}/bin/grep -q '2' && ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0 || ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1"
+          "$mainMod, M, exec, hyprctl activewindow -j | ${pkgs.jq}/bin/jq -r '.fullscreen' | ${pkgs.gnugrep}/bin/grep -q '2' && ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0 || ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1"
+          "$mainMod, E, exec, ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
+          "$mainMod SHIFT, E, exec, ${kitty}"
           "$mainMod, A, layoutmsg, swapwithmaster"
+
           "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
-          "$mainMod, T, exec, ${hyprctl} clients | grep -q 'main-term' && ${hyprctl} dispatch focuswindow main-term || $mainTerm"
-          "$mainMod, G, exec, ${hyprctl} dispatch workspace 2;"
-          "$mainMod SHIFT, G, exec, ${hyprctl} clients | ${grep} -iq 'class: steam' && ${hyprctl} dispatch focuswindow 'class:^(steam)$' || steam"
+          "$mainMod, T, exec, ${hyprctl} clients | grep -q 'tmesh' && ${hyprctl} dispatch focuswindow main-term || ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
+          # "$mainMod, G, exec, ${hyprctl} dispatch workspace 2;"
+          # "$mainMod SHIFT, G, exec, ${hyprctl} clients | ${grep} -iq 'class: steam' && ${hyprctl} dispatch focuswindow 'class:^(steam)$' || steam"
           "$mainMod, C, killactive,"
           "$mainMod SHIFT, C, exec, ${hyprctl} activewindow -j | ${jq} '.pid' | ${xargs} -r kill -9"
           "$mainMod, F, exec, $fileManager"
           "$mainMod, V, togglefloating,"
           "$mainMod SHIFT, Tab, cyclenext"
           "$mainMod, Tab, cyclenext, -1"
-          "$mainMod, M, exec, hyprctl activewindow -j | jq -r '.fullscreen' | grep -q '2' && hyprctl dispatch fullscreen 0 || hyprctl dispatch fullscreen 1"
           "$mainMod SHIFT, M, fullscreen, 0"
           "$mainMod, H, movefocus, l"
           "$mainMod, J, movefocus, d"
@@ -284,7 +321,7 @@ in {
         windowrulev2 = [
           "suppressevent maximize, class:.*"
           "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-          "workspace 2,class:^(steam)$"
+          "workspace magic,class:^(steam)$"
         ];
       };
 

@@ -1,8 +1,7 @@
+# INFO: Remote Server
 {
   inputs,
-  modulesPath,
   config,
-  pkgs,
   lib,
   ...
 }: let

@@ -96,7 +96,7 @@ in {
         gen-7 = true;
         gen-8 = true;
         gamingDir = "/snowscape/gaming";
-        saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
+        # saves = "/snowscape/gaming/profiles/simonwjackson/progress/saves";
       };
       steam = {enable = true;};
     };
@@ -111,7 +111,10 @@ in {
         mac = "10:7c:61:4d:e4:11";
       }
     ];
-    profiles.workspace = enabled;
+    profiles = {
+      base = enabled;
+      workspace = enabled;
+    };
     snowscape = {
       enable = true;
       glacier = "unzen";

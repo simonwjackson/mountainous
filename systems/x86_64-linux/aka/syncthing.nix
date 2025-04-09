@@ -1,25 +1,11 @@
-{
-  config,
-  host,
-  ...
-}: {
+{host, ...}: {
   device = {
     id = "DIVKBPA-VNVTEK5-FH7C2SB-QCSK6ZC-N4OE7AQ-3JX63AR-BDR6WMP-JQZ3KAK";
     name = "Desktop (${host})";
   };
   shares = {
-    scripts = {
-      path = "/home/simonwjackson/.local/scripts";
-      versioning = {
-        type = "simple";
-        params = {
-          keep = "5";
-        };
-      };
-      type = "sendreceive";
-      copyOwnershipFromParent = true;
-    };
     code = {
+      copyOwnershipFromParent = true;
       path = "/snowscape/code";
       type = "sendreceive";
       # TODO: Make this "global"
@@ -124,6 +110,7 @@
         "ehthumbs.db"
         "*~"
         ".DS_Store"
+        "DELETEME"
       ];
     };
     notes = {
@@ -140,14 +127,6 @@
       blacklist = [
         "steam/**"
       ];
-    };
-    videos = {
-      path = "/snowscape/videos";
-      whitelist = false;
-    };
-    music = {
-      path = "/snowscape/music";
-      whitelist = false;
     };
   };
 }

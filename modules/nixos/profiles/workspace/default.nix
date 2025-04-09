@@ -2,12 +2,31 @@
   config,
   lib,
   pkgs,
+  inputs,
+  system,
   ...
 }: let
   inherit (lib) mkEnableOption mkDefault mkOption types;
   inherit (lib.mountainous) enabled;
 
   cfg = config.mountainous.profiles.workspace;
+
+  icho = pkgs.symlinkJoin {
+    name = "icho";
+    paths = [inputs.icho.packages.${system}.default];
+    buildInputs = [pkgs.makeWrapper];
+    postBuild = let
+      envScript = ''
+        source ${config.age.secrets."user-simonwjackson-anthropic".path}
+        source ${config.age.secrets."deepseek-api-key".path}
+      '';
+    in ''
+      for bin in $out/bin/*; do
+        wrapProgram $bin \
+          --run ${pkgs.lib.escapeShellArg envScript}
+      done
+    '';
+  };
 in {
   options.mountainous.profiles.workspace = {
     enable = mkEnableOption "Enable workspace profile";
@@ -38,16 +57,9 @@ in {
       earlySetup = true;
     };
 
-    programs.icho = {
-      enable = lib.mkDefault true;
-      environment = {
-        NOTES_DIR = mkDefault "/snowscape/notes";
-      };
-      environmentFiles = [
-        config.age.secrets."user-simonwjackson-anthropic".path
-        config.age.secrets."deepseek-api-key".path
-      ];
-    };
+    environment.systemPackages = [
+      icho
+    ];
 
     # programs.webapps = lib.mkIf cfg.desktop.enable {
     #   "photopea" = {

@@ -1,19 +1,6 @@
 {
-  # Snowfall Lib provides a customized `lib` instance with access to your flake's library
-  # as well as the libraries available from your flake's inputs.
-  lib,
-  # An instance of `pkgs` with your overlays and packages applied is also available.
-  pkgs,
-  # You also have access to your flake's inputs.
-  inputs,
-  # Additional metadata is provided by Snowfall Lib.
-  home, # The home architecture for this host (eg. `x86_64-linux`).
-  target, # The Snowfall Lib target for this home (eg. `x86_64-home`).
-  format, # A normalized name for the home target (eg. `home`).
-  virtual, # A boolean to determine whether this home is a virtual target using nixos-generators.
-  host, # The host name for this home.
-  # All other arguments come from the home home.
   config,
+  pkgs,
   ...
 }: {
   mountainous = {
@@ -24,7 +11,8 @@
     desktops.hyprland = {
       extraSettings = {
         monitor = [
-          "eDP-1,preferred,auto,1.5"
+          # "desc:YHB YHB02P25 0x20240901,1080x1920@60,auto,1,transform,1"
+          # "desc:YMK EM160 0x00000001,modeline 2880 2912 2920 2980 1800 1808 1816 1824 652270 +hsync -vsync,auto,1.6,transform,0"
         ];
         exec-once = [
           "systemctl --user start hyprland-session.target"
@@ -32,6 +20,49 @@
       };
     };
   };
+
+  # Converted kanshi config to home-manager nix config
+  # services.kanshi = {
+  #   enable = true;
+  #   profiles = {
+  #     undocked = {
+  #       exec = [
+  #         "${pkgs.hyprland}/bin/hyprctl --instance 0 dispatch dpms on"
+  #         "${pkgs.coreutils}/bin/sleep 0.1 && ${pkgs.hyprland}/bin/hyprctl --instance 0 dispatch workspace 2"
+  #       ];
+  #       outputs = [
+  #         {
+  #           criteria = "YHB YHB02P25 0x20240901";
+  #           status = "enable";
+  #           scale = 1.5;
+  #           mode = "1080x1920@60";
+  #           transform = "90";
+  #         }
+  #       ];
+  #     };
+  #     docked = {
+  #       exec = [
+  #         "${pkgs.hyprland}/bin/hyprctl --instance 0 dispatch workspace 1"
+  #       ];
+  #       outputs = [
+  #         {
+  #           criteria = "YHB YHB02P25 0x20240901";
+  #           status = "disable";
+  #         }
+  #         {
+  #           criteria = "sisel muhendislik Typec monitor";
+  #           status = "disable";
+  #         }
+  #         {
+  #           criteria = "YMK EM160 0x00000001";
+  #           status = "enable";
+  #           scale = 1.5;
+  #           mode = "2880x1800@120";
+  #         }
+  #       ];
+  #     };
+  #   };
+  # };
 
   home = {
     homeDirectory = "/home/${config.home.username}";

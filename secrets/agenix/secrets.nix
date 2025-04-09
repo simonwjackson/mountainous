@@ -144,6 +144,7 @@ in {
   ########
 
   "wifi-vrackie.age".publicKeys = users ++ systems;
+  "wifi-brpublic.age".publicKeys = users ++ systems;
 
   ########
   # bluetooth

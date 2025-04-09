@@ -1,9 +1,6 @@
 {
   config,
-  inputs,
   lib,
-  pkgs,
-  system,
   ...
 }: let
   cfg = config.mountainous.disks.frostbite;
@@ -34,6 +31,9 @@ in {
   config = lib.mkIf cfg.enable {
     boot = {
       supportedFilesystems = ["btrfs"]; # Keep your existing filesystems
+      initrd = {
+        kernelModules = ["btrfs"];
+      };
     };
 
     fileSystems = lib.mkIf config.mountainous.impermanence.enable {
@@ -68,7 +68,6 @@ in {
                 type = "EF02";
               };
 
-              # esp = {
               duffle = {
                 name = "ESP";
                 size = "512M";

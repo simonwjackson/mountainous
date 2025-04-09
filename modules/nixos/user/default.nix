@@ -85,7 +85,7 @@ in {
         {
           isNormalUser = true;
           openssh.authorizedKeys.keys = cfg.authorizedKeys;
-          hashedPasswordFile = cfg.hashedPasswordFile;
+          hashedPasswordFile = lib.mkDefault cfg.hashedPasswordFile;
           home = cfg.home;
           group = "users";
           extraGroups =

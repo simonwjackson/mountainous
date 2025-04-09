@@ -1,3 +1,4 @@
+# INFO: Remote Server
 {
   config,
   pkgs,

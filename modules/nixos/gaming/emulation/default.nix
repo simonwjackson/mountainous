@@ -19,10 +19,10 @@ in {
     gamingDir = mkOption {
       type = lib.types.path;
     };
-    saves = mkOption {
-      type = lib.types.path;
-      description = "Container directory for game saves";
-    };
+    # saves = mkOption {
+    #   type = lib.types.path;
+    #   description = "Container directory for game saves";
+    # };
   };
 
   config = lib.mkIf cfg.enable {
@@ -43,27 +43,27 @@ in {
       ++ lib.optionals cfg.gen-8 gen-8;
 
     # BUG: if dirs dont exist, they are owned by root
-    fileSystems = {
-      "${share}/dolphin-emu/GC" = {
-        device = "${cfg.saves}/nintendo-gamecube/";
-        options = ["bind"];
-      };
-
-      "${share}/dolphin-emu/Wii/title" = {
-        device = "${cfg.saves}/nintendo-wii/";
-        options = ["bind"];
-      };
-
-      "${share}/Cemu/mlc01/usr" = {
-        device = "${cfg.saves}/nintendo-wiiu/";
-        options = ["bind"];
-      };
-
-      # "/home/${config.mountainous.user.name}/.config/Ryujinx/bis" = {
-      "/home/simonwjackson/.config/Ryujinx/bis" = {
-        device = "${cfg.saves}/nintendo-switch";
-        options = ["bind"];
-      };
-    };
+    # fileSystems = {
+    #   "${share}/dolphin-emu/GC" = {
+    #     device = "${cfg.saves}/nintendo-gamecube/";
+    #     options = ["bind"];
+    #   };
+    #
+    #   "${share}/dolphin-emu/Wii/title" = {
+    #     device = "${cfg.saves}/nintendo-wii/";
+    #     options = ["bind"];
+    #   };
+    #
+    #   "${share}/Cemu/mlc01/usr" = {
+    #     device = "${cfg.saves}/nintendo-wiiu/";
+    #     options = ["bind"];
+    #   };
+    #
+    #   # "/home/${config.mountainous.user.name}/.config/Ryujinx/bis" = {
+    #   "/home/simonwjackson/.config/Ryujinx/bis" = {
+    #     device = "${cfg.saves}/nintendo-switch";
+    #     options = ["bind"];
+    #   };
+    # };
   };
 }

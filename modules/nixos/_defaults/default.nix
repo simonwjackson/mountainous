@@ -4,8 +4,6 @@
   host,
   inputs,
   lib,
-  options,
-  pkgs,
   system,
   ...
 }: let
@@ -119,7 +117,7 @@ in {
       workspace = mkDefault disabled;
     };
     security = mkDefault enabled;
-    syncthing = rec {
+    syncthing = {
       inherit otherDevices;
 
       enable = mkDefault true;
@@ -157,46 +155,13 @@ in {
 
   programs.tmesh = let
     common = ''
-      # allow passthrough of escape sequences
-      set -g allow-passthrough on
-
-      set -g status off
-
-      # Switch to another session if last window closed
-      set-option -g detach-on-destroy off
-
-      # Auto resize to the smallest screen connected
-      set-option -g window-size smallest
-
-      # Disable right click menu
-      unbind-key -T root MouseDown3Pane
-
-      # Respond to focus events
-      set-option -g focus-events on
-
-      # address vim mode switching delay (http://superuser.com/a/252717/65504)
-      set-option -s escape-time 0
-
-      # silent
-      set-option -g visual-activity off
-      set-option -g visual-bell off
-      set-option -g visual-silence off
-      set-option -g bell-action none
-
-      # Ignore window notifications
-      set-window-option -g monitor-activity off
+      TODO: Move them back
     '';
   in {
     enable = true;
     tmeshServerTmuxConfig = common;
     tmeshTmuxConfig = ''
-      # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
-      set -s set-clipboard on
-
-      # tmesh uses c-a
-      set -g prefix C-a
-      unbind-key C-b
-      bind-key C-a send-prefix
+      TODO: Move them back
 
       ${common}
     '';
@@ -217,7 +182,7 @@ in {
     };
   };
 
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = [
     inputs.nixos-anywhere.packages.${system}.nixos-anywhere
   ];
 

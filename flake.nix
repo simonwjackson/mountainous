@@ -111,7 +111,7 @@
         agenix.nixosModules.default
         disko.nixosModules.default
         home-manager.nixosModules.default
-        icho.nixosModules.default
+        # icho.nixosModules.default
         impermanence.nixosModules.impermanence
         nix-flatpak.nixosModules.nix-flatpak
         nixos-facter-modules.nixosModules.facter
@@ -121,7 +121,7 @@
 
       systems.modules.darwin = with inputs; [
         home-manager.darwinModules.default
-        icho.nixosModules.default
+        # icho.nixosModules.default
         tmesh.nixosModules.default
       ];
 
