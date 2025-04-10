@@ -68,6 +68,8 @@
   mkNixosSystem = arch: name:
     nixpkgs.lib.nixosSystem {
       system = arch;
+      # Pass inputs as specialArgs to make them available to all modules
+      specialArgs = { inherit inputs; };
       modules = 
         # First import all NixOS modules
         nixosModules

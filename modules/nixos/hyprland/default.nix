@@ -2,11 +2,6 @@
   lib,
   pkgs,
   inputs,
-  system,
-  target,
-  format,
-  virtual,
-  systems,
   config,
   ...
 }: let
@@ -21,7 +16,8 @@ in {
   config = lib.mkIf cfg.enable {
     programs.hyprland = {
       enable = true;
-      # package = inputs.hyprland.packages.${system}.hyprland;
+      package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+      portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
     };
 
     environment.systemPackages = [
@@ -29,6 +25,7 @@ in {
       pkgs.eww
     ];
 
+    # TODO: is this still needed? now that we have portalPackage..
     xdg.portal.enable = true;
 
     security.pam.services.hyprlock = {};
