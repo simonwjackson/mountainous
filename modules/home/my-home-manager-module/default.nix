@@ -20,8 +20,8 @@ in {
     # Module implementation goes here
     home.packages = with pkgs; [
       # Example packages this module might add
-      ripgrep
       fd
+      btop
     ];
 
     # Add module-specific configuration

@@ -33,6 +33,8 @@
   # Enable flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
+  # Enable modules
+
   # This is required for NixOS
   system.stateVersion = "23.11"; # Change to the version you installed
 }

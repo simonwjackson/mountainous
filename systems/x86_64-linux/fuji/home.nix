@@ -12,4 +12,9 @@
   programs.git.extraConfig = {
     init.defaultBranch = "main";
   };
+
+  # Enable modules
+  modules = {
+    my-home-manager-module.enable = true;
+  };
 }

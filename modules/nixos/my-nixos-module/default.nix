@@ -20,8 +20,7 @@ in {
     # Module implementation goes here
     environment.systemPackages = with pkgs; [
       # Example packages this module might add
-      htop
-      curl
+      btop
     ];
 
     # Add module-specific configuration

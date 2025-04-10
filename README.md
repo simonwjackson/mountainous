@@ -123,12 +123,46 @@ If any of these files don't exist, the system will work fine without them. This 
 - Customize per-system where needed
 - Add or remove any layer without breaking anything
 
+#### Module Auto-loading
+
+All modules placed in the `modules/home/` directory are automatically imported into every user's home-manager configuration. To add a new module:
+
+1. Create a new directory in `modules/home/your-module-name/`
+2. Add a `default.nix` file with your module definition
+3. The module will be automatically loaded for all systems
+
+To use the module, enable it in your home-manager configuration:
+
+```nix
+# In home/default.nix or systems/<arch>/<name>/home.nix
+{ config, pkgs, ... }: {
+  modules.your-module-name.enable = true;
+}
+```
+
 ### NixOS Modules
 
 Similar to home-manager, NixOS modules are automatically loaded:
 
 1. **Modules** (`/modules/nixos/*/default.nix`): Reusable modules that are automatically loaded on all systems
 2. **System configuration** (`/systems/<arch>/<name>/default.nix`): System-specific configuration
+
+#### Module Auto-loading
+
+All modules placed in the `modules/nixos/` directory are automatically imported into every system configuration. To add a new module:
+
+1. Create a new directory in `modules/nixos/your-module-name/`
+2. Add a `default.nix` file with your module definition
+3. The module will be automatically loaded for all systems
+
+To use the module, enable it in your system configuration:
+
+```nix
+# In systems/<arch>/<name>/default.nix
+{ config, pkgs, ... }: {
+  modules.your-module-name.enable = true;
+}
+```
 
 These modules can be enabled in the system configuration files as needed.
 
