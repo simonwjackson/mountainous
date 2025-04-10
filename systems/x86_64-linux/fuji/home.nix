@@ -1,7 +1,5 @@
 # System-specific home-manager configuration for fuji
-{ config, pkgs, ... }:
-
-{
+{pkgs, ...}: {
   # Add system-specific configuration here
   # This will be merged with the default configuration
 

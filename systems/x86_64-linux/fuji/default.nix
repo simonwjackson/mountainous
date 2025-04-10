@@ -1,8 +1,4 @@
-{
-  config,
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   # Basic system configuration
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -40,4 +36,3 @@
   # This is required for NixOS
   system.stateVersion = "23.11"; # Change to the version you installed
 }
-

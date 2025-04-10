@@ -1,31 +1,45 @@
 {inputs}: let
   inherit (inputs) self nixpkgs home-manager;
-  
+
   # Path to default home-manager configuration
   defaultHomePath = ./home/default.nix;
-  
+
   # Check if a file exists
   fileExists = path: builtins.pathExists path;
-  
+
   # Get all architectures from the systems directory
   architectures = builtins.attrNames (builtins.readDir ./systems);
-  
+
   # Function to create a home-manager module for a given architecture and system name
   mkHomeManagerModule = arch: name: {
     # Include home-manager module
+
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
-    
+
     # Apply the default home configuration if it exists
-    home-manager.users.nixos = { config, pkgs, ... }: {
-      imports = 
+    home-manager.users.nixos = {
+      config,
+      pkgs,
+      ...
+    }: {
+      imports =
         # First import the default configuration if it exists
-        (if fileExists defaultHomePath then [ defaultHomePath ] else []) ++
+        (
+          if fileExists defaultHomePath
+          then [defaultHomePath]
+          else []
+        )
+        ++
         # Then import system-specific configuration if it exists to override defaults
-        (if fileExists ./systems/${arch}/${name}/home.nix then [ ./systems/${arch}/${name}/home.nix ] else []);
+        (
+          if fileExists ./systems/${arch}/${name}/home.nix
+          then [./systems/${arch}/${name}/home.nix]
+          else []
+        );
     };
   };
-  
+
   # Function to create a nixosSystem for a given architecture and system name
   mkNixosSystem = arch: name:
     nixpkgs.lib.nixosSystem {
@@ -38,7 +52,7 @@
         (mkHomeManagerModule arch name)
       ];
     };
-    
+
   # Function to build system configurations for a specific architecture
   systemsForArch = arch: let
     systemNames = builtins.attrNames (builtins.readDir ./systems/${arch});
