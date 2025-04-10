@@ -18,7 +18,7 @@
     vim
     wget
     git
-    ex  # Example extraction utility package from packages directory
+    ex
   ];
 
   # Enable SSH
@@ -34,8 +34,16 @@
   # Enable flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  # Enable modules
+  mountainous.hyprland = {
+    enable = true;
+    autoLogin = true;
+  };
+
+  nix.settings = {
+    substituters = ["https://hyprland.cachix.org"];
+    trusted-public-keys = ["hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="];
+  };
 
   # This is required for NixOS
-  system.stateVersion = "23.11"; # Change to the version you installed
+  system.stateVersion = "25.05";
 }
