@@ -43,6 +43,13 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 ├── utils.nix              # Helper functions for the flake
 ├── home/                  # Default home-manager configurations
 │   └── default.nix        # Applied to all systems
+├── modules/               # Reusable modules
+│   ├── home/              # Home-manager modules
+│   │   └── my-home-manager-module/
+│   │       └── default.nix
+│   └── nixos/             # NixOS modules
+│       └── my-nixos-module/
+│           └── default.nix
 ├── systems/               # System configurations by architecture
 │   └── x86_64-linux/      # x86_64 Linux configurations
 │       └── fuji/          # Example system named "fuji"
@@ -104,15 +111,26 @@ The default configuration creates a user with:
 
 ### Home Manager Configuration
 
-The system uses a two-layer approach for home-manager configurations:
+The system uses a three-layer approach for home-manager configurations:
 
-1. **Default configuration** (`/home/default.nix`): Applied to all systems, providing a consistent base
-2. **System-specific configuration** (`/systems/<arch>/<name>/home.nix`): Merged on top of the default configuration
+1. **Modules** (`/modules/home/*/default.nix`): Reusable modules that are automatically loaded on all systems
+2. **Default configuration** (`/home/default.nix`): Applied to all systems, providing a consistent base
+3. **System-specific configuration** (`/systems/<arch>/<name>/home.nix`): Merged on top of the default configuration
 
-If either file doesn't exist, the system will work fine without it. This approach allows you to:
+If any of these files don't exist, the system will work fine without them. This approach allows you to:
+- Create reusable modules for specific functionality
 - Maintain consistent configuration across all systems
 - Customize per-system where needed
-- Add or remove either layer without breaking anything
+- Add or remove any layer without breaking anything
+
+### NixOS Modules
+
+Similar to home-manager, NixOS modules are automatically loaded:
+
+1. **Modules** (`/modules/nixos/*/default.nix`): Reusable modules that are automatically loaded on all systems
+2. **System configuration** (`/systems/<arch>/<name>/default.nix`): System-specific configuration
+
+These modules can be enabled in the system configuration files as needed.
 
 ## License
 
