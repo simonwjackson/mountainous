@@ -14,7 +14,6 @@
   in
     utils.mkFlake {
       inherit inputs;
-
-      namespace = "mountainous"; 
+      namespace = "mountainous";
     };
 }

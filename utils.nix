@@ -72,6 +72,9 @@
         # First import all NixOS modules
         nixosModules
         ++ [
+          # Add our packages overlay to make custom packages available
+          { nixpkgs.overlays = [ (final: prev: collectPackages prev arch) ]; }
+          # System configuration
           ./systems/${arch}/${name}/default.nix
           # Add home-manager as a module
           home-manager.nixosModules.home-manager
@@ -109,12 +112,48 @@
       systemNames);
   in
     vmPkgs;
+  # Function to collect and import packages from the packages directory
+  collectPackages = pkgs: system: let
+    # Check if packages directory exists
+    packagesDir = ./packages;
+    packagesDirExists = builtins.pathExists packagesDir;
+    
+    # Get package names (directory names) from packages directory
+    packageNames = if packagesDirExists 
+      then builtins.attrNames (builtins.readDir packagesDir)
+      else [];
+      
+    # Import each package and create an attribute set
+    packageSet = builtins.listToAttrs (map (name: {
+      inherit name;
+      value = pkgs.callPackage (packagesDir + "/${name}") {};
+    }) packageNames);
+  in
+    packageSet;
+
 in {
   # Main flake utility function
-  mkFlake = {inputs}: {
+  mkFlake = {inputs, namespace}: let
+    # Create package sets for each system
+    pkgSets = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system:
+      let 
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          overlays = [];
+        };
+        packages = collectPackages pkgs system;
+      in
+        # Merge VM packages with our custom packages
+        (if system == "x86_64-linux" then mkVmPackages "x86_64-linux" else {}) // packages
+    );
+  in {
     nixosConfigurations = allSystems;
 
-    # VM outputs for all configurations
-    packages.x86_64-linux = mkVmPackages "x86_64-linux";
+    # Packages output for each supported system
+    packages = pkgSets;
+
+    # Make packages available to dependent flakes
+    overlay = final: prev: collectPackages prev prev.system;
   };
 }

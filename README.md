@@ -43,6 +43,10 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 ├── utils.nix              # Helper functions for the flake
 ├── home/                  # Default home-manager configurations
 │   └── default.nix        # Applied to all systems
+├── packages/              # Reusable packages
+│   └── ex/                # Example package
+│       ├── default.nix    # Package definition
+│       └── ex.sh          # Package source
 ├── modules/               # Reusable modules
 │   ├── home/              # Home-manager modules
 │   │   └── my-home-manager-module/
@@ -165,6 +169,54 @@ To use the module, enable it in your system configuration:
 ```
 
 These modules can be enabled in the system configuration files as needed.
+
+## Custom Packages
+
+The flake automatically collects and exposes packages from the `packages` directory. Each package is accessible through the flake outputs and available in your NixOS configurations.
+
+### Package Structure
+
+Each package should be placed in its own directory under `packages/` with at least a `default.nix` file:
+
+```
+packages/
+  my-package/
+    default.nix    # Package definition
+    # Additional sources as needed
+```
+
+### Package Definition
+
+A typical package definition looks like this:
+
+```nix
+{
+  # Snowfall Lib provides a customized `lib` instance with access to your flake's library
+  # as well as the libraries available from your flake's inputs.
+  lib,
+  # You also have access to your flake's inputs.
+  inputs,
+
+  # All other arguments come from NixPkgs. You can use `pkgs` to pull packages or helpers
+  # programmatically or you may add the named attributes as arguments here.
+  pkgs,
+  stdenv,
+  ...
+}:
+
+stdenv.mkDerivation {
+  # Create your package
+}
+```
+
+### Using Packages
+
+The packages are automatically available:
+
+1. **In flake outputs**: `nix build .#my-package`
+2. **In NixOS configurations**: `environment.systemPackages = [ pkgs.my-package ];`
+3. **In home-manager configurations**: `home.packages = [ pkgs.my-package ];`
+4. **To other flakes**: When your flake is imported as an input
 
 ## License
 

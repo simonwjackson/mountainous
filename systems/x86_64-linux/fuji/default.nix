@@ -18,6 +18,7 @@
     vim
     wget
     git
+    ex  # Example extraction utility package from packages directory
   ];
 
   # Enable SSH
