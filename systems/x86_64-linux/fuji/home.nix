@@ -1,34 +1,17 @@
-{
-  # System-specific home-manager configuration for vmware
-  
-  pkgs, 
-  config, 
-  lib, 
-  ...
-}:
+# System-specific home-manager configuration for fuji
+{ config, pkgs, ... }:
 
 {
-  # Override username and email for this specific system
-  programs.git = {
-    userName = "VMware User";
-    userEmail = "vmware-user@example.com";
-  };
-  
-  # Add system-specific packages
+  # Add system-specific configuration here
+  # This will be merged with the default configuration
+
+  # Additional packages specific to this system
   home.packages = with pkgs; [
-    # VM-specific tools
-    virt-manager
-    spice-gtk
-    
-    # Development tools for this system
-    vscode
-    nodejs
+    neovim
   ];
-  
-  # System-specific shell configuration
-  programs.zsh.shellAliases = {
-    # Add VM-specific aliases
-    vm-start = "virsh start default";
-    vm-stop = "virsh shutdown default";
+
+  # System-specific settings
+  programs.git.extraConfig = {
+    init.defaultBranch = "main";
   };
 }

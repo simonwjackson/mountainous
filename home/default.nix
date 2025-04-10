@@ -1,49 +1,42 @@
-{
-  # Default home-manager configuration for all systems
-  
-  pkgs, 
-  config, 
-  lib, 
-  ...
-}:
+# Default home-manager configuration for all systems
+{ config, pkgs, ... }:
 
 {
-  # Enable home-manager
+  # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
-  
-  # Default packages for all users
-  home.packages = with pkgs; [
-    htop
-    git
-    ripgrep
-    fd
-    curl
-    wget
-  ];
-  
-  # Default Git configuration
+
+  # Home Manager needs a bit of information about you and the
+  # paths it should manage.
+  home.username = "nixos";
+  home.homeDirectory = "/home/nixos";
+
+  # Basic shell configuration
+  programs.bash = {
+    enable = true;
+    shellAliases = {
+      ll = "ls -l";
+      la = "ls -la";
+    };
+  };
+
+  # Git configuration
   programs.git = {
     enable = true;
-    userName = "Default User";
+    userName = "NixOS User";
     userEmail = "user@example.com";
-    extraConfig = {
-      init.defaultBranch = "main";
-    };
   };
-  
-  # Default shell configuration - using zsh
-  programs.zsh = {
-    enable = true;
-    enableAutosuggestions = true;
-    enableCompletion = true;
-    autocd = true;
-    
-    shellAliases = {
-      ll = "ls -la";
-      update = "sudo nixos-rebuild switch";
-    };
-  };
-  
-  # This method allows for merging with system-specific configurations
-  lib.mkForce = false;
+
+  # Install some basic packages
+  home.packages = with pkgs; [
+    htop
+    ripgrep
+    fd
+    jq
+  ];
+
+  # This value determines the Home Manager release that your
+  # configuration is compatible with. This helps avoid breakage
+  # when a new Home Manager release introduces backwards
+  # incompatible changes.
+  home.stateVersion = "23.11";
 }

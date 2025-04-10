@@ -1,6 +1,6 @@
 # Mountainous Rethink
 
-A NixOS configuration flake for managing multiple system configurations.
+A NixOS configuration flake for managing multiple system configurations with integrated home-manager support.
 
 ## Overview
 
@@ -9,6 +9,7 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 - Organizing configurations by architecture and system name
 - Building and testing configurations in VMs
 - Deploying configurations to physical machines
+- Consistent home-manager configurations across systems with per-system customization
 
 ## Getting Started
 
@@ -40,10 +41,13 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 ├── flake.nix              # Main flake entry point
 ├── flake.lock             # Dependency lock file
 ├── utils.nix              # Helper functions for the flake
+├── home/                  # Default home-manager configurations
+│   └── default.nix        # Applied to all systems
 ├── systems/               # System configurations by architecture
 │   └── x86_64-linux/      # x86_64 Linux configurations
 │       └── fuji/          # Example system named "fuji"
-│           └── default.nix # System configuration
+│           ├── default.nix # System configuration
+│           └── home.nix    # System-specific home-manager configuration
 ```
 
 ## Adding a New System
@@ -53,7 +57,7 @@ This repository contains a NixOS configuration flake that makes it easy to manag
    mkdir -p systems/x86_64-linux/new-system
    ```
 
-2. Create a `default.nix` file with your configuration:
+2. Create a `default.nix` file with your system configuration:
    ```nix
    {
      config,
@@ -65,7 +69,18 @@ This repository contains a NixOS configuration flake that makes it easy to manag
    }
    ```
 
-3. Build and test the new configuration:
+3. Optionally add a `home.nix` file with system-specific home-manager configuration:
+   ```nix
+   { config, pkgs, ... }: {
+     # System-specific home-manager configuration
+     # This will be merged with the default configuration
+     home.packages = with pkgs; [
+       # Additional packages for this system
+     ];
+   }
+   ```
+
+4. Build and test the new configuration:
    ```
    nix build .#vm-new-system
    ./result/bin/run-nixos-vm
@@ -85,6 +100,19 @@ The default configuration creates a user with:
 - Username: `nixos`
 - Password: `changeme` (change this immediately after first login)
 - Admin privileges (part of the wheel group)
+- Home-manager configuration from `home/default.nix` and any system-specific `home.nix`
+
+### Home Manager Configuration
+
+The system uses a two-layer approach for home-manager configurations:
+
+1. **Default configuration** (`/home/default.nix`): Applied to all systems, providing a consistent base
+2. **System-specific configuration** (`/systems/<arch>/<name>/home.nix`): Merged on top of the default configuration
+
+If either file doesn't exist, the system will work fine without it. This approach allows you to:
+- Maintain consistent configuration across all systems
+- Customize per-system where needed
+- Add or remove either layer without breaking anything
 
 ## License
 
