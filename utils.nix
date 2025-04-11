@@ -2,7 +2,7 @@
   inherit (inputs) self nixpkgs home-manager;
 
   # Path to default home-manager configuration
-  defaultHomePath = ./home/default.nix;
+  defaultHomePath = ./nix/home/default.nix;
 
   # Check if a file exists
   fileExists = path: builtins.pathExists path;
@@ -23,13 +23,13 @@
         map (path: path + "/default.nix") modulePaths;
         
   # Collect all home-manager modules
-  homeManagerModules = collectModules ./modules/home;
+  homeManagerModules = collectModules ./nix/modules/home;
   
   # Collect all NixOS modules
-  nixosModules = collectModules ./modules/nixos;
+  nixosModules = collectModules ./nix/modules/nixos;
 
   # Get all architectures from the systems directory
-  architectures = builtins.attrNames (builtins.readDir ./systems);
+  architectures = builtins.attrNames (builtins.readDir ./nix/systems);
 
   # Function to create a home-manager module for a given architecture and system name
   mkHomeManagerModule = arch: name: {
@@ -60,8 +60,8 @@
         ++
         # Then import system-specific configuration if it exists to override defaults
         (
-          if fileExists ./systems/${arch}/${name}/home.nix
-          then [./systems/${arch}/${name}/home.nix]
+          if fileExists ./nix/systems/${arch}/${name}/home.nix
+          then [./nix/systems/${arch}/${name}/home.nix]
           else []
         );
     };
@@ -80,7 +80,7 @@
           # Add our packages overlay to make custom packages available
           { nixpkgs.overlays = [ (final: prev: collectPackages prev arch) ]; }
           # System configuration
-          ./systems/${arch}/${name}/default.nix
+          ./nix/systems/${arch}/${name}/default.nix
           # Add home-manager as a module
           home-manager.nixosModules.home-manager
           # Include our home-manager configuration
@@ -90,7 +90,7 @@
 
   # Function to build system configurations for a specific architecture
   systemsForArch = arch: let
-    systemNames = builtins.attrNames (builtins.readDir ./systems/${arch});
+    systemNames = builtins.attrNames (builtins.readDir ./nix/systems/${arch});
     systems = builtins.listToAttrs (map (name: {
         inherit name;
         value = mkNixosSystem arch name;
@@ -109,7 +109,7 @@
 
   # Collect all VM builds for each architecture
   mkVmPackages = arch: let
-    systemNames = builtins.attrNames (builtins.readDir ./systems/${arch});
+    systemNames = builtins.attrNames (builtins.readDir ./nix/systems/${arch});
     vmPkgs = builtins.listToAttrs (map (name: {
         name = "vm-${name}";
         value = self.nixosConfigurations.${name}.config.system.build.vm;
@@ -120,7 +120,7 @@
   # Function to collect and import packages from the packages directory
   collectPackages = pkgs: system: let
     # Check if packages directory exists
-    packagesDir = ./packages;
+    packagesDir = ./nix/packages;
     packagesDirExists = builtins.pathExists packagesDir;
     
     # Get package names (directory names) from packages directory
