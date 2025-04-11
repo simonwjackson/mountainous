@@ -1,7 +1,7 @@
 {pkgs, ...}: {
-mountainous.hyprland = {
-  enable = true;
-};
+  mountainous.hyprland = {
+    enable = true;
+  };
 
   # Additional packages specific to this system
   home.packages = with pkgs; [
@@ -12,10 +12,5 @@ mountainous.hyprland = {
   # System-specific settings
   programs.git.extraConfig = {
     init.defaultBranch = "main";
-  };
-
-  # Enable modules
-  modules = {
-    my-home-manager-module.enable = true;
   };
 }
