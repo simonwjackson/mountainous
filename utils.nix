@@ -131,7 +131,7 @@
     # Import each package and create an attribute set
     packageSet = builtins.listToAttrs (map (name: {
       inherit name;
-      value = pkgs.callPackage (packagesDir + "/${name}") {};
+      value = pkgs.callPackage (packagesDir + "/${name}") { inherit inputs; };
     }) packageNames);
   in
     packageSet;
