@@ -1,15 +1,30 @@
 {lib, config, pkgs, ...}:
 with lib;
 {
-  options.mountainous.vm-display-resize = {
+  options.mountainous.vm = {
     enable = mkEnableOption "VM display auto-resizing";
   };
 
-  config = mkIf config.mountainous.vm-display-resize.enable {
+  config = mkIf config.mountainous.vm.enable {
+
+    # VM-specific configuration that only applies when building a VM
+    virtualisation.vmVariant = {
+      # These settings only apply when building with nixos-rebuild build-vm
+      virtualisation = {
+        memorySize = 4096; # Example: Set VM memory to 4GB
+        cores = 4;         # Example: Set VM cores
+      
+        qemu.options = [
+          # Force auto-resize to be enabled
+          "-device virtio-gpu-pci"
+          "-display gtk,gl=on"
+        ];
+      };
+
     # Enable QEMU Guest Agent
     services.qemuGuest.enable = true;
   
-    # VM-specific packages and services
+    # VM-specific packages and servicesvm
     environment.systemPackages = with pkgs; [
       # Install SPICE agent and utilities
       spice-vdagent   # This enables auto-resize and clipboard sharing
@@ -25,21 +40,8 @@ with lib;
     # For Wayland-based desktops like Hyprland
     hardware.opengl.enable = true;
 
-    # VM-specific configuration that only applies when building a VM
-    virtualisation.vmVariant = {
-      # These settings only apply when building with nixos-rebuild build-vm
-      virtualisation = {
-        memorySize = 4096; # Example: Set VM memory to 4GB
-        cores = 4;         # Example: Set VM cores
-      
-        qemu.options = [
-          # Force auto-resize to be enabled
-          "-device virtio-gpu-pci"
-          "-display gtk,gl=on"
-        ];
-      };
+    services.spice-vdagentd.enable = true;
     };
  
-    services.spice-vdagentd.enable = true;
   };
 }

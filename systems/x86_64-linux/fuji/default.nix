@@ -40,7 +40,7 @@
   };
 
   # Enable VM display auto-resizing for QEMU virtual machines
-  mountainous.vm-display-resize.enable = true;
+  mountainous.vm.enable = true;
 
   nix.settings = {
     substituters = ["https://hyprland.cachix.org"];
