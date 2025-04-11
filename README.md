@@ -170,6 +170,21 @@ To use the module, enable it in your system configuration:
 
 These modules can be enabled in the system configuration files as needed.
 
+## VM Display Auto-Resizing
+
+The system includes a module for auto-resizing VM displays when running as a QEMU virtual machine. This ensures that the internal monitor of your VM resizes to match the emulation window size.
+
+To enable VM display auto-resizing for a system, add to your configuration:
+
+```nix
+# In systems/<arch>/<name>/default.nix
+{ config, pkgs, ... }: {
+  mountainous.vm-display-resize.enable = true;
+}
+```
+
+The module only applies when building a VM using `nixos-rebuild build-vm` and running it with `./result/bin/run-nixos-vm`. It does not affect the system when installed on real hardware.
+
 ## Custom Packages
 
 The flake automatically collects and exposes packages from the `packages` directory. Each package is accessible through the flake outputs and available in your NixOS configurations.
