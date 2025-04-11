@@ -37,6 +37,9 @@
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
+    
+    # Pass inputs to home-manager modules as specialArgs
+    home-manager.extraSpecialArgs = { inherit inputs; };
 
     # Apply the default home configuration if it exists
     home-manager.users.nixos = {

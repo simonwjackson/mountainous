@@ -1,7 +1,7 @@
-# System-specific home-manager configuration for fuji
 {pkgs, ...}: {
-  # Add system-specific configuration here
-  # This will be merged with the default configuration
+mountainous.hyprland = {
+  enable = true;
+};
 
   # Additional packages specific to this system
   home.packages = with pkgs; [
