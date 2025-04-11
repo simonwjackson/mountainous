@@ -5,7 +5,7 @@
 
   # Network configuration
   networking = {
-    hostName = "nixos"; # Define your hostname
+    hostName = "kita"; # Define your hostname
     networkmanager.enable = true;
   };
 
@@ -25,23 +25,34 @@
   services.openssh.enable = true;
 
   # User configuration
-  users.users.nixos = {
+  users.users.simonwjackson = {
     isNormalUser = true;
     extraGroups = ["wheel" "networkmanager"];
-    initialPassword = "changeme";
+    initialPassword = "asdfasdfasdf";
   };
 
   # Enable flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  mountainous.hyprland = {
-    enable = true;
-    autoLogin = true;
+  mountainous = {
+    disks = {
+      frostbite = {
+        enable = true;
+        encrypt = true;
+        device = "/dev/nvme0n1";
+        swapSize = "32G";
+      };
+    };
+    impermanence = {
+      enable = true;
+      persistPath = "/tundra/permafrost";
+    };
+    hyprland = {
+      enable = true;
+      autoLogin = true;
+    };
   };
 
-  # Enable VM display auto-resizing for QEMU virtual machines
-  mountainous.vm.enable = true;
-
   # This is required for NixOS
-  system.stateVersion = "25.05";
+  system.stateVersion = "24.11";
 }

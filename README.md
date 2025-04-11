@@ -193,6 +193,25 @@ To use the module, enable it in your system configuration:
 
 These modules can be enabled in the system configuration files as needed.
 
+## Impermanence
+
+The system includes a module for impermanence, which allows for a stateless NixOS setup with persistent data stored in a separate partition.
+
+To enable impermanence for a system, add to your configuration:
+
+```nix
+# In systems/<arch>/<name>/default.nix
+{ config, pkgs, ... }: {
+  mountainous.impermanence = {
+    enable = true;
+    persistPath = "/path/to/persist"; # Default: /persist
+    persistDevice = "/dev/path/to/device"; # Required: Device to mount at persistPath
+  };
+}
+```
+
+The `persistDevice` option is required and should point to the device that will be mounted at the `persistPath`. This is typically a partition on your disk, such as `/dev/mapper/hostname-frostbite` when using LUKS encryption.
+
 ## VM Display Auto-Resizing
 
 The system includes a module for auto-resizing VM displays when running as a QEMU virtual machine. This ensures that the internal monitor of your VM resizes to match the emulation window size.

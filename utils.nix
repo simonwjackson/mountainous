@@ -1,5 +1,5 @@
 {inputs}: let
-  inherit (inputs) self nixpkgs home-manager;
+  inherit (inputs) self nixpkgs impermanence disko home-manager;
 
   # Path to default home-manager configuration
   defaultHomePath = ./nix/home/default.nix;
@@ -42,7 +42,7 @@
     home-manager.extraSpecialArgs = { inherit inputs; };
 
     # Apply the default home configuration if it exists
-    home-manager.users.nixos = {
+    home-manager.users.simonwjackson = {
       config,
       pkgs,
       ...
@@ -81,6 +81,10 @@
           { nixpkgs.overlays = [ (final: prev: collectPackages prev arch) ]; }
           # System configuration
           ./nix/systems/${arch}/${name}/default.nix
+          # impermanence module
+          impermanence.nixosModules.impermanence
+          # disko module
+          disko.nixosModules.default
           # Add home-manager as a module
           home-manager.nixosModules.home-manager
           # Include our home-manager configuration

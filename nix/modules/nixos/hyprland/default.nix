@@ -43,7 +43,7 @@ in {
       displayManager.autoLogin = lib.mkIf cfg.autoLogin {
         enable = true;
         # user = config.mountainous.user.name;
-        user = "nixos";
+        user = "simonwjackson";
       };
     };
 

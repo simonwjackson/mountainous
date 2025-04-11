@@ -5,6 +5,7 @@
   bzip2,
   p7zip,
   gzip,
+  inputs,
 }:
 (writeShellApplication {
   name = "ex";
