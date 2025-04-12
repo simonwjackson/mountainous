@@ -298,6 +298,35 @@ When adding packages to the system, they should be used as:
 
 The package name in the derivation (`name = "package-name"`) should match the directory name under `packages/`.
 
+## Custom Overlays
+
+You can add custom overlays to your flake by modifying the `flake.nix` file. Overlays allow you to extend or override packages in nixpkgs.
+
+To add overlays, modify your `flake.nix` file as follows:
+
+```nix
+# In flake.nix
+outputs = inputs: let
+  utils = import ./utils.nix {inherit inputs;};
+in
+  utils.mkFlake {
+    inherit inputs;
+    namespace = "mountainous";
+    overlays = with inputs; [
+      (final: prev: {
+        # Example: pulling packages from the chaotic input
+        gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
+        gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
+        
+        # Add more overlays as needed
+      })
+      # Add more overlay functions as needed
+    ];
+  };
+```
+
+These overlays will be applied when importing nixpkgs, making the packages available in all your configurations.
+
 ## License
 
 MIT

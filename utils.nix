@@ -87,7 +87,7 @@
   };
 
   # Function to create a nixosSystem for a given architecture and system name
-  mkNixosSystem = arch: name:
+  mkNixosSystem = overlays: arch: name:
     nixpkgs.lib.nixosSystem {
       system = arch;
       # Pass inputs as specialArgs to make them available to all modules
@@ -97,7 +97,7 @@
         nixosModules
         ++ [
           # Add our packages overlay to make custom packages available
-          {nixpkgs.overlays = [(final: prev: collectPackages prev arch)];}
+          {nixpkgs.overlays = [(final: prev: collectPackages prev arch)] ++ overlays;}
           # System configuration
           ./nix/systems/${arch}/${name}/default.nix
           # impermanence module
@@ -112,21 +112,21 @@
     };
 
   # Function to build system configurations for a specific architecture
-  systemsForArch = arch: let
+  systemsForArch = overlays: arch: let
     systemNames = builtins.attrNames (builtins.readDir ./nix/systems/${arch});
     systems = builtins.listToAttrs (map (name: {
         inherit name;
-        value = mkNixosSystem arch name;
+        value = mkNixosSystem overlays arch name;
       })
       systemNames);
   in
     systems;
 
   # Combine all system configurations across all architectures
-  allSystems =
+  allSystems = overlays:
     builtins.foldl' (
       acc: arch:
-        acc // (systemsForArch arch)
+        acc // (systemsForArch overlays arch)
     ) {}
     architectures;
 
@@ -210,14 +210,17 @@ in {
   mkFlake = {
     inputs,
     namespace,
+    overlays ? [],
   }: let
+    # Create system configurations with overlays
+    systems = allSystems overlays;
     # Create package sets for each system
     pkgSets = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
       system: let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
-          overlays = [];
+          overlays = overlays;
         };
         packages = collectPackages pkgs system;
       in
@@ -230,7 +233,7 @@ in {
         // packages
     );
   in {
-    nixosConfigurations = allSystems;
+    nixosConfigurations = systems;
 
     # Packages output for each supported system
     packages = pkgSets;

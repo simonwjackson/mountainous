@@ -58,6 +58,15 @@
       enable = true;
       autoLogin = true;
     };
+    gaming = {
+      core.enable = true;
+      emulation = {
+        enable = true;
+        gen-7 = true;
+        gen-8 = true;
+      };
+      steam.enable = true;
+    };
   };
 
   # This is required for NixOS

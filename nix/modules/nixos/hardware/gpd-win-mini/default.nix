@@ -59,23 +59,10 @@ in {
     hardware = {
       i2c.enable = true;
       sensor.iio.enable = true;
-      graphics = {
-        # enable32Bit = true;
-      };
       enableAllFirmware = true;
       cpu.amd = {
         updateMicrocode = true;
         ryzen-smu.enable = true;
-      };
-
-      graphics = {
-        enable32Bit = true;
-        extraPackages = with pkgs; [
-          amdvlk
-        ];
-        extraPackages32 = with pkgs; [
-          driversi686Linux.amdvlk
-        ];
       };
     };
   };
