@@ -66,14 +66,17 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 ├── utils.nix              # Helper functions for the flake
 ├── home/                  # Default home-manager configurations
 │   └── default.nix        # Applied to all systems
-├── packages/              # Reusable packages
+├── packages/              # Reusable packages (supports unlimited nesting)
 │   └── ex/                # Example package
 │       ├── default.nix    # Package definition
 │       └── ex.sh          # Package source
-├── modules/               # Reusable modules
+├── modules/               # Reusable modules (supports unlimited nesting)
 │   ├── home/              # Home-manager modules
 │   │   └── my-home-manager-module/
 │   │       └── default.nix
+│   │   └── nested/        # Nested modules are supported
+│   │       └── example/
+│   │           └── default.nix
 │   └── nixos/             # NixOS modules
 │       └── my-nixos-module/
 │           └── default.nix
@@ -152,7 +155,7 @@ If any of these files don't exist, the system will work fine without them. This 
 
 #### Module Auto-loading
 
-All modules placed in the `modules/home/` directory are automatically imported into every user's home-manager configuration. To add a new module:
+All modules placed in the `modules/home/` directory (including any nested subdirectories) are automatically imported into every user's home-manager configuration. To add a new module:
 
 1. Create a new directory in `modules/home/your-module-name/`
 2. Add a `default.nix` file with your module definition
@@ -176,7 +179,7 @@ Similar to home-manager, NixOS modules are automatically loaded:
 
 #### Module Auto-loading
 
-All modules placed in the `modules/nixos/` directory are automatically imported into every system configuration. To add a new module:
+All modules placed in the `modules/nixos/` directory (including any nested subdirectories) are automatically imported into every system configuration. To add a new module:
 
 1. Create a new directory in `modules/nixos/your-module-name/`
 2. Add a `default.nix` file with your module definition
@@ -233,13 +236,20 @@ The flake automatically collects and exposes packages from the `packages` direct
 
 ### Package Structure
 
-Each package should be placed in its own directory under `packages/` with at least a `default.nix` file:
+Each package should be placed in its own directory under `packages/` with at least a `default.nix` file. Packages can be nested in subdirectories to any depth, and will be available with names that reflect their path (with slashes replaced by dashes):
 
 ```
 packages/
   my-package/
-    default.nix    # Package definition
+    default.nix    # Package definition (accessible as my-package)
     # Additional sources as needed
+  nested/
+    cool-package/   # Nested package (accessible as nested-cool-package)
+      default.nix
+    deeply/
+      nested/
+        pkg/         # Deeply nested package (accessible as nested-deeply-nested-pkg)
+          default.nix
 ```
 
 ### Package Definition

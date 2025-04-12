@@ -35,6 +35,13 @@
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
   mountainous = {
+    hardware = {
+      devices = {
+        gpd-win-mini = {
+          enable = true;
+        };
+      };
+    };
     disks = {
       frostbite = {
         enable = true;
