@@ -33,25 +33,26 @@ in {
         "/var/lib/bluetooth"
         "/var/lib/nixos"
         "/var/lib/fprint"
+        "/home/simonwjackson"
       ];
       files = [
         "/etc/machine-id"
         "/etc/adjtime"
       ];
-      users."simonwjackson" = {
+      # users."simonwjackson" = {
       # users."${config.mountainous.user.name}" = {
-        files = [];
-        directories = [
-          ".supermaven"
-          ".mozilla"
-          ".config"
-          ".cache"
-          ".local/state"
-          ".local/share"
-          ".local/share/Steam"
-          "Downloads"
-        ];
-      };
+      #  files = [];
+      #  directories = [
+      #    ".supermaven"
+      #    ".mozilla"
+      #    ".config"
+      #    ".cache"
+      #    ".local/state"
+      #    ".local/share"
+      #    ".local/share/Steam"
+      #    "Downloads"
+      #  ];
+      # };
     };
   };
 }
