@@ -255,6 +255,7 @@ in {
           # "$mainMod, E, exec, ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
           "$mainMod SHIFT, E, exec, ${kitty}"
           "$mainMod, A, layoutmsg, swapwithmaster"
+          "$mainMod SHIFT, A, exec, ${workspaceCyclerScript}/bin/workspaceCycler"
 
           "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
           # "$mainMod, T, exec, ${hyprctl} clients | grep -q 'tmesh' && ${hyprctl} dispatch focuswindow main-term || ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
@@ -335,6 +336,14 @@ in {
       mergedLists = lib.foldl' (acc: attr: acc // (mergeListAttr attr)) {} listAttrs;
 
       # Final merged settings
+      # Create a script file for workspaceCycler with necessary dependencies
+      workspaceCyclerScript = pkgs.writeShellScriptBin "workspaceCycler" ''
+        #!${pkgs.bash}/bin/bash
+        export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland]}:$PATH"
+        
+        ${builtins.readFile ./workspaceCycle.sh}
+      '';
+
       mergedSettings =
         lib.recursiveUpdate
         (lib.recursiveUpdate defaultSettings cfg.extraSettings)
