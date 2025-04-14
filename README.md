@@ -230,6 +230,18 @@ To enable VM display auto-resizing for a system, add to your configuration:
 
 The module only applies when building a VM using `nixos-rebuild build-vm` and running it with `./result/bin/run-nixos-vm`. It does not affect the system when installed on real hardware.
 
+## Hyprland Configuration
+
+The mountainous configuration includes Hyprland as a window manager option with various pre-configured keybindings.
+
+### Key Applications and Shortcuts
+
+| Application | Shortcut | Description |
+|-------------|----------|-------------|
+| walker | SUPER + SPACE | Toggle application launcher |
+
+For more details on the Hyprland configuration, see the `nix/modules/home/hyprland/default.nix` file.
+
 ## Custom Packages
 
 The flake automatically collects and exposes packages from the `packages` directory. Each package is accessible through the flake outputs and available in your NixOS configurations.

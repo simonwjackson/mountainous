@@ -103,9 +103,10 @@ in {
       kitty = "${pkgs.kitty}/bin/kitty";
       lf = "${pkgs.lf}/bin/lf";
       swaybg = "${pkgs.swaybg}/bin/swaybg";
+      walker = "${pkgs.walker}/bin/walker";
 
       defaultSettings = {
-        # monitor = [",preferred,auto,auto"];
+        monitor = [",preferred,auto,auto"];
 
         "$terminal" = "${kitty}";
         "$fileManager" = "${kitty} -- ${lf}";
@@ -272,6 +273,7 @@ in {
           "$mainMod, J, movefocus, d"
           "$mainMod, K, movefocus, u"
           "$mainMod, L, movefocus, r"
+          "$mainMod, SPACE, exec, ${walker}"
           "$mainMod SHIFT, left, resizeactive, -20 0"
           "$mainMod SHIFT, right, resizeactive, 20 0"
           "$mainMod SHIFT, up, resizeactive, 0 -20"
