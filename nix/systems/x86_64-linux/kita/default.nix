@@ -9,9 +9,7 @@
 
   mountainous = {
     profiles = {
-      base = {
-        enable = true;
-      };
+      base.enable = true;
     };
     # networking.core.names = [
     #   # TODO: Move to caldigit module
@@ -24,6 +22,11 @@
     #     mac = "86:4f:69:77:9c:62";
     #   }
     # ];
+    hybrid-sleep = {
+      enable = true;
+      delay = 5;
+      hibernate = true;
+    };
     hardware = {
       devices = {
         gpd-win-mini = {
