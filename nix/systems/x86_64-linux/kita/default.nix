@@ -31,6 +31,9 @@
     initialPassword = "asdfasdfasdf";
   };
 
+  services.hardware.bolt.enable = true;  # Enable Thunderbolt support
+  boot.kernelModules = [ "igc" "thunderbolt" ];
+
   # Enable flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
