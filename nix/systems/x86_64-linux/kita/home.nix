@@ -3,16 +3,21 @@
     enable = true;
   };
 
-  # Additional packages specific to this system
-  home.packages = with pkgs; [
-    neovim
-    ex # Example extraction utility package from packages directory
-  ];
-
   # System-specific settings
   programs.git.extraConfig = {
     init.defaultBranch = "main";
   };
+
+  programs.direnv.enable = true;
+
+  home.packages = with pkgs; [
+  # Move later
+    windsurf
+    code-cursor
+
+    neovim
+    ex # Example extraction utility package from packages directory
+  ];
 
   # Converted kanshi config to home-manager nix config
   services.kanshi = {

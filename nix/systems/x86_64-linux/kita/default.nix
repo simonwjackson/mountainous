@@ -1,43 +1,29 @@
-{pkgs, ...}: {
-  # Basic system configuration
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-  # Network configuration
-  networking = {
-    hostName = "kita"; # Define your hostname
-    networkmanager.enable = true;
-  };
-
-  # Time zone and locale
-  time.timeZone = "UTC";
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  # Basic packages
-  environment.systemPackages = with pkgs; [
-    vim
-    wget
-    git
-    ex
-  ];
-
-  # Enable SSH
-  services.openssh.enable = true;
-
-  # User configuration
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    extraGroups = ["wheel" "networkmanager"];
-    initialPassword = "asdfasdfasdf";
-  };
-
-  services.hardware.bolt.enable = true;  # Enable Thunderbolt support
-  boot.kernelModules = [ "igc" "thunderbolt" ];
-
-  # Enable flakes
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+{
+  config,
+  pkgs,
+  ...
+}: {
+  ###################
+  # Mountainous
+  ###################
 
   mountainous = {
+    profiles = {
+      base = {
+        enable = true;
+      };
+    };
+    # networking.core.names = [
+    #   # TODO: Move to caldigit module
+    #   {
+    #     name = "eth";
+    #     mac = "64:4b:f0:6a:6c:7e";
+    #   }
+    #   {
+    #     name = "wifi";
+    #     mac = "86:4f:69:77:9c:62";
+    #   }
+    # ];
     hardware = {
       devices = {
         gpd-win-mini = {
@@ -70,6 +56,61 @@
       };
       steam.enable = true;
     };
+  };
+
+  ###################
+  # Misc
+  ###################
+
+  # Basic system configuration
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # Network configuration
+  networking = {
+    hostName = "kita"; # Define your hostname
+    networkmanager.enable = true;
+  };
+
+  # Time zone and locale
+  time.timeZone = "America/Chicago";
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  # Basic packages
+  environment.systemPackages = with pkgs; [
+    vim
+    wget
+    git
+    ex
+  ];
+
+  programs.obs-studio = {
+    enable = true;
+    enableVirtualCamera = true;
+  };
+
+  # Enable SSH
+  services.openssh.enable = true;
+
+  # User configuration
+  users.users.simonwjackson = {
+    isNormalUser = true;
+    extraGroups = ["wheel" "networkmanager"];
+    initialPassword = "asdfasdfasdf";
+  };
+
+  services.hardware.bolt.enable = true; # Enable Thunderbolt support
+  boot.kernelModules = [
+    "igc"
+    "thunderbolt"
+  ];
+
+  # Enable flakes
+  nix.settings.experimental-features = ["nix-command" "flakes"];
+
+  hardware = {
+    enableRedistributableFirmware = true;
+    enableAllFirmware = true;
   };
 
   # This is required for NixOS
