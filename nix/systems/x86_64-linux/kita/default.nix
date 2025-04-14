@@ -69,12 +69,7 @@
   # Network configuration
   networking = {
     hostName = "kita"; # Define your hostname
-    networkmanager.enable = true;
   };
-
-  # Time zone and locale
-  time.timeZone = "America/Chicago";
-  i18n.defaultLocale = "en_US.UTF-8";
 
   # Basic packages
   environment.systemPackages = with pkgs; [
@@ -89,13 +84,8 @@
     enableVirtualCamera = true;
   };
 
-  # Enable SSH
-  services.openssh.enable = true;
-
   # User configuration
   users.users.simonwjackson = {
-    isNormalUser = true;
-    extraGroups = ["wheel" "networkmanager"];
     initialPassword = "asdfasdfasdf";
   };
 
@@ -104,14 +94,6 @@
     "igc"
     "thunderbolt"
   ];
-
-  # Enable flakes
-  nix.settings.experimental-features = ["nix-command" "flakes"];
-
-  hardware = {
-    enableRedistributableFirmware = true;
-    enableAllFirmware = true;
-  };
 
   # This is required for NixOS
   system.stateVersion = "24.11";

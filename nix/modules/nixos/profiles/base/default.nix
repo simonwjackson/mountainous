@@ -67,13 +67,31 @@ in {
     # TODO: Move to (desktop?) profile
     environment.variables.BROWSER = "firefox";
 
-    time.timeZone = "America/Chicago";
-
     services.gpm.enable = true; # TTY mouse
 
     # This is a hack to get around a bug in nixos-option
     # TODO: Remove this when nixos-option is fixed
     # INFO: https://github.com/NixOS/nixpkgs/issues/291051
     environment.etc."NIXOS_OZONE_WL".text = "1";
+
+    # Enable flakes
+    nix.settings.experimental-features = ["nix-command" "flakes"];
+  
+    hardware = {
+      enableRedistributableFirmware = true;
+      enableAllFirmware = true;
+    };
+
+    # Enable SSH
+    services.openssh.enable = true;
+
+    # Network configuration
+    networking = {
+      networkmanager.enable = true;
+    };
+
+    # Time zone and locale
+    time.timeZone = "America/Chicago";
+    i18n.defaultLocale = "en_US.UTF-8";
   };
 }
