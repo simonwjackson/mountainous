@@ -36,6 +36,24 @@ in {
     # Misc
     ###################
 
+    boot.kernel.sysctl = {
+      "net.ipv4.ip_forward" = 1;
+      "net.ipv6.conf.all.forwarding" = 1;
+      "net.ipv6.conf.all.disable_ipv6" = 1;
+      "net.ipv6.conf.default.disable_ipv6" = 1;
+    };
+
+    networking = {
+      useDHCP = lib.mkDefault true;
+      domain = "mountaino.us";
+      networkmanager = {
+        enable = true;
+      };
+    };
+
+    # WARN: This speeds up `nixos-rebuild`, but im not sure if there are any side effects
+    systemd.services.NetworkManager-wait-online.enable = false;
+
     users = {
       groups.media = {
         gid = lib.mkForce 333;
@@ -66,16 +84,15 @@ in {
 
     # environment.pathsToLink = ["/share/zsh"];
 
-    # TODO: Move to (desktop?) profile
-    environment.variables.BROWSER = "firefox";
+    environment = {
+      # This is a hack to get around a bug in nixos-option
+      # TODO: Remove this when nixos-option is fixed
+      # INFO: https://github.com/NixOS/nixpkgs/issues/291051
+      etc."NIXOS_OZONE_WL".text = "1";
 
-    # Enable TTY mouse
-    services.gpm.enable = true;
-
-    # This is a hack to get around a bug in nixos-option
-    # TODO: Remove this when nixos-option is fixed
-    # INFO: https://github.com/NixOS/nixpkgs/issues/291051
-    environment.etc."NIXOS_OZONE_WL".text = "1";
+      # TODO: Move to (desktop?) profile
+      variables.BROWSER = "firefox";
+    };
 
     hardware = {
       # This means we can use firmware that is not redistributable
@@ -119,16 +136,27 @@ in {
       services.spice-vdagentd.enable = true;
     };
 
-    # Network configuration
-    networking = {
-      networkmanager.enable = true;
+    # Automatic timezone detection
+    services.automatic-timezoned.enable = true; 
+
+    i18n.defaultLocale = "en_US.UTF-8";
+    i18n.extraLocaleSettings = {
+      LC_ADDRESS = "en_US.UTF-8";
+      LC_IDENTIFICATION = "en_US.UTF-8";
+      LC_MEASUREMENT = "en_US.UTF-8";
+      LC_MONETARY = "en_US.UTF-8";
+      LC_NAME = "en_US.UTF-8";
+      LC_NUMERIC = "en_US.UTF-8";
+      LC_PAPER = "en_US.UTF-8";
+      LC_TELEPHONE = "en_US.UTF-8";
+      LC_TIME = "en_US.UTF-8";
     };
 
-    # Time zone and locale
-    time.timeZone = "America/Chicago";
-    i18n.defaultLocale = "en_US.UTF-8";
-
     services = {
+      # Enable TTY mouse
+      gpm.enable = true;
+
+      # OpenSSH server
       openssh.enable = true;
 
       # A daemon that automatically adjusts CPU frequency based on usage

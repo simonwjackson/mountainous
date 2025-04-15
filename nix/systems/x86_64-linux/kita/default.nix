@@ -27,13 +27,6 @@
       delay = 5;
       hibernate = true;
     };
-    hardware = {
-      devices = {
-        gpd-win-mini = {
-          enable = true;
-        };
-      };
-    };
     disks = {
       frostbite = {
         enable = true;
@@ -65,9 +58,57 @@
   # Misc
   ###################
 
-  # Basic system configuration
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  hardware = {
+    # i2c is for sensors and other hardware that is connected to the motherboard
+    i2c.enable = true;
+
+    sensor.iio.enable = true;
+    cpu.amd = {
+      updateMicrocode = true;
+      ryzen-smu.enable = true;
+    };
+
+    # Enable Bluetooth support
+    bluetooth.enable = true;
+    bluetooth.powerOnBoot = true;
+  };
+
+  boot = {
+    loader = {
+      systemd-boot.enable = true;
+      efi.canTouchEfiVariables = true;
+    };
+    initrd = {
+      availableKernelModules = [
+        "nvme"
+        "xhci_pci"
+        "thunderbolt"
+        "usbhid"
+        "usb_storage"
+        "uas"
+        "sd_mod"
+      ];
+      kernelModules = ["amdgpu"];
+    };
+    kernelModules = ["kvm-amd" "tun" "igc" "thunderbolt"];
+    kernelPackages = pkgs.linuxPackages_zen;
+    kernelParams = [
+      # Enable AMD power management
+      "amd_pstate=active"
+
+      # HiDPI scaling
+      "video=efifb:scale"
+
+      # Display Core: allows the GPU to control the display
+      # "amdgpu.dc=1"
+
+      # Runtime power management. disabled.
+      # "amdgpu.runpm=0"
+
+      # Fast boot will speed up boot time by skipping some initialization
+      "amdgpu.fastboot=1"
+    ];
+  };
 
   # Network configuration
   networking = {
@@ -80,6 +121,7 @@
     wget
     git
     ex
+    ryzenadj
   ];
 
   programs.obs-studio = {
@@ -87,16 +129,8 @@
     enableVirtualCamera = true;
   };
 
-  # User configuration
-  users.users.simonwjackson = {
-    initialPassword = "asdfasdfasdf";
-  };
-
-  services.hardware.bolt.enable = true; # Enable Thunderbolt support
-  boot.kernelModules = [
-    "igc"
-    "thunderbolt"
-  ];
+  # Enable Thunderbolt support
+  services.hardware.bolt.enable = true;
 
   # This is required for NixOS
   system.stateVersion = "24.11";

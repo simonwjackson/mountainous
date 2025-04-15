@@ -29,6 +29,7 @@ in {
     environment.persistence."${cfg.persistPath}" = {
       hideMounts = true;
       directories = [
+        "/etc/NetworkManager/system-connections"
         "/var/lib/systemd/coredump"
         "/var/lib/bluetooth"
         "/var/lib/nixos"
