@@ -6,7 +6,7 @@
   system,
   ...
 }: let
-  cfg = config.mountainous.gaming.steam;
+  cfg = config.mountainous.steam;
 
   steamWrapper = pkgs.writeShellScriptBin "steam" ''
     # Path to localconfig.vdf
@@ -21,10 +21,8 @@
     exec "$STEAM_ORIGINAL" "$@"
   '';
 in {
-  options.mountainous = {
-    gaming.steam = {
-      enable = lib.mkEnableOption "Enable steam";
-    };
+  options.mountainous.steam = {
+    enable = lib.mkEnableOption "Enable steam";
   };
 
   config = lib.mkIf cfg.enable {

@@ -11,6 +11,8 @@
     profiles = {
       base.enable = true;
       laptop.enable = true;
+      workspace.enable = true;
+      gaming.enable = true;
     };
     # networking.core.names = [
     #   # TODO: Move to caldigit module
@@ -30,19 +32,6 @@
         device = "/dev/nvme0n1";
         swapSize = "32G";
       };
-    };
-    hyprland = {
-      enable = true;
-      autoLogin = true;
-    };
-    gaming = {
-      core.enable = true;
-      emulation = {
-        enable = true;
-        gen-7 = true;
-        gen-8 = true;
-      };
-      steam.enable = true;
     };
   };
 
