@@ -44,8 +44,8 @@
   # Collect all home-manager modules
   homeManagerModules = collectModules ./nix/modules/home;
 
-  # Collect all NixOS modules
-  nixosModules = collectModules ./nix/modules/nixos;
+  # Collect all NixOS modules and profiles
+  nixosModules = collectModules ./nix/modules/nixos ++ collectModules ./nix/profiles;
 
   # Get all architectures from the systems directory
   architectures = builtins.attrNames (builtins.readDir ./nix/systems);

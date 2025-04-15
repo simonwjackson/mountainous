@@ -14,6 +14,7 @@
       workspace.enable = true;
       gaming.enable = true;
     };
+
     # networking.core.names = [
     #   # TODO: Move to caldigit module
     #   {
