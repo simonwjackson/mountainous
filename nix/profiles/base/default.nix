@@ -40,6 +40,8 @@ in {
     # Misc
     ###################
 
+    environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
     boot.kernel.sysctl = {
       "net.ipv4.ip_forward" = 1;
       "net.ipv6.conf.all.forwarding" = 1;
@@ -87,16 +89,6 @@ in {
     # '';
 
     # environment.pathsToLink = ["/share/zsh"];
-
-    environment = {
-      # This is a hack to get around a bug in nixos-option
-      # TODO: Remove this when nixos-option is fixed
-      # INFO: https://github.com/NixOS/nixpkgs/issues/291051
-      etc."NIXOS_OZONE_WL".text = "1";
-
-      # TODO: Move to (desktop?) profile
-      variables.BROWSER = "firefox";
-    };
 
     hardware = {
       # This means we can use firmware that is not redistributable
