@@ -18,6 +18,10 @@ in {
     ###################
 
     mountainous = {
+      impermanence = {
+        enable = true;
+        persistPath = "/tundra/permafrost";
+      };
       user = {
         enable = mkDefault true;
         name = mkDefault "simonwjackson";

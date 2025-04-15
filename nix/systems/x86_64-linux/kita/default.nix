@@ -10,6 +10,7 @@
   mountainous = {
     profiles = {
       base.enable = true;
+      laptop.enable = true;
     };
     # networking.core.names = [
     #   # TODO: Move to caldigit module
@@ -22,11 +23,6 @@
     #     mac = "86:4f:69:77:9c:62";
     #   }
     # ];
-    hybrid-sleep = {
-      enable = true;
-      delay = 5;
-      hibernate = true;
-    };
     disks = {
       frostbite = {
         enable = true;
@@ -34,10 +30,6 @@
         device = "/dev/nvme0n1";
         swapSize = "32G";
       };
-    };
-    impermanence = {
-      enable = true;
-      persistPath = "/tundra/permafrost";
     };
     hyprland = {
       enable = true;
