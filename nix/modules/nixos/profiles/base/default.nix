@@ -17,6 +17,7 @@ in {
     ###################
 
     mountainous = {
+      security.enable = true;
       user = {
         enable = mkDefault true;
         name = mkDefault "simonwjackson";
