@@ -75,10 +75,6 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    services.udev.extraRules = ''
-      KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
-    '';
-
     programs.zsh.enable = true;
 
     users = {
@@ -88,6 +84,7 @@ in {
           isNormalUser = true;
           # openssh.authorizedKeys.keys = cfg.authorizedKeys;
           # hashedPasswordFile = lib.mkDefault cfg.hashedPasswordFile;
+          initialPassword = "asdfasdfasdf";
           home = cfg.home;
           group = "users";
           extraGroups =

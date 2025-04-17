@@ -40,6 +40,24 @@
   # Misc
   ###################
 
+  # enable syncthing
+  services.syncthing = {
+    enable = true;
+    user = "simonwjackson";
+    group = "users";
+    dataDir = "/home/simonwjackson/.local/share/syncthing";
+    configDir = "/home/simonwjackson/.config/syncthing";
+    overrideFolders = false;
+    overrideDevices = false;
+  };
+
+  # Disable default folder
+  systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true";
+
+  services.udev.extraRules = ''
+    KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
+  '';
+
   hardware = {
     # i2c is for sensors and other hardware that is connected to the motherboard
     i2c.enable = true;
@@ -104,6 +122,7 @@
     git
     ex
     ryzenadj
+    obsidian
   ];
 
   programs.obs-studio = {

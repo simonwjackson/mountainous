@@ -61,6 +61,25 @@ in {
       };
     };
 
+    services.hyprsunset = {
+      enable = true;
+      transitions = {
+        sunrise = {
+          calendar = "*-*-* 06:00:00";
+          requests = [
+            [ "temperature" "6500" ]
+            [ "gamma" "100" ]
+          ];
+        };
+        sunset = {
+          calendar = "*-*-* 19:00:00";
+          requests = [
+            [ "temperature" "3500" ]
+          ];
+        };
+      };
+    };
+
     services.hypridle = {
       enable = true;
       settings = {
@@ -115,6 +134,7 @@ in {
 
         exec-once = [
           "${swaybg} -c '#000000'"
+          "${pkgs.hyprdim}/bin/hyprdim"
         ];
 
         env = [
@@ -251,14 +271,15 @@ in {
           "$mainMod SHIFT, 0, movetoworkspace, 10"
 
           "$mainMod, D, togglespecialworkspace, magic"
-          "$mainMod CTRL, O, exec, hyprctl activewindow -j | ${pkgs.jq}/bin/jq -r '.fullscreen' | ${pkgs.gnugrep}/bin/grep -q '2' && ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0 || ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1"
           "$mainMod, M, exec, hyprctl activewindow -j | ${pkgs.jq}/bin/jq -r '.fullscreen' | ${pkgs.gnugrep}/bin/grep -q '2' && ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 0 || ${pkgs.hyprland}/bin/hyprctl dispatch fullscreen 1"
           # "$mainMod, E, exec, ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
           "$mainMod SHIFT, E, exec, ${kitty}"
           "$mainMod, A, layoutmsg, swapwithmaster"
           "$mainMod SHIFT, A, exec, ${workspaceCyclerScript}/bin/workspaceCycler"
 
+"$mainMod, P, exec, ${pkgs.hyprpicker}/bin/hyprpicker -a"
           "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
+          "$mainMod, O, exec, ${hyprctl} clients | ${grep} -iq 'class: obsidian' && ${hyprctl} dispatch focuswindow 'class:^(obsidian)$' || ${pkgs.obsidian}/bin/obsidian"
           # "$mainMod, T, exec, ${hyprctl} clients | grep -q 'tmesh' && ${hyprctl} dispatch focuswindow main-term || ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
           # "$mainMod, G, exec, ${hyprctl} dispatch workspace 2;"
           # "$mainMod SHIFT, G, exec, ${hyprctl} clients | ${grep} -iq 'class: steam' && ${hyprctl} dispatch focuswindow 'class:^(steam)$' || steam"
