@@ -11,7 +11,7 @@
   programs.direnv.enable = true;
 
   home.packages = with pkgs; [
-  # Move later
+    # Move later
     windsurf
     code-cursor
 

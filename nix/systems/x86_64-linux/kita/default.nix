@@ -130,6 +130,13 @@
   # Enable Thunderbolt support
   services.hardware.bolt.enable = true;
 
+  fileSystems."/snowscape" = {
+    device = "/tundra/frostbite/snowscape";
+    fsType = "none";
+    options = ["bind"];
+    neededForBoot = false;
+  };
+
   # This is required for NixOS
   system.stateVersion = "24.11";
 }
