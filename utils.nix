@@ -98,6 +98,8 @@
         ++ [
           # Add our packages overlay to make custom packages available
           {nixpkgs.overlays = [(final: prev: collectPackages prev arch)] ++ overlays;}
+          # Automatically set hostname based on the folder name
+          {networking.hostName = name;}
           # System configuration
           ./nix/systems/${arch}/${name}/default.nix
           # impermanence module

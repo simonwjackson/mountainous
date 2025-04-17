@@ -112,11 +112,6 @@
     ];
   };
 
-  # Network configuration
-  networking = {
-    hostName = "kita"; # Define your hostname
-  };
-
   # Basic packages
   environment.systemPackages = with pkgs; [
     vim
