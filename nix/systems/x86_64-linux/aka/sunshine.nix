@@ -4,48 +4,30 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkIf mkOption mkEnableOption types hasAttr isBool genAttrs;
+  inherit (lib) mkIf mkOption mkEnableOption types hasAttr isBool genAttrs mkForce;
 
-  logPath = "/tmp/sunshine.log";
-  primaryMonitor = "DP-1";
-  virtualMonitor = "HDMI-A-2";
-  getHyprlandSignature = pkgs.writeShellScript "getHyprlandSignature" ''
-    ${pkgs.findutils}/bin/find "$XDG_RUNTIME_DIR/hypr/" -maxdepth 1 -type d |
-      ${pkgs.gnugrep}/bin/grep -v "^$XDG_RUNTIME_DIR/hypr/$" |
-      ${pkgs.gawk}/bin/awk -F'/' '{print $NF}'
-  '';
+  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+  journalctl = "${pkgs.systemd}/bin/journalctl";
+  grep = "${pkgs.gnugrep}/bin/grep";
 
   waitForDisconnect = pkgs.writeShellScript "waitForDisconnect" ''
-    ${pkgs.coreutils}/bin/tail -n 0 -f "${logPath}" |
-      ${pkgs.gnugrep}/bin/grep -q "CLIENT DISCONNECTED" && $1
+    ${journalctl} --user -u sunshine.service -f |
+      ${grep} -q "CLIENT DISCONNECTED" && $1
   '';
 
   onDisconnect = pkgs.writeShellScript "onDisconnect" ''
-    export PATH="${pkgs.hyprland}/bin:$PATH"
-
-    HYPRLAND_INSTANCE_SIGNATURE=$(${getHyprlandSignature})
-    export HYPRLAND_INSTANCE_SIGNATURE
-
-    hyprctl dispatch dpms on DP-1
-    hyprctl dispatch moveworkspacetomonitor "2" "DP-1" &&
-      hyprctl dispatch dpms off HDMI-A-2
+    ${hyprctl} --instance 0 reload
   '';
 
   onConnect = pkgs.writeShellScript "onConnect" ''
-    export PATH="${pkgs.hyprland}/bin:$PATH"
-
-    HYPRLAND_INSTANCE_SIGNATURE=$(${getHyprlandSignature})
-    export HYPRLAND_INSTANCE_SIGNATURE
-
-    hyprctl dispatch workspace 2
-    sleep 1
-    hyprctl dispatch dpms on HDMI-A-2
-    hyprctl dispatch moveworkspacetomonitor "2" "HDMI-A-2" &&
-      hyprctl dispatch dpms off DP-1
+    ${hyprctl} --instance 0 keyword monitor HDMI-A-2,2160x1856@90,auto,2 &&
+      ${hyprctl} --instance 0 keyword monitor DP-1,disable &&
+      ${hyprctl} --instance 0 keyword monitor DP-2,disable
   '';
 in {
   services.sunshine = {
     enable = true;
+    capSysAdmin = true;
     settings = {
       output_name = 0;
     };
@@ -54,9 +36,9 @@ in {
       env = {
         PATH = "$(PATH):$(HOME)/.local/bin";
       };
-      apps = lib.mkAfter [
+      apps = mkForce [
         {
-          name = "Gaming";
+          name = "Gamingx";
           prep-cmd = [
             {
               do = onConnect;
@@ -72,19 +54,8 @@ in {
     };
   };
 
-  # Create a custom target for Hyprland
-  systemd.user.targets.hyprland-session = {
-    description = "Hyprland compositor session";
-    documentation = ["man:systemd.special(7)"];
-    bindsTo = ["graphical-session.target"];
-    wants = ["graphical-session-pre.target"];
-    after = ["graphical-session-pre.target"];
-  };
-
-  # Modify the Sunshine service to use our custom target
-  systemd.user.services.sunshine = {
-    after = ["hyprland-session.target"];
-    requires = ["hyprland-session.target"];
-    partOf = ["graphical-session.target"];
-  };
+  services.udev.extraRules = ''
+    KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
+    KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
+  '';  
 }

@@ -40,7 +40,7 @@ in {
     # Misc
     ###################
 
-    environment.sessionVariables.NIXOS_OZONE_WL = "1";
+    services.tailscale.enable = true;
 
     boot.kernel.sysctl = {
       "net.ipv4.ip_forward" = 1;

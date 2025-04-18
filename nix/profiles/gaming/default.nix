@@ -29,11 +29,11 @@ in {
       # mangohud_git
       # gamescope-wsi_git
       # gamescope_git
-      dolphin-emu
-      rpcs3
-      cemu
-      ryujinx
-      retroarch-full
+      # dolphin-emu
+      # rpcs3
+      # cemu
+      # ryujinx
+      # retroarch-full
     ];
 
     # BUG: if dirs dont exist, they are owned by root

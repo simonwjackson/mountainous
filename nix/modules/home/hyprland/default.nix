@@ -295,6 +295,7 @@ in {
           "$mainMod, K, movefocus, u"
           "$mainMod, L, movefocus, r"
           "$mainMod, SPACE, exec, ${walker}"
+          "$mainMod CTRL, SPACE, exec, ${walker} --modules windows"
           "$mainMod SHIFT, left, resizeactive, -20 0"
           "$mainMod SHIFT, right, resizeactive, 20 0"
           "$mainMod SHIFT, up, resizeactive, 0 -20"
