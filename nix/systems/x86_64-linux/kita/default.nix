@@ -114,8 +114,6 @@
 
   # Basic packages
   environment.systemPackages = with pkgs; [
-    vim
-    wget
     git
     ex
     ryzenadj

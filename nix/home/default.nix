@@ -45,6 +45,9 @@
     # INFO: https://github.com/NixOS/nixpkgs/issues/291051
     NIXOS_OZONE_WL = "1";
 
+    # Allow non-free packages
+    NIXPKGS_ALLOW_UNFREE=1;
+    
     BROWSER = "firefox";
   };
 
