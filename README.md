@@ -242,6 +242,33 @@ The mountainous configuration includes Hyprland as a window manager option with 
 
 For more details on the Hyprland configuration, see the `nix/modules/home/hyprland/default.nix` file.
 
+## Sunshine Configuration
+
+The Sunshine module provides game streaming capability with customizable resolution and refresh rate settings per application.
+
+### Resolution and Refresh Rate Configuration
+
+Each application entry in the Sunshine configuration can specify its own resolution and refresh rate in the format `resolution@fps`. 
+
+For example:
+
+```nix
+{
+  name = "4K 60";
+  prep-cmd = [
+    {
+      do = makeOnConnect "3840x2160@60";
+      undo = "";
+    }
+  ];
+  # other configuration...
+}
+```
+
+This allows you to have different resolution settings for various devices and use cases, with each application entry using the appropriate settings for that specific profile.
+
+Configuration is located at `nix/systems/x86_64-linux/aka/sunshine.nix`.
+
 ## Custom Packages
 
 The flake automatically collects and exposes packages from the `packages` directory. Each package is accessible through the flake outputs and available in your NixOS configurations.

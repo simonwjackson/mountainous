@@ -26,7 +26,7 @@ in {
 
   config = lib.mkIf cfg.enable {
     programs.hyprlock = {
-      enable = true;
+      enable = false;
       settings = {
         general = {
           disable_loading_bar = true;
@@ -86,19 +86,20 @@ in {
         general = {
           after_sleep_cmd = "hyprctl dispatch dpms on";
           ignore_dbus_inhibit = false;
-          lock_cmd = "hyprlock";
+          # lock_cmd = "hyprlock"; # Commented out lock command
         };
 
         listener = [
           {
-            timeout = 180;
-            on-timeout = "hyprlock";
-          }
-          {
-            timeout = 120;
+            timeout = 300;
             on-timeout = "hyprctl dispatch dpms off";
             on-resume = "hyprctl dispatch dpms on";
+            # on-timeout = "hyprlock & hyprctl dispatch dpms off"; # Commented out locking with screen off
           }
+          # { 
+          #   timeout = 150;
+          #   on-timeout = "hyprlock";
+          # }
         ];
       };
     };
@@ -275,6 +276,8 @@ in {
           # "$mainMod, E, exec, ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
           "$mainMod SHIFT, E, exec, ${kitty}"
           "$mainMod, A, layoutmsg, swapwithmaster"
+          # For Android
+          "$mainMod, F1, layoutmsg, swapwithmaster"
           "$mainMod SHIFT, A, exec, ${workspaceCyclerScript}/bin/workspaceCycler"
 
 "$mainMod, P, exec, ${pkgs.hyprpicker}/bin/hyprpicker -a"
