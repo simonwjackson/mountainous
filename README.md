@@ -246,9 +246,9 @@ For more details on the Hyprland configuration, see the `nix/modules/home/hyprla
 
 The Sunshine module provides game streaming capability with customizable resolution and refresh rate settings per application.
 
-### Resolution and Refresh Rate Configuration
+### Resolution, Refresh Rate, and Scaling Configuration
 
-Each application entry in the Sunshine configuration can specify its own resolution and refresh rate in the format `resolution@fps`. 
+Each application entry in the Sunshine configuration can specify its own resolution, refresh rate, and scaling factor. The resolution and refresh rate are specified in the format `resolution@fps`, and scaling is an integer value (typically 1 or 2). 
 
 For example:
 
@@ -257,7 +257,7 @@ For example:
   name = "4K 60";
   prep-cmd = [
     {
-      do = makeOnConnect "3840x2160@60";
+      do = makeOnConnect { resolution = "3840x2160@60"; scaling = 1; };
       undo = "";
     }
   ];
@@ -265,7 +265,24 @@ For example:
 }
 ```
 
-This allows you to have different resolution settings for various devices and use cases, with each application entry using the appropriate settings for that specific profile.
+```nix
+{
+  name = "ZFold 6 (Landscape)";
+  prep-cmd = [
+    {
+      do = makeOnConnect { resolution = "2160x1856@90"; scaling = 2; };
+      undo = "";
+    }
+  ];
+  # other configuration...
+}
+```
+
+This allows you to have different display settings for various devices and use cases:
+- For larger displays or desktop monitors, use `scaling = 1`
+- For smaller and/or high-DPI displays like phones and tablets, use `scaling = 2` for better readability
+
+The scaling parameter is optional and defaults to 1 if not specified.
 
 Configuration is located at `nix/systems/x86_64-linux/aka/sunshine.nix`.
 
