@@ -42,7 +42,10 @@ in {
           name = "4K 60";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "3840x2160@60"; scaling = 1; };
+              do = makeOnConnect { 
+                resolution = "3840x2160@60";
+                scaling = 1;
+              };
               undo = "";
             }
           ];
@@ -56,7 +59,10 @@ in {
           name = "FHD 120";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "1920x1080@120"; scaling = 1; };
+              do = makeOnConnect { 
+                resolution = "1920x1080@120";
+                scaling = 1;
+              };
               undo = "";
             }
           ];
@@ -70,7 +76,10 @@ in {
           name = "ZFold 6 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "1856x2160@90"; scaling = 2; };
+              do = makeOnConnect { 
+                resolution = "1856x2160@90";
+                scaling = 2;
+              };
               undo = "";
             }
           ];
@@ -84,7 +93,10 @@ in {
           name = "ZFold 6 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "2160x1856@90"; scaling = 2; };
+              do = makeOnConnect { 
+                resolution = "2160x1856@90";
+                scaling = 2;
+              };
               undo = "";
             }
           ];
@@ -99,7 +111,10 @@ in {
           name = "Samsung Tab S9 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "1752x2800@90"; scaling = 2; };
+              do = makeOnConnect { 
+                resolution = "1752x2800@90";
+                scaling = 2;
+              };
               undo = "";
             }
           ];
@@ -113,7 +128,10 @@ in {
           name = "Samsung Tab S9 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "2800x1752@90"; scaling = 2; };
+              do = makeOnConnect { 
+                resolution = "2800x1752@90";
+                scaling = 2;
+              };
               undo = "";
             }
           ];
@@ -127,7 +145,10 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "2560x2024@60"; scaling = 1.5; };
+              do = makeOnConnect { 
+                resolution = "2560x2024@60";
+                scaling = 1.5;
+              };
               undo = "";
             }
           ];
@@ -141,7 +162,10 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "2560x2024@60"; scaling = 1.5; };
+              do = makeOnConnect { 
+                resolution = "2560x2024@60";
+                scaling = 1.5;
+              };
               undo = "";
             }
           ];
@@ -155,7 +179,44 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Laptop)";
           prep-cmd = [
             {
-              do = makeOnConnect { resolution = "2560x1240@60"; scaling = 1.5; };
+              do = makeOnConnect { 
+                resolution = "2560x1240@60";
+                scaling = 1.5;
+              };
+              undo = "";
+            }
+          ];
+          cmd = "${waitForDisconnect} ${onDisconnect}";
+          exclude-global-prep-cmd = "false";
+          auto-detach = "false";
+          wait-all = "false";
+        }
+
+        {
+          name = "ZFold 6 Folded (Portrait)";
+          prep-cmd = [
+            {
+              do = makeOnConnect {
+                resolution = "968x2376@90";
+                scaling = 1.25;
+              };
+              undo = "";
+            }
+          ];
+          cmd = "${waitForDisconnect} ${onDisconnect}";
+          exclude-global-prep-cmd = "false";
+          auto-detach = "false";
+          wait-all = "false";
+        }
+
+        {
+          name = "ZFold 6 Folded (Landscape)";
+          prep-cmd = [
+            {
+              do = makeOnConnect {
+                resolution = "2376x968@90";
+                scaling = 1.25;
+              };
               undo = "";
             }
           ];

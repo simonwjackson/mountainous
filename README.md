@@ -200,6 +200,26 @@ These modules can be enabled in the system configuration files as needed.
 
 The system includes a module for impermanence, which allows for a stateless NixOS setup with persistent data stored in a separate partition.
 
+## Sunshine Game Streaming
+
+The system includes a Sunshine game streaming server with preconfigured device profiles for various devices:
+
+### Device Profiles
+
+| Profile | Resolution | Refresh Rate | Scaling |
+|---------|------------|--------------|--------|
+| 4K 60 | 3840x2160 | 60 Hz | 1 |
+| FHD 120 | 1920x1080 | 120 Hz | 1 |
+| ZFold 6 (Portrait) | 1856x2160 | 90 Hz | 2 |
+| ZFold 6 (Landscape) | 2160x1856 | 90 Hz | 2 |
+| ZFold 6 Folded (Portrait) | 968x2368 | 60 Hz | 1 |
+| ZFold 6 Folded (Landscape) | 2368x968 | 60 Hz | 1 |
+| Samsung Tab S9 (Portrait) | 1752x2800 | 90 Hz | 2 |
+| Samsung Tab S9 (Landscape) | 2800x1752 | 90 Hz | 2 |
+| ThinkPad X1 Fold Gen 2 (Landscape) | 2560x2024 | 60 Hz | 1.5 |
+| ThinkPad X1 Fold Gen 2 (Portrait) | 2560x2024 | 60 Hz | 1.5 |
+| ThinkPad X1 Fold Gen 2 (Laptop) | 2560x1240 | 60 Hz | 1.5 |
+
 To enable impermanence for a system, add to your configuration:
 
 ```nix
