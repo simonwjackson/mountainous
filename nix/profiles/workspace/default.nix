@@ -14,24 +14,12 @@ in {
 
   config = mkIf cfg.enable {
     mountainous = {
+      sound.enable = true;
       performance.enable = true;
       hyprland = {
         enable = true;
         autoLogin = true;
       };
-    };
-
-    # Disable PulseAudio
-    services.pulseaudio.enable = false;
-
-    # Enable PipeWire
-    services.pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-      jack.enable = true;
-      wireplumber.enable = true;
     };
   };
 }
