@@ -1,0 +1,176 @@
+# (This is not a dircolors file but it helps to highlight colors and comments)
+# vim:ft=dircolors
+# Catppuccin Frappé colorscheme for lf file manager
+# Inspired by the Catppuccin Frappé palette:
+# https://github.com/catppuccin/catppuccin
+
+# file types (core functionality)
+ln      01;04;38;5;140    # LINK - Lavender (bold, underlined)
+or      38;5;231;48;5;203 # ORPHAN - Red background with white text
+tw      38;5;232;48;5;142 # STICKY_OTHER_WRITABLE - Yellow background
+ow      38;5;232;48;5;108 # OTHER_WRITABLE - Green background
+st      01;38;5;140       # STICKY - Lavender (bold)
+di      01;38;5;110       # DIR - Blue (bold)
+pi      38;5;215          # FIFO - Peach
+so      01;38;5;183       # SOCK - Mauve (bold)
+bd      38;5;215;01       # BLK - Peach (bold)
+cd      38;5;215;01       # CHR - Peach (bold)
+su      38;5;108;01       # SETUID - Green (bold)
+sg      38;5;108;01       # SETGID - Green (bold)
+ex      01;38;5;108       # EXEC - Green (bold)
+fi      00                # FILE - Default
+
+# archives or compressed
+*.tar   38;5;203
+*.tgz   38;5;203
+*.arc   38;5;203
+*.arj   38;5;203
+*.taz   38;5;203
+*.lha   38;5;203
+*.lz4   38;5;203
+*.lzh   38;5;203
+*.lzma  38;5;203
+*.tlz   38;5;203
+*.txz   38;5;203
+*.tzo   38;5;203
+*.t7z   38;5;203
+*.zip   38;5;203
+*.z     38;5;203
+*.dz    38;5;203
+*.gz    38;5;203
+*.lrz   38;5;203
+*.lz    38;5;203
+*.lzo   38;5;203
+*.xz    38;5;203
+*.zst   38;5;203
+*.tzst  38;5;203
+*.bz2   38;5;203
+*.bz    38;5;203
+*.tbz   38;5;203
+*.tbz2  38;5;203
+*.tz    38;5;203
+*.deb   38;5;203
+*.rpm   38;5;203
+*.jar   38;5;203
+*.war   38;5;203
+*.ear   38;5;203
+*.sar   38;5;203
+*.rar   38;5;203
+*.alz   38;5;203
+*.ace   38;5;203
+*.zoo   38;5;203
+*.cpio  38;5;203
+*.7z    38;5;203
+*.rz    38;5;203
+*.cab   38;5;203
+*.wim   38;5;203
+*.swm   38;5;203
+*.dwm   38;5;203
+*.esd   38;5;203
+
+# image formats
+*.jpg   38;5;183
+*.jpeg  38;5;183
+*.mjpg  38;5;183
+*.mjpeg 38;5;183
+*.gif   38;5;183
+*.bmp   38;5;183
+*.pbm   38;5;183
+*.pgm   38;5;183
+*.ppm   38;5;183
+*.tga   38;5;183
+*.xbm   38;5;183
+*.xpm   38;5;183
+*.tif   38;5;183
+*.tiff  38;5;183
+*.png   38;5;183
+*.svg   38;5;183
+*.svgz  38;5;183
+*.mng   38;5;183
+*.pcx   38;5;183
+*.mov   38;5;183
+*.mpg   38;5;183
+*.mpeg  38;5;183
+*.m2v   38;5;183
+*.mkv   38;5;183
+*.webm  38;5;183
+*.ogm   38;5;183
+*.mp4   38;5;183
+*.m4v   38;5;183
+*.mp4v  38;5;183
+*.vob   38;5;183
+*.qt    38;5;183
+*.nuv   38;5;183
+*.wmv   38;5;183
+*.asf   38;5;183
+*.rm    38;5;183
+*.rmvb  38;5;183
+*.flc   38;5;183
+*.avi   38;5;183
+*.fli   38;5;183
+*.flv   38;5;183
+*.gl    38;5;183
+*.dl    38;5;183
+*.xcf   38;5;183
+*.xwd   38;5;183
+*.yuv   38;5;183
+*.cgm   38;5;183
+*.emf   38;5;183
+*.ogv   38;5;183
+*.ogx   38;5;183
+
+# audio formats
+*.aac   38;5;116
+*.au    38;5;116
+*.flac  38;5;116
+*.m4a   38;5;116
+*.mid   38;5;116
+*.midi  38;5;116
+*.mka   38;5;116
+*.mp3   38;5;116
+*.mpc   38;5;116
+*.ogg   38;5;116
+*.ra    38;5;116
+*.wav   38;5;116
+*.oga   38;5;116
+*.opus  38;5;116
+*.spx   38;5;116
+*.xspf  38;5;116
+
+# documents, configuration, text files
+*.txt   38;5;152
+*.md    38;5;152
+*.mkd   38;5;152
+*.org   38;5;152
+*.json  38;5;215
+*.yaml  38;5;215
+*.yml   38;5;215
+*.toml  38;5;215
+*.xml   38;5;215
+*.csv   38;5;152
+*.conf  38;5;142
+*.ini   38;5;142
+*.rc    38;5;142
+
+# source code files
+*.c     38;5;110
+*.cpp   38;5;110
+*.h     38;5;110
+*.hpp   38;5;110
+*.py    38;5;142
+*.js    38;5;142
+*.ts    38;5;142
+*.java  38;5;110
+*.sh    38;5;215
+*.bash  38;5;215
+*.zsh   38;5;215
+*.fish  38;5;215
+*.rb    38;5;203
+*.go    38;5;116
+*.lua   38;5;140
+*.rs    38;5;209
+*.php   38;5;183
+*.html  38;5;209
+*.css   38;5;140
+*.scss  38;5;183
+*.sass  38;5;183

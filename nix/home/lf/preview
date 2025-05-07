@@ -1,0 +1,10 @@
+#!/bin/sh
+
+case "$1" in
+*.tar* | *.zip | *.rar | *.gz | *.7z) tar tf "$1" ;;
+*.pdf) pdftotext "$1" - ;;
+*.jpg | *.jpeg | *.png | *.gif) mediainfo "$1" ;;
+*)
+  bat --color=always --style="-numbers" --paging=never --theme="Catppuccin Frappe" "$1"
+  ;;
+esac

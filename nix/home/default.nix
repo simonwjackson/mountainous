@@ -1,9 +1,204 @@
 # Default home-manager configuration for all systems
 {
-  config,
   pkgs,
+  lib,
   ...
 }: {
+  programs.zoxide = {
+    enable = true;
+    enableBashIntegration = true;
+    enableZshIntegration = true;
+  };
+  programs.bat.enable = true;
+  programs.lf = {
+    enable = true;
+
+    # Set up the previewer script
+    previewer = {
+      source = pkgs.writeShellScript "pv.sh" (builtins.readFile ./lf/preview);
+    };
+
+    # Basic settings
+    settings = {
+      icons = true;
+      colors = true;
+      incsearch = true;
+      scrolloff = 10;
+    };
+
+    # Key bindings
+    keybindings = {
+      "<enter>" = "open";
+      "<esc>" = "quit";
+      "q" = "quit";
+      "." = "set hidden!";
+      "m" = "push :mkdir<space>";
+      "t" = "push :touch<space>";
+      "<delete>" = "delete";
+      "D" = "delete";
+      "f" = "fzf_jump";
+      "F" = "fzf_search";
+      "x" = "extract";
+      "J" = "move-parent down";
+      "K" = "move-parent up";
+      "p" = "paste; clear";
+    };
+
+    commands = let
+      cp = "${pkgs.coreutils}/bin/cp";
+      dirname = "${pkgs.coreutils}/bin/dirname";
+      find = "${pkgs.findutils}/bin/find";
+      fzf = lib.getExe pkgs.fzf;
+      lf = lib.getExe pkgs.lf;
+      mkdir = "${pkgs.coreutils}/bin/mkdir";
+      mv = "${pkgs.coreutils}/bin/mv";
+      ouch = lib.getExe pkgs.ouch;
+      p7z = lib.getExe pkgs.p7zip;
+      printf = "${pkgs.coreutils}/bin/printf";
+      rm = "${pkgs.coreutils}/bin/rm";
+      rsync = lib.getExe pkgs.rsync;
+      sed = lib.getExe pkgs.gnused;
+      stdbuf = "${pkgs.coreutils}/bin/stdbuf";
+      tar = lib.getExe pkgs.gnutar;
+      touch = "${pkgs.coreutils}/bin/touch";
+      tr = "${pkgs.coreutils}/bin/tr";
+      unrar = lib.getExe pkgs.unrar;
+      unzip = lib.getExe pkgs.unzip;
+      zip = lib.getExe pkgs.zip;
+      zoxide = lib.getExe pkgs.zoxide;
+    in {
+      touch = ''
+        %{{
+          IFS=" "
+          file="$*"
+          ${touch} -- "$file"
+          ${lf} -remote "send $id select \"$(${printf} '%s' "$file" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\""
+        }}
+      '';
+      mkdir = ''
+        %{{
+          IFS=" "
+          file="$*"
+          ${mkdir} -p -- "$file"
+          ${lf} -remote "send $id cd \"$(${printf} '%s' "$file" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\""
+        }}
+      '';
+      move-parent = ''
+        &{{
+          dironly="setlocal \"$(${dirname} -- "$PWD" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\" dironly"
+          ${lf} -remote "send $id :updir; $dironly true; $1; $dironly false; open"
+        }}
+      '';
+      fzf_jump = ''
+        ''${{
+          res="$(${find} . -maxdepth 1 | ${fzf} --reverse --header="Jump to location")"
+          if [ -n "$res" ]; then
+            if [ -d "$res" ]; then
+                cmd="cd"
+            else
+                cmd="select"
+            fi
+            res="$(${printf} '%s' "$res" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
+            ${lf} -remote "send $id $cmd \"$res\""
+          fi
+        }}
+      '';
+      z = ''
+        %{{
+          result="$(${zoxide} query --exclude "$PWD" "$@" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
+          ${lf} -remote "send $id cd \"$result\""
+        }}
+      '';
+      zi = ''
+        ''${{
+          result="$(${zoxide} query -i | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
+          ${lf} -remote "send $id cd \"$result\""
+         }}
+      '';
+      paste = ''
+        &{{
+          set -- $(cat ~/.local/share/lf/files)
+          mode="$1"
+          shift
+          case "$mode" in
+              copy)
+                  ${rsync} -av --ignore-existing --progress -- "$@" . |
+                  ${stdbuf} -i0 -o0 -e0 ${tr} '\r' '\n' |
+                  while IFS= read -r line; do
+                      line="$(${printf} '%s' "$line" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
+                      ${lf} -remote "send $id echo \"$line\""
+                  done
+                  ;;
+              move)
+                  ${mv} -n -- "$@" .
+                  ${lf} -remote "send clear"
+                  ;;
+          esac
+        }}
+      '';
+      on-init = ''
+        :{{
+          cmd on-redraw %{{
+              if [ "$lf_width" -le 80 ]; then
+                  ${lf} -remote "send $id set ratios 1:2"
+              elif [ "$lf_width" -le 160 ]; then
+                  ${lf} -remote "send $id set ratios 1:2:3"
+              else
+                  ${lf} -remote "send $id set ratios 1:2:3:5"
+              fi
+          }}
+
+          on-redraw
+        }}
+      '';
+      on-cd = ''
+        &{{
+          # Zoxide
+          ${zoxide} add "$PWD"
+
+          # Starship
+          # fmt="$(STARSHIP_SHELL= starship prompt | sed 's/\\/\\\\/g;s/"/\\"/g')"
+          # lf -remote "send $id set promptfmt \"$fmt\""
+        }}
+      '';
+      zip = ''
+        ''${{
+            set -f
+            ${mkdir} $1
+            ${cp} -r $fx $1
+            ${zip} -r $1.zip $1
+            ${rm} -rf $1
+        }}
+      '';
+      tar = ''
+        ''${{
+            set -f
+            ${mkdir} $1
+            ${cp} -r $fx $1
+            ${tar} czf $1.tar.gz $1
+            ${rm} -rf $1
+        }}
+      '';
+      extract = ''
+        ''${{
+          set -f
+          ${ouch} decompress $fx
+        }}
+      '';
+    };
+  };
+
+  # Set file sources for lf configuration
+  home.file = {
+    ".config/lf/colors" = {
+      source = ./lf/colors;
+    };
+
+    ".config/lf/icons" = {
+      source = ./lf/icons;
+    };
+  };
+
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
@@ -300,8 +495,8 @@
     NIXOS_OZONE_WL = "1";
 
     # Allow non-free packages
-    NIXPKGS_ALLOW_UNFREE=1;
-    
+    NIXPKGS_ALLOW_UNFREE = 1;
+
     BROWSER = "firefox";
   };
 
