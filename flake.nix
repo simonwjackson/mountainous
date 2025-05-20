@@ -3,6 +3,7 @@
 
   inputs = {
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+    nix-search-tv.url = "github:3timeslazy/nix-search-tv";
     elevate = {
       url = "github:simonwjackson/elevate";
       inputs.nixpkgs.follows = "nixpkgs";

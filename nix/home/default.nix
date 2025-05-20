@@ -287,7 +287,16 @@
       };
       quitOnTopLevelReturn = true;
       disableStartupPopups = true;
-      customCommands = [];
+      customCommands = [
+        {
+          key = "C";
+          command = "git-commit-message --accept --quiet";
+          context = "files";
+          description = "Use AI to generate commit message";
+          loadingText = "Generating AI commit message...";
+          subprocess = true;
+        }
+      ];
       promptToReturnFromSubprocess = false;
     };
   };
@@ -484,20 +493,28 @@
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    # Zsh-specific settings would go here
+  };
 
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home.username = "simonwjackson";
   home.homeDirectory = "/home/simonwjackson";
 
+  # Shell aliases for both bash and zsh
+  home.shellAliases = {
+    ll = "ls -l";
+    la = "ls -la";
+    gcm = "git-commit-message";
+    gcma = "git-commit-message --accept";
+  };
+
   # Basic shell configuration
   programs.bash = {
     enable = true;
-    shellAliases = {
-      ll = "ls -l";
-      la = "ls -la";
-    };
+    # Bash-specific aliases would go here
   };
 
   # Git configuration
@@ -505,6 +522,9 @@
     enable = true;
     userName = "NixOS User";
     userEmail = "user@example.com";
+    aliases = {
+      ai-commit = "!git-commit-message";
+    };
   };
 
   # Install some basic packages
@@ -513,6 +533,7 @@
     ripgrep
     fd
     jq
+    git-commit-message
   ];
 
   # Environment variables

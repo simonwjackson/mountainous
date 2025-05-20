@@ -58,6 +58,8 @@ in {
     enableVirtualCamera = true;
   };
 
+  programs.mosh.enable = true;
+
   # Enable Thunderbolt support
   services.hardware.bolt.enable = true;
 
@@ -138,7 +140,7 @@ in {
   fileSystems."/tundra/sleet" = {
     device = "/dev/disk/by-id/usb-Generic_MassStorageClass_000000002958-0:0-part1";
     fsType = "f2fs";
-    options = [ "noatime" "nofail" "x-systemd.automount" "x-systemd.device-timeout=5" ];
+    options = ["noatime" "nofail" "x-systemd.automount" "x-systemd.device-timeout=5"];
   };
 
   # enable syncthing
