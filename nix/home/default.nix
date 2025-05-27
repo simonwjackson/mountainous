@@ -2,6 +2,7 @@
 {
   pkgs,
   lib,
+  inputs,
   ...
 }: {
   programs.zoxide = {
@@ -288,14 +289,14 @@
       quitOnTopLevelReturn = true;
       disableStartupPopups = true;
       customCommands = [
-        {
-          key = "C";
-          command = "git-commit-message --accept --quiet";
-          context = "files";
-          description = "Use AI to generate commit message";
-          loadingText = "Generating AI commit message...";
-          subprocess = true;
-        }
+        # {
+        #   key = "C";
+        #   command = "git-commit-message --accept --quiet";
+        #   context = "files";
+        #   description = "Use AI to generate commit message";
+        #   loadingText = "Generating AI commit message...";
+        #   subprocess = true;
+        # }
       ];
       promptToReturnFromSubprocess = false;
     };
@@ -335,26 +336,29 @@
       "K" = "move-parent up";
       "p" = "paste; clear";
       "~" = "cd ~";
+      "Y" = "copy_full_path";
     };
 
     commands = let
       cp = "${pkgs.coreutils}/bin/cp";
-      cat = "${pkgs.coreutils}/bin/cat";
+      # cat = "${pkgs.coreutils}/bin/cat";
       dirname = "${pkgs.coreutils}/bin/dirname";
       find = "${pkgs.findutils}/bin/find";
       fzf = lib.getExe pkgs.fzf;
       lf = lib.getExe pkgs.lf;
       mkdir = "${pkgs.coreutils}/bin/mkdir";
-      mv = "${pkgs.coreutils}/bin/mv";
+      # mv = "${pkgs.coreutils}/bin/mv";
       ouch = lib.getExe pkgs.ouch;
       printf = "${pkgs.coreutils}/bin/printf";
+      realpath = "${pkgs.coreutils}/bin/realpath";
       rm = "${pkgs.coreutils}/bin/rm";
-      rsync = lib.getExe pkgs.rsync;
+      # rsync = lib.getExe pkgs.rsync;
       sed = lib.getExe pkgs.gnused;
-      stdbuf = "${pkgs.coreutils}/bin/stdbuf";
+      # stdbuf = "${pkgs.coreutils}/bin/stdbuf";
       tar = lib.getExe pkgs.gnutar;
       touch = "${pkgs.coreutils}/bin/touch";
-      tr = "${pkgs.coreutils}/bin/tr";
+      # tr = "${pkgs.coreutils}/bin/tr";
+      wlCopy = "${pkgs.wl-clipboard}/bin/wl-copy";
       zip = lib.getExe pkgs.zip;
       zoxide = lib.getExe pkgs.zoxide;
     in {
@@ -406,27 +410,27 @@
           ${lf} -remote "send $id cd \"$result\""
          }}
       '';
-      paste = ''
-        &{{
-          set -- $(${cat} ~/.local/share/lf/files)
-          mode="$1"
-          shift
-          case "$mode" in
-              copy)
-                  ${rsync} -av --ignore-existing --progress -- "$@" . |
-                  ${stdbuf} -i0 -o0 -e0 ${tr} '\r' '\n' |
-                  while IFS= read -r line; do
-                      line="$(${printf} '%s' "$line" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
-                      ${lf} -remote "send $id echo \"$line\""
-                  done
-                  ;;
-              move)
-                  ${mv} -n -- "$@" .
-                  ${lf} -remote "send clear"
-                  ;;
-          esac
-        }}
-      '';
+      # paste = ''
+      #   &{{
+      #     set -- $(${cat} ~/.local/share/lf/files)
+      #     mode="$1"
+      #     shift
+      #     case "$mode" in
+      #         copy)
+      #             ${rsync} -av --ignore-existing --progress -- "$@" . |
+      #             ${stdbuf} -i0 -o0 -e0 ${tr} '\r' '\n' |
+      #             while IFS= read -r line; do
+      #                 line="$(${printf} '%s' "$line" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
+      #                 ${lf} -remote "send $id echo \"$line\""
+      #             done
+      #             ;;
+      #         move)
+      #             ${mv} -n -- "$@" .
+      #             ${lf} -remote "send clear"
+      #             ;;
+      #     esac
+      #   }}
+      # '';
       on-init = ''
         :{{
           cmd on-redraw %{{
@@ -476,6 +480,13 @@
           ${ouch} decompress $fx
         }}
       '';
+      copy_full_path = ''
+        ''${{
+          full_path="$(${realpath} "$f")"
+          echo -n "$full_path" | ${wlCopy}
+          ${lf} -remote "send $id echo \"Copied: $full_path\""
+        }}
+      '';
     };
   };
 
@@ -509,6 +520,10 @@
     la = "ls -la";
     gcm = "git-commit-message";
     gcma = "git-commit-message --accept";
+    ns = let
+      nix-search-tv = lib.getExe inputs.nix-search-tv.packages.x86_64-linux.default;
+      fzf = lib.getExe pkgs.fzf;
+    in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
   };
 
   # Basic shell configuration

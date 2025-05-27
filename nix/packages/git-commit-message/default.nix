@@ -31,7 +31,6 @@ stdenv.mkDerivation {
       bash
       git
       jq
-      claude
     ])}
   '';
 
