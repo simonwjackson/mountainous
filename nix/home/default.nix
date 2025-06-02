@@ -5,6 +5,280 @@
   inputs,
   ...
 }: {
+  programs.yazi = {
+    enable = true;
+
+    plugins = {
+      ouch = pkgs.yaziPlugins.ouch;
+    };
+
+    # Set panel ratios similar to lf (1:2:3)
+    settings = {
+      manager = {
+        ratio = [1 2 3];
+        show_hidden = true;
+      };
+    };
+
+    # Configure keybindings
+    keymap = {
+      manager = {
+        prepend_keymap = [
+          {
+            on = ["<Esc>"];
+            run = "quit";
+            desc = "Quit Yazi";
+          }
+          {
+            on = ["Y"];
+            run = "copy path";
+            desc = "Copy full path";
+          }
+          {
+            on = ["C"];
+            run = "plugin ouch";
+            desc = "Compress with ouch";
+          }
+        ];
+      };
+    };
+
+    theme = {
+      manager = {
+        cwd = {fg = "#81c8be";};
+
+        hovered = {
+          fg = "#303446";
+          bg = "#8caaee";
+        };
+        preview_hovered = {
+          fg = "#303446";
+          bg = "#c6d0f5";
+        };
+
+        find_keyword = {
+          fg = "#e5c890";
+          italic = true;
+        };
+        find_position = {
+          fg = "#f4b8e4";
+          bg = "reset";
+          italic = true;
+        };
+
+        marker_copied = {
+          fg = "#a6d189";
+          bg = "#a6d189";
+        };
+        marker_cut = {
+          fg = "#e78284";
+          bg = "#e78284";
+        };
+        marker_marked = {
+          fg = "#81c8be";
+          bg = "#81c8be";
+        };
+        marker_selected = {
+          fg = "#8caaee";
+          bg = "#8caaee";
+        };
+
+        tab_active = {
+          fg = "#303446";
+          bg = "#c6d0f5";
+        };
+        tab_inactive = {
+          fg = "#c6d0f5";
+          bg = "#51576d";
+        };
+        tab_width = 1;
+
+        count_copied = {
+          fg = "#303446";
+          bg = "#a6d189";
+        };
+        count_cut = {
+          fg = "#303446";
+          bg = "#e78284";
+        };
+        count_selected = {
+          fg = "#303446";
+          bg = "#8caaee";
+        };
+
+        border_symbol = "│";
+        border_style = {fg = "#414559";};
+      };
+
+      mode = {
+        normal_main = {
+          fg = "#303446";
+          bg = "#8caaee";
+          bold = true;
+        };
+        normal_alt = {
+          fg = "#8caaee";
+          bg = "#414559";
+        };
+
+        select_main = {
+          fg = "#303446";
+          bg = "#a6d189";
+          bold = true;
+        };
+        select_alt = {
+          fg = "#a6d189";
+          bg = "#414559";
+        };
+
+        unset_main = {
+          fg = "#303446";
+          bg = "#eebebe";
+          bold = true;
+        };
+        unset_alt = {
+          fg = "#eebebe";
+          bg = "#414559";
+        };
+      };
+
+      status = {
+        separator_open = "";
+        separator_close = "";
+
+        progress_label = {
+          fg = "#ffffff";
+          bold = true;
+        };
+        progress_normal = {
+          fg = "#8caaee";
+          bg = "#51576d";
+        };
+        progress_error = {
+          fg = "#e78284";
+          bg = "#51576d";
+        };
+
+        perm_type = {fg = "#8caaee";};
+        perm_read = {fg = "#e5c890";};
+        perm_write = {fg = "#e78284";};
+        perm_exec = {fg = "#a6d189";};
+        perm_sep = {fg = "#838ba7";};
+      };
+
+      input = {
+        border = {fg = "#8caaee";};
+        title = {};
+        value = {};
+        selected = {reversed = true;};
+      };
+
+      pick = {
+        border = {fg = "#8caaee";};
+        active = {fg = "#f4b8e4";};
+        inactive = {};
+      };
+
+      confirm = {
+        border = {fg = "#8caaee";};
+        title = {fg = "#8caaee";};
+        content = {};
+        list = {};
+        btn_yes = {reversed = true;};
+        btn_no = {};
+      };
+
+      cmp = {
+        border = {fg = "#8caaee";};
+      };
+
+      tasks = {
+        border = {fg = "#8caaee";};
+        title = {};
+        hovered = {underline = true;};
+      };
+
+      which = {
+        mask = {bg = "#414559";};
+        cand = {fg = "#81c8be";};
+        rest = {fg = "#949cbb";};
+        desc = {fg = "#f4b8e4";};
+        separator = "  ";
+        separator_style = {fg = "#626880";};
+      };
+
+      help = {
+        on = {fg = "#81c8be";};
+        run = {fg = "#f4b8e4";};
+        desc = {fg = "#949cbb";};
+        hovered = {
+          bg = "#626880";
+          bold = true;
+        };
+        footer = {
+          fg = "#c6d0f5";
+          bg = "#51576d";
+        };
+      };
+
+      notify = {
+        title_info = {fg = "#81c8be";};
+        title_warn = {fg = "#e5c890";};
+        title_error = {fg = "#e78284";};
+      };
+
+      filetype = {
+        rules = [
+          # Media
+          {
+            mime = "image/*";
+            fg = "#81c8be";
+          }
+          {
+            mime = "{audio,video}/*";
+            fg = "#e5c890";
+          }
+
+          # Archives
+          {
+            mime = "application/*zip";
+            fg = "#f4b8e4";
+          }
+          {
+            mime = "application/x-{tar,bzip*,7z-compressed,xz,rar}";
+            fg = "#f4b8e4";
+          }
+
+          # Documents
+          {
+            mime = "application/{pdf,doc,rtf}";
+            fg = "#a6d189";
+          }
+
+          # Fallback
+          {
+            name = "*";
+            fg = "#c6d0f5";
+          }
+          {
+            name = "*/";
+            fg = "#8caaee";
+          }
+        ];
+      };
+
+      spot = {
+        border = {fg = "#8caaee";};
+        title = {fg = "#8caaee";};
+        tbl_cell = {
+          fg = "#8caaee";
+          reversed = true;
+        };
+        tbl_col = {bold = true;};
+      };
+    };
+  };
+
   programs.zoxide = {
     enable = true;
     enableBashIntegration = true;
@@ -301,205 +575,8 @@
       promptToReturnFromSubprocess = false;
     };
   };
+
   programs.bat.enable = true;
-  programs.lf = {
-    enable = true;
-
-    # Set up the previewer script
-    previewer = {
-      source = pkgs.writeShellScript "pv.sh" (builtins.readFile ./lf/preview);
-    };
-
-    # Basic settings
-    settings = {
-      icons = true;
-      colors = true;
-      incsearch = true;
-      scrolloff = 10;
-      hidden = true;
-    };
-
-    # Key bindings
-    keybindings = {
-      "<enter>" = "open";
-      "<esc>" = "quit";
-      "q" = "quit";
-      "." = "set hidden!";
-      "m" = "push :mkdir<space>";
-      "t" = "push :touch<space>";
-      "<delete>" = "delete";
-      "D" = "delete";
-      "f" = "fzf_jump";
-      "F" = "fzf_search";
-      "x" = "extract";
-      "J" = "move-parent down";
-      "K" = "move-parent up";
-      "p" = "paste; clear";
-      "~" = "cd ~";
-      "Y" = "copy_full_path";
-    };
-
-    commands = let
-      cp = "${pkgs.coreutils}/bin/cp";
-      # cat = "${pkgs.coreutils}/bin/cat";
-      dirname = "${pkgs.coreutils}/bin/dirname";
-      find = "${pkgs.findutils}/bin/find";
-      fzf = lib.getExe pkgs.fzf;
-      lf = lib.getExe pkgs.lf;
-      mkdir = "${pkgs.coreutils}/bin/mkdir";
-      # mv = "${pkgs.coreutils}/bin/mv";
-      ouch = lib.getExe pkgs.ouch;
-      printf = "${pkgs.coreutils}/bin/printf";
-      realpath = "${pkgs.coreutils}/bin/realpath";
-      rm = "${pkgs.coreutils}/bin/rm";
-      # rsync = lib.getExe pkgs.rsync;
-      sed = lib.getExe pkgs.gnused;
-      # stdbuf = "${pkgs.coreutils}/bin/stdbuf";
-      tar = lib.getExe pkgs.gnutar;
-      touch = "${pkgs.coreutils}/bin/touch";
-      # tr = "${pkgs.coreutils}/bin/tr";
-      wlCopy = "${pkgs.wl-clipboard}/bin/wl-copy";
-      zip = lib.getExe pkgs.zip;
-      zoxide = lib.getExe pkgs.zoxide;
-    in {
-      touch = ''
-        %{{
-          IFS=" "
-          file="$*"
-          ${touch} -- "$file"
-          ${lf} -remote "send $id select \"$(${printf} '%s' "$file" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\""
-        }}
-      '';
-      mkdir = ''
-        %{{
-          IFS=" "
-          file="$*"
-          ${mkdir} -p -- "$file"
-          ${lf} -remote "send $id cd \"$(${printf} '%s' "$file" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\""
-        }}
-      '';
-      move-parent = ''
-        &{{
-          dironly="setlocal \"$(${dirname} -- "$PWD" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')\" dironly"
-          ${lf} -remote "send $id :updir; $dironly true; $1; $dironly false; open"
-        }}
-      '';
-      fzf_jump = ''
-        ''${{
-          res="$(${find} . -maxdepth 1 | ${fzf} --reverse --header="Jump to location")"
-          if [ -n "$res" ]; then
-            if [ -d "$res" ]; then
-                cmd="cd"
-            else
-                cmd="select"
-            fi
-            res="$(${printf} '%s' "$res" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
-            ${lf} -remote "send $id $cmd \"$res\""
-          fi
-        }}
-      '';
-      z = ''
-        %{{
-          result="$(${zoxide} query --exclude "$PWD" "$@" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
-          ${lf} -remote "send $id cd \"$result\""
-        }}
-      '';
-      zi = ''
-        ''${{
-          result="$(${zoxide} query -i | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
-          ${lf} -remote "send $id cd \"$result\""
-         }}
-      '';
-      # paste = ''
-      #   &{{
-      #     set -- $(${cat} ~/.local/share/lf/files)
-      #     mode="$1"
-      #     shift
-      #     case "$mode" in
-      #         copy)
-      #             ${rsync} -av --ignore-existing --progress -- "$@" . |
-      #             ${stdbuf} -i0 -o0 -e0 ${tr} '\r' '\n' |
-      #             while IFS= read -r line; do
-      #                 line="$(${printf} '%s' "$line" | ${sed} 's/\\/\\\\/g;s/"/\\"/g')"
-      #                 ${lf} -remote "send $id echo \"$line\""
-      #             done
-      #             ;;
-      #         move)
-      #             ${mv} -n -- "$@" .
-      #             ${lf} -remote "send clear"
-      #             ;;
-      #     esac
-      #   }}
-      # '';
-      on-init = ''
-        :{{
-          cmd on-redraw %{{
-              if [ "$lf_width" -le 80 ]; then
-                  ${lf} -remote "send $id set ratios 1:2"
-              elif [ "$lf_width" -le 160 ]; then
-                  ${lf} -remote "send $id set ratios 1:2:3"
-              else
-                  ${lf} -remote "send $id set ratios 1:2:3:5"
-              fi
-          }}
-
-          on-redraw
-        }}
-      '';
-      on-cd = ''
-        &{{
-          # Zoxide
-          ${zoxide} add "$PWD"
-
-          # Starship
-          # fmt="$(STARSHIP_SHELL= starship prompt | sed 's/\\/\\\\/g;s/"/\\"/g')"
-          # lf -remote "send $id set promptfmt \"$fmt\""
-        }}
-      '';
-      zip = ''
-        ''${{
-            set -f
-            ${mkdir} $1
-            ${cp} -r $fx $1
-            ${zip} -r $1.zip $1
-            ${rm} -rf $1
-        }}
-      '';
-      tar = ''
-        ''${{
-            set -f
-            ${mkdir} $1
-            ${cp} -r $fx $1
-            ${tar} czf $1.tar.gz $1
-            ${rm} -rf $1
-        }}
-      '';
-      extract = ''
-        ''${{
-          set -f
-          ${ouch} decompress $fx
-        }}
-      '';
-      copy_full_path = ''
-        ''${{
-          full_path="$(${realpath} "$f")"
-          echo -n "$full_path" | ${wlCopy}
-          ${lf} -remote "send $id echo \"Copied: $full_path\""
-        }}
-      '';
-    };
-  };
-
-  # Set file sources for lf configuration
-  home.file = {
-    ".config/lf/colors" = {
-      source = ./lf/colors;
-    };
-
-    ".config/lf/icons" = {
-      source = ./lf/icons;
-    };
-  };
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
