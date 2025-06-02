@@ -40,6 +40,11 @@ in {
     # Misc
     ###################
 
+    environment.systemPackages = [
+      # WARN: Still early days for uutils
+      pkgs.uutils-coreutils-noprefix
+    ];
+
     services.tailscale.enable = true;
 
     boot.kernel.sysctl = {
@@ -133,7 +138,7 @@ in {
     };
 
     # Automatic timezone detection
-    services.automatic-timezoned.enable = true; 
+    services.automatic-timezoned.enable = true;
 
     i18n.defaultLocale = "en_US.UTF-8";
     i18n.extraLocaleSettings = {
