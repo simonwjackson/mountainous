@@ -617,6 +617,10 @@
     aliases = {
       ai-commit = "!git-commit-message";
     };
+    ignores = [
+      "**/.resession.json"
+      "**/.claude/settings.local.json"
+    ];
   };
 
   # Install some basic packages
