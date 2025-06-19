@@ -39,6 +39,7 @@
         (final: prev: {
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           "gamescope-wsi_git" = chaotic.packages.${prev.system}."gamescope-wsi_git";
+          neovim = inputs.icho.packages.${final.system}.default;
         })
       ];
     };

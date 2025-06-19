@@ -13,6 +13,16 @@ in {
   };
 
   config = lib.mkIf config.mountainous.profiles.base.enable {
+    networking.firewall.allowedTCPPorts = [
+      8081 # Expo GO
+    ];
+
+    networking.firewall.enable = false;
+
+    networking.enableIPv6 = false;
+
+    programs.mosh.enable = true;
+
     ###################
     # Mountainous
     ###################
@@ -33,6 +43,9 @@ in {
         #   keys = lib.mapAttrsToList (name: _: builtins.readFile (keysDir + "/${name}")) pubKeyFiles;
         # in
         #   keys;
+      };
+      tmesh = {
+        enable = mkDefault true;
       };
     };
 

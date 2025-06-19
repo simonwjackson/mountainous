@@ -630,6 +630,8 @@
     fd
     jq
     git-commit-message
+    firefox
+    chromium
   ];
 
   # Environment variables
@@ -897,6 +899,7 @@
     NIXPKGS_ALLOW_UNFREE = 1;
 
     BROWSER = "firefox";
+    EDITOR = "nvim";
   };
 
   # This value determines the Home Manager release that your

@@ -1,5 +1,5 @@
 {inputs}: let
-  inherit (inputs) self nixpkgs impermanence disko home-manager;
+  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh;
 
   # Path to default home-manager configuration
   defaultHomePath = ./nix/home/default.nix;
@@ -110,6 +110,8 @@
           home-manager.nixosModules.home-manager
           # Include our home-manager configuration
           (mkHomeManagerModule arch name)
+          # Add tmesh module
+          tmesh.nixosModules.default
         ];
     };
 

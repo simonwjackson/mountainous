@@ -1,140 +1,91 @@
-{pkgs, ...}: {
-  ###################
-  # Mountainous
-  ###################
+{
+  config,
+  pkgs,
+  lib,
+  modulesPath,
+  ...
+}: {
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+  ];
 
-  mountainous = {
-    profiles = {
-      base.enable = true;
-      laptop.enable = true;
-      workspace.enable = true;
-      gaming.enable = true;
-    };
-
-    # networking.core.names = [
-    #   # TODO: Move to caldigit module
-    #   {
-    #     name = "eth";
-    #     mac = "64:4b:f0:6a:6c:7e";
-    #   }
-    #   {
-    #     name = "wifi";
-    #     mac = "86:4f:69:77:9c:62";
-    #   }
-    # ];
-    disks = {
-      frostbite = {
-        enable = true;
-        encrypt = true;
-        device = "/dev/nvme0n1";
-        swapSize = "32G";
-      };
-    };
-  };
-
-  ###################
-  # Misc
-  ###################
-
-  fileSystems."/tundra/sleet" = {
-    device = "/dev/disk/by-id/usb-Generic_MassStorageClass_000000002958-0:0-part1";
-    fsType = "f2fs";
-    options = [ "noatime" "nofail" "x-systemd.automount" "x-systemd.device-timeout=5" ];
-  };
-
-  # enable syncthing
-  services.syncthing = {
-    enable = true;
-    user = "simonwjackson";
-    group = "users";
-    dataDir = "/home/simonwjackson/.local/share/syncthing";
-    configDir = "/home/simonwjackson/.config/syncthing";
-    overrideFolders = false;
-    overrideDevices = false;
-  };
-
-  # Disable default folder
-  systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true";
-
-  services.udev.extraRules = ''
-    KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
-  '';
-
-  hardware = {
-    # i2c is for sensors and other hardware that is connected to the motherboard
-    i2c.enable = true;
-
-    sensor.iio.enable = true;
-    cpu.amd = {
-      updateMicrocode = true;
-      ryzen-smu.enable = true;
-    };
-
-    # Enable Bluetooth support
-    bluetooth.enable = true;
-    bluetooth.powerOnBoot = true;
-  };
-
+  # Boot configuration
   boot = {
+    initrd = {
+      availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "sd_mod" "sdhci_pci"];
+      kernelModules = [];
+    };
+    kernelModules = ["kvm-amd" "acpi_call"];
+    extraModulePackages = with config.boot.kernelPackages; [acpi_call];
+    # Kernel parameters for handheld gaming device
+    kernelParams = [
+      "amd_pstate=active"
+      "amdgpu.ppfeaturemask=0xffffffff"
+      "amdgpu.gpu_recovery=1"
+    ];
+    # UEFI boot loader configuration
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
     };
-    initrd = {
-      availableKernelModules = [
-        "nvme"
-        "xhci_pci"
-        "thunderbolt"
-        "usbhid"
-        "usb_storage"
-        "uas"
-        "sd_mod"
-      ];
-      kernelModules = ["amdgpu"];
-    };
-    kernelModules = ["kvm-amd" "tun" "igc" "thunderbolt"];
-    kernelPackages = pkgs.linuxPackages_zen;
-    kernelParams = [
-      # Enable AMD power management
-      "amd_pstate=active"
+  };
 
-      # HiDPI scaling
-      "video=efifb:scale"
+  # Hardware configuration for AYANEO AIR 1S with AMD Ryzen 5 5560U
+  hardware = {
+    cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+    enableRedistributableFirmware = true;
+    bluetooth.enable = true;
+  };
 
-      # Display Core: allows the GPU to control the display
-      # "amdgpu.dc=1"
-
-      # Runtime power management. disabled.
-      # "amdgpu.runpm=0"
-
-      # Fast boot will speed up boot time by skipping some initialization
-      "amdgpu.fastboot=1"
+  # Graphics configuration for integrated Radeon Graphics
+  services.xserver.videoDrivers = ["amdgpu"];
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+    extraPackages = with pkgs; [
+      rocmPackages.clr.icd
+      rocmPackages.clr
+      amdvlk
+    ];
+    extraPackages32 = with pkgs; [
+      driversi686Linux.amdvlk
     ];
   };
 
-  # Basic packages
-  environment.systemPackages = with pkgs; [
-    git
-    ex
-    ryzenadj
-    obsidian
-  ];
-
-  programs.obs-studio = {
+  # Power management for handheld gaming device
+  powerManagement.enable = true;
+  powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
+  services.thermald.enable = true;
+  services.tlp = {
     enable = true;
-    enableVirtualCamera = true;
+    settings = {
+      CPU_SCALING_GOVERNOR_ON_AC = "performance";
+      CPU_SCALING_GOVERNOR_ON_BAT = "schedutil";
+      CPU_BOOST_ON_AC = 1;
+      CPU_BOOST_ON_BAT = 0;
+    };
   };
 
-  # Enable Thunderbolt support
-  services.hardware.bolt.enable = true;
+  # Networking
+  networking.hostName = "kita";
+  networking.useDHCP = lib.mkDefault true;
 
-  fileSystems."/snowscape" = {
-    device = "/tundra/frostbite/snowscape";
-    fsType = "none";
-    options = ["bind"];
-    neededForBoot = false;
+  # System profile
+  mountainous = {
+    profiles = {
+      base.enable = true;
+      laptop.enable = true;
+      gaming.enable = true;
+    };
+    disks = {
+      frostbite = {
+        enable = true;
+        device = "/dev/nvme0n1";
+        swapSize = "16G";
+        encrypt = false;
+      };
+    };
   };
 
-  # This is required for NixOS
-  system.stateVersion = "24.11";
+  system.stateVersion = "24.05";
 }
