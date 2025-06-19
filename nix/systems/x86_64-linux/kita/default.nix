@@ -9,6 +9,10 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  environment.systemPackages = with pkgs; [
+    moonlight-qt
+  ];
+
   # Boot configuration
   boot = {
     initrd = {
@@ -76,6 +80,11 @@
       base.enable = true;
       laptop.enable = true;
       gaming.enable = true;
+    };
+    kde = {
+      enable = true;
+      autoLogin = true;
+      autoLoginUser = "simonwjackson";
     };
     disks = {
       frostbite = {
