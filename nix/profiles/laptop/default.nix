@@ -3,10 +3,9 @@
   config,
   lib,
   pkgs,
-  inputs,
   ...
 }: let
-  inherit (lib) mkIf mkDefault mkEnableOption;
+  inherit (lib) mkEnableOption;
 in {
   options.mountainous.profiles.laptop = {
     enable = mkEnableOption "Whether to enable the laptop profile.";
@@ -24,6 +23,11 @@ in {
     environment.systemPackages = with pkgs; [
       acpi
     ];
+
+    # Automatic timezone detection based on location
+    services.automatic-timezoned.enable = true;
+    services.geoclue2.enable = true;
+    services.timesyncd.enable = true;
 
     services = {
       libinput = {

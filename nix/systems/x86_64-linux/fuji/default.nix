@@ -1,4 +1,8 @@
-{pkgs, lib, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   inherit (lib.mountainous) enabled;
 
   codeDir = "/snowscape/code";
@@ -22,14 +26,14 @@ in {
     extraModprobeConfig = ''
       options snd-hda-intel dmic_detect=0
     '';
-      
+
     kernelModules = [
       "nvme"
       "thunderbolt"
       "tun"
       "igc"
-      "nvme_core"  # Added for more complete NVMe support
-      "hid_sensor_hub"  # Added for orientation sensing on foldable device
+      "nvme_core" # Added for more complete NVMe support
+      "hid_sensor_hub" # Added for orientation sensing on foldable device
       "snd_hda_intel"
       "snd_soc_avs"
       "snd_sof_pci_intel_tgl"
@@ -49,7 +53,7 @@ in {
       "i915.force_probe=all" # Force early i915 initialization
       "i915.enable_fbc=1"
       "i915.enable_psr=2"
-      "acpi_osi=!\"Windows 2020\""  # Added for better Lenovo compatibility
+      "acpi_osi=!\"Windows 2020\"" # Added for better Lenovo compatibility
     ];
     initrd = {
       kernelModules = ["i915"];
