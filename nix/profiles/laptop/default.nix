@@ -26,7 +26,17 @@ in {
 
     # Automatic timezone detection based on location
     services.automatic-timezoned.enable = true;
-    services.geoclue2.enable = true;
+    services.geoclue2 = {
+      enable = true;
+      # Enable avahi for local network discovery
+      enableDemoAgent = false;
+      geoProviderUrl = "https://location.services.mozilla.com/v1/geolocate?key=geoclue";
+    };
+    services.avahi = {
+      enable = true;
+      nssmdns4 = true;
+      nssmdns6 = true;
+    };
     services.timesyncd.enable = true;
 
     services = {
