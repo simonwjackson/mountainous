@@ -50,7 +50,11 @@ _run_nixie_command ACTION *ARGS:
     eval $COMMAND
 
 switch *ARGS:
-    just _run_nixie_command switch {{ ARGS }}
+    #!/usr/bin/env bash
+    HOST="${1}"
+    shift
+    nixos-rebuild switch --flake .#"${HOST}" --target-host "${HOST}" --use-remote-sudo "$@" 
+    # just _run_nixie_command switch {{ ARGS }}
 
 test *ARGS:
     just _run_nixie_command test {{ ARGS }}

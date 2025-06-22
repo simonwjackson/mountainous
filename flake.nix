@@ -42,5 +42,15 @@
           neovim = inputs.icho.packages.${final.system}.default;
         })
       ];
+    } // {
+      devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
+        pkgs = import inputs.nixpkgs { inherit system; };
+      in {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            just
+          ];
+        };
+      });
     };
 }
