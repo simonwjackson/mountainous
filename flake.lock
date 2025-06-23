@@ -888,15 +888,16 @@
           "nixpkgs"
         ],
         "nixvim": "nixvim",
+        "tabby-nvim": "tabby-nvim",
         "tmesh": "tmesh",
         "vim-overseer": "vim-overseer"
       },
       "locked": {
-        "lastModified": 1748965325,
-        "narHash": "sha256-UJrrht0zf3c6UTvX7xfHSAJ6zq9DEVgOa6emgfpmKAQ=",
+        "lastModified": 1750711507,
+        "narHash": "sha256-jn+j5E4Y0CbEKVgzuOhIGCpP5kqI/9Omrr5JcUpOq7s=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "ab06c81ff1d0572b41921daea72b215b870b7d44",
+        "rev": "569a00dec91fbb253561c7b84c0b3cdd63956e49",
         "type": "github"
       },
       "original": {
@@ -1765,6 +1766,22 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tabby-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1747993690,
+        "narHash": "sha256-26ysSn0klZYMPEaxCe/1zD2qCYwobU5dZSq5P/GtwMU=",
+        "owner": "nanozuki",
+        "repo": "tabby.nvim",
+        "rev": "b3affa6db7eab80fca2a2db5b73b473144507039",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nanozuki",
+        "repo": "tabby.nvim",
         "type": "github"
       }
     },

@@ -601,6 +601,7 @@
       nix-search-tv = lib.getExe inputs.nix-search-tv.packages.x86_64-linux.default;
       fzf = lib.getExe pkgs.fzf;
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
+    pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
   };
 
   # Basic shell configuration
@@ -632,6 +633,7 @@
     git-commit-message
     firefox
     chromium
+    nodePackages.prettier
   ];
 
   # Environment variables
