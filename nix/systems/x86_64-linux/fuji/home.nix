@@ -1,6 +1,7 @@
 {pkgs, ...}: {
-  mountainous.hyprland = {
-    enable = true;
+  mountainous = {
+    agenix.enable = true;
+    hyprland.enable = true;
   };
 
   # System-specific settings

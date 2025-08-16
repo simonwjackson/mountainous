@@ -2,6 +2,10 @@
   description = "My NixOS configurations";
 
   inputs = {
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
     elevate = {
@@ -41,19 +45,22 @@
           neovim = inputs.icho.packages.${final.system}.default;
         })
       ];
-    } // {
-      formatter = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
-        pkgs = import inputs.nixpkgs { inherit system; };
-      in
-        pkgs.alejandra
+    }
+    // {
+      formatter = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (
+        system: let
+          pkgs = import inputs.nixpkgs {inherit system;};
+        in
+          pkgs.alejandra
       );
 
       devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
-        pkgs = import inputs.nixpkgs { inherit system; };
+        pkgs = import inputs.nixpkgs {inherit system;};
       in {
         default = pkgs.mkShell {
           packages = with pkgs; [
             just
+            gum
           ];
         };
       });

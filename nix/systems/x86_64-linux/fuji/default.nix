@@ -126,6 +126,7 @@ in {
   security.rtkit.enable = true;
 
   mountainous = {
+    agenix.enable = true;
     sound.enable = lib.mkForce false;
     profiles = {
       base.enable = true;
