@@ -583,7 +583,40 @@
 
   programs.zsh = {
     enable = true;
-    # Zsh-specific settings would go here
+    history = {
+      size = 10000;
+      save = 10000;
+      ignoreDups = true;
+      ignoreSpace = true;
+      expireDuplicatesFirst = true;
+      extended = true;
+    };
+    
+    # Enable history search and Ctrl-R
+    initExtraBeforeCompInit = ''
+      # Enable Ctrl-R for history search (should work by default but ensure it's set)
+      bindkey '^R' history-incremental-search-backward
+      
+      # Enable up/down arrow keys for history search
+      bindkey '^[[A' history-search-backward
+      bindkey '^[[B' history-search-forward
+      
+      # Enable history expansion
+      setopt HIST_VERIFY
+      setopt HIST_EXPAND
+      
+      # Share history between all sessions
+      setopt SHARE_HISTORY
+      setopt APPEND_HISTORY
+      setopt INC_APPEND_HISTORY
+    '';
+    
+    # Enable auto-suggestions and syntax highlighting if available
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
+    
+    # Enable completion
+    enableCompletion = true;
   };
 
   # Home Manager needs a bit of information about you and the
@@ -607,7 +640,22 @@
   # Basic shell configuration
   programs.bash = {
     enable = true;
-    # Bash-specific aliases would go here
+    historyControl = ["ignoredups" "erasedups"];
+    historyFile = "$HOME/.bash_history";
+    historyFileSize = 10000;
+    historySize = 1000;
+    historyIgnore = ["ls" "cd" "exit"];
+    shellOptions = ["histappend" "checkwinsize" "extglob" "globstar" "checkjobs"];
+    
+    # Enable bash completion and other readline features
+    bashrcExtra = ''
+      # Enable history search with up/down arrows
+      bind '"\e[A": history-search-backward'
+      bind '"\e[B": history-search-forward'
+      
+      # Enable reverse search with Ctrl-R (this should work by default but ensure it's set)
+      bind '"\C-r": reverse-search-history'
+    '';
   };
 
   # Git configuration
