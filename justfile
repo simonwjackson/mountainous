@@ -53,8 +53,29 @@ switch *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
     args=({{ ARGS }})
-    HOST="${args[0]}"
-    nixos-rebuild switch --flake .#"${HOST}" --target-host "${HOST}" --use-remote-sudo "${args[@]:1}"
+
+    # Determine hosts based on number of arguments
+    if [ ${#args[@]} -eq 0 ]; then
+        # No args: use current hostname for all
+        FLAKE_NAME=$(hostname)
+        TARGET_HOST=$(hostname)
+        BUILD_HOST=$(hostname)
+        EXTRA_ARGS=()
+    elif [ ${#args[@]} -eq 1 ]; then
+        # One arg: use for flake name and target host
+        FLAKE_NAME="${args[0]}"
+        TARGET_HOST="${args[0]}"
+        BUILD_HOST=$(hostname)
+        EXTRA_ARGS=()
+    else
+        # Two or more args: first is flake/target, second is build host, rest are extra args
+        FLAKE_NAME="${args[0]}"
+        TARGET_HOST="${args[0]}"
+        BUILD_HOST="${args[1]}"
+        EXTRA_ARGS=("${args[@]:2}")
+    fi
+
+    nixos-rebuild switch --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --use-remote-sudo "${EXTRA_ARGS[@]}"
 
 test *ARGS:
     just _run_nixie_command test {{ ARGS }}
