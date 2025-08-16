@@ -687,6 +687,17 @@
     ];
   };
 
+  # Global git hooks
+  xdg.configFile."git/hooks/pre-push" = {
+    text = ''
+      #!/usr/bin/env bash
+      
+      # Call the standalone AI secret scanner
+      exec ai-secret-scanner "$@"
+    '';
+    executable = true;
+  };
+
   # Install some basic packages
   home.packages = with pkgs; [
     htop
@@ -694,6 +705,7 @@
     fd
     jq
     git-commit-message
+    # ai-secret-scanner  # Will be available after flake rebuild
     firefox
     chromium
     nodePackages.prettier
