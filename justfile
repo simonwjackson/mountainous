@@ -51,10 +51,10 @@ _run_nixie_command ACTION *ARGS:
 
 switch *ARGS:
     #!/usr/bin/env bash
-    HOST="${1}"
-    shift
-    nixos-rebuild switch --flake .#"${HOST}" --target-host "${HOST}" --use-remote-sudo "$@" 
-    # just _run_nixie_command switch {{ ARGS }}
+    set -euo pipefail
+    args=({{ ARGS }})
+    HOST="${args[0]}"
+    nixos-rebuild switch --flake .#"${HOST}" --target-host "${HOST}" --use-remote-sudo "${args[@]:1}"
 
 test *ARGS:
     just _run_nixie_command test {{ ARGS }}
