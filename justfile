@@ -95,3 +95,7 @@ scaffold *ARGS:
 # Deploy a new system and home configuration
 deploy *ARGS:
     nix run .#deploy -- {{ ARGS }}
+
+# Format all Nix files in the repository
+format:
+    nix fmt

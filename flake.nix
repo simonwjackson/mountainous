@@ -42,6 +42,12 @@
         })
       ];
     } // {
+      formatter = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
+        pkgs = import inputs.nixpkgs { inherit system; };
+      in
+        pkgs.alejandra
+      );
+
       devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
         pkgs = import inputs.nixpkgs { inherit system; };
       in {

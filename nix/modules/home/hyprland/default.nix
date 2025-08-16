@@ -122,7 +122,6 @@ in {
       firefox = "${pkgs.firefox}/bin/firefox";
       kitty = "${pkgs.kitty}/bin/kitty";
       lf = "${pkgs.lf}/bin/lf";
-      swaybg = "${pkgs.swaybg}/bin/swaybg";
       walker = "${pkgs.walker}/bin/walker";
 
       defaultSettings = {
@@ -134,7 +133,6 @@ in {
         "$screenshotTmpl" = ''/home/simonwjackson/Pictures/$(${date} +"%Y-%m-%dT%H:%M:%S").png'';
 
         exec-once = [
-          "${swaybg} -c '#000000'"
           "${pkgs.hyprdim}/bin/hyprdim"
         ];
 
@@ -215,10 +213,11 @@ in {
         };
 
         misc = {
-          force_default_wallpaper = -1;
+          force_default_wallpaper = 0;
           disable_hyprland_logo = true;
           disable_autoreload = false;
           disable_splash_rendering = true;
+          background_color = "0x000000";
         };
 
         input = {
@@ -309,6 +308,7 @@ in {
           "$mainMod, down, swapwindow, d"
           "$mainMod, S, togglespecialworkspace, magic"
           "$mainMod SHIFT, S, movetoworkspace, special:magic"
+          "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
         ];
 
         bindel = [

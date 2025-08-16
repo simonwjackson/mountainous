@@ -31,8 +31,14 @@ in {
       pkgs.eww
     ];
 
-    # TODO: is this still needed? now that we have portalPackage..
-    xdg.portal.enable = true;
+    # Configure xdg-desktop-portal for proper theme detection
+    xdg.portal = {
+      enable = true;
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-gtk
+      ];
+      config.common.default = "*";
+    };
 
     security.pam.services.hyprlock = {};
 
