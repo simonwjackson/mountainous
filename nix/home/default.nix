@@ -672,6 +672,7 @@
     };
     aliases = {
       ai-commit = "!git-commit-message";
+      secret-scanner = "!git-secret-scanner";
       # wt = "!f() { if [ \"$1\" = 'clone' ]; then shift; url=\"$1\"; name=\"\${2:-$(basename \"$url\" .git)}\"; git clone --bare \"$url\" \"$name/.bare\" && cd \"$name\" && echo 'gitdir: ./.bare' > .git && git worktree add main; else git worktree \"$@\"; fi; }; f";
       wt = ''
         !f() {
@@ -699,8 +700,8 @@
     text = ''
       #!/usr/bin/env bash
       
-      # Call the standalone AI secret scanner
-      exec ai-secret-scanner "$@"
+      # Call the standalone git secret scanner
+      exec git-secret-scanner "$@"
     '';
     executable = true;
   };
@@ -712,7 +713,7 @@
     fd
     jq
     git-commit-message
-    # ai-secret-scanner  # Will be available after flake rebuild
+    git-secret-scanner
     firefox
     chromium
     nodePackages.prettier
