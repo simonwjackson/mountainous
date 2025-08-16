@@ -12,7 +12,6 @@
       url = "github:simonwjackson/icho";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    ryujinx.url = "github:Naxdy/Ryujinx";
     tmesh.url = "github:simonwjackson/tmesh";
     auto-cpufreq = {
       url = "github:AdnanHodzic/auto-cpufreq";
