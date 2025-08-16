@@ -661,8 +661,15 @@
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "NixOS User";
-    userEmail = "user@example.com";
+    userName = "Simon W. Jackson";
+    userEmail = "github@simonwjackson.io";
+    extraConfig = {
+      core.hooksPath = "~/.config/git/hooks";
+      pull.rebase = true;
+      pull.ff = "only";
+      fetch.prune = true;
+      fetch.pruneTags = true;
+    };
     aliases = {
       ai-commit = "!git-commit-message";
       # wt = "!f() { if [ \"$1\" = 'clone' ]; then shift; url=\"$1\"; name=\"\${2:-$(basename \"$url\" .git)}\"; git clone --bare \"$url\" \"$name/.bare\" && cd \"$name\" && echo 'gitdir: ./.bare' > .git && git worktree add main; else git worktree \"$@\"; fi; }; f";
