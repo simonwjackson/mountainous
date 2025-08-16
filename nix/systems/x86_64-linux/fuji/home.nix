@@ -10,6 +10,13 @@
 
   programs.direnv.enable = true;
 
+  # Configure XDG portal to use GTK file picker
+  xdg.configFile."xdg-desktop-portal/hyprland-portals.conf".text = ''
+    [preferred]
+    default=hyprland;gtk
+    org.freedesktop.impl.portal.FileChooser=gtk
+  '';
+
   home.packages = with pkgs; [
     # Move later
     windsurf

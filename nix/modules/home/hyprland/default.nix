@@ -67,14 +67,14 @@ in {
         sunrise = {
           calendar = "*-*-* 06:00:00";
           requests = [
-            [ "temperature" "6500" ]
-            [ "gamma" "100" ]
+            ["temperature" "6500"]
+            ["gamma" "100"]
           ];
         };
         sunset = {
           calendar = "*-*-* 19:00:00";
           requests = [
-            [ "temperature" "3500" ]
+            ["temperature" "3500"]
           ];
         };
       };
@@ -96,7 +96,7 @@ in {
             on-resume = "hyprctl dispatch dpms on";
             # on-timeout = "hyprlock & hyprctl dispatch dpms off"; # Commented out locking with screen off
           }
-          # { 
+          # {
           #   timeout = 150;
           #   on-timeout = "hyprlock";
           # }
@@ -279,7 +279,7 @@ in {
           "$mainMod, F1, layoutmsg, swapwithmaster"
           "$mainMod SHIFT, A, exec, ${workspaceCyclerScript}/bin/workspaceCycler"
 
-"$mainMod, P, exec, ${pkgs.hyprpicker}/bin/hyprpicker -a"
+          "$mainMod, P, exec, ${pkgs.hyprpicker}/bin/hyprpicker -a"
           "$mainMod, W, exec, ${hyprctl} clients | grep -iq 'class: firefox' && ${hyprctl} dispatch focuswindow 'class:^(firefox)$' || ${firefox}"
           "$mainMod, O, exec, ${hyprctl} clients | ${grep} -iq 'class: obsidian' && ${hyprctl} dispatch focuswindow 'class:^(obsidian)$' || ${pkgs.obsidian}/bin/obsidian"
           # "$mainMod, T, exec, ${hyprctl} clients | grep -q 'tmesh' && ${hyprctl} dispatch focuswindow main-term || ${kitty} --class tmesh --override 'map ctrl+shift+t pass_keys' --override confirm_os_window_close=0 -- ${lib.getExe inputs.tmesh.packages.${system}.tmesh}"
@@ -336,6 +336,53 @@ in {
           "suppressevent maximize, class:.*"
           "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
           "workspace magic,class:^(steam)$"
+
+          # Firefox specific windows that should float
+          "float,class:^(firefox)$,title:^(Library)$"
+          "float,class:^(firefox)$,title:^(About Mozilla Firefox)$"
+          "float,class:^(firefox)$,title:^(Picture-in-Picture)$"
+          "float,class:^(firefox)$,title:^(Firefox — Sharing Indicator)$"
+          "float,class:^(firefox)$,title:^(Extension:.*)"
+
+          # Firefox save/open dialogs and popups (they have empty titles)
+          "float,class:^(firefox)$,title:^$"
+          "center,class:^(firefox)$,floating:1"
+
+          # Explicitly tile the main Firefox window
+          "tile,class:^(firefox)$,title:^(.*Mozilla Firefox)$"
+          "tile,class:^(firefox)$,title:^(Mozilla Firefox Private Browsing)$"
+
+          # GTK Application dialogs and popups
+          "float,title:^(About)(.*)$"
+          "float,title:^(Preferences)(.*)$"
+          "float,title:^(Settings)(.*)$"
+          "float,title:^(Open File)(.*)$"
+          "float,title:^(Save File)(.*)$"
+          "float,title:^(Save As)(.*)$"
+          "float,title:^(Select Folder)(.*)$"
+          "float,title:^(Choose)(.*)$"
+          "float,title:^(File Chooser)(.*)$"
+          "float,title:^(Open Folder)(.*)$"
+
+          # GTK File picker patterns
+          "float,class:^(file-roller)$"
+          "float,class:^(org.gnome.FileRoller)$"
+          "float,title:^(Archive Manager)(.*)$"
+
+          # Common GTK dialog classes
+          "float,class:^(zenity)$"
+          "float,class:^(yad)$"
+          "float,class:^(file-chooser)$"
+          "float,class:^(dialog)$"
+
+          # Size constraints for file dialogs
+          "size 900 700,title:^(Open File)(.*)$"
+          "size 900 700,title:^(Save File)(.*)$"
+          "size 900 700,title:^(Save As)(.*)$"
+          "size 900 700,title:^(Select Folder)(.*)$"
+
+          # Position Firefox popups in top-right
+          "move 100%-20 20,class:^(firefox)$,floating:1"
         ];
       };
 
@@ -367,7 +414,7 @@ in {
       workspaceCyclerScript = pkgs.writeShellScriptBin "workspaceCycler" ''
         #!${pkgs.bash}/bin/bash
         export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland]}:$PATH"
-        
+
         ${builtins.readFile ./workspaceCycle.sh}
       '';
 

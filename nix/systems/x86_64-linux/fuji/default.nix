@@ -73,6 +73,8 @@ in {
     ex
     ryzenadj
     obsidian
+    xdg-desktop-portal-gtk
+    yazi
   ];
 
   programs.obs-studio = {
