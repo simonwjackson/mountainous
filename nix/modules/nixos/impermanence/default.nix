@@ -30,10 +30,12 @@ in {
       hideMounts = true;
       directories = [
         "/etc/NetworkManager/system-connections"
+        "/etc/ssh"
         "/var/lib/systemd/coredump"
         "/var/lib/bluetooth"
-        "/var/lib/nixos"
         "/var/lib/fprint"
+        "/var/lib/nixos"
+        "/var/lib/tailscale"
         "/home/simonwjackson"
       ];
       files = [
