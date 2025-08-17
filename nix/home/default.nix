@@ -569,7 +569,7 @@
           context = "files";
           description = "AI-generated commit message";
           loadingText = "Generating AI commit message...";
-          subprocess = true;
+          output = "terminal";
         }
       ];
       promptToReturnFromSubprocess = false;
