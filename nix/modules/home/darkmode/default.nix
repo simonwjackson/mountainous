@@ -136,24 +136,40 @@ in {
     # Initialize GTK settings.ini files with default theme
     # These will be dynamically updated by darkmode-toggle script
     home.activation.initGtkSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      run mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
-      
-      # Only create initial files if they don't exist (to avoid overwriting dynamic changes)
-      if [[ ! -f "$HOME/.config/gtk-3.0/settings.ini" ]]; then
-        run cat > "$HOME/.config/gtk-3.0/settings.ini" << 'EOF'
-[Settings]
-gtk-application-prefer-dark-theme=${if cfg.defaultMode == "dark" then "1" else "0"}
-gtk-theme-name=${if cfg.defaultMode == "dark" then cfg.themes.gtk.dark else cfg.themes.gtk.light}
-EOF
-      fi
-      
-      if [[ ! -f "$HOME/.config/gtk-4.0/settings.ini" ]]; then
-        run cat > "$HOME/.config/gtk-4.0/settings.ini" << 'EOF'
-[Settings]
-gtk-application-prefer-dark-theme=${if cfg.defaultMode == "dark" then "1" else "0"}
-gtk-theme-name=${if cfg.defaultMode == "dark" then cfg.themes.gtk.dark else cfg.themes.gtk.light}
-EOF
-      fi
+            run mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+
+            # Only create initial files if they don't exist (to avoid overwriting dynamic changes)
+            if [[ ! -f "$HOME/.config/gtk-3.0/settings.ini" ]]; then
+              run cat > "$HOME/.config/gtk-3.0/settings.ini" << 'EOF'
+      [Settings]
+      gtk-application-prefer-dark-theme=${
+        if cfg.defaultMode == "dark"
+        then "1"
+        else "0"
+      }
+      gtk-theme-name=${
+        if cfg.defaultMode == "dark"
+        then cfg.themes.gtk.dark
+        else cfg.themes.gtk.light
+      }
+      EOF
+            fi
+
+            if [[ ! -f "$HOME/.config/gtk-4.0/settings.ini" ]]; then
+              run cat > "$HOME/.config/gtk-4.0/settings.ini" << 'EOF'
+      [Settings]
+      gtk-application-prefer-dark-theme=${
+        if cfg.defaultMode == "dark"
+        then "1"
+        else "0"
+      }
+      gtk-theme-name=${
+        if cfg.defaultMode == "dark"
+        then cfg.themes.gtk.dark
+        else cfg.themes.gtk.light
+      }
+      EOF
+            fi
     '';
   };
 }

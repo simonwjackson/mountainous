@@ -120,7 +120,7 @@ deploy *ARGS:
 
 # Format all Nix files in the repository
 format:
-    nix fmt
+    nix fmt .
 
 # Interactively encrypt a new secret
 encrypt:

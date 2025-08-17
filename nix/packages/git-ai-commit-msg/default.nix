@@ -3,17 +3,17 @@
   pkgs,
   writeShellApplication,
   ...
-}: 
+}:
 writeShellApplication {
   name = "git-ai-commit-msg";
-  
+
   runtimeInputs = with pkgs; [
     bash
     git
     jq
     curl
   ];
-  
+
   text = ''
     # Function to show usage
     show_usage() {
@@ -165,15 +165,15 @@ writeShellApplication {
 
     # Check for Gemini API key from agenix
     API_KEY_FILE="$XDG_RUNTIME_DIR/agenix/user-simonwjackson-gemini-api-key"
-    
+
     if [ ! -f "$API_KEY_FILE" ]; then
       echo "Error: Gemini API key not found at $API_KEY_FILE"
       echo "Make sure agenix is properly configured and the secret is available."
       exit 1
     fi
-    
+
     API_KEY=$(cat "$API_KEY_FILE")
-    
+
     if [ -z "$API_KEY" ]; then
       echo "Error: Gemini API key is empty"
       exit 1
@@ -226,7 +226,7 @@ writeShellApplication {
     Detailed explanation in one sentence.
 
     - First bullet point describing a key change
-    - Second bullet point describing another change  
+    - Second bullet point describing another change
     - Third bullet point describing final change
 
     Rules:
@@ -278,7 +278,7 @@ writeShellApplication {
     Detailed explanation paragraph.
 
     - First bullet point describing a key change
-    - Second bullet point describing another change  
+    - Second bullet point describing another change
     - Third bullet point describing final change
 
     Rules:
@@ -323,7 +323,7 @@ writeShellApplication {
     Detailed explanation in one sentence.
 
     - First bullet point describing a key change
-    - Second bullet point describing another change  
+    - Second bullet point describing another change
     - Third bullet point describing final change
 
     Rules:
@@ -407,14 +407,14 @@ writeShellApplication {
       fi
     fi
   '';
-  
+
   meta = with lib; {
     description = "Generate git commit messages using Gemini AI based on staged changes";
     longDescription = ''
       A tool that analyzes staged git changes and generates commit messages using Google's Gemini AI.
       It detects the commit style from recent commits (Angular vs imperative) and generates
       appropriate messages following the repository's conventions.
-      
+
       Requires agenix secret 'user-simonwjackson-gemini-api-key' to be available.
     '';
     mainProgram = "git-ai-commit-msg";

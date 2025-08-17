@@ -19,12 +19,16 @@
     ${hyprctl} --instance 0 reload
   '';
 
-  makeOnConnect = { resolution, scaling ? 1 }: pkgs.writeShellScript "onConnect-${resolution}-${toString scaling}" ''
-    ${hyprctl} --instance 0 keyword monitor HDMI-A-2,${resolution},auto,${toString scaling} &&
-      ${hyprctl} --instance 0 dispatch dpms on &&
-      ${hyprctl} --instance 0 keyword monitor DP-1,disable &&
-      ${hyprctl} --instance 0 keyword monitor DP-2,disable
-  '';
+  makeOnConnect = {
+    resolution,
+    scaling ? 1,
+  }:
+    pkgs.writeShellScript "onConnect-${resolution}-${toString scaling}" ''
+      ${hyprctl} --instance 0 keyword monitor HDMI-A-2,${resolution},auto,${toString scaling} &&
+        ${hyprctl} --instance 0 dispatch dpms on &&
+        ${hyprctl} --instance 0 keyword monitor DP-1,disable &&
+        ${hyprctl} --instance 0 keyword monitor DP-2,disable
+    '';
 in {
   services.sunshine = {
     enable = true;
@@ -42,7 +46,7 @@ in {
           name = "4K 60";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "3840x2160@60";
                 scaling = 1;
               };
@@ -59,7 +63,7 @@ in {
           name = "FHD 120";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "1920x1080@120";
                 scaling = 1;
               };
@@ -71,12 +75,12 @@ in {
           auto-detach = "false";
           wait-all = "false";
         }
-        
+
         {
           name = "ZFold 6 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "1856x2160@90";
                 scaling = 2;
               };
@@ -93,7 +97,7 @@ in {
           name = "ZFold 6 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "2160x1856@90";
                 scaling = 2;
               };
@@ -104,14 +108,13 @@ in {
           exclude-global-prep-cmd = "false";
           auto-detach = "false";
           wait-all = "false";
-        
         }
 
         {
           name = "Samsung Tab S9 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "1752x2800@90";
                 scaling = 2;
               };
@@ -128,7 +131,7 @@ in {
           name = "Samsung Tab S9 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "2800x1752@90";
                 scaling = 2;
               };
@@ -145,7 +148,7 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Landscape)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "2560x2024@60";
                 scaling = 1.5;
               };
@@ -162,7 +165,7 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Portrait)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "2560x2024@60";
                 scaling = 1.5;
               };
@@ -179,7 +182,7 @@ in {
           name = "ThinkPad X1 Fold Gen 2 (Laptop)";
           prep-cmd = [
             {
-              do = makeOnConnect { 
+              do = makeOnConnect {
                 resolution = "2560x1240@60";
                 scaling = 1.5;
               };

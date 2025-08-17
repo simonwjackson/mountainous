@@ -37,7 +37,7 @@
           ];
         };
       }
-      
+
       {
         profile = {
           name = "nreal";
@@ -56,7 +56,7 @@
           ];
         };
       }
-      
+
       {
         profile = {
           name = "docked";

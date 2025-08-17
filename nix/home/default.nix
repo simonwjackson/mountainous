@@ -701,7 +701,7 @@
   xdg.configFile."git/hooks/pre-push" = {
     text = ''
       #!/usr/bin/env bash
-      
+
       # Call the standalone git secret scanner
       exec git-secret-scanner "$@"
     '';

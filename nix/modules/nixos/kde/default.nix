@@ -9,13 +9,13 @@
 in {
   options.mountainous.kde = {
     enable = mkEnableOption "KDE Plasma desktop environment";
-    
+
     autoLogin = mkOption {
       type = types.bool;
       default = false;
       description = "Enable automatic login";
     };
-    
+
     autoLoginUser = mkOption {
       type = types.str;
       default = "simonwjackson";
@@ -26,7 +26,7 @@ in {
   config = mkIf cfg.enable {
     # Enable the X11 windowing system
     services.xserver.enable = true;
-    
+
     # Enable the KDE Plasma Desktop Environment
     services.displayManager.sddm = {
       enable = true;
@@ -36,38 +36,38 @@ in {
         user = cfg.autoLoginUser;
       };
     };
-    
+
     services.desktopManager.plasma6.enable = true;
-    
+
     # Disable power-profiles-daemon as it conflicts with TLP
     services.power-profiles-daemon.enable = false;
-    
+
     # Configure autologin without password
     services.displayManager.autoLogin = mkIf cfg.autoLogin {
       enable = true;
       user = cfg.autoLoginUser;
     };
-    
+
     # Ensure the user exists and has no password requirement for autologin
     users.users.${cfg.autoLoginUser} = mkIf cfg.autoLogin {
-      extraGroups = [ "wheel" "video" "audio" "networkmanager" ];
+      extraGroups = ["wheel" "video" "audio" "networkmanager"];
       # Set an empty password hash to allow passwordless login
       hashedPassword = "";
     };
-    
+
     # Enable passwordless sudo for the autologin user
     security.sudo.extraRules = mkIf cfg.autoLogin [
       {
-        users = [ cfg.autoLoginUser ];
+        users = [cfg.autoLoginUser];
         commands = [
           {
             command = "ALL";
-            options = [ "NOPASSWD" ];
+            options = ["NOPASSWD"];
           }
         ];
       }
     ];
-    
+
     # XDG portal for better desktop integration
     xdg.portal = {
       enable = true;
@@ -75,7 +75,7 @@ in {
         kdePackages.xdg-desktop-portal-kde
       ];
     };
-    
+
     # Enable sound
     security.rtkit.enable = true;
     services.pipewire = {
@@ -84,7 +84,7 @@ in {
       alsa.support32Bit = true;
       pulse.enable = true;
     };
-    
+
     # KDE-specific packages
     environment.systemPackages = with pkgs; [
       kdePackages.kate

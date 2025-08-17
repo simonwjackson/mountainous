@@ -71,12 +71,12 @@ in {
       description = "Automatic screen rotation service";
       wantedBy = ["default.target"];
       after = ["graphical-session.target"];
-      
+
       serviceConfig = {
         Type = "simple";
         Restart = "always";
         RestartSec = "10";
-        
+
         # Environment variables for the service
         Environment = [
           "PATH=${pkgs.hyprland}/bin:${pkgs.jq}/bin:${pkgs.python3}/bin:/run/current-system/sw/bin"
@@ -86,7 +86,7 @@ in {
       script = ''
         # Wait for Hyprland to be ready
         sleep 5
-        
+
         ${pkgs.auto-rotate}/bin/auto-rotate \
           --accelerometer "${cfg.accelerometerDevice}" \
           --hinge "${cfg.hingeDevice}" \
@@ -95,7 +95,11 @@ in {
           --hinge-threshold ${toString cfg.hingeThreshold} \
           --hyprland-instance ${toString cfg.hyprlandInstance} \
           --poll-interval ${toString cfg.pollInterval} \
-          ${if cfg.enableHingeDetection then "--enable-hinge" else ""}
+          ${
+          if cfg.enableHingeDetection
+          then "--enable-hinge"
+          else ""
+        }
       '';
     };
 
@@ -104,11 +108,11 @@ in {
       # Allow access to IIO devices for rotation detection
       SUBSYSTEM=="iio", GROUP="input", MODE="0664"
       KERNEL=="iio:device*", GROUP="input", MODE="0664"
-      
+
       # Allow write access to scan_elements for hinge sensor initialization
       SUBSYSTEM=="iio", ATTR{name}=="hinge", RUN+="${pkgs.coreutils}/bin/chgrp -R input /sys%p/scan_elements"
       SUBSYSTEM=="iio", ATTR{name}=="hinge", RUN+="${pkgs.coreutils}/bin/chmod -R g+w /sys%p/scan_elements"
-      
+
       # Alternative: target specific device paths
       KERNEL=="iio:device4", RUN+="${pkgs.coreutils}/bin/chgrp -R input /sys%p/scan_elements /sys%p/buffer"
       KERNEL=="iio:device4", RUN+="${pkgs.coreutils}/bin/chmod -R g+w /sys%p/scan_elements /sys%p/buffer"

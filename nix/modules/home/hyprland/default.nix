@@ -318,7 +318,7 @@ in {
           ",XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
           ",XF86MonBrightnessUp, exec, sudo ${brillo} -A 5"
           ",XF86MonBrightnessDown, exec, sudo ${brillo} -U 5"
-          
+
           # Monitor scaling controls
           "$mainMod, equal, exec, ${scaleAdjustScript}/bin/adjustScale up"
           "$mainMod, minus, exec, ${scaleAdjustScript}/bin/adjustScale down"
@@ -427,22 +427,22 @@ in {
 
         # Get current monitor configuration
         MONITOR_INFO=$(hyprctl --instance 0 monitors -j | jq -r '.[0] | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale)"')
-        
+
         if [ -z "$MONITOR_INFO" ]; then
           echo "Could not get monitor info"
           exit 1
         fi
-        
+
         # Parse monitor info
         MONITOR_NAME=$(echo "$MONITOR_INFO" | cut -d',' -f1)
         RESOLUTION=$(echo "$MONITOR_INFO" | cut -d',' -f2)
         POSITION=$(echo "$MONITOR_INFO" | cut -d',' -f3)
         CURRENT_SCALE=$(echo "$MONITOR_INFO" | cut -d',' -f4)
-        
+
         # Extract resolution width and height
         WIDTH=$(echo "$RESOLUTION" | cut -d'x' -f1)
         HEIGHT=$(echo "$RESOLUTION" | cut -d'x' -f2 | cut -d'@' -f1)
-        
+
         # Use pre-calculated valid scales for common resolutions to reduce latency
         RESOLUTION_KEY="''${WIDTH}x''${HEIGHT}"
         case "$RESOLUTION_KEY" in
@@ -462,25 +462,25 @@ in {
             # Calculate valid scales dynamically for unknown resolutions
             CANDIDATE_SCALES="0.5 0.75 1.0 1.2 1.25 1.333333 1.5 1.6 2.0"
             VALID_SCALES=()
-            
+
             for scale in $CANDIDATE_SCALES; do
               # Quick integer division check
               sw=$(awk "BEGIN {print int($WIDTH / $scale + 0.5)}")
               sh=$(awk "BEGIN {print int($HEIGHT / $scale + 0.5)}")
-              
+
               # Check if scale produces clean division
               if [ "$(awk "BEGIN {print ($WIDTH % $scale == 0 && $HEIGHT % $scale == 0) ? 1 : 0}")" = "1" ]; then
                 VALID_SCALES+=("$scale")
               fi
             done
-            
+
             # Fallback if no valid scales found
             if [ ''${#VALID_SCALES[@]} -eq 0 ]; then
               VALID_SCALES=(0.5 1.0 2.0)
             fi
             ;;
         esac
-        
+
         # Find the index of the current scale or closest scale
         current_index=0
         min_diff=999
@@ -493,7 +493,7 @@ in {
             current_index=$i
           fi
         done
-        
+
         # Calculate new index based on direction
         if [ "$DIRECTION" = "up" ]; then
           new_index=$((current_index + 1))
@@ -508,15 +508,15 @@ in {
             echo "Already at minimum scale"
           fi
         fi
-        
+
         # Get the new scale
         NEW_SCALE="''${VALID_SCALES[$new_index]}"
-        
+
         # Apply new scale only if it's different
         if [ "$NEW_SCALE" != "$CURRENT_SCALE" ]; then
           echo "Applying scale: $CURRENT_SCALE -> $NEW_SCALE"
           hyprctl --instance 0 keyword monitor "$MONITOR_NAME,$RESOLUTION,$POSITION,$NEW_SCALE"
-          
+
           # Verify the scale was applied
           sleep 0.1
           ACTUAL_SCALE=$(hyprctl --instance 0 monitors -j | jq -r '.[0].scale')

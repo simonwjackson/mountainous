@@ -5,7 +5,6 @@
   stdenv,
   ...
 }:
-
 pkgs.writeShellScriptBin "workspaceCycler" ''
   #!${pkgs.bash}/bin/bash
   export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland]}:$PATH"

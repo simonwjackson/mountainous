@@ -20,7 +20,7 @@ in {
 
       settings = {
         format = "$all$character";
-        
+
         character = {
           success_symbol = "[❯](bold #a6d189)";
           error_symbol = "[❯](bold #e78284)";
