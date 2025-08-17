@@ -466,7 +466,7 @@
           allBranchesLogGraph = "a";
         };
         files = {
-          commitChanges = "c";
+          commitChanges = "C";
           commitChangesWithoutHook = "w";
           amendLastCommit = "A";
           commitChangesWithEditor = "C";
@@ -563,14 +563,14 @@
       quitOnTopLevelReturn = true;
       disableStartupPopups = true;
       customCommands = [
-        # {
-        #   key = "C";
-        #   command = "git-commit-message --accept --quiet";
-        #   context = "files";
-        #   description = "Use AI to generate commit message";
-        #   loadingText = "Generating AI commit message...";
-        #   subprocess = true;
-        # }
+        {
+          key = "c";
+          command = "git-ai-commit-msg -y";
+          context = "files";
+          description = "AI-generated commit message";
+          loadingText = "Generating AI commit message...";
+          subprocess = true;
+        }
       ];
       promptToReturnFromSubprocess = false;
     };
@@ -672,6 +672,7 @@
     };
     aliases = {
       ai-commit = "!git-commit-message";
+      ai-commit-msg = "!git-ai-commit-msg";
       secret-scanner = "!git-secret-scanner";
       # wt = "!f() { if [ \"$1\" = 'clone' ]; then shift; url=\"$1\"; name=\"\${2:-$(basename \"$url\" .git)}\"; git clone --bare \"$url\" \"$name/.bare\" && cd \"$name\" && echo 'gitdir: ./.bare' > .git && git worktree add main; else git worktree \"$@\"; fi; }; f";
       wt = ''
@@ -713,6 +714,7 @@
     fd
     jq
     git-commit-message
+    git-ai-commit-msg
     git-secret-scanner
     firefox
     chromium
