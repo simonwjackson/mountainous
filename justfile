@@ -77,7 +77,7 @@ switch *ARGS:
         EXTRA_ARGS=("${args[@]:2}")
     fi
 
-    nixos-rebuild switch --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --use-remote-sudo "${EXTRA_ARGS[@]}"
+    nixos-rebuild switch --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --sudo "${EXTRA_ARGS[@]}"
 
 test *ARGS:
     #!/usr/bin/env bash
@@ -105,7 +105,7 @@ test *ARGS:
         EXTRA_ARGS=("${args[@]:2}")
     fi
 
-    nixos-rebuild test --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --use-remote-sudo "${EXTRA_ARGS[@]}"
+    nixos-rebuild test --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --sudo "${EXTRA_ARGS[@]}"
     # just _run_nixie_command test {{ ARGS }}
 
 boot *ARGS:

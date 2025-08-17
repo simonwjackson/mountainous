@@ -626,7 +626,9 @@
   home.homeDirectory = "/home/simonwjackson";
 
   # Shell aliases for both bash and zsh
-  home.shellAliases = {
+  home.shellAliases = let
+    claudeCodeCmd = "bun x '@anthropic-ai/claude-code' --dangerously-skip-permissions";
+  in {
     ll = "ls -l";
     la = "ls -la";
     gcm = "git-commit-message";
@@ -636,6 +638,8 @@
       fzf = lib.getExe pkgs.fzf;
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
     pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
+    claude-code = claudeCodeCmd;
+    cc = claudeCodeCmd;
   };
 
   # Basic shell configuration
@@ -711,6 +715,8 @@
   # Install some basic packages
   home.packages = with pkgs; [
     htop
+    btop
+    killall
     ripgrep
     fd
     jq
