@@ -123,6 +123,16 @@ in {
   mountainous = {
     agenix.enable = true;
     sound.enable = lib.mkForce false;
+    auto-rotate = {
+      enable = true;
+      accelerometerDevice = "/sys/bus/iio/devices/iio:device1";
+      hingeDevice = "/sys/bus/iio/devices/iio:device4";
+      enableHingeDetection = true;   # Re-enabled with proper initialization
+      hingeThreshold = 90;           # Lower threshold for easier testing
+      rotationThreshold = 100000;  # Lowered for better sensitivity
+      debounceTime = 2;
+      pollInterval = 0.5;
+    };
     profiles = {
       base.enable = true;
       laptop.enable = true;
