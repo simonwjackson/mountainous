@@ -56,6 +56,7 @@
 
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
+    home-manager.backupFileExtension = "backup";
 
     # Pass inputs to home-manager modules as specialArgs
     home-manager.extraSpecialArgs = {inherit inputs;};

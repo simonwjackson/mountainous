@@ -168,7 +168,7 @@ in {
 
       systemsDir = lib.mkOption {
         type = lib.types.path;
-        default = ./../../../../systems;
+        default = ./../../../systems;
         description = "Directory containing system configurations";
       };
 
