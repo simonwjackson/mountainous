@@ -8,10 +8,12 @@ HOSTS := env_var_or_default('HOSTS', '')
 BUILDERS := env_var_or_default('BUILDERS', '')
 
 # Default recipe
+[private]
 default:
     @just --list --unsorted
 
 # Common function to handle shared logic
+[private]
 _run_nixie_command ACTION *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail

@@ -12,6 +12,10 @@ in {
   };
 
   config = mkIf cfg.enable {
+    environment.sessionVariables = {
+      TMESH_CMD = "nvim --cmd 'let g:auto_session_enabled = v:false' --cmd 'autocmd TermClose * if !v:event.status | quit | endif' --cmd 'autocmd VimEnter * set signcolumn=no | startinsert' +terminal";
+    };
+
     programs.tmesh = {
       enable = true;
 
