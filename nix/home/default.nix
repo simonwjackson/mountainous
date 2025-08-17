@@ -1,5 +1,6 @@
 # Default home-manager configuration for all systems
 {
+  config,
   pkgs,
   lib,
   inputs,
@@ -993,6 +994,16 @@
   mountainous.darkmode = {
     enable = true;
     defaultMode = "dark";
+  };
+
+  # Enable agenix secrets management
+  mountainous.agenix.enable = true;
+
+  # Enable atuin with encrypted secrets
+  mountainous.atuin = {
+    enable = true;
+    key_path = config.age.secrets.atuin_key.path;
+    session_path = config.age.secrets.atuin_session.path;
   };
 
   # This value determines the Home Manager release that your

@@ -16,7 +16,7 @@
   fileExists = path: builtins.pathExists path;
   
   # Function to auto-discover .age files from secrets directory
-  # Only include user-specific secrets for home-manager
+  # Include user-specific secrets and atuin secrets for home-manager
   discoverSecrets = let
     # Check if secrets directory exists
     secretsDirExists = fileExists secretsDir;
@@ -30,12 +30,13 @@
           ageFiles = lib.filterAttrs (name: type: 
             type == "regular" && lib.hasSuffix ".age" name
           ) dirContent;
-          # Only include user-specific secrets (starting with "user-")
-          userSecrets = lib.filterAttrs (name: type:
-            lib.hasPrefix "user-" name
+          # Include user-specific secrets (starting with "user-") and atuin secrets
+          allowedSecrets = lib.filterAttrs (name: type:
+            lib.hasPrefix "user-" name || 
+            lib.hasPrefix "atuin_" name
           ) ageFiles;
         in
-          builtins.attrNames userSecrets
+          builtins.attrNames allowedSecrets
       else [];
     
     # Convert file names to secret configuration
