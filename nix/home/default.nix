@@ -999,6 +999,9 @@
   # Enable agenix secrets management
   mountainous.agenix.enable = true;
 
+  # Enable starship prompt
+  mountainous.starship.enable = true;
+
   # Enable atuin with encrypted secrets
   mountainous.atuin = {
     enable = true;

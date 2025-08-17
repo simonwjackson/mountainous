@@ -37,7 +37,7 @@ in {
       nssmdns4 = true;
       nssmdns6 = true;
     };
-    services.timesyncd.enable = true;
+    services.timesyncd.enable = lib.mkDefault true;
 
     services = {
       libinput = {
