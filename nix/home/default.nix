@@ -679,21 +679,24 @@
       ai-commit = "!git-commit-message";
       ai-commit-msg = "!git-ai-commit-msg";
       secret-scanner = "!git-secret-scanner";
-      # wt = "!f() { if [ \"$1\" = 'clone' ]; then shift; url=\"$1\"; name=\"\${2:-$(basename \"$url\" .git)}\"; git clone --bare \"$url\" \"$name/.bare\" && cd \"$name\" && echo 'gitdir: ./.bare' > .git && git worktree add main; else git worktree \"$@\"; fi; }; f";
-      wt = ''
-        !f() {
-          if [ "$1" = 'clone' ]; then
-            shift
-            url="$1"
-            name="''${2:-$(basename "$url" .git)}"
-            git clone --bare "$url" "$name/.bare" &&
-            cd "$name" &&
-            echo 'gitdir: ./.bare' > .git &&
-            git worktree add main
-          else
-            git worktree "$@"
-          fi
-        }; f'';
+      wt =
+        # bash
+        ''
+          !f() {
+            if [ "$1" = 'clone' ]; then
+              shift
+              url="$1"
+              name="''${2:-$(basename "$url" .git)}"
+              git clone --bare "$url" "$name/.bare" &&
+              cd "$name" &&
+              echo 'gitdir: ./.bare' > .git &&
+              git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
+              git fetch origin &&
+              git worktree add main
+            else
+              git worktree "$@"
+            fi
+          }; f'';
     };
     ignores = [
       "**/.resession.json"
@@ -707,7 +710,7 @@
       #!/usr/bin/env bash
 
       # Call the standalone git secret scanner
-      exec git-secret-scanner "$@"
+      exec git-secret-scanner divergence
     '';
     executable = true;
   };
