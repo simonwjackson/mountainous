@@ -90,8 +90,16 @@
   mkNixosSystem = overlays: arch: name:
     nixpkgs.lib.nixosSystem {
       system = arch;
-      # Pass inputs as specialArgs to make them available to all modules
-      specialArgs = {inherit inputs;};
+      # Pass inputs and other args as specialArgs to make them available to all modules
+      specialArgs = {
+        inherit inputs;
+        target = arch;
+        lib = nixpkgs.lib.extend (final: prev: {
+          mountainous = {
+            inherit util;
+          };
+        });
+      };
       modules =
         # First import all NixOS modules
         nixosModules
@@ -209,6 +217,12 @@
       packageDirs);
   in
     packageSet;
+
+  # Utility functions for syncthing module
+  util = {
+    allArchitectures = systems: builtins.attrNames (builtins.readDir systems);
+    getAllHosts = systems: arch: builtins.attrNames (builtins.readDir "${systems}/${arch}");
+  };
 in {
   # Main flake utility function
   mkFlake = {
@@ -244,5 +258,12 @@ in {
 
     # Make packages available to dependent flakes
     overlay = final: prev: collectPackages prev prev.system;
+
+    # Export lib with mountainous utilities
+    lib = {
+      mountainous = {
+        inherit util;
+      };
+    };
   };
 }

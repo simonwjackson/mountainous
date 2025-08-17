@@ -85,19 +85,14 @@ in {
   # Enable Thunderbolt support
   services.hardware.bolt.enable = true;
 
-  # enable syncthing
-  services.syncthing = {
+  # Enable mountainous Syncthing module with auto-discovery
+  mountainous.syncthing = {
     enable = true;
-    user = "simonwjackson";
-    group = "users";
-    dataDir = "/home/simonwjackson/.local/share/syncthing";
-    configDir = "/home/simonwjackson/.config/syncthing";
-    overrideFolders = false;
-    overrideDevices = false;
+    key = "/run/agenix/fuji-syncthing-key";
+    cert = "/run/agenix/fuji-syncthing-cert";
+    systemsDir = ../../../../nix/systems;
+    # Configuration automatically discovered from ./syncthing.nix
   };
-
-  # Disable default folder
-  systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true";
 
   services.udev.extraRules = ''
     KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"

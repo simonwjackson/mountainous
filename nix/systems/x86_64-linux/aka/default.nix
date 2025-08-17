@@ -143,19 +143,20 @@ in {
     options = ["noatime" "nofail" "x-systemd.automount" "x-systemd.device-timeout=5"];
   };
 
-  # enable syncthing
-  services.syncthing = {
+  # Enable mountainous Syncthing module with auto-discovery
+  mountainous.syncthing = {
     enable = true;
-    user = "simonwjackson";
-    group = "users";
-    dataDir = "/home/simonwjackson/.local/share/syncthing";
-    configDir = "/home/simonwjackson/.config/syncthing";
-    overrideFolders = false;
-    overrideDevices = false;
+    # Configuration automatically discovered from ./syncthing.nix
+    # Certificates automatically configured from agenix secrets
+    otherDevices = {
+      # Add external devices here as needed
+      # Example:
+      # "phone" = {
+      #   id = "DEVICE-ID-HERE";
+      #   shares = ["photos" "documents"];
+      # };
+    };
   };
-
-  # Disable default folder
-  systemd.services.syncthing.environment.STNODEFAULTFOLDER = "true";
 
   system.stateVersion = "24.05";
 }
