@@ -157,4 +157,5 @@ in {
   "nyu-syncthing-cert.age".publicKeys = users ++ [nyu];
   "onishi-syncthing-key.age".publicKeys = users ++ [onishi];
   "onishi-syncthing-cert.age".publicKeys = users ++ [onishi];
+  "user-simonwjackson-gemini-api-key.age".publicKeys = users ++ systems;
 }
