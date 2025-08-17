@@ -3,20 +3,20 @@
 set -euo pipefail
 
 # Default mode
-MODE="changes"
+MODE="changed"
 
 # Parse command line arguments
 if [ $# -gt 0 ]; then
   case "$1" in
-  "changes" | "modified" | "staged" | "divergence")
+  "changed" | "modified" | "staged" | "diverged")
     MODE="$1"
     ;;
   *)
-    echo "Usage: $0 [changes|modified|staged|divergence]"
-    echo "  changes     - Scan uncommitted changes (tracked + untracked files) (default)"
+    echo "Usage: $0 [changed|modified|staged|diverged]"
+    echo "  changed     - Scan uncommitted changes (tracked + untracked files) (default)"
     echo "  modified    - Scan uncommitted changes in tracked files only"
     echo "  staged      - Scan staged changes ready to be committed"
-    echo "  divergence  - Scan changes between current branch and upstream"
+    echo "  diverged    - Scan changes between current branch and upstream"
     exit 1
     ;;
   esac
@@ -25,7 +25,7 @@ fi
 # Get the appropriate git diff based on mode
 get_diff() {
   case "$MODE" in
-  "changes")
+  "changed")
     # Show both tracked changes and new untracked files
     git diff
     git ls-files --others --exclude-standard | xargs -I {} git diff /dev/null {} 2>/dev/null || true
@@ -36,7 +36,7 @@ get_diff() {
   "staged")
     git diff --cached
     ;;
-  "divergence")
+  "diverged")
     # Check if upstream exists
     if ! git rev-parse @{u} >/dev/null 2>&1; then
       echo "Error: No upstream branch configured for current branch"
@@ -59,6 +59,7 @@ fi
 
 # Scan the diff for secrets
 scan_result=$(echo "$diff_content" |
+  gum spin --spinner dot --title "Scanning for secrets..." -- \
   bun x @anthropic-ai/claude-code \
     --model claude-3-5-haiku-latest \
     --print \

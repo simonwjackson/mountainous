@@ -1,9 +1,7 @@
 {
   lib,
-  inputs,
   pkgs,
   stdenv,
-  substituteAll,
   bun,
   ...
 }:
@@ -13,14 +11,15 @@ stdenv.mkDerivation {
 
   src = ./.;
 
-  buildInputs = with pkgs; [bash git bun];
+  buildInputs = with pkgs; [bash git bun gum];
 
   installPhase = ''
     mkdir -p $out/bin
 
-    # Substitute the bun path in the script
+    # Substitute the bun and gum paths in the script
     substitute git-secret-scanner.sh $out/bin/git-secret-scanner \
-      --replace "bun x @anthropic-ai/claude-code" "${bun}/bin/bun x @anthropic-ai/claude-code"
+      --replace "bun x @anthropic-ai/claude-code" "${bun}/bin/bun x @anthropic-ai/claude-code" \
+      --replace "gum " "${pkgs.gum}/bin/gum "
 
     chmod +x $out/bin/git-secret-scanner
   '';

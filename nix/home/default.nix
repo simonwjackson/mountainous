@@ -710,7 +710,7 @@
       #!/usr/bin/env bash
 
       # Call the standalone git secret scanner
-      exec git-secret-scanner divergence
+      exec git-secret-scanner diverged
     '';
     executable = true;
   };
