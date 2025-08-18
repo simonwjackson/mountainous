@@ -306,7 +306,7 @@ in {
           "$mainMod, right, swapwindow, r"
           "$mainMod, up, swapwindow, u"
           "$mainMod, down, swapwindow, d"
-          "$mainMod, S, exec, pkill -f 'hyprshot.*ksnip' || (${pkgs.hyprshot}/bin/hyprshot --freeze --mode=region --raw | ${pkgs.ksnip}/bin/ksnip -)"
+          "$mainMod, S, exec, pgrep -f 'hyprshot.*ksnip' > /dev/null && pkill -f 'hyprshot.*ksnip' || (${pkgs.hyprshot}/bin/hyprshot --freeze --mode=region --raw | ${pkgs.ksnip}/bin/ksnip -)"
           "$mainMod SHIFT, S, movetoworkspace, special:magic"
           "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
           "$mainMod, equal, exec, ${splitToggleScript}/bin/splitToggle"
