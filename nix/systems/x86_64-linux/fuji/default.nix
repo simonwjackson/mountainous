@@ -23,9 +23,7 @@ in {
     #   }
     # ];
 
-    extraModprobeConfig = ''
-      options snd-hda-intel dmic_detect=0
-    '';
+
 
     kernelModules = [
       "nvme"
@@ -34,17 +32,19 @@ in {
       "igc"
       "nvme_core" # Added for more complete NVMe support
       "hid_sensor_hub" # Added for orientation sensing on foldable device
-      "snd_hda_intel"
-      "snd_soc_avs"
-      "snd_sof_pci_intel_tgl"
     ];
+    # Add extraModprobeConfig for X1 Fold audio quirks
+    extraModprobeConfig = ''
+      options snd-hda-intel model=thinkpad-x1fold
+    '';
+
     loader = {
       efi.canTouchEfiVariables = true;
       systemd-boot = {
         enable = true;
       };
     };
-    kernelPackages = pkgs.linuxPackages_6_6;
+    kernelPackages = pkgs.linuxPackages_latest;  # Upgrade to 6.16 for best X1 Fold support
     kernelParams = [
       "video=efifb:2024x2560" # Match your native resolution
       "video=efifb:scale" # HiDPI scaling
@@ -54,6 +54,7 @@ in {
       "i915.enable_fbc=1"
       "i915.enable_psr=2"
       "acpi_osi=!\"Windows 2020\"" # Added for better Lenovo compatibility
+      "snd-hda-intel.model=thinkpad-x1fold" # X1 Fold specific audio quirk
     ];
     initrd = {
       kernelModules = ["i915"];
@@ -87,7 +88,7 @@ in {
 
   # Enable mountainous Syncthing module with auto-discovery
   mountainous.syncthing = {
-    enable = true;
+    enable = false;
     key = "/run/agenix/fuji-syncthing-key";
     cert = "/run/agenix/fuji-syncthing-cert";
     systemsDir = ../../../../nix/systems;
@@ -107,25 +108,19 @@ in {
     # Enable Bluetooth support
     bluetooth.enable = true;
     bluetooth.powerOnBoot = true;
-  };
 
-  services.pulseaudio = {
-    enable = true;
-    package = pkgs.pulseaudioFull;
-  };
-
-  services.pipewire = {
-    enable = lib.mkForce false;
+    # Add SOF firmware for Intel audio
+    firmware = [ pkgs.sof-firmware ];
   };
 
   security.rtkit.enable = true;
 
   mountainous = {
     agenix.enable = true;
-    sound.enable = lib.mkForce false;
+    sound.enable = true;
     auto-rotate = {
       enable = true;
-      accelerometerDevice = "/sys/bus/iio/devices/iio:device1";
+      accelerometerDevice = "/sys/bus/iio/devices/iio:device0";
       hingeDevice = "/sys/bus/iio/devices/iio:device4";
       enableHingeDetection = true; # Re-enabled with proper initialization
       hingeThreshold = 90; # Lower threshold for easier testing
