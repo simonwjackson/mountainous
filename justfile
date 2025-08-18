@@ -51,6 +51,32 @@ _run_nixie_command ACTION *ARGS:
     echo "Executing: $COMMAND"
     eval $COMMAND
 
+# Pre-switch hook for syncing local files to remote before deployment
+[private]
+_pre_deploy TARGET_HOST:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Skip if deploying to localhost
+    if [[ "{{ TARGET_HOST }}" == "$(hostname)" ]]; then
+        exit 0
+    fi
+
+    echo "🔄 Pre-switch sync to {{ TARGET_HOST }}..."
+
+    # Sync Claude files to target (if they exist locally)
+    if [[ -d "./nix/home/claude/commands" ]]; then
+        ssh {{ TARGET_HOST }} "mkdir -p ~/.claude/commands"
+        rsync -av --delete ./nix/home/claude/commands/*.md "{{ TARGET_HOST }}:~/.claude/commands/" 2>/dev/null || true
+    fi
+
+    if [[ -d "./nix/home/claude/agents" ]]; then
+        ssh {{ TARGET_HOST }} "mkdir -p ~/.claude/agents"
+        rsync -av --delete ./nix/home/claude/agents/*.md "{{ TARGET_HOST }}:~/.claude/agents/" 2>/dev/null || true
+    fi
+
+    # Future: Add other pre-deployment syncs here
+
 switch *ARGS:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -77,7 +103,43 @@ switch *ARGS:
         EXTRA_ARGS=("${args[@]:2}")
     fi
 
+    # Pre-switch sync
+    just _pre_deploy "${TARGET_HOST}"
+
+    # Run the actual switch
     nixos-rebuild switch --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --sudo "${EXTRA_ARGS[@]}"
+
+    # Post-switch sync
+    just _post_switch "${TARGET_HOST}"
+
+# Post-switch hook for syncing remote files back after deployment
+[private]
+_post_switch TARGET_HOST:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Skip if deployed to localhost
+    if [[ "{{ TARGET_HOST }}" == "$(hostname)" ]]; then
+        exit 0
+    fi
+
+    echo "🔄 Post-switch sync from {{ TARGET_HOST }}..."
+
+    # Ensure local directories exist
+    mkdir -p ./nix/home/claude/commands
+    mkdir -p ./nix/home/claude/agents
+
+    # Sync Claude files back from target
+    rsync -av "{{ TARGET_HOST }}:~/.claude/commands/*.md" ./nix/home/claude/commands/ 2>/dev/null || true
+    rsync -av "{{ TARGET_HOST }}:~/.claude/agents/*.md" ./nix/home/claude/agents/ 2>/dev/null || true
+
+    # Auto-commit if there are changes
+    if ! git diff --quiet nix/home/claude/; then
+        git add nix/home/claude/
+        git commit -m "auto: sync claude files from {{ TARGET_HOST }}" || true
+    fi
+
+    # Future: Add other post-deployment syncs here
 
 test *ARGS:
     #!/usr/bin/env bash

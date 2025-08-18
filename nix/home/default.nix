@@ -644,10 +644,10 @@
   home.shellAliases = let
     claudeCodeCmd = "${pkgs.bun}/bin/bun x '@anthropic-ai/claude-code' --dangerously-skip-permissions";
   in {
-    tree = "${lib.getExe pkgs.eza}/bin/eza --tree --all --git-ignore";
-    ls = "less -R";
-    ll = "ls -l";
-    la = "ls -la";
+    tree = "${lib.getExe pkgs.eza} --tree --all --git-ignore";
+    ls = "${lib.getExe pkgs.eza}";
+    ll = "${lib.getExe pkgs.eza} -l";
+    la = "${lib.getExe pkgs.eza} -la";
     gcm = "git-commit-message";
     gcma = "git-commit-message --accept";
     ns = let
@@ -1044,6 +1044,16 @@
   mountainous.claude = {
     enable = true;
     credentialsPath = config.age.secrets.user-simonwjackson-claude-credentials.path;
+    
+    commands = {
+      enable = true;
+      source = ./claude/commands;
+    };
+    
+    agents = {
+      enable = true;
+      source = ./claude/agents;
+    };
   };
 
   # Enable starship prompt
