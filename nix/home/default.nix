@@ -594,7 +594,10 @@
     };
 
     # Enable history search and Ctrl-R
-    initExtraBeforeCompInit = ''
+    initExtraBeforeCompInit = let
+      bun = lib.getExe pkgs.bun;
+      gum = lib.getExe pkgs.gum;
+    in ''
       # Enable Ctrl-R for history search (should work by default but ensure it's set)
       bindkey '^R' history-incremental-search-backward
 
@@ -610,6 +613,18 @@
       setopt SHARE_HISTORY
       setopt APPEND_HISTORY
       setopt INC_APPEND_HISTORY
+
+      # Ask function for Claude AI assistance
+      ask() {
+          ${gum} spin --spinner dot --title "Asking Claude..." -- \
+          ${bun} x '@anthropic-ai/claude-code' \
+              --append-system-prompt "You are a technical expert specializing in NixOS, Nix package management, bash scripting, shell programming, and general software development. When answering questions: Always format responses in markdown with proper code blocks using triple backticks and language identifiers. Provide practical, working examples when possible. For Nix/NixOS: Follow best practices with proper module structure and current syntax. For shell scripts: Include error handling and explain command flags. Be concise but thorough, focusing on actionable solutions." \
+              --dangerously-skip-permissions \
+              --verbose \
+              --print \
+              -- "$*" | \
+          ${gum} format
+      }
     '';
 
     # Enable auto-suggestions and syntax highlighting if available
@@ -641,7 +656,6 @@
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
     pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
     claude = claudeCodeCmd;
-    ask = "${claudeCodeCmd} --verbose --print";
   };
 
   # Basic shell configuration
@@ -689,16 +703,16 @@
               shift
               url="$1"
               name="''${2:-$(basename "$url" .git)}"
-            
+          
               # Check if directory already exists
               if [ -d "$name" ]; then
                 echo "Error: Directory '$name' already exists"
                 return 1
               fi
-            
+          
               git clone --bare "$url" "$name/.bare" &&
               cd "$name" &&
-            
+          
               # Only remove .git if it's a directory (from bare clone)
               if [ -d .git ]; then
                 rm -rf .git
@@ -706,7 +720,7 @@
                 echo "Warning: .git file already exists, backing up to .git.bak"
                 mv .git .git.bak
               fi &&
-            
+          
               echo 'gitdir: ./.bare' > .git &&
               git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
               git fetch origin &&
