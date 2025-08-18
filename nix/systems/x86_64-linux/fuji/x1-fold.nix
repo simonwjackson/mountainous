@@ -52,7 +52,7 @@
     enable = true;
     accelerometerDevice = "/sys/bus/iio/devices/iio:device0";  # Primary accelerometer
     hingeDevice = "/sys/bus/iio/devices/iio:device4";          # Hinge position sensor
-    enableHingeDetection = true;
+    enableHingeDetection = false;
     hingeThreshold = 90;         # Degrees for laptop/tablet mode detection
     rotationThreshold = 100000;  # Sensitivity for orientation changes
     debounceTime = 2;           # Prevent rapid orientation switching
