@@ -627,7 +627,7 @@
 
   # Shell aliases for both bash and zsh
   home.shellAliases = let
-    claudeCodeCmd = "bun x '@anthropic-ai/claude-code' --dangerously-skip-permissions";
+    claudeCodeCmd = "${pkgs.bun}/bin/bun x '@anthropic-ai/claude-code' --dangerously-skip-permissions";
   in {
     ll = "ls -l";
     la = "ls -la";
@@ -638,8 +638,7 @@
       fzf = lib.getExe pkgs.fzf;
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
     pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
-    claude-code = claudeCodeCmd;
-    cc = claudeCodeCmd;
+    claude = claudeCodeCmd;
   };
 
   # Basic shell configuration
@@ -687,8 +686,24 @@
               shift
               url="$1"
               name="''${2:-$(basename "$url" .git)}"
+          
+              # Check if directory already exists
+              if [ -d "$name" ]; then
+                echo "Error: Directory '$name' already exists"
+                return 1
+              fi
+          
               git clone --bare "$url" "$name/.bare" &&
               cd "$name" &&
+          
+              # Only remove .git if it's a directory (from bare clone)
+              if [ -d .git ]; then
+                rm -rf .git
+              elif [ -f .git ]; then
+                echo "Warning: .git file already exists, backing up to .git.bak"
+                mv .git .git.bak
+              fi &&
+          
               echo 'gitdir: ./.bare' > .git &&
               git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
               git fetch origin &&
