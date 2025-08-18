@@ -629,6 +629,8 @@
   home.shellAliases = let
     claudeCodeCmd = "${pkgs.bun}/bin/bun x '@anthropic-ai/claude-code' --dangerously-skip-permissions";
   in {
+    tree = "${lib.getExe pkgs.eza}/bin/eza --tree --all --git-ignore";
+    ls = "less -R";
     ll = "ls -l";
     la = "ls -la";
     gcm = "git-commit-message";
@@ -687,16 +689,16 @@
               shift
               url="$1"
               name="''${2:-$(basename "$url" .git)}"
-                  
+            
               # Check if directory already exists
               if [ -d "$name" ]; then
                 echo "Error: Directory '$name' already exists"
                 return 1
               fi
-                  
+            
               git clone --bare "$url" "$name/.bare" &&
               cd "$name" &&
-                  
+            
               # Only remove .git if it's a directory (from bare clone)
               if [ -d .git ]; then
                 rm -rf .git
@@ -704,7 +706,7 @@
                 echo "Warning: .git file already exists, backing up to .git.bak"
                 mv .git .git.bak
               fi &&
-                  
+            
               echo 'gitdir: ./.bare' > .git &&
               git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
               git fetch origin &&
@@ -1023,6 +1025,12 @@
 
   # Enable agenix secrets management
   mountainous.agenix.enable = true;
+
+  # Enable Claude credentials management
+  mountainous.claude = {
+    enable = true;
+    credentialsPath = config.age.secrets.user-simonwjackson-claude-credentials.path;
+  };
 
   # Enable starship prompt
   mountainous.starship.enable = true;

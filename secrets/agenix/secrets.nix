@@ -52,6 +52,7 @@ in {
   "user-simonwjackson-github-token-nix.age".publicKeys = users ++ systems;
   "user-simonwjackson-email.age".publicKeys = users ++ systems;
   "user-simonwjackson-anthropic.age".publicKeys = users ++ systems;
+  "user-simonwjackson-claude-credentials.age".publicKeys = users ++ systems;
   "slskd_env.age".publicKeys = users ++ systems;
   "aria2-rpc-secret.age".publicKeys = users ++ systems;
   "tandoor_env.age".publicKeys = users ++ systems;
