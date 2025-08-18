@@ -309,6 +309,7 @@ in {
           "$mainMod, S, exec, pkill -f 'hyprshot.*ksnip' || (${pkgs.hyprshot}/bin/hyprshot --freeze --mode=region --raw | ${pkgs.ksnip}/bin/ksnip -)"
           "$mainMod SHIFT, S, movetoworkspace, special:magic"
           "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
+          "$mainMod, equal, exec, ${splitToggleScript}/bin/splitToggle"
         ];
 
         bindel = [
@@ -320,8 +321,8 @@ in {
           ",XF86MonBrightnessDown, exec, sudo ${brillo} -U 5"
 
           # Monitor scaling controls
-          "$mainMod, equal, exec, ${scaleAdjustScript}/bin/adjustScale up"
-          "$mainMod, minus, exec, ${scaleAdjustScript}/bin/adjustScale down"
+          "$mainMod SHIFT, equal, exec, ${scaleAdjustScript}/bin/adjustScale up"
+          "$mainMod SHIFT, minus, exec, ${scaleAdjustScript}/bin/adjustScale down"
         ];
 
         bindl = [
