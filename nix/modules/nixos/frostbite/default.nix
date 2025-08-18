@@ -128,6 +128,10 @@ in {
                       "/tundra/frostbite/snowscape" = {
                         mountpoint = "/tundra/frostbite/snowscape";
                         mountOptions = ["compress=zstd" "noatime" "discard=async" "space_cache=v2"];
+                        # TODO: Test postCreateHook to set ownership to simonwjackson:users
+                        # postCreateHook = ''
+                        #   chown -R simonwjackson:users "$MOUNT_POINT"
+                        # '';
                       };
                       "/tundra/frostbite/snowscape/code" = {
                         mountpoint = "/tundra/frostbite/snowscape/code";
