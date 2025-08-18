@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Automatic screen rotation service for Lenovo Fold with Hyprland.
-Monitors accelerometer and hinge sensors to detect device orientation and rotation.
+Monitors accelerometer to detect device orientation and rotation.
 """
 
 import argparse
@@ -41,13 +41,10 @@ class AutoRotate:
     
     def __init__(self, args):
         self.accelerometer_device = Path(args.accelerometer)
-        self.hinge_device = Path(args.hinge) if args.enable_hinge else None
         self.rotation_threshold = args.rotation_threshold
         self.debounce_time = args.debounce_time
-        self.hinge_threshold = args.hinge_threshold
         self.hyprland_instance = args.hyprland_instance
         self.poll_interval = args.poll_interval
-        self.enable_hinge = args.enable_hinge
         
         # State tracking
         self.current_orientation = 0
@@ -62,10 +59,6 @@ class AutoRotate:
         
         # Validate sensor devices
         self._validate_devices()
-        
-        # Initialize hinge sensor if enabled
-        if self.enable_hinge:
-            self._init_hinge_sensor()
     
     def _validate_devices(self):
         """Validate that sensor devices exist and are accessible."""
@@ -79,41 +72,9 @@ class AutoRotate:
             if not accel_file.exists():
                 raise FileNotFoundError(f"Accelerometer file not found: {accel_file}")
         
-        if self.enable_hinge and self.hinge_device:
-            if not self.hinge_device.exists():
-                self.logger.warning(f"Hinge device not found: {self.hinge_device}, disabling hinge detection")
-                self.enable_hinge = False
         
         self.logger.info("Sensor devices validated successfully")
     
-    def _init_hinge_sensor(self):
-        """Initialize hinge sensor for proper readings."""
-        try:
-            # Enable all angle channels
-            for i in range(3):
-                enable_path = self.hinge_device / f"scan_elements/in_angl{i}_en"
-                if enable_path.exists():
-                    enable_path.write_text("1")
-                    self.logger.debug(f"Enabled hinge angle channel {i}")
-            
-            # Try to enable buffer (may fail if already enabled)
-            buffer_enable = self.hinge_device / "buffer/enable"
-            if buffer_enable.exists():
-                try:
-                    current_state = buffer_enable.read_text().strip()
-                    if current_state != "1":
-                        buffer_enable.write_text("1")
-                        self.logger.info("Enabled hinge sensor buffer")
-                    else:
-                        self.logger.debug("Hinge sensor buffer already enabled")
-                except OSError as e:
-                    self.logger.warning(f"Could not enable hinge buffer: {e}")
-            
-            self.logger.info("Hinge sensor initialized successfully")
-            
-        except Exception as e:
-            self.logger.error(f"Failed to initialize hinge sensor: {e}")
-            self.enable_hinge = False
     
     def _read_accelerometer(self) -> Optional[SensorReading]:
         """Read accelerometer values from sysfs."""
@@ -131,41 +92,6 @@ class AutoRotate:
             self.logger.error(f"Failed to read accelerometer: {e}")
             return None
     
-    def _read_hinge_angle(self) -> Optional[float]:
-        """Read hinge angle from sensor in degrees."""
-        if not self.enable_hinge or not self.hinge_device:
-            return None
-        
-        try:
-            # Read scale factor
-            scale_path = self.hinge_device / "in_angl_scale"
-            scale = 1.0
-            if scale_path.exists():
-                scale = float(scale_path.read_text().strip())
-            
-            # Try to read different angle sensors
-            # angl0 = hinge, angl1 = screen, angl2 = keyboard
-            for angle_id, label in [(0, "hinge"), (1, "screen"), (2, "keyboard")]:
-                angle_path = self.hinge_device / f"in_angl{angle_id}_raw"
-                if angle_path.exists():
-                    angle_raw = int(angle_path.read_text().strip())
-                    # Convert from radians to degrees
-                    angle_degrees = angle_raw * scale * 180.0 / 3.14159265359
-                    
-                    # Log for debugging
-                    if angle_degrees != 0:
-                        self.logger.debug(f"Hinge {label} angle: {angle_degrees:.1f}°")
-                    
-                    # Return the first non-zero angle we find
-                    if abs(angle_degrees) > 5:  # Minimum threshold
-                        return angle_degrees
-            
-            return 0.0  # All angles are near zero
-            
-        except (IOError, ValueError) as e:
-            self.logger.error(f"Failed to read hinge angle: {e}")
-        
-        return None
     
     def _calculate_orientation(self, reading: SensorReading) -> int:
         """Calculate device orientation based on accelerometer readings."""
@@ -196,16 +122,6 @@ class AutoRotate:
         
         return self.current_orientation
     
-    def _is_tablet_mode(self) -> bool:
-        """Check if device is in tablet mode based on hinge angle."""
-        if not self.enable_hinge:
-            return True  # Always rotate if hinge detection is disabled
-        
-        angle = self._read_hinge_angle()
-        if angle is None:
-            return True  # Default to tablet mode if can't read hinge
-        
-        return angle >= self.hinge_threshold
     
     def _get_current_monitor_info(self) -> Optional[dict]:
         """Get current monitor configuration from Hyprland."""
@@ -294,8 +210,6 @@ class AutoRotate:
         """Main service loop."""
         self.logger.info("Starting auto-rotation service")
         self.logger.info(f"Accelerometer: {self.accelerometer_device}")
-        if self.enable_hinge:
-            self.logger.info(f"Hinge sensor: {self.hinge_device}")
         self.logger.info(f"Rotation threshold: {self.rotation_threshold}")
         self.logger.info(f"Poll interval: {self.poll_interval}s")
         
@@ -318,15 +232,6 @@ class AutoRotate:
                 
                 self.logger.debug(f"Above threshold - processing rotation")
                 
-                # Check tablet mode if hinge detection is enabled
-                tablet_mode = self._is_tablet_mode()
-                if not tablet_mode:
-                    self.logger.debug(f"Not in tablet mode - skipping rotation")
-                    time.sleep(self.poll_interval)
-                    continue
-                
-                self.logger.debug(f"In tablet mode - calculating orientation")
-                
                 # Calculate and apply orientation
                 new_orientation = self._calculate_orientation(accel_reading)
                 self.logger.debug(f"Calculated orientation: {new_orientation} (current: {self.current_orientation})")
@@ -345,20 +250,14 @@ def main():
     parser = argparse.ArgumentParser(description="Automatic screen rotation for Lenovo Fold")
     parser.add_argument("--accelerometer", default="/sys/bus/iio/devices/iio:device1",
                         help="Accelerometer device path")
-    parser.add_argument("--hinge", default="/sys/bus/iio/devices/iio:device4",
-                        help="Hinge sensor device path")
     parser.add_argument("--rotation-threshold", type=int, default=500000,
                         help="Rotation detection threshold")
     parser.add_argument("--debounce-time", type=int, default=2,
                         help="Debounce time in seconds")
-    parser.add_argument("--hinge-threshold", type=int, default=160,
-                        help="Hinge angle threshold for tablet mode")
     parser.add_argument("--hyprland-instance", type=int, default=0,
                         help="Hyprland instance number")
     parser.add_argument("--poll-interval", type=float, default=0.5,
                         help="Sensor polling interval")
-    parser.add_argument("--enable-hinge", action="store_true",
-                        help="Enable hinge detection for tablet mode")
     
     args = parser.parse_args()
     

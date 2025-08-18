@@ -16,11 +16,6 @@ in {
       description = "Path to accelerometer IIO device";
     };
 
-    hingeDevice = mkOption {
-      type = types.str;
-      default = "/sys/bus/iio/devices/iio:device4";
-      description = "Path to hinge sensor IIO device";
-    };
 
     rotationThreshold = mkOption {
       type = types.int;
@@ -34,17 +29,7 @@ in {
       description = "Debounce time in seconds to prevent jittery rotations";
     };
 
-    enableHingeDetection = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Only rotate when device is in tablet mode (hinge angle detection)";
-    };
 
-    hingeThreshold = mkOption {
-      type = types.int;
-      default = 160;
-      description = "Hinge angle threshold for tablet mode detection (degrees)";
-    };
 
     hyprlandInstance = mkOption {
       type = types.int;
@@ -89,17 +74,10 @@ in {
 
         ${pkgs.auto-rotate}/bin/auto-rotate \
           --accelerometer "${cfg.accelerometerDevice}" \
-          --hinge "${cfg.hingeDevice}" \
           --rotation-threshold ${toString cfg.rotationThreshold} \
           --debounce-time ${toString cfg.debounceTime} \
-          --hinge-threshold ${toString cfg.hingeThreshold} \
           --hyprland-instance ${toString cfg.hyprlandInstance} \
-          --poll-interval ${toString cfg.pollInterval} \
-          ${
-          if cfg.enableHingeDetection
-          then "--enable-hinge"
-          else ""
-        }
+          --poll-interval ${toString cfg.pollInterval}
       '';
     };
 
@@ -108,14 +86,6 @@ in {
       # Allow access to IIO devices for rotation detection
       SUBSYSTEM=="iio", GROUP="input", MODE="0664"
       KERNEL=="iio:device*", GROUP="input", MODE="0664"
-
-      # Allow write access to scan_elements for hinge sensor initialization
-      SUBSYSTEM=="iio", ATTR{name}=="hinge", RUN+="${pkgs.coreutils}/bin/chgrp -R input /sys%p/scan_elements"
-      SUBSYSTEM=="iio", ATTR{name}=="hinge", RUN+="${pkgs.coreutils}/bin/chmod -R g+w /sys%p/scan_elements"
-
-      # Alternative: target specific device paths
-      KERNEL=="iio:device4", RUN+="${pkgs.coreutils}/bin/chgrp -R input /sys%p/scan_elements /sys%p/buffer"
-      KERNEL=="iio:device4", RUN+="${pkgs.coreutils}/bin/chmod -R g+w /sys%p/scan_elements /sys%p/buffer"
     '';
 
     # Ensure i2c group exists and user is in it
