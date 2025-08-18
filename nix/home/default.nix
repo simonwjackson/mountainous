@@ -639,6 +639,7 @@
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
     pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
     claude = claudeCodeCmd;
+    ask = "${claudeCodeCmd} --verbose --print";
   };
 
   # Basic shell configuration
@@ -686,16 +687,16 @@
               shift
               url="$1"
               name="''${2:-$(basename "$url" .git)}"
-          
+                  
               # Check if directory already exists
               if [ -d "$name" ]; then
                 echo "Error: Directory '$name' already exists"
                 return 1
               fi
-          
+                  
               git clone --bare "$url" "$name/.bare" &&
               cd "$name" &&
-          
+                  
               # Only remove .git if it's a directory (from bare clone)
               if [ -d .git ]; then
                 rm -rf .git
@@ -703,7 +704,7 @@
                 echo "Warning: .git file already exists, backing up to .git.bak"
                 mv .git .git.bak
               fi &&
-          
+                  
               echo 'gitdir: ./.bare' > .git &&
               git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
               git fetch origin &&
