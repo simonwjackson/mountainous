@@ -1881,11 +1881,11 @@
         "snowfall-lib": "snowfall-lib_5"
       },
       "locked": {
-        "lastModified": 1755440966,
-        "narHash": "sha256-QlcSxljHrv56AxdjBh6roqAMoBml6/kJ+Q9jrlupCKc=",
+        "lastModified": 1755541567,
+        "narHash": "sha256-IB38vdreXvMb7cMz6fcGsHd1pfqFhiDDLClgOdheFNA=",
         "owner": "simonwjackson",
         "repo": "tmesh",
-        "rev": "4518ae4b00c702ca62749133b90770b1296b67b1",
+        "rev": "347708418cbd9bf04e41ea813957d9b41d8888ff",
         "type": "github"
       },
       "original": {
