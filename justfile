@@ -51,6 +51,35 @@ _run_nixie_command ACTION *ARGS:
     echo "Executing: $COMMAND"
     eval $COMMAND
 
+# Helper for nixos-rebuild commands (test, switch) with pre/post deploy hooks
+[private]
+_run_nixie ACTION *ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=({{ ARGS }})
+
+    # Determine target host
+    if [ ${#args[@]} -eq 0 ]; then
+        TARGET_HOST=$(hostname)
+        EXTRA_ARGS=()
+    else
+        TARGET_HOST="${args[0]}"
+        EXTRA_ARGS=("${args[@]:1}")
+    fi
+
+    # Pre-deploy sync (only for switch)
+    if [ "{{ ACTION }}" = "switch" ]; then
+        just _pre_deploy "${TARGET_HOST}"
+    fi
+
+    # Run nixie command
+    nixie {{ ACTION }} ${TARGET_HOST} "${EXTRA_ARGS[@]}"
+
+    # Post-deploy sync (only for switch)
+    if [ "{{ ACTION }}" = "switch" ]; then
+        just _post_deploy "${TARGET_HOST}"
+    fi
+
 # Pre-switch hook for bidirectional sync of Claude files
 [private]
 _pre_deploy TARGET_HOST:
@@ -90,39 +119,16 @@ _pre_deploy TARGET_HOST:
     # Future: Add other pre-deployment syncs here
 
 switch *ARGS:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=({{ ARGS }})
+    just _run_nixie switch {{ ARGS }}
 
-    # Determine hosts based on number of arguments
-    if [ ${#args[@]} -eq 0 ]; then
-        # No args: use current hostname for all
-        FLAKE_NAME=$(hostname)
-        TARGET_HOST=$(hostname)
-        BUILD_HOST=$(hostname)
-        EXTRA_ARGS=()
-    elif [ ${#args[@]} -eq 1 ]; then
-        # One arg: use for flake name and target host
-        FLAKE_NAME="${args[0]}"
-        TARGET_HOST="${args[0]}"
-        BUILD_HOST=$(hostname)
-        EXTRA_ARGS=()
-    else
-        # Two or more args: first is flake/target, second is build host, rest are extra args
-        FLAKE_NAME="${args[0]}"
-        TARGET_HOST="${args[0]}"
-        BUILD_HOST="${args[1]}"
-        EXTRA_ARGS=("${args[@]:2}")
-    fi
+test *ARGS:
+    just _run_nixie test {{ ARGS }}
 
-    # Pre-switch sync
-    just _pre_deploy "${TARGET_HOST}"
+boot *ARGS:
+    just _run_nixie boot {{ ARGS }}
 
-    # Run the actual switch
-    nixos-rebuild switch --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --sudo "${EXTRA_ARGS[@]}"
-
-    # Post-switch sync
-    just _post_deploy "${TARGET_HOST}"
+build *ARGS:
+    nix build .#nixosConfigurations.{{ ARGS }}.config.system.build.toplevel --dry-run
 
 # Post-switch hook - no-op (all syncing done in pre-deploy)
 [private]
@@ -130,42 +136,6 @@ _post_deploy TARGET_HOST:
     #!/usr/bin/env bash
     # No operation - bidirectional sync handled in pre-deploy
     :
-
-test *ARGS:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=({{ ARGS }})
-
-    # Determine hosts based on number of arguments
-    if [ ${#args[@]} -eq 0 ]; then
-        # No args: use current hostname for all
-        FLAKE_NAME=$(hostname)
-        TARGET_HOST=$(hostname)
-        BUILD_HOST=$(hostname)
-        EXTRA_ARGS=()
-    elif [ ${#args[@]} -eq 1 ]; then
-        # One arg: use for flake name and target host
-        FLAKE_NAME="${args[0]}"
-        TARGET_HOST="${args[0]}"
-        BUILD_HOST=$(hostname)
-        EXTRA_ARGS=()
-    else
-        # Two or more args: first is flake/target, second is build host, rest are extra args
-        FLAKE_NAME="${args[0]}"
-        TARGET_HOST="${args[0]}"
-        BUILD_HOST="${args[1]}"
-        EXTRA_ARGS=("${args[@]:2}")
-    fi
-
-    nixos-rebuild test --flake .#"${FLAKE_NAME}" --build-host "${BUILD_HOST}" --target-host "${TARGET_HOST}" --sudo "${EXTRA_ARGS[@]}"
-    # just _run_nixie_command test {{ ARGS }}
-
-boot *ARGS:
-    just _run_nixie_command boot {{ ARGS }}
-
-build *ARGS:
-    nix build .#nixosConfigurations.{{ ARGS }}.config.system.build.toplevel --dry-run
-    # just _run_nixie_command build {{ ARGS }}
 
 # Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
 up *ARGS:
