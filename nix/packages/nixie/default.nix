@@ -2,6 +2,8 @@
   lib,
   pkgs,
   writeShellApplication,
+  inputs,
+  ...
 }:
 writeShellApplication {
   name = "nixie";

@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Common just commands: `just switch`, `just test`, `just build`, `just up`, `just deploy`
 - Scaffold new system: `nix run .#scaffold -- [args]`
 - Check history: `just history`
+- Search packages: `nix search nixpkgs <regex>` to find packages by name or description
 
 ## Code Style Guidelines
 - **Project Structure**: Follow modular approach with `/nix/modules/`, `/nix/packages/`, `/nix/profiles/`, `/nix/systems/`
