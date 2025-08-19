@@ -28,7 +28,7 @@ in {
           };
           mode = mkOption {
             type = types.enum ["normal_installed" "force_installed" "allowed" "blocked"];
-            default = "normal_installed";
+            default = "force_installed";
             description = "Installation mode for the extension";
           };
         };

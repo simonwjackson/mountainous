@@ -25,25 +25,19 @@
       extensions = {
         # Essential security & privacy
         "uBlock0@raymondhill.net" = {slug = "ublock-origin";};
-        "addon@darkreader.org" = {slug = "darkreader";};
         "{d634138d-c276-4fc8-924b-40a0ea21d284}" = {slug = "1password-x-password-manager";};
 
         # Developer tools
-        "{5caff8cc-3d2e-4110-a88a-003cc85b3858}" = {slug = "vue-js-devtools";};
         "{6AC85730-7D0F-4de0-B3FA-21142DD85326}" = {slug = "colorzilla";};
 
         # Productivity
+        "addon@darkreader.org" = {slug = "darkreader";};
         "sponsorBlocker@ajay.app" = {slug = "sponsorblock";};
         "languagetool-webextension@languagetool.org" = {slug = "languagetool";};
-        "{1c5e4c6f-5530-49a3-b216-31ce7d744db0}" = {slug = "markdownload";};
-        "team@readwise.io" = {slug = "readwise-highlighter";};
 
         # Utilities
-        "FirefoxColor@mozilla.com" = {slug = "firefox-color";};
         "autotextexpander@example.com" = {slug = "auto-text-expander";};
         "jid1-BYcQOfYfmBMd9A@jetpack" = {slug = "pushbullet";};
-        "Toggley@FaridZelli" = {slug = "toggley";};
-        "{44df5123-f715-9146-bfaa-c6e8d4461d44}" = {slug = "fakespot-fake-reviews-amazon";};
 
         # Vim navigation
         "tridactyl.vim.betas@cmcaine.co.uk" = {slug = "tridactyl-vim";};
