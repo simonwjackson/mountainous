@@ -566,7 +566,6 @@ in {
     };
 
     wayland.windowManager.hyprland = let
-      brillo = "${pkgs.brillo}/bin/brillo";
       # curl = "${pkgs.curl}/bin/curl";
       date = "${pkgs.coreutils}/bin/date";
       grep = "${pkgs.gnugrep}/bin/grep";
@@ -778,8 +777,8 @@ in {
           ",XF86AudioLowerVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-"
           ",XF86AudioMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle"
           ",XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-          ",XF86MonBrightnessUp, exec, sudo ${brillo} -A 5"
-          ",XF86MonBrightnessDown, exec, sudo ${brillo} -U 5"
+          ",XF86MonBrightnessUp, exec, ${pkgs.brightness-sync}/bin/brightness-sync up 5"
+          ",XF86MonBrightnessDown, exec, ${pkgs.brightness-sync}/bin/brightness-sync down 5"
 
           # Monitor scaling controls
           "$mainMod SHIFT, plus, exec, ${scaleAdjustScript}/bin/adjustScale up all"
