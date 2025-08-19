@@ -10,6 +10,7 @@
     # Audio quirks for X1 Fold - enables internal speakers via SoundWire
     extraModprobeConfig = ''
       options snd-hda-intel model=thinkpad-x1fold
+      options snd_hda_intel power_save=30
     '';
 
     # Latest kernel provides best X1 Fold support (6.8+ recommended)
@@ -26,6 +27,11 @@
       "video=efifb:scale" # HiDPI scaling for high-resolution display
       "acpi_osi=!\"Windows 2020\"" # Better Lenovo compatibility and power management
       "mem_sleep_default=s2idle" # Use s2idle instead of deep suspend (deep causes reboot on X1 Fold)
+      # Power management optimizations for s2idle
+      "i915.enable_guc=3" # Better GPU power management
+      "intel_idle.max_cstate=9" # Deeper C-states for CPU
+      "processor.max_cstate=9" # CPU deeper sleep states
+      "nvme.noacpi=1" # Better NVMe power management
     ];
   };
 

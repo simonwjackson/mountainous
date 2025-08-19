@@ -61,7 +61,37 @@ in {
     obsidian
     xdg-desktop-portal-gtk
     yazi
+    powertop # For power analysis
   ];
+
+  # Power management optimizations (compatible with auto-cpufreq)
+  powerManagement = {
+    enable = true;
+    powertop.enable = true; # Auto-tune (non-CPU settings only)
+  };
+
+  # Intel thermal daemon for better thermal management
+  services.thermald.enable = true;
+
+  # Systemd service to disable unnecessary wake sources
+  systemd.services.optimize-wake-sources = {
+    description = "Disable unnecessary wake sources for better s2idle";
+    wantedBy = [ "multi-user.target" ];
+    script = ''
+      # Disable wake sources that interrupt s2idle
+      # Keep only: XHCI (USB), LID, SLPB (power button)
+      for source in PEG0 TXHC TDM0 TRP0 TRP1; do
+        if [ -f /proc/acpi/wakeup ] && grep -q "^$source" /proc/acpi/wakeup; then
+          echo "$source" > /proc/acpi/wakeup 2>/dev/null || true
+        fi
+      done
+    '';
+  };
+
+  # Sysctl settings for better power management
+  boot.kernel.sysctl = {
+    "vm.laptop_mode" = 5; # Better disk power management
+  };
 
   # System services
   security.rtkit.enable = true;
