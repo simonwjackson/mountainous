@@ -14,116 +14,265 @@
     #!${pkgs.bash}/bin/bash
     export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland pkgs.gawk]}:$PATH"
 
-    # Get the direction (up or down)
+    # Parse arguments
     DIRECTION="''${1:-up}"
+    TARGET="''${2:-focused}"  # focused, monitor name, or "all"
 
-    # Get current monitor configuration including transform (rotation)
-    MONITOR_INFO=$(hyprctl --instance 0 monitors -j | jq -r '.[0] | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale),\(.transform)"')
+    # Function to get monitor information based on target
+    get_target_monitors() {
+      local target="$1"
+      
+      if [ "$target" = "all" ] || [ "$target" = "--all" ]; then
+        # Return all monitors
+        hyprctl --instance 0 monitors -j | jq -r '.[] | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale),\(.transform)"'
+      elif [ "$target" = "focused" ]; then
+        # Return focused monitor
+        hyprctl --instance 0 monitors -j | jq -r '.[] | select(.focused == true) | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale),\(.transform)"'
+      else
+        # Return specific monitor by name
+        hyprctl --instance 0 monitors -j | jq -r --arg name "$target" '.[] | select(.name == $name) | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale),\(.transform)"'
+      fi
+    }
+
+    # Get monitors based on target
+    MONITOR_INFO=$(get_target_monitors "$TARGET")
 
     if [ -z "$MONITOR_INFO" ]; then
-      echo "Could not get monitor info"
+      if [ "$TARGET" = "focused" ]; then
+        echo "No focused monitor found"
+      elif [ "$TARGET" = "all" ] || [ "$TARGET" = "--all" ]; then
+        echo "No monitors found"
+      else
+        echo "Monitor '$TARGET' not found"
+      fi
       exit 1
     fi
 
-    # Parse monitor info
-    MONITOR_NAME=$(echo "$MONITOR_INFO" | cut -d',' -f1)
-    RESOLUTION=$(echo "$MONITOR_INFO" | cut -d',' -f2)
-    POSITION=$(echo "$MONITOR_INFO" | cut -d',' -f3)
-    CURRENT_SCALE=$(echo "$MONITOR_INFO" | cut -d',' -f4)
-    TRANSFORM=$(echo "$MONITOR_INFO" | cut -d',' -f5)
+    # Function to get valid scales for a resolution
+    get_valid_scales() {
+      local width=$1
+      local height=$2
+      local transform=$3
+      
+      # Adjust resolution key based on rotation
+      local resolution_key
+      if [ "$transform" = "1" ] || [ "$transform" = "3" ]; then
+        resolution_key="''${height}x''${width}"
+      else
+        resolution_key="''${width}x''${height}"
+      fi
 
-    # Extract resolution width and height
-    WIDTH=$(echo "$RESOLUTION" | cut -d'x' -f1)
-    HEIGHT=$(echo "$RESOLUTION" | cut -d'x' -f2 | cut -d'@' -f1)
+      # Return valid scales based on resolution
+      case "$resolution_key" in
+        "2024x2560"|"2560x2024")
+          echo "0.5 1.0 1.333333 1.6 2.0"
+          ;;
+        "2880x1800"|"1800x2880")
+          echo "1.0 1.125 1.25 1.333333 1.5 1.6 1.8 2.0"
+          ;;
+        "1920x1080"|"1080x1920")
+          echo "0.5 0.75 1.0 1.2 1.25 1.5 2.0"
+          ;;
+        "3840x2160"|"2160x3840")
+          echo "0.5 1.0 1.25 1.5 2.0 2.5 3.0"
+          ;;
+        "2560x1440"|"1440x2560")
+          echo "0.5 1.0 1.25 2.0"
+          ;;
+        *)
+          # Calculate dynamically for unknown resolutions
+          local candidate_scales="0.5 0.75 1.0 1.2 1.25 1.333333 1.5 1.6 2.0"
+          local valid_scales=""
+          
+          for scale in $candidate_scales; do
+            if [ "$(awk "BEGIN {print ($width % $scale == 0 && $height % $scale == 0) ? 1 : 0}")" = "1" ]; then
+              valid_scales="$valid_scales $scale"
+            fi
+          done
+          
+          # Fallback if no valid scales found
+          if [ -z "$valid_scales" ]; then
+            echo "0.5 1.0 2.0"
+          else
+            echo "$valid_scales"
+          fi
+          ;;
+      esac
+    }
 
-    # Adjust resolution key based on rotation
-    # Transform 1 and 3 are 90° and 270° rotations (width/height swapped)
-    if [ "$TRANSFORM" = "1" ] || [ "$TRANSFORM" = "3" ]; then
-      RESOLUTION_KEY="''${HEIGHT}x''${WIDTH}"
-    else
-      RESOLUTION_KEY="''${WIDTH}x''${HEIGHT}"
-    fi
+    # Function to find scale intersection for multiple monitors
+    get_scale_intersection() {
+      local first=true
+      local intersection=""
+      
+      while IFS=',' read -r name resolution position scale transform; do
+        local width=$(echo "$resolution" | cut -d'x' -f1)
+        local height=$(echo "$resolution" | cut -d'x' -f2 | cut -d'@' -f1)
+        local monitor_scales=$(get_valid_scales "$width" "$height" "$transform")
+        
+        if [ "$first" = true ]; then
+          intersection="$monitor_scales"
+          first=false
+        else
+          # Find intersection
+          local new_intersection=""
+          for scale in $intersection; do
+            if echo "$monitor_scales" | grep -q "\b$scale\b"; then
+              new_intersection="$new_intersection $scale"
+            fi
+          done
+          intersection="$new_intersection"
+        fi
+      done <<< "$MONITOR_INFO"
+      
+      # Fallback if no intersection
+      if [ -z "$intersection" ]; then
+        echo "1.0 2.0"
+      else
+        echo "$intersection"
+      fi
+    }
 
-    # HACK: Use pre-calculated valid scales for common resolutions to reduce latency
-    case "$RESOLUTION_KEY" in
-      "2024x2560"|"2560x2024")
-        VALID_SCALES=(1.0 1.333333 1.6 2.0)
-        ;;
-      "2880x1800"|"1800x2880")
-        VALID_SCALES=(1.0 1.125 1.25 1.333333 1.5 1.6 1.8 2.0)
-        ;;
-      *)
-        # Calculate valid scales dynamically for unknown resolutions
-        CANDIDATE_SCALES="0.5 0.75 1.0 1.2 1.25 1.333333 1.5 1.6 2.0"
-        VALID_SCALES=()
+    # Function to apply scale to a single monitor
+    apply_monitor_scale() {
+      local monitor_line="$1"
+      local target_scale="$2"
+      
+      local name=$(echo "$monitor_line" | cut -d',' -f1)
+      local resolution=$(echo "$monitor_line" | cut -d',' -f2) 
+      local position=$(echo "$monitor_line" | cut -d',' -f3)
+      local current_scale=$(echo "$monitor_line" | cut -d',' -f4)
+      local transform=$(echo "$monitor_line" | cut -d',' -f5)
+      
+      if [ "$target_scale" != "$current_scale" ]; then
+        echo "✓ $name: Applying scale $current_scale → $target_scale (transform: $transform)"
+        hyprctl --instance 0 keyword monitor "$name,$resolution,$position,$target_scale,transform,$transform"
+        
+        # Verify the scale was applied
+        sleep 0.1
+        local actual_scale=$(hyprctl --instance 0 monitors -j | jq -r --arg name "$name" '.[] | select(.name == $name) | .scale')
+        local actual_normalized=$(awk "BEGIN {printf \"%.2f\", $actual_scale}")
+        local target_normalized=$(awk "BEGIN {printf \"%.2f\", $target_scale}")
+        
+        if [ "$actual_normalized" = "$target_normalized" ]; then
+          echo "  Scale successfully changed to $target_scale"
+        else
+          echo "  Warning: Scale change may have failed. Current: $actual_scale, Expected: $target_scale"
+        fi
+      else
+        echo "✓ $name: Scale unchanged ($current_scale)"
+      fi
+    }
 
-        for scale in $CANDIDATE_SCALES; do
-          # Quick integer division check
-          sw=$(awk "BEGIN {print int($WIDTH / $scale + 0.5)}")
-          sh=$(awk "BEGIN {print int($HEIGHT / $scale + 0.5)}")
-
-          # Check if scale produces clean division
-          if [ "$(awk "BEGIN {print ($WIDTH % $scale == 0 && $HEIGHT % $scale == 0) ? 1 : 0}")" = "1" ]; then
-            VALID_SCALES+=("$scale")
+    # Main processing logic
+    if [ "$TARGET" = "all" ] || [ "$TARGET" = "--all" ]; then
+      # Handle multiple monitors with intersection
+      monitor_count=$(echo "$MONITOR_INFO" | wc -l)
+      if [ "$monitor_count" -gt 1 ]; then
+        echo "Detecting $monitor_count monitors..."
+        intersection=$(get_scale_intersection)
+        echo "Common scales: [$intersection]"
+        
+        # Convert to array
+        read -ra VALID_SCALES <<< "$intersection"
+        
+        if [ ''${#VALID_SCALES[@]} -le 1 ]; then
+          echo "Error: No common scales available for synchronized scaling"
+          exit 1
+        fi
+        
+        # Find the current common scale (or closest)
+        # For simplicity, use the first monitor's current scale as reference
+        first_monitor=$(echo "$MONITOR_INFO" | head -n1)
+        current_scale=$(echo "$first_monitor" | cut -d',' -f4)
+        
+        # Find closest scale in intersection
+        current_index=0
+        min_diff=999
+        for i in "''${!VALID_SCALES[@]}"; do
+          scale="''${VALID_SCALES[$i]}"
+          diff=$(awk "BEGIN {printf \"%.6f\", sqrt(($current_scale - $scale)^2)}")
+          is_smaller=$(awk "BEGIN {print ($diff < $min_diff) ? 1 : 0}")
+          if [ "$is_smaller" = "1" ]; then
+            min_diff=$diff
+            current_index=$i
           fi
         done
-
-        # Fallback if no valid scales found
-        if [ ''${#VALID_SCALES[@]} -eq 0 ]; then
-          VALID_SCALES=(0.5 1.0 2.0)
+        
+        # Calculate new index
+        if [ "$DIRECTION" = "up" ]; then
+          new_index=$((current_index + 1))
+          if [ $new_index -ge ''${#VALID_SCALES[@]} ]; then
+            new_index=$((''${#VALID_SCALES[@]} - 1))
+            echo "Already at maximum common scale"
+          fi
+        else
+          new_index=$((current_index - 1))
+          if [ $new_index -lt 0 ]; then
+            new_index=0
+            echo "Already at minimum common scale"
+          fi
         fi
-        ;;
-    esac
-
-    # Find the index of the current scale or closest scale
-    current_index=0
-    min_diff=999
-    for i in "''${!VALID_SCALES[@]}"; do
-      scale="''${VALID_SCALES[$i]}"
-      diff=$(awk "BEGIN {printf \"%.6f\", sqrt(($CURRENT_SCALE - $scale)^2)}")
-      is_smaller=$(awk "BEGIN {print ($diff < $min_diff) ? 1 : 0}")
-      if [ "$is_smaller" = "1" ]; then
-        min_diff=$diff
-        current_index=$i
-      fi
-    done
-
-    # Calculate new index based on direction
-    if [ "$DIRECTION" = "up" ]; then
-      new_index=$((current_index + 1))
-      if [ $new_index -ge ''${#VALID_SCALES[@]} ]; then
-        new_index=$((''${#VALID_SCALES[@]} - 1))
-        echo "Already at maximum scale"
-      fi
-    else
-      new_index=$((current_index - 1))
-      if [ $new_index -lt 0 ]; then
-        new_index=0
-        echo "Already at minimum scale"
+        
+        target_scale="''${VALID_SCALES[$new_index]}"
+        echo "Applying scale $target_scale to all monitors:"
+        
+        # Apply to all monitors
+        while IFS= read -r monitor_line; do
+          apply_monitor_scale "$monitor_line" "$target_scale"
+        done <<< "$MONITOR_INFO"
+      else
+        # Single monitor, fall through to individual logic
+        TARGET="focused"
       fi
     fi
 
-    # Get the new scale
-    NEW_SCALE="''${VALID_SCALES[$new_index]}"
-
-    # Apply new scale only if it's different
-    if [ "$NEW_SCALE" != "$CURRENT_SCALE" ]; then
-      echo "Applying scale: $CURRENT_SCALE -> $NEW_SCALE (transform: $TRANSFORM)"
-      hyprctl --instance 0 keyword monitor "$MONITOR_NAME,$RESOLUTION,$POSITION,$NEW_SCALE,transform,$TRANSFORM"
-
-      # Verify the scale was applied
-      sleep 0.1
-      ACTUAL_SCALE=$(hyprctl --instance 0 monitors -j | jq -r '.[0].scale')
-      # Normalize both scales to 2 decimal places for comparison
-      ACTUAL_NORMALIZED=$(awk "BEGIN {printf \"%.2f\", $ACTUAL_SCALE}")
-      NEW_NORMALIZED=$(awk "BEGIN {printf \"%.2f\", $NEW_SCALE}")
-      if [ "$ACTUAL_NORMALIZED" = "$NEW_NORMALIZED" ]; then
-        echo "Scale successfully changed to $NEW_SCALE"
+    # Handle individual monitor (focused or named)
+    if [ "$TARGET" != "all" ] && [ "$TARGET" != "--all" ]; then
+      # Parse single monitor info
+      name=$(echo "$MONITOR_INFO" | cut -d',' -f1)
+      resolution=$(echo "$MONITOR_INFO" | cut -d',' -f2)
+      position=$(echo "$MONITOR_INFO" | cut -d',' -f3)
+      current_scale=$(echo "$MONITOR_INFO" | cut -d',' -f4)
+      transform=$(echo "$MONITOR_INFO" | cut -d',' -f5)
+      
+      width=$(echo "$resolution" | cut -d'x' -f1)
+      height=$(echo "$resolution" | cut -d'x' -f2 | cut -d'@' -f1)
+      
+      # Get valid scales for this monitor
+      valid_scales_str=$(get_valid_scales "$width" "$height" "$transform")
+      read -ra VALID_SCALES <<< "$valid_scales_str"
+      
+      # Find current scale index
+      current_index=0
+      min_diff=999
+      for i in "''${!VALID_SCALES[@]}"; do
+        scale="''${VALID_SCALES[$i]}"
+        diff=$(awk "BEGIN {printf \"%.6f\", sqrt(($current_scale - $scale)^2)}")
+        is_smaller=$(awk "BEGIN {print ($diff < $min_diff) ? 1 : 0}")
+        if [ "$is_smaller" = "1" ]; then
+          min_diff=$diff
+          current_index=$i
+        fi
+      done
+      
+      # Calculate new index
+      if [ "$DIRECTION" = "up" ]; then
+        new_index=$((current_index + 1))
+        if [ $new_index -ge ''${#VALID_SCALES[@]} ]; then
+          new_index=$((''${#VALID_SCALES[@]} - 1))
+          echo "Already at maximum scale"
+        fi
       else
-        echo "Warning: Scale change may have failed. Current: $ACTUAL_SCALE, Expected: $NEW_SCALE"
+        new_index=$((current_index - 1))
+        if [ $new_index -lt 0 ]; then
+          new_index=0
+          echo "Already at minimum scale"
+        fi
       fi
-    else
-      echo "Scale unchanged: $CURRENT_SCALE"
+      
+      target_scale="''${VALID_SCALES[$new_index]}"
+      apply_monitor_scale "$MONITOR_INFO" "$target_scale"
     fi
   '';
 
