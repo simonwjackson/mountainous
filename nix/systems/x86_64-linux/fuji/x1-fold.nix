@@ -1,8 +1,4 @@
-{
-  pkgs,
-  lib,
-  ...
-}: {
+{pkgs, ...}: {
   # ThinkPad X1 Fold Gen 1 hardware-specific configuration
   # This module contains all hardware quirks and optimizations for the X1 Fold
 
@@ -20,7 +16,7 @@
     kernelModules = [
       "hid_sensor_hub" # For fold/orientation sensors and hinge detection
       "nvme"
-      "thunderbolt" 
+      "thunderbolt"
       "tun"
       "igc" # Intel Ethernet Controller
       "nvme_core"
@@ -121,7 +117,7 @@
   # Systemd service to disable unnecessary wake sources
   systemd.services.optimize-wake-sources = {
     description = "Disable unnecessary wake sources for better s2idle";
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     script = ''
       # Disable wake sources that interrupt s2idle
       # Keep only: XHCI (USB), LID, SLPB (power button)
