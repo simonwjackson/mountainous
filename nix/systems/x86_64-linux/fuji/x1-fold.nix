@@ -19,6 +19,11 @@
     # X1 Fold specific kernel modules
     kernelModules = [
       "hid_sensor_hub" # For fold/orientation sensors and hinge detection
+      "nvme"
+      "thunderbolt" 
+      "tun"
+      "igc" # Intel Ethernet Controller
+      "nvme_core"
     ];
 
     # X1 Fold specific kernel parameters
@@ -32,7 +37,35 @@
       "intel_idle.max_cstate=9" # Deeper C-states for CPU
       "processor.max_cstate=9" # CPU deeper sleep states
       "nvme.noacpi=1" # Better NVMe power management
+      # Intel graphics optimizations
+      "fbcon=nodefer"
+      "i915.fastboot=1"
+      "i915.enable_fbc=1"
+      "i915.enable_psr=2"
+      # Hibernation resume parameters
+      "resume=UUID=92b1c48f-0905-41cb-92ee-8b164252b01f"
+      "resume_offset=533760"
     ];
+
+    # Intel graphics module for initrd
+    initrd = {
+      kernelModules = ["i915"];
+      availableKernelModules = [
+        "xhci_pci"
+        "thunderbolt"
+        "nvme"
+        "usb_storage"
+        "sd_mod"
+      ];
+    };
+
+    # Resume device for hibernation
+    resumeDevice = "/dev/disk/by-uuid/92b1c48f-0905-41cb-92ee-8b164252b01f";
+
+    # Sysctl settings for better power management on laptops
+    kernel.sysctl = {
+      "vm.laptop_mode" = 5; # Better disk power management
+    };
   };
 
   # Hardware support specific to X1 Fold
@@ -56,6 +89,15 @@
   # Thunderbolt support for dock and external device connectivity
   services.hardware.bolt.enable = true;
 
+  # Intel thermal daemon for better thermal management
+  services.thermald.enable = true;
+
+  # Power management optimizations (compatible with auto-cpufreq)
+  powerManagement = {
+    enable = true;
+    powertop.enable = true; # Auto-tune (non-CPU settings only)
+  };
+
   # Auto-rotate configuration optimized for X1 Fold's foldable display
   mountainous.auto-rotate = {
     enable = true;
@@ -75,6 +117,26 @@
   services.udev.extraRules = ''
     KERNEL=="i2c-[0-9]*", GROUP="i2c", MODE="0660"
   '';
+
+  # Systemd service to disable unnecessary wake sources
+  systemd.services.optimize-wake-sources = {
+    description = "Disable unnecessary wake sources for better s2idle";
+    wantedBy = [ "multi-user.target" ];
+    script = ''
+      # Disable wake sources that interrupt s2idle
+      # Keep only: XHCI (USB), LID, SLPB (power button)
+      for source in PEG0 TXHC TDM0 TRP0 TRP1; do
+        if [ -f /proc/acpi/wakeup ] && grep -q "^$source" /proc/acpi/wakeup; then
+          echo "$source" > /proc/acpi/wakeup 2>/dev/null || true
+        fi
+      done
+    '';
+  };
+
+  # Hardware-specific packages
+  environment.systemPackages = with pkgs; [
+    powertop # For power analysis and optimization
+  ];
 
   # # Create laptop mode toggle script for X1 Fold
   # environment.systemPackages = with pkgs; [
