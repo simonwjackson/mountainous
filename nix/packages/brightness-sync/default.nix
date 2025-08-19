@@ -10,14 +10,13 @@
   gawk,
   ...
 }:
-
 stdenv.mkDerivation rec {
   pname = "brightness-sync";
   version = "1.0.0";
 
   src = ./.;
 
-  nativeBuildInputs = [ makeWrapper ];
+  nativeBuildInputs = [makeWrapper];
 
   installPhase = ''
     runHook preInstall
@@ -28,13 +27,13 @@ stdenv.mkDerivation rec {
     # Wrap the script with required dependencies in PATH
     wrapProgram $out/bin/brightness-sync \
       --prefix PATH : ${lib.makeBinPath [
-        bash
-        ddcutil
-        brightnessctl
-        coreutils
-        gnugrep
-        gawk
-      ]}
+      bash
+      ddcutil
+      brightnessctl
+      coreutils
+      gnugrep
+      gawk
+    ]}
 
     runHook postInstall
   '';

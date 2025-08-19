@@ -4,8 +4,7 @@
   writeShellScriptBin,
   symlinkJoin,
   ...
-}:
-let
+}: let
   secrets-encrypt = writeShellScriptBin "secrets-encrypt" ''
     #!/usr/bin/env bash
     set -euo pipefail
@@ -230,7 +229,7 @@ let
   # Create a wrapper script that can call either command
   secrets-wrapper = writeShellScriptBin "secrets" ''
     #!/usr/bin/env bash
-    
+
     if [ $# -eq 0 ]; then
         echo "Usage: secrets <command>"
         echo ""
@@ -239,7 +238,7 @@ let
         echo "  rekey      - Re-encrypt all secrets with current keys"
         exit 1
     fi
-    
+
     case "$1" in
         encrypt)
             shift
@@ -257,21 +256,21 @@ let
     esac
   '';
 in
-symlinkJoin {
-  name = "secrets";
-  paths = [ secrets-wrapper secrets-encrypt secrets-rekey ];
-  meta = with lib; {
-    description = "Secret management tools for agenix";
-    longDescription = ''
-      Provides commands for managing agenix secrets:
-      - secrets encrypt: Interactive tool to encrypt new secrets
-      - secrets rekey: Re-encrypt all secrets with current keys
-      
-      Both tools work with the mountainous repository structure and
-      automatically handle git operations.
-    '';
-    mainProgram = "secrets";
-    platforms = platforms.unix;
-    license = licenses.mit;
-  };
-}
+  symlinkJoin {
+    name = "secrets";
+    paths = [secrets-wrapper secrets-encrypt secrets-rekey];
+    meta = with lib; {
+      description = "Secret management tools for agenix";
+      longDescription = ''
+        Provides commands for managing agenix secrets:
+        - secrets encrypt: Interactive tool to encrypt new secrets
+        - secrets rekey: Re-encrypt all secrets with current keys
+
+        Both tools work with the mountainous repository structure and
+        automatically handle git operations.
+      '';
+      mainProgram = "secrets";
+      platforms = platforms.unix;
+      license = licenses.mit;
+    };
+  }

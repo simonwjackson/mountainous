@@ -85,7 +85,7 @@ in {
 
     secretsDir = mkOption {
       type = types.str;
-      default = 
+      default =
         if osConfig ? users.users.${config.home.username}.uid
         then "/run/user/${toString osConfig.users.users.${config.home.username}.uid}/agenix"
         else "$XDG_RUNTIME_DIR/agenix";
