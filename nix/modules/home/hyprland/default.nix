@@ -8,6 +8,125 @@
   inherit (lib) mkEnableOption mkOption types;
 
   cfg = config.mountainous.hyprland;
+
+  # Create a script for adjusting monitor scale
+  scaleAdjustScript = pkgs.writeShellScriptBin "adjustScale" ''
+    #!${pkgs.bash}/bin/bash
+    export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland pkgs.gawk]}:$PATH"
+
+    # Get the direction (up or down)
+    DIRECTION="''${1:-up}"
+
+    # Get current monitor configuration including transform (rotation)
+    MONITOR_INFO=$(hyprctl --instance 0 monitors -j | jq -r '.[0] | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale),\(.transform)"')
+
+    if [ -z "$MONITOR_INFO" ]; then
+      echo "Could not get monitor info"
+      exit 1
+    fi
+
+    # Parse monitor info
+    MONITOR_NAME=$(echo "$MONITOR_INFO" | cut -d',' -f1)
+    RESOLUTION=$(echo "$MONITOR_INFO" | cut -d',' -f2)
+    POSITION=$(echo "$MONITOR_INFO" | cut -d',' -f3)
+    CURRENT_SCALE=$(echo "$MONITOR_INFO" | cut -d',' -f4)
+    TRANSFORM=$(echo "$MONITOR_INFO" | cut -d',' -f5)
+
+    # Extract resolution width and height
+    WIDTH=$(echo "$RESOLUTION" | cut -d'x' -f1)
+    HEIGHT=$(echo "$RESOLUTION" | cut -d'x' -f2 | cut -d'@' -f1)
+
+    # Adjust resolution key based on rotation
+    # Transform 1 and 3 are 90° and 270° rotations (width/height swapped)
+    if [ "$TRANSFORM" = "1" ] || [ "$TRANSFORM" = "3" ]; then
+      RESOLUTION_KEY="''${HEIGHT}x''${WIDTH}"
+    else
+      RESOLUTION_KEY="''${WIDTH}x''${HEIGHT}"
+    fi
+
+    # HACK: Use pre-calculated valid scales for common resolutions to reduce latency
+    case "$RESOLUTION_KEY" in
+      "2024x2560"|"2560x2024")
+        VALID_SCALES=(1.0 1.333333 1.6 2.0)
+        ;;
+      "2880x1800"|"1800x2880")
+        VALID_SCALES=(1.0 1.125 1.25 1.333333 1.5 1.6 1.8 2.0)
+        ;;
+      *)
+        # Calculate valid scales dynamically for unknown resolutions
+        CANDIDATE_SCALES="0.5 0.75 1.0 1.2 1.25 1.333333 1.5 1.6 2.0"
+        VALID_SCALES=()
+
+        for scale in $CANDIDATE_SCALES; do
+          # Quick integer division check
+          sw=$(awk "BEGIN {print int($WIDTH / $scale + 0.5)}")
+          sh=$(awk "BEGIN {print int($HEIGHT / $scale + 0.5)}")
+
+          # Check if scale produces clean division
+          if [ "$(awk "BEGIN {print ($WIDTH % $scale == 0 && $HEIGHT % $scale == 0) ? 1 : 0}")" = "1" ]; then
+            VALID_SCALES+=("$scale")
+          fi
+        done
+
+        # Fallback if no valid scales found
+        if [ ''${#VALID_SCALES[@]} -eq 0 ]; then
+          VALID_SCALES=(0.5 1.0 2.0)
+        fi
+        ;;
+    esac
+
+    # Find the index of the current scale or closest scale
+    current_index=0
+    min_diff=999
+    for i in "''${!VALID_SCALES[@]}"; do
+      scale="''${VALID_SCALES[$i]}"
+      diff=$(awk "BEGIN {printf \"%.6f\", sqrt(($CURRENT_SCALE - $scale)^2)}")
+      is_smaller=$(awk "BEGIN {print ($diff < $min_diff) ? 1 : 0}")
+      if [ "$is_smaller" = "1" ]; then
+        min_diff=$diff
+        current_index=$i
+      fi
+    done
+
+    # Calculate new index based on direction
+    if [ "$DIRECTION" = "up" ]; then
+      new_index=$((current_index + 1))
+      if [ $new_index -ge ''${#VALID_SCALES[@]} ]; then
+        new_index=$((''${#VALID_SCALES[@]} - 1))
+        echo "Already at maximum scale"
+      fi
+    else
+      new_index=$((current_index - 1))
+      if [ $new_index -lt 0 ]; then
+        new_index=0
+        echo "Already at minimum scale"
+      fi
+    fi
+
+    # Get the new scale
+    NEW_SCALE="''${VALID_SCALES[$new_index]}"
+
+    # Apply new scale only if it's different
+    if [ "$NEW_SCALE" != "$CURRENT_SCALE" ]; then
+      echo "Applying scale: $CURRENT_SCALE -> $NEW_SCALE (transform: $TRANSFORM)"
+      hyprctl --instance 0 keyword monitor "$MONITOR_NAME,$RESOLUTION,$POSITION,$NEW_SCALE,transform,$TRANSFORM"
+
+      # Verify the scale was applied
+      sleep 0.1
+      ACTUAL_SCALE=$(hyprctl --instance 0 monitors -j | jq -r '.[0].scale')
+      # Normalize both scales to 2 decimal places for comparison
+      ACTUAL_NORMALIZED=$(awk "BEGIN {printf \"%.2f\", $ACTUAL_SCALE}")
+      NEW_NORMALIZED=$(awk "BEGIN {printf \"%.2f\", $NEW_SCALE}")
+      if [ "$ACTUAL_NORMALIZED" = "$NEW_NORMALIZED" ]; then
+        echo "Scale successfully changed to $NEW_SCALE"
+      else
+        echo "Warning: Scale change may have failed. Current: $ACTUAL_SCALE, Expected: $NEW_SCALE"
+      fi
+    else
+      echo "Scale unchanged: $CURRENT_SCALE"
+    fi
+  '';
+
   # Create a script for toggling between golden ratio and even split
   splitToggleScript = pkgs.writeShellScriptBin "splitToggle" ''
     #!${pkgs.bash}/bin/bash
@@ -56,19 +175,19 @@
     get_monitor_info() {
       local monitor_data
       monitor_data=$(hyprctl --instance 0 monitors -j | jq -r '.[] | select(.focused == true) | "\(.width),\(.scale)"') || error "Failed to get monitor info"
-      
+
       [ -z "$monitor_data" ] || [ "$monitor_data" = "null," ] && error "No focused monitor found"
-      
+
       echo "$monitor_data"
     }
 
     # Get current window layout information
     get_window_layout() {
       local workspace_id orientation windows_info
-      
+
       workspace_id=$(hyprctl --instance 0 activeworkspace -j | jq -r '.id') || error "Failed to get workspace ID"
       orientation=$(hyprctl --instance 0 getoption master:orientation -j | jq -r '.str') || error "Failed to get orientation"
-      
+
       # Get windows in current workspace (non-floating only)
       windows_info=$(hyprctl --instance 0 clients -j | jq -r --argjson ws "$workspace_id" '
         [.[] | select(.workspace.id == $ws and .floating == false)] |
@@ -83,7 +202,7 @@
           }
         end
       ') || error "Failed to get window layout"
-      
+
       echo "$windows_info"
     }
 
@@ -91,10 +210,10 @@
     determine_target_ratio() {
       local current_ratio="$1"
       local diff_golden diff_even
-      
+
       diff_golden=$(awk "BEGIN {d=$current_ratio-$GOLDEN_RATIO; printf \"%.5f\", (d<0) ? -d : d}")
       diff_even=$(awk "BEGIN {d=$current_ratio-$EVEN_SPLIT; printf \"%.5f\", (d<0) ? -d : d}")
-      
+
       if [ "$(awk "BEGIN {print ($diff_golden < $diff_even) ? 1 : 0}")" = "1" ]; then
         debug "Closer to golden ratio (diff: $diff_golden), switching to even split"
         echo "$EVEN_SPLIT"
@@ -116,23 +235,23 @@
       local monitor_info physical_width scale logical_width
       local layout_info windows_data area_width orientation
       local master_info master_width actual_ratio new_ratio
-      
+
       # Get monitor information
       monitor_info=$(get_monitor_info)
       physical_width=$(echo "$monitor_info" | cut -d',' -f1)
       scale=$(echo "$monitor_info" | cut -d',' -f2)
       logical_width=$(awk "BEGIN {printf \"%.0f\", $physical_width / $scale}")
-      
+
       debug "Monitor: ''${physical_width}px physical, ''${logical_width}px logical (scale $scale)"
-      
+
       # Get window layout
       layout_info=$(get_window_layout)
-      
+
       if [ -z "$layout_info" ]; then
         debug "No windows found, using config fallback"
         local current_mfact
         current_mfact=$(hyprctl --instance 0 getoption master:mfact -j | jq -r '.float') || error "Failed to get current mfact"
-        
+
         if [ "$(awk "BEGIN {print ($current_mfact > $THRESHOLD) ? 1 : 0}")" = "1" ]; then
           new_ratio="$EVEN_SPLIT"
         else
@@ -143,7 +262,7 @@
         # Parse layout information
         orientation=$(echo "$layout_info" | jq -r '.orientation')
         area_width=$(echo "$layout_info" | jq -r '.area_width')
-        
+
         # Get master window info based on orientation
         if [ "$orientation" = "right" ]; then
           master_info=$(echo "$layout_info" | jq -r '.windows | last')
@@ -152,17 +271,17 @@
           master_info=$(echo "$layout_info" | jq -r '.windows | first')
           debug "Orientation: left (master is leftmost)"
         fi
-        
+
         master_width=$(echo "$master_info" | cut -d',' -f1)
         actual_ratio=$(awk "BEGIN {printf \"%.5f\", $master_width / $area_width}")
-        
+
         debug "Master window: ''${master_width}px logical"
         debug "Window area: ''${area_width}px total"
         debug "Current ratio: $actual_ratio"
-        
+
         new_ratio=$(determine_target_ratio "$actual_ratio")
       fi
-      
+
       apply_ratio "$new_ratio"
       $DEBUG || echo "Layout toggled to ratio: $new_ratio"
     }
@@ -189,6 +308,7 @@ in {
     # Add scripts to PATH
     home.packages = [
       splitToggleScript
+      scaleAdjustScript
     ];
 
     programs.hyprlock = {
@@ -583,119 +703,6 @@ in {
       # Final merged settings
       # Use the workspace-cycler package
       workspaceCyclerScript = pkgs.workspace-cycler;
-
-      # Create a script for adjusting monitor scale
-      scaleAdjustScript = pkgs.writeShellScriptBin "adjustScale" ''
-        #!${pkgs.bash}/bin/bash
-        export PATH="${lib.makeBinPath [pkgs.jq pkgs.hyprland pkgs.gawk]}:$PATH"
-
-        # Get the direction (up or down)
-        DIRECTION="''${1:-up}"
-
-        # Get current monitor configuration
-        MONITOR_INFO=$(hyprctl --instance 0 monitors -j | jq -r '.[0] | "\(.name),\(.width)x\(.height)@\(.refreshRate),\(.x)x\(.y),\(.scale)"')
-
-        if [ -z "$MONITOR_INFO" ]; then
-          echo "Could not get monitor info"
-          exit 1
-        fi
-
-        # Parse monitor info
-        MONITOR_NAME=$(echo "$MONITOR_INFO" | cut -d',' -f1)
-        RESOLUTION=$(echo "$MONITOR_INFO" | cut -d',' -f2)
-        POSITION=$(echo "$MONITOR_INFO" | cut -d',' -f3)
-        CURRENT_SCALE=$(echo "$MONITOR_INFO" | cut -d',' -f4)
-
-        # Extract resolution width and height
-        WIDTH=$(echo "$RESOLUTION" | cut -d'x' -f1)
-        HEIGHT=$(echo "$RESOLUTION" | cut -d'x' -f2 | cut -d'@' -f1)
-
-        # Use pre-calculated valid scales for common resolutions to reduce latency
-        RESOLUTION_KEY="''${WIDTH}x''${HEIGHT}"
-        case "$RESOLUTION_KEY" in
-          "2024x2560")
-            VALID_SCALES=(0.5 1.0 1.6 2.0)
-            ;;
-          "1920x1080")
-            VALID_SCALES=(0.5 0.75 1.0 1.2 1.25 1.5 2.0)
-            ;;
-          "3840x2160")
-            VALID_SCALES=(0.5 1.0 1.25 1.5 2.0 2.5 3.0)
-            ;;
-          "2560x1440")
-            VALID_SCALES=(0.5 1.0 1.25 2.0)
-            ;;
-          *)
-            # Calculate valid scales dynamically for unknown resolutions
-            CANDIDATE_SCALES="0.5 0.75 1.0 1.2 1.25 1.333333 1.5 1.6 2.0"
-            VALID_SCALES=()
-
-            for scale in $CANDIDATE_SCALES; do
-              # Quick integer division check
-              sw=$(awk "BEGIN {print int($WIDTH / $scale + 0.5)}")
-              sh=$(awk "BEGIN {print int($HEIGHT / $scale + 0.5)}")
-
-              # Check if scale produces clean division
-              if [ "$(awk "BEGIN {print ($WIDTH % $scale == 0 && $HEIGHT % $scale == 0) ? 1 : 0}")" = "1" ]; then
-                VALID_SCALES+=("$scale")
-              fi
-            done
-
-            # Fallback if no valid scales found
-            if [ ''${#VALID_SCALES[@]} -eq 0 ]; then
-              VALID_SCALES=(0.5 1.0 2.0)
-            fi
-            ;;
-        esac
-
-        # Find the index of the current scale or closest scale
-        current_index=0
-        min_diff=999
-        for i in "''${!VALID_SCALES[@]}"; do
-          scale="''${VALID_SCALES[$i]}"
-          diff=$(awk "BEGIN {printf \"%.6f\", sqrt(($CURRENT_SCALE - $scale)^2)}")
-          is_smaller=$(awk "BEGIN {print ($diff < $min_diff) ? 1 : 0}")
-          if [ "$is_smaller" = "1" ]; then
-            min_diff=$diff
-            current_index=$i
-          fi
-        done
-
-        # Calculate new index based on direction
-        if [ "$DIRECTION" = "up" ]; then
-          new_index=$((current_index + 1))
-          if [ $new_index -ge ''${#VALID_SCALES[@]} ]; then
-            new_index=$((''${#VALID_SCALES[@]} - 1))
-            echo "Already at maximum scale"
-          fi
-        else
-          new_index=$((current_index - 1))
-          if [ $new_index -lt 0 ]; then
-            new_index=0
-            echo "Already at minimum scale"
-          fi
-        fi
-
-        # Get the new scale
-        NEW_SCALE="''${VALID_SCALES[$new_index]}"
-
-        # Apply new scale only if it's different
-        if [ "$NEW_SCALE" != "$CURRENT_SCALE" ]; then
-          echo "Applying scale: $CURRENT_SCALE -> $NEW_SCALE"
-          hyprctl --instance 0 keyword monitor "$MONITOR_NAME,$RESOLUTION,$POSITION,$NEW_SCALE"
-
-          # Verify the scale was applied
-          sleep 0.1
-          ACTUAL_SCALE=$(hyprctl --instance 0 monitors -j | jq -r '.[0].scale')
-          if [ "$ACTUAL_SCALE" = "$NEW_SCALE" ]; then
-            echo "Scale successfully changed to $NEW_SCALE"
-          else
-            echo "Warning: Scale change may have failed. Current: $ACTUAL_SCALE, Expected: $NEW_SCALE"
-          fi
-        else
-          echo "Scale unchanged: $CURRENT_SCALE"
-        fi
-      '';
 
       mergedSettings =
         lib.recursiveUpdate
