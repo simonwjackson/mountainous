@@ -9,15 +9,6 @@ in {
     ./x1-fold.nix # X1 Fold hardware-specific configuration
   ];
 
-  boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      systemd-boot = {
-        enable = true;
-      };
-    };
-  };
-
   # System services
   security.rtkit.enable = true;
 
@@ -25,6 +16,9 @@ in {
   mountainous = {
     agenix.enable = true;
     sound.enable = true;
+
+    # Boot configuration
+    boot.systemd-boot.enable = true;
 
     # Syncthing disabled as requested
     syncthing = {
@@ -63,4 +57,3 @@ in {
 
   system.stateVersion = "24.11";
 }
-

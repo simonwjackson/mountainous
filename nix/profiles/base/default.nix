@@ -28,6 +28,11 @@ in {
     ###################
 
     mountainous = {
+      boot.systemd-boot = {
+        timeout = 3;
+        configurationLimit = 10;
+      };
+
       impermanence = {
         enable = true;
         persistPath = "/tundra/permafrost";
