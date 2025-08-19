@@ -33,7 +33,7 @@ in {
         then "suspend-then-hibernate"
         else "suspend";
       lidSwitchExternalPower = "suspend";
-      
+
       # Use proper NixOS options instead of extraConfig
       powerKey = "hibernate";
       suspendKey =
@@ -44,7 +44,7 @@ in {
         if cfg.hibernate
         then "suspend-then-hibernate"
         else "suspend";
-      
+
       extraConfig = ''
         IdleAction=${
           if cfg.hibernate

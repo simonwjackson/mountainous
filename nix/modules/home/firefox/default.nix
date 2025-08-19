@@ -5,19 +5,20 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption types mkIf;
-  
+
   cfg = config.mountainous.firefox;
-  
+
   # Helper function to create extension settings
   mkExtensionSettings = extensions:
     lib.mapAttrs (id: ext: {
       install_url = "https://addons.mozilla.org/firefox/downloads/latest/${ext.slug}/latest.xpi";
       installation_mode = ext.mode;
-    }) extensions;
+    })
+    extensions;
 in {
   options.mountainous.firefox = {
     enable = mkEnableOption "Whether to enable Firefox with declarative extensions";
-    
+
     extensions = mkOption {
       type = types.attrsOf (types.submodule {
         options = {
@@ -43,14 +44,14 @@ in {
         }
       '';
     };
-    
+
     lockExtensions = mkOption {
       type = types.listOf types.str;
       default = [];
       description = "List of extension IDs that users cannot disable";
       example = ["uBlock0@raymondhill.net"];
     };
-    
+
     extraPolicies = mkOption {
       type = types.attrs;
       default = {};
@@ -63,7 +64,7 @@ in {
         }
       '';
     };
-    
+
     extraPrefs = mkOption {
       type = types.attrs;
       default = {};
@@ -76,23 +77,23 @@ in {
       '';
     };
   };
-  
+
   config = mkIf cfg.enable {
     programs.firefox = {
       enable = true;
-      
+
       policies = lib.mkMerge [
         {
           ExtensionSettings = mkExtensionSettings cfg.extensions;
         }
-        
+
         (lib.optionalAttrs (cfg.lockExtensions != []) {
           Extensions.Locked = cfg.lockExtensions;
         })
-        
+
         cfg.extraPolicies
       ];
-      
+
       profiles.default = {
         id = 0;
         name = "default";

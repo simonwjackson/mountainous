@@ -16,7 +16,6 @@ in {
       description = "Path to accelerometer IIO device";
     };
 
-
     rotationThreshold = mkOption {
       type = types.int;
       default = 500000;
@@ -28,8 +27,6 @@ in {
       default = 2;
       description = "Debounce time in seconds to prevent jittery rotations";
     };
-
-
 
     hyprlandInstance = mkOption {
       type = types.int;

@@ -154,18 +154,18 @@
           local dp_resolution=$(echo "$dp_monitor" | cut -d',' -f2)
           local dp_width=$(echo "$dp_resolution" | cut -d'x' -f1)
           local dp_height=$(echo "$dp_resolution" | cut -d'x' -f2 | cut -d'@' -f1)
-          
+
           # eDP-1 effective width after 270° rotation (2560px physical)
           local edp_width=2560
-          
+
           # Calculate centered x-position: (DP_width - eDP_width) / (2 * scale)
           local new_x=$(awk "BEGIN {printf \"%.0f\", ($dp_width - $edp_width) / (2 * $target_scale)}")
-          
+
           # Calculate y-position: DP height / new scale
           local new_y=$(awk "BEGIN {printf \"%.0f\", $dp_height / $target_scale}")
-          
+
           new_position="''${new_x}x''${new_y}"
-          
+
           echo "  Recalculating eDP-1 position: $position → $new_position (centered under DP, scale: $target_scale)"
         fi
       fi
