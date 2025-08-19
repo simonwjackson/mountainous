@@ -758,7 +758,7 @@
     git-commit-message
     git-ai-commit-msg
     git-secret-scanner
-    firefox
+    # firefox - managed by mountainous.firefox module
     chromium
     nodePackages.prettier
   ];
