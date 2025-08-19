@@ -1,7 +1,23 @@
 {pkgs, ...}: {
   mountainous = {
     agenix.enable = true;
-    hyprland.enable = true;
+    hyprland = {
+      enable = true;
+      extraSettings = {
+        monitor = [
+          # External monitor (DP-1) - normal orientation, positioned above
+          "DP-3,2880x1800@120,0x0,1.6,transform,0"
+          "DP-2,2880x1800@120,0x0,1.6,transform,0"
+          "DP-1,2880x1800@120,0x0,1.6,transform,0"
+
+          # Internal display (eDP-1) - 270° rotation, centered below external
+          "eDP-1,2024x2560@60,100x1125,1.6,transform,3"
+
+          # Fallback for any other monitors
+          ",preferred,auto,1.0"
+        ];
+      };
+    };
   };
 
   # System-specific settings
