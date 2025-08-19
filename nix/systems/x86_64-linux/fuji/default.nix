@@ -34,6 +34,9 @@ in {
       "i915.fastboot=1"
       "i915.enable_fbc=1"
       "i915.enable_psr=2"
+      # Hibernation resume parameters
+      "resume=UUID=92b1c48f-0905-41cb-92ee-8b164252b01f"
+      "resume_offset=533760"
     ];
 
     initrd = {
@@ -46,6 +49,9 @@ in {
         "sd_mod"
       ];
     };
+
+    # Resume device for hibernation
+    resumeDevice = "/dev/disk/by-uuid/92b1c48f-0905-41cb-92ee-8b164252b01f";
   };
 
   # System packages

@@ -25,6 +25,7 @@
       "video=efifb:2024x2560" # Native resolution of foldable OLED panel
       "video=efifb:scale" # HiDPI scaling for high-resolution display
       "acpi_osi=!\"Windows 2020\"" # Better Lenovo compatibility and power management
+      "mem_sleep_default=s2idle" # Use s2idle instead of deep suspend (deep causes reboot on X1 Fold)
     ];
   };
 
