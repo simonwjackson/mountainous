@@ -20,6 +20,7 @@
       "tun"
       "igc" # Intel Ethernet Controller
       "nvme_core"
+      "intel_vsc" # Intel Vision Sensing Controller for IPU6 camera
     ];
 
     # X1 Fold specific kernel parameters
@@ -78,6 +79,12 @@
       powerOnBoot = true;
     };
 
+    # Intel IPU6 camera support for ThinkPad X1 Fold Gen 2
+    ipu6 = {
+      enable = true;
+      platform = "ipu6ep";
+    };
+
     # SOF firmware for Intel Smart Sound Technology audio
     firmware = [pkgs.sof-firmware];
   };
@@ -132,6 +139,7 @@
   # Hardware-specific packages
   environment.systemPackages = with pkgs; [
     powertop # For power analysis and optimization
+    libcamera # Camera support library
   ];
 
   # # Create laptop mode toggle script for X1 Fold
