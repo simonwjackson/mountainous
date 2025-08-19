@@ -56,13 +56,11 @@
 
       devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
         pkgs = import inputs.nixpkgs {inherit system;};
-        nixie = pkgs.callPackage ./nix/packages/nixie {};
       in {
         default = pkgs.mkShell {
           packages = with pkgs; [
             just
             gum
-            nixie
           ];
         };
       });
