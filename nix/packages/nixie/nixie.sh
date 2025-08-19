@@ -17,6 +17,9 @@ Options:
   --[no-]report          Generate and display a summary report (default: --report)
   [extra options]        All other options are passed to the final command.
 
+Environment Variables:
+  NIXIE_BUILDERS         Comma-separated list of builders to use for building (e.g., 'ssh://host1,ssh://host2')
+
 "
 
 ACTION=""
@@ -29,6 +32,8 @@ EXTRA_OPTS=()
 SHOULD_EXIT=false
 SUCCESSFUL_HOSTS=()
 FAILED_HOSTS=()
+BUILDERS_ENV="${NIXIE_BUILDERS:-}"
+BUILDERS_SPEC=""
 
 log() {
   gum log --level "$1" "$2"
@@ -107,6 +112,14 @@ parse_hosts() {
   fi
 }
 
+parse_builders() {
+  if [[ -n "${BUILDERS_ENV:-}" ]]; then
+    # Convert comma-separated builders to space-separated format for nixos-rebuild
+    BUILDERS_SPEC="${BUILDERS_ENV//,/ }"
+    log info "Using builders: ${BUILDERS_SPEC}"
+  fi
+}
+
 check_host_online() {
   local host=$1
 
@@ -147,14 +160,26 @@ run_action() {
   local host=$1
   log info "Running $ACTION on $host"
 
-  if nixos-rebuild "$ACTION" \
-    --flake ".#$host" \
-    --target-host "$host" \
-    --use-remote-sudo \
-    --use-substitutes \
-    --max-jobs "auto" \
-    "${EXTRA_OPTS[@]}" \
-    --log-format internal-json -v |& nom --json; then
+  # Build the nixos-rebuild command
+  local cmd_args=(
+    "$ACTION"
+    --flake ".#$host"
+    --target-host "$host"
+    --use-remote-sudo
+    --use-substitutes
+    --max-jobs "auto"
+  )
+
+  # Add builders if specified
+  if [[ -n "${BUILDERS_SPEC:-}" ]]; then
+    cmd_args+=(--builders "${BUILDERS_SPEC}")
+  fi
+
+  # Add any extra options
+  cmd_args+=("${EXTRA_OPTS[@]}")
+  cmd_args+=(--log-format internal-json -v)
+
+  if nixos-rebuild "${cmd_args[@]}" |& nom --json; then
     log info "Successfully ran $ACTION on $host"
     SUCCESSFUL_HOSTS+=("$host")
   else
@@ -203,6 +228,7 @@ print_summary() {
 main() {
   parse_arguments "$@"
   parse_hosts
+  parse_builders
   check_hosts_online
 
   for host in "${ONLINE_HOSTS[@]}"; do

@@ -45,7 +45,7 @@ _run_nixie_command ACTION *ARGS:
     fi
 
     if [ -n "{{ BUILDERS }}" ]; then
-        COMMAND="BUILDERS='{{ BUILDERS }}' $COMMAND"
+        COMMAND="NIXIE_BUILDERS='{{ BUILDERS }}' $COMMAND"
     fi
 
     echo "Executing: $COMMAND"

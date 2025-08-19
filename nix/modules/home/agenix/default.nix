@@ -3,6 +3,7 @@
   inputs,
   lib,
   pkgs,
+  osConfig ? {},
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf types;
@@ -84,7 +85,10 @@ in {
 
     secretsDir = mkOption {
       type = types.str;
-      default = "$XDG_RUNTIME_DIR/agenix";
+      default = 
+        if osConfig ? users.users.${config.home.username}.uid
+        then "/run/user/${toString osConfig.users.users.${config.home.username}.uid}/agenix"
+        else "$XDG_RUNTIME_DIR/agenix";
       description = "Directory where secrets are symlinked";
     };
 
