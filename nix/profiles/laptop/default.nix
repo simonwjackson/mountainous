@@ -3,10 +3,15 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }: let
   inherit (lib) mkEnableOption;
 in {
+  imports = [
+    inputs.home-manager.nixosModules.home-manager
+  ];
+
   options.mountainous.profiles.laptop = {
     enable = mkEnableOption "Whether to enable the laptop profile.";
   };
@@ -45,6 +50,26 @@ in {
         touchpad = {
           disableWhileTyping = true;
           tapping = true;
+        };
+      };
+    };
+
+    # Automatic blue light filtering based on location
+    # Uses manual coordinates as geoclue2 requires additional configuration
+    # Coordinates default to Austin, TX area but will update with timezone changes
+    home-manager.users.simonwjackson = {
+      services.gammastep = {
+        enable = true;
+        provider = "geoclue2";
+        temperature = {
+          day = 6500;
+          night = 3500;
+        };
+        settings = {
+          general = {
+            adjustment-method = "wayland";
+            fade = 1; # Smooth transitions
+          };
         };
       };
     };
