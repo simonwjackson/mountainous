@@ -60,7 +60,7 @@ in {
   "atuin_key.age".publicKeys = users ++ systems;
   "atuin_session.age".publicKeys = users ++ systems;
   "game-collection-sync.age".publicKeys = users ++ systems;
-  "searx-env.age".publicKeys = users ++ systems;
+  "user-simonwjackson-gemini-api-key.age".publicKeys = users ++ systems;
 
   #########
   # Usenet
@@ -129,34 +129,13 @@ in {
   "ntfy-htpasswd.age".publicKeys = users ++ [yari];
 
   #######
-  # Services
+  # Syncthing
   #######
 
-  "kavita.age".publicKeys = users ++ systems;
-
-  ########
-  # Heidi
-  ########
-
-  "heidi-tailscale.age".publicKeys = users ++ systems;
-
-  ########
-  # wifi
-  ########
-
-  "wifi-vrackie.age".publicKeys = users ++ systems;
-  "wifi-brpublic.age".publicKeys = users ++ systems;
-
-  ########
-  # bluetooth
-  ########
-
-  "bluetooth-fuji-sony-ote.age".publicKeys = users ++ systems;
   "tsukuba-syncthing-key.age".publicKeys = users ++ [tsukuba];
   "tsukuba-syncthing-cert.age".publicKeys = users ++ [tsukuba];
   "nyu-syncthing-key.age".publicKeys = users ++ [nyu];
   "nyu-syncthing-cert.age".publicKeys = users ++ [nyu];
   "onishi-syncthing-key.age".publicKeys = users ++ [onishi];
   "onishi-syncthing-cert.age".publicKeys = users ++ [onishi];
-  "user-simonwjackson-gemini-api-key.age".publicKeys = users ++ systems;
 }
