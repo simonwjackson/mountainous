@@ -34,6 +34,7 @@ in {
   '';
 
   mountainous = {
+    iceberg-array.enable = true;
     impermanence.enable = lib.mkForce false;
     profiles = {
       base.enable = true;
