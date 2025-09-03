@@ -17,7 +17,15 @@
 
   # Function to get secrets this system has access to
   # For now, disable auto-discovery and return empty set to avoid conflicts
-  getAccessibleSecrets = {};
+  getAccessibleSecrets = {
+    # Add tailscale secret for meshSidecar
+    "tailscale" = {
+      file = secretsDir + "/tailscale.age";
+      owner = cfg.secretsOwner;
+      group = cfg.secretsGroup;
+      mode = cfg.secretsMode;
+    };
+  };
 
   # Import secrets.nix if it exists
   secretsNix =

@@ -28,6 +28,8 @@ in {
     ###################
 
     mountainous = {
+      agenix.enable = mkDefault true;
+      
       boot.systemd-boot = {
         timeout = 3;
         configurationLimit = 10;
@@ -66,12 +68,18 @@ in {
     ];
 
     services.tailscale.enable = true;
+    
+    services.meshSidecar = {
+      enable = true;
+      provider = "tailscale";
+      authKeyFile = config.age.secrets.tailscale.path;
+    };
 
     boot.kernel.sysctl = {
-      "net.ipv4.ip_forward" = 1;
-      "net.ipv6.conf.all.forwarding" = 1;
-      "net.ipv6.conf.all.disable_ipv6" = 1;
-      "net.ipv6.conf.default.disable_ipv6" = 1;
+      "net.ipv4.ip_forward" = mkDefault 1;
+      "net.ipv6.conf.all.forwarding" = mkDefault 1;
+      "net.ipv6.conf.all.disable_ipv6" = lib.mkForce 1;
+      "net.ipv6.conf.default.disable_ipv6" = lib.mkForce 1;
     };
 
     networking = {

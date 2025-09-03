@@ -159,5 +159,32 @@ in {
     };
   };
 
+  # Enable nginx for meshSidecar validation
+  services.nginx = {
+    enable = true;
+    virtualHosts."localhost" = {
+      listen = [
+        {
+          addr = "127.0.0.1";
+          port = 8080;
+        }
+      ];
+      locations."/" = {
+        return = "200 'meshSidecar test server on aka'";
+        extraConfig = "add_header Content-Type text/plain;";
+      };
+    };
+  };
+
+  # Configure meshSidecar for aka
+  services.meshSidecar = {
+    outboundInterface = "eno1";
+    services = {
+      nginx = {
+        meshName = "aka-web";
+      };
+    };
+  };
+
   system.stateVersion = "24.05";
 }
