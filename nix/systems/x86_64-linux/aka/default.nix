@@ -176,15 +176,5 @@ in {
     };
   };
 
-  # Configure meshSidecar for aka
-  services.meshSidecar = {
-    outboundInterface = "eno1";
-    services = {
-      nginx = {
-        meshName = "aka-web";
-      };
-    };
-  };
-
   system.stateVersion = "24.05";
 }

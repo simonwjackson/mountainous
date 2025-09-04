@@ -121,8 +121,6 @@
           (mkHomeManagerModule arch name)
           # Add tmesh module
           tmesh.nixosModules.default
-          # Add meshSidecar module
-          inputs.meshSidecar.nixosModules.default
         ];
     };
 

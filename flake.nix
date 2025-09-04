@@ -21,10 +21,6 @@
       url = "github:AdnanHodzic/auto-cpufreq";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    meshSidecar = {
-      url = "github:noblepayne/meshSidecar";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-anywhere.url = "github:nix-community/nixos-anywhere";
     hyprland.url = "github:hyprwm/Hyprland";

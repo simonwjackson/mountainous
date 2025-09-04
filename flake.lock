@@ -1035,26 +1035,6 @@
         "type": "github"
       }
     },
-    "meshSidecar": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1756170851,
-        "narHash": "sha256-8gwaCGnq0XyVUmIVFBqmOUfQVUjQ0yXjucCxAMf6X6M=",
-        "owner": "noblepayne",
-        "repo": "meshSidecar",
-        "rev": "6f71b1155ce9e35ae68492a54b650fcb0f0b8d87",
-        "type": "github"
-      },
-      "original": {
-        "owner": "noblepayne",
-        "repo": "meshSidecar",
-        "type": "github"
-      }
-    },
     "nix-github-actions": {
       "inputs": {
         "nixpkgs": [
@@ -1509,7 +1489,6 @@
         "hyprland": "hyprland",
         "icho": "icho",
         "impermanence": "impermanence",
-        "meshSidecar": "meshSidecar",
         "nix-search-tv": "nix-search-tv",
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_9",
