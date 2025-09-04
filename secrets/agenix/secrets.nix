@@ -38,29 +38,21 @@ let
     zao
   ];
 in {
-  "user-simonwjackson.age".publicKeys = users ++ systems;
-  "user-simonwjackson-kita.age".publicKeys = users ++ systems;
-  "user-simonwjackson-pin.age".publicKeys = users ++ systems;
-  "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
-  "deepseek-api-key.age".publicKeys = users ++ systems;
-  "user-simonwjackson-instapaper.age".publicKeys = users ++ systems;
+  "user-simonwjackson-anthropic.age".publicKeys = users ++ systems;
+  "user-simonwjackson-claude-credentials.age".publicKeys = users ++ systems;
+  "user-simonwjackson-email.age".publicKeys = users ++ systems;
+  "user-simonwjackson-gemini-api-key.age".publicKeys = users ++ systems;
+  "user-simonwjackson-github-token-nix.age".publicKeys = users ++ systems;
+  "user-simonwjackson-github-token.age".publicKeys = users ++ systems;
   "user-simonwjackson-gmail.age".publicKeys = users ++ systems;
+  "user-simonwjackson-instapaper.age".publicKeys = users ++ systems;
+  "user-simonwjackson-kita.age".publicKeys = users ++ systems;
+  "user-simonwjackson-openai-api-key.age".publicKeys = users ++ systems;
+  "user-simonwjackson-pin.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-ca.cert.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-private.key.age".publicKeys = users ++ systems;
   "user-simonwjackson-taskserver-public.cert.age".publicKeys = users ++ systems;
-  "user-simonwjackson-github-token.age".publicKeys = users ++ systems;
-  "user-simonwjackson-github-token-nix.age".publicKeys = users ++ systems;
-  "user-simonwjackson-email.age".publicKeys = users ++ systems;
-  "user-simonwjackson-anthropic.age".publicKeys = users ++ systems;
-  "user-simonwjackson-claude-credentials.age".publicKeys = users ++ systems;
-  "slskd_env.age".publicKeys = users ++ systems;
-  "aria2-rpc-secret.age".publicKeys = users ++ systems;
-  "tandoor_env.age".publicKeys = users ++ systems;
-  "paperless_ngx_env.age".publicKeys = users ++ systems;
-  "atuin_key.age".publicKeys = users ++ systems;
-  "atuin_session.age".publicKeys = users ++ systems;
-  "game-collection-sync.age".publicKeys = users ++ systems;
-  "user-simonwjackson-gemini-api-key.age".publicKeys = users ++ systems;
+  "user-simonwjackson.age".publicKeys = users ++ systems;
 
   #########
   # Usenet
@@ -125,17 +117,24 @@ in {
   "kita-syncthing-key.age".publicKeys = users ++ [kita];
   "kita-syncthing-cert.age".publicKeys = users ++ [kita];
 
-  "matrix-shared-secret.age".publicKeys = users ++ [yari];
-  "ntfy-htpasswd.age".publicKeys = users ++ [yari];
-
-  #######
-  # Syncthing
-  #######
-
   "tsukuba-syncthing-key.age".publicKeys = users ++ [tsukuba];
   "tsukuba-syncthing-cert.age".publicKeys = users ++ [tsukuba];
+
   "nyu-syncthing-key.age".publicKeys = users ++ [nyu];
   "nyu-syncthing-cert.age".publicKeys = users ++ [nyu];
+
   "onishi-syncthing-key.age".publicKeys = users ++ [onishi];
   "onishi-syncthing-cert.age".publicKeys = users ++ [onishi];
+
+  #######
+  # Misc
+  #######
+
+  "aria2-rpc-secret.age".publicKeys = users ++ systems;
+  "atuin_key.age".publicKeys = users ++ systems;
+  "atuin_session.age".publicKeys = users ++ systems;
+  "deepseek-api-key.age".publicKeys = users ++ systems;
+  "paperless_ngx_env.age".publicKeys = users ++ systems;
+  "slskd_env.age".publicKeys = users ++ systems;
+  "tandoor_env.age".publicKeys = users ++ systems;
 }
