@@ -7,6 +7,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+    gomod2nix = {
+      url = "github:nix-community/gomod2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-search-tv.url = "github:3timeslazy/nix-search-tv";
     elevate = {
       url = "github:simonwjackson/elevate";
@@ -39,6 +43,7 @@
       inherit inputs;
       namespace = "mountainous";
       overlays = with inputs; [
+        gomod2nix.overlays.default
         (final: prev: {
           gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
           "gamescope-wsi_git" = chaotic.packages.${prev.system}."gamescope-wsi_git";
