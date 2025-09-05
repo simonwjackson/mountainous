@@ -72,14 +72,7 @@ in {
   "tailscale.age".publicKeys = users ++ systems;
   "tailscale_env.age".publicKeys = users ++ systems;
 
-  "proton-0-usenet.age".publicKeys = users ++ systems;
-  "proton-0-soulseek.age".publicKeys = users ++ systems;
-  "proton-0-index.age".publicKeys = users ++ systems;
-  "proton-0-torrents.age".publicKeys = users ++ systems;
-  "proton-0-downloads.age".publicKeys = users ++ systems;
-
-  "proton-1.age".publicKeys = users ++ systems;
-  "proton-2.age".publicKeys = users ++ systems;
+  "proton.age".publicKeys = users ++ systems;
 
   "fastestvpn.age".publicKeys = users ++ systems;
 
