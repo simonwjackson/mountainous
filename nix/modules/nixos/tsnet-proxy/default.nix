@@ -34,8 +34,15 @@ in {
 
           port = mkOption {
             type = types.int;
-            description = "Backend port on localhost";
+            description = "Backend port";
             example = 8080;
+          };
+
+          host = mkOption {
+            type = types.str;
+            default = "localhost";
+            description = "Backend host address";
+            example = "192.168.15.1";
           };
 
           authKeyFile = mkOption {
@@ -120,7 +127,7 @@ in {
           effectiveAuthKeyFile = if serviceConfig.authKeyFile != null 
             then serviceConfig.authKeyFile 
             else cfg.authKeyFile;
-          backendUrl = "${serviceConfig.protocol}://localhost:${toString serviceConfig.port}";
+          backendUrl = "${serviceConfig.protocol}://${serviceConfig.host}:${toString serviceConfig.port}";
         in ''
           # Debug environment
           echo "HOME=$HOME"

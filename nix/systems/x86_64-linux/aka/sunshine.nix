@@ -1,10 +1,9 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }: let
-  inherit (lib) mkIf mkOption mkEnableOption types hasAttr isBool genAttrs mkForce;
+  inherit (lib) mkForce;
 
   hyprctl = "${pkgs.hyprland}/bin/hyprctl";
   journalctl = "${pkgs.systemd}/bin/journalctl";
@@ -25,9 +24,7 @@
   }:
     pkgs.writeShellScript "onConnect-${resolution}-${toString scaling}" ''
       ${hyprctl} --instance 0 keyword monitor HDMI-A-2,${resolution},auto,${toString scaling} &&
-        ${hyprctl} --instance 0 dispatch dpms on &&
-        ${hyprctl} --instance 0 keyword monitor DP-1,disable &&
-        ${hyprctl} --instance 0 keyword monitor DP-2,disable
+        ${hyprctl} --instance 0 dispatch dpms on
     '';
 in {
   services.sunshine = {

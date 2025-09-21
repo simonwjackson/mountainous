@@ -121,6 +121,8 @@
           (mkHomeManagerModule arch name)
           # Add tmesh module
           tmesh.nixosModules.default
+          # Add VPN-Confinement module
+          inputs.vpn-confinement.nixosModules.default
         ];
     };
 

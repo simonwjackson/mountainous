@@ -22,6 +22,7 @@ in {
     ex
     ryzenadj
     obsidian
+    wireguard-tools
   ];
 
   #######################
@@ -33,6 +34,24 @@ in {
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1a5c", ATTR{authorized}="0"
   '';
 
+  # Enable WireGuard support
+  networking.wireguard.enable = true;
+
+  # Configure agenix secrets
+  age.secrets."tailscale" = {
+    file = ../../../../secrets/agenix/tailscale.age;
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+    mode = "400";
+  };
+
+  age.secrets."proton" = {
+    file = ../../../../secrets/agenix/proton.age;
+    owner = "root";
+    group = "root";
+    mode = "400";
+  };
+
   mountainous = {
     iceberg-array.enable = true;
     impermanence.enable = lib.mkForce false;
@@ -42,6 +61,9 @@ in {
       workspace.enable = true;
       gaming.enable = true;
     };
+
+    # VPN isolation for services
+
     # networking.core.names = [
     #   {
     #     name = "wifi";
@@ -144,6 +166,11 @@ in {
     options = ["noatime" "nofail" "x-systemd.automount" "x-systemd.device-timeout=5"];
   };
 
+  # Custom hosts file entries
+  networking.hosts = {
+    "127.0.0.1" = ["amazesql01.database.windows.net"];
+  };
+
   # Enable mountainous Syncthing module with auto-discovery
   mountainous.syncthing = {
     enable = true;
@@ -159,19 +186,59 @@ in {
     };
   };
 
-  # Enable nginx for meshSidecar validation
-  services.nginx = {
+  # VPN-isolated services configuration
+  # mountainous.vpn-isolated-service = {
+  #   enable = true;
+  #
+  #   namespaces = {
+  #     vpn = {
+  #       wireguardConfigFile = config.age.secrets."proton".path;
+  #       accessibleFrom = [
+  #         "192.168.0.0/16"
+  #         "10.0.0.0/8"
+  #         "172.16.0.0/12"
+  #         "100.64.0.0/10" # Tailscale network
+  #       ];
+  #       portMappings = [
+  #         {
+  #           from = 8888;
+  #           to = 8888;
+  #         }
+  #       ];
+  #     };
+  #   };
+  #
+  #   services = {
+  #     ip-display = {
+  #       vpnNamespace = "vpn";
+  #       description = "Simple HTTP server displaying public IP";
+  #       script = ''
+  #         ${pkgs.python3}/bin/python3 ${config.mountainous.vpn-isolated-service.lib.ipDisplayScript}
+  #       '';
+  #     };
+  #   };
+  # };
+
+  services.music-assistant.providers = ["sonos" "sonos_s1" "ytmusic" "chromecast" "filesystem_local" "filesystem_smb" "jellyfin"];
+  services.music-assistant.enable = true;
+
+  services.sabnzbd = {
     enable = true;
-    virtualHosts."localhost" = {
-      listen = [
-        {
-          addr = "127.0.0.1";
-          port = 8080;
-        }
-      ];
-      locations."/" = {
-        return = "200 'meshSidecar test server on aka'";
-        extraConfig = "add_header Content-Type text/plain;";
+    openFirewall = true;
+  };
+
+  # Configure sabnzbd to listen on all interfaces
+  systemd.services.sabnzbd.serviceConfig.ExecStart = lib.mkForce "${pkgs.sabnzbd}/bin/sabnzbd -d -s 0.0.0.0:8080 -f /var/lib/sabnzbd/sabnzbd.ini";
+
+  mountainous.tsnet-proxy = {
+    enable = true;
+    authKeyFile = config.age.secrets."tailscale".path;
+    services = {
+      sabnzbd = {
+        hostname = "usenet";
+        port = 8080;
+        protocol = "http";
+        host = "127.0.0.1"; # Local sabnzbd service
       };
     };
   };

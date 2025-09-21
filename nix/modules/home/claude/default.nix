@@ -45,31 +45,31 @@ in {
   };
 
   config = lib.mkMerge [
-    (mkIf cfg.enable {
-      # Manage Claude credentials with token injection from agenix
-      home.activation.manageClaude = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        run mkdir -p "$HOME/.claude"
-
-        # Read the access token from the agenix secret
-        TOKEN=$(cat "${cfg.credentialsPath}")
-
-        if [[ -f "$HOME/.claude/.credentials.json" ]]; then
-          # Update existing file, preserving other fields
-          run ${jq} --arg token "$TOKEN" \
-            '.claudeAiOauth.accessToken = $token' \
-            "$HOME/.claude/.credentials.json" > "$HOME/.claude/.credentials.json.tmp"
-          run mv "$HOME/.claude/.credentials.json.tmp" "$HOME/.claude/.credentials.json"
-        else
-          # Create new file with minimal structure
-          run ${jq} -n --arg token "$TOKEN" \
-            '{"claudeAiOauth": {"accessToken": $token, "scopes": ["user:inference", "user:profile"], "subscriptionType": "max"}}' \
-            > "$HOME/.claude/.credentials.json"
-        fi
-
-        # Set proper permissions (read/write for owner only)
-        run chmod 600 "$HOME/.claude/.credentials.json"
-      '';
-    })
+    # (mkIf cfg.enable {
+    #   # Manage Claude credentials with token injection from agenix
+    #   home.activation.manageClaude = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    #     run mkdir -p "$HOME/.claude"
+    #
+    #     # Read the access token from the agenix secret
+    #     TOKEN=$(cat "${cfg.credentialsPath}")
+    #
+    #     if [[ -f "$HOME/.claude/.credentials.json" ]]; then
+    #       # Update existing file, preserving other fields
+    #       run ${jq} --arg token "$TOKEN" \
+    #         '.claudeAiOauth.accessToken = $token' \
+    #         "$HOME/.claude/.credentials.json" > "$HOME/.claude/.credentials.json.tmp"
+    #       run mv "$HOME/.claude/.credentials.json.tmp" "$HOME/.claude/.credentials.json"
+    #     else
+    #       # Create new file with minimal structure
+    #       run ${jq} -n --arg token "$TOKEN" \
+    #         '{"claudeAiOauth": {"accessToken": $token, "scopes": ["user:inference", "user:profile"], "subscriptionType": "max"}}' \
+    #         > "$HOME/.claude/.credentials.json"
+    #     fi
+    #
+    #     # Set proper permissions (read/write for owner only)
+    #     run chmod 600 "$HOME/.claude/.credentials.json"
+    #   '';
+    # })
 
     (mkIf cfg.commands.enable {
       # Manage Claude commands with simple copy
