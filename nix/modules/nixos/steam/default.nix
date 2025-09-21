@@ -36,6 +36,12 @@ in {
       };
     };
 
+    # Note: Not enabling jovian.steam directly due to power key conflicts
+    # Instead, we'll use Jovian's packages via the flake
+
+    # Optional: Enable Jovian's Decky loader for Steam Deck plugins
+    # jovian.decky.enable = true;
+
     programs = {
       steam = {
         enable = true;
@@ -46,8 +52,11 @@ in {
             extraPkgs = pkgs:
               with pkgs; [
                 mangohud
-                gamescope-wsi_git
-                gamescope_git
+                # Use stable gamescope from nixpkgs (not git versions)
+                # Removed problematic gamescope_git which causes Vulkan errors on AMD
+                gamescope
+                # Optional: Use Jovian packages if available
+                # (pkgs.jovian-chaotic.gamescope or gamescope)
               ];
           })
           .overrideAttrs (old: {
@@ -69,7 +78,7 @@ in {
             '';
           });
         extraCompatPackages = [
-          # inputs.elevate.packages.${system}.proton-ge-custom
+          # Keep proton-ge-custom for latest Proton improvements
           inputs.elevate.packages.x86_64-linux.proton-ge-custom
         ];
       };

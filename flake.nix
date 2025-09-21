@@ -7,6 +7,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
+    jovian.follows = "chaotic/jovian";
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -49,8 +50,7 @@
       overlays = with inputs; [
         gomod2nix.overlays.default
         (final: prev: {
-          gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
-          "gamescope-wsi_git" = chaotic.packages.${prev.system}."gamescope-wsi_git";
+          # Removed gamescope_git overlays - now using Jovian's stable packages
           neovim = inputs.icho.packages.${final.system}.default;
         })
       ];

@@ -26,9 +26,8 @@ in {
     environment.systemPackages = with pkgs; [
       # inputs.elevate.packages.${system}.moonbeam
       # inputs.elevate.packages.x86_64-linux.moonbeam
-      # mangohud_git
-      # gamescope-wsi_git
-      # gamescope_git
+      # mangohud_git  # Now provided via Jovian
+      # gamescope packages removed - now using Jovian's stable versions
       # dolphin-emu
       # rpcs3
       # cemu

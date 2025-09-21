@@ -1529,6 +1529,10 @@
         "hyprland": "hyprland",
         "icho": "icho",
         "impermanence": "impermanence",
+        "jovian": [
+          "chaotic",
+          "jovian"
+        ],
         "nix-search-tv": "nix-search-tv",
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_9",
