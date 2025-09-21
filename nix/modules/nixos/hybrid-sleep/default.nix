@@ -45,14 +45,13 @@ in {
         then "suspend-then-hibernate"
         else "suspend";
 
-      extraConfig = ''
-        IdleAction=${
+      settings.Login = {
+        IdleAction =
           if cfg.hibernate
           then "hibernate"
-          else "suspend"
-        }
-        IdleActionSec=${toString cfg.delay}min
-      '';
+          else "suspend";
+        IdleActionSec = "${toString cfg.delay}min";
+      };
     };
   };
 }
