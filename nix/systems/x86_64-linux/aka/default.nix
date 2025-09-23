@@ -4,9 +4,7 @@
   modulesPath,
   pkgs,
   ...
-}: let
-  inherit (lib.mountainous) enabled disabled;
-in {
+}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./sunshine.nix
@@ -57,7 +55,6 @@ in {
     impermanence.enable = lib.mkForce false;
     profiles = {
       base.enable = true;
-      laptop.enable = true;
       workspace.enable = true;
       gaming.enable = true;
     };

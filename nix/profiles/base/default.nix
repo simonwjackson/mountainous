@@ -185,6 +185,16 @@ in {
       # A daemon that automatically adjusts CPU frequency based on usage
       auto-cpufreq.enable = true;
 
+      # Enable time synchronization
+      timesyncd.enable = mkDefault true;
+
+      # Enable avahi for local network discovery (.local hostnames)
+      avahi = {
+        enable = true;
+        nssmdns4 = true;
+        nssmdns6 = true;
+      };
+
       # A shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rules
       ananicy = {
         enable = true;
