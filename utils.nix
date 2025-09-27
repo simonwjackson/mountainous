@@ -125,8 +125,6 @@
           inputs.vpn-confinement.nixosModules.default
           # Add Chaotic module
           inputs.chaotic.nixosModules.default
-          # Add Jovian module for SteamOS packages
-          inputs.jovian.nixosModules.default
         ];
     };
 

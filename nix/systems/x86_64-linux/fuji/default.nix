@@ -9,6 +9,16 @@ in {
     ./x1-fold.nix # X1 Fold hardware-specific configuration
   ];
 
+  hardware.opengl = {
+    enable = true;
+    extraPackages = with pkgs; [
+      intel-media-driver # LIBVA_DRIVER_NAME=iHD
+      vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but sometimes works better for legacy GPUs)
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
+  };
+
   # System services
   security.rtkit.enable = true;
 

@@ -12,6 +12,15 @@
     ./disko.nix
   ];
 
+  ################
+  # STEAM
+  ################
+
+  # Use the new mountainous Steam module for proper runtime support
+  mountainous.steam = {
+    enable = true;
+  };
+
   environment.systemPackages = with pkgs; [
     mergerfs
     mpvScripts.uosc
@@ -90,14 +99,11 @@
         ryzen-smu.enable = true;
       };
     };
+
     graphics = {
+      enable = true;
       enable32Bit = true;
-      extraPackages = with pkgs; [
-        amdvlk
-      ];
-      extraPackages32 = with pkgs; [
-        driversi686Linux.amdvlk
-      ];
+      # Steam module handles graphics packages
     };
 
     # Enable Bluetooth support
@@ -238,6 +244,17 @@
         host = "127.0.0.1"; # Local sabnzbd service
       };
     };
+  };
+
+  # Enable Flatpak support
+  services.flatpak.enable = true;
+
+  # Add Flatpak directories to XDG_DATA_DIRS for desktop integration
+  environment.sessionVariables = {
+    XDG_DATA_DIRS = [
+      "/var/lib/flatpak/exports/share"
+      "/home/simonwjackson/.local/share/flatpak/exports/share"
+    ];
   };
 
   system.stateVersion = "24.05";

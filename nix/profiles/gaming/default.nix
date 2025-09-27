@@ -14,8 +14,10 @@ in {
   };
 
   config = mkIf cfg.enable {
-    mountainous = {
-      steam.enable = true;
+    # Enable hardware acceleration for video decoding (VA-API/VDPAU)
+    # This is required for Moonlight game streaming
+    hardware.opengl = {
+      enable = true;
     };
 
     # Allow uinput devices to be used by non-root users
@@ -24,6 +26,7 @@ in {
     '';
 
     environment.systemPackages = with pkgs; [
+      moonlight-qt # Moonlight game streaming client
       # inputs.elevate.packages.${system}.moonbeam
       # inputs.elevate.packages.x86_64-linux.moonbeam
       # mangohud_git  # Now provided via Jovian

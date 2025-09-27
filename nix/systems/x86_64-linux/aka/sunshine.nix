@@ -74,11 +74,11 @@ in {
         }
 
         {
-          name = "ZFold 6 (Portrait)";
+          name = "ZFold 7 (Portrait)";
           prep-cmd = [
             {
               do = makeOnConnect {
-                resolution = "1856x2160@90";
+                resolution = "1968x2184@90";
                 scaling = 2;
               };
               undo = "";
@@ -91,11 +91,11 @@ in {
         }
 
         {
-          name = "ZFold 6 (Landscape)";
+          name = "ZFold 7 (Landscape)";
           prep-cmd = [
             {
               do = makeOnConnect {
-                resolution = "2160x1856@90";
+                resolution = "2184x1968@90";
                 scaling = 2;
               };
               undo = "";
