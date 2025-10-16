@@ -84,37 +84,37 @@ _run_nixie ACTION *ARGS:
 [private]
 _pre_deploy TARGET_HOST:
     #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Skip if deploying to localhost
-    if [[ "{{ TARGET_HOST }}" == "$(hostname)" ]]; then
-        exit 0
-    fi
-
-    echo "🔄 Bidirectional sync with {{ TARGET_HOST }}..."
-
-    # Ensure local directories exist
-    mkdir -p ./nix/home/claude/commands
-    mkdir -p ./nix/home/claude/agents
-
-    # Ensure remote directories exist
-    ssh {{ TARGET_HOST }} "mkdir -p ~/.claude/commands ~/.claude/agents"
-
-    # Bidirectional sync - merge changes from both sides
-    echo "  📥 Syncing from remote..."
-    rsync -av "{{ TARGET_HOST }}:~/.claude/commands/" ./nix/home/claude/commands/ 2>/dev/null || true
-    rsync -av "{{ TARGET_HOST }}:~/.claude/agents/" ./nix/home/claude/agents/ 2>/dev/null || true
-
-    echo "  📤 Syncing to remote..."
-    rsync -av ./nix/home/claude/commands/ "{{ TARGET_HOST }}:~/.claude/commands/" 2>/dev/null || true
-    rsync -av ./nix/home/claude/agents/ "{{ TARGET_HOST }}:~/.claude/agents/" 2>/dev/null || true
-
-    # Auto-commit any changes pulled from remote
-    if ! git diff --quiet nix/home/claude/ 2>/dev/null; then
-        echo "  📝 Committing changes from remote..."
-        git add nix/home/claude/
-        git commit -m "auto: sync claude files from {{ TARGET_HOST }} (pre-deploy)" || true
-    fi
+    # set -euo pipefail
+    #
+    # # Skip if deploying to localhost
+    # if [[ "{{ TARGET_HOST }}" == "$(hostname)" ]]; then
+    #     exit 0
+    # fi
+    #
+    # echo "🔄 Bidirectional sync with {{ TARGET_HOST }}..."
+    #
+    # # Ensure local directories exist
+    # mkdir -p ./nix/home/claude/commands
+    # mkdir -p ./nix/home/claude/agents
+    #
+    # # Ensure remote directories exist
+    # ssh {{ TARGET_HOST }} "mkdir -p ~/.claude/commands ~/.claude/agents"
+    #
+    # # Bidirectional sync - merge changes from both sides
+    # echo "  📥 Syncing from remote..."
+    # rsync -av "{{ TARGET_HOST }}:~/.claude/commands/" ./nix/home/claude/commands/ 2>/dev/null || true
+    # rsync -av "{{ TARGET_HOST }}:~/.claude/agents/" ./nix/home/claude/agents/ 2>/dev/null || true
+    #
+    # echo "  📤 Syncing to remote..."
+    # rsync -av ./nix/home/claude/commands/ "{{ TARGET_HOST }}:~/.claude/commands/" 2>/dev/null || true
+    # rsync -av ./nix/home/claude/agents/ "{{ TARGET_HOST }}:~/.claude/agents/" 2>/dev/null || true
+    #
+    # # Auto-commit any changes pulled from remote
+    # if ! git diff --quiet nix/home/claude/ 2>/dev/null; then
+    #     echo "  📝 Committing changes from remote..."
+    #     git add nix/home/claude/
+    #     git commit -m "auto: sync claude files from {{ TARGET_HOST }} (pre-deploy)" || true
+    # fi
 
     # Future: Add other pre-deployment syncs here
 

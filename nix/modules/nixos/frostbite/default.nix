@@ -39,6 +39,7 @@ in {
     fileSystems = lib.mkIf config.mountainous.impermanence.enable {
       "/".neededForBoot = true;
       "/tundra/igloo".neededForBoot = true;
+      "/tundra/permafrost".neededForBoot = true;
       "/nix".neededForBoot = true;
       "/boot".neededForBoot = true;
       "/var/log".neededForBoot = true;

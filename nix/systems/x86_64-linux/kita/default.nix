@@ -13,61 +13,49 @@
     moonlight-qt
   ];
 
-  # Boot configuration
+  services = {
+    openssh.enable = true;
+  };
+
+  # Boot configuration for Intel NUC8i3BEK
   boot = {
     initrd = {
-      availableKernelModules = ["nvme" "xhci_pci" "ahci" "usb_storage" "sd_mod" "sdhci_pci"];
+      availableKernelModules = ["xhci_pci" "ahci" "usb_storage" "sd_mod" "rtsx_pci_sdmmc"];
       kernelModules = [];
     };
-    kernelModules = ["kvm-amd" "acpi_call"];
-    extraModulePackages = with config.boot.kernelPackages; [acpi_call];
-    # Kernel parameters for handheld gaming device
+    kernelModules = ["kvm-intel"];
+    extraModulePackages = [];
     kernelParams = [
-      "amd_pstate=active"
-      "amdgpu.ppfeaturemask=0xffffffff"
-      "amdgpu.gpu_recovery=1"
+      "i915.enable_gvt=1"
+      "intel_idle.max_cstate=1"
     ];
-    # UEFI boot loader configuration
     loader = {
       systemd-boot.enable = true;
       efi.canTouchEfiVariables = true;
     };
   };
 
-  # Hardware configuration for AYANEO AIR 1S with AMD Ryzen 5 5560U
+  # Hardware configuration for Intel NUC8i3BEK with i3-8109U
   hardware = {
-    cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+    cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
     enableRedistributableFirmware = true;
     bluetooth.enable = true;
   };
 
-  # Graphics configuration for integrated Radeon Graphics
-  services.xserver.videoDrivers = ["amdgpu"];
+  # Graphics configuration for Intel Iris Plus Graphics 655
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
-      rocmPackages.clr.icd
-      rocmPackages.clr
-      amdvlk
+      intel-media-driver # LIBVA_DRIVER_NAME=iHD
+      vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but sometimes works better)
+      vaapiVdpau
+      libvdpau-va-gl
     ];
     extraPackages32 = with pkgs; [
-      driversi686Linux.amdvlk
+      intel-media-driver
+      vaapiIntel
     ];
-  };
-
-  # Power management for handheld gaming device
-  powerManagement.enable = true;
-  powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
-  services.thermald.enable = true;
-  services.tlp = {
-    enable = true;
-    settings = {
-      CPU_SCALING_GOVERNOR_ON_AC = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT = "schedutil";
-      CPU_BOOST_ON_AC = 1;
-      CPU_BOOST_ON_BAT = 0;
-    };
   };
 
   # Networking
@@ -78,19 +66,14 @@
   mountainous = {
     profiles = {
       base.enable = true;
-      laptop.enable = true;
+      workspace.enable = true;
       gaming.enable = true;
-    };
-    kde = {
-      enable = true;
-      autoLogin = true;
-      autoLoginUser = "simonwjackson";
     };
     disks = {
       frostbite = {
         enable = true;
-        device = "/dev/nvme0n1";
-        swapSize = "16G";
+        device = "/dev/sda";
+        swapSize = "8G";
         encrypt = false;
       };
     };

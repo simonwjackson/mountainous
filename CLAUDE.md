@@ -23,6 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Error Handling**: Use `lib.mkIf` for conditional configuration, with sensible defaults
 
 ## Development Workflow
+- **CRITICAL**: Always `git add` new files immediately - Nix flakes only see git-tracked files
 - Store common functions in `utils.nix`
 - Test in VM with `nix build .#vm-<system>` before deploying
 - Use the three-layer approach for home-manager configurations
