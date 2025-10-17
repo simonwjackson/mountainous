@@ -79,6 +79,7 @@ in {
 
     users = {
       mutableUsers = true;
+      users.root.initialPassword = "asdfasdfasdf";
       users.${cfg.name} =
         {
           isNormalUser = true;

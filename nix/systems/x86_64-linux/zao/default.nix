@@ -11,7 +11,7 @@
   ];
 
   # Boot configuration for 11th Gen Intel Core i9-11900H (Tiger Lake)
-  # Redundant USB boot with GRUB
+  # RAID1 USB boot with GRUB for redundancy
   boot = {
     initrd = {
       availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "uas" "sd_mod" "rtsx_pci_sdmmc"];
@@ -20,7 +20,10 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
-    # Enable software RAID for redundant USB boot and backup
+    # Enable software RAID for:
+    # - RAID1 USB boot (dual Lexar drives)
+    # - RAID1 USB backup (dual Lexar drives)
+    # - RAID0 system (dual WD Blue SN570 NVMe drives)
     swraid = {
       enable = true;
       mdadmConf = ''
@@ -35,15 +38,11 @@
       };
       grub = {
         enable = true;
-        # INITIAL DEPLOY: Single USB device (no RAID)
+        # RAID1 boot: Install to both USB drives for redundancy
         devices = [
           "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0374119080022027-0:0"
+          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0330119070016269-0:0"
         ];
-        # AFTER FIRST BOOT: Add second USB to enable RAID1 boot redundancy
-        # devices = [
-        #   "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0374119080022027-0:0"
-        #   "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0322119070015232-0:0"
-        # ];
         efiSupport = true;
         efiInstallAsRemovable = true; # USB boot reliability
         copyKernels = true; # Kernel redundancy
@@ -116,23 +115,78 @@
     impermanence.enable = lib.mkForce false;
   };
 
+  # Configure ephemeral root filesystem (tmpfs) for impermanence
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+    options = ["defaults" "size=2G" "mode=755"];
+  };
+
+  # Mark persistent storage as needed early in boot
+  fileSystems."/tundra/permafrost".neededForBoot = true;
+
   # Local impermanence configuration for zao
   environment.persistence."/tundra/permafrost" = {
     hideMounts = true;
     directories = [
-      "/etc/NetworkManager/system-connections"
-      "/etc/ssh"
+      "/nix" # Nix store must persist (large, contains all packages)
       "/var/lib/systemd/coredump"
-      "/var/lib/bluetooth"
       "/var/lib/nixos"
       "/var/lib/tailscale"
-      "/home/simonwjackson"
+      "/var/log"
+      "/root"
+      {
+        directory = "/home/simonwjackson";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0700";
+      }
+      {
+        directory = "/tundra/igloo";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0700";
+      }
+      {
+        directory = "/nix/var/nix/profiles/per-user/simonwjackson";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0755";
+      }
     ];
     files = [
       "/etc/machine-id"
-      "/etc/adjtime"
     ];
   };
+
+  # Fix ownership of persistent directories on boot
+  # Workaround for impermanence not setting ownership correctly
+  systemd.services.fix-persistent-ownership = {
+    description = "Fix ownership of persistent directories";
+    wantedBy = ["local-fs.target"];
+    after = ["tundra-permafrost.mount"];
+    before = ["home-simonwjackson.mount" "tundra-igloo.mount"];
+    requiredBy = ["home-simonwjackson.mount" "tundra-igloo.mount"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/home/simonwjackson
+      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/tundra/igloo
+      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson
+    '';
+  };
+
+  # SSH host keys in persistent storage
+  # Keys are deployed via deploy.sh using --extra-files during initial installation
+  services.openssh.hostKeys = [
+    {
+      path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
+      type = "rsa";
+      bits = 4096;
+    }
+  ];
 
   # Server-specific optimizations for always-plugged-in laptop
   # Disable battery-saving features since this runs as a server

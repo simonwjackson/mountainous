@@ -41,6 +41,14 @@ else
   exit 1
 fi
 
+# Check for manual-disko.sh script
+MANUAL_DISKO_SCRIPT="nix/systems/x86_64-linux/${HOSTNAME}/manual-disko.sh"
+USE_MANUAL_DISKO=false
+if [ -f "$MANUAL_DISKO_SCRIPT" ]; then
+  echo "Found manual-disko.sh for $HOSTNAME - will use manual formatting"
+  USE_MANUAL_DISKO=true
+fi
+
 # Copy SSH keys
 cp "$SSH_KEY" "$temp/tundra/igloo/"
 cp "$SSH_KEY" "$temp/$USER_HOME/.ssh/"
@@ -57,12 +65,40 @@ ssh \
   -o UserKnownHostsFile=/dev/null \
   "$TARGET" "chmod 600 ~/.ssh/authorized_keys"
 
+# Handle manual disk formatting if needed
+if [ "$USE_MANUAL_DISKO" = true ]; then
+  echo "Transferring manual-disko.sh to target..."
+  scp \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    "$MANUAL_DISKO_SCRIPT" \
+    "$TARGET:/tmp/manual-disko.sh"
+
+  echo "Running manual disk formatting on target..."
+  ssh \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    "$TARGET" "chmod +x /tmp/manual-disko.sh && sudo /tmp/manual-disko.sh"
+
+  echo "Manual formatting complete"
+fi
+
 # Deploy NixOS configuration
 echo "Deploying NixOS configuration..."
+
+# Set phases based on whether manual formatting was done
+if [ "$USE_MANUAL_DISKO" = true ]; then
+  NIXOS_PHASES="kexec,install"
+  echo "Using phases: kexec,install (skipping disko - manual formatting already done)"
+else
+  NIXOS_PHASES="kexec,disko,install"
+  echo "Using phases: kexec,disko,install"
+fi
+
 nixos-anywhere \
   --flake ".#$HOSTNAME" \
   --extra-files "$temp" \
-  --phases kexec,disko,install \
+  --phases "$NIXOS_PHASES" \
   --target-host "$TARGET"
 
 # Set correct ownership of directories
@@ -70,6 +106,6 @@ echo "Setting correct ownership of directories..."
 ssh \
   -o StrictHostKeyChecking=no \
   -o UserKnownHostsFile=/dev/null \
-  -t "$TARGET" "sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT && sudo reboot"
+  -t "$TARGET" "sudo mkdir -p /mnt/$USER_HOME /mnt/$IGLOO_MOUNT /mnt/nix/var/nix/profiles/per-user/simonwjackson && sudo chown -R 1000:100 /mnt/$USER_HOME /mnt/$IGLOO_MOUNT /mnt/nix/var/nix/profiles/per-user/simonwjackson && sudo reboot"
 
 echo "Installation complete! The system will reboot automatically."
