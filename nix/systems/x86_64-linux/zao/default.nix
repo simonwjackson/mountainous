@@ -134,7 +134,6 @@
       "/var/lib/nixos"
       "/var/lib/tailscale"
       "/var/log"
-      "/root"
       {
         directory = "/home/simonwjackson";
         user = "simonwjackson";

@@ -80,6 +80,22 @@ echo ""
 echo "=== Wiping partition signatures ==="
 wipefs -af "${USB1}-part2" "${USB1}-part3" "${USB2}-part2" "${USB2}-part3" "${NVME1}-part1" "${NVME2}-part1"
 
+# Stop any auto-assembled arrays again after wipefs
+echo ""
+echo "=== Stopping any auto-assembled arrays ==="
+sleep 2
+for md in /dev/md/md* /dev/md[0-9]* /dev/md1[0-9]*; do
+  [ -e "$md" ] && mdadm --stop "$md" 2>/dev/null || true
+done
+
+# Remove any lingering device nodes
+mdadm --remove /dev/md/boot 2>/dev/null || true
+mdadm --remove /dev/md/backup 2>/dev/null || true
+mdadm --remove /dev/md/blizzard0 2>/dev/null || true
+
+# Wait for devices to be fully released
+sleep 3
+
 echo ""
 echo "=== Creating RAID1 boot array (md/boot) ==="
 mdadm --create /dev/md/boot \
