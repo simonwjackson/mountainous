@@ -160,22 +160,24 @@
   };
 
   # Fix ownership of persistent directories on boot
-  # Workaround for impermanence not setting ownership correctly
-  systemd.services.fix-persistent-ownership = {
-    description = "Fix ownership of persistent directories";
-    wantedBy = ["local-fs.target"];
-    after = ["tundra-permafrost.mount"];
-    before = ["home-simonwjackson.mount" "tundra-igloo.mount"];
-    requiredBy = ["home-simonwjackson.mount" "tundra-igloo.mount"];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+  # Workaround for impermanence bug where parent directories are created with root ownership
+  # See: https://github.com/nix-community/impermanence/issues/74
+  systemd.tmpfiles.settings."10-persistent-ownership" = {
+    "/tundra/permafrost/home/simonwjackson".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0700";
     };
-    script = ''
-      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/home/simonwjackson
-      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/tundra/igloo
-      ${pkgs.coreutils}/bin/chown -R 1000:100 /tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson
-    '';
+    "/tundra/permafrost/tundra/igloo".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0700";
+    };
+    "/tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0755";
+    };
   };
 
   # SSH host keys in persistent storage
