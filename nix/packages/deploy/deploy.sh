@@ -38,15 +38,16 @@ generate_host_key() {
   echo "🔑 Generating new SSH host key for $hostname..."
 
   # Create temp directory for key generation
-  local temp_key_dir=$(mktemp -d)
-  trap "rm -rf $temp_key_dir" RETURN
+  local temp_key_dir
+  temp_key_dir=$(mktemp -d)
+  trap 'rm -rf "$temp_key_dir"' RETURN
 
   # Generate SSH host key (4096-bit RSA, no passphrase)
   ssh-keygen -t rsa -b 4096 -N "" -C "host-key-$hostname" \
     -f "$temp_key_dir/ssh_host_rsa_key" >/dev/null 2>&1
 
   # Encrypt private key with age using user's SSH public key
-  age --encrypt --recipient "$(cat ${ssh_key}.pub)" \
+  age --encrypt --recipient "$(cat "${ssh_key}.pub")" \
     < "$temp_key_dir/ssh_host_rsa_key" \
     > "$host_key_enc"
 
