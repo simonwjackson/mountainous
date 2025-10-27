@@ -36,11 +36,11 @@
 
   # Initrd kernel modules (loaded in early boot for hardware access)
   boot.initrd.availableKernelModules = [
-    "nvme"          # NVMe SSD support (WD SN740)
-    "xhci_pci"      # USB 3.2 controllers
-    "thunderbolt"   # Thunderbolt 4 support
-    "usb_storage"   # USB storage devices
-    "sd_mod"        # SD card reader (if present)
+    "nvme" # NVMe SSD support (WD SN740)
+    "xhci_pci" # USB 3.2 controllers
+    "thunderbolt" # Thunderbolt 4 support
+    "usb_storage" # USB storage devices
+    "sd_mod" # SD card reader (if present)
   ];
 
   # Early KMS for i915 (smooth graphical boot)
@@ -48,12 +48,12 @@
 
   # Common kernel modules (loaded after boot)
   boot.kernelModules = [
-    "i915"                    # Intel Iris Xe Graphics
-    "snd_sof_pci_intel_tgl"   # Sound Open Firmware (Realtek ALC298)
-    "iwlmvm"                  # Intel WiFi 6E AX211
-    "btusb"                   # Bluetooth
-    "hid_multitouch"          # Touchpad (Imagis) & Touchscreen (Goodix)
-    "intel_ishtp_hid"         # Intel Sensor Hub (2-in-1 features)
+    "i915" # Intel Iris Xe Graphics
+    "snd_sof_pci_intel_tgl" # Sound Open Firmware (Realtek ALC298)
+    "iwlmvm" # Intel WiFi 6E AX211
+    "btusb" # Bluetooth
+    "hid_multitouch" # Touchpad (Imagis) & Touchscreen (Goodix)
+    "intel_ishtp_hid" # Intel Sensor Hub (2-in-1 features)
   ];
 
   # Resume from hibernate
@@ -63,15 +63,24 @@
   mountainous = {
     profiles.base.enable = true;
 
+    # Enable Hyprland (Wayland compositor)
+    hyprland = {
+      enable = true;
+    };
+
     # Override base profile's impermanence - configure locally (like zao)
     impermanence.enable = lib.mkForce false;
   };
+
+  # Disable auto-cpufreq from base profile (conflicts with TLP)
+  # TLP is better for laptops with comprehensive device power management
+  services.auto-cpufreq.enable = lib.mkForce false;
 
   # Networking
   networking.hostName = "asana";
   networking.networkmanager = {
     enable = true;
-    wifi.powersave = true;  # Enable WiFi power saving on battery
+    wifi.powersave = true; # Enable WiFi power saving on battery
   };
 
   # Timezone
@@ -80,11 +89,11 @@
   # Graphics configuration for Intel Iris Xe (Raptor Lake-P integrated GPU)
   hardware.graphics = {
     enable = true;
-    enable32Bit = true;  # Support for 32-bit applications/games
+    enable32Bit = true; # Support for 32-bit applications/games
     extraPackages = with pkgs; [
-      intel-media-driver    # VAAPI driver for hardware video decode (LIBVA_DRIVER_NAME=iHD)
+      intel-media-driver # VAAPI driver for hardware video decode (LIBVA_DRIVER_NAME=iHD)
       intel-compute-runtime # OpenCL support for compute workloads
-      vpl-gpu-rt           # Intel Video Processing Library (VPL) for newer hardware
+      vpl-gpu-rt # Intel Video Processing Library (VPL) for newer hardware
     ];
   };
 
@@ -95,7 +104,7 @@
       antialias = true;
       hinting = {
         enable = true;
-        style = "slight";  # Light hinting for HiDPI displays
+        style = "slight"; # Light hinting for HiDPI displays
       };
       subpixel = {
         rgba = "rgb";
@@ -110,21 +119,21 @@
   services.libinput = {
     enable = true;
     touchpad = {
-      naturalScrolling = true;         # Two-finger scroll direction (macOS-style)
-      tapping = true;                  # Tap to click
-      disableWhileTyping = true;       # Prevent accidental touches while typing
-      accelProfile = "adaptive";       # Adaptive acceleration curve
-      scrollMethod = "twofinger";      # Two-finger scrolling
-      clickMethod = "clickfinger";     # Click behavior based on finger count
-      middleEmulation = false;         # Disable middle button emulation
-      tappingDragLock = false;         # Disable drag lock
+      naturalScrolling = true; # Two-finger scroll direction (macOS-style)
+      tapping = true; # Tap to click
+      disableWhileTyping = true; # Prevent accidental touches while typing
+      accelProfile = "adaptive"; # Adaptive acceleration curve
+      scrollMethod = "twofinger"; # Two-finger scrolling
+      clickMethod = "clickfinger"; # Click behavior based on finger count
+      middleEmulation = false; # Disable middle button emulation
+      tappingDragLock = false; # Disable drag lock
     };
   };
 
   # Wacom stylus support (Wacom EMR digitizer)
   # Model: WCOM016A:00 2D1F:0185 (I2C HID)
   # Features: Pressure sensitivity, tilt detection, hover detection, button support
-  services.xserver.wacom.enable = true;  # Works for both X11 and Wayland
+  services.xserver.wacom.enable = true; # Works for both X11 and Wayland
 
   # Audio configuration
   # Hardware: Realtek ALC298 codec via Intel Alder Lake-P PCH HDA
@@ -137,10 +146,10 @@
     enable = true;
     alsa = {
       enable = true;
-      support32Bit = true;  # 32-bit application support
+      support32Bit = true; # 32-bit application support
     };
-    pulse.enable = true;    # PulseAudio compatibility layer
-    jack.enable = true;     # JACK audio compatibility (optional, for pro audio)
+    pulse.enable = true; # PulseAudio compatibility layer
+    jack.enable = true; # JACK audio compatibility (optional, for pro audio)
   };
 
   # Disable PulseAudio (conflicts with PipeWire)
@@ -151,11 +160,11 @@
   # Driver: btusb, btintel
   hardware.bluetooth = {
     enable = true;
-    powerOnBoot = true;  # Power on Bluetooth adapter on boot
+    powerOnBoot = true; # Power on Bluetooth adapter on boot
     settings = {
       General = {
-        Enable = "Source,Sink,Media,Socket";  # Enable all audio profiles
-        Experimental = true;  # Enable experimental features (better codec support)
+        Enable = "Source,Sink,Media,Socket"; # Enable all audio profiles
+        Experimental = true; # Enable experimental features (better codec support)
       };
     };
   };
@@ -327,30 +336,30 @@
     git
 
     # Power management
-    powertop        # Power consumption monitoring
-    tlp             # TLP CLI tools
-    acpi            # Battery and AC adapter info
+    powertop # Power consumption monitoring
+    tlp # TLP CLI tools
+    acpi # Battery and AC adapter info
 
     # Display & input
-    brightnessctl   # Modern backlight control (user in video group can use without sudo)
-    libwacom        # Wacom device support library
+    brightnessctl # Modern backlight control (user in video group can use without sudo)
+    libwacom # Wacom device support library
     xf86-input-wacom # Wacom driver (X11 and Wayland compatible)
-    onboard         # On-screen keyboard for tablet mode
+    onboard # On-screen keyboard for tablet mode
 
     # Audio
-    pavucontrol     # PulseAudio/PipeWire volume control GUI
-    alsa-utils      # ALSA utilities (alsamixer, aplay, arecord, etc.)
+    pavucontrol # PulseAudio/PipeWire volume control GUI
+    alsa-utils # ALSA utilities (alsamixer, aplay, arecord, etc.)
 
     # Hardware monitoring
-    lm_sensors      # Temperature monitoring (sensors command)
-    htop            # Process monitor
-    btop            # Beautiful process monitor
-    nvme-cli        # NVMe health monitoring
-    smartmontools   # Drive health (smartctl)
-    usbutils        # lsusb
-    pciutils        # lspci
-    dmidecode       # Hardware info
-    inxi            # System information tool
+    lm_sensors # Temperature monitoring (sensors command)
+    htop # Process monitor
+    btop # Beautiful process monitor
+    nvme-cli # NVMe health monitoring
+    smartmontools # Drive health (smartctl)
+    usbutils # lsusb
+    pciutils # lspci
+    dmidecode # Hardware info
+    inxi # System information tool
   ];
 
   # Enable fstrim for SSD maintenance (weekly TRIM)
