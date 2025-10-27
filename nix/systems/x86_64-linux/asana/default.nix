@@ -17,6 +17,9 @@
     efi.canTouchEfiVariables = true;
   };
 
+  # Intel microcode updates (critical for security and stability)
+  hardware.cpu.intel.updateMicrocode = true;
+
   # Kernel parameters for better power management and sleep
   boot.kernelParams = [
     # Try deep sleep if BIOS supports (fallback to s2idle)
@@ -28,12 +31,37 @@
     "i915.enable_psr=2"
   ];
 
+  # Initrd kernel modules (loaded in early boot for hardware access)
+  boot.initrd.availableKernelModules = [
+    "nvme"          # NVMe SSD support (WD SN740)
+    "xhci_pci"      # USB 3.2 controllers
+    "thunderbolt"   # Thunderbolt 4 support
+    "usb_storage"   # USB storage devices
+    "sd_mod"        # SD card reader (if present)
+  ];
+
+  # Early KMS for i915 (smooth graphical boot)
+  boot.initrd.kernelModules = ["i915"];
+
+  # Common kernel modules (loaded after boot)
+  boot.kernelModules = [
+    "i915"                    # Intel Iris Xe Graphics
+    "snd_sof_pci_intel_tgl"   # Sound Open Firmware (Realtek ALC298)
+    "iwlmvm"                  # Intel WiFi 6E AX211
+    "btusb"                   # Bluetooth
+    "hid_multitouch"          # Touchpad (Imagis) & Touchscreen (Goodix)
+    "intel_ishtp_hid"         # Intel Sensor Hub (2-in-1 features)
+  ];
+
   # Resume from hibernate
   boot.resumeDevice = "/dev/disk/by-label/swap";
 
   # Enable base profile
   mountainous = {
     profiles.base.enable = true;
+
+    # Override base profile's impermanence - configure locally (like zao)
+    impermanence.enable = lib.mkForce false;
   };
 
   # Networking
@@ -49,6 +77,60 @@
     extraGroups = ["wheel" "networkmanager" "video"];
   };
 
+  # Configure ephemeral root filesystem (tmpfs) for impermanence
+  # Root is wiped on every boot - only /tundra/permafrost persists
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+    options = ["defaults" "size=2G" "mode=755"];
+  };
+
+  # Mark persistent storage as needed early in boot
+  fileSystems."/tundra/permafrost".neededForBoot = true;
+
+  # Local impermanence configuration for asana (following zao's pattern)
+  environment.persistence."/tundra/permafrost" = {
+    hideMounts = true;
+    directories = [
+      "/nix" # Nix store must persist (large, contains all packages)
+      "/var/lib/systemd/coredump"
+      "/var/lib/nixos"
+      "/var/lib/tailscale"
+      "/var/log"
+      {
+        directory = "/home/simonwjackson";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0700";
+      }
+      {
+        directory = "/nix/var/nix/profiles/per-user/simonwjackson";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0755";
+      }
+    ];
+    files = [
+      "/etc/machine-id"
+    ];
+  };
+
+  # Fix ownership of persistent directories on boot
+  # Workaround for impermanence bug where parent directories are created with root ownership
+  # See: https://github.com/nix-community/impermanence/issues/74
+  systemd.tmpfiles.settings."10-persistent-ownership" = {
+    "/tundra/permafrost/home/simonwjackson".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0700";
+    };
+    "/tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0755";
+    };
+  };
+
   # SSH configuration
   services.openssh = {
     enable = true;
@@ -56,6 +138,16 @@
       PermitRootLogin = "prohibit-password";
       PasswordAuthentication = false;
     };
+
+    # SSH host keys in persistent storage
+    # Keys will need to exist in /tundra/permafrost/etc/ssh/ before first boot
+    hostKeys = [
+      {
+        path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
+        type = "rsa";
+        bits = 4096;
+      }
+    ];
   };
 
   # Suspend-then-hibernate after 30 minutes
@@ -123,6 +215,9 @@
     powertop # For monitoring power consumption
     tlp # TLP CLI tools
   ];
+
+  # Enable fstrim for SSD maintenance (weekly TRIM)
+  services.fstrim.enable = true;
 
   # Enable flakes
   nix.settings = {

@@ -4,7 +4,7 @@
 **Hardware**: Samsung Galaxy Book3 Pro 360 (NP960QFG-KA1US)
 **Goal**: Complete NixOS configuration with full hardware support
 
-**Current Status**: Pre-deployment configuration phase
+**Current Status**: Pre-deployment configuration phase - Priority 1 Complete ✅
 **Last Updated**: 2025-10-27
 
 ---
@@ -71,69 +71,45 @@ If battery drain is still unacceptable:
 
 **These tasks can be completed NOW before deploying to hardware.**
 
-## ⚠️ Critical Issue: Disk Configuration
+## ✅ Critical Issue: Disk Configuration - RESOLVED
 
-**Priority**: MUST FIX BEFORE DEPLOYMENT
+**Priority**: ~~MUST FIX BEFORE DEPLOYMENT~~ **COMPLETED**
 
-Current `disko.nix` is misconfigured:
-- [ ] **Fix device path**: Change `/dev/sda` → `/dev/nvme0n1`
-- [ ] **Decision needed**: Keep LUKS2+Btrfs (current on-disk) or switch to plain ext4?
-  - Current on-disk: LUKS2 encrypted, Btrfs with subvolumes, impermanence
-  - disko.nix draft: Plain ext4 (simpler but loses encryption)
-- [ ] **Update partition layout** to match one of:
-  - **Option A (Preserve)**: BIOS boot (1M) + EFI (512M) + LUKS2 (rest) with Btrfs
-  - **Option B (Simplify)**: EFI (512M) + swap (20G) + root ext4 (rest)
-
-**⚠️ WARNING**: Deploying with wrong disk config will destroy data. Decide strategy first.
+Disk configuration has been fixed:
+- [x] **Fixed device path**: Changed `/dev/sda` → `/dev/nvme0n1`
+- [x] **Decision made**: Keeping LUKS2+Btrfs (preserve encryption)
+  - Configuration: LUKS2 encrypted, Btrfs with subvolumes, impermanence configured
+- [x] **Updated partition layout**: EFI (512M) + swap (20G) + LUKS2 (rest) with Btrfs
+  - Subvolumes configured: @root (unused - tmpfs instead), @nix, @persist → /tundra/permafrost, @log
+  - SSD optimizations: compress=zstd, noatime, discard=async
+  - LUKS2 with Argon2id key derivation
+- [x] **Impermanence**: tmpfs root (ephemeral), persistent storage at /tundra/permafrost, local config (zao pattern)
 
 ---
 
-## Priority 1: Core System (Critical for Boot)
+## ✅ Priority 1: Core System (Critical for Boot) - COMPLETED
 
 ### Boot & Firmware
 - [x] Configure systemd-boot for UEFI
 - [x] Enable EFI variable modification
 - [x] Configure swap (20GB for hibernate support)
 - [x] Set boot.resumeDevice for hibernate
-- [ ] Add Intel microcode updates (`hardware.cpu.intel.updateMicrocode`)
-- [ ] Configure initrd kernel modules:
-  ```nix
-  boot.initrd.availableKernelModules = [
-    "nvme"          # NVMe SSD support
-    "xhci_pci"      # USB 3.2 controller
-    "thunderbolt"   # Thunderbolt 4
-    "usb_storage"   # USB storage devices
-    "sd_mod"        # SD card (if present)
-  ];
-  ```
-- [ ] Configure early KMS for graphics:
-  ```nix
-  boot.initrd.kernelModules = [ "i915" ];
-  ```
-- [ ] Add common kernel modules:
-  ```nix
-  boot.kernelModules = [
-    "i915"                        # Intel graphics
-    "snd_sof_pci_intel_tgl"       # Audio (SOF)
-    "iwlmvm"                      # WiFi
-    "btusb"                       # Bluetooth
-    "hid_multitouch"              # Touchpad/touchscreen
-    "intel_ishtp_hid"             # Sensor hub (2-in-1 features)
-  ];
-  ```
+- [x] Add Intel microcode updates (`hardware.cpu.intel.updateMicrocode = true`)
+- [x] Configure initrd kernel modules (nvme, xhci_pci, thunderbolt, usb_storage, sd_mod)
+- [x] Configure early KMS for i915 graphics
+- [x] Add common kernel modules (i915, snd_sof_pci_intel_tgl, iwlmvm, btusb, hid_multitouch, intel_ishtp_hid)
 
-### Storage & Filesystem (After fixing disko.nix)
-- [ ] Configure filesystem mount options for SSD:
-  ```nix
-  fileSystems."/".options = [ "noatime" "nodiratime" ];
-  ```
-- [ ] Enable fstrim for SSD maintenance:
-  ```nix
-  services.fstrim.enable = true;
-  ```
-- [ ] If using LUKS2: Add to crypttab config
-- [ ] If using Btrfs: Configure subvolumes
-- [ ] If using impermanence: Add impermanence module
+### Storage & Filesystem
+- [x] Configure filesystem mount options for SSD (noatime, nodiratime, discard=async, compress=zstd)
+- [x] Enable fstrim service for SSD maintenance
+- [x] LUKS2 configured with Argon2id key derivation
+- [x] Btrfs subvolumes configured (@root, @nix, @persist → /tundra/permafrost, @log)
+- [x] Impermanence configured (tmpfs root, local config following zao's pattern)
+  - [x] tmpfs root filesystem (ephemeral, 2GB RAM)
+  - [x] Persistent storage at /tundra/permafrost
+  - [x] environment.persistence configuration
+  - [x] systemd tmpfiles ownership fixes
+  - [x] SSH host keys in persistent storage
 
 ---
 
@@ -160,13 +136,6 @@ Current `disko.nix` is misconfigured:
   ```nix
   boot.kernelParams = [ "video=eDP-1:2880x1800@60" ];
   ```
-- [ ] Install backlight control tool:
-  ```nix
-  environment.systemPackages = with pkgs; [
-    brightnessctl  # Modern backlight control
-  ];
-  ```
-- [x] User already in video group for backlight control
 - [ ] Configure HiDPI fonts:
   ```nix
   fonts = {
@@ -889,5 +858,5 @@ systemctl --failed
 ---
 
 **Last Updated**: 2025-10-27
-**Status**: Ready for pre-deployment configuration work
-**Next Step**: Fix disko.nix device path and encryption decision
+**Status**: Priority 1 Complete - Ready for Priority 2 (Graphics & Display)
+**Next Step**: Configure OpenGL/Vulkan support, HiDPI scaling, and backlight control
