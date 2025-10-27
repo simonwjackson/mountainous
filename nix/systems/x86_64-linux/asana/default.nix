@@ -123,6 +123,26 @@
   # Features: Pressure sensitivity, tilt detection, hover detection, button support
   services.xserver.wacom.enable = true;  # Works for both X11 and Wayland
 
+  # Audio configuration
+  # Hardware: Realtek ALC298 codec via Intel Alder Lake-P PCH HDA
+  # Driver: SOF (Sound Open Firmware) - sof-hda-dsp
+  sound.enable = true;
+
+  # PipeWire: Modern audio server (replaces PulseAudio)
+  # Provides low-latency audio, Bluetooth audio, and professional audio support
+  services.pipewire = {
+    enable = true;
+    alsa = {
+      enable = true;
+      support32Bit = true;  # 32-bit application support
+    };
+    pulse.enable = true;    # PulseAudio compatibility layer
+    jack.enable = true;     # JACK audio compatibility (optional, for pro audio)
+  };
+
+  # Disable PulseAudio (conflicts with PipeWire)
+  hardware.pulseaudio.enable = false;
+
   # User configuration
   users.users.simonwjackson = {
     isNormalUser = true;
@@ -269,6 +289,8 @@
     brightnessctl   # Modern backlight control (user in video group can use without sudo)
     libwacom        # Wacom device support library
     xf86-input-wacom # Wacom driver (X11 and Wayland compatible)
+    pavucontrol     # PulseAudio/PipeWire volume control GUI
+    alsa-utils      # ALSA utilities (alsamixer, aplay, arecord, etc.)
   ];
 
   # Enable fstrim for SSD maintenance (weekly TRIM)

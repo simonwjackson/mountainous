@@ -4,7 +4,7 @@
 **Hardware**: Samsung Galaxy Book3 Pro 360 (NP960QFG-KA1US)
 **Goal**: Complete NixOS configuration with full hardware support
 
-**Current Status**: Pre-deployment configuration phase - Priority 1, 2 & 3 Complete ✅
+**Current Status**: Pre-deployment configuration phase - Priority 1-4 Complete ✅
 **Last Updated**: 2025-10-27
 
 ---
@@ -145,33 +145,16 @@ Disk configuration has been fixed:
 
 ---
 
-## Priority 4: Audio
+## ✅ Priority 4: Audio - COMPLETED
 
 ### Audio Configuration (SOF - Sound Open Firmware)
-- [ ] Enable sound:
-  ```nix
-  sound.enable = true;
-  ```
-- [ ] Enable PipeWire (modern audio server):
-  ```nix
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;  # PulseAudio compatibility
-    jack.enable = true;   # JACK compatibility (optional)
-  };
-
-  # Disable PulseAudio (conflicts with PipeWire)
-  hardware.pulseaudio.enable = false;
-  ```
-- [ ] Add audio packages:
-  ```nix
-  environment.systemPackages = with pkgs; [
-    pavucontrol  # GUI volume control
-    alsa-utils   # alsamixer, aplay, etc.
-  ];
-  ```
+- [x] Enable sound subsystem (sound.enable = true)
+- [x] Enable PipeWire audio server
+  - [x] ALSA support enabled (including 32-bit)
+  - [x] PulseAudio compatibility layer enabled
+  - [x] JACK compatibility enabled (for pro audio)
+- [x] Disable PulseAudio (hardware.pulseaudio.enable = false)
+- [x] Add audio packages (pavucontrol for GUI, alsa-utils for CLI tools)
 
 ---
 
@@ -821,5 +804,5 @@ systemctl --failed
 ---
 
 **Last Updated**: 2025-10-27
-**Status**: Priority 1, 2 & 3 Complete - Ready for Priority 4 (Audio)
-**Next Step**: Enable PipeWire audio server with SOF drivers for Realtek ALC298
+**Status**: Priority 1-4 Complete - Ready for Priority 5 (Network)
+**Next Step**: Configure WiFi 6E (Intel AX211) and Bluetooth with NetworkManager
