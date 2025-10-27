@@ -101,6 +101,28 @@
     };
   };
 
+  # Input device configuration for 2-in-1 convertible
+  # Touchpad: Imagis IMG4100 (I2C HID)
+  # Touchscreen: Goodix GXTP7936 (I2C HID, 10-point multi-touch)
+  services.libinput = {
+    enable = true;
+    touchpad = {
+      naturalScrolling = true;         # Two-finger scroll direction (macOS-style)
+      tapping = true;                  # Tap to click
+      disableWhileTyping = true;       # Prevent accidental touches while typing
+      accelProfile = "adaptive";       # Adaptive acceleration curve
+      scrollMethod = "twofinger";      # Two-finger scrolling
+      clickMethod = "clickfinger";     # Click behavior based on finger count
+      middleEmulation = false;         # Disable middle button emulation
+      tappingDragLock = false;         # Disable drag lock
+    };
+  };
+
+  # Wacom stylus support (Wacom EMR digitizer)
+  # Model: WCOM016A:00 2D1F:0185 (I2C HID)
+  # Features: Pressure sensitivity, tilt detection, hover detection, button support
+  services.xserver.wacom.enable = true;  # Works for both X11 and Wayland
+
   # User configuration
   users.users.simonwjackson = {
     isNormalUser = true;
@@ -242,9 +264,11 @@
   environment.systemPackages = with pkgs; [
     neovim
     git
-    powertop      # Power consumption monitoring
-    tlp           # TLP CLI tools
-    brightnessctl # Modern backlight control (user in video group can use without sudo)
+    powertop        # Power consumption monitoring
+    tlp             # TLP CLI tools
+    brightnessctl   # Modern backlight control (user in video group can use without sudo)
+    libwacom        # Wacom device support library
+    xf86-input-wacom # Wacom driver (X11 and Wayland compatible)
   ];
 
   # Enable fstrim for SSD maintenance (weekly TRIM)
