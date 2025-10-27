@@ -17,7 +17,8 @@
               };
             };
             swap = {
-              size = "2G";
+              size = "20G";  # Increased from 2G for hibernate support (16GB RAM + overhead)
+              label = "swap";
               content = {
                 type = "swap";
                 resumeDevice = true;
