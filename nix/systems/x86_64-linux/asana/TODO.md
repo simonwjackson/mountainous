@@ -4,7 +4,7 @@
 **Hardware**: Samsung Galaxy Book3 Pro 360 (NP960QFG-KA1US)
 **Goal**: Complete NixOS configuration with full hardware support
 
-**Current Status**: Pre-deployment configuration phase - Priority 1 Complete ✅
+**Current Status**: Pre-deployment configuration phase - Priority 1 & 2 Complete ✅
 **Last Updated**: 2025-10-27
 
 ---
@@ -113,39 +113,17 @@ Disk configuration has been fixed:
 
 ---
 
-## Priority 2: Graphics & Display
+## ✅ Priority 2: Graphics & Display - COMPLETED
 
 ### Intel Graphics Driver
-- [ ] Enable OpenGL/Vulkan support:
-  ```nix
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;  # For 32-bit apps/games
-    extraPackages = with pkgs; [
-      intel-media-driver    # VAAPI (hardware video decode)
-      intel-compute-runtime # OpenCL
-      vpl-gpu-rt           # Intel VPL (Video Processing Library)
-    ];
-  };
-  ```
+- [x] Enable OpenGL/Vulkan support (hardware.graphics with enable32Bit)
+- [x] Add Intel media drivers (intel-media-driver for VAAPI, intel-compute-runtime for OpenCL, vpl-gpu-rt for VPL)
 - [x] Kernel parameters already set (i915.fastboot, enable_fbc, enable_psr)
 
 ### Display & HiDPI Configuration
-- [ ] Add display resolution hint (optional):
-  ```nix
-  boot.kernelParams = [ "video=eDP-1:2880x1800@60" ];
-  ```
-- [ ] Configure HiDPI fonts:
-  ```nix
-  fonts = {
-    fontconfig = {
-      enable = true;
-      antialias = true;
-      hinting.enable = true;
-    };
-  };
-  ```
+- [x] Add display resolution hint for 3K OLED panel (video=eDP-1:2880x1800@60)
+- [x] Install brightnessctl for backlight control
+- [x] Configure HiDPI fonts with antialiasing, hinting, and subpixel rendering
 
 ---
 
@@ -858,5 +836,5 @@ systemctl --failed
 ---
 
 **Last Updated**: 2025-10-27
-**Status**: Priority 1 Complete - Ready for Priority 2 (Graphics & Display)
-**Next Step**: Configure OpenGL/Vulkan support, HiDPI scaling, and backlight control
+**Status**: Priority 1 & 2 Complete - Ready for Priority 3 (Input Devices)
+**Next Step**: Configure touchpad, touchscreen, and Wacom stylus with libinput

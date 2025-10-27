@@ -29,6 +29,9 @@
     "i915.fastboot=1"
     "i915.enable_fbc=1"
     "i915.enable_psr=2"
+
+    # Display resolution hint for native 3K OLED panel
+    "video=eDP-1:2880x1800@60"
   ];
 
   # Initrd kernel modules (loaded in early boot for hardware access)
@@ -70,6 +73,33 @@
 
   # Timezone
   time.timeZone = "UTC";
+
+  # Graphics configuration for Intel Iris Xe (Raptor Lake-P integrated GPU)
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;  # Support for 32-bit applications/games
+    extraPackages = with pkgs; [
+      intel-media-driver    # VAAPI driver for hardware video decode (LIBVA_DRIVER_NAME=iHD)
+      intel-compute-runtime # OpenCL support for compute workloads
+      vpl-gpu-rt           # Intel Video Processing Library (VPL) for newer hardware
+    ];
+  };
+
+  # HiDPI font configuration for 3K display (2880x1800, ~226 PPI)
+  fonts = {
+    fontconfig = {
+      enable = true;
+      antialias = true;
+      hinting = {
+        enable = true;
+        style = "slight";  # Light hinting for HiDPI displays
+      };
+      subpixel = {
+        rgba = "rgb";
+        lcdfilter = "default";
+      };
+    };
+  };
 
   # User configuration
   users.users.simonwjackson = {
@@ -212,8 +242,9 @@
   environment.systemPackages = with pkgs; [
     neovim
     git
-    powertop # For monitoring power consumption
-    tlp # TLP CLI tools
+    powertop      # Power consumption monitoring
+    tlp           # TLP CLI tools
+    brightnessctl # Modern backlight control (user in video group can use without sudo)
   ];
 
   # Enable fstrim for SSD maintenance (weekly TRIM)
