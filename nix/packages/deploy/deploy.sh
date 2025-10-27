@@ -28,18 +28,52 @@ install -d -m700 "$temp/$USER_HOME/.ssh"
 install -d -m700 "$temp/tundra/igloo"
 install -d -m755 "$temp/etc/ssh"
 
-# Decrypt and place host SSH key
+# Function to generate and encrypt SSH host key
+generate_host_key() {
+  local hostname="$1"
+  local ssh_key="$2"
+  local host_key_enc="$3"
+  local host_key_pub="${host_key_enc%.age}.pub"
+
+  echo "🔑 Generating new SSH host key for $hostname..."
+
+  # Create temp directory for key generation
+  local temp_key_dir=$(mktemp -d)
+  trap "rm -rf $temp_key_dir" RETURN
+
+  # Generate SSH host key (4096-bit RSA, no passphrase)
+  ssh-keygen -t rsa -b 4096 -N "" -C "host-key-$hostname" \
+    -f "$temp_key_dir/ssh_host_rsa_key" >/dev/null 2>&1
+
+  # Encrypt private key with age using user's SSH public key
+  age --encrypt --recipient "$(cat ${ssh_key}.pub)" \
+    < "$temp_key_dir/ssh_host_rsa_key" \
+    > "$host_key_enc"
+
+  # Copy public key
+  cp "$temp_key_dir/ssh_host_rsa_key.pub" "$host_key_pub"
+
+  # Stage keys in git for manual review
+  git add "$host_key_enc" "$host_key_pub" 2>/dev/null || true
+
+  echo "✅ Generated and encrypted host SSH key"
+  echo "📝 Keys staged in git - review and commit before deploying to production"
+}
+
+# Decrypt and place host SSH key (generate if doesn't exist)
 HOST_KEY_ENC="secrets/keys/hosts/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key.age"
 if [ -f "$HOST_KEY_ENC" ]; then
-  echo "Decrypting host SSH key..."
-  age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" >"$temp/etc/ssh/ssh_host_rsa_key"
-  chmod 600 "$temp/etc/ssh/ssh_host_rsa_key"
-  cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
-  chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
+  echo "🔓 Using existing host SSH key..."
 else
-  echo "Error: Host SSH key not found at $HOST_KEY_ENC"
-  exit 1
+  echo "⚠️  Host SSH key not found - generating new key..."
+  generate_host_key "$HOSTNAME" "$SSH_KEY" "$HOST_KEY_ENC"
 fi
+
+echo "🔓 Decrypting host SSH key..."
+age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" >"$temp/etc/ssh/ssh_host_rsa_key"
+chmod 600 "$temp/etc/ssh/ssh_host_rsa_key"
+cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
+chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
 
 # Check for manual-disko.sh script
 MANUAL_DISKO_SCRIPT="nix/systems/x86_64-linux/${HOSTNAME}/manual-disko.sh"
