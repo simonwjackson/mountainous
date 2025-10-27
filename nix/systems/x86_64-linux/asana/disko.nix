@@ -25,7 +25,6 @@
             # Swap partition (20GB for hibernate support with 16GB RAM)
             swap = {
               size = "20G";
-              label = "swap";
               content = {
                 type = "swap";
                 resumeDevice = true;  # Enable hibernate resume

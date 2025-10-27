@@ -134,6 +134,7 @@ nixos-anywhere \
   --flake ".#$HOSTNAME" \
   --extra-files "$temp" \
   --phases "$NIXOS_PHASES" \
+  --no-substitute-on-destination \
   --target-host "$TARGET"
 
 # Set correct ownership of directories

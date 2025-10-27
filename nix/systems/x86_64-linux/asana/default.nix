@@ -152,7 +152,7 @@
   };
 
   # Disable PulseAudio (conflicts with PipeWire)
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
 
   # Bluetooth configuration
   # Hardware: Intel WiFi 6E AX211 (integrated Bluetooth)
@@ -275,11 +275,10 @@
   '';
 
   # Lid close behavior
-  services.logind = {
-    lidSwitch = "suspend-then-hibernate";
-    lidSwitchExternalPower = "suspend-then-hibernate";
-    # Use new settings format instead of extraConfig
-    powerKey = "suspend-then-hibernate";
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend-then-hibernate";
+    HandleLidSwitchExternalPower = "suspend-then-hibernate";
+    HandlePowerKey = "suspend-then-hibernate";
   };
 
   # TLP for comprehensive power management
