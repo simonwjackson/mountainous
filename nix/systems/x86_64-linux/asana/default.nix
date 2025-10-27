@@ -56,8 +56,7 @@
     "intel_ishtp_hid" # Intel Sensor Hub (2-in-1 features)
   ];
 
-  # Resume from hibernate
-  boot.resumeDevice = "/dev/disk/by-label/swap";
+  # Resume from hibernate: Automatically configured by disko.nix (resumeDevice = true on swap partition)
 
   # Enable base profile
   mountainous = {
@@ -83,8 +82,8 @@
     wifi.powersave = true; # Enable WiFi power saving on battery
   };
 
-  # Timezone
-  time.timeZone = "UTC";
+  # Timezone: Managed automatically by services.automatic-timezoned (from base profile)
+  # This is better for laptops that may travel between time zones
 
   # Graphics configuration for Intel Iris Xe (Raptor Lake-P integrated GPU)
   hardware.graphics = {
@@ -138,7 +137,7 @@
   # Audio configuration
   # Hardware: Realtek ALC298 codec via Intel Alder Lake-P PCH HDA
   # Driver: SOF (Sound Open Firmware) - sof-hda-dsp
-  sound.enable = true;
+  # Note: sound.enable is deprecated - PipeWire handles ALSA automatically
 
   # PipeWire: Modern audio server (replaces PulseAudio)
   # Provides low-latency audio, Bluetooth audio, and professional audio support
@@ -279,9 +278,8 @@
   services.logind = {
     lidSwitch = "suspend-then-hibernate";
     lidSwitchExternalPower = "suspend-then-hibernate";
-    extraConfig = ''
-      HandlePowerKey=suspend-then-hibernate
-    '';
+    # Use new settings format instead of extraConfig
+    powerKey = "suspend-then-hibernate";
   };
 
   # TLP for comprehensive power management
@@ -343,7 +341,7 @@
     # Display & input
     brightnessctl # Modern backlight control (user in video group can use without sudo)
     libwacom # Wacom device support library
-    xf86-input-wacom # Wacom driver (X11 and Wayland compatible)
+    xf86_input_wacom # Wacom driver (X11 and Wayland compatible)
     onboard # On-screen keyboard for tablet mode
 
     # Audio
