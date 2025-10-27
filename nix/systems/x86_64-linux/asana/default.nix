@@ -69,7 +69,10 @@
 
   # Networking
   networking.hostName = "asana";
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    wifi.powersave = true;  # Enable WiFi power saving on battery
+  };
 
   # Timezone
   time.timeZone = "UTC";
@@ -142,6 +145,23 @@
 
   # Disable PulseAudio (conflicts with PipeWire)
   hardware.pulseaudio.enable = false;
+
+  # Bluetooth configuration
+  # Hardware: Intel WiFi 6E AX211 (integrated Bluetooth)
+  # Driver: btusb, btintel
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;  # Power on Bluetooth adapter on boot
+    settings = {
+      General = {
+        Enable = "Source,Sink,Media,Socket";  # Enable all audio profiles
+        Experimental = true;  # Enable experimental features (better codec support)
+      };
+    };
+  };
+
+  # Blueman: Bluetooth manager GUI
+  services.blueman.enable = true;
 
   # User configuration
   users.users.simonwjackson = {

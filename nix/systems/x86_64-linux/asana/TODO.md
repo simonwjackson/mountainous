@@ -4,7 +4,7 @@
 **Hardware**: Samsung Galaxy Book3 Pro 360 (NP960QFG-KA1US)
 **Goal**: Complete NixOS configuration with full hardware support
 
-**Current Status**: Pre-deployment configuration phase - Priority 1-4 Complete ✅
+**Current Status**: Pre-deployment configuration phase - Priority 1-5 Complete ✅
 **Last Updated**: 2025-10-27
 
 ---
@@ -158,34 +158,20 @@ Disk configuration has been fixed:
 
 ---
 
-## Priority 5: Network
+## ✅ Priority 5: Network - COMPLETED
 
 ### WiFi (Intel AX211 WiFi 6E)
-- [ ] Enable NetworkManager:
-  ```nix
-  networking.networkmanager.enable = true;
-  ```
+- [x] Enable NetworkManager
 - [x] User already in networkmanager group
-- [ ] Configure WiFi power management:
-  ```nix
-  networking.networkmanager.wifi.powersave = true;
-  ```
+- [x] Configure WiFi power management (wifi.powersave = true)
+- [x] WiFi ready for 2.4 GHz, 5 GHz, and 6 GHz bands
 
 ### Bluetooth
-- [ ] Enable Bluetooth:
-  ```nix
-  hardware.bluetooth = {
-    enable = true;
-    powerOnBoot = true;
-    settings = {
-      General = {
-        Enable = "Source,Sink,Media,Socket";
-        Experimental = true;  # Enable experimental features
-      };
-    };
-  };
-  services.blueman.enable = true;  # Bluetooth manager GUI
-  ```
+- [x] Enable Bluetooth hardware support
+- [x] Power on boot enabled
+- [x] Configure bluez with all audio profiles (Source, Sink, Media, Socket)
+- [x] Enable experimental features (better codec support)
+- [x] Enable blueman GUI for device management
 
 ---
 
@@ -804,5 +790,5 @@ systemctl --failed
 ---
 
 **Last Updated**: 2025-10-27
-**Status**: Priority 1-4 Complete - Ready for Priority 5 (Network)
-**Next Step**: Configure WiFi 6E (Intel AX211) and Bluetooth with NetworkManager
+**Status**: Priority 1-5 Complete - Ready for Priority 6 (Power Management)
+**Next Step**: Enable thermald and add power monitoring tools
