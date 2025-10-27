@@ -38,19 +38,9 @@
                 type = "luks";
                 name = "asana-root";  # LUKS device name
 
-                # LUKS2 settings for better security and performance
+                # LUKS2 settings
+                # Note: Disko's luks type uses cryptsetup defaults (LUKS2, aes-xts-plain64, argon2id)
                 settings = {
-                  # Use LUKS2 format
-                  type = "luks2";
-
-                  # Use strong encryption (AES-XTS with 512-bit key)
-                  cipher = "aes-xts-plain64";
-                  keySize = 512;
-
-                  # Use Argon2id for key derivation (more secure than PBKDF2)
-                  # Note: Requires LUKS2 format
-                  pbkdfAlgo = "argon2id";
-
                   # Allow discards for SSD TRIM support
                   allowDiscards = true;
                 };
@@ -60,21 +50,11 @@
                   type = "btrfs";
                   extraArgs = ["-f"];  # Force if needed
 
-                  # Btrfs subvolumes for impermanence
+                  # Btrfs subvolumes for persistent storage
+                  # Following frostbite pattern: separate subvolumes for /nix and /var/log
+                  # This avoids tmpfs issues during installation
                   subvolumes = {
-                    # Root subvolume (ephemeral - wiped on boot with impermanence)
-                    "@root" = {
-                      mountpoint = "/";
-                      mountOptions = [
-                        "compress=zstd"      # Enable compression
-                        "noatime"            # Don't update access times (SSD optimization)
-                        "nodiratime"         # Don't update directory access times
-                        "discard=async"      # Async TRIM for SSD
-                        "space_cache=v2"     # Use space cache v2
-                      ];
-                    };
-
-                    # Nix store subvolume (persistent)
+                    # Nix store subvolume (persistent, direct mount)
                     "@nix" = {
                       mountpoint = "/nix";
                       mountOptions = [
@@ -86,9 +66,9 @@
                       ];
                     };
 
-                    # Persistent data subvolume (survives reboots)
-                    "@persist" = {
-                      mountpoint = "/tundra/permafrost";
+                    # System logs subvolume (persistent, direct mount)
+                    "@log" = {
+                      mountpoint = "/var/log";
                       mountOptions = [
                         "compress=zstd"
                         "noatime"
@@ -98,9 +78,9 @@
                       ];
                     };
 
-                    # System logs subvolume (persistent)
-                    "@log" = {
-                      mountpoint = "/var/log";
+                    # Other persistent data (home, machine-id, etc.)
+                    "@permafrost" = {
+                      mountpoint = "/tundra/permafrost";
                       mountOptions = [
                         "compress=zstd"
                         "noatime"
