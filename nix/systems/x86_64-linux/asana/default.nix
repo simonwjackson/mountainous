@@ -163,6 +163,22 @@
   # Blueman: Bluetooth manager GUI
   services.blueman.enable = true;
 
+  # 2-in-1 convertible features
+  # Sensor hub: Intel ISH with accelerometer, gyroscope, ALS, hinge sensor
+  # Enables automatic screen rotation and mode detection
+  hardware.sensor.iio.enable = true;
+
+  # Thunderbolt 4 support
+  # Hardware: Intel Thunderbolt 4 controller (Alder Lake-P)
+  # Features: PCIe tunneling, DisplayPort, USB, 40 Gbps bandwidth
+  services.hardware.bolt.enable = true;
+
+  # ACPI daemon for power button and lid switch events
+  services.acpid.enable = true;
+
+  # Firmware updates via fwupd (BIOS, Thunderbolt, etc.)
+  services.fwupd.enable = true;
+
   # User configuration
   users.users.simonwjackson = {
     isNormalUser = true;
@@ -300,17 +316,41 @@
     };
   };
 
-  # Packages for power monitoring and basic tools
+  # Thermald: Intel Dynamic Platform and Thermal Framework daemon
+  # Automatically manages CPU/GPU temperatures and prevents thermal throttling
+  services.thermald.enable = true;
+
+  # System packages: power monitoring, hardware tools, utilities
   environment.systemPackages = with pkgs; [
+    # Basic tools
     neovim
     git
+
+    # Power management
     powertop        # Power consumption monitoring
     tlp             # TLP CLI tools
+    acpi            # Battery and AC adapter info
+
+    # Display & input
     brightnessctl   # Modern backlight control (user in video group can use without sudo)
     libwacom        # Wacom device support library
     xf86-input-wacom # Wacom driver (X11 and Wayland compatible)
+    onboard         # On-screen keyboard for tablet mode
+
+    # Audio
     pavucontrol     # PulseAudio/PipeWire volume control GUI
     alsa-utils      # ALSA utilities (alsamixer, aplay, arecord, etc.)
+
+    # Hardware monitoring
+    lm_sensors      # Temperature monitoring (sensors command)
+    htop            # Process monitor
+    btop            # Beautiful process monitor
+    nvme-cli        # NVMe health monitoring
+    smartmontools   # Drive health (smartctl)
+    usbutils        # lsusb
+    pciutils        # lspci
+    dmidecode       # Hardware info
+    inxi            # System information tool
   ];
 
   # Enable fstrim for SSD maintenance (weekly TRIM)
