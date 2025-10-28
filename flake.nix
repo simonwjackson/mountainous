@@ -29,6 +29,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-anywhere.url = "github:nix-community/nixos-anywhere";
     hyprland.url = "github:hyprwm/Hyprland";
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+    };
     disko.url = "github:nix-community/disko";
     impermanence.url = "github:nix-community/impermanence";
     home-manager = {

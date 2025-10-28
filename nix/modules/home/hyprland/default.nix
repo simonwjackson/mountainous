@@ -477,6 +477,13 @@ in {
       default = {};
       description = "Additional settings to merge with the default configuration";
     };
+
+    # Add option for Hyprland plugins
+    plugins = mkOption {
+      type = types.listOf types.package;
+      default = [];
+      description = "List of Hyprland plugins to load";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -864,6 +871,7 @@ in {
       enable = true;
       package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
       portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+      plugins = cfg.plugins;
       settings = mergedSettings;
     };
   };

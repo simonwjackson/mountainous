@@ -1,27 +1,60 @@
-{pkgs, ...}: {
+{pkgs, inputs, ...}: {
   # Gaming handheld optimized home configuration
 
-  # Option: Hyprland for gaming (lightweight Wayland compositor)
-  # Uncomment to enable:
-  # mountainous.hyprland = {
-  #   enable = true;
-  #   extraSettings = {
-  #     monitor = [
-  #       # 7" 1920x1080 display at native resolution
-  #       "eDP-1,1920x1080@60,0x0,1.5" # 1.5x scale for HiDPI (314 PPI)
-  #     ];
-  #     exec-once = [
-  #       "systemctl --user start hyprland-session.target"
-  #       # Optional: Auto-launch Steam Big Picture
-  #       # "steam -bigpicture"
-  #     ];
-  #     # Gaming-friendly binds
-  #     bind = [
-  #       "SUPER, F1, exec, steam -bigpicture" # Quick Steam access
-  #       "SUPER, F2, exec, gamemode"          # Toggle gamemode
-  #     ];
-  #   };
-  # };
+  # Hyprland for gaming handheld with touch gesture support
+  mountainous.hyprland = {
+    enable = true;
+
+    # Note: Using libinput-gestures instead of hyprgrass due to version compatibility
+    # plugins = [];
+
+    extraSettings = {
+      monitor = [
+        # 7" 1920x1080 display at native resolution
+        "eDP-1,1920x1080@60,0x0,1.5" # 1.5x scale for HiDPI (314 PPI)
+      ];
+
+      exec-once = [
+        "systemctl --user start hyprland-session.target"
+        # Launch libinput-gestures for touch gesture support
+        "libinput-gestures"
+        # Auto-launch Steam Big Picture on workspace 1 (main workspace)
+        "[workspace 1 silent] steam -bigpicture"
+      ];
+
+      # Touch and gesture configuration
+      input = {
+        touchpad = {
+          natural_scroll = true;
+          tap-to-click = true;
+          tap-and-drag = true;
+          disable_while_typing = false; # Handheld - no traditional keyboard
+        };
+      };
+
+      gestures = {
+        workspace_swipe = true;
+        workspace_swipe_fingers = 3;
+        workspace_swipe_distance = 300;
+        workspace_swipe_forever = false;
+        workspace_swipe_cancel_ratio = 0.5;
+      };
+
+      # Gaming-friendly binds
+      bind = [
+        "SUPER, F1, exec, steam -bigpicture" # Quick Steam access
+        "SUPER, F2, exec, gamemode"          # Toggle gamemode
+      ];
+
+      # Window rules for gaming
+      windowrulev2 = [
+        # Steam should be on workspace 1, not special workspace
+        "workspace 1, class:^(steam)$"
+        # Steam should be fullscreen by default
+        "fullscreen, class:^(steam)$, title:^(Steam Big Picture Mode)$"
+      ];
+    };
+  };
 
   # Git configuration
   programs.git.extraConfig = {
@@ -39,10 +72,8 @@
     htop
     btop
 
-    # Gaming utilities
-    mangohud    # FPS overlay and performance monitoring
+    # Gaming utilities (mangohud, gamemode provided by mountainous.steam)
     goverlay    # MangoHud GUI configuration
-    gamemode    # Performance optimization for games
 
     # Controller testing
     jstest-gtk  # Gamepad testing GUI
@@ -58,6 +89,12 @@
 
     # Handheld utilities
     brightnessctl # Screen brightness control
+    wtype         # Wayland keyboard input emulator (for touch gestures)
+
+    # Touch gesture support
+    libinput-gestures
+    wmctrl        # Required by libinput-gestures
+    xdotool       # Required by libinput-gestures
 
     # Gaming launchers (besides Steam)
     # lutris      # Multi-platform game launcher
@@ -77,6 +114,9 @@
     GDK_SCALE = "2";
     GDK_DPI_SCALE = "0.75"; # 2 * 0.75 = 1.5x effective
   };
+
+  # libinput-gestures configuration for touch gestures
+  xdg.configFile."libinput-gestures.conf".source = ./libinput-gestures.conf;
 
   # XDG user directories for gaming saves, etc.
   xdg.userDirs = {

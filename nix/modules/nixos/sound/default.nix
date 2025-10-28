@@ -13,9 +13,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Enable sound subsystem
-    sound.enable = true;
-
     # Disable PulseAudio (using PipeWire instead)
     hardware.pulseaudio.enable = false;
 

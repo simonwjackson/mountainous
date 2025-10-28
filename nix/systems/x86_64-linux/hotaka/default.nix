@@ -96,18 +96,12 @@
       enable = true;
       enable32Bit = true; # Essential for gaming (32-bit games/libraries)
       extraPackages = with pkgs; [
-        # AMD Vulkan drivers
-        amdvlk
-        # AMD OpenCL
-        rocm-opencl-icd
-        rocm-opencl-runtime
+        # AMD Vulkan drivers (RADV is enabled by default, amdvlk was deprecated)
         # Video acceleration
         libva
         libvdpau-va-gl
       ];
-      extraPackages32 = with pkgs; [
-        driversi686Linux.amdvlk # 32-bit Vulkan for older games
-      ];
+      # 32-bit drivers (RADV is enabled by default)
     };
 
     # Enable AMD GPU OpenCL support
@@ -119,6 +113,21 @@
   networking.useDHCP = lib.mkDefault true;
   networking.networkmanager.enable = true;
   networking.networkmanager.wifi.powersave = false; # Disable WiFi powersave for gaming
+
+  # Auto-login to Hyprland for gaming handheld experience
+  services.greetd = {
+    enable = true;
+    settings = {
+      default_session = {
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        user = "greeter";
+      };
+      initial_session = {
+        command = "Hyprland";
+        user = "simonwjackson";
+      };
+    };
+  };
 
   # Enable profiles for gaming handheld
   mountainous = {
@@ -276,9 +285,11 @@
   # Gamemode for automatic performance switching
   programs.gamemode.enable = true;
 
-  # Steam with optimization
+  # Use mountainous Steam module for comprehensive Steam setup
+  mountainous.steam.enable = true;
+
+  # Additional Steam configuration
   programs.steam = {
-    enable = true;
     remotePlay.openFirewall = true;
     gamescopeSession.enable = true; # Steam Deck-like UI
   };
