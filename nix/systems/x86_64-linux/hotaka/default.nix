@@ -332,12 +332,31 @@
       Type = "oneshot";
       ExecStart = pkgs.writeShellScript "resume-fixes" ''
         # Reload MediaTek WiFi module to fix resume issues
-        # Must unload mt7921e first (depends on mt7921_common, mt792x_lib)
+        # First, find and bring down the WiFi interface to release the module
+        WIFI_INTERFACE=$(${pkgs.iproute2}/bin/ip link show | ${pkgs.gnugrep}/bin/grep -oP '^\d+: \K(wl[^:]+)' | head -n1)
+
+        if [ -n "$WIFI_INTERFACE" ]; then
+          echo "Bringing down WiFi interface: $WIFI_INTERFACE"
+          ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" down
+          sleep 1
+        fi
+
+        # Now unload modules in reverse dependency order
+        # mt7921e depends on mt7921_common, which depends on mt792x_lib
         ${pkgs.kmod}/bin/modprobe -r mt7921e
         ${pkgs.kmod}/bin/modprobe -r mt7921_common
         ${pkgs.kmod}/bin/modprobe -r mt792x_lib
         sleep 1
+
+        # Reload the driver
         ${pkgs.kmod}/bin/modprobe mt7921e
+        sleep 1
+
+        # Bring interface back up if we found one
+        if [ -n "$WIFI_INTERFACE" ]; then
+          echo "Bringing up WiFi interface: $WIFI_INTERFACE"
+          ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" up
+        fi
 
         # AMD GPU display wake workaround
         # Force display refresh after hibernate resume
