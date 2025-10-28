@@ -12,6 +12,10 @@
 
   # Boot configuration for AYANEO AIR (AMD Ryzen 5 5560U)
   boot = {
+    # Use linux-zen kernel for better gaming performance, battery life, and sleep/wake reliability
+    # Zen kernel includes desktop/gaming optimizations and better power management
+    kernelPackages = pkgs.linuxPackages_zen;
+
     initrd = {
       availableKernelModules = [
         "nvme"
@@ -46,6 +50,10 @@
 
       # Power management for handheld
       "mem_sleep_default=deep"           # Deep sleep for better battery
+
+      # NVMe power state fix - critical for AMD sleep/wake reliability
+      # Prevents NVMe drive from entering problematic power states during suspend
+      "nvme_core.default_ps_max_latency_us=0"
 
       # Display
       "video=eDP-1:1920x1080@60"         # Force native resolution
@@ -233,6 +241,14 @@
 
   # Handheld-specific services
   services = {
+    # Handheld Daemon - provides AYANEO-specific support
+    # Features: TDP control, controller support, LED control, power profiles
+    # Note: AYANEO AIR has "partial" support - controller and some features work
+    handheld-daemon = {
+      enable = true;
+      user = "simonwjackson";  # Run as main user for device access
+    };
+
     # Enable thermald? No - AMD doesn't need it (Intel-specific)
     # thermald.enable = false;
 
@@ -294,10 +310,11 @@
     gamescopeSession.enable = true; # Steam Deck-like UI
   };
 
-  # XFS-specific settings
+  # XFS-specific settings and handheld utilities
   # XFS doesn't need special services, but ensure xfsprogs is available
   environment.systemPackages = with pkgs; [
-    xfsprogs # XFS utilities (xfs_repair, xfs_info, etc.)
+    xfsprogs          # XFS utilities (xfs_repair, xfs_info, etc.)
+    handheld-daemon   # HHD CLI tools (hhd command, device support)
   ];
 
   # Suspend-then-hibernate for better battery life
