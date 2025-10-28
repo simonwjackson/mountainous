@@ -116,6 +116,9 @@
       gaming.enable = true; # Steam, gamemode, controllers, etc.
     };
 
+    # Enable sound with PipeWire for gaming
+    sound.enable = true;
+
     # Override base profile's impermanence - configure locally
     impermanence.enable = lib.mkForce false;
   };

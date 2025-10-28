@@ -79,12 +79,12 @@ Tools to consider:
 
 Current configuration check:
 
-- [ ] **Device path correct**: `/dev/nvme0n1` (512GB NVMe SSD)
-- [ ] **Boot**: 512M EFI partition (FAT32)
-- [ ] **Swap**: 16GB (for hibernate support)
-- [ ] **Root**: Direct XFS filesystem - **NO ENCRYPTION**
-- [ ] **Filesystem**: XFS with gaming optimizations (noatime, discard, largeio)
-- [ ] **Impermanence**: tmpfs root (2GB), persistent storage at /tundra/permafrost
+- [x] **Device path correct**: `/dev/nvme0n1` (512GB NVMe SSD)
+- [x] **Boot**: 512M EFI partition (FAT32)
+- [x] **Swap**: 16GB (for hibernate support)
+- [x] **Root**: Direct XFS filesystem - **NO ENCRYPTION**
+- [x] **Filesystem**: XFS with gaming optimizations (noatime, discard, largeio)
+- [x] **Impermanence**: tmpfs root (2GB), persistent storage at /tundra/permafrost
 
 **Note**: Review `nix/systems/x86_64-linux/hotaka/disko.nix` before deployment!
 
@@ -94,32 +94,32 @@ Current configuration check:
 
 ### Boot & Firmware
 
-- [ ] Configure systemd-boot for UEFI
-- [ ] Enable EFI variable modification
-- [ ] Configure swap (16GB, already present)
-- [ ] Set boot.resumeDevice for hibernate
-- [ ] Add AMD microcode updates (`hardware.cpu.amd.updateMicrocode = true`)
-- [ ] Configure initrd kernel modules (nvme, xhci_pci, usb_storage, sd_mod)
-- [ ] Configure early KMS for amdgpu graphics
-- [ ] Add common kernel modules (amdgpu, kvm-amd, mt7921e, btusb, hid_multitouch)
+- [x] Configure systemd-boot for UEFI
+- [x] Enable EFI variable modification
+- [x] Configure swap (16GB, already present)
+- [x] Set boot.resumeDevice for hibernate
+- [x] Add AMD microcode updates (`hardware.cpu.amd.updateMicrocode = true`)
+- [x] Configure initrd kernel modules (nvme, xhci_pci, usb_storage, sd_mod)
+- [x] Configure early KMS for amdgpu graphics
+- [x] Add common kernel modules (amdgpu, kvm-amd, mt7921e, btusb, hid_multitouch)
 
 ### AMD-Specific Kernel Parameters
 
-- [ ] Set `amdgpu.ppfeaturemask=0xffffffff` (enable all GPU power features)
-- [ ] Set `amdgpu.gpu_recovery=1` (enable GPU hang recovery)
-- [ ] Set `amd_pstate=active` (use active P-state driver)
-- [ ] Consider `amdgpu.dc=1` (Display Core for better display support)
-- [ ] Consider `amdgpu.dpm=1` (Dynamic Power Management)
+- [x] Set `amdgpu.ppfeaturemask=0xffffffff` (enable all GPU power features)
+- [x] Set `amdgpu.gpu_recovery=1` (enable GPU hang recovery)
+- [x] Set `amd_pstate=active` (use active P-state driver)
+- [x] Consider `amdgpu.dc=1` (Display Core for better display support)
+- [x] Consider `amdgpu.dpm=1` (Dynamic Power Management)
 
 ### Storage & Filesystem
 
-- [ ] Configure XFS mount options for SSD (noatime, nodiratime, discard, logbufs=8, largeio)
-- [ ] Enable fstrim service for SSD maintenance (async TRIM via mount option)
-- [ ] Verify XFS filesystem configured with gaming optimizations
-- [ ] Review impermanence setup:
-  - [ ] tmpfs root (2GB, ephemeral)
-  - [ ] /tundra/permafrost (persistent: /nix, /home, /var/lib)
-  - [ ] Gaming saves persist in /home/simonwjackson/.local/share/
+- [x] Configure XFS mount options for SSD (noatime, nodiratime, discard, logbufs=8, largeio)
+- [x] Enable fstrim service for SSD maintenance (async TRIM via mount option)
+- [x] Verify XFS filesystem configured with gaming optimizations
+- [x] Review impermanence setup:
+  - [x] tmpfs root (2GB, ephemeral)
+  - [x] /tundra/permafrost (persistent: /nix, /home, /var/lib)
+  - [x] Gaming saves persist in /home/simonwjackson/.local/share/
 
 ---
 
@@ -127,21 +127,21 @@ Current configuration check:
 
 ### AMD Radeon Graphics (Cezanne)
 
-- [ ] Enable OpenGL/Vulkan support (`hardware.graphics.enable = true`)
-- [ ] Enable 32-bit graphics support (`hardware.graphics.enable32Bit = true`)
-- [ ] Add AMD graphics packages:
-  - [ ] amdvlk (AMD Vulkan driver)
-  - [ ] amdvlk-32bit (for 32-bit games)
-  - [ ] mesa drivers
-  - [ ] rocm-opencl-icd (OpenCL support)
-- [ ] Enable AMD GPU OpenCL (`hardware.amdgpu.opencl.enable = true`)
-- [ ] Configure VAAPI for hardware video decode
+- [x] Enable OpenGL/Vulkan support (`hardware.graphics.enable = true`)
+- [x] Enable 32-bit graphics support (`hardware.graphics.enable32Bit = true`)
+- [x] Add AMD graphics packages:
+  - [x] amdvlk (AMD Vulkan driver)
+  - [x] amdvlk-32bit (for 32-bit games)
+  - [x] mesa drivers
+  - [x] rocm-opencl-icd (OpenCL support)
+- [x] Enable AMD GPU OpenCL (`hardware.amdgpu.opencl.enable = true`)
+- [x] Configure VAAPI for hardware video decode
 
 ### Display Configuration (7" 1080p, 314 PPI)
 
-- [ ] Set display resolution hint: `video=eDP-1:1920x1080@60`
-- [ ] Configure HiDPI scaling (150-200% scale recommended)
-- [ ] Install brightnessctl for backlight control
+- [x] Set display resolution hint: `video=eDP-1:1920x1080@60`
+- [x] Configure HiDPI scaling (150-200% scale recommended)
+- [x] Install brightnessctl for backlight control
 - [ ] Configure fonts for high DPI:
   - [ ] Font antialiasing
   - [ ] Subpixel hinting
@@ -149,10 +149,10 @@ Current configuration check:
 
 ### Gaming-Specific Graphics
 
-- [ ] Install MangoHud for FPS overlay
+- [x] Install MangoHud for FPS overlay
 - [ ] Install vkBasalt for graphics post-processing (optional)
-- [ ] Install gamemode for performance optimization
-- [ ] Configure gamescope compositor (optional, Steam Deck-like)
+- [x] Install gamemode for performance optimization
+- [x] Configure gamescope compositor (optional, Steam Deck-like)
 
 ---
 
@@ -203,12 +203,12 @@ Current configuration check:
 
 ### Audio Configuration
 
-- [ ] Enable sound subsystem (`sound.enable = true`)
-- [ ] Enable PipeWire with low latency:
-  - [ ] ALSA support (including 32-bit for games)
-  - [ ] PulseAudio compatibility
-  - [ ] JACK compatibility
-- [ ] Configure low-latency audio for gaming:
+- [x] Enable sound subsystem (`sound.enable = true`)
+- [x] Enable PipeWire with low latency:
+  - [x] ALSA support (including 32-bit for games)
+  - [x] PulseAudio compatibility
+  - [x] JACK compatibility
+- [x] Configure low-latency audio for gaming:
   ```nix
   services.pipewire.wireplumber.configPackages = [
     (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/10-gaming.conf" ''
@@ -226,17 +226,17 @@ Current configuration check:
     '')
   ];
   ```
-- [ ] Add audio packages:
-  - [ ] pavucontrol (GUI volume control)
-  - [ ] alsa-utils (CLI tools)
-  - [ ] pulseaudio (for compatibility)
+- [x] Add audio packages:
+  - [x] pavucontrol (GUI volume control)
+  - [x] alsa-utils (CLI tools)
+  - [x] pulseaudio (for compatibility)
 
 ### Audio Hardware
 
-- [ ] Built-in speakers configuration
-- [ ] Headphone jack detection
-- [ ] HDMI/DisplayPort audio (for external displays)
-- [ ] Microphone support
+- [x] Built-in speakers configuration
+- [x] Headphone jack detection
+- [x] HDMI/DisplayPort audio (for external displays)
+- [x] Microphone support
 
 ---
 
