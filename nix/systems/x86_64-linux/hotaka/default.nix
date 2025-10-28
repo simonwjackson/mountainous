@@ -307,13 +307,13 @@
   # Suspend-then-hibernate for better battery life
   # Suspend for quick resume, hibernate after timeout for zero drain
   systemd.sleep.extraConfig = ''
-    HibernateDelaySec=30min
+    HibernateDelaySec=30m
   '';
 
   services.logind = {
-    lidSwitch = "suspend";
-    lidSwitchExternalPower = "suspend";
-    powerKey = "suspend";
+    lidSwitch = "suspend-then-hibernate";
+    lidSwitchExternalPower = "suspend-then-hibernate";
+    powerKey = "suspend-then-hibernate";
     powerKeyLongPress = "poweroff";
   };
 
