@@ -244,27 +244,27 @@ Current configuration check:
 
 ### WiFi (MediaTek MT7921 WiFi 6E)
 
-- [ ] Enable NetworkManager
-- [ ] Add user to networkmanager group
-- [ ] Configure WiFi power management:
-  - [ ] `wifi.powersave = false` (gaming prioritizes performance)
-  - [ ] Or configurable per-profile
-- [ ] Ensure mt7921e driver available
-- [ ] WiFi firmware included in linux-firmware
+- [x] Enable NetworkManager
+- [x] Add user to networkmanager group
+- [x] Configure WiFi power management:
+  - [x] `wifi.powersave = false` (gaming prioritizes performance)
+  - [x] Or configurable per-profile
+- [x] Ensure mt7921e driver available
+- [x] WiFi firmware included in linux-firmware
 
 ### Bluetooth
 
-- [ ] Enable Bluetooth hardware support
-- [ ] Power on boot enabled
-- [ ] Configure bluez with all audio profiles
-- [ ] Enable experimental features (better codec support for headphones)
-- [ ] Enable blueman GUI for device management
-- [ ] Low-latency Bluetooth audio configuration
+- [x] Enable Bluetooth hardware support
+- [x] Power on boot enabled
+- [x] Configure bluez with all audio profiles
+- [x] Enable experimental features (better codec support for headphones)
+- [x] Enable blueman GUI for device management
+- [x] Low-latency Bluetooth audio configuration
 
 ### Network Optimization for Gaming
 
-- [ ] Consider disabling WiFi power saving for competitive gaming
-- [ ] Configure DNS for low latency (1.1.1.1 or 8.8.8.8)
+- [x] Consider disabling WiFi power saving for competitive gaming
+- [ ] Configure DNS for low latency (1.1.1.1 or 8.8.8.8) - Optional
 - [ ] Enable BBR congestion control (optional)
 
 ---

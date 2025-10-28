@@ -77,8 +77,19 @@
   hardware = {
     cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
     enableRedistributableFirmware = true;
-    bluetooth.enable = true;
-    bluetooth.powerOnBoot = true;
+
+    # Bluetooth configuration (MediaTek MT7921 integrated)
+    bluetooth = {
+      enable = true;
+      powerOnBoot = true; # Power on Bluetooth adapter on boot
+      # Enable experimental features for better codec support (headphones, controllers)
+      settings = {
+        General = {
+          Enable = "Source,Sink,Media,Socket";
+          Experimental = true;
+        };
+      };
+    };
 
     # AMD Radeon Graphics (Cezanne)
     graphics = {
@@ -273,6 +284,9 @@
 
     # Firmware updates
     fwupd.enable = true;
+
+    # Blueman: Bluetooth manager GUI (for pairing controllers, headphones)
+    blueman.enable = true;
 
     # libinput for touchscreen
     libinput = {
