@@ -227,55 +227,28 @@
     # Enable thermald? No - AMD doesn't need it (Intel-specific)
     # thermald.enable = false;
 
-    # Enable TLP for better battery life
+    # Enable auto-cpufreq for dynamic gaming handheld power management
     # (Choose either TLP or auto-cpufreq, not both!)
-    tlp = {
+    # auto-cpufreq is better for gaming workloads - automatically detects and boosts
+    auto-cpufreq = {
       enable = true;
       settings = {
-        # CPU governor
-        CPU_SCALING_GOVERNOR_ON_AC = "schedutil";
-        CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+        # Charger profile - maximize performance for gaming on AC
+        charger = {
+          governor = "schedutil";       # Dynamic scheduling for best balance
+          turbo = "auto";                # Allow turbo boost automatically
+          scaling_min_freq = 400000;     # 400 MHz minimum
+          scaling_max_freq = 4062000;    # 4.062 GHz maximum (full boost)
+        };
 
-        # CPU boost (turbo)
-        CPU_BOOST_ON_AC = 1;
-        CPU_BOOST_ON_BAT = 1; # Keep enabled for responsive gaming on battery
-
-        # CPU performance scaling
-        CPU_MIN_PERF_ON_AC = 0;
-        CPU_MAX_PERF_ON_AC = 100;
-        CPU_MIN_PERF_ON_BAT = 0;
-        CPU_MAX_PERF_ON_BAT = 70; # Cap at 70% on battery for better life
-
-        # Energy performance preference (EPP)
-        CPU_ENERGY_PERF_POLICY_ON_AC = "balance_performance";
-        CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
-
-        # AMD GPU power management
-        RADEON_DPM_PERF_LEVEL_ON_AC = "auto";
-        RADEON_DPM_PERF_LEVEL_ON_BAT = "low";
-        RADEON_DPM_STATE_ON_AC = "performance";
-        RADEON_DPM_STATE_ON_BAT = "battery";
-
-        # Disable USB autosuspend (breaks controllers)
-        USB_AUTOSUSPEND = 0;
-
-        # Platform profile (if supported by AYANEO)
-        PLATFORM_PROFILE_ON_AC = "performance";
-        PLATFORM_PROFILE_ON_BAT = "low-power";
-
-        # Disk power management
-        DISK_IDLE_SECS_ON_AC = 0;
-        DISK_IDLE_SECS_ON_BAT = 2;
-        MAX_LOST_WORK_SECS_ON_AC = 15;
-        MAX_LOST_WORK_SECS_ON_BAT = 60;
-
-        # WiFi power saving (disabled for gaming)
-        WIFI_PWR_ON_AC = "off";
-        WIFI_PWR_ON_BAT = "off"; # Keep off even on battery for online gaming
-
-        # Sound power saving
-        SOUND_POWER_SAVE_ON_AC = 0;
-        SOUND_POWER_SAVE_ON_BAT = 1;
+        # Battery profile - balance performance and battery life
+        battery = {
+          governor = "powersave";        # Powersave for battery efficiency
+          turbo = "auto";                # Still allow turbo for responsive gaming
+          scaling_min_freq = 400000;     # 400 MHz minimum
+          scaling_max_freq = 2800000;    # 2.8 GHz cap for better battery life
+          energy_performance_preference = "balance_power";
+        };
       };
     };
 

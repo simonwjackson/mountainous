@@ -275,10 +275,10 @@ Current configuration check:
 
 Choose ONE of the following:
 
-#### Option A: auto-cpufreq (Recommended for gaming handheld)
+#### Option A: auto-cpufreq (Recommended for gaming handheld) ✅ SELECTED
 
-- [ ] Enable auto-cpufreq
-- [ ] Configure profiles:
+- [x] Enable auto-cpufreq
+- [x] Configure profiles:
   ```nix
   services.auto-cpufreq.enable = true;
   services.auto-cpufreq.settings = {
@@ -330,14 +330,14 @@ Choose ONE of the following:
 
 ### Battery Care
 
-- [ ] Configure charge thresholds (if supported by AYANEO firmware)
-- [ ] Add battery monitoring packages (acpi, powertop)
+- [ ] Configure charge thresholds (if supported by AYANEO firmware) - Optional, hardware-dependent
+- [x] Add battery monitoring packages (acpi, powertop)
 
 ### Thermal Management
 
-- [ ] No thermald needed (not Intel)
-- [ ] Verify amdgpu thermal management active
-- [ ] Monitor CPU/GPU thermals (important for handheld)
+- [x] No thermald needed (not Intel)
+- [x] Verify amdgpu thermal management active
+- [x] Monitor CPU/GPU thermals (important for handheld)
 
 ### TDP Management (Advanced)
 

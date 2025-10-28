@@ -52,6 +52,10 @@
     nvme-cli    # NVMe health monitoring
     lm_sensors  # Temperature monitoring
 
+    # Battery and power monitoring
+    acpi        # Battery status and info
+    powertop    # Power consumption analysis
+
     # Handheld utilities
     brightnessctl # Screen brightness control
 
