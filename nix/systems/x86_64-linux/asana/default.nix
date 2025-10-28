@@ -37,6 +37,15 @@
     "video=eDP-1:2880x1800@60"
   ];
 
+  # SOF audio driver: Disable IMR (In-Memory Restore) for hibernation compatibility
+  # Without this, the SOF firmware fails to reload after hibernation because the
+  # IMR cached state is cleared during S4 (hibernate), causing "firmware boot timeout"
+  # The 0x81 debug flag forces full firmware reload instead of IMR restore
+  # See: https://github.com/thesofproject/sof/issues/5892
+  boot.extraModprobeConfig = ''
+    options snd-sof sof_debug=0x81
+  '';
+
   # Initrd kernel modules (loaded in early boot for hardware access)
   boot.initrd.availableKernelModules = [
     "nvme" # NVMe SSD support (WD SN740)
