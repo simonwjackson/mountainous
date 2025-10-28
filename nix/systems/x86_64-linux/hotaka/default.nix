@@ -55,8 +55,8 @@
       # Prevents NVMe drive from entering problematic power states during suspend
       "nvme_core.default_ps_max_latency_us=0"
 
-      # Display
-      "video=eDP-1:1920x1080@60" # Force native resolution
+      # Display - let amdgpu KMS auto-detect native resolution
+      "fbcon=nodefer" # Earlier framebuffer initialization
 
       # Quiet boot
       "loglevel=4"

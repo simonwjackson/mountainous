@@ -1,4 +1,8 @@
-{pkgs, inputs, ...}: {
+{
+  pkgs,
+  inputs,
+  ...
+}: {
   # Gaming handheld optimized home configuration
 
   # Hyprland for gaming handheld with touch gesture support
@@ -10,8 +14,7 @@
 
     extraSettings = {
       monitor = [
-        # 7" 1920x1080 display at native resolution
-        "eDP-1,1920x1080@60,0x0,1.5" # 1.5x scale for HiDPI (314 PPI)
+        "eDP-1,1920x1080@60,0x0,1.5,transform,1"
       ];
 
       exec-once = [
@@ -19,7 +22,7 @@
         # Launch libinput-gestures for touch gesture support
         "libinput-gestures"
         # Auto-launch Steam Big Picture on workspace 1 (main workspace)
-        "[workspace 1 silent] steam -bigpicture"
+        "[workspace 1 silent] steam"
       ];
 
       # Touch and gesture configuration
@@ -32,18 +35,18 @@
         };
       };
 
-      gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
-        workspace_swipe_distance = 300;
-        workspace_swipe_forever = false;
-        workspace_swipe_cancel_ratio = 0.5;
-      };
+      # gestures = {
+      #   workspace_swipe = true;
+      #   workspace_swipe_fingers = 3;
+      #   workspace_swipe_distance = 300;
+      #   workspace_swipe_forever = false;
+      #   workspace_swipe_cancel_ratio = 0.5;
+      # };
 
       # Gaming-friendly binds
       bind = [
-        "SUPER, F1, exec, steam -bigpicture" # Quick Steam access
-        "SUPER, F2, exec, gamemode"          # Toggle gamemode
+        "SUPER, F1, exec, steam" # Quick Steam access
+        "SUPER, F2, exec, gamemode" # Toggle gamemode
       ];
 
       # Window rules for gaming
@@ -73,28 +76,28 @@
     btop
 
     # Gaming utilities (mangohud, gamemode provided by mountainous.steam)
-    goverlay    # MangoHud GUI configuration
+    goverlay # MangoHud GUI configuration
 
     # Controller testing
-    jstest-gtk  # Gamepad testing GUI
-    evtest      # Input event testing
+    jstest-gtk # Gamepad testing GUI
+    evtest # Input event testing
 
     # System monitoring
-    nvme-cli    # NVMe health monitoring
-    lm_sensors  # Temperature monitoring
+    nvme-cli # NVMe health monitoring
+    lm_sensors # Temperature monitoring
 
     # Battery and power monitoring
-    acpi        # Battery status and info
-    powertop    # Power consumption analysis
+    acpi # Battery status and info
+    powertop # Power consumption analysis
 
     # Handheld utilities
     brightnessctl # Screen brightness control
-    wtype         # Wayland keyboard input emulator (for touch gestures)
+    wtype # Wayland keyboard input emulator (for touch gestures)
 
     # Touch gesture support
     libinput-gestures
-    wmctrl        # Required by libinput-gestures
-    xdotool       # Required by libinput-gestures
+    wmctrl # Required by libinput-gestures
+    xdotool # Required by libinput-gestures
 
     # Gaming launchers (besides Steam)
     # lutris      # Multi-platform game launcher
