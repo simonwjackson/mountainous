@@ -1,30 +1,3 @@
-# ============================================================================
-# AYANEO AIR (hotaka) - XFS + Impermanence Configuration
-# ============================================================================
-#
-# Gaming handheld optimized configuration:
-# - XFS filesystem for maximum gaming performance
-# - NO encryption (no keyboard input available on handheld)
-# - tmpfs root (impermanence - ephemeral system state)
-# - Persistent storage at /tundra/permafrost
-# - 16GB swap for hibernate support
-#
-# Device: 512GB NVMe SSD (NVME SSD 512GB)
-# Path: /dev/nvme0n1
-#
-# Performance optimizations for gaming:
-# - XFS: Better random I/O than btrfs (shader compilation, saves)
-# - XFS: Lower CPU overhead = better battery life
-# - XFS: Direct writes = less SSD wear
-# - noatime: Reduce write operations
-# - discard: TRIM for SSD health
-#
-# Note: No LUKS encryption because:
-# - No physical keyboard on handheld for passphrase entry
-# - Broken fingerprint sensor can't be used
-# - On-screen keyboard at boot is impractical
-#
-# ============================================================================
 {
   disko.devices = {
     disk = {
@@ -34,9 +7,8 @@
         content = {
           type = "gpt";
           partitions = {
-            # EFI Boot Partition
+            # EFI boot partition
             ESP = {
-              priority = 1;
               size = "512M";
               type = "EF00";
               content = {
@@ -45,63 +17,71 @@
                 mountpoint = "/boot";
                 mountOptions = [
                   "defaults"
-                  "umask=0077"
+                  "umask=0077" # Secure boot partition
                 ];
               };
             };
 
-            # Swap Partition (16GB for hibernate with 13GB RAM)
+            # Swap partition (20GB for hibernate support with 16GB RAM)
             swap = {
-              priority = 2;
-              size = "16G";
+              size = "20G";
               content = {
                 type = "swap";
-                discardPolicy = "both"; # TRIM support
-                resumeDevice = true; # Enable hibernate
+                resumeDevice = true; # Enable hibernate resume
               };
             };
 
-            # Root Partition (remaining space)
-            # Direct XFS - no encryption (no keyboard for passphrase entry)
+            # Root partition with Btrfs (rest of disk)
             root = {
-              priority = 3;
               size = "100%";
               content = {
-                type = "filesystem";
-                format = "xfs";
-                mountpoint = "/tundra/permafrost";
+                type = "btrfs";
+                extraArgs = ["-f"]; # Force if needed
 
-                # XFS mount options optimized for gaming SSD
-                mountOptions = [
-                  # Performance optimizations
-                  "noatime"           # Don't update access times (reduces writes)
-                  "nodiratime"        # Don't update directory access times
+                # Btrfs subvolumes for persistent storage
+                # Following frostbite pattern: separate subvolumes for /nix and /var/log
+                # This avoids tmpfs issues during installation
+                subvolumes = {
+                  # Nix store subvolume (persistent, direct mount)
+                  "@nix" = {
+                    mountpoint = "/nix";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
 
-                  # SSD optimizations
-                  "discard"           # Enable TRIM support
+                  # System logs subvolume (persistent, direct mount)
+                  "@log" = {
+                    mountpoint = "/var/log";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
 
-                  # XFS-specific optimizations
-                  "logbufs=8"         # More log buffers for better performance
-                  "logbsize=256k"     # Larger log buffer size
-                  "largeio"           # Optimize for large I/O operations (games)
-                  "swalloc"           # Stripe-width allocation (better for sequential)
-                ];
+                  # Other persistent data (home, machine-id, etc.)
+                  "@permafrost" = {
+                    mountpoint = "/tundra/permafrost";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
+                };
               };
             };
           };
         };
-      };
-    };
-
-    # tmpfs root for impermanence (ephemeral system state)
-    nodev = {
-      "/" = {
-        fsType = "tmpfs";
-        mountOptions = [
-          "defaults"
-          "size=2G"           # 2GB tmpfs (adequate for system)
-          "mode=755"
-        ];
       };
     };
   };

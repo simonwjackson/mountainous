@@ -33,7 +33,7 @@
 
     loader = {
       efi = {
-        canTouchEfiVariables = false; # USB boot compatibility
+        canTouchEfiVariables = false;
         efiSysMountPoint = "/boot";
       };
       grub = {

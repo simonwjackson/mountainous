@@ -10,10 +10,7 @@
     ./disko.nix
   ];
 
-  # Boot configuration for AYANEO AIR (AMD Ryzen 5 5560U)
   boot = {
-    # Use linux-zen kernel for better gaming performance, battery life, and sleep/wake reliability
-    # Zen kernel includes desktop/gaming optimizations and better power management
     kernelPackages = pkgs.linuxPackages_zen;
 
     initrd = {
@@ -28,10 +25,10 @@
     };
 
     kernelModules = [
-      "kvm-amd"       # AMD virtualization
-      "amdgpu"        # AMD graphics driver
-      "mt7921e"       # MediaTek WiFi 6E
-      "btusb"         # Bluetooth
+      "kvm-amd" # AMD virtualization
+      "amdgpu" # AMD graphics driver
+      "mt7921e" # MediaTek WiFi 6E
+      "btusb" # Bluetooth
       "hid_multitouch" # Touchscreen
     ];
 
@@ -39,24 +36,27 @@
 
     # Kernel parameters optimized for AMD gaming handheld
     kernelParams = [
+      # Resume device for hibernation (must match swap partition)
+      "resume=/dev/disk/by-partlabel/disk-main-swap"
+
       # AMD GPU optimizations
       "amdgpu.ppfeaturemask=0xffffffff" # Enable all GPU power features
-      "amdgpu.gpu_recovery=1"            # Enable GPU hang recovery
-      "amdgpu.dc=1"                      # Display Core for better display
-      "amdgpu.dpm=1"                     # Dynamic Power Management
+      "amdgpu.gpu_recovery=1" # Enable GPU hang recovery
+      "amdgpu.dc=1" # Display Core for better display
+      "amdgpu.dpm=1" # Dynamic Power Management
 
       # AMD CPU power management
-      "amd_pstate=active"                # Active P-state driver for better power
+      "amd_pstate=active" # Active P-state driver for better power
 
       # Power management for handheld
-      "mem_sleep_default=deep"           # Deep sleep for better battery
+      "mem_sleep_default=deep" # Deep sleep for better battery
 
       # NVMe power state fix - critical for AMD sleep/wake reliability
       # Prevents NVMe drive from entering problematic power states during suspend
       "nvme_core.default_ps_max_latency_us=0"
 
       # Display
-      "video=eDP-1:1920x1080@60"         # Force native resolution
+      "video=eDP-1:1920x1080@60" # Force native resolution
 
       # Quiet boot
       "loglevel=4"
@@ -73,7 +73,7 @@
       systemd-boot = {
         enable = true;
         configurationLimit = 10; # Limit generations (save space on 512GB)
-        editor = false;          # Disable boot editor for security
+        editor = false; # Disable boot editor for security
       };
     };
 
@@ -152,50 +152,29 @@
   };
 
   # Configure ephemeral root filesystem (tmpfs) for impermanence
-  # This is managed by disko.nix's nodev section
-  # (Root is tmpfs, persistent data at /tundra/permafrost)
-
-  # Persistent storage on NVMe SSD
-  # Override disko-generated config to use stable device path
-  # No LUKS encryption - direct XFS partition
-  fileSystems."/tundra/permafrost" = lib.mkForce {
-    device = "/dev/disk/by-partlabel/disk-main-root";
-    fsType = "xfs";
-    neededForBoot = true;
-    options = [
-      "noatime"
-      "nodiratime"
-      "discard"
-      "logbufs=8"
-      "logbsize=256k"
-      "largeio"
-      "swalloc"
-    ];
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+    options = ["defaults" "size=2G" "mode=755"];
   };
+
+  # Mark persistent storage as needed early in boot
+  fileSystems."/tundra/permafrost".neededForBoot = true;
 
   # Local impermanence configuration for hotaka (gaming handheld)
   environment.persistence."/tundra/permafrost" = {
     hideMounts = true;
     directories = [
-      # Core system
-      "/nix" # Nix store must persist (large, contains all packages)
       "/var/lib/systemd/coredump"
       "/var/lib/nixos"
       "/var/lib/tailscale"
-      "/var/log"
-
-      # Gaming-specific persistence (CRITICAL for gaming handheld!)
       "/var/lib/bluetooth" # Bluetooth pairings (controllers, headphones)
-
-      # User home directory with gaming data
       {
         directory = "/home/simonwjackson";
         user = "simonwjackson";
         group = "users";
         mode = "0700";
       }
-
-      # User-specific Nix profiles
       {
         directory = "/nix/var/nix/profiles/per-user/simonwjackson";
         user = "simonwjackson";
@@ -225,19 +204,24 @@
     };
   };
 
-  # SSH host keys in persistent storage
-  # Keys are deployed via nixos-anywhere during initial installation
-  services.openssh.hostKeys = [
-    {
-      path = "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key";
-      type = "ed25519";
-    }
-    {
-      path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
-      type = "rsa";
-      bits = 4096;
-    }
-  ];
+  # SSH configuration
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "prohibit-password";
+      PasswordAuthentication = false;
+    };
+
+    # SSH host keys in persistent storage
+    # Keys will need to exist in /tundra/permafrost/etc/ssh/ before first boot
+    hostKeys = [
+      {
+        path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
+        type = "rsa";
+        bits = 4096;
+      }
+    ];
+  };
 
   # Handheld-specific services
   services = {
@@ -246,7 +230,7 @@
     # Note: AYANEO AIR has "partial" support - controller and some features work
     handheld-daemon = {
       enable = true;
-      user = "simonwjackson";  # Run as main user for device access
+      user = "simonwjackson"; # Run as main user for device access
     };
 
     # Enable thermald? No - AMD doesn't need it (Intel-specific)
@@ -260,18 +244,18 @@
       settings = {
         # Charger profile - maximize performance for gaming on AC
         charger = {
-          governor = "schedutil";       # Dynamic scheduling for best balance
-          turbo = "auto";                # Allow turbo boost automatically
-          scaling_min_freq = 400000;     # 400 MHz minimum
-          scaling_max_freq = 4062000;    # 4.062 GHz maximum (full boost)
+          governor = "schedutil"; # Dynamic scheduling for best balance
+          turbo = "auto"; # Allow turbo boost automatically
+          scaling_min_freq = 400000; # 400 MHz minimum
+          scaling_max_freq = 4062000; # 4.062 GHz maximum (full boost)
         };
 
         # Battery profile - balance performance and battery life
         battery = {
-          governor = "powersave";        # Powersave for battery efficiency
-          turbo = "auto";                # Still allow turbo for responsive gaming
-          scaling_min_freq = 400000;     # 400 MHz minimum
-          scaling_max_freq = 2800000;    # 2.8 GHz cap for better battery life
+          governor = "powersave"; # Powersave for battery efficiency
+          turbo = "auto"; # Still allow turbo for responsive gaming
+          scaling_min_freq = 400000; # 400 MHz minimum
+          scaling_max_freq = 2800000; # 2.8 GHz cap for better battery life
           energy_performance_preference = "balance_power";
         };
       };
@@ -313,8 +297,8 @@
   # XFS-specific settings and handheld utilities
   # XFS doesn't need special services, but ensure xfsprogs is available
   environment.systemPackages = with pkgs; [
-    xfsprogs          # XFS utilities (xfs_repair, xfs_info, etc.)
-    handheld-daemon   # HHD CLI tools (hhd command, device support)
+    xfsprogs # XFS utilities (xfs_repair, xfs_info, etc.)
+    handheld-daemon # HHD CLI tools (hhd command, device support)
   ];
 
   # Suspend-then-hibernate for better battery life
@@ -333,6 +317,15 @@
   # Handheld power management
   # Use schedutil governor (better for dynamic gaming workloads than performance/powersave)
   powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
+
+  # User configuration
+  users.users.simonwjackson = {
+    isNormalUser = true;
+    extraGroups = ["wheel" "networkmanager" "video"];
+    openssh.authorizedKeys.keyFiles = [
+      ../../../modules/nixos/user/id_rsa.pub
+    ];
+  };
 
   system.stateVersion = "25.05";
 }
