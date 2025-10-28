@@ -55,8 +55,8 @@
       # Prevents NVMe drive from entering problematic power states during suspend
       "nvme_core.default_ps_max_latency_us=0"
 
-      # MediaTek MT7921e WiFi fix - disable ASPM to prevent resume issues
-      "pcie_aspm.policy=performance"
+      # PCIe ASPM disabled - fixes MT7921e WiFi resume and AMD GPU hibernate issues
+      "pcie_aspm=off"
 
       # Display - let amdgpu KMS auto-detect native resolution
       "fbcon=nodefer" # Earlier framebuffer initialization
@@ -310,28 +310,44 @@
     HibernateDelaySec=30m
   '';
 
-  services.logind = {
-    lidSwitch = "suspend-then-hibernate";
-    lidSwitchExternalPower = "suspend-then-hibernate";
-    powerKey = "suspend-then-hibernate";
-    powerKeyLongPress = "poweroff";
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend-then-hibernate";
+    HandleLidSwitchExternalPower = "suspend-then-hibernate";
+    HandlePowerKey = "suspend-then-hibernate";
+    HandlePowerKeyLongPress = "poweroff";
   };
 
   # Handheld power management
   # Use schedutil governor (better for dynamic gaming workloads than performance/powersave)
   powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
 
-  # WiFi resume fix for MediaTek MT7921e
-  # Reload WiFi module after resume to fix connection issues
-  powerManagement.resumeCommands = ''
-    # Reload MediaTek WiFi module to fix resume issues
-    # Must unload mt7921e first (depends on mt7921_common, mt792x_lib)
-    ${pkgs.kmod}/bin/modprobe -r mt7921e
-    ${pkgs.kmod}/bin/modprobe -r mt7921_common
-    ${pkgs.kmod}/bin/modprobe -r mt792x_lib
-    sleep 1
-    ${pkgs.kmod}/bin/modprobe mt7921e
-  '';
+  # Post-sleep fixes for WiFi and display (runs after BOTH suspend AND hibernate)
+  # Using systemd service instead of powerManagement.resumeCommands to support hibernate
+  systemd.services.resume-fixes = {
+    description = "Fix WiFi and display after resume from suspend/hibernate";
+    wantedBy = ["sleep.target"];
+    after = ["suspend.target" "hibernate.target" "hybrid-sleep.target" "suspend-then-hibernate.target"];
+
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "resume-fixes" ''
+        # Reload MediaTek WiFi module to fix resume issues
+        # Must unload mt7921e first (depends on mt7921_common, mt792x_lib)
+        ${pkgs.kmod}/bin/modprobe -r mt7921e
+        ${pkgs.kmod}/bin/modprobe -r mt7921_common
+        ${pkgs.kmod}/bin/modprobe -r mt792x_lib
+        sleep 1
+        ${pkgs.kmod}/bin/modprobe mt7921e
+
+        # AMD GPU display wake workaround
+        # Force display refresh after hibernate resume
+        echo "Triggering display wake..."
+        # Try to wake DPMS
+        ${pkgs.systemd}/bin/loginctl lock-session || true
+        ${pkgs.systemd}/bin/loginctl unlock-session || true
+      '';
+    };
+  };
 
   # User configuration
   users.users.simonwjackson = {
