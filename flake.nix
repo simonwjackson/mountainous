@@ -33,6 +33,10 @@
       url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
     };
+    hyprgrass = {
+      url = "github:horriblename/hyprgrass";
+      inputs.hyprland.follows = "hyprland";
+    };
     disko.url = "github:nix-community/disko";
     impermanence.url = "github:nix-community/impermanence";
     home-manager = {

@@ -9,20 +9,22 @@
   mountainous.hyprland = {
     enable = true;
 
-    # Note: Using libinput-gestures instead of hyprgrass due to version compatibility
-    # plugins = [];
+    # Enable hyprgrass plugin for native touch gesture support
+    plugins = [
+      inputs.hyprgrass.packages.${pkgs.system}.default
+    ];
 
     extraSettings = {
       monitor = [
-        "eDP-1,1920x1080@60,0x0,1.5,transform,1"
+        "eDP-1,preferred,auto,1.5,transform,1"
       ];
 
       exec-once = [
         "systemctl --user start hyprland-session.target"
-        # Launch libinput-gestures for touch gesture support
-        "libinput-gestures"
         # Auto-launch Steam Big Picture on workspace 1 (main workspace)
         "[workspace 1 silent] steam"
+        # Auto-launch Moonlight on workspace 2 for game streaming
+        "[workspace 2 silent] moonlight"
       ];
 
       # Touch and gesture configuration
@@ -35,18 +37,47 @@
         };
       };
 
-      # gestures = {
-      #   workspace_swipe = true;
-      #   workspace_swipe_fingers = 3;
-      #   workspace_swipe_distance = 300;
-      #   workspace_swipe_forever = false;
-      #   workspace_swipe_cancel_ratio = 0.5;
-      # };
+      # Touchscreen rotation to match monitor transform (1 = 90 degrees)
+      "input:touchdevice:transform" = 1;
+
+      # Hyprland native gesture (for trackpad - uses gesture keyword, not gestures block)
+      gesture = [
+        "3, horizontal, workspace"
+      ];
+
+      # hyprgrass plugin configuration (note: plugin: prefix required)
+      "plugin:touch_gestures:sensitivity" = 4.0; # Increase for tablet (default 1.0 too low)
+      "plugin:touch_gestures:workspace_swipe_fingers" = 3;
+      "plugin:touch_gestures:edge_margin" = 30; # Larger margin for easier edge swipe triggering
+      "plugin:touch_gestures:debug:visualize_touch" = 1; # Show visual feedback for touch points
 
       # Gaming-friendly binds
       bind = [
         "SUPER, F1, exec, steam" # Quick Steam access
         "SUPER, F2, exec, gamemode" # Toggle gamemode
+        "SUPER, F3, exec, moonlight" # Quick Moonlight access
+      ];
+
+      # hyprgrass touch gesture bindings
+      "hyprgrass-bind" = [
+        # 3-finger workspace switching (left/right swipes)
+        ", swipe:3:l, workspace, e+1"
+        ", swipe:3:r, workspace, e-1"
+
+        # 4-finger gestures for window management
+        ", swipe:4:u, fullscreen, 1"
+        ", swipe:4:d, exec, sh -c 'hyprctl clients | grep -iq \"class: steam\" && hyprctl dispatch focuswindow \"class:^(steam)$\" || steam'"
+
+        # Edge swipes for special workspace (replaces pinch gestures)
+        ", edge:r:l, togglespecialworkspace, magic"
+
+        # Edge swipes for brightness control (left edge up/down)
+        # ", edge:l:u, exec, brightnessctl set +5%"
+        # ", edge:l:d, exec, brightnessctl set 5%-"
+
+        # Virtual keyboard toggle gestures
+        # ", edge:b:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400" # Bottom edge swipe up
+        ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400" # 3-finger swipe up
       ];
 
       # Window rules for gaming
@@ -55,6 +86,10 @@
         "workspace 1, class:^(steam)$"
         # Steam should be fullscreen by default
         "fullscreen, class:^(steam)$, title:^(Steam Big Picture Mode)$"
+        # Moonlight should be on workspace 2
+        "workspace 2, class:^(moonlight)$"
+        # Moonlight should be fullscreen by default
+        "fullscreen, class:^(moonlight)$"
       ];
     };
   };
@@ -75,6 +110,9 @@
     htop
     btop
 
+    # Game streaming
+    moonlight-qt # Game streaming client
+
     # Gaming utilities (mangohud, gamemode provided by mountainous.steam)
     goverlay # MangoHud GUI configuration
 
@@ -93,11 +131,7 @@
     # Handheld utilities
     brightnessctl # Screen brightness control
     wtype # Wayland keyboard input emulator (for touch gestures)
-
-    # Touch gesture support
-    libinput-gestures
-    wmctrl # Required by libinput-gestures
-    xdotool # Required by libinput-gestures
+    wvkbd # Lightweight Wayland virtual keyboard for touch input
 
     # Gaming launchers (besides Steam)
     # lutris      # Multi-platform game launcher
@@ -117,9 +151,6 @@
     GDK_SCALE = "2";
     GDK_DPI_SCALE = "0.75"; # 2 * 0.75 = 1.5x effective
   };
-
-  # libinput-gestures configuration for touch gestures
-  xdg.configFile."libinput-gestures.conf".source = ./libinput-gestures.conf;
 
   # XDG user directories for gaming saves, etc.
   xdg.userDirs = {
