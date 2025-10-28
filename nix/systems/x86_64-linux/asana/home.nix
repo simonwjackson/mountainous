@@ -1,5 +1,10 @@
 {pkgs, ...}: {
-  # Minimal home-manager configuration
+  # Home-manager configuration for asana
+
+  # Enable Hyprland home-manager module
+  mountainous.hyprland = {
+    enable = true;
+  };
 
   programs.git = {
     enable = true;

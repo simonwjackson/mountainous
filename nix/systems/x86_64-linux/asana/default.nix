@@ -191,6 +191,9 @@
   users.users.simonwjackson = {
     isNormalUser = true;
     extraGroups = ["wheel" "networkmanager" "video"];
+    openssh.authorizedKeys.keyFiles = [
+      ../../../modules/nixos/user/id_rsa.pub
+    ];
   };
 
   # Configure ephemeral root filesystem (tmpfs) for impermanence
