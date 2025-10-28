@@ -55,6 +55,9 @@
       # Prevents NVMe drive from entering problematic power states during suspend
       "nvme_core.default_ps_max_latency_us=0"
 
+      # MediaTek MT7921e WiFi fix - disable ASPM to prevent resume issues
+      "pcie_aspm.policy=performance"
+
       # Display - let amdgpu KMS auto-detect native resolution
       "fbcon=nodefer" # Earlier framebuffer initialization
 
@@ -317,6 +320,18 @@
   # Handheld power management
   # Use schedutil governor (better for dynamic gaming workloads than performance/powersave)
   powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
+
+  # WiFi resume fix for MediaTek MT7921e
+  # Reload WiFi module after resume to fix connection issues
+  powerManagement.resumeCommands = ''
+    # Reload MediaTek WiFi module to fix resume issues
+    # Must unload mt7921e first (depends on mt7921_common, mt792x_lib)
+    ${pkgs.kmod}/bin/modprobe -r mt7921e
+    ${pkgs.kmod}/bin/modprobe -r mt7921_common
+    ${pkgs.kmod}/bin/modprobe -r mt792x_lib
+    sleep 1
+    ${pkgs.kmod}/bin/modprobe mt7921e
+  '';
 
   # User configuration
   users.users.simonwjackson = {
