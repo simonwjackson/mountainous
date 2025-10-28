@@ -22,13 +22,16 @@
 
   # Kernel parameters for better power management and sleep
   boot.kernelParams = [
-    # Try deep sleep if BIOS supports (fallback to s2idle)
-    "mem_sleep_default=deep"
+    # Resume device for hibernation (must match swap partition)
+    "resume=/dev/disk/by-partlabel/disk-main-swap"
+
+    # Use s2idle instead of deep sleep (deep sleep causes blank screen on Raptor Lake)
+    "mem_sleep_default=s2idle"
 
     # Intel graphics optimizations
     "i915.fastboot=1"
     "i915.enable_fbc=1"
-    "i915.enable_psr=2"
+    "i915.enable_psr=2"  # PSR2 for better battery life (test if works with s2idle)
 
     # Display resolution hint for native 3K OLED panel
     "video=eDP-1:2880x1800@60"
@@ -57,6 +60,7 @@
   ];
 
   # Resume from hibernate: Automatically configured by disko.nix (resumeDevice = true on swap partition)
+  # Disko sets: boot.resumeDevice = "/dev/disk/by-partlabel/disk-main-swap"
 
   # Enable base profile
   mountainous = {
