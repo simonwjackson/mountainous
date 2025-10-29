@@ -322,50 +322,54 @@
   powerManagement.cpuFreqGovernor = lib.mkDefault "schedutil";
 
   # Post-sleep fixes for WiFi and display (runs after BOTH suspend AND hibernate)
-  # Using systemd service instead of powerManagement.resumeCommands to support hibernate
-  systemd.services.resume-fixes = {
-    description = "Fix WiFi and display after resume from suspend/hibernate";
-    wantedBy = ["sleep.target"];
-    after = ["suspend.target" "hibernate.target" "hybrid-sleep.target" "suspend-then-hibernate.target"];
+  # Using systemd sleep hook instead of powerManagement.resumeCommands to support hibernate
+  # This approach avoids the issue of services starting during system activation
+  environment.etc."systemd/system-sleep/resume-fixes" = {
+    source = pkgs.writeShellScript "resume-fixes" ''
+      #!/bin/sh
+      # systemd-sleep hook: called before sleep ($1=pre) and after resume ($1=post)
+      # $2 contains the sleep type: suspend, hibernate, hybrid-sleep, suspend-then-hibernate
 
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = pkgs.writeShellScript "resume-fixes" ''
-        # Reload MediaTek WiFi module to fix resume issues
-        # First, find and bring down the WiFi interface to release the module
-        WIFI_INTERFACE=$(${pkgs.iproute2}/bin/ip link show | ${pkgs.gnugrep}/bin/grep -oP '^\d+: \K(wl[^:]+)' | head -n1)
+      # Only run after resume, not before sleep
+      if [ "$1" != "post" ]; then
+        exit 0
+      fi
 
-        if [ -n "$WIFI_INTERFACE" ]; then
-          echo "Bringing down WiFi interface: $WIFI_INTERFACE"
-          ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" down
-          sleep 1
-        fi
+      # Reload MediaTek WiFi module to fix resume issues
+      # First, find and bring down the WiFi interface to release the module
+      WIFI_INTERFACE=$(${pkgs.iproute2}/bin/ip link show | ${pkgs.gnugrep}/bin/grep -oP '^\d+: \K(wl[^:]+)' | head -n1)
 
-        # Now unload modules in reverse dependency order
-        # mt7921e depends on mt7921_common, which depends on mt792x_lib
-        ${pkgs.kmod}/bin/modprobe -r mt7921e
-        ${pkgs.kmod}/bin/modprobe -r mt7921_common
-        ${pkgs.kmod}/bin/modprobe -r mt792x_lib
+      if [ -n "$WIFI_INTERFACE" ]; then
+        echo "Bringing down WiFi interface: $WIFI_INTERFACE"
+        ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" down
         sleep 1
+      fi
 
-        # Reload the driver
-        ${pkgs.kmod}/bin/modprobe mt7921e
-        sleep 1
+      # Now unload modules in reverse dependency order
+      # mt7921e depends on mt7921_common, which depends on mt792x_lib
+      ${pkgs.kmod}/bin/modprobe -r mt7921e
+      ${pkgs.kmod}/bin/modprobe -r mt7921_common
+      ${pkgs.kmod}/bin/modprobe -r mt792x_lib
+      sleep 1
 
-        # Bring interface back up if we found one
-        if [ -n "$WIFI_INTERFACE" ]; then
-          echo "Bringing up WiFi interface: $WIFI_INTERFACE"
-          ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" up
-        fi
+      # Reload the driver
+      ${pkgs.kmod}/bin/modprobe mt7921e
+      sleep 1
 
-        # AMD GPU display wake workaround
-        # Force display refresh after hibernate resume
-        echo "Triggering display wake..."
-        # Try to wake DPMS
-        ${pkgs.systemd}/bin/loginctl lock-session || true
-        ${pkgs.systemd}/bin/loginctl unlock-session || true
-      '';
-    };
+      # Bring interface back up if we found one
+      if [ -n "$WIFI_INTERFACE" ]; then
+        echo "Bringing up WiFi interface: $WIFI_INTERFACE"
+        ${pkgs.iproute2}/bin/ip link set "$WIFI_INTERFACE" up
+      fi
+
+      # AMD GPU display wake workaround
+      # Force display refresh after hibernate resume
+      echo "Triggering display wake..."
+      # Try to wake DPMS
+      ${pkgs.systemd}/bin/loginctl lock-session || true
+      ${pkgs.systemd}/bin/loginctl unlock-session || true
+    '';
+    mode = "0755";  # Make executable
   };
 
   # User configuration
