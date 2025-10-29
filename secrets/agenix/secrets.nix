@@ -130,4 +130,10 @@ in {
   "paperless_ngx_env.age".publicKeys = users ++ systems;
   "slskd_env.age".publicKeys = users ++ systems;
   "tandoor_env.age".publicKeys = users ++ systems;
+
+  #########
+  # Home Assistant / Smart Home
+  #########
+
+  "zwave-js-secrets.age".publicKeys = users ++ [rakku];
 }

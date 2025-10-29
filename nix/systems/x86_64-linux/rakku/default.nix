@@ -8,6 +8,12 @@
     ./disko.nix
   ];
 
+  # Configure agenix identity paths (SSH keys for decryption)
+  # Point to persistent storage location since root is ephemeral (tmpfs)
+  age.identityPaths = [
+    "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
+  ];
+
   # Configure agenix secrets
   age.secrets."zwave-js-secrets" = {
     file = ../../../../secrets/agenix/zwave-js-secrets.age;
@@ -97,6 +103,10 @@
   services.music-assistant = {
     enable = true;
     providers = [
+      # Home Assistant integration
+      "hass" # Required for HA integration
+      "hass_players" # Use HA media players in Music Assistant
+
       # Streaming services
       "spotify"
       "ytmusic" # YouTube Music
