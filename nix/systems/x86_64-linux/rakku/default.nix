@@ -66,6 +66,7 @@
       "mqtt" # MQTT broker support
       "esphome" # ESPHome device integration
       "met" # Met.no weather service
+      "mcp_server" # Model Context Protocol server for LLM integration
     ];
 
     config = {
@@ -77,8 +78,14 @@
         temperature_unit = "C";
       };
 
-      # Enable default integrations
-      default_config = {};
+      # UI-managed configuration files
+      # These files are created and managed by Home Assistant UI
+      # and are persisted in /var/lib/hass
+      automation = "!include automations.yaml";
+      scene = "!include scenes.yaml";
+      script = "!include scripts.yaml";
+      group = "!include groups.yaml";
+      input_boolean = "!include input_booleans.yaml";
 
       # HTTP configuration
       http = {
@@ -148,6 +155,23 @@
 
   # Grant Home Assistant and Z-Wave JS users access to serial devices
   users.users.hass.extraGroups = ["dialout"];
+
+  # AirConnect - Bridge AirPlay to Sonos/UPnP speakers
+  # Detects Sonos players and creates virtual AirPlay devices for each
+  systemd.services.airconnect = {
+    description = "AirConnect - AirPlay to Sonos/UPnP Bridge";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
+
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.airconnect}/bin/airupnp -l 1000:2000 -Z";
+      Restart = "on-failure";
+      RestartSec = "10s";
+      DynamicUser = true;
+    };
+  };
 
   # Disable impermanence module (configure manually below)
   mountainous = {

@@ -2,3 +2,4 @@ result
 *.qcow2
 ai_docs
 .direnv
+CLAUDE.local.md
