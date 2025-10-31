@@ -59,6 +59,14 @@
     enable = true;
     openFirewall = true;
 
+    # Add optimized compression libraries for better HTTP performance
+    # package = pkgs.home-assistant.override {
+    #   extraPackages = ps: [
+    #     ps.zlib-ng # Faster zlib implementation
+    #     ps.isal # Intel Storage Acceleration Library for compression
+    #   ];
+    # };
+
     extraComponents = [
       "default_config" # Essential integrations
       "zha" # Zigbee Home Automation
@@ -66,7 +74,54 @@
       "mqtt" # MQTT broker support
       "esphome" # ESPHome device integration
       "met" # Met.no weather service
-      "mcp_server" # Model Context Protocol server for LLM integration
+
+      # Groups and helpers
+      "group" # Group integration for creating groups
+      "input_boolean" # Boolean input helpers
+      "input_button" # Button helpers
+      "input_datetime" # Date/time input helpers
+      "input_number" # Number input helpers
+      "input_select" # Select input helpers
+      "input_text" # Text input helpers
+      "counter" # Counter helpers
+      "timer" # Timer helpers
+      "schedule" # Schedule helpers
+
+      # Voice and notifications
+      "google_translate" # Text-to-speech
+      "tts" # Text-to-speech platform
+
+      # Media
+      "music_assistant" # Music Assistant integration
+      "sonos" # Sonos speakers
+      "cast" # Chromecast/Google Cast
+      "media_source" # Media source
+      "radio_browser" # Internet radio stations
+
+      # Mobile and cloud
+      "mobile_app" # Mobile app support
+      "cloud" # Nabu Casa cloud
+
+      # Vacuum cleaners
+      "roborock" # Roborock vacuum integration
+
+      # Lights
+      "yeelight" # Yeelight smart lights
+
+      # Network and discovery
+      "dhcp" # DHCP discovery
+      "ssdp" # SSDP discovery
+      "zeroconf" # Zeroconf/mDNS discovery
+      "usb" # USB discovery
+
+      # Utilities
+      "sun" # Sun position
+      "zone" # Zones
+      "person" # Person tracking
+      "device_tracker" # Device tracking
+      "history" # History
+      "logbook" # Logbook
+      "recorder" # Recorder for database
     ];
 
     config = {
@@ -86,6 +141,13 @@
       script = "!include scripts.yaml";
       group = "!include groups.yaml";
       input_boolean = "!include input_booleans.yaml";
+
+      # Core integrations for sidebar panels
+      history = {}; # History panel
+      logbook = {}; # Activities panel
+      map = {}; # Map panel
+      media_source = {}; # Media browser
+      recorder = {}; # Required for history
 
       # HTTP configuration
       http = {
