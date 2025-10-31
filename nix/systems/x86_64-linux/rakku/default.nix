@@ -143,6 +143,9 @@
       scene = "!include scenes.yaml";
       script = "!include scripts.yaml";
       sensor = "!include sensors.yaml";
+      input_boolean = "!include input_booleans.yaml";
+      input_datetime = "!include input_datetime.yaml";
+      input_number = "!include input_number.yaml";
 
       # Core integrations for sidebar panels
       history = {}; # History panel
