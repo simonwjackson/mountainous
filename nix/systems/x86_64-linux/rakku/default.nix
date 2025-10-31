@@ -137,10 +137,12 @@
       # These files are created and managed by Home Assistant UI
       # and are persisted in /var/lib/hass
       automation = "!include automations.yaml";
-      scene = "!include scenes.yaml";
-      script = "!include scripts.yaml";
+      binary_sensor = "!include binary_sensors.yaml";
       group = "!include groups.yaml";
       input_boolean = "!include input_booleans.yaml";
+      scene = "!include scenes.yaml";
+      script = "!include scripts.yaml";
+      sensor = "!include sensors.yaml";
 
       # Core integrations for sidebar panels
       history = {}; # History panel
