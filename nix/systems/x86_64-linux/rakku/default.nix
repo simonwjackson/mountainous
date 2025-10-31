@@ -59,13 +59,15 @@
     enable = true;
     openFirewall = true;
 
-    # Add optimized compression libraries for better HTTP performance
-    # package = pkgs.home-assistant.override {
-    #   extraPackages = ps: [
-    #     ps.zlib-ng # Faster zlib implementation
-    #     ps.isal # Intel Storage Acceleration Library for compression
-    #   ];
-    # };
+    # Add required packages for NEST integration and optimized compression
+    package = pkgs.home-assistant.override {
+      extraPackages = ps: [
+        ps.grpcio # Required for NEST integration
+        ps.google-nest-sdm # NEST Smart Device Management API
+        # ps.zlib-ng # Faster zlib implementation
+        # ps.isal # Intel Storage Acceleration Library for compression
+      ];
+    };
 
     extraComponents = [
       "default_config" # Essential integrations
@@ -97,10 +99,15 @@
       "cast" # Chromecast/Google Cast
       "media_source" # Media source
       "radio_browser" # Internet radio stations
+      "nest" # Google Nest thermostats, cameras, doorbells
+      "ffmpeg" # Media processing for camera streams
 
       # Mobile and cloud
       "mobile_app" # Mobile app support
       "cloud" # Nabu Casa cloud
+
+      # Authentication and credentials
+      "application_credentials" # OAuth credential management for integrations
 
       # Vacuum cleaners
       "roborock" # Roborock vacuum integration
@@ -140,12 +147,11 @@
       binary_sensor = "!include binary_sensors.yaml";
       group = "!include groups.yaml";
       input_boolean = "!include input_booleans.yaml";
+      input_datetime = "!include input_datetime.yaml";
+      input_number = "!include input_number.yaml";
       scene = "!include scenes.yaml";
       script = "!include scripts.yaml";
       sensor = "!include sensors.yaml";
-      input_boolean = "!include input_booleans.yaml";
-      input_datetime = "!include input_datetime.yaml";
-      input_number = "!include input_number.yaml";
 
       # Core integrations for sidebar panels
       history = {}; # History panel
@@ -153,6 +159,14 @@
       map = {}; # Map panel
       media_source = {}; # Media browser
       recorder = {}; # Required for history
+
+      # Text-to-speech configuration
+      tts = [
+        {
+          platform = "google_translate";
+          service_name = "google_translate_say";
+        }
+      ];
 
       # HTTP configuration
       http = {
