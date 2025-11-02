@@ -22,6 +22,13 @@
     mode = "400";
   };
 
+  age.secrets."vrackie-wifi-password" = {
+    file = ../../../../secrets/agenix/vrackie-wifi-password.age;
+    owner = "root";
+    group = "root";
+    mode = "400";
+  };
+
   # UEFI boot configuration
   boot.loader = {
     systemd-boot.enable = true;
@@ -39,6 +46,7 @@
   boot.kernelModules = [
     "igb" # Intel I211 Gigabit NIC
     "cp210x" # USB-to-serial for HubZ Smart Home Controller (Z-Wave/Zigbee)
+    "mt7921u" # MediaTek MT7921U WiFi driver for Netgear A8000
   ];
 
   # Udev rules for HubZ Smart Home Controller
@@ -373,6 +381,111 @@
     ];
   };
 
+  # Network configuration - WiFi and Ethernet Bridge
+  # Rakku connects to vrackie via WiFi (Netgear A8000) and shares connection
+  # through ethernet ports using a bridge with NAT
+  networking = {
+    # WiFi connection to vrackie network
+    # NetworkManager handles the connection - see declarative connection below
+    wireless.enable = lib.mkForce false; # Use NetworkManager instead
+
+    # Declarative NetworkManager connections
+    networkmanager = {
+      ensureProfiles = {
+        # Load WiFi password from agenix secret
+        environmentFiles = [config.age.secrets."vrackie-wifi-password".path];
+
+        # WiFi connection to vrackie (2.4GHz)
+        profiles = {
+          vrackie = {
+            connection = {
+              id = "vrackie";
+              type = "wifi";
+              autoconnect = true;
+            };
+            wifi = {
+              mode = "infrastructure";
+              ssid = "vrackie";
+            };
+            wifi-security = {
+              auth-alg = "open";
+              key-mgmt = "wpa-psk";
+              psk = "$VRACKIE_WIFI_PASSWORD";
+            };
+            ipv4 = {
+              method = "auto";
+            };
+            ipv6 = {
+              addr-gen-mode = "default";
+              method = "auto";
+            };
+            proxy = {};
+          };
+
+          # Bridge for ethernet sharing (enp1s0, enp2s0, enp3s0)
+          br-lan = {
+            connection = {
+              id = "br-lan";
+              type = "bridge";
+              interface-name = "br-lan";
+              autoconnect = true;
+            };
+            ethernet = {};
+            bridge = {};
+            ipv4 = {
+              method = "shared";
+              address1 = "10.42.0.1/24";
+            };
+            ipv6 = {
+              addr-gen-mode = "default";
+              method = "auto";
+            };
+            proxy = {};
+          };
+
+          # Bridge port: enp1s0
+          bridge-slave-enp1s0 = {
+            connection = {
+              id = "bridge-slave-enp1s0";
+              type = "ethernet";
+              interface-name = "enp1s0";
+              controller = "br-lan";
+              port-type = "bridge";
+              autoconnect = true;
+            };
+            bridge-port = {};
+          };
+
+          # Bridge port: enp2s0
+          bridge-slave-enp2s0 = {
+            connection = {
+              id = "bridge-slave-enp2s0";
+              type = "ethernet";
+              interface-name = "enp2s0";
+              controller = "br-lan";
+              port-type = "bridge";
+              autoconnect = true;
+            };
+            bridge-port = {};
+          };
+
+          # Bridge port: enp3s0
+          bridge-slave-enp3s0 = {
+            connection = {
+              id = "bridge-slave-enp3s0";
+              type = "ethernet";
+              interface-name = "enp3s0";
+              controller = "br-lan";
+              port-type = "bridge";
+              autoconnect = true;
+            };
+            bridge-port = {};
+          };
+        };
+      };
+    };
+  };
+
   # Basic firewall configuration
   # Firewall disabled (using Tailscale for network security)
   # Services and their ports:
@@ -380,6 +493,7 @@
   #   - Music Assistant: 8095
   #   - Z-Wave JS: 3000 (WebSocket)
   #   - SSH: 22
+  #   - Bridge DHCP: 10.42.0.1 (dnsmasq)
   networking.firewall = {
     enable = lib.mkForce false;
     allowedTCPPorts = [22 8123 8095 3000];
