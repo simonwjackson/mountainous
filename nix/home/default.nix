@@ -361,11 +361,13 @@
         };
       };
       git = {
-        paging = {
-          colorArg = "always";
-          pager = "BAT_THEME=\"Catppuccin Frappe\" nix run nixpkgs#delta -- --paging=never";
-          useConfig = false;
-        };
+        pagers = [
+          {
+            colorArg = "always";
+            pager = "BAT_THEME=\"Catppuccin Frappe\" nix run nixpkgs#delta -- --paging=never";
+            useConfig = false;
+          }
+        ];
         parseEmoji = true;
       };
       os = {
@@ -481,7 +483,7 @@
           viewResetOptions = "D";
           fetch = "f";
           toggleTreeView = "`";
-          openMergeTool = "M";
+          openMergeOptions = "M";
           openStatusFilter = "<c-b>";
           copyFileInfoToClipboard = "y";
           collapseAll = "-";

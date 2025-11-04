@@ -64,7 +64,7 @@ in {
       # WARN: Still early days for uutils
       pkgs.uutils-coreutils-noprefix
       pkgs.xh
-      pkgs.du-dust
+      pkgs.dust
     ];
 
     services.tailscale.enable = true;

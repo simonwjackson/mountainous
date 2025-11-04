@@ -210,9 +210,9 @@ in {
         devices = deviceListFromSystems // deviceListFromOthers;
       };
 
-      extraFlags = [
-        "--no-default-folder"
-      ];
+      # extraFlags removed - Syncthing 2.0+ no longer supports --no-default-folder
+      # Default folder is now disabled by default when folders are configured declaratively
+      extraFlags = [];
     };
 
     system.activationScripts.syncthingStignore = {
