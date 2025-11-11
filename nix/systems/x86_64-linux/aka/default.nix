@@ -118,7 +118,12 @@
 
   boot = {
     swraid.enable = true;
-    extraModulePackages = [];
+    extraModulePackages = with config.boot.kernelPackages; [
+      v4l2loopback
+    ];
+    extraModprobeConfig = ''
+      options v4l2loopback devices=1 video_nr=10 card_label="OBS Virtual Camera" exclusive_caps=1
+    '';
     initrd = {
       availableKernelModules = [
         "ahci"
@@ -131,7 +136,7 @@
       ];
       kernelModules = ["dm-snapshot" "amdgpu" "i2c-dev"];
     };
-    kernelModules = ["kvm-amd" "tun"];
+    kernelModules = ["kvm-amd" "tun" "v4l2loopback"];
     kernelPackages = pkgs.linuxPackages_zen;
     loader = {
       efi = {
