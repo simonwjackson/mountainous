@@ -13,15 +13,15 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Install taskwarrior and the recurrence hook package
+    # Install the recurrence hook package
     home.packages = with pkgs; [
-      taskwarrior3
       taskwarrior-recurrence
     ];
 
     # Configure taskwarrior with required UDAs for chained recurrence
     programs.taskwarrior = {
       enable = true;
+      package = pkgs.taskwarrior3;
       config = {
         # Disable default recurrence behavior
         recurrence = "no";
@@ -56,13 +56,11 @@ in {
       run mkdir -p "$HOME/.task/hooks"
 
       # Symlink the hook scripts with the correct names
+      # Note: Files in nix store are already executable, no need to chmod
       run ln -sf ${pkgs.taskwarrior-recurrence}/share/taskwarrior-hooks/on_add.py \
         "$HOME/.task/hooks/on-add-fix-recurrence.py"
       run ln -sf ${pkgs.taskwarrior-recurrence}/share/taskwarrior-hooks/on_exit.py \
         "$HOME/.task/hooks/on-exit-fix-recurrence.py"
-
-      # Ensure hooks are executable
-      run chmod +x "$HOME/.task/hooks"/*.py
     '';
   };
 }

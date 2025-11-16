@@ -1,14 +1,14 @@
 {
   lib,
   python3Packages,
-  taskwarrior-recurrence,
+  inputs,
   ...
 }:
 python3Packages.buildPythonApplication {
   pname = "taskwarrior-recurrence";
   version = "unstable";
 
-  src = taskwarrior-recurrence;
+  src = inputs.taskwarrior-recurrence;
 
   pyproject = true;
   build-system = with python3Packages; [
