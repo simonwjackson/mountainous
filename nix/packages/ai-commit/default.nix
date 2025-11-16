@@ -5,7 +5,7 @@
   ...
 }:
 writeShellApplication {
-  name = "git-ai-commit-msg";
+  name = "ai-commit";
 
   runtimeInputs = with pkgs; [
     bash
@@ -174,7 +174,7 @@ writeShellApplication {
 
       Requires agenix secret 'user-simonwjackson-gemini-api-key' to be available for Gemini fallback.
     '';
-    mainProgram = "git-ai-commit-msg";
+    mainProgram = "ai-commit";
     platforms = platforms.unix;
     license = licenses.mit;
   };

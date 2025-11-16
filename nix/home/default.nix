@@ -568,10 +568,10 @@
       customCommands = [
         {
           key = "c";
-          command = "git-ai-commit-msg -y";
+          command = "ai-commit -y";
           context = "files";
           description = "AI-generated commit message";
-          loadingText = "Generating and committing...";
+          loadingText = "🤖 Committing...";
           output = "log";
         }
       ];
@@ -697,8 +697,6 @@
     ls = "${lib.getExe pkgs.eza}";
     ll = "${lib.getExe pkgs.eza} -l";
     la = "${lib.getExe pkgs.eza} -la";
-    gcm = "git-commit-message";
-    gcma = "git-commit-message --accept";
     ns = let
       nix-search-tv = lib.getExe inputs.nix-search-tv.packages.x86_64-linux.default;
       fzf = lib.getExe pkgs.fzf;
@@ -782,8 +780,7 @@
       fetch.pruneTags = true;
     };
     aliases = {
-      ai-commit = "!git-commit-message";
-      ai-commit-msg = "!git-ai-commit-msg";
+      ai-commit = "!ai-commit";
       secret-scanner = "!git-secret-scanner";
       wt =
         # bash
@@ -845,8 +842,7 @@
     ripgrep
     fd
     jq
-    git-commit-message
-    git-ai-commit-msg
+    ai-commit
     git-secret-scanner
     brightness-sync
     # firefox - managed by mountainous.firefox module
