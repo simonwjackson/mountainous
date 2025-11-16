@@ -571,8 +571,8 @@
           command = "git-ai-commit-msg -y";
           context = "files";
           description = "AI-generated commit message";
-          loadingText = "Generating AI commit message...";
-          output = "terminal";
+          loadingText = "Generating and committing...";
+          output = "log";
         }
       ];
       promptToReturnFromSubprocess = false;
