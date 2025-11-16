@@ -143,7 +143,17 @@ boot *ARGS:
 # Build configuration (dry-run)
 [group('deploy')]
 build *ARGS:
-    nix build .#nixosConfigurations.{{ ARGS }}.config.system.build.toplevel --dry-run
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Determine target host
+    if [ -z "{{ ARGS }}" ]; then
+        TARGET_HOST=$(hostname)
+    else
+        TARGET_HOST="{{ ARGS }}"
+    fi
+
+    nix build .#nixosConfigurations.${TARGET_HOST}.config.system.build.toplevel --dry-run
 
 # Deploy a new system and home configuration
 [group('deploy')]
