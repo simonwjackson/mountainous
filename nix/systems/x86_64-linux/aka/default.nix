@@ -92,6 +92,23 @@
   # Enable Thunderbolt support
   services.hardware.bolt.enable = true;
 
+  # Printing support
+  services.printing = {
+    enable = true;
+    drivers = with pkgs; [
+      brlaser  # Brother laser printer driver
+      gutenprint
+      gutenprintBin
+    ];
+  };
+
+  # Enable printer discovery and auto-configuration
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+
   hardware = {
     cpu = {
       amd = {
