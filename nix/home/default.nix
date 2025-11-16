@@ -676,6 +676,12 @@
 
     # Enable completion
     enableCompletion = true;
+
+    # Initialize just completion
+    initExtra = ''
+      # Load just completions
+      source <(${pkgs.just}/bin/just --completions zsh)
+    '';
   };
 
   # Home Manager needs a bit of information about you and the
