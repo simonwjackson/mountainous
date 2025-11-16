@@ -21,6 +21,8 @@
     };
   };
 
+  mountainous.taskwarrior.enable = true;
+
   # System-specific settings
   programs.git.extraConfig = {
     init.defaultBranch = "main";

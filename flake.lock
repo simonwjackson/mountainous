@@ -1593,6 +1593,7 @@
         "nix-search-tv": "nix-search-tv",
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_9",
+        "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tmesh": "tmesh_2",
         "vpn-confinement": "vpn-confinement"
       }
@@ -1968,6 +1969,22 @@
       "original": {
         "owner": "nanozuki",
         "repo": "tabby.nvim",
+        "type": "github"
+      }
+    },
+    "taskwarrior-recurrence": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1563911791,
+        "narHash": "sha256-8WRdZO11uvRdrNp7y1Gtdfhn3FII8C1WBQtiwHescqg=",
+        "owner": "lyz-code",
+        "repo": "taskwarrior_recurrence",
+        "rev": "b03cc3be994b5e888e542dc2a2729b1bd3476fa5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lyz-code",
+        "repo": "taskwarrior_recurrence",
         "type": "github"
       }
     },
