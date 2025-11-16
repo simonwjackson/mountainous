@@ -3,10 +3,11 @@
     enable = true;
     extraSettings = {
       monitor = [
-        ",preferred,auto,auto"
-        # "DP-1,2880x1800@120,auto-down,1.5"
-        # "DP-2,2880x1800@120,auto-down,1.5"
-        # "HDMI-A-2,disabled"
+        # Corrected positioning: DP-2 at 0x1350 (logical height = 1800/1.3333)
+        # This ensures monitors are perfectly aligned without gaps
+        "DP-1,2880x1800@120,0x0,1.3333"
+        "DP-2,2880x1800@120,0x1350,1.3333"
+        "HDMI-A-2,preferred,auto,auto"
       ];
       workspace = [
         # "2,gapsout:0,monitor:[HDMI-A-2],gapsin:5 "
