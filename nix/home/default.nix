@@ -627,6 +627,47 @@
               -- "$*" | \
           ${gum} format
       }
+
+      # Kill process by PID, name, or port
+      killproc() {
+        if [ -z "$1" ]; then
+          echo "Usage: kp <pid|process-name|:port>"
+          echo "Examples:"
+          echo "  kp 1234              # Kill by PID"
+          echo "  kp fastify           # Kill by process name"
+          echo "  kp :3001             # Kill by port"
+          return 1
+        fi
+
+        # Check if argument starts with colon (e.g., :3001)
+        if [[ "$1" =~ ^:[0-9]+$ ]]; then
+          local port="''${1:1}"  # Remove the colon
+          local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
+          if [ -z "$pid" ]; then
+            echo "No process found on port $port"
+            return 1
+          fi
+          kill -9 $pid && echo "Killed process $pid on port $port"
+
+        # Check if it's a PID (pure number)
+        elif [[ "$1" =~ ^[0-9]+$ ]]; then
+          if ps -p "$1" > /dev/null 2>&1; then
+            kill -9 "$1" && echo "Killed process $1"
+          else
+            echo "No process found with PID $1"
+            return 1
+          fi
+
+        # Otherwise treat as process name
+        else
+          pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
+            echo "No processes found matching '$1'"
+            return 1
+          }
+        fi
+      }
+
+      alias kp=killproc
     '';
 
     # Enable auto-suggestions and syntax highlighting if available
@@ -678,6 +719,47 @@
 
       # Enable reverse search with Ctrl-R (this should work by default but ensure it's set)
       bind '"\C-r": reverse-search-history'
+
+      # Kill process by PID, name, or port
+      killproc() {
+        if [ -z "$1" ]; then
+          echo "Usage: kp <pid|process-name|:port>"
+          echo "Examples:"
+          echo "  kp 1234              # Kill by PID"
+          echo "  kp fastify           # Kill by process name"
+          echo "  kp :3001             # Kill by port"
+          return 1
+        fi
+
+        # Check if argument starts with colon (e.g., :3001)
+        if [[ "$1" =~ ^:[0-9]+$ ]]; then
+          local port="''${1:1}"  # Remove the colon
+          local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
+          if [ -z "$pid" ]; then
+            echo "No process found on port $port"
+            return 1
+          fi
+          kill -9 $pid && echo "Killed process $pid on port $port"
+
+        # Check if it's a PID (pure number)
+        elif [[ "$1" =~ ^[0-9]+$ ]]; then
+          if ps -p "$1" > /dev/null 2>&1; then
+            kill -9 "$1" && echo "Killed process $1"
+          else
+            echo "No process found with PID $1"
+            return 1
+          fi
+
+        # Otherwise treat as process name
+        else
+          pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
+            echo "No processes found matching '$1'"
+            return 1
+          }
+        fi
+      }
+
+      alias kp=killproc
     '';
   };
 
@@ -1049,7 +1131,7 @@
     credentialsPath = config.age.secrets.user-simonwjackson-claude-credentials.path;
 
     commands = {
-      enable = true;
+      enable = false;
       source = ./claude/commands;
     };
 
