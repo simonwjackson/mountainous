@@ -787,52 +787,33 @@ in {
           "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
           "workspace magic,class:^(steam)$"
 
-          # Firefox specific windows that should float
+          # Firefox: Float specific popups and dialogs
           "float,class:^(firefox)$,title:^(Library)$"
           "float,class:^(firefox)$,title:^(About Mozilla Firefox)$"
           "float,class:^(firefox)$,title:^(Picture-in-Picture)$"
           "float,class:^(firefox)$,title:^(Firefox — Sharing Indicator)$"
           "float,class:^(firefox)$,title:^(Extension:.*)"
-
-          # Firefox save/open dialogs and popups (they have empty titles)
           "float,class:^(firefox)$,title:^$"
-          "center,class:^(firefox)$,floating:1"
 
-          # Explicitly tile the main Firefox window
-          "tile,class:^(firefox)$,title:^(.*Mozilla Firefox)$"
-          "tile,class:^(firefox)$,title:^(Mozilla Firefox Private Browsing)$"
+          # Firefox: Explicitly tile main browser windows
+          "tile,class:^(firefox)$,title:^(.*(Mozilla Firefox|Private Browsing))$"
 
-          # GTK Application dialogs and popups
-          "float,title:^(About)(.*)$"
-          "float,title:^(Preferences)(.*)$"
-          "float,title:^(Settings)(.*)$"
-          "float,title:^(Open File)(.*)$"
-          "float,title:^(Save File)(.*)$"
-          "float,title:^(Save As)(.*)$"
-          "float,title:^(Select Folder)(.*)$"
-          "float,title:^(Choose)(.*)$"
-          "float,title:^(File Chooser)(.*)$"
-          "float,title:^(Open Folder)(.*)$"
+          # GTK: Common dialog windows (About, Preferences, Settings)
+          "float,title:^(About|Preferences|Settings)(.*)$"
 
-          # GTK File picker patterns
-          "float,class:^(file-roller)$"
-          "float,class:^(org.gnome.FileRoller)$"
+          # GTK: File chooser dialogs
+          "float,title:^(Open File|Save File|Save As|Select Folder|Choose|File Chooser|Open Folder)(.*)$"
+          "size 900 700,title:^(Open File|Save File|Save As|Select Folder)(.*)$"
+
+          # GTK: File manager and archive windows
+          "float,class:^(file-roller|org.gnome.FileRoller)$"
           "float,title:^(Archive Manager)(.*)$"
 
-          # Common GTK dialog classes
-          "float,class:^(zenity)$"
-          "float,class:^(yad)$"
-          "float,class:^(file-chooser)$"
-          "float,class:^(dialog)$"
+          # GTK: Common dialog utilities
+          "float,class:^(zenity|yad|file-chooser|dialog)$"
 
-          # Size constraints for file dialogs
-          "size 900 700,title:^(Open File)(.*)$"
-          "size 900 700,title:^(Save File)(.*)$"
-          "size 900 700,title:^(Save As)(.*)$"
-          "size 900 700,title:^(Select Folder)(.*)$"
-
-          # Position Firefox popups in top-right
-          "move 100%-20 20,class:^(firefox)$,floating:1"
+          # Center all floating windows (popups, dialogs, etc.)
+          "center,floating:1"
         ];
       };
 
