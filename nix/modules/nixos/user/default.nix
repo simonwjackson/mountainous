@@ -51,7 +51,7 @@ in {
     };
 
     hashedPasswordFile = mkOption {
-      type = path;
+      type = lib.types.nullOr path;
       default = null;
       description = "The path to a file containing the hashed password for the user.";
     };
@@ -70,6 +70,7 @@ in {
 
     authorizedKeys = mkOption {
       type = listOf str;
+      default = [];
       description = "The list of authorized SSH keys for the user.";
     };
   };

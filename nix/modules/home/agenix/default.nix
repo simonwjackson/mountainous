@@ -75,11 +75,14 @@ in {
 
     identityPaths = mkOption {
       type = types.listOf types.str;
-      default = [
-        "${config.home.homeDirectory}/.ssh/id_rsa"
-        "${config.home.homeDirectory}/.ssh/id_ed25519"
-        "/tundra/igloo/id_rsa"
-      ];
+      default =
+        [
+          "${config.home.homeDirectory}/.ssh/id_rsa"
+          "${config.home.homeDirectory}/.ssh/id_ed25519"
+        ]
+        ++ (lib.optionals (osConfig.mountainous.impermanence.enable or false) [
+          "/tundra/igloo/id_rsa"
+        ]);
       description = "Paths to identity files for decrypting secrets";
     };
 

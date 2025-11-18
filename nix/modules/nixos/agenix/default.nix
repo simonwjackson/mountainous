@@ -43,11 +43,14 @@ in {
 
     identityPaths = mkOption {
       type = types.listOf types.str;
-      default = [
-        "/etc/ssh/ssh_host_rsa_key"
-        "/etc/ssh/ssh_host_ed25519_key"
-        "/tundra/igloo/id_rsa"
-      ];
+      default =
+        [
+          "/etc/ssh/ssh_host_rsa_key"
+          "/etc/ssh/ssh_host_ed25519_key"
+        ]
+        ++ (lib.optionals (config.mountainous.impermanence.enable or false) [
+          "/tundra/igloo/id_rsa"
+        ]);
       description = "Paths to identity files for decrypting secrets";
     };
 
