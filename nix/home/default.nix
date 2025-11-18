@@ -823,16 +823,25 @@
     ];
   };
 
-  # Global git hooks
-  xdg.configFile."git/hooks/pre-push" = {
-    text = ''
-      #!/usr/bin/env bash
-
-      # Call the standalone git secret scanner
-      exec git-secret-scanner diverged
+  # SSH configuration
+  programs.ssh = {
+    enable = true;
+    extraConfig = ''
+      Host *
+        WarnWeakCrypto no-pq-kex
     '';
-    executable = true;
   };
+
+  # Global git hooks
+  # xdg.configFile."git/hooks/pre-push" = {
+  #   text = ''
+  #     #!/usr/bin/env bash
+  #
+  #     # Call the standalone git secret scanner
+  #     exec git-secret-scanner diverged
+  #   '';
+  #   executable = true;
+  # };
 
   # Install some basic packages
   home.packages = with pkgs; [
@@ -843,7 +852,7 @@
     fd
     jq
     ai-commit
-    git-secret-scanner
+    # git-secret-scanner
     brightness-sync
     # firefox - managed by mountainous.firefox module
     chromium
