@@ -22,6 +22,7 @@ in {
     programs.taskwarrior = {
       enable = true;
       package = pkgs.taskwarrior3;
+      dataLocation = "${config.xdg.dataHome}/task";
       config = {
         # Disable default recurrence behavior
         recurrence = "no";
@@ -53,14 +54,14 @@ in {
 
     # Install recurrence hooks
     home.activation.installTaskwarriorHooks = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      run mkdir -p "$HOME/.task/hooks"
+      run mkdir -p "${config.xdg.dataHome}/task/hooks"
 
       # Symlink the hook scripts with the correct names
       # Note: Files in nix store are already executable, no need to chmod
       run ln -sf ${pkgs.taskwarrior-recurrence}/share/taskwarrior-hooks/on_add.py \
-        "$HOME/.task/hooks/on-add-fix-recurrence.py"
+        "${config.xdg.dataHome}/task/hooks/on-add-fix-recurrence.py"
       run ln -sf ${pkgs.taskwarrior-recurrence}/share/taskwarrior-hooks/on_exit.py \
-        "$HOME/.task/hooks/on-exit-fix-recurrence.py"
+        "${config.xdg.dataHome}/task/hooks/on-exit-fix-recurrence.py"
     '';
   };
 }

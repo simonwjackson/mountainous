@@ -6,6 +6,27 @@
   inputs,
   ...
 }: {
+  # Enable XDG Base Directory specification
+  xdg = {
+    enable = true;
+
+    # Explicitly set XDG directories (home-manager sets sensible defaults)
+    # These follow the XDG Base Directory specification:
+    # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+    # User-specific configuration files (~/.config)
+    configHome = "${config.home.homeDirectory}/.config";
+
+    # User-specific data files (~/.local/share)
+    dataHome = "${config.home.homeDirectory}/.local/share";
+
+    # User-specific state files (~/.local/state)
+    stateHome = "${config.home.homeDirectory}/.local/state";
+
+    # User-specific cache files (~/.cache)
+    cacheHome = "${config.home.homeDirectory}/.cache";
+  };
+
   programs.yazi = {
     enable = true;
 
@@ -709,7 +730,7 @@
   programs.bash = {
     enable = true;
     historyControl = ["ignoredups" "erasedups"];
-    historyFile = "$HOME/.bash_history";
+    historyFile = "${config.xdg.stateHome}/bash/history";
     historyFileSize = 10000;
     historySize = 1000;
     historyIgnore = ["ls" "cd" "exit"];
@@ -773,7 +794,7 @@
     userName = "Simon W. Jackson";
     userEmail = "github@simonwjackson.io";
     extraConfig = {
-      core.hooksPath = "~/.config/git/hooks";
+      core.hooksPath = "${config.xdg.configHome}/git/hooks";
       pull.rebase = true;
       pull.ff = "only";
       fetch.prune = true;
@@ -1125,6 +1146,12 @@
 
     BROWSER = "firefox";
     EDITOR = "nvim";
+
+    # XDG Base Directory specification
+    XDG_CONFIG_HOME = "${config.xdg.configHome}";
+    XDG_DATA_HOME = "${config.xdg.dataHome}";
+    XDG_STATE_HOME = "${config.xdg.stateHome}";
+    XDG_CACHE_HOME = "${config.xdg.cacheHome}";
   };
 
   # Enable dark mode support
