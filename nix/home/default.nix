@@ -596,12 +596,28 @@
           output = "log";
         }
         {
-          key = "s";
+          key = "p";
+          context = "files";
+          description = "Sync current branch with remote tracking branch";
+          command = "git sync {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🔽 Syncing branch...";
+        }
+        {
+          key = "P";
+          context = "files";
+          description = "Ship current branch to remote tracking branch";
+          command = "git ship --yes {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🚀 Shipping branch...";
+        }
+        {
+          key = "x";
           context = "localBranches";
           description = "Sync selected branch with main";
           command = "git sync {{.SelectedLocalBranch.Name}}";
           output = "log";
-          loadingText = "Syncing branch...";
+          loadingText = "🔽 Syncing branch...";
           prompts = [
             {
               type = "confirm";
@@ -611,7 +627,7 @@
           ];
         }
         {
-          key = "S";
+          key = "X";
           context = "localBranches";
           description = "Ship selected branch to {{.SelectedLocalBranch.Name}}";
           prompts = [
@@ -623,7 +639,7 @@
           ];
           command = "git ship --yes {{.SelectedLocalBranch.Name}}";
           output = "log";
-          loadingText = "Shipping branch...";
+          loadingText = "🚀 Shipping branch...";
         }
       ];
       promptToReturnFromSubprocess = false;
