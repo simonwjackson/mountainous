@@ -606,7 +606,7 @@
             {
               type = "confirm";
               title = "Confirm sync";
-              body = "Sync {{.SelectedLocalBranch.Name}} to local branch?";
+              body = "Sync {{.SelectedLocalBranch.Name}} to local branch now?";
             }
           ];
         }
