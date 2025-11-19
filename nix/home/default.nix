@@ -613,12 +613,12 @@
         {
           key = "S";
           context = "localBranches";
-          description = "Ship selected branch to main";
+          description = "Ship selected branch to {{.SelectedLocalBranch.Name}}";
           prompts = [
             {
               type = "confirm";
               title = "Confirm ship";
-              body = "Ship {{.SelectedLocalBranch.Name}} to main?";
+              body = "Ship {{.SelectedLocalBranch.Name}} to {{.SelectedLocalBranch.Name}}?";
             }
           ];
           command = "git ship --yes {{.SelectedLocalBranch.Name}}";
