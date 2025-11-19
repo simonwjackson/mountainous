@@ -832,43 +832,35 @@
     };
     aliases = {
       ai-commit = "!ai-commit";
-      secret-scanner = "!git-secret-scanner";
+      # secret-scanner = "!git-secret-scanner";
       sync = "!git-sync";
       ship = "!git-ship";
-      wt =
-        # bash
-        ''
-          !f() {
-            if [ "$1" = 'clone' ]; then
-              shift
-              url="$1"
-              name="''${2:-$(basename "$url" .git)}"
 
-              # Check if directory already exists
-              if [ -d "$name" ]; then
-                echo "Error: Directory '$name' already exists"
-                return 1
-              fi
+      # Worktree management
+      wt = "worktree list";
+      wta = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree add \"../$dir\" -b \"$branch\"; }; f";
+      wtr = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git fetch origin \"$branch\" 2>/dev/null || true; git worktree add \"../$dir\" \"origin/$branch\"; }; f";
+      wtrm = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree remove \"../$dir\"; }; f";
+      wtp = "worktree prune";
 
-              git clone --bare "$url" "$name/.bare" &&
-              cd "$name" &&
+      # Worktree status and info
+      wtst = "!git worktree list | awk '{print $1}' | xargs -I {} sh -c 'echo \"=== {} ===\" && git -C {} status -sb'";
+      wtb = "!git branch -vv && echo '\n--- Worktrees ---' && git worktree list";
 
-              # Only remove .git if it's a directory (from bare clone)
-              if [ -d .git ]; then
-                rm -rf .git
-              elif [ -f .git ]; then
-                echo "Warning: .git file already exists, backing up to .git.bak"
-                mv .git .git.bak
-              fi &&
+      # Branch management in worktrees
+      wtfree = "!comm -23 <(git branch --format='%(refname:short)' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's/branch //' | sort)";
+      wtnew = "!comm -23 <(git branch -r | grep -v HEAD | sed 's|origin/||' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's|.*/||' | sort)";
 
-              echo 'gitdir: ./.bare' > .git &&
-              git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
-              git fetch origin &&
-              git worktree add main
-            else
-              git worktree "$@"
-            fi
-          }; f'';
+      # Quick operations
+      l = "log --oneline --graph --decorate --all -20";
+
+      # Comparison - shows divergence between local and remote tracking branch
+      # < means commit is in remote but not local (behind)
+      # > means commit is in local but not remote (ahead)
+      delta = "!git log --left-right --graph --oneline --decorate @{u}...HEAD 2>/dev/null || echo 'No upstream branch set'";
+
+      # Bare worktree specific
+      root = "!pwd | sed 's|/[^/]*$||'";
     };
     ignores = [
       "**/.resession.json"
