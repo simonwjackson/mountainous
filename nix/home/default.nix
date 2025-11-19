@@ -600,7 +600,7 @@
           context = "localBranches";
           description = "Sync selected branch with main";
           command = "git sync {{.SelectedLocalBranch.Name}}";
-          output = "terminal";
+          output = "log";
           loadingText = "Syncing branch...";
           prompts = [
             {
@@ -622,7 +622,7 @@
             }
           ];
           command = "git ship --yes {{.SelectedLocalBranch.Name}}";
-          output = "terminal";
+          output = "log";
           loadingText = "Shipping branch...";
         }
       ];

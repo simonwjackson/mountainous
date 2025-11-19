@@ -225,6 +225,7 @@ in
         - Prompts to merge current branch to target branch
         - Supports --yes/-y flag to auto-merge without prompting
       '';
+      mainProgram = "git-sync";
       platforms = platforms.unix;
       license = licenses.mit;
     };
