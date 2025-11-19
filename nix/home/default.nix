@@ -599,7 +599,7 @@
           key = "s";
           context = "localBranches";
           description = "Sync selected branch with main";
-          command = "git checkout {{.SelectedLocalBranch.Name | quote}} && git sync";
+          command = "git sync {{.SelectedLocalBranch.Name}}";
           output = "terminal";
           loadingText = "Syncing branch...";
           prompts = [
@@ -621,7 +621,7 @@
               body = "Ship {{.SelectedLocalBranch.Name}} to main?";
             }
           ];
-          command = "git checkout {{.SelectedLocalBranch.Name | quote}} && git ship --yes";
+          command = "git ship --yes {{.SelectedLocalBranch.Name}}";
           output = "terminal";
           loadingText = "Shipping branch...";
         }
