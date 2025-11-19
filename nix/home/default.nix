@@ -595,6 +595,57 @@
           loadingText = "🤖 Committing...";
           output = "log";
         }
+        {
+          key = "s";
+          context = "localBranches";
+          description = "Sync branch with remote";
+          prompts = [
+            {
+              type = "input";
+              title = "Branch name to sync:";
+              key = "BranchName";
+              initialValue = "{{.SelectedLocalBranch.Name}}";
+              suggestions = {
+                preset = "branches";
+              };
+            }
+          ];
+          command = "git-sync {{.Form.BranchName | quote}}";
+          output = "terminal";
+          loadingText = "Syncing branch...";
+        }
+        {
+          key = "S";
+          context = "localBranches";
+          description = "Ship branch (merge to remote)";
+          prompts = [
+            {
+              type = "input";
+              title = "Branch name to ship to:";
+              key = "BranchName";
+              initialValue = "{{.SelectedLocalBranch.Name}}";
+              suggestions = {
+                preset = "branches";
+              };
+            }
+            {
+              type = "confirm";
+              title = "Confirm ship";
+              body = "Ship and merge to {{.Form.BranchName}}?";
+            }
+          ];
+          command = "git-ship --yes {{.Form.BranchName | quote}}";
+          output = "terminal";
+          loadingText = "Shipping branch...";
+        }
+        {
+          key = "<c-s>";
+          context = "global";
+          description = "Sync current branch with main";
+          command = "git-sync main";
+          output = "terminal";
+          loadingText = "Syncing with main...";
+        }
       ];
       promptToReturnFromSubprocess = false;
     };
