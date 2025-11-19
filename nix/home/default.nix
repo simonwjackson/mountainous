@@ -596,7 +596,7 @@
           output = "log";
         }
         {
-          key = "s";
+          key = "<c-s>";
           context = "localBranches";
           description = "Sync branch with remote";
           prompts = [
@@ -615,7 +615,7 @@
           loadingText = "Syncing branch...";
         }
         {
-          key = "S";
+          key = "<c-S>";
           context = "localBranches";
           description = "Ship branch (merge to remote)";
           prompts = [
@@ -637,14 +637,6 @@
           command = "git-ship --yes {{.Form.BranchName | quote}}";
           output = "terminal";
           loadingText = "Shipping branch...";
-        }
-        {
-          key = "<c-s>";
-          context = "global";
-          description = "Sync current branch with main";
-          command = "git-sync main";
-          output = "terminal";
-          loadingText = "Syncing with main...";
         }
       ];
       promptToReturnFromSubprocess = false;
