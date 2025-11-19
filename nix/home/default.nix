@@ -596,45 +596,32 @@
           output = "log";
         }
         {
-          key = "x";
+          key = "s";
           context = "localBranches";
-          description = "Sync branch with remote";
-          prompts = [
-            {
-              type = "input";
-              title = "Branch name to sync:";
-              key = "BranchName";
-              initialValue = "{{.SelectedLocalBranch.Name}}";
-              suggestions = {
-                preset = "branches";
-              };
-            }
-          ];
-          command = "git-sync {{.Form.BranchName | quote}}";
+          description = "Sync selected branch with main";
+          command = "git checkout {{.SelectedLocalBranch.Name | quote}} && git sync";
           output = "terminal";
           loadingText = "Syncing branch...";
-        }
-        {
-          key = "X";
-          context = "localBranches";
-          description = "Ship branch (merge to remote)";
           prompts = [
             {
-              type = "input";
-              title = "Branch name to ship to:";
-              key = "BranchName";
-              initialValue = "{{.SelectedLocalBranch.Name}}";
-              suggestions = {
-                preset = "branches";
-              };
+              type = "confirm";
+              title = "Confirm sync";
+              body = "Sync {{.SelectedLocalBranch.Name}} to local branch?";
             }
+          ];
+        }
+        {
+          key = "S";
+          context = "localBranches";
+          description = "Ship selected branch to main";
+          prompts = [
             {
               type = "confirm";
               title = "Confirm ship";
-              body = "Ship and merge to {{.Form.BranchName}}?";
+              body = "Ship {{.SelectedLocalBranch.Name}} to main?";
             }
           ];
-          command = "git-ship --yes {{.Form.BranchName | quote}}";
+          command = "git checkout {{.SelectedLocalBranch.Name | quote}} && git ship --yes";
           output = "terminal";
           loadingText = "Shipping branch...";
         }
