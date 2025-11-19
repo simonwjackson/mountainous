@@ -612,7 +612,7 @@
           loadingText = "🚀 Shipping branch...";
         }
         {
-          key = "x";
+          key = "s";
           context = "localBranches";
           description = "Sync selected branch with main";
           command = "git sync {{.SelectedLocalBranch.Name}}";
@@ -627,7 +627,7 @@
           ];
         }
         {
-          key = "X";
+          key = "S";
           context = "localBranches";
           description = "Ship selected branch to {{.SelectedLocalBranch.Name}}";
           prompts = [
