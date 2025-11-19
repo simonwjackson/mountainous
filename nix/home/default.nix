@@ -596,7 +596,7 @@
           output = "log";
         }
         {
-          key = "<c-s>";
+          key = "x";
           context = "localBranches";
           description = "Sync branch with remote";
           prompts = [
@@ -615,7 +615,7 @@
           loadingText = "Syncing branch...";
         }
         {
-          key = "<c-S>";
+          key = "X";
           context = "localBranches";
           description = "Ship branch (merge to remote)";
           prompts = [
