@@ -803,6 +803,8 @@
     aliases = {
       ai-commit = "!ai-commit";
       secret-scanner = "!git-secret-scanner";
+      sync = "!git-sync";
+      ship = "!git-ship";
       wt =
         # bash
         ''
@@ -811,16 +813,16 @@
               shift
               url="$1"
               name="''${2:-$(basename "$url" .git)}"
-              
+
               # Check if directory already exists
               if [ -d "$name" ]; then
                 echo "Error: Directory '$name' already exists"
                 return 1
               fi
-              
+
               git clone --bare "$url" "$name/.bare" &&
               cd "$name" &&
-              
+
               # Only remove .git if it's a directory (from bare clone)
               if [ -d .git ]; then
                 rm -rf .git
@@ -828,7 +830,7 @@
                 echo "Warning: .git file already exists, backing up to .git.bak"
                 mv .git .git.bak
               fi &&
-              
+
               echo 'gitdir: ./.bare' > .git &&
               git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" &&
               git fetch origin &&
@@ -873,6 +875,7 @@
     fd
     jq
     ai-commit
+    git-sync
     # git-secret-scanner
     brightness-sync
     # firefox - managed by mountainous.firefox module
