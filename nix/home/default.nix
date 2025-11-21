@@ -612,6 +612,38 @@
           loadingText = "🚀 Shipping branch...";
         }
         {
+          key = "p";
+          context = "commits";
+          description = "Sync current branch with remote tracking branch";
+          command = "git sync {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🔽 Syncing branch...";
+        }
+        {
+          key = "P";
+          context = "commits";
+          description = "Ship current branch to remote tracking branch";
+          command = "git ship --yes {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🚀 Shipping branch...";
+        }
+        {
+          key = "p";
+          context = "reflog";
+          description = "Sync current branch with remote tracking branch";
+          command = "git sync {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🔽 Syncing branch...";
+        }
+        {
+          key = "P";
+          context = "reflog";
+          description = "Ship current branch to remote tracking branch";
+          command = "git ship --yes {{.CheckedOutBranch.Name}}";
+          output = "log";
+          loadingText = "🚀 Shipping branch...";
+        }
+        {
           key = "s";
           context = "localBranches";
           description = "Sync selected branch with main";
