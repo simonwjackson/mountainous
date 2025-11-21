@@ -44,14 +44,14 @@
       current=$(${pkgs.git}/bin/git branch --show-current)
       current_dir=$PWD
 
-      # Check for uncommitted changes to tracked files
-      if [[ -n $(${pkgs.git}/bin/git status --porcelain) ]]; then
-        echo "Error: You have uncommitted changes."
+      # Check for uncommitted changes to tracked files only (ignore untracked)
+      if [[ -n $(${pkgs.git}/bin/git status --porcelain --untracked-files=no) ]]; then
+        echo "Error: You have uncommitted changes to tracked files."
         echo "Please stash or commit your changes before syncing:"
         echo ""
         echo "  git stash push -m \"Work in progress\""
         echo ""
-        ${pkgs.git}/bin/git status --short
+        ${pkgs.git}/bin/git status --short --untracked-files=no
         exit 1
       fi
 
