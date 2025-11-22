@@ -421,66 +421,6 @@
             };
             proxy = {};
           };
-
-          # Bridge for ethernet sharing (enp1s0, enp2s0, enp3s0)
-          br-lan = {
-            connection = {
-              id = "br-lan";
-              type = "bridge";
-              interface-name = "br-lan";
-              autoconnect = true;
-            };
-            ethernet = {};
-            bridge = {};
-            ipv4 = {
-              method = "shared";
-              address1 = "10.42.0.1/24";
-            };
-            ipv6 = {
-              addr-gen-mode = "default";
-              method = "auto";
-            };
-            proxy = {};
-          };
-
-          # Bridge port: enp1s0
-          bridge-slave-enp1s0 = {
-            connection = {
-              id = "bridge-slave-enp1s0";
-              type = "ethernet";
-              interface-name = "enp1s0";
-              controller = "br-lan";
-              port-type = "bridge";
-              autoconnect = true;
-            };
-            bridge-port = {};
-          };
-
-          # Bridge port: enp2s0
-          bridge-slave-enp2s0 = {
-            connection = {
-              id = "bridge-slave-enp2s0";
-              type = "ethernet";
-              interface-name = "enp2s0";
-              controller = "br-lan";
-              port-type = "bridge";
-              autoconnect = true;
-            };
-            bridge-port = {};
-          };
-
-          # Bridge port: enp3s0
-          bridge-slave-enp3s0 = {
-            connection = {
-              id = "bridge-slave-enp3s0";
-              type = "ethernet";
-              interface-name = "enp3s0";
-              controller = "br-lan";
-              port-type = "bridge";
-              autoconnect = true;
-            };
-            bridge-port = {};
-          };
         };
       };
     };
@@ -493,7 +433,6 @@
   #   - Music Assistant: 8095
   #   - Z-Wave JS: 3000 (WebSocket)
   #   - SSH: 22
-  #   - Bridge DHCP: 10.42.0.1 (dnsmasq)
   networking.firewall = {
     enable = lib.mkForce false;
     allowedTCPPorts = [22 8123 8095 3000];
