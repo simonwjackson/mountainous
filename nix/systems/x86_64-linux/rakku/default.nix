@@ -22,13 +22,6 @@
     mode = "400";
   };
 
-  age.secrets."vrackie-wifi-password" = {
-    file = ../../../../secrets/agenix/vrackie-wifi-password.age;
-    owner = "root";
-    group = "root";
-    mode = "400";
-  };
-
   # UEFI boot configuration
   boot.loader = {
     systemd-boot.enable = true;
@@ -381,49 +374,9 @@
     ];
   };
 
-  # Network configuration - WiFi and Ethernet Bridge
-  # Rakku connects to vrackie via WiFi (Netgear A8000) and shares connection
-  # through ethernet ports using a bridge with NAT
+  # Network configuration
   networking = {
-    # WiFi connection to vrackie network
-    # NetworkManager handles the connection - see declarative connection below
     wireless.enable = lib.mkForce false; # Use NetworkManager instead
-
-    # Declarative NetworkManager connections
-    networkmanager = {
-      ensureProfiles = {
-        # Load WiFi password from agenix secret
-        environmentFiles = [config.age.secrets."vrackie-wifi-password".path];
-
-        # WiFi connection to vrackie (2.4GHz)
-        profiles = {
-          vrackie = {
-            connection = {
-              id = "vrackie";
-              type = "wifi";
-              autoconnect = true;
-            };
-            wifi = {
-              mode = "infrastructure";
-              ssid = "vrackie";
-            };
-            wifi-security = {
-              auth-alg = "open";
-              key-mgmt = "wpa-psk";
-              psk = "$VRACKIE_WIFI_PASSWORD";
-            };
-            ipv4 = {
-              method = "auto";
-            };
-            ipv6 = {
-              addr-gen-mode = "default";
-              method = "auto";
-            };
-            proxy = {};
-          };
-        };
-      };
-    };
   };
 
   # Basic firewall configuration
