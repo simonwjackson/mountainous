@@ -782,38 +782,38 @@ in {
           "$mainMod, mouse:273, resizewindow"
         ];
 
-        windowrulev2 = [
-          "suppressevent maximize, class:.*"
-          "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0"
-          "workspace magic,class:^(steam)$"
+        windowrule = [
+          "suppress_event maximize, match:class .*"
+          "no_focus true, match:class ^$, match:title ^$, match:xwayland true, match:float true, match:fullscreen false, match:pin false"
+          "workspace magic, match:class ^(steam)$"
 
           # Firefox: Float specific popups and dialogs
-          "float,class:^(firefox)$,title:^(Library)$"
-          "float,class:^(firefox)$,title:^(About Mozilla Firefox)$"
-          "float,class:^(firefox)$,title:^(Picture-in-Picture)$"
-          "float,class:^(firefox)$,title:^(Firefox — Sharing Indicator)$"
-          "float,class:^(firefox)$,title:^(Extension:.*)"
-          "float,class:^(firefox)$,title:^$"
+          "float true, match:class ^(firefox)$, match:title ^(Library)$"
+          "float true, match:class ^(firefox)$, match:title ^(About Mozilla Firefox)$"
+          "float true, match:class ^(firefox)$, match:title ^(Picture-in-Picture)$"
+          "float true, match:class ^(firefox)$, match:title ^(Firefox — Sharing Indicator)$"
+          "float true, match:class ^(firefox)$, match:title ^(Extension:.*)"
+          "float true, match:class ^(firefox)$, match:title ^$"
 
           # Firefox: Explicitly tile main browser windows
-          "tile,class:^(firefox)$,title:^(.*(Mozilla Firefox|Private Browsing))$"
+          "tile true, match:class ^(firefox)$, match:title ^(.*(Mozilla Firefox|Private Browsing))$"
 
           # GTK: Common dialog windows (About, Preferences, Settings)
-          "float,title:^(About|Preferences|Settings)(.*)$"
+          "float true, match:title ^(About|Preferences|Settings)(.*)$"
 
           # GTK: File chooser dialogs
-          "float,title:^(Open File|Save File|Save As|Select Folder|Choose|File Chooser|Open Folder)(.*)$"
-          "size 900 700,title:^(Open File|Save File|Save As|Select Folder)(.*)$"
+          "float true, match:title ^(Open File|Save File|Save As|Select Folder|Choose|File Chooser|Open Folder)(.*)$"
+          "size 900 700, match:title ^(Open File|Save File|Save As|Select Folder)(.*)$"
 
           # GTK: File manager and archive windows
-          "float,class:^(file-roller|org.gnome.FileRoller)$"
-          "float,title:^(Archive Manager)(.*)$"
+          "float true, match:class ^(file-roller|org.gnome.FileRoller)$"
+          "float true, match:title ^(Archive Manager)(.*)$"
 
           # GTK: Common dialog utilities
-          "float,class:^(zenity|yad|file-chooser|dialog)$"
+          "float true, match:class ^(zenity|yad|file-chooser|dialog)$"
 
           # Center all floating windows (popups, dialogs, etc.)
-          "center,floating:1"
+          "center true, match:float true"
         ];
       };
 
@@ -826,7 +826,7 @@ in {
         "bindel"
         "bindl"
         "bindm"
-        "windowrulev2"
+        "windowrule"
         "animation"
         "bezier"
       ];

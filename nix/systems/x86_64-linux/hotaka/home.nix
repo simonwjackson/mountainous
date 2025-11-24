@@ -81,15 +81,15 @@
       ];
 
       # Window rules for gaming
-      windowrulev2 = [
+      windowrule = [
         # Steam should be on workspace 1, not special workspace
-        "workspace 1, class:^(steam)$"
+        "workspace 1, match:class ^(steam)$"
         # Steam should be fullscreen by default
-        "fullscreen, class:^(steam)$, title:^(Steam Big Picture Mode)$"
+        "fullscreen true, match:class ^(steam)$, match:title ^(Steam Big Picture Mode)$"
         # Moonlight should be on workspace 2
-        "workspace 2, class:^(moonlight)$"
+        "workspace 2, match:class ^(moonlight)$"
         # Moonlight should be fullscreen by default
-        "fullscreen, class:^(moonlight)$"
+        "fullscreen true, match:class ^(moonlight)$"
       ];
     };
   };
