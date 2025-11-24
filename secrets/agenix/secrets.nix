@@ -74,7 +74,7 @@ in {
 
   "proton.age".publicKeys = users ++ systems;
 
-  "fastestvpn.age".publicKeys = users ++ systems;
+  "fastest-vpn.age".publicKeys = users ++ systems;
 
   #########
   # Syncthing

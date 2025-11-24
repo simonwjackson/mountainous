@@ -13,6 +13,14 @@ in {
   };
 
   config = lib.mkIf config.mountainous.profiles.base.enable {
+    # VPN secret for vpn-ns tool
+    age.secrets."fastest-vpn" = {
+      file = ../../../secrets/agenix/fastest-vpn.age;
+      owner = "simonwjackson";
+      group = "users";
+      mode = "400";
+    };
+
     networking.firewall.allowedTCPPorts = [
       8081 # Expo GO
     ];

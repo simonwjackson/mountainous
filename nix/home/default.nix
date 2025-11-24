@@ -786,6 +786,7 @@
     in "${nix-search-tv} print | ${fzf} --preview '${nix-search-tv} preview {}' --scheme history";
     pretty = "${pkgs.nodePackages.prettier}/bin/prettier";
     claude = claudeCodeCmd;
+    vpn = "VPN_NS_CONFIG=/run/agenix/fastest-vpn ${lib.getExe pkgs.vpn-ns}";
   };
 
   # Basic shell configuration
@@ -1209,6 +1210,9 @@
     XDG_DATA_HOME = "${config.xdg.dataHome}";
     XDG_STATE_HOME = "${config.xdg.stateHome}";
     XDG_CACHE_HOME = "${config.xdg.cacheHome}";
+
+    # VPN namespace config
+    VPN_NS_CONFIG = "/run/agenix/fastest-vpn";
   };
 
   # Enable dark mode support
