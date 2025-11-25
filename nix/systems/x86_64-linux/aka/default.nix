@@ -244,26 +244,32 @@
   #   };
   # };
 
-  # Transmission with VPN isolation
-  mountainous.transmission = {
-    enable = true;
-    vpn = {
-      enable = true;
-      configFile = config.age.secrets."fastest-vpn".path;
-    };
-    tailscale.enable = true;
-  };
-
-  # SABnzbd with VPN isolation
+  # Base service configurations
+  mountainous.transmission.enable = true;
   mountainous.sabnzbd = {
     enable = true;
-    vpn = {
-      enable = true;
-      configFile = config.age.secrets."fastest-vpn".path;
-    };
-    tailscale = {
-      enable = true;
-      domain = "hummingbird-lake.ts.net";
+    hostWhitelist = [ "usenet.hummingbird-lake.ts.net" ];
+  };
+
+  # VPN namespace - services register here
+  mountainous.vpn-ns = {
+    enable = true;
+    configFile = config.age.secrets."fastest-vpn".path;
+    tailscaleDomain = "hummingbird-lake.ts.net";
+    services = {
+      transmission = {
+        enable = true;
+        port = 9091;
+        tailscale.enable = true;
+      };
+      sabnzbd = {
+        enable = true;
+        port = 8080;
+        tailscale = {
+          enable = true;
+          hostname = "usenet";
+        };
+      };
     };
   };
 
