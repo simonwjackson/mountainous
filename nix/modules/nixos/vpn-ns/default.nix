@@ -32,6 +32,12 @@ let
           default = name;
           description = "Tailscale hostname for this service";
         };
+
+        protocol = mkOption {
+          type = types.enum [ "http" "https" ];
+          default = "http";
+          description = "Backend protocol (WebSockets work over both)";
+        };
       };
 
       preStart = mkOption {
@@ -129,7 +135,7 @@ in
       nameValuePair name {
         hostname = svc.tailscale.hostname;
         port = svc.port;
-        protocol = "http";
+        protocol = svc.tailscale.protocol;
         host = cfg.vethAddress;
       }
     ) (filterAttrs (_: svc: svc.tailscale.enable) enabledServices);
