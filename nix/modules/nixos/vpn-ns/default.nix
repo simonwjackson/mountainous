@@ -102,7 +102,8 @@ in
       vpn-ns = {
         description = "VPN Network Namespace";
         wantedBy = [ "multi-user.target" ];
-        wants = enabledServiceNames;
+        wants = [ "network-online.target" ] ++ enabledServiceNames;
+        after = [ "network-online.target" ];
         before = enabledServiceNames;
         serviceConfig = {
           Type = "oneshot";
