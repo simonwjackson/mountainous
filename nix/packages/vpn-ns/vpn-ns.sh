@@ -25,10 +25,11 @@ usage() {
     echo ""
     echo "Local access:"
     echo "  Apps binding to 0.0.0.0 are reachable at 10.200.200.2"
-    echo "  Private networks (10.x, 172.16-31.x, 192.168.x) route through host"
+    echo "  192.168.x.x networks route through host (not VPN)"
     echo ""
     echo "Environment variables:"
-    echo "  VPN_NS_CONFIG  Path to WireGuard config (required)"
+    echo "  VPN_NS_CONFIG      Path to WireGuard config (required)"
+    echo "  VPN_NS_LOCAL_NETS  Space-separated CIDRs for local routing (default: 192.168.0.0/16)"
     exit 1
 }
 
@@ -118,11 +119,13 @@ setup_namespace() {
     sudo ip netns exec "$NS" ip addr add "$VETH_NS_IP" dev "$VETH_NS"
     sudo ip netns exec "$NS" ip link set "$VETH_NS" up
 
-    # Route RFC1918 private networks through veth (local access)
-    # These routes are more specific than default, so they take precedence
-    sudo ip netns exec "$NS" ip route add 10.0.0.0/8 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
-    sudo ip netns exec "$NS" ip route add 172.16.0.0/12 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
-    sudo ip netns exec "$NS" ip route add 192.168.0.0/16 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
+    # Route local networks through veth (not VPN)
+    # Only 192.168.0.0/16 by default - many VPNs use 10.x and 172.16.x internally
+    # Set VPN_NS_LOCAL_NETS to customize (space-separated CIDRs)
+    local local_nets="${VPN_NS_LOCAL_NETS:-192.168.0.0/16}"
+    for net in $local_nets; do
+        sudo ip netns exec "$NS" ip route add "$net" via "${VETH_HOST_IP%/*}" dev "$VETH_NS" 2>/dev/null || true
+    done
 
     # Enable IP forwarding on host for return traffic
     sudo sysctl -w net.ipv4.ip_forward=1 > /dev/null
