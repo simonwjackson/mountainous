@@ -17,6 +17,7 @@ usage() {
     echo ""
     echo "Run any command inside a WireGuard VPN namespace."
     echo "Internet traffic goes through VPN, but local networks remain accessible."
+    echo "Multiple apps share the same namespace - cleanup happens when last app exits."
     echo ""
     echo "Examples:"
     echo "  vpn-ns curl ifconfig.me"
@@ -62,8 +63,25 @@ if [[ -z "$WG_DNS" ]]; then
     WG_DNS="1.1.1.1"
 fi
 
+namespace_ready() {
+    # Check if namespace exists and has a working WireGuard interface
+    ip netns list 2>/dev/null | grep -q "^$NS" || return 1
+    sudo ip netns exec "$NS" ip link show "$WG_IF" &>/dev/null || return 1
+    sudo ip netns exec "$NS" ip link show "$VETH_NS" &>/dev/null || return 1
+    return 0
+}
+
 cleanup() {
-    echo "Cleaning up..."
+    # Check if any other processes are still running in the namespace
+    local pids
+    pids=$(sudo ip netns pids "$NS" 2>/dev/null | grep -v "^$BASHPID$" || true)
+
+    if [[ -n "$pids" ]]; then
+        echo "Other processes still using namespace, skipping cleanup"
+        return
+    fi
+
+    echo "Cleaning up namespace..."
     sudo iptables -t nat -D POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
     sudo ip route del "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
     sudo ip link del "$VETH_HOST" 2>/dev/null || true
@@ -161,8 +179,12 @@ verify_vpn() {
 
 trap cleanup EXIT
 
-setup_namespace
-verify_vpn
+if namespace_ready; then
+    echo "Reusing existing VPN namespace"
+else
+    setup_namespace
+    verify_vpn
+fi
 
 echo "Running: $*"
 sudo ip netns exec "$NS" sudo -u "$USER" \
