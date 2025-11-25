@@ -5,6 +5,7 @@ set -euo pipefail
 NS="vpn"
 WG_IF="wg-vpn"
 WG_CONF="${VPN_NS_CONFIG:-}"
+RUN_AS_USER="${VPN_NS_USER:-}"
 
 # Veth pair for local network access
 VETH_HOST="veth-vpn-host"
@@ -13,29 +14,49 @@ VETH_HOST_IP="10.200.200.1/24"
 VETH_NS_IP="10.200.200.2/24"
 
 usage() {
-    echo "Usage: vpn-ns <command> [args...]"
-    echo ""
-    echo "Run any command inside a WireGuard VPN namespace."
-    echo "Internet traffic goes through VPN, but local networks remain accessible."
-    echo "Multiple apps share the same namespace - cleanup happens when last app exits."
-    echo ""
-    echo "Examples:"
-    echo "  vpn-ns curl ifconfig.me"
-    echo "  vpn-ns transmission-gtk"
-    echo "  vpn-ns nix run nixpkgs#someapp -- --some-flags"
-    echo ""
-    echo "Local access:"
-    echo "  Apps binding to 0.0.0.0 are reachable at 10.200.200.2"
-    echo "  192.168.x.x networks route through host (not VPN)"
-    echo ""
-    echo "Environment variables:"
-    echo "  VPN_NS_CONFIG      Path to WireGuard config (required)"
-    echo "  VPN_NS_LOCAL_NETS  Space-separated CIDRs for local routing (default: 192.168.0.0/16)"
+    cat <<EOF
+Usage: vpn-ns [--setup] <command> [args...]
+       sudo vpn-ns [--setup] <command> [args...]
+
+Run any command inside a WireGuard VPN namespace.
+Internet traffic goes through VPN, but local networks remain accessible.
+Multiple apps share the same namespace - cleanup happens when last app exits.
+
+Options:
+  --setup    Only ensure namespace exists, don't run a command (for systemd PreStart)
+
+Requires root privileges (use sudo for interactive use).
+
+Examples:
+  sudo vpn-ns curl ifconfig.me
+  sudo vpn-ns --setup              # Just create namespace
+  ip netns exec vpn sudo -u user cmd  # Run in existing namespace
+
+Local access:
+  Apps binding to 0.0.0.0 are reachable at 10.200.200.2
+  192.168.x.x networks route through host (not VPN)
+
+Environment variables:
+  VPN_NS_CONFIG      Path to WireGuard config (required)
+  VPN_NS_USER        User to run command as (default: runs as root)
+  VPN_NS_LOCAL_NETS  Space-separated CIDRs for local routing (default: 192.168.0.0/16)
+EOF
     exit 1
 }
 
-if [[ $# -eq 0 ]]; then
+SETUP_ONLY=false
+if [[ "${1:-}" == "--setup" ]]; then
+    SETUP_ONLY=true
+    shift
+fi
+
+if [[ $# -eq 0 && "$SETUP_ONLY" == "false" ]]; then
     usage
+fi
+
+if [[ $EUID -ne 0 ]]; then
+    echo "ERROR: vpn-ns must be run as root (use sudo)" >&2
+    exit 1
 fi
 
 if [[ -z "$WG_CONF" ]]; then
@@ -64,17 +85,15 @@ if [[ -z "$WG_DNS" ]]; then
 fi
 
 namespace_ready() {
-    # Check if namespace exists and has a working WireGuard interface
     ip netns list 2>/dev/null | grep -q "^$NS" || return 1
-    sudo ip netns exec "$NS" ip link show "$WG_IF" &>/dev/null || return 1
-    sudo ip netns exec "$NS" ip link show "$VETH_NS" &>/dev/null || return 1
+    ip netns exec "$NS" ip link show "$WG_IF" &>/dev/null || return 1
+    ip netns exec "$NS" ip link show "$VETH_NS" &>/dev/null || return 1
     return 0
 }
 
 cleanup() {
-    # Check if any other processes are still running in the namespace
     local pids
-    pids=$(sudo ip netns pids "$NS" 2>/dev/null | grep -v "^$BASHPID$" || true)
+    pids=$(ip netns pids "$NS" 2>/dev/null | grep -v "^$$\$" || true)
 
     if [[ -n "$pids" ]]; then
         echo "Other processes still using namespace, skipping cleanup"
@@ -82,81 +101,63 @@ cleanup() {
     fi
 
     echo "Cleaning up namespace..."
-    sudo iptables -t nat -D POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
-    sudo ip route del "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
-    sudo ip link del "$VETH_HOST" 2>/dev/null || true
-    sudo ip netns del "$NS" 2>/dev/null || true
-    sudo rm -rf "/etc/netns/$NS" 2>/dev/null || true
+    iptables -t nat -D POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
+    ip route del "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+    ip link del "$VETH_HOST" 2>/dev/null || true
+    ip netns del "$NS" 2>/dev/null || true
+    rm -rf "/etc/netns/$NS" 2>/dev/null || true
 }
 
 setup_namespace() {
-    # Create namespace if it doesn't exist
     if ! ip netns list | grep -q "^$NS"; then
         echo "Creating network namespace '$NS'..."
-        sudo ip netns add "$NS"
+        ip netns add "$NS"
     fi
 
-    # Remove existing interface if present
-    sudo ip link del "$WG_IF" 2>/dev/null || true
+    ip link del "$WG_IF" 2>/dev/null || true
 
-    # Create and configure WireGuard interface
     echo "Setting up WireGuard interface..."
-    sudo ip link add "$WG_IF" type wireguard
+    ip link add "$WG_IF" type wireguard
 
-    # Copy config to temp file with .conf extension (wg-quick requires it)
-    local tmpconf
+    local tmpconf stripped
     tmpconf=$(mktemp --suffix=.conf)
     cp "$WG_CONF" "$tmpconf"
 
-    # Strip wg-quick specific options and configure interface
-    local stripped
     stripped=$(mktemp)
     wg-quick strip "$tmpconf" > "$stripped"
-    sudo wg setconf "$WG_IF" "$stripped"
+    wg setconf "$WG_IF" "$stripped"
     rm -f "$tmpconf" "$stripped"
 
-    sudo ip link set "$WG_IF" netns "$NS"
+    ip link set "$WG_IF" netns "$NS"
 
-    # Configure interface inside namespace
-    sudo ip netns exec "$NS" ip addr add "$WG_ADDR" dev "$WG_IF"
-    sudo ip netns exec "$NS" ip link set lo up
-    sudo ip netns exec "$NS" ip link set "$WG_IF" up
-    sudo ip netns exec "$NS" ip route add default dev "$WG_IF"
+    ip netns exec "$NS" ip addr add "$WG_ADDR" dev "$WG_IF"
+    ip netns exec "$NS" ip link set lo up
+    ip netns exec "$NS" ip link set "$WG_IF" up
+    ip netns exec "$NS" ip route add default dev "$WG_IF"
 
-    # Set up veth pair for local network access
     echo "Setting up local network bridge..."
-    sudo ip link del "$VETH_HOST" 2>/dev/null || true
-    sudo ip link add "$VETH_HOST" type veth peer name "$VETH_NS"
-    sudo ip link set "$VETH_NS" netns "$NS"
+    ip link del "$VETH_HOST" 2>/dev/null || true
+    ip link add "$VETH_HOST" type veth peer name "$VETH_NS"
+    ip link set "$VETH_NS" netns "$NS"
 
-    # Configure host side
-    sudo ip addr add "$VETH_HOST_IP" dev "$VETH_HOST"
-    sudo ip link set "$VETH_HOST" up
+    ip addr add "$VETH_HOST_IP" dev "$VETH_HOST"
+    ip link set "$VETH_HOST" up
 
-    # Configure namespace side
-    sudo ip netns exec "$NS" ip addr add "$VETH_NS_IP" dev "$VETH_NS"
-    sudo ip netns exec "$NS" ip link set "$VETH_NS" up
+    ip netns exec "$NS" ip addr add "$VETH_NS_IP" dev "$VETH_NS"
+    ip netns exec "$NS" ip link set "$VETH_NS" up
 
-    # Route local networks through veth (not VPN)
-    # Only 192.168.0.0/16 by default - many VPNs use 10.x and 172.16.x internally
-    # Set VPN_NS_LOCAL_NETS to customize (space-separated CIDRs)
     local local_nets="${VPN_NS_LOCAL_NETS:-192.168.0.0/16}"
     for net in $local_nets; do
-        sudo ip netns exec "$NS" ip route add "$net" via "${VETH_HOST_IP%/*}" dev "$VETH_NS" 2>/dev/null || true
+        ip netns exec "$NS" ip route add "$net" via "${VETH_HOST_IP%/*}" dev "$VETH_NS" 2>/dev/null || true
     done
 
-    # Enable IP forwarding on host for return traffic
-    sudo sysctl -w net.ipv4.ip_forward=1 > /dev/null
+    sysctl -w net.ipv4.ip_forward=1 > /dev/null
 
-    # Add route on host to reach namespace
-    sudo ip route add "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+    ip route add "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+    iptables -t nat -A POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
 
-    # NAT for namespace to reach local network (and return traffic)
-    sudo iptables -t nat -A POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
-
-    # Configure DNS for the namespace
-    sudo mkdir -p "/etc/netns/$NS"
-    echo "nameserver $WG_DNS" | sudo tee "/etc/netns/$NS/resolv.conf" > /dev/null
+    mkdir -p "/etc/netns/$NS"
+    echo "nameserver $WG_DNS" > "/etc/netns/$NS/resolv.conf"
 
     echo "VPN namespace ready (VPN: $WG_ADDR, Local: ${VETH_NS_IP%/*}, DNS: $WG_DNS)"
 }
@@ -164,7 +165,7 @@ setup_namespace() {
 verify_vpn() {
     echo "Verifying VPN connection..."
     local vpn_ip
-    vpn_ip=$(sudo ip netns exec "$NS" curl -s --max-time 10 ifconfig.me 2>/dev/null) || {
+    vpn_ip=$(ip netns exec "$NS" curl -s --max-time 10 ifconfig.me 2>/dev/null) || {
         echo "ERROR: VPN connection failed. Aborting to prevent leak."
         exit 1
     }
@@ -177,7 +178,10 @@ verify_vpn() {
     echo "VPN IP: $vpn_ip"
 }
 
-trap cleanup EXIT
+# Only cleanup on exit if running a command (not setup-only mode)
+if [[ "$SETUP_ONLY" == "false" ]]; then
+    trap cleanup EXIT
+fi
 
 if namespace_ready; then
     echo "Reusing existing VPN namespace"
@@ -186,11 +190,21 @@ else
     verify_vpn
 fi
 
+# If setup-only mode, we're done
+if [[ "$SETUP_ONLY" == "true" ]]; then
+    echo "Namespace '$NS' is ready for use"
+    exit 0
+fi
+
 echo "Running: $*"
-sudo ip netns exec "$NS" sudo -u "$USER" \
-    DISPLAY="${DISPLAY:-}" \
-    WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" \
-    XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" \
-    DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" \
-    HOME="$HOME" \
-    "$@"
+if [[ -n "$RUN_AS_USER" ]]; then
+    ip netns exec "$NS" runuser -u "$RUN_AS_USER" -- \
+        env DISPLAY="${DISPLAY:-}" \
+            WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" \
+            XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" \
+            DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" \
+            HOME="${HOME:-/home/$RUN_AS_USER}" \
+        "$@"
+else
+    ip netns exec "$NS" "$@"
+fi

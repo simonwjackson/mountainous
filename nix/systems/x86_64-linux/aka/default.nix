@@ -255,6 +255,31 @@
   # Configure sabnzbd to listen on all interfaces
   systemd.services.sabnzbd.serviceConfig.ExecStart = lib.mkForce "${pkgs.sabnzbd}/bin/sabnzbd -d -s 0.0.0.0:8080 -f /var/lib/sabnzbd/sabnzbd.ini";
 
+  # Transmission running inside VPN namespace
+  services.transmission = {
+    enable = true;
+    package = pkgs.transmission_4;
+    openFirewall = true;
+    settings = {
+      rpc-bind-address = "0.0.0.0";
+      rpc-whitelist-enabled = false;
+    };
+  };
+
+  # Set up VPN namespace before transmission starts, then run inside it
+  systemd.services.transmission = {
+    # Set up namespace as root before main service starts
+    serviceConfig.ExecStartPre = lib.mkBefore [
+      "+${pkgs.vpn-ns}/bin/vpn-ns --setup"
+    ];
+    # Run main process inside the VPN namespace (as transmission user)
+    serviceConfig.NetworkNamespacePath = "/run/netns/vpn";
+    # Bind-mount the namespace's resolv.conf for proper DNS
+    serviceConfig.BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];
+    # Ensure VPN config is available
+    environment.VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
+  };
+
   mountainous.tsnet-proxy = {
     enable = true;
     authKeyFile = config.age.secrets."tailscale".path;
