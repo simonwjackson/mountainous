@@ -96,7 +96,7 @@
   services.printing = {
     enable = true;
     drivers = with pkgs; [
-      brlaser  # Brother laser printer driver
+      brlaser # Brother laser printer driver
       gutenprint
       gutenprintBin
     ];
@@ -244,72 +244,32 @@
   #   };
   # };
 
-  services.music-assistant.providers = ["sonos" "sonos_s1" "ytmusic" "chromecast" "filesystem_local" "filesystem_smb" "jellyfin"];
-  services.music-assistant.enable = true;
-
-  services.sabnzbd = {
+  # Transmission with VPN isolation
+  mountainous.transmission = {
     enable = true;
-    openFirewall = true;
-  };
-
-  # Configure sabnzbd to listen on all interfaces
-  systemd.services.sabnzbd.serviceConfig.ExecStart = lib.mkForce "${pkgs.sabnzbd}/bin/sabnzbd -d -s 0.0.0.0:8080 -f /var/lib/sabnzbd/sabnzbd.ini";
-
-  # VPN namespace service - other services depend on this
-  systemd.services.vpn-ns = {
-    description = "VPN Network Namespace";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "transmission.service" ];  # Start transmission when vpn-ns starts
-    before = [ "transmission.service" ]; # Ensure vpn-ns is ready before transmission
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
-      ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
+    vpn = {
+      enable = true;
+      configFile = config.age.secrets."fastest-vpn".path;
     };
-    environment.VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
+    tailscale.enable = true;
   };
 
-  # Transmission running inside VPN namespace
-  services.transmission = {
+  # SABnzbd with VPN isolation
+  mountainous.sabnzbd = {
     enable = true;
-    package = pkgs.transmission_4;
-    openFirewall = true;
-    settings = {
-      rpc-bind-address = "0.0.0.0";
-      rpc-whitelist-enabled = false;
-      rpc-host-whitelist-enabled = false;
+    vpn = {
+      enable = true;
+      configFile = config.age.secrets."fastest-vpn".path;
     };
-  };
-
-  # Run transmission inside the VPN namespace
-  systemd.services.transmission = {
-    after = [ "vpn-ns.service" ];
-    bindsTo = [ "vpn-ns.service" ];  # Stop transmission if vpn-ns stops
-    partOf = [ "vpn-ns.service" ];   # Restart transmission when vpn-ns restarts
-    serviceConfig = {
-      NetworkNamespacePath = "/run/netns/vpn";
-      BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];
+    tailscale = {
+      enable = true;
+      domain = "hummingbird-lake.ts.net";
     };
   };
 
   mountainous.tsnet-proxy = {
     enable = true;
     authKeyFile = config.age.secrets."tailscale".path;
-    services = {
-      sabnzbd = {
-        hostname = "usenet";
-        port = 8080;
-        protocol = "http";
-        host = "127.0.0.1"; # Local sabnzbd service
-      };
-      transmission = {
-        hostname = "transmission";
-        port = 9091;
-        protocol = "http";
-        host = "10.200.200.2"; # VPN namespace via veth
-      };
-    };
   };
 
   # Enable Flatpak support
