@@ -255,6 +255,18 @@
   # Configure sabnzbd to listen on all interfaces
   systemd.services.sabnzbd.serviceConfig.ExecStart = lib.mkForce "${pkgs.sabnzbd}/bin/sabnzbd -d -s 0.0.0.0:8080 -f /var/lib/sabnzbd/sabnzbd.ini";
 
+  # VPN namespace service - other services depend on this
+  systemd.services.vpn-ns = {
+    description = "VPN Network Namespace";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
+    };
+    environment.VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
+  };
+
   # Transmission running inside VPN namespace
   services.transmission = {
     enable = true;
@@ -266,18 +278,14 @@
     };
   };
 
-  # Set up VPN namespace before transmission starts, then run inside it
+  # Run transmission inside the VPN namespace
   systemd.services.transmission = {
-    # Set up namespace as root before main service starts
-    serviceConfig.ExecStartPre = lib.mkBefore [
-      "+${pkgs.vpn-ns}/bin/vpn-ns --setup"
-    ];
-    # Run main process inside the VPN namespace (as transmission user)
-    serviceConfig.NetworkNamespacePath = "/run/netns/vpn";
-    # Bind-mount the namespace's resolv.conf for proper DNS
-    serviceConfig.BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];
-    # Ensure VPN config is available
-    environment.VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
+    after = [ "vpn-ns.service" ];
+    requires = [ "vpn-ns.service" ];
+    serviceConfig = {
+      NetworkNamespacePath = "/run/netns/vpn";
+      BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];
+    };
   };
 
   mountainous.tsnet-proxy = {
