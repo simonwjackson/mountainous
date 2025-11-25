@@ -6,15 +6,26 @@ NS="vpn"
 WG_IF="wg-vpn"
 WG_CONF="${VPN_NS_CONFIG:-}"
 
+# Veth pair for local network access
+VETH_HOST="veth-vpn-host"
+VETH_NS="veth-vpn-ns"
+VETH_HOST_IP="10.200.200.1/24"
+VETH_NS_IP="10.200.200.2/24"
+
 usage() {
     echo "Usage: vpn-ns <command> [args...]"
     echo ""
     echo "Run any command inside a WireGuard VPN namespace."
+    echo "Internet traffic goes through VPN, but local networks remain accessible."
     echo ""
     echo "Examples:"
     echo "  vpn-ns curl ifconfig.me"
     echo "  vpn-ns transmission-gtk"
     echo "  vpn-ns nix run nixpkgs#someapp -- --some-flags"
+    echo ""
+    echo "Local access:"
+    echo "  Apps binding to 0.0.0.0 are reachable at 10.200.200.2"
+    echo "  Private networks (10.x, 172.16-31.x, 192.168.x) route through host"
     echo ""
     echo "Environment variables:"
     echo "  VPN_NS_CONFIG  Path to WireGuard config (required)"
@@ -52,6 +63,9 @@ fi
 
 cleanup() {
     echo "Cleaning up..."
+    sudo iptables -t nat -D POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
+    sudo ip route del "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+    sudo ip link del "$VETH_HOST" 2>/dev/null || true
     sudo ip netns del "$NS" 2>/dev/null || true
     sudo rm -rf "/etc/netns/$NS" 2>/dev/null || true
 }
@@ -90,11 +104,40 @@ setup_namespace() {
     sudo ip netns exec "$NS" ip link set "$WG_IF" up
     sudo ip netns exec "$NS" ip route add default dev "$WG_IF"
 
+    # Set up veth pair for local network access
+    echo "Setting up local network bridge..."
+    sudo ip link del "$VETH_HOST" 2>/dev/null || true
+    sudo ip link add "$VETH_HOST" type veth peer name "$VETH_NS"
+    sudo ip link set "$VETH_NS" netns "$NS"
+
+    # Configure host side
+    sudo ip addr add "$VETH_HOST_IP" dev "$VETH_HOST"
+    sudo ip link set "$VETH_HOST" up
+
+    # Configure namespace side
+    sudo ip netns exec "$NS" ip addr add "$VETH_NS_IP" dev "$VETH_NS"
+    sudo ip netns exec "$NS" ip link set "$VETH_NS" up
+
+    # Route RFC1918 private networks through veth (local access)
+    # These routes are more specific than default, so they take precedence
+    sudo ip netns exec "$NS" ip route add 10.0.0.0/8 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
+    sudo ip netns exec "$NS" ip route add 172.16.0.0/12 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
+    sudo ip netns exec "$NS" ip route add 192.168.0.0/16 via "${VETH_HOST_IP%/*}" dev "$VETH_NS"
+
+    # Enable IP forwarding on host for return traffic
+    sudo sysctl -w net.ipv4.ip_forward=1 > /dev/null
+
+    # Add route on host to reach namespace
+    sudo ip route add "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+
+    # NAT for namespace to reach local network (and return traffic)
+    sudo iptables -t nat -A POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
+
     # Configure DNS for the namespace
     sudo mkdir -p "/etc/netns/$NS"
     echo "nameserver $WG_DNS" | sudo tee "/etc/netns/$NS/resolv.conf" > /dev/null
 
-    echo "VPN namespace ready (Address: $WG_ADDR, DNS: $WG_DNS)"
+    echo "VPN namespace ready (VPN: $WG_ADDR, Local: ${VETH_NS_IP%/*}, DNS: $WG_DNS)"
 }
 
 verify_vpn() {
