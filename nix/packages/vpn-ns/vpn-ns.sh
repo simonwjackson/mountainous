@@ -2,10 +2,21 @@
 
 set -euo pipefail
 
+# Auto-escalate to root if not already (for interactive use)
+if [[ $EUID -ne 0 ]]; then
+    if command -v sudo &>/dev/null; then
+        exec sudo --preserve-env=VPN_NS_CONFIG,VPN_NS_LOCAL_NETS,VPN_NS_USER \
+            "$0" "$@"
+    else
+        echo "ERROR: vpn-ns must be run as root (sudo not found)" >&2
+        exit 1
+    fi
+fi
+
 NS="vpn"
 WG_IF="wg-vpn"
 WG_CONF="${VPN_NS_CONFIG:-}"
-RUN_AS_USER="${VPN_NS_USER:-}"
+RUN_AS_USER="${VPN_NS_USER:-${SUDO_USER:-}}"
 
 # Veth pair for local network access
 VETH_HOST="veth-vpn-host"
@@ -16,23 +27,21 @@ VETH_NS_IP="10.200.200.2/24"
 usage() {
     cat <<EOF
 Usage: vpn-ns [--setup|--cleanup] <command> [args...]
-       sudo vpn-ns [--setup|--cleanup] <command> [args...]
 
 Run any command inside a WireGuard VPN namespace.
 Internet traffic goes through VPN, but local networks remain accessible.
 Multiple apps share the same namespace - cleanup happens when last app exits.
+Auto-escalates to root via sudo when needed.
 
 Options:
-  --setup    Only ensure namespace exists, don't run a command (for systemd ExecStart)
-  --cleanup  Tear down namespace and all associated resources (for systemd ExecStop)
-
-Requires root privileges (use sudo for interactive use).
+  --setup    Only ensure namespace exists, don't run a command (for systemd)
+  --cleanup  Tear down namespace and all associated resources (for systemd)
 
 Examples:
-  sudo vpn-ns curl ifconfig.me
-  sudo vpn-ns --setup              # Just create namespace
-  sudo vpn-ns --cleanup            # Tear down namespace
-  ip netns exec vpn sudo -u user cmd  # Run in existing namespace
+  vpn-ns curl ifconfig.me
+  vpn-ns transmission-gtk
+  vpn-ns --setup                   # Just create namespace
+  vpn-ns --cleanup                 # Tear down namespace
 
 Local access:
   Apps binding to 0.0.0.0 are reachable at 10.200.200.2
@@ -40,7 +49,7 @@ Local access:
 
 Environment variables:
   VPN_NS_CONFIG      Path to WireGuard config (required for --setup)
-  VPN_NS_USER        User to run command as (default: runs as root)
+  VPN_NS_USER        User to run command as (default: invoking user)
   VPN_NS_LOCAL_NETS  Space-separated CIDRs for local routing (default: 192.168.0.0/16)
 EOF
     exit 1
@@ -58,11 +67,6 @@ fi
 
 if [[ $# -eq 0 && "$SETUP_ONLY" == "false" && "$CLEANUP_ONLY" == "false" ]]; then
     usage
-fi
-
-if [[ $EUID -ne 0 ]]; then
-    echo "ERROR: vpn-ns must be run as root (use sudo)" >&2
-    exit 1
 fi
 
 # Handle cleanup mode early (doesn't need VPN_NS_CONFIG)
