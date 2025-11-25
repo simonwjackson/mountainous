@@ -278,6 +278,7 @@
     settings = {
       rpc-bind-address = "0.0.0.0";
       rpc-whitelist-enabled = false;
+      rpc-host-whitelist-enabled = false;
     };
   };
 
@@ -301,6 +302,12 @@
         port = 8080;
         protocol = "http";
         host = "127.0.0.1"; # Local sabnzbd service
+      };
+      transmission = {
+        hostname = "transmission";
+        port = 9091;
+        protocol = "http";
+        host = "10.200.200.2"; # VPN namespace via veth
       };
     };
   };
