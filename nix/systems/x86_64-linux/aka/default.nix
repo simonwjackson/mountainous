@@ -259,10 +259,13 @@
   systemd.services.vpn-ns = {
     description = "VPN Network Namespace";
     wantedBy = [ "multi-user.target" ];
+    wants = [ "transmission.service" ];  # Start transmission when vpn-ns starts
+    before = [ "transmission.service" ]; # Ensure vpn-ns is ready before transmission
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
+      ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
     };
     environment.VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
   };
@@ -281,7 +284,8 @@
   # Run transmission inside the VPN namespace
   systemd.services.transmission = {
     after = [ "vpn-ns.service" ];
-    requires = [ "vpn-ns.service" ];
+    bindsTo = [ "vpn-ns.service" ];  # Stop transmission if vpn-ns stops
+    partOf = [ "vpn-ns.service" ];   # Restart transmission when vpn-ns restarts
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
       BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];

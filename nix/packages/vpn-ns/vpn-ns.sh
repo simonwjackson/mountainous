@@ -15,21 +15,23 @@ VETH_NS_IP="10.200.200.2/24"
 
 usage() {
     cat <<EOF
-Usage: vpn-ns [--setup] <command> [args...]
-       sudo vpn-ns [--setup] <command> [args...]
+Usage: vpn-ns [--setup|--cleanup] <command> [args...]
+       sudo vpn-ns [--setup|--cleanup] <command> [args...]
 
 Run any command inside a WireGuard VPN namespace.
 Internet traffic goes through VPN, but local networks remain accessible.
 Multiple apps share the same namespace - cleanup happens when last app exits.
 
 Options:
-  --setup    Only ensure namespace exists, don't run a command (for systemd PreStart)
+  --setup    Only ensure namespace exists, don't run a command (for systemd ExecStart)
+  --cleanup  Tear down namespace and all associated resources (for systemd ExecStop)
 
 Requires root privileges (use sudo for interactive use).
 
 Examples:
   sudo vpn-ns curl ifconfig.me
   sudo vpn-ns --setup              # Just create namespace
+  sudo vpn-ns --cleanup            # Tear down namespace
   ip netns exec vpn sudo -u user cmd  # Run in existing namespace
 
 Local access:
@@ -37,7 +39,7 @@ Local access:
   192.168.x.x networks route through host (not VPN)
 
 Environment variables:
-  VPN_NS_CONFIG      Path to WireGuard config (required)
+  VPN_NS_CONFIG      Path to WireGuard config (required for --setup)
   VPN_NS_USER        User to run command as (default: runs as root)
   VPN_NS_LOCAL_NETS  Space-separated CIDRs for local routing (default: 192.168.0.0/16)
 EOF
@@ -45,18 +47,34 @@ EOF
 }
 
 SETUP_ONLY=false
+CLEANUP_ONLY=false
 if [[ "${1:-}" == "--setup" ]]; then
     SETUP_ONLY=true
     shift
+elif [[ "${1:-}" == "--cleanup" ]]; then
+    CLEANUP_ONLY=true
+    shift
 fi
 
-if [[ $# -eq 0 && "$SETUP_ONLY" == "false" ]]; then
+if [[ $# -eq 0 && "$SETUP_ONLY" == "false" && "$CLEANUP_ONLY" == "false" ]]; then
     usage
 fi
 
 if [[ $EUID -ne 0 ]]; then
     echo "ERROR: vpn-ns must be run as root (use sudo)" >&2
     exit 1
+fi
+
+# Handle cleanup mode early (doesn't need VPN_NS_CONFIG)
+if [[ "$CLEANUP_ONLY" == "true" ]]; then
+    echo "Cleaning up VPN namespace..."
+    iptables -t nat -D POSTROUTING -s 10.200.200.0/24 ! -o "$VETH_HOST" -j MASQUERADE 2>/dev/null || true
+    ip route del "${VETH_NS_IP%/*}/32" dev "$VETH_HOST" 2>/dev/null || true
+    ip link del "$VETH_HOST" 2>/dev/null || true
+    ip netns del "$NS" 2>/dev/null || true
+    rm -rf "/etc/netns/$NS" 2>/dev/null || true
+    echo "VPN namespace cleaned up"
+    exit 0
 fi
 
 if [[ -z "$WG_CONF" ]]; then
