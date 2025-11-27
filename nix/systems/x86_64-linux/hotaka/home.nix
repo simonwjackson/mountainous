@@ -11,7 +11,7 @@
 
     # Enable hyprgrass plugin for native touch gesture support
     plugins = [
-      inputs.hyprgrass.packages.${pkgs.system}.default
+      inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
     ];
 
     extraSettings = {

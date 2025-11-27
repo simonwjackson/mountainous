@@ -11,7 +11,7 @@ pkgs.writeShellApplication {
     coreutils
     openssh
     age
-    inputs.nixos-anywhere.packages.${system}.nixos-anywhere
+    inputs.nixos-anywhere.packages.${pkgs.stdenv.hostPlatform.system}.nixos-anywhere
   ];
 
   text = builtins.readFile ./deploy.sh;
