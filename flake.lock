@@ -1080,11 +1080,11 @@
         "vim-overseer": "vim-overseer"
       },
       "locked": {
-        "lastModified": 1764272662,
-        "narHash": "sha256-1aiUfIvZ4GkAH3UUCPME0HvoOwxzE6vSePzlpshjuvU=",
+        "lastModified": 1764275022,
+        "narHash": "sha256-VlXFDWuHxH9mZhjidoj7TRFkn49bIasqDujREatx/EI=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "020143a12e3b2e0cd4fb2dfdc7d7c614f27de025",
+        "rev": "bdb982f91dbbed3b798a98ac59577d0fc30835cc",
         "type": "github"
       },
       "original": {
