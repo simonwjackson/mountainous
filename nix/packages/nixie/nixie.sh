@@ -34,9 +34,19 @@ SUCCESSFUL_HOSTS=()
 FAILED_HOSTS=()
 BUILDERS_ENV="${NIXIE_BUILDERS:-}"
 BUILDERS_SPEC=""
+IS_TTY=false
+
+# Detect if running in an interactive TTY
+if [ -t 1 ]; then
+  IS_TTY=true
+fi
 
 log() {
-  gum log --level "$1" "$2"
+  if $IS_TTY; then
+    gum log --level "$1" "$2"
+  else
+    echo "[$1] $2"
+  fi
 }
 
 handle_sigint() {
@@ -177,52 +187,97 @@ run_action() {
 
   # Add any extra options
   cmd_args+=("${EXTRA_OPTS[@]}")
-  cmd_args+=(--log-format internal-json -v)
 
-  if nixos-rebuild "${cmd_args[@]}" |& nom --json; then
-    log info "Successfully ran $ACTION on $host"
-    SUCCESSFUL_HOSTS+=("$host")
+  # Use nom for pretty output in TTY, plain output otherwise
+  if $IS_TTY; then
+    cmd_args+=(--log-format internal-json -v)
+    if nixos-rebuild "${cmd_args[@]}" |& nom --json; then
+      log info "Successfully ran $ACTION on $host"
+      SUCCESSFUL_HOSTS+=("$host")
+    else
+      log error "Failed to run $ACTION on $host"
+      FAILED_HOSTS+=("$host")
+    fi
   else
-    log error "Failed to run $ACTION on $host"
-    FAILED_HOSTS+=("$host")
+    if nixos-rebuild "${cmd_args[@]}"; then
+      log info "Successfully ran $ACTION on $host"
+      SUCCESSFUL_HOSTS+=("$host")
+    else
+      log error "Failed to run $ACTION on $host"
+      FAILED_HOSTS+=("$host")
+    fi
   fi
 }
 
 print_summary() {
-  gum style \
-    --border normal \
-    --margin "1" \
-    --padding "1" \
-    --border-foreground 212 \
-    "nixie Script Summary"
+  if $IS_TTY; then
+    gum style \
+      --border normal \
+      --margin "1" \
+      --padding "1" \
+      --border-foreground 212 \
+      "nixie Script Summary"
 
-  gum style --foreground 212 "Action performed: $ACTION"
+    gum style --foreground 212 "Action performed: $ACTION"
 
-  gum style --foreground 212 "Hosts processed:"
-  for host in "${ONLINE_HOSTS[@]}"; do
-    if [[ " ${SUCCESSFUL_HOSTS[*]} " =~ ${host} ]]; then
-      gum style "  ✓ $host" --foreground 46
-    elif [[ " ${FAILED_HOSTS[*]} " =~ ${host} ]]; then
-      gum style "  ✗ $host" --foreground 196
-    else
-      gum style "  ? $host" --foreground 214
-    fi
-  done
-
-  if [[ ${#OFFLINE_HOSTS[@]} -gt 0 ]]; then
-    gum style --foreground 212 "Offline hosts:"
-
-    for host in "${OFFLINE_HOSTS[@]}"; do
-      gum style "  - $host" --foreground 214
+    gum style --foreground 212 "Hosts processed:"
+    for host in "${ONLINE_HOSTS[@]}"; do
+      if [[ " ${SUCCESSFUL_HOSTS[*]} " =~ ${host} ]]; then
+        gum style "  ✓ $host" --foreground 46
+      elif [[ " ${FAILED_HOSTS[*]} " =~ ${host} ]]; then
+        gum style "  ✗ $host" --foreground 196
+      else
+        gum style "  ? $host" --foreground 214
+      fi
     done
-  fi
 
-  gum style --foreground 212 "Summary:"
-  gum style "  Total hosts: ${#HOSTS_ARRAY[@]}"
-  gum style "  Online hosts: ${#ONLINE_HOSTS[@]}"
-  gum style "  Offline hosts: ${#OFFLINE_HOSTS[@]}"
-  gum style "  Successful: ${#SUCCESSFUL_HOSTS[@]}"
-  gum style "  Failed: ${#FAILED_HOSTS[@]}"
+    if [[ ${#OFFLINE_HOSTS[@]} -gt 0 ]]; then
+      gum style --foreground 212 "Offline hosts:"
+
+      for host in "${OFFLINE_HOSTS[@]}"; do
+        gum style "  - $host" --foreground 214
+      done
+    fi
+
+    gum style --foreground 212 "Summary:"
+    gum style "  Total hosts: ${#HOSTS_ARRAY[@]}"
+    gum style "  Online hosts: ${#ONLINE_HOSTS[@]}"
+    gum style "  Offline hosts: ${#OFFLINE_HOSTS[@]}"
+    gum style "  Successful: ${#SUCCESSFUL_HOSTS[@]}"
+    gum style "  Failed: ${#FAILED_HOSTS[@]}"
+  else
+    echo ""
+    echo "=== nixie Script Summary ==="
+    echo ""
+    echo "Action performed: $ACTION"
+    echo ""
+    echo "Hosts processed:"
+    for host in "${ONLINE_HOSTS[@]}"; do
+      if [[ " ${SUCCESSFUL_HOSTS[*]} " =~ ${host} ]]; then
+        echo "  [OK] $host"
+      elif [[ " ${FAILED_HOSTS[*]} " =~ ${host} ]]; then
+        echo "  [FAIL] $host"
+      else
+        echo "  [?] $host"
+      fi
+    done
+
+    if [[ ${#OFFLINE_HOSTS[@]} -gt 0 ]]; then
+      echo ""
+      echo "Offline hosts:"
+      for host in "${OFFLINE_HOSTS[@]}"; do
+        echo "  - $host"
+      done
+    fi
+
+    echo ""
+    echo "Summary:"
+    echo "  Total hosts: ${#HOSTS_ARRAY[@]}"
+    echo "  Online hosts: ${#ONLINE_HOSTS[@]}"
+    echo "  Offline hosts: ${#OFFLINE_HOSTS[@]}"
+    echo "  Successful: ${#SUCCESSFUL_HOSTS[@]}"
+    echo "  Failed: ${#FAILED_HOSTS[@]}"
+  fi
 }
 
 main() {
