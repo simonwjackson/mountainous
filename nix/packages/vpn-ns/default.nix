@@ -30,6 +30,7 @@
 // {
   meta = with lib; {
     description = "Run commands inside a WireGuard VPN namespace";
+    mainProgram = "vpn-ns";
     license = licenses.mit;
     platforms = platforms.linux;
   };

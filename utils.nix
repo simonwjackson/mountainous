@@ -262,7 +262,7 @@ in {
     packages = pkgSets;
 
     # Make packages available to dependent flakes
-    overlay = final: prev: collectPackages prev prev.system;
+    overlay = final: prev: collectPackages prev prev.stdenv.hostPlatform.system;
 
     # Export lib with mountainous utilities
     lib = {

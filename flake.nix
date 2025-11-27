@@ -60,7 +60,7 @@
         gomod2nix.overlays.default
         (final: prev: {
           # Removed gamescope_git overlays - now using Jovian's stable packages
-          neovim = inputs.icho.packages.${final.system}.default;
+          neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];
