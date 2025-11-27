@@ -918,10 +918,12 @@
   # SSH configuration
   programs.ssh = {
     enable = true;
-    extraConfig = ''
-      Host *
-        WarnWeakCrypto no-pq-kex
-    '';
+    enableDefaultConfig = false;
+    matchBlocks."*" = {
+      extraOptions = {
+        WarnWeakCrypto = "no-pq-kex";
+      };
+    };
   };
 
   # Global git hooks
