@@ -53,7 +53,7 @@
   };
 
   # System-specific settings
-  programs.git.extraConfig = {
+  programs.git.settings = {
     init.defaultBranch = "main";
   };
 

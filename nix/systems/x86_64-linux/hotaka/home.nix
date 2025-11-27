@@ -95,7 +95,7 @@
   };
 
   # Git configuration
-  programs.git.extraConfig = {
+  programs.git.settings = {
     init.defaultBranch = "main";
   };
 

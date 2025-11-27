@@ -14,7 +14,7 @@ in {
 
   config = mkIf cfg.enable {
     # Disable PulseAudio (using PipeWire instead)
-    hardware.pulseaudio.enable = false;
+    services.pulseaudio.enable = false;
 
     # Enable PipeWire with gaming optimizations
     services.pipewire = {

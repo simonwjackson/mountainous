@@ -16,7 +16,7 @@ in {
   config = mkIf cfg.enable {
     # Enable hardware acceleration for video decoding (VA-API/VDPAU)
     # This is required for Moonlight game streaming
-    hardware.opengl = {
+    hardware.graphics = {
       enable = true;
     };
 
