@@ -128,6 +128,7 @@ in {
   "atuin_session.age".publicKeys = users ++ systems;
   "deepseek-api-key.age".publicKeys = users ++ systems;
   "user-simonwjackson-firecrawl-api-key.age".publicKeys = users ++ systems;
+  "user-simonwjackson-dropbox-token.age".publicKeys = users ++ systems;
   "paperless_ngx_env.age".publicKeys = users ++ systems;
   "slskd_env.age".publicKeys = users ++ systems;
   "tandoor_env.age".publicKeys = users ++ systems;
