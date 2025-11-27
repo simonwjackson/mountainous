@@ -683,6 +683,11 @@
       bun = lib.getExe pkgs.bun;
       gum = lib.getExe pkgs.gum;
     in ''
+      # Load API keys from agenix secrets
+      if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
+        export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
+      fi
+
       # Enable Ctrl-R for history search (should work by default but ensure it's set)
       bindkey '^R' history-incremental-search-backward
 
@@ -801,6 +806,11 @@
 
     # Enable bash completion and other readline features
     bashrcExtra = ''
+      # Load API keys from agenix secrets
+      if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
+        export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
+      fi
+
       # Enable history search with up/down arrows
       bind '"\e[A": history-search-backward'
       bind '"\e[B": history-search-forward'
