@@ -27,31 +27,26 @@ in {
       HibernateDelaySec=${toString (cfg.delay * 60)}
     '';
 
-    services.logind = {
-      lidSwitch =
+    services.logind.settings.Login = {
+      HandleLidSwitch =
         if cfg.hibernate
         then "suspend-then-hibernate"
         else "suspend";
-      lidSwitchExternalPower = "suspend";
-
-      # Use proper NixOS options instead of extraConfig
-      powerKey = "hibernate";
-      suspendKey =
+      HandleLidSwitchExternalPower = "suspend";
+      HandlePowerKey = "hibernate";
+      HandleSuspendKey =
         if cfg.hibernate
         then "suspend-then-hibernate"
         else "suspend";
-      hibernateKey =
+      HandleHibernateKey =
         if cfg.hibernate
         then "suspend-then-hibernate"
         else "suspend";
-
-      settings.Login = {
-        IdleAction =
-          if cfg.hibernate
-          then "hibernate"
-          else "suspend";
-        IdleActionSec = "${toString cfg.delay}min";
-      };
+      IdleAction =
+        if cfg.hibernate
+        then "hibernate"
+        else "suspend";
+      IdleActionSec = "${toString cfg.delay}min";
     };
   };
 }
