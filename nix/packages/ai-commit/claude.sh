@@ -55,11 +55,13 @@ case "$LOG_LEVEL" in
       --setting-sources "" \
       --dangerously-skip-permissions \
       --tools "" \
-      --system-prompt "Generate only a Conventional Commits message. No explanation." \
-      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max." \
+      --system-prompt "Generate only a Conventional Commits message. No explanation. No markdown formatting or code blocks." \
+      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max. Do not wrap in backticks or code blocks." \
       | tee >(cat >&2) \
       | jq -r 'select(.type == "stream_event") | .event | select(.type == "content_block_delta") | .delta.text // empty' \
       | tr -d '\n')
+    # Strip any markdown code blocks that might have been added
+    MESSAGE=$(echo "$MESSAGE" | sed 's/^```[a-zA-Z]*//; s/```$//' | sed 's/^`//; s/`$//')
     echo "" >&2
     ;;
   debug)
@@ -74,11 +76,13 @@ case "$LOG_LEVEL" in
       --setting-sources "" \
       --dangerously-skip-permissions \
       --tools "" \
-      --system-prompt "Generate only a Conventional Commits message. No explanation." \
-      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max." \
+      --system-prompt "Generate only a Conventional Commits message. No explanation. No markdown formatting or code blocks." \
+      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max. Do not wrap in backticks or code blocks." \
       | tee >(jq -r 'select(.type == "stream_event") | .event | select(.type == "content_block_delta") | .delta.text // empty' | while IFS= read -r chunk; do printf '%s' "$chunk" >&2; done; echo "" >&2) \
       | jq -r 'select(.type == "stream_event") | .event | select(.type == "content_block_delta") | .delta.text // empty' \
       | tr -d '\n')
+    # Strip any markdown code blocks that might have been added
+    MESSAGE=$(echo "$MESSAGE" | sed 's/^```[a-zA-Z]*//; s/```$//' | sed 's/^`//; s/`$//')
     ;;
   info)
     # Show only friendly messages, suppress JSONL
@@ -92,10 +96,12 @@ case "$LOG_LEVEL" in
       --setting-sources "" \
       --dangerously-skip-permissions \
       --tools "" \
-      --system-prompt "Generate only a Conventional Commits message. No explanation." \
-      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max." \
+      --system-prompt "Generate only a Conventional Commits message. No explanation. No markdown formatting or code blocks." \
+      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max. Do not wrap in backticks or code blocks." \
       | jq -r 'select(.type == "stream_event") | .event | select(.type == "content_block_delta") | .delta.text // empty' \
       | tr -d '\n')
+    # Strip any markdown code blocks that might have been added
+    MESSAGE=$(echo "$MESSAGE" | sed 's/^```[a-zA-Z]*//; s/```$//' | sed 's/^`//; s/`$//')
     ;;
   *)
     # No logging except errors
@@ -109,11 +115,13 @@ case "$LOG_LEVEL" in
       --setting-sources "" \
       --dangerously-skip-permissions \
       --tools "" \
-      --system-prompt "Generate only a Conventional Commits message. No explanation." \
-      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max." \
+      --system-prompt "Generate only a Conventional Commits message. No explanation. No markdown formatting or code blocks." \
+      "Generate commit message: type(scope): subject. Present tense, lowercase, 50 chars max. Do not wrap in backticks or code blocks." \
       2>/dev/null \
       | jq -r 'select(.type == "stream_event") | .event | select(.type == "content_block_delta") | .delta.text // empty' \
       | tr -d '\n')
+    # Strip any markdown code blocks that might have been added
+    MESSAGE=$(echo "$MESSAGE" | sed 's/^```[a-zA-Z]*//; s/```$//' | sed 's/^`//; s/`$//')
     ;;
 esac
 

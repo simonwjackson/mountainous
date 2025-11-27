@@ -226,7 +226,8 @@ Rules:
 - Keep first line under 50 characters
 - One sentence explanation after blank line
 - Exactly 3 bullet points with specific details
-- Match the style and tone of the example commits"
+- Match the style and tone of the example commits
+- Do not wrap the message in markdown code blocks or backticks"
   else
     PROMPT="Generate an Angular-style commit message for these staged git changes.
 
@@ -247,7 +248,8 @@ Rules:
 - Keep description under 50 characters
 - Be specific and concise
 - Only return the commit message, nothing else
-- Match the style and tone of the example commits"
+- Match the style and tone of the example commits
+- Do not wrap the message in markdown code blocks or backticks"
   fi
 elif [ "$COMMIT_STYLE" = "imperative" ] && [ "$CONFIDENCE" -ge 70 ]; then
   # Use imperative style
@@ -276,7 +278,8 @@ Rules:
 - Start with imperative verb (Add, Fix, Update, Remove, etc.)
 - Keep first line under 50 characters
 - Match the style of the examples above
-- Include detailed explanation and bullet points"
+- Include detailed explanation and bullet points
+- Do not wrap the message in markdown code blocks or backticks"
   else
     PROMPT="Generate a commit message in imperative style for these staged git changes.
 
@@ -294,7 +297,8 @@ Rules:
 - Keep under 50 characters
 - Be specific and concise
 - Only return the commit message, nothing else
-- Match the style of the examples above"
+- Match the style of the examples above
+- Do not wrap the message in markdown code blocks or backticks"
   fi
 else
   # Fall back to Angular style (original behavior)
@@ -323,7 +327,8 @@ Rules:
 - Keep first line under 50 characters
 - One sentence explanation after blank line
 - Exactly 3 bullet points with specific details
-- Be concise but informative"
+- Be concise but informative
+- Do not wrap the message in markdown code blocks or backticks"
   else
     PROMPT="Generate an Angular-style commit message for these staged git changes:
 
@@ -339,6 +344,7 @@ Rules:
 - Keep description under 50 characters
 - Be specific and concise
 - Only return the commit message, nothing else
+- Do not wrap the message in markdown code blocks or backticks
 
 Examples:
 - feat(auth): add user login functionality
@@ -363,7 +369,8 @@ for ((i = 1; i <= RETRY_COUNT; i++)); do
   COMMIT_MESSAGE=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null)
 
   # Remove markdown code blocks if present, but preserve blank lines in commit message
-  COMMIT_MESSAGE=$(echo "$COMMIT_MESSAGE" | sed 's/^```[a-zA-Z]*$//' | sed 's/^```$//')
+  # Handle both fenced code blocks (```...```) and inline backticks
+  COMMIT_MESSAGE=$(echo "$COMMIT_MESSAGE" | sed '/^```[a-zA-Z]*$/d; /^```$/d; s/^```[a-zA-Z]*//; s/```$//' | sed 's/^`//; s/`$//')
 
   if [ "$COMMIT_MESSAGE" != "null" ] && [ "$COMMIT_MESSAGE" != "" ]; then
     break
