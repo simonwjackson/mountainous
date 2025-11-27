@@ -678,86 +678,6 @@
       extended = true;
     };
 
-    # Enable history search and Ctrl-R
-    initExtraBeforeCompInit = let
-      bun = lib.getExe pkgs.bun;
-      gum = lib.getExe pkgs.gum;
-    in ''
-      # Load API keys from agenix secrets
-      if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
-        export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
-      fi
-
-      # Enable Ctrl-R for history search (should work by default but ensure it's set)
-      bindkey '^R' history-incremental-search-backward
-
-      # Enable up/down arrow keys for history search
-      bindkey '^[[A' history-search-backward
-      bindkey '^[[B' history-search-forward
-
-      # Enable history expansion
-      setopt HIST_VERIFY
-      setopt HIST_EXPAND
-
-      # Share history between all sessions
-      setopt SHARE_HISTORY
-      setopt APPEND_HISTORY
-      setopt INC_APPEND_HISTORY
-
-      # Ask function for Claude AI assistance
-      ask() {
-          ${gum} spin --spinner dot --title "Asking Claude..." -- \
-          ${bun} x '@anthropic-ai/claude-code' \
-              --append-system-prompt "You are a technical expert specializing in NixOS, Nix package management, bash scripting, shell programming, and general software development. When answering questions: Always format responses in markdown with proper code blocks using triple backticks and language identifiers. Provide practical, working examples when possible. For Nix/NixOS: Follow best practices with proper module structure and current syntax. For shell scripts: Include error handling and explain command flags. Be concise but thorough, focusing on actionable solutions." \
-              --dangerously-skip-permissions \
-              --verbose \
-              --print \
-              -- "$*" | \
-          ${gum} format
-      }
-
-      # Kill process by PID, name, or port
-      killproc() {
-        if [ -z "$1" ]; then
-          echo "Usage: kp <pid|process-name|:port>"
-          echo "Examples:"
-          echo "  kp 1234              # Kill by PID"
-          echo "  kp fastify           # Kill by process name"
-          echo "  kp :3001             # Kill by port"
-          return 1
-        fi
-
-        # Check if argument starts with colon (e.g., :3001)
-        if [[ "$1" =~ ^:[0-9]+$ ]]; then
-          local port="''${1:1}"  # Remove the colon
-          local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
-          if [ -z "$pid" ]; then
-            echo "No process found on port $port"
-            return 1
-          fi
-          kill -9 $pid && echo "Killed process $pid on port $port"
-
-        # Check if it's a PID (pure number)
-        elif [[ "$1" =~ ^[0-9]+$ ]]; then
-          if ps -p "$1" > /dev/null 2>&1; then
-            kill -9 "$1" && echo "Killed process $1"
-          else
-            echo "No process found with PID $1"
-            return 1
-          fi
-
-        # Otherwise treat as process name
-        else
-          pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
-            echo "No processes found matching '$1'"
-            return 1
-          }
-        fi
-      }
-
-      alias kp=killproc
-    '';
-
     # Enable auto-suggestions and syntax highlighting if available
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
@@ -765,11 +685,93 @@
     # Enable completion
     enableCompletion = true;
 
-    # Initialize just completion
-    initExtra = ''
-      # Load just completions
-      source <(${pkgs.just}/bin/just --completions zsh)
-    '';
+    # Combined init content using mkOrder for proper sequencing
+    initContent = let
+      bun = lib.getExe pkgs.bun;
+      gum = lib.getExe pkgs.gum;
+    in lib.mkMerge [
+      # Before compinit (order 550)
+      (lib.mkOrder 550 ''
+        # Load API keys from agenix secrets
+        if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
+          export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
+        fi
+
+        # Enable Ctrl-R for history search (should work by default but ensure it's set)
+        bindkey '^R' history-incremental-search-backward
+
+        # Enable up/down arrow keys for history search
+        bindkey '^[[A' history-search-backward
+        bindkey '^[[B' history-search-forward
+
+        # Enable history expansion
+        setopt HIST_VERIFY
+        setopt HIST_EXPAND
+
+        # Share history between all sessions
+        setopt SHARE_HISTORY
+        setopt APPEND_HISTORY
+        setopt INC_APPEND_HISTORY
+
+        # Ask function for Claude AI assistance
+        ask() {
+            ${gum} spin --spinner dot --title "Asking Claude..." -- \
+            ${bun} x '@anthropic-ai/claude-code' \
+                --append-system-prompt "You are a technical expert specializing in NixOS, Nix package management, bash scripting, shell programming, and general software development. When answering questions: Always format responses in markdown with proper code blocks using triple backticks and language identifiers. Provide practical, working examples when possible. For Nix/NixOS: Follow best practices with proper module structure and current syntax. For shell scripts: Include error handling and explain command flags. Be concise but thorough, focusing on actionable solutions." \
+                --dangerously-skip-permissions \
+                --verbose \
+                --print \
+                -- "$*" | \
+            ${gum} format
+        }
+
+        # Kill process by PID, name, or port
+        killproc() {
+          if [ -z "$1" ]; then
+            echo "Usage: kp <pid|process-name|:port>"
+            echo "Examples:"
+            echo "  kp 1234              # Kill by PID"
+            echo "  kp fastify           # Kill by process name"
+            echo "  kp :3001             # Kill by port"
+            return 1
+          fi
+
+          # Check if argument starts with colon (e.g., :3001)
+          if [[ "$1" =~ ^:[0-9]+$ ]]; then
+            local port="''${1:1}"  # Remove the colon
+            local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
+            if [ -z "$pid" ]; then
+              echo "No process found on port $port"
+              return 1
+            fi
+            kill -9 $pid && echo "Killed process $pid on port $port"
+
+          # Check if it's a PID (pure number)
+          elif [[ "$1" =~ ^[0-9]+$ ]]; then
+            if ps -p "$1" > /dev/null 2>&1; then
+              kill -9 "$1" && echo "Killed process $1"
+            else
+              echo "No process found with PID $1"
+              return 1
+            fi
+
+          # Otherwise treat as process name
+          else
+            pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
+              echo "No processes found matching '$1'"
+              return 1
+            }
+          fi
+        }
+
+        alias kp=killproc
+      '')
+      # After compinit (default order)
+      ''
+        # Load just completions
+        source <(${pkgs.just}/bin/just --completions zsh)
+      ''
+    ];
   };
 
   # Home Manager needs a bit of information about you and the
@@ -864,46 +866,48 @@
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "Simon W. Jackson";
-    userEmail = "github@simonwjackson.io";
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Simon W. Jackson";
+        email = "github@simonwjackson.io";
+      };
       core.hooksPath = "${config.xdg.configHome}/git/hooks";
       pull.rebase = true;
       pull.ff = "only";
       fetch.prune = true;
       fetch.pruneTags = true;
-    };
-    aliases = {
-      ai-commit = "!ai-commit";
-      # secret-scanner = "!git-secret-scanner";
-      sync = "!git-sync";
-      ship = "!git-ship";
+      alias = {
+        ai-commit = "!ai-commit";
+        # secret-scanner = "!git-secret-scanner";
+        sync = "!git-sync";
+        ship = "!git-ship";
 
-      # Worktree management
-      wt = "worktree list";
-      wta = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree add \"../$dir\" -b \"$branch\"; }; f";
-      wtr = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git fetch origin \"$branch\" 2>/dev/null || true; git worktree add \"../$dir\" \"origin/$branch\"; }; f";
-      wtrm = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree remove \"../$dir\"; }; f";
-      wtp = "worktree prune";
+        # Worktree management
+        wt = "worktree list";
+        wta = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree add \"../$dir\" -b \"$branch\"; }; f";
+        wtr = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git fetch origin \"$branch\" 2>/dev/null || true; git worktree add \"../$dir\" \"origin/$branch\"; }; f";
+        wtrm = "!f() { local branch=\"$1\"; local dir=$(echo \"$branch\" | sed 's|/|-|g'); git worktree remove \"../$dir\"; }; f";
+        wtp = "worktree prune";
 
-      # Worktree status and info
-      wtst = "!git worktree list | awk '{print $1}' | xargs -I {} sh -c 'echo \"=== {} ===\" && git -C {} status -sb'";
-      wtb = "!git branch -vv && echo '\n--- Worktrees ---' && git worktree list";
+        # Worktree status and info
+        wtst = "!git worktree list | awk '{print $1}' | xargs -I {} sh -c 'echo \"=== {} ===\" && git -C {} status -sb'";
+        wtb = "!git branch -vv && echo '\n--- Worktrees ---' && git worktree list";
 
-      # Branch management in worktrees
-      wtfree = "!comm -23 <(git branch --format='%(refname:short)' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's/branch //' | sort)";
-      wtnew = "!comm -23 <(git branch -r | grep -v HEAD | sed 's|origin/||' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's|.*/||' | sort)";
+        # Branch management in worktrees
+        wtfree = "!comm -23 <(git branch --format='%(refname:short)' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's/branch //' | sort)";
+        wtnew = "!comm -23 <(git branch -r | grep -v HEAD | sed 's|origin/||' | sort) <(git worktree list --porcelain | grep 'branch' | sed 's|.*/||' | sort)";
 
-      # Quick operations
-      l = "log --oneline --graph --decorate --all -20";
+        # Quick operations
+        l = "log --oneline --graph --decorate --all -20";
 
-      # Comparison - shows divergence between local and remote tracking branch
-      # < means commit is in remote but not local (behind)
-      # > means commit is in local but not remote (ahead)
-      delta = "!git log --left-right --graph --oneline --decorate @{u}...HEAD 2>/dev/null || echo 'No upstream branch set'";
+        # Comparison - shows divergence between local and remote tracking branch
+        # < means commit is in remote but not local (behind)
+        # > means commit is in local but not remote (ahead)
+        delta = "!git log --left-right --graph --oneline --decorate @{u}...HEAD 2>/dev/null || echo 'No upstream branch set'";
 
-      # Bare worktree specific
-      root = "!pwd | sed 's|/[^/]*$||'";
+        # Bare worktree specific
+        root = "!pwd | sed 's|/[^/]*$||'";
+      };
     };
     ignores = [
       "**/.resession.json"
