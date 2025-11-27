@@ -61,6 +61,16 @@
         (final: prev: {
           # Removed gamescope_git overlays - now using Jovian's stable packages
           neovim = inputs.icho.packages.${final.system}.default;
+          obsidian = prev.symlinkJoin {
+            name = "obsidian";
+            paths = [prev.obsidian];
+            buildInputs = [prev.makeWrapper];
+            postBuild = ''
+              wrapProgram $out/bin/obsidian \
+                --add-flags "--enable-unsafe-webgpu" \
+                --add-flags "--enable-features=Vulkan"
+            '';
+          };
         })
       ];
     }
