@@ -175,7 +175,7 @@ run_action() {
     "$ACTION"
     --flake ".#$host"
     --target-host "$host"
-    --use-remote-sudo
+    --sudo
     --use-substitutes
     --max-jobs "auto"
   )
