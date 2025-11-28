@@ -11,10 +11,10 @@
   ];
 
   boot = {
-    # Use LTS kernel (6.6.x) - newer kernels have i915 DSI panel timing bugs
+    # TEST D: Try latest kernel
+    # Confirmed working: 6.6 (LTS), 6.12
     # See: https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/8992
-    # See: https://bbs.archlinux.org/viewtopic.php?id=303555
-    kernelPackages = pkgs.linuxPackages_6_6;
+    kernelPackages = pkgs.linuxPackages_latest;
 
     initrd = {
       availableKernelModules = [
