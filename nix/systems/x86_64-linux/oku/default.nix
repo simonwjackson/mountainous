@@ -46,17 +46,29 @@
       # Resume device for hibernation
       "resume=/dev/disk/by-partlabel/disk-main-swap"
 
+      # Use s2idle instead of deep sleep (deep can cause display issues on Tiger Lake)
+      "mem_sleep_default=s2idle"
+
+      # Intel graphics optimizations
+      "i915.fastboot=1"
+      "i915.enable_fbc=1"
+      "i915.enable_psr=2" # PSR2 for better battery life
+
       # Intel power management
       "intel_pstate=active"
-
-      # Power management for tablet
-      "mem_sleep_default=deep"
 
       # Quiet boot
       "loglevel=4"
       "quiet"
       "splash"
     ];
+
+    # SOF audio driver: Disable IMR for hibernate compatibility
+    # Without this, SOF firmware fails to reload after hibernation
+    # See: https://github.com/thesofproject/sof/issues/5892
+    extraModprobeConfig = ''
+      options snd-sof sof_debug=0x81
+    '';
 
     loader = {
       efi = {
@@ -100,6 +112,9 @@
         libvdpau-va-gl
       ];
     };
+
+    # IIO sensors for 2-in-1 tablet features (rotation, orientation)
+    sensor.iio.enable = true;
   };
 
   # Networking
@@ -136,6 +151,9 @@
 
     impermanence.enable = lib.mkForce false;
   };
+
+  # Disable auto-cpufreq from base profile (conflicts with TLP)
+  services.auto-cpufreq.enable = lib.mkForce false;
 
   # Ephemeral root filesystem
   fileSystems."/" = {
@@ -228,6 +246,9 @@
     fwupd.enable = true;
     blueman.enable = true;
 
+    # Thermald: Intel thermal management for preventing throttling
+    thermald.enable = true;
+
     # Touchscreen/stylus input
     libinput = {
       enable = true;
@@ -254,11 +275,11 @@
     HibernateDelaySec=30m
   '';
 
+  # Lid and power button behavior (matching asana's hibernate setup)
   services.logind.settings.Login = {
     HandleLidSwitch = lib.mkForce "suspend-then-hibernate";
-    HandleLidSwitchExternalPower = lib.mkForce "suspend";
+    HandleLidSwitchExternalPower = lib.mkForce "suspend-then-hibernate";
     HandlePowerKey = lib.mkForce "suspend-then-hibernate";
-    HandlePowerKeyLongPress = lib.mkForce "poweroff";
   };
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
