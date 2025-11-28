@@ -16,12 +16,12 @@
     extraSettings = {
       # 12.6" OLED 2560x1600 DSI display
       monitor = [
-        "DSI-1,2560x1600@60,auto,2,transform,0"
+        "DSI-1,2560x1600@60,auto,1.25,transform,0"
       ];
 
       exec-once = [
         "systemctl --user start hyprland-session.target"
-        "iio-hyprland"  # Auto-rotate display based on accelerometer
+        "iio-hyprland" # Auto-rotate display based on accelerometer
       ];
 
       input = {
