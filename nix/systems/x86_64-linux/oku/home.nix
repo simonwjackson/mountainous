@@ -51,16 +51,7 @@
       "plugin:touch_gestures:sensitivity" = 4.0;
       "plugin:touch_gestures:workspace_swipe_fingers" = 3;
       "plugin:touch_gestures:edge_margin" = 30;
-
-      bind = [
-        # Quick launchers
-        "SUPER, T, exec, foot" # Terminal
-        "SUPER, F, exec, firefox" # Browser
-        "SUPER, E, exec, nautilus" # Files
-
-        # Virtual keyboard toggle
-        "SUPER, K, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400"
-      ];
+      "plugin:touch_gestures:long_press_delay" = 200;
 
       # Touch gesture bindings (mouse-like actions)
       "hyprgrass-bindm" = [
@@ -81,8 +72,8 @@
         # Edge swipes
         ", edge:r:l, togglespecialworkspace, magic"
 
-        # Virtual keyboard
-        ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400"
+        # Virtual keyboard (height: -L landscape, -H portrait)
+        ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 250"
       ];
     };
   };
