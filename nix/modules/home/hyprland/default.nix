@@ -480,6 +480,22 @@
 
     STT_BIN="${inputs.speech.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/stt"
     WTYPE_BIN="${pkgs.wtype}/bin/wtype"
+    SOX_PLAY="${pkgs.sox}/bin/play"
+    AMBIENT_PID_FILE="$RUNTIME_DIR/dictation-ambient.pid"
+
+    start_ambient() {
+      # TNG-style warp core hum
+      $SOX_PLAY -n -c1 synth whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 &
+      echo $! > "$AMBIENT_PID_FILE"
+    }
+
+    stop_ambient() {
+      if [[ -f "$AMBIENT_PID_FILE" ]]; then
+        kill $(cat "$AMBIENT_PID_FILE") 2>/dev/null
+        rm -f "$AMBIENT_PID_FILE"
+        sleep 0.1
+      fi
+    }
 
     ACTION="''${1:-toggle}"
 
@@ -490,6 +506,7 @@
           PID=$(cat "$PID_FILE")
           if kill -0 "$PID" 2>/dev/null; then
             log "=== Stopping recording (PID: $PID) ==="
+            stop_ambient
             kill -INT "$PID"
             rm -f "$PID_FILE"
 
@@ -506,6 +523,8 @@
             if [[ -s "$TRANSCRIPT_FILE" ]]; then
               TRANSCRIPT=$(cat "$TRANSCRIPT_FILE")
               log "Transcript: $TRANSCRIPT"
+              # Small delay to let modifiers release
+              sleep 0.2
               echo -n "$TRANSCRIPT" | $WTYPE_BIN -
               log "Done typing"
               rm -f "$TRANSCRIPT_FILE"
@@ -521,6 +540,7 @@
 
         # Start recording
         log "=== Starting recording ==="
+        start_ambient
         rm -f "$TRANSCRIPT_FILE"
         $STT_BIN > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
         STT_PID=$!
@@ -559,6 +579,7 @@ in {
       scaleAdjustScript
       dictationScript
       pkgs.wtype
+      pkgs.sox
     ];
 
     programs.hyprlock = {
