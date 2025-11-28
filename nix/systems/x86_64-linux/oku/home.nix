@@ -119,12 +119,12 @@
   ];
 
   # HiDPI for 12.6" 2560x1600 display (~240 PPI)
-  home.sessionVariables = {
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-    QT_SCALE_FACTOR = "1.6";
-    GDK_SCALE = "2";
-    GDK_DPI_SCALE = "0.8";
-  };
+  # home.sessionVariables = {
+  #   QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+  #   QT_SCALE_FACTOR = "1.6";
+  #   GDK_SCALE = "1";
+  #   GDK_DPI_SCALE = "0.8";
+  # };
 
   xdg.userDirs = {
     enable = true;
