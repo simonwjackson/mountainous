@@ -1098,11 +1098,11 @@
         "vim-overseer": "vim-overseer"
       },
       "locked": {
-        "lastModified": 1764284565,
-        "narHash": "sha256-rg+RXfv4gU0W3oHLpFhjG6MdD/ZAW5NfR6acAS+0Luc=",
+        "lastModified": 1764349493,
+        "narHash": "sha256-m45NDRVBZzUBUd0Akk9FRER3GHCCABvxuuzzbWWTV20=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "b18c2409780b461ebe0253ce838324651ef61d95",
+        "rev": "1f223bde4baa31051dfc91e3450914aacfb93dee",
         "type": "github"
       },
       "original": {
@@ -1880,11 +1880,11 @@
         "nixpkgs": "nixpkgs_9"
       },
       "locked": {
-        "lastModified": 1764313875,
-        "narHash": "sha256-qveuof6U9bCZtTWOAtJvOnKoXX+u8FtjVssdcicXIrE=",
+        "lastModified": 1764350440,
+        "narHash": "sha256-YtE5CibZBTtQPOh+VAZ8w9tiTNuqAJJMFx7ZN0BTShg=",
         "owner": "miniarray",
         "repo": "speech",
-        "rev": "9bc49dfad12ce80d48c789cbe221e16399a45a0b",
+        "rev": "3c1ccf2b226ecf121051e2ad26f0507e5a6c6ff2",
         "type": "github"
       },
       "original": {
