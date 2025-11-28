@@ -1,3 +1,25 @@
+# Huawei MateBook E (DRC-W56) - "oku"
+#
+# KNOWN ISSUE: Suspend (s2idle/deep) does not work on this device.
+# The DSI panel fails to reinitialize after resume due to i915 driver timing bugs.
+#
+# Symptoms after suspend:
+#   - System wakes (network responds to ping)
+#   - Screen remains black
+#   - dmesg shows: "mismatch in pixel_rate (expected 291594, found 332418)"
+#   - dmesg shows: "flip_done timed out" errors
+#
+# Root cause: The dual-link DSI panel comes back with different timing
+# parameters than expected, causing the i915 driver to fail display flips.
+#
+# Related kernel bugs (as of 2025-11, all appear UNFIXED):
+#   - https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/8992 (MateBook E DSI)
+#   - https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/6607 (DSI burst mode mismatch)
+#   - https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/6131 (DSI resume failure)
+#
+# Workaround: Use hibernate instead of suspend. Hibernate works perfectly.
+# Periodically test newer kernels (6.14+) to check if the bug is fixed.
+#
 {
   config,
   pkgs,
@@ -12,7 +34,7 @@
 
   boot = {
     # Kernel 6.12 - newest working kernel for MateBook E DSI panel
-    # Latest (6.13+) has i915 DSI divide-by-zero bug
+    # Kernel 6.13+ has i915 DSI divide-by-zero bug on boot
     # See: https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/8992
     kernelPackages = pkgs.linuxPackages_6_12;
 
@@ -46,15 +68,12 @@
       # Resume device for hibernation
       "resume=/dev/disk/by-partlabel/disk-main-swap"
 
-      # Use s2idle instead of deep sleep (deep can cause display issues on Tiger Lake)
-      "mem_sleep_default=s2idle"
+      # Intel graphics optimizations (hibernate-only, no suspend workarounds needed)
+      "i915.fastboot=1"   # Faster boot
+      "i915.enable_fbc=1" # Frame buffer compression for battery
+      "i915.enable_psr=2" # PSR2 for display power savings
 
-      # Intel graphics optimizations
-      "i915.fastboot=1"
-      "i915.enable_fbc=1"
-      "i915.enable_psr=2" # PSR2 for better battery life
-
-      # Intel power management
+      # Intel CPU power management
       "intel_pstate=active"
 
       # Quiet boot
@@ -84,6 +103,7 @@
 
     resumeDevice = "/dev/disk/by-partlabel/disk-main-swap";
   };
+
 
   # Hardware configuration for Intel Core i5-1130G7 (Tiger Lake)
   hardware = {
@@ -275,11 +295,13 @@
     HibernateDelaySec=30m
   '';
 
-  # Lid and power button behavior (matching asana's hibernate setup)
+  # Lid and power button behavior
+  # NOTE: Suspend doesn't work on this device - DSI panel has timing bugs on resume
+  # (i915 flip_done timeout, see dmesg). Use hibernate directly instead.
   services.logind.settings.Login = {
-    HandleLidSwitch = lib.mkForce "suspend-then-hibernate";
-    HandleLidSwitchExternalPower = lib.mkForce "suspend-then-hibernate";
-    HandlePowerKey = lib.mkForce "suspend-then-hibernate";
+    HandleLidSwitch = lib.mkForce "hibernate";
+    HandleLidSwitchExternalPower = lib.mkForce "hibernate";
+    HandlePowerKey = lib.mkForce "hibernate";
   };
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "powersave";
