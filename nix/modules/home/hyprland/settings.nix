@@ -82,7 +82,6 @@
     orientation = "right";
     mfact = "0.61803";
     new_status = "slave";
-    inherit_fullscreen = "false";
   };
 
   misc = {
