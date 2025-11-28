@@ -78,10 +78,6 @@
         ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400"
       ];
 
-      windowrule = [
-        # Firefox optimizations
-        "float, title:^(Firefox)$"
-      ];
     };
   };
 

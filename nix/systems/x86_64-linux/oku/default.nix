@@ -11,7 +11,10 @@
   ];
 
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
+    # Use LTS kernel (6.6.x) - newer kernels have i915 DSI panel timing bugs
+    # See: https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/8992
+    # See: https://bbs.archlinux.org/viewtopic.php?id=303555
+    kernelPackages = pkgs.linuxPackages_6_6;
 
     initrd = {
       availableKernelModules = [
@@ -43,10 +46,12 @@
       # Resume device for hibernation
       "resume=/dev/disk/by-partlabel/disk-main-swap"
 
-      # Intel GPU
-      # Uncomment if experiencing i915 crashes (disables GPU acceleration):
+      # i915 DSI panel workarounds for MateBook E
+      # TEST B: Both PSR and FBC enabled (LTS kernel only)
+      # "i915.enable_psr=0"
+      # "i915.enable_fbc=0"
+      # If still crashing, uncomment nomodeset (disables GPU acceleration):
       # "nomodeset"
-      # "i915.modeset=0"
 
       # Intel power management
       "intel_pstate=active"
@@ -54,10 +59,8 @@
       # Power management for tablet
       "mem_sleep_default=deep"
 
-      # Quiet boot
-      "loglevel=4"
-      "quiet"
-      "splash"
+      # Verbose boot to see what's happening
+      "loglevel=7"
     ];
 
     loader = {
