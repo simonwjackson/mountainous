@@ -107,6 +107,9 @@
         ", edge:r:l, exec, ${pkgs.dictation}/bin/dictation"
         ", edge:r:u, exec, brightnessctl set +10%"
         ", edge:r:d, exec, brightnessctl set 10%-"
+
+        # Edge swipes - bottom edge
+        ", edge:d:u, exec, ${pkgs.dictation}/bin/dictation --return"
       ];
     };
   };

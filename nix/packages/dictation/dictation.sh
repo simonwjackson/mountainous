@@ -6,6 +6,21 @@ TRANSCRIPT_FILE="$RUNTIME_DIR/dictation-transcript.txt"
 PID_FILE="$RUNTIME_DIR/dictation-stt.pid"
 AMBIENT_PID_FILE="$RUNTIME_DIR/dictation-ambient.pid"
 WAITING_PID_FILE="$RUNTIME_DIR/dictation-waiting.pid"
+RETURN_FLAG_FILE="$RUNTIME_DIR/dictation-send-return"
+
+# Parse flags
+SEND_RETURN=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --return|-r)
+      SEND_RETURN=true
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 log() {
   echo "[$(date '+%H:%M:%S')] $*" >> "$LOG_FILE"
@@ -71,10 +86,17 @@ case "$ACTION" in
           sleep 0.2
           wtype -P super -P shift -P ctrl -P alt
           echo -n "$TRANSCRIPT" | wtype -
+          # Send return key if flag was set when recording started
+          if [[ -f "$RETURN_FLAG_FILE" ]]; then
+            wtype -k Return
+            rm -f "$RETURN_FLAG_FILE"
+            log "Sent Return key"
+          fi
           log "Done typing"
           rm -f "$TRANSCRIPT_FILE"
         else
           log "No transcript available"
+          rm -f "$RETURN_FLAG_FILE"
         fi
         exit 0
       else
@@ -88,6 +110,13 @@ case "$ACTION" in
     play_start
     start_ambient
     rm -f "$TRANSCRIPT_FILE"
+    # Save return flag if --return was passed
+    if [[ "$SEND_RETURN" == "true" ]]; then
+      touch "$RETURN_FLAG_FILE"
+      log "Will send Return key after transcription"
+    else
+      rm -f "$RETURN_FLAG_FILE"
+    fi
     stt > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
     STT_PID=$!
     echo "$STT_PID" > "$PID_FILE"
