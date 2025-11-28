@@ -71,8 +71,13 @@
         # Edge swipes
         ", edge:r:l, togglespecialworkspace, magic"
 
-        # Virtual keyboard (height: -L landscape, -H portrait)
-        ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 250"
+        # Virtual keyboards via gestures (try all 3, pick your favorite)
+        # Bottom edge up: wvkbd docked (anchored to bottom)
+        ", edge:b:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; wvkbd-mobintl -L 250 --landscape-layers full,special"
+        # Left edge up: wvkbd floating (moveable)
+        ", edge:l:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; wvkbd-floating -L 250 --landscape-layers full,special"
+        # 3-finger swipe up: hyprkbd (Hyprland-specific fork)
+        ", swipe:3:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; hyprkbd"
       ];
     };
   };
@@ -90,8 +95,10 @@
     htop
     btop
 
-    # Tablet essentials
-    wvkbd # Virtual keyboard
+    # Tablet essentials - virtual keyboards
+    wvkbd # Anchored to bottom
+    wvkbd-floating # Floating version (patched)
+    hyprkbd # Hyprland-specific fork
     wtype # Keyboard input emulator
     brightnessctl
     iio-hyprland # Auto-rotate for Hyprland (uses system iio-sensor-proxy)
