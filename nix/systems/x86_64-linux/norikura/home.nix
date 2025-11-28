@@ -21,7 +21,7 @@
       # 7" DSI display 1200x1920 native (portrait), rotate 90° for landscape
       # Transform 1 = 90° clockwise rotation
       monitor = [
-        "DSI-1, 1200x1920@60, 0x0, auto, transform, 3"
+        "DSI-1, 1200x1920@60, 0x0, 1.5, transform, 3"
       ];
 
       exec-once = [
@@ -68,12 +68,11 @@
         vfr = true; # Variable frame rate - reduces GPU work when idle
         disable_hyprland_logo = true;
         disable_splash_rendering = true;
-        no_direct_scanout = false; # Allow direct scanout for performance
       };
 
-      # Reduce render quality for performance
+      # Render performance
       render = {
-        explicit_sync = 0; # Can help on older Intel GPUs
+        direct_scanout = 2; # Auto - enables for fullscreen apps
       };
     };
   };

@@ -726,11 +726,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1764304195,
-        "narHash": "sha256-bO7FN/bF6gG7TlZpKAZjO3VvfsLaPFkefeUfJJ7F/7w=",
+        "lastModified": 1764361670,
+        "narHash": "sha256-jgWzgpIaHbL3USIq0gihZeuy1lLf2YSfwvWEwnfAJUw=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "86ff0ef506c209bb397849706e85cc3a913cb577",
+        "rev": "780be8ef503a28939cf9dc7996b48ffb1a3e04c6",
         "type": "github"
       },
       "original": {
@@ -1339,11 +1339,11 @@
     },
     "nixpkgs_10": {
       "locked": {
-        "lastModified": 1763678758,
-        "narHash": "sha256-+hBiJ+kG5IoffUOdlANKFflTT5nO3FrrR2CA3178Y5s=",
+        "lastModified": 1764242076,
+        "narHash": "sha256-sKoIWfnijJ0+9e4wRvIgm/HgE27bzwQxcEmo2J/gNpI=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "117cc7f94e8072499b0a7aa4c52084fa4e11cc9b",
+        "rev": "2fad6eac6077f03fe109c4d4eb171cf96791faa4",
         "type": "github"
       },
       "original": {
@@ -2102,11 +2102,11 @@
         "snowfall-lib": "snowfall-lib_5"
       },
       "locked": {
-        "lastModified": 1763949193,
-        "narHash": "sha256-1xjuvdSdC2W1B8WOLnF9TLO6rSt5D57FXwnsUJkU7sY=",
+        "lastModified": 1764363403,
+        "narHash": "sha256-wif8fTK3/fC0lVgUo0IjmxaGg2YRTb3e1gI1Qsz1mzc=",
         "owner": "simonwjackson",
         "repo": "tmesh",
-        "rev": "9a94c168ae243d61e568ea37f0a6721ed3013271",
+        "rev": "8fb8b7f1d507b519538329c2f0b17f93f91f589d",
         "type": "github"
       },
       "original": {
