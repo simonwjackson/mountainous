@@ -463,6 +463,74 @@
 
     main "$@"
   '';
+
+  # Create a script for hold-to-dictate (toggle speech-to-text)
+  dictationToggleScript = pkgs.writeShellScriptBin "dictationToggle" ''
+    #!${pkgs.bash}/bin/bash
+
+    RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/tmp}"
+    LOG_FILE="$RUNTIME_DIR/dictation.log"
+    TRANSCRIPT_FILE="$RUNTIME_DIR/dictation-transcript.txt"
+    PID_FILE="$RUNTIME_DIR/dictation-stt.pid"
+
+    log() {
+      echo "[$(date '+%H:%M:%S')] $*" >> "$LOG_FILE"
+    }
+
+    STT_BIN="${inputs.speech.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/stt"
+    WTYPE_BIN="${pkgs.wtype}/bin/wtype"
+
+    log "=== Dictation toggle ==="
+
+    # Check if stt is currently running via PID file
+    if [[ -f "$PID_FILE" ]]; then
+      PID=$(cat "$PID_FILE")
+      if kill -0 "$PID" 2>/dev/null; then
+        log "STT is running (PID: $PID) - sending SIGINT (like Ctrl+C)..."
+        kill -INT "$PID"
+        rm -f "$PID_FILE"
+
+        # Wait for transcription to complete (may take a few seconds for API)
+        log "Waiting for transcription..."
+        for i in {1..10}; do
+          sleep 0.5
+          if [[ -s "$TRANSCRIPT_FILE" ]]; then
+            log "Transcript file has content after ''${i}*0.5 seconds"
+            break
+          fi
+        done
+
+        if [[ -f "$TRANSCRIPT_FILE" ]]; then
+          TRANSCRIPT=$(cat "$TRANSCRIPT_FILE")
+          log "Transcript: $TRANSCRIPT"
+          if [[ -n "$TRANSCRIPT" ]]; then
+            log "Typing transcript with wtype..."
+            echo -n "$TRANSCRIPT" | $WTYPE_BIN -
+            log "Done typing"
+          else
+            log "Transcript was empty"
+          fi
+          rm -f "$TRANSCRIPT_FILE"
+        else
+          log "No transcript file found"
+        fi
+        exit 0
+      else
+        log "Stale PID file, removing"
+        rm -f "$PID_FILE"
+      fi
+    fi
+
+    # Start recording
+    log "STT not running - starting recording..."
+    rm -f "$TRANSCRIPT_FILE"
+
+    # Run stt directly (not in subshell) and save PID
+    $STT_BIN > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
+    STT_PID=$!
+    echo "$STT_PID" > "$PID_FILE"
+    log "Started stt with PID: $STT_PID"
+  '';
 in {
   imports = [
     inputs.hyprland.homeManagerModules.default
@@ -487,10 +555,12 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    # Add scripts to PATH
+    # Add scripts and tools to PATH
     home.packages = [
       splitToggleScript
       scaleAdjustScript
+      dictationToggleScript
+      pkgs.wtype
     ];
 
     programs.hyprlock = {
@@ -750,7 +820,7 @@ in {
           "$mainMod, right, swapwindow, r"
           "$mainMod, up, swapwindow, u"
           "$mainMod, down, swapwindow, d"
-          "$mainMod, S, exec, pgrep -f 'hyprshot.*ksnip' > /dev/null && pkill -f 'hyprshot.*ksnip' || (${pkgs.hyprshot}/bin/hyprshot --freeze --mode=region --raw | ${pkgs.ksnip}/bin/ksnip -)"
+          "$mainMod, S, exec, ${dictationToggleScript}/bin/dictationToggle"
           "$mainMod SHIFT, S, movetoworkspace, special:magic"
           "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
           "$mainMod, equal, exec, ${splitToggleScript}/bin/splitToggle"

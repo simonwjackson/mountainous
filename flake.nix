@@ -48,6 +48,7 @@
       url = "github:lyz-code/taskwarrior_recurrence";
       flake = false;
     };
+    speech.url = "github:miniarray/speech";
   };
 
   outputs = inputs: let
