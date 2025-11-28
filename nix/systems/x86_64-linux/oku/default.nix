@@ -11,10 +11,10 @@
   ];
 
   boot = {
-    # TEST D: Try latest kernel
-    # Confirmed working: 6.6 (LTS), 6.12
+    # Kernel 6.12 - newest working kernel for MateBook E DSI panel
+    # Latest (6.13+) has i915 DSI divide-by-zero bug
     # See: https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/8992
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = pkgs.linuxPackages_6_12;
 
     initrd = {
       availableKernelModules = [
@@ -46,21 +46,16 @@
       # Resume device for hibernation
       "resume=/dev/disk/by-partlabel/disk-main-swap"
 
-      # i915 DSI panel workarounds for MateBook E
-      # TEST B: Both PSR and FBC enabled (LTS kernel only)
-      # "i915.enable_psr=0"
-      # "i915.enable_fbc=0"
-      # If still crashing, uncomment nomodeset (disables GPU acceleration):
-      # "nomodeset"
-
       # Intel power management
       "intel_pstate=active"
 
       # Power management for tablet
       "mem_sleep_default=deep"
 
-      # Verbose boot to see what's happening
-      "loglevel=7"
+      # Quiet boot
+      "loglevel=4"
+      "quiet"
+      "splash"
     ];
 
     loader = {
