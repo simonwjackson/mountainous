@@ -61,6 +61,12 @@
         "SUPER, K, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400"
       ];
 
+      # Touch gesture bindings (mouse-like actions)
+      "hyprgrass-bindm" = [
+        ", longpress:2, movewindow"
+        ", longpress:3, resizewindow"
+      ];
+
       # Touch gesture bindings
       "hyprgrass-bind" = [
         # 3-finger workspace switching
@@ -77,7 +83,6 @@
         # Virtual keyboard
         ", swipe:3:u, exec, pkill wvkbd-mobintl || wvkbd-mobintl -L 400"
       ];
-
     };
   };
 
