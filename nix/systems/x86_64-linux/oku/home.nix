@@ -22,6 +22,7 @@
 
       exec-once = [
         "systemctl --user start hyprland-session.target"
+        "iio-hyprland"  # Auto-rotate display based on accelerometer
       ];
 
       input = {
@@ -103,7 +104,7 @@
     wvkbd # Virtual keyboard
     wtype # Keyboard input emulator
     brightnessctl
-    iio-sensor-proxy # Rotation sensor
+    iio-hyprland # Auto-rotate for Hyprland (uses system iio-sensor-proxy)
 
     # Stylus/drawing
     rnote # Note-taking with stylus

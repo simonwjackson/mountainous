@@ -287,7 +287,6 @@
   # Tablet utilities
   environment.systemPackages = with pkgs; [
     brightnessctl
-    iio-sensor-proxy # For auto-rotation
   ];
 
   # Suspend-then-hibernate for battery life
