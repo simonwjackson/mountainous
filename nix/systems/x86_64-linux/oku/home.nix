@@ -8,16 +8,17 @@
   mountainous.hyprland = {
     enable = true;
 
-    # Touch gesture and workspace overview plugins
+    # Touch gesture, workspace overview, and title bar plugins
     plugins = [
       inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
       inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system}.hyprexpo
+      inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system}.hyprbars
     ];
 
     extraSettings = {
       # 12.6" OLED 2560x1600 DSI display
       monitor = [
-        "DSI-1,2560x1600@60,auto,1.25,transform,0"
+        "DSI-1,2560x1600@60,auto,1.333,transform,0"
       ];
 
       exec-once = [
@@ -59,9 +60,22 @@
       "plugin:hyprexpo:workspace_method" = "center current";
       "plugin:touch_gestures:long_press_delay" = 200;
 
-      # Keyboard bindings
-      bind = [
-        "SUPER, Tab, hyprexpo:expo, toggle"
+      # hyprbars title bar config (touch-friendly sizes)
+      "plugin:hyprbars:bar_height" = 30;
+      "plugin:hyprbars:bar_color" = "rgb(1e1e2e)";
+      "plugin:hyprbars:col.text" = "rgb(cdd6f4)";
+      "plugin:hyprbars:bar_text_size" = 12;
+      "plugin:hyprbars:bar_text_font" = "Sans";
+      "plugin:hyprbars:bar_part_of_window" = true;
+      "plugin:hyprbars:bar_precedence_over_border" = true;
+      "plugin:hyprbars:bar_padding" = 10;
+      "plugin:hyprbars:bar_button_padding" = 8;
+
+      # Title bar buttons (right to left: close, maximize, minimize)
+      "plugin:hyprbars:hyprbars-button" = [
+        "rgb(f38ba8), 18, 󰖭, hyprctl dispatch killactive"
+        "rgb(a6e3a1), 18, 󰁌, hyprctl dispatch fullscreen 1"
+        "rgb(fab387), 18, 󰖰, hyprctl dispatch movetoworkspacesilent special:minimized"
       ];
 
       # Touch gesture bindings (mouse-like actions)
@@ -76,12 +90,21 @@
         ", swipe:3:l, workspace, e+1"
         ", swipe:3:r, workspace, e-1"
 
+        # 5-finger: move window to workspace AND follow
+        ", swipe:5:l, movetoworkspace, e+1"
+        ", swipe:5:r, movetoworkspace, e-1"
+
         # 4-finger gestures
         ", swipe:4:u, hyprexpo:expo, toggle"
         ", swipe:4:d, togglefloating"
 
         # Edge swipes
         ", edge:r:l, togglespecialworkspace, magic"
+        ", edge:r:u, exec, brightnessctl set +10%"
+        ", edge:r:d, exec, brightnessctl set 10%-"
+
+        # Toggle title bars (top edge swipe down)
+        ", edge:l:r, exec, hyprctl keyword plugin:hyprbars:bar_height $([ $(hyprctl getoption plugin:hyprbars:bar_height -j | grep -o '\"int\": [0-9]*' | awk '{print $2}') -eq 0 ] && echo 30 || echo 0)"
 
         # Virtual keyboard - left edge up to toggle (full+special layers)
         ", edge:l:u, exec, pkill -SIGRTMIN wvkbd-mobintl 2>/dev/null || wvkbd-mobintl -L 300 --landscape-layers full,special"
