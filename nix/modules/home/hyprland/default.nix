@@ -483,17 +483,35 @@
     SOX_PLAY="${pkgs.sox}/bin/play"
     AMBIENT_PID_FILE="$RUNTIME_DIR/dictation-ambient.pid"
 
+    play_start() {
+      $SOX_PLAY -n synth 0.8 sine 550:580 sine 825:870 fade l 0.18 0.8 0.55 vol 0.08 &
+    }
+
+    WAITING_PID_FILE="$RUNTIME_DIR/dictation-waiting.pid"
+
+    start_waiting() {
+      $SOX_PLAY -n synth 0.8 sine 550:580 sine 825:870 fade l 0.18 0.8 0.55 vol 0.08 repeat - &
+      echo $! > "$WAITING_PID_FILE"
+    }
+
+    stop_waiting() {
+      if [[ -f "$WAITING_PID_FILE" ]]; then
+        kill $(cat "$WAITING_PID_FILE") 2>/dev/null
+        rm -f "$WAITING_PID_FILE"
+      fi
+    }
+
     start_ambient() {
-      # TNG-style warp core hum
-      $SOX_PLAY -n -c1 synth whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 &
+      $SOX_PLAY -n -c1 synth whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 fade t 2 &
       echo $! > "$AMBIENT_PID_FILE"
     }
 
     stop_ambient() {
       if [[ -f "$AMBIENT_PID_FILE" ]]; then
-        kill $(cat "$AMBIENT_PID_FILE") 2>/dev/null
+        AMBIENT_PID=$(cat "$AMBIENT_PID_FILE")
         rm -f "$AMBIENT_PID_FILE"
-        sleep 0.1
+        $SOX_PLAY -n -c1 synth 0.5 whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 fade t 0 0.5 0.5 &
+        kill $AMBIENT_PID 2>/dev/null
       fi
     }
 
@@ -507,10 +525,10 @@
           if kill -0 "$PID" 2>/dev/null; then
             log "=== Stopping recording (PID: $PID) ==="
             stop_ambient
+            start_waiting
             kill -INT "$PID"
             rm -f "$PID_FILE"
 
-            # Wait for transcription to complete
             log "Waiting for transcription..."
             for i in {1..10}; do
               sleep 0.5
@@ -520,11 +538,12 @@
               fi
             done
 
+            stop_waiting
             if [[ -s "$TRANSCRIPT_FILE" ]]; then
               TRANSCRIPT=$(cat "$TRANSCRIPT_FILE")
               log "Transcript: $TRANSCRIPT"
-              # Small delay to let modifiers release
               sleep 0.2
+              $WTYPE_BIN -P super -P shift -P ctrl -P alt
               echo -n "$TRANSCRIPT" | $WTYPE_BIN -
               log "Done typing"
               rm -f "$TRANSCRIPT_FILE"
@@ -540,6 +559,7 @@
 
         # Start recording
         log "=== Starting recording ==="
+        play_start
         start_ambient
         rm -f "$TRANSCRIPT_FILE"
         $STT_BIN > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
@@ -870,7 +890,6 @@ in {
           "$mainMod, mouse:272, movewindow"
           "$mainMod, mouse:273, resizewindow"
         ];
-
 
         windowrule = [
           "suppress_event maximize, match:class .*"
