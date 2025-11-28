@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOG_FILE="$RUNTIME_DIR/dictation.log"
 TRANSCRIPT_FILE="$RUNTIME_DIR/dictation-transcript.txt"
 PID_FILE="$RUNTIME_DIR/dictation-stt.pid"
 AMBIENT_PID_FILE="$RUNTIME_DIR/dictation-ambient.pid"
 WAITING_PID_FILE="$RUNTIME_DIR/dictation-waiting.pid"
 RETURN_FLAG_FILE="$RUNTIME_DIR/dictation-send-return"
+AUDIO_FILE="$RUNTIME_DIR/dictation-recording.wav"
+
+# Load config if exists (for remote transcription settings)
+if [[ -f "$CONFIG_DIR/dictation/config" ]]; then
+  # shellcheck source=/dev/null
+  source "$CONFIG_DIR/dictation/config"
+fi
+
+# Remote transcription settings (can be set via config or environment)
+REMOTE_HOST="${DICTATION_REMOTE_HOST:-}"
+WHISPER_MODEL="${DICTATION_WHISPER_MODEL:-~/.local/share/whisper/models/ggml-tiny.en.bin}"
 
 # Parse flags
 SEND_RETURN=false
@@ -56,11 +68,33 @@ stop_ambient() {
   fi
 }
 
+# Transcribe audio file via SSH to remote host
+transcribe_remote() {
+  local audio_file="$1"
+  local output_file="$2"
+
+  log "Sending audio to remote host: $REMOTE_HOST"
+
+  # Pipe audio to remote, run whisper, get text back
+  cat "$audio_file" | ssh "$REMOTE_HOST" "
+    TMPFILE=\$(mktemp --suffix=.wav)
+    cat > \"\$TMPFILE\"
+    whisper-cli -m $WHISPER_MODEL -f \"\$TMPFILE\" -nt 2>/dev/null
+    rm -f \"\$TMPFILE\"
+  " > "$output_file" 2>> "$LOG_FILE"
+
+  rm -f "$audio_file"
+}
+
+is_remote_mode() {
+  [[ -n "$REMOTE_HOST" ]]
+}
+
 ACTION="${1:-toggle}"
 
 case "$ACTION" in
   toggle|*)
-    # Check if stt is currently running via PID file
+    # Check if recording is currently running via PID file
     if [[ -f "$PID_FILE" ]]; then
       PID=$(cat "$PID_FILE")
       if kill -0 "$PID" 2>/dev/null; then
@@ -70,14 +104,25 @@ case "$ACTION" in
         kill -INT "$PID"
         rm -f "$PID_FILE"
 
-        log "Waiting for transcription..."
-        for i in {1..10}; do
-          sleep 0.5
-          if [[ -s "$TRANSCRIPT_FILE" ]]; then
-            log "Transcript ready after ${i}*0.5 seconds"
-            break
+        if is_remote_mode; then
+          # Remote mode: send recorded audio to remote for transcription
+          log "Using remote transcription via $REMOTE_HOST"
+          # Wait a moment for rec to finish writing
+          sleep 0.3
+          if [[ -f "$AUDIO_FILE" ]]; then
+            transcribe_remote "$AUDIO_FILE" "$TRANSCRIPT_FILE"
           fi
-        done
+        else
+          # Local mode: wait for stt to finish
+          log "Waiting for transcription..."
+          for i in {1..10}; do
+            sleep 0.5
+            if [[ -s "$TRANSCRIPT_FILE" ]]; then
+              log "Transcript ready after ${i}*0.5 seconds"
+              break
+            fi
+          done
+        fi
 
         stop_waiting
         if [[ -s "$TRANSCRIPT_FILE" ]]; then
@@ -110,6 +155,7 @@ case "$ACTION" in
     play_start
     start_ambient
     rm -f "$TRANSCRIPT_FILE"
+    rm -f "$AUDIO_FILE"
     # Save return flag if --return was passed
     if [[ "$SEND_RETURN" == "true" ]]; then
       touch "$RETURN_FLAG_FILE"
@@ -117,9 +163,20 @@ case "$ACTION" in
     else
       rm -f "$RETURN_FLAG_FILE"
     fi
-    stt > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
-    STT_PID=$!
-    echo "$STT_PID" > "$PID_FILE"
-    log "Started stt with PID: $STT_PID"
+
+    if is_remote_mode; then
+      # Remote mode: record audio to file for later SSH transfer
+      log "Recording for remote transcription to $REMOTE_HOST"
+      rec -q "$AUDIO_FILE" 2>> "$LOG_FILE" &
+      REC_PID=$!
+      echo "$REC_PID" > "$PID_FILE"
+      log "Started rec with PID: $REC_PID"
+    else
+      # Local mode: use stt directly
+      stt > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
+      STT_PID=$!
+      echo "$STT_PID" > "$PID_FILE"
+      log "Started stt with PID: $STT_PID"
+    fi
     ;;
 esac

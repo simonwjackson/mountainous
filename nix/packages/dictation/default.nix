@@ -7,6 +7,7 @@
   wtype,
   coreutils,
   procps,
+  openssh,
   inputs,
   ...
 }:
@@ -32,6 +33,7 @@ stdenv.mkDerivation rec {
       wtype
       coreutils
       procps
+      openssh
     ]}:${stt}/bin
 
     runHook postInstall
