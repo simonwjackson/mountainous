@@ -20,7 +20,6 @@ in {
 
     environment.systemPackages = with pkgs; [
       gamescope
-      steam
       steam-tui
       gamemode
       mangohud

@@ -8,9 +8,10 @@
   mountainous.hyprland = {
     enable = true;
 
-    # Touch gesture support
+    # Touch gesture and workspace overview plugins
     plugins = [
       inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
+      inputs.hyprland-plugins.packages.${pkgs.stdenv.hostPlatform.system}.hyprexpo
     ];
 
     extraSettings = {
@@ -50,7 +51,18 @@
       "plugin:touch_gestures:sensitivity" = 4.0;
       "plugin:touch_gestures:workspace_swipe_fingers" = 3;
       "plugin:touch_gestures:edge_margin" = 30;
+
+      # hyprexpo workspace overview config
+      "plugin:hyprexpo:columns" = 2;
+      "plugin:hyprexpo:gap_size" = 5;
+      "plugin:hyprexpo:bg_col" = "rgb(000000)";
+      "plugin:hyprexpo:workspace_method" = "center current";
       "plugin:touch_gestures:long_press_delay" = 200;
+
+      # Keyboard bindings
+      bind = [
+        "SUPER, Tab, hyprexpo:expo, toggle"
+      ];
 
       # Touch gesture bindings (mouse-like actions)
       "hyprgrass-bindm" = [
@@ -65,19 +77,14 @@
         ", swipe:3:r, workspace, e-1"
 
         # 4-finger gestures
-        ", swipe:4:u, fullscreen, 1"
+        ", swipe:4:u, hyprexpo:expo, toggle"
         ", swipe:4:d, togglefloating"
 
         # Edge swipes
         ", edge:r:l, togglespecialworkspace, magic"
 
-        # Virtual keyboards via gestures (try all 3, pick your favorite)
-        # Bottom edge up: wvkbd docked (anchored to bottom)
-        ", edge:b:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; wvkbd-mobintl -L 250 --landscape-layers full,special"
-        # Left edge up: wvkbd floating (moveable)
-        ", edge:l:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; wvkbd-floating -L 250 --landscape-layers full,special"
-        # 3-finger swipe up: hyprkbd (Hyprland-specific fork)
-        ", swipe:3:u, exec, pkill wvkbd-mobintl; pkill wvkbd-floating; pkill hyprkbd; hyprkbd"
+        # Virtual keyboard - left edge up to toggle (full+special layers)
+        ", edge:l:u, exec, pkill -SIGRTMIN wvkbd-mobintl 2>/dev/null || wvkbd-mobintl -L 300 --landscape-layers full,special"
       ];
     };
   };
@@ -97,8 +104,6 @@
 
     # Tablet essentials - virtual keyboards
     wvkbd # Anchored to bottom
-    wvkbd-floating # Floating version (patched)
-    hyprkbd # Hyprland-specific fork
     wtype # Keyboard input emulator
     brightnessctl
     iio-hyprland # Auto-rotate for Hyprland (uses system iio-sensor-proxy)
