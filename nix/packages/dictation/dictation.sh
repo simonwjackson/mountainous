@@ -68,6 +68,23 @@ stop_ambient() {
   fi
 }
 
+# Transcribe audio file locally using whisper-cli
+transcribe_local() {
+  local audio_file="$1"
+  local output_file="$2"
+
+  log "Transcribing locally with whisper-cli (model: $WHISPER_MODEL)"
+
+  if [[ ! -f "$WHISPER_MODEL" ]]; then
+    log "ERROR: Whisper model not found at $WHISPER_MODEL"
+    log "Ensure mountainous.dictation.whisperModel is configured correctly"
+    return 1
+  fi
+
+  whisper-cli -m "$WHISPER_MODEL" -f "$audio_file" -nt 2>> "$LOG_FILE" > "$output_file"
+  rm -f "$audio_file"
+}
+
 # Transcribe audio file via SSH to remote host
 transcribe_remote() {
   local audio_file="$1"
@@ -104,24 +121,18 @@ case "$ACTION" in
         kill -INT "$PID"
         rm -f "$PID_FILE"
 
-        if is_remote_mode; then
-          # Remote mode: send recorded audio to remote for transcription
-          log "Using remote transcription via $REMOTE_HOST"
-          # Wait a moment for rec to finish writing
-          sleep 0.3
-          if [[ -f "$AUDIO_FILE" ]]; then
+        # Buffer drain delay - wait for audio buffers to fully flush
+        # This prevents cutting off speech at the end of recording
+        sleep 1
+
+        if [[ -f "$AUDIO_FILE" ]]; then
+          if is_remote_mode; then
+            # Remote mode: send recorded audio to remote for transcription
             transcribe_remote "$AUDIO_FILE" "$TRANSCRIPT_FILE"
+          else
+            # Local mode: transcribe locally with whisper-cli
+            transcribe_local "$AUDIO_FILE" "$TRANSCRIPT_FILE"
           fi
-        else
-          # Local mode: wait for stt to finish
-          log "Waiting for transcription..."
-          for i in {1..10}; do
-            sleep 0.5
-            if [[ -s "$TRANSCRIPT_FILE" ]]; then
-              log "Transcript ready after ${i}*0.5 seconds"
-              break
-            fi
-          done
         fi
 
         stop_waiting
@@ -164,19 +175,16 @@ case "$ACTION" in
       rm -f "$RETURN_FLAG_FILE"
     fi
 
+    # Record audio to file (used for both local and remote transcription)
     if is_remote_mode; then
-      # Remote mode: record audio to file for later SSH transfer
       log "Recording for remote transcription to $REMOTE_HOST"
-      rec -q "$AUDIO_FILE" 2>> "$LOG_FILE" &
-      REC_PID=$!
-      echo "$REC_PID" > "$PID_FILE"
-      log "Started rec with PID: $REC_PID"
     else
-      # Local mode: use stt directly
-      stt > "$TRANSCRIPT_FILE" 2>> "$LOG_FILE" &
-      STT_PID=$!
-      echo "$STT_PID" > "$PID_FILE"
-      log "Started stt with PID: $STT_PID"
+      log "Recording for local transcription"
     fi
+    # Record at 16kHz mono - optimal for whisper transcription
+    rec -q -r 16000 -c 1 "$AUDIO_FILE" 2>> "$LOG_FILE" &
+    REC_PID=$!
+    echo "$REC_PID" > "$PID_FILE"
+    log "Started rec with PID: $REC_PID"
     ;;
 esac

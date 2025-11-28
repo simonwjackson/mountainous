@@ -44,6 +44,7 @@
   };
 
   mountainous.taskwarrior.enable = true;
+  mountainous.dictation.enable = true;
 
   # System-specific settings
   programs.git.settings = {

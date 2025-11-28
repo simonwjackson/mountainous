@@ -8,6 +8,12 @@
   inputs,
   ...
 }: {
+  # Remote dictation via aka (Atom CPU too slow for local whisper)
+  mountainous.dictation = {
+    enable = true;
+    remoteHost = "aka";
+  };
+
   # GPD Pocket 1 Hyprland configuration
   mountainous.hyprland = {
     enable = true;

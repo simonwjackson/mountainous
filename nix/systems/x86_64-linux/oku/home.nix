@@ -5,6 +5,9 @@
 }: {
   # Huawei MateBook E tablet home configuration
 
+  # Local dictation (has enough CPU for whisper)
+  mountainous.dictation.enable = true;
+
   mountainous.hyprland = {
     enable = true;
 

@@ -10,7 +10,7 @@
   cfg = config.mountainous.hyprland;
 
   # Import configuration from sub-modules
-  keybindsConfig = import ./keybinds.nix {inherit lib pkgs inputs;};
+  keybindsConfig = import ./keybinds.nix {inherit config lib pkgs inputs;};
   settingsConfig = import ./settings.nix {inherit lib pkgs;};
   windowrulesConfig = import ./windowrules.nix {inherit lib pkgs;};
   hyprlockConfig = import ./hyprlock.nix {inherit lib pkgs;};

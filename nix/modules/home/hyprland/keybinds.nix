@@ -1,9 +1,11 @@
 # Hyprland keybindings configuration
 {
+  config,
   lib,
   pkgs,
   inputs,
 }: let
+  dictationEnabled = config.mountainous.dictation.enable or false;
   # Tool paths
   date = "${pkgs.coreutils}/bin/date";
   grep = "${pkgs.gnugrep}/bin/grep";
@@ -79,10 +81,12 @@ in {
     "$mainMod, right, swapwindow, r"
     "$mainMod, up, swapwindow, u"
     "$mainMod, down, swapwindow, d"
-    "$mainMod, S, exec, ${pkgs.dictation}/bin/dictation"
-    "$mainMod SHIFT, S, exec, ${pkgs.dictation}/bin/dictation --return"
     "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
     "$mainMod, equal, exec, ${pkgs.split-toggle}/bin/split-toggle"
+  ]
+  ++ lib.optionals dictationEnabled [
+    "$mainMod, S, exec, ${pkgs.dictation}/bin/dictation"
+    "$mainMod SHIFT, S, exec, ${pkgs.dictation}/bin/dictation --return"
   ];
 
   bindel = [

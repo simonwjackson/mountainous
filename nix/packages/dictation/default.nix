@@ -8,7 +8,7 @@
   coreutils,
   procps,
   openssh,
-  inputs,
+  whisper-cpp,
   ...
 }:
 stdenv.mkDerivation rec {
@@ -18,8 +18,6 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   nativeBuildInputs = [makeWrapper];
-
-  stt = inputs.speech.packages.${stdenv.hostPlatform.system}.default;
 
   installPhase = ''
     runHook preInstall
@@ -34,7 +32,8 @@ stdenv.mkDerivation rec {
       coreutils
       procps
       openssh
-    ]}:${stt}/bin
+      whisper-cpp
+    ]}
 
     runHook postInstall
   '';
