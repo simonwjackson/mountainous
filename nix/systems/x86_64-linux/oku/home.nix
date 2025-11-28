@@ -99,16 +99,14 @@
         ", swipe:4:u, hyprexpo:expo, toggle"
         ", swipe:4:d, togglefloating"
 
-        # Edge swipes
-        ", edge:r:l, togglespecialworkspace, magic"
+        # Edge swipes - left edge
+        ", edge:l:r, togglespecialworkspace, magic"
+        ", edge:l:u, exec, pkill -SIGRTMIN wvkbd-mobintl 2>/dev/null || wvkbd-mobintl -L 300 --landscape-layers full,special"
+
+        # Edge swipes - right edge
+        ", edge:r:l, exec, ${pkgs.dictation}/bin/dictation"
         ", edge:r:u, exec, brightnessctl set +10%"
         ", edge:r:d, exec, brightnessctl set 10%-"
-
-        # Toggle title bars (top edge swipe down)
-        # ", edge:l:r, exec, hyprctl keyword plugin:hyprbars:bar_height $([ $(hyprctl getoption plugin:hyprbars:bar_height -j | grep -o '\"int\": [0-9]*' | awk '{print $2}') -eq 0 ] && echo 30 || echo 0)"
-
-        # Virtual keyboard - left edge up to toggle (full+special layers)
-        ", edge:l:u, exec, pkill -SIGRTMIN wvkbd-mobintl 2>/dev/null || wvkbd-mobintl -L 300 --landscape-layers full,special"
       ];
     };
   };
