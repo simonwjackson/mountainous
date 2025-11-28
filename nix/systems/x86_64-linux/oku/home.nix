@@ -14,10 +14,9 @@
     ];
 
     extraSettings = {
-      # 12.6" OLED 2560x1600 display
-      # Native orientation is portrait, transform,1 for landscape
+      # 12.6" OLED 2560x1600 DSI display
       monitor = [
-        "eDP-1,2560x1600@60,auto,1.6,transform,0"
+        "DSI-1,2560x1600@60,auto,2,transform,0"
       ];
 
       exec-once = [
@@ -36,7 +35,7 @@
         # Stylus configuration
         tablet = {
           # Map tablet input to monitor
-          output = "eDP-1";
+          output = "DSI-1";
         };
       };
 

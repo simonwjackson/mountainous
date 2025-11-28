@@ -162,8 +162,10 @@
     profiles = {
       base.enable = true;
       laptop.enable = true;
+      gaming.enable = true;
     };
 
+    steam.enable = true;
     sound.enable = true;
 
     # Auto-rotation for tablet
