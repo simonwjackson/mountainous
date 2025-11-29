@@ -8,33 +8,28 @@
   inputs,
   ...
 }: {
-  # === MPV Configuration for weak Atom CPU ===
+  # === MPV overrides for weak Atom CPU ===
   # Hardware decoding is essential - software decode can't keep up
   programs.mpv = {
-    enable = true;
     config = {
-      # Hardware decoding (VA-API for Intel)
+      # Hardware decoding (VA-API for Intel Cherry Trail)
       hwdec = "vaapi";
       vo = "gpu";
       gpu-context = "wayland";
 
-      # yt-dlp format for mpv's internal ytdl-hook
-      # Cherry Trail has NO AV1/VP9 hw decode - must use H.264 (avc1)
+      # yt-dlp format - Cherry Trail has NO AV1/VP9 hw decode
       ytdl-format = "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/best[height<=1080]";
-
-      # Panscan disabled by default (handled by fullscreen profile below)
-      panscan = 0;
 
       # Performance optimizations for weak GPU
       profile = "fast";
-      scale = "bilinear"; # Faster than default lanczos
+      scale = "bilinear";
       cscale = "bilinear";
       dscale = "bilinear";
       dither-depth = "no";
 
       # Reduce frame drops
-      framedrop = "vo"; # Drop frames if too slow
-      video-sync = "audio"; # Prioritize audio sync
+      framedrop = "vo";
+      video-sync = "audio";
 
       # Lower cache for limited RAM
       demuxer-max-bytes = "50M";
@@ -46,18 +41,8 @@
     };
 
     scripts = with pkgs.mpvScripts; [
-      quality-menu # Quick quality switching for yt-dlp
+      quality-menu
     ];
-
-    # Conditional profiles
-    profiles = {
-      # Auto-activate when fullscreen - fill screen by cropping
-      fullscreen-panscan = {
-        profile-cond = "fullscreen";
-        profile-restore = "copy";
-        panscan = 1;
-      };
-    };
   };
 
   # === yt-dlp Configuration ===
