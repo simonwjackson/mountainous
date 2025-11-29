@@ -67,6 +67,13 @@
       gaming.enable = true;
     };
 
+    # Syncthing for knowledge sync
+    syncthing = {
+      enable = true;
+      deviceId = "DIVKBPA-VNVTEK5-FH7C2SB-QCSK6ZC-N4OE7AQ-3JX63AR-BDR6WMP-JQZ3KAK";
+      folders.knowledge.path = "/snowscape/knowledge";
+    };
+
     # VPN isolation for services
 
     # networking.core.names = [

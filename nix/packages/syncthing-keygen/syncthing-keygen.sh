@@ -32,7 +32,7 @@ echo ""
 
 # Generate syncthing certificate and key
 cd "$TEMP_DIR"
-syncthing generate --home "$TEMP_DIR" --no-default-folder --skip-port-probing
+syncthing generate --home "$TEMP_DIR"
 
 # Extract device ID from config.xml
 if [ ! -f "$TEMP_DIR/config.xml" ]; then

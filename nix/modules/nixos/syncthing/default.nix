@@ -12,23 +12,19 @@
   agenixEnabled = config.mountainous.agenix.enable or false;
   secretsDir = ../../../../secrets/agenix;
 
-  # Import the central device ID registry
-  allDeviceIds = import ./devices.nix;
-
   # All NixOS systems from the flake
   allSystems = inputs.self.nixosConfigurations or {};
 
   # Filter to systems with syncthing enabled AND valid device ID (excluding self)
   syncthingSystems = filterAttrs (name: system:
     name != hostname
-    && allDeviceIds ? ${name}
     && (system.config.mountainous.syncthing.enable or false)
+    && (system.config.mountainous.syncthing.deviceId or "") != ""
   ) allSystems;
 
-  # Build device entries for services.syncthing.settings.devices
-  # Only include devices that actually exist in the registry
-  nixosDevices = mapAttrs (name: _system: {
-    id = allDeviceIds.${name};
+  # Build device entries from each system's declared deviceId
+  nixosDevices = mapAttrs (name: system: {
+    id = system.config.mountainous.syncthing.deviceId;
     addresses = ["dynamic"];
   }) syncthingSystems;
 
@@ -153,6 +149,17 @@
 in {
   options.mountainous.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization with auto-discovery";
+
+    deviceId = mkOption {
+      type = types.str;
+      default = "";
+      description = ''
+        This system's syncthing device ID. Required for auto-discovery.
+        Get from existing system: syncthing -device-id
+        Or generate new: nix run .#syncthing-keygen -- <hostname>
+      '';
+      example = "XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX";
+    };
 
     user = mkOption {
       type = types.str;

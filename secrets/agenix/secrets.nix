@@ -13,6 +13,7 @@ let
   kita = builtins.readFile ../keys/hosts/x86_64-linux_kita_ssh_host_rsa_key.pub;
   naka = builtins.readFile ../keys/hosts/aarch64-linux_naka_ssh_host_rsa_key.pub;
   nyu = builtins.readFile ../keys/hosts/x86_64-linux_nyu_ssh_host_rsa_key.pub;
+  oku = builtins.readFile ../keys/hosts/x86_64-linux_oku_ssh_host_rsa_key.pub;
   rakku = builtins.readFile ../keys/hosts/x86_64-linux_rakku_ssh_host_rsa_key.pub;
   unzen = builtins.readFile ../keys/hosts/x86_64-linux_unzen_ssh_host_rsa_key.pub;
   usu = builtins.readFile ../keys/hosts/x86_64-linux_usu_ssh_host_rsa_key.pub;
@@ -31,6 +32,7 @@ let
     kita
     naka
     nyu
+    oku
     rakku
     unzen
     usu
@@ -103,6 +105,9 @@ in {
 
   "aka-syncthing-key.age".publicKeys = users ++ [aka];
   "aka-syncthing-cert.age".publicKeys = users ++ [aka];
+
+  "oku-syncthing-key.age".publicKeys = users ++ [oku];
+  "oku-syncthing-cert.age".publicKeys = users ++ [oku];
 
   "fuji-syncthing-key.age".publicKeys = users ++ [fuji];
   "fuji-syncthing-cert.age".publicKeys = users ++ [fuji];

@@ -72,6 +72,17 @@
                       "space_cache=v2"
                     ];
                   };
+
+                  "@snowscape-knowledge" = {
+                    mountpoint = "/snowscape/knowledge";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
                 };
               };
             };

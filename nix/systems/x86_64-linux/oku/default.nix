@@ -171,6 +171,13 @@
     # auto-rotate.enable = true;
 
     impermanence.enable = lib.mkForce false;
+
+    # Syncthing for knowledge sync
+    syncthing = {
+      enable = true;
+      deviceId = "ICJAC2B-55KKGYZ-5QUYHGX-NJLJTQ2-KI4EPHO-IIIDF5F-ZY54PKY-Y46T3AR";
+      folders.knowledge.path = "/snowscape/knowledge";
+    };
   };
 
   # Use persistent SSH key for agenix (set directly to override defaults)
@@ -223,6 +230,11 @@
       mode = "0700";
     };
     "/tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson".d = {
+      user = "simonwjackson";
+      group = "users";
+      mode = "0755";
+    };
+    "/snowscape/knowledge".z = {
       user = "simonwjackson";
       group = "users";
       mode = "0755";
