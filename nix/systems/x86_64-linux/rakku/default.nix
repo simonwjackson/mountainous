@@ -102,7 +102,6 @@
       "tts" # Text-to-speech platform
 
       # Media
-      "music_assistant" # Music Assistant integration
       "sonos" # Sonos speakers
       "cast" # Chromecast/Google Cast
       "media_source" # Media source
@@ -194,54 +193,6 @@
     secretsConfigFile = config.age.secrets."zwave-js-secrets".path;
   };
 
-  # Music Assistant - Music library manager and streaming server
-  # Integrates with Home Assistant for centralized music control
-  services.music-assistant = {
-    enable = true;
-    providers = [
-      # Home Assistant integration
-      "hass" # Required for HA integration
-      "hass_players" # Use HA media players in Music Assistant
-
-      # Streaming services
-      "spotify"
-      "ytmusic" # YouTube Music
-      "tunein" # Internet radio
-
-      # Local/Network sources
-      "filesystem_local" # Local music files
-      "filesystem_smb" # SMB/Network shares
-      "jellyfin"
-      "plex"
-
-      # Player protocols
-      # Note: airplay not available (requires unsupported OpenSSL 1.1)
-      "chromecast" # Google Cast
-      "dlna" # DLNA/UPnP
-      "snapcast" # Multi-room audio
-      "sonos" # Sonos speakers
-    ];
-  };
-
-  # Override Music Assistant service to disable DynamicUser (incompatible with impermanence)
-  systemd.services.music-assistant = {
-    serviceConfig = {
-      DynamicUser = lib.mkForce false;
-      User = "music-assistant";
-      Group = "music-assistant";
-    };
-  };
-
-  # Create static user for Music Assistant
-  users.users.music-assistant = {
-    isSystemUser = true;
-    group = "music-assistant";
-    home = "/var/lib/music-assistant";
-    createHome = false;
-  };
-
-  users.groups.music-assistant = {};
-
   # Grant Home Assistant and Z-Wave JS users access to serial devices
   users.users.hass.extraGroups = ["dialout"];
 
@@ -298,12 +249,6 @@
       "/var/lib/hass" # Home Assistant configuration and data
       "/var/lib/zwave-js" # Z-Wave JS network data and secrets
       {
-        directory = "/var/lib/music-assistant";
-        user = "music-assistant";
-        group = "music-assistant";
-        mode = "0755";
-      }
-      {
         directory = "/var/lib/tsnet-proxy-habitat";
         user = "tsnet-proxy";
         group = "tsnet-proxy";
@@ -358,11 +303,6 @@
       group = "hass";
       mode = "0755";
     };
-    "/tundra/permafrost/var/lib/music-assistant".d = {
-      user = "music-assistant";
-      group = "music-assistant";
-      mode = "0755";
-    };
     "/tundra/permafrost/var/lib/tsnet-proxy-habitat".d = {
       user = "tsnet-proxy";
       group = "tsnet-proxy";
@@ -412,12 +352,11 @@
   # Firewall disabled (using Tailscale for network security)
   # Services and their ports:
   #   - Home Assistant: 8123
-  #   - Music Assistant: 8095
   #   - Z-Wave JS: 3000 (WebSocket)
   #   - SSH: 22
   networking.firewall = {
     enable = lib.mkForce false;
-    allowedTCPPorts = [22 8123 8095 3000];
+    allowedTCPPorts = [22 8123 3000];
   };
 
   system.stateVersion = "24.11";
