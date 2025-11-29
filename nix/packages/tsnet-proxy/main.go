@@ -52,8 +52,15 @@ func main() {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
+		// Extract IP without port for X-Forwarded-For
+		clientIP, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			// RemoteAddr might not have a port, use as-is
+			clientIP = r.RemoteAddr
+		}
+
 		// Set proxy headers
-		r.Header.Set("X-Forwarded-For", r.RemoteAddr)
+		r.Header.Set("X-Forwarded-For", clientIP)
 		r.Header.Set("X-Forwarded-Proto", "https")
 		r.Header.Set("X-Forwarded-Host", r.Host)
 

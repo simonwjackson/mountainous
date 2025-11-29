@@ -146,6 +146,8 @@
         unit_system = "metric";
         time_zone = "America/Denver";
         temperature_unit = "C";
+        external_url = "https://habitat.hummingbird-lake.ts.net";
+        internal_url = "http://localhost:8123";
       };
 
       # UI-managed configuration files
