@@ -99,8 +99,10 @@ if [[ -f "$PID_FILE" ]]; then
     kill -INT "$PID"
     rm -f "$PID_FILE"
 
-    # Buffer drain delay - wait for audio buffers to fully flush
-    sleep 1
+    # Wait for rec process to fully exit and flush buffers
+    while kill -0 "$PID" 2>/dev/null; do
+      sleep 0.1
+    done
 
     if [[ -f "$AUDIO_FILE" ]]; then
       transcribe "$AUDIO_FILE" "$TRANSCRIPT_FILE"
