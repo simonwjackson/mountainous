@@ -80,15 +80,8 @@ transcribe() {
   log "Sending audio to $REMOTE_HOST (model: $WHISPER_MODEL)"
   log "Audio file size: $(stat -c%s "$audio_file" 2>/dev/null || echo "unknown") bytes"
 
-  # Pipe audio to remote, run whisper, get text back
-  ssh "$REMOTE_HOST" "
-    set -e
-    TMPFILE=\$(mktemp --suffix=.wav)
-    cat > \"\$TMPFILE\"
-    echo \"[remote] Received audio: \$(stat -c%s \"\$TMPFILE\") bytes\" >&2
-    whisper-cli -m $WHISPER_MODEL -f \"\$TMPFILE\" -nt
-    rm -f \"\$TMPFILE\"
-  " <"$audio_file" >"$output_file" 2>>"$LOG_FILE"
+  # Pipe audio to remote, run whisper via nix shell, get text back
+  cat "$audio_file" | ssh "$REMOTE_HOST" "nix shell nixpkgs#whisper-cpp --command sh -c 'cat > /tmp/dictation-audio.wav && whisper-cli -m $WHISPER_MODEL -f /tmp/dictation-audio.wav -nt 2>/dev/null && rm /tmp/dictation-audio.wav'" >"$output_file" 2>>"$LOG_FILE"
 
   local exit_code=$?
   log "SSH exit code: $exit_code"
