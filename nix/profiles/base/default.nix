@@ -75,7 +75,7 @@ in {
       pkgs.dust
     ];
 
-    services.tailscale.enable = true;
+    mountainous.tailscale.enable = true;
 
     boot.kernel.sysctl = {
       "net.ipv4.ip_forward" = mkDefault 1;

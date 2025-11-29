@@ -88,7 +88,30 @@
           packages = with pkgs; [
             just
             gum
+
+            # Lefthook
+            lefthook
+
+            # Nix
+            alejandra
+
+            # Shell
+            shellcheck
+            shfmt
+
+            # Go
+            go
+
+            # Python
+            black
+
+            # Secrets
+            gitleaks
           ];
+
+          shellHook = ''
+            lefthook install
+          '';
         };
       });
     };

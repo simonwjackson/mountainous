@@ -3,3 +3,5 @@ result
 ai_docs
 .direnv
 CLAUDE.local.md
+.lefthook/
+.lefthook-local.yml
