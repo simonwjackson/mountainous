@@ -664,6 +664,21 @@
 
   programs.bat.enable = true;
 
+  # MPV with conditional panscan (only fill screen when fullscreen)
+  programs.mpv = {
+    enable = true;
+    config = {
+      panscan = 0;
+    };
+    profiles = {
+      fullscreen-panscan = {
+        profile-cond = "fullscreen";
+        profile-restore = "copy";
+        panscan = 1;
+      };
+    };
+  };
+
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
