@@ -62,13 +62,12 @@
       enable32Bit = true;
       extraPackages = with pkgs; [
         intel-media-driver # LIBVA_DRIVER_NAME=iHD
-        vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but sometimes works better)
-        vaapiVdpau
+        intel-vaapi-driver # LIBVA_DRIVER_NAME=i965 (older but sometimes works better)
         libvdpau-va-gl
       ];
       extraPackages32 = with pkgs; [
         intel-media-driver
-        vaapiIntel
+        intel-vaapi-driver
       ];
     };
   };
@@ -88,6 +87,11 @@
     # Override base profile's impermanence - configure locally
     impermanence.enable = lib.mkForce false;
   };
+
+  # Use mkForce to override defaults from mountainous.agenix module
+  age.identityPaths = lib.mkForce [
+    "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
+  ];
 
   # Configure ephemeral root filesystem (tmpfs) for impermanence
   fileSystems."/" = {
