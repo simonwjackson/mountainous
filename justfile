@@ -203,10 +203,11 @@ format:
 encrypt:
     nix run .#secrets -- encrypt
 
-# Re-encrypt all secrets (useful after adding/removing keys)
+# Re-encrypt all secrets for all hosts (agenix-rekey)
 [group('secrets')]
 rekey:
-    nix run .#secrets -- rekey
+    nix run .#agenix-rekey.x86_64-linux.rekey -- -a
+    git add secrets/rekeyed/
 
 # Generate syncthing identity for a host
 [group('syncthing')]

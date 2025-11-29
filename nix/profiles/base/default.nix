@@ -14,19 +14,23 @@ in {
 
   config = lib.mkIf config.mountainous.profiles.base.enable {
     # VPN secret for vpn-ns tool
+    # Note: Using rekeyFile for agenix-rekey integration. The secret is auto-discovered
+    # from secrets/system/networking/, but we override ownership here.
     age.secrets."fastest-vpn" = {
-      file = ../../../secrets/agenix/fastest-vpn.age;
-      owner = "simonwjackson";
-      group = "users";
-      mode = "400";
+      rekeyFile = lib.mkDefault ../../../secrets/system/networking/fastest-vpn.age;
+      owner = lib.mkForce "simonwjackson";
+      group = lib.mkForce "users";
+      mode = lib.mkForce "400";
     };
 
     # GitHub token for nix config (used for private flake access)
-    age.secrets."user-simonwjackson-github-token-nix" = {
-      file = ../../../secrets/agenix/user-simonwjackson-github-token-nix.age;
-      owner = "root";
-      group = "root";
-      mode = "400";
+    # Note: This is a user secret, auto-discovered from secrets/user/simonwjackson/credentials/
+    # We add it to system secrets by declaring it with rekeyFile
+    age.secrets."github-token-nix" = {
+      rekeyFile = ../../../secrets/user/simonwjackson/credentials/github-token-nix.age;
+      owner = mkDefault "root";
+      group = mkDefault "root";
+      mode = mkDefault "400";
     };
 
     networking.firewall.allowedTCPPorts = [
@@ -311,7 +315,7 @@ in {
       distributedBuilds = true;
       extraOptions = ''
         builders-use-substitutes = true
-        !include ${config.age.secrets."user-simonwjackson-github-token-nix".path}
+        !include ${config.age.secrets."github-token-nix".path}
       '';
     };
   };

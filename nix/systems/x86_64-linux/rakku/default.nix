@@ -15,20 +15,12 @@
     "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
   ];
 
-  # Configure agenix secrets
-  age.secrets."zwave-js-secrets" = {
-    file = ../../../../secrets/agenix/zwave-js-secrets.age;
-    owner = "root";
-    group = "root";
-    mode = "400";
-  };
-
-  age.secrets."tailscale-tsnet" = {
-    file = ../../../../secrets/agenix/tailscale-ephemeral.age;
+  # Override ownership for tsnet-proxy (file auto-discovered)
+  age.secrets."tailscale-ephemeral" = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
-    mode = "400";
   };
+  # zwave-js-secrets auto-discovered with root:root defaults
 
   # UEFI boot configuration
   boot.loader = {
@@ -222,7 +214,7 @@
 
     tsnet-proxy = {
       enable = true;
-      authKeyFile = config.age.secrets."tailscale-tsnet".path;
+      authKeyFile = config.age.secrets."tailscale-ephemeral".path;
       services.habitat = {
         hostname = "habitat";
         protocol = "http";

@@ -44,20 +44,12 @@
   # Enable WireGuard support
   networking.wireguard.enable = true;
 
-  # Configure agenix secrets
-  age.secrets."tailscale-tsnet" = {
-    file = ../../../../secrets/agenix/tailscale-ephemeral.age;
+  # Override ownership for tsnet-proxy (file auto-discovered)
+  age.secrets."tailscale-ephemeral" = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
-    mode = "400";
   };
-
-  age.secrets."proton" = {
-    file = ../../../../secrets/agenix/proton.age;
-    owner = "root";
-    group = "root";
-    mode = "400";
-  };
+  # proton secret auto-discovered with root:root defaults
 
   mountainous = {
     iceberg-array.enable = true;
@@ -268,7 +260,7 @@
 
   mountainous.tsnet-proxy = {
     enable = true;
-    authKeyFile = config.age.secrets."tailscale-tsnet".path;
+    authKeyFile = config.age.secrets."tailscale-ephemeral".path;
     services.mcp = {
       hostname = "mcp";
       port = 8090;

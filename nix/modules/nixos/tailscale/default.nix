@@ -6,7 +6,9 @@
   inherit (lib) mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.tailscale;
   agenixEnabled = config.mountainous.agenix.enable or false;
-  secretsDir = ../../../../secrets/agenix;
+
+  # Check if secret exists (auto-discovered by agenix module)
+  hasSecret = config.age.secrets ? tailscale-ephemeral;
 in {
   options.mountainous.tailscale = {
     enable = mkEnableOption "Tailscale VPN mesh networking";
@@ -20,16 +22,12 @@ in {
   };
 
   config = mkIf cfg.enable {
-    age.secrets.tailscale-ephemeral = mkIf agenixEnabled {
-      file = secretsDir + "/tailscale-ephemeral.age";
-      mode = "400";
-      owner = "root";
-      group = "root";
-    };
+    # Secret is auto-discovered by mountainous.agenix module
+    # No declaration needed here - just reference it
 
     services.tailscale = {
       enable = true;
-      authKeyFile = mkIf agenixEnabled config.age.secrets.tailscale-ephemeral.path;
+      authKeyFile = mkIf (agenixEnabled && hasSecret) config.age.secrets.tailscale-ephemeral.path;
       extraUpFlags = cfg.extraUpFlags;
     };
   };

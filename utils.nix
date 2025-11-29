@@ -1,5 +1,5 @@
 {inputs}: let
-  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh synapse;
+  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh synapse agenix-rekey;
 
   # Path to default home-manager configuration
   defaultHomePath = ./nix/home/default.nix;
@@ -41,6 +41,33 @@
     in
       map (path: path + "/default.nix") modulePaths;
 
+  # Collect feature modules that export { nixos, home }
+  collectFeatureModules = dir:
+    if !(builtins.pathExists dir)
+    then {
+      nixos = [];
+      home = [];
+    }
+    else let
+      dirContent = builtins.readDir dir;
+      dirNames = builtins.attrNames dirContent;
+      featureDirs = builtins.filter (name: dirContent.${name} == "directory") dirNames;
+      featurePaths = map (name: dir + "/${name}") featureDirs;
+
+      # Only include directories that have a default.nix
+      validFeatures = builtins.filter (path: builtins.pathExists (path + "/default.nix")) featurePaths;
+
+      # Import each feature
+      features = map (path: import (path + "/default.nix")) validFeatures;
+
+      nixosModules = map (f: f.nixos or null) features;
+      homeModules = map (f: f.home or null) features;
+    in {
+      nixos = builtins.filter (m: m != null) nixosModules;
+      home = builtins.filter (m: m != null) homeModules;
+    };
+
+  featureModules = collectFeatureModules ./features;
   # Collect all home-manager modules
   homeManagerModules = collectModules ./nix/modules/home;
 
@@ -253,5 +280,10 @@ in {
     # Make packages available to dependent flakes
     overlay = final: prev: collectPackages prev prev.stdenv.hostPlatform.system;
 
+    # agenix-rekey configuration for secret management
+    agenix-rekey = agenix-rekey.configure {
+      userFlake = self;
+      nixosConfigurations = systems;
+    };
   };
 }

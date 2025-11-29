@@ -55,7 +55,7 @@
     enable = true;
     remotes.dropbox = {
       config.type = "dropbox";
-      secrets.token = config.age.secrets.user-simonwjackson-dropbox-token.path;
+      secrets.token = config.age.secrets.cloud_dropbox-token.path;
     };
   };
 

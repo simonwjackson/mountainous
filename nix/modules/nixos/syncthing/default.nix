@@ -10,29 +10,36 @@
   cfg = config.mountainous.syncthing;
   hostname = config.networking.hostName;
   agenixEnabled = config.mountainous.agenix.enable or false;
-  secretsDir = ../../../../secrets/agenix;
 
   # All NixOS systems from the flake
   allSystems = inputs.self.nixosConfigurations or {};
 
   # Filter to systems with syncthing enabled AND valid device ID (excluding self)
-  syncthingSystems = filterAttrs (name: system:
-    name != hostname
-    && (system.config.mountainous.syncthing.enable or false)
-    && (system.config.mountainous.syncthing.deviceId or "") != ""
-  ) allSystems;
+  syncthingSystems =
+    filterAttrs (
+      name: system:
+        name
+        != hostname
+        && (system.config.mountainous.syncthing.enable or false)
+        && (system.config.mountainous.syncthing.deviceId or "") != ""
+    )
+    allSystems;
 
   # Build device entries from each system's declared deviceId
-  nixosDevices = mapAttrs (name: system: {
-    id = system.config.mountainous.syncthing.deviceId;
-    addresses = ["dynamic"];
-  }) syncthingSystems;
+  nixosDevices =
+    mapAttrs (name: system: {
+      id = system.config.mountainous.syncthing.deviceId;
+      addresses = ["dynamic"];
+    })
+    syncthingSystems;
 
   # Build extraDevices entries (phones, external servers)
-  externalDevices = mapAttrs (name: dev: {
-    inherit (dev) id;
-    addresses = dev.addresses or ["dynamic"];
-  }) cfg.extraDevices;
+  externalDevices =
+    mapAttrs (name: dev: {
+      inherit (dev) id;
+      addresses = dev.addresses or ["dynamic"];
+    })
+    cfg.extraDevices;
 
   # Combine all devices
   allDevices = nixosDevices // externalDevices;
@@ -45,25 +52,30 @@
       filter (name: allDevices ? ${name}) folderCfg.devices
     else
       # Auto-discover: NixOS systems that also have this folder
-      (filter (name:
-        (syncthingSystems.${name}.config.mountainous.syncthing.folders or {}) ? ${folderName}
+      (filter (
+        name:
+          (syncthingSystems.${name}.config.mountainous.syncthing.folders or {}) ? ${folderName}
       ) (attrNames syncthingSystems))
       ++
       # Plus extraDevices that list this folder
-      (filter (name:
-        elem folderName (cfg.extraDevices.${name}.folders or [])
+      (filter (
+        name:
+          elem folderName (cfg.extraDevices.${name}.folders or [])
       ) (attrNames cfg.extraDevices));
 
   # Build folder config for services.syncthing.settings.folders
-  folders = mapAttrs (name: folderCfg: {
-    path = folderCfg.path;
-    devices = resolveDevices name folderCfg;
-    type = folderCfg.type;
-    ignorePerms = folderCfg.ignorePerms;
-    rescanIntervalS = folderCfg.rescanIntervalS;
-  } // optionalAttrs (folderCfg.versioning != null) {
-    inherit (folderCfg) versioning;
-  }) cfg.folders;
+  folders = mapAttrs (name: folderCfg:
+    {
+      path = folderCfg.path;
+      devices = resolveDevices name folderCfg;
+      type = folderCfg.type;
+      ignorePerms = folderCfg.ignorePerms;
+      rescanIntervalS = folderCfg.rescanIntervalS;
+    }
+    // optionalAttrs (folderCfg.versioning != null) {
+      inherit (folderCfg) versioning;
+    })
+  cfg.folders;
 
   # Folder submodule type
   folderType = types.submodule {
@@ -145,7 +157,6 @@
       };
     };
   };
-
 in {
   options.mountainous.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization with auto-discovery";
@@ -226,22 +237,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    # Agenix secrets for syncthing key and cert
-    age.secrets = mkIf (agenixEnabled && builtins.pathExists (secretsDir + "/${hostname}-syncthing-key.age")) {
-      "${hostname}-syncthing-key" = {
-        file = secretsDir + "/${hostname}-syncthing-key.age";
-        mode = "400";
-        owner = cfg.user;
-        group = cfg.group;
-      };
-      "${hostname}-syncthing-cert" = {
-        file = secretsDir + "/${hostname}-syncthing-cert.age";
-        mode = "400";
-        owner = cfg.user;
-        group = cfg.group;
-      };
-    };
-
     # Configure syncthing service
     services.syncthing = {
       enable = true;
@@ -251,12 +246,6 @@ in {
       configDir = cfg.configDir;
       guiAddress = cfg.guiAddress;
       openDefaultPorts = cfg.openFirewall;
-
-      # Use agenix-managed key and cert if available
-      key = mkIf (agenixEnabled && builtins.pathExists (secretsDir + "/${hostname}-syncthing-key.age"))
-        config.age.secrets."${hostname}-syncthing-key".path;
-      cert = mkIf (agenixEnabled && builtins.pathExists (secretsDir + "/${hostname}-syncthing-cert.age"))
-        config.age.secrets."${hostname}-syncthing-cert".path;
 
       overrideDevices = true;
       overrideFolders = true;

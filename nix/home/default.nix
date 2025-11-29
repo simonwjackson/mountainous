@@ -708,18 +708,31 @@
       lib.mkMerge [
         # Before compinit (order 550)
         (lib.mkOrder 550 ''
-          # Load API keys from agenix secrets
-          if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
-            export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
-          fi
-
-          if [[ -r "${config.age.secrets.user-simonwjackson-pushover-token.path}" ]]; then
-            export PUSHOVER_TOKEN="$(cat ${config.age.secrets.user-simonwjackson-pushover-token.path})"
-          fi
-
-          if [[ -r "${config.age.secrets.user-simonwjackson-pushover-user.path}" ]]; then
-            export PUSHOVER_USER="$(cat ${config.age.secrets.user-simonwjackson-pushover-user.path})"
-          fi
+          # Load API keys from agenix secrets (if available)
+          ${
+            if (config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? credentials_firecrawl-api-key)
+            then ''              if [[ -r "${config.age.secrets.credentials_firecrawl-api-key.path}" ]]; then
+                          export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.credentials_firecrawl-api-key.path})"
+                        fi
+            ''
+            else ""
+          }
+          ${
+            if (config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? email_pushover-token)
+            then ''              if [[ -r "${config.age.secrets.email_pushover-token.path}" ]]; then
+                          export PUSHOVER_TOKEN="$(cat ${config.age.secrets.email_pushover-token.path})"
+                        fi
+            ''
+            else ""
+          }
+          ${
+            if (config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? email_pushover-user)
+            then ''              if [[ -r "${config.age.secrets.email_pushover-user.path}" ]]; then
+                          export PUSHOVER_USER="$(cat ${config.age.secrets.email_pushover-user.path})"
+                        fi
+            ''
+            else ""
+          }
 
           # Enable Ctrl-R for history search (should work by default but ensure it's set)
           bindkey '^R' history-incremental-search-backward
@@ -832,10 +845,14 @@
 
     # Enable bash completion and other readline features
     bashrcExtra = ''
-      # Load API keys from agenix secrets
-      if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
-        export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
-      fi
+      # Load API keys from agenix secrets (if available)
+      ${
+        if config.mountainous.agenix.enable && (config.age.secrets or {}) ? credentials_firecrawl-api-key
+        then ''          if [[ -r "${config.age.secrets.credentials_firecrawl-api-key.path}" ]]; then
+                  export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.credentials_firecrawl-api-key.path})"
+                fi''
+        else ""
+      }
 
       # Enable history search with up/down arrows
       bind '"\e[A": history-search-backward'
@@ -1265,9 +1282,9 @@
   mountainous.agenix.enable = true;
 
   # Enable Claude credentials management
-  mountainous.claude = {
+  mountainous.claude = lib.mkIf ((config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? credentials_claude-credentials)) {
     enable = true;
-    credentialsPath = config.age.secrets.user-simonwjackson-claude-credentials.path;
+    credentialsPath = config.age.secrets.credentials_claude-credentials.path;
 
     commands = {
       enable = false;
@@ -1284,11 +1301,16 @@
   mountainous.starship.enable = true;
 
   # Enable atuin with encrypted secrets
-  mountainous.atuin = {
-    enable = true;
-    key_path = config.age.secrets.atuin_key.path;
-    session_path = config.age.secrets.atuin_session.path;
-  };
+  mountainous.atuin =
+    lib.mkIf (
+      config.mountainous.agenix.enable
+      && (config.age.secrets or {}) ? atuin_key
+      && (config.age.secrets or {}) ? atuin_session
+    ) {
+      enable = true;
+      key_path = config.age.secrets.atuin_key.path;
+      session_path = config.age.secrets.atuin_session.path;
+    };
 
   # This value determines the Home Manager release that your
   # configuration is compatible with. This helps avoid breakage
