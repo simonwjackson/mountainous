@@ -95,11 +95,6 @@
       specialArgs = {
         inherit inputs;
         target = arch;
-        lib = nixpkgs.lib.extend (final: prev: {
-          mountainous = {
-            inherit util;
-          };
-        });
       };
       modules =
         # First import all NixOS modules
@@ -220,12 +215,6 @@
       packageDirs);
   in
     packageSet;
-
-  # Utility functions for syncthing module
-  util = {
-    allArchitectures = systems: builtins.attrNames (builtins.readDir systems);
-    getAllHosts = systems: arch: builtins.attrNames (builtins.readDir "${systems}/${arch}");
-  };
 in {
   # Main flake utility function
   mkFlake = {
@@ -262,11 +251,5 @@ in {
     # Make packages available to dependent flakes
     overlay = final: prev: collectPackages prev prev.stdenv.hostPlatform.system;
 
-    # Export lib with mountainous utilities
-    lib = {
-      mountainous = {
-        inherit util;
-      };
-    };
   };
 }

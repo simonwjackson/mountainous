@@ -30,14 +30,6 @@ in {
     # Boot configuration
     boot.systemd-boot.enable = true;
 
-    # Syncthing disabled as requested
-    syncthing = {
-      enable = false;
-      key = "/run/agenix/fuji-syncthing-key";
-      cert = "/run/agenix/fuji-syncthing-cert";
-      systemsDir = ../../../../nix/systems;
-    };
-
     # System profiles
     profiles = {
       base.enable = true;

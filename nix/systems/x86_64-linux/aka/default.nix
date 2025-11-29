@@ -197,54 +197,6 @@
     "127.0.0.1" = ["amazesql01.database.windows.net"];
   };
 
-  # Enable mountainous Syncthing module with auto-discovery
-  mountainous.syncthing = {
-    enable = true;
-    # Configuration automatically discovered from ./syncthing.nix
-    # Certificates automatically configured from agenix secrets
-    otherDevices = {
-      # Add external devices here as needed
-      # Example:
-      # "phone" = {
-      #   id = "DEVICE-ID-HERE";
-      #   shares = ["photos" "documents"];
-      # };
-    };
-  };
-
-  # VPN-isolated services configuration
-  # mountainous.vpn-isolated-service = {
-  #   enable = true;
-  #
-  #   namespaces = {
-  #     vpn = {
-  #       wireguardConfigFile = config.age.secrets."proton".path;
-  #       accessibleFrom = [
-  #         "192.168.0.0/16"
-  #         "10.0.0.0/8"
-  #         "172.16.0.0/12"
-  #         "100.64.0.0/10" # Tailscale network
-  #       ];
-  #       portMappings = [
-  #         {
-  #           from = 8888;
-  #           to = 8888;
-  #         }
-  #       ];
-  #     };
-  #   };
-  #
-  #   services = {
-  #     ip-display = {
-  #       vpnNamespace = "vpn";
-  #       description = "Simple HTTP server displaying public IP";
-  #       script = ''
-  #         ${pkgs.python3}/bin/python3 ${config.mountainous.vpn-isolated-service.lib.ipDisplayScript}
-  #       '';
-  #     };
-  #   };
-  # };
-
   # Base service configurations
   mountainous.transmission.enable = true;
   mountainous.sabnzbd = {
