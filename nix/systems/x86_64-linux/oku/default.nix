@@ -173,6 +173,9 @@
     impermanence.enable = lib.mkForce false;
   };
 
+  # Use persistent SSH key for agenix (set directly to override defaults)
+  age.identityPaths = lib.mkForce ["/tundra/permafrost/etc/ssh/ssh_host_rsa_key"];
+
   # Disable auto-cpufreq from base profile (conflicts with TLP)
   services.auto-cpufreq.enable = lib.mkForce false;
 

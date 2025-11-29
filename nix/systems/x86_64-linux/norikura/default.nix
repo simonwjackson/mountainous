@@ -182,7 +182,13 @@
 
     # Disable impermanence for initial setup
     impermanence.enable = lib.mkForce false;
+
+    # Use persistent SSH key for agenix
+    agenix.identityPaths = ["/tundra/permafrost/etc/ssh/ssh_host_rsa_key"];
   };
+
+  # Use persistent SSH key for agenix (set directly to override defaults)
+  age.identityPaths = lib.mkForce ["/tundra/permafrost/etc/ssh/ssh_host_rsa_key"];
 
   # Touchscreen calibration for rotated display
   # Goodix touchscreen needs transformation matrix when display is rotated
