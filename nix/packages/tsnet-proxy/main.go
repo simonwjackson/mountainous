@@ -48,6 +48,13 @@ func main() {
 	// Create reverse proxy
 	proxy := httputil.NewSingleHostReverseProxy(backendURL)
 
+	// Rewrite Host header to backend host
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = backendURL.Host
+	}
+
 	// Add request logging and headers
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)

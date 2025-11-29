@@ -1,10 +1,9 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types concatStringsSep mapAttrsToList;
+  inherit (lib) mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.mcp-gateway;
 in {
   options.mountainous.mcp-gateway = {
@@ -68,9 +67,8 @@ in {
                 proxy_read_timeout 86400s;
                 proxy_send_timeout 86400s;
 
-                # Headers for SSE
+                # Headers for SSE (proxy_http_version set by proxyWebsockets)
                 proxy_set_header Connection "";
-                proxy_http_version 1.1;
                 chunked_transfer_encoding off;
 
                 # CORS headers
