@@ -277,12 +277,19 @@
       hostname = "tavern";
       port = 8000;
     };
+    services.ollama = {
+      hostname = "ollama";
+      port = 11434;
+    };
   };
 
   # Ollama for local LLM inference
   services.ollama = {
     enable = true;
     acceleration = "rocm"; # AMD GPU
+    environmentVariables = {
+      OLLAMA_ORIGINS = "*"; # Allow all origins (secured by Tailscale)
+    };
     loadModels = [
       "nomic-embed-text"
       "hermes3" # Best available for AI Dungeon-style storytelling
@@ -295,6 +302,8 @@
     port = 3939;
     vaultPath = "/snowscape/knowledge";
     envPath = "/snowscape/knowledge/.synapse";
+    user = "simonwjackson"; # Add this
+    group = "users"; # Add this
   };
 
   # MCP Gateway - path-based routing for MCP servers
