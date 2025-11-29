@@ -21,6 +21,14 @@ in {
       mode = "400";
     };
 
+    # GitHub token for nix config (used for private flake access)
+    age.secrets."user-simonwjackson-github-token-nix" = {
+      file = ../../../secrets/agenix/user-simonwjackson-github-token-nix.age;
+      owner = "root";
+      group = "root";
+      mode = "400";
+    };
+
     networking.firewall.allowedTCPPorts = [
       8081 # Expo GO
     ];
