@@ -22,26 +22,11 @@ stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
 
-    # Install both local and remote scripts
-    install -Dm755 dictation-local.sh $out/bin/dictation-local
-    install -Dm755 dictation-remote.sh $out/bin/dictation-remote
+    # Install unified script
+    install -Dm755 dictation.sh $out/bin/dictation
 
-    # Create 'dictation' as symlink to local by default
-    ln -s dictation-local $out/bin/dictation
-
-    # Wrap local script (includes whisper-cpp)
-    wrapProgram $out/bin/dictation-local \
-      --prefix PATH : ${lib.makeBinPath [
-      bash
-      sox
-      wtype
-      coreutils
-      procps
-      whisper-cpp
-    ]}
-
-    # Wrap remote script (includes openssh, no whisper-cpp needed)
-    wrapProgram $out/bin/dictation-remote \
+    # Wrap with all dependencies (local and remote)
+    wrapProgram $out/bin/dictation \
       --prefix PATH : ${lib.makeBinPath [
       bash
       sox
@@ -49,6 +34,7 @@ stdenv.mkDerivation rec {
       coreutils
       procps
       openssh
+      whisper-cpp
     ]}
 
     runHook postInstall
@@ -61,8 +47,9 @@ stdenv.mkDerivation rec {
       recording, press again to stop and type the transcription. Includes
       ambient sound effects and waiting tones.
 
-      - dictation-local: Uses whisper-cli locally
-      - dictation-remote: Sends audio to remote host via SSH
+      Mode is determined by DICTATION_REMOTE_HOST:
+      - If set: sends audio to remote host via SSH
+      - If unset or --local flag: uses whisper-cli locally
     '';
     license = licenses.mit;
     platforms = platforms.linux;

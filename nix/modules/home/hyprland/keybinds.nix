@@ -6,11 +6,7 @@
   inputs,
 }: let
   dictationEnabled = config.mountainous.dictation.enable or false;
-  dictationRemote = config.mountainous.dictation.remoteHost or null;
-  dictationBin =
-    if dictationRemote != null
-    then "${pkgs.dictation}/bin/dictation-remote"
-    else "${pkgs.dictation}/bin/dictation-local";
+  dictationBin = "${pkgs.dictation}/bin/dictation";
 
   # Tool paths
   date = "${pkgs.coreutils}/bin/date";

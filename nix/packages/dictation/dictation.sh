@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Local dictation - uses whisper-cli directly on this machine
+# Dictation - speech-to-text for Wayland
+# Supports local (whisper-cli) and remote (SSH) transcription
 
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -17,14 +18,20 @@ if [[ -f "$CONFIG_DIR/dictation/config" ]]; then
   source "$CONFIG_DIR/dictation/config"
 fi
 
-WHISPER_MODEL="${DICTATION_WHISPER_MODEL:-}"
+REMOTE_HOST="${DICTATION_REMOTE_HOST:-}"
+WHISPER_MODEL="${DICTATION_WHISPER_MODEL:-~/.local/share/whisper/models/ggml-tiny.en.bin}"
 
 # Parse flags
 SEND_RETURN=false
+FORCE_LOCAL=false
 while [[ $# -gt 0 ]]; do
   case $1 in
     --return | -r)
       SEND_RETURN=true
+      shift
+      ;;
+    --local | -l)
+      FORCE_LOCAL=true
       shift
       ;;
     *)
@@ -33,8 +40,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Determine mode
+if [[ "$FORCE_LOCAL" == "true" ]] || [[ -z "$REMOTE_HOST" ]]; then
+  MODE="local"
+else
+  MODE="remote"
+fi
+
 log() {
-  echo "[$(date '+%H:%M:%S')] [local] $*" >>"$LOG_FILE"
+  echo "[$(date '+%H:%M:%S')] [$MODE${REMOTE_HOST:+:$REMOTE_HOST}] $*" >>"$LOG_FILE"
 }
 
 play_start() {
@@ -67,7 +81,7 @@ stop_ambient() {
   fi
 }
 
-transcribe() {
+transcribe_local() {
   local audio_file="$1"
   local output_file="$2"
 
@@ -84,6 +98,30 @@ transcribe() {
   rm -f "$audio_file"
 }
 
+transcribe_remote() {
+  local audio_file="$1"
+  local output_file="$2"
+
+  log "Sending audio to $REMOTE_HOST (model: $WHISPER_MODEL)"
+  log "Audio file size: $(stat -c%s "$audio_file" 2>/dev/null || echo "unknown") bytes"
+
+  # Pipe audio to remote, run whisper via nix shell, get text back
+  cat "$audio_file" | ssh "$REMOTE_HOST" "nix shell nixpkgs#whisper-cpp --command sh -c 'cat > /tmp/dictation-audio.wav && whisper-cli -m $WHISPER_MODEL -f /tmp/dictation-audio.wav -nt 2>/dev/null && rm /tmp/dictation-audio.wav'" >"$output_file" 2>>"$LOG_FILE"
+
+  local exit_code=$?
+  log "SSH exit code: $exit_code"
+  log "Transcript file size: $(stat -c%s "$output_file" 2>/dev/null || echo "0") bytes"
+  rm -f "$audio_file"
+}
+
+transcribe() {
+  if [[ "$MODE" == "local" ]]; then
+    transcribe_local "$@"
+  else
+    transcribe_remote "$@"
+  fi
+}
+
 # Check if recording is currently running via PID file
 if [[ -f "$PID_FILE" ]]; then
   PID=$(cat "$PID_FILE")
@@ -91,11 +129,17 @@ if [[ -f "$PID_FILE" ]]; then
     log "=== Stopping recording (PID: $PID) ==="
     stop_ambient
     start_waiting
+
+    # Brief delay to capture trailing audio before stopping
+    sleep 1
+
     kill -INT "$PID"
     rm -f "$PID_FILE"
 
-    # Buffer drain delay - wait for audio buffers to fully flush
-    sleep 1
+    # Wait for rec process to fully exit and flush buffers
+    while kill -0 "$PID" 2>/dev/null; do
+      sleep 0.1
+    done
 
     if [[ -f "$AUDIO_FILE" ]]; then
       transcribe "$AUDIO_FILE" "$TRANSCRIPT_FILE"
@@ -128,8 +172,17 @@ if [[ -f "$PID_FILE" ]]; then
   fi
 fi
 
+# Validate local mode has model
+if [[ "$MODE" == "local" ]]; then
+  if [[ -z "$WHISPER_MODEL" ]] || [[ ! -f "$WHISPER_MODEL" ]]; then
+    log "ERROR: Whisper model not found at $WHISPER_MODEL"
+    echo "ERROR: DICTATION_WHISPER_MODEL not set or file not found" >&2
+    exit 1
+  fi
+fi
+
 # Start recording
-log "=== Starting recording ==="
+log "=== Starting recording (mode: $MODE) ==="
 play_start
 start_ambient
 rm -f "$TRANSCRIPT_FILE"

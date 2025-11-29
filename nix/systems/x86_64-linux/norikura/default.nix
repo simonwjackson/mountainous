@@ -143,7 +143,7 @@
 
   # Broadcom WiFi firmware
   hardware.firmware = [
-    (pkgs.runCommandNoCC "gpd-pocket-wifi-firmware" {} ''
+    (pkgs.runCommand "gpd-pocket-wifi-firmware" {} ''
             mkdir -p $out/lib/firmware/brcm
             # BCM4356 firmware configuration for GPD Pocket
             cat > $out/lib/firmware/brcm/brcmfmac4356-pcie.txt << 'EOF'

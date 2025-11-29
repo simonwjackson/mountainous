@@ -36,12 +36,6 @@
   );
 
   hasConfig = cfg.remoteHost != null || modelPath != null;
-
-  # Which binary to use based on mode
-  dictationBin =
-    if cfg.remoteHost != null
-    then "${pkgs.dictation}/bin/dictation-remote"
-    else "${pkgs.dictation}/bin/dictation-local";
 in {
   options.mountainous.dictation = {
     enable = mkEnableOption "dictation with speech-to-text using whisper";
@@ -52,7 +46,7 @@ in {
       description = ''
         Remote host for transcription via SSH.
         If null, transcription runs locally using whisper-cli.
-        The remote host must have whisper-cpp installed.
+        The remote host must have Nix installed (uses nix shell for whisper-cpp).
       '';
       example = "server.local";
     };
