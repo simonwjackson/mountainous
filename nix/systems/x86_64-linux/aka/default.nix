@@ -100,13 +100,33 @@
   services.hardware.bolt.enable = true;
 
   # SillyTavern service
-  systemd.services.sillytavern = {
+  systemd.services.sillytavern = let
+    configFile = pkgs.writeText "sillytavern-config.yaml" ''
+      dataRoot: ./data
+      listen: false
+      port: 8000
+      protocol:
+        ipv4: true
+        ipv6: false
+      whitelistMode: false
+      enableForwardedWhitelist: false
+      whitelist:
+        - ::1
+        - 127.0.0.1
+      basicAuthMode: false
+      enableCorsProxy: false
+      enableUserAccounts: false
+      securityOverride: false
+      browserLaunch:
+        enabled: false
+    '';
+  in {
     description = "SillyTavern LLM Frontend";
     after = ["network.target" "ollama.service"];
     wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "simple";
-      ExecStart = "${pkgs.sillytavern}/bin/sillytavern --enableIPv4 true";
+      ExecStart = "${pkgs.sillytavern}/bin/sillytavern --configPath ${configFile}";
       Restart = "on-failure";
       StateDirectory = "sillytavern";
       WorkingDirectory = "/var/lib/sillytavern";
@@ -271,7 +291,7 @@
 
   # Synapse MCP server for semantic search
   services.synapse = {
-    enable = false;
+    enable = true;
     port = 3939;
     vaultPath = "/snowscape/knowledge";
     envPath = "/snowscape/knowledge/.synapse";
