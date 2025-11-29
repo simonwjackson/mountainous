@@ -1846,11 +1846,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1764400848,
-        "narHash": "sha256-ovLA106TM3Wxtrq9Cx+mgWEIAX4/ftxfcSXFMp6ck8I=",
+        "lastModified": 1764402594,
+        "narHash": "sha256-lfbUxrxDrWuRSEOTArxAK0EfLsPRbRsGNitCSghkqFE=",
         "owner": "miniArray",
         "repo": "synapse",
-        "rev": "601ee8380bd289a95900c4e0fbbce864d90fc549",
+        "rev": "1c1aff75cfbbd54efd8216e55f4a091b288390a6",
         "type": "github"
       },
       "original": {
