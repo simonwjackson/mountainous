@@ -43,7 +43,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
     taskwarrior-recurrence = {
       url = "github:lyz-code/taskwarrior_recurrence";
       flake = false;
