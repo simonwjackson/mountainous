@@ -303,9 +303,8 @@ in {
       distributedBuilds = true;
       extraOptions = ''
         builders-use-substitutes = true
+        !include ${config.age.secrets."user-simonwjackson-github-token-nix".path}
       '';
-      # TODO: Add age secrets
-      # !include ${config.age.secrets."user-simonwjackson-github-token-nix".path};
     };
   };
 }
