@@ -5,8 +5,11 @@
 }: {
   # Huawei MateBook E tablet home configuration
 
-  # Local dictation (has enough CPU for whisper)
-  mountainous.dictation.enable = true;
+  # Remote dictation via aka
+  mountainous.dictation = {
+    enable = true;
+    remoteHost = "aka";
+  };
 
   mountainous.hyprland = {
     enable = true;

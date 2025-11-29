@@ -192,6 +192,7 @@
   environment.persistence."/tundra/permafrost" = {
     hideMounts = true;
     directories = [
+      "/etc/NetworkManager/system-connections"
       "/var/lib/systemd/coredump"
       "/var/lib/nixos"
       "/var/lib/tailscale"
