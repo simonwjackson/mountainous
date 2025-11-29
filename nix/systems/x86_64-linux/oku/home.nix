@@ -107,12 +107,12 @@
         ", edge:l:u, exec, pkill -SIGRTMIN wvkbd-mobintl 2>/dev/null || wvkbd-mobintl -L 300 --landscape-layers full,special"
 
         # Edge swipes - right edge
-        ", edge:r:l, exec, ${pkgs.dictation}/bin/dictation"
+        ", edge:r:l, exec, ${pkgs.dictation}/bin/dictation-local"
         ", edge:r:u, exec, brightnessctl set +10%"
         ", edge:r:d, exec, brightnessctl set 10%-"
 
         # Edge swipes - bottom edge
-        ", edge:d:u, exec, ${pkgs.dictation}/bin/dictation --return"
+        ", edge:d:u, exec, ${pkgs.dictation}/bin/dictation-local --return"
       ];
     };
   };

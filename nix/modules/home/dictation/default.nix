@@ -36,6 +36,12 @@
   );
 
   hasConfig = cfg.remoteHost != null || modelPath != null;
+
+  # Which binary to use based on mode
+  dictationBin =
+    if cfg.remoteHost != null
+    then "${pkgs.dictation}/bin/dictation-remote"
+    else "${pkgs.dictation}/bin/dictation-local";
 in {
   options.mountainous.dictation = {
     enable = mkEnableOption "dictation with speech-to-text using whisper";

@@ -6,6 +6,12 @@
   inputs,
 }: let
   dictationEnabled = config.mountainous.dictation.enable or false;
+  dictationRemote = config.mountainous.dictation.remoteHost or null;
+  dictationBin =
+    if dictationRemote != null
+    then "${pkgs.dictation}/bin/dictation-remote"
+    else "${pkgs.dictation}/bin/dictation-local";
+
   # Tool paths
   date = "${pkgs.coreutils}/bin/date";
   grep = "${pkgs.gnugrep}/bin/grep";
@@ -85,8 +91,8 @@ in {
     "$mainMod, equal, exec, ${pkgs.split-toggle}/bin/split-toggle"
   ]
   ++ lib.optionals dictationEnabled [
-    "$mainMod, S, exec, ${pkgs.dictation}/bin/dictation"
-    "$mainMod SHIFT, S, exec, ${pkgs.dictation}/bin/dictation --return"
+    "$mainMod, S, exec, ${dictationBin}"
+    "$mainMod SHIFT, S, exec, ${dictationBin} --return"
   ];
 
   bindel = [

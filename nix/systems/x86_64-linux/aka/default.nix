@@ -30,6 +30,7 @@
     ryzenadj
     obsidian
     wireguard-tools
+    whisper-cpp # For remote dictation transcription
   ];
 
   #######################

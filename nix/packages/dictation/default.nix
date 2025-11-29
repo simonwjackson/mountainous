@@ -22,9 +22,26 @@ stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
 
-    install -Dm755 dictation.sh $out/bin/dictation
+    # Install both local and remote scripts
+    install -Dm755 dictation-local.sh $out/bin/dictation-local
+    install -Dm755 dictation-remote.sh $out/bin/dictation-remote
 
-    wrapProgram $out/bin/dictation \
+    # Create 'dictation' as symlink to local by default
+    ln -s dictation-local $out/bin/dictation
+
+    # Wrap local script (includes whisper-cpp)
+    wrapProgram $out/bin/dictation-local \
+      --prefix PATH : ${lib.makeBinPath [
+      bash
+      sox
+      wtype
+      coreutils
+      procps
+      whisper-cpp
+    ]}
+
+    # Wrap remote script (includes openssh, no whisper-cpp needed)
+    wrapProgram $out/bin/dictation-remote \
       --prefix PATH : ${lib.makeBinPath [
       bash
       sox
@@ -32,7 +49,6 @@ stdenv.mkDerivation rec {
       coreutils
       procps
       openssh
-      whisper-cpp
     ]}
 
     runHook postInstall
@@ -44,6 +60,9 @@ stdenv.mkDerivation rec {
       A tool for speech-to-text dictation in Wayland. Press once to start
       recording, press again to stop and type the transcription. Includes
       ambient sound effects and waiting tones.
+
+      - dictation-local: Uses whisper-cli locally
+      - dictation-remote: Sends audio to remote host via SSH
     '';
     license = licenses.mit;
     platforms = platforms.linux;
