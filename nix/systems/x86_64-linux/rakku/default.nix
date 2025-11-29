@@ -10,7 +10,8 @@
 
   # Configure agenix identity paths (SSH keys for decryption)
   # Point to persistent storage location since root is ephemeral (tmpfs)
-  age.identityPaths = [
+  # Use mkForce to override defaults from mountainous.agenix module
+  age.identityPaths = lib.mkForce [
     "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
   ];
 

@@ -8,6 +8,73 @@
   inputs,
   ...
 }: {
+  # === MPV Configuration for weak Atom CPU ===
+  # Hardware decoding is essential - software decode can't keep up
+  programs.mpv = {
+    enable = true;
+    config = {
+      # Hardware decoding (VA-API for Intel)
+      hwdec = "vaapi";
+      vo = "gpu";
+      gpu-context = "wayland";
+
+      # yt-dlp format for mpv's internal ytdl-hook
+      # Cherry Trail has NO AV1/VP9 hw decode - must use H.264 (avc1)
+      ytdl-format = "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/best[height<=1080]";
+
+      # Panscan disabled by default (handled by fullscreen profile below)
+      panscan = 0;
+
+      # Performance optimizations for weak GPU
+      profile = "fast";
+      scale = "bilinear"; # Faster than default lanczos
+      cscale = "bilinear";
+      dscale = "bilinear";
+      dither-depth = "no";
+
+      # Reduce frame drops
+      framedrop = "vo"; # Drop frames if too slow
+      video-sync = "audio"; # Prioritize audio sync
+
+      # Lower cache for limited RAM
+      demuxer-max-bytes = "50M";
+      demuxer-max-back-bytes = "25M";
+
+      # Disable expensive features
+      deband = "no";
+      interpolation = "no";
+    };
+
+    scripts = with pkgs.mpvScripts; [
+      quality-menu # Quick quality switching for yt-dlp
+    ];
+
+    # Conditional profiles
+    profiles = {
+      # Auto-activate when fullscreen - fill screen by cropping
+      fullscreen-panscan = {
+        profile-cond = "fullscreen";
+        profile-restore = "copy";
+        panscan = 1;
+      };
+    };
+  };
+
+  # === yt-dlp Configuration ===
+  # Prefer formats the Atom can actually decode
+  programs.yt-dlp = {
+    enable = true;
+    settings = {
+      # Prefer h264 (better hw decode support) over VP9/AV1
+      format = "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/best[height<=1080]";
+
+      # Merge to mkv for compatibility
+      merge-output-format = "mkv";
+
+      # Use cookies from browser for age-restricted content
+      cookies-from-browser = "firefox";
+    };
+  };
   # Remote dictation via aka (Atom CPU too slow for local whisper)
   mountainous.dictation = {
     enable = true;
@@ -57,16 +124,9 @@
         rounding = 0; # Square corners are faster
       };
 
-      # Faster animations (or disable with enabled = false)
+      # Disable all animations for performance
       animations = {
-        enabled = true;
-        # Quick, simple animations
-        animation = [
-          "global, 1, 2, default"
-          "windows, 1, 2, default"
-          "fade, 1, 2, default"
-          "workspaces, 1, 2, default, slide"
-        ];
+        enabled = false;
       };
 
       # Misc performance settings

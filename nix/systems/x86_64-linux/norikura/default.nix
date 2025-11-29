@@ -130,10 +130,17 @@
       enable = true;
       enable32Bit = false; # Atom doesn't benefit from 32-bit libs
       extraPackages = with pkgs; [
-        intel-vaapi-driver # VAAPI for Cherry Trail
+        intel-vaapi-driver # VAAPI for Cherry Trail (i965 driver)
         libvdpau-va-gl
       ];
     };
+  };
+
+  # VA-API driver selection for Cherry Trail
+  # i965 is required (not iHD which is for newer Intel)
+  environment.sessionVariables = {
+    LIBVA_DRIVER_NAME = "i965";
+    VDPAU_DRIVER = "va_gl";
   };
 
   # Networking
