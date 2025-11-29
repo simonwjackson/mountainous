@@ -207,3 +207,8 @@ encrypt:
 [group('secrets')]
 rekey:
     nix run .#secrets -- rekey
+
+# Generate syncthing identity for a host
+[group('syncthing')]
+syncthing-keygen HOSTNAME:
+    nix run .#syncthing-keygen -- {{ HOSTNAME }}
