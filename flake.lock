@@ -1611,6 +1611,7 @@
         "nix-search-tv": "nix-search-tv",
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_8",
+        "synapse": "synapse",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tmesh": "tmesh_2"
       }
@@ -1835,6 +1836,26 @@
       "original": {
         "owner": "snowfallorg",
         "repo": "lib",
+        "type": "github"
+      }
+    },
+    "synapse": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764395766,
+        "narHash": "sha256-cc+XVquviDhWaG8yiLQWSD1oQfT34I3xlP1BaY8nGA8=",
+        "owner": "miniArray",
+        "repo": "synapse",
+        "rev": "9a3e85182353fae94ce76c40adea87e67be87a3c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "miniArray",
+        "repo": "synapse",
         "type": "github"
       }
     },

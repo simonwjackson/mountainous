@@ -227,6 +227,28 @@
   mountainous.tsnet-proxy = {
     enable = true;
     authKeyFile = config.age.secrets."tailscale-tsnet".path;
+    services.mcp = {
+      hostname = "mcp";
+      port = 8090;
+    };
+  };
+
+  # Synapse MCP server for semantic search
+  services.synapse = {
+    enable = true;
+    port = 3939;
+    vaultPath = "/snowscape/knowledge";
+    envPath = "/snowscape/knowledge/.synapse";
+  };
+
+  # MCP Gateway - path-based routing for MCP servers
+  mountainous.mcp-gateway = {
+    enable = true;
+    port = 8090;
+    servers.synapse = {
+      path = "synapse";
+      upstream = "http://127.0.0.1:3939";
+    };
   };
 
   # Enable Flatpak support

@@ -47,6 +47,10 @@
       url = "github:lyz-code/taskwarrior_recurrence";
       flake = false;
     };
+    synapse = {
+      url = "github:miniArray/synapse";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -60,6 +64,7 @@
         (final: prev: {
           # Removed gamescope_git overlays - now using Jovian's stable packages
           neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
+          synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];

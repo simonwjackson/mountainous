@@ -1,5 +1,5 @@
 {inputs}: let
-  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh;
+  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh synapse;
 
   # Path to default home-manager configuration
   defaultHomePath = ./nix/home/default.nix;
@@ -118,6 +118,8 @@
           tmesh.nixosModules.default
           # Add Chaotic module
           inputs.chaotic.nixosModules.default
+          # Add Synapse module
+          synapse.nixosModules.default
         ];
     };
 
