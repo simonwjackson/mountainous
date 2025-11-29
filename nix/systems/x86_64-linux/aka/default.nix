@@ -23,8 +23,6 @@
 
   environment.systemPackages = with pkgs; [
     mergerfs
-    mpvScripts.uosc
-    mpv
     git
     ex
     ryzenadj

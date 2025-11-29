@@ -3,6 +3,53 @@
   config,
   ...
 }: {
+  # === MPV tuned for powerful AMD system ===
+  programs.mpv = {
+    config = {
+      # Hardware decoding (VA-API via Mesa for AMD)
+      hwdec = "vaapi";
+      vo = "gpu-next";
+      gpu-api = "vulkan";
+      gpu-context = "waylandvk";
+
+      # High quality scaling (GPU can handle it)
+      scale = "ewa_lanczossharp";
+      cscale = "ewa_lanczossharp";
+      dscale = "mitchell";
+      correct-downscaling = "yes";
+      linear-downscaling = "yes";
+      sigmoid-upscaling = "yes";
+
+      # Quality features
+      deband = "yes";
+      deband-iterations = 4;
+      deband-threshold = 35;
+      deband-range = 16;
+      deband-grain = 5;
+
+      # HDR support
+      hdr-compute-peak = "yes";
+      tone-mapping = "bt.2446a";
+
+      # Prefer best quality streams
+      ytdl-format = "bestvideo+bestaudio/best";
+
+      # Interpolation for smooth playback on 120Hz
+      interpolation = "yes";
+      tscale = "oversample";
+      video-sync = "display-resample";
+
+      # Large cache for 4K content
+      demuxer-max-bytes = "500M";
+      demuxer-max-back-bytes = "250M";
+    };
+
+    scripts = with pkgs.mpvScripts; [
+      uosc        # Modern UI
+      thumbfast   # Thumbnails for seeking
+      quality-menu
+    ];
+  };
   # Dropbox remote configuration (uses agenix for token)
   programs.rclone = {
     enable = true;
