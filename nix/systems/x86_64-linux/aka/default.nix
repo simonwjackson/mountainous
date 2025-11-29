@@ -29,6 +29,7 @@
     obsidian
     wireguard-tools
     whisper-cpp # For remote dictation transcription
+    sillytavern # AI Dungeon-style LLM frontend
   ];
 
   #######################
@@ -97,6 +98,20 @@
 
   # Enable Thunderbolt support
   services.hardware.bolt.enable = true;
+
+  # SillyTavern service
+  systemd.services.sillytavern = {
+    description = "SillyTavern LLM Frontend";
+    after = ["network.target" "ollama.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.sillytavern}/bin/sillytavern --enableIPv4 true";
+      Restart = "on-failure";
+      StateDirectory = "sillytavern";
+      WorkingDirectory = "/var/lib/sillytavern";
+    };
+  };
 
   # Printing support
   services.printing = {
@@ -238,11 +253,25 @@
       hostname = "mcp";
       port = 8090;
     };
+    services.tavern = {
+      hostname = "tavern";
+      port = 8000;
+    };
+  };
+
+  # Ollama for local LLM inference
+  services.ollama = {
+    enable = true;
+    acceleration = "rocm"; # AMD GPU
+    loadModels = [
+      "nomic-embed-text"
+      "hermes3" # Best available for AI Dungeon-style storytelling
+    ];
   };
 
   # Synapse MCP server for semantic search
   services.synapse = {
-    enable = true;
+    enable = false;
     port = 3939;
     vaultPath = "/snowscape/knowledge";
     envPath = "/snowscape/knowledge/.synapse";
