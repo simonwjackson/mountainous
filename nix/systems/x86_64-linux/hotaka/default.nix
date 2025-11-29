@@ -369,7 +369,7 @@
       ${pkgs.systemd}/bin/loginctl lock-session || true
       ${pkgs.systemd}/bin/loginctl unlock-session || true
     '';
-    mode = "0755";  # Make executable
+    mode = "0755"; # Make executable
   };
 
   # User configuration

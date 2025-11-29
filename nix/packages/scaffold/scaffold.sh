@@ -312,18 +312,18 @@ ARCH="$DEFAULT_ARCH"
 shift
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --arch)
-    ARCH="$2"
-    shift 2
-    ;;
-  --identity)
-    SSH_KEY="$2"
-    shift 2
-    ;;
-  *)
-    echo "Unknown argument: $1"
-    exit 1
-    ;;
+    --arch)
+      ARCH="$2"
+      shift 2
+      ;;
+    --identity)
+      SSH_KEY="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      exit 1
+      ;;
   esac
 done
 

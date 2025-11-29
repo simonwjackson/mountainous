@@ -15,11 +15,11 @@ LOG_LEVEL="${LOG_LEVEL:-}"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -d|--details)
+    -d | --details)
       DETAILED=true
       shift
       ;;
-    -r|--retry)
+    -r | --retry)
       shift
       RETRY_COUNT="$1"
       shift
@@ -28,7 +28,7 @@ while [[ $# -gt 0 ]]; do
       RETRY_COUNT="${1#*=}"
       shift
       ;;
-    -s|--style)
+    -s | --style)
       shift
       STYLE_OVERRIDE="$1"
       shift
@@ -119,15 +119,15 @@ get_style_examples() {
   local count=${2:-3}
 
   case $style in
-  "angular")
-    git log --format="%s" -50 2>/dev/null | grep -E "^(feat|fix|docs|style|refactor|test|chore|build|ci|perf)(\([^\)]+\))?:[[:space:]]" | head -"$count"
-    ;;
-  "imperative")
-    git log --format="%s" -50 2>/dev/null | grep -E "^[A-Z][a-z]+[[:space:]]" | grep -v -E "^(feat|fix|docs|style|refactor|test|chore|build|ci|perf)" | head -"$count"
-    ;;
-  *)
-    git log --format="%s" -"$count" 2>/dev/null
-    ;;
+    "angular")
+      git log --format="%s" -50 2>/dev/null | grep -E "^(feat|fix|docs|style|refactor|test|chore|build|ci|perf)(\([^\)]+\))?:[[:space:]]" | head -"$count"
+      ;;
+    "imperative")
+      git log --format="%s" -50 2>/dev/null | grep -E "^[A-Z][a-z]+[[:space:]]" | grep -v -E "^(feat|fix|docs|style|refactor|test|chore|build|ci|perf)" | head -"$count"
+      ;;
+    *)
+      git log --format="%s" -"$count" 2>/dev/null
+      ;;
   esac
 }
 

@@ -2,7 +2,7 @@
 
 # Parse arguments
 DIRECTION="${1:-up}"
-TARGET="${2:-focused}"  # focused, monitor name, or "all"
+TARGET="${2:-focused}" # focused, monitor name, or "all"
 
 # Function to get monitor information based on target
 get_target_monitors() {
@@ -50,19 +50,19 @@ get_valid_scales() {
 
   # Return valid scales based on resolution
   case "$resolution_key" in
-    "2024x2560"|"2560x2024")
+    "2024x2560" | "2560x2024")
       echo "0.5 1.0 1.333333 1.6 2.0"
       ;;
-    "2880x1800"|"1800x2880")
+    "2880x1800" | "1800x2880")
       echo "1.0 1.125 1.25 1.333333 1.5 1.6 1.8 2.0"
       ;;
-    "1920x1080"|"1080x1920")
+    "1920x1080" | "1080x1920")
       echo "0.5 0.75 1.0 1.2 1.25 1.5 2.0"
       ;;
-    "3840x2160"|"2160x3840")
+    "3840x2160" | "2160x3840")
       echo "0.5 1.0 1.25 1.5 2.0 2.5 3.0"
       ;;
-    "2560x1440"|"1440x2560")
+    "2560x1440" | "1440x2560")
       echo "0.5 1.0 1.25 2.0"
       ;;
     *)
@@ -109,7 +109,7 @@ get_scale_intersection() {
       done
       intersection="$new_intersection"
     fi
-  done <<< "$MONITOR_INFO"
+  done <<<"$MONITOR_INFO"
 
   # Fallback if no intersection
   if [ -z "$intersection" ]; then
@@ -123,7 +123,7 @@ get_scale_intersection() {
 apply_monitor_scale() {
   local monitor_line="$1"
   local target_scale="$2"
-  local all_monitors_info="$3"  # Optional: all monitor info for position recalculation
+  local all_monitors_info="$3" # Optional: all monitor info for position recalculation
 
   local name=$(echo "$monitor_line" | cut -d',' -f1)
   local resolution=$(echo "$monitor_line" | cut -d',' -f2)
@@ -186,7 +186,7 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "--all" ]; then
     echo "Common scales: [$intersection]"
 
     # Convert to array
-    read -ra VALID_SCALES <<< "$intersection"
+    read -ra VALID_SCALES <<<"$intersection"
 
     if [ ${#VALID_SCALES[@]} -le 1 ]; then
       echo "Error: No common scales available for synchronized scaling"
@@ -232,7 +232,7 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "--all" ]; then
     # Apply to all monitors
     while IFS= read -r monitor_line; do
       apply_monitor_scale "$monitor_line" "$target_scale" "$MONITOR_INFO"
-    done <<< "$MONITOR_INFO"
+    done <<<"$MONITOR_INFO"
   else
     # Single monitor, fall through to individual logic
     TARGET="focused"
@@ -253,7 +253,7 @@ if [ "$TARGET" != "all" ] && [ "$TARGET" != "--all" ]; then
 
   # Get valid scales for this monitor
   valid_scales_str=$(get_valid_scales "$width" "$height" "$transform")
-  read -ra VALID_SCALES <<< "$valid_scales_str"
+  read -ra VALID_SCALES <<<"$valid_scales_str"
 
   # Find current scale index
   current_index=0

@@ -1,11 +1,8 @@
-{
-  lib,
-  ...
-}: {
+{lib, ...}: {
   # Shared configuration for iceberg array - contains NO operational logic
-  # This is pure data configuration that can be safely shared between 
+  # This is pure data configuration that can be safely shared between
   # mount operations (safe) and format operations (destructive)
-  
+
   icebergArray = {
     # Disk definitions - shared between mount and format operations
     disks = [
@@ -70,10 +67,9 @@
     };
 
     # Helper function to generate mount point path for a disk
-    getDiskMountPoint = mountPointsConfig: diskId: 
-      let 
-        diskNum = lib.strings.removePrefix "iceberg" diskId;
-      in "${mountPointsConfig.disks}/iceberg/${diskNum}/0";
+    getDiskMountPoint = mountPointsConfig: diskId: let
+      diskNum = lib.strings.removePrefix "iceberg" diskId;
+    in "${mountPointsConfig.disks}/iceberg/${diskNum}/0";
 
     # Helper function to get disk by ID
     getDisk = diskId: disks:

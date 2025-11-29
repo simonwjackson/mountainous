@@ -1,4 +1,8 @@
-{pkgs, config, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   # Dropbox remote configuration (uses agenix for token)
   programs.rclone = {
     enable = true;

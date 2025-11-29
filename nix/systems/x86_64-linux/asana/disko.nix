@@ -3,7 +3,7 @@
     disk = {
       main = {
         type = "disk";
-        device = "/dev/nvme0n1";  # Fixed: was /dev/sda, now correct NVMe device
+        device = "/dev/nvme0n1"; # Fixed: was /dev/sda, now correct NVMe device
         content = {
           type = "gpt";
           partitions = {
@@ -17,7 +17,7 @@
                 mountpoint = "/boot";
                 mountOptions = [
                   "defaults"
-                  "umask=0077"  # Secure boot partition
+                  "umask=0077" # Secure boot partition
                 ];
               };
             };
@@ -27,7 +27,7 @@
               size = "20G";
               content = {
                 type = "swap";
-                resumeDevice = true;  # Enable hibernate resume
+                resumeDevice = true; # Enable hibernate resume
               };
             };
 
@@ -36,7 +36,7 @@
               size = "100%";
               content = {
                 type = "luks";
-                name = "asana-root";  # LUKS device name
+                name = "asana-root"; # LUKS device name
 
                 # LUKS2 settings
                 # Note: Disko's luks type uses cryptsetup defaults (LUKS2, aes-xts-plain64, argon2id)
@@ -48,7 +48,7 @@
                 # Btrfs filesystem inside LUKS
                 content = {
                   type = "btrfs";
-                  extraArgs = ["-f"];  # Force if needed
+                  extraArgs = ["-f"]; # Force if needed
 
                   # Btrfs subvolumes for persistent storage
                   # Following frostbite pattern: separate subvolumes for /nix and /var/log

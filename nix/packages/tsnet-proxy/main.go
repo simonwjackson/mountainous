@@ -47,16 +47,16 @@ func main() {
 
 	// Create reverse proxy
 	proxy := httputil.NewSingleHostReverseProxy(backendURL)
-	
+
 	// Add request logging and headers
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
-		
+
 		// Set proxy headers
 		r.Header.Set("X-Forwarded-For", r.RemoteAddr)
 		r.Header.Set("X-Forwarded-Proto", "https")
 		r.Header.Set("X-Forwarded-Host", r.Host)
-		
+
 		proxy.ServeHTTP(w, r)
 	})
 
@@ -91,7 +91,7 @@ func main() {
 	}()
 
 	log.Printf("Proxying requests from %s to %s", *hostname, *backend)
-	
+
 	// Start serving
 	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)

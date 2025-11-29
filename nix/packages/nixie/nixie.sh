@@ -79,36 +79,36 @@ parse_arguments() {
 
   while [[ $# -gt 0 ]]; do
     case $1 in
-    -h | --help)
-      echo "$doc"
-      exit 0
-      ;;
-    --report)
-      GENERATE_REPORT=true
-      shift
-      ;;
-    --no-report)
-      GENERATE_REPORT=false
-      shift
-      ;;
-    --*)
-      EXTRA_OPTS+=("$1")
-      if [[ $# -gt 1 && ! $2 == --* ]]; then
-        EXTRA_OPTS+=("$2")
-        shift
-      fi
-      shift
-      ;;
-    *)
-      if [[ -z "$HOSTS_ARG" ]]; then
-        HOSTS_ARG=$1
-      else
-        echo "Unexpected argument: $1"
+      -h | --help)
         echo "$doc"
-        exit 1
-      fi
-      shift
-      ;;
+        exit 0
+        ;;
+      --report)
+        GENERATE_REPORT=true
+        shift
+        ;;
+      --no-report)
+        GENERATE_REPORT=false
+        shift
+        ;;
+      --*)
+        EXTRA_OPTS+=("$1")
+        if [[ $# -gt 1 && ! $2 == --* ]]; then
+          EXTRA_OPTS+=("$2")
+          shift
+        fi
+        shift
+        ;;
+      *)
+        if [[ -z "$HOSTS_ARG" ]]; then
+          HOSTS_ARG=$1
+        else
+          echo "Unexpected argument: $1"
+          echo "$doc"
+          exit 1
+        fi
+        shift
+        ;;
     esac
   done
 

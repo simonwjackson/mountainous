@@ -144,14 +144,14 @@
   # Broadcom WiFi firmware
   hardware.firmware = [
     (pkgs.runCommandNoCC "gpd-pocket-wifi-firmware" {} ''
-      mkdir -p $out/lib/firmware/brcm
-      # BCM4356 firmware configuration for GPD Pocket
-      cat > $out/lib/firmware/brcm/brcmfmac4356-pcie.txt << 'EOF'
-# GPD Pocket BCM4356 WiFi configuration
-# Enables full channel range (not just 1-11)
-ccode=XV
-regrev=0
-EOF
+            mkdir -p $out/lib/firmware/brcm
+            # BCM4356 firmware configuration for GPD Pocket
+            cat > $out/lib/firmware/brcm/brcmfmac4356-pcie.txt << 'EOF'
+      # GPD Pocket BCM4356 WiFi configuration
+      # Enables full channel range (not just 1-11)
+      ccode=XV
+      regrev=0
+      EOF
     '')
   ];
 

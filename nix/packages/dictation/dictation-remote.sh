@@ -29,7 +29,7 @@ fi
 SEND_RETURN=false
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --return|-r)
+    --return | -r)
       SEND_RETURN=true
       shift
       ;;
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 log() {
-  echo "[$(date '+%H:%M:%S')] [remote:$REMOTE_HOST] $*" >> "$LOG_FILE"
+  echo "[$(date '+%H:%M:%S')] [remote:$REMOTE_HOST] $*" >>"$LOG_FILE"
 }
 
 play_start() {
@@ -49,7 +49,7 @@ play_start() {
 
 start_waiting() {
   play -n synth 0.8 sine 550:580 sine 825:870 fade l 0.18 0.8 0.55 vol 0.08 repeat - &
-  echo $! > "$WAITING_PID_FILE"
+  echo $! >"$WAITING_PID_FILE"
 }
 
 stop_waiting() {
@@ -61,7 +61,7 @@ stop_waiting() {
 
 start_ambient() {
   play -n -c1 synth whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 fade t 2 &
-  echo $! > "$AMBIENT_PID_FILE"
+  echo $! >"$AMBIENT_PID_FILE"
 }
 
 stop_ambient() {
@@ -88,7 +88,7 @@ transcribe() {
     echo \"[remote] Received audio: \$(stat -c%s \"\$TMPFILE\") bytes\" >&2
     whisper-cli -m $WHISPER_MODEL -f \"\$TMPFILE\" -nt
     rm -f \"\$TMPFILE\"
-  " < "$audio_file" > "$output_file" 2>> "$LOG_FILE"
+  " <"$audio_file" >"$output_file" 2>>"$LOG_FILE"
 
   local exit_code=$?
   log "SSH exit code: $exit_code"
@@ -155,7 +155,7 @@ else
 fi
 
 log "Recording to $AUDIO_FILE (will send to $REMOTE_HOST)"
-rec -q -r 16000 -c 1 "$AUDIO_FILE" 2>> "$LOG_FILE" &
+rec -q -r 16000 -c 1 "$AUDIO_FILE" 2>>"$LOG_FILE" &
 REC_PID=$!
-echo "$REC_PID" > "$PID_FILE"
+echo "$REC_PID" >"$PID_FILE"
 log "Started rec with PID: $REC_PID"

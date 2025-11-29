@@ -3,13 +3,12 @@
   lib,
   pkgs,
   ...
-}:
-let
+}: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types mapAttrs' nameValuePair filterAttrs attrValues;
   cfg = config.mountainous.vpn-ns;
 
   # Service submodule options
-  serviceOpts = { name, ... }: {
+  serviceOpts = {name, ...}: {
     options = {
       enable = mkEnableOption "Include ${name} in VPN namespace";
 
@@ -34,7 +33,7 @@ let
         };
 
         protocol = mkOption {
-          type = types.enum [ "http" "https" ];
+          type = types.enum ["http" "https"];
           default = "http";
           description = "Backend protocol (WebSockets work over both)";
         };
@@ -57,9 +56,7 @@ let
   # Get enabled services
   enabledServices = filterAttrs (_: svc: svc.enable) cfg.services;
   enabledServiceNames = map (svc: svc.unit) (attrValues enabledServices);
-
-in
-{
+in {
   options.mountainous.vpn-ns = {
     enable = mkEnableOption "VPN network namespace for isolating services";
 
@@ -71,7 +68,7 @@ in
 
     localNetworks = mkOption {
       type = types.listOf types.str;
-      default = [ "192.168.0.0/16" ];
+      default = ["192.168.0.0/16"];
       description = "CIDRs that should route through host (not VPN)";
     };
 
@@ -97,48 +94,53 @@ in
 
   config = mkIf cfg.enable {
     # Systemd services configuration
-    systemd.services = {
-      # VPN namespace service
-      vpn-ns = {
-        description = "VPN Network Namespace";
-        wantedBy = [ "multi-user.target" ];
-        wants = [ "network-online.target" ] ++ enabledServiceNames;
-        after = [ "network-online.target" ];
-        before = enabledServiceNames;
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
-          ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
-        };
-        environment = {
-          VPN_NS_CONFIG = cfg.configFile;
-          VPN_NS_LOCAL_NETS = lib.concatStringsSep " " cfg.localNetworks;
-        };
-      };
-    } // mapAttrs' (name: svc: nameValuePair (lib.removeSuffix ".service" svc.unit) (mkMerge [
+    systemd.services =
       {
-        after = [ "vpn-ns.service" ];
-        bindsTo = [ "vpn-ns.service" ];
-        partOf = [ "vpn-ns.service" ];
-        serviceConfig = {
-          NetworkNamespacePath = "/run/netns/vpn";
-          BindReadOnlyPaths = [ "/etc/netns/vpn/resolv.conf:/etc/resolv.conf" ];
+        # VPN namespace service
+        vpn-ns = {
+          description = "VPN Network Namespace";
+          wantedBy = ["multi-user.target"];
+          wants = ["network-online.target"] ++ enabledServiceNames;
+          after = ["network-online.target"];
+          before = enabledServiceNames;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
+            ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
+          };
+          environment = {
+            VPN_NS_CONFIG = cfg.configFile;
+            VPN_NS_LOCAL_NETS = lib.concatStringsSep " " cfg.localNetworks;
+          };
         };
       }
-      (mkIf (svc.preStart != null) {
-        serviceConfig.ExecStartPre = [ svc.preStart ];
-      })
-    ])) enabledServices;
+      // mapAttrs' (name: svc:
+        nameValuePair (lib.removeSuffix ".service" svc.unit) (mkMerge [
+          {
+            after = ["vpn-ns.service"];
+            bindsTo = ["vpn-ns.service"];
+            partOf = ["vpn-ns.service"];
+            serviceConfig = {
+              NetworkNamespacePath = "/run/netns/vpn";
+              BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+            };
+          }
+          (mkIf (svc.preStart != null) {
+            serviceConfig.ExecStartPre = [svc.preStart];
+          })
+        ]))
+      enabledServices;
 
     # Tailscale proxy integration for enabled services
-    mountainous.tsnet-proxy.services = mapAttrs' (name: svc:
-      nameValuePair name {
-        hostname = svc.tailscale.hostname;
-        port = svc.port;
-        protocol = svc.tailscale.protocol;
-        host = cfg.vethAddress;
-      }
+    mountainous.tsnet-proxy.services = mapAttrs' (
+      name: svc:
+        nameValuePair name {
+          hostname = svc.tailscale.hostname;
+          port = svc.port;
+          protocol = svc.tailscale.protocol;
+          host = cfg.vethAddress;
+        }
     ) (filterAttrs (_: svc: svc.tailscale.enable) enabledServices);
   };
 }

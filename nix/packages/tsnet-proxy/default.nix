@@ -3,7 +3,6 @@
   buildGoApplication,
   ...
 }:
-
 buildGoApplication rec {
   pname = "tsnet-proxy";
   version = "1.0.0";

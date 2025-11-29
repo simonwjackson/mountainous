@@ -12,11 +12,11 @@ DEBUG=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -v|--verbose)
+    -v | --verbose)
       DEBUG=true
       shift
       ;;
-    -h|--help)
+    -h | --help)
       echo "Usage: $0 [-v|--verbose] [-h|--help]"
       echo "Toggle between golden ratio and even split layouts"
       exit 0

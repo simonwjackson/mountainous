@@ -249,7 +249,7 @@
   mountainous.transmission.enable = true;
   mountainous.sabnzbd = {
     enable = true;
-    hostWhitelist = [ "usenet.hummingbird-lake.ts.net" ];
+    hostWhitelist = ["usenet.hummingbird-lake.ts.net"];
   };
 
   # VPN namespace - services register here

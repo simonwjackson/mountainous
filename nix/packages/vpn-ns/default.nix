@@ -21,9 +21,9 @@
     gnugrep
     gnused
     coreutils
-    procps      # sysctl
-    iptables    # iptables
-    util-linux  # runuser
+    procps # sysctl
+    iptables # iptables
+    util-linux # runuser
   ];
   text = builtins.readFile ./vpn-ns.sh;
 })

@@ -69,7 +69,7 @@
       "resume=/dev/disk/by-partlabel/disk-main-swap"
 
       # Intel graphics optimizations (hibernate-only, no suspend workarounds needed)
-      "i915.fastboot=1"   # Faster boot
+      "i915.fastboot=1" # Faster boot
       "i915.enable_fbc=1" # Frame buffer compression for battery
       "i915.enable_psr=2" # PSR2 for display power savings
 
@@ -103,7 +103,6 @@
 
     resumeDevice = "/dev/disk/by-partlabel/disk-main-swap";
   };
-
 
   # Hardware configuration for Intel Core i5-1130G7 (Tiger Lake)
   hardware = {

@@ -689,89 +689,90 @@
     initContent = let
       bun = lib.getExe pkgs.bun;
       gum = lib.getExe pkgs.gum;
-    in lib.mkMerge [
-      # Before compinit (order 550)
-      (lib.mkOrder 550 ''
-        # Load API keys from agenix secrets
-        if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
-          export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
-        fi
-
-        # Enable Ctrl-R for history search (should work by default but ensure it's set)
-        bindkey '^R' history-incremental-search-backward
-
-        # Enable up/down arrow keys for history search
-        bindkey '^[[A' history-search-backward
-        bindkey '^[[B' history-search-forward
-
-        # Enable history expansion
-        setopt HIST_VERIFY
-        setopt HIST_EXPAND
-
-        # Share history between all sessions
-        setopt SHARE_HISTORY
-        setopt APPEND_HISTORY
-        setopt INC_APPEND_HISTORY
-
-        # Ask function for Claude AI assistance
-        ask() {
-            ${gum} spin --spinner dot --title "Asking Claude..." -- \
-            ${bun} x '@anthropic-ai/claude-code' \
-                --append-system-prompt "You are a technical expert specializing in NixOS, Nix package management, bash scripting, shell programming, and general software development. When answering questions: Always format responses in markdown with proper code blocks using triple backticks and language identifiers. Provide practical, working examples when possible. For Nix/NixOS: Follow best practices with proper module structure and current syntax. For shell scripts: Include error handling and explain command flags. Be concise but thorough, focusing on actionable solutions." \
-                --dangerously-skip-permissions \
-                --verbose \
-                --print \
-                -- "$*" | \
-            ${gum} format
-        }
-
-        # Kill process by PID, name, or port
-        killproc() {
-          if [ -z "$1" ]; then
-            echo "Usage: kp <pid|process-name|:port>"
-            echo "Examples:"
-            echo "  kp 1234              # Kill by PID"
-            echo "  kp fastify           # Kill by process name"
-            echo "  kp :3001             # Kill by port"
-            return 1
+    in
+      lib.mkMerge [
+        # Before compinit (order 550)
+        (lib.mkOrder 550 ''
+          # Load API keys from agenix secrets
+          if [[ -r "${config.age.secrets.user-simonwjackson-firecrawl-api-key.path}" ]]; then
+            export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
           fi
 
-          # Check if argument starts with colon (e.g., :3001)
-          if [[ "$1" =~ ^:[0-9]+$ ]]; then
-            local port="''${1:1}"  # Remove the colon
-            local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
-            if [ -z "$pid" ]; then
-              echo "No process found on port $port"
+          # Enable Ctrl-R for history search (should work by default but ensure it's set)
+          bindkey '^R' history-incremental-search-backward
+
+          # Enable up/down arrow keys for history search
+          bindkey '^[[A' history-search-backward
+          bindkey '^[[B' history-search-forward
+
+          # Enable history expansion
+          setopt HIST_VERIFY
+          setopt HIST_EXPAND
+
+          # Share history between all sessions
+          setopt SHARE_HISTORY
+          setopt APPEND_HISTORY
+          setopt INC_APPEND_HISTORY
+
+          # Ask function for Claude AI assistance
+          ask() {
+              ${gum} spin --spinner dot --title "Asking Claude..." -- \
+              ${bun} x '@anthropic-ai/claude-code' \
+                  --append-system-prompt "You are a technical expert specializing in NixOS, Nix package management, bash scripting, shell programming, and general software development. When answering questions: Always format responses in markdown with proper code blocks using triple backticks and language identifiers. Provide practical, working examples when possible. For Nix/NixOS: Follow best practices with proper module structure and current syntax. For shell scripts: Include error handling and explain command flags. Be concise but thorough, focusing on actionable solutions." \
+                  --dangerously-skip-permissions \
+                  --verbose \
+                  --print \
+                  -- "$*" | \
+              ${gum} format
+          }
+
+          # Kill process by PID, name, or port
+          killproc() {
+            if [ -z "$1" ]; then
+              echo "Usage: kp <pid|process-name|:port>"
+              echo "Examples:"
+              echo "  kp 1234              # Kill by PID"
+              echo "  kp fastify           # Kill by process name"
+              echo "  kp :3001             # Kill by port"
               return 1
             fi
-            kill -9 $pid && echo "Killed process $pid on port $port"
 
-          # Check if it's a PID (pure number)
-          elif [[ "$1" =~ ^[0-9]+$ ]]; then
-            if ps -p "$1" > /dev/null 2>&1; then
-              kill -9 "$1" && echo "Killed process $1"
+            # Check if argument starts with colon (e.g., :3001)
+            if [[ "$1" =~ ^:[0-9]+$ ]]; then
+              local port="''${1:1}"  # Remove the colon
+              local pid=$(ss -tlnp 2>/dev/null | grep ":$port " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
+              if [ -z "$pid" ]; then
+                echo "No process found on port $port"
+                return 1
+              fi
+              kill -9 $pid && echo "Killed process $pid on port $port"
+
+            # Check if it's a PID (pure number)
+            elif [[ "$1" =~ ^[0-9]+$ ]]; then
+              if ps -p "$1" > /dev/null 2>&1; then
+                kill -9 "$1" && echo "Killed process $1"
+              else
+                echo "No process found with PID $1"
+                return 1
+              fi
+
+            # Otherwise treat as process name
             else
-              echo "No process found with PID $1"
-              return 1
+              pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
+                echo "No processes found matching '$1'"
+                return 1
+              }
             fi
+          }
 
-          # Otherwise treat as process name
-          else
-            pkill -9 -f "$1" && echo "Killed processes matching '$1'" || {
-              echo "No processes found matching '$1'"
-              return 1
-            }
-          fi
-        }
-
-        alias kp=killproc
-      '')
-      # After compinit (default order)
-      ''
-        # Load just completions
-        source <(${pkgs.just}/bin/just --completions zsh)
-      ''
-    ];
+          alias kp=killproc
+        '')
+        # After compinit (default order)
+        ''
+          # Load just completions
+          source <(${pkgs.just}/bin/just --completions zsh)
+        ''
+      ];
   };
 
   # Home Manager needs a bit of information about you and the

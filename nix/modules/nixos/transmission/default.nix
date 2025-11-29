@@ -3,12 +3,10 @@
   lib,
   pkgs,
   ...
-}:
-let
+}: let
   inherit (lib) mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.transmission;
-in
-{
+in {
   options.mountainous.transmission = {
     enable = mkEnableOption "Transmission BitTorrent client";
 
@@ -34,11 +32,13 @@ in
       enable = true;
       package = pkgs.transmission_4;
       openFirewall = cfg.openFirewall;
-      settings = {
-        rpc-bind-address = "0.0.0.0";
-        rpc-whitelist-enabled = false;
-        rpc-host-whitelist-enabled = false;
-      } // cfg.settings;
+      settings =
+        {
+          rpc-bind-address = "0.0.0.0";
+          rpc-whitelist-enabled = false;
+          rpc-host-whitelist-enabled = false;
+        }
+        // cfg.settings;
     };
   };
 }

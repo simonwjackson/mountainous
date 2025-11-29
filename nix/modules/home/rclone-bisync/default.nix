@@ -75,7 +75,6 @@
         exit $EXIT_CODE
       fi
     '';
-
 in {
   options.mountainous.rclone-bisync = {
     enable = mkEnableOption "rclone bidirectional sync";
@@ -125,35 +124,41 @@ in {
 
   config = mkIf cfg.enable {
     # Systemd services
-    systemd.user.services = mapAttrs' (name: folderCfg:
-      nameValuePair "rclone-bisync-${name}" {
-        Unit = {
-          Description = "rclone bisync: ${name}";
-          After = ["network-online.target"];
-          Wants = ["network-online.target"];
-        };
+    systemd.user.services =
+      mapAttrs' (
+        name: folderCfg:
+          nameValuePair "rclone-bisync-${name}" {
+            Unit = {
+              Description = "rclone bisync: ${name}";
+              After = ["network-online.target"];
+              Wants = ["network-online.target"];
+            };
 
-        Service = {
-          Type = "oneshot";
-          ExecStart = "${mkSyncScript name folderCfg}";
-          SuccessExitStatus = "0 1";
-        };
-      }
-    ) cfg.folders;
+            Service = {
+              Type = "oneshot";
+              ExecStart = "${mkSyncScript name folderCfg}";
+              SuccessExitStatus = "0 1";
+            };
+          }
+      )
+      cfg.folders;
 
     # Systemd timers
-    systemd.user.timers = mapAttrs' (name: folderCfg:
-      nameValuePair "rclone-bisync-${name}" {
-        Unit.Description = "rclone bisync timer: ${name}";
+    systemd.user.timers =
+      mapAttrs' (
+        name: folderCfg:
+          nameValuePair "rclone-bisync-${name}" {
+            Unit.Description = "rclone bisync timer: ${name}";
 
-        Timer = {
-          OnCalendar = folderCfg.interval;
-          Persistent = true;
-          RandomizedDelaySec = "30s";
-        };
+            Timer = {
+              OnCalendar = folderCfg.interval;
+              Persistent = true;
+              RandomizedDelaySec = "30s";
+            };
 
-        Install.WantedBy = ["timers.target"];
-      }
-    ) cfg.folders;
+            Install.WantedBy = ["timers.target"];
+          }
+      )
+      cfg.folders;
   };
 }

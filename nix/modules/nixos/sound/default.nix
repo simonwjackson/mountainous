@@ -48,9 +48,9 @@ in {
 
     # Audio packages
     environment.systemPackages = with pkgs; [
-      pavucontrol   # GUI volume control
-      alsa-utils    # CLI audio tools (alsamixer, aplay, etc.)
-      pulseaudio    # For pactl compatibility
+      pavucontrol # GUI volume control
+      alsa-utils # CLI audio tools (alsamixer, aplay, etc.)
+      pulseaudio # For pactl compatibility
     ];
   };
 }

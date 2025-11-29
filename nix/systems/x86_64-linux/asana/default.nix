@@ -31,7 +31,7 @@
     # Intel graphics optimizations
     "i915.fastboot=1"
     "i915.enable_fbc=1"
-    "i915.enable_psr=2"  # PSR2 for better battery life (test if works with s2idle)
+    "i915.enable_psr=2" # PSR2 for better battery life (test if works with s2idle)
 
     # Display resolution hint for native 3K OLED panel
     "video=eDP-1:2880x1800@60"

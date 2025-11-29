@@ -3,8 +3,7 @@
   lib,
   pkgs,
   ...
-}:
-let
+}: let
   inherit (lib) mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.sabnzbd;
 
@@ -22,8 +21,7 @@ let
       fi
     fi
   '';
-in
-{
+in {
   options.mountainous.sabnzbd = {
     enable = mkEnableOption "SABnzbd Usenet downloader";
 
@@ -43,7 +41,7 @@ in
       type = types.listOf types.str;
       default = [];
       description = "Hostnames to whitelist for SABnzbd access";
-      example = [ "usenet.hummingbird-lake.ts.net" ];
+      example = ["usenet.hummingbird-lake.ts.net"];
     };
   };
 
@@ -55,9 +53,10 @@ in
 
     systemd.services.sabnzbd = {
       serviceConfig = {
-        ExecStart = lib.mkForce
+        ExecStart =
+          lib.mkForce
           "${pkgs.sabnzbd}/bin/sabnzbd -d -s 0.0.0.0:${toString cfg.port} -f /var/lib/sabnzbd/sabnzbd.ini";
-        ExecStartPre = lib.mkIf (cfg.hostWhitelist != []) [ updateWhitelist ];
+        ExecStartPre = lib.mkIf (cfg.hostWhitelist != []) [updateWhitelist];
       };
     };
   };

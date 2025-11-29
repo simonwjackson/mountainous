@@ -48,8 +48,8 @@ generate_host_key() {
 
   # Encrypt private key with age using user's SSH public key
   age --encrypt --recipient "$(cat "${ssh_key}.pub")" \
-    < "$temp_key_dir/ssh_host_rsa_key" \
-    > "$host_key_enc"
+    <"$temp_key_dir/ssh_host_rsa_key" \
+    >"$host_key_enc"
 
   # Copy public key
   cp "$temp_key_dir/ssh_host_rsa_key.pub" "$host_key_pub"
