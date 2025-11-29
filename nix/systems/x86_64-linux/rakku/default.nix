@@ -22,6 +22,13 @@
     mode = "400";
   };
 
+  age.secrets."tailscale-tsnet" = {
+    file = ../../../../secrets/agenix/tailscale-ephemeral.age;
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+    mode = "400";
+  };
+
   # UEFI boot configuration
   boot.loader = {
     systemd-boot.enable = true;
@@ -258,6 +265,17 @@
   # Disable impermanence module (configure manually below)
   mountainous = {
     impermanence.enable = lib.mkForce false;
+
+    tsnet-proxy = {
+      enable = true;
+      authKeyFile = config.age.secrets."tailscale-tsnet".path;
+      services.habitat = {
+        hostname = "habitat";
+        protocol = "http";
+        host = "localhost";
+        port = 8123;
+      };
+    };
   };
 
   # Configure ephemeral root filesystem (tmpfs) for impermanence
@@ -284,6 +302,12 @@
         user = "music-assistant";
         group = "music-assistant";
         mode = "0755";
+      }
+      {
+        directory = "/var/lib/tsnet-proxy-habitat";
+        user = "tsnet-proxy";
+        group = "tsnet-proxy";
+        mode = "0700";
       }
       {
         directory = "/home/simonwjackson";
@@ -338,6 +362,11 @@
       user = "music-assistant";
       group = "music-assistant";
       mode = "0755";
+    };
+    "/tundra/permafrost/var/lib/tsnet-proxy-habitat".d = {
+      user = "tsnet-proxy";
+      group = "tsnet-proxy";
+      mode = "0700";
     };
   };
 
