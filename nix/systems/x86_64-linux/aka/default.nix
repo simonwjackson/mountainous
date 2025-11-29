@@ -46,8 +46,8 @@
   networking.wireguard.enable = true;
 
   # Configure agenix secrets
-  age.secrets."tailscale" = {
-    file = ../../../../secrets/agenix/tailscale.age;
+  age.secrets."tailscale-tsnet" = {
+    file = ../../../../secrets/agenix/tailscale-ephemeral.age;
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
     mode = "400";
@@ -276,7 +276,7 @@
 
   mountainous.tsnet-proxy = {
     enable = true;
-    authKeyFile = config.age.secrets."tailscale".path;
+    authKeyFile = config.age.secrets."tailscale-tsnet".path;
   };
 
   # Enable Flatpak support

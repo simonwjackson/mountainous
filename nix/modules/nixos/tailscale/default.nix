@@ -30,10 +30,6 @@ in {
     services.tailscale = {
       enable = true;
       authKeyFile = mkIf agenixEnabled config.age.secrets.tailscale-ephemeral.path;
-      authKeyParameters = mkIf agenixEnabled {
-        ephemeral = true;
-        preauthorized = true;
-      };
       extraUpFlags = cfg.extraUpFlags;
     };
   };
