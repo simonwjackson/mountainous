@@ -713,6 +713,14 @@
             export FIRECRAWL_API_KEY="$(cat ${config.age.secrets.user-simonwjackson-firecrawl-api-key.path})"
           fi
 
+          if [[ -r "${config.age.secrets.user-simonwjackson-pushover-token.path}" ]]; then
+            export PUSHOVER_TOKEN="$(cat ${config.age.secrets.user-simonwjackson-pushover-token.path})"
+          fi
+
+          if [[ -r "${config.age.secrets.user-simonwjackson-pushover-user.path}" ]]; then
+            export PUSHOVER_USER="$(cat ${config.age.secrets.user-simonwjackson-pushover-user.path})"
+          fi
+
           # Enable Ctrl-R for history search (should work by default but ensure it's set)
           bindkey '^R' history-incremental-search-backward
 
