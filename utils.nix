@@ -98,6 +98,9 @@
         # First import all home-manager modules
         homeManagerModules
         ++
+        # Then import feature modules (home)
+        featureModules.home
+        ++
         # Then import the default configuration if it exists
         (
           if fileExists defaultHomePath
@@ -126,6 +129,9 @@
       modules =
         # First import all NixOS modules
         nixosModules
+        ++
+        # Then import feature modules (nixos)
+        featureModules.nixos
         ++ [
           # Add our packages overlay to make custom packages available
           {nixpkgs.overlays = [(final: prev: collectPackages prev arch)] ++ overlays;}

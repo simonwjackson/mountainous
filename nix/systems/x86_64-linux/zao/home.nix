@@ -1,6 +1,5 @@
 {pkgs, ...}: {
   mountainous.hyprland = {
-    enable = true;
     extraSettings = {
       monitor = [
         ",preferred,auto,auto"

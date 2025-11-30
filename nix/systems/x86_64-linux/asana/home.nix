@@ -3,7 +3,6 @@
 
   # Enable Hyprland home-manager module
   mountainous.hyprland = {
-    enable = true;
   };
 
   programs.git = {

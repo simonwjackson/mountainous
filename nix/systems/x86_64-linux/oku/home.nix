@@ -7,13 +7,10 @@
 
   # Remote dictation via aka
   mountainous.dictation = {
-    enable = true;
     remoteHost = "aka";
   };
 
   mountainous.hyprland = {
-    enable = true;
-
     # Touch gesture, workspace overview, and title bar plugins
     plugins = [
       inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -127,7 +124,6 @@
   programs.direnv.enable = true;
 
   programs.waybar = {
-    enable = true;
     settings = {
       mainBar = {
         layer = "top";
@@ -209,7 +205,6 @@
   # };
 
   xdg.userDirs = {
-    enable = true;
     createDirectories = true;
     documents = "$HOME/Documents";
     download = "$HOME/Downloads";

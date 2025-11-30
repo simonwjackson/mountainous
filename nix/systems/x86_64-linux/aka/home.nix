@@ -45,8 +45,8 @@
     };
 
     scripts = with pkgs.mpvScripts; [
-      uosc        # Modern UI
-      thumbfast   # Thumbnails for seeking
+      uosc # Modern UI
+      thumbfast # Thumbnails for seeking
       quality-menu
     ];
   };
@@ -72,7 +72,6 @@
   };
 
   mountainous.hyprland = {
-    enable = true;
     extraSettings = {
       monitor = [
         # Corrected positioning: DP-2 at 0x1350 (logical height = 1800/1.3333)

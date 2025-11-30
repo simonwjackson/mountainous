@@ -166,6 +166,7 @@
 
     steam.enable = true;
     sound.enable = true;
+    hyprland.enable = true;
 
     # Auto-rotation for tablet
     # auto-rotate.enable = true;

@@ -3,11 +3,13 @@
   inputs,
   lib,
   pkgs,
+  osConfig ? {},
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption types;
+  inherit (lib) mkOption types;
 
   cfg = config.mountainous.hyprland;
+  hyprlandEnabled = osConfig.mountainous.hyprland.enable or false;
 
   # Import configuration from sub-modules
   keybindsConfig = import ./keybinds.nix {inherit config lib pkgs inputs;};
@@ -16,10 +18,10 @@
   hyprlockConfig = import ./hyprlock.nix {inherit lib pkgs;};
 
   # List of attributes that should be merged instead of replaced
+  # NOTE: "monitor" intentionally excluded - user settings should replace defaults
   listAttrs = [
     "exec-once"
     "env"
-    "monitor"
     "bind"
     "bindel"
     "bindl"
@@ -55,8 +57,6 @@ in {
   ];
 
   options.mountainous.hyprland = {
-    enable = mkEnableOption "Whether to enable the hyprland desktop";
-
     extraSettings = mkOption {
       type = types.attrs;
       default = {};
@@ -70,7 +70,7 @@ in {
     };
   };
 
-  config = lib.mkIf cfg.enable {
+  config = lib.mkIf hyprlandEnabled {
     # Add tools to PATH
     home.packages = [
       pkgs.wtype

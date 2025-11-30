@@ -48,7 +48,6 @@
   # === yt-dlp Configuration ===
   # Prefer formats the Atom can actually decode
   programs.yt-dlp = {
-    enable = true;
     settings = {
       # Prefer h264 (better hw decode support) over VP9/AV1
       format = "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/best[height<=1080]";
@@ -62,14 +61,11 @@
   };
   # Remote dictation via aka (Atom CPU too slow for local whisper)
   mountainous.dictation = {
-    enable = true;
     remoteHost = "aka";
   };
 
   # GPD Pocket 1 Hyprland configuration
   mountainous.hyprland = {
-    enable = true;
-
     # Touch gesture plugin for touchscreen
     plugins = [
       inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -135,7 +131,6 @@
   programs.direnv.enable = true;
 
   programs.waybar = {
-    enable = true;
     settings = {
       mainBar = {
         layer = "top";
@@ -207,7 +202,6 @@
   ];
 
   xdg.userDirs = {
-    enable = true;
     createDirectories = true;
     documents = "$HOME/Documents";
     download = "$HOME/Downloads";

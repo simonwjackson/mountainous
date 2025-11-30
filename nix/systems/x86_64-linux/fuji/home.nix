@@ -2,7 +2,6 @@
   mountainous = {
     agenix.enable = true;
     hyprland = {
-      enable = true;
       extraSettings = {
         monitor = [
           # External monitor (DP-1) - normal orientation, positioned above

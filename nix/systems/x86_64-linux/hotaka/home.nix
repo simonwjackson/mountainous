@@ -7,8 +7,6 @@
 
   # Hyprland for gaming handheld with touch gesture support
   mountainous.hyprland = {
-    enable = true;
-
     # Enable hyprgrass plugin for native touch gesture support
     plugins = [
       inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default

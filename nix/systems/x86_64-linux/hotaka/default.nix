@@ -149,6 +149,7 @@
 
     # Enable sound with PipeWire for gaming
     sound.enable = true;
+    hyprland.enable = true;
 
     # Override base profile's impermanence - configure locally
     impermanence.enable = lib.mkForce false;
