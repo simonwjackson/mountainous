@@ -121,9 +121,13 @@ in {
         device = cfg.persistDevice;
         fsType = cfg.persistFsType;
         options = cfg.persistOptions;
-        neededForBoot = true;
       };
     })
+
+    # Always ensure persistPath is available at boot (even when disko manages the mount)
+    {
+      fileSystems."${cfg.persistPath}".neededForBoot = lib.mkDefault true;
+    }
 
     # Persist Nix store (optional, for faster rebuilds)
     (mkIf cfg.persistNixStore {

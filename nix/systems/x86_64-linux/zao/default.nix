@@ -112,9 +112,6 @@
   networking.hostName = "zao";
   networking.useDHCP = lib.mkDefault true;
 
-  # Ensure persistent storage is available during boot for impermanence
-  fileSystems."/tundra/permafrost".neededForBoot = true;
-
   # Thunderbolt networking to Mac Mini (via WD19TB dock)
   # Provides high-speed direct connection (~20-40 Gbps) for file transfers
   networking.interfaces.thunderbolt0 = {
@@ -159,9 +156,6 @@
     # Note: /nix and /var/log are separate btrfs subvolumes managed by disko
     impermanence = {
       enable = true;
-      # Persistent storage is managed by disko, so we don't specify persistDevice
-      # The mount is already configured in disko.nix
-      persistDevice = null; # Managed by disko.nix
       persistFsType = "btrfs";
 
       # zao-specific persistence: /tundra/igloo directory
