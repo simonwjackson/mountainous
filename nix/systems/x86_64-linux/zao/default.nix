@@ -112,6 +112,18 @@
   networking.hostName = "zao";
   networking.useDHCP = lib.mkDefault true;
 
+  # Thunderbolt networking to Mac Mini (via WD19TB dock)
+  # Provides high-speed direct connection (~20-40 Gbps) for file transfers
+  networking.interfaces.thunderbolt0 = {
+    useDHCP = false;
+    ipv4.addresses = [
+      {
+        address = "192.168.2.1";
+        prefixLength = 24;
+      }
+    ];
+  };
+
   # Enable profiles for desktop/gaming server
   mountainous = {
     profiles = {
