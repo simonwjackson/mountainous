@@ -168,6 +168,13 @@
       enable = true;
     };
 
+    # Unified Steam library: local games + network games from aka
+    # Local files take priority, seamless when network disconnects
+    steam-mergerfs = {
+      enable = true;
+      server = "aka"; # Resolves via Tailscale or mDNS fallback
+    };
+
     device = {
       role = "portable";
       capabilities = {
@@ -358,6 +365,13 @@
       }
       {
         directory = "/nix/var/nix/profiles/per-user/simonwjackson";
+        user = "simonwjackson";
+        group = "users";
+        mode = "0755";
+      }
+      # Local Steam games storage (priority over network)
+      {
+        directory = "/tundra/glacier/steam";
         user = "simonwjackson";
         group = "users";
         mode = "0755";

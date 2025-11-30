@@ -74,6 +74,18 @@
       workspace.enable = true;
     };
 
+    # NFS server - export Steam library for remote access
+    nfs-server = {
+      enable = true;
+      exports = [
+        {
+          path = "/home/simonwjackson/.local/share/Steam";
+          clients = "*"; # Allow all - network security handled by Tailscale/firewall
+          options = ["rw" "sync" "no_subtree_check" "all_squash" "anonuid=333" "anongid=333"];
+        }
+      ];
+    };
+
     # Syncthing for knowledge sync
     syncthing = {
       enable = true;
@@ -147,13 +159,6 @@
       gutenprint
       gutenprintBin
     ];
-  };
-
-  # Enable printer discovery and auto-configuration
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
   };
 
   hardware = {

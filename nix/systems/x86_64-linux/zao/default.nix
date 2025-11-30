@@ -168,6 +168,14 @@
         }
       ];
     };
+
+    # NFS client - mount Steam library from aka
+    steam-nfs-client = {
+      enable = true;
+      server = "aka"; # Tailscale DNS name
+      remotePath = "/home/simonwjackson/.local/share/Steam";
+      mountPoint = "/tundra/avalanche/steam";
+    };
   };
 
   # Fix ownership for zao-specific persistent directory
