@@ -169,7 +169,7 @@
     hyprland.enable = true;
 
     # Keyboard remapping (kanata - supports chords)
-    kanata = {
+    keyboard = {
       enable = true;
       device = "/dev/input/event4"; # Huawei keyboard dock (by-path has colons that kanata can't parse)
       config = ''

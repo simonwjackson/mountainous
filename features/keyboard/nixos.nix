@@ -4,24 +4,11 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types;
-  cfg = config.mountainous.kanata;
+  inherit (lib) mkIf mkDefault;
+  cfg = config.mountainous.keyboard;
+  sharedOptions = import ./options.nix {inherit lib;};
 in {
-  options.mountainous.kanata = {
-    enable = mkEnableOption "kanata keyboard remapping";
-
-    device = mkOption {
-      type = types.str;
-      description = "Input device path for the keyboard";
-      example = "/dev/input/by-id/usb-Huawei-keyboard";
-    };
-
-    config = mkOption {
-      type = types.lines;
-      default = "";
-      description = "Kanata configuration (defsrc, defalias, deflayer, defchordsv2)";
-    };
-  };
+  options.mountainous.keyboard = sharedOptions;
 
   config = mkIf cfg.enable {
     environment.systemPackages = [pkgs.kanata];
