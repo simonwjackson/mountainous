@@ -112,6 +112,9 @@
   networking.hostName = "zao";
   networking.useDHCP = lib.mkDefault true;
 
+  # Ensure persistent storage is available during boot for impermanence
+  fileSystems."/tundra/permafrost".neededForBoot = true;
+
   # Thunderbolt networking to Mac Mini (via WD19TB dock)
   # Provides high-speed direct connection (~20-40 Gbps) for file transfers
   networking.interfaces.thunderbolt0 = {
@@ -152,89 +155,37 @@
       };
     };
 
-    # Agenix identity path - point to persistent SSH key location
-    # (default paths don't work with custom impermanence setup)
-    agenix.identityPaths = [
-      "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
-    ];
+    # Unified impermanence configuration
+    # Note: /nix and /var/log are separate btrfs subvolumes managed by disko
+    impermanence = {
+      enable = true;
+      # Persistent storage is managed by disko, so we don't specify persistDevice
+      # The mount is already configured in disko.nix
+      persistDevice = null; # Managed by disko.nix
+      persistFsType = "btrfs";
 
-    # Override base profile's impermanence - configure locally
-    impermanence.enable = lib.mkForce false;
-  };
-
-  # Configure ephemeral root filesystem (tmpfs) for impermanence
-  fileSystems."/" = {
-    device = "none";
-    fsType = "tmpfs";
-    options = ["defaults" "size=2G" "mode=755"];
-  };
-
-  # Mark persistent storage as needed early in boot
-  fileSystems."/tundra/permafrost".neededForBoot = true;
-
-  # Local impermanence configuration for zao
-  # Note: /nix and /var/log are separate btrfs subvolumes (not bind mounts)
-  # This avoids tmpfs issues during installation
-  environment.persistence."/tundra/permafrost" = {
-    hideMounts = true;
-    directories = [
-      "/var/lib/systemd/coredump"
-      "/var/lib/nixos"
-      "/var/lib/tailscale"
-      {
-        directory = "/home/simonwjackson";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0700";
-      }
-      {
-        directory = "/tundra/igloo";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0700";
-      }
-      {
-        directory = "/nix/var/nix/profiles/per-user/simonwjackson";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0755";
-      }
-    ];
-    files = [
-      "/etc/machine-id"
-    ];
-  };
-
-  # Fix ownership of persistent directories on boot
-  # Workaround for impermanence bug where parent directories are created with root ownership
-  # See: https://github.com/nix-community/impermanence/issues/74
-  systemd.tmpfiles.settings."10-persistent-ownership" = {
-    "/tundra/permafrost/home/simonwjackson".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0700";
+      # zao-specific persistence: /tundra/igloo directory
+      extraDirectories = [
+        {
+          directory = "/tundra/igloo";
+          user = "simonwjackson";
+          group = "users";
+          mode = "0700";
+        }
+      ];
     };
+  };
+
+  # Fix ownership for zao-specific persistent directory
+  # The base impermanence feature handles home and nix profiles,
+  # but we need to add our custom /tundra/igloo directory
+  systemd.tmpfiles.settings."10-persistent-ownership" = {
     "/tundra/permafrost/tundra/igloo".d = {
       user = "simonwjackson";
       group = "users";
       mode = "0700";
     };
-    "/tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0755";
-    };
   };
-
-  # SSH host keys in persistent storage
-  # Keys are deployed via deploy.sh using --extra-files during initial installation
-  services.openssh.hostKeys = [
-    {
-      path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
-      type = "rsa";
-      bits = 4096;
-    }
-  ];
 
   # Storage and disk health maintenance
   # Btrfs maintenance - critical for RAID0 data integrity
