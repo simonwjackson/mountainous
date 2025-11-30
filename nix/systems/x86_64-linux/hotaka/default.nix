@@ -146,10 +146,19 @@
       base.enable = true;
     };
 
-    # Gaming feature configuration
+    # Device configuration: gaming handheld
+    device = {
+      role = "portable"; # Usage: mobile gaming, battery-conscious
+      capabilities = {
+        battery = true;
+        touchscreen = true;
+        formFactor = "handheld";
+      };
+    };
+
+    # Gaming feature configuration (reads device.role/traits)
     gaming = {
       enable = true;
-      deviceType = "handheld";
 
       # Performance optimizations
       performance = {

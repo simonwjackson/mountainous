@@ -11,11 +11,16 @@
   gamingEnabled = osConfig.mountainous.gaming.enable or false;
   gamingCfg = osConfig.mountainous.gaming or {};
 
+  # Get device config from NixOS
+  device = osConfig.mountainous.device or {};
+  deviceCaps = device.capabilities or {};
+
   # Check if Hyprland is enabled
   hyprlandEnabled = osConfig.mountainous.hyprland.enable or false;
 
-  # Determine device type
-  isHandheld = gamingCfg.deviceType or "desktop" == "handheld";
+  # Determine device characteristics from shared device module
+  isHandheld = (deviceCaps.formFactor or "tower") == "handheld" || (deviceCaps.formFactor or "tower") == "tablet";
+  hasTouch = deviceCaps.touchscreen or false;
 
   # Check if overlay is enabled
   overlayEnabled = gamingCfg.home.overlay.enable or true;
@@ -32,6 +37,9 @@ in {
         ++ optionals isHandheld [
           # Handheld-specific packages
           jstest-gtk # Gamepad testing GUI
+        ]
+        ++ optionals hasTouch [
+          # Touch-enabled device packages
           wvkbd # Wayland virtual keyboard for touch input
         ];
 

@@ -3,11 +3,8 @@
 in {
   enable = mkEnableOption "Gaming support with Steam and optimized audio";
 
-  deviceType = mkOption {
-    type = types.enum ["desktop" "handheld" "server"];
-    default = "desktop";
-    description = "Device type affects default packages and configuration";
-  };
+  # NOTE: Device type is now defined at mountainous.device.role and mountainous.device.traits
+  # This feature reads from config.mountainous.device instead of having its own deviceType
 
   streaming = {
     enable = mkEnableOption "Sunshine game streaming server";

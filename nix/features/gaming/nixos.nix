@@ -7,12 +7,19 @@
   inherit (lib) mkIf mkMerge;
 
   cfg = config.mountainous.gaming;
+  device = config.mountainous.device;
 
   # Import streaming module configuration
   streamingModule = import ./streaming.nix {
     inherit config lib pkgs cfg;
   };
   streamingConfig = streamingModule.config;
+
+  # Role/capability-based decisions
+  isServer = device.role == "server";
+  isPortable = device.role == "portable";
+  hasTouch = device.capabilities.touchscreen;
+  isHandheld = device.capabilities.formFactor == "handheld" || device.capabilities.formFactor == "tablet";
 
   # Device-specific package sets
   basePackages = with pkgs; [
@@ -109,21 +116,26 @@ in {
       ];
     })
 
-    # Desktop-specific configuration
-    (mkIf (cfg.deviceType == "desktop") {
+    # Desktop-specific configuration (not a server)
+    (mkIf (!isServer) {
       environment.systemPackages = desktopPackages;
     })
 
-    # Handheld-specific configuration
-    (mkIf (cfg.deviceType == "handheld") {
+    # Handheld/tablet-specific configuration (portable + small form factor)
+    (mkIf isHandheld {
       environment.systemPackages = handheldPackages;
     })
 
     # Server configuration (minimal, streaming-focused)
-    (mkIf (cfg.deviceType == "server") {
+    (mkIf isServer {
       # Server mode gets minimal packages
       # Streaming server will be configured in separate module
       environment.systemPackages = [];
+    })
+
+    # Touch-enabled devices get virtual keyboard support
+    (mkIf hasTouch {
+      # Could add touch-specific gaming tools here
     })
 
     # Streaming support (Sunshine)

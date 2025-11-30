@@ -20,6 +20,10 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
+    # Zen kernel for low-latency game streaming (Sunshine) and media server (Jellyfin)
+    # Matches aka and hotaka gaming systems for fleet consistency
+    kernelPackages = pkgs.linuxPackages_zen;
+
     # Kernel parameters for server performance and stability
     kernelParams = [
       "nvme_core.default_ps_max_latency_us=0" # Prevent NVMe power state issues
@@ -115,17 +119,32 @@
       workspace.enable = true;
     };
 
-    # Unified gaming feature
+    # Device configuration: laptop chassis used as headless server
+    device = {
+      role = "server"; # Usage: runs 24/7, serves game streams
+      capabilities = {
+        battery = true; # Has battery (graceful shutdown on power loss)
+        formFactor = "laptop"; # Thermal profile of a laptop
+        touchscreen = false;
+      };
+    };
+
+    # Unified gaming feature (reads from device.role/traits)
     gaming = {
       enable = true;
-      deviceType = "server";
 
       # Enable game streaming with Sunshine
       streaming = {
         enable = true;
-        monitors.primary = "DP-1";
+        monitors.primary = "DP-1"; # Virtual display for streaming
       };
     };
+
+    # Agenix identity path - point to persistent SSH key location
+    # (default paths don't work with custom impermanence setup)
+    agenix.identityPaths = [
+      "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
+    ];
 
     # Override base profile's impermanence - configure locally
     impermanence.enable = lib.mkForce false;

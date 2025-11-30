@@ -19,8 +19,21 @@
   # Use the unified gaming feature for gaming support and streaming
   mountainous.gaming = {
     enable = true;
-    deviceType = "desktop";
     streaming.enable = true;
+  };
+
+  ################
+  # DEVICE
+  ################
+
+  # Desktop gaming PC with dual high-refresh monitors
+  mountainous.device = {
+    role = "desktop";
+    capabilities = {
+      battery = false;
+      touchscreen = false;
+      formFactor = "tower";
+    };
   };
 
   environment.systemPackages = with pkgs; [

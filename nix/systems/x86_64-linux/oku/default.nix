@@ -166,7 +166,15 @@
 
     gaming = {
       enable = true;
-      deviceType = "handheld"; # Tablet, similar to handheld
+    };
+
+    device = {
+      role = "portable";
+      capabilities = {
+        battery = true;
+        touchscreen = true;
+        formFactor = "tablet";
+      };
     };
 
     hyprland.enable = true;
