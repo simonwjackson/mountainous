@@ -20,6 +20,12 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
+    # Kernel parameters for server performance and stability
+    kernelParams = [
+      "nvme_core.default_ps_max_latency_us=0" # Prevent NVMe power state issues
+      "intel_pstate=active" # Use Intel P-state driver
+    ];
+
     loader = {
       efi.canTouchEfiVariables = false;
       efi.efiSysMountPoint = "/boot";
@@ -79,6 +85,24 @@
 
   # Load NVIDIA driver for Xorg and Wayland
   services.xserver.videoDrivers = ["nvidia"];
+
+  # Hardware monitoring and maintenance tools
+  environment.systemPackages = with pkgs; [
+    # Storage health
+    smartmontools # SMART monitoring (smartctl)
+    nvme-cli # NVMe health and management
+    btrfs-progs # Btrfs utilities (scrub, balance, etc.)
+
+    # System monitoring
+    lm_sensors # Temperature monitoring
+    htop # Process monitor
+    btop # Beautiful system monitor
+
+    # Hardware info
+    pciutils # lspci
+    usbutils # lsusb
+    dmidecode # Hardware info
+  ];
 
   # Networking
   networking.hostName = "zao";
@@ -181,7 +205,31 @@
     }
   ];
 
+  # Storage and disk health maintenance
+  # Btrfs maintenance - critical for RAID0 data integrity
+  services.btrfs.autoScrub = {
+    enable = true;
+    interval = "weekly";
+    fileSystems = ["/tundra/permafrost"];
+  };
+
+  # SSD TRIM maintenance (weekly)
+  services.fstrim.enable = true;
+
+  # SMART monitoring for NVMe health
+  services.smartd = {
+    enable = true;
+    autodetect = true;
+    notifications = {
+      wall.enable = true;
+      x11.enable = false;
+    };
+  };
+
   # Server-specific optimizations for always-plugged-in laptop
+  # Intel thermal management - prevents throttling and manages temps
+  services.thermald.enable = true;
+
   # Disable battery-saving features since this runs as a server
   services.auto-cpufreq.enable = lib.mkForce false;
 
