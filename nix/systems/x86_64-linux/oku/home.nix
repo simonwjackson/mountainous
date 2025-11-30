@@ -21,7 +21,7 @@
     extraSettings = {
       # 12.6" OLED 2560x1600 DSI display
       monitor = [
-        "DSI-1,2560x1600@60,auto,1.333,transform,0"
+        "DSI-1,2560x1600@60,auto,1.6,transform,0"
       ];
 
       exec-once = [
@@ -45,8 +45,8 @@
         };
       };
 
-      # Touchscreen rotation (0 = no transform for landscape default)
-      "input:touchdevice:transform" = 0;
+      # Bind touchscreen to display - transform auto-syncs with monitor rotation
+      "input:touchdevice:output" = "DSI-1";
 
       gesture = [
         "3, horizontal, workspace"
