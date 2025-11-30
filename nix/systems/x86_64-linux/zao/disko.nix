@@ -19,7 +19,7 @@
           type = "gpt";
           partitions = {
             ESP = {
-              size = "512M";
+              size = "2G";
               type = "EF00"; # EFI System Partition
               content = {
                 type = "filesystem";
@@ -36,9 +36,27 @@
       };
 
       # NVMe Drive 1 - WD Blue SN570 2TB (Btrfs RAID0 member)
+      # NOTE: Disko processes disks alphabetically. The btrfs must be defined
+      # on the SECOND disk (blizzard.0.01) so the first partition exists when referenced.
       "blizzard.0.00" = {
         type = "disk";
         device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800890";
+        content = {
+          type = "gpt";
+          partitions = {
+            primary = {
+              size = "100%";
+              # Empty - btrfs RAID defined on blizzard.0.01
+            };
+          };
+        };
+      };
+
+      # NVMe Drive 2 - WD Blue SN570 2TB (Btrfs RAID0 member)
+      # This disk comes second alphabetically, so we define the btrfs here
+      "blizzard.0.01" = {
+        type = "disk";
+        device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725";
         content = {
           type = "gpt";
           partitions = {
@@ -48,13 +66,33 @@
                 type = "btrfs";
                 extraArgs = [
                   "-f"
-                  "-d"
-                  "raid0"
-                  "-m"
-                  "raid1" # Metadata mirrored for safety
-                  "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725-part1"
+                  "-d raid0" # Data striped for performance
+                  "-m raid1" # Metadata mirrored for safety
+                  "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800890-part1" # First disk's partition
                 ];
                 subvolumes = {
+                  "@nix" = {
+                    mountpoint = "/nix";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
+
+                  "@log" = {
+                    mountpoint = "/var/log";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                      "nodiratime"
+                      "discard=async"
+                      "space_cache=v2"
+                    ];
+                  };
+
                   "@permafrost" = {
                     mountpoint = "/tundra/permafrost";
                     mountOptions = [
@@ -67,21 +105,6 @@
                   };
                 };
               };
-            };
-          };
-        };
-      };
-
-      # NVMe Drive 2 - WD Blue SN570 2TB (Btrfs RAID0 member)
-      "blizzard.0.01" = {
-        type = "disk";
-        device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725";
-        content = {
-          type = "gpt";
-          partitions = {
-            primary = {
-              size = "100%";
-              # Part of btrfs RAID0 with blizzard.0.00 - defined there
             };
           };
         };

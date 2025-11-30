@@ -3,14 +3,21 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
-  echo "Usage: $0 <hostname> <user@ip> [ssh_key_path] [nixos-anywhere args...]"
-  echo "Example: $0 cho nixos@192.168.1.247 ~/.ssh/my_key"
+  echo "Usage: $0 <hostname> <user@ip> [ssh_key_path] [target_arch]"
+  echo "Example: $0 cho nixos@192.168.1.247 ~/.ssh/my_key x86_64-linux"
+  echo ""
+  echo "Arguments:"
+  echo "  hostname     - NixOS configuration name (e.g., zao, fuji)"
+  echo "  user@ip      - Target host SSH address"
+  echo "  ssh_key_path - Path to SSH private key (default: ~/.ssh/id_rsa)"
+  echo "  target_arch  - Target architecture (default: x86_64-linux)"
   exit 1
 fi
 
 HOSTNAME="$1"
 TARGET="$2"
 SSH_KEY="${3:-$HOME/.ssh/id_rsa}"
+TARGET_ARCH="${4:-x86_64-linux}"
 
 # Create a temporary directory for our extra files
 temp=$(mktemp -d)
@@ -62,7 +69,7 @@ generate_host_key() {
 }
 
 # Decrypt and place host SSH key (generate if doesn't exist)
-HOST_KEY_ENC="secrets/keys/hosts/x86_64-linux_${HOSTNAME}_ssh_host_rsa_key.age"
+HOST_KEY_ENC="secrets/keys/hosts/${TARGET_ARCH}_${HOSTNAME}_ssh_host_rsa_key.age"
 if [ -f "$HOST_KEY_ENC" ]; then
   echo "🔓 Using existing host SSH key..."
 else
@@ -77,7 +84,7 @@ cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
 chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
 
 # Check for manual-disko.sh script
-MANUAL_DISKO_SCRIPT="nix/systems/x86_64-linux/${HOSTNAME}/manual-disko.sh"
+MANUAL_DISKO_SCRIPT="nix/systems/${TARGET_ARCH}/${HOSTNAME}/manual-disko.sh"
 USE_MANUAL_DISKO=false
 if [ -f "$MANUAL_DISKO_SCRIPT" ]; then
   echo "Found manual-disko.sh for $HOSTNAME - will use manual formatting"

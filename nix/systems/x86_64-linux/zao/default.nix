@@ -108,14 +108,14 @@
   fileSystems."/tundra/permafrost".neededForBoot = true;
 
   # Local impermanence configuration for zao
+  # Note: /nix and /var/log are separate btrfs subvolumes (not bind mounts)
+  # This avoids tmpfs issues during installation
   environment.persistence."/tundra/permafrost" = {
     hideMounts = true;
     directories = [
-      "/nix" # Nix store must persist (large, contains all packages)
       "/var/lib/systemd/coredump"
       "/var/lib/nixos"
       "/var/lib/tailscale"
-      "/var/log"
       {
         directory = "/home/simonwjackson";
         user = "simonwjackson";
