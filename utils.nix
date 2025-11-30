@@ -67,7 +67,7 @@
       home = builtins.filter (m: m != null) homeModules;
     };
 
-  featureModules = collectFeatureModules ./features;
+  featureModules = collectFeatureModules ./nix/features;
   # Collect all home-manager modules
   homeManagerModules = collectModules ./nix/modules/home;
 
