@@ -14,7 +14,8 @@
   sharedOptions = import ./options.nix {inherit lib;};
 
   # Path to secrets directory (new structure)
-  secretsRoot = ../../secrets;
+  # Go up from nix/features/agenix/ to repo root, then into secrets/
+  secretsRoot = ../../../secrets;
 
   # Master identity for agenix-rekey
   # Using attrset format to specify both identity path and pubkey:
