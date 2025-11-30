@@ -164,8 +164,11 @@
       gaming.enable = true;
     };
 
-    steam.enable = true;
-    sound.enable = true;
+    gaming = {
+      enable = true;
+      deviceType = "handheld"; # Tablet, similar to handheld
+    };
+
     hyprland.enable = true;
 
     # Keyboard remapping (kanata - supports chords)

@@ -13,12 +13,14 @@
   ];
 
   ################
-  # STEAM
+  # GAMING
   ################
 
-  # Use the new mountainous Steam module for proper runtime support
-  mountainous.steam = {
+  # Use the unified gaming feature for gaming support and streaming
+  mountainous.gaming = {
     enable = true;
+    deviceType = "desktop";
+    streaming.enable = true;
   };
 
   environment.systemPackages = with pkgs; [
@@ -57,7 +59,6 @@
     profiles = {
       base.enable = true;
       workspace.enable = true;
-      gaming.enable = true;
     };
 
     # Syncthing for knowledge sync

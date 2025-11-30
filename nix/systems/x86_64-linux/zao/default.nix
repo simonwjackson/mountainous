@@ -22,14 +22,13 @@
 
     loader = {
       efi.canTouchEfiVariables = false;
-      systemd-boot = {
-        enable = true;
-        # Install as removable for SD card boot reliability
-        # This places the bootloader at /EFI/BOOT/BOOTX64.EFI
-      };
-      # Use removable installation for SD card portability
       efi.efiSysMountPoint = "/boot";
-      grub.enable = false;
+      grub = {
+        enable = true;
+        efiSupport = true;
+        efiInstallAsRemovable = true; # Install to /EFI/BOOT/BOOTX64.EFI for SD card
+        device = "nodev"; # EFI only, no MBR
+      };
     };
   };
 
@@ -90,7 +89,18 @@
     profiles = {
       base.enable = true;
       workspace.enable = true;
-      gaming.enable = true;
+    };
+
+    # Unified gaming feature
+    gaming = {
+      enable = true;
+      deviceType = "server";
+
+      # Enable game streaming with Sunshine
+      streaming = {
+        enable = true;
+        monitors.primary = "DP-1";
+      };
     };
 
     # Override base profile's impermanence - configure locally

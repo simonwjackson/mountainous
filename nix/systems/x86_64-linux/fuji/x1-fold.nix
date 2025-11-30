@@ -102,13 +102,14 @@
   };
 
   # Auto-rotate configuration optimized for X1 Fold's foldable display
-  mountainous.auto-rotate = {
-    enable = true;
-    accelerometerDevice = "/sys/bus/iio/devices/iio:device0"; # Primary accelerometer
-    rotationThreshold = 100000; # Sensitivity for orientation changes
-    debounceTime = 2; # Prevent rapid orientation switching
-    pollInterval = 0.5; # Check sensors twice per second
-  };
+  # NOTE: auto-rotate module has been removed
+  # mountainous.auto-rotate = {
+  #   enable = true;
+  #   accelerometerDevice = "/sys/bus/iio/devices/iio:device0"; # Primary accelerometer
+  #   rotationThreshold = 100000; # Sensitivity for orientation changes
+  #   debounceTime = 2; # Prevent rapid orientation switching
+  #   pollInterval = 0.5; # Check sensors twice per second
+  # };
 
   # OBS Studio with virtual camera for video conferencing on foldable display
   programs.obs-studio = {

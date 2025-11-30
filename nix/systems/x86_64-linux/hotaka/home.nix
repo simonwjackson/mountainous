@@ -6,6 +6,7 @@
   # Gaming handheld optimized home configuration
 
   # Hyprland for gaming handheld with touch gesture support
+  # Note: Auto-launch apps and gaming keybinds are configured in the gaming feature
   mountainous.hyprland = {
     # Enable hyprgrass plugin for native touch gesture support
     plugins = [
@@ -19,10 +20,6 @@
 
       exec-once = [
         "systemctl --user start hyprland-session.target"
-        # Auto-launch Steam Big Picture on workspace 1 (main workspace)
-        "[workspace 1 silent] steam"
-        # Auto-launch Moonlight on workspace 2 for game streaming
-        "[workspace 2 silent] moonlight"
       ];
 
       # Touch and gesture configuration
@@ -48,13 +45,6 @@
       "plugin:touch_gestures:workspace_swipe_fingers" = 3;
       "plugin:touch_gestures:edge_margin" = 30; # Larger margin for easier edge swipe triggering
       "plugin:touch_gestures:debug:visualize_touch" = 1; # Show visual feedback for touch points
-
-      # Gaming-friendly binds
-      bind = [
-        "SUPER, F1, exec, steam" # Quick Steam access
-        "SUPER, F2, exec, gamemode" # Toggle gamemode
-        "SUPER, F3, exec, moonlight" # Quick Moonlight access
-      ];
 
       # hyprgrass touch gesture bindings
       "hyprgrass-bind" = [
@@ -100,7 +90,7 @@
   # Development tools
   programs.direnv.enable = true;
 
-  # Gaming and handheld-specific packages
+  # Handheld-specific packages (gaming packages provided by gaming feature)
   home.packages = with pkgs; [
     # Core tools
     neovim
@@ -108,14 +98,7 @@
     htop
     btop
 
-    # Game streaming
-    moonlight-qt # Game streaming client
-
-    # Gaming utilities (mangohud, gamemode provided by mountainous.steam)
-    goverlay # MangoHud GUI configuration
-
     # Controller testing
-    jstest-gtk # Gamepad testing GUI
     evtest # Input event testing
 
     # System monitoring
@@ -129,7 +112,6 @@
     # Handheld utilities
     brightnessctl # Screen brightness control
     wtype # Wayland keyboard input emulator (for touch gestures)
-    wvkbd # Lightweight Wayland virtual keyboard for touch input
 
     # Gaming launchers (besides Steam)
     # lutris      # Multi-platform game launcher
@@ -139,16 +121,7 @@
     # retroarch   # Multi-system emulator
   ];
 
-  # HiDPI configuration for 7" 314 PPI display
-  home.sessionVariables = {
-    # Scale factor for Qt applications
-    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
-    QT_SCALE_FACTOR = "1.5";
-
-    # Scale factor for GTK applications
-    GDK_SCALE = "2";
-    GDK_DPI_SCALE = "0.75"; # 2 * 0.75 = 1.5x effective
-  };
+  # HiDPI configuration handled by gaming feature for handheld devices
 
   # XDG user directories for gaming saves, etc.
   xdg.userDirs = {

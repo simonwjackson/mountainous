@@ -140,11 +140,38 @@
     };
   };
 
-  # Enable profiles for gaming handheld
+  # Enable features for gaming handheld
   mountainous = {
     profiles = {
       base.enable = true;
-      gaming.enable = true; # Steam, gamemode, controllers, etc.
+    };
+
+    # Gaming feature configuration
+    gaming = {
+      enable = true;
+      deviceType = "handheld";
+
+      # Performance optimizations
+      performance = {
+        lowLatencyAudio = true;
+        gamemode = true;
+      };
+
+      # Home-manager gaming configuration
+      home = {
+        autoLaunch = [
+          "[workspace 1 silent] steam"
+          "[workspace 2 silent] moonlight"
+        ];
+
+        keybinds = {
+          "SUPER, F1" = "exec, steam";
+          "SUPER, F2" = "exec, gamemode";
+          "SUPER, F3" = "exec, moonlight";
+        };
+
+        overlay.enable = true;
+      };
     };
 
     # Enable sound with PipeWire for gaming
@@ -286,13 +313,7 @@
     };
   };
 
-  # Gamemode for automatic performance switching
-  programs.gamemode.enable = true;
-
-  # Use mountainous Steam module for comprehensive Steam setup
-  mountainous.steam.enable = true;
-
-  # Additional Steam configuration
+  # Additional Steam configuration (base Steam handled by gaming feature)
   programs.steam = {
     remotePlay.openFirewall = true;
     gamescopeSession.enable = true; # Steam Deck-like UI
