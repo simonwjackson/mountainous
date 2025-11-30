@@ -33,9 +33,24 @@ in {
     services.automatic-timezoned.enable = true;
     services.geoclue2 = {
       enable = true;
-      # Enable avahi for local network discovery
-      enableDemoAgent = false;
-      geoProviderUrl = "https://location.services.mozilla.com/v1/geolocate?key=geoclue";
+      # Enable demo agent to keep GeoClue alive for system services
+      enableDemoAgent = true;
+      # BeaconDB - community replacement for defunct Mozilla Location Services
+      geoProviderUrl = "https://api.beacondb.net/v1/geolocate";
+      submissionUrl = "https://api.beacondb.net/v2/geosubmit";
+      # Allow automatic-timezoned and gammastep to use geoclue
+      appConfig = {
+        "automatic-timezoned" = {
+          isAllowed = true;
+          isSystem = true;
+          users = [];
+        };
+        "gammastep" = {
+          isAllowed = true;
+          isSystem = false;
+          users = [];
+        };
+      };
     };
     services.avahi = {
       enable = true;
