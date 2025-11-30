@@ -55,10 +55,37 @@
 
   # All persistence files
   allFiles = coreFiles ++ cfg.extraFiles;
+
+  # Disko subvolume generation
+  diskoSubvolumes =
+    lib.optionalAttrs cfg.persistNixStore {
+      "@nix" = {
+        mountpoint = "/nix";
+        mountOptions = cfg.disko.mountOptions;
+      };
+    }
+    // {
+      "@permafrost" = {
+        mountpoint = cfg.persistPath;
+        mountOptions = cfg.disko.mountOptions;
+      };
+    }
+    // lib.optionalAttrs cfg.persistLogs {
+      "@log" = {
+        mountpoint = "/var/log";
+        mountOptions = cfg.disko.mountOptions;
+      };
+    };
 in {
   options.mountainous.impermanence = import ./options.nix {inherit lib;};
 
   config = mkIf cfg.enable (mkMerge [
+    # Disko subvolume contribution
+    (mkIf cfg.disko.enable {
+      disko.devices.disk.${cfg.disko.diskName}.content.partitions.${cfg.disko.partitionName}.content.subvolumes =
+        lib.mkDefault diskoSubvolumes;
+    })
+
     # Base impermanence configuration
     {
       # Enable FUSE for user bind mounts
@@ -129,23 +156,13 @@ in {
       fileSystems."${cfg.persistPath}".neededForBoot = lib.mkDefault true;
     }
 
-    # Persist Nix store (optional, for faster rebuilds)
-    (mkIf cfg.persistNixStore {
+    # Persist Nix store (when not using disko subvolume)
+    # NOTE: /var/log is handled by disko @log subvolume when persistLogs=true,
+    # so we don't add it to impermanence (that would create conflicting mounts)
+    (mkIf (cfg.persistNixStore && !cfg.disko.enable) {
       environment.persistence."${cfg.persistPath}".directories = mkForce (
         allDirs
-        ++ [
-          "/nix"
-        ]
-      );
-    })
-
-    # Persist logs (optional, for debugging)
-    (mkIf cfg.persistLogs {
-      environment.persistence."${cfg.persistPath}".directories = mkForce (
-        allDirs
-        ++ [
-          "/var/log"
-        ]
+        ++ ["/nix"]
       );
     })
   ]);

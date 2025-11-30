@@ -6,8 +6,8 @@
   ...
 }: {
   imports = [
-    (modulesPath + "/installer/scan/not-detected.nix")
     ./disko.nix
+    (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
   # Boot configuration for Intel NUC8i3BEK (Coffee Lake i3-8109U)
@@ -84,93 +84,27 @@
       gaming.enable = true;
     };
 
-    # Override base profile's impermanence - configure locally
-    impermanence.enable = lib.mkForce false;
-  };
+    impermanence = {
+      enable = true;
+      persistFsType = "btrfs";
 
-  # Use mkForce to override defaults from mountainous.agenix module
-  age.identityPaths = lib.mkForce [
-    "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
-  ];
+      # Disko handles /nix, not impermanence
+      persistNixStore = false;
 
-  # Configure ephemeral root filesystem (tmpfs) for impermanence
-  fileSystems."/" = {
-    device = "none";
-    fsType = "tmpfs";
-    options = ["defaults" "size=2G" "mode=755"];
-  };
+      # Kita-specific: persist logs for debugging
+      persistLogs = true;
 
-  # Persistent storage on main SSD
-  # Override disko-generated config to use stable device path
-  fileSystems."/tundra/permafrost" = lib.mkForce {
-    device = "/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D-part1";
-    fsType = "xfs";
-    neededForBoot = true;
-  };
-
-  # Local impermanence configuration for kita
-  environment.persistence."/tundra/permafrost" = {
-    hideMounts = true;
-    directories = [
-      "/nix" # Nix store must persist (large, contains all packages)
-      "/var/lib/systemd/coredump"
-      "/var/lib/nixos"
-      "/var/lib/tailscale"
-      "/var/log"
-      {
-        directory = "/home/simonwjackson";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0700";
-      }
-      {
-        directory = "/tundra/igloo";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0700";
-      }
-      {
-        directory = "/nix/var/nix/profiles/per-user/simonwjackson";
-        user = "simonwjackson";
-        group = "users";
-        mode = "0755";
-      }
-    ];
-    files = [
-      "/etc/machine-id"
-    ];
-  };
-
-  # Fix ownership of persistent directories on boot
-  # Workaround for impermanence bug where parent directories are created with root ownership
-  # See: https://github.com/nix-community/impermanence/issues/74
-  systemd.tmpfiles.settings."10-persistent-ownership" = {
-    "/tundra/permafrost/home/simonwjackson".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0700";
-    };
-    "/tundra/permafrost/tundra/igloo".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0700";
-    };
-    "/tundra/permafrost/nix/var/nix/profiles/per-user/simonwjackson".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0755";
+      # Extra directories beyond the base
+      extraDirectories = [
+        {
+          directory = "/tundra/igloo";
+          user = "simonwjackson";
+          group = "users";
+          mode = "0700";
+        }
+      ];
     };
   };
-
-  # SSH host keys in persistent storage
-  # Keys are deployed via deploy.sh using --extra-files during initial installation
-  services.openssh.hostKeys = [
-    {
-      path = "/tundra/permafrost/etc/ssh/ssh_host_rsa_key";
-      type = "rsa";
-      bits = 4096;
-    }
-  ];
 
   # NUC power management
   # Always-on desktop system optimized for consistent performance

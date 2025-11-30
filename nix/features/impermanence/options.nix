@@ -3,6 +3,39 @@
 in {
   enable = mkEnableOption "Ephemeral root with persistent storage";
 
+  # Disko integration
+  disko = {
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Auto-generate disko subvolumes for impermanence";
+    };
+
+    diskName = mkOption {
+      type = types.str;
+      default = "main";
+      description = "Name of the disk in disko.devices.disk to add subvolumes to";
+    };
+
+    partitionName = mkOption {
+      type = types.str;
+      default = "root";
+      description = "Name of the partition to add subvolumes to";
+    };
+
+    mountOptions = mkOption {
+      type = types.listOf types.str;
+      default = [
+        "compress=zstd"
+        "noatime"
+        "nodiratime"
+        "discard=async"
+        "space_cache=v2"
+      ];
+      description = "Default btrfs mount options for impermanence subvolumes";
+    };
+  };
+
   # Storage configuration
   persistPath = mkOption {
     type = types.str;
@@ -70,11 +103,11 @@ in {
     description = "Additional files to persist";
   };
 
-  # Special cases
+  # Subvolume controls
   persistNixStore = mkOption {
     type = types.bool;
-    default = false;
-    description = "Persist entire /nix store (large, but faster rebuilds)";
+    default = true;
+    description = "Create @nix subvolume for /nix store";
   };
 
   persistLogs = mkOption {
