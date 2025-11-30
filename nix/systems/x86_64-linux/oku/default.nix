@@ -168,6 +168,140 @@
     sound.enable = true;
     hyprland.enable = true;
 
+    # Keyboard remapping (kanata - supports chords)
+    kanata = {
+      enable = true;
+      device = "/dev/input/event4"; # Huawei keyboard dock (by-path has colons that kanata can't parse)
+      config = ''
+        (defalias
+          z-ctl (tap-hold 200 200 z lctl)    ;; tap: z, hold: ctrl
+          v-sft (tap-hold 200 200 v lsft)    ;; tap: v, hold: shift
+          m-sft (tap-hold 200 200 m lsft)    ;; tap: m, hold: shift
+          '-ctl (tap-hold 200 200 ' lctl)    ;; tap: ', hold: ctrl
+          spc-gui (tap-hold 200 200 spc lmet) ;; tap: space, hold: gui/super
+          a-arr (tap-hold 200 200 a (layer-while-held arrows))  ;; hold: arrow layer
+          s-num (tap-hold 200 200 s (layer-while-held numpad))  ;; hold: numpad layer
+          d-brk (tap-hold 200 200 d (layer-while-held brackets)) ;; hold: brackets layer
+          f-nav (tap-hold 200 200 f (layer-while-held fnav))    ;; hold: f-nav layer
+          e-med (tap-hold 200 200 e (layer-while-held media))   ;; hold: media layer
+          ;; Swap ; and : - tap gives :, with shift gives ;
+          scln-swap (fork S-; (unshift ;) (lsft rsft))
+          ;; When in arrows layer (A held), hold S to activate scroll layer
+          s-scrl (layer-while-held scroll)
+          ;; When in numpad layer (S held), hold A to activate scroll layer
+          a-scrl (layer-while-held scroll)
+          ;; When in arrows layer (A held), hold D to activate symbols layer
+          d-sym (layer-while-held symbols)
+        )
+
+        (defsrc
+          esc  grv  1    2    3    4    5    6    7    8    9    0    min  eql  bspc
+          tab  q    w    e    r    t    y    u    i    o    p    [    ]    \    '
+          caps a    s    d    f    g    h    j    k    l    ;    ret
+          lsft 102d z    x    c    v    b    n    m    ,    .    /    rsft
+          lctl lalt lmet rmet ralt rctl
+          spc  up   down left rght
+          f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
+          mute vold volu brup brdn
+        )
+
+        (deflayer base
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   q    w    @e-med r  t    y    u    i    o    p    XX   XX   XX   XX
+          XX   @a-arr @s-num @d-brk @f-nav g  h    j    k    l    @scln-swap XX
+          XX   @z-ctl x  c    @v-sft ,  XX   .    @m-sft n  b    @'-ctl XX
+          XX   lalt lmet rmet ralt XX
+          @spc-gui XX XX XX XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer arrows
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    _    _    _    _    XX   XX   XX   XX   XX
+          XX   _    @s-scrl @d-sym _  _    left down up   rght _    XX
+          XX   _    _    _    _    _    _    _    _    _    _    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer numpad
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    S-3  7    8    9    S-5  XX   XX   XX   XX
+          XX   @a-scrl _  _    _    _    S-=  4    5    6    min  XX
+          XX   _    _    _    _    _    _    S-8  1    2    3    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer scroll
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    _    _    _    _    XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    home pgdn pgup end  _    XX
+          XX   _    _    _    _    _    _    _    _    _    _    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer fnav
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    _    _    _    _    XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    bspc tab  S-tab del  _    XX
+          XX   _    _    _    _    _    _    _    _    _    _    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer brackets
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    _    [    ]    _    XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    _    S-9  S-0  _    _    XX
+          XX   _    _    _    _    _    _    _    S-[  S-]  _    _    XX
+          XX   _    _    _    S-.  XX
+          S-,  XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer symbols
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    S-grv /  S-\  \    S-grv XX   XX   XX   XX
+          XX   _    _    _    _    _    S-6  S-2  S-7  S-4  eql  XX
+          XX   _    _    _    _    _    _    _    S-/  S-1  _    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        (deflayer media
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   _    _    _    _    _    prev vold volu next XX XX XX XX XX
+          XX   _    _    _    _    _    prev pp   mute next _    XX
+          XX   _    _    _    _    _    _    _    brdn brup _    _    XX
+          XX   _    _    _    _    XX
+          _    XX   XX   XX   XX
+          XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX   XX
+          XX   XX   XX   XX   XX
+        )
+
+        ;; Simultaneous key chords
+        (defchordsv2
+          (j k) ret 50 first-release ()   ;; j+k = Enter
+          (k l) esc 50 first-release ()   ;; k+l = Escape
+          (l h) C-s 50 first-release ()   ;; l+h = Ctrl+S
+        )
+      '';
+    };
+
     # Auto-rotation for tablet
     # auto-rotate.enable = true;
 
