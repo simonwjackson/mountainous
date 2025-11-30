@@ -11,7 +11,7 @@
   ];
 
   # Boot configuration for 11th Gen Intel Core i9-11900H (Tiger Lake)
-  # RAID1 USB boot with GRUB for redundancy
+  # Dual USB boot with GRUB for redundancy, btrfs RAID for storage
   boot = {
     initrd = {
       availableKernelModules = ["xhci_pci" "thunderbolt" "nvme" "uas" "sd_mod" "rtsx_pci_sdmmc"];
@@ -20,34 +20,16 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
-    # Enable software RAID for:
-    # - RAID1 USB boot (dual Lexar drives)
-    # - RAID1 USB backup (dual Lexar drives)
-    # - RAID0 system (dual WD Blue SN570 NVMe drives)
-    swraid = {
-      enable = true;
-      mdadmConf = ''
-        MAILADDR nobody@nowhere
-      '';
-    };
-
     loader = {
-      efi = {
-        canTouchEfiVariables = false;
-        efiSysMountPoint = "/boot";
-      };
-      grub = {
+      efi.canTouchEfiVariables = false;
+      systemd-boot = {
         enable = true;
-        # RAID1 boot: Install to both USB drives for redundancy
-        devices = [
-          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0374119080022027-0:0"
-          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0330119070016269-0:0"
-        ];
-        efiSupport = true;
-        efiInstallAsRemovable = true; # USB boot reliability
-        copyKernels = true; # Kernel redundancy
-        fsIdentifier = "uuid"; # UUID-based mounting
+        # Install as removable for SD card boot reliability
+        # This places the bootloader at /EFI/BOOT/BOOTX64.EFI
       };
+      # Use removable installation for SD card portability
+      efi.efiSysMountPoint = "/boot";
+      grub.enable = false;
     };
   };
 
