@@ -99,6 +99,9 @@ in {
     networking = {
       useDHCP = lib.mkDefault true;
       domain = "mountaino.us";
+      # Add .local to search so bare hostnames fall back to mDNS
+      # e.g., "aka" tries aka.mountaino.us, then aka.local
+      search = ["mountaino.us" "local"];
       networkmanager = {
         enable = true;
       };
@@ -213,6 +216,13 @@ in {
         enable = true;
         nssmdns4 = true;
         nssmdns6 = true;
+        openFirewall = true;
+        # Publish this host so others can find it via mDNS
+        publish = {
+          enable = true;
+          addresses = true;
+          workstation = true;
+        };
       };
 
       # A shell daemon created to manage processes' IO and CPU priorities, with community-driven set of rules
