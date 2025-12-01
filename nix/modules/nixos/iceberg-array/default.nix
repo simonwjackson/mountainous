@@ -98,6 +98,9 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # Register mount prefix for the directories module
+    mountainous.directories.mountPrefixes."${cfg.mountPoints.merged}/iceberg" = "tundra-merged-iceberg.mount";
+
     # Systemd target for services that depend on iceberg array
     # With automount, access to paths triggers mounting on-demand
     # This target is just a synchronization point for services

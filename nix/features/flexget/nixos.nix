@@ -106,12 +106,11 @@ in {
 
     # Use upstream NixOS module
     services.flexget = {
-      enable = true;
-      user = cfg.user;
-      homeDir = cfg.dataDir;
-      interval = cfg.interval;
-      systemScheduler = true;
+      inherit (cfg) user interval;
 
+      enable = true;
+      homeDir = cfg.dataDir;
+      systemScheduler = true;
       config =
         cfg.config
         + lib.optionalString cfg.webUI.enable ''
@@ -132,9 +131,8 @@ in {
       {
         directories = [
           {
+            inherit (cfg) user group;
             directory = cfg.dataDir;
-            user = cfg.user;
-            group = cfg.group;
             mode = "0700";
           }
         ];

@@ -124,6 +124,12 @@
   mountainous = {
     iceberg-array.enable = true;
 
+    directories.paths."/tundra/merged/iceberg/knowledge" = {
+      owner = "simonwjackson";
+      group = "users";
+      mode = "0755";
+    };
+
     profiles = {
       base.enable = true;
       workspace.enable = true;
