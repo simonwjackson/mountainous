@@ -41,7 +41,8 @@
     in
       map (path: path + "/default.nix") modulePaths;
 
-  # Collect feature modules by auto-discovering nixos.nix and home.nix files
+  # Collect feature modules by recursively discovering nixos.nix and home.nix files
+  # Supports nested structures like: features/media/flexget/nixos.nix
   collectFeatureModules = dir:
     if !(builtins.pathExists dir)
     then {
@@ -49,17 +50,54 @@
       home = [];
     }
     else let
-      dirContent = builtins.readDir dir;
-      dirNames = builtins.attrNames dirContent;
-      featureDirs = builtins.filter (name: dirContent.${name} == "directory") dirNames;
-      featurePaths = map (name: dir + "/${name}") featureDirs;
+      # Recursive function to find all feature directories containing nixos.nix or home.nix
+      findFeatureDirs = path: let
+        dirContent = builtins.readDir path;
+        dirNames = builtins.attrNames dirContent;
 
-      # Directly discover nixos.nix and home.nix in each feature directory
-      nixosPaths = builtins.filter builtins.pathExists (map (p: p + "/nixos.nix") featurePaths);
-      homePaths = builtins.filter builtins.pathExists (map (p: p + "/home.nix") featurePaths);
+        # Get all subdirectories
+        subDirs =
+          map (name: path + "/${name}")
+          (builtins.filter (name: dirContent.${name} == "directory") dirNames);
+
+        # Check if this directory has nixos.nix or home.nix
+        hasNixos = builtins.pathExists (path + "/nixos.nix");
+        hasHome = builtins.pathExists (path + "/home.nix");
+
+        # Recursively search subdirectories
+        subDirResults =
+          builtins.foldl' (acc: subDir: let
+            result = findFeatureDirs subDir;
+          in {
+            nixos = acc.nixos ++ result.nixos;
+            home = acc.home ++ result.home;
+          }) {
+            nixos = [];
+            home = [];
+          }
+          subDirs;
+      in {
+        nixos =
+          (
+            if hasNixos
+            then [path]
+            else []
+          )
+          ++ subDirResults.nixos;
+        home =
+          (
+            if hasHome
+            then [path]
+            else []
+          )
+          ++ subDirResults.home;
+      };
+
+      # Find all feature directories
+      featureDirs = findFeatureDirs dir;
     in {
-      nixos = map import nixosPaths;
-      home = map import homePaths;
+      nixos = map (p: import (p + "/nixos.nix")) featureDirs.nixos;
+      home = map (p: import (p + "/home.nix")) featureDirs.home;
     };
 
   featureModules = collectFeatureModules ./nix/features;

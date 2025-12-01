@@ -7,6 +7,9 @@
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
   cfg = config.mountainous.flexget;
 
+  # YAML format for type-safe configuration
+  yamlFormat = pkgs.formats.yaml {};
+
   # Overlay to patch flexget with web UI assets
   flexgetOverlay = final: prev: {
     flexget = prev.flexget.overridePythonAttrs (old: {
@@ -48,17 +51,18 @@ in {
     };
 
     config = mkOption {
-      type = types.lines;
-      default = "";
-      description = "FlexGet YAML configuration";
-      example = ''
-        tasks:
-          download-shows:
-            rss: https://example.com/rss
-            series:
-              - Breaking Bad
-            download: /downloads/tv/
-      '';
+      type = yamlFormat.type;
+      default = {};
+      description = "FlexGet configuration as a Nix attribute set (converted to YAML)";
+      example = {
+        tasks = {
+          download-shows = {
+            rss = "https://example.com/rss";
+            series = ["Breaking Bad"];
+            download = "/downloads/tv/";
+          };
+        };
+      };
     };
 
     webUI = {
@@ -107,15 +111,21 @@ in {
 
         enable = true;
         homeDir = cfg.dataDir;
-        systemScheduler = true;
-        config =
-          cfg.config
-          + lib.optionalString cfg.webUI.enable ''
-
-            web_server:
-              bind: 0.0.0.0
-              port: ${toString cfg.webUI.port}
-          '';
+        # Use FlexGet's internal scheduler when schedules are defined in config
+        # systemScheduler=true appends "schedules: no" which conflicts with JSON output
+        systemScheduler = !(cfg.config ? schedules && cfg.config.schedules != []);
+        config = let
+          # Merge web_server config if webUI is enabled
+          mergedConfig =
+            cfg.config
+            // lib.optionalAttrs cfg.webUI.enable {
+              web_server = {
+                bind = "0.0.0.0";
+                port = cfg.webUI.port;
+              };
+            };
+        in
+          lib.generators.toYAML {} mergedConfig;
       };
 
       # Firewall for web UI

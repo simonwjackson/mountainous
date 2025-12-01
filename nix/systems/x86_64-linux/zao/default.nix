@@ -124,10 +124,24 @@
   mountainous = {
     iceberg-array.enable = true;
 
-    directories.paths."/tundra/merged/iceberg/knowledge" = {
-      owner = "simonwjackson";
-      group = "users";
-      mode = "0755";
+    directories.paths = {
+      "/tundra/merged/iceberg/knowledge" = {
+        owner = "simonwjackson";
+        group = "users";
+        mode = "0755";
+      };
+      "/tundra/merged/iceberg/series" = {
+        owner = "media";
+        group = "media";
+        mode = "0755";
+        parents = true;
+      };
+      "/tundra/merged/iceberg/movies" = {
+        owner = "media";
+        group = "media";
+        mode = "0755";
+        parents = true;
+      };
     };
 
     profiles = {
@@ -185,8 +199,8 @@
   # FlexGet media automation
   mountainous.flexget = {
     enable = true;
-    user = "simonwjackson";
-    group = "users";
+    user = "media";
+    group = "media";
     dataDir = "/var/lib/flexget";
     interval = "15m";
 
@@ -196,36 +210,130 @@
       passwordFile = config.age.secrets.flexget-password.path;
     };
 
-    config = ''
-      # Load variables from file (generated from secrets)
-      variables: /var/lib/flexget/variables.yml
+    config = {
+      variables = "/var/lib/flexget/variables.yml";
 
-      # Templates for reuse across tasks
-      templates:
-        # NZBGet download handler (via Tailscale)
-        nzbget:
-          nzbget:
-            url: https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc
+      templates = {
+        "nzbget-series".nzbget = {
+          url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+          category = "Series";
+        };
+        "nzbget-movies".nzbget = {
+          url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+          category = "Movies";
+        };
+      };
 
-      # Tasks will be added as needed (series, movies, etc.)
-      # Example task structure:
-      #   my-series:
-      #     discover:
-      #       what:
-      #         - next_series_episodes: yes
-      #       from:
-      #         - newznab:
-      #             website: https://api.nzbgeek.info
-      #             apikey: '{? nzbgeek_api ?}'
-      #             category: tv
-      #       release_estimations: ignore
-      #     series:
-      #       - Show Name
-      #     template: nzbget
-      tasks: {}
+      tasks = {
+        "sync-trakt-shows" = {
+          priority = 1;
+          trakt_list = {
+            account = "my-trakt";
+            list = "watchlist";
+            type = "shows";
+          };
+          accept_all = "yes";
+          list_add = [{entry_list = "trakt-shows";}];
+        };
 
-      schedules: []
-    '';
+        "sync-trakt-movies" = {
+          priority = 2;
+          trakt_list = {
+            account = "my-trakt";
+            list = "watchlist";
+            type = "movies";
+          };
+          accept_all = "yes";
+          list_add = [{movie_list = "trakt-movies";}];
+        };
+
+        "download-shows" = {
+          priority = 10;
+          template = "nzbget-series";
+          rss = "https://api.nzbgeek.info/api?t=search&cat=5000&apikey={? nzbgeek_api ?}";
+          configure_series = {
+            from.entry_list = "trakt-shows";
+            settings = {
+              quality = "720p-1080p hdtv+";
+              propers = "12 hours";
+              identified_by = "ep";
+            };
+          };
+        };
+
+        "download-movies" = {
+          priority = 20;
+          template = "nzbget-movies";
+          discover = {
+            what = [{movie_list = "trakt-movies";}];
+            from = [
+              {
+                newznab = {
+                  website = "https://api.nzbgeek.info";
+                  apikey = "{? nzbgeek_api ?}";
+                  category = "movie";
+                };
+              }
+            ];
+            release_estimations = "ignore";
+          };
+          quality = "1080p+ bluray webdl webrip";
+          list_match.from = [{movie_list = "trakt-movies";}];
+        };
+
+        "sort-series" = {
+          priority = 50;
+          seen = "local";
+          filesystem = {
+            path = "/tundra/merged/iceberg/series";
+            recursive = "yes";
+            retrieve = "files";
+            regexp = ''.*\.(mkv|mp4|avi)$'';
+          };
+          accept_all = "yes";
+          metainfo_series = "yes";
+          thetvdb_lookup = "yes";
+          move = {
+            to = ''/tundra/merged/iceberg/series/{{tvdb_series_name|default(series_name)|replace(" ", ".")|replace(":", "")}}/'';
+            rename = ''{{tvdb_series_name|default(series_name)|replace(" ", ".")|replace(":", "")}}.{{series_id|upper}}{{location|pathext}}'';
+            clean_source = 50;
+          };
+        };
+
+        "sort-movies" = {
+          priority = 51;
+          seen = "local";
+          filesystem = {
+            path = "/tundra/merged/iceberg/movies";
+            recursive = "yes";
+            retrieve = "files";
+            regexp = ''.*\.(mkv|mp4|avi)$'';
+          };
+          accept_all = "yes";
+          imdb_lookup = "yes";
+          move = {
+            to = ''/tundra/merged/iceberg/movies/{{imdb_name|default(movie_name)|replace(' ', '.')}}.{{imdb_year|default(movie_year)}}/'';
+            rename = ''{{imdb_name|default(movie_name)|replace(" ", ".")}}.{{imdb_year|default(movie_year)}}{{location|pathext}}'';
+            clean_source = 50;
+          };
+        };
+      };
+
+      schedules = [
+        {
+          tasks = ["sync-trakt-shows" "sync-trakt-movies"];
+          interval.hours = 1;
+        }
+        {
+          tasks = ["download-shows" "download-movies"];
+          interval.minutes = 30;
+        }
+        {
+          tasks = ["sort-series" "sort-movies"];
+          interval.minutes = 15;
+        }
+      ];
+    };
   };
 
   # tsnet-proxy for FlexGet webUI (accessible via Tailscale)
@@ -248,8 +356,8 @@
 
   # FlexGet password secret
   age.secrets.flexget-password = {
-    owner = "simonwjackson";
-    group = "users";
+    owner = "media";
+    group = "media";
   };
 
   # VPN namespace for isolated services (usenet, etc.)
@@ -262,6 +370,8 @@
   # Usenet binary downloader (NZBGet) with VPN isolation
   mountainous.usenet = {
     enable = true;
+    user = "media";
+    group = "media";
     servers.newsdemon = {
       host = "news.newsdemon.com";
       port = 563;
@@ -269,17 +379,28 @@
       passwordFile = config.age.secrets."newsdemon-pass".path;
       connections = 50;
     };
+
+    # Category destinations for post-processing
+    # Aliases catch subcategories from indexers (e.g., "Movies > HD", "TV > HD")
+    settings = {
+      UMask = "0022"; # Standard permissions, both services run as media
+      "Category1.Name" = "Movies";
+      "Category1.DestDir" = "/tundra/merged/iceberg/movies";
+      "Category1.Aliases" = "Movies *, movies, movie";
+      "Category2.Name" = "Series";
+      "Category2.DestDir" = "/tundra/merged/iceberg/series";
+      "Category2.Aliases" = "TV *, Series *, series, tv, TV";
+    };
   };
 
-  # Grant nzbget read access to news server password
+  # Grant media user read access to secrets
   age.secrets."newsdemon-pass" = {
-    owner = "nzbget";
-    group = "nzbget";
+    owner = "media";
+    group = "media";
   };
 
-  # Grant flexget read access to secrets
-  age.secrets."nzbgeek-api".owner = "simonwjackson";
-  age.secrets."nzbget-pass".owner = "simonwjackson";
+  age.secrets."nzbgeek-api".owner = "media";
+  age.secrets."nzbget-pass".owner = "media";
 
   # Generate FlexGet variables.yml from secrets before starting
   systemd.services.flexget.serviceConfig.ExecStartPre = lib.mkBefore [
