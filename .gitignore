@@ -5,3 +5,4 @@ ai_docs
 CLAUDE.local.md
 .lefthook/
 .lefthook-local.yml
+secrets/rekeyed/

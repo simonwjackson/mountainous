@@ -161,8 +161,7 @@ in {
 
         # Only set the rest of the configuration if we have a real host pubkey
         hostPubkey = mkIf (cfg.hostPubkey != null) (mkDefault cfg.hostPubkey);
-        storageMode = mkIf (cfg.hostPubkey != null) (mkDefault "local");
-        localStorageDir = mkIf (cfg.hostPubkey != null) (mkDefault (secretsRoot + "/rekeyed/${config.networking.hostName}"));
+        storageMode = mkIf (cfg.hostPubkey != null) (mkDefault "derivation");
       };
     };
 
