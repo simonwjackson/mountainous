@@ -69,7 +69,6 @@
       namespace = "mountainous";
       overlays = with inputs; [
         gomod2nix.overlays.default
-        (import ./nix/overlays/flexget.nix)
         (final: prev: {
           # Removed gamescope_git overlays - now using Jovian's stable packages
           neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;

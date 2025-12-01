@@ -5,6 +5,19 @@
 }: let
   inherit (lib) mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.flexget;
+
+  # Overlay to patch flexget with web UI assets
+  flexgetOverlay = final: prev: {
+    flexget = prev.flexget.overridePythonAttrs (old: {
+      postInstall =
+        (old.postInstall or "")
+        + ''
+          # Install web UI assets
+          mkdir -p $out/${prev.python3.sitePackages}/flexget/ui/v2/dist
+          cp -r ${final.flexget-webui}/* $out/${prev.python3.sitePackages}/flexget/ui/v2/dist/
+        '';
+    });
+  };
 in {
   options.mountainous.flexget = {
     enable = mkEnableOption "FlexGet media automation";
@@ -77,6 +90,9 @@ in {
   };
 
   config = mkIf cfg.enable {
+    # Apply overlay to patch flexget with web UI
+    nixpkgs.overlays = [flexgetOverlay];
+
     # Create flexget user/group
     users.users.${cfg.user} = mkIf (cfg.user == "flexget") {
       isSystemUser = true;
