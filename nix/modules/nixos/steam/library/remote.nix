@@ -4,11 +4,10 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types optionalAttrs;
-  cfg = config.mountainous.steam-nfs-client;
-  impermanenceCfg = config.mountainous.impermanence;
+  inherit (lib) mkEnableOption mkOption mkIf types;
+  cfg = config.mountainous.steam.library.remote;
 in {
-  options.mountainous.steam-nfs-client = {
+  options.mountainous.steam.library.remote = {
     enable = mkEnableOption "Mount remote Steam library via NFS";
 
     server = mkOption {
@@ -77,7 +76,7 @@ in {
     };
 
     # Create local directories for machine-specific data
-    systemd.tmpfiles.settings."20-steam-local" = {
+    systemd.tmpfiles.settings."20-steam-library-remote" = {
       "${cfg.localCompatdataPath}".d = {
         user = cfg.user;
         group = "users";
@@ -90,22 +89,7 @@ in {
       };
     };
 
-    # Impermanence integration - persist local Steam data
-    environment.persistence."${impermanenceCfg.persistPath}" = mkIf impermanenceCfg.enable {
-      directories = [
-        {
-          directory = cfg.localCompatdataPath;
-          user = cfg.user;
-          group = "users";
-          mode = "0755";
-        }
-        {
-          directory = cfg.localShadercachePath;
-          user = cfg.user;
-          group = "users";
-          mode = "0755";
-        }
-      ];
-    };
+    # Note: For impermanence, add localCompatdataPath and localShadercachePath
+    # to your environment.persistence configuration manually
   };
 }

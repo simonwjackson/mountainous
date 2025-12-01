@@ -170,7 +170,7 @@
     };
 
     # NFS client - mount Steam library from aka
-    steam-nfs-client = {
+    steam.library.remote = {
       enable = true;
       server = "aka"; # Tailscale DNS name
       remotePath = "/home/simonwjackson/.local/share/Steam";

@@ -4,14 +4,14 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types concatStringsSep;
+  inherit (lib) mkEnableOption mkOption mkIf types;
 
-  cfg = config.mountainous.steam-mergerfs;
+  cfg = config.mountainous.steam.library.hybrid;
 
   # Build mergerfs branches string: local first (priority), then remote
   branchesStr = "${cfg.localPath}:${cfg.nfsMountPoint}";
 in {
-  options.mountainous.steam-mergerfs = {
+  options.mountainous.steam.library.hybrid = {
     enable = mkEnableOption "Unified Steam library with local priority via MergerFS";
 
     server = mkOption {
@@ -106,7 +106,7 @@ in {
     ];
 
     # Create local directories
-    systemd.tmpfiles.settings."20-steam-mergerfs" = {
+    systemd.tmpfiles.settings."20-steam-library-hybrid" = {
       "${cfg.localPath}".d = {
         user = cfg.user;
         group = "users";

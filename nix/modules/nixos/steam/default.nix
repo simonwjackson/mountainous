@@ -8,6 +8,11 @@
 
   cfg = config.mountainous.steam;
 in {
+  imports = [
+    ./library/remote.nix
+    ./library/hybrid.nix
+  ];
+
   options.mountainous.steam = {
     enable = mkEnableOption "Steam gaming platform with full runtime support";
   };

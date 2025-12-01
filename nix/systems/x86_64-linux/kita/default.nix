@@ -11,7 +11,6 @@
   ];
 
   # Boot configuration for Intel NUC8i3BEK (Coffee Lake i3-8109U)
-  # RAID1 USB boot with GRUB for redundancy
   boot = {
     initrd = {
       availableKernelModules = ["xhci_pci" "thunderbolt" "ahci" "nvme" "usb_storage" "sd_mod" "rtsx_pci_sdmmc"];
@@ -20,31 +19,13 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
-    # Enable software RAID for:
-    # - RAID1 USB boot (dual USB drives for redundancy)
-    swraid = {
-      enable = true;
-      mdadmConf = ''
-        MAILADDR nobody@nowhere
-      '';
-    };
-
     loader = {
-      efi = {
-        canTouchEfiVariables = false; # USB boot compatibility
-        efiSysMountPoint = "/boot";
-      };
+      efi.canTouchEfiVariables = false;
       grub = {
         enable = true;
-        # RAID1 boot: Install to both USB drives for redundancy
-        devices = [
-          "/dev/disk/by-id/usb-SanDisk_Ultra_Fit_4C530000230426119230-0:0"
-          "/dev/disk/by-id/usb-Lexar_USB_Flash_Drive_0322119070015232-0:0"
-        ];
         efiSupport = true;
-        efiInstallAsRemovable = true; # USB boot reliability
-        copyKernels = true; # Kernel redundancy
-        fsIdentifier = "uuid"; # UUID-based mounting
+        efiInstallAsRemovable = true;
+        device = "/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D";
       };
     };
   };
@@ -84,12 +65,18 @@
       gaming.enable = true;
     };
 
+    # Unified Steam library: local games + network games from aka
+    steam.library.hybrid = {
+      enable = true;
+      server = "aka";
+    };
+
     impermanence = {
       enable = true;
       persistFsType = "btrfs";
 
-      # Disko handles /nix, not impermanence
-      persistNixStore = false;
+      # Create @nix subvolume for Nix store
+      persistNixStore = true;
 
       # Kita-specific: persist logs for debugging
       persistLogs = true;
@@ -101,6 +88,13 @@
           user = "simonwjackson";
           group = "users";
           mode = "0700";
+        }
+        # Local Steam games storage (priority over network)
+        {
+          directory = "/tundra/glacier/steam";
+          user = "simonwjackson";
+          group = "users";
+          mode = "0755";
         }
       ];
     };

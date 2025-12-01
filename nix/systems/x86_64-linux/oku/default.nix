@@ -168,11 +168,9 @@
       enable = true;
     };
 
-    # Unified Steam library: local games + network games from aka
-    # Local files take priority, seamless when network disconnects
-    steam-mergerfs = {
+    steam.library.hybrid = {
       enable = true;
-      server = "aka"; # Resolves via Tailscale or mDNS fallback
+      server = "aka";
     };
 
     device = {
