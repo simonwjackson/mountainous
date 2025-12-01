@@ -56,7 +56,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flexget-webui = {
-      url = "github:Flexget/webui";
+      url = "https://github.com/Flexget/webui/releases/download/2.0.29/dist.zip";
       flake = false;
     };
   };

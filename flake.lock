@@ -701,17 +701,14 @@
     "flexget-webui": {
       "flake": false,
       "locked": {
-        "lastModified": 1692450955,
-        "narHash": "sha256-ZqAQ1ve5oL8QuOPUDKHLwejYA23WrQ+LgXw3dPVunHU=",
-        "owner": "Flexget",
-        "repo": "webui",
-        "rev": "64e3dbd3f6bd320cb9b02b3bdb3c4ac4ad02462c",
-        "type": "github"
+        "lastModified": 1692450951,
+        "narHash": "sha256-7i2W/GHbSwBP61KKV5PlS4Cg3Vc6D3gdjuUnb+ZnYIw=",
+        "type": "tarball",
+        "url": "https://github.com/Flexget/webui/releases/download/2.0.29/dist.zip"
       },
       "original": {
-        "owner": "Flexget",
-        "repo": "webui",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://github.com/Flexget/webui/releases/download/2.0.29/dist.zip"
       }
     },
     "gitignore": {
@@ -1553,11 +1550,11 @@
     },
     "nixpkgs_8": {
       "locked": {
-        "lastModified": 1764242076,
-        "narHash": "sha256-sKoIWfnijJ0+9e4wRvIgm/HgE27bzwQxcEmo2J/gNpI=",
+        "lastModified": 1764517877,
+        "narHash": "sha256-pp3uT4hHijIC8JUK5MEqeAWmParJrgBVzHLNfJDZxg4=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2fad6eac6077f03fe109c4d4eb171cf96791faa4",
+        "rev": "2d293cbfa5a793b4c50d17c05ef9e385b90edf6c",
         "type": "github"
       },
       "original": {

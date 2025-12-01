@@ -141,15 +141,21 @@ in {
       systemd.services.flexget-set-password = {
         description = "Set FlexGet web UI password";
         wantedBy = ["multi-user.target"];
-        before = ["flexget.service"];
-        after = ["agenix.service"];
+        after = ["flexget.service"];
         serviceConfig = {
           Type = "oneshot";
           User = cfg.user;
           Group = cfg.group;
           ExecStart = pkgs.writeShellScript "flexget-set-password" ''
+            set -e
+            CONFIG="${cfg.dataDir}/flexget.yml"
+            # Wait for config to exist (flexget creates it on first run)
+            if [ ! -f "$CONFIG" ]; then
+              echo "Config not found, skipping password setup (will run on next boot)"
+              exit 0
+            fi
             PASSWORD=$(cat ${cfg.webUI.passwordFile})
-            ${pkgs.flexget}/bin/flexget -c ${cfg.dataDir}/config.yml web passwd "$PASSWORD"
+            ${pkgs.flexget}/bin/flexget -c "$CONFIG" web passwd "$PASSWORD"
           '';
         };
       };
