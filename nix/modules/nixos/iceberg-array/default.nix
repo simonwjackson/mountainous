@@ -98,6 +98,22 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    # Systemd target for services that depend on iceberg array
+    # With automount, access to paths triggers mounting on-demand
+    # This target is just a synchronization point for services
+    systemd.targets.iceberg-array = {
+      description = "Iceberg Array Storage Target";
+      wantedBy = ["multi-user.target"];
+      after = ["local-fs.target"];
+    };
+
+    # Target for the merged view
+    systemd.targets.iceberg-merged = {
+      description = "Iceberg Array Merged View Target";
+      wantedBy = ["multi-user.target"];
+      after = ["iceberg-array.target"];
+    };
+
     # Combined fileSystems configuration
     fileSystems =
       # Safe mounting of existing iceberg array partitions (no formatting)
@@ -221,8 +237,8 @@ in {
 
     systemd.services.iceberg-array-snapraid-sync = {
       description = "SnapRAID Sync for Iceberg Array";
-      after = ["iceberg-array-validate.service"];
-      requires = ["iceberg-array-validate.service"];
+      after = ["iceberg-array.target"];
+      wants = ["iceberg-array.target"];
 
       # Only run if at least the data disks are available
       unitConfig = {

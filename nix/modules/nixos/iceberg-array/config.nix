@@ -10,37 +10,38 @@
         id = "iceberg00";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=30"];
+        # nofail + short timeout: don't block boot, fail fast if device absent
+        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=1"];
       }
       {
         id = "iceberg01";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_VRJVWS3K-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=30"];
+        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=1"];
       }
       {
         id = "iceberg02";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH3KRAG-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=120"];
+        mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=1"];
       }
       {
         id = "iceberg03";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=120"];
+        mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=1"];
       }
       {
         id = "iceberg04";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_WD-CA081PBK-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=30"];
+        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=1"];
       }
       {
         id = "iceberg05";
         device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGK9H0C-0:0";
         partition = "1";
-        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=30"];
+        mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=1"];
       }
     ];
 
