@@ -62,13 +62,15 @@
     profiles = {
       base.enable = true;
       workspace.enable = true;
-      gaming.enable = true;
     };
 
-    # Unified Steam library: local games + network games from aka
-    steam.library.hybrid = {
+    # Gaming feature with remote Steam library (kita always on same network as aka)
+    gaming = {
       enable = true;
-      server = "aka";
+      library.remote = {
+        enable = true;
+        server = "aka";
+      };
     };
 
     impermanence = {
@@ -88,13 +90,6 @@
           user = "simonwjackson";
           group = "users";
           mode = "0700";
-        }
-        # Local Steam games storage (priority over network)
-        {
-          directory = "/tundra/glacier/steam";
-          user = "simonwjackson";
-          group = "users";
-          mode = "0755";
         }
       ];
     };

@@ -15,6 +15,14 @@
   };
   streamingConfig = streamingModule.config;
 
+  # Import library module configurations
+  libraryRemoteModule = import ./lib/remote.nix {
+    inherit config lib pkgs cfg;
+  };
+  libraryHybridModule = import ./lib/hybrid.nix {
+    inherit config lib pkgs cfg;
+  };
+
   # Role/capability-based decisions
   isServer = device.role == "server";
   isPortable = device.role == "portable";
@@ -140,5 +148,11 @@ in {
 
     # Streaming support (Sunshine)
     (mkIf cfg.streaming.enable streamingConfig)
+
+    # Library remote (NFS mount)
+    (mkIf cfg.library.remote.enable libraryRemoteModule.config)
+
+    # Library hybrid (MergerFS local + remote)
+    (mkIf cfg.library.hybrid.enable libraryHybridModule.config)
   ]);
 }

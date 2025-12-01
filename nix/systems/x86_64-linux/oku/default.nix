@@ -166,11 +166,10 @@
 
     gaming = {
       enable = true;
-    };
-
-    steam.library.hybrid = {
-      enable = true;
-      server = "aka";
+      library.hybrid = {
+        enable = true;
+        server = "aka";
+      };
     };
 
     device = {
