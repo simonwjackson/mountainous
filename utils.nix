@@ -41,7 +41,7 @@
     in
       map (path: path + "/default.nix") modulePaths;
 
-  # Collect feature modules that export { nixos, home }
+  # Collect feature modules by auto-discovering nixos.nix and home.nix files
   collectFeatureModules = dir:
     if !(builtins.pathExists dir)
     then {
@@ -54,17 +54,12 @@
       featureDirs = builtins.filter (name: dirContent.${name} == "directory") dirNames;
       featurePaths = map (name: dir + "/${name}") featureDirs;
 
-      # Only include directories that have a default.nix
-      validFeatures = builtins.filter (path: builtins.pathExists (path + "/default.nix")) featurePaths;
-
-      # Import each feature
-      features = map (path: import (path + "/default.nix")) validFeatures;
-
-      nixosModules = map (f: f.nixos or null) features;
-      homeModules = map (f: f.home or null) features;
+      # Directly discover nixos.nix and home.nix in each feature directory
+      nixosPaths = builtins.filter builtins.pathExists (map (p: p + "/nixos.nix") featurePaths);
+      homePaths = builtins.filter builtins.pathExists (map (p: p + "/home.nix") featurePaths);
     in {
-      nixos = builtins.filter (m: m != null) nixosModules;
-      home = builtins.filter (m: m != null) homeModules;
+      nixos = map import nixosPaths;
+      home = map import homePaths;
     };
 
   featureModules = collectFeatureModules ./nix/features;
