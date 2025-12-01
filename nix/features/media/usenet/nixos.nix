@@ -5,7 +5,11 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types mapAttrsToList concatStringsSep;
-  cfg = config.mountainous.usenet;
+  cfg = config.mountainous.media.usenet;
+  mediaCfg = config.mountainous.media;
+
+  # Internal path requirements for this module
+  requiredPaths = ["movies" "series"];
 
   # Server submodule
   serverOpts = {name, ...}: {
@@ -70,19 +74,29 @@
 
   # Servers with password files
   serversWithPasswords = lib.filterAttrs (_: srv: srv.passwordFile != null) cfg.servers;
+
+  # Auto-configure category destinations from media paths
+  categorySettings = {
+    "Category1.Name" = "Movies";
+    "Category1.DestDir" = mediaCfg.paths.movies;
+    "Category1.Aliases" = "Movies *, movies, movie";
+    "Category2.Name" = "Series";
+    "Category2.DestDir" = mediaCfg.paths.series;
+    "Category2.Aliases" = "TV *, Series *, series, tv, TV";
+  };
 in {
-  options.mountainous.usenet = {
+  options.mountainous.media.usenet = {
     enable = mkEnableOption "Usenet binary downloader with VPN isolation";
 
     user = mkOption {
       type = types.str;
-      default = "nzbget";
+      default = "media";
       description = "User to run NZBGet as";
     };
 
     group = mkOption {
       type = types.str;
-      default = "nzbget";
+      default = "media";
       description = "Group to run NZBGet as";
     };
 
@@ -98,13 +112,17 @@ in {
       description = "Port for NZBGet web interface";
     };
 
-    tailscale = {
-      enable = mkEnableOption "Expose NZBGet via Tailscale" // {default = true;};
+    vpn = {
+      enable = mkEnableOption "VPN isolation for usenet downloads";
+    };
 
-      hostname = mkOption {
+    proxy = {
+      enable = mkEnableOption "Tailscale proxy for usenet web UI";
+
+      name = mkOption {
         type = types.str;
         default = "usenet";
-        description = "Tailscale hostname for NZBGet";
+        description = "Tailscale hostname";
       };
     };
 
@@ -131,10 +149,11 @@ in {
       description = ''
         NZBGet configuration settings. These are passed as command-line options.
         See https://github.com/nzbgetcom/nzbget/blob/develop/nzbget.conf for options.
+        Category destinations are auto-configured from mountainous.media.paths.
       '';
       example = lib.literalExpression ''
         {
-          MainDir = "/data/usenet";
+          UMask = "0022";
         }
       '';
     };
@@ -154,6 +173,14 @@ in {
 
   config = mkIf cfg.enable (mkMerge [
     {
+      # Validate required paths exist
+      assertions =
+        map (path: {
+          assertion = mediaCfg.paths ? ${path};
+          message = "NZBGet requires mountainous.media.paths.${path} to be defined";
+        })
+        requiredPaths;
+
       # Enable NZBGet service
       services.nzbget = {
         enable = true;
@@ -171,6 +198,7 @@ in {
             InterDir = cfg.intermediateDir;
           }
           // serverSettings
+          // categorySettings
           // cfg.settings;
       };
 
@@ -199,13 +227,14 @@ in {
           '';
       };
 
-      # Register with VPN namespace
-      mountainous.vpn-ns.services.nzbget = {
+      # Wire up VPN and proxy internally
+      mountainous.vpn-ns.services.nzbget = mkIf cfg.vpn.enable {
         enable = true;
         unit = "nzbget.service";
         port = cfg.port;
-        tailscale = {
-          inherit (cfg.tailscale) enable hostname;
+        tailscale = mkIf cfg.proxy.enable {
+          enable = true;
+          hostname = cfg.proxy.name;
           protocol = "http";
         };
       };

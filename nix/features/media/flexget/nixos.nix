@@ -4,8 +4,12 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
-  cfg = config.mountainous.flexget;
+  inherit (lib) mkEnableOption mkOption mkIf mkMerge mkDefault types;
+  cfg = config.mountainous.media.flexget;
+  mediaCfg = config.mountainous.media;
+
+  # Module-internal path requirements
+  requiredPaths = ["movies" "series"];
 
   # YAML format for type-safe configuration
   yamlFormat = pkgs.formats.yaml {};
@@ -23,18 +27,18 @@
     });
   };
 in {
-  options.mountainous.flexget = {
+  options.mountainous.media.flexget = {
     enable = mkEnableOption "FlexGet media automation";
 
     user = mkOption {
       type = types.str;
-      default = "flexget";
+      default = "media";
       description = "User to run FlexGet as";
     };
 
     group = mkOption {
       type = types.str;
-      default = "flexget";
+      default = "media";
       description = "Group to run FlexGet as";
     };
 
@@ -91,6 +95,14 @@ in {
 
   config = mkIf cfg.enable (mkMerge [
     {
+      # Validation: error if required paths not defined
+      assertions =
+        map (path: {
+          assertion = mediaCfg.paths ? ${path};
+          message = "mountainous.media.flexget requires mountainous.media.paths.${path} to be defined";
+        })
+        requiredPaths;
+
       # Apply overlay to patch flexget with web UI
       nixpkgs.overlays = [flexgetOverlay];
 
