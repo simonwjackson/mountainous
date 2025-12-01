@@ -67,7 +67,6 @@
   # proton secret auto-discovered with root:root defaults
 
   mountainous = {
-    iceberg-array.enable = true;
     impermanence.enable = lib.mkForce false;
     profiles = {
       base.enable = true;

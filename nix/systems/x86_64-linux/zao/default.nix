@@ -126,6 +126,8 @@
 
   # Enable profiles for desktop/gaming server
   mountainous = {
+    iceberg-array.enable = true;
+
     profiles = {
       base.enable = true;
       workspace.enable = true;
