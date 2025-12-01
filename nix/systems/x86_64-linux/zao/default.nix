@@ -197,8 +197,31 @@
     };
 
     config = ''
-      # Placeholder config - customize as needed
-      # See: https://flexget.com/Configuration
+      # Load variables from file (generated from secrets)
+      variables: /var/lib/flexget/variables.yml
+
+      # Templates for reuse across tasks
+      templates:
+        # NZBGet download handler (via Tailscale)
+        nzbget:
+          nzbget:
+            url: https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc
+
+      # Tasks will be added as needed (series, movies, etc.)
+      # Example task structure:
+      #   my-series:
+      #     discover:
+      #       what:
+      #         - next_series_episodes: yes
+      #       from:
+      #         - newznab:
+      #             website: https://api.nzbgeek.info
+      #             apikey: '{? nzbgeek_api ?}'
+      #             category: tv
+      #       release_estimations: ignore
+      #     series:
+      #       - Show Name
+      #     template: nzbget
       tasks: {}
 
       schedules: []
@@ -247,6 +270,29 @@
       connections = 50;
     };
   };
+
+  # Grant nzbget read access to news server password
+  age.secrets."newsdemon-pass" = {
+    owner = "nzbget";
+    group = "nzbget";
+  };
+
+  # Grant flexget read access to secrets
+  age.secrets."nzbgeek-api".owner = "simonwjackson";
+  age.secrets."nzbget-pass".owner = "simonwjackson";
+
+  # Generate FlexGet variables.yml from secrets before starting
+  systemd.services.flexget.serviceConfig.ExecStartPre = lib.mkBefore [
+    (pkgs.writeShellScript "generate-flexget-variables" ''
+      set -e
+      NZBGEEK_API=$(cat ${config.age.secrets."nzbgeek-api".path} | cut -d= -f2)
+      NZBGET_PASS=$(cat ${config.age.secrets."nzbget-pass".path} | cut -d= -f2)
+      cat > /var/lib/flexget/variables.yml << EOF
+      nzbgeek_api: "$NZBGEEK_API"
+      nzbget_pass: "$NZBGET_PASS"
+      EOF
+    '')
+  ];
 
   # Fix ownership for zao-specific persistent directory
   # The base impermanence feature handles home and nix profiles,
