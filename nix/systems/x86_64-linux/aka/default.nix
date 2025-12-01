@@ -249,10 +249,6 @@
 
   # Base service configurations
   mountainous.transmission.enable = true;
-  mountainous.sabnzbd = {
-    enable = true;
-    hostWhitelist = ["usenet.hummingbird-lake.ts.net"];
-  };
 
   # VPN namespace - services register here
   mountainous.vpn-ns = {
@@ -264,14 +260,6 @@
         enable = true;
         port = 9091;
         tailscale.enable = true;
-      };
-      sabnzbd = {
-        enable = true;
-        port = 8080;
-        tailscale = {
-          enable = true;
-          hostname = "usenet";
-        };
       };
     };
   };

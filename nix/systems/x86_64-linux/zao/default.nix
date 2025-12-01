@@ -229,6 +229,25 @@
     group = "users";
   };
 
+  # VPN namespace for isolated services (usenet, etc.)
+  mountainous.vpn-ns = {
+    enable = true;
+    configFile = config.age.secrets."fastest-vpn".path;
+    tailscaleDomain = "hummingbird-lake.ts.net";
+  };
+
+  # Usenet binary downloader (NZBGet) with VPN isolation
+  mountainous.usenet = {
+    enable = true;
+    servers.newsdemon = {
+      host = "news.newsdemon.com";
+      port = 563;
+      username = "bzenujnaz5";
+      passwordFile = config.age.secrets."newsdemon-pass".path;
+      connections = 50;
+    };
+  };
+
   # Fix ownership for zao-specific persistent directory
   # The base impermanence feature handles home and nix profiles,
   # but we need to add our custom /tundra/igloo directory

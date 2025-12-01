@@ -1,0 +1,227 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption mkOption mkIf mkMerge types mapAttrsToList concatStringsSep;
+  cfg = config.mountainous.usenet;
+
+  # Server submodule
+  serverOpts = {name, ...}: {
+    options = {
+      host = mkOption {
+        type = types.str;
+        description = "News server hostname";
+        example = "news.newsdemon.com";
+      };
+
+      port = mkOption {
+        type = types.port;
+        default = 563;
+        description = "News server port";
+      };
+
+      username = mkOption {
+        type = types.str;
+        description = "Username for authentication";
+      };
+
+      passwordFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = "Path to file containing password (use agenix)";
+      };
+
+      encryption = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Use TLS/SSL encryption";
+      };
+
+      connections = mkOption {
+        type = types.int;
+        default = 20;
+        description = "Number of connections to use";
+      };
+
+      retention = mkOption {
+        type = types.int;
+        default = 0;
+        description = "Server retention in days (0 = unlimited)";
+      };
+    };
+  };
+
+  # Generate server settings for nzbget.conf
+  serverSettings = let
+    servers = lib.attrValues cfg.servers;
+    mkServerSetting = idx: srv: {
+      "Server${toString idx}.Active" = true;
+      "Server${toString idx}.Host" = srv.host;
+      "Server${toString idx}.Port" = srv.port;
+      "Server${toString idx}.Username" = srv.username;
+      "Server${toString idx}.Encryption" = srv.encryption;
+      "Server${toString idx}.Connections" = srv.connections;
+      "Server${toString idx}.Retention" = srv.retention;
+    };
+  in
+    lib.foldl' (acc: srv: acc // mkServerSetting (lib.length (lib.attrNames acc) / 7 + 1) srv) {} servers;
+
+  # Servers with password files
+  serversWithPasswords = lib.filterAttrs (_: srv: srv.passwordFile != null) cfg.servers;
+in {
+  options.mountainous.usenet = {
+    enable = mkEnableOption "Usenet binary downloader with VPN isolation";
+
+    user = mkOption {
+      type = types.str;
+      default = "nzbget";
+      description = "User to run NZBGet as";
+    };
+
+    group = mkOption {
+      type = types.str;
+      default = "nzbget";
+      description = "Group to run NZBGet as";
+    };
+
+    dataDir = mkOption {
+      type = types.path;
+      default = "/var/lib/nzbget";
+      description = "Directory for NZBGet data and downloads queue";
+    };
+
+    port = mkOption {
+      type = types.port;
+      default = 6789;
+      description = "Port for NZBGet web interface";
+    };
+
+    tailscale = {
+      enable = mkEnableOption "Expose NZBGet via Tailscale" // {default = true;};
+
+      hostname = mkOption {
+        type = types.str;
+        default = "usenet";
+        description = "Tailscale hostname for NZBGet";
+      };
+    };
+
+    servers = mkOption {
+      type = types.attrsOf (types.submodule serverOpts);
+      default = {};
+      description = "News servers to configure";
+      example = lib.literalExpression ''
+        {
+          newsdemon = {
+            host = "news.newsdemon.com";
+            port = 563;
+            username = "myuser";
+            passwordFile = config.age.secrets.newsdemon-pass.path;
+            connections = 50;
+          };
+        }
+      '';
+    };
+
+    settings = mkOption {
+      type = types.attrsOf (types.oneOf [types.bool types.int types.str]);
+      default = {};
+      description = ''
+        NZBGet configuration settings. These are passed as command-line options.
+        See https://github.com/nzbgetcom/nzbget/blob/develop/nzbget.conf for options.
+      '';
+      example = lib.literalExpression ''
+        {
+          MainDir = "/data/usenet";
+        }
+      '';
+    };
+
+    downloadDir = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = "Directory for completed downloads (sets DestDir)";
+    };
+
+    intermediateDir = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = "Directory for in-progress downloads (sets InterDir)";
+    };
+  };
+
+  config = mkIf cfg.enable (mkMerge [
+    {
+      # Enable NZBGet service
+      services.nzbget = {
+        enable = true;
+        inherit (cfg) user group;
+        settings =
+          {
+            # Bind to all interfaces for access from veth
+            ControlIP = "0.0.0.0";
+            ControlPort = cfg.port;
+          }
+          // lib.optionalAttrs (cfg.downloadDir != null) {
+            DestDir = cfg.downloadDir;
+          }
+          // lib.optionalAttrs (cfg.intermediateDir != null) {
+            InterDir = cfg.intermediateDir;
+          }
+          // serverSettings
+          // cfg.settings;
+      };
+
+      # Inject passwords from secret files into nzbget.conf
+      systemd.services.nzbget = mkIf (serversWithPasswords != {}) {
+        preStart = let
+          configFile = "${cfg.dataDir}/nzbget.conf";
+          serverList = lib.attrNames cfg.servers;
+          # Generate password injection commands
+          injectCommands = lib.concatStringsSep "\n" (lib.imap1 (
+              idx: name: let
+                srv = cfg.servers.${name};
+              in
+                lib.optionalString (srv.passwordFile != null) ''
+                  PASSWORD=$(cat ${srv.passwordFile})
+                  ${pkgs.gnused}/bin/sed -i "s|^Server${toString idx}.Password=.*|Server${toString idx}.Password=$PASSWORD|" ${configFile}
+                  if ! grep -q "^Server${toString idx}.Password=" ${configFile}; then
+                    echo "Server${toString idx}.Password=$PASSWORD" >> ${configFile}
+                  fi
+                ''
+            )
+            serverList);
+        in
+          lib.mkAfter ''
+            ${injectCommands}
+          '';
+      };
+
+      # Register with VPN namespace
+      mountainous.vpn-ns.services.nzbget = {
+        enable = true;
+        unit = "nzbget.service";
+        port = cfg.port;
+        tailscale = {
+          inherit (cfg.tailscale) enable hostname;
+          protocol = "http";
+        };
+      };
+
+      # Impermanence integration
+      environment.persistence."${config.mountainous.impermanence.persistPath}" =
+        mkIf (config.mountainous.impermanence.enable or false)
+        {
+          directories = [
+            {
+              inherit (cfg) user group;
+              directory = cfg.dataDir;
+              mode = "0750";
+            }
+          ];
+        };
+    }
+  ]);
+}
