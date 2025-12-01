@@ -18,25 +18,67 @@
     ) ""
     (lib.attrNames cfg.mountPrefixes);
 
-  # Group directories by their mount dependency
-  dirsByMount = lib.foldl' (
-    acc: path: let
-      dirCfg = cfg.paths.${path};
-      mountPrefix = findMountPrefix path;
-      mountUnit =
-        if mountPrefix != ""
-        then cfg.mountPrefixes.${mountPrefix}
-        else null;
-      key =
-        if mountUnit != null
-        then mountUnit
-        else "__no_mount__";
-    in
+  # Generate all parent paths between a base and target path
+  # e.g., getParentPaths "/mnt" "/mnt/a/b/c" -> ["/mnt/a" "/mnt/a/b" "/mnt/a/b/c"]
+  getParentPaths = basePath: targetPath: let
+    # Remove base from target to get relative part
+    relative = lib.removePrefix basePath targetPath;
+    # Split into components, filtering empty strings
+    components = lib.filter (x: x != "") (lib.splitString "/" relative);
+    # Build cumulative paths
+    buildPaths = acc: component:
       acc
-      // {
-        ${key} = (acc.${key} or []) ++ [{inherit path dirCfg mountUnit;}];
-      }
-  ) {} (lib.attrNames cfg.paths);
+      ++ [
+        (
+          if acc == []
+          then "${basePath}/${component}"
+          else "${lib.last acc}/${component}"
+        )
+      ];
+  in
+    lib.foldl' buildPaths [] components;
+
+  # Expand a single directory entry to include parents if requested
+  expandEntry = path: dirCfg: let
+    mountPrefix = findMountPrefix path;
+    basePath =
+      if mountPrefix != ""
+      then mountPrefix
+      else "";
+    parentPaths =
+      if dirCfg.parents
+      then getParentPaths basePath path
+      else [path];
+  in
+    map (p: {
+      path = p;
+      inherit dirCfg;
+      mountPrefix = mountPrefix;
+    })
+    parentPaths;
+
+  # Expand all entries
+  allEntries = lib.flatten (lib.mapAttrsToList expandEntry cfg.paths);
+
+  # Group directories by their mount dependency
+  dirsByMount =
+    lib.foldl' (
+      acc: entry: let
+        mountUnit =
+          if entry.mountPrefix != ""
+          then cfg.mountPrefixes.${entry.mountPrefix}
+          else null;
+        key =
+          if mountUnit != null
+          then mountUnit
+          else "__no_mount__";
+      in
+        acc
+        // {
+          ${key} = (acc.${key} or []) ++ [entry];
+        }
+    ) {}
+    allEntries;
 
   # Generate tmpfiles rules for directories without mount dependencies
   tmpfilesRules = lib.optionals (dirsByMount ? "__no_mount__") (
@@ -67,6 +109,11 @@ in {
             type = lib.types.str;
             default = "0755";
             description = "Permissions mode for the directory";
+          };
+          parents = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Create parent directories with the same ownership and mode";
           };
         };
       });
