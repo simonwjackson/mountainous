@@ -31,9 +31,10 @@ trap cleanup EXIT
 # Create the SSH directory structure in our temp folder
 USER_HOME="/tundra/permafrost/home/simonwjackson"
 IGLOO_MOUNT="/tundra/igloo"
+PERSIST_SSH="/tundra/permafrost/etc/ssh"
 install -d -m700 "$temp/$USER_HOME/.ssh"
 install -d -m700 "$temp/tundra/igloo"
-install -d -m755 "$temp/etc/ssh"
+install -d -m755 "$temp/$PERSIST_SSH"
 
 # Function to generate and encrypt SSH host key
 generate_host_key() {
@@ -78,10 +79,10 @@ else
 fi
 
 echo "🔓 Decrypting host SSH key..."
-age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" >"$temp/etc/ssh/ssh_host_rsa_key"
-chmod 600 "$temp/etc/ssh/ssh_host_rsa_key"
-cp "${HOST_KEY_ENC%.age}.pub" "$temp/etc/ssh/ssh_host_rsa_key.pub"
-chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
+age --decrypt --identity "$SSH_KEY" "$HOST_KEY_ENC" >"$temp/$PERSIST_SSH/ssh_host_rsa_key"
+chmod 600 "$temp/$PERSIST_SSH/ssh_host_rsa_key"
+cp "${HOST_KEY_ENC%.age}.pub" "$temp/$PERSIST_SSH/ssh_host_rsa_key.pub"
+chmod 644 "$temp/$PERSIST_SSH/ssh_host_rsa_key.pub"
 
 # Check for manual-disko.sh script
 MANUAL_DISKO_SCRIPT="nix/systems/${TARGET_ARCH}/${HOSTNAME}/manual-disko.sh"
