@@ -193,6 +193,7 @@
     webUI = {
       enable = true;
       port = 5050;
+      passwordFile = config.age.secrets.flexget-password.path;
     };
 
     config = ''
@@ -220,6 +221,12 @@
   age.secrets."tailscale-ephemeral" = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
+  };
+
+  # FlexGet password secret
+  age.secrets.flexget-password = {
+    owner = "simonwjackson";
+    group = "users";
   };
 
   # Fix ownership for zao-specific persistent directory

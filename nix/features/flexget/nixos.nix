@@ -1,9 +1,10 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types;
+  inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
   cfg = config.mountainous.flexget;
 
   # Overlay to patch flexget with web UI assets
@@ -69,16 +70,11 @@ in {
         description = "Port for FlexGet web UI";
       };
 
-      password = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Password for web UI (consider using passwordFile instead)";
-      };
-
       passwordFile = mkOption {
         type = types.nullOr types.path;
         default = null;
-        description = "File containing the web UI password";
+        description = "Path to file containing the web UI password (use agenix)";
+        example = "config.age.secrets.flexget-password.path";
       };
     };
 
@@ -89,53 +85,74 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
-    # Apply overlay to patch flexget with web UI
-    nixpkgs.overlays = [flexgetOverlay];
+  config = mkIf cfg.enable (mkMerge [
+    {
+      # Apply overlay to patch flexget with web UI
+      nixpkgs.overlays = [flexgetOverlay];
 
-    # Create flexget user/group
-    users.users.${cfg.user} = mkIf (cfg.user == "flexget") {
-      isSystemUser = true;
-      group = cfg.group;
-      home = cfg.dataDir;
-      createHome = true;
-      description = "FlexGet daemon user";
-    };
-
-    users.groups.${cfg.group} = mkIf (cfg.group == "flexget") {};
-
-    # Use upstream NixOS module
-    services.flexget = {
-      inherit (cfg) user interval;
-
-      enable = true;
-      homeDir = cfg.dataDir;
-      systemScheduler = true;
-      config =
-        cfg.config
-        + lib.optionalString cfg.webUI.enable ''
-
-          web_server:
-            bind: 0.0.0.0
-            port: ${toString cfg.webUI.port}
-        '';
-    };
-
-    # Firewall for web UI
-    networking.firewall.allowedTCPPorts =
-      lib.optional (cfg.openFirewall && cfg.webUI.enable) cfg.webUI.port;
-
-    # Impermanence integration - persist FlexGet data
-    environment.persistence."${config.mountainous.impermanence.persistPath}" =
-      mkIf (config.mountainous.impermanence.enable or false)
-      {
-        directories = [
-          {
-            inherit (cfg) user group;
-            directory = cfg.dataDir;
-            mode = "0700";
-          }
-        ];
+      # Create flexget user/group
+      users.users.${cfg.user} = mkIf (cfg.user == "flexget") {
+        isSystemUser = true;
+        group = cfg.group;
+        home = cfg.dataDir;
+        createHome = true;
+        description = "FlexGet daemon user";
       };
-  };
+
+      users.groups.${cfg.group} = mkIf (cfg.group == "flexget") {};
+
+      # Use upstream NixOS module
+      services.flexget = {
+        inherit (cfg) user interval;
+
+        enable = true;
+        homeDir = cfg.dataDir;
+        systemScheduler = true;
+        config =
+          cfg.config
+          + lib.optionalString cfg.webUI.enable ''
+
+            web_server:
+              bind: 0.0.0.0
+              port: ${toString cfg.webUI.port}
+          '';
+      };
+
+      # Firewall for web UI
+      networking.firewall.allowedTCPPorts =
+        lib.optional (cfg.openFirewall && cfg.webUI.enable) cfg.webUI.port;
+
+      # Impermanence integration - persist FlexGet data
+      environment.persistence."${config.mountainous.impermanence.persistPath}" =
+        mkIf (config.mountainous.impermanence.enable or false)
+        {
+          directories = [
+            {
+              inherit (cfg) user group;
+              directory = cfg.dataDir;
+              mode = "0700";
+            }
+          ];
+        };
+    }
+
+    # Set web UI password from agenix secret
+    (mkIf (cfg.webUI.enable && cfg.webUI.passwordFile != null) {
+      systemd.services.flexget-set-password = {
+        description = "Set FlexGet web UI password";
+        wantedBy = ["multi-user.target"];
+        before = ["flexget.service"];
+        after = ["agenix.service"];
+        serviceConfig = {
+          Type = "oneshot";
+          User = cfg.user;
+          Group = cfg.group;
+          ExecStart = pkgs.writeShellScript "flexget-set-password" ''
+            PASSWORD=$(cat ${cfg.webUI.passwordFile})
+            ${pkgs.flexget}/bin/flexget -c ${cfg.dataDir}/config.yml web passwd "$PASSWORD"
+          '';
+        };
+      };
+    })
+  ]);
 }
