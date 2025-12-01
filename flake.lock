@@ -698,6 +698,22 @@
         "type": "github"
       }
     },
+    "flexget-webui": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1692450955,
+        "narHash": "sha256-ZqAQ1ve5oL8QuOPUDKHLwejYA23WrQ+LgXw3dPVunHU=",
+        "owner": "Flexget",
+        "repo": "webui",
+        "rev": "64e3dbd3f6bd320cb9b02b3bdb3c4ac4ad02462c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Flexget",
+        "repo": "webui",
+        "type": "github"
+      }
+    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -1725,6 +1741,7 @@
         "chaotic": "chaotic",
         "disko": "disko",
         "elevate": "elevate",
+        "flexget-webui": "flexget-webui",
         "gomod2nix": "gomod2nix",
         "home-manager": "home-manager_3",
         "hyprgrass": "hyprgrass",

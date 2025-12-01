@@ -180,6 +180,46 @@
     };
   };
 
+  # FlexGet media automation
+  mountainous.flexget = {
+    enable = true;
+    user = "simonwjackson";
+    group = "users";
+    dataDir = "/var/lib/flexget";
+    interval = "15m";
+
+    webUI = {
+      enable = true;
+      port = 5050;
+    };
+
+    config = ''
+      # Placeholder config - customize as needed
+      # See: https://flexget.com/Configuration
+      tasks: {}
+
+      schedules: []
+    '';
+  };
+
+  # tsnet-proxy for FlexGet webUI (accessible via Tailscale)
+  mountainous.tsnet-proxy = {
+    enable = true;
+    authKeyFile = config.age.secrets."tailscale-ephemeral".path;
+
+    services.flexget = {
+      hostname = "flexget";
+      protocol = "http";
+      port = 5050;
+    };
+  };
+
+  # Grant tsnet-proxy access to tailscale secret
+  age.secrets."tailscale-ephemeral" = {
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+  };
+
   # Fix ownership for zao-specific persistent directory
   # The base impermanence feature handles home and nix profiles,
   # but we need to add our custom /tundra/igloo directory
