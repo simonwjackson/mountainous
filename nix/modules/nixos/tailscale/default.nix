@@ -30,5 +30,16 @@ in {
       authKeyFile = mkIf (agenixEnabled && hasSecret) config.age.secrets.tailscale-ephemeral.path;
       extraUpFlags = cfg.extraUpFlags;
     };
+
+    # Ensure tailscaled waits for persistent storage bind mount
+    systemd.services.tailscaled = mkIf (config.mountainous.impermanence.enable or false) {
+      after = ["local-fs.target"];
+      requires = ["local-fs.target"];
+    };
+
+    # Impermanence integration - persist Tailscale state
+    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf (config.mountainous.impermanence.enable or false) {
+      directories = ["/var/lib/tailscale"];
+    };
   };
 }

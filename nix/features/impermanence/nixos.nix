@@ -15,10 +15,10 @@
   hasBluetooth = config.hardware.bluetooth.enable or false;
 
   # Common directories ALL systems need
+  # Note: /var/lib/tailscale is managed by mountainous.tailscale module
   coreDirs = [
     "/var/lib/systemd/coredump"
     "/var/lib/nixos"
-    "/var/lib/tailscale"
     {
       directory = "/home/${cfg.user}";
       user = cfg.user;
@@ -107,15 +107,12 @@ in {
 
       # SSH host keys in persistent storage
       # Critical: these MUST be in persistent storage for agenix and remote access
+      # Only RSA is needed - agenix uses RSA, and RSA 4096 is sufficient for SSH
       services.openssh.hostKeys = [
         {
           path = "${cfg.persistPath}/etc/ssh/ssh_host_rsa_key";
           type = "rsa";
           bits = 4096;
-        }
-        {
-          path = "${cfg.persistPath}/etc/ssh/ssh_host_ed25519_key";
-          type = "ed25519";
         }
       ];
 
@@ -128,8 +125,35 @@ in {
       # Fix ownership of persistent directories on boot
       # Workaround for impermanence bug where parent directories are created with root ownership
       # See: https://github.com/nix-community/impermanence/issues/74
+      # Also ensures XDG directories exist with correct ownership before services start
       systemd.tmpfiles.settings."10-persistent-ownership" = {
         "${cfg.persistPath}/home/${cfg.user}".d = {
+          user = cfg.user;
+          group = "users";
+          mode = "0700";
+        };
+        # XDG Base Directory - needed by hyprland, sddm, dconf, and many other services
+        "${cfg.persistPath}/home/${cfg.user}/.local".d = {
+          user = cfg.user;
+          group = "users";
+          mode = "0700";
+        };
+        "${cfg.persistPath}/home/${cfg.user}/.local/share".d = {
+          user = cfg.user;
+          group = "users";
+          mode = "0700";
+        };
+        "${cfg.persistPath}/home/${cfg.user}/.local/state".d = {
+          user = cfg.user;
+          group = "users";
+          mode = "0700";
+        };
+        "${cfg.persistPath}/home/${cfg.user}/.config".d = {
+          user = cfg.user;
+          group = "users";
+          mode = "0700";
+        };
+        "${cfg.persistPath}/home/${cfg.user}/.cache".d = {
           user = cfg.user;
           group = "users";
           mode = "0700";

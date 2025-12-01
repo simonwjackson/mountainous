@@ -84,7 +84,8 @@ in {
         name = "tsnet-proxy-${serviceName}";
         value = {
           description = "tsnet proxy service for ${serviceName}";
-          after = ["network.target"];
+          after = ["network.target" "local-fs.target"];
+          requires = ["local-fs.target"];
           wantedBy = ["multi-user.target"];
 
           serviceConfig = {
@@ -162,6 +163,18 @@ in {
     };
 
     users.groups.tsnet-proxy = {};
+
+    # Impermanence integration - persist tsnet state directories
+    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf (config.mountainous.impermanence.enable or false) {
+      directories =
+        lib.mapAttrsToList (serviceName: _: {
+          directory = "/var/lib/tsnet-proxy-${serviceName}";
+          user = "tsnet-proxy";
+          group = "tsnet-proxy";
+          mode = "0700";
+        })
+        cfg.services;
+    };
 
     # Allow tsnet-proxy to create network connections
     networking.firewall = {
