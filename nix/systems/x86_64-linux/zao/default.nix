@@ -114,15 +114,11 @@
 
   # Thunderbolt networking to Mac Mini (via WD19TB dock)
   # Provides high-speed direct connection (~20-40 Gbps) for file transfers
-  networking.interfaces.thunderbolt0 = {
-    useDHCP = false;
-    ipv4.addresses = [
-      {
-        address = "192.168.2.1";
-        prefixLength = 24;
-      }
-    ];
-  };
+  # Uses udev rule + networkmanager to configure when device appears (won't block boot)
+  services.udev.extraRules = ''
+    # Configure thunderbolt0 with static IP when it appears
+    ACTION=="add", SUBSYSTEM=="net", KERNEL=="thunderbolt0", RUN+="${pkgs.networkmanager}/bin/nmcli connection add type ethernet con-name thunderbolt0 ifname thunderbolt0 ipv4.method manual ipv4.addresses 192.168.2.1/24 connection.autoconnect yes 2>/dev/null || true"
+  '';
 
   # Enable profiles for desktop/gaming server
   mountainous = {
