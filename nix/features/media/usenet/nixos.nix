@@ -184,21 +184,63 @@ in {
         })
         requiredPaths;
 
+      # Declaratively create NZBGet directories
+      mountainous.directories.paths = {
+        "${cfg.dataDir}/downloads" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/downloads/completed" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/downloads/intermediate" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/downloads/nzb" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/downloads/queue" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/downloads/tmp" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+      };
+
       # Enable NZBGet service
       services.nzbget = {
         enable = true;
         inherit (cfg) user group;
         settings =
           {
+            # Use explicit paths instead of ~/downloads (media user has no home)
+            MainDir = "${cfg.dataDir}/downloads";
+            DestDir =
+              if cfg.downloadDir != null
+              then cfg.downloadDir
+              else "${cfg.dataDir}/downloads/completed";
+            InterDir =
+              if cfg.intermediateDir != null
+              then cfg.intermediateDir
+              else "${cfg.dataDir}/downloads/intermediate";
+            NzbDir = "${cfg.dataDir}/downloads/nzb";
+            QueueDir = "${cfg.dataDir}/downloads/queue";
+            TempDir = "${cfg.dataDir}/downloads/tmp";
+
             # Bind to all interfaces for access from veth
             ControlIP = "0.0.0.0";
             ControlPort = cfg.port;
-          }
-          // lib.optionalAttrs (cfg.downloadDir != null) {
-            DestDir = cfg.downloadDir;
-          }
-          // lib.optionalAttrs (cfg.intermediateDir != null) {
-            InterDir = cfg.intermediateDir;
           }
           // serverSettings
           // categorySettings

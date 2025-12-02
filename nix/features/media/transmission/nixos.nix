@@ -23,6 +23,12 @@ in {
       description = "Group to run Transmission as";
     };
 
+    dataDir = mkOption {
+      type = types.path;
+      default = "/var/lib/transmission";
+      description = "Directory for Transmission data and downloads";
+    };
+
     port = mkOption {
       type = types.port;
       default = 9091;
@@ -62,11 +68,31 @@ in {
 
   config = mkIf cfg.enable (mkMerge [
     {
+      # Declaratively create Transmission directories
+      mountainous.directories.paths = {
+        "${cfg.dataDir}" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/Downloads" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+        "${cfg.dataDir}/.incomplete" = {
+          owner = cfg.user;
+          group = cfg.group;
+          mode = "0750";
+        };
+      };
+
       services.transmission = {
         enable = true;
         package = pkgs.transmission_4;
         user = cfg.user;
         group = cfg.group;
+        home = cfg.dataDir;
         openFirewall = cfg.openFirewall;
         settings =
           {
@@ -74,6 +100,10 @@ in {
             rpc-bind-address = "0.0.0.0";
             rpc-whitelist-enabled = false;
             rpc-host-whitelist-enabled = false;
+            # Use dataDir for downloads
+            download-dir = "${cfg.dataDir}/Downloads";
+            incomplete-dir = "${cfg.dataDir}/.incomplete";
+            incomplete-dir-enabled = true;
             # Stop seeding immediately when download completes
             ratio-limit = 0;
             ratio-limit-enabled = true;
@@ -100,7 +130,7 @@ in {
           directories = [
             {
               inherit (cfg) user group;
-              directory = "/var/lib/transmission";
+              directory = cfg.dataDir;
               mode = "0750";
             }
           ];

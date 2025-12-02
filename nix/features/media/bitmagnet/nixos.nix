@@ -149,6 +149,13 @@ in {
         }
       ];
 
+      # Declaratively create Bitmagnet directory
+      mountainous.directories.paths.${cfg.dataDir} = {
+        owner = cfg.user;
+        group = cfg.group;
+        mode = "0750";
+      };
+
       # Bitmagnet systemd service
       systemd.services.bitmagnet = {
         description = "Bitmagnet BitTorrent indexer and DHT crawler";

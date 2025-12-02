@@ -24,6 +24,14 @@
           # item.title.string -> item.find('title').text
           substituteInPlace flexget/plugins/input/torznab.py \
             --replace-fail "item.title.string" "(item.find('title').text if item.find('title') is not None else 'Unknown')"
+
+          # Fix torznab enclosure matching: support magnet MIME type from Bitmagnet
+          # Bitmagnet returns type="application/x-bittorrent;x-scheme-handler/magnet"
+          # FlexGet only matches exact "application/x-bittorrent"
+          substituteInPlace flexget/plugins/input/torznab.py \
+            --replace-fail \
+              "enclosure = item.find(\"enclosure[@type='application/x-bittorrent']\")" \
+              "enclosure = item.find(\"enclosure[@type='application/x-bittorrent']\") or item.find(\"enclosure[@type='application/x-bittorrent;x-scheme-handler/magnet']\")"
         '';
       postInstall =
         (old.postInstall or "")
@@ -110,6 +118,13 @@ in {
           message = "mountainous.media.flexget requires mountainous.media.paths.${path} to be defined";
         })
         requiredPaths;
+
+      # Declaratively create FlexGet directory
+      mountainous.directories.paths.${cfg.dataDir} = {
+        owner = cfg.user;
+        group = cfg.group;
+        mode = "0700";
+      };
 
       # Apply overlay to patch flexget with web UI
       nixpkgs.overlays = [flexgetOverlay];

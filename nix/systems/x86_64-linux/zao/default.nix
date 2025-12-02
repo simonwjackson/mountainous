@@ -224,56 +224,39 @@
             url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
             category = "Comics";
           };
-          # Transmission templates for torrent downloads via Bitmagnet
+          # Transmission templates for torrent downloads via Tailscale proxy
           "transmission-series".transmission = {
-            host = "transmission.hummingbird-lake.ts.net";
+            host = "https://transmission.hummingbird-lake.ts.net";
             port = 443;
             path = "/tundra/merged/iceberg/series";
           };
           "transmission-movies".transmission = {
-            host = "transmission.hummingbird-lake.ts.net";
+            host = "https://transmission.hummingbird-lake.ts.net";
             port = 443;
             path = "/tundra/merged/iceberg/movies";
           };
           "transmission-comics".transmission = {
-            host = "transmission.hummingbird-lake.ts.net";
+            host = "https://transmission.hummingbird-lake.ts.net";
             port = 443;
             path = "/tundra/merged/iceberg/comics";
           };
         };
 
         tasks = {
-          "sync-trakt-shows" = {
-            priority = 1;
-            trakt_list = {
-              account = "my-trakt";
-              list = "watchlist";
-              type = "shows";
-            };
-            accept_all = true;
-            list_add = [{entry_list = "trakt-shows";}];
-          };
-
-          "sync-trakt-movies" = {
-            priority = 2;
-            trakt_list = {
-              account = "my-trakt";
-              list = "watchlist";
-              type = "movies";
-            };
-            accept_all = true;
-            list_add = [{movie_list = "trakt-movies";}];
-          };
-
+          # Series downloads - query Trakt watchlist directly
           "download-shows" = {
             priority = 10;
             template = "nzbget-series";
             rss = "https://api.nzbgeek.info/api?t=search&cat=5000&apikey={? nzbgeek_api ?}";
             configure_series = {
-              from.entry_list = "trakt-shows";
+              from.trakt_list = {
+                account = "my-trakt";
+                list = "watchlist";
+                type = "shows";
+              };
               settings = {
                 quality = "720p-2160p hdtv+ webdl webrip";
-                target = "2160p webdl+"; # Upgrade target: 4K
+                target = "2160p webdl+";
                 upgrade = true;
                 propers = "12 hours";
                 identified_by = "ep";
@@ -281,11 +264,62 @@
             };
           };
 
+          "download-shows-torrent" = {
+            priority = 15;
+            template = "transmission-series";
+            discover = {
+              what = [
+                {
+                  trakt_list = {
+                    account = "my-trakt";
+                    list = "watchlist";
+                    type = "shows";
+                  };
+                }
+              ];
+              from = [
+                {
+                  torznab = {
+                    website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
+                    apikey = "";
+                    searcher = "tv";
+                    categories = [5040 5045 5050];
+                  };
+                }
+              ];
+              release_estimations = "ignore";
+            };
+            configure_series = {
+              from.trakt_list = {
+                account = "my-trakt";
+                list = "watchlist";
+                type = "shows";
+              };
+              settings = {
+                quality = "720p-2160p hdtv+ webdl webrip";
+                target = "2160p webdl+";
+                upgrade = true;
+                propers = "12 hours";
+                identified_by = "ep";
+              };
+            };
+          };
+
+          # Movie downloads - query Trakt watchlist directly
+          # Remove from Trakt watchlist when done to stop future downloads
           "download-movies" = {
             priority = 20;
             template = "nzbget-movies";
             discover = {
-              what = [{movie_list = "trakt-movies";}];
+              what = [
+                {
+                  trakt_list = {
+                    account = "my-trakt";
+                    list = "watchlist";
+                    type = "movies";
+                  };
+                }
+              ];
               from = [
                 {
                   newznab = {
@@ -298,60 +332,38 @@
               release_estimations = "ignore";
             };
             quality = "1080p-2160p bluray webdl webrip";
-            proper_movies = "30 days"; # Keep looking for 4K upgrades for 30 days
-            list_match.from = [{movie_list = "trakt-movies";}];
-          };
-
-          # Torrent tasks using Bitmagnet DHT indexer
-          "download-shows-torrent" = {
-            priority = 15;
-            template = "transmission-series";
-            discover = {
-              what = [{entry_list = "trakt-shows";}];
-              from = [
-                {
-                  torznab = {
-                    website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
-                    apikey = ""; # Bitmagnet doesn't require an API key
-                    searcher = "tv";
-                    categories = [5040 5045 5050]; # HD TV, WEB-DL TV, UHD TV
-                  };
-                }
-              ];
-              release_estimations = "ignore";
-            };
-            configure_series = {
-              from.entry_list = "trakt-shows";
-              settings = {
-                quality = "720p-2160p hdtv+ webdl webrip";
-                target = "2160p webdl+"; # Upgrade target: 4K
-                upgrade = true;
-                propers = "12 hours";
-                identified_by = "ep";
-              };
-            };
+            proper_movies = "30 days";
+            accept_all = true;
           };
 
           "download-movies-torrent" = {
             priority = 25;
             template = "transmission-movies";
             discover = {
-              what = [{movie_list = "trakt-movies";}];
+              what = [
+                {
+                  trakt_list = {
+                    account = "my-trakt";
+                    list = "watchlist";
+                    type = "movies";
+                  };
+                }
+              ];
               from = [
                 {
                   torznab = {
                     website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
-                    apikey = ""; # Bitmagnet doesn't require an API key
+                    apikey = "";
                     searcher = "movie";
-                    categories = [2040 2045 2050]; # HD Movies, WEB-DL Movies, UHD Movies
+                    categories = [2040 2045 2050];
                   };
                 }
               ];
               release_estimations = "ignore";
             };
             quality = "1080p-2160p bluray webdl webrip";
-            proper_movies = "30 days"; # Keep looking for 4K upgrades for 30 days
-            list_match.from = [{movie_list = "trakt-movies";}];
+            proper_movies = "30 days";
+            accept_all = true;
           };
 
           # Comics tasks - watchlist managed via text file
@@ -445,7 +457,7 @@
 
         schedules = [
           {
-            tasks = ["sync-trakt-shows" "sync-trakt-movies" "sync-comics-watchlist"];
+            tasks = ["sync-comics-watchlist"];
             interval.hours = 1;
           }
           {
@@ -458,7 +470,7 @@
           }
           {
             tasks = ["download-comics" "download-comics-torrent"];
-            interval.hours = 2; # Comics release weekly, check less frequently
+            interval.hours = 2;
           }
           {
             tasks = ["sort-series" "sort-movies"];
