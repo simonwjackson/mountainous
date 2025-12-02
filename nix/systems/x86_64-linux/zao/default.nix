@@ -618,6 +618,14 @@
       # Machine learning for face detection, object recognition, smart search
       machineLearning.enable = true;
 
+      # Storage template: organize by year/date folders
+      settings = {
+        storageTemplate = {
+          enabled = true;
+          template = "{{y}}/{{y}}-{{MM}}-{{dd}}/{{filename}}";
+        };
+      };
+
       # Hardware acceleration: NVIDIA primary, Intel VAAPI fallback
       hardware.acceleration = {
         enable = true;
