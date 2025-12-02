@@ -20,8 +20,6 @@
     kernelModules = ["kvm-intel"];
     extraModulePackages = [];
 
-    # Zen kernel for low-latency game streaming (Sunshine) and media server (Jellyfin)
-    # Matches aka and hotaka gaming systems for fleet consistency
     kernelPackages = pkgs.linuxPackages_zen;
 
     # Kernel parameters for server performance and stability
@@ -526,6 +524,50 @@
         name = "bitmagnet";
       };
       tmdb.apiKeyFile = config.age.secrets."tmdb-api".path;
+    };
+
+    # Jellyfin media server (no VPN - needs direct access for streaming)
+    jellyfin = {
+      enable = true;
+      proxy = {
+        enable = true;
+        name = "watch";
+      };
+
+      # Hardware acceleration for transcoding
+      # Uses both Intel QuickSync (VAAPI) and NVIDIA for flexible transcoding
+      hardware = {
+        vaapi.enable = true; # Intel QuickSync
+        nvidia.enable = true; # NVIDIA NVENC
+      };
+
+      # Plugins configuration
+      plugins = {
+        # Auto-skip TV show intros and credits
+        introSkipper = {
+          enable = true;
+          autoSkip = true;
+        };
+
+        # Trakt.tv integration for watch history sync
+        trakt = {
+          enable = true;
+          syncMode = "two-way";
+        };
+
+        # Auto-download subtitles in English and French
+        openSubtitles = {
+          enable = true;
+          languages = ["eng" "fre"];
+        };
+
+        # Merge multiple versions (4K + 1080p) into single item
+        mergeVersions.enable = true;
+
+        # Enhanced metadata providers
+        fanartTv.enable = true;
+        omdb.enable = true;
+      };
     };
   };
 
