@@ -121,14 +121,19 @@ in {
         lib.optional (mediaCfg.group != cfg.group && mediaCfg.paths != {}) mediaCfg.group
         ++ lib.optionals cfg.hardware.acceleration.enable ["render" "video"];
 
-      # Impermanence integration - persist Immich data
+      # Create media directory if it doesn't exist
+      systemd.tmpfiles.rules = [
+        "d ${cfg.mediaLocation} 0750 ${cfg.user} ${cfg.group} -"
+      ];
+
+      # Impermanence integration - persist Immich internal state (not media)
       environment.persistence."${config.mountainous.impermanence.persistPath}" =
         mkIf (config.mountainous.impermanence.enable or false)
         {
           directories = [
             {
               inherit (cfg) user group;
-              directory = cfg.mediaLocation;
+              directory = "/var/lib/immich";
               mode = "0750";
             }
           ];
