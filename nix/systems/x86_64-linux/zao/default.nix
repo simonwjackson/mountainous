@@ -472,6 +472,48 @@
               clean_source = 50;
             };
           };
+
+          # Cleanup completed torrents (keep files, remove from Transmission)
+          "clean-completed" = {
+            priority = 60;
+            disable = ["seen" "seen_info_hash"]; # Don't check seen database for cleanup
+            from_transmission = {
+              host = "https://transmission.hummingbird-lake.ts.net";
+              port = 443;
+              only_complete = true;
+            };
+            # Remove completed torrents after 1 hour (gives sort tasks time to move files)
+            "if" = [
+              {"transmission_date_done < now - timedelta(hours=1)" = "accept";}
+            ];
+            transmission = {
+              host = "https://transmission.hummingbird-lake.ts.net";
+              port = 443;
+              action = "remove"; # Keep files, just remove torrent
+            };
+          };
+
+          # Purge stalled/dead torrents (delete incomplete files)
+          "clean-stalled" = {
+            priority = 61;
+            disable = ["seen" "seen_info_hash"]; # Don't check seen database for cleanup
+            from_transmission = {
+              host = "https://transmission.hummingbird-lake.ts.net";
+              port = 443;
+              only_complete = false;
+            };
+            "if" = [
+              # Stalled: 0% progress after 24 hours
+              {"transmission_progress == 0 and transmission_date_added < now - timedelta(hours=24)" = "accept";}
+              # Dead: no seeders for 3+ days
+              {"transmission_seeders == 0 and transmission_date_added < now - timedelta(days=3)" = "accept";}
+            ];
+            transmission = {
+              host = "https://transmission.hummingbird-lake.ts.net";
+              port = 443;
+              action = "purge"; # Delete torrent AND incomplete files
+            };
+          };
         };
 
         schedules = [
@@ -494,6 +536,10 @@
           {
             tasks = ["sort-series" "sort-movies"];
             interval.minutes = 15;
+          }
+          {
+            tasks = ["clean-completed" "clean-stalled"];
+            interval.hours = 4;
           }
         ];
       };
