@@ -37,6 +37,12 @@ in {
       description = "Directory for Jellyfin data, config, and cache";
     };
 
+    cacheDir = mkOption {
+      type = types.path;
+      default = "/var/lib/jellyfin/cache";
+      description = "Directory for Jellyfin cache (default within dataDir to avoid storage issues)";
+    };
+
     port = mkOption {
       type = types.port;
       default = 8096;
@@ -183,7 +189,7 @@ in {
           group = cfg.group;
           mode = "0750";
         };
-        "${cfg.dataDir}/cache" = {
+        "${cfg.cacheDir}" = {
           owner = cfg.user;
           group = cfg.group;
           mode = "0750";
@@ -198,7 +204,7 @@ in {
       # Enable Jellyfin service
       services.jellyfin = {
         enable = true;
-        inherit (cfg) user group dataDir openFirewall;
+        inherit (cfg) user group dataDir cacheDir openFirewall;
       };
 
       # Allow Jellyfin user to access media paths
@@ -275,26 +281,35 @@ in {
 
     # Generate plugin repositories configuration
     (mkIf (cfg.plugins.introSkipper.enable) {
-      # Create plugin repositories file
-      # Intro Skipper is a third-party plugin that needs its repo added
-      systemd.services.jellyfin.preStart = lib.mkAfter ''
-        # Ensure repositories directory exists
-        mkdir -p ${cfg.dataDir}/config
+      # Create plugin repositories file via a separate oneshot service
+      # This runs as the jellyfin user to avoid permission issues
+      systemd.services.jellyfin-intro-skipper-repo = {
+        description = "Configure Intro Skipper plugin repository for Jellyfin";
+        wantedBy = ["jellyfin.service"];
+        before = ["jellyfin.service"];
+        serviceConfig = {
+          Type = "oneshot";
+          User = cfg.user;
+          Group = cfg.group;
+          RemainAfterExit = true;
+        };
+        script = ''
+          # Ensure config directory exists
+          mkdir -p ${cfg.dataDir}/config
 
-        # Add Intro Skipper repository if not already present
-        REPOS_FILE="${cfg.dataDir}/config/repositories.json"
-        if [ ! -f "$REPOS_FILE" ]; then
-          echo '[]' > "$REPOS_FILE"
-        fi
+          # Add Intro Skipper repository if not already present
+          REPOS_FILE="${cfg.dataDir}/config/repositories.json"
+          if [ ! -f "$REPOS_FILE" ]; then
+            echo '[]' > "$REPOS_FILE"
+          fi
 
-        # Check if intro-skipper repo already exists
-        if ! ${pkgs.jq}/bin/jq -e '.[] | select(.Url == "${pluginRepos.introSkipper}")' "$REPOS_FILE" > /dev/null 2>&1; then
-          ${pkgs.jq}/bin/jq '. + [{"Name": "Intro Skipper", "Url": "${pluginRepos.introSkipper}"}]' "$REPOS_FILE" > "$REPOS_FILE.tmp"
-          mv "$REPOS_FILE.tmp" "$REPOS_FILE"
-        fi
-
-        chown ${cfg.user}:${cfg.group} "$REPOS_FILE"
-      '';
+          # Check if intro-skipper repo already exists
+          if ! ${pkgs.jq}/bin/jq -e '.[] | select(.Url == "${pluginRepos.introSkipper}")' "$REPOS_FILE" > /dev/null 2>&1; then
+            ${pkgs.jq}/bin/jq '. + [{"Name": "Intro Skipper", "Url": "${pluginRepos.introSkipper}"}]' "$REPOS_FILE" > "$REPOS_FILE.tmp"
+            mv "$REPOS_FILE.tmp" "$REPOS_FILE"
+          fi
+        '';
+      };
     })
   ]);
 }

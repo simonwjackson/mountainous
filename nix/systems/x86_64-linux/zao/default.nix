@@ -209,32 +209,35 @@
       config = {
         variables = "/var/lib/flexget/variables.yml";
 
-        templates = {
+        templates = let
+          nzbgetUrl = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+          host = "https://transmission.hummingbird-lake.ts.net";
+        in {
           "nzbget-series".nzbget = {
-            url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+            url = nzbgetUrl;
             category = "Series";
           };
           "nzbget-movies".nzbget = {
-            url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+            url = nzbgetUrl;
             category = "Movies";
           };
           "nzbget-comics".nzbget = {
-            url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+            url = nzbgetUrl;
             category = "Comics";
           };
           # Transmission templates for torrent downloads via Tailscale proxy
           "transmission-series".transmission = {
-            host = "https://transmission.hummingbird-lake.ts.net";
+            host = host;
             port = 443;
             path = "/tundra/merged/iceberg/series";
           };
           "transmission-movies".transmission = {
-            host = "https://transmission.hummingbird-lake.ts.net";
+            host = host;
             port = 443;
             path = "/tundra/merged/iceberg/movies";
           };
           "transmission-comics".transmission = {
-            host = "https://transmission.hummingbird-lake.ts.net";
+            host = host;
             port = 443;
             path = "/tundra/merged/iceberg/comics";
           };
