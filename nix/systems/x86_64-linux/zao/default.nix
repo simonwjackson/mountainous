@@ -618,10 +618,15 @@
       # Machine learning for face detection, object recognition, smart search
       machineLearning.enable = true;
 
-      # Hardware acceleration using NVIDIA RTX 3060 (faster NVENC transcoding)
+      # Hardware acceleration: NVIDIA primary, Intel VAAPI fallback
       hardware.acceleration = {
         enable = true;
-        devices = ["/dev/nvidia0" "/dev/nvidiactl" "/dev/nvidia-modeset"];
+        devices = [
+          "/dev/nvidia0"
+          "/dev/nvidiactl"
+          "/dev/nvidia-modeset"
+          "/dev/dri/renderD128" # Intel VAAPI fallback
+        ];
       };
     };
 
