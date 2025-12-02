@@ -55,6 +55,8 @@
       open = false; # Use proprietary driver, not open source kernel modules
       nvidiaSettings = true;
       package = config.boot.kernelPackages.nvidiaPackages.stable;
+      # Keep GPU initialized for faster NVENC startup
+      nvidiaPersistenced = true;
 
       # Prime configuration for hybrid graphics
       prime = {
@@ -154,6 +156,14 @@
       streaming = {
         enable = true;
         monitors.primary = "DP-1"; # Virtual display for streaming
+        # Use NVIDIA NVENC encoder with KMS capture for hybrid GPU system
+        encoder = "nvenc";
+        capture = "kms";
+        # Low-latency NVENC settings for game streaming
+        nvenc = {
+          preset = "llhq"; # Low latency high quality
+          rateControl = "cbr"; # Constant bitrate for stable streaming
+        };
       };
     };
 
