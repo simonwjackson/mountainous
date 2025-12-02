@@ -9,6 +9,30 @@ in {
   streaming = {
     enable = mkEnableOption "Sunshine game streaming server";
 
+    encoder = mkOption {
+      type = types.enum ["auto" "nvenc" "vaapi" "software"];
+      default = "auto";
+      description = ''
+        Video encoder to use for streaming.
+        - auto: Let Sunshine auto-detect the best encoder
+        - nvenc: Force NVIDIA NVENC (requires NVIDIA GPU)
+        - vaapi: Force VA-API (Intel/AMD)
+        - software: Force CPU encoding (libx264)
+      '';
+    };
+
+    capture = mkOption {
+      type = types.enum ["auto" "kms" "wlr" "x11"];
+      default = "auto";
+      description = ''
+        Screen capture method.
+        - auto: Let Sunshine auto-detect
+        - kms: DRM/KMS capture (requires cap_sys_admin)
+        - wlr: Wayland wlroots protocol
+        - x11: X11 capture
+      '';
+    };
+
     monitors = {
       primary = mkOption {
         type = types.str;
@@ -26,6 +50,36 @@ in {
       type = types.listOf types.attrs;
       default = [];
       description = "Additional Sunshine applications";
+    };
+
+    # Advanced encoder settings
+    nvenc = {
+      preset = mkOption {
+        type = types.enum ["default" "hp" "hq" "ll" "llhp" "llhq" "lossless" "losslesshp"];
+        default = "default";
+        description = ''
+          NVENC encoding preset:
+          - default: Balanced quality/performance
+          - hp: High performance (fastest)
+          - hq: High quality
+          - ll: Low latency
+          - llhp: Low latency high performance
+          - llhq: Low latency high quality
+          - lossless/losslesshp: Lossless encoding
+        '';
+      };
+
+      rateControl = mkOption {
+        type = types.enum ["auto" "cqp" "vbr" "cbr"];
+        default = "auto";
+        description = "Rate control mode for NVENC";
+      };
+
+      twoPass = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable two-pass encoding for better quality (higher latency)";
+      };
     };
   };
 
