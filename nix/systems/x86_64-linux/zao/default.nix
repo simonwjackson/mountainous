@@ -618,12 +618,39 @@
       # Machine learning for face detection, object recognition, smart search
       machineLearning.enable = true;
 
-      # Storage template: organize by year/date folders
+      # Immich settings optimized for zao hardware (i9-11900H, RTX 3060, 32GB RAM)
       settings = {
+        # File organization by year/date
         storageTemplate = {
           enabled = true;
           template = "{{y}}/{{y}}-{{MM}}-{{dd}}/{{filename}}";
         };
+
+        # Video transcoding with NVIDIA NVENC
+        ffmpeg = {
+          accel = "nvenc";
+          accelDecode = true;
+          targetVideoCodec = "hevc";
+          preset = "quality";
+          crf = 23;
+        };
+
+        # Higher concurrency for 8-core CPU
+        job = {
+          thumbnailGeneration.concurrency = 5;
+          metadataExtraction.concurrency = 8;
+          faceDetection.concurrency = 4;
+          videoConversion.concurrency = 2;
+        };
+
+        # Larger previews for high-res displays
+        image = {
+          preview.size = 2160;
+          thumbnail.quality = 90;
+        };
+
+        # Extended trash retention
+        trash.days = 60;
       };
 
       # Hardware acceleration: NVIDIA primary, Intel VAAPI fallback
