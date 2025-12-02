@@ -190,6 +190,7 @@
       movies = "/tundra/merged/iceberg/movies";
       series = "/tundra/merged/iceberg/series";
       comics = "/tundra/merged/iceberg/comics";
+      photos = "/tundra/merged/iceberg/photos";
     };
 
     # FlexGet media automation
@@ -603,6 +604,26 @@
         name = "bitmagnet";
       };
       tmdb.apiKeyFile = config.age.secrets."tmdb-api".path;
+    };
+
+    # Immich photo/video backup and management
+    immich = {
+      enable = true;
+      mediaLocation = "/tundra/merged/iceberg/photos";
+      proxy = {
+        enable = true;
+        name = "photos";
+      };
+
+      # Machine learning for face detection, object recognition, smart search
+      machineLearning.enable = true;
+
+      # Hardware acceleration using Intel VAAPI (better for transcoding thumbnails/videos)
+      # RTX 3060 could be used but Intel is more power-efficient for this workload
+      hardware.acceleration = {
+        enable = true;
+        devices = ["/dev/dri/renderD128"];
+      };
     };
 
     # Jellyfin media server (no VPN - needs direct access for streaming)
