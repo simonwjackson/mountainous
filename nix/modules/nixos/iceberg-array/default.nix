@@ -142,7 +142,7 @@ in {
             "use_ino"
             "cache.files=partial"
             "dropcacheonclose=true"
-            "category.create=mfs"
+            "category.create=pfrd"
             "fsname=mergerfs-iceberg"
           ];
         };
@@ -254,6 +254,10 @@ in {
         ExecStart = "${pkgs.writeShellScript "snapraid-sync" ''
           set -euo pipefail
 
+          # Thresholds for safety checks (prevent ransomware/accidental mass deletion)
+          MAX_REMOVED=50
+          MAX_UPDATED=100
+
           if [ ! -f /etc/snapraid.conf ]; then
             echo "SnapRAID configuration not found"
             exit 1
@@ -289,6 +293,30 @@ in {
             echo "WARNING: Not all parity disks available. Sync will proceed but redundancy is reduced."
           fi
 
+          # Run diff check before sync to detect suspicious changes
+          echo "Running SnapRAID diff to check for changes..."
+          DIFF_OUTPUT=$(${pkgs.snapraid}/bin/snapraid diff 2>&1) || true
+          echo "$DIFF_OUTPUT"
+
+          # Parse diff output for removed and updated counts
+          REMOVED=$(echo "$DIFF_OUTPUT" | grep -oP '^\s*\K\d+(?=\s+removed)' || echo "0")
+          UPDATED=$(echo "$DIFF_OUTPUT" | grep -oP '^\s*\K\d+(?=\s+updated)' || echo "0")
+
+          if [ "$REMOVED" -gt "$MAX_REMOVED" ]; then
+            echo "ERROR: $REMOVED files removed exceeds safety threshold of $MAX_REMOVED"
+            echo "This could indicate ransomware, accidental deletion, or misconfiguration."
+            echo "Review changes manually with 'snapraid diff' before running 'snapraid sync --force'"
+            exit 1
+          fi
+
+          if [ "$UPDATED" -gt "$MAX_UPDATED" ]; then
+            echo "ERROR: $UPDATED files updated exceeds safety threshold of $MAX_UPDATED"
+            echo "This could indicate ransomware or mass file corruption."
+            echo "Review changes manually with 'snapraid diff' before running 'snapraid sync --force'"
+            exit 1
+          fi
+
+          echo "Diff check passed (removed: $REMOVED/$MAX_REMOVED, updated: $UPDATED/$MAX_UPDATED)"
           echo "Starting SnapRAID sync..."
           ${pkgs.snapraid}/bin/snapraid sync
           echo "SnapRAID sync completed successfully"
@@ -301,9 +329,52 @@ in {
       wantedBy = ["timers.target"];
 
       timerConfig = {
-        OnCalendar = "Mon 02:00"; # Weekly instead of daily - reduces SMR wear
+        OnCalendar = "*-*-* 03:00"; # Daily at 3 AM - protects new content within 24h
         Persistent = true;
-        RandomizedDelaySec = "2h"; # Spread load over 2h window
+        RandomizedDelaySec = "1h"; # Spread load over 1h window
+      };
+    };
+
+    # Monthly scrub service to verify data integrity
+    systemd.services.iceberg-array-snapraid-scrub = {
+      description = "SnapRAID Scrub for Iceberg Array";
+      after = ["iceberg-array.target" "iceberg-array-snapraid-sync.service"];
+      wants = ["iceberg-array.target"];
+
+      unitConfig = {
+        ConditionPathExists = map (diskId: icebergConfig.getDiskMountPoint cfg.mountPoints diskId) icebergConfig.snapraid.dataDisks;
+      };
+
+      serviceConfig = {
+        Type = "oneshot";
+        User = "root";
+        Nice = 19; # Low priority - don't interfere with normal operations
+        IOSchedulingClass = "idle";
+        ExecStart = "${pkgs.writeShellScript "snapraid-scrub" ''
+          set -euo pipefail
+
+          if [ ! -f /etc/snapraid.conf ]; then
+            echo "SnapRAID configuration not found"
+            exit 1
+          fi
+
+          # Scrub 8% of the oldest data, files older than 10 days
+          # At 8% monthly, full array verification takes ~12 months
+          echo "Starting SnapRAID scrub (8% of data older than 10 days)..."
+          ${pkgs.snapraid}/bin/snapraid scrub -p 8 -o 10
+          echo "SnapRAID scrub completed successfully"
+        ''}";
+      };
+    };
+
+    systemd.timers.iceberg-array-snapraid-scrub = {
+      description = "SnapRAID Scrub Timer for Iceberg Array";
+      wantedBy = ["timers.target"];
+
+      timerConfig = {
+        OnCalendar = "monthly"; # First day of each month
+        Persistent = true;
+        RandomizedDelaySec = "6h"; # Spread over 6h window
       };
     };
 
@@ -314,5 +385,15 @@ in {
     services.udev.extraRules = ''
       SUBSYSTEM=="usb", ATTRS{idVendor}=="152d", ATTRS{idProduct}=="0578", ATTR{power/autosuspend}="-1"
     '';
+
+    # SMART monitoring for TerraMaster drives (extends existing smartd config)
+    services.smartd = {
+      enable = true;
+      devices =
+        map (disk: {
+          device = disk.device;
+        })
+        cfg.disks;
+    };
   };
 }
