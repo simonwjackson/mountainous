@@ -14,9 +14,17 @@
   # YAML format for type-safe configuration
   yamlFormat = pkgs.formats.yaml {};
 
-  # Overlay to patch flexget with web UI assets
+  # Overlay to patch flexget with web UI assets and bug fixes
   flexgetOverlay = final: prev: {
     flexget = prev.flexget.overridePythonAttrs (old: {
+      postPatch =
+        (old.postPatch or "")
+        + ''
+          # Fix torznab plugin bug: uses BeautifulSoup syntax on ElementTree
+          # item.title.string -> item.find('title').text
+          substituteInPlace flexget/plugins/input/torznab.py \
+            --replace-fail "item.title.string" "(item.find('title').text if item.find('title') is not None else 'Unknown')"
+        '';
       postInstall =
         (old.postInstall or "")
         + ''

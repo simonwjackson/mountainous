@@ -9,7 +9,7 @@
   mediaCfg = config.mountainous.media;
 
   # Internal path requirements for this module
-  requiredPaths = ["movies" "series"];
+  requiredPaths = ["movies" "series" "comics"];
 
   # Server submodule
   serverOpts = {name, ...}: {
@@ -83,6 +83,9 @@
     "Category2.Name" = "Series";
     "Category2.DestDir" = mediaCfg.paths.series;
     "Category2.Aliases" = "TV *, Series *, series, tv, TV";
+    "Category3.Name" = "Comics";
+    "Category3.DestDir" = mediaCfg.paths.comics;
+    "Category3.Aliases" = "Comics *, comics, comic";
   };
 in {
   options.mountainous.media.usenet = {

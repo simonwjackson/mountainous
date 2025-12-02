@@ -191,6 +191,7 @@
     paths = {
       movies = "/tundra/merged/iceberg/movies";
       series = "/tundra/merged/iceberg/series";
+      comics = "/tundra/merged/iceberg/comics";
     };
 
     # FlexGet media automation
@@ -219,6 +220,10 @@
             url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
             category = "Movies";
           };
+          "nzbget-comics".nzbget = {
+            url = "https://nzbget:{? nzbget_pass ?}@usenet.hummingbird-lake.ts.net/xmlrpc";
+            category = "Comics";
+          };
           # Transmission templates for torrent downloads via Bitmagnet
           "transmission-series".transmission = {
             host = "transmission.hummingbird-lake.ts.net";
@@ -229,6 +234,11 @@
             host = "transmission.hummingbird-lake.ts.net";
             port = 443;
             path = "/tundra/merged/iceberg/movies";
+          };
+          "transmission-comics".transmission = {
+            host = "transmission.hummingbird-lake.ts.net";
+            port = 443;
+            path = "/tundra/merged/iceberg/comics";
           };
         };
 
@@ -288,9 +298,7 @@
               release_estimations = "ignore";
             };
             quality = "1080p-2160p bluray webdl webrip";
-            proper_movies = {
-              interval = "30 days"; # Keep looking for 4K upgrades for 30 days
-            };
+            proper_movies = "30 days"; # Keep looking for 4K upgrades for 30 days
             list_match.from = [{movie_list = "trakt-movies";}];
           };
 
@@ -342,10 +350,59 @@
               release_estimations = "ignore";
             };
             quality = "1080p-2160p bluray webdl webrip";
-            proper_movies = {
-              interval = "30 days"; # Keep looking for 4K upgrades for 30 days
-            };
+            proper_movies = "30 days"; # Keep looking for 4K upgrades for 30 days
             list_match.from = [{movie_list = "trakt-movies";}];
+          };
+
+          # Comics tasks - watchlist managed via text file
+          "sync-comics-watchlist" = {
+            priority = 5;
+            text = {
+              url = "file:///tundra/merged/iceberg/comics/watchlist.txt";
+              entry = {
+                url = "(.+)"; # Required field - use line content
+                title = "(.+)"; # Each line becomes a title
+              };
+            };
+            accept_all = true;
+            list_add = [{entry_list = "wanted-comics";}];
+          };
+
+          "download-comics" = {
+            priority = 30;
+            template = "nzbget-comics";
+            rss = "https://api.nzbgeek.info/api?t=search&cat=7030&apikey={? nzbgeek_api ?}";
+            crossmatch = {
+              from = [{entry_list = "wanted-comics";}];
+              fields = ["title"];
+              action = "accept";
+              exact = false; # Partial match (e.g., "Batman" matches "Batman #123")
+            };
+          };
+
+          "download-comics-torrent" = {
+            priority = 35;
+            template = "transmission-comics";
+            discover = {
+              what = [{entry_list = "wanted-comics";}];
+              from = [
+                {
+                  torznab = {
+                    website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
+                    apikey = "";
+                    searcher = "search"; # Generic search for comics
+                    categories = [7030]; # Comics category
+                  };
+                }
+              ];
+              release_estimations = "ignore";
+            };
+            crossmatch = {
+              from = [{entry_list = "wanted-comics";}];
+              fields = ["title"];
+              action = "accept";
+              exact = false;
+            };
           };
 
           "sort-series" = {
@@ -388,7 +445,7 @@
 
         schedules = [
           {
-            tasks = ["sync-trakt-shows" "sync-trakt-movies"];
+            tasks = ["sync-trakt-shows" "sync-trakt-movies" "sync-comics-watchlist"];
             interval.hours = 1;
           }
           {
@@ -398,6 +455,10 @@
           {
             tasks = ["download-shows-torrent" "download-movies-torrent"];
             interval.hours = 1;
+          }
+          {
+            tasks = ["download-comics" "download-comics-torrent"];
+            interval.hours = 2; # Comics release weekly, check less frequently
           }
           {
             tasks = ["sort-series" "sort-movies"];
