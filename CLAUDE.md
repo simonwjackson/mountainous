@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+> **Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads)
+> for issue tracking. Use `bd` commands instead of markdown TODOs.
+> See AGENTS.md for workflow details.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build Commands
@@ -31,5 +35,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Enable modules with `mountainous.<module-name>.enable = true`
 - Verify VM with `./result/bin/run-nixos-vm` before hardware deployment
 - Documentation for various applications, operating system, etc is located in `./ai_docs`
-
 - use `just [test|build|switch|..]` instead of raw nix commands where possible
