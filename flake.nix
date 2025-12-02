@@ -134,6 +134,9 @@
 
             # Secrets
             gitleaks
+
+            # AI
+            inputs.beads.packages.${system}.default
           ];
 
           shellHook = ''
