@@ -540,8 +540,33 @@
       # Hardware acceleration for transcoding
       # Uses both Intel QuickSync (VAAPI) and NVIDIA for flexible transcoding
       hardware = {
-        vaapi.enable = true; # Intel QuickSync
+        vaapi = {
+          enable = true; # Intel QuickSync
+          enableGuC = true; # Better QuickSync performance via GuC
+        };
         nvidia.enable = true; # NVIDIA NVENC
+      };
+
+      # Performance optimizations
+      performance = {
+        # Use tmpfs for transcoding to reduce SSD writes
+        transcodeTmpfs = {
+          enable = true;
+          size = "8G"; # Generous size for 4K transcoding
+        };
+
+        # FFmpeg probe settings for large media files
+        ffmpegProbe = {
+          probeSize = "100M";
+          analyzeDuration = "200M";
+        };
+
+        # Service resource limits
+        serviceHardening = {
+          enable = true;
+          memoryMax = "12G"; # Higher limit for 4K transcoding
+          memoryHigh = "8G";
+        };
       };
 
       # Plugins configuration

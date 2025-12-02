@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
+  inherit (lib) mkEnableOption mkOption mkIf mkMerge mkDefault types;
   cfg = config.mountainous.media.jellyfin;
   mediaCfg = config.mountainous.media;
 
@@ -79,10 +79,57 @@ in {
           default = "/dev/dri/renderD128";
           description = "VAAPI render device";
         };
+        enableGuC = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable Intel GuC for better QuickSync performance";
+        };
       };
 
       nvidia = {
         enable = mkEnableOption "NVIDIA hardware acceleration";
+      };
+    };
+
+    performance = {
+      transcodeTmpfs = {
+        enable = mkEnableOption "Use tmpfs for transcoding temp files (reduces SSD writes)";
+        size = mkOption {
+          type = types.str;
+          default = "4G";
+          description = "Size of tmpfs for transcoding (e.g., 4G, 8G)";
+        };
+      };
+
+      ffmpegProbe = {
+        probeSize = mkOption {
+          type = types.str;
+          default = "100M";
+          description = "FFmpeg probe size for better codec detection";
+        };
+        analyzeDuration = mkOption {
+          type = types.str;
+          default = "200M";
+          description = "FFmpeg analyze duration for better stream analysis";
+        };
+      };
+
+      serviceHardening = {
+        enable = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Enable service resource limits and hardening";
+        };
+        memoryMax = mkOption {
+          type = types.str;
+          default = "8G";
+          description = "Maximum memory for Jellyfin service";
+        };
+        memoryHigh = mkOption {
+          type = types.str;
+          default = "6G";
+          description = "Memory high watermark for Jellyfin service";
+        };
       };
     };
 
@@ -237,17 +284,25 @@ in {
       # Ensure jellyfin user can access render device
       users.users.${cfg.user}.extraGroups = ["render" "video"];
 
-      # Add VAAPI drivers to Jellyfin environment
+      # Add VAAPI drivers and FFmpeg probe settings to Jellyfin environment
       systemd.services.jellyfin.environment = {
         LIBVA_DRIVER_NAME = "iHD"; # Intel Media Driver
+        # FFmpeg probe settings for large media files
+        JELLYFIN_FFmpeg__probesize = cfg.performance.ffmpegProbe.probeSize;
+        JELLYFIN_FFmpeg__analyzeduration = cfg.performance.ffmpegProbe.analyzeDuration;
       };
 
       # Ensure graphics packages are available
       hardware.graphics.enable = true;
       hardware.graphics.extraPackages = with pkgs; [
         intel-media-driver # VAAPI driver
-        intel-compute-runtime # OpenCL for tone mapping
-        vpl-gpu-rt # Intel Video Processing Library
+        intel-compute-runtime # OpenCL for HDR tone mapping
+        vpl-gpu-rt # Intel Video Processing Library (modern replacement for intel-media-sdk)
+      ];
+
+      # Enable GuC for better QuickSync performance
+      boot.kernelParams = lib.mkIf cfg.hardware.vaapi.enableGuC [
+        "i915.enable_guc=3"
       ];
     })
 
@@ -309,6 +364,41 @@ in {
             mv "$REPOS_FILE.tmp" "$REPOS_FILE"
           fi
         '';
+      };
+    })
+
+    # Tmpfs for transcoding temp files (reduces SSD writes)
+    (mkIf cfg.performance.transcodeTmpfs.enable {
+      fileSystems."${cfg.dataDir}/transcodes" = {
+        device = "tmpfs";
+        fsType = "tmpfs";
+        options = [
+          "size=${cfg.performance.transcodeTmpfs.size}"
+          "mode=0750"
+          "uid=${cfg.user}"
+          "gid=${cfg.group}"
+        ];
+      };
+    })
+
+    # Service hardening and resource limits
+    (mkIf cfg.performance.serviceHardening.enable {
+      systemd.services.jellyfin.serviceConfig = {
+        # Memory limits
+        MemoryMax = cfg.performance.serviceHardening.memoryMax;
+        MemoryHigh = cfg.performance.serviceHardening.memoryHigh;
+
+        # Nice level for media server (slightly lower priority than system tasks)
+        Nice = 5;
+
+        # IO priority (best-effort, mid-priority)
+        IOSchedulingClass = "best-effort";
+        IOSchedulingPriority = 4;
+
+        # Watchdog and restart behavior
+        WatchdogSec = "60s";
+        Restart = mkDefault "on-failure";
+        RestartSec = mkDefault "10s";
       };
     })
   ]);
