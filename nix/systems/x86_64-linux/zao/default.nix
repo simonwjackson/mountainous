@@ -618,11 +618,10 @@
       # Machine learning for face detection, object recognition, smart search
       machineLearning.enable = true;
 
-      # Hardware acceleration using Intel VAAPI (better for transcoding thumbnails/videos)
-      # RTX 3060 could be used but Intel is more power-efficient for this workload
+      # Hardware acceleration using NVIDIA RTX 3060 (faster NVENC transcoding)
       hardware.acceleration = {
         enable = true;
-        devices = ["/dev/dri/renderD128"];
+        devices = ["/dev/nvidia0" "/dev/nvidiactl" "/dev/nvidia-modeset"];
       };
     };
 
