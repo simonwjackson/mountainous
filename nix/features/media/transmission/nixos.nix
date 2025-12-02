@@ -111,6 +111,11 @@ in {
           // cfg.settings;
       };
 
+      # Add media paths as writable for transmission service
+      # Required because NixOS transmission uses ProtectSystem=strict
+      systemd.services.transmission.serviceConfig.BindPaths =
+        lib.mapAttrsToList (_: path: path) mediaCfg.paths;
+
       # Wire up VPN and proxy internally
       mountainous.vpn-ns.services.transmission = mkIf cfg.vpn.enable {
         enable = true;
