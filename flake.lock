@@ -1236,11 +1236,11 @@
         "vim-overseer": "vim-overseer"
       },
       "locked": {
-        "lastModified": 1764354757,
-        "narHash": "sha256-m1F/79burErF1t+U/UiyCFiWM6njmDlfhbXkPboVMBM=",
+        "lastModified": 1764462520,
+        "narHash": "sha256-0atn+gwlgPJP92wUxXWdnu48fHddKwmNqRSuW/8tGMw=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "4cfaec67b4410afde6dc1130f66d24cc10a7bdcd",
+        "rev": "ffdd5ac019ac6198419611f7451f118b66d7859c",
         "type": "github"
       },
       "original": {
