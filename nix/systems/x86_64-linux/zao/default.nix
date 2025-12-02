@@ -289,6 +289,11 @@
                 }
               ];
               release_estimations = "ignore";
+              limit = 3; # Get top 3 results so we have alternatives if one fails
+            };
+            # Skip releases that previously stalled/failed
+            remember_rejected = {
+              retry_time = "7 days";
             };
             configure_series = {
               from.trakt_list = {
@@ -370,11 +375,15 @@
                 }
               ];
               release_estimations = "ignore";
-              limit = 1; # Only grab one result per movie
+              limit = 3; # Get top 3 results so we have alternatives if one fails
             };
             quality = "1080p-2160p bluray webdl webrip";
             proper_movies = "30 days";
             imdb_lookup = true;
+            # Skip releases that previously stalled/failed
+            remember_rejected = {
+              retry_time = "7 days";
+            };
             # Reject if already downloaded (by NZB or previous torrent run)
             list_match = {
               from = [{movie_list = "downloaded-movies";}];
@@ -494,6 +503,7 @@
           };
 
           # Purge stalled/dead torrents (delete incomplete files)
+          # Also removes from downloaded-movies list so it can be re-tried with a different release
           "clean-stalled" = {
             priority = 61;
             disable = ["seen" "seen_info_hash"]; # Don't check seen database for cleanup
@@ -508,6 +518,12 @@
               # Dead: no seeders for 3+ days
               {"transmission_seeders == 0 and transmission_date_added < now - timedelta(days=3)" = "accept";}
             ];
+            # Remember this release failed so we don't try it again
+            remember_rejected = {
+              retry_time = "7 days";
+            };
+            # Remove from downloaded list so movie can be re-discovered
+            list_remove = [{movie_list = "downloaded-movies";}];
             transmission = {
               host = "https://transmission.hummingbird-lake.ts.net";
               port = 443;
