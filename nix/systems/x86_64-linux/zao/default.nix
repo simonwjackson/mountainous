@@ -262,7 +262,9 @@
             configure_series = {
               from.entry_list = "trakt-shows";
               settings = {
-                quality = "720p-1080p hdtv+";
+                quality = "720p-2160p hdtv+ webdl webrip";
+                target = "2160p webdl+"; # Upgrade target: 4K
+                upgrade = true;
                 propers = "12 hours";
                 identified_by = "ep";
               };
@@ -285,7 +287,10 @@
               ];
               release_estimations = "ignore";
             };
-            quality = "1080p+ bluray webdl webrip";
+            quality = "1080p-2160p bluray webdl webrip";
+            proper_movies = {
+              interval = "30 days"; # Keep looking for 4K upgrades for 30 days
+            };
             list_match.from = [{movie_list = "trakt-movies";}];
           };
 
@@ -301,7 +306,7 @@
                     website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
                     apikey = ""; # Bitmagnet doesn't require an API key
                     searcher = "tv";
-                    categories = [5040 5050]; # HD TV, UHD TV
+                    categories = [5040 5045 5050]; # HD TV, WEB-DL TV, UHD TV
                   };
                 }
               ];
@@ -310,7 +315,9 @@
             configure_series = {
               from.entry_list = "trakt-shows";
               settings = {
-                quality = "720p-1080p hdtv+ webdl webrip";
+                quality = "720p-2160p hdtv+ webdl webrip";
+                target = "2160p webdl+"; # Upgrade target: 4K
+                upgrade = true;
                 propers = "12 hours";
                 identified_by = "ep";
               };
@@ -328,13 +335,16 @@
                     website = "https://bitmagnet.hummingbird-lake.ts.net/torznab";
                     apikey = ""; # Bitmagnet doesn't require an API key
                     searcher = "movie";
-                    categories = [2040 2050]; # HD Movies, UHD Movies
+                    categories = [2040 2045 2050]; # HD Movies, WEB-DL Movies, UHD Movies
                   };
                 }
               ];
               release_estimations = "ignore";
             };
-            quality = "1080p+ bluray webdl webrip";
+            quality = "1080p-2160p bluray webdl webrip";
+            proper_movies = {
+              interval = "30 days"; # Keep looking for 4K upgrades for 30 days
+            };
             list_match.from = [{movie_list = "trakt-movies";}];
           };
 
