@@ -95,12 +95,21 @@
       );
 
       devShells = inputs.nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
-        pkgs = import inputs.nixpkgs {inherit system;};
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          config.allowUnfreePredicate = pkg:
+            builtins.elem (inputs.nixpkgs.lib.getName pkg) [
+              "graphite-cli"
+            ];
+        };
       in {
         default = pkgs.mkShell {
           packages = with pkgs; [
             just
             gum
+
+            # Git
+            graphite-cli
 
             # Lefthook
             lefthook
