@@ -331,12 +331,19 @@
                 }
               ];
               release_estimations = "ignore";
+              limit = 1; # Only grab one result per movie
             };
             quality = "1080p-2160p bluray webdl webrip";
             proper_movies = "30 days";
             imdb_lookup = true;
-            seen_movies = "strict"; # Only download one release per movie (by IMDB ID)
+            # Reject if already downloaded, accept otherwise
+            list_match = {
+              from = [{movie_list = "downloaded-movies";}];
+              action = "reject";
+            };
             accept_all = true;
+            # Track downloaded movies across all tasks
+            list_add = [{movie_list = "downloaded-movies";}];
           };
 
           "download-movies-torrent" = {
@@ -363,12 +370,19 @@
                 }
               ];
               release_estimations = "ignore";
+              limit = 1; # Only grab one result per movie
             };
             quality = "1080p-2160p bluray webdl webrip";
             proper_movies = "30 days";
             imdb_lookup = true;
-            seen_movies = "strict"; # Only download one release per movie (by IMDB ID)
+            # Reject if already downloaded (by NZB or previous torrent run)
+            list_match = {
+              from = [{movie_list = "downloaded-movies";}];
+              action = "reject";
+            };
             accept_all = true;
+            # Track downloaded movies across all tasks
+            list_add = [{movie_list = "downloaded-movies";}];
           };
 
           # Comics tasks - watchlist managed via text file
