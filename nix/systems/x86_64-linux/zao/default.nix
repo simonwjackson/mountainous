@@ -333,6 +333,8 @@
             };
             quality = "1080p-2160p bluray webdl webrip";
             proper_movies = "30 days";
+            imdb_lookup = true;
+            seen_movies = "strict"; # Only download one release per movie (by IMDB ID)
             accept_all = true;
           };
 
@@ -363,6 +365,8 @@
             };
             quality = "1080p-2160p bluray webdl webrip";
             proper_movies = "30 days";
+            imdb_lookup = true;
+            seen_movies = "strict"; # Only download one release per movie (by IMDB ID)
             accept_all = true;
           };
 
