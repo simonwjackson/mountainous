@@ -986,6 +986,7 @@
     ripgrep
     fd
     jq
+    beads
     ai-commit
     git-sync
     # git-secret-scanner

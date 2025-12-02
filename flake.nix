@@ -55,6 +55,10 @@
       url = "github:miniArray/synapse";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    beads = {
+      url = "github:steveyegge/beads";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flexget-webui = {
       url = "https://github.com/Flexget/webui/releases/download/2.0.29/dist.zip";
       flake = false;
@@ -73,6 +77,7 @@
           # Removed gamescope_git overlays - now using Jovian's stable packages
           neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
           synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
+          beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];
