@@ -650,7 +650,7 @@
       # Machine learning for face detection, object recognition, smart search
       machineLearning = {
         enable = true;
-        cuda.enable = true; # Use NVIDIA GPU for ML inference
+        # cuda.enable = true; # Use NVIDIA GPU for ML inference
       };
 
       # Immich settings optimized for zao hardware (i9-11900H, RTX 3060, 32GB RAM)
@@ -770,6 +770,20 @@
     };
   };
 
+  # Kokoro TTS server (used by OpenReader for text-to-speech)
+  mountainous.kokoro-tts = {
+    enable = true;
+    # cuda = true; # Use RTX 3060 for GPU acceleration
+  };
+
+  # OpenReader e-book reader with TTS
+  mountainous.openreader = {
+    enable = true;
+    port = 3004; # 3003 is used by Immich ML
+    ttsEndpoint = "http://localhost:8880/v1"; # Kokoro endpoint
+    stateDir = "/var/lib/openreader";
+  };
+
   # tsnet-proxy for FlexGet webUI (accessible via Tailscale)
   mountainous.tsnet-proxy = {
     enable = true;
@@ -779,6 +793,18 @@
       hostname = "flexget";
       protocol = "http";
       port = 5050;
+    };
+
+    services.openreader = {
+      hostname = "reader";
+      protocol = "http";
+      port = 3004;
+    };
+
+    services.kokoro-tts = {
+      hostname = "tts";
+      protocol = "http";
+      port = 8880;
     };
   };
 

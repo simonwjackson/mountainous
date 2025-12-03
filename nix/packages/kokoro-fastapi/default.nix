@@ -10,7 +10,6 @@
   stdenv,
   cudaSupport ? false,
   cudaPackages ? null,
-  inputs,
   ...
 }: let
   # Fetch the pre-trained Kokoro model
