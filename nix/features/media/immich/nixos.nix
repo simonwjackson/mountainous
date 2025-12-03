@@ -57,6 +57,16 @@ in {
         default = true;
         description = "Enable machine learning features (face detection, object recognition)";
       };
+
+      cuda = {
+        enable = mkEnableOption "CUDA acceleration for machine learning (NVIDIA GPUs)";
+
+        devices = mkOption {
+          type = types.listOf types.str;
+          default = ["/dev/nvidia0" "/dev/nvidiactl" "/dev/nvidia-uvm"];
+          description = "NVIDIA device paths for CUDA acceleration";
+        };
+      };
     };
 
     hardware = {
@@ -147,6 +157,33 @@ in {
         protocol = "http";
         port = cfg.port;
       };
+    })
+
+    # CUDA acceleration for machine learning
+    (mkIf (cfg.machineLearning.enable && cfg.machineLearning.cuda.enable) {
+      # Override onnxruntime to build with CUDA support
+      nixpkgs.overlays = [
+        (final: prev: {
+          onnxruntime = prev.onnxruntime.override {cudaSupport = true;};
+        })
+      ];
+
+      # Configure ML service with CUDA library paths
+      services.immich.machine-learning.environment = {
+        LD_LIBRARY_PATH = lib.concatStringsSep ":" [
+          "${pkgs.python312Packages.onnxruntime}/lib"
+          "${pkgs.python312Packages.onnxruntime}/lib/python3.12/site-packages/onnxruntime/capi"
+        ];
+      };
+
+      # Grant ML service access to NVIDIA devices
+      systemd.services.immich-machine-learning.serviceConfig = {
+        PrivateDevices = lib.mkForce false;
+        DeviceAllow = cfg.machineLearning.cuda.devices;
+      };
+
+      # Add user to video group for GPU access
+      users.users.${cfg.user}.extraGroups = ["video"];
     })
   ]);
 }

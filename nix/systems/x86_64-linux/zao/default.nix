@@ -130,7 +130,22 @@
         group = "users";
         mode = "0755";
       };
-      # movies and series directories now managed by mountainous.media.paths
+      # Immich library directories (per-user photo storage on mergerfs)
+      "/tundra/merged/iceberg/photos/library" = {
+        owner = "media";
+        group = "media";
+        mode = "0750";
+      };
+      "/tundra/merged/iceberg/photos/library/simon" = {
+        owner = "media";
+        group = "media";
+        mode = "0750";
+      };
+      "/tundra/merged/iceberg/photos/library/laure" = {
+        owner = "media";
+        group = "media";
+        mode = "0750";
+      };
     };
 
     profiles = {
@@ -619,14 +634,24 @@
     # Immich photo/video backup and management
     immich = {
       enable = true;
-      mediaLocation = "/tundra/merged/iceberg/photos";
+      user = "media";
+      group = "media";
+      mediaLocation = "/var/lib/immich"; # NVMe: thumbs, transcodes, uploads
       proxy = {
         enable = true;
         name = "photos";
       };
 
+      # Store original photos on 30T mergerfs, separated by user
+      environment = {
+        IMMICH_LIBRARY_LOCATION = "/tundra/merged/iceberg/photos/library/{{user}}";
+      };
+
       # Machine learning for face detection, object recognition, smart search
-      machineLearning.enable = true;
+      machineLearning = {
+        enable = true;
+        cuda.enable = true; # Use NVIDIA GPU for ML inference
+      };
 
       # Immich settings optimized for zao hardware (i9-11900H, RTX 3060, 32GB RAM)
       settings = {
