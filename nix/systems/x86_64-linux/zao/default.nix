@@ -208,16 +208,16 @@
     };
   };
 
-  # Media namespace configuration
-  mountainous.media = {
-    # Shared paths for media content
-    paths = {
-      movies = "/tundra/merged/iceberg/movies";
-      series = "/tundra/merged/iceberg/series";
-      comics = "/tundra/merged/iceberg/comics";
-      photos = "/tundra/merged/iceberg/photos";
-    };
+  # Shared media paths configuration
+  mountainous.media.paths = {
+    movies = "/tundra/merged/iceberg/movies";
+    series = "/tundra/merged/iceberg/series";
+    comics = "/tundra/merged/iceberg/comics";
+    photos = "/tundra/merged/iceberg/photos";
+  };
 
+  # Trove: media acquisition services
+  mountainous.trove = {
     # FlexGet media automation
     flexget = {
       enable = true;
@@ -630,7 +630,10 @@
       };
       tmdb.apiKeyFile = config.age.secrets."tmdb-api".path;
     };
+  };
 
+  # Vault: media serving/viewing services
+  mountainous.vault = {
     # Immich photo/video backup and management
     immich = {
       enable = true;

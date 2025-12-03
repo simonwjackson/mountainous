@@ -5,10 +5,10 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
-  cfg = config.mountainous.media.immich;
+  cfg = config.mountainous.vault.immich;
   mediaCfg = config.mountainous.media;
 in {
-  options.mountainous.media.immich = {
+  options.mountainous.vault.immich = {
     enable = mkEnableOption "Immich photo and video backup server";
 
     user = mkOption {

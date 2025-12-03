@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge mkDefault types;
-  cfg = config.mountainous.media.flexget;
+  cfg = config.mountainous.trove.flexget;
   mediaCfg = config.mountainous.media;
 
   # Module-internal path requirements
@@ -43,7 +43,7 @@
     });
   };
 in {
-  options.mountainous.media.flexget = {
+  options.mountainous.trove.flexget = {
     enable = mkEnableOption "FlexGet media automation";
 
     user = mkOption {
@@ -115,7 +115,7 @@ in {
       assertions =
         map (path: {
           assertion = mediaCfg.paths ? ${path};
-          message = "mountainous.media.flexget requires mountainous.media.paths.${path} to be defined";
+          message = "mountainous.trove.flexget requires mountainous.media.paths.${path} to be defined";
         })
         requiredPaths;
 

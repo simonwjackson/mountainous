@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types mapAttrsToList concatStringsSep;
-  cfg = config.mountainous.media.usenet;
+  cfg = config.mountainous.trove.usenet;
   mediaCfg = config.mountainous.media;
 
   # Internal path requirements for this module
@@ -88,7 +88,7 @@
     "Category3.Aliases" = "Comics *, comics, comic";
   };
 in {
-  options.mountainous.media.usenet = {
+  options.mountainous.trove.usenet = {
     enable = mkEnableOption "Usenet binary downloader with VPN isolation";
 
     user = mkOption {

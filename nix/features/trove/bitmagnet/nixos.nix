@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types literalExpression;
-  cfg = config.mountainous.media.bitmagnet;
+  cfg = config.mountainous.trove.bitmagnet;
   mediaCfg = config.mountainous.media;
 
   # Environment variables for bitmagnet service
@@ -28,7 +28,7 @@
     }
     // cfg.settings;
 in {
-  options.mountainous.media.bitmagnet = {
+  options.mountainous.trove.bitmagnet = {
     enable = mkEnableOption "Bitmagnet self-hosted BitTorrent indexer and DHT crawler";
 
     user = mkOption {
@@ -142,8 +142,8 @@ in {
           assertion = !cfg.vpn.enable -> cfg.openFirewall;
           message = ''
             Bitmagnet DHT crawler without VPN isolation exposes your IP address to the DHT network.
-            Either enable VPN isolation (mountainous.media.bitmagnet.vpn.enable = true)
-            or explicitly open firewall ports (mountainous.media.bitmagnet.openFirewall = true)
+            Either enable VPN isolation (mountainous.trove.bitmagnet.vpn.enable = true)
+            or explicitly open firewall ports (mountainous.trove.bitmagnet.openFirewall = true)
             to acknowledge this risk.
           '';
         }

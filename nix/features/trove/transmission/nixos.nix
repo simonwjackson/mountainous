@@ -5,10 +5,10 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge types;
-  cfg = config.mountainous.media.transmission;
+  cfg = config.mountainous.trove.transmission;
   mediaCfg = config.mountainous.media;
 in {
-  options.mountainous.media.transmission = {
+  options.mountainous.trove.transmission = {
     enable = mkEnableOption "Transmission BitTorrent client";
 
     user = mkOption {

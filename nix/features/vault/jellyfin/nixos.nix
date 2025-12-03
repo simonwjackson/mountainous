@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkEnableOption mkOption mkIf mkMerge mkDefault types;
-  cfg = config.mountainous.media.jellyfin;
+  cfg = config.mountainous.vault.jellyfin;
   mediaCfg = config.mountainous.media;
 
   # Module-internal path requirements
@@ -16,7 +16,7 @@
     introSkipper = "https://raw.githubusercontent.com/intro-skipper/intro-skipper/master/manifest.json";
   };
 in {
-  options.mountainous.media.jellyfin = {
+  options.mountainous.vault.jellyfin = {
     enable = mkEnableOption "Jellyfin media server";
 
     user = mkOption {
@@ -215,7 +215,7 @@ in {
       assertions =
         map (path: {
           assertion = mediaCfg.paths ? ${path};
-          message = "mountainous.media.jellyfin requires mountainous.media.paths.${path} to be defined";
+          message = "mountainous.vault.jellyfin requires mountainous.media.paths.${path} to be defined";
         })
         requiredPaths;
 

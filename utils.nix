@@ -42,7 +42,7 @@
       map (path: path + "/default.nix") modulePaths;
 
   # Collect feature modules by recursively discovering nixos.nix and home.nix files
-  # Supports nested structures like: features/media/flexget/nixos.nix
+  # Supports nested structures like: features/trove/flexget/nixos.nix
   collectFeatureModules = dir:
     if !(builtins.pathExists dir)
     then {
