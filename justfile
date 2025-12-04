@@ -207,7 +207,7 @@ encrypt:
 [group('secrets')]
 rekey:
     nix run .#agenix-rekey.x86_64-linux.rekey -- -a
-    git add secrets/rekeyed/
+    mkdir -p secrets/rekeyed && git add secrets/rekeyed/ 2>/dev/null || true
 
 # Generate syncthing identity for a host
 [group('syncthing')]
