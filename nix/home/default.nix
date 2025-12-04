@@ -733,6 +733,22 @@
             ''
             else ""
           }
+          ${
+            if (config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? credentials_brave-api-key)
+            then ''              if [[ -r "${config.age.secrets.credentials_brave-api-key.path}" ]]; then
+                          export BRAVE_API_KEY="$(cat ${config.age.secrets.credentials_brave-api-key.path})"
+                        fi
+            ''
+            else ""
+          }
+          ${
+            if (config.mountainous.agenix.enable or false) && ((config.age.secrets or {}) ? credentials_serper-api-key)
+            then ''              if [[ -r "${config.age.secrets.credentials_serper-api-key.path}" ]]; then
+                          export SERPER_API_KEY="$(cat ${config.age.secrets.credentials_serper-api-key.path})"
+                        fi
+            ''
+            else ""
+          }
 
           # Enable Ctrl-R for history search (should work by default but ensure it's set)
           bindkey '^R' history-incremental-search-backward
