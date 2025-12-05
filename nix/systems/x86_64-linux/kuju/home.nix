@@ -110,7 +110,7 @@
     uniform sampler2D tex;
 
     // Saturation boost - adjust 0.0 to 0.5 (higher = more vibrant)
-    const float vibrance = 0.18;
+    const float vibrance = 1;
 
     void main() {
         vec4 c = texture2D(tex, v_texcoord);
@@ -139,7 +139,7 @@
     }
   '';
 
-  # Hyprshade auto-scheduling: vibrance by day, blue-light-filter at night
+  # Hyprshade shaders (manual toggle only via SUPER+F7/F8)
   xdg.configFile."hypr/hyprshade.toml".text = ''
     [[shades]]
     name = "vibrance"
@@ -147,8 +147,6 @@
 
     [[shades]]
     name = "blue-light-filter"
-    start_time = 19:00:00
-    end_time = 07:00:00
   '';
 
   # ============================================================================
@@ -160,15 +158,15 @@
       "eDP-1,1920x1080@120,0x0,1.5,transform,0"
     ];
 
-    # Hyprshade toggle keybinds
+    # Hyprshade keybinds
     bind = [
       "SUPER, F7, exec, hyprshade toggle vibrance"
       "SUPER, F8, exec, hyprshade toggle blue-light-filter"
     ];
 
-    # Auto-start hyprshade scheduler
+    # Enable vibrance shader by default
     exec-once = [
-      "hyprshade auto"
+      "hyprshade on vibrance"
     ];
   };
 }
