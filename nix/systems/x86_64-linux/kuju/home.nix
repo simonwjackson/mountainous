@@ -1,5 +1,17 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   vibranceShader = "$HOME/.config/hypr/shaders/vibrance.glsl";
+
+  # Tool paths for keybinds
+  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+  grep = "${pkgs.gnugrep}/bin/grep";
+  steam = "${pkgs.steam}/bin/steam";
+
+  # Focus window if running, otherwise launch app
+  focusOrLaunch = class: cmd: "${hyprctl} clients -j | ${grep} -qi '\"class\": \"${class}\"' && ${hyprctl} dispatch focuswindow 'class:^(${class})$' || ${cmd}";
 in {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
@@ -173,13 +185,15 @@ in {
     # Apply vibrance shader by default (OLED-like appearance)
     decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
 
-    # HHD back button bindings (L4=F20, R4=F21)
-    # When r4l4=hhd in HHD config, back buttons emit F20/F21 keycodes
-    # Placeholder actions - customize as needed
+    # HHD button bindings
+    # With l4r4=combo_menu: tap=QAM(F16), double=overlay(F17), hold=Xbox(F15)
+    # With r4l4=hhd: L4=F20, R4=F21
     bind = [
-      # L4 back button (F20) - e.g., Quick Action Menu
+      # Xbox/Guide button (hold Menu) - Focus or launch Steam
+      ", F15, exec, ${focusOrLaunch "steam" steam}"
+      # L4 back button (F20) - placeholder
       ", F20, exec, echo 'L4 pressed - customize me'"
-      # R4 back button (F21) - e.g., Screenshot or secondary action
+      # R4 back button (F21) - placeholder
       ", F21, exec, echo 'R4 pressed - customize me'"
     ];
   };
