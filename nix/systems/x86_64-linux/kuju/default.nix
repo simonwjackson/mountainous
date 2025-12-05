@@ -403,26 +403,23 @@
   # https://github.com/Cryolitia/gpd-fan-driver
   hardware.gpd-fan.enable = true;
 
-  # Custom quiet fan curve using fancontrol
-  # hwmon2 = gpdfan (fan), hwmon5 = k10temp (CPU temp)
-  # NOTE: hwmon numbers may change on reboot - verify with: cat /sys/class/hwmon/hwmon*/name
-  hardware.fancontrol = {
-    enable = true;
-    config = ''
-      INTERVAL=3
-      DEVPATH=hwmon2=devices/platform/gpd_fan hwmon5=devices/pci0000:00/0000:00:18.3
-      DEVNAME=hwmon2=gpdfan hwmon5=k10temp
-      FCTEMPS=hwmon2/pwm1=hwmon5/temp1_input
-      FCFANS=hwmon2/pwm1=hwmon2/fan1_input
-      # Quiet curve: fan off until 55°C, gentle ramp to 80°C
-      MINTEMP=hwmon2/pwm1=55
-      MAXTEMP=hwmon2/pwm1=80
-      # PWM: MINSTART=spin-up threshold, MINSTOP=minimum while running
-      MINSTART=hwmon2/pwm1=80
-      MINSTOP=hwmon2/pwm1=60
-      MINPWM=hwmon2/pwm1=0
-      MAXPWM=hwmon2/pwm1=255
-    '';
+  # Set fan to quiet immediately when device appears (before fancontrol starts)
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", ATTR{pwm1}="0"
+  '';
+
+  # Dynamic fancontrol - finds hwmon devices by name at runtime
+  # Survives hwmon number changes across reboots
+  systemd.services.gpd-fancontrol = {
+    description = "GPD Dynamic Fan Control";
+    wantedBy = ["multi-user.target"];
+    after = ["systemd-modules-load.service"];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.gpd-fancontrol}/bin/gpd-fancontrol";
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
   };
 
   # ============================================================================
