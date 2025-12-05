@@ -9,6 +9,7 @@
 
   # Import sub-modules
   steamButtonConfig = import ./steam-button.nix {inherit config lib pkgs osConfig;};
+  steamPrefsConfig = import ./steam-prefs.nix {inherit config lib pkgs osConfig;};
 
   # Get gaming config from NixOS (source of truth)
   gamingEnabled = osConfig.mountainous.gaming.enable or false;
@@ -108,5 +109,8 @@ in {
 
     # Steam button handler (from steam-button.nix)
     steamButtonConfig.config
+
+    # Steam preferences (from steam-prefs.nix)
+    steamPrefsConfig.config
   ]);
 }

@@ -148,10 +148,10 @@ in {
     # Apply vibrance shader by default (OLED-like appearance)
     decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
 
-    # L4/R4 back buttons (placeholders - HHD keyboard not working)
+    # L4/R4 back buttons → workspace switching
     bind = [
-      ", F20, exec, echo 'L4 pressed - customize me'"
-      ", F21, exec, echo 'R4 pressed - customize me'"
+      ", F20, workspace, 1"
+      ", F21, workspace, 2"
     ];
   };
 }

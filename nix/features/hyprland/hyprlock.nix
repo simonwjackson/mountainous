@@ -44,9 +44,9 @@
     settings = {
       general = {
         # CRITICAL: Turn off display BEFORE suspend (fixes screen staying on during s2idle)
-        before_sleep_cmd = "hyprctl dispatch dpms off";
+        before_sleep_cmd = "hyprctl --instance 0 dispatch dpms off";
         # Restore display after resume
-        after_sleep_cmd = "hyprctl dispatch dpms on";
+        after_sleep_cmd = "hyprctl --instance 0 dispatch dpms on";
         ignore_dbus_inhibit = false;
         lock_cmd = "pidof hyprlock || hyprlock";
       };
@@ -55,8 +55,8 @@
         # Turn off display after 2 minutes of inactivity
         {
           timeout = 120;
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on";
+          on-timeout = "hyprctl --instance 0 dispatch dpms off";
+          on-resume = "hyprctl --instance 0 dispatch dpms on";
         }
         # Suspend after 5 minutes idle (only on battery)
         {
