@@ -1,4 +1,6 @@
-{pkgs, ...}: {
+{pkgs, ...}: let
+  brightness-extended = "${pkgs.brightness-sync}/bin/brightness-extended";
+in {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
   # ============================================================================
@@ -100,21 +102,23 @@
   };
 
   # ============================================================================
-  # HYPRSHADE - IPS display enhancement shaders
+  # HYPRSHADE - Display enhancement shaders
   # ============================================================================
-  # Vibrance shader makes IPS colors more vivid (closer to OLED pop)
-  # Blue light filter for comfortable night use
+  # Vibrance shader - subtle color enhancement for IPS panel
   xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
-    precision highp float;
-    varying vec2 v_texcoord;
+    #version 300 es
+    precision mediump float;
+
+    in vec2 v_texcoord;
+    out vec4 fragColor;
     uniform sampler2D tex;
 
-    const float vibrance = 0.7;      // Color boost (0.0-1.0)
-    const float contrast = 1.25;     // Contrast multiplier
-    const float saturation = 1.5;    // Overall saturation
+    const float vibrance = 0.3;
+    const float contrast = 1.1;
+    const float saturation = 1.15;
 
     void main() {
-        vec4 c = texture2D(tex, v_texcoord);
+        vec4 c = texture(tex, v_texcoord);
 
         // Smart vibrance (boosts dull colors more)
         float avg = (c.r + c.g + c.b) / 3.0;
@@ -129,30 +133,34 @@
         // Contrast (centered at 0.5)
         c.rgb = (c.rgb - 0.5) * contrast + 0.5;
 
-        gl_FragColor = clamp(c, 0.0, 1.0);
+        fragColor = clamp(c, 0.0, 1.0);
     }
   '';
 
+  # Blue light filter for comfortable night use
   xdg.configFile."hypr/shaders/blue-light-filter.glsl".text = ''
-    precision highp float;
-    varying vec2 v_texcoord;
+    #version 300 es
+    precision mediump float;
+
+    in vec2 v_texcoord;
+    out vec4 fragColor;
     uniform sampler2D tex;
 
     // Warm color temperature for night (3500K)
     const float temperature = 3500.0;
 
     void main() {
-        vec4 c = texture2D(tex, v_texcoord);
+        vec4 c = texture(tex, v_texcoord);
         float temp = temperature / 100.0;
         float r = temp <= 66.0 ? 1.0 : clamp(1.292936 * pow(temp - 60.0, -0.1332047), 0.0, 1.0);
         float g = temp <= 66.0 ? clamp(0.390082 * log(temp) - 0.631841, 0.0, 1.0) : clamp(1.129891 * pow(temp - 60.0, -0.0755148), 0.0, 1.0);
         float b = temp >= 66.0 ? 1.0 : (temp <= 19.0 ? 0.0 : clamp(0.543207 * log(temp - 10.0) - 1.19625, 0.0, 1.0));
         c.rgb *= vec3(r, g, b);
-        gl_FragColor = c;
+        fragColor = c;
     }
   '';
 
-  # Hyprshade shaders (manual toggle only via SUPER+F7/F8)
+  # Hyprshade config
   xdg.configFile."hypr/hyprshade.toml".text = ''
     [[shades]]
     name = "vibrance"
@@ -171,13 +179,19 @@
       "eDP-1,1920x1080@120,0x0,1.5,transform,0"
     ];
 
-    # Hyprshade keybinds
+    # Hyprshade keybind
     bind = [
-      "SUPER, F7, exec, hyprshade toggle vibrance"
       "SUPER, F8, exec, hyprshade toggle blue-light-filter"
     ];
 
-    # Enable vibrance shader by default
+    # Override default brightness keys to use extended brightness
+    # (seamless transition to software dimming below hardware minimum)
+    bindel = [
+      ",XF86MonBrightnessUp, exec, ${brightness-extended} up 5"
+      ",XF86MonBrightnessDown, exec, ${brightness-extended} down 5"
+    ];
+
+    # Enable vibrance shader on startup
     exec-once = [
       "hyprshade on vibrance"
     ];

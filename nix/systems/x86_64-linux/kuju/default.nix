@@ -520,6 +520,10 @@
 
   # USB autosuspend and other power tweaks via udev
   services.udev.extraRules = ''
+    # Backlight control - allow video group to write
+    ACTION=="add", SUBSYSTEM=="backlight", RUN+="${pkgs.coreutils}/bin/chgrp video /sys/class/backlight/%k/brightness"
+    ACTION=="add", SUBSYSTEM=="backlight", RUN+="${pkgs.coreutils}/bin/chmod g+w /sys/class/backlight/%k/brightness"
+
     # Set fan to quiet immediately when device appears (before fancontrol starts)
     # Uses %S (sysfs path) and %p (device path) for reliable path construction
     ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > %S%p/pwm1_enable 2>/dev/null; echo 0 > %S%p/pwm1 2>/dev/null || true'"

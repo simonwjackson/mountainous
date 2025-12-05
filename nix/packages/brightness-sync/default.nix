@@ -8,6 +8,8 @@
   coreutils,
   gnugrep,
   gawk,
+  bc,
+  hyprland,
   ...
 }:
 stdenv.mkDerivation rec {
@@ -21,10 +23,13 @@ stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
 
-    # Install the main script
+    # Install the main script (legacy, for multi-monitor sync)
     install -Dm755 brightness-sync.sh $out/bin/brightness-sync
 
-    # Wrap the script with required dependencies in PATH
+    # Install extended brightness script (seamless hw->sw dimming)
+    install -Dm755 brightness-extended.sh $out/bin/brightness-extended
+
+    # Wrap the sync script with required dependencies in PATH
     wrapProgram $out/bin/brightness-sync \
       --prefix PATH : ${lib.makeBinPath [
       bash
@@ -35,18 +40,29 @@ stdenv.mkDerivation rec {
       gawk
     ]}
 
+    # Wrap the extended script with required dependencies in PATH
+    wrapProgram $out/bin/brightness-extended \
+      --prefix PATH : ${lib.makeBinPath [
+      bash
+      brightnessctl
+      coreutils
+      bc
+      hyprland
+    ]}
+
     runHook postInstall
   '';
 
   meta = with lib; {
-    description = "Synchronize brightness across internal and external displays";
+    description = "Brightness control with software dimming below hardware minimum";
     longDescription = ''
-      A tool to synchronize brightness settings between internal laptop displays
-      (using backlight interfaces) and external monitors (using DDC/CI protocol).
-      Supports manual synchronization and automatic monitoring modes.
+      Two brightness tools:
+      - brightness-sync: Synchronize brightness between internal and external displays
+      - brightness-extended: Seamless brightness control that uses hardware backlight
+        until minimum, then continues with software gamma dimming via Hyprland shader
     '';
     license = licenses.mit;
     platforms = platforms.linux;
-    mainProgram = "brightness-sync";
+    mainProgram = "brightness-extended";
   };
 }

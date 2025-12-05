@@ -10,10 +10,32 @@ PROGRAM_NAME="brightness-sync"
 VERSION="1.0.0"
 
 # Configuration
-INTERNAL_DISPLAY="intel_backlight"
 EXTERNAL_DISPLAY_ID="1" # DDC display ID
 MIN_BRIGHTNESS=5
 MAX_BRIGHTNESS=100
+
+# Auto-detect internal backlight device
+detect_backlight() {
+  local backlight_dir="/sys/class/backlight"
+
+  # Check if backlight directory exists
+  if [ ! -d "$backlight_dir" ]; then
+    return 1
+  fi
+
+  # Try common backlight devices in order of preference
+  # amdgpu_bl* for AMD GPUs, intel_backlight for Intel, acpi_video* as fallback
+  for device in "$backlight_dir"/amdgpu_bl* "$backlight_dir"/intel_backlight "$backlight_dir"/acpi_video* "$backlight_dir"/*; do
+    if [ -d "$device" ] && [ -f "$device/brightness" ]; then
+      basename "$device"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+INTERNAL_DISPLAY="${INTERNAL_DISPLAY:-$(detect_backlight 2>/dev/null || echo "")}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -62,13 +84,17 @@ check_dependencies() {
 
   # Check if we have any way to control internal display
   if ! command -v brightnessctl &>/dev/null &&
-    ! command -v brillo &>/dev/null &&
-    ! [ -d "/sys/class/backlight/$INTERNAL_DISPLAY" ]; then
-    missing_deps+=("brightnessctl/brillo or backlight sysfs interface")
+    ! command -v brillo &>/dev/null; then
+    if [ -z "$INTERNAL_DISPLAY" ]; then
+      missing_deps+=("brightnessctl/brillo (no backlight device detected)")
+    elif [ ! -d "/sys/class/backlight/$INTERNAL_DISPLAY" ]; then
+      missing_deps+=("brightnessctl/brillo or valid backlight sysfs interface (detected: $INTERNAL_DISPLAY)")
+    fi
   fi
 
   if [ ${#missing_deps[@]} -gt 0 ]; then
     echo -e "${RED}Error: Missing dependencies: ${missing_deps[*]}${NC}" >&2
+    echo "Available backlights: $(ls /sys/class/backlight/ 2>/dev/null || echo 'none')" >&2
     echo "Please install the required tools and try again." >&2
     exit 1
   fi
@@ -77,11 +103,20 @@ check_dependencies() {
 # Get internal display brightness (0-100)
 get_internal_brightness() {
   if command -v brightnessctl &>/dev/null; then
-    brightnessctl -m -d "$INTERNAL_DISPLAY" | cut -d, -f4 | tr -d '%'
+    # brightnessctl auto-detects the backlight device if not specified
+    if [ -n "$INTERNAL_DISPLAY" ]; then
+      brightnessctl -m -d "$INTERNAL_DISPLAY" 2>/dev/null | cut -d, -f4 | tr -d '%'
+    else
+      brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%'
+    fi
   elif command -v brillo &>/dev/null; then
     brillo -q
   else
     # Direct sysfs access as fallback
+    if [ -z "$INTERNAL_DISPLAY" ]; then
+      echo "0"
+      return 1
+    fi
     local current max percentage
     current=$(cat "/sys/class/backlight/$INTERNAL_DISPLAY/brightness")
     max=$(cat "/sys/class/backlight/$INTERNAL_DISPLAY/max_brightness")
@@ -105,10 +140,19 @@ set_internal_brightness() {
   brightness=$(min "$MAX_BRIGHTNESS" "$brightness")
 
   if command -v brightnessctl &>/dev/null; then
-    brightnessctl -q set "${brightness}%"
+    # brightnessctl auto-detects the backlight device if not specified
+    if [ -n "$INTERNAL_DISPLAY" ]; then
+      brightnessctl -q -d "$INTERNAL_DISPLAY" set "${brightness}%"
+    else
+      brightnessctl -q set "${brightness}%"
+    fi
   elif command -v brillo &>/dev/null; then
     sudo brillo -S "$brightness" -q
   else
+    if [ -z "$INTERNAL_DISPLAY" ]; then
+      echo -e "${RED}Error: No backlight device detected${NC}" >&2
+      return 1
+    fi
     local max_brightness
     max_brightness=$(cat "/sys/class/backlight/$INTERNAL_DISPLAY/max_brightness")
     local raw_value=$((brightness * max_brightness / 100))
