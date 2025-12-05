@@ -454,20 +454,22 @@
   # USB autosuspend and other power tweaks via udev
   services.udev.extraRules = ''
     # Set fan to quiet immediately when device appears (before fancontrol starts)
-    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", ATTR{pwm1}="0"
+    # Note: Uses RUN instead of ATTR because udev may lack write permission at this stage
+    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", RUN+="/bin/sh -c 'echo 0 > $sys$devpath/pwm1 2>/dev/null || true'"
 
-    # Enable USB autosuspend for all devices
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend_delay_ms}="1000"
-    ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="auto"
+    # Enable USB autosuspend for actual USB devices (not interface nodes)
+    # TEST ensures the attribute exists before attempting to write
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/autosuspend_delay_ms", ATTR{power/autosuspend_delay_ms}="1000"
+    ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="auto"
 
     # SATA link power management
-    ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", ATTR{link_power_management_policy}="med_power_with_dipm"
+    ACTION=="add", SUBSYSTEM=="scsi_host", KERNEL=="host*", TEST=="link_power_management_policy", ATTR{link_power_management_policy}="med_power_with_dipm"
 
     # PCI power management
-    ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
+    ACTION=="add", SUBSYSTEM=="pci", TEST=="power/control", ATTR{power/control}="auto"
 
-    # AMD GPU power saving on battery
-    ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card*", ATTR{device/power_dpm_force_performance_level}="low"
+    # AMD GPU power saving - only match main card device (card0, card1), not outputs (card1-DP-1, etc.)
+    ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card[0-9]", TEST=="device/power_dpm_force_performance_level", ATTR{device/power_dpm_force_performance_level}="low"
   '';
 
   # WiFi power saving (re-enable on battery - was disabled for gaming)
