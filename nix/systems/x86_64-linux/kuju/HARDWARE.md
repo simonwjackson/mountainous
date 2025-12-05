@@ -5,7 +5,7 @@ This document describes the hardware configuration for the GPD G1617-02 portable
 ## System Overview
 
 **Manufacturer:** GPD
-**Model:** G1617-02 (GPD Win Max 2 series)
+**Model:** G1617-02 (GPD Win Mini 2025)
 **Chassis Type:** Laptop/Portable Gaming Device
 **BIOS:** Version 2.10 (June 5, 2025)
 **Boot Mode:** UEFI
@@ -51,13 +51,6 @@ This document describes the hardware configuration for the GPD G1617-02 portable
 **by-id Path:** `nvme-KIOXIA-EXCERIA_PLUS_G3_SSD_6FAKS1DUZ0E8`
 **PCIe Address:** `pci-0000:c1:00.0-nvme-1`
 
-**Current Partition Table (Windows):**
-```
-nvme0n1p1    100M   (EFI System Partition)
-nvme0n1p2    128M   (Microsoft Reserved)
-nvme0n1p3    300G   (NTFS - Windows C:)
-nvme0n1p4    1.5T   (NTFS - Windows D:)
-nvme0n1p5     16G   (NTFS - Recovery)
 ```
 
 **NixOS Implications:**

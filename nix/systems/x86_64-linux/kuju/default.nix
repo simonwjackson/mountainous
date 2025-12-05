@@ -403,11 +403,6 @@
   # https://github.com/Cryolitia/gpd-fan-driver
   hardware.gpd-fan.enable = true;
 
-  # Set fan to quiet immediately when device appears (before fancontrol starts)
-  services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", ATTR{pwm1}="0"
-  '';
-
   # Dynamic fancontrol - finds hwmon devices by name at runtime
   # Survives hwmon number changes across reboots
   systemd.services.gpd-fancontrol = {
@@ -461,6 +456,9 @@
 
   # USB autosuspend and other power tweaks via udev
   services.udev.extraRules = ''
+    # Set fan to quiet immediately when device appears (before fancontrol starts)
+    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", ATTR{pwm1}="0"
+
     # Enable USB autosuspend for all devices
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/autosuspend_delay_ms}="1000"
     ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="auto"
