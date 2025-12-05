@@ -109,6 +109,96 @@ in {
     };
   };
 
+  steamPrefs = {
+    enable = mkEnableOption "Declarative Steam preferences management";
+
+    steamId = mkOption {
+      type = types.str;
+      default = "";
+      description = "Steam user ID (numeric, found in ~/.steam/steam/userdata/<ID>)";
+      example = "12345678";
+    };
+
+    friends = {
+      autoSignIn = mkOption {
+        type = types.enum ["online" "offline"];
+        default = "offline";
+        description = "Auto sign-in behavior for Steam Friends";
+      };
+
+      notifications = {
+        showIngame = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Show friend notifications while in-game";
+        };
+        showOnline = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Show notifications when friends come online";
+        };
+        showMessage = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Show notifications for new messages";
+        };
+      };
+
+      sounds = {
+        playIngame = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Play sounds for events while in-game";
+        };
+        playOnline = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Play sounds when friends come online";
+        };
+        playMessage = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Play sounds for new messages";
+        };
+      };
+    };
+
+    reapplyOnSteamExit = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Watch for Steam exit and re-apply preferences";
+    };
+
+    remotePlay = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable Steam Remote Play (game streaming to other devices)";
+      };
+    };
+
+    compatibility = {
+      defaultTool = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          Default Proton/compatibility tool for all games.
+          Common values: "proton_37" (Proton 9), "GE-Proton", "proton_experimental"
+          Set to null to not manage this setting.
+        '';
+        example = "GE-Proton";
+      };
+    };
+
+    controller = {
+      guideButtonFocusesSteam = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Whether pressing the controller guide/Xbox button focuses Steam";
+      };
+    };
+  };
+
   performance = {
     lowLatencyAudio = mkOption {
       type = types.bool;

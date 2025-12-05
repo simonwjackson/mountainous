@@ -320,7 +320,17 @@
     hyprland.enable = true;
 
     # Gaming - local Steam install only
-    gaming.enable = true;
+    gaming = {
+      enable = true;
+      steamPrefs = {
+        enable = true;
+        steamId = "80924811";
+        friends.autoSignIn = "offline";
+        remotePlay.enable = false;
+        compatibility.defaultTool = "GE-Proton";
+        controller.guideButtonFocusesSteam = false;
+      };
+    };
 
     # Syncthing for knowledge sync
     syncthing = {
