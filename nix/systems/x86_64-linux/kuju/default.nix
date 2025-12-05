@@ -150,11 +150,6 @@
       "amdgpu.dc=1" # Display Core for better display
       "amdgpu.dpm=1" # Dynamic Power Management
 
-      # CRITICAL: Disable PSR (Panel Self Refresh) - fixes screen staying on during suspend
-      # and random display freezes on AMD Ryzen AI 9 HX 370
-      # Reference: https://bugs.launchpad.net/bugs/2111739
-      "amdgpu.dcdebugmask=0x12"
-
       # ========================================================================
       # AMD CPU power management (Zen 5 architecture)
       # ========================================================================
@@ -172,10 +167,6 @@
       # NVMe power state fix - critical for AMD sleep/wake reliability
       # Prevents NVMe drive from entering problematic power states during suspend
       "nvme_core.default_ps_max_latency_us=0"
-
-      # RTC ACPI alarm fix - prevents premature wake from suspend
-      # Framework/GPD community tested fix for suspend-then-hibernate
-      "rtc_cmos.use_acpi_alarm=1"
 
       # ========================================================================
       # Display Configuration
@@ -477,66 +468,7 @@
 
     # AMD GPU power saving on battery
     ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card*", ATTR{device/power_dpm_force_performance_level}="low"
-
-    # ========================================================================
-    # SUSPEND FIX: Disable I2C device wakeup sources
-    # ========================================================================
-    # These touchpad/touchscreen devices can prevent proper suspend or cause
-    # immediate wakeup, keeping the screen on during sleep.
-    # Reference: https://github.com/Sabrina-Fox/WM2-Help
-    # Reference: https://github.com/Cryolitia/nixos-config
-
-    # Touchpad wakeup disable (PNP0C50 = HID-over-I2C touchpad)
-    SUBSYSTEM=="i2c", KERNEL=="i2c-PNP0C50:00", ATTR{power/wakeup}="disabled"
-
-    # Touchscreen wakeup disable (GXTP7385 = Goodix touchscreen, if present)
-    SUBSYSTEM=="i2c", KERNEL=="i2c-GXTP7385:00", ATTR{power/wakeup}="disabled"
-
-    # GPD Win Mini 2025 touchpad devices (from HARDWARE.md)
-    # Verify with: ls /sys/bus/i2c/devices/
-    SUBSYSTEM=="i2c", KERNEL=="i2c-HTIX5288:00", ATTR{power/wakeup}="disabled"
-    SUBSYSTEM=="i2c", KERNEL=="i2c-NVTK0603:00", ATTR{power/wakeup}="disabled"
-
-    # ========================================================================
-    # SUSPEND FIX: Disable USB controller wakeup (prevents s2idle failures)
-    # ========================================================================
-    # XHC controllers can prevent reaching deepest sleep state
-    # Error: "amd_pmc: Last suspend didn't reach deepest state"
-    SUBSYSTEM=="pci", ATTR{vendor}=="0x1022", ATTR{device}=="0x15b6", ATTR{power/wakeup}="disabled"
   '';
-
-  # Disable ACPI wakeup sources that interfere with s2idle
-  # Run at boot to disable USB/PCIe wakeup triggers
-  systemd.services.disable-wakeup-sources = {
-    description = "Disable problematic ACPI wakeup sources for s2idle";
-    wantedBy = ["multi-user.target"];
-    after = ["systemd-modules-load.service"];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    script = ''
-      # Disable USB controller wakeup (XHC0-4)
-      for dev in XHC0 XHC1 XHC3 XHC4; do
-        if grep -q "$dev.*enabled" /proc/acpi/wakeup; then
-          echo $dev > /proc/acpi/wakeup
-        fi
-      done
-      # Disable PCIe bridge wakeup (GPP devices)
-      for dev in GPP0 GPP1 GPP3 GPP4 GPP5; do
-        if grep -q "$dev.*enabled" /proc/acpi/wakeup; then
-          echo $dev > /proc/acpi/wakeup
-        fi
-      done
-      # CRITICAL: Disable Thunderbolt/USB4 wakeup (NHI0, NHI1)
-      # These prevent reaching S0i3 deepest sleep state
-      for dev in NHI0 NHI1; do
-        if grep -q "$dev.*enabled" /proc/acpi/wakeup; then
-          echo $dev > /proc/acpi/wakeup
-        fi
-      done
-    '';
-  };
 
   # WiFi power saving (re-enable on battery - was disabled for gaming)
   # NOTE: This is now handled dynamically by auto-cpufreq / scripts
