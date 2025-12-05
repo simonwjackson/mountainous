@@ -403,6 +403,58 @@
     ui.enable = false; # Headless - no web UI needed
   };
 
+  # Evsieve: Remap Xbox button (BTN_MODE) from HHD controller to F15 keyboard key
+  # This allows Hyprland to bind to the Xbox button
+  systemd.services.xbox-button-remap = {
+    description = "Remap Xbox button to F15 keyboard key";
+    wantedBy = ["multi-user.target"];
+    after = ["handheld-daemon.service"];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "on-failure";
+      RestartSec = "3s";
+      # Wait for HHD controller to appear, then remap BTN_MODE to F15
+      ExecStart = pkgs.writeShellScript "xbox-remap" ''
+        # Find HHD controller by name in /proc/bus/input/devices
+        find_hhd_device() {
+          ${pkgs.gawk}/bin/awk '
+            /^N: Name="Handheld Daemon Controller"/ { found=1 }
+            found && /^H: Handlers=/ {
+              match($0, /event[0-9]+/)
+              if (RSTART > 0) {
+                print "/dev/input/" substr($0, RSTART, RLENGTH)
+                exit
+              }
+            }
+          ' /proc/bus/input/devices
+        }
+
+        # Wait for HHD controller device
+        echo "Waiting for Handheld Daemon Controller..."
+        while true; do
+          HHD_DEV=$(find_hhd_device)
+          if [ -n "$HHD_DEV" ] && [ -e "$HHD_DEV" ]; then
+            break
+          fi
+          sleep 1
+        done
+        echo "Found HHD controller at $HHD_DEV"
+        sleep 2  # Give HHD time to fully initialize
+
+        # Use evsieve to intercept BTN_MODE and emit as F15 keyboard key
+        # --input grabs the device, --map converts BTN_MODE to KEY_F15
+        # --output:keyboard creates a virtual keyboard for the remapped key
+        # --output recreates the controller without BTN_MODE (so games still work)
+        echo "Starting evsieve remap..."
+        exec ${pkgs.evsieve}/bin/evsieve \
+          --input "$HHD_DEV" grab \
+          --map btn:mode key:f15 \
+          --output key:f15 create-link=/dev/input/by-id/xbox-button-keyboard name="Xbox Button Keyboard" \
+          --output create-link=/dev/input/by-id/hhd-controller-remapped name="HHD Controller (remapped)"
+      '';
+    };
+  };
+
   # OBS Studio with virtual camera
   programs.obs-studio = {
     enable = true;

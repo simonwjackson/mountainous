@@ -26,9 +26,11 @@ in {
   # ============================================================================
   # HANDHELD DAEMON (HHD) CONFIGURATION
   # ============================================================================
-  # Declarative config for controller emulation and button mapping
+  # HHD needs a writable config file (it updates state), so we copy instead of symlink
   # Hot-reloads when file changes - no restart needed
-  xdg.configFile."hhd/state.yml".text = ''
+  home.activation.hhdConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        mkdir -p ~/.config/hhd
+        cat > ~/.config/hhd/state.yml << 'HHDEOF'
     hhd:
       settings:
         hhd:
@@ -51,6 +53,7 @@ in {
         # L4/R4 back buttons emit F20/F21 keycodes for custom Hyprland binds
         r4l4: hhd
         vibration: medium
+    HHDEOF
   '';
 
   # ============================================================================
@@ -186,12 +189,12 @@ in {
     decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
 
     # HHD button bindings
-    # With l4r4=combo_menu: tap=QAM(F16), double=overlay(F17), hold=Xbox(F15)
-    # With r4l4=hhd: L4=F20, R4=F21
+    # Xbox button: BTN_MODE remapped via evsieve → XF86Launch6
+    # L4/R4: HHD's keyboard shortcuts not working, keeping placeholders for future
     bind = [
-      # Xbox/Guide button (hold Menu) - Focus or launch Steam
-      ", F15, exec, ${focusOrLaunch "steam" steam}"
-      # L4 back button (F20) - placeholder
+      # Xbox button (XF86Launch6, remapped from BTN_MODE) - Focus or launch Steam
+      ", XF86Launch6, exec, ${focusOrLaunch "steam" steam}"
+      # L4 back button (F20) - placeholder (HHD keyboard not working)
       ", F20, exec, echo 'L4 pressed - customize me'"
       # R4 back button (F21) - placeholder
       ", F21, exec, echo 'R4 pressed - customize me'"
