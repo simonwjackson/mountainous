@@ -6,3 +6,5 @@ CLAUDE.local.md
 .lefthook/
 .lefthook-local.yml
 secrets/rekeyed/
+nix/packages/steam-prefs/__pycache__
+history

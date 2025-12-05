@@ -190,6 +190,28 @@ in {
       };
     };
 
+    shaderCache = {
+      enablePreCaching = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = ''
+          Enable shader pre-caching (downloads pre-compiled shaders from Valve).
+          With Mesa 23.1+ and GPL support, this is often unnecessary for AMD/Intel GPUs.
+          Set to null to not manage this setting.
+        '';
+      };
+
+      enableBackgroundProcessing = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = ''
+          Allow background processing of Vulkan shaders.
+          When enabled, Steam compiles downloaded shaders in the background.
+          Set to null to not manage this setting.
+        '';
+      };
+    };
+
     controller = {
       guideButtonFocusesSteam = mkOption {
         type = types.bool;

@@ -329,6 +329,10 @@
         remotePlay.enable = false;
         compatibility.defaultTool = "GE-Proton";
         controller.guideButtonFocusesSteam = false;
+        shaderCache = {
+          enablePreCaching = false;
+          enableBackgroundProcessing = false;
+        };
       };
     };
 

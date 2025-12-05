@@ -52,6 +52,16 @@
       if (cfg.compatibility.defaultTool or null) != null
       then {defaultCompatTool = cfg.compatibility.defaultTool;}
       else {}
+    )
+    // (
+      if (cfg.shaderCache.enablePreCaching or null) != null
+      then {disableShaderCache = !cfg.shaderCache.enablePreCaching;}
+      else {}
+    )
+    // (
+      if (cfg.shaderCache.enableBackgroundProcessing or null) != null
+      then {enableShaderBackgroundProcessing = cfg.shaderCache.enableBackgroundProcessing;}
+      else {}
     ));
 
   # Shared apply script - used by both activation and watcher

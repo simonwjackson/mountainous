@@ -30,7 +30,13 @@ SETTINGS_MAP = {
 }
 
 # Additional settings that don't map directly to friends section
-EXTRA_SETTINGS = {"enableStreaming", "defaultCompatTool", "guideButtonFocusesSteam"}
+EXTRA_SETTINGS = {
+    "enableStreaming",
+    "defaultCompatTool",
+    "guideButtonFocusesSteam",
+    "disableShaderCache",
+    "enableShaderBackgroundProcessing",
+}
 
 
 def get_steam_path() -> Path:
@@ -260,6 +266,69 @@ def patch_compat_tool(config_path: Path, settings: Dict[str, Any]) -> bool:
     return True
 
 
+def patch_shader_cache(config_path: Path, settings: Dict[str, Any]) -> bool:
+    """Patch the config.vdf for shader cache settings. Returns True if patched."""
+    has_disable = "disableShaderCache" in settings
+    has_background = "enableShaderBackgroundProcessing" in settings
+
+    if not has_disable and not has_background:
+        return False
+
+    if not config_path.exists():
+        print(
+            f"  config.vdf not found at {config_path}, skipping shader cache settings"
+        )
+        return False
+
+    # Load config.vdf
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = vdf.load(f)
+    except Exception as e:
+        print(f"  Warning: Failed to parse config.vdf: {e}", file=sys.stderr)
+        return False
+
+    # Create backup
+    create_backup(config_path)
+
+    # Navigate to ShaderCacheManager
+    # Path: InstallConfigStore -> Software -> Valve -> Steam -> ShaderCacheManager
+    try:
+        steam_section = data["InstallConfigStore"]["Software"]["Valve"]["Steam"]
+    except KeyError:
+        print("  Warning: Could not find Steam section in config.vdf", file=sys.stderr)
+        return False
+
+    if "ShaderCacheManager" not in steam_section:
+        steam_section["ShaderCacheManager"] = {}
+
+    shader_manager = steam_section["ShaderCacheManager"]
+
+    if has_disable:
+        value = settings["disableShaderCache"]
+        if isinstance(value, bool):
+            value = "1" if value else "0"
+        elif isinstance(value, int):
+            value = str(value)
+        shader_manager["DisableShaderCache"] = value
+        status = "Disabled" if value == "1" else "Enabled"
+        print(f"  Shader Pre-Caching = {status}")
+
+    if has_background:
+        value = settings["enableShaderBackgroundProcessing"]
+        if isinstance(value, bool):
+            value = "1" if value else "0"
+        elif isinstance(value, int):
+            value = str(value)
+        shader_manager["EnableShaderBackgroundProcessing"] = value
+        status = "Enabled" if value == "1" else "Disabled"
+        print(f"  Background Vulkan Shader Processing = {status}")
+
+    # Write atomically
+    atomic_write_vdf(config_path, data)
+    return True
+
+
 def atomic_write_vdf(vdf_path: Path, data: Dict[str, Any]) -> None:
     """Write VDF data atomically using temp file + rename."""
     temp_path = vdf_path.with_suffix(".vdf.tmp")
@@ -337,6 +406,14 @@ def main() -> int:
     if "defaultCompatTool" in settings and settings["defaultCompatTool"] is not None:
         print("Applying settings to config.vdf:")
         patch_compat_tool(config_path, settings)
+
+    # Patch config.vdf for shader cache settings
+    if (
+        "disableShaderCache" in settings
+        or "enableShaderBackgroundProcessing" in settings
+    ):
+        print("Applying shader cache settings to config.vdf:")
+        patch_shader_cache(config_path, settings)
 
     return 0
 
