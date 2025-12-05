@@ -109,9 +109,9 @@
     varying vec2 v_texcoord;
     uniform sampler2D tex;
 
-    const float vibrance = 0.4;      // Color boost (0.0-1.0)
-    const float contrast = 1.15;     // Contrast multiplier
-    const float saturation = 1.25;   // Overall saturation
+    const float vibrance = 0.7;      // Color boost (0.0-1.0)
+    const float contrast = 1.25;     // Contrast multiplier
+    const float saturation = 1.5;    // Overall saturation
 
     void main() {
         vec4 c = texture2D(tex, v_texcoord);
