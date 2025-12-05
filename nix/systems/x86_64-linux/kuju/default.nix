@@ -121,6 +121,7 @@
       "amdgpu" # AMD graphics driver
       "iwlwifi" # Intel Wi-Fi 6E AX210
       "btusb" # Bluetooth support
+      "gpd-fan" # GPD fan control - load early to minimize loud fan during boot
     ];
 
     # Blacklist conflicting modules
@@ -413,12 +414,44 @@
   # https://github.com/Cryolitia/gpd-fan-driver
   hardware.gpd-fan.enable = true;
 
+  # Early fan silence - runs ASAP to quiet the fan before full fancontrol starts
+  # This is a oneshot that runs very early in boot to minimize loud fan time
+  systemd.services.gpd-fan-early-quiet = {
+    description = "GPD Fan Early Quiet (minimize boot noise)";
+    wantedBy = ["sysinit.target"];
+    after = ["systemd-modules-load.service"];
+    before = ["basic.target"];
+    unitConfig = {
+      DefaultDependencies = false;
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "gpd-fan-early-quiet" ''
+        # Wait briefly for hwmon to appear (max 5 seconds)
+        for i in $(seq 1 50); do
+          for hwmon in /sys/class/hwmon/hwmon*; do
+            if [[ -f "$hwmon/name" ]] && [[ "$(cat "$hwmon/name" 2>/dev/null)" == "gpdfan" ]]; then
+              # Found it - set to minimum PWM immediately
+              echo 1 > "$hwmon/pwm1_enable" 2>/dev/null || true
+              echo 0 > "$hwmon/pwm1" 2>/dev/null || true
+              echo "Fan set to quiet mode via $hwmon"
+              exit 0
+            fi
+          done
+          sleep 0.1
+        done
+        echo "Warning: gpdfan hwmon not found within 5 seconds"
+      '';
+    };
+  };
+
   # Dynamic fancontrol - finds hwmon devices by name at runtime
   # Survives hwmon number changes across reboots
   systemd.services.gpd-fancontrol = {
     description = "GPD Dynamic Fan Control";
     wantedBy = ["multi-user.target"];
-    after = ["systemd-modules-load.service"];
+    after = ["systemd-modules-load.service" "gpd-fan-early-quiet.service"];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.gpd-fancontrol}/bin/gpd-fancontrol";
@@ -467,8 +500,8 @@
   # USB autosuspend and other power tweaks via udev
   services.udev.extraRules = ''
     # Set fan to quiet immediately when device appears (before fancontrol starts)
-    # Note: Uses RUN instead of ATTR because udev may lack write permission at this stage
-    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", RUN+="/bin/sh -c 'echo 0 > $sys$devpath/pwm1 2>/dev/null || true'"
+    # Uses %S (sysfs path) and %p (device path) for reliable path construction
+    ACTION=="add", SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", RUN+="${pkgs.bash}/bin/bash -c 'echo 1 > %S%p/pwm1_enable 2>/dev/null; echo 0 > %S%p/pwm1 2>/dev/null || true'"
 
     # Enable USB autosuspend for actual USB devices (not interface nodes)
     # TEST ensures the attribute exists before attempting to write
