@@ -9,9 +9,15 @@ STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness-extended-state"
 SHADER_FILE="${XDG_RUNTIME_DIR:-/tmp}/brightness-dimmer.glsl"
 
 # Configuration
-HARDWARE_MIN=5 # Hardware backlight minimum (percent)
-SOFTWARE_MIN=1 # Lowest software dim level (percent)
-STEP_DEFAULT=5
+# User-facing scale: 0-100
+#   0-19:   Software dimming (20 fine-grained steps, shader opacity 0.02-0.95)
+#   20-100: Hardware brightness (maps to 5-100% backlight)
+SOFTWARE_STEPS=20  # Number of software dimming levels (0 to SOFTWARE_STEPS-1)
+HARDWARE_MIN_PCT=5 # Lowest hardware backlight percentage
+STEP_DEFAULT=1
+
+# Command to run when exiting software dimming (e.g., restore vibrance shader)
+RESTORE_SHADER_CMD="${RESTORE_SHADER_CMD:-}"
 
 # Detect backlight device
 detect_backlight() {
@@ -36,14 +42,14 @@ get_hw_brightness() {
       brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%'
     fi
   else
-    echo "$HARDWARE_MIN"
+    echo "$HARDWARE_MIN_PCT"
   fi
 }
 
-# Set hardware brightness (percent)
+# Set hardware brightness (percent, clamped to HARDWARE_MIN_PCT-100)
 set_hw_brightness() {
   local level="$1"
-  level=$((level < HARDWARE_MIN ? HARDWARE_MIN : level))
+  level=$((level < HARDWARE_MIN_PCT ? HARDWARE_MIN_PCT : level))
   level=$((level > 100 ? 100 : level))
 
   if command -v brightnessctl &>/dev/null; then
@@ -55,12 +61,12 @@ set_hw_brightness() {
   fi
 }
 
-# Generate dimmer shader with given opacity (0.0 = black, 1.0 = full brightness)
-generate_shader() {
+# Generate dimming shader
+generate_dimmer_shader() {
   local opacity="$1"
   cat >"$SHADER_FILE" <<EOF
 #version 300 es
-precision mediump float;
+precision highp float;
 
 in vec2 v_texcoord;
 out vec4 fragColor;
@@ -74,21 +80,21 @@ void main() {
 EOF
 }
 
-# Apply or remove dimming shader
+# Apply dimming shader or restore default
 apply_shader() {
   local opacity="$1"
 
   if [ "$opacity" = "1.0" ] || [ "$opacity" = "1" ]; then
-    # Full brightness - restore vibrance shader via hyprshade
+    # Not dimming - clear shader and run restore command if configured
     rm -f "$SHADER_FILE"
-    if command -v hyprshade &>/dev/null; then
-      hyprshade on vibrance >/dev/null 2>&1 || hyprctl keyword decoration:screen_shader "" >/dev/null 2>&1 || true
+    if [ -n "$RESTORE_SHADER_CMD" ]; then
+      eval "$RESTORE_SHADER_CMD" >/dev/null 2>&1 || true
     else
       hyprctl keyword decoration:screen_shader "" >/dev/null 2>&1 || true
     fi
   else
-    # Apply dimming shader
-    generate_shader "$opacity"
+    # Dimming - apply dimmer shader
+    generate_dimmer_shader "$opacity"
     hyprctl keyword decoration:screen_shader "$SHADER_FILE" >/dev/null 2>&1 || true
   fi
 }
@@ -103,26 +109,38 @@ get_brightness() {
 }
 
 # Set extended brightness (0-100)
+# 0-(SOFTWARE_STEPS-1): Software dimming with shader
+# SOFTWARE_STEPS-100: Hardware brightness (mapped to HARDWARE_MIN_PCT-100%)
 set_brightness() {
   local target="$1"
-  target=$((target < SOFTWARE_MIN ? SOFTWARE_MIN : target))
+  target=$((target < 0 ? 0 : target))
   target=$((target > 100 ? 100 : target))
+
+  # Get previous brightness to detect mode transitions
+  local previous=0
+  if [ -f "$STATE_FILE" ]; then
+    previous=$(cat "$STATE_FILE")
+  fi
 
   echo "$target" >"$STATE_FILE"
 
-  if [ "$target" -ge "$HARDWARE_MIN" ]; then
-    # Above hardware minimum - use hardware, disable shader
-    set_hw_brightness "$target"
-    apply_shader 1.0
+  local was_dimming=$([ "$previous" -lt "$SOFTWARE_STEPS" ] && echo 1 || echo 0)
+  local now_dimming=$([ "$target" -lt "$SOFTWARE_STEPS" ] && echo 1 || echo 0)
+
+  if [ "$target" -ge "$SOFTWARE_STEPS" ]; then
+    # Hardware range: map SOFTWARE_STEPS-100 to HARDWARE_MIN_PCT-100%
+    local hw_brightness
+    hw_brightness=$(awk "BEGIN {printf \"%.0f\", $HARDWARE_MIN_PCT + ($target - $SOFTWARE_STEPS) * (100 - $HARDWARE_MIN_PCT) / (100 - $SOFTWARE_STEPS)}")
+    set_hw_brightness "$hw_brightness"
+    # Only restore shader when transitioning OUT of software dimming
+    if [ "$was_dimming" = "1" ]; then
+      apply_shader 1.0
+    fi
   else
-    # Below hardware minimum - keep hardware at min, use shader
-    set_hw_brightness "$HARDWARE_MIN"
-    # Map SOFTWARE_MIN-HARDWARE_MIN to opacity 0.1-1.0
-    # e.g., target=1 (SOFTWARE_MIN) -> opacity=0.1, target=5 (HARDWARE_MIN) -> opacity=1.0
-    local range=$((HARDWARE_MIN - SOFTWARE_MIN))
-    local position=$((target - SOFTWARE_MIN))
+    # Software dimming range: 0 to SOFTWARE_STEPS-1
+    set_hw_brightness "$HARDWARE_MIN_PCT"
     local opacity
-    opacity=$(echo "scale=2; 0.1 + (0.9 * $position / $range)" | bc)
+    opacity=$(awk "BEGIN {printf \"%.3f\", 0.02 + (0.93 * $target / ($SOFTWARE_STEPS - 1))}")
     apply_shader "$opacity"
   fi
 }
@@ -149,11 +167,13 @@ status() {
   current=$(get_brightness)
   hw_level=$(get_hw_brightness)
 
-  echo "Extended brightness: ${current}%"
+  echo "Extended brightness: ${current}/100"
   echo "Hardware brightness: ${hw_level}%"
 
-  if [ "$current" -lt "$HARDWARE_MIN" ]; then
-    echo "Mode: Software dimming (shader active)"
+  if [ "$current" -lt "$SOFTWARE_STEPS" ]; then
+    local opacity
+    opacity=$(awk "BEGIN {printf \"%.3f\", 0.02 + (0.93 * $current / ($SOFTWARE_STEPS - 1))}")
+    echo "Mode: Software dimming (shader opacity: ${opacity})"
   else
     echo "Mode: Hardware backlight"
   fi
@@ -184,13 +204,14 @@ Usage: $0 <command> [value]
 
 Commands:
   get       Get current brightness (0-100)
-  set N     Set brightness to N percent
-  up [N]    Increase brightness by N (default: 5)
-  down [N]  Decrease brightness by N (default: 5)
+  set N     Set brightness to N (0-100)
+  up [N]    Increase brightness by N (default: 1)
+  down [N]  Decrease brightness by N (default: 1)
   status    Show detailed status
 
-Brightness 0-${HARDWARE_MIN}% uses software dimming (shader)
-Brightness ${HARDWARE_MIN}-100% uses hardware backlight
+Scale:
+  0-$((SOFTWARE_STEPS - 1)):   Software dimming ($SOFTWARE_STEPS fine steps, shader opacity 0.02-0.95)
+  ${SOFTWARE_STEPS}-100: Hardware backlight (maps to ${HARDWARE_MIN_PCT}-100%)
 EOF
     ;;
   *)

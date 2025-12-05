@@ -97,8 +97,8 @@ in {
     ",XF86AudioLowerVolume, exec, ${wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-"
     ",XF86AudioMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle"
     ",XF86AudioMicMute, exec, ${wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-    ",XF86MonBrightnessUp, exec, ${pkgs.brightness-sync}/bin/brightness-sync up 5"
-    ",XF86MonBrightnessDown, exec, ${pkgs.brightness-sync}/bin/brightness-sync down 5"
+    ",XF86MonBrightnessUp, exec, ${pkgs.brightness-sync}/bin/brightness-extended up 1"
+    ",XF86MonBrightnessDown, exec, ${pkgs.brightness-sync}/bin/brightness-extended down 1"
 
     # Monitor scaling controls
     "$mainMod SHIFT, plus, exec, ${pkgs.scale-adjust}/bin/scale-adjust up all"
