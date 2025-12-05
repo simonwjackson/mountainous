@@ -48,7 +48,6 @@
       # === HDR→SDR Tone Mapping for IPS panel ===
       hdr-compute-peak = "yes";
       tone-mapping = "bt.2446a";
-      tone-mapping-mode = "hybrid";
       target-colorspace-hint = "yes";
 
       # === IPS Panel Optimization (maximize perceived contrast) ===
