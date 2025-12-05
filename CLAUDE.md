@@ -32,3 +32,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Verify VM with `./result/bin/run-nixos-vm` before hardware deployment
 - Documentation for various applications, operating system, etc is located in `./ai_docs`
 - use `just [test|build|switch|..]` instead of raw nix commands where possible
+- `hyprctl --instance 0 ..` for all hyprctl commands
