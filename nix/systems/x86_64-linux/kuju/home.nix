@@ -7,7 +7,6 @@ in {
 
   # Gaming handheld specific packages
   home.packages = with pkgs; [
-    hyprshade
   ];
 
   # Dictation support (voice-to-text)
@@ -102,75 +101,6 @@ in {
   };
 
   # ============================================================================
-  # HYPRSHADE - Display enhancement shaders
-  # ============================================================================
-  # Vibrance shader - subtle color enhancement for IPS panel
-  xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
-    #version 300 es
-    precision mediump float;
-
-    in vec2 v_texcoord;
-    out vec4 fragColor;
-    uniform sampler2D tex;
-
-    const float vibrance = 0.3;
-    const float contrast = 1.1;
-    const float saturation = 1.15;
-
-    void main() {
-        vec4 c = texture(tex, v_texcoord);
-
-        // Smart vibrance (boosts dull colors more)
-        float avg = (c.r + c.g + c.b) / 3.0;
-        float mx = max(c.r, max(c.g, c.b));
-        float amt = (mx - avg) * (-vibrance * 3.0);
-        c.rgb = mix(c.rgb, vec3(mx), amt);
-
-        // Saturation boost
-        float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-        c.rgb = mix(vec3(luma), c.rgb, saturation);
-
-        // Contrast (centered at 0.5)
-        c.rgb = (c.rgb - 0.5) * contrast + 0.5;
-
-        fragColor = clamp(c, 0.0, 1.0);
-    }
-  '';
-
-  # Blue light filter for comfortable night use
-  xdg.configFile."hypr/shaders/blue-light-filter.glsl".text = ''
-    #version 300 es
-    precision mediump float;
-
-    in vec2 v_texcoord;
-    out vec4 fragColor;
-    uniform sampler2D tex;
-
-    // Warm color temperature for night (3500K)
-    const float temperature = 3500.0;
-
-    void main() {
-        vec4 c = texture(tex, v_texcoord);
-        float temp = temperature / 100.0;
-        float r = temp <= 66.0 ? 1.0 : clamp(1.292936 * pow(temp - 60.0, -0.1332047), 0.0, 1.0);
-        float g = temp <= 66.0 ? clamp(0.390082 * log(temp) - 0.631841, 0.0, 1.0) : clamp(1.129891 * pow(temp - 60.0, -0.0755148), 0.0, 1.0);
-        float b = temp >= 66.0 ? 1.0 : (temp <= 19.0 ? 0.0 : clamp(0.543207 * log(temp - 10.0) - 1.19625, 0.0, 1.0));
-        c.rgb *= vec3(r, g, b);
-        fragColor = c;
-    }
-  '';
-
-  # Hyprshade config
-  xdg.configFile."hypr/hyprshade.toml".text = ''
-    [[shades]]
-    name = "vibrance"
-    default = true
-
-    [[shades]]
-    name = "blue-light-filter"
-  '';
-
-  # ============================================================================
   # HYPRLAND CONFIG
   # ============================================================================
   mountainous.hyprland.extraSettings = {
@@ -179,21 +109,11 @@ in {
       "eDP-1,1920x1080@120,0x0,1.5,transform,0"
     ];
 
-    # Hyprshade keybind
-    bind = [
-      "SUPER, F8, exec, hyprshade toggle blue-light-filter"
-    ];
-
     # Override default brightness keys to use extended brightness
     # (seamless transition to software dimming below hardware minimum)
     bindel = [
       ",XF86MonBrightnessUp, exec, ${brightness-extended} up 5"
       ",XF86MonBrightnessDown, exec, ${brightness-extended} down 5"
-    ];
-
-    # Enable vibrance shader on startup
-    exec-once = [
-      "hyprshade on vibrance"
     ];
   };
 }
