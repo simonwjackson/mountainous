@@ -6,14 +6,44 @@
 }: let
   vibranceShader = "$HOME/.config/hypr/shaders/vibrance.glsl";
 
-  # Tool paths for keybinds
+  # Tool paths
   hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+  jq = "${pkgs.jq}/bin/jq";
   grep = "${pkgs.gnugrep}/bin/grep";
-  # Use NixOS Steam package (from programs.steam.enable)
   steam = "${osConfig.programs.steam.package}/bin/steam";
 
   # Focus window if running, otherwise launch app
   focusOrLaunch = class: cmd: "${hyprctl} clients -j | ${grep} -qi '\"class\": \"${class}\"' && ${hyprctl} dispatch focuswindow 'class:^(${class})$' || ${cmd}";
+
+  # Xbox button handler - context-aware Steam/gaming navigation
+  xboxButtonHandler = pkgs.writeShellScript "xbox-button-handler" ''
+    # Behavior:
+    # - On ws10: toggle Steam overlay (special workspace)
+    # - Not on ws10 + game running: switch to show game
+    # - Not on ws10 + no game: switch to ws10, launch Steam if needed, show overlay
+
+    CURRENT_WS=$(${hyprctl} activeworkspace -j | ${jq} -r '.id')
+    GAME_ON_WS10=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.workspace.id == 10 and (.class | test("^steam_app_|gamescope")))] | length')
+    STEAM_RUNNING=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
+
+    if [[ "$CURRENT_WS" == "10" ]]; then
+        # Launch Steam if not running before toggling
+        if [[ "$STEAM_RUNNING" -eq 0 ]]; then
+            ${steam} &
+            sleep 0.5
+        fi
+        ${hyprctl} dispatch togglespecialworkspace gaming
+    elif [[ "$GAME_ON_WS10" -gt 0 ]]; then
+        ${hyprctl} dispatch workspace 10
+    else
+        ${hyprctl} dispatch workspace 10
+        if [[ "$STEAM_RUNNING" -eq 0 ]]; then
+            ${steam} &
+            sleep 0.5
+        fi
+        ${hyprctl} dispatch togglespecialworkspace gaming
+    fi
+  '';
 in {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
@@ -24,39 +54,6 @@ in {
 
   # Restore vibrance shader after software dimming ends
   home.sessionVariables.RESTORE_SHADER_CMD = "hyprctl keyword decoration:screen_shader ${vibranceShader}";
-
-  # ============================================================================
-  # HANDHELD DAEMON (HHD) CONFIGURATION
-  # ============================================================================
-  # HHD needs a writable config file (it updates state), so we copy instead of symlink
-  # Hot-reloads when file changes - no restart needed
-  home.activation.hhdConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        mkdir -p ~/.config/hhd
-        cat > ~/.config/hhd/state.yml << 'HHDEOF'
-    hhd:
-      settings:
-        hhd:
-          http:
-            localhost_only: true
-            enable_token: false
-    gpd:
-      controllers:
-        # Menu button: tap=QAM, double-tap=HHD overlay, hold=Xbox button
-        l4r4: combo_menu
-        # Select + button combos for Xbox shortcuts
-        main_chords: select_only
-        # DualSense Edge emulation (gyro, touchpad, adaptive triggers)
-        controller_mode: dualsense_edge
-        # Motion controls enabled
-        imu: true
-        imu_hz: 400
-        nintendo_mode: false
-      wincontrols:
-        # L4/R4 back buttons emit F20/F21 keycodes for custom Hyprland binds
-        r4l4: hhd
-        vibration: medium
-    HHDEOF
-  '';
 
   # ============================================================================
   # VIBRANCE SHADER - OLED-like appearance for IPS panel
@@ -194,21 +191,21 @@ in {
     # Xbox button: BTN_MODE remapped via evsieve → XF86Launch6
     # L4/R4: HHD's keyboard shortcuts not working, keeping placeholders for future
     bind = [
-      # Xbox button (XF86Launch6, remapped from BTN_MODE) - Go to Steam workspace, focus/launch Steam
-      ", XF86Launch6, exec, ${hyprctl} dispatch workspace 10 && ${focusOrLaunch "steam" steam}"
+      # Xbox button - Context-aware Steam/gaming navigation
+      ", XF86Launch6, exec, ${xboxButtonHandler}"
       # L4 back button (F20) - placeholder (HHD keyboard not working)
       ", F20, exec, echo 'L4 pressed - customize me'"
       # R4 back button (F21) - placeholder
       ", F21, exec, echo 'R4 pressed - customize me'"
     ];
 
-    # Force Steam and games to workspace 10 (new Hyprland syntax)
+    # Steam client goes to special workspace "gaming" (overlay)
+    # Games go to workspace 10 (fullscreen)
     windowrule = [
-      # Steam client windows
-      "workspace 10 silent, match:class steam"
-      "workspace 10 silent, match:class Steam"
-      "workspace 10 silent, match:title Steam"
-      # Steam games (common patterns)
+      # Steam client windows → special workspace
+      "workspace special:gaming silent, match:class ^(steam|Steam)$"
+      "workspace special:gaming silent, match:title ^Steam$"
+      # Steam games → workspace 10
       "workspace 10, match:class r:^steam_app_"
       "workspace 10, match:class gamescope"
       # Make games fullscreen by default

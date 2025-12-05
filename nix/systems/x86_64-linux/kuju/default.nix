@@ -395,30 +395,20 @@
     requires = lib.mkForce [];
   };
 
-  # Handheld Daemon (HHD) - Controller/input management for gaming handhelds
-  # Config managed declaratively via home-manager: ~/.config/hhd/state.yml
-  services.handheld-daemon = {
-    enable = true;
-    user = "simonwjackson";
-    ui.enable = false; # Headless - no web UI needed
-  };
-
-  # Evsieve: Remap Xbox button (BTN_MODE) from HHD controller to F15 keyboard key
-  # This allows Hyprland to bind to the Xbox button
+  # Evsieve: Remap Xbox button (BTN_MODE) to keyboard key for Hyprland binding
+  # Uses raw GPD controller directly (no HHD - simpler and more stable)
   systemd.services.xbox-button-remap = {
-    description = "Remap Xbox button to F15 keyboard key";
+    description = "Remap Xbox button to keyboard key";
     wantedBy = ["multi-user.target"];
-    after = ["handheld-daemon.service"];
     serviceConfig = {
       Type = "simple";
       Restart = "on-failure";
       RestartSec = "3s";
-      # Wait for HHD controller to appear, then remap BTN_MODE to F15
       ExecStart = pkgs.writeShellScript "xbox-remap" ''
-        # Find HHD controller by name in /proc/bus/input/devices
-        find_hhd_device() {
+        # Find raw GPD controller (X-Box 360 pad)
+        find_gpd_controller() {
           ${pkgs.gawk}/bin/awk '
-            /^N: Name="Handheld Daemon Controller"/ { found=1 }
+            /^N: Name="Microsoft X-Box 360 pad"/ { found=1 }
             found && /^H: Handlers=/ {
               match($0, /event[0-9]+/)
               if (RSTART > 0) {
@@ -429,28 +419,23 @@
           ' /proc/bus/input/devices
         }
 
-        # Wait for HHD controller device
-        echo "Waiting for Handheld Daemon Controller..."
+        echo "Waiting for GPD controller..."
         while true; do
-          HHD_DEV=$(find_hhd_device)
-          if [ -n "$HHD_DEV" ] && [ -e "$HHD_DEV" ]; then
+          GPD_DEV=$(find_gpd_controller)
+          if [ -n "$GPD_DEV" ] && [ -e "$GPD_DEV" ]; then
             break
           fi
           sleep 1
         done
-        echo "Found HHD controller at $HHD_DEV"
-        sleep 2  # Give HHD time to fully initialize
+        echo "Found GPD controller at $GPD_DEV"
 
-        # Use evsieve to intercept BTN_MODE and emit as F15 keyboard key
-        # --input grabs the device, --map converts BTN_MODE to KEY_F15
-        # --output:keyboard creates a virtual keyboard for the remapped key
-        # --output recreates the controller without BTN_MODE (so games still work)
-        echo "Starting evsieve remap..."
+        # Intercept BTN_MODE (Xbox button), emit as XF86Launch6 keyboard key
+        # Pass all other controller events through unchanged
         exec ${pkgs.evsieve}/bin/evsieve \
-          --input "$HHD_DEV" grab \
+          --input "$GPD_DEV" grab \
           --map btn:mode key:f15 \
           --output key:f15 create-link=/dev/input/by-id/xbox-button-keyboard name="Xbox Button Keyboard" \
-          --output create-link=/dev/input/by-id/hhd-controller-remapped name="HHD Controller (remapped)"
+          --output name="GPD Controller"
       '';
     };
   };
