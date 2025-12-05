@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  osConfig,
   ...
 }: let
   vibranceShader = "$HOME/.config/hypr/shaders/vibrance.glsl";
@@ -8,7 +9,8 @@
   # Tool paths for keybinds
   hyprctl = "${pkgs.hyprland}/bin/hyprctl";
   grep = "${pkgs.gnugrep}/bin/grep";
-  steam = "${pkgs.steam}/bin/steam";
+  # Use NixOS Steam package (from programs.steam.enable)
+  steam = "${osConfig.programs.steam.package}/bin/steam";
 
   # Focus window if running, otherwise launch app
   focusOrLaunch = class: cmd: "${hyprctl} clients -j | ${grep} -qi '\"class\": \"${class}\"' && ${hyprctl} dispatch focuswindow 'class:^(${class})$' || ${cmd}";
@@ -192,12 +194,26 @@ in {
     # Xbox button: BTN_MODE remapped via evsieve → XF86Launch6
     # L4/R4: HHD's keyboard shortcuts not working, keeping placeholders for future
     bind = [
-      # Xbox button (XF86Launch6, remapped from BTN_MODE) - Focus or launch Steam
-      ", XF86Launch6, exec, ${focusOrLaunch "steam" steam}"
+      # Xbox button (XF86Launch6, remapped from BTN_MODE) - Go to Steam workspace, focus/launch Steam
+      ", XF86Launch6, exec, ${hyprctl} dispatch workspace 10 && ${focusOrLaunch "steam" steam}"
       # L4 back button (F20) - placeholder (HHD keyboard not working)
       ", F20, exec, echo 'L4 pressed - customize me'"
       # R4 back button (F21) - placeholder
       ", F21, exec, echo 'R4 pressed - customize me'"
+    ];
+
+    # Force Steam and games to workspace 10 (new Hyprland syntax)
+    windowrule = [
+      # Steam client windows
+      "workspace 10 silent, match:class steam"
+      "workspace 10 silent, match:class Steam"
+      "workspace 10 silent, match:title Steam"
+      # Steam games (common patterns)
+      "workspace 10, match:class r:^steam_app_"
+      "workspace 10, match:class gamescope"
+      # Make games fullscreen by default
+      "fullscreen on, match:class r:^steam_app_"
+      "fullscreen on, match:class gamescope"
     ];
   };
 }
