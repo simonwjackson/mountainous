@@ -67,6 +67,10 @@
       url = "github:Cryolitia/gpd-fan-driver";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    citron = {
+      url = "github:simonwjackson/citron-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -82,6 +86,7 @@
           neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
           synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
           beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
+          citron = inputs.citron.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];

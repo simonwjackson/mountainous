@@ -144,6 +144,46 @@
         "type": "github"
       }
     },
+    "citron": {
+      "inputs": {
+        "citron-src": "citron-src",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nx-tzdb": "nx-tzdb"
+      },
+      "locked": {
+        "lastModified": 1764956700,
+        "narHash": "sha256-9BksmLRJWSJkjRaSUudDGX2L/TVZJ7RbVg2SQkrgQ/A=",
+        "owner": "simonwjackson",
+        "repo": "citron-nix",
+        "rev": "e1450dac1b4e07f7919464049b08fbda791e8364",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "citron-nix",
+        "type": "github"
+      }
+    },
+    "citron-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1764753324,
+        "narHash": "sha256-ciBNaRWRLXXYuHU4ONNODQ82+0Ul6yULGGUYmaHAL0c=",
+        "ref": "refs/heads/main",
+        "rev": "d397f379fe9f6b48675269428101a5e22cad924c",
+        "revCount": 27741,
+        "submodules": true,
+        "type": "git",
+        "url": "https://git.citron-emu.org/Citron/Emulator.git"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://git.citron-emu.org/Citron/Emulator.git"
+      }
+    },
     "claudecode-nvim": {
       "flake": false,
       "locked": {
@@ -1727,6 +1767,19 @@
         "type": "github"
       }
     },
+    "nx-tzdb": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1697078172,
+        "narHash": "sha256-YOIElcKTiclem05trZsA3YJReozu/ex7jJAKD6nAMwc=",
+        "type": "tarball",
+        "url": "https://github.com/lat9nq/tzdb_to_nx/releases/download/221202/221202.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/lat9nq/tzdb_to_nx/releases/download/221202/221202.zip"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -1796,6 +1849,7 @@
         "auto-cpufreq": "auto-cpufreq",
         "beads": "beads",
         "chaotic": "chaotic",
+        "citron": "citron",
         "disko": "disko",
         "elevate": "elevate",
         "flexget-webui": "flexget-webui",

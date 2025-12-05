@@ -41,6 +41,9 @@
 
     # Moonlight streaming client
     moonlight-qt
+
+    # Emulators
+    citron # Nintendo Switch
   ];
 
   handheldPackages = with pkgs; [
