@@ -109,14 +109,27 @@
     varying vec2 v_texcoord;
     uniform sampler2D tex;
 
-    // Saturation boost - adjust 0.0 to 0.5 (higher = more vibrant)
-    const float vibrance = 1;
+    const float vibrance = 0.4;      // Color boost (0.0-1.0)
+    const float contrast = 1.15;     // Contrast multiplier
+    const float saturation = 1.25;   // Overall saturation
 
     void main() {
         vec4 c = texture2D(tex, v_texcoord);
+
+        // Smart vibrance (boosts dull colors more)
         float avg = (c.r + c.g + c.b) / 3.0;
-        c.rgb += (c.rgb - avg) * vibrance;
-        gl_FragColor = c;
+        float mx = max(c.r, max(c.g, c.b));
+        float amt = (mx - avg) * (-vibrance * 3.0);
+        c.rgb = mix(c.rgb, vec3(mx), amt);
+
+        // Saturation boost
+        float luma = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+        c.rgb = mix(vec3(luma), c.rgb, saturation);
+
+        // Contrast (centered at 0.5)
+        c.rgb = (c.rgb - 0.5) * contrast + 0.5;
+
+        gl_FragColor = clamp(c, 0.0, 1.0);
     }
   '';
 
