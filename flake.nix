@@ -63,6 +63,10 @@
       url = "https://github.com/Flexget/webui/releases/download/2.0.29/dist.zip";
       flake = false;
     };
+    gpd-fan-driver = {
+      url = "github:Cryolitia/gpd-fan-driver";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let

@@ -158,7 +158,7 @@
   mountainous.hyprland.extraSettings = {
     # Display rotation for portrait panel (GPD Win Mini 2025)
     monitor = [
-      "eDP-1,1920x1080@120,0x0,1,transform,1"
+      "eDP-1,1920x1080@120,0x0,1.5,transform,0"
     ];
 
     # Hyprshade toggle keybinds

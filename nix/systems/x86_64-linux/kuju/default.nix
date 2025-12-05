@@ -84,12 +84,14 @@
   config,
   pkgs,
   lib,
+  inputs,
   modulesPath,
   ...
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./disko.nix
+    inputs.gpd-fan-driver.nixosModules.default
   ];
 
   # ============================================================================
@@ -175,7 +177,6 @@
       # Screen rotation for portrait panels mounted as landscape
       # GPD Win Mini 2025: REQUIRED (portrait screen in landscape mount)
       # GPD Win Max 2 2025: NOT needed (true landscape screen)
-      "fbcon=rotate:1"
       "fbcon=nodefer" # Earlier framebuffer initialization
 
       # ========================================================================
@@ -377,47 +378,40 @@
     lm_sensors
   ];
 
-  # Fan control with custom quiet curve
-  # Uses fancontrol service from lm-sensors with gpd-fan hwmon interface
+  # ============================================================================
+  # FAN CONTROL - GPD Fan Driver + Quiet Curve
+  # ============================================================================
+  # Uses external gpd-fan-driver module (kernel 6.18+ will have it natively)
+  # https://github.com/Cryolitia/gpd-fan-driver
+  hardware.gpd-fan.enable = true;
+
+  # Custom quiet fan curve using fancontrol
+  # hwmon2 = gpdfan (fan), hwmon5 = k10temp (CPU temp)
+  # NOTE: hwmon numbers may change on reboot - verify with: cat /sys/class/hwmon/hwmon*/name
   hardware.fancontrol = {
     enable = true;
-    # Quiet fan curve: stay silent up to 50°C, ramp gently, full speed at 85°C
-    # IMPORTANT: Run `sensors-detect` and `pwmconfig` after first boot to
-    # generate correct DEVPATH/DEVNAME values for your specific hardware
     config = ''
-      # Configuration for GPD Win Mini 2025 / Win Max 2 2025
-      # Tune these values after running: sudo pwmconfig
-      INTERVAL=5
-      DEVPATH=hwmon0=devices/platform/gpd_fan
-      DEVNAME=hwmon0=gpd_fan
-      FCTEMPS=hwmon0/pwm1=hwmon0/temp1_input
-      FCFANS=hwmon0/pwm1=hwmon0/fan1_input
-      # Quiet curve: 0% until 50°C, gentle ramp 50-85°C
-      MINTEMP=hwmon0/pwm1=50
-      MAXTEMP=hwmon0/pwm1=85
-      MINSTART=hwmon0/pwm1=60
-      MINSTOP=hwmon0/pwm1=40
-      # Limit max fan speed to 85% for noise reduction (set to 255 for full)
-      MAXPWM=hwmon0/pwm1=220
+      INTERVAL=3
+      DEVPATH=hwmon2=devices/platform/gpd_fan hwmon5=devices/pci0000:00/0000:00:18.3
+      DEVNAME=hwmon2=gpdfan hwmon5=k10temp
+      FCTEMPS=hwmon2/pwm1=hwmon5/temp1_input
+      FCFANS=hwmon2/pwm1=hwmon2/fan1_input
+      # Quiet curve: fan off until 55°C, gentle ramp to 80°C
+      MINTEMP=hwmon2/pwm1=55
+      MAXTEMP=hwmon2/pwm1=80
+      # PWM: MINSTART=spin-up threshold, MINSTOP=minimum while running
+      MINSTART=hwmon2/pwm1=80
+      MINSTOP=hwmon2/pwm1=60
+      MINPWM=hwmon2/pwm1=0
+      MAXPWM=hwmon2/pwm1=255
     '';
-  };
-
-  # Suspend-then-hibernate for better battery life
-  # Suspend for quick resume, hibernate after timeout for zero drain
-  systemd.sleep.extraConfig = ''
-    HibernateDelaySec=30m
-  '';
-
-  services.logind.settings.Login = {
-    HandleLidSwitch = "suspend-then-hibernate";
-    HandleLidSwitchExternalPower = "suspend-then-hibernate";
-    HandlePowerKey = "suspend-then-hibernate";
-    HandlePowerKeyLongPress = "poweroff";
   };
 
   # ============================================================================
   # POWER MANAGEMENT - MAXIMUM BATTERY OPTIMIZATION
   # ============================================================================
+  # Note: suspend-then-hibernate is handled by mountainous.hybrid-sleep
+  # (enabled via laptop profile) - no need to configure logind manually
 
   # Auto-cpufreq: Automatic CPU frequency scaling for battery life
   # Much better than static governors - adapts dynamically
