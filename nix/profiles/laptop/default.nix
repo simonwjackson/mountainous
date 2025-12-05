@@ -20,7 +20,7 @@ in {
     mountainous = {
       hybrid-sleep = {
         enable = true;
-        delay = 60; # Changed from 5 minutes to 60 minutes (1 hour)
+        delay = 15; # Hibernate after 15 minutes of suspend
         hibernate = true;
       };
     };
