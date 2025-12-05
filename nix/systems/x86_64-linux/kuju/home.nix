@@ -12,6 +12,36 @@ in {
   home.sessionVariables.RESTORE_SHADER_CMD = "hyprctl keyword decoration:screen_shader ${vibranceShader}";
 
   # ============================================================================
+  # HANDHELD DAEMON (HHD) CONFIGURATION
+  # ============================================================================
+  # Declarative config for controller emulation and button mapping
+  # Hot-reloads when file changes - no restart needed
+  xdg.configFile."hhd/state.yml".text = ''
+    hhd:
+      settings:
+        hhd:
+          http:
+            localhost_only: true
+            enable_token: false
+    gpd:
+      controllers:
+        # Menu button: tap=QAM, double-tap=HHD overlay, hold=Xbox button
+        l4r4: combo_menu
+        # Select + button combos for Xbox shortcuts
+        main_chords: select_only
+        # DualSense Edge emulation (gyro, touchpad, adaptive triggers)
+        controller_mode: dualsense_edge
+        # Motion controls enabled
+        imu: true
+        imu_hz: 400
+        nintendo_mode: false
+      wincontrols:
+        # L4/R4 back buttons emit F20/F21 keycodes for custom Hyprland binds
+        r4l4: hhd
+        vibration: medium
+  '';
+
+  # ============================================================================
   # VIBRANCE SHADER - OLED-like appearance for IPS panel
   # ============================================================================
   xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
@@ -142,5 +172,15 @@ in {
 
     # Apply vibrance shader by default (OLED-like appearance)
     decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
+
+    # HHD back button bindings (L4=F20, R4=F21)
+    # When r4l4=hhd in HHD config, back buttons emit F20/F21 keycodes
+    # Placeholder actions - customize as needed
+    bind = [
+      # L4 back button (F20) - e.g., Quick Action Menu
+      ", F20, exec, echo 'L4 pressed - customize me'"
+      # R4 back button (F21) - e.g., Screenshot or secondary action
+      ", F21, exec, echo 'R4 pressed - customize me'"
+    ];
   };
 }

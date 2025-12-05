@@ -395,6 +395,14 @@
     requires = lib.mkForce [];
   };
 
+  # Handheld Daemon (HHD) - Controller/input management for gaming handhelds
+  # Config managed declaratively via home-manager: ~/.config/hhd/state.yml
+  services.handheld-daemon = {
+    enable = true;
+    user = "simonwjackson";
+    ui.enable = false; # Headless - no web UI needed
+  };
+
   # OBS Studio with virtual camera
   programs.obs-studio = {
     enable = true;
