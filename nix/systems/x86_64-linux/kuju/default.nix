@@ -183,11 +183,20 @@
       "fbcon=nodefer" # Earlier framebuffer initialization
 
       # ========================================================================
-      # Boot Configuration
+      # Boot Configuration - MAXIMUM SPEED
       # ========================================================================
-      "loglevel=4"
+      "loglevel=3" # Reduce kernel logging (errors and warnings only)
       "quiet"
-      "splash"
+      "rd.systemd.show_status=auto" # Only show status on slow boot
+      "rd.udev.log_level=3" # Reduce udev logging
+
+      # Disable unnecessary kernel features for faster boot
+      "nowatchdog" # Disable watchdog (saves ~0.5s)
+      "nmi_watchdog=0" # Disable NMI watchdog
+      "modprobe.blacklist=iTCO_wdt" # Blacklist Intel watchdog
+
+      # Faster console
+      "vt.global_cursor_default=0" # Hide cursor during boot
     ];
 
     # systemd-boot (UEFI) - simpler than GRUB for single-boot UEFI systems
@@ -374,6 +383,18 @@
     };
   };
 
+  # ============================================================================
+  # GREETD BOOT OPTIMIZATION - Remove network dependency for fastest boot
+  # ============================================================================
+  # systemd-user-sessions waits for network.target and we can't easily remove it.
+  # Solution: Make greetd NOT wait for systemd-user-sessions at all.
+  # greetd just needs basic.target to launch Hyprland - network is not required.
+  systemd.services.greetd = {
+    after = lib.mkForce ["basic.target"];
+    wants = lib.mkForce [];
+    requires = lib.mkForce [];
+  };
+
   # OBS Studio with virtual camera
   programs.obs-studio = {
     enable = true;
@@ -540,11 +561,19 @@
   };
 
   # ============================================================================
-  # BOOT SPEED OPTIMIZATIONS
+  # BOOT SPEED OPTIMIZATIONS - MAXIMUM AGGRESSION
   # ============================================================================
-  # Goal: Get to Hyprland ASAP - defer non-critical services
+  # Goal: Get to Hyprland in under 2 seconds userspace time
+  # Strategy: Defer EVERYTHING that isn't needed for display
 
-  # Defer tailscaled daemon (608ms) - Tailscale can start after we're in Hyprland
+  # --------------------------------------------------------------------------
+  # NETWORK SERVICES - All deferred (not needed for Hyprland)
+  # --------------------------------------------------------------------------
+
+  # Defer NetworkManager-wait-online completely (often blocks boot)
+  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
+
+  # Defer tailscaled daemon (608ms)
   systemd.services.tailscaled = {
     wantedBy = lib.mkForce [];
     before = lib.mkForce [];
@@ -552,12 +581,12 @@
   systemd.timers.tailscaled-deferred = {
     wantedBy = ["timers.target"];
     timerConfig = {
-      OnBootSec = "3s";
+      OnBootSec = "5s";
       Unit = "tailscaled.service";
     };
   };
 
-  # Defer tailscaled-autoconnect (6.5s) - run after tailscaled starts
+  # Defer tailscaled-autoconnect (6.5s)
   systemd.services.tailscaled-autoconnect = {
     wantedBy = lib.mkForce [];
     before = lib.mkForce [];
@@ -565,41 +594,78 @@
   systemd.timers.tailscaled-autoconnect-deferred = {
     wantedBy = ["timers.target"];
     timerConfig = {
-      OnBootSec = "5s";
+      OnBootSec = "8s";
       Unit = "tailscaled-autoconnect.service";
     };
   };
 
-  # Defer powertop (2.4s) - power tuning can wait until after login
+  # --------------------------------------------------------------------------
+  # POWER/HARDWARE SERVICES - Deferred (can tune after login)
+  # --------------------------------------------------------------------------
+
+  # Defer powertop (2.4s)
   systemd.services.powertop.wantedBy = lib.mkForce [];
   systemd.timers.powertop = {
     wantedBy = ["timers.target"];
     timerConfig = {
-      OnBootSec = "30s"; # Run 30s after boot instead of blocking
+      OnBootSec = "30s";
       Unit = "powertop.service";
     };
   };
 
-  # Defer syncthing-init (1.1s) - run AFTER graphical, don't block it
+  # Defer bolt (268ms) - Thunderbolt auth not needed immediately
+  systemd.services."bolt".wantedBy = lib.mkForce [];
+  systemd.timers.bolt-deferred = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "10s";
+      Unit = "bolt.service";
+    };
+  };
+
+  # Defer fwupd - firmware updates definitely not needed at boot
+  systemd.services.fwupd.wantedBy = lib.mkForce [];
+
+  # --------------------------------------------------------------------------
+  # SYNC SERVICES - Deferred
+  # --------------------------------------------------------------------------
+
+  # Defer syncthing-init (149ms)
   systemd.services.syncthing-init = {
     wantedBy = lib.mkForce [];
     before = lib.mkForce [];
-    after = ["graphical.target"];
   };
   systemd.timers.syncthing-init-deferred = {
     wantedBy = ["timers.target"];
     timerConfig = {
-      OnBootSec = "10s";
+      OnBootSec = "15s";
       Unit = "syncthing-init.service";
     };
   };
 
-  # Reduce systemd default timeouts for faster failure detection
+  # --------------------------------------------------------------------------
+  # OPTIONAL SERVICES - Defer or disable
+  # --------------------------------------------------------------------------
+
+  # Defer ModemManager (78ms) - not using cellular
+  systemd.services.ModemManager.wantedBy = lib.mkForce [];
+
+  # Defer geoclue (99ms) - location services not critical
+  systemd.services.geoclue.wantedBy = lib.mkForce [];
+
+  # --------------------------------------------------------------------------
+  # SYSTEMD OPTIMIZATIONS
+  # --------------------------------------------------------------------------
+
+  # Aggressive timeouts - fail fast, don't hang boot
   systemd.settings.Manager = {
-    DefaultTimeoutStartSec = "10s";
-    DefaultTimeoutStopSec = "10s";
-    DefaultDeviceTimeoutSec = "10s";
+    DefaultTimeoutStartSec = "5s";
+    DefaultTimeoutStopSec = "5s";
+    DefaultDeviceTimeoutSec = "5s";
   };
+
+  # Disable systemd-networkd-wait-online if present
+  systemd.network.wait-online.enable = false;
 
   system.stateVersion = "25.05";
 }
