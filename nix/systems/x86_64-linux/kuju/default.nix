@@ -191,6 +191,8 @@
 
     # systemd-boot (UEFI) - simpler than GRUB for single-boot UEFI systems
     loader = {
+      # Skip boot menu for fastest boot - hold space to show menu
+      timeout = 0;
       efi = {
         canTouchEfiVariables = true;
         efiSysMountPoint = "/boot";
@@ -502,6 +504,68 @@
     openssh.authorizedKeys.keyFiles = [
       ../../../modules/nixos/user/id_rsa.pub
     ];
+  };
+
+  # ============================================================================
+  # BOOT SPEED OPTIMIZATIONS
+  # ============================================================================
+  # Goal: Get to Hyprland ASAP - defer non-critical services
+
+  # Defer tailscaled daemon (608ms) - Tailscale can start after we're in Hyprland
+  systemd.services.tailscaled = {
+    wantedBy = lib.mkForce [];
+    before = lib.mkForce [];
+  };
+  systemd.timers.tailscaled-deferred = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "3s";
+      Unit = "tailscaled.service";
+    };
+  };
+
+  # Defer tailscaled-autoconnect (6.5s) - run after tailscaled starts
+  systemd.services.tailscaled-autoconnect = {
+    wantedBy = lib.mkForce [];
+    before = lib.mkForce [];
+  };
+  systemd.timers.tailscaled-autoconnect-deferred = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "5s";
+      Unit = "tailscaled-autoconnect.service";
+    };
+  };
+
+  # Defer powertop (2.4s) - power tuning can wait until after login
+  systemd.services.powertop.wantedBy = lib.mkForce [];
+  systemd.timers.powertop = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "30s"; # Run 30s after boot instead of blocking
+      Unit = "powertop.service";
+    };
+  };
+
+  # Defer syncthing-init (1.1s) - run AFTER graphical, don't block it
+  systemd.services.syncthing-init = {
+    wantedBy = lib.mkForce [];
+    before = lib.mkForce [];
+    after = ["graphical.target"];
+  };
+  systemd.timers.syncthing-init-deferred = {
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "10s";
+      Unit = "syncthing-init.service";
+    };
+  };
+
+  # Reduce systemd default timeouts for faster failure detection
+  systemd.settings.Manager = {
+    DefaultTimeoutStartSec = "10s";
+    DefaultTimeoutStopSec = "10s";
+    DefaultDeviceTimeoutSec = "10s";
   };
 
   system.stateVersion = "25.05";
