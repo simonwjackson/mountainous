@@ -7,6 +7,9 @@
 }: let
   inherit (lib) mkIf mkMerge optionals;
 
+  # Import sub-modules
+  steamButtonConfig = import ./steam-button.nix {inherit config lib pkgs osConfig;};
+
   # Get gaming config from NixOS (source of truth)
   gamingEnabled = osConfig.mountainous.gaming.enable or false;
   gamingCfg = osConfig.mountainous.gaming or {};
@@ -102,5 +105,8 @@ in {
         GDK_DPI_SCALE = "0.75"; # 2 * 0.75 = 1.5x effective
       };
     })
+
+    # Steam button handler (from steam-button.nix)
+    steamButtonConfig.config
   ]);
 }

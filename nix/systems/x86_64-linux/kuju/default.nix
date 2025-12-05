@@ -598,6 +598,12 @@
     gamescopeSession.enable = true; # Steam Deck-like UI for handheld mode
   };
 
+  # Steam button handler - Xbox button via evsieve remap
+  mountainous.gaming.steamButton = {
+    enable = true;
+    keybind = ", XF86Launch6"; # Xbox button (BTN_MODE) remapped via evsieve
+  };
+
   # ============================================================================
   # USER CONFIGURATION
   # ============================================================================

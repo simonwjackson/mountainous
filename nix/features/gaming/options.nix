@@ -87,6 +87,28 @@ in {
     enable = mkEnableOption "Virtual gamepad proxy service";
   };
 
+  steamButton = {
+    enable = mkEnableOption "Steam button handler for quick Steam/gaming access";
+
+    keybind = mkOption {
+      type = types.str;
+      default = "SUPER, G";
+      description = "Hyprland keybind to trigger Steam button (e.g., 'SUPER, G' or ', XF86Launch6')";
+    };
+
+    workspace = mkOption {
+      type = types.int;
+      default = 10;
+      description = "Workspace number for games";
+    };
+
+    specialWorkspace = mkOption {
+      type = types.str;
+      default = "gaming";
+      description = "Name of the special workspace for Steam overlay";
+    };
+  };
+
   performance = {
     lowLatencyAudio = mkOption {
       type = types.bool;

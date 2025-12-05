@@ -5,45 +5,6 @@
   ...
 }: let
   vibranceShader = "$HOME/.config/hypr/shaders/vibrance.glsl";
-
-  # Tool paths
-  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
-  jq = "${pkgs.jq}/bin/jq";
-  grep = "${pkgs.gnugrep}/bin/grep";
-  steam = "${osConfig.programs.steam.package}/bin/steam";
-
-  # Focus window if running, otherwise launch app
-  focusOrLaunch = class: cmd: "${hyprctl} clients -j | ${grep} -qi '\"class\": \"${class}\"' && ${hyprctl} dispatch focuswindow 'class:^(${class})$' || ${cmd}";
-
-  # Xbox button handler - context-aware Steam/gaming navigation
-  xboxButtonHandler = pkgs.writeShellScript "xbox-button-handler" ''
-    # Behavior:
-    # - On ws10: toggle Steam overlay (special workspace)
-    # - Not on ws10 + game running: switch to show game
-    # - Not on ws10 + no game: switch to ws10, launch Steam if needed, show overlay
-
-    CURRENT_WS=$(${hyprctl} activeworkspace -j | ${jq} -r '.id')
-    GAME_ON_WS10=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.workspace.id == 10 and (.class | test("^steam_app_|gamescope")))] | length')
-    STEAM_RUNNING=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
-
-    if [[ "$CURRENT_WS" == "10" ]]; then
-        # Launch Steam if not running before toggling
-        if [[ "$STEAM_RUNNING" -eq 0 ]]; then
-            ${steam} &
-            sleep 0.5
-        fi
-        ${hyprctl} dispatch togglespecialworkspace gaming
-    elif [[ "$GAME_ON_WS10" -gt 0 ]]; then
-        ${hyprctl} dispatch workspace 10
-    else
-        ${hyprctl} dispatch workspace 10
-        if [[ "$STEAM_RUNNING" -eq 0 ]]; then
-            ${steam} &
-            sleep 0.5
-        fi
-        ${hyprctl} dispatch togglespecialworkspace gaming
-    fi
-  '';
 in {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
@@ -187,30 +148,10 @@ in {
     # Apply vibrance shader by default (OLED-like appearance)
     decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
 
-    # HHD button bindings
-    # Xbox button: BTN_MODE remapped via evsieve → XF86Launch6
-    # L4/R4: HHD's keyboard shortcuts not working, keeping placeholders for future
+    # L4/R4 back buttons (placeholders - HHD keyboard not working)
     bind = [
-      # Xbox button - Context-aware Steam/gaming navigation
-      ", XF86Launch6, exec, ${xboxButtonHandler}"
-      # L4 back button (F20) - placeholder (HHD keyboard not working)
       ", F20, exec, echo 'L4 pressed - customize me'"
-      # R4 back button (F21) - placeholder
       ", F21, exec, echo 'R4 pressed - customize me'"
-    ];
-
-    # Steam client goes to special workspace "gaming" (overlay)
-    # Games go to workspace 10 (fullscreen)
-    windowrule = [
-      # Steam client windows → special workspace
-      "workspace special:gaming silent, match:class ^(steam|Steam)$"
-      "workspace special:gaming silent, match:title ^Steam$"
-      # Steam games → workspace 10
-      "workspace 10, match:class r:^steam_app_"
-      "workspace 10, match:class gamescope"
-      # Make games fullscreen by default
-      "fullscreen on, match:class r:^steam_app_"
-      "fullscreen on, match:class gamescope"
     ];
   };
 }
