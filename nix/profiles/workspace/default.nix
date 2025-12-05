@@ -16,10 +16,7 @@ in {
     mountainous = {
       sound.enable = true;
       performance.enable = true;
-      hyprland = {
-        enable = true;
-        autoLogin = true;
-      };
+      hyprland.enable = true;
     };
 
     # Workspace packages

@@ -10,7 +10,11 @@ in {
   options.mountainous.hyprland = {
     enable = lib.mkEnableOption "Whether to enable the hyprland desktop";
 
-    autoLogin = lib.mkEnableOption "Whether to auto login to the hyprland desktop";
+    autoLogin = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to auto login to the hyprland desktop";
+    };
   };
 
   config = lib.mkIf cfg.enable {

@@ -343,6 +343,24 @@
 
     # Thunderbolt/USB4 support
     hardware.bolt.enable = true;
+
+    # Disable SDDM (use greetd instead for TUI login)
+    displayManager.sddm.enable = lib.mkForce false;
+
+    # TUI login manager with auto-login to Hyprland
+    greetd = {
+      enable = true;
+      settings = {
+        default_session = {
+          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+          user = "greeter";
+        };
+        initial_session = {
+          command = "Hyprland";
+          user = "simonwjackson";
+        };
+      };
+    };
   };
 
   # OBS Studio with virtual camera
