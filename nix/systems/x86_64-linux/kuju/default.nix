@@ -123,12 +123,17 @@
       "btusb" # Bluetooth support
     ];
 
-    # Blacklist conflicting BMI160 modules for proper BMI260 sensor support
-    # GPD Win Max 2 2025 uses BMI260 IMU, needs IIO subsystem instead
+    # Blacklist conflicting modules
     blacklistedKernelModules = [
+      # BMI160 conflicts with BMI260 IMU (GPD uses BMI260, needs IIO subsystem)
       "bmi160_spi"
       "bmi160_i2c"
       "bmi160_core"
+      # sp5100_tco (AMD watchdog) conflicts with i2c_piix4 SMBus
+      "sp5100_tco"
+      # i2c_piix4 causes SMBus timeout errors on AMD Ryzen AI 9 HX 370
+      # Only loses SPD EEPROM access (decode-dimms) - dmidecode still works via SMBIOS
+      "i2c_piix4"
     ];
 
     extraModulePackages = [];
@@ -215,8 +220,8 @@
       # Enable experimental features for better codec support (headphones, controllers)
       settings = {
         General = {
-          Enable = "Source,Sink,Media,Socket";
           Experimental = true;
+          # Note: Audio profiles (Source,Sink,Media) are handled by PipeWire, not main.conf
         };
       };
     };
@@ -325,6 +330,12 @@
   # ============================================================================
   # SERVICES - Gaming Handheld Optimizations
   # ============================================================================
+
+  # Disable nscd - restarts on every resolv.conf change causing boot loop
+  # Name resolution works via systemd-resolved/NetworkManager without nscd
+  services.nscd.enable = false;
+  system.nssModules = lib.mkForce [];
+
   services = {
     # SSD optimization (TRIM for NVMe)
     fstrim.enable = true;
