@@ -1,9 +1,13 @@
 # Steam Button Handler - Context-aware Steam/gaming navigation
 #
-# Provides a keybind (default: SUPER+G) that intelligently handles Steam access:
+# Provides a keybind (default: SUPER+G) that intelligently handles Steam access.
+# When useSpecialWorkspace = true (default):
 # - On gaming workspace: Toggle Steam overlay (special workspace)
 # - Not on gaming workspace + game running: Switch to gaming workspace
 # - Not on gaming workspace + no game: Switch to workspace, launch Steam, show overlay
+# When useSpecialWorkspace = false:
+# - Steam and games all go to the gaming workspace
+# - Button switches to gaming workspace and launches Steam if needed
 {
   config,
   lib,
@@ -31,19 +35,20 @@
 
   # Configurable values
   workspace = toString (cfg.workspace or 10);
+  useSpecialWorkspace = cfg.useSpecialWorkspace or true;
   specialWs = cfg.specialWorkspace or "gaming";
   keybind = cfg.keybind or "SUPER, G";
 
-  # Steam button handler script
-  steamButtonHandler = pkgs.writeShellScript "steam-button-handler" ''
-    # Context-aware Steam/gaming navigation
+  # Steam button handler script (special workspace mode)
+  steamButtonHandlerSpecial = pkgs.writeShellScript "steam-button-handler" ''
+    # Context-aware Steam/gaming navigation (special workspace mode)
     # - On gaming workspace: Toggle Steam overlay
     # - Not on gaming workspace + game running: Switch to show game
     # - Not on gaming workspace + no game: Launch Steam, show overlay
 
-    CURRENT_WS=$(${hyprctl} activeworkspace -j | ${jq} -r '.id')
-    GAME_ON_WS=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.workspace.id == ${workspace} and (.class | test("^steam_app_|gamescope")))] | length')
-    STEAM_RUNNING=$(${hyprctl} clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
+    CURRENT_WS=$(${hyprctl} --instance 0 activeworkspace -j | ${jq} -r '.id')
+    GAME_ON_WS=$(${hyprctl} --instance 0 clients -j | ${jq} -r '[.[] | select(.workspace.id == ${workspace} and (.class | test("^steam_app_|gamescope")))] | length')
+    STEAM_RUNNING=$(${hyprctl} --instance 0 clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
 
     if [[ "$CURRENT_WS" == "${workspace}" ]]; then
         # On gaming workspace - launch Steam if needed, then toggle overlay
@@ -51,20 +56,68 @@
             ${steam}/bin/steam &
             sleep 0.5
         fi
-        ${hyprctl} dispatch togglespecialworkspace ${specialWs}
+        ${hyprctl} --instance 0 dispatch togglespecialworkspace ${specialWs}
     elif [[ "$GAME_ON_WS" -gt 0 ]]; then
         # Not on gaming workspace, but game is running - switch to show it
-        ${hyprctl} dispatch workspace ${workspace}
+        ${hyprctl} --instance 0 dispatch workspace ${workspace}
     else
         # Not on gaming workspace, no game - go to workspace and show Steam
-        ${hyprctl} dispatch workspace ${workspace}
+        ${hyprctl} --instance 0 dispatch workspace ${workspace}
         if [[ "$STEAM_RUNNING" -eq 0 ]]; then
             ${steam}/bin/steam &
             sleep 0.5
         fi
-        ${hyprctl} dispatch togglespecialworkspace ${specialWs}
+        ${hyprctl} --instance 0 dispatch togglespecialworkspace ${specialWs}
     fi
   '';
+
+  # Steam button handler script (regular workspace mode)
+  steamButtonHandlerSimple = pkgs.writeShellScript "steam-button-handler" ''
+    # Simple Steam/gaming navigation (regular workspace mode)
+    # Switch to gaming workspace and launch Steam if not running
+
+    STEAM_RUNNING=$(${hyprctl} --instance 0 clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
+
+    ${hyprctl} --instance 0 dispatch workspace ${workspace}
+    if [[ "$STEAM_RUNNING" -eq 0 ]]; then
+        ${steam}/bin/steam &
+    fi
+  '';
+
+  steamButtonHandler =
+    if useSpecialWorkspace
+    then steamButtonHandlerSpecial
+    else steamButtonHandlerSimple;
+
+  # Window rules for special workspace mode
+  windowRulesSpecial = [
+    # Steam client → special workspace overlay
+    "workspace special:${specialWs} silent, match:class ^(steam|Steam)$"
+    "workspace special:${specialWs} silent, match:title ^Steam$"
+
+    # Steam games → gaming workspace
+    "workspace ${workspace}, match:class r:^steam_app_"
+    "workspace ${workspace}, match:class gamescope"
+
+    # Games fullscreen by default
+    "fullscreen on, match:class r:^steam_app_"
+    "fullscreen on, match:class gamescope"
+  ];
+
+  # Window rules for regular workspace mode
+  windowRulesSimple = [
+    # Steam client → gaming workspace
+    "workspace ${workspace}, match:class ^(steam|Steam)$"
+    "workspace ${workspace}, match:title ^Steam$"
+
+    # Steam games → gaming workspace
+    "workspace ${workspace}, match:class r:^steam_app_"
+    "workspace ${workspace}, match:class gamescope"
+
+    # Games fullscreen by default
+    "fullscreen on, match:class r:^steam_app_"
+    "fullscreen on, match:class gamescope"
+  ];
 in {
   config = mkMerge [
     # Assertion: steamButton requires Hyprland
@@ -86,19 +139,10 @@ in {
         ];
 
         # Window rules for Steam and games
-        windowrule = [
-          # Steam client → special workspace overlay
-          "workspace special:${specialWs} silent, match:class ^(steam|Steam)$"
-          "workspace special:${specialWs} silent, match:title ^Steam$"
-
-          # Steam games → gaming workspace
-          "workspace ${workspace}, match:class r:^steam_app_"
-          "workspace ${workspace}, match:class gamescope"
-
-          # Games fullscreen by default
-          "fullscreen on, match:class r:^steam_app_"
-          "fullscreen on, match:class gamescope"
-        ];
+        windowrule =
+          if useSpecialWorkspace
+          then windowRulesSpecial
+          else windowRulesSimple;
       };
     })
   ];

@@ -102,10 +102,16 @@ in {
       description = "Workspace number for games";
     };
 
+    useSpecialWorkspace = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Put Steam in a special workspace overlay (true) or regular workspace (false)";
+    };
+
     specialWorkspace = mkOption {
       type = types.str;
       default = "gaming";
-      description = "Name of the special workspace for Steam overlay";
+      description = "Name of the special workspace for Steam overlay (only used when useSpecialWorkspace = true)";
     };
   };
 

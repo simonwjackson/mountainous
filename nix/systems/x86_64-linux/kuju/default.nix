@@ -616,6 +616,7 @@
   mountainous.gaming.steamButton = {
     enable = true;
     keybind = ", XF86Launch6"; # Xbox button (BTN_MODE) remapped via evsieve
+    useSpecialWorkspace = false; # Steam goes to workspace 10, not a special overlay
   };
 
   # ============================================================================
