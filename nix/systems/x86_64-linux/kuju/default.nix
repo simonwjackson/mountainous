@@ -369,16 +369,16 @@
     # Disable SDDM (use greetd instead for TUI login)
     displayManager.sddm.enable = lib.mkForce false;
 
-    # TUI login manager with auto-login to Hyprland
+    # TUI login manager with auto-login to Hyprland on TTY1
     greetd = {
       enable = true;
       settings = {
         default_session = {
-          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd start-hyprland";
           user = "greeter";
         };
         initial_session = {
-          command = "Hyprland";
+          command = "start-hyprland";
           user = "simonwjackson";
         };
       };
