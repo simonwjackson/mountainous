@@ -29,6 +29,7 @@ in {
       enable = true;
       authKeyFile = mkIf (agenixEnabled && hasSecret) config.age.secrets.tailscale-ephemeral.path;
       extraUpFlags = cfg.extraUpFlags;
+      extraDaemonFlags = ["--encrypt-state=false"];
     };
 
     # Ensure tailscaled waits for persistent storage bind mount
