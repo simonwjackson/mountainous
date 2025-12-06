@@ -14,39 +14,39 @@ in {
   mountainous.dictation.enable = true;
 
   # Restore vibrance shader after software dimming ends
-  home.sessionVariables.RESTORE_SHADER_CMD = "hyprctl keyword decoration:screen_shader ${vibranceShader}";
+  # home.sessionVariables.RESTORE_SHADER_CMD = "hyprctl keyword decoration:screen_shader ${vibranceShader}";
 
   # ============================================================================
   # VIBRANCE SHADER - OLED-like appearance for IPS panel
   # ============================================================================
-  xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
-    #version 300 es
-    precision highp float;
-
-    in vec2 v_texcoord;
-    out vec4 fragColor;
-    uniform sampler2D tex;
-
-    void main() {
-        vec4 c = texture(tex, v_texcoord);
-
-        // Saturation boost (OLED-like vibrance)
-        float saturation = 1.15;
-        float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
-        c.rgb = mix(vec3(luma), c.rgb, saturation);
-
-        // Contrast boost (deeper blacks, brighter highlights)
-        float contrast = 1.08;
-        c.rgb = (c.rgb - 0.5) * contrast + 0.5;
-
-        // Gamma correction (punchier midtones)
-        float gamma = 0.95;
-        c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
-
-        c.rgb = clamp(c.rgb, 0.0, 1.0);
-        fragColor = c;
-    }
-  '';
+  # xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
+  #   #version 300 es
+  #   precision highp float;
+  #
+  #   in vec2 v_texcoord;
+  #   out vec4 fragColor;
+  #   uniform sampler2D tex;
+  #
+  #   void main() {
+  #       vec4 c = texture(tex, v_texcoord);
+  #
+  #       // Saturation boost (OLED-like vibrance)
+  #       float saturation = 1.15;
+  #       float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+  #       c.rgb = mix(vec3(luma), c.rgb, saturation);
+  #
+  #       // Contrast boost (deeper blacks, brighter highlights)
+  #       float contrast = 1.08;
+  #       c.rgb = (c.rgb - 0.5) * contrast + 0.5;
+  #
+  #       // Gamma correction (punchier midtones)
+  #       float gamma = 0.95;
+  #       c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
+  #
+  #       c.rgb = clamp(c.rgb, 0.0, 1.0);
+  #       fragColor = c;
+  #   }
+  # '';
 
   # Direnv for directory-based environments
   programs.direnv.enable = true;
@@ -142,11 +142,11 @@ in {
   mountainous.hyprland.extraSettings = {
     # Display rotation for portrait panel (GPD Win Mini 2025)
     monitor = [
-      "eDP-1,1920x1080@120,0x0,1.5,transform,0"
+      "eDP-1,1920x1080@120,0x0,1.25,transform,0"
     ];
 
     # Apply vibrance shader by default (OLED-like appearance)
-    decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
+    # decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
 
     # L4/R4 back buttons → workspace switching
     bind = [

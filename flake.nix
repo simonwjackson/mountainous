@@ -32,7 +32,9 @@
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-anywhere.url = "github:nix-community/nixos-anywhere";
-    hyprland.url = "github:hyprwm/Hyprland";
+    # Pinned to bbb8331 - commits after this break gamescope fullscreen rendering
+    # https://github.com/hyprwm/Hyprland/discussions/12176
+    hyprland.url = "github:hyprwm/Hyprland/bbb8331";
     hyprland-plugins = {
       url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
@@ -82,7 +84,8 @@
       overlays = with inputs; [
         gomod2nix.overlays.default
         (final: prev: {
-          # Removed gamescope_git overlays - now using Jovian's stable packages
+          # Using mainline gamescope with SDL backend workaround:
+          # SDL_VIDEODRIVER=x11 gamescope --backend sdl -F fsr ...
           neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
           synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
           beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;

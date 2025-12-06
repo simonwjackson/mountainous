@@ -97,11 +97,9 @@
 
     # Steam games → gaming workspace
     "workspace ${workspace}, match:class r:^steam_app_"
-    "workspace ${workspace}, match:class gamescope"
 
     # Games fullscreen by default
     "fullscreen on, match:class r:^steam_app_"
-    "fullscreen on, match:class gamescope"
   ];
 
   # Window rules for regular workspace mode
@@ -112,11 +110,9 @@
 
     # Steam games → gaming workspace
     "workspace ${workspace}, match:class r:^steam_app_"
-    "workspace ${workspace}, match:class gamescope"
 
     # Games fullscreen by default
     "fullscreen on, match:class r:^steam_app_"
-    "fullscreen on, match:class gamescope"
   ];
 in {
   config = mkMerge [

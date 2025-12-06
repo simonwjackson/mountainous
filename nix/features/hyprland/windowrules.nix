@@ -8,6 +8,10 @@
     "no_focus true, match:class ^$, match:title ^$, match:xwayland true, match:float true, match:fullscreen false, match:pin false"
     "workspace magic, match:class ^(steam)$"
 
+    # Gamescope: Tile and fullscreen by default
+    "tile true, match:class ^\.gamescope"
+    "fullscreen on, match:class ^\.gamescope"
+
     # Firefox: Float specific popups and dialogs
     "float true, match:class ^(firefox)$, match:title ^(Library)$"
     "float true, match:class ^(firefox)$, match:title ^(About Mozilla Firefox)$"

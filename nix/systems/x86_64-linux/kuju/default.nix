@@ -177,9 +177,6 @@
       # ========================================================================
       # Display Configuration
       # ========================================================================
-      # Screen rotation for portrait panels mounted as landscape
-      # GPD Win Mini 2025: REQUIRED (portrait screen in landscape mount)
-      # GPD Win Max 2 2025: NOT needed (true landscape screen)
       "fbcon=nodefer" # Earlier framebuffer initialization
 
       # ========================================================================
@@ -343,15 +340,6 @@
       folders.knowledge.path = "/snowscape/knowledge";
     };
   };
-
-  # ============================================================================
-  # DISPLAY ROTATION - Portrait panel mounted as landscape (Hyprland)
-  # ============================================================================
-  # GPD Win Mini 2025 uses a portrait screen rotated 90 degrees
-  # Hyprland monitor config: transform 1 = 90 degrees clockwise
-  # Add to home.nix or hyprland.conf:
-  #   monitor = eDP-1,1920x1080@120,0x0,1,transform,1
-  # ============================================================================
 
   # ============================================================================
   # SERVICES - Gaming Handheld Optimizations
@@ -609,7 +597,6 @@
   # Additional Steam configuration (base Steam handled by gaming profile)
   programs.steam = {
     remotePlay.openFirewall = true;
-    gamescopeSession.enable = true; # Steam Deck-like UI for handheld mode
   };
 
   # Steam button handler - Xbox button via evsieve remap
