@@ -181,7 +181,13 @@
     # Apply hyprshade on startup (uses schedule from hyprshade.toml)
     exec-once = [
       "hyprshade auto"
+      "game-session-monitor"
     ];
+
+    # Disable "not responding" popup (interferes with frozen game session)
+    misc = {
+      enable_anr_dialog = false;
+    };
 
     # L4/R4 back buttons → workspace switching
     bind = [

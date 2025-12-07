@@ -483,8 +483,42 @@
     cage
     (writeShellScriptBin "game-session" ''
       # Launch Sway inside cage for gaming
-      # This avoids VT switching issues with gamescope
-      exec ${cage}/bin/cage -s -- sway
+      # Uses systemd scope for easy freeze/unfreeze via game-session-freeze/thaw
+      exec ${systemd}/bin/systemd-run --user --scope --unit=game-session \
+        ${cage}/bin/cage -s -- sway
+    '')
+    (writeShellScriptBin "game-session-freeze" ''
+      ${systemd}/bin/systemctl --user freeze game-session.scope 2>/dev/null
+    '')
+    (writeShellScriptBin "game-session-thaw" ''
+      ${systemd}/bin/systemctl --user thaw game-session.scope 2>/dev/null
+    '')
+    (writeShellScriptBin "game-session-monitor" ''
+      # Auto freeze/thaw game-session based on workspace 10 focus
+      # Thaw when on workspace 10, freeze when leaving
+      GAME_WORKSPACE=10
+      LAST_STATE=""
+
+      update_state() {
+        local current_ws="$1"
+        if [ "$current_ws" = "$GAME_WORKSPACE" ] && [ "$LAST_STATE" != "thaw" ]; then
+          ${systemd}/bin/systemctl --user thaw game-session.scope 2>/dev/null && LAST_STATE="thaw"
+        elif [ "$current_ws" != "$GAME_WORKSPACE" ] && [ "$LAST_STATE" != "freeze" ]; then
+          ${systemd}/bin/systemctl --user freeze game-session.scope 2>/dev/null && LAST_STATE="freeze"
+        fi
+      }
+
+      # Get initial workspace and set state
+      INITIAL_WS=$(${pkgs.hyprland}/bin/hyprctl activeworkspace -j | ${pkgs.jq}/bin/jq -r '.id')
+      update_state "$INITIAL_WS"
+
+      # Monitor workspace changes via Hyprland socket
+      ${pkgs.socat}/bin/socat -U - "UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" | while read -r line; do
+        if [[ "$line" == workspace\>\>* ]]; then
+          WS="''${line#workspace>>}"
+          update_state "$WS"
+        fi
+      done
     '')
   ];
 

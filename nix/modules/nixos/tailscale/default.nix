@@ -32,11 +32,17 @@ in {
       extraDaemonFlags = ["--encrypt-state=false"];
     };
 
-    # Ensure tailscaled waits for persistent storage bind mount
-    systemd.services.tailscaled = mkIf (config.mountainous.impermanence.enable or false) {
-      after = ["local-fs.target"];
-      requires = ["local-fs.target"];
-    };
+    # Tailscaled service overrides
+    systemd.services.tailscaled =
+      {
+        # Restart on abnormal exits (signals, timeouts) but not clean exits
+        serviceConfig.Restart = lib.mkForce "on-abnormal";
+      }
+      // lib.optionalAttrs (config.mountainous.impermanence.enable or false) {
+        # Ensure tailscaled waits for persistent storage bind mount
+        after = ["local-fs.target"];
+        requires = ["local-fs.target"];
+      };
 
     # Impermanence integration - persist Tailscale state
     environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf (config.mountainous.impermanence.enable or false) {
