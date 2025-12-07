@@ -369,12 +369,16 @@
     # Disable SDDM (use greetd instead for TUI login)
     displayManager.sddm.enable = lib.mkForce false;
 
-    # Auto-login to Hyprland on TTY1 (no greeter - always auto-login)
+    # TUI login manager with auto-login to Hyprland on TTY1
     greetd = {
       enable = true;
       settings = {
         default_session = {
-          command = "Hyprland";
+          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd start-hyprland";
+          user = "greeter";
+        };
+        initial_session = {
+          command = "start-hyprland";
           user = "simonwjackson";
         };
       };
@@ -447,7 +451,7 @@
   # Mosh - mobile shell for unstable connections
   programs.mosh.enable = true;
 
-  # Sway window manager (for nested gaming session)
+  # Sway window manager (on TTY2)
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;

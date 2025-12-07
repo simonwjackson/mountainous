@@ -3,9 +3,7 @@
   lib,
   osConfig,
   ...
-}: let
-  vibranceShader = "$HOME/.config/hypr/shaders/vibrance.glsl";
-in {
+}: {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
   # ============================================================================
@@ -13,40 +11,49 @@ in {
   # Dictation support (voice-to-text)
   mountainous.dictation.enable = true;
 
-  # Restore vibrance shader after software dimming ends
-  # home.sessionVariables.RESTORE_SHADER_CMD = "hyprctl keyword decoration:screen_shader ${vibranceShader}";
+  # ============================================================================
+  # HYPRSHADE - Screen shader management
+  # ============================================================================
+  home.packages = [pkgs.hyprshade];
 
-  # ============================================================================
-  # VIBRANCE SHADER - OLED-like appearance for IPS panel
-  # ============================================================================
-  # xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
-  #   #version 300 es
-  #   precision highp float;
-  #
-  #   in vec2 v_texcoord;
-  #   out vec4 fragColor;
-  #   uniform sampler2D tex;
-  #
-  #   void main() {
-  #       vec4 c = texture(tex, v_texcoord);
-  #
-  #       // Saturation boost (OLED-like vibrance)
-  #       float saturation = 1.15;
-  #       float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
-  #       c.rgb = mix(vec3(luma), c.rgb, saturation);
-  #
-  #       // Contrast boost (deeper blacks, brighter highlights)
-  #       float contrast = 1.08;
-  #       c.rgb = (c.rgb - 0.5) * contrast + 0.5;
-  #
-  #       // Gamma correction (punchier midtones)
-  #       float gamma = 0.95;
-  #       c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
-  #
-  #       c.rgb = clamp(c.rgb, 0.0, 1.0);
-  #       fragColor = c;
-  #   }
-  # '';
+  # Vibrance shader - OLED-like appearance for IPS panel
+  xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
+    precision highp float;
+    varying vec2 v_texcoord;
+    uniform sampler2D tex;
+
+    void main() {
+        vec4 c = texture2D(tex, v_texcoord);
+
+        // Saturation boost (OLED-like vibrance)
+        float saturation = 1.35;
+        float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+        c.rgb = mix(vec3(luma), c.rgb, saturation);
+
+        // Contrast boost (deeper blacks, brighter highlights)
+        float contrast = 1.12;
+        c.rgb = (c.rgb - 0.5) * contrast + 0.5;
+
+        // Gamma correction (punchier midtones)
+        float gamma = 0.92;
+        c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
+
+        c.rgb = clamp(c.rgb, 0.0, 1.0);
+        gl_FragColor = c;
+    }
+  '';
+
+  # Hyprshade config - vibrance always on, blue-light-filter at night
+  xdg.configFile."hypr/hyprshade.toml".text = ''
+    [[shades]]
+    name = "vibrance"
+    default = true
+
+    [[shades]]
+    name = "blue-light-filter"
+    start_time = 21:00:00
+    end_time = 06:00:00
+  '';
 
   # Direnv for directory-based environments
   programs.direnv.enable = true;
@@ -145,8 +152,10 @@ in {
       "eDP-1,1920x1080@120,0x0,1.25,transform,0"
     ];
 
-    # Apply vibrance shader by default (OLED-like appearance)
-    # decoration.screen_shader = "~/.config/hypr/shaders/vibrance.glsl";
+    # Apply hyprshade on startup (uses schedule from hyprshade.toml)
+    exec-once = [
+      "hyprshade auto"
+    ];
 
     # L4/R4 back buttons → workspace switching
     bind = [
