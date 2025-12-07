@@ -369,16 +369,12 @@
     # Disable SDDM (use greetd instead for TUI login)
     displayManager.sddm.enable = lib.mkForce false;
 
-    # TUI login manager with auto-login to Hyprland on TTY1
+    # Auto-login to Hyprland on TTY1 (no greeter - always auto-login)
     greetd = {
       enable = true;
       settings = {
         default_session = {
-          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd start-hyprland";
-          user = "greeter";
-        };
-        initial_session = {
-          command = "start-hyprland";
+          command = "Hyprland";
           user = "simonwjackson";
         };
       };
@@ -396,6 +392,40 @@
     wants = lib.mkForce [];
     requires = lib.mkForce [];
   };
+
+  # ============================================================================
+  # SWAY ON TTY2 - Second greetd instance
+  # ============================================================================
+  # Provides Sway as an alternative compositor on TTY2 (Ctrl+Alt+F2)
+  # Hyprland remains on TTY1 via greetd
+  systemd.services.greetd-sway = {
+    description = "Sway greeter on TTY2";
+    after = ["systemd-user-sessions.service" "plymouth-quit-wait.service"];
+    conflicts = ["getty@tty2.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = let
+      swayConfig = pkgs.writeText "greetd-sway-config.toml" ''
+        [terminal]
+        vt = 2
+
+        [default_session]
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway"
+        user = "greeter"
+
+        [initial_session]
+        command = "sway"
+        user = "simonwjackson"
+      '';
+    in {
+      Type = "simple";
+      ExecStart = "${pkgs.greetd.greetd}/bin/greetd --config ${swayConfig}";
+      Restart = "always";
+      RestartSec = "1";
+    };
+  };
+
+  # Override getty@tty2 to prevent conflict
+  systemd.services."getty@tty2".enable = false;
 
   # Evsieve: Remap Xbox button (BTN_MODE) to keyboard key for Hyprland binding
   # Uses raw GPD controller directly (no HHD - simpler and more stable)
@@ -450,6 +480,12 @@
 
   # Mosh - mobile shell for unstable connections
   programs.mosh.enable = true;
+
+  # Sway window manager (on TTY2)
+  programs.sway = {
+    enable = true;
+    wrapperFeatures.gtk = true;
+  };
 
   # ============================================================================
   # THERMAL/FAN & TDP CONFIGURATION - Quiet Operation with Dynamic Performance
