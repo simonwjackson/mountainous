@@ -65,7 +65,7 @@ in {
       "$mainMod, O, exec, ${hyprctl} clients | ${grep} -iq 'class: obsidian' && ${hyprctl} dispatch focuswindow 'class:^(obsidian)$' || ${pkgs.obsidian}/bin/obsidian"
       "$mainMod, C, killactive,"
       "$mainMod SHIFT, C, exec, ${hyprctl} activewindow -j | ${jq} '.pid' | ${xargs} -r kill -9"
-      "$mainMod, F, exec, $fileManager"
+      # "$mainMod, F" reserved for nested Sway fullscreen toggle
       "$mainMod, V, togglefloating,"
       "$mainMod SHIFT, Tab, cyclenext"
       "$mainMod, Tab, cyclenext, -1"

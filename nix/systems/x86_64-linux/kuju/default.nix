@@ -393,40 +393,6 @@
     requires = lib.mkForce [];
   };
 
-  # ============================================================================
-  # SWAY ON TTY2 - Second greetd instance
-  # ============================================================================
-  # Provides Sway as an alternative compositor on TTY2 (Ctrl+Alt+F2)
-  # Hyprland remains on TTY1 via greetd
-  systemd.services.greetd-sway = {
-    description = "Sway greeter on TTY2";
-    after = ["systemd-user-sessions.service" "plymouth-quit-wait.service"];
-    conflicts = ["getty@tty2.service"];
-    wantedBy = ["multi-user.target"];
-    serviceConfig = let
-      swayConfig = pkgs.writeText "greetd-sway-config.toml" ''
-        [terminal]
-        vt = 2
-
-        [default_session]
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway"
-        user = "greeter"
-
-        [initial_session]
-        command = "sway"
-        user = "simonwjackson"
-      '';
-    in {
-      Type = "simple";
-      ExecStart = "${pkgs.greetd.greetd}/bin/greetd --config ${swayConfig}";
-      Restart = "always";
-      RestartSec = "1";
-    };
-  };
-
-  # Override getty@tty2 to prevent conflict
-  systemd.services."getty@tty2".enable = false;
-
   # Evsieve: Remap Xbox button (BTN_MODE) to keyboard key for Hyprland binding
   # Uses raw GPD controller directly (no HHD - simpler and more stable)
   systemd.services.xbox-button-remap = {
@@ -481,7 +447,7 @@
   # Mosh - mobile shell for unstable connections
   programs.mosh.enable = true;
 
-  # Sway window manager (on TTY2)
+  # Sway window manager (for nested gaming session)
   programs.sway = {
     enable = true;
     wrapperFeatures.gtk = true;
@@ -509,6 +475,13 @@
   environment.systemPackages = with pkgs; [
     ryzenadj
     lm_sensors
+    # Cage compositor for nested Sway gaming session
+    cage
+    (writeShellScriptBin "game-session" ''
+      # Launch Sway inside cage for gaming
+      # This avoids VT switching issues with gamescope
+      exec ${cage}/bin/cage -s -- sway
+    '')
   ];
 
   # ============================================================================
