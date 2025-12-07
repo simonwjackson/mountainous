@@ -18,12 +18,15 @@
 
   # Vibrance shader - OLED-like appearance for IPS panel
   xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
+    #version 300 es
     precision highp float;
-    varying vec2 v_texcoord;
+
+    in vec2 v_texcoord;
     uniform sampler2D tex;
+    out vec4 fragColor;
 
     void main() {
-        vec4 c = texture2D(tex, v_texcoord);
+        vec4 c = texture(tex, v_texcoord);
 
         // Saturation boost (OLED-like vibrance)
         float saturation = 1.35;
@@ -38,21 +41,44 @@
         float gamma = 0.92;
         c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
 
-        c.rgb = clamp(c.rgb, 0.0, 1.0);
-        gl_FragColor = c;
+        fragColor = clamp(c, 0.0, 1.0);
     }
   '';
 
-  # Hyprshade config - vibrance always on, blue-light-filter at night
+  # Vibrance MAX shader - OLED on steroids
+  xdg.configFile."hypr/shaders/vibrance-max.glsl".text = ''
+    #version 300 es
+    precision highp float;
+
+    in vec2 v_texcoord;
+    uniform sampler2D tex;
+    out vec4 fragColor;
+
+    void main() {
+        vec4 c = texture(tex, v_texcoord);
+
+        // Saturation boost (maximum practical vibrance)
+        float saturation = 1.65;
+        float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+        c.rgb = mix(vec3(luma), c.rgb, saturation);
+
+        // Contrast boost (deep blacks, bright highlights)
+        float contrast = 1.20;
+        c.rgb = (c.rgb - 0.5) * contrast + 0.5;
+
+        // Gamma correction (punchy midtones)
+        float gamma = 0.88;
+        c.rgb = pow(max(c.rgb, vec3(0.0)), vec3(gamma));
+
+        fragColor = clamp(c, 0.0, 1.0);
+    }
+  '';
+
+  # Hyprshade config - vibrance-max by default
   xdg.configFile."hypr/hyprshade.toml".text = ''
     [[shades]]
-    name = "vibrance"
+    name = "vibrance-max"
     default = true
-
-    [[shades]]
-    name = "blue-light-filter"
-    start_time = 21:00:00
-    end_time = 06:00:00
   '';
 
   # Direnv for directory-based environments
