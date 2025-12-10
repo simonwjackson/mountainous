@@ -12,10 +12,65 @@
   mountainous.dictation.enable = true;
 
   # ============================================================================
-  # HYPRSHADE - Screen shader management
+  # SHIKANE - Dynamic output configuration
+  # ============================================================================
+  # Profiles:
+  #   - portable: Internal 7" display only (gaming on the go)
+  #   - docked: External monitors only (internal off for streaming)
+  #   - extended: Internal + external monitors (productivity)
   # ============================================================================
   home.packages = [pkgs.hyprshade];
 
+  services.shikane = {
+    enable = true;
+    settings = {
+      profile = [
+        # DOCKED MODE - External monitors only (internal disabled)
+        # ASUS MQ149CD monitors stacked vertically (DP-8 on top, DP-9 on bottom)
+        {
+          name = "docked";
+          output = [
+            {
+              search = "m=TL070FDXS01";
+              enable = false;
+            }
+            {
+              search = "n=DP-9";
+              enable = true;
+              mode = "1920x1200@60";
+              position = "0,0";
+              scale = 1.2;
+            }
+            {
+              search = "n=DP-8";
+              enable = true;
+              mode = "1920x1200@60";
+              position = "0,1000"; # Below DP-9 (1200/1.2 = 1000 logical pixels)
+              scale = 1.2;
+            }
+          ];
+        }
+        # PORTABLE MODE - Internal display only (GPD Win Mini 2025)
+        # 7" H-IPS panel @ 120Hz, scale 1.25 for readability
+        {
+          name = "portable";
+          output = [
+            {
+              search = "m=TL070FDXS01";
+              enable = true;
+              mode = "1920x1080@120";
+              position = "0,0";
+              scale = 1.25;
+            }
+          ];
+        }
+      ];
+    };
+  };
+
+  # ============================================================================
+  # HYPRSHADE - Screen shader management
+  # ============================================================================
   # Vibrance shader - OLED-like appearance for IPS panel
   xdg.configFile."hypr/shaders/vibrance.glsl".text = ''
     #version 300 es
@@ -173,10 +228,8 @@
   # HYPRLAND CONFIG
   # ============================================================================
   mountainous.hyprland.extraSettings = {
-    # Display rotation for portrait panel (GPD Win Mini 2025)
-    monitor = [
-      "eDP-1,1920x1080@120,0x0,1.25,transform,0"
-    ];
+    # Monitor settings handled by shikane
+    monitor = [];
 
     # Apply hyprshade on startup (uses schedule from hyprshade.toml)
     exec-once = [
