@@ -87,7 +87,23 @@
   inputs,
   modulesPath,
   ...
-}: {
+}: let
+  swayGamingConfig = pkgs.writeText "sway-gaming-config" ''
+    # Gaming-optimized sway config (minimal, no bar, Steam autostart)
+
+    ### Variables
+    set $mod Mod4
+    set $term foot
+
+    ### Autostart Steam
+    exec steam
+
+    ### Key bindings
+    bindsym $mod+Return exec $term
+    bindsym $mod+Shift+q kill
+    bindsym $mod+f fullscreen
+  '';
+in {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./disko.nix
@@ -482,10 +498,10 @@
     # Cage compositor for nested Sway gaming session
     cage
     (writeShellScriptBin "game-session" ''
-      # Launch Sway inside cage for gaming
+      # Launch Sway inside cage for gaming with custom config (no bar)
       # Uses systemd scope for easy freeze/unfreeze via game-session-freeze/thaw
       exec ${systemd}/bin/systemd-run --user --scope --unit=game-session \
-        ${cage}/bin/cage -s -- sway
+        ${cage}/bin/cage -s -- sway -c ${swayGamingConfig}
     '')
     (writeShellScriptBin "game-session-freeze" ''
       ${systemd}/bin/systemctl --user freeze game-session.scope 2>/dev/null
