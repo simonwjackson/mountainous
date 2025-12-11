@@ -35,8 +35,8 @@ in {
     # Tailscaled service overrides
     systemd.services.tailscaled =
       {
-        # Restart on abnormal exits (signals, timeouts) but not clean exits
-        serviceConfig.Restart = lib.mkForce "on-abnormal";
+        # Always restart to handle deferred boot scenarios
+        serviceConfig.Restart = lib.mkForce "always";
       }
       // lib.optionalAttrs (config.mountainous.impermanence.enable or false) {
         # Ensure tailscaled waits for persistent storage bind mount
