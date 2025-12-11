@@ -533,7 +533,7 @@
         };
         commits = {
           squashDown = "s";
-          renameCommit = "r";
+          renameCommit = "<disabled>";
           renameCommitWithEditor = "R";
           viewResetOptions = "g";
           markCommitAsFixup = "f";
@@ -626,6 +626,14 @@
           command = "git ship --yes {{.CheckedOutBranch.Name}}";
           output = "log";
           loadingText = "🚀 Shipping branch...";
+        }
+        {
+          key = "r";
+          context = "commits";
+          description = "AI-generated reword for selected commit";
+          command = "ai-reword {{.SelectedLocalCommit.Sha}}";
+          output = "log";
+          loadingText = "🤖 Rewording commit...";
         }
         {
           key = "s";

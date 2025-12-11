@@ -2,18 +2,19 @@
   lib,
   pkgs,
   writeShellApplication,
+  symlinkJoin,
   ...
-}:
-writeShellApplication {
-  name = "ai-commit";
+}: let
+  ai-commit = writeShellApplication {
+    name = "ai-commit";
 
-  runtimeInputs = with pkgs; [
-    bash
-    git
-    jq
-    curl
-    bun
-  ];
+    runtimeInputs = with pkgs; [
+      bash
+      git
+      jq
+      curl
+      bun
+    ];
 
   text = ''
     # Main orchestrator for AI commit message generation
@@ -163,19 +164,52 @@ writeShellApplication {
     fi
   '';
 
-  meta = with lib; {
-    description = "Generate git commit messages using AI (Claude or Gemini) based on staged changes";
-    longDescription = ''
-      A tool that analyzes staged git changes and generates commit messages using AI.
-      It tries Claude (Anthropic) first, and falls back to Google's Gemini AI if Claude fails.
+    meta = with lib; {
+      description = "Generate git commit messages using AI (Claude or Gemini) based on staged changes";
+      longDescription = ''
+        A tool that analyzes staged git changes and generates commit messages using AI.
+        It tries Claude (Anthropic) first, and falls back to Google's Gemini AI if Claude fails.
 
-      The tool detects the commit style from recent commits (Angular vs imperative) and generates
-      appropriate messages following the repository's conventions.
+        The tool detects the commit style from recent commits (Angular vs imperative) and generates
+        appropriate messages following the repository's conventions.
 
-      Requires agenix secret 'user-simonwjackson-gemini-api-key' to be available for Gemini fallback.
-    '';
-    mainProgram = "ai-commit";
-    platforms = platforms.unix;
-    license = licenses.mit;
+        Requires agenix secret 'user-simonwjackson-gemini-api-key' to be available for Gemini fallback.
+      '';
+      mainProgram = "ai-commit";
+      platforms = platforms.unix;
+      license = licenses.mit;
+    };
   };
-}
+
+  ai-reword = writeShellApplication {
+    name = "ai-reword";
+
+    runtimeInputs = with pkgs; [
+      bash
+      git
+      jq
+      bun
+      gnused
+      coreutils
+    ];
+
+    text = builtins.readFile ./reword.sh;
+
+    meta = with lib; {
+      description = "Reword any git commit message using AI";
+      longDescription = ''
+        A tool that rewrites an existing commit message using AI.
+        It analyzes the commit's diff and generates a new commit message.
+        Works with HEAD (via amend) or older commits (via interactive rebase).
+      '';
+      mainProgram = "ai-reword";
+      platforms = platforms.unix;
+      license = licenses.mit;
+    };
+  };
+in
+  symlinkJoin {
+    name = "ai-commit";
+    paths = [ai-commit ai-reword];
+    meta = ai-commit.meta;
+  }
