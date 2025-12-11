@@ -230,6 +230,7 @@
     exec-once = [
       "hyprshade auto"
       "game-session-monitor"
+      "kitty"
     ];
 
     # Disable "not responding" popup (interferes with frozen game session)
@@ -238,9 +239,18 @@
     };
 
     # L4/R4 back buttons → workspace switching
+    # Xbox button → game-session launcher
     bind = [
       ", F5, workspace, 1"
       ", F8, workspace, 2"
+    ];
+
+    # Workspace assignments (silent = don't switch to workspace on launch)
+    # kitty → workspace 1, firefox → workspace 2, everything else → workspace 3
+    windowrule = [
+      "workspace 1 silent, match:class ^(kitty)$"
+      "workspace 2 silent, match:class ^(firefox)$"
+      "workspace 3 silent, match:class ^(?!kitty$|firefox$).*"
     ];
   };
 }
