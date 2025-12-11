@@ -355,6 +355,70 @@ in {
       deviceId = "JD7WTBJ-N4R623A-7EYMYTM-3PK4NS4-LGEE2GJ-PVE3XO3-3RLFXMX-R53EEQU";
       folders.knowledge.path = "/snowscape/knowledge";
     };
+
+    # Keyboard remapping via Kanata
+    # Hold F + H/J/K/L = Backspace/Tab/Shift+Tab/Delete
+    # Hold A + H/J/K/L = Arrow keys (left/down/up/right)
+    # Hold A, then also hold S + H/J/K/L = Home/PageDown/PageUp/End
+    # Hold S = Numpad layer (y=# u=7 i=8 o=9 p=% h=+ j=4 k=5 l=6 ;=- n=* m=1 ,=2 .=3)
+    # Hold Z or . = Ctrl, Hold V or N = Shift
+    # Swap ; and : (tap ; gives :, shift+; gives ;)
+    # Simultaneous: JK = Enter, KL = Escape, HL = Ctrl+S
+    keyboard = {
+      enable = true;
+      device = "/dev/input/by-path/platform-i8042-serio-0-event-kbd";
+      config = ''
+        (defsrc
+          a s f h j k l z v n . y u i o p ; m , spc del
+        )
+
+        (defalias
+          a (tap-hold 200 200 a (layer-while-held arrows))
+          s (tap-hold 200 200 s (layer-while-held numpad))
+          f (tap-hold 200 200 f (layer-while-held nav))
+          ;; Space tap, GUI/Super hold
+          spc (tap-hold 200 200 spc lmet)
+          ;; When in arrows layer (A held), hold S to activate scroll layer
+          s-scrl (layer-while-held scroll)
+          ;; When in numpad layer (S held), hold A to activate scroll layer
+          a-scrl (layer-while-held scroll)
+          ;; Ctrl on hold
+          z (tap-hold 200 200 z lctl)
+          dot (tap-hold 200 200 . lctl)
+          ;; Shift on hold
+          v (tap-hold 200 200 v lsft)
+          n (tap-hold 200 200 n lsft)
+          ;; Swap ; and : - tap gives :, with shift gives ;
+          scln-swap (fork S-; (unshift ;) (lsft rsft))
+        )
+
+        (deflayer base
+          @a @s @f h j k l @z @v @n @dot y u i o p @scln-swap m , @spc A-esc
+        )
+
+        (deflayer nav
+          _ _ _ bspc tab S-tab del _ _ _ _ _ _ _ _ _ _ _ _ _ _
+        )
+
+        (deflayer arrows
+          _ @s-scrl _ left down up right _ _ _ _ _ _ _ _ _ _ _ _ _ _
+        )
+
+        (deflayer numpad
+          @a-scrl _ _ S-= 4 5 6 _ _ S-8 3 S-3 7 8 9 S-5 min 1 2 _ _
+        )
+
+        (deflayer scroll
+          _ _ _ home pgdn pgup end _ _ _ _ _ _ _ _ _ _ _ _ _ _
+        )
+
+        (defchordsv2
+          (j k) ret 50 first-release ()
+          (k l) esc 50 first-release ()
+          (h l) C-s 50 first-release ()
+        )
+      '';
+    };
   };
 
   # ============================================================================
