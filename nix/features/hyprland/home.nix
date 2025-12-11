@@ -17,7 +17,7 @@
   windowrulesConfig = import ./windowrules.nix {inherit lib pkgs;};
   hyprlockConfig = import ./hyprlock.nix {inherit lib pkgs;};
 
-  # List of attributes that should be merged instead of replaced
+  # List of attributes that should be merged (concatenated) instead of replaced
   # NOTE: "monitor" intentionally excluded - user settings should replace defaults
   listAttrs = [
     "exec-once"
@@ -37,16 +37,22 @@
     // keybindsConfig
     // windowrulesConfig;
 
-  # Function to merge lists for a specific attribute
-  mergeListAttr = attr:
-    if (defaultSettings ? ${attr} && cfg.extraSettings ? ${attr})
-    then {${attr} = (defaultSettings.${attr} or []) ++ (cfg.extraSettings.${attr} or []);}
+  # Function to merge lists for a specific attribute from default and extra settings
+  mergeListAttr = attr: let
+    defaultList = defaultSettings.${attr} or [];
+    extraList = cfg.extraSettings.${attr} or [];
+  in
+    if (defaultList != [] || extraList != [])
+    then {${attr} = defaultList ++ extraList;}
     else {};
 
   # Merge all list attributes
   mergedLists = lib.foldl' (acc: attr: acc // (mergeListAttr attr)) {} listAttrs;
 
-  # Final merged settings
+  # Final merged settings:
+  # 1. Start with defaultSettings
+  # 2. Apply extraSettings (non-list attrs override, list attrs get replaced temporarily)
+  # 3. Apply mergedLists to restore proper list concatenation
   mergedSettings =
     lib.recursiveUpdate
     (lib.recursiveUpdate defaultSettings cfg.extraSettings)
@@ -58,9 +64,53 @@ in {
 
   options.mountainous.hyprland = {
     extraSettings = mkOption {
-      type = types.attrs;
+      type = types.submodule {
+        freeformType = types.attrsOf types.anything;
+        options = {
+          # Define list attributes explicitly so they merge properly
+          bind = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Extra keybindings";
+          };
+          bindel = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Extra keybindings (repeat on hold, release)";
+          };
+          bindl = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Extra keybindings (locked)";
+          };
+          bindm = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Extra mouse bindings";
+          };
+          exec-once = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Commands to execute once at startup";
+          };
+          windowrule = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Extra window rules";
+          };
+          env = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = "Environment variables";
+          };
+        };
+      };
       default = {};
-      description = "Additional settings to merge with the default configuration";
+      description = ''
+        Additional settings to merge with the default configuration.
+        List attributes (bind, exec-once, windowrule, etc.) are concatenated.
+        Other attributes are merged recursively.
+      '';
     };
 
     plugins = mkOption {

@@ -1,9 +1,4 @@
-{
-  pkgs,
-  lib,
-  osConfig,
-  ...
-}: {
+{pkgs, ...}: {
   # ============================================================================
   # HOME-MANAGER CONFIGURATION - kuju (GPD Gaming Handheld)
   # ============================================================================
@@ -244,8 +239,8 @@
 
     # L4/R4 back buttons → workspace switching
     bind = [
-      ", F20, workspace, 1"
-      ", F21, workspace, 2"
+      ", F5, workspace, 1"
+      ", F8, workspace, 2"
     ];
   };
 }

@@ -721,6 +721,51 @@ in {
   # NOTE: This is now handled dynamically by auto-cpufreq / scripts
   # networking.networkmanager.wifi.powersave = true; # Conflicts with gaming profile
 
+  # ============================================================================
+  # HIBERNATE RESUME FIX - AMD GPU Display Wake
+  # ============================================================================
+  # After hibernate, the AMD GPU display pipeline may not properly reinitialize.
+  # This systemd sleep hook forces a display wake sequence after resume.
+  # Uses system-sleep hook to run after BOTH suspend AND hibernate.
+  environment.etc."systemd/system-sleep/resume-fixes" = {
+    source = pkgs.writeShellScript "resume-fixes" ''
+      #!/bin/sh
+      # systemd-sleep hook: called before sleep ($1=pre) and after resume ($1=post)
+      # $2 contains the sleep type: suspend, hibernate, hybrid-sleep, suspend-then-hibernate
+
+      # Only run after resume, not before sleep
+      if [ "$1" != "post" ]; then
+        exit 0
+      fi
+
+      # Log for debugging
+      echo "resume-fixes: Running post-$2 wake sequence"
+
+      # Give the GPU a moment to initialize after hibernate
+      sleep 1
+
+      # AMD GPU display wake workaround
+      # Force display refresh by toggling DPMS via loginctl
+      echo "resume-fixes: Triggering display wake..."
+      ${pkgs.systemd}/bin/loginctl lock-session 2>/dev/null || true
+      sleep 0.5
+      ${pkgs.systemd}/bin/loginctl unlock-session 2>/dev/null || true
+
+      # Notify any running Hyprland instances to refresh display
+      # This handles cases where hypridle's after_sleep_cmd didn't run
+      # Run as the user who owns the Hyprland session
+      for user_dir in /run/user/*; do
+        if [ -d "$user_dir/hypr" ]; then
+          uid=$(basename "$user_dir")
+          ${pkgs.sudo}/bin/sudo -u "#$uid" ${pkgs.hyprland}/bin/hyprctl --instance 0 dispatch dpms on 2>/dev/null || true
+        fi
+      done
+
+      echo "resume-fixes: Display wake sequence complete"
+    '';
+    mode = "0755"; # Make executable
+  };
+
   # Additional Steam configuration (base Steam handled by gaming profile)
   programs.steam = {
     remotePlay.openFirewall = true;
@@ -757,16 +802,20 @@ in {
   # Defer NetworkManager-wait-online completely (often blocks boot)
   systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
 
-  # Defer tailscaled daemon (608ms)
+  # --------------------------------------------------------------------------
+  # TAILSCALE - Deferred startup but persistent across rebuilds
+  # --------------------------------------------------------------------------
+  # Problem: We want to defer tailscale to speed up boot, but nixos-rebuild
+  # stops services that aren't in wantedBy anymore.
+  # Solution: Keep wantedBy but order AFTER graphical-session so it doesn't
+  # block the critical boot path. This way it stays running on rebuild.
   systemd.services.tailscaled = {
-    wantedBy = lib.mkForce [];
-    before = lib.mkForce [];
-  };
-  systemd.timers.tailscaled-deferred = {
-    wantedBy = ["timers.target"];
-    timerConfig = {
-      OnBootSec = "5s";
-      Unit = "tailscaled.service";
+    # Keep in multi-user.target (default) so nixos-rebuild doesn't stop it
+    # but order it after display is up so it doesn't block boot
+    after = lib.mkForce ["network-pre.target" "NetworkManager.service" "systemd-resolved.service" "graphical-session.target"];
+    # Don't restart on config changes - keep connection alive
+    serviceConfig = {
+      X-RestartIfChanged = lib.mkForce false;
     };
   };
 
