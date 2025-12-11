@@ -67,100 +67,100 @@
 
     theme = {
       manager = {
-        cwd = {fg = "#81c8be";};
+        cwd = {fg = "#73daca";};
 
         hovered = {
-          fg = "#303446";
-          bg = "#8caaee";
+          fg = "#1a1b26";
+          bg = "#7aa2f7";
         };
         preview_hovered = {
-          fg = "#303446";
-          bg = "#c6d0f5";
+          fg = "#1a1b26";
+          bg = "#c0caf5";
         };
 
         find_keyword = {
-          fg = "#e5c890";
+          fg = "#e0af68";
           italic = true;
         };
         find_position = {
-          fg = "#f4b8e4";
+          fg = "#bb9af7";
           bg = "reset";
           italic = true;
         };
 
         marker_copied = {
-          fg = "#a6d189";
-          bg = "#a6d189";
+          fg = "#9ece6a";
+          bg = "#9ece6a";
         };
         marker_cut = {
-          fg = "#e78284";
-          bg = "#e78284";
+          fg = "#f7768e";
+          bg = "#f7768e";
         };
         marker_marked = {
-          fg = "#81c8be";
-          bg = "#81c8be";
+          fg = "#73daca";
+          bg = "#73daca";
         };
         marker_selected = {
-          fg = "#8caaee";
-          bg = "#8caaee";
+          fg = "#7aa2f7";
+          bg = "#7aa2f7";
         };
 
         tab_active = {
-          fg = "#303446";
-          bg = "#c6d0f5";
+          fg = "#1a1b26";
+          bg = "#c0caf5";
         };
         tab_inactive = {
-          fg = "#c6d0f5";
-          bg = "#51576d";
+          fg = "#c0caf5";
+          bg = "#292e42";
         };
         tab_width = 1;
 
         count_copied = {
-          fg = "#303446";
-          bg = "#a6d189";
+          fg = "#1a1b26";
+          bg = "#9ece6a";
         };
         count_cut = {
-          fg = "#303446";
-          bg = "#e78284";
+          fg = "#1a1b26";
+          bg = "#f7768e";
         };
         count_selected = {
-          fg = "#303446";
-          bg = "#8caaee";
+          fg = "#1a1b26";
+          bg = "#7aa2f7";
         };
 
         border_symbol = "│";
-        border_style = {fg = "#414559";};
+        border_style = {fg = "#3b4261";};
       };
 
       mode = {
         normal_main = {
-          fg = "#303446";
-          bg = "#8caaee";
+          fg = "#1a1b26";
+          bg = "#7aa2f7";
           bold = true;
         };
         normal_alt = {
-          fg = "#8caaee";
-          bg = "#414559";
+          fg = "#7aa2f7";
+          bg = "#3b4261";
         };
 
         select_main = {
-          fg = "#303446";
-          bg = "#a6d189";
+          fg = "#1a1b26";
+          bg = "#9ece6a";
           bold = true;
         };
         select_alt = {
-          fg = "#a6d189";
-          bg = "#414559";
+          fg = "#9ece6a";
+          bg = "#3b4261";
         };
 
         unset_main = {
-          fg = "#303446";
-          bg = "#eebebe";
+          fg = "#1a1b26";
+          bg = "#f7768e";
           bold = true;
         };
         unset_alt = {
-          fg = "#eebebe";
-          bg = "#414559";
+          fg = "#f7768e";
+          bg = "#3b4261";
         };
       };
 
@@ -173,37 +173,37 @@
           bold = true;
         };
         progress_normal = {
-          fg = "#8caaee";
-          bg = "#51576d";
+          fg = "#7aa2f7";
+          bg = "#292e42";
         };
         progress_error = {
-          fg = "#e78284";
-          bg = "#51576d";
+          fg = "#f7768e";
+          bg = "#292e42";
         };
 
-        perm_type = {fg = "#8caaee";};
-        perm_read = {fg = "#e5c890";};
-        perm_write = {fg = "#e78284";};
-        perm_exec = {fg = "#a6d189";};
-        perm_sep = {fg = "#838ba7";};
+        perm_type = {fg = "#7aa2f7";};
+        perm_read = {fg = "#e0af68";};
+        perm_write = {fg = "#f7768e";};
+        perm_exec = {fg = "#9ece6a";};
+        perm_sep = {fg = "#565f89";};
       };
 
       input = {
-        border = {fg = "#8caaee";};
+        border = {fg = "#7aa2f7";};
         title = {};
         value = {};
         selected = {reversed = true;};
       };
 
       pick = {
-        border = {fg = "#8caaee";};
-        active = {fg = "#f4b8e4";};
+        border = {fg = "#7aa2f7";};
+        active = {fg = "#bb9af7";};
         inactive = {};
       };
 
       confirm = {
-        border = {fg = "#8caaee";};
-        title = {fg = "#8caaee";};
+        border = {fg = "#7aa2f7";};
+        title = {fg = "#7aa2f7";};
         content = {};
         list = {};
         btn_yes = {reversed = true;};
@@ -211,42 +211,42 @@
       };
 
       cmp = {
-        border = {fg = "#8caaee";};
+        border = {fg = "#7aa2f7";};
       };
 
       tasks = {
-        border = {fg = "#8caaee";};
+        border = {fg = "#7aa2f7";};
         title = {};
         hovered = {underline = true;};
       };
 
       which = {
-        mask = {bg = "#414559";};
-        cand = {fg = "#81c8be";};
-        rest = {fg = "#949cbb";};
-        desc = {fg = "#f4b8e4";};
+        mask = {bg = "#3b4261";};
+        cand = {fg = "#73daca";};
+        rest = {fg = "#565f89";};
+        desc = {fg = "#bb9af7";};
         separator = "  ";
-        separator_style = {fg = "#626880";};
+        separator_style = {fg = "#3b4261";};
       };
 
       help = {
-        on = {fg = "#81c8be";};
-        run = {fg = "#f4b8e4";};
-        desc = {fg = "#949cbb";};
+        on = {fg = "#73daca";};
+        run = {fg = "#bb9af7";};
+        desc = {fg = "#565f89";};
         hovered = {
-          bg = "#626880";
+          bg = "#3b4261";
           bold = true;
         };
         footer = {
-          fg = "#c6d0f5";
-          bg = "#51576d";
+          fg = "#c0caf5";
+          bg = "#292e42";
         };
       };
 
       notify = {
-        title_info = {fg = "#81c8be";};
-        title_warn = {fg = "#e5c890";};
-        title_error = {fg = "#e78284";};
+        title_info = {fg = "#73daca";};
+        title_warn = {fg = "#e0af68";};
+        title_error = {fg = "#f7768e";};
       };
 
       filetype = {
@@ -254,46 +254,46 @@
           # Media
           {
             mime = "image/*";
-            fg = "#81c8be";
+            fg = "#73daca";
           }
           {
             mime = "{audio,video}/*";
-            fg = "#e5c890";
+            fg = "#e0af68";
           }
 
           # Archives
           {
             mime = "application/*zip";
-            fg = "#f4b8e4";
+            fg = "#bb9af7";
           }
           {
             mime = "application/x-{tar,bzip*,7z-compressed,xz,rar}";
-            fg = "#f4b8e4";
+            fg = "#bb9af7";
           }
 
           # Documents
           {
             mime = "application/{pdf,doc,rtf}";
-            fg = "#a6d189";
+            fg = "#9ece6a";
           }
 
           # Fallback
           {
             name = "*";
-            fg = "#c6d0f5";
+            fg = "#c0caf5";
           }
           {
             name = "*/";
-            fg = "#8caaee";
+            fg = "#7aa2f7";
           }
         ];
       };
 
       spot = {
-        border = {fg = "#8caaee";};
-        title = {fg = "#8caaee";};
+        border = {fg = "#7aa2f7";};
+        title = {fg = "#7aa2f7";};
         tbl_cell = {
-          fg = "#8caaee";
+          fg = "#7aa2f7";
           reversed = true;
         };
         tbl_col = {bold = true;};
@@ -320,42 +320,42 @@
         shortTimeFormat = "3:04pm";
         theme = {
           activeBorderColor = [
-            "#ca9ee6"
+            "#bb9af7"
             "bold"
           ];
           inactiveBorderColor = [
-            "#626880"
+            "#3b4261"
           ];
           searchingActiveBorderColor = [
-            "#ef9f76"
+            "#ff9e64"
             "bold"
           ];
           optionsTextColor = [
-            "#ca9ee6"
+            "#bb9af7"
           ];
           selectedLineBgColor = [
-            "#51576d"
+            "#292e42"
           ];
           inactiveViewSelectedLineBgColor = [
-            "#414559"
+            "#24283b"
           ];
           cherryPickedCommitFgColor = [
-            "#ea999c"
+            "#f7768e"
           ];
           cherryPickedCommitBgColor = [
-            "#eebebe"
+            "#ff9e64"
           ];
           markedBaseCommitFgColor = [
-            "#ca9ee6"
+            "#bb9af7"
           ];
           markedBaseCommitBgColor = [
-            "#ef9f76"
+            "#ff9e64"
           ];
           unstagedChangesColor = [
-            "#e78284"
+            "#f7768e"
           ];
           defaultFgColor = [
-            "#c6d0f5"
+            "#c0caf5"
           ];
         };
         showListFooter = false;
@@ -385,7 +385,7 @@
         pagers = [
           {
             colorArg = "always";
-            pager = "BAT_THEME=\"Catppuccin Frappe\" nix run nixpkgs#delta -- --paging=never";
+            pager = "BAT_THEME=\"tokyonight_night\" nix run nixpkgs#delta -- --paging=never";
             useConfig = false;
           }
         ];

@@ -11,10 +11,10 @@
   iproute2,
   inputs,
   # Theme configuration parameters
-  kittyDarkTheme ? "Catppuccin-Frappe.conf",
-  kittyLightTheme ? "Tango_Light.conf",
-  gtkDarkTheme ? "Catppuccin-Frappe-Standard-Blue-Dark",
-  gtkLightTheme ? "Catppuccin-Latte-Standard-Blue-Light",
+  kittyDarkTheme ? "tokyo_night_night.conf",
+  kittyLightTheme ? "tokyo_night_day.conf",
+  gtkDarkTheme ? "tokyonight-dark-b",
+  gtkLightTheme ? "tokyonight-day-b",
 }:
 writeShellApplication {
   name = "darkmode-toggle";

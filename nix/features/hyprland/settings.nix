@@ -12,7 +12,7 @@
   env = [
     "XCURSOR_SIZE,24"
     "HYPRCURSOR_SIZE,24"
-    "XCURSOR_THEME,catppuccin-frappe-blue-cursors"
+    "XCURSOR_THEME,Adwaita"
     "XCURSOR_SIZE,24"
   ];
 

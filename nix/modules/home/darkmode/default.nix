@@ -20,12 +20,12 @@ in {
       kitty = {
         dark = mkOption {
           type = types.str;
-          default = "Catppuccin-Frappe.conf";
+          default = "tokyo_night_night.conf";
           description = "Kitty theme for dark mode";
         };
         light = mkOption {
           type = types.str;
-          default = "Tango_Light.conf";
+          default = "tokyo_night_day.conf";
           description = "Kitty theme for light mode";
         };
       };
@@ -33,12 +33,12 @@ in {
       gtk = {
         dark = mkOption {
           type = types.str;
-          default = "catppuccin-frappe-blue-standard";
+          default = "tokyonight-dark-b";
           description = "GTK theme for dark mode";
         };
         light = mkOption {
           type = types.str;
-          default = "catppuccin-latte-blue-standard";
+          default = "tokyonight-day-b";
           description = "GTK theme for light mode";
         };
       };
@@ -68,17 +68,8 @@ in {
 
     # Ensure xdg-desktop-portal-gtk is available for Firefox integration
     home.packages = with pkgs; [
-      # GTK themes for both light and dark variants
-      (catppuccin-gtk.override {
-        variant = "frappe";
-        accents = ["blue"];
-        size = "standard";
-      })
-      (catppuccin-gtk.override {
-        variant = "latte";
-        accents = ["blue"];
-        size = "standard";
-      })
+      # GTK themes - Tokyo Night
+      tokyonight-gtk-theme
       # Required for dconf changes
       dconf
       # Required for gsettings binary

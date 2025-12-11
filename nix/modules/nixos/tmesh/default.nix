@@ -82,18 +82,18 @@ in {
         set-option -g escape-time 0
         set-option -g history-limit 0
 
-        # Catppuccin Frappe theme colors - Server variant
-        set-option -g pane-border-style "fg=#737994"
-        set-option -g pane-active-border-style "fg=#ca9ee6"
-        set-option -g mode-style "fg=#303446,bg=#e5c890"
-        set-option -g message-style "fg=#c6d0f5,bg=#51576d"
-        set-option -g message-command-style "fg=#c6d0f5,bg=#51576d"
-        set-option -g popup-style "fg=#c6d0f5,bg=#292c3c"
-        set-option -g popup-border-style "fg=#ca9ee6"
+        # Tokyo Night theme colors - Server variant
+        set-option -g pane-border-style "fg=#3b4261"
+        set-option -g pane-active-border-style "fg=#7aa2f7"
+        set-option -g mode-style "fg=#1a1b26,bg=#e0af68"
+        set-option -g message-style "fg=#c0caf5,bg=#292e42"
+        set-option -g message-command-style "fg=#c0caf5,bg=#292e42"
+        set-option -g popup-style "fg=#c0caf5,bg=#1a1b26"
+        set-option -g popup-border-style "fg=#7aa2f7"
         set-option -g popup-border-lines "rounded"
-        set-option -g menu-style "fg=#c6d0f5,bg=#51576d"
-        set-option -g menu-selected-style "fg=#303446,bg=#ca9ee6"
-        set-option -g menu-border-style "fg=#737994"
+        set-option -g menu-style "fg=#c0caf5,bg=#292e42"
+        set-option -g menu-selected-style "fg=#1a1b26,bg=#7aa2f7"
+        set-option -g menu-border-style "fg=#3b4261"
         set-option -g menu-border-lines "rounded"
       '';
 
@@ -120,18 +120,18 @@ in {
         set-option -g escape-time 0
         set-option -g history-limit 0
 
-        # Catppuccin Frappe theme colors
-        set-option -g pane-border-style "fg=#626880"
-        set-option -g pane-active-border-style "fg=#8caaee"
-        set-option -g mode-style "fg=#303446,bg=#babbf1"
-        set-option -g message-style "fg=#c6d0f5,bg=#414559"
-        set-option -g message-command-style "fg=#c6d0f5,bg=#414559"
-        set-option -g popup-style "fg=#c6d0f5,bg=#303446"
-        set-option -g popup-border-style "fg=#8caaee"
+        # Tokyo Night theme colors
+        set-option -g pane-border-style "fg=#3b4261"
+        set-option -g pane-active-border-style "fg=#7aa2f7"
+        set-option -g mode-style "fg=#1a1b26,bg=#bb9af7"
+        set-option -g message-style "fg=#c0caf5,bg=#24283b"
+        set-option -g message-command-style "fg=#c0caf5,bg=#24283b"
+        set-option -g popup-style "fg=#c0caf5,bg=#1a1b26"
+        set-option -g popup-border-style "fg=#7aa2f7"
         set-option -g popup-border-lines "rounded"
-        set-option -g menu-style "fg=#c6d0f5,bg=#414559"
-        set-option -g menu-selected-style "fg=#303446,bg=#8caaee"
-        set-option -g menu-border-style "fg=#626880"
+        set-option -g menu-style "fg=#c0caf5,bg=#24283b"
+        set-option -g menu-selected-style "fg=#1a1b26,bg=#7aa2f7"
+        set-option -g menu-border-style "fg=#3b4261"
         set-option -g menu-border-lines "rounded"
       '';
     };
