@@ -1303,6 +1303,25 @@
     defaultMode = "dark";
   };
 
+  # Firefox with declarative extensions
+  mountainous.firefox = {
+    enable = true;
+    extensions = {
+      "uBlock0@raymondhill.net" = {slug = "ublock-origin";};
+      "addon@darkreader.org" = {slug = "darkreader";};
+      "{cebd391d-f568-473f-bb6e-698d08ec81ec}" = {slug = "tokyo-night-dark-theme";};
+      "sponsorBlocker@ajay.app" = {slug = "sponsorblock";};
+      "@react-devtools" = {slug = "react-devtools";};
+      "ff2mpv@yossarian.net" = {slug = "ff2mpv";};
+    };
+    nativeMessagingHosts = [pkgs.ff2mpv];
+    extraPolicies = {
+      DisableTelemetry = true;
+      DisableFirefoxStudies = true;
+      DisablePocket = true;
+    };
+  };
+
   # Enable agenix secrets management
   mountainous.agenix.enable = true;
 

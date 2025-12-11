@@ -45,6 +45,13 @@ in {
       '';
     };
 
+    nativeMessagingHosts = mkOption {
+      type = types.listOf types.package;
+      default = [];
+      description = "Native messaging hosts to make available to Firefox extensions";
+      example = lib.literalExpression "[ pkgs.ff2mpv ]";
+    };
+
     lockExtensions = mkOption {
       type = types.listOf types.str;
       default = [];
@@ -81,6 +88,7 @@ in {
   config = mkIf cfg.enable {
     programs.firefox = {
       enable = true;
+      nativeMessagingHosts = cfg.nativeMessagingHosts;
 
       policies = lib.mkMerge [
         {
