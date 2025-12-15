@@ -99,6 +99,10 @@ in {
         listen_on = "unix:@mykitty";
       };
 
+      keybindings = {
+        "shift+enter" = "send_text all \\x1b[13;2u";
+      };
+
       # Use theme configuration
       extraConfig = ''
         # Include default theme

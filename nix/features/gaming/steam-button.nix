@@ -72,48 +72,19 @@
   '';
 
   # Steam button handler script (regular workspace mode)
+  # Launches game-session instead of local Steam
   steamButtonHandlerSimple = pkgs.writeShellScript "steam-button-handler" ''
-    # Simple Steam/gaming navigation (regular workspace mode)
-    # Switch to gaming workspace and launch Steam if not running
-
-    STEAM_RUNNING=$(${hyprctl} --instance 0 clients -j | ${jq} -r '[.[] | select(.class | test("^(steam|Steam)$"))] | length')
+    # Simple gaming navigation (regular workspace mode)
+    # Switch to gaming workspace and launch game-session
 
     ${hyprctl} --instance 0 dispatch workspace ${workspace}
-    if [[ "$STEAM_RUNNING" -eq 0 ]]; then
-        ${steam}/bin/steam &
-    fi
+    game-session &
   '';
 
   steamButtonHandler =
     if useSpecialWorkspace
     then steamButtonHandlerSpecial
     else steamButtonHandlerSimple;
-
-  # Window rules for special workspace mode
-  windowRulesSpecial = [
-    # Steam client → special workspace overlay
-    "workspace special:${specialWs} silent, match:class ^(steam|Steam)$"
-    "workspace special:${specialWs} silent, match:title ^Steam$"
-
-    # Steam games → gaming workspace
-    "workspace ${workspace}, match:class r:^steam_app_"
-
-    # Games fullscreen by default
-    "fullscreen on, match:class r:^steam_app_"
-  ];
-
-  # Window rules for regular workspace mode
-  windowRulesSimple = [
-    # Steam client → gaming workspace
-    "workspace ${workspace}, match:class ^(steam|Steam)$"
-    "workspace ${workspace}, match:title ^Steam$"
-
-    # Steam games → gaming workspace
-    "workspace ${workspace}, match:class r:^steam_app_"
-
-    # Games fullscreen by default
-    "fullscreen on, match:class r:^steam_app_"
-  ];
 in {
   config = mkMerge [
     # Assertion: steamButton requires Hyprland
@@ -129,16 +100,10 @@ in {
     # Actual configuration
     (mkIf (gamingEnabled && steamButtonEnabled && hyprlandEnabled) {
       mountainous.hyprland.extraSettings = {
-        # Steam button keybind
+        # Steam button keybind - switches to gaming workspace and launches game-session
         bind = [
           "${keybind}, exec, ${steamButtonHandler}"
         ];
-
-        # Window rules for Steam and games
-        windowrule =
-          if useSpecialWorkspace
-          then windowRulesSpecial
-          else windowRulesSimple;
       };
     })
   ];

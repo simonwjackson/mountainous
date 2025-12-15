@@ -477,16 +477,17 @@ in {
     requires = lib.mkForce [];
   };
 
-  # Evsieve: Remap Xbox button (BTN_MODE) to keyboard key for Hyprland binding
+  # Evsieve: Remap GPD controller buttons to keyboard keys for Hyprland binding
   # Uses raw GPD controller directly (no HHD - simpler and more stable)
+  # Maps: Xbox button → F15, L4 (BTN_TL2) → F5, R4 (BTN_TR2) → F8
   systemd.services.xbox-button-remap = {
-    description = "Remap Xbox button to keyboard key";
+    description = "Remap GPD controller buttons to keyboard keys";
     wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "simple";
       Restart = "on-failure";
       RestartSec = "3s";
-      ExecStart = pkgs.writeShellScript "xbox-remap" ''
+      ExecStart = pkgs.writeShellScript "gpd-button-remap" ''
         # Find raw GPD controller (X-Box 360 pad)
         find_gpd_controller() {
           ${pkgs.gawk}/bin/awk '
@@ -511,12 +512,17 @@ in {
         done
         echo "Found GPD controller at $GPD_DEV"
 
-        # Intercept BTN_MODE (Xbox button), emit as XF86Launch6 keyboard key
+        # Remap GPD controller buttons to keyboard keys:
+        # - BTN_MODE (Xbox button) → F15 (for Steam overlay)
+        # - BTN_TL2 (L4 back paddle) → F5 (for workspace 1)
+        # - BTN_TR2 (R4 back paddle) → F8 (for workspace 2)
         # Pass all other controller events through unchanged
         exec ${pkgs.evsieve}/bin/evsieve \
           --input "$GPD_DEV" grab \
           --map btn:mode key:f15 \
-          --output key:f15 create-link=/dev/input/by-id/xbox-button-keyboard name="Xbox Button Keyboard" \
+          --map btn:tl2 key:f5 \
+          --map btn:tr2 key:f8 \
+          --output key:f15 key:f5 key:f8 create-link=/dev/input/by-id/gpd-buttons-keyboard name="GPD Buttons Keyboard" \
           --output name="GPD Controller"
       '';
     };
