@@ -44,6 +44,12 @@ in {
     programs.mosh.enable = true;
     programs.tmesh.enable = mkDefault true;
 
+    # Default shell command for tmesh sessions
+    environment.sessionVariables = {
+      # TMESH_CMD = "/run/current-system/sw/bin/nix run /snowscape/code/sandbox/new-nixvim";
+      TMESH_CMD = "nvim";
+    };
+
     ###################
     # Mountainous
     ###################
@@ -72,7 +78,6 @@ in {
         # in
         #   keys;
       };
-
     };
 
     ###################
