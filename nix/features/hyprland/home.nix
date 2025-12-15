@@ -118,6 +118,12 @@ in {
       default = [];
       description = "List of Hyprland plugins to load";
     };
+
+    enableHypridle = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable hypridle for idle management (disable for servers)";
+    };
   };
 
   config = lib.mkIf hyprlandEnabled {
@@ -128,7 +134,7 @@ in {
     ];
 
     programs.hyprlock = hyprlockConfig.hyprlock;
-    services.hypridle = hyprlockConfig.hypridle;
+    services.hypridle = lib.mkIf cfg.enableHypridle hyprlockConfig.hypridle;
 
     wayland.windowManager.hyprland = {
       enable = true;

@@ -42,6 +42,7 @@ in {
     networking.enableIPv6 = false;
 
     programs.mosh.enable = true;
+    programs.tmesh.enable = mkDefault true;
 
     ###################
     # Mountainous
