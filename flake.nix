@@ -32,7 +32,8 @@
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Pinned nixpkgs for Immich - prevents breakage from upstream spacy/typer-slim issues
-    nixpkgs-immich.url = "github:NixOS/nixpkgs/418468ac9527e799809c900eda37cbff999199b6";
+    # nixpkgs-immich.url = "github:NixOS/nixpkgs/418468ac9527e799809c900eda37cbff999199b6";
+    # nixpkgs-immich.url = "github:NixOS/nixpkgs/418468ac9527e799809c900eda37cbff999199b6";
     nixos-anywhere.url = "github:nix-community/nixos-anywhere";
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland-plugins = {
@@ -83,31 +84,33 @@
       namespace = "mountainous";
       overlays = with inputs; [
         gomod2nix.overlays.default
-        (final: prev: let
-          # Import pinned nixpkgs for Immich to avoid spacy/typer-slim breakage
-          pinnedPkgs = import inputs.nixpkgs-immich {
-            inherit (final) system;
-            config.allowUnfree = true;
-          };
-        in {
-          # Pin Immich to working version
-          immich = pinnedPkgs.immich;
-          # Removed gamescope_git overlays - now using Jovian's stable packages
-          neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
-          synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
-          beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
-          citron = inputs.citron.packages.${final.stdenv.hostPlatform.system}.default;
-          obsidian = prev.symlinkJoin {
-            name = "obsidian";
-            paths = [prev.obsidian];
-            buildInputs = [prev.makeWrapper];
-            postBuild = ''
-              wrapProgram $out/bin/obsidian \
-                --add-flags "--enable-unsafe-webgpu" \
-                --add-flags "--enable-features=Vulkan"
-            '';
-          };
-        })
+        (final: prev:
+          #   let
+          #   # Import pinned nixpkgs for Immich to avoid spacy/typer-slim breakage
+          #   pinnedPkgs = import inputs.nixpkgs-immich {
+          #     inherit (final) system;
+          #     config.allowUnfree = true;
+          #   };
+          # in
+          {
+            # Pin Immich to working version
+            # immich = pinnedPkgs.immich;
+            # Removed gamescope_git overlays - now using Jovian's stable packages
+            neovim = inputs.icho.packages.${final.stdenv.hostPlatform.system}.default;
+            synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
+            beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
+            citron = inputs.citron.packages.${final.stdenv.hostPlatform.system}.default;
+            obsidian = prev.symlinkJoin {
+              name = "obsidian";
+              paths = [prev.obsidian];
+              buildInputs = [prev.makeWrapper];
+              postBuild = ''
+                wrapProgram $out/bin/obsidian \
+                  --add-flags "--enable-unsafe-webgpu" \
+                  --add-flags "--enable-features=Vulkan"
+              '';
+            };
+          })
       ];
     }
     // {
