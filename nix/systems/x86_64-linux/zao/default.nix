@@ -637,8 +637,7 @@
     # Immich photo/video backup and management
     immich = {
       enable = true;
-      user = "media";
-      group = "media";
+      # Run as default immich user (added to media group for file access)
       mediaLocation = "/var/lib/immich"; # NVMe: thumbs, transcodes, uploads
       proxy = {
         enable = true;
@@ -905,6 +904,9 @@
 
   # CPU governor for consistent performance (not battery optimization)
   powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
+
+  # Grant immich user access to media group for shared photo storage
+  users.users.immich.extraGroups = ["media"];
 
   system.stateVersion = "25.05";
 }
