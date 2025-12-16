@@ -1018,8 +1018,16 @@
     # firefox - managed by mountainous.firefox module
     chromium
     nodePackages.prettier
-    pyxis-wrapped
+    # pyxis - managed by programs.pyxis module below
   ];
+
+  # Pyxis - Pandora CLI client
+  programs.pyxis = {
+    enable = true;
+    package = pkgs.pyxis;
+    username = "simon@simonwjackson.com";
+    passwordFile = "/run/agenix/pandora-password";
+  };
 
   # Environment variables
   xdg.configFile."walker/config.toml".text = ''

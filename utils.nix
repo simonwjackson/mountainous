@@ -1,5 +1,5 @@
 {inputs}: let
-  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh synapse agenix-rekey;
+  inherit (inputs) self nixpkgs impermanence disko home-manager tmesh synapse agenix-rekey pyxis;
 
   # Path to default home-manager configuration
   defaultHomePath = ./nix/home/default.nix;
@@ -133,6 +133,11 @@
         ++
         # Then import feature modules (home)
         featureModules.home
+        ++
+        # External home-manager modules from flake inputs
+        [
+          pyxis.homeManagerModules.default
+        ]
         ++
         # Then import the default configuration if it exists
         (

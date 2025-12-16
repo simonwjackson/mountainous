@@ -1566,11 +1566,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1765809366,
-        "narHash": "sha256-tpD5fuGjUgs/P+z/TIcf6gVek+1YjtXIrHKpUer0XYg=",
+        "lastModified": 1765849033,
+        "narHash": "sha256-OB+uHSwQveUdSp1Fpb3r2I49lWpgjN8ez/eVp/7lu3E=",
         "owner": "simonwjackson",
         "repo": "pyxis",
-        "rev": "60b9128f0b2e65f3ce938befa8b8d8232fbebcd2",
+        "rev": "184c0500e92952ac376f57304087ab3cc2ce39bd",
         "type": "github"
       },
       "original": {

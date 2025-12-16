@@ -33,14 +33,7 @@ in {
       mode = mkDefault "400";
     };
 
-    # Pandora credentials for pyxis
-    age.secrets."pandora-username" = {
-      rekeyFile = ../../../secrets/user/simonwjackson/credentials/pandora-username.age;
-      owner = mkDefault "simonwjackson";
-      group = mkDefault "users";
-      mode = mkDefault "400";
-    };
-
+    # Pandora password for pyxis (username is in config file)
     age.secrets."pandora-password" = {
       rekeyFile = ../../../secrets/user/simonwjackson/credentials/pandora-password.age;
       owner = mkDefault "simonwjackson";
@@ -78,7 +71,7 @@ in {
         }
         {
           name = "pyxis";
-          cmd = "${pkgs.pyxis-wrapped}/bin/pyxis tui";
+          cmd = "pyxis tui";
           icon = "󰎄";
         }
       ];
