@@ -33,6 +33,21 @@ in {
       mode = mkDefault "400";
     };
 
+    # Pandora credentials for pyxis
+    age.secrets."pandora-username" = {
+      rekeyFile = ../../../secrets/user/simonwjackson/credentials/pandora-username.age;
+      owner = mkDefault "simonwjackson";
+      group = mkDefault "users";
+      mode = mkDefault "400";
+    };
+
+    age.secrets."pandora-password" = {
+      rekeyFile = ../../../secrets/user/simonwjackson/credentials/pandora-password.age;
+      owner = mkDefault "simonwjackson";
+      group = mkDefault "users";
+      mode = mkDefault "400";
+    };
+
     networking.firewall.allowedTCPPorts = [
       8081 # Expo GO
     ];
@@ -44,6 +59,29 @@ in {
     programs.mosh.enable = true;
     programs.tmesh = {
       enable = mkDefault true;
+
+      apps = [
+        {
+          name = "shell";
+          cmd = "$SHELL";
+          icon = "";
+        }
+        {
+          name = "btop";
+          cmd = "btop";
+          icon = "󱤘";
+        }
+        {
+          name = "yazi";
+          cmd = "yazi";
+          icon = "";
+        }
+        {
+          name = "pyxis";
+          cmd = "${pkgs.pyxis-wrapped}/bin/pyxis tui";
+          icon = "󰎄";
+        }
+      ];
 
       # Server-side tmux config (runs on remote host)
       tmeshServerTmuxConfig = ''

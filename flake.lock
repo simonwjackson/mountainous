@@ -121,6 +121,28 @@
         "type": "github"
       }
     },
+    "beads_2": {
+      "inputs": {
+        "flake-utils": "flake-utils_5",
+        "nixpkgs": [
+          "pyxis",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764807886,
+        "narHash": "sha256-tS30cWkvrWm6MwMlGPup8dsB4Y53w+jqF8+rX8zwK9Q=",
+        "owner": "steveyegge",
+        "repo": "beads",
+        "rev": "c9eeecf0c3e853b7928dbf305602c375863a19e2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "steveyegge",
+        "repo": "beads",
+        "type": "github"
+      }
+    },
     "chaotic": {
       "inputs": {
         "flake-schemas": "flake-schemas",
@@ -524,6 +546,24 @@
     "flake-utils_4": {
       "inputs": {
         "systems": "systems_7"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_5": {
+      "inputs": {
+        "systems": "systems_8"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -1518,6 +1558,27 @@
         "type": "github"
       }
     },
+    "pyxis": {
+      "inputs": {
+        "beads": "beads_2",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1765809366,
+        "narHash": "sha256-tpD5fuGjUgs/P+z/TIcf6gVek+1YjtXIrHKpUer0XYg=",
+        "owner": "simonwjackson",
+        "repo": "pyxis",
+        "rev": "60b9128f0b2e65f3ce938befa8b8d8232fbebcd2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "pyxis",
+        "type": "github"
+      }
+    },
     "resession-nvim": {
       "flake": false,
       "locked": {
@@ -1561,6 +1622,7 @@
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_7",
         "nixpkgs-immich": "nixpkgs-immich",
+        "pyxis": "pyxis",
         "synapse": "synapse",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tmesh": "tmesh"
@@ -1735,6 +1797,21 @@
         "type": "github"
       }
     },
+    "systems_8": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "taskwarrior-recurrence": {
       "flake": false,
       "locked": {
@@ -1756,11 +1833,11 @@
         "nixpkgs": "nixpkgs_8"
       },
       "locked": {
-        "lastModified": 1765828689,
-        "narHash": "sha256-xSV5J0aPWEIfMCtd4UcK3EakcKlyDbonAsi2NewVVdU=",
+        "lastModified": 1765848229,
+        "narHash": "sha256-Kq9Vh+VPlm7kIMntjFkrPc3BXt93M7emnY59dK57o2Q=",
         "owner": "simonwjackson",
         "repo": "tmesh",
-        "rev": "e56041d7e913376f4eb576eee812af68d6d3cae5",
+        "rev": "34d6b0b09ac7c5772eb0a665579b70c99457c66b",
         "type": "github"
       },
       "original": {

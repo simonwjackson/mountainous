@@ -73,6 +73,10 @@
       url = "github:simonwjackson/citron-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pyxis = {
+      url = "github:simonwjackson/pyxis";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -97,6 +101,7 @@
           synapse = inputs.synapse.packages.${final.stdenv.hostPlatform.system}.default;
           beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
           citron = inputs.citron.packages.${final.stdenv.hostPlatform.system}.default;
+          pyxis = inputs.pyxis.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];

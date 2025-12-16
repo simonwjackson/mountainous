@@ -1018,6 +1018,7 @@
     # firefox - managed by mountainous.firefox module
     chromium
     nodePackages.prettier
+    pyxis-wrapped
   ];
 
   # Environment variables
