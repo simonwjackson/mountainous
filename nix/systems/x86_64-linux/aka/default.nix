@@ -284,7 +284,7 @@
   # Ollama for local LLM inference
   services.ollama = {
     enable = true;
-    acceleration = "rocm"; # AMD GPU
+    package = pkgs.ollama-rocm; # AMD GPU
     environmentVariables = {
       OLLAMA_ORIGINS = "*"; # Allow all origins (secured by Tailscale)
     };
