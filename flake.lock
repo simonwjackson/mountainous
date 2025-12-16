@@ -1833,11 +1833,11 @@
         "nixpkgs": "nixpkgs_8"
       },
       "locked": {
-        "lastModified": 1765848229,
-        "narHash": "sha256-Kq9Vh+VPlm7kIMntjFkrPc3BXt93M7emnY59dK57o2Q=",
+        "lastModified": 1765856344,
+        "narHash": "sha256-Pec2G/nY/7FiAfsM6I1ahkPoVsdCZnoTqcZcP/LzL6U=",
         "owner": "simonwjackson",
         "repo": "tmesh",
-        "rev": "34d6b0b09ac7c5772eb0a665579b70c99457c66b",
+        "rev": "4f1cb15d5aa5f204f25bb78d6984ea9cf4c4c046",
         "type": "github"
       },
       "original": {

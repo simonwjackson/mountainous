@@ -1318,9 +1318,12 @@
     extensions = {
       "uBlock0@raymondhill.net" = {slug = "ublock-origin";};
       "addon@darkreader.org" = {slug = "darkreader";};
-      "{cebd391d-f568-473f-bb6e-698d08ec81ec}" = {slug = "tokyo-night-dark-theme";};
       "sponsorBlocker@ajay.app" = {slug = "sponsorblock";};
       "@react-devtools" = {slug = "react-devtools";};
+      "{d634138d-c276-4fc8-924b-40a0ea21d284}" = {slug = "1password-x-password-manager";};
+      "{1be309c5-3e4f-4b99-927d-bb500eb4fa88}" = {slug = "augmented-steam";};
+      "jid1-BYcQOfYfmBMd9A@jetpack" = {slug = "pushbullet";};
+      "tridactyl.vim@cmcaine.co.uk" = {slug = "tridactyl-vim";};
       "ff2mpv@yossarian.net" = {slug = "ff2mpv";};
     };
     nativeMessagingHosts = [pkgs.ff2mpv];
