@@ -1086,11 +1086,11 @@
         "vim-overseer": "vim-overseer"
       },
       "locked": {
-        "lastModified": 1765842545,
-        "narHash": "sha256-Sc7D2ZDWr7ozSmrTYzXE8sejc7V1G04uWPviHxUwoBM=",
+        "lastModified": 1765846710,
+        "narHash": "sha256-mhwGAKjUpWsQBTeNwHtLWbmjkGXa+eO842+evLxMyqU=",
         "owner": "simonwjackson",
         "repo": "icho",
-        "rev": "fc0b70a298bbf18e0f84d2b4f69b579621af2e3a",
+        "rev": "22675f803663b3a7a5cb89d58e293977f9d60971",
         "type": "github"
       },
       "original": {
