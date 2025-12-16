@@ -1019,6 +1019,7 @@
     chromium
     nodePackages.prettier
     # pyxis - managed by programs.pyxis module below
+    opencode
   ];
 
   # Pyxis - Pandora CLI client

@@ -77,6 +77,10 @@
       url = "github:simonwjackson/pyxis";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    opencode = {
+      url = "github:simonwjackson/opencode";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -102,6 +106,7 @@
           beads = inputs.beads.packages.${final.stdenv.hostPlatform.system}.default;
           citron = inputs.citron.packages.${final.stdenv.hostPlatform.system}.default;
           pyxis = inputs.pyxis.packages.${final.stdenv.hostPlatform.system}.default;
+          opencode = inputs.opencode.packages.${final.stdenv.hostPlatform.system}.default;
           obsidian = prev.symlinkJoin {
             name = "obsidian";
             paths = [prev.obsidian];

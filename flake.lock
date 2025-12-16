@@ -1496,6 +1496,26 @@
         "url": "https://github.com/lat9nq/tzdb_to_nx/releases/download/221202/221202.zip"
       }
     },
+    "opencode": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1765516634,
+        "narHash": "sha256-77GXN9EN3U+e8d3HAUpZT07HhChBfrHvmNPPvgtreZY=",
+        "owner": "simonwjackson",
+        "repo": "opencode",
+        "rev": "ee3927577a8dcf163065078ce58f96d914323833",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "opencode",
+        "type": "github"
+      }
+    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -1622,6 +1642,7 @@
         "nixos-anywhere": "nixos-anywhere",
         "nixpkgs": "nixpkgs_7",
         "nixpkgs-immich": "nixpkgs-immich",
+        "opencode": "opencode",
         "pyxis": "pyxis",
         "synapse": "synapse",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
