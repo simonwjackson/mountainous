@@ -42,12 +42,106 @@ in {
     networking.enableIPv6 = false;
 
     programs.mosh.enable = true;
-    programs.tmesh.enable = mkDefault true;
+    programs.tmesh = {
+      enable = mkDefault true;
+
+      # Server-side tmux config (runs on remote host)
+      tmeshServerTmuxConfig = ''
+        # Clipboard passthrough for nested tmux
+        # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
+        set -s set-clipboard on
+        set -g allow-passthrough on
+
+        # Session behavior
+        set-option -g detach-on-destroy off
+        unbind-key -T root MouseDown3Pane
+
+        # Performance
+        set-option -g focus-events on
+        set-option -s escape-time 0
+
+        # Silent operation
+        set-option -g visual-activity off
+        set-option -g visual-bell off
+        set-option -g visual-silence off
+        set-option -g bell-action none
+        set-window-option -g monitor-activity off
+
+        # Window behavior
+        set-option -g window-size latest
+        setw -g aggressive-resize on
+        setw -g mode-keys vi
+
+        # Terminal settings
+        set -sa terminal-features ',xterm-256color:RGB'
+        set-option -g default-terminal "tmux-256color"
+        set-option -ga terminal-overrides ",*256col*:Tc"
+
+        # Mouse and indexing
+        set-option -g mouse on
+        set-option -g base-index 1
+        set-option -g pane-base-index 1
+        set-option -g renumber-windows on
+
+        # Disable status bar
+        set-option -g status off
+        set-option -g history-limit 0
+
+        # Tokyo Night theme - Server variant
+        set-option -g pane-border-style "fg=#3b4261"
+        set-option -g pane-active-border-style "fg=#7aa2f7"
+        set-option -g mode-style "fg=#1a1b26,bg=#e0af68"
+        set-option -g message-style "fg=#c0caf5,bg=#292e42"
+        set-option -g message-command-style "fg=#c0caf5,bg=#292e42"
+        set-option -g popup-style "fg=#c0caf5,bg=#1a1b26"
+        set-option -g popup-border-style "fg=#7aa2f7"
+        set-option -g popup-border-lines "rounded"
+        set-option -g menu-style "fg=#c0caf5,bg=#292e42"
+        set-option -g menu-selected-style "fg=#1a1b26,bg=#7aa2f7"
+        set-option -g menu-border-style "fg=#3b4261"
+        set-option -g menu-border-lines "rounded"
+      '';
+
+      # Client-side tmux config (runs locally)
+      tmeshTmuxConfig = ''
+        # Terminal settings
+        set-option -g default-terminal "tmux-256color"
+        set-option -ga terminal-overrides ",*256col*:Tc"
+
+        # Mouse and indexing
+        set-option -g mouse on
+        set-option -g base-index 1
+        set-option -g pane-base-index 1
+        set-option -g renumber-windows on
+
+        # Clipboard and system integration
+        set-option -g set-clipboard on
+        set-option -g focus-events on
+        set-option -s escape-time 0
+
+        # Disable status bar
+        set-option -g status off
+        set-option -g history-limit 0
+
+        # Tokyo Night theme
+        set-option -g pane-border-style "fg=#3b4261"
+        set-option -g pane-active-border-style "fg=#7aa2f7"
+        set-option -g mode-style "fg=#1a1b26,bg=#bb9af7"
+        set-option -g message-style "fg=#c0caf5,bg=#24283b"
+        set-option -g message-command-style "fg=#c0caf5,bg=#24283b"
+        set-option -g popup-style "fg=#c0caf5,bg=#1a1b26"
+        set-option -g popup-border-style "fg=#7aa2f7"
+        set-option -g popup-border-lines "rounded"
+        set-option -g menu-style "fg=#c0caf5,bg=#24283b"
+        set-option -g menu-selected-style "fg=#1a1b26,bg=#7aa2f7"
+        set-option -g menu-border-style "fg=#3b4261"
+        set-option -g menu-border-lines "rounded"
+      '';
+    };
 
     # Default shell command for tmesh sessions
     environment.sessionVariables = {
-      # TMESH_CMD = "/run/current-system/sw/bin/nix run /snowscape/code/sandbox/new-nixvim";
-      TMESH_CMD = "nvim";
+      TMESH_CMD = "/run/current-system/sw/bin/nix run /snowscape/code/sandbox/new-nixvim";
     };
 
     ###################
