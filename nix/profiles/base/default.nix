@@ -78,6 +78,10 @@ in {
 
       # Server-side tmux config (runs on remote host)
       tmeshServerTmuxConfig = ''
+        # Extended keys support (CSI u / kitty keyboard protocol)
+        set -s extended-keys on
+        set -as terminal-features ',*:extkeys'
+
         # Clipboard passthrough for nested tmux
         # INFO: https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---tmux-inside-tmux
         set -s set-clipboard on
@@ -135,6 +139,10 @@ in {
 
       # Client-side tmux config (runs locally)
       tmeshTmuxConfig = ''
+        # Extended keys support (CSI u / kitty keyboard protocol)
+        set -s extended-keys on
+        set -as terminal-features ',*:extkeys'
+
         # Terminal settings
         set-option -g default-terminal "tmux-256color"
         set-option -ga terminal-overrides ",*256col*:Tc"
