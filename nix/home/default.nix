@@ -1345,11 +1345,16 @@
   mountainous.starship.enable = true;
 
   # Enable atuin with encrypted secrets
-  mountainous.atuin =
+  # Check if secret files exist at source path (evaluation time check)
+  mountainous.atuin = let
+    secretsRoot = ../../secrets/user/${config.home.username}/atuin;
+    keyExists = builtins.pathExists (secretsRoot + "/key.age");
+    sessionExists = builtins.pathExists (secretsRoot + "/session.age");
+  in
     lib.mkIf (
       config.mountainous.agenix.enable
-      && (config.age.secrets or {}) ? atuin_key
-      && (config.age.secrets or {}) ? atuin_session
+      && keyExists
+      && sessionExists
     ) {
       enable = true;
       key_path = config.age.secrets.atuin_key.path;

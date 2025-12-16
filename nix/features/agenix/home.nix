@@ -15,7 +15,8 @@
   sharedOptions = import ./options.nix {inherit lib;};
 
   # Path to secrets directory (new structure)
-  secretsRoot = ../../secrets;
+  # From nix/features/agenix/ we need to go up 3 levels to reach repo root
+  secretsRoot = ../../../secrets;
   userSecretsDir = secretsRoot + "/user/${username}";
 
   # Function to check if a file/path exists
