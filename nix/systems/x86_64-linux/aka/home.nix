@@ -51,25 +51,25 @@
     ];
   };
   # Dropbox remote configuration (uses agenix for token)
-  programs.rclone = {
-    enable = true;
-    remotes.dropbox = {
-      config.type = "dropbox";
-      secrets.token = config.age.secrets.cloud_dropbox-token.path;
-    };
-  };
+  # programs.rclone = {
+  #   enable = true;
+  #   remotes.dropbox = {
+  #     config.type = "dropbox";
+  #     secrets.token = config.age.secrets.cloud_dropbox-token.path;
+  #   };
+  # };
 
   # Bidirectional sync for knowledge base
-  mountainous.rclone-bisync = {
-    enable = true;
-    folders.knowledge = {
-      localPath = "/snowscape/knowledge";
-      remote = "dropbox";
-      remotePath = "knowledge";
-      interval = "*:0/5";
-      conflictResolve = "newer";
-    };
-  };
+  # mountainous.rclone-bisync = {
+  #   enable = true;
+  #   folders.knowledge = {
+  #     localPath = "/snowscape/knowledge";
+  #     remote = "dropbox";
+  #     remotePath = "knowledge";
+  #     interval = "*:0/5";
+  #     conflictResolve = "newer";
+  #   };
+  # };
 
   mountainous.hyprland = {
     extraSettings = {
