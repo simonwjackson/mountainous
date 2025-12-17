@@ -131,6 +131,12 @@ in {
     home.packages = [
       pkgs.wtype
       pkgs.sox
+      # Screenshot tools
+      pkgs.grim
+      pkgs.slurp
+      pkgs.satty
+      pkgs.wl-clipboard
+      pkgs.libnotify
     ];
 
     programs.hyprlock = hyprlockConfig.hyprlock;

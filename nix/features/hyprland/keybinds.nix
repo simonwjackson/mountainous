@@ -20,11 +20,20 @@
   kitty = "${pkgs.kitty}/bin/kitty";
   lf = "${pkgs.lf}/bin/lf";
   walker = "${pkgs.walker}/bin/walker";
+
+  # Screenshot tools
+  grim = "${pkgs.grim}/bin/grim";
+  slurp = "${pkgs.slurp}/bin/slurp";
+  satty = "${pkgs.satty}/bin/satty";
+  wlCopy = "${pkgs.wl-clipboard}/bin/wl-copy";
+  notifySend = "${pkgs.libnotify}/bin/notify-send";
+  mkdir = "${pkgs.coreutils}/bin/mkdir";
+  screenshotDir = "$HOME/Pictures/Screenshots";
+  screenshotFile = ''$(${date} +"%Y-%m-%dT%H:%M:%S").png'';
 in {
   "$terminal" = "${kitty}";
   "$fileManager" = "${kitty} -- ${lf}";
   "$mainMod" = "SUPER";
-  "$screenshotTmpl" = ''/home/simonwjackson/Pictures/$(${date} +"%Y-%m-%dT%H:%M:%S").png'';
 
   bind =
     [
@@ -86,6 +95,14 @@ in {
       "$mainMod, down, swapwindow, d"
       "$mainMod, N, exec, ${pkgs.darkmode-toggle}/bin/darkmode-toggle"
       "$mainMod, equal, exec, ${pkgs.split-toggle}/bin/split-toggle"
+
+      # Screenshots - with Satty markup
+      ''$mainMod, G, exec, ${mkdir} -p ${screenshotDir} && ${grim} -g "$(${slurp})" - | ${satty} --filename - --output-filename "${screenshotDir}/${screenshotFile}" --copy-command "${wlCopy}"''
+      ''$mainMod CTRL, G, exec, ${mkdir} -p ${screenshotDir} && ${grim} -g "$(${hyprctl} activewindow -j | ${jq} -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" - | ${satty} --filename - --output-filename "${screenshotDir}/${screenshotFile}" --copy-command "${wlCopy}"''
+
+      # Screenshots - direct (no markup)
+      ''$mainMod SHIFT, G, exec, ${mkdir} -p ${screenshotDir} && ${grim} -g "$(${slurp})" "${screenshotDir}/${screenshotFile}" && ${wlCopy} < "${screenshotDir}/${screenshotFile}" && ${notifySend} "Screenshot" "Region saved & copied"''
+      ''$mainMod CTRL SHIFT, G, exec, ${mkdir} -p ${screenshotDir} && ${grim} -g "$(${hyprctl} activewindow -j | ${jq} -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')" "${screenshotDir}/${screenshotFile}" && ${wlCopy} < "${screenshotDir}/${screenshotFile}" && ${notifySend} "Screenshot" "Window saved & copied"''
     ]
     ++ lib.optionals dictationEnabled [
       "$mainMod, S, exec, ${dictationBin}"
