@@ -113,6 +113,64 @@ namespace_ready() {
   return 0
 }
 
+# Wait for DNS resolution of VPN endpoint (infinite retry with capped exponential backoff)
+wait_for_dns() {
+  local endpoint
+  endpoint=$(grep -i "^Endpoint" "$WG_CONF" | head -1 | sed 's/.*=\s*//' | cut -d: -f1 | tr -d ' ')
+
+  if [[ -z "$endpoint" ]]; then
+    echo "WARNING: No Endpoint found in config, skipping DNS wait"
+    return 0
+  fi
+
+  # Check if it's already an IP address (no DNS needed)
+  if [[ "$endpoint" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Endpoint is IP address, no DNS resolution needed"
+    return 0
+  fi
+
+  local delay=1
+  local max_delay=60
+
+  echo "Waiting for DNS resolution of $endpoint..."
+  while ! getent hosts "$endpoint" &>/dev/null; do
+    echo "DNS not ready for $endpoint, retrying in ${delay}s..."
+    sleep "$delay"
+    delay=$((delay * 2))
+    ((delay > max_delay)) && delay=$max_delay
+  done
+
+  echo "DNS resolved: $endpoint"
+}
+
+# Health check loop for daemon mode (runs forever until tunnel dies)
+health_loop() {
+  local failures=0
+  local max_failures=3
+  local check_interval=60
+
+  echo "Starting health check loop (interval: ${check_interval}s, max failures: $max_failures)"
+
+  while true; do
+    sleep "$check_interval"
+
+    if ip netns exec "$NS" ping -c1 -W5 1.1.1.1 &>/dev/null; then
+      if ((failures > 0)); then
+        echo "VPN health restored after $failures failed check(s)"
+        failures=0
+      fi
+    else
+      ((failures++))
+      echo "VPN health check failed ($failures/$max_failures)"
+
+      if ((failures >= max_failures)); then
+        echo "VPN tunnel appears dead, exiting for systemd restart"
+        exit 1
+      fi
+    fi
+  done
+}
+
 cleanup() {
   local pids
   pids=$(ip netns pids "$NS" 2>/dev/null | grep -v "^$$\$" || true)
@@ -200,7 +258,14 @@ verify_vpn() {
   echo "VPN IP: $vpn_ip"
 }
 
-# Only cleanup on exit if running a command (not setup-only mode)
+# Signal handler for clean shutdown in daemon mode
+shutdown_handler() {
+  echo "Received shutdown signal, exiting gracefully..."
+  exit 0
+}
+
+# Only cleanup on exit if running a command (not setup-only/daemon mode)
+# In daemon mode, ExecStop handles cleanup
 if [[ "$SETUP_ONLY" == "false" ]]; then
   trap cleanup EXIT
 fi
@@ -208,14 +273,19 @@ fi
 if namespace_ready; then
   echo "Reusing existing VPN namespace"
 else
+  # Wait for DNS before attempting setup
+  wait_for_dns
   setup_namespace
   verify_vpn
 fi
 
-# If setup-only mode, we're done
+# If setup-only (daemon) mode, enter health check loop
 if [[ "$SETUP_ONLY" == "true" ]]; then
-  echo "Namespace '$NS' is ready for use"
-  exit 0
+  echo "Namespace '$NS' is ready for use, entering daemon mode"
+  # Trap signals for clean shutdown
+  trap shutdown_handler SIGTERM SIGINT
+  health_loop
+  # health_loop only returns on failure, which means exit 1 already called
 fi
 
 echo "Running: $*"

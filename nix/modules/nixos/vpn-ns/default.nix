@@ -104,10 +104,12 @@ in {
           after = ["network-online.target"];
           before = enabledServiceNames;
           serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
+            Type = "simple";
             ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
             ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
+            # Restart on failure (tunnel dies, DNS issues, etc.)
+            Restart = "always";
+            RestartSec = "10s";
           };
           environment = {
             VPN_NS_CONFIG = cfg.configFile;
