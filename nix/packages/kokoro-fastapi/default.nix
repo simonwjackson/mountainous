@@ -34,6 +34,17 @@
         pythonRemoveDeps = (old.pythonRemoveDeps or []) ++ ["typer-slim"];
         pythonRelaxDeps = (old.pythonRelaxDeps or []) ++ ["typer-slim"];
       });
+      # Override spacy to use typer instead of typer-slim
+      spacy = super.spacy.overridePythonAttrs (old: {
+        dependencies = builtins.map (
+          dep:
+            if dep == super.typer-slim
+            then super.typer
+            else dep
+        ) (old.dependencies or []);
+        pythonRemoveDeps = (old.pythonRemoveDeps or []) ++ ["typer-slim"];
+        pythonRelaxDeps = (old.pythonRelaxDeps or []) ++ ["typer-slim"];
+      });
     };
   };
 
