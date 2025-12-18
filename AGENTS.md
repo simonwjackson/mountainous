@@ -1,14 +1,7 @@
-# CLAUDE.md
+# Mountainous
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Build Commands
-- Build system: `nix build .#vm-[system-name]`
-- Run VM: `./result/bin/run-nixos-vm`
-- Deploy to hardware: `just switch [system-name]`
-- Common just commands: `just switch`, `just test`, `just build`, `just up`, `just deploy`
+- Evolve a system: `just switch [system-name]`
 - Scaffold new system: `nix run .#scaffold -- [args]`
-- Check history: `just history`
 - Search packages: `nix search nixpkgs <regex>` to find packages by name or description
 
 ## Code Style Guidelines
@@ -34,4 +27,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - use `just [test|build|switch|..]` instead of raw nix commands where possible
 - `hyprctl --instance 0 ..` for all hyprctl commands
 
+## Deploy Commands
+
+- `nix run .#deploy` - **DESTRUCTIVE** - For fresh system installs only. Will wipe the target system.
+- For updating existing systems, use: `nixos-rebuild switch --flake .#<hostname> --target-host user@ip`
+
+## Development Guidelines
+
+- Run tests before completing any task, adding or updating tests as needed
 - use ssh -F /dev/null when connecting

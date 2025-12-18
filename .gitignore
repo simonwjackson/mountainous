@@ -8,3 +8,4 @@ CLAUDE.local.md
 secrets/rekeyed/
 nix/packages/steam-prefs/__pycache__
 history
+AGENTS.local.md
