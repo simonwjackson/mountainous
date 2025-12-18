@@ -99,7 +99,8 @@ in {
 
   config = lib.mkIf cfg.enable {
     # Register mount prefix for the directories module
-    mountainous.directories.mountPrefixes."${cfg.mountPoints.merged}/iceberg" = "tundra-merged-iceberg.mount";
+    # Use our mount service instead of the raw mount unit
+    mountainous.directories.mountPrefixes."${cfg.mountPoints.merged}/iceberg" = "iceberg-mergerfs-mount.service";
 
     # Systemd target for services that depend on iceberg array
     # With automount, access to paths triggers mounting on-demand
@@ -110,11 +111,94 @@ in {
       after = ["local-fs.target"];
     };
 
-    # Target for the merged view
+    # Target for the merged view - depends on the mount service
     systemd.targets.iceberg-merged = {
       description = "Iceberg Array Merged View Target";
       wantedBy = ["multi-user.target"];
-      after = ["iceberg-array.target"];
+      after = ["iceberg-mergerfs-mount.service"];
+      requires = ["iceberg-mergerfs-mount.service"];
+    };
+
+    # Service to mount mergerfs only after data disks are available
+    systemd.services.iceberg-mergerfs-mount = let
+      dataDiskPaths =
+        map (
+          diskId: let
+            diskNum = lib.strings.removePrefix "iceberg" diskId;
+          in "${cfg.mountPoints.disks}/iceberg/${diskNum}/0"
+        )
+        icebergConfig.snapraid.dataDisks;
+    in {
+      description = "Mount Iceberg MergerFS (after disks are ready)";
+      wantedBy = ["multi-user.target"];
+      after = ["local-fs.target"];
+
+      # Only start if at least one data disk device exists
+      # This prevents the service from running when array is disconnected
+      unitConfig = {
+        ConditionPathExists = "|${builtins.head dataDiskPaths}";
+      };
+
+      path = with pkgs; [util-linux mount];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = pkgs.writeShellScript "iceberg-mergerfs-mount" ''
+          set -euo pipefail
+
+          DATA_DISKS=(${lib.concatStringsSep " " (map (p: ''"${p}"'') dataDiskPaths)})
+          MERGED_PATH="${cfg.mountPoints.merged}/iceberg"
+
+          # Wait for disk mounts (with timeout)
+          # Must be longer than x-systemd.device-timeout (90s) to give disks time
+          TIMEOUT=120
+          WAITED=0
+          READY=0
+
+          echo "Waiting for iceberg data disks to mount..."
+
+          while [ $WAITED -lt $TIMEOUT ]; do
+            MOUNTED=0
+            for disk in "''${DATA_DISKS[@]}"; do
+              if mountpoint -q "$disk" 2>/dev/null; then
+                ((MOUNTED++)) || true
+              fi
+            done
+
+            if [ $MOUNTED -eq ''${#DATA_DISKS[@]} ]; then
+              READY=1
+              break
+            fi
+
+            sleep 1
+            ((WAITED++)) || true
+          done
+
+          if [ $READY -eq 0 ]; then
+            echo "Timeout waiting for iceberg disks. Mounted: $MOUNTED/''${#DATA_DISKS[@]}"
+            echo "Array may be disconnected - skipping mergerfs mount"
+            exit 0
+          fi
+
+          echo "All data disks mounted, mounting mergerfs..."
+
+          # Check if already mounted
+          if mountpoint -q "$MERGED_PATH" 2>/dev/null; then
+            echo "MergerFS already mounted at $MERGED_PATH"
+            exit 0
+          fi
+
+          mount "$MERGED_PATH"
+          echo "MergerFS mounted successfully at $MERGED_PATH"
+        '';
+
+        ExecStop = pkgs.writeShellScript "iceberg-mergerfs-umount" ''
+          MERGED_PATH="${cfg.mountPoints.merged}/iceberg"
+          if mountpoint -q "$MERGED_PATH" 2>/dev/null; then
+            umount "$MERGED_PATH" || true
+          fi
+        '';
+      };
     };
 
     # Combined fileSystems configuration
@@ -130,14 +214,14 @@ in {
         })
         cfg.disks))
       //
-      # MergerFS configuration
+      # MergerFS configuration - uses noauto so we control mounting via systemd service
       {
         "${cfg.mountPoints.merged}/iceberg" = {
           device = "${cfg.mountPoints.disks}/iceberg/00/0:${cfg.mountPoints.disks}/iceberg/01/0:${cfg.mountPoints.disks}/iceberg/04/0:${cfg.mountPoints.disks}/iceberg/05/0";
           fsType = "fuse.mergerfs";
           options = [
-            "defaults"
-            "nofail"
+            "noauto" # Don't mount automatically - let our service handle it
+            "x-systemd.automount=false" # Prevent any automount attempts
             "allow_other"
             "use_ino"
             "cache.files=partial"

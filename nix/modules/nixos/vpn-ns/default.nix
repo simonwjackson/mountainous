@@ -104,7 +104,8 @@ in {
           after = ["network-online.target"];
           before = enabledServiceNames;
           serviceConfig = {
-            Type = "simple";
+            Type = "notify";
+            NotifyAccess = "all";
             ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
             ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
             # Restart on failure (tunnel dies, DNS issues, etc.)

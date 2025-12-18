@@ -9,6 +9,7 @@
   pathToMountUnit = path: "${lib.replaceStrings ["/"] ["-"] (lib.removePrefix "/" path)}.mount";
 
   # Find the longest matching mount prefix for a path
+  # Exported as a config option for use by other modules
   findMountPrefix = path:
     lib.foldl' (
       acc: prefix:
@@ -17,6 +18,14 @@
         else acc
     ) ""
     (lib.attrNames cfg.mountPrefixes);
+
+  # Get the mount service for a given path (if any)
+  getMountServiceForPath = path: let
+    prefix = findMountPrefix path;
+  in
+    if prefix != ""
+    then cfg.mountPrefixes.${prefix}
+    else null;
 
   # Generate all parent paths between a base and target path
   # e.g., getParentPaths "/mnt" "/mnt/a/b/c" -> ["/mnt/a" "/mnt/a/b" "/mnt/a/b/c"]
@@ -139,6 +148,24 @@ in {
           "/tundra/merged/iceberg" = "tundra-merged-iceberg.mount";
         }
       '';
+    };
+
+    # Function to get mount service dependency for a path
+    # Returns null if path doesn't need a mount dependency
+    getMountService = lib.mkOption {
+      type = lib.types.functionTo (lib.types.nullOr lib.types.str);
+      default = getMountServiceForPath;
+      readOnly = true;
+      description = "Function to get the mount service for a given path";
+    };
+
+    # Function to get mount services for multiple paths
+    # Returns list of unique mount services (non-null) for the given paths
+    getMountServicesForPaths = lib.mkOption {
+      type = lib.types.functionTo (lib.types.listOf lib.types.str);
+      default = paths: lib.unique (lib.filter (x: x != null) (map getMountServiceForPath paths));
+      readOnly = true;
+      description = "Function to get unique mount services for a list of paths";
     };
   };
 

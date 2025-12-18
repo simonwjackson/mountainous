@@ -140,6 +140,18 @@ in {
 
       users.groups.${cfg.group} = mkIf (cfg.group == "flexget") {};
 
+      # Add dependencies on mount services for any media paths that require them
+      # This ensures flexget waits for mounts like iceberg mergerfs
+      systemd.services.flexget = let
+        mountServices =
+          config.mountainous.directories.getMountServicesForPaths
+          (lib.attrValues mediaCfg.paths);
+      in
+        lib.mkIf (mountServices != []) {
+          after = mountServices;
+          requires = mountServices;
+        };
+
       # Use upstream NixOS module
       services.flexget = {
         inherit (cfg) user interval;

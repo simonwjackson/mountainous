@@ -113,8 +113,20 @@ in {
 
       # Add media paths as writable for transmission service
       # Required because NixOS transmission uses ProtectSystem=strict
-      systemd.services.transmission.serviceConfig.BindPaths =
-        lib.mapAttrsToList (_: path: path) mediaCfg.paths;
+      # Also add dependencies on mount services for any media paths that require them
+      # This ensures transmission waits for mounts like iceberg mergerfs
+      systemd.services.transmission = let
+        mountServices =
+          config.mountainous.directories.getMountServicesForPaths
+          (lib.attrValues mediaCfg.paths);
+      in
+        {
+          serviceConfig.BindPaths = lib.mapAttrsToList (_: path: path) mediaCfg.paths;
+        }
+        // lib.optionalAttrs (mountServices != []) {
+          after = mountServices;
+          requires = mountServices;
+        };
 
       # Wire up VPN and proxy internally
       mountainous.vpn-ns.services.transmission = mkIf cfg.vpn.enable {

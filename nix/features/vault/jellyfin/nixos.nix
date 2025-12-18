@@ -248,6 +248,18 @@ in {
         };
       };
 
+      # Add dependencies on mount services for any media paths that require them
+      # This ensures jellyfin waits for mounts like iceberg mergerfs
+      systemd.services.jellyfin = let
+        mountServices =
+          config.mountainous.directories.getMountServicesForPaths
+          (lib.attrValues mediaCfg.paths);
+      in
+        lib.mkIf (mountServices != []) {
+          after = mountServices;
+          requires = mountServices;
+        };
+
       # Enable Jellyfin service
       services.jellyfin = {
         enable = true;
@@ -395,8 +407,7 @@ in {
         IOSchedulingClass = "best-effort";
         IOSchedulingPriority = 4;
 
-        # Watchdog and restart behavior
-        WatchdogSec = "60s";
+        # Restart behavior (no watchdog - Jellyfin doesn't support sd_notify)
         Restart = mkDefault "on-failure";
         RestartSec = mkDefault "10s";
       };

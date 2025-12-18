@@ -248,29 +248,43 @@ in {
       };
 
       # Inject passwords from secret files into nzbget.conf
-      systemd.services.nzbget = mkIf (serversWithPasswords != {}) {
-        preStart = let
-          configFile = "${cfg.dataDir}/nzbget.conf";
-          serverList = lib.attrNames cfg.servers;
-          # Generate password injection commands
-          injectCommands = lib.concatStringsSep "\n" (lib.imap1 (
-              idx: name: let
-                srv = cfg.servers.${name};
-              in
-                lib.optionalString (srv.passwordFile != null) ''
-                  PASSWORD=$(cat ${srv.passwordFile})
-                  ${pkgs.gnused}/bin/sed -i "s|^Server${toString idx}.Password=.*|Server${toString idx}.Password=$PASSWORD|" ${configFile}
-                  if ! grep -q "^Server${toString idx}.Password=" ${configFile}; then
-                    echo "Server${toString idx}.Password=$PASSWORD" >> ${configFile}
-                  fi
-                ''
-            )
-            serverList);
-        in
-          lib.mkAfter ''
-            ${injectCommands}
-          '';
-      };
+      # Also add dependencies on mount services for media paths
+      systemd.services.nzbget = let
+        mountServices =
+          config.mountainous.directories.getMountServicesForPaths
+          (lib.attrValues mediaCfg.paths);
+      in
+        mkMerge [
+          # Mount service dependencies
+          (lib.mkIf (mountServices != []) {
+            after = mountServices;
+            requires = mountServices;
+          })
+          # Password injection
+          (mkIf (serversWithPasswords != {}) {
+            preStart = let
+              configFile = "${cfg.dataDir}/nzbget.conf";
+              serverList = lib.attrNames cfg.servers;
+              # Generate password injection commands
+              injectCommands = lib.concatStringsSep "\n" (lib.imap1 (
+                  idx: name: let
+                    srv = cfg.servers.${name};
+                  in
+                    lib.optionalString (srv.passwordFile != null) ''
+                      PASSWORD=$(cat ${srv.passwordFile})
+                      ${pkgs.gnused}/bin/sed -i "s|^Server${toString idx}.Password=.*|Server${toString idx}.Password=$PASSWORD|" ${configFile}
+                      if ! grep -q "^Server${toString idx}.Password=" ${configFile}; then
+                        echo "Server${toString idx}.Password=$PASSWORD" >> ${configFile}
+                      fi
+                    ''
+                )
+                serverList);
+            in
+              lib.mkAfter ''
+                ${injectCommands}
+              '';
+          })
+        ];
 
       # Wire up VPN and proxy internally
       mountainous.vpn-ns.services.nzbget = mkIf cfg.vpn.enable {

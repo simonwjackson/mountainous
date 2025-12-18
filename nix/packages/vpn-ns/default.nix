@@ -12,6 +12,7 @@
   util-linux,
   glibc,
   iputils,
+  systemd,
   ...
 }:
 (writeShellApplication {
@@ -28,6 +29,7 @@
     util-linux # runuser
     glibc.getent # getent for DNS lookups
     iputils # ping for health checks
+    systemd # systemd-notify for readiness signaling
   ];
   text = builtins.readFile ./vpn-ns.sh;
 })

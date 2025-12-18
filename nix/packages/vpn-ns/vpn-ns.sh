@@ -279,9 +279,13 @@ else
   verify_vpn
 fi
 
-# If setup-only (daemon) mode, enter health check loop
+# If setup-only (daemon) mode, notify systemd and enter health check loop
 if [[ "$SETUP_ONLY" == "true" ]]; then
   echo "Namespace '$NS' is ready for use, entering daemon mode"
+  # Notify systemd that we're ready (dependent services can now start)
+  if [[ -n "${NOTIFY_SOCKET:-}" ]]; then
+    systemd-notify --ready --status="VPN namespace ready"
+  fi
   # Trap signals for clean shutdown
   trap shutdown_handler SIGTERM SIGINT
   health_loop

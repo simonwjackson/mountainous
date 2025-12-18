@@ -110,6 +110,22 @@ in {
 
   config = mkIf cfg.enable (mkMerge [
     {
+      # Add dependencies on mount services for any paths that require them
+      # This ensures immich waits for mounts like iceberg mergerfs
+      # Check both mediaLocation and environment paths (like IMMICH_LIBRARY_LOCATION)
+      systemd.services.immich-server = let
+        # Extract paths from environment variables that look like file paths
+        envPaths = lib.filter (p: lib.hasPrefix "/" p) (lib.attrValues cfg.environment);
+        # Also check media paths if photos is defined
+        photoPaths = lib.optional (mediaCfg.paths ? photos) mediaCfg.paths.photos;
+        allPaths = [cfg.mediaLocation] ++ envPaths ++ photoPaths;
+        mountServices = config.mountainous.directories.getMountServicesForPaths allPaths;
+      in
+        lib.mkIf (mountServices != []) {
+          after = mountServices;
+          requires = mountServices;
+        };
+
       # Enable Immich service
       services.immich = {
         enable = true;

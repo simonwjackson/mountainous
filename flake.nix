@@ -166,6 +166,7 @@
 
             # AI
             inputs.beads.packages.${system}.default
+            mgrep
           ];
 
           shellHook = ''
