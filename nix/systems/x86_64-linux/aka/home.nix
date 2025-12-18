@@ -96,6 +96,17 @@
   mountainous.taskwarrior.enable = true;
   mountainous.dictation.enable = true;
 
+  # Override hypridle: Keep screen DPMS, but never suspend (desktop)
+  services.hypridle.settings.listener = [
+    # Turn off display after 2 minutes of inactivity
+    {
+      timeout = 120;
+      on-timeout = "hyprctl --instance 0 dispatch dpms off";
+      on-resume = "hyprctl --instance 0 dispatch dpms on";
+    }
+    # No suspend listener - aka is a desktop and should never sleep
+  ];
+
   # System-specific settings
   programs.git.settings = {
     init.defaultBranch = "main";
