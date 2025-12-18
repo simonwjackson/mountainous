@@ -10,6 +10,8 @@
   procps,
   iptables,
   util-linux,
+  glibc,
+  iputils,
   ...
 }:
 (writeShellApplication {
@@ -24,6 +26,8 @@
     procps # sysctl
     iptables # iptables
     util-linux # runuser
+    glibc.getent # getent for DNS lookups
+    iputils # ping for health checks
   ];
   text = builtins.readFile ./vpn-ns.sh;
 })
