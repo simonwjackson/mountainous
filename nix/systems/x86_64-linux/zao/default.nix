@@ -203,8 +203,8 @@
     gaming.library.remote = {
       enable = true;
       server = "aka"; # Tailscale DNS name
-      remotePath = "/home/simonwjackson/.local/share/Steam";
-      mountPoint = "/tundra/avalanche/steam";
+      remotePath = "/snowscape/gaming/games/steam";
+      mountPoint = "/snowscape/gaming/games/steam";
     };
   };
 

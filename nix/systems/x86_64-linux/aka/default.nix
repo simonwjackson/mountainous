@@ -78,9 +78,9 @@
       enable = true;
       exports = [
         {
-          path = "/home/simonwjackson/.local/share/Steam";
+          path = "/snowscape/gaming/games/steam";
           clients = "*"; # Allow all - network security handled by Tailscale/firewall
-          options = ["rw" "sync" "no_subtree_check" "all_squash" "anonuid=333" "anongid=333"];
+          options = ["rw" "sync" "no_subtree_check" "all_squash" "anonuid=1000" "anongid=100"];
         }
       ];
     };
