@@ -126,18 +126,8 @@ in {
       '')
     ];
 
-    # Create virtual sink at user session start for Sunshine audio capture
-    systemd.user.services.sunshine-audio-sink = {
-      description = "Virtual audio sink for Sunshine streaming";
-      wantedBy = ["pipewire.service"];
-      after = ["pipewire.service"];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-        ExecStart = "${pkgs.pulseaudio}/bin/pactl load-module module-null-sink sink_name=sunshine-sink sink_properties=device.description=Sunshine";
-        ExecStop = "${pkgs.pulseaudio}/bin/pactl unload-module module-null-sink";
-      };
-    };
+    # Note: Sunshine creates its own virtual sinks (sink-sunshine-stereo, etc.)
+    # when a client connects, and captures from their monitors automatically.
 
     # DualSense and other gamepad permissions
     services.udev.extraRules = lib.mkMerge [
@@ -170,8 +160,8 @@ in {
           log_path = logPath;
           output_name = cfg.streaming.monitorIndex;
           key_rightalt_to_key_win = "enabled";
-          # Use our virtual sink for audio capture
-          audio_sink = "sunshine-sink";
+          # Let Sunshine create and manage its own virtual sinks
+          # It will capture from its own sink-sunshine-stereo.monitor
         }
         // encoderSettings;
 
