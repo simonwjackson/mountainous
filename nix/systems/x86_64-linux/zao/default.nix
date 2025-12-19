@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   lib,
   modulesPath,
@@ -123,6 +124,18 @@
   # Enable profiles for desktop/gaming server
   mountainous = {
     iceberg-array.enable = true;
+
+    # Syncthing for gaming profiles sync with aka
+    syncthing = {
+      enable = true;
+      deviceId = "CTOOG4Z-5WK7MDW-UQ3KHOI-YEMDGQF-D6JSIMG-BNPJZWN-MPN3RTO-TBFKRAN";
+      folders = {
+        gaming-profiles = {
+          path = "/tundra/merged/iceberg/gaming/profiles";
+          ignorePerms = true; # Shared storage - don't sync perms
+        };
+      };
+    };
 
     directories.paths = {
       "/tundra/merged/iceberg/knowledge" = {

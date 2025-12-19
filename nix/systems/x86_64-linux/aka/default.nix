@@ -101,11 +101,17 @@
       ];
     };
 
-    # Syncthing for knowledge sync
+    # Syncthing for knowledge and gaming profiles sync
     syncthing = {
       enable = true;
       deviceId = "DIVKBPA-VNVTEK5-FH7C2SB-QCSK6ZC-N4OE7AQ-3JX63AR-BDR6WMP-JQZ3KAK";
-      folders.knowledge.path = "/snowscape/knowledge";
+      folders = {
+        knowledge.path = "/snowscape/knowledge";
+        gaming-profiles = {
+          path = "/snowscape/gaming/profiles";
+          ignorePerms = true; # Shared storage with setgid - don't sync perms
+        };
+      };
     };
 
     # VPN isolation for services

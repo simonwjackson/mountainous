@@ -11,6 +11,14 @@
   hostname = config.networking.hostName;
   agenixEnabled = config.mountainous.agenix.enable or false;
 
+  # Path to secrets directory (go up 4 levels from nix/modules/nixos/syncthing/ to repo root)
+  secretsRoot = ../../../../secrets;
+
+  # Check if syncthing secrets files exist for this host
+  syncthingCertPath = secretsRoot + "/hosts/${hostname}/syncthing-cert.age";
+  syncthingKeyPath = secretsRoot + "/hosts/${hostname}/syncthing-key.age";
+  hasSyncthingSecrets = builtins.pathExists syncthingCertPath && builtins.pathExists syncthingKeyPath;
+
   # All NixOS systems from the flake
   allSystems = inputs.self.nixosConfigurations or {};
 
@@ -247,6 +255,10 @@ in {
       guiAddress = cfg.guiAddress;
       openDefaultPorts = cfg.openFirewall;
 
+      # Use agenix secrets for identity if available
+      cert = mkIf hasSyncthingSecrets config.age.secrets.syncthing-cert.path;
+      key = mkIf hasSyncthingSecrets config.age.secrets.syncthing-key.path;
+
       overrideDevices = true;
       overrideFolders = true;
 
@@ -260,6 +272,20 @@ in {
           globalAnnounceEnabled = true;
           relaysEnabled = true;
         };
+      };
+    };
+
+    # Set proper ownership on agenix secrets so syncthing user can read them
+    age.secrets = mkIf hasSyncthingSecrets {
+      syncthing-cert = {
+        owner = cfg.user;
+        group = cfg.group;
+        mode = "400";
+      };
+      syncthing-key = {
+        owner = cfg.user;
+        group = cfg.group;
+        mode = "400";
       };
     };
 
