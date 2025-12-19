@@ -22,6 +22,7 @@
     citron = {
       enable = true;
       keys = inputs.switch-prod-keys;
+      savePath = "/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch";
       gameDirectories = ["/snowscape/gaming/games/nintendo-switch"];
       graphics = {
         backend = "vulkan"; # AMD RX 7900

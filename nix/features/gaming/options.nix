@@ -18,6 +18,19 @@ in {
       example = "inputs.switch-prod-keys";
     };
 
+    savePath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Path to shared Nintendo Switch NAND directory (containing system/ and user/ subdirectories).
+        When set, ~/.local/share/citron/nand is symlinked to this path.
+        This allows saves and user profile (UUID) to be shared across multiple machines.
+        Per-machine settings (graphics, controller, etc.) remain in ~/.config/citron/qt-config.ini.
+        (null = don't manage, use Citron's default location)
+      '';
+      example = "/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch";
+    };
+
     # Game directories - appended to existing config
     gameDirectories = mkOption {
       type = types.listOf types.str;

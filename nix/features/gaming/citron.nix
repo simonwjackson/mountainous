@@ -3,6 +3,7 @@
 # Handles:
 # - Automatic installation of prod keys to ~/.local/share/citron/keys/
 # - Declarative configuration of ~/.config/citron/qt-config.ini
+# - Symlink management for shared NAND (saves + user profile)
 # - Smart re-installation when flake input changes (path-based detection)
 {
   config,
@@ -19,6 +20,7 @@
   citronCfg = osConfig.mountainous.gaming.citron or {};
   citronEnabled = citronCfg.enable or false;
   keysPath = citronCfg.keys or null;
+  savePath = citronCfg.savePath or null;
 
   # Build settings JSON for citron-config script
   # Only include non-null values
@@ -117,11 +119,62 @@
     echo "citron-config: Applying declarative settings..."
     ${pkgs.citron-config}/bin/citron-config '${settingsJson}'
   '';
+
+  # Script to symlink NAND directory for shared saves
+  symlinkNandScript = pkgs.writeShellScript "symlink-citron-nand" ''
+    set -euo pipefail
+
+    NAND_TARGET="${savePath}"
+    NAND_LINK="$HOME/.local/share/citron/nand"
+    CITRON_DIR="$HOME/.local/share/citron"
+
+    # Ensure citron data directory exists
+    ${pkgs.coreutils}/bin/mkdir -p "$CITRON_DIR"
+
+    # Check current state
+    if [[ -L "$NAND_LINK" ]]; then
+      CURRENT_TARGET=$(${pkgs.coreutils}/bin/readlink "$NAND_LINK")
+      if [[ "$CURRENT_TARGET" == "$NAND_TARGET" ]]; then
+        echo "citron-nand: Symlink already correct ($NAND_LINK -> $NAND_TARGET)"
+        exit 0
+      fi
+      echo "citron-nand: Updating symlink..."
+      echo "  old target: $CURRENT_TARGET"
+      echo "  new target: $NAND_TARGET"
+      ${pkgs.coreutils}/bin/rm "$NAND_LINK"
+    elif [[ -d "$NAND_LINK" ]]; then
+      echo "citron-nand: Removing existing nand directory to create symlink..."
+      echo "  WARNING: Existing local saves will be removed!"
+      echo "  Backing up to $NAND_LINK.backup.$(date +%Y%m%d-%H%M%S)"
+      ${pkgs.coreutils}/bin/mv "$NAND_LINK" "$NAND_LINK.backup.$(date +%Y%m%d-%H%M%S)"
+    elif [[ -e "$NAND_LINK" ]]; then
+      echo "citron-nand: ERROR: $NAND_LINK exists but is not a directory or symlink"
+      exit 1
+    fi
+
+    # Verify target exists
+    if [[ ! -d "$NAND_TARGET" ]]; then
+      echo "citron-nand: ERROR: Target directory does not exist: $NAND_TARGET"
+      echo "  Please ensure the save path exists before activating."
+      exit 1
+    fi
+
+    # Create symlink
+    ${pkgs.coreutils}/bin/ln -s "$NAND_TARGET" "$NAND_LINK"
+    echo "citron-nand: Symlink created ($NAND_LINK -> $NAND_TARGET)"
+  '';
 in {
   config = mkIf (gamingEnabled && citronEnabled) (mkMerge [
+    # NAND symlink for shared saves (if savePath provided)
+    (mkIf (savePath != null) {
+      home.activation.symlinkCitronNand = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        run ${symlinkNandScript}
+      '';
+    })
+
     # Keys installation (if keys path provided)
     (mkIf (keysPath != null) {
-      home.activation.installCitronKeys = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      home.activation.installCitronKeys = lib.hm.dag.entryAfter ["writeBoundary" "symlinkCitronNand"] ''
         run ${installKeysScript}
       '';
     })
