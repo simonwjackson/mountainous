@@ -29,21 +29,32 @@
   hasTouch = device.capabilities.touchscreen;
   isHandheld = device.capabilities.formFactor == "handheld" || device.capabilities.formFactor == "tablet";
 
+  # Wrapper script that launches Steam through steam-cage
+  # This fixes FSR issues on Hyprland by running Steam in a nested sway session
+  steamWrapper = pkgs.writeShellScriptBin "steam" ''
+    export STEAM_REAL_PATH="${pkgs.steam}/bin/steam"
+    exec ${pkgs.steam-cage}/bin/steam-cage "$@"
+  '';
+
   # Device-specific package sets
-  basePackages = with pkgs; [
+  basePackages = [
+    # Steam wrapper - launches through steam-cage to fix FSR on Hyprland
+    # hiPrio ensures our wrapper shadows the real steam binary in PATH
+    (lib.hiPrio steamWrapper)
+
     # Steam tools (proton-ge-bin goes in extraCompatPackages, not here)
-    gamescope
-    steam-tui
-    protontricks
+    pkgs.gamescope
+    pkgs.steam-tui
+    pkgs.protontricks
 
     # Performance overlays
-    mangohud
+    pkgs.mangohud
 
     # Moonlight streaming client
-    moonlight-qt
+    pkgs.moonlight-qt
 
     # Emulators
-    citron # Nintendo Switch
+    pkgs.citron # Nintendo Switch
   ];
 
   handheldPackages = with pkgs; [

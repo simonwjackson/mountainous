@@ -8,7 +8,8 @@
     "no_focus true, match:class ^$, match:title ^$, match:xwayland true, match:float true, match:fullscreen false, match:pin false"
     "workspace magic, match:class ^(steam)$"
 
-    # Gamescope: Tile and fullscreen by default
+    # Gamescope (steam-cage): Always on workspace 10, tiled and fullscreen
+    "workspace 10, match:class ^\.gamescope"
     "tile true, match:class ^\.gamescope"
     "fullscreen on, match:class ^\.gamescope"
 

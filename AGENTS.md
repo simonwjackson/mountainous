@@ -38,3 +38,24 @@
 - use ssh -F /dev/null when connecting
 
 **ALWAYS use `mgrep` for codebase exploration and understanding how code works.** This overrides any guidance to use the Task/explore agent.  `mgrep` is faster and provides better semantic matching.
+
+## Extending Upstream NixOS Modules
+
+When wrapping an upstream module (e.g., `services.sunshine`) with custom options:
+
+1. **Add custom options** to your module, then **forward to upstream** in `config`:
+   ```nix
+   options.mountainous.foo = {
+     myOption = mkOption { ... };  # Your custom option
+   };
+   config = mkIf cfg.enable {
+     services.foo = {               # Forward to upstream
+       enable = true;
+       setting = cfg.myOption;
+     };
+   };
+   ```
+
+2. **Don't redeclare upstream options** - set them directly via `services.*` in `config`
+
+3. **Use `mkDefault`** for values that systems might override

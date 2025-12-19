@@ -33,17 +33,61 @@ in {
       '';
     };
 
-    monitors = {
-      primary = mkOption {
-        type = types.str;
-        default = "DP-1";
-        description = "Primary monitor name for gaming";
-      };
-      virtual = mkOption {
-        type = types.str;
-        default = "HDMI-A-2";
-        description = "Virtual/streaming monitor name";
-      };
+    monitor = mkOption {
+      type = types.str;
+      description = "Monitor name for hyprctl commands (e.g., 'HDMI-A-2')";
+      example = "HDMI-A-2";
+    };
+
+    monitorIndex = mkOption {
+      type = types.int;
+      description = "Monitor index for Sunshine output_name (check Sunshine logs for 'Monitor N is ...')";
+      example = 1;
+    };
+
+    disableOtherMonitors = mkEnableOption "Turn off (DPMS) non-streaming monitors during session";
+
+    profiles = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          name = mkOption {
+            type = types.str;
+            description = "Display name for this profile in Sunshine UI";
+            example = "4K 60";
+          };
+          resolution = mkOption {
+            type = types.str;
+            description = "Resolution (e.g., '3840x2160')";
+            example = "3840x2160";
+          };
+          refresh = mkOption {
+            type = types.int;
+            default = 60;
+            description = "Refresh rate in Hz";
+          };
+          scaling = mkOption {
+            type = types.number;
+            default = 1;
+            description = "Display scaling factor";
+          };
+        };
+      });
+      default = [];
+      description = "Display profiles for different streaming devices";
+      example = [
+        {
+          name = "4K 60";
+          resolution = "3840x2160";
+          refresh = 60;
+          scaling = 1;
+        }
+        {
+          name = "FHD 120";
+          resolution = "1920x1080";
+          refresh = 120;
+          scaling = 1;
+        }
+      ];
     };
 
     applications = mkOption {
@@ -285,14 +329,19 @@ in {
       nfsOptions = mkOption {
         type = types.listOf types.str;
         default = [
-          "x-systemd.automount"
+          "nofail" # Don't fail boot/switch if unavailable
+          "_netdev" # This is a network mount
+          "x-systemd.automount" # Only mount on access
           "noauto"
           "x-systemd.idle-timeout=600"
           "x-systemd.device-timeout=5s"
           "x-systemd.mount-timeout=5s"
+          "x-systemd.requires=tailscaled.service" # Wait for Tailscale
           "soft"
           "timeo=14"
           "nfsvers=4"
+          "nocto" # Skip close-to-open checks for better read performance (safe for single-client)
+          "async" # Async I/O for better throughput
         ];
         description = "NFS mount options";
       };
@@ -353,16 +402,20 @@ in {
       nfsOptions = mkOption {
         type = types.listOf types.str;
         default = [
-          "x-systemd.automount"
+          "nofail" # Don't fail boot/switch if unavailable
+          "_netdev" # This is a network mount
+          "x-systemd.automount" # Only mount on access
           "noauto"
           "x-systemd.idle-timeout=600"
           "x-systemd.device-timeout=5s"
           "x-systemd.mount-timeout=5s"
+          "x-systemd.requires=tailscaled.service" # Wait for Tailscale
           "soft"
           "timeo=10"
           "retrans=2"
           "nfsvers=4"
-          "_netdev"
+          "nocto" # Skip close-to-open checks for better read performance (safe for single-client)
+          "async" # Async I/O for better throughput
         ];
         description = "NFS mount options for graceful network handling";
       };

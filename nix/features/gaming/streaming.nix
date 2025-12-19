@@ -5,56 +5,70 @@
   cfg,
   ...
 }: let
-  inherit (lib) mkIf optionalAttrs;
+  inherit (lib) mkIf optionalAttrs optionalString;
 
   logPath = "/tmp/sunshine.log";
 
-  # Get monitor names from cfg.streaming.monitors
-  primaryMonitor = cfg.streaming.monitors.primary;
-  virtualMonitor = cfg.streaming.monitors.virtual;
+  # Get monitor from cfg.streaming.monitor
+  streamingMonitor = cfg.streaming.monitor;
 
   # Determine if we need NVENC-specific setup
   useNvenc = cfg.streaming.encoder == "nvenc";
   useKms = cfg.streaming.capture == "kms" || (cfg.streaming.capture == "auto" && useNvenc);
 
-  # Helper script to get Hyprland signature
-  getHyprlandSignature = pkgs.writeShellScript "getHyprlandSignature" ''
-    ${pkgs.findutils}/bin/find "$XDG_RUNTIME_DIR/hypr/" -maxdepth 1 -type d |
-      ${pkgs.gnugrep}/bin/grep -v "^$XDG_RUNTIME_DIR/hypr/$" |
-      ${pkgs.gawk}/bin/awk -F'/' '{print $NF}'
+  hyprctl = "${pkgs.hyprland}/bin/hyprctl";
+  jq = "${pkgs.jq}/bin/jq";
+
+  # Script to disable all monitors except the streaming one (removes from compositor)
+  disableOtherMonitorsScript = pkgs.writeShellScript "disable-other-monitors" ''
+    # Get all monitor names except the streaming monitor and disable them
+    for mon in $(${hyprctl} --instance 0 monitors -j | ${jq} -r '.[].name' | grep -v '^${streamingMonitor}$'); do
+      ${hyprctl} --instance 0 keyword monitor "$mon,disable"
+    done
   '';
 
-  # Wait for client disconnect from sunshine logs
-  waitForDisconnect = pkgs.writeShellScript "waitForDisconnect" ''
-    ${pkgs.coreutils}/bin/tail -n 0 -f "${logPath}" |
-      ${pkgs.gnugrep}/bin/grep -q "CLIENT DISCONNECTED" && $1
+  # Script to restore monitors by reloading hyprland config
+  restoreMonitors = pkgs.writeShellScript "restore-monitors" ''
+    ${hyprctl} --instance 0 reload
   '';
 
-  # Script to run when client disconnects - switch back to primary monitor
-  onDisconnect = pkgs.writeShellScript "onDisconnect" ''
-    export PATH="${pkgs.hyprland}/bin:$PATH"
+  # Generate onConnect script for a profile
+  makeOnConnect = {
+    monitor,
+    resolution,
+    refresh,
+    scaling,
+    disableOthers,
+  }:
+    pkgs.writeShellScript "onConnect-${resolution}-${toString refresh}-${toString scaling}" ''
+      ${optionalString disableOthers "${disableOtherMonitorsScript} &&"}
+      ${hyprctl} --instance 0 keyword monitor ${monitor},${resolution}@${toString refresh},auto,${toString scaling} &&
+      ${hyprctl} --instance 0 dispatch dpms on ${monitor} &&
+      ${hyprctl} --instance 0 dispatch workspace 10
+    '';
 
-    HYPRLAND_INSTANCE_SIGNATURE=$(${getHyprlandSignature})
-    export HYPRLAND_INSTANCE_SIGNATURE
+  # Generate onDisconnect script
+  makeOnDisconnect = {disableOthers}:
+    if disableOthers
+    then restoreMonitors
+    else "";
 
-    hyprctl dispatch dpms on ${primaryMonitor}
-    hyprctl dispatch moveworkspacetomonitor 2 ${primaryMonitor} &&
-      hyprctl dispatch workspace 2 &&
-      hyprctl dispatch dpms off ${virtualMonitor}
-  '';
-
-  # Script to run when client connects - switch to virtual monitor
-  onConnect = pkgs.writeShellScript "onConnect" ''
-    export PATH="${pkgs.hyprland}/bin:$PATH"
-
-    HYPRLAND_INSTANCE_SIGNATURE=$(${getHyprlandSignature})
-    export HYPRLAND_INSTANCE_SIGNATURE
-
-    hyprctl dispatch dpms on ${virtualMonitor}
-    hyprctl dispatch moveworkspacetomonitor 2 ${virtualMonitor} &&
-      hyprctl dispatch workspace 2 &&
-      hyprctl dispatch dpms off ${primaryMonitor}
-  '';
+  # Convert profile to Sunshine app format
+  profileToApp = profile: {
+    inherit (profile) name;
+    prep-cmd = [
+      {
+        do = makeOnConnect {
+          monitor = streamingMonitor;
+          inherit (profile) resolution refresh scaling;
+          disableOthers = cfg.streaming.disableOtherMonitors;
+        };
+        undo = makeOnDisconnect {
+          disableOthers = cfg.streaming.disableOtherMonitors;
+        };
+      }
+    ];
+  };
 
   # Patch sunshine binary to include GPU library path in RPATH
   # Required because setcap binaries ignore LD_LIBRARY_PATH for security
@@ -147,7 +161,6 @@ in {
     services.sunshine = {
       enable = true;
       # Enable capSysAdmin for KMS capture (required for direct framebuffer access)
-      # Only enable if using KMS capture method. Use mkDefault to allow system overrides.
       capSysAdmin = lib.mkDefault useKms;
       openFirewall = true;
       autoStart = true;
@@ -155,35 +168,19 @@ in {
       settings =
         {
           log_path = logPath;
-          output_name = 0;
+          output_name = cfg.streaming.monitorIndex;
           key_rightalt_to_key_win = "enabled";
           # Use our virtual sink for audio capture
           audio_sink = "sunshine-sink";
         }
         // encoderSettings;
 
-      # Default application configuration with monitor switching
+      # Application configuration from profiles
       applications = {
-        env = {
-          PATH = "$(PATH):$(HOME)/.local/bin";
-        };
         apps =
-          [
-            {
-              name = "Gaming";
-              prep-cmd = [
-                {
-                  do = onConnect;
-                  undo = "";
-                }
-              ];
-              cmd = "${waitForDisconnect} ${onDisconnect}";
-              exclude-global-prep-cmd = "false";
-              auto-detach = "false";
-              wait-all = "false";
-            }
-          ]
-          # Append any user-defined applications from cfg.streaming.applications
+          # Generate apps from profiles
+          (map profileToApp cfg.streaming.profiles)
+          # Append any user-defined applications
           ++ cfg.streaming.applications;
       };
     };

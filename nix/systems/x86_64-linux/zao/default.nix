@@ -170,7 +170,8 @@
       # Enable game streaming with Sunshine
       streaming = {
         enable = true;
-        monitors.primary = "DP-1"; # Virtual display for streaming
+        monitor = "DP-11"; # FH-HD4K HDMI dummy/capture device
+        monitorIndex = 0; # From Sunshine logs: Monitor 0 is DP-11
         # Use NVIDIA NVENC encoder with KMS capture for hybrid GPU system
         encoder = "nvenc";
         capture = "kms";

@@ -7,7 +7,6 @@
 }: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
-    ./sunshine.nix
     # ./web-app.nix
     ./disko.nix
   ];
@@ -19,7 +18,12 @@
   # Use the unified gaming feature for gaming support and streaming
   mountainous.gaming = {
     enable = true;
-    streaming.enable = true;
+    streaming = {
+      enable = true;
+      monitor = "HDMI-A-2";
+      monitorIndex = 2; # From hyprctl: Monitor HDMI-A-2 (ID 2)
+      disableOtherMonitors = true; # DPMS off DP-1/DP-2 during streaming
+    };
   };
 
   ################

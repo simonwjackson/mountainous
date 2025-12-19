@@ -260,20 +260,39 @@ in {
       };
     };
 
-    # services.sunshine = {
-    #   openFirewall = lib.mkDefault true;
-    #   capSysAdmin = lib.mkDefault true;
-    #   settings = {
-    #     log_path = lib.mkDefault "/tmp/sunshine.log";
-    #     key_rightalt_to_key_win = lib.mkDefault "enabled";
-    #   };
-    #   autoStart = lib.mkDefault false;
-    # };
+    # Gaming configuration - available to all systems
+    # Systems must set mountainous.gaming.streaming.enable and mountainous.gaming.streaming.monitor
+    mountainous.gaming.steamButton.enable = false; # Disabled - using window rules instead
 
-    # services.udev.extraRules = ''
-    #   KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"
-    #   KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"
-    # '';
+    mountainous.gaming.streaming.profiles = [
+      # Standard resolutions
+      {
+        name = "4K 60";
+        resolution = "3840x2160";
+        refresh = 60;
+        scaling = 1;
+      }
+      {
+        name = "FHD 120";
+        resolution = "1920x1080";
+        refresh = 120;
+        scaling = 1;
+      }
+
+      # Samsung Galaxy Z Fold 7
+      {
+        name = "ZFold 7 (Portrait)";
+        resolution = "1968x2184";
+        refresh = 90;
+        scaling = 2;
+      }
+      {
+        name = "ZFold 7 (Landscape)";
+        resolution = "2184x1968";
+        refresh = 90;
+        scaling = 2;
+      }
+    ];
 
     # environment.pathsToLink = ["/share/zsh"];
 
