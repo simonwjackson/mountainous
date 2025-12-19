@@ -292,6 +292,37 @@ in {
         refresh = 90;
         scaling = 2;
       }
+      {
+        name = "ZFold 7 (75%)";
+        resolution = "1891x1704";
+        refresh = 60;
+        scaling = 1;
+      }
+      {
+        name = "ZFold 7 (66%)";
+        resolution = "1744x1600";
+        refresh = 60;
+        scaling = 1;
+      }
+      {
+        name = "ZFold 7 (50%)";
+        resolution = "1544x1392";
+        refresh = 60;
+        scaling = 1;
+      }
+      {
+        name = "ZFold 7 (25%)";
+        resolution = "1092x984";
+        refresh = 60;
+        scaling = 1;
+      }
+
+      {
+        name = "ZFold 7 (20%)";
+        resolution = "977x880";
+        refresh = 60;
+        scaling = 1;
+      }
     ];
 
     # environment.pathsToLink = ["/share/zsh"];
