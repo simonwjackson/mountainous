@@ -3,6 +3,7 @@
   pkgs,
   lib,
   modulesPath,
+  inputs,
   ...
 }: {
   imports = [
@@ -70,6 +71,22 @@
       library.remote = {
         enable = true;
         server = "aka";
+      };
+
+      # Citron - performance settings for Intel Iris Plus 655
+      # Note: No savePath - kita uses local saves (no shared storage access yet)
+      # TODO: Add syncthing for gaming-profiles to enable save sync
+      citron = {
+        enable = true;
+        keys = inputs.switch-prod-keys;
+        # No gameDirectories - kita doesn't have access to game storage
+        graphics = {
+          resolution = 0.5; # Low res for integrated GPU
+          antiAliasing = "none"; # Disable AA for performance
+          backend = "vulkan";
+          asyncShaders = true;
+          # FSR + 100 sharpness from base defaults
+        };
       };
     };
 

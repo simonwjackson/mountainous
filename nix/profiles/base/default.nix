@@ -264,6 +264,39 @@ in {
     # Systems must set mountainous.gaming.streaming.enable and mountainous.gaming.streaming.monitor
     mountainous.gaming.steamButton.enable = false; # Disabled - using window rules instead
 
+    # Default Citron graphics settings for all mountainous hosts
+    mountainous.gaming.citron.graphics = {
+      antiAliasing = mkDefault "taa";
+      fsrSharpness = mkDefault 100;
+      resolution = mkDefault 1;
+      scalingFilter = mkDefault "fsr";
+    };
+
+    # Default Xbox controller mappings for Citron (applies to all hosts with Citron enabled)
+    # GUID is from Sunshine's virtual gamepad - consistent across all streaming clients
+    mountainous.gaming.citron.controls = {
+      player_0_type = "0";
+      player_0_connected = "true";
+      player_0_button_a = "pad:0,button:1,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_b = "pad:0,button:0,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_x = "pad:0,button:3,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_y = "pad:0,button:2,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_lstick = "pad:0,button:9,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_rstick = "pad:0,button:10,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_l = "pad:0,button:4,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_r = "pad:0,button:5,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_zl = "threshold:0.500000,axis:2,pad:0,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_zr = "threshold:0.500000,axis:5,pad:0,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_plus = "pad:0,button:7,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_minus = "pad:0,button:6,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_dleft = "hat:0,pad:0,direction:left,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_dup = "hat:0,pad:0,direction:up,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_dright = "hat:0,pad:0,direction:right,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_button_ddown = "hat:0,pad:0,direction:down,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_lstick = "range:0.950000,deadzone:0.150000,threshold:0.500000,axis_y:1,axis_x:0,pad:0,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+      player_0_rstick = "range:0.950000,deadzone:0.150000,threshold:0.500000,axis_y:4,axis_x:3,pad:0,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
+    };
+
     mountainous.gaming.streaming.profiles = [
       # Standard resolutions
       {

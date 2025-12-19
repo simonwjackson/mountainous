@@ -36,6 +36,7 @@ MAPPINGS = {
         "fsr2": 8,
     },
     "gpuAccuracy": {"normal": 0, "high": 1, "extreme": 2},
+    "antiAliasing": {"none": 0, "fxaa": 1, "smaa": 2, "taa": 3},
     "language": {
         "japanese": 0,
         "english": 1,
@@ -82,6 +83,8 @@ INI_KEYS = {
     "gpuAccuracy": ("Renderer", "gpu_accuracy"),
     "asyncShaders": ("Renderer", "use_asynchronous_shaders"),
     "diskShaderCache": ("Renderer", "use_disk_shader_cache"),
+    "antiAliasing": ("Renderer", "anti_aliasing"),
+    "fsrSharpness": ("Renderer", "fsr_sharpening_slider"),
     # System
     "dockedMode": ("System", "use_docked_mode"),
     "language": ("System", "language_index"),
@@ -186,6 +189,10 @@ def apply_settings(config: configparser.ConfigParser, settings: dict):
             apply_game_directories(config, value)
             continue
 
+        if key == "controls":
+            apply_controls(config, value)
+            continue
+
         if key not in INI_KEYS:
             print(f"Warning: Unknown setting '{key}', skipping", file=sys.stderr)
             continue
@@ -205,6 +212,22 @@ def apply_settings(config: configparser.ConfigParser, settings: dict):
         config[section][f"{ini_key}\\default"] = "false"
 
         print(f"Set [{section}] {ini_key} = {converted}")
+
+
+def apply_controls(config: configparser.ConfigParser, controls: dict):
+    """Apply controller mappings to [Controls] section."""
+    if not controls:
+        return
+
+    section = "Controls"
+    if section not in config:
+        config[section] = {}
+
+    for key, value in controls.items():
+        if value is None:
+            continue
+        config[section][key] = str(value)
+        print(f"Set [{section}] {key} = {value}")
 
 
 def apply_game_directories(config: configparser.ConfigParser, directories: list):

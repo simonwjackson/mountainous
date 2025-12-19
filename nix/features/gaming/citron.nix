@@ -35,6 +35,8 @@
       gpuAccuracy = citronCfg.graphics.gpuAccuracy or null;
       asyncShaders = citronCfg.graphics.asyncShaders or null;
       diskShaderCache = citronCfg.graphics.diskShaderCache or null;
+      antiAliasing = citronCfg.graphics.antiAliasing or null;
+      fsrSharpness = citronCfg.graphics.fsrSharpness or null;
       # System
       dockedMode = citronCfg.system.dockedMode or null;
       language = citronCfg.system.language or null;
@@ -52,6 +54,8 @@
       theme = citronCfg.ui.theme or null;
       # Game directories (always include, even if empty - script handles it)
       gameDirectories = citronCfg.gameDirectories or [];
+      # Controls (always include, even if empty - script handles it)
+      controls = citronCfg.controls or {};
     }
   );
 
@@ -66,6 +70,8 @@
     || (citronCfg.graphics.gpuAccuracy or null) != null
     || (citronCfg.graphics.asyncShaders or null) != null
     || (citronCfg.graphics.diskShaderCache or null) != null
+    || (citronCfg.graphics.antiAliasing or null) != null
+    || (citronCfg.graphics.fsrSharpness or null) != null
     || (citronCfg.system.dockedMode or null) != null
     || (citronCfg.system.language or null) != null
     || (citronCfg.system.region or null) != null
@@ -77,7 +83,8 @@
     || (citronCfg.ui.confirmStop or null) != null
     || (citronCfg.ui.pauseInBackground or null) != null
     || (citronCfg.ui.theme or null) != null
-    || (citronCfg.gameDirectories or []) != [];
+    || (citronCfg.gameDirectories or []) != []
+    || (citronCfg.controls or {}) != {};
 
   # Script to install keys with source path tracking
   installKeysScript = pkgs.writeShellScript "install-citron-keys" ''

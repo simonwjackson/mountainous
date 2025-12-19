@@ -93,6 +93,18 @@ in {
         default = null;
         description = "Cache compiled shaders to disk. (null = don't manage)";
       };
+
+      antiAliasing = mkOption {
+        type = types.nullOr (types.enum ["none" "fxaa" "smaa" "taa"]);
+        default = null;
+        description = "Anti-aliasing method. (null = don't manage)";
+      };
+
+      fsrSharpness = mkOption {
+        type = types.nullOr (types.ints.between 0 100);
+        default = null;
+        description = "FSR sharpening slider 0-100. Higher = sharper. (null = don't manage)";
+      };
     };
 
     # System settings
@@ -192,6 +204,23 @@ in {
         ]);
         default = null;
         description = "UI theme. (null = don't manage)";
+      };
+    };
+
+    # Controller settings
+    controls = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      description = ''
+        Controller mappings for player inputs.
+        Keys are the INI keys (e.g., "player_0_button_a", "player_0_lstick").
+        Values are the binding strings (e.g., "pad:0,button:1,port:0,guid:...,engine:sdl").
+        These are written directly to the [Controls] section of qt-config.ini.
+      '';
+      example = {
+        "player_0_type" = "0";
+        "player_0_connected" = "true";
+        "player_0_button_a" = "pad:0,button:1,port:0,guid:030000005e040000ea02000008040000,engine:sdl";
       };
     };
   };
