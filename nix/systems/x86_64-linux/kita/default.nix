@@ -11,6 +11,30 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
+  # NFS client utilities for mounting remote gaming storage
+  environment.systemPackages = with pkgs; [
+    nfs-utils
+  ];
+
+  # NFS mount for zao's gaming/games directory
+  fileSystems."/snowscape/gaming/games" = {
+    device = "zao:/tundra/merged/iceberg/gaming/games";
+    fsType = "nfs";
+    options = [
+      "nofail" # Don't fail boot if unavailable
+      "_netdev" # This is a network mount
+      "x-systemd.automount" # Only mount on access
+      "noauto"
+      "x-systemd.idle-timeout=600" # Unmount after 10 min idle
+      "x-systemd.device-timeout=5s"
+      "x-systemd.mount-timeout=5s"
+      "x-systemd.requires=tailscaled.service"
+      "soft" # Don't hang on network issues
+      "timeo=14"
+      "nfsvers=4"
+    ];
+  };
+
   # Boot configuration for Intel NUC8i3BEK (Coffee Lake i3-8109U)
   boot = {
     initrd = {
@@ -74,12 +98,12 @@
       };
 
       # Citron - performance settings for Intel Iris Plus 655
-      # Note: No savePath - kita uses local saves (no shared storage access yet)
-      # TODO: Add syncthing for gaming-profiles to enable save sync
+      # Saves synced via Syncthing, games accessed via NFS from zao
       citron = {
         enable = true;
         keys = inputs.switch-prod-keys;
-        # No gameDirectories - kita doesn't have access to game storage
+        savePath = "/snowscape/gaming/profiles/simonwjackson/progress/saves/nintendo-switch";
+        gameDirectories = ["/snowscape/gaming/games/nintendo-switch"];
         graphics = {
           resolution = 0.5; # Low res for integrated GPU
           antiAliasing = "none"; # Disable AA for performance
@@ -87,6 +111,42 @@
           asyncShaders = true;
           # FSR + 100 sharpness from base defaults
         };
+      };
+    };
+
+    # Syncthing for gaming profiles sync (saves)
+    syncthing = {
+      enable = true;
+      deviceId = "J6JEBGV-GDLTLZA-JKIS5PM-EYJ6IS5-QBDM3KP-LSGBR2D-S5VXSYE-TWMVYQ5";
+      folders = {
+        gaming-profiles = {
+          path = "/snowscape/gaming/profiles";
+          ignorePerms = true; # Shared storage - don't sync perms
+        };
+      };
+    };
+
+    # Directory structure for gaming storage
+    directories.paths = {
+      "/snowscape" = {
+        owner = "root";
+        group = "root";
+        mode = "0755";
+      };
+      "/snowscape/gaming" = {
+        owner = "simonwjackson";
+        group = "users";
+        mode = "0755";
+      };
+      "/snowscape/gaming/games" = {
+        owner = "media";
+        group = "media";
+        mode = "0755";
+      };
+      "/snowscape/gaming/profiles" = {
+        owner = "simonwjackson";
+        group = "users";
+        mode = "0755";
       };
     };
 

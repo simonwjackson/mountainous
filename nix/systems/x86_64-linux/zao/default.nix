@@ -137,6 +137,18 @@
       };
     };
 
+    # NFS server - share gaming directory with other systems (kita, etc.)
+    nfs-server = {
+      enable = true;
+      exports = [
+        {
+          path = "/tundra/merged/iceberg/gaming";
+          clients = "*"; # Tailscale handles network security
+          options = ["rw" "sync" "no_subtree_check" "all_squash" "anonuid=333" "anongid=333"];
+        }
+      ];
+    };
+
     directories.paths = {
       "/tundra/merged/iceberg/knowledge" = {
         owner = "simonwjackson";
