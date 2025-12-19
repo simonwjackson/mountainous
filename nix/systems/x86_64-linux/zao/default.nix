@@ -201,7 +201,7 @@
         gameDirectories = ["/tundra/merged/iceberg/gaming/games/nintendo-switch"];
         graphics = {
           backend = "vulkan"; # NVIDIA RTX 3060 Mobile
-          resolution = 4; # 4x native (4K)
+          resolution = 1; # 1x native
           scalingFilter = "fsr"; # AMD FidelityFX upscaling
         };
       };
