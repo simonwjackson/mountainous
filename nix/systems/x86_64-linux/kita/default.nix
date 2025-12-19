@@ -18,7 +18,7 @@
 
   # NFS mount for zao's gaming/games directory
   fileSystems."/snowscape/gaming/games" = {
-    device = "zao:/tundra/merged/iceberg/gaming/games";
+    device = "zao:/games"; # zao exports /tundra/merged/iceberg/gaming as fsid=0 (NFS root)
     fsType = "nfs";
     options = [
       "nofail" # Don't fail boot if unavailable

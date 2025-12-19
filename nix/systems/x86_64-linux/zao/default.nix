@@ -144,7 +144,7 @@
         {
           path = "/tundra/merged/iceberg/gaming";
           clients = "*"; # Tailscale handles network security
-          options = ["rw" "sync" "no_subtree_check" "all_squash" "anonuid=333" "anongid=333"];
+          options = ["rw" "sync" "no_subtree_check" "crossmnt" "fsid=0" "all_squash" "anonuid=333" "anongid=333"];
         }
       ];
     };

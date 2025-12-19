@@ -34,7 +34,7 @@
 
       options = mkOption {
         type = types.listOf types.str;
-        default = ["rw" "sync" "no_subtree_check" "no_root_squash"];
+        default = ["rw" "sync" "no_subtree_check" "crossmnt" "no_root_squash"];
         description = "NFS export options";
         example = ["rw" "sync" "all_squash" "anonuid=1000" "anongid=1000"];
       };
