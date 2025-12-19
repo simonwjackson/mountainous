@@ -38,7 +38,7 @@
     enableHypridle = false;
     extraSettings = {
       monitor = [
-        ",preferred,auto,auto"
+        ",preferred,auto,2"
       ];
       exec-once = [
         "systemctl --user start hyprland-session.target"
