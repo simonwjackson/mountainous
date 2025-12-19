@@ -180,6 +180,20 @@
     gaming = {
       enable = true;
 
+      # Citron Nintendo Switch emulator
+      citron = {
+        enable = true;
+        keys = inputs.switch-prod-keys;
+        # Saves synced from aka via syncthing gaming-profiles folder
+        savePath = "/tundra/merged/iceberg/gaming/profiles/simonwjackson/progress/saves/nintendo-switch";
+        gameDirectories = ["/tundra/merged/iceberg/gaming/games/nintendo-switch"];
+        graphics = {
+          backend = "vulkan"; # NVIDIA RTX 3060 Mobile
+          resolution = 4; # 4x native (4K)
+          scalingFilter = "fsr"; # AMD FidelityFX upscaling
+        };
+      };
+
       # Enable game streaming with Sunshine
       streaming = {
         enable = true;
