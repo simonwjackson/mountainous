@@ -121,18 +121,30 @@
   '';
 
   # Script to symlink NAND directory for shared saves
+  # Hybrid approach: automatic backup + loud warning with migration instructions
   symlinkNandScript = pkgs.writeShellScript "symlink-citron-nand" ''
     set -euo pipefail
 
     NAND_TARGET="${savePath}"
     NAND_LINK="$HOME/.local/share/citron/nand"
     CITRON_DIR="$HOME/.local/share/citron"
+    PROFILES_SUBPATH="system/save/8000000000000010/su/avators/profiles.dat"
+
+    # Helper to extract UUID from profiles.dat (little-endian at offset 0x10)
+    extract_uuid() {
+      local profiles_file="$1"
+      if [[ -f "$profiles_file" ]]; then
+        ${pkgs.coreutils}/bin/od -A n -t x1 -j 16 -N 16 "$profiles_file" 2>/dev/null | \
+          ${pkgs.gawk}/bin/awk '{for(i=NF;i>=1;i--) printf "%s", toupper($i); print ""}'
+      fi
+    }
 
     # Ensure citron data directory exists
     ${pkgs.coreutils}/bin/mkdir -p "$CITRON_DIR"
 
     # Check current state
     if [[ -L "$NAND_LINK" ]]; then
+      # Already a symlink
       CURRENT_TARGET=$(${pkgs.coreutils}/bin/readlink "$NAND_LINK")
       if [[ "$CURRENT_TARGET" == "$NAND_TARGET" ]]; then
         echo "citron-nand: Symlink already correct ($NAND_LINK -> $NAND_TARGET)"
@@ -142,11 +154,64 @@
       echo "  old target: $CURRENT_TARGET"
       echo "  new target: $NAND_TARGET"
       ${pkgs.coreutils}/bin/rm "$NAND_LINK"
+
     elif [[ -d "$NAND_LINK" ]]; then
-      echo "citron-nand: Removing existing nand directory to create symlink..."
-      echo "  WARNING: Existing local saves will be removed!"
-      echo "  Backing up to $NAND_LINK.backup.$(date +%Y%m%d-%H%M%S)"
-      ${pkgs.coreutils}/bin/mv "$NAND_LINK" "$NAND_LINK.backup.$(date +%Y%m%d-%H%M%S)"
+      # Existing local installation - backup and warn
+      BACKUP_PATH="$NAND_LINK.backup.$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+      LOCAL_UUID=$(extract_uuid "$NAND_LINK/$PROFILES_SUBPATH")
+      SHARED_UUID=$(extract_uuid "$NAND_TARGET/$PROFILES_SUBPATH")
+
+      echo ""
+      echo "========================================================================"
+      echo "  CITRON: Existing local installation detected"
+      echo "========================================================================"
+      echo ""
+      echo "  Backing up local data to:"
+      echo "    $BACKUP_PATH"
+      echo ""
+
+      ${pkgs.coreutils}/bin/mv "$NAND_LINK" "$BACKUP_PATH"
+
+      # Warn about potential save migration
+      echo "  LOCAL UUID:  ''${LOCAL_UUID:-<not found>}"
+      echo "  SHARED UUID: ''${SHARED_UUID:-<not found>}"
+      echo ""
+
+      if [[ -n "$LOCAL_UUID" && -n "$SHARED_UUID" && "$LOCAL_UUID" != "$SHARED_UUID" ]]; then
+        echo "  !! WARNING: UUID MISMATCH !!"
+        echo ""
+        echo "  Your local saves use a different user profile than the shared storage."
+        echo "  Saves will NOT appear in Citron until migrated."
+        echo ""
+        echo "  To migrate your local saves to shared storage:"
+        echo ""
+        echo "    1. Copy your saves to the shared UUID folder:"
+        echo "       cp -r $BACKUP_PATH/user/save/0000000000000000/$LOCAL_UUID/* \\"
+        echo "         $NAND_TARGET/user/save/0000000000000000/$SHARED_UUID/"
+        echo ""
+        echo "    2. Or copy all saves if shared UUID folder doesn't have them:"
+        echo "       mkdir -p $NAND_TARGET/user/save/0000000000000000/$SHARED_UUID"
+        echo "       cp -rn $BACKUP_PATH/user/save/0000000000000000/$LOCAL_UUID/* \\"
+        echo "         $NAND_TARGET/user/save/0000000000000000/$SHARED_UUID/"
+        echo ""
+      elif [[ -n "$LOCAL_UUID" && -z "$SHARED_UUID" ]]; then
+        echo "  NOTE: No existing shared profile found."
+        echo "  Seeding shared storage with your local profile..."
+        echo ""
+        # Copy local system data to shared location to preserve UUID
+        if [[ -d "$BACKUP_PATH/system" ]]; then
+          ${pkgs.coreutils}/bin/cp -rn "$BACKUP_PATH/system/"* "$NAND_TARGET/system/" 2>/dev/null || true
+        fi
+        if [[ -d "$BACKUP_PATH/user" ]]; then
+          ${pkgs.coreutils}/bin/cp -rn "$BACKUP_PATH/user/"* "$NAND_TARGET/user/" 2>/dev/null || true
+        fi
+        echo "  Local profile and saves copied to shared storage."
+        echo ""
+      fi
+
+      echo "========================================================================"
+      echo ""
+
     elif [[ -e "$NAND_LINK" ]]; then
       echo "citron-nand: ERROR: $NAND_LINK exists but is not a directory or symlink"
       exit 1
