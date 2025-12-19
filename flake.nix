@@ -73,6 +73,10 @@
       url = "github:simonwjackson/citron-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    switch-prod-keys = {
+      url = "https://files.prodkeys.net/Prodkeys.NET_v21-0-0.zip";
+      flake = false;
+    };
     pyxis = {
       url = "github:simonwjackson/pyxis";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -3,6 +3,186 @@
 in {
   enable = mkEnableOption "Gaming support with Steam and optimized audio";
 
+  citron = {
+    enable = mkEnableOption "Citron Nintendo Switch emulator";
+
+    keys = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = ''
+        Path to Switch prod keys directory (containing prod.keys and title.keys).
+        When set, keys are automatically copied to ~/.local/share/citron/keys/
+        on home-manager activation. Keys are re-copied when the input changes.
+        Typically passed as a flake input: inputs.switch-prod-keys
+      '';
+      example = "inputs.switch-prod-keys";
+    };
+
+    # Game directories - appended to existing config
+    gameDirectories = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      description = "Directories containing Switch game files (.nsp, .xci). Appended to existing game directories.";
+      example = ["/snowscape/gaming/games/nintendo-switch"];
+    };
+
+    # Graphics settings
+    graphics = {
+      backend = mkOption {
+        type = types.nullOr (types.enum ["opengl" "vulkan"]);
+        default = null;
+        description = "Graphics backend (null = don't manage)";
+      };
+
+      resolution = mkOption {
+        type = types.nullOr types.number;
+        default = null;
+        description = ''
+          Resolution multiplier. Native Switch is 720p/1080p.
+          Valid values: 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 7, 8
+          (null = don't manage)
+        '';
+        example = 2;
+      };
+
+      vsync = mkOption {
+        type = types.nullOr (types.enum ["off" "fifo" "mailbox"]);
+        default = null;
+        description = "VSync mode: off, fifo (tear-free), mailbox (low latency). (null = don't manage)";
+      };
+
+      fullscreenMode = mkOption {
+        type = types.nullOr (types.enum ["borderless" "exclusive"]);
+        default = null;
+        description = "Fullscreen mode when fullscreen is enabled. (null = don't manage)";
+      };
+
+      scalingFilter = mkOption {
+        type = types.nullOr (types.enum ["nearest" "bilinear" "bicubic" "lanczos" "gaussian" "scaleforce" "scalefx" "fsr" "fsr2"]);
+        default = null;
+        description = "Scaling filter for upscaling. (null = don't manage)";
+      };
+
+      gpuAccuracy = mkOption {
+        type = types.nullOr (types.enum ["normal" "high" "extreme"]);
+        default = null;
+        description = "GPU emulation accuracy. Higher = more accurate but slower. (null = don't manage)";
+      };
+
+      asyncShaders = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Compile shaders asynchronously. May cause stutter while building cache. (null = don't manage)";
+      };
+
+      diskShaderCache = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Cache compiled shaders to disk. (null = don't manage)";
+      };
+    };
+
+    # System settings
+    system = {
+      dockedMode = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Docked mode (1080p) vs handheld mode (720p). (null = don't manage)";
+      };
+
+      language = mkOption {
+        type = types.nullOr (types.enum [
+          "japanese"
+          "english"
+          "french"
+          "german"
+          "italian"
+          "spanish"
+          "chinese"
+          "korean"
+          "dutch"
+          "portuguese"
+          "russian"
+          "taiwanese"
+          "british-english"
+        ]);
+        default = null;
+        description = "System language. (null = don't manage)";
+      };
+
+      region = mkOption {
+        type = types.nullOr (types.enum ["japan" "usa" "europe" "australia" "china" "korea" "taiwan"]);
+        default = null;
+        description = "System region. (null = don't manage)";
+      };
+    };
+
+    # Performance settings
+    performance = {
+      multicore = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Enable multi-core CPU emulation. (null = don't manage)";
+      };
+
+      speedLimit = mkOption {
+        type = types.nullOr types.int;
+        default = null;
+        description = "Speed limit percentage (0 = unlimited, 100 = normal). (null = don't manage)";
+        example = 100;
+      };
+    };
+
+    # Audio settings
+    audio = {
+      volume = mkOption {
+        type = types.nullOr (types.ints.between 0 100);
+        default = null;
+        description = "Audio volume percentage 0-100. (null = don't manage)";
+      };
+
+      muteInBackground = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Mute audio when Citron is in background. (null = don't manage)";
+      };
+    };
+
+    # UI settings
+    ui = {
+      fullscreen = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Start in fullscreen mode. (null = don't manage)";
+      };
+
+      confirmStop = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Ask for confirmation when stopping emulation. (null = don't manage)";
+      };
+
+      pauseInBackground = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Pause emulation when Citron is in background. (null = don't manage)";
+      };
+
+      theme = mkOption {
+        type = types.nullOr (types.enum [
+          "default"
+          "colorful"
+          "colorful_dark"
+          "colorful_midnight_blue"
+          "qdarkstyle"
+          "qdarkstyle_midnight_blue"
+        ]);
+        default = null;
+        description = "UI theme. (null = don't manage)";
+      };
+    };
+  };
+
   # NOTE: Device type is now defined at mountainous.device.role and mountainous.device.traits
   # This feature reads from config.mountainous.device instead of having its own deviceType
 

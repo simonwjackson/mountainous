@@ -10,6 +10,7 @@
   # Import sub-modules
   steamButtonConfig = import ./steam-button.nix {inherit config lib pkgs osConfig;};
   steamPrefsConfig = import ./steam-prefs.nix {inherit config lib pkgs osConfig;};
+  citronConfig = import ./citron.nix {inherit config lib pkgs osConfig;};
 
   # Get gaming config from NixOS (source of truth)
   gamingEnabled = osConfig.mountainous.gaming.enable or false;
@@ -112,5 +113,8 @@ in {
 
     # Steam preferences (from steam-prefs.nix)
     steamPrefsConfig.config
+
+    # Citron Nintendo Switch emulator (from citron.nix)
+    citronConfig.config
   ]);
 }

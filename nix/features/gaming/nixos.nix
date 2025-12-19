@@ -37,25 +37,25 @@
   '';
 
   # Device-specific package sets
-  basePackages = [
-    # Steam wrapper - launches through steam-cage to fix FSR on Hyprland
-    # hiPrio ensures our wrapper shadows the real steam binary in PATH
-    (lib.hiPrio steamWrapper)
+  basePackages =
+    [
+      # Steam wrapper - launches through steam-cage to fix FSR on Hyprland
+      # hiPrio ensures our wrapper shadows the real steam binary in PATH
+      (lib.hiPrio steamWrapper)
 
-    # Steam tools (proton-ge-bin goes in extraCompatPackages, not here)
-    pkgs.gamescope
-    pkgs.steam-tui
-    pkgs.protontricks
+      # Steam tools (proton-ge-bin goes in extraCompatPackages, not here)
+      pkgs.gamescope
+      pkgs.steam-tui
+      pkgs.protontricks
 
-    # Performance overlays
-    pkgs.mangohud
+      # Performance overlays
+      pkgs.mangohud
 
-    # Moonlight streaming client
-    pkgs.moonlight-qt
-
-    # Emulators
-    pkgs.citron # Nintendo Switch
-  ];
+      # Moonlight streaming client
+      pkgs.moonlight-qt
+    ]
+    # Citron Nintendo Switch emulator (only if explicitly enabled)
+    ++ lib.optionals cfg.citron.enable [pkgs.citron];
 
   handheldPackages = with pkgs; [
     # Touch and gamepad tools for handheld devices

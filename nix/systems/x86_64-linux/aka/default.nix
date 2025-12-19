@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   modulesPath,
   pkgs,
@@ -18,6 +19,16 @@
   # Use the unified gaming feature for gaming support and streaming
   mountainous.gaming = {
     enable = true;
+    citron = {
+      enable = true;
+      keys = inputs.switch-prod-keys;
+      gameDirectories = ["/snowscape/gaming/games/nintendo-switch"];
+      graphics = {
+        backend = "vulkan"; # AMD RX 7900
+        resolution = 4;
+        scalingFilter = "fsr";
+      };
+    };
     streaming = {
       enable = true;
       monitor = "HDMI-A-2";

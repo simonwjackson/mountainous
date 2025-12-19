@@ -1644,6 +1644,7 @@
         "nixpkgs-immich": "nixpkgs-immich",
         "opencode": "opencode",
         "pyxis": "pyxis",
+        "switch-prod-keys": "switch-prod-keys",
         "synapse": "synapse",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tmesh": "tmesh"
@@ -1691,6 +1692,19 @@
         "owner": "snowfallorg",
         "repo": "lib",
         "type": "github"
+      }
+    },
+    "switch-prod-keys": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1762998299,
+        "narHash": "sha256-AExcHZjTU925k3If3l8saGXbTfAE8GAU/kvZeBboFhA=",
+        "type": "tarball",
+        "url": "https://files.prodkeys.net/Prodkeys.NET_v21-0-0.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://files.prodkeys.net/Prodkeys.NET_v21-0-0.zip"
       }
     },
     "synapse": {
