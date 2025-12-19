@@ -34,6 +34,8 @@
     ];
   };
   mountainous.hyprland = {
+    # Disable hypridle - this is a server that should never sleep
+    enableHypridle = false;
     extraSettings = {
       monitor = [
         ",preferred,auto,auto"
