@@ -31,8 +31,10 @@
 
   # Wrapper script that launches Steam through steam-cage
   # This fixes FSR issues on Hyprland by running Steam in a nested sway session
+  # IMPORTANT: Uses config.programs.steam.package to get the overridden Steam
+  # with STEAM_EXTRA_COMPAT_TOOLS_PATHS set (for Proton-GE support)
   steamWrapper = pkgs.writeShellScriptBin "steam" ''
-    export STEAM_REAL_PATH="${pkgs.steam}/bin/steam"
+    export STEAM_REAL_PATH="${config.programs.steam.package}/bin/steam"
     exec ${pkgs.steam-cage}/bin/steam-cage "$@"
   '';
 
@@ -55,7 +57,9 @@
       pkgs.moonlight-qt
     ]
     # Citron Nintendo Switch emulator (only if explicitly enabled)
-    ++ lib.optionals cfg.citron.enable [pkgs.citron];
+    ++ lib.optionals cfg.citron.enable [pkgs.citron]
+    # RPCS3 PS3 emulator (only if explicitly enabled)
+    ++ lib.optionals cfg.rpcs3.enable [pkgs.rpcs3];
 
   handheldPackages = with pkgs; [
     # Touch and gamepad tools for handheld devices
