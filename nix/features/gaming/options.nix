@@ -228,6 +228,10 @@ in {
   # NOTE: Device type is now defined at mountainous.device.role and mountainous.device.traits
   # This feature reads from config.mountainous.device instead of having its own deviceType
 
+  rpcs3 = {
+    enable = mkEnableOption "RPCS3 PS3 emulator";
+  };
+
   streaming = {
     enable = mkEnableOption "Sunshine game streaming server";
 

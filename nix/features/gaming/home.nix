@@ -11,6 +11,7 @@
   steamButtonConfig = import ./steam-button.nix {inherit config lib pkgs osConfig;};
   steamPrefsConfig = import ./steam-prefs.nix {inherit config lib pkgs osConfig;};
   citronConfig = import ./citron.nix {inherit config lib pkgs osConfig;};
+  rpcs3Config = import ./rpcs3.nix {inherit config lib pkgs osConfig;};
 
   # Get gaming config from NixOS (source of truth)
   gamingEnabled = osConfig.mountainous.gaming.enable or false;
@@ -116,5 +117,8 @@ in {
 
     # Citron Nintendo Switch emulator (from citron.nix)
     citronConfig.config
+
+    # RPCS3 PS3 emulator (from rpcs3.nix)
+    rpcs3Config.config
   ]);
 }

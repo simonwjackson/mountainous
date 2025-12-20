@@ -30,6 +30,10 @@
         scalingFilter = "fsr";
       };
     };
+
+    # RPCS3 PS3 emulator
+    # Firmware: Download PS3UPDAT.PUP from playstation.com, then File → Install Firmware
+    rpcs3.enable = true;
     streaming = {
       enable = true;
       monitor = "HDMI-A-2";
