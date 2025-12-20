@@ -271,6 +271,18 @@ in {
       example = 1;
     };
 
+    adapter = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        GPU adapter name for Sunshine. Forces encoding on specific GPU.
+        Use "ls /dev/dri/" to list available render devices.
+        Common values: "/dev/dri/renderD128" (usually dGPU), "/dev/dri/renderD129" (usually iGPU).
+        null = auto-detect (may pick wrong GPU on multi-GPU systems).
+      '';
+      example = "/dev/dri/renderD128";
+    };
+
     disableOtherMonitors = mkEnableOption "Turn off (DPMS) non-streaming monitors during session";
 
     profiles = mkOption {

@@ -38,6 +38,7 @@
       enable = true;
       monitor = "HDMI-A-2";
       monitorIndex = 2; # From hyprctl: Monitor HDMI-A-2 (ID 2)
+      adapter = "/dev/dri/renderD128"; # RX 7900 XT (avoid iGPU at renderD129)
       disableOtherMonitors = true; # DPMS off DP-1/DP-2 during streaming
     };
   };

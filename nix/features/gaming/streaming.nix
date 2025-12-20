@@ -92,6 +92,9 @@
     // (optionalAttrs (cfg.streaming.capture != "auto") {
       capture = cfg.streaming.capture;
     })
+    // (optionalAttrs (cfg.streaming.adapter != null) {
+      adapter_name = cfg.streaming.adapter;
+    })
     // (optionalAttrs (cfg.streaming.nvenc.preset != "default") {
       nvenc_preset = cfg.streaming.nvenc.preset;
     })
