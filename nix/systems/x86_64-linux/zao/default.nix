@@ -208,7 +208,11 @@
 
       # RPCS3 PS3 emulator
       # Firmware: Download PS3UPDAT.PUP from playstation.com, then File → Install Firmware
-      rpcs3.enable = true;
+      rpcs3 = {
+        enable = true;
+        savePath = "/tundra/merged/iceberg/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
+        gamePath = "/tundra/merged/iceberg/gaming/games/sony-playstation-3/_dev_hdd0";
+      };
 
       # Enable game streaming with Sunshine
       streaming = {

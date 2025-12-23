@@ -33,7 +33,11 @@
 
     # RPCS3 PS3 emulator
     # Firmware: Download PS3UPDAT.PUP from playstation.com, then File → Install Firmware
-    rpcs3.enable = true;
+    rpcs3 = {
+      enable = true;
+      savePath = "/snowscape/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
+      gamePath = "/snowscape/gaming/games/sony-playstation-3/_dev_hdd0";
+    };
     streaming = {
       enable = true;
       monitor = "HDMI-A-2";

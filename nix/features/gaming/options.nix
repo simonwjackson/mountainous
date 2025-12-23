@@ -230,6 +230,30 @@ in {
 
   rpcs3 = {
     enable = mkEnableOption "RPCS3 PS3 emulator";
+
+    savePath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Path for RPCS3 savedata directory.
+        When set, ~/.config/rpcs3/dev_hdd0/home/00000001/savedata is symlinked to this path.
+        All game saves will be stored in subdirectories automatically.
+        (null = don't manage, use RPCS3's default location)
+      '';
+      example = "/snowscape/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
+    };
+
+    gamePath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Path for RPCS3 dev_hdd0/game directory (runtime data + installed patches/DLC).
+        When set, ~/.config/rpcs3/dev_hdd0/game is symlinked to this path.
+        Recommended: use _dev_hdd0/ subfolder in your games directory.
+        (null = don't manage, use RPCS3's default location)
+      '';
+      example = "/snowscape/gaming/games/sony-playstation-3/_dev_hdd0";
+    };
   };
 
   streaming = {
