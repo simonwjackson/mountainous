@@ -36,7 +36,8 @@
     rpcs3 = {
       enable = true;
       savePath = "/snowscape/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
-      gamePath = "/snowscape/gaming/games/sony-playstation-3/_dev_hdd0";
+      installPath = "/net/zao/tundra/merged/iceberg/gaming/games/sony-playstation-3/_dev_hdd0";
+      gamePath = "/net/zao/tundra/merged/iceberg/gaming/games/sony-playstation-3";
     };
     streaming = {
       enable = true;

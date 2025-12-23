@@ -243,7 +243,7 @@ in {
       example = "/snowscape/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
     };
 
-    gamePath = mkOption {
+    installPath = mkOption {
       type = types.nullOr types.str;
       default = null;
       description = ''
@@ -253,6 +253,22 @@ in {
         (null = don't manage, use RPCS3's default location)
       '';
       example = "/snowscape/gaming/games/sony-playstation-3/_dev_hdd0";
+    };
+
+    gamePath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Path for RPCS3 games directory (disc games in JB folder format).
+        When set, the /games/ VFS mount is configured in ~/.config/rpcs3/vfs.yml.
+        Games placed here will appear automatically in RPCS3's game list.
+
+        Expected structure: Each subdirectory should be a JB folder containing
+        PS3_GAME/, PS3_DISC.SFB, and optionally PS3_UPDATE/.
+
+        (null = don't manage, use RPCS3's default location)
+      '';
+      example = "/snowscape/gaming/games/sony-playstation-3";
     };
   };
 

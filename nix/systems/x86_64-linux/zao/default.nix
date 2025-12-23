@@ -225,7 +225,8 @@
       rpcs3 = {
         enable = true;
         savePath = "/tundra/merged/iceberg/gaming/profiles/simonwjackson/progress/saves/sony-playstation-3";
-        gamePath = "/tundra/merged/iceberg/gaming/games/sony-playstation-3/_dev_hdd0";
+        installPath = "/tundra/merged/iceberg/gaming/games/sony-playstation-3/_dev_hdd0";
+        gamePath = "/tundra/merged/iceberg/gaming/games/sony-playstation-3";
       };
 
       # Enable game streaming with Sunshine
