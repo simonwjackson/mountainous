@@ -1,4 +1,5 @@
 {
+  lib,
   pkgs,
   config,
   ...
@@ -97,7 +98,8 @@
   mountainous.dictation.enable = true;
 
   # Override hypridle: Keep screen DPMS, but never suspend (desktop)
-  services.hypridle.settings.listener = [
+  # Use mkForce to completely replace the listener list (not merge with base config)
+  services.hypridle.settings.listener = lib.mkForce [
     # Turn off display after 2 minutes of inactivity
     {
       timeout = 120;

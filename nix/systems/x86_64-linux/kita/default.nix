@@ -10,21 +10,21 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  # Auto-discovery NFS mounts via autofs
+  # Auto-discovery NFS mounts via autofs with optimized options
   # Access any host's exports at /net/<hostname>/<export-path>
   # e.g., /net/aka/snowscape/gaming/games/steam
-  # e.g., /net/zao/tundra/merged/iceberg/gaming
   services.autofs = {
     enable = true;
-    autoMaster = ''
-      /net -hosts --timeout=600
+    autoMaster = let
+      # Performance-optimized NFS options for read-heavy gaming workloads
+      nfsOpts = "nfsvers=4,soft,nocto,async,timeo=14,retrans=2";
+    in ''
+      /net -hosts -${nfsOpts} --timeout=600
     '';
   };
 
-  # NFS client utilities for autofs
-  environment.systemPackages = with pkgs; [
-    nfs-utils
-  ];
+  # NFS client utilities
+  environment.systemPackages = with pkgs; [nfs-utils];
 
   # Boot configuration for Intel NUC8i3BEK (Coffee Lake i3-8109U)
   boot = {

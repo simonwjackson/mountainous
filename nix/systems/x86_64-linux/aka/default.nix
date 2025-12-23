@@ -48,6 +48,21 @@
   };
 
   ################
+  # AUTOFS
+  ################
+
+  # Auto-discovery NFS mounts via autofs
+  # Access any host's exports at /net/<hostname>/<export-path>
+  services.autofs = {
+    enable = true;
+    autoMaster = let
+      nfsOpts = "nfsvers=4,soft,nocto,async,timeo=14,retrans=2";
+    in ''
+      /net -hosts -${nfsOpts} --timeout=600
+    '';
+  };
+
+  ################
   # DEVICE
   ################
 
@@ -70,6 +85,7 @@
     wireguard-tools
     whisper-cpp # For remote dictation transcription
     sillytavern # AI Dungeon-style LLM frontend
+    nfs-utils # For autofs NFS mounts
   ];
 
   #######################

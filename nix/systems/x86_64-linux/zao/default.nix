@@ -91,6 +91,17 @@
   # Load NVIDIA driver for Xorg and Wayland
   services.xserver.videoDrivers = ["nvidia"];
 
+  # Auto-discovery NFS mounts via autofs
+  # Access any host's exports at /net/<hostname>/<export-path>
+  services.autofs = {
+    enable = true;
+    autoMaster = let
+      nfsOpts = "nfsvers=4,soft,nocto,async,timeo=14,retrans=2";
+    in ''
+      /net -hosts -${nfsOpts} --timeout=600
+    '';
+  };
+
   # Hardware monitoring and maintenance tools
   environment.systemPackages = with pkgs; [
     # Storage health
@@ -107,6 +118,9 @@
     pciutils # lspci
     usbutils # lsusb
     dmidecode # Hardware info
+
+    # NFS
+    nfs-utils # For autofs NFS mounts
   ];
 
   # Networking
@@ -144,7 +158,7 @@
         {
           path = "/tundra/merged/iceberg/gaming";
           clients = "*"; # Tailscale handles network security
-          options = ["rw" "sync" "no_subtree_check" "crossmnt" "fsid=0" "all_squash" "anonuid=333" "anongid=333"];
+          options = ["rw" "sync" "no_subtree_check" "crossmnt" "fsid=1" "all_squash" "anonuid=333" "anongid=333"];
         }
       ];
     };
