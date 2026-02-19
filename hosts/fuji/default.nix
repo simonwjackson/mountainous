@@ -481,7 +481,7 @@
   };
 
   systemd.services.borg-offsite-sync = {
-    description = "Sync borg repos to aka";
+    description = "Sync borg repos to aka and yari";
     after = [
       "borgbackup-job-biometrics.service"
       "borgbackup-job-fitness.service"
@@ -498,7 +498,8 @@
     script = ''
       for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
         if [ -d "/var/lib/borg/$repo" ]; then
-          rsync -az --delete "/var/lib/borg/$repo/" "aka:/tundra/merged/iceberg/backups/fuji/$repo/"
+          rsync -az --delete "/var/lib/borg/$repo/" "aka:/tundra/merged/iceberg/backups/fuji/$repo/" || true
+          rsync -az --delete "/var/lib/borg/$repo/" "yari:/var/lib/borg-mirror/fuji/$repo/" || true
         fi
       done
     '';

@@ -60,6 +60,11 @@
         specialArgs = { inherit pyxis tsnsrv; };
       };
 
+      yari = mkHost {
+        system = "aarch64-linux";
+        hostPath = ./hosts/yari;
+      };
+
       rakku = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/rakku;
