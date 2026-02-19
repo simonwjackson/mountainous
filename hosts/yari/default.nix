@@ -53,6 +53,9 @@
     nodejs
     git
     curl
+    cmake
+    gnumake
+    gcc
   ];
 
   # ── Secrets ──────────────────────────────────────────────────────────
@@ -108,7 +111,7 @@
     after = [ "network-online.target" "tailscale.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash ];
+    path = [ pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.cmake pkgs.gnumake pkgs.gcc ];
     environment = {
       HOME = "/home/simonwjackson";
       OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
