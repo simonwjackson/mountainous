@@ -135,8 +135,9 @@
         startScript = pkgs.writeShellScript "openclaw-node-start" ''
           export HOME=/home/simonwjackson
           exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" node run \
-            --host 100.69.49.119 \
-            --port 18789 \
+            --host 100.125.27.42 \
+            --port 443 \
+            --tls \
             --display-name yari
         '';
       in "${startScript}";
