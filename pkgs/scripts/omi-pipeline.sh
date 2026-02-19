@@ -222,6 +222,16 @@ echo "$ALL_CONVERSATIONS" | jq -c '.[]' | while IFS= read -r conv; do
       continue
     fi
 
+    # Aggressive pre-filter: if Simon said < 15 words and recording has 20+ segments, it's media
+    if [[ "$USER_WORD_COUNT" -lt 15 && "$SEGMENT_COUNT" -ge 20 ]]; then
+      echo "  🔇 User said $USER_WORD_COUNT words across $SEGMENT_COUNT segments — background media, skipping Groq"
+      TMP="$(mktemp)"
+      jq --arg id "$ID" --arg file "$FILENAME" --arg fin "$FINISHED" \
+        '.conversations[$id] = {file: $file, finished_at: $fin, groq_processed: true, classification: "media-auto-lowuser"}' \
+        "$STATE_FILE" > "$TMP" && mv "$TMP" "$STATE_FILE"
+      continue
+    fi
+
     # Build the text to send to Groq (overview + metadata + Simon's words + full transcript context)
     GROQ_INPUT="Title: $TITLE
 Category: $CATEGORY
@@ -238,29 +248,30 @@ Simon wears this device throughout the day. It captures HIS conversations, but a
 Classify this transcript and extract actionable information.
 
 CLASSIFICATION (pick exactly one):
-- "noise" — ambient sounds, gibberish, repetitive fragments, kids playing, inaudible
+- "noise" — ambient sounds, gibberish, repetitive fragments, inaudible
 - "media" — background media (YouTube, podcast, TV, music). Signs: tutorial language ("in this video", "lets take a look", "subscribe"), single continuous monologue with no conversational back-and-forth, educational/entertainment content not directed at anyone present
-- "mundane" — casual conversation with no actionable content (small talk, routine chitchat)
-- "actionable" — contains decisions, tasks, ideas, promises, reminders, or notable events
+- "mundane" — casual conversation with no actionable content (small talk, routine chitchat, household noise, kids playing normally, routine requests like "pass the toilet paper")
+- "actionable" — contains CONCRETE decisions, tasks, ideas, promises, reminders, or NOTABLE family moments (milestones, sweet/memorable events — NOT routine household chatter)
+- "research" — Simon expressed curiosity, asked a question, or mentioned a topic worth researching. Signs: "I wonder if...", "what is the best...", "is there a...", "how does X work", comparing products/options, wanting to learn about something. Extract the research query and context. Can co-occur with actionable (use "actionable" if there are also concrete action items, but include research_queries in the output).
 
 RULES:
 - Simon is ALWAYS labeled "User" in transcripts. Other speakers are "Speaker N".
 - ONLY extract action items from what SIMON (User) said. Ignore what other speakers said unless Simon explicitly agreed to it.
-- Be conservative: only classify as "actionable" if there are CONCRETE items from Simon
-- Family moments (kids saying something sweet, milestones) count as actionable under "family"
-- Work meetings where Simon commits to tasks or makes decisions are actionable
-- Simon saying "I should..." or "I need to..." = actionable (todo)
-- Simon saying "We decided..." or agreeing to something = actionable (decision)
-- Pure noise with no intelligible speech = noise
-- If Simon spoke very little and the rest is media/podcast/panel content = media (only extract from Simons words if they contain personal action items)
-- Multi-speaker media (podcasts, panels, YouTube) where Simon interjects briefly: classify as media UNLESS Simons words contain clear personal action items — then classify as actionable but ONLY extract from Simons segments
+- Be conservative: only classify as "actionable" if there are CONCRETE items from Simon.
+- Family moments count as actionable ONLY for milestones, genuinely sweet/memorable moments, or real decisions. Routine household chatter (bathroom, getting dressed, bedtime nagging, snack requests, potty talk) is MUNDANE, not actionable. Ask: "Would Simon want to remember this specific moment in a week?" If no → mundane.
+- Work meetings where Simon commits to tasks or makes decisions are actionable.
+- Simon saying "I should..." or "I need to..." = actionable (todo).
+- Simon saying "We decided..." or agreeing to something = actionable (decision).
+- Pure noise with no intelligible speech = noise.
+- If Simon spoke very little and the rest is media/podcast/panel content = media (only extract from Simons words if they contain personal action items).
+- Multi-speaker media (podcasts, panels, YouTube) where Simon interjects briefly: classify as media UNLESS Simons words contain clear personal action items — then classify as actionable but ONLY extract from Simons segments.
 - CRITICAL: Short fragments from Simon like "as a leader", "yeah", "oh wow", "interesting" while media plays are NOT reflections or action items. These are involuntary reactions to video content. Classify as media.
-- If 90%+ of the transcript is media content and Simon only has 1-3 short fragments, it is ALWAYS media regardless of what those fragments say
-- If uncertain between mundane and actionable, choose mundane
-- If uncertain between mundane and actionable, choose mundane
+- If 90%+ of the transcript is media content and Simon only has 1-3 short fragments, it is ALWAYS media regardless of what those fragments say.
+- CONFIDENCE GATE: If you classify as "actionable" but your confidence is below 0.7, downgrade to "mundane" instead. When in doubt, choose mundane.
+- If uncertain between mundane and actionable, choose mundane.
 
 Respond in this EXACT JSON format (no markdown, no backticks):
-{"classification":"noise|mundane|actionable","confidence":0.0-1.0,"items":[{"type":"todo|decision|idea|reminder|family|work|reflection","text":"concise one-liner","urgency":"high|medium|low"}]}'
+{"classification":"noise|mundane|actionable|research","confidence":0.0-1.0,"items":[{"type":"todo|decision|idea|reminder|family|work|reflection","text":"concise one-liner","urgency":"high|medium|low"}],"research_queries":[{"query":"what to search for","context":"why Simon is curious about this"}]}'
 
     GROQ_PAYLOAD="$(jq -n \
       --arg model "$GROQ_MODEL" \
@@ -297,6 +308,31 @@ Respond in this EXACT JSON format (no markdown, no backticks):
       CONFIDENCE="$(echo "$GROQ_CONTENT" | jq -r '.confidence // 0' 2>/dev/null || echo "0")"
 
       echo "  🏷️  Classification: $CLASSIFICATION (confidence: $CONFIDENCE)"
+
+      # Confidence gate: downgrade low-confidence actionable/research to mundane
+      if [[ "$CLASSIFICATION" == "actionable" || "$CLASSIFICATION" == "research" ]]; then
+        CONF_INT="$(echo "$CONFIDENCE" | awk '{printf "%d", $1 * 100}')"
+        if [[ "$CONF_INT" -lt 70 ]]; then
+          echo "  ⬇️  Downgrading $CLASSIFICATION → mundane (confidence $CONFIDENCE < 0.7)"
+          CLASSIFICATION="mundane"
+        fi
+      fi
+
+      # Queue research items
+      if [[ "$CLASSIFICATION" == "research" || "$CLASSIFICATION" == "actionable" ]]; then
+        RESEARCH_QUERIES="$(echo "$GROQ_CONTENT" | jq -c '.research_queries // [] | .[]' 2>/dev/null)"
+        if [[ -n "$RESEARCH_QUERIES" ]]; then
+          RESEARCH_QUEUE="$HOME/research/queue/pending.jsonl"
+          mkdir -p "$(dirname "$RESEARCH_QUEUE")"
+          echo "$RESEARCH_QUERIES" | while IFS= read -r rq; do
+            RQ_SLUG="$(echo "$rq" | jq -r '.query' | sed 's/[^a-zA-Z0-9]/-/g; s/--*/-/g' | cut -c1-30 | tr '[:upper:]' '[:lower:]')"
+            echo "$rq" | jq -c --arg id "${ID}-${RQ_SLUG}" --arg title "$TITLE" --arg omi_id "$ID" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              '{id: $id, source: "omi", query: .query, context: .context, omi_title: $title, omi_id: $omi_id, priority: "medium", created_at: $ts}' \
+              >> "$RESEARCH_QUEUE"
+            echo "  🔍 Queued research: $(echo "$rq" | jq -r '.query')"
+          done
+        fi
+      fi
 
       if [[ "$CLASSIFICATION" == "actionable" ]]; then
         # Extract items and write to memory
