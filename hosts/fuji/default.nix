@@ -443,7 +443,7 @@
       ExecStart = let
         startScript = pkgs.writeShellScript "openclaw-start" ''
           export HOME=/home/simonwjackson
-          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
+          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --bind 0.0.0.0 --port 18789
         '';
       in "${startScript}";
       Restart = "always";
