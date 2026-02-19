@@ -1,0 +1,552 @@
+{ config, lib, pkgs, pyxis, tsnsrv, ... }:
+
+{
+  imports = [
+    ./hardware.nix
+    ./disko.nix
+    ../../profiles/server
+    ../../modules/tasks-calendar
+    ../../modules/openclaw
+    ../../modules/etabli
+    ../../modules/omi
+    ../../modules/kroger
+    pyxis.nixosModules.default
+  ];
+
+  home-manager.users.simonwjackson = import ../../home/simonwjackson;
+
+  networking.hostName = "fuji";
+  networking.useDHCP = true;
+  time.timeZone = "UTC";
+
+  users.users.simonwjackson = {
+    isNormalUser = true;
+    shell = pkgs.nushell;
+    extraGroups = [ "wheel" ];
+    openssh.authorizedKeys.keys = [
+      "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ=="
+    ];
+  };
+
+  services.openssh.listenAddresses = [
+    { addr = "100.69.49.119"; port = 22; }
+  ];
+
+  services.fail2ban = {
+    enable = true;
+    maxretry = 3;
+    bantime = "1h";
+    bantime-increment = {
+      enable = true;
+      maxtime = "168h";
+    };
+  };
+
+  networking.firewall = {
+    enable = true;
+    allowedUDPPortRanges = [{ from = 60000; to = 61000; }];
+  };
+
+  environment.systemPackages = with pkgs; [
+    chromium stdenv.cc.cc.lib android-tools nodejs rclone
+    gogcli yq
+    (python3.withPackages (ps: [ ps.pyyaml ]))
+  ] ++ (with pkgs.lifted-scripts; [
+    biometrics-oura-sync
+    biometrics-withings-sync
+    biometrics-ketomojo-sync
+    biometrics-import-saa
+    biometrics-withings-auth
+    fitness-import
+    nutrition-lookup
+    nutrition-log-meal
+    nutrition-daily-summary
+    tasks-query
+    omi-sync
+    omi-pipeline
+    omi-notify
+    omi-cron
+    omi-digest
+    omi-nightly-review
+    youtube-digest
+    ebay-api
+    ebay-publish
+  ]);
+
+  # ── Secrets ──────────────────────────────────────────────────────────
+
+  age.secrets.tailscale-authkey = {
+    file = ../../secrets/tailscale-authkey.age;
+    mode = "0440";
+    group = "tsnsrv";
+  };
+
+  age.secrets.pandora-password = {
+    file = ../../secrets/pandora-password.age;
+    mode = "0444";
+  };
+
+  age.secrets.groq-env = {
+    file = ../../secrets/groq-env.age;
+    mode = "0440";
+    owner = "simonwjackson";
+  };
+
+  age.secrets."fastest-vpn" = {
+    file = ../../secrets/fastest-vpn.age;
+    mode = "0400";
+  };
+
+  age.secrets."outlook-calendar-url" = {
+    file = ../../secrets/outlook-calendar-url.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."omi-api-key" = {
+    file = ../../secrets/omi-api-key.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."invidious-token" = {
+    file = ../../secrets/invidious-token.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."google-oauth-client" = {
+    file = ../../secrets/google-oauth-client.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."oura-api-token" = {
+    file = ../../secrets/oura-api-token.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."withings-client-id" = {
+    file = ../../secrets/withings-client-id.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."withings-client-secret" = {
+    file = ../../secrets/withings-client-secret.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."ketomojo-client-id" = {
+    file = ../../secrets/ketomojo-client-id.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."ketomojo-client-secret" = {
+    file = ../../secrets/ketomojo-client-secret.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."hf-token" = {
+    file = ../../secrets/hf-token.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."telegram-bot-token" = {
+    file = ../../secrets/telegram-bot-token.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."anthropic-api-key" = {
+    file = ../../secrets/anthropic-api-key.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets.openclaw-env = {
+    file = ../../secrets/openclaw-env.age;
+    mode = "0400";
+    owner = "simonwjackson";
+  };
+
+  age.secrets.ebay-api-env = {
+    file = ../../secrets/ebay-api-env.age;
+    mode = "0400";
+    owner = "simonwjackson";
+  };
+
+  age.secrets.ebay-refresh-token = {
+    file = ../../secrets/ebay-refresh-token.age;
+    mode = "0400";
+    owner = "simonwjackson";
+  };
+
+  age.secrets.nutrition-api-keys = {
+    file = ../../secrets/nutrition-api-keys.age;
+    mode = "0400";
+    owner = "simonwjackson";
+  };
+
+  age.secrets."rclone-conf" = {
+    file = ../../secrets/rclone-conf.age;
+    owner = "simonwjackson";
+    mode = "0400";
+    path = "/home/simonwjackson/.config/rclone/rclone.conf";
+  };
+
+  age.secrets."gogcli-credentials" = {
+    file = ../../secrets/gogcli-credentials.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets."gogcli-keyring" = {
+    file = ../../secrets/gogcli-keyring.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  age.secrets.borg-passphrase = {
+    file = ../../secrets/borg-passphrase.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
+  # ── Services ─────────────────────────────────────────────────────────
+
+  services.etabli = {
+    enable = true;
+    anthropicKeyFile = config.age.secrets."anthropic-api-key".path;
+  };
+
+  services.openclaw-skills = {
+    enable = true;
+    user = "simonwjackson";
+    hfTokenFile = config.age.secrets."hf-token".path;
+  };
+
+  services.tasks-calendar = {
+    enable = true;
+    timezone = "America/Denver";
+    calendarUrlFile = "/run/agenix/outlook-calendar-url";
+  };
+
+  services.omi = {
+    enable = true;
+    schedule = "*:0/15:00";
+    tokenFile = config.age.secrets."telegram-bot-token".path;
+    groqEnvFile = config.age.secrets.groq-env.path;
+  };
+
+  services.kroger = {
+    enable = true;
+    clientIdFile = config.age.secrets."kroger-client-id".path;
+    clientSecretFile = config.age.secrets."kroger-client-secret".path;
+  };
+
+  # ── Pyxis ────────────────────────────────────────────────────────────
+
+  services.pyxis = {
+    enable = true;
+    package = pyxis.packages.aarch64-linux.default;
+    server.hostname = "fuji";
+    server.port = 8765;
+    sources.pandora = {
+      username = "simon@simonwjackson.com";
+      passwordFile = config.age.secrets.pandora-password.path;
+    };
+  };
+
+  # ── Tailscale ────────────────────────────────────────────────────────
+
+  services.tailscale = {
+    enable = true;
+    authKeyFile = config.age.secrets.tailscale-authkey.path;
+  };
+
+  users.groups.tsnsrv = {};
+  users.users.tsnsrv = {
+    isSystemUser = true;
+    group = "tsnsrv";
+  };
+
+  # tsnsrv proxies (fuji uses tsnsrv, not tsnet-proxy)
+  systemd.services.tsnsrv-etabli = {
+    description = "tsnsrv Tailscale proxy for Etabli";
+    after = [ "network-online.target" "etabli.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    environment.HOME = "/var/lib/tsnsrv-etabli";
+    serviceConfig = {
+      Type = "simple";
+      User = "tsnsrv";
+      Group = "tsnsrv";
+      StateDirectory = "tsnsrv-etabli";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = ''
+      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
+      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name etabli -stateDir /var/lib/tsnsrv-etabli http://127.0.0.1:7398
+    '';
+  };
+
+  systemd.services.tsnsrv-pyxis = {
+    description = "tsnsrv Tailscale proxy for pyxis";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    environment.HOME = "/var/lib/tsnsrv-pyxis";
+    serviceConfig = {
+      Type = "simple";
+      User = "tsnsrv";
+      Group = "tsnsrv";
+      StateDirectory = "tsnsrv-pyxis";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = ''
+      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
+      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name pyxis -stateDir /var/lib/tsnsrv-pyxis http://localhost:8765
+    '';
+  };
+
+  systemd.services.tsnsrv-youtube = {
+    description = "tsnsrv Tailscale proxy for Invidious";
+    after = [ "network-online.target" "invidious.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    environment.HOME = "/var/lib/tsnsrv-youtube";
+    serviceConfig = {
+      Type = "simple";
+      User = "tsnsrv";
+      Group = "tsnsrv";
+      StateDirectory = "tsnsrv-youtube";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = ''
+      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
+      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name youtube -stateDir /var/lib/tsnsrv-youtube http://127.0.0.1:3333
+    '';
+  };
+
+  systemd.services.tsnsrv-openclaw = {
+    description = "tsnsrv Tailscale proxy for OpenClaw";
+    after = [ "network-online.target" "openclaw-gateway.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    environment.HOME = "/var/lib/tsnsrv-openclaw";
+    serviceConfig = {
+      Type = "simple";
+      User = "tsnsrv";
+      Group = "tsnsrv";
+      StateDirectory = "tsnsrv-openclaw";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = ''
+      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
+      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name openclaw -stateDir /var/lib/tsnsrv-openclaw http://127.0.0.1:18789
+    '';
+  };
+
+  # ── VPN Namespace ────────────────────────────────────────────────────
+
+  systemd.services.vpn-ns = {
+    description = "VPN Network Namespace";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "notify";
+      NotifyAccess = "all";
+      ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
+      ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
+      Restart = "always";
+      RestartSec = "10s";
+    };
+    environment = {
+      VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
+      VPN_NS_LOCAL_NETS = "100.64.0.0/10";
+    };
+  };
+
+  # ── Invidious ────────────────────────────────────────────────────────
+
+  services.invidious = {
+    enable = true;
+    port = 3333;
+    settings = {
+      db.user = "invidious";
+      db.dbname = "invidious";
+      host_binding = lib.mkForce "127.0.0.1";
+      registration_enabled = false;
+      login_enabled = true;
+      captcha_enabled = false;
+      default_user_preferences = {
+        locale = "en-US";
+        region = "US";
+        quality = "hd720";
+        save_player_pos = true;
+      };
+    };
+  };
+
+  # ── OpenClaw Gateway ─────────────────────────────────────────────────
+
+  systemd.services.openclaw-gateway = {
+    description = "OpenClaw Gateway";
+    after = [ "network-online.target" "tailscale.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.android-tools pkgs.cmake pkgs.gnumake pkgs.gcc ];
+    environment = {
+      HOME = "/home/simonwjackson";
+      OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
+      OPENCLAW_CONFIG_PATH = "/home/simonwjackson/.openclaw/openclaw.json";
+      OPENCLAW_NIX_MODE = "1";
+      LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
+    };
+    serviceConfig = {
+      Type = "simple";
+      User = "simonwjackson";
+      Group = "users";
+      TimeoutStartSec = "30min";
+      EnvironmentFile = config.age.secrets.openclaw-env.path;
+      ExecStartPre = let
+        setupScript = pkgs.writeShellScript "openclaw-setup" ''
+          export HOME=/home/simonwjackson
+          mkdir -p "$HOME/.openclaw"
+          cd "$HOME/.openclaw"
+          ${pkgs.nodejs}/bin/npm install openclaw@latest
+
+          CONFIG="$HOME/.openclaw/openclaw.json"
+          if [ -f "$CONFIG" ]; then
+            ${pkgs.jq}/bin/jq \
+              --arg token "$TELEGRAM_BOT_TOKEN" \
+              --arg gwtoken "$OPENCLAW_GATEWAY_TOKEN" \
+              --arg bravekey "$BRAVE_SEARCH_API_KEY" \
+              '.channels.telegram.botToken = $token |
+               .gateway.auth.token = $gwtoken |
+               .tools.web.search.apiKey = $bravekey' \
+              "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+          fi
+        '';
+      in "${setupScript}";
+      ExecStart = let
+        startScript = pkgs.writeShellScript "openclaw-start" ''
+          export HOME=/home/simonwjackson
+          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
+        '';
+      in "${startScript}";
+      Restart = "always";
+      RestartSec = 5;
+      KillMode = "process";
+    };
+  };
+
+  # ── Borg Backup ──────────────────────────────────────────────────────
+
+  services.borgbackup.jobs = let
+    borgDefaults = {
+      exclude = [ "*/__pycache__" "*/.git" "*/shell.nix" ];
+      encryption = {
+        mode = "repokey";
+        passCommand = "cat ${config.age.secrets.borg-passphrase.path}";
+      };
+      compression = "auto,zstd";
+      startAt = "daily";
+      prune.keep = { daily = 7; weekly = 4; monthly = 6; };
+      user = "simonwjackson";
+    };
+  in {
+    biometrics = borgDefaults // { paths = [ "/home/simonwjackson/biometrics" ]; repo = "/var/lib/borg/biometrics"; };
+    fitness = borgDefaults // { paths = [ "/home/simonwjackson/fitness" ]; repo = "/var/lib/borg/fitness"; };
+    nutrition = borgDefaults // { paths = [ "/home/simonwjackson/nutrition" ]; repo = "/var/lib/borg/nutrition"; };
+    tasks = borgDefaults // { paths = [ "/home/simonwjackson/tasks" ]; repo = "/var/lib/borg/tasks"; };
+    omi = borgDefaults // { paths = [ "/home/simonwjackson/omi" ]; repo = "/var/lib/borg/omi"; };
+    flakey = borgDefaults // { paths = [ "/home/simonwjackson/flakey" ]; repo = "/var/lib/borg/flakey"; };
+    openclaw = borgDefaults // {
+      paths = [ "/home/simonwjackson/.openclaw" ];
+      exclude = [ "*/__pycache__" "*/.git" "*/shell.nix" "*/node_modules" "*/browser" "*/.cache" ];
+      repo = "/var/lib/borg/openclaw";
+    };
+  };
+
+  systemd.services.borg-offsite-sync = {
+    description = "Sync borg repos to aka";
+    after = [
+      "borgbackup-job-biometrics.service"
+      "borgbackup-job-fitness.service"
+      "borgbackup-job-nutrition.service"
+      "borgbackup-job-tasks.service"
+      "borgbackup-job-omi.service"
+    ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "simonwjackson";
+    };
+    path = with pkgs; [ rsync openssh ];
+    script = ''
+      for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
+        if [ -d "/var/lib/borg/$repo" ]; then
+          rsync -az --delete "/var/lib/borg/$repo/" "aka:/tundra/merged/iceberg/backups/fuji/$repo/"
+        fi
+      done
+    '';
+  };
+
+  systemd.timers.borg-offsite-sync = {
+    description = "Daily offsite sync of borg repos";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 04:00:00";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.borg-dropbox-sync = {
+    description = "Sync borg repos to Dropbox and Google Drive";
+    after = [
+      "borgbackup-job-biometrics.service"
+      "borgbackup-job-fitness.service"
+      "borgbackup-job-nutrition.service"
+      "borgbackup-job-tasks.service"
+      "borgbackup-job-omi.service"
+      "borgbackup-job-flakey.service"
+      "borgbackup-job-openclaw.service"
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      User = "simonwjackson";
+    };
+    path = with pkgs; [ rclone ];
+    script = ''
+      for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
+        if [ -d "/var/lib/borg/$repo" ]; then
+          rclone sync "/var/lib/borg/$repo/" "dropbox:backups/fuji/$repo/" --transfers 4 --checkers 8
+          rclone sync "/var/lib/borg/$repo/" "gdrive:backups/fuji/$repo/" --transfers 4 --checkers 8
+        fi
+      done
+    '';
+  };
+
+  systemd.timers.borg-dropbox-sync = {
+    description = "Daily Dropbox sync of borg repos";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 04:30:00";
+      Persistent = true;
+    };
+  };
+
+  system.stateVersion = "24.11";
+}
