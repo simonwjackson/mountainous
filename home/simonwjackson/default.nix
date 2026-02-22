@@ -63,6 +63,11 @@
         | prepend $"($env.HOME)/.local/bin"
         | prepend $"($env.HOME)/.nix-profile/bin"
         | uniq)
+
+      # Load OpenClaw gateway token from system agenix secret
+      if ("/run/agenix/openclaw-env" | path exists) {
+        $env.OPENCLAW_GATEWAY_TOKEN = (open /run/agenix/openclaw-env | lines | where ($it | str starts-with "OPENCLAW_GATEWAY_TOKEN=") | first | split row "=" | skip 1 | str join "=")
+      }
     '';
     shellAliases = {
       ll = "ls -l";

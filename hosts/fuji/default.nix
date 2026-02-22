@@ -23,6 +23,7 @@
     isNormalUser = true;
     shell = pkgs.nushell;
     extraGroups = [ "wheel" ];
+    hashedPassword = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ=="
     ];
@@ -44,7 +45,11 @@
 
   networking.firewall = {
     enable = true;
-    allowedUDPPortRanges = [{ from = 60000; to = 61000; }];
+    # Default: block everything on public interfaces
+    allowedTCPPorts = [];
+    allowedUDPPorts = [ 41641 ];  # Tailscale WireGuard (needed on all interfaces)
+    # Trust all Tailscale traffic
+    trustedInterfaces = [ "tailscale0" ];
   };
 
   environment.systemPackages = with pkgs; [
@@ -72,6 +77,8 @@
     ebay-api
     ebay-publish
   ]);
+
+  nix.settings.secret-key-files = [ "/etc/nix/signing-key.priv" ];
 
   # ── Secrets ──────────────────────────────────────────────────────────
 
@@ -268,6 +275,7 @@
   services.tailscale = {
     enable = true;
     authKeyFile = config.age.secrets.tailscale-authkey.path;
+    extraSetFlags = [ "--netfilter-mode=nodivert" ];
   };
 
   users.groups.tsnsrv = {};
@@ -443,7 +451,7 @@
       ExecStart = let
         startScript = pkgs.writeShellScript "openclaw-start" ''
           export HOME=/home/simonwjackson
-          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --bind 0.0.0.0 --port 18789
+          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
         '';
       in "${startScript}";
       Restart = "always";
@@ -477,6 +485,74 @@
       paths = [ "/home/simonwjackson/.openclaw" ];
       exclude = [ "*/__pycache__" "*/.git" "*/shell.nix" "*/node_modules" "*/browser" "*/.cache" ];
       repo = "/var/lib/borg/openclaw";
+    };
+  };
+
+  # ── Biometrics Sync Timers ──────────────────────────────────────────
+
+  systemd.services.biometrics-oura-sync = {
+    description = "Sync Oura Ring data";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "simonwjackson";
+    };
+    path = with pkgs; [ curl jq coreutils bash python3 ];
+    script = ''
+      export HOME=/home/simonwjackson
+      biometrics-oura-sync
+    '';
+  };
+
+  systemd.timers.biometrics-oura-sync = {
+    description = "Daily Oura Ring sync";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 10:00:00";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.biometrics-withings-sync = {
+    description = "Sync Withings scale data";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "simonwjackson";
+    };
+    path = with pkgs; [ curl jq coreutils bash python3 ];
+    script = ''
+      export HOME=/home/simonwjackson
+      biometrics-withings-sync
+    '';
+  };
+
+  systemd.timers.biometrics-withings-sync = {
+    description = "Daily Withings sync";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 10:05:00";
+      Persistent = true;
+    };
+  };
+
+  systemd.services.biometrics-ketomojo-sync = {
+    description = "Sync Keto-Mojo readings";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "simonwjackson";
+    };
+    path = with pkgs; [ curl jq coreutils bash python3 ];
+    script = ''
+      export HOME=/home/simonwjackson
+      biometrics-ketomojo-sync
+    '';
+  };
+
+  systemd.timers.biometrics-ketomojo-sync = {
+    description = "Daily Keto-Mojo sync";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* 10:10:00";
+      Persistent = true;
     };
   };
 
