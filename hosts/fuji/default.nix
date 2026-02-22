@@ -529,7 +529,7 @@
     description = "Daily Withings sync";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "*-*-* 10:05:00";
+      OnCalendar = "*-*-* 16:00:00";
       Persistent = true;
     };
   };
