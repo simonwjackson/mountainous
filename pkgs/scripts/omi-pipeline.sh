@@ -2,7 +2,7 @@
 
 # Omi Pipeline v3
 # Sync from Omi API → write one transcript file per day
-# No classification, no Groq, no notifications. Just transcripts.
+# Optimized format for LLM consumption (minimal tokens)
 
 set -euo pipefail
 
@@ -70,19 +70,13 @@ if [[ "$TOTAL" -eq 0 ]]; then
   exit 0
 fi
 
-# --- Group by date (MST = UTC-7) and write daily files ---
-# Get all unique dates, build one file per day
-
-# Track which conversation IDs we've seen
-declare -A SEEN_IDS
+# --- Process conversations into daily files ---
 
 echo "$ALL_CONVERSATIONS" | jq -c '.[]' | while IFS= read -r conv; do
   ID="$(echo "$conv" | jq -r '.id')"
   STARTED="$(echo "$conv" | jq -r '.started_at')"
   FINISHED="$(echo "$conv" | jq -r '.finished_at // empty')"
   TITLE="$(echo "$conv" | jq -r '.structured.title // "Untitled"')"
-  OVERVIEW="$(echo "$conv" | jq -r '.structured.overview // ""')"
-  EMOJI="$(echo "$conv" | jq -r '.structured.emoji // ""')"
 
   # Skip in-progress conversations
   if [[ -z "$FINISHED" ]]; then
@@ -97,48 +91,74 @@ echo "$ALL_CONVERSATIONS" | jq -c '.[]' | while IFS= read -r conv; do
   fi
 
   # Convert started_at to MST date for grouping
-  # MST = UTC-7
   DATE_MST="$(TZ=America/Denver date -d "$STARTED" +%Y-%m-%d 2>/dev/null || echo "$STARTED" | cut -c1-10)"
   TIME_MST="$(TZ=America/Denver date -d "$STARTED" +%H:%M 2>/dev/null || echo "$STARTED" | cut -c12-16)"
 
   DAILY_FILE="$TRANSCRIPTS_DIR/${DATE_MST}.md"
 
-  # Build transcript text
+  # Build optimized transcript:
+  # - "User" → "Simon", named speakers keep name, unknown → S1/S2/etc
+  # - Collapse consecutive same-speaker segments
+  # - Single newlines between speaker changes
   TRANSCRIPT="$(echo "$conv" | jq -r '
     if .transcript_segments != null and (.transcript_segments | length) > 0 then
-      .transcript_segments | map(
-        "**" + (.speaker_name // "Unknown") + ":** " + .text
-      ) | join("\n\n")
+      # Build speaker label map: track unknown speaker counter
+      # First pass: collect unique speaker_ids and their names
+      (
+        [.transcript_segments[] | {id: (.speaker_id // 0), name: (.speaker_name // "Unknown")}]
+        | unique_by(.id)
+        | to_entries
+        | map(
+            if .value.name == "User" then {key: (.value.id | tostring), value: "Simon"}
+            elif .value.name != null and .value.name != "Unknown" and (.value.name | startswith("Speaker ") | not) then {key: (.value.id | tostring), value: .value.name}
+            else {key: (.value.id | tostring), value: "S\(.key + 1)"}
+            end
+          )
+        | from_entries
+      ) as $labels |
+      # Second pass: build transcript with collapsed consecutive segments
+      (
+        .transcript_segments
+        | reduce .[] as $seg (
+            {lines: [], last_speaker: null, last_text: ""};
+            ($labels[($seg.speaker_id // 0 | tostring)] // "S?") as $label |
+            if $label == .last_speaker then
+              # Same speaker continues — append text
+              .last_text += (" " + $seg.text)
+            else
+              # Speaker changed — flush previous
+              (if .last_speaker != null then
+                .lines += [.last_speaker + ": " + .last_text]
+              else . end) |
+              .last_speaker = $label |
+              .last_text = $seg.text
+            end
+          )
+        # Flush final speaker
+        | if .last_speaker != null then .lines += [.last_speaker + ": " + .last_text] else . end
+        | .lines | join("\n")
+      )
     else
-      "*No transcript segments available*"
+      "(no transcript)"
     end
   ')"
 
-  # If this conversation was previously written (updated finished_at), we need to
-  # remove the old entry. Use the ID marker to find and remove it.
+  # Remove old entry for this ID if daily file exists
   if [[ -f "$DAILY_FILE" ]]; then
-    # Remove old entry for this ID if it exists (between markers)
     sed -i "/<!-- omi:${ID} -->/,/<!-- \/omi:${ID} -->/d" "$DAILY_FILE"
   fi
 
-  # Append to daily file
+  # Create daily file header if new
   if [[ ! -f "$DAILY_FILE" ]]; then
     echo "# ${DATE_MST}" > "$DAILY_FILE"
-    echo "" >> "$DAILY_FILE"
   fi
 
+  # Append conversation
   {
     echo "<!-- omi:${ID} -->"
-    echo "## ${EMOJI} ${TITLE} (${TIME_MST})"
-    echo ""
-    if [[ -n "$OVERVIEW" ]]; then
-      echo "> ${OVERVIEW}"
-      echo ""
-    fi
+    echo "## ${TITLE} | ${TIME_MST}"
     echo "$TRANSCRIPT"
-    echo ""
     echo "<!-- /omi:${ID} -->"
-    echo ""
   } >> "$DAILY_FILE"
 
   echo "  ✅ ${DATE_MST} — ${TITLE}"
