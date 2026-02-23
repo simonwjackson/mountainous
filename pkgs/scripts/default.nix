@@ -36,17 +36,17 @@ in {
   # === BIOMETRICS ===
 
   biometrics-oura-sync = mkShellScript "biometrics-oura-sync" {
-    deps = with pkgs; [ curl jq coreutils ];
+    deps = with pkgs; [ curl jq coreutils util-linux ];
     text = builtins.readFile ./biometrics-oura-sync.sh;
   };
 
   biometrics-withings-sync = mkShellScript "biometrics-withings-sync" {
-    deps = with pkgs; [ curl jq coreutils python3 ];
+    deps = with pkgs; [ curl jq coreutils python3 util-linux ];
     text = builtins.readFile ./biometrics-withings-sync.sh;
   };
 
   biometrics-ketomojo-sync = mkShellScript "biometrics-ketomojo-sync" {
-    deps = with pkgs; [ curl jq coreutils python3 ];
+    deps = with pkgs; [ curl jq coreutils python3 util-linux ];
     text = builtins.readFile ./biometrics-ketomojo-sync.sh;
   };
 
@@ -90,29 +90,14 @@ in {
 
   # === OMI ===
 
-  omi-sync = mkShellScript "omi-sync" {
-    deps = with pkgs; [ curl jq coreutils ];
-    text = builtins.readFile ./omi-sync.sh;
-  };
-
   omi-pipeline = mkShellScript "omi-pipeline" {
-    deps = with pkgs; [ curl jq coreutils findutils python3 gnused gnugrep util-linux ];
+    deps = with pkgs; [ curl jq coreutils gnused util-linux ];
     text = builtins.readFile ./omi-pipeline.sh;
   };
 
-  omi-notify = mkShellScript "omi-notify" {
-    deps = with pkgs; [ jq coreutils ];
-    text = builtins.readFile ./omi-notify.sh;
-  };
-
   omi-cron = mkShellScript "omi-cron" {
-    deps = with pkgs; [ curl jq coreutils gnugrep gnused ];
+    deps = with pkgs; [ ];
     text = builtins.readFile ./omi-cron.sh;
-  };
-
-  omi-digest = mkShellScript "omi-digest" {
-    deps = with pkgs; [ jq coreutils findutils ];
-    text = builtins.readFile ./omi-digest.sh;
   };
 
   # === KROGER ===
@@ -213,8 +198,4 @@ in {
     text = builtins.readFile ./youtube-digest.sh;
   };
 
-  omi-nightly-review = mkShellScript "omi-nightly-review" {
-    deps = with pkgs; [ jq coreutils findutils python3 gnugrep gnused ];
-    text = builtins.readFile ./omi-nightly-review.sh;
-  };
 }

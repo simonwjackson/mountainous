@@ -1,7 +1,6 @@
-
 # Oura Ring → local JSONL sync
 # Pulls daily data from Oura API v2 and appends to per-type JSONL files
-# Idempotent: uses state file to track last sync date, won't duplicate
+# Idempotent: tracks per-endpoint latest day, deduplicates on append
 
 
 DATA_DIR="$HOME/biometrics/data"
@@ -39,31 +38,40 @@ mkdir -p "$DATA_DIR"
 
 TOKEN=$(cat "$TOKEN_FILE")
 
-# --- State ---
-if [[ -f "$STATE_FILE" ]]; then
-  LAST_SYNC=$(jq -r '.last_sync_date // empty' "$STATE_FILE" 2>/dev/null || true)
-fi
-
-if [[ -z "${LAST_SYNC:-}" ]]; then
-  # First run: backfill 90 days
-  LAST_SYNC=$(date -d "365 days ago" +%Y-%m-%d 2>/dev/null || date -v-90d +%Y-%m-%d)
-fi
-
 TODAY=$(date +%Y-%m-%d)
 
-if [[ "$LAST_SYNC" == "$TODAY" ]]; then
-  echo "Already synced today ($TODAY), skipping."
-  exit 0
+# --- Load per-endpoint state ---
+# State format: {"endpoints": {"daily_sleep": "2026-02-22", ...}, "last_run": "2026-02-23"}
+if [[ -f "$STATE_FILE" ]]; then
+  STATE=$(cat "$STATE_FILE")
+else
+  STATE='{}'
 fi
 
-# Start from day after last sync
-START_DATE=$(date -d "$LAST_SYNC + 1 day" +%Y-%m-%d 2>/dev/null || date -v+1d -j -f %Y-%m-%d "$LAST_SYNC" +%Y-%m-%d)
-
-echo "Syncing from $START_DATE to $TODAY"
+echo "Sync run: $TODAY"
 
 TOTAL=0
+NEW_ENDPOINTS_STATE=$(echo "$STATE" | jq '.endpoints // {}')
+
 for endpoint in "${ENDPOINTS[@]}"; do
   outfile="$DATA_DIR/${endpoint}.jsonl"
+
+  # Get last synced day for this endpoint from state
+  LAST_DAY=$(echo "$NEW_ENDPOINTS_STATE" | jq -r --arg ep "$endpoint" '.[$ep] // empty')
+
+  if [[ -z "$LAST_DAY" ]]; then
+    # No state — check the file for the latest day, or backfill 365 days
+    if [[ -f "$outfile" ]]; then
+      # Try .day first, then extract date from .timestamp for heartrate-style endpoints
+      LAST_DAY=$(tail -1 "$outfile" | jq -r '.day // (.timestamp // empty | split("T")[0])' 2>/dev/null || true)
+    fi
+    if [[ -z "$LAST_DAY" ]]; then
+      LAST_DAY=$(date -d "30 days ago" +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)
+    fi
+  fi
+
+  # Start from the last synced day (inclusive — we deduplicate below)
+  START_DATE="$LAST_DAY"
 
   # heartrate/enhanced_tag endpoints use datetime params, others use date
   if [[ "$endpoint" == "heartrate" || "$endpoint" == "enhanced_tag" ]]; then
@@ -84,17 +92,9 @@ for endpoint in "${ENDPOINTS[@]}"; do
     continue
   fi
 
-  # Each response has { "data": [...] } — extract items and append as individual JSONL records
-  count=$(echo "$body" | jq '.data | length')
-  if [[ "$count" -gt 0 ]]; then
-    echo "$body" | jq -c '.data[]' >> "$outfile"
-    echo "$endpoint: +${count} records"
-    TOTAL=$((TOTAL + count))
-  else
-    echo "$endpoint: no new data"
-  fi
+  # Collect all data (including paginated)
+  all_data=$(echo "$body" | jq -c '.data[]' 2>/dev/null || true)
 
-  # Handle pagination (next_token)
   next_token=$(echo "$body" | jq -r '.next_token // empty')
   while [[ -n "${next_token:-}" ]]; do
     response=$(curl -s -w "\n%{http_code}" \
@@ -109,18 +109,71 @@ for endpoint in "${ENDPOINTS[@]}"; do
       break
     fi
 
-    page_count=$(echo "$body" | jq '.data | length')
-    if [[ "$page_count" -gt 0 ]]; then
-      echo "$body" | jq -c '.data[]' >> "$outfile"
-      echo "$endpoint: +${page_count} records (page)"
-      TOTAL=$((TOTAL + page_count))
+    page_data=$(echo "$body" | jq -c '.data[]' 2>/dev/null || true)
+    if [[ -n "$page_data" ]]; then
+      all_data=$(printf '%s\n%s' "$all_data" "$page_data")
     fi
 
     next_token=$(echo "$body" | jq -r '.next_token // empty')
   done
+
+  if [[ -z "$all_data" ]]; then
+    echo "$endpoint: no new data"
+    continue
+  fi
+
+  # Deduplicate: build set of existing IDs (prefer 'id', fall back to 'day')
+  # For endpoints with unique 'id' field, use that; otherwise use 'day'
+  tmp_new=$(mktemp)
+  if [[ -f "$outfile" ]]; then
+    # Check if records have 'id' field
+    has_id=$(echo "$all_data" | head -1 | jq -r '.id // empty')
+    if [[ -n "$has_id" ]]; then
+      # Deduplicate by id
+      existing_ids=$(jq -r '.id // empty' "$outfile" | sort -u)
+      while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        rid=$(echo "$line" | jq -r '.id // empty')
+        if ! echo "$existing_ids" | grep -qxF "$rid"; then
+          echo "$line" >> "$tmp_new"
+        fi
+      done <<< "$all_data"
+    else
+      # Deduplicate by day
+      existing_days=$(jq -r '.day // empty' "$outfile" | sort -u)
+      while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        rday=$(echo "$line" | jq -r '.day // empty')
+        if ! echo "$existing_days" | grep -qxF "$rday"; then
+          echo "$line" >> "$tmp_new"
+        fi
+      done <<< "$all_data"
+    fi
+  else
+    # No existing file — all data is new
+    echo "$all_data" > "$tmp_new"
+  fi
+
+  count=$(wc -l < "$tmp_new" | tr -d ' ')
+  if [[ "$count" -gt 0 ]]; then
+    cat "$tmp_new" >> "$outfile"
+    echo "$endpoint: +${count} records"
+    TOTAL=$((TOTAL + count))
+  else
+    echo "$endpoint: no new data"
+  fi
+
+  rm -f "$tmp_new"
+
+  # Track the latest day from API response for this endpoint
+  latest_day=$(echo "$all_data" | jq -r '.day // (.timestamp // empty | split("T")[0])' | grep -v '^$' | sort | tail -1)
+  if [[ -n "$latest_day" ]]; then
+    NEW_ENDPOINTS_STATE=$(echo "$NEW_ENDPOINTS_STATE" | jq --arg ep "$endpoint" --arg d "$latest_day" '.[$ep] = $d')
+  fi
 done
 
-# Update state
-jq -n --arg date "$TODAY" '{"last_sync_date": $date}' > "$STATE_FILE"
+# Update state with per-endpoint tracking
+jq -n --arg run "$TODAY" --argjson eps "$NEW_ENDPOINTS_STATE" \
+  '{"last_run": $run, "endpoints": $eps}' > "$STATE_FILE"
 
 echo "Done. Total: ${TOTAL} new records."

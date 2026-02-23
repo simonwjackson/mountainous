@@ -67,12 +67,8 @@
     nutrition-log-meal
     nutrition-daily-summary
     tasks-query
-    omi-sync
     omi-pipeline
-    omi-notify
     omi-cron
-    omi-digest
-    omi-nightly-review
     youtube-digest
     ebay-api
     ebay-publish
@@ -247,8 +243,6 @@
   services.omi = {
     enable = true;
     schedule = "*:0/15:00";
-    tokenFile = config.age.secrets."telegram-bot-token".path;
-    groqEnvFile = config.age.secrets.groq-env.path;
   };
 
   services.kroger = {
@@ -496,7 +490,7 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 ];
+    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-oura-sync ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-oura-sync
@@ -518,7 +512,7 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 ];
+    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-withings-sync ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-withings-sync
@@ -540,7 +534,7 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 ];
+    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-ketomojo-sync ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-ketomojo-sync
