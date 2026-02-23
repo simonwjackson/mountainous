@@ -7,7 +7,7 @@
 set -euo pipefail
 
 OMI_DIR="${OMI_DIR:-$HOME/omi}"
-TRANSCRIPTS_DIR="$OMI_DIR/transcripts"
+TRANSCRIPTS_DIR="${TRANSCRIPTS_DIR:-$HOME/transcripts}"
 STATE_FILE="$OMI_DIR/.pipeline-state.json"
 LOCK_FILE="$OMI_DIR/.pipeline.lock"
 OMI_API_KEY_FILE="${OMI_API_KEY_FILE:-/run/agenix/omi-api-key}"
