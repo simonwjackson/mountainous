@@ -471,7 +471,7 @@
   in {
     biometrics = borgDefaults // { paths = [ "/home/simonwjackson/biometrics" ]; repo = "/var/lib/borg/biometrics"; };
     fitness = borgDefaults // { paths = [ "/home/simonwjackson/fitness" ]; repo = "/var/lib/borg/fitness"; };
-    nutrition = borgDefaults // { paths = [ "/home/simonwjackson/nutrition" ]; repo = "/var/lib/borg/nutrition"; };
+    nutrition = borgDefaults // { paths = [ "/home/simonwjackson/.local/share/nutrition" ]; repo = "/var/lib/borg/nutrition"; };
     tasks = borgDefaults // { paths = [ "/home/simonwjackson/.local/share/tasks" ]; repo = "/var/lib/borg/tasks"; };
     omi = borgDefaults // { paths = [ "/home/simonwjackson/omi" ]; repo = "/var/lib/borg/omi"; };
     flakey = borgDefaults // { paths = [ "/home/simonwjackson/flakey" ]; repo = "/var/lib/borg/flakey"; };
