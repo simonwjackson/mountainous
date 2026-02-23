@@ -37,6 +37,7 @@ in {
   "secrets/hf-token.age".publicKeys = fujiKeys;
   "secrets/anthropic-api-key.age".publicKeys = fujiKeys;
   "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
+  "secrets/ado-refresh-token.age".publicKeys = fujiKeys;
 
   # Rakku secrets
   "secrets/tailscale-ephemeral.age".publicKeys = rakkuKeys;

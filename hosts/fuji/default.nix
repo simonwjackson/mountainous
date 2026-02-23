@@ -166,6 +166,12 @@
     mode = "0400";
   };
 
+  age.secrets."ado-refresh-token" = {
+    file = ../../secrets/ado-refresh-token.age;
+    owner = "simonwjackson";
+    mode = "0400";
+  };
+
   age.secrets."anthropic-api-key" = {
     file = ../../secrets/anthropic-api-key.age;
     owner = "simonwjackson";
