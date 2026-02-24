@@ -74,5 +74,13 @@
         };
       };
     };
+
+    devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
+      let pkgs = nixpkgs.legacyPackages.${system};
+      in {
+        default = pkgs.mkShell {
+          buildInputs = with pkgs; [ ];
+        };
+      });
   };
 }

@@ -10,6 +10,8 @@
     ../../modules/etabli
     ../../modules/omi
     ../../modules/kroger
+    ../../modules/biker
+    ../../modules/ado-sync
     pyxis.nixosModules.default
   ];
 
@@ -257,6 +259,13 @@
     clientSecretFile = config.age.secrets."kroger-client-secret".path;
   };
 
+  services.biker.enable = true;
+
+  services.ado-sync = {
+    enable = true;
+    calendar = [ "*-*-* 15:00:00" "*-*-* 19:00:00" "*-*-* 00:00:00" ];  # 8am, noon, 5pm MST
+  };
+
   # ── Pyxis ────────────────────────────────────────────────────────────
 
   services.pyxis = {
@@ -342,6 +351,26 @@
     script = ''
       export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
       exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name youtube -stateDir /var/lib/tsnsrv-youtube http://127.0.0.1:3333
+    '';
+  };
+
+  systemd.services.tsnsrv-biker = {
+    description = "tsnsrv Tailscale proxy for Biker";
+    after = [ "network-online.target" "biker.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    environment.HOME = "/var/lib/tsnsrv-biker";
+    serviceConfig = {
+      Type = "simple";
+      User = "tsnsrv";
+      Group = "tsnsrv";
+      StateDirectory = "tsnsrv-biker";
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    script = ''
+      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
+      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name biker -stateDir /var/lib/tsnsrv-biker http://127.0.0.1:8384
     '';
   };
 
