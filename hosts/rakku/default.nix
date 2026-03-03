@@ -170,9 +170,10 @@ in
       Port = 8888;
       Listen = "0.0.0.0";
       Timeout = 600;
-      Allow = "100.64.0.0/10";  # Tailscale CGNAT range
+      Allow = ["127.0.0.1" "100.64.0.0/10"];  # localhost + Tailscale CGNAT
       MaxClients = 20;
       LogLevel = "Warning";
+      ConnectPort = [443 563];  # HTTPS CONNECT support
     };
   };
 
