@@ -279,6 +279,12 @@
     };
   };
 
+  # Route yt-dlp traffic through rakku (residential IP)
+  systemd.services.pyxis.environment = {
+    HTTP_PROXY = "http://100.88.212.118:8888";
+    HTTPS_PROXY = "http://100.88.212.118:8888";
+  };
+
   # ── Tailscale ────────────────────────────────────────────────────────
 
   services.tailscale = {

@@ -160,6 +160,22 @@ in
 
   users.users.hass.extraGroups = [ "dialout" ];
 
+
+
+  # ── Tinyproxy (residential IP proxy for YouTube/scrapers) ────────────
+
+  services.tinyproxy = {
+    enable = true;
+    settings = {
+      Port = 8888;
+      Listen = "0.0.0.0";
+      Timeout = 600;
+      Allow = "100.64.0.0/10";  # Tailscale CGNAT range
+      MaxClients = 20;
+      LogLevel = "Warning";
+    };
+  };
+
   # ── AirConnect ───────────────────────────────────────────────────────
 
   systemd.services.airconnect = {

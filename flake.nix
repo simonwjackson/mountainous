@@ -1,40 +1,31 @@
 {
   description = "Mountainous — unified NixOS configurations";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     impermanence.url = "github:nix-community/impermanence";
-
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     # Fuji-specific inputs
     pyxis.url = "github:simonwjackson/pyxis";
-
     tsnsrv = {
       url = "github:boinkor-net/tsnsrv";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-
   outputs = { self, nixpkgs, disko, home-manager, agenix, impermanence, gomod2nix, pyxis, tsnsrv, ... }:
   let
     mkHost = { system, hostPath, specialArgs ? {}, extraModules ? [] }: nixpkgs.lib.nixosSystem {
@@ -59,12 +50,10 @@
         hostPath = ./hosts/fuji;
         specialArgs = { inherit pyxis tsnsrv; };
       };
-
       yari = mkHost {
         system = "aarch64-linux";
         hostPath = ./hosts/yari;
       };
-
       rakku = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/rakku;
@@ -74,7 +63,6 @@
         };
       };
     };
-
     devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
       let pkgs = nixpkgs.legacyPackages.${system};
       in {

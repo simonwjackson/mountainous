@@ -12,7 +12,7 @@ let
 in {
   # Fuji secrets
   "secrets/tailscale-authkey.age".publicKeys = fujiYariKeys;
-  "secrets/pandora-password.age".publicKeys = fujiKeys;
+  "secrets/pandora-password.age".publicKeys = fujiKeys ++ rakkuKeys;
   "secrets/groq-env.age".publicKeys = fujiKeys;
   "secrets/fastest-vpn.age".publicKeys = fujiYariKeys;
   "secrets/openclaw-env.age".publicKeys = fujiYariKeys;
