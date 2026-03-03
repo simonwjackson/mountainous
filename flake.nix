@@ -62,6 +62,12 @@
           inherit gomod2nix;
         };
       };
+      kita = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/kita;
+        extraModules = [ impermanence.nixosModules.default ];
+        specialArgs = { inherit pyxis; };
+      };
     };
     devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
       let pkgs = nixpkgs.legacyPackages.${system};
