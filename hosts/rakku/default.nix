@@ -184,6 +184,7 @@ in
     options = [ "defaults" "size=2G" "mode=755" ];
   };
 
+  fileSystems."/nix".neededForBoot = true;
   fileSystems."/tundra/permafrost".neededForBoot = true;
 
   environment.persistence."/tundra/permafrost" = {
@@ -273,6 +274,9 @@ in
   };
 
   # ── Network ──────────────────────────────────────────────────────────
+
+  # Tailscale system daemon (machine-level connectivity)
+  services.tailscale.enable = true;
 
   networking.wireless.enable = lib.mkForce false;
   networking.firewall.enable = lib.mkForce false;
