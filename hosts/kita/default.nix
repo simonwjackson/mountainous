@@ -32,8 +32,7 @@
 
   age.secrets."pandora-password" = {
     file = ../../secrets/pandora-password.age;
-    owner = "simonwjackson";
-    group = "users";
+    mode = "0444";  # DynamicUser can't own files; world-readable for service access
   };
 
   # ── Pyxis ────────────────────────────────────────────────────────────
