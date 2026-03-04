@@ -77,7 +77,7 @@ in
     server.hostname = "kita";
     web.port = 5678;
     web.allowedHosts = [ "pyxis.hummingbird-lake.ts.net" ];
-    sources.pandora.username = "simonwjackson@gmail.com";
+    sources.pandora.username = "simon@simonwjackson.com";
     sources.pandora.passwordFile = config.age.secrets."pandora-password".path;
     log.level = "info";
   };
