@@ -1,10 +1,23 @@
-{ config, lib, pkgs, pyxis, ... }:
+{ config, lib, pkgs, pyxis, gomod2nix, ... }:
+
+let
+  buildGoApplication = gomod2nix.legacyPackages.${pkgs.system}.buildGoApplication;
+  tsnet-proxy-pkg = buildGoApplication {
+    pname = "tsnet-proxy";
+    version = "1.0.0";
+    src = ../../pkgs/tsnet-proxy;
+    modules = ../../pkgs/tsnet-proxy/gomod2nix.toml;
+    ldflags = [ "-s" "-w" ];
+    doCheck = false;
+  };
+in
 
 {
   imports = [
     ./hardware.nix
     ./disko.nix
     ../../profiles/server
+    ../../modules/tsnet-proxy
     pyxis.nixosModules.default
   ];
 
@@ -33,6 +46,26 @@
   age.secrets."pandora-password" = {
     file = ../../secrets/pandora-password.age;
     mode = "0444";  # DynamicUser can't own files; world-readable for service access
+  };
+
+  age.secrets."tailscale-ephemeral" = {
+    file = ../../secrets/tailscale-ephemeral.age;
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+  };
+
+  # ── Tsnet Proxy ──────────────────────────────────────────────────────
+
+  mountainous.services.tsnet-proxy = {
+    enable = true;
+    package = tsnet-proxy-pkg;
+    authKeyFile = config.age.secrets."tailscale-ephemeral".path;
+    services.pyxis = {
+      hostname = "pyxis";
+      protocol = "http";
+      host = "localhost";
+      port = 8765;
+    };
   };
 
   # ── Pyxis ────────────────────────────────────────────────────────────
@@ -83,6 +116,12 @@
       "/var/lib/systemd/coredump"
       "/var/lib/nixos"
       "/var/lib/tailscale"
+      {
+        directory = "/var/lib/tsnet-proxy-pyxis";
+        user = "tsnet-proxy";
+        group = "tsnet-proxy";
+        mode = "0700";
+      }
       {
         directory = "/home/simonwjackson";
         user = "simonwjackson";

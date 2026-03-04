@@ -1,4 +1,4 @@
-{ config, lib, pkgs, pyxis, tsnsrv, ... }:
+{ config, lib, pkgs, tsnsrv, ... }:
 
 {
   imports = [
@@ -12,7 +12,6 @@
     ../../modules/kroger
     ../../modules/biker
     ../../modules/ado-sync
-    pyxis.nixosModules.default
   ];
 
   home-manager.users.simonwjackson = import ../../home/simonwjackson;
@@ -84,11 +83,6 @@
     file = ../../secrets/tailscale-authkey.age;
     mode = "0440";
     group = "tsnsrv";
-  };
-
-  age.secrets.pandora-password = {
-    file = ../../secrets/pandora-password.age;
-    mode = "0444";
   };
 
   age.secrets.groq-env = {
@@ -266,25 +260,6 @@
     calendar = [ "*-*-* 15:00:00" "*-*-* 19:00:00" "*-*-* 00:00:00" ];  # 8am, noon, 5pm MST
   };
 
-  # ── Pyxis ────────────────────────────────────────────────────────────
-
-  services.pyxis = {
-    enable = true;
-    package = pyxis.packages.aarch64-linux.default;
-    server.hostname = "fuji";
-    server.port = 8765;
-    sources.pandora = {
-      username = "simon@simonwjackson.com";
-      passwordFile = config.age.secrets.pandora-password.path;
-    };
-  };
-
-  # Route yt-dlp traffic through rakku (residential IP)
-  systemd.services.pyxis.environment = {
-    HTTP_PROXY = "http://100.88.212.118:8888";
-    HTTPS_PROXY = "http://100.88.212.118:8888";
-  };
-
   # ── Tailscale ────────────────────────────────────────────────────────
 
   services.tailscale = {
@@ -317,26 +292,6 @@
     script = ''
       export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
       exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name etabli -stateDir /var/lib/tsnsrv-etabli http://127.0.0.1:7398
-    '';
-  };
-
-  systemd.services.tsnsrv-pyxis = {
-    description = "tsnsrv Tailscale proxy for pyxis";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    environment.HOME = "/var/lib/tsnsrv-pyxis";
-    serviceConfig = {
-      Type = "simple";
-      User = "tsnsrv";
-      Group = "tsnsrv";
-      StateDirectory = "tsnsrv-pyxis";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
-    script = ''
-      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
-      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name pyxis -stateDir /var/lib/tsnsrv-pyxis http://localhost:8765
     '';
   };
 

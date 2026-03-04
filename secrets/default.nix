@@ -42,6 +42,6 @@ in {
   "secrets/ado-refresh-token.age".publicKeys = fujiKeys;
 
   # Rakku secrets
-  "secrets/tailscale-ephemeral.age".publicKeys = rakkuKeys;
+  "secrets/tailscale-ephemeral.age".publicKeys = rakkuKeys ++ kitaKeys;
   "secrets/zwave-js-secrets.age".publicKeys = rakkuKeys;
 }

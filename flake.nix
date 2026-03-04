@@ -48,7 +48,7 @@
       fuji = mkHost {
         system = "aarch64-linux";
         hostPath = ./hosts/fuji;
-        specialArgs = { inherit pyxis tsnsrv; };
+        specialArgs = { inherit tsnsrv; };
       };
       yari = mkHost {
         system = "aarch64-linux";
@@ -66,7 +66,7 @@
         system = "x86_64-linux";
         hostPath = ./hosts/kita;
         extraModules = [ impermanence.nixosModules.default ];
-        specialArgs = { inherit pyxis; };
+        specialArgs = { inherit pyxis gomod2nix; };
       };
     };
     devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
