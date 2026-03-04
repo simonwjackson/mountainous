@@ -75,6 +75,7 @@ in
     package = pyxis.packages.x86_64-linux.default;
     server.port = 8765;
     server.hostname = "kita";
+    server.externalUrl = "http://192.168.1.174:8765";
     web.port = 5678;
     web.allowedHosts = [ "pyxis.hummingbird-lake.ts.net" ];
     sources.pandora.username = "simon@simonwjackson.com";
