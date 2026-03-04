@@ -318,11 +318,11 @@
         "yt-dlp-src": "yt-dlp-src"
       },
       "locked": {
-        "lastModified": 1772593011,
-        "narHash": "sha256-l8nGUZbLpIiPO1kPg97lv97iYLpOWEEamf4xleczxbo=",
+        "lastModified": 1772593333,
+        "narHash": "sha256-mLmcM7ieBa7P/w8+n9Q7sLm0r7wgooBx176j1hN5qTo=",
         "owner": "simonwjackson",
         "repo": "pyxis",
-        "rev": "7d610e318cbfc9b1ec6b18884ede230a1b45e782",
+        "rev": "ec8f4faa3ebb500969c7019f8dda359514a28757",
         "type": "github"
       },
       "original": {
