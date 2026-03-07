@@ -134,7 +134,7 @@ for endpoint in "${ENDPOINTS[@]}"; do
       while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         rid=$(echo "$line" | jq -r '.id // empty')
-        if ! echo "$existing_ids" | grep -qxF "$rid"; then
+        if ! grep -qxF "$rid" <<< "$existing_ids"; then
           echo "$line" >> "$tmp_new"
         fi
       done <<< "$all_data"
@@ -144,7 +144,7 @@ for endpoint in "${ENDPOINTS[@]}"; do
       while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         rday=$(echo "$line" | jq -r '.day // empty')
-        if ! echo "$existing_days" | grep -qxF "$rday"; then
+        if ! grep -qxF "$rday" <<< "$existing_days"; then
           echo "$line" >> "$tmp_new"
         fi
       done <<< "$all_data"

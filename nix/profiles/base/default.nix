@@ -222,6 +222,8 @@ in {
       pkgs.uutils-coreutils-noprefix
       pkgs.xh
       pkgs.dust
+      pkgs.fd
+      pkgs.ripgrep
     ];
 
     mountainous.tailscale.enable = true;
