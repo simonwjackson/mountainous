@@ -14,6 +14,7 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     impermanence.url = "github:nix-community/impermanence";
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
@@ -26,7 +27,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { self, nixpkgs, disko, home-manager, agenix, impermanence, gomod2nix, pyxis, tsnsrv, ... }:
+  outputs = { self, nixpkgs, disko, home-manager, agenix, nixos-hardware, impermanence, gomod2nix, pyxis, tsnsrv, ... }:
   let
     mkHost = { system, hostPath, specialArgs ? {}, extraModules ? [] }: nixpkgs.lib.nixosSystem {
       inherit system;
@@ -67,6 +68,11 @@
         hostPath = ./hosts/kita;
         extraModules = [ impermanence.nixosModules.default ];
         specialArgs = { inherit pyxis gomod2nix; };
+      };
+      yuki = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/yuki;
+        specialArgs = { inherit nixos-hardware; };
       };
     };
     devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
