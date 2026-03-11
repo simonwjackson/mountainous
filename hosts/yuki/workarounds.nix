@@ -339,6 +339,17 @@ in {
   };
 
   home-manager.users.simonwjackson = {
+    mountainous.hyprland.keybinds = {
+      ",XF86MonBrightnessUp" = {
+        kind = "bindel";
+        action = "exec, ${yukiBrightnessScript} up";
+      };
+      ",XF86MonBrightnessDown" = {
+        kind = "bindel";
+        action = "exec, ${yukiBrightnessScript} down";
+      };
+    };
+
     xdg.configFile."hypr/yuki-workarounds.conf".text = ''
       # This file is sourced from the main Hyprland config only on yuki.
       #
@@ -380,11 +391,9 @@ in {
       # in a similar place: the kernel backlight nodes can be written, but without the
       # borrowed EDID hack they do not currently produce reliable visible dimming.
       #
-      # So the current user-facing solution is a Hyprland screen shader driven by the
-      # brightness keys. This is intentionally documented here so it is obvious that this
-      # is a compromise, not a final answer.
-      bind = , XF86MonBrightnessUp, exec, ${yukiBrightnessScript} up
-      bind = , XF86MonBrightnessDown, exec, ${yukiBrightnessScript} down
+      # The actual XF86 brightness keybindings are overridden via
+      # `mountainous.hyprland.keybinds` so yuki can reuse the shared global keymap while
+      # swapping only the command implementation.
 
       cursor {
         # Important companion setting for shader-based dimming.

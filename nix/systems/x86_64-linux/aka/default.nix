@@ -82,7 +82,6 @@
     git
     ex
     ryzenadj
-    obsidian
     wireguard-tools
     whisper-cpp # For remote dictation transcription
     sillytavern # AI Dungeon-style LLM frontend

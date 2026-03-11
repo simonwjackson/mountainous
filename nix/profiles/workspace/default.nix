@@ -22,7 +22,6 @@ in {
     # Workspace packages
     environment.systemPackages = with pkgs; [
       git
-      obsidian
       xdg-desktop-portal-gtk
       yazi
     ];

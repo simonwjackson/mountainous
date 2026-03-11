@@ -1,10 +1,123 @@
 { config, lib, pkgs, osConfig ? {}, ... }:
 
 let
+  inherit (lib) mkOption types;
+
   hyprlandEnabled = osConfig.programs.hyprland.enable or false;
+  hostName = osConfig.networking.hostName or "";
+  isYuki = hostName == "yuki";
+
+  sharedHyprlandKeybindsConfig = import ../../nix/features/hyprland/keybinds.nix {
+    inherit config lib pkgs;
+    inputs = {};
+  };
+  sharedHyprlandKeybinds = sharedHyprlandKeybindsConfig.keybinds;
+  homeHyprlandKeybinds = {
+    "$mainMod, Return" = {
+      kind = "bind";
+      action = "exec, $terminal";
+    };
+    "$mainMod, N" = {
+      kind = "bind";
+      action = "exec, darkman toggle";
+    };
+    "$mainMod CTRL, E" = {
+      kind = "bind";
+      action = "exit,";
+    };
+    ", Print" = {
+      kind = "bind";
+      action = ''exec, grim -g "$(slurp)" - | wl-copy'';
+    };
+  };
+  finalHyprlandKeybinds = lib.filterAttrs (_: spec: spec != null) (
+    sharedHyprlandKeybinds
+    // homeHyprlandKeybinds
+    // config.mountainous.hyprland.keybinds
+  );
+  renderHyprlandKeybinds = kind:
+    lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (
+        combo: spec: "      ${kind} = ${combo}, ${spec.action}"
+      )
+      (lib.filterAttrs (_: spec: spec.kind == kind) finalHyprlandKeybinds)
+    );
+
+  ironbarBar = {
+    position = "top";
+    height = 32;
+    start = [
+      {
+        type = "workspaces";
+        favorites = ["1" "2" "3" "4" "5"];
+      }
+    ];
+    center = [
+      {
+        type = "clock";
+        format = "%a %Y-%m-%d %H:%M";
+      }
+    ];
+    end = [
+      {
+        type = "volume";
+        format = "{icon} {percentage}%";
+      }
+      {
+        type = "network_manager";
+        icon_size = 18;
+      }
+      {
+        type = "battery";
+        format = "{percentage}%";
+        thresholds = {
+          warning = 20;
+          critical = 5;
+        };
+      }
+      {
+        type = "tray";
+        icon_size = 16;
+      }
+    ];
+  };
+  ironbarConfig =
+    if isYuki
+    then {
+      start = null;
+      center = null;
+      end = null;
+      monitors = {
+        "eDP-1" = ironbarBar;
+      };
+    }
+    else ironbarBar;
 in
 {
-  home.stateVersion = "24.11";
+  options.mountainous.hyprland.keybinds = mkOption {
+    type = types.attrsOf (types.nullOr (types.submodule {
+      options = {
+        kind = mkOption {
+          type = types.enum ["bind" "bindel" "bindl" "bindm"];
+          description = "Which Hyprland bind keyword to render for this key chord.";
+        };
+
+        action = mkOption {
+          type = types.str;
+          description = "The dispatcher and arguments, e.g. `exec, kitty`.";
+        };
+      };
+    }));
+    default = {};
+    description = ''
+      Per-host Hyprland keybinding overrides keyed by key chord.
+
+      Use the same key to replace a shared binding, or set it to `null` to remove it.
+    '';
+  };
+
+  config = {
+    home.stateVersion = "24.11";
 
   programs.direnv = {
     enable = true;
@@ -130,8 +243,8 @@ in
 
   home.packages = with pkgs;
     lib.optionals hyprlandEnabled [
-      waybar
-      wofi
+      ironbar
+      tofi
       wl-clipboard
       grim
       slurp
@@ -142,20 +255,22 @@ in
 
   xdg.configFile = lib.mkIf hyprlandEnabled {
     "hypr/hyprland.conf".text = ''
-      $mod = SUPER
-      $terminal = kitty
-      $menu = wofi --show drun
+      $mod = ${sharedHyprlandKeybindsConfig."$mainMod"}
+      $mainMod = ${sharedHyprlandKeybindsConfig."$mainMod"}
+      $terminal = ${sharedHyprlandKeybindsConfig."$terminal"}
+      $fileManager = ${sharedHyprlandKeybindsConfig."$fileManager"}
+      $menu = tofi-drun
 
-      ${lib.optionalString ((osConfig.networking.hostName or "") != "yuki") ''monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
+      ${lib.optionalString (!isYuki) ''monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
       monitor = eDP-2, 2880x1800@60, 0x1800, 1''}
 
       # Host-specific Hyprland quirks live in separately managed files so laptop-specific
       # workarounds do not get buried in this generic user config.
-      ${lib.optionalString ((osConfig.networking.hostName or "") == "yuki") ''source = ~/.config/hypr/yuki-workarounds.conf''}
+      ${lib.optionalString isYuki ''source = ${config.xdg.configFile."hypr/yuki-workarounds.conf".source}''}
 
       exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland
       exec-once = nm-applet --indicator
-      exec-once = waybar
+      exec-once = ironbar
 
       env = XCURSOR_SIZE,24
       env = NIXOS_OZONE_WL,1
@@ -172,7 +287,7 @@ in
       general {
         gaps_in = 4
         gaps_out = 8
-        border_size = 2
+        border_size = 0
         layout = dwindle
       }
 
@@ -191,110 +306,62 @@ in
 
       misc {
         disable_hyprland_logo = true
+        force_default_wallpaper = 0
+        background_color = 0x000000
       }
 
-      bind = $mod, Return, exec, $terminal
-      bind = $mod, D, exec, $menu
-      bind = $mod SHIFT, Q, killactive,
-      bind = $mod SHIFT, E, exit,
-      bind = $mod, F, fullscreen,
-      bind = $mod, V, togglefloating,
-      bind = $mod, P, exec, pavucontrol
+${renderHyprlandKeybinds "bind"}
+${lib.optionalString (renderHyprlandKeybinds "bindel" != "") ''
 
-      bind = $mod, H, movefocus, l
-      bind = $mod, L, movefocus, r
-      bind = $mod, K, movefocus, u
-      bind = $mod, J, movefocus, d
+${renderHyprlandKeybinds "bindel"}''}
+${lib.optionalString (renderHyprlandKeybinds "bindl" != "") ''
 
-      bind = $mod SHIFT, H, movewindow, l
-      bind = $mod SHIFT, L, movewindow, r
-      bind = $mod SHIFT, K, movewindow, u
-      bind = $mod SHIFT, J, movewindow, d
+${renderHyprlandKeybinds "bindl"}''}
+${lib.optionalString (renderHyprlandKeybinds "bindm" != "") ''
 
-      bind = $mod, 1, workspace, 1
-      bind = $mod, 2, workspace, 2
-      bind = $mod, 3, workspace, 3
-      bind = $mod, 4, workspace, 4
-      bind = $mod, 5, workspace, 5
-      bind = $mod, 6, workspace, 6
-      bind = $mod, 7, workspace, 7
-      bind = $mod, 8, workspace, 8
-      bind = $mod, 9, workspace, 9
-      bind = $mod, 0, workspace, 10
-
-      bind = $mod SHIFT, 1, movetoworkspace, 1
-      bind = $mod SHIFT, 2, movetoworkspace, 2
-      bind = $mod SHIFT, 3, movetoworkspace, 3
-      bind = $mod SHIFT, 4, movetoworkspace, 4
-      bind = $mod SHIFT, 5, movetoworkspace, 5
-      bind = $mod SHIFT, 6, movetoworkspace, 6
-      bind = $mod SHIFT, 7, movetoworkspace, 7
-      bind = $mod SHIFT, 8, movetoworkspace, 8
-      bind = $mod SHIFT, 9, movetoworkspace, 9
-      bind = $mod SHIFT, 0, movetoworkspace, 10
-
-      bindm = $mod, mouse:272, movewindow
-      bindm = $mod, mouse:273, resizewindow
-
-      bind = , Print, exec, grim -g "$(slurp)" - | wl-copy
+${renderHyprlandKeybinds "bindm"}''}
     '';
 
-    "waybar/config.jsonc".text = ''
-      {
-        "layer": "top",
-        "position": "top",
-        "modules-left": ["hyprland/workspaces"],
-        "modules-center": ["clock"],
-        "modules-right": ["pulseaudio", "network", "battery", "tray"],
-        "hyprland/workspaces": {
-          "format": "{name}"
-        },
-        "clock": {
-          "format": "{:%a %Y-%m-%d %H:%M}"
-        },
-        "pulseaudio": {
-          "format": "VOL {volume}%",
-          "format-muted": "MUTED"
-        },
-        "network": {
-          "format-wifi": "{essid}",
-          "format-ethernet": "wired",
-          "format-disconnected": "offline"
-        },
-        "battery": {
-          "format": "BAT {capacity}%"
-        },
-        "tray": {
-          "spacing": 8
-        }
-      }
-    '';
+    "ironbar/config.json".text = builtins.toJSON ironbarConfig;
 
-    "waybar/style.css".text = ''
+    "ironbar/style.css".text = ''
       * {
         font-family: monospace;
         font-size: 12px;
       }
 
-      window#waybar {
-        background: rgba(20, 20, 20, 0.9);
-        color: #e6e6e6;
+      .background {
+        background-color: transparent;
+        color: #ffffff;
       }
 
-      #workspaces button,
-      #clock,
-      #pulseaudio,
-      #network,
-      #battery,
-      #tray {
+      #bar {
+        padding: 0 6px;
+      }
+
+      .widget {
+        margin: 0 2px;
+        background: transparent;
+      }
+
+      .workspaces .item,
+      .clock,
+      .volume,
+      .network_manager,
+      .battery,
+      .tray,
+      button {
         padding: 0 8px;
+        background: transparent;
+        box-shadow: none;
       }
     '';
   };
 
-  programs.git = {
-    enable = true;
-    userName = "Simon W. Jackson";
-    userEmail = "simon@simonwjackson.io";
+    programs.git = {
+      enable = true;
+      userName = "Simon W. Jackson";
+      userEmail = "simon@simonwjackson.io";
+    };
   };
 }
