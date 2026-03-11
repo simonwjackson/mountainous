@@ -1307,12 +1307,6 @@
     VPN_NS_CONFIG = "/run/agenix/fastest-vpn";
   };
 
-  # Enable dark mode support
-  mountainous.darkmode = {
-    enable = true;
-    defaultMode = "dark";
-  };
-
   # Firefox with declarative extensions
   mountainous.firefox = {
     enable = true;

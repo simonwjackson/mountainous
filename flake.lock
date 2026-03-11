@@ -45,6 +45,22 @@
         "type": "github"
       }
     },
+    "cascade": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1759367139,
+        "narHash": "sha256-uGC+SIRisABvulJcpiHwE4mhhwzMVtpo3RMJEJoCaPU=",
+        "owner": "cascadefox",
+        "repo": "cascade",
+        "rev": "8700d7718d130023815f0b036f3b1c4aaa2d5392",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cascadefox",
+        "repo": "cascade",
+        "type": "github"
+      }
+    },
     "darwin": {
       "inputs": {
         "nixpkgs": [
@@ -350,6 +366,7 @@
     "root": {
       "inputs": {
         "agenix": "agenix",
+        "cascade": "cascade",
         "disko": "disko",
         "gomod2nix": "gomod2nix",
         "home-manager": "home-manager_2",

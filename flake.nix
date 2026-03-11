@@ -26,12 +26,16 @@
       url = "github:boinkor-net/tsnsrv";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    cascade = {
+      url = "github:cascadefox/cascade";
+      flake = false;
+    };
   };
-  outputs = { self, nixpkgs, disko, home-manager, agenix, nixos-hardware, impermanence, gomod2nix, pyxis, tsnsrv, ... }:
+  outputs = { self, nixpkgs, disko, home-manager, agenix, nixos-hardware, impermanence, gomod2nix, pyxis, tsnsrv, cascade, ... }:
   let
     mkHost = { system, hostPath, specialArgs ? {}, extraModules ? [] }: nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit self; } // specialArgs;
+      specialArgs = { inherit self cascade; } // specialArgs;
       modules = [
         disko.nixosModules.default
         agenix.nixosModules.default
