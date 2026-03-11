@@ -65,5 +65,11 @@ in {
 
     # Always restart to handle deferred boot scenarios.
     systemd.services.tailscaled.serviceConfig.Restart = lib.mkForce "always";
+
+    # Wi-Fi + DHCP can come up well after tailscaled starts, especially on laptops.
+    # Give the autoconnect helper enough time to observe the daemon reach Running
+    # instead of failing spuriously while tailscaled continues connecting from its
+    # persisted state in the background.
+    systemd.services.tailscaled-autoconnect.serviceConfig.TimeoutStartSec = mkDefault "10min";
   };
 }
