@@ -12,6 +12,7 @@ in {
     ./disko.nix
     ./workarounds.nix
     ../../nix/profiles/laptop
+    ../../nix/profiles/workstation
   ];
 
   home-manager.users.simonwjackson = import ../../home/simonwjackson;
@@ -21,7 +22,10 @@ in {
   time.timeZone = "America/Denver";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  mountainous.profiles.laptop.enable = true;
+  mountainous.profiles = {
+    laptop.enable = true;
+    workstation.enable = true;
+  };
 
   age.secrets.simonwjackson-password-hash = lib.mkIf hasPasswordSecret {
     file = passwordSecretFile;
