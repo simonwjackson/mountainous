@@ -1,5 +1,8 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, osConfig ? {}, ... }:
 
+let
+  hyprlandEnabled = osConfig.programs.hyprland.enable or false;
+in
 {
   home.stateVersion = "24.11";
 
@@ -119,6 +122,170 @@
 
   programs.bash = {
     enable = true;
+  };
+
+  programs.kitty = {
+    enable = true;
+  };
+
+  home.packages = with pkgs;
+    lib.optionals hyprlandEnabled [
+      waybar
+      wofi
+      wl-clipboard
+      grim
+      slurp
+      brightnessctl
+      pavucontrol
+      networkmanagerapplet
+    ];
+
+  xdg.configFile = lib.mkIf hyprlandEnabled {
+    "hypr/hyprland.conf".text = ''
+      $mod = SUPER
+      $terminal = kitty
+      $menu = wofi --show drun
+
+      monitor = eDP-1, preferred, 0x0, 1, transform, 2
+      monitor = eDP-2, preferred, 0x1800, 1
+
+      exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland
+      exec-once = nm-applet --indicator
+      exec-once = waybar
+
+      env = XCURSOR_SIZE,24
+      env = NIXOS_OZONE_WL,1
+
+      input {
+        kb_layout = us
+        follow_mouse = 1
+        touchpad {
+          natural_scroll = false
+          tap-to-click = true
+        }
+      }
+
+      general {
+        gaps_in = 4
+        gaps_out = 8
+        border_size = 2
+        layout = dwindle
+      }
+
+      decoration {
+        rounding = 8
+      }
+
+      animations {
+        enabled = true
+      }
+
+      dwindle {
+        pseudotile = true
+        preserve_split = true
+      }
+
+      misc {
+        disable_hyprland_logo = true
+      }
+
+      bind = $mod, Return, exec, $terminal
+      bind = $mod, D, exec, $menu
+      bind = $mod SHIFT, Q, killactive,
+      bind = $mod SHIFT, E, exit,
+      bind = $mod, F, fullscreen,
+      bind = $mod, V, togglefloating,
+      bind = $mod, P, exec, pavucontrol
+
+      bind = $mod, H, movefocus, l
+      bind = $mod, L, movefocus, r
+      bind = $mod, K, movefocus, u
+      bind = $mod, J, movefocus, d
+
+      bind = $mod SHIFT, H, movewindow, l
+      bind = $mod SHIFT, L, movewindow, r
+      bind = $mod SHIFT, K, movewindow, u
+      bind = $mod SHIFT, J, movewindow, d
+
+      bind = $mod, 1, workspace, 1
+      bind = $mod, 2, workspace, 2
+      bind = $mod, 3, workspace, 3
+      bind = $mod, 4, workspace, 4
+      bind = $mod, 5, workspace, 5
+      bind = $mod, 6, workspace, 6
+      bind = $mod, 7, workspace, 7
+      bind = $mod, 8, workspace, 8
+      bind = $mod, 9, workspace, 9
+      bind = $mod, 0, workspace, 10
+
+      bind = $mod SHIFT, 1, movetoworkspace, 1
+      bind = $mod SHIFT, 2, movetoworkspace, 2
+      bind = $mod SHIFT, 3, movetoworkspace, 3
+      bind = $mod SHIFT, 4, movetoworkspace, 4
+      bind = $mod SHIFT, 5, movetoworkspace, 5
+      bind = $mod SHIFT, 6, movetoworkspace, 6
+      bind = $mod SHIFT, 7, movetoworkspace, 7
+      bind = $mod SHIFT, 8, movetoworkspace, 8
+      bind = $mod SHIFT, 9, movetoworkspace, 9
+      bind = $mod SHIFT, 0, movetoworkspace, 10
+
+      bindm = $mod, mouse:272, movewindow
+      bindm = $mod, mouse:273, resizewindow
+
+      bind = , Print, exec, grim -g "$(slurp)" - | wl-copy
+    '';
+
+    "waybar/config.jsonc".text = ''
+      {
+        "layer": "top",
+        "position": "top",
+        "modules-left": ["hyprland/workspaces"],
+        "modules-center": ["clock"],
+        "modules-right": ["pulseaudio", "network", "battery", "tray"],
+        "hyprland/workspaces": {
+          "format": "{name}"
+        },
+        "clock": {
+          "format": "{:%a %Y-%m-%d %H:%M}"
+        },
+        "pulseaudio": {
+          "format": "VOL {volume}%",
+          "format-muted": "MUTED"
+        },
+        "network": {
+          "format-wifi": "{essid}",
+          "format-ethernet": "wired",
+          "format-disconnected": "offline"
+        },
+        "battery": {
+          "format": "BAT {capacity}%"
+        },
+        "tray": {
+          "spacing": 8
+        }
+      }
+    '';
+
+    "waybar/style.css".text = ''
+      * {
+        font-family: monospace;
+        font-size: 12px;
+      }
+
+      window#waybar {
+        background: rgba(20, 20, 20, 0.9);
+        color: #e6e6e6;
+      }
+
+      #workspaces button,
+      #clock,
+      #pulseaudio,
+      #network,
+      #battery,
+      #tray {
+        padding: 0 8px;
+      }
+    '';
   };
 
   programs.git = {
