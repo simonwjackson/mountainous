@@ -31,6 +31,74 @@ let
       printf '%s\n' "$refresh" > "$stateFile"
     fi
   '';
+  yukiBrightnessScript = pkgs.writeShellScript "yuki-brightness" ''
+    set -eu
+
+    min=5
+    max=100
+    stepDefault=5
+    devices="intel_backlight"
+
+    get_percent() {
+      line="$(${pkgs.brightnessctl}/bin/brightnessctl -m -d "$1" 2>/dev/null || true)"
+      [ -n "$line" ] || return 1
+
+      IFS=, read -r _ _ _ percent _ <<EOF
+$line
+EOF
+      percent="''${percent%%%}"
+      printf '%s\n' "$percent"
+    }
+
+    current_percent() {
+      current=""
+
+      for device in $devices; do
+        if value=$(get_percent "$device"); then
+          if [ -z "$current" ] || [ "$value" -gt "$current" ]; then
+            current="$value"
+          fi
+        fi
+      done
+
+      if [ -n "$current" ]; then
+        printf '%s\n' "$current"
+      else
+        printf '100\n'
+      fi
+    }
+
+    apply_percent() {
+      target="$1"
+      [ "$target" -lt "$min" ] && target="$min"
+      [ "$target" -gt "$max" ] && target="$max"
+
+      for device in $devices; do
+        ${pkgs.brightnessctl}/bin/brightnessctl -q -d "$device" set "''${target}%" 2>/dev/null || true
+      done
+    }
+
+    case "''${1:-}" in
+      up)
+        step="''${2:-$stepDefault}"
+        apply_percent "$(( $(current_percent) + step ))"
+        ;;
+      down)
+        step="''${2:-$stepDefault}"
+        apply_percent "$(( $(current_percent) - step ))"
+        ;;
+      set)
+        apply_percent "''${2:?usage: yuki-brightness set <percent>}"
+        ;;
+      get)
+        current_percent
+        ;;
+      *)
+        echo "usage: yuki-brightness {up [step]|down [step]|set <percent>|get}" >&2
+        exit 1
+        ;;
+    esac
+  '';
 in
 {
   home.stateVersion = "24.11";
@@ -226,6 +294,8 @@ in
       bind = $mod, F, fullscreen,
       bind = $mod, V, togglefloating,
       bind = $mod, P, exec, pavucontrol
+      ${lib.optionalString isYuki ''bind = , XF86MonBrightnessUp, exec, ${yukiBrightnessScript} up
+      bind = , XF86MonBrightnessDown, exec, ${yukiBrightnessScript} down''}
 
       bind = $mod, H, movefocus, l
       bind = $mod, L, movefocus, r

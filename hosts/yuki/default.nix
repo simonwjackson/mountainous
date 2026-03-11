@@ -45,6 +45,7 @@ in
     kernelPackages = pkgs.linuxPackages_latest;
     kernelParams = [
       "i915.enable_psr=0"
+      "i915.enable_dpcd_backlight=1"
       ''acpi_osi="!Windows 2020"''
       "mem_sleep_default=s2idle"
     ];
@@ -123,6 +124,20 @@ in
 
   networking.networkmanager.enable = true;
   networking.wireless.enable = lib.mkForce false;
+
+  systemd.services.fix-backlight-permissions = {
+    description = "Allow video group to control backlight devices";
+    after = [ "systemd-udev-settle.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      for brightness in /sys/class/backlight/*/brightness; do
+        [ -e "$brightness" ] || continue
+        ${pkgs.coreutils}/bin/chgrp video "$brightness" || true
+        ${pkgs.coreutils}/bin/chmod g+w "$brightness" || true
+      done
+    '';
+  };
 
   systemd.services.disable-elan-wakeup-before-sleep = {
     description = "Disable ELAN touchpad wakeup sources before sleep";
