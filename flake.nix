@@ -36,6 +36,7 @@
         disko.nixosModules.default
         agenix.nixosModules.default
         home-manager.nixosModules.home-manager
+        ./nix/modules/nixos/tailscale
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
@@ -46,6 +47,7 @@
             trusted-users = [ "root" "@wheel" "simonwjackson" "admin" ];
           };
           security.sudo.wheelNeedsPassword = lib.mkDefault false;
+          mountainous.tailscale.enable = lib.mkDefault true;
         })
         { nixpkgs.overlays = import ./overlays; }
         hostPath

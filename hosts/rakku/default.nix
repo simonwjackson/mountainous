@@ -292,8 +292,8 @@ in
 
   # ── Network ──────────────────────────────────────────────────────────
 
-  # Tailscale system daemon (machine-level connectivity)
-  services.tailscale.enable = true;
+  # Tailscale system daemon (machine-level connectivity) is enabled globally
+  # from flake defaults via mountainous.tailscale.
 
   networking.wireless.enable = lib.mkForce false;
   networking.firewall.enable = lib.mkForce false;

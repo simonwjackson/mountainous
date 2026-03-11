@@ -98,7 +98,7 @@ in
 
   # ── Tailscale ────────────────────────────────────────────────────────
 
-  services.tailscale.enable = true;
+  # Enabled globally from flake defaults via mountainous.tailscale.
 
   # ── Ephemeral root (tmpfs) + Impermanence ───────────────────────────
 

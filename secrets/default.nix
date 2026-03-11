@@ -14,8 +14,8 @@ let
   yukiKeys = [ yuki simonwjackson ];
   allKeys = [ fuji yari rakku kita yuki simonwjackson ];
 in {
-  # Fuji secrets
-  "secrets/tailscale-authkey.age".publicKeys = fujiYariKeys;
+  # Shared machine Tailscale auth key
+  "secrets/tailscale-authkey.age".publicKeys = allKeys;
   "secrets/pandora-password.age".publicKeys = fujiKeys ++ rakkuKeys ++ kitaKeys;
   "secrets/groq-env.age".publicKeys = fujiKeys;
   "secrets/fastest-vpn.age".publicKeys = fujiYariKeys;

@@ -3,50 +3,67 @@
   lib,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types;
+  inherit (lib) mkDefault mkEnableOption mkOption mkIf types;
   cfg = config.mountainous.tailscale;
-  agenixEnabled = config.mountainous.agenix.enable or false;
-
-  # Check if secret exists (auto-discovered by agenix module)
-  hasSecret = config.age.secrets ? tailscale-ephemeral;
+  sharedAuthKeyFile = ../../../../secrets/tailscale-authkey.age;
+  hasSharedAuthKeyFile = builtins.pathExists sharedAuthKeyFile;
+  hasSharedAuthKeySecret = config.age.secrets ? tailscale-authkey;
+  hasEphemeralSecret = config.age.secrets ? tailscale-ephemeral;
 in {
   options.mountainous.tailscale = {
     enable = mkEnableOption "Tailscale VPN mesh networking";
+
+    authKeyFile = mkOption {
+      type = types.nullOr types.path;
+      default =
+        if hasSharedAuthKeySecret
+        then config.age.secrets.tailscale-authkey.path
+        else if hasEphemeralSecret
+        then config.age.secrets.tailscale-ephemeral.path
+        else null;
+      example = "/run/agenix/tailscale-authkey";
+      description = "Path to a Tailscale auth key file used for automatic tailscale up.";
+    };
 
     extraUpFlags = mkOption {
       type = types.listOf types.str;
       default = [];
       example = ["--ssh" "--advertise-exit-node"];
-      description = "Extra flags to pass to tailscale up";
+      description = "Extra flags to pass to tailscale up.";
+    };
+
+    extraSetFlags = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      example = ["--netfilter-mode=nodivert"];
+      description = "Extra flags to pass to tailscale set after the daemon is running.";
+    };
+
+    extraDaemonFlags = mkOption {
+      type = types.listOf types.str;
+      default = ["--encrypt-state=false"];
+      example = ["--stateful-filtering=false"];
+      description = "Extra flags to pass to tailscaled.";
     };
   };
 
   config = mkIf cfg.enable {
-    # Secret is auto-discovered by mountainous.agenix module
-    # No declaration needed here - just reference it
+    age.secrets.tailscale-authkey = mkIf hasSharedAuthKeyFile {
+      file = mkDefault sharedAuthKeyFile;
+      owner = mkDefault "root";
+      group = mkDefault "root";
+      mode = mkDefault "0400";
+    };
 
     services.tailscale = {
       enable = true;
-      authKeyFile = mkIf (agenixEnabled && hasSecret) config.age.secrets.tailscale-ephemeral.path;
+      authKeyFile = mkIf (cfg.authKeyFile != null) cfg.authKeyFile;
       extraUpFlags = cfg.extraUpFlags;
-      extraDaemonFlags = ["--encrypt-state=false"];
+      extraSetFlags = cfg.extraSetFlags;
+      extraDaemonFlags = cfg.extraDaemonFlags;
     };
 
-    # Tailscaled service overrides
-    systemd.services.tailscaled =
-      {
-        # Always restart to handle deferred boot scenarios
-        serviceConfig.Restart = lib.mkForce "always";
-      }
-      // lib.optionalAttrs (config.mountainous.impermanence.enable or false) {
-        # Ensure tailscaled waits for persistent storage bind mount
-        after = ["local-fs.target"];
-        requires = ["local-fs.target"];
-      };
-
-    # Impermanence integration - persist Tailscale state
-    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf (config.mountainous.impermanence.enable or false) {
-      directories = ["/var/lib/tailscale"];
-    };
+    # Always restart to handle deferred boot scenarios.
+    systemd.services.tailscaled.serviceConfig.Restart = lib.mkForce "always";
   };
 }

@@ -262,10 +262,9 @@
 
   # ── Tailscale ────────────────────────────────────────────────────────
 
-  services.tailscale = {
-    enable = true;
+  mountainous.tailscale = {
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = [ "--netfilter-mode=nodivert" ];
+    extraSetFlags = ["--netfilter-mode=nodivert"];
   };
 
   users.groups.tsnsrv = {};
