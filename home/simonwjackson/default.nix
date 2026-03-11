@@ -146,8 +146,8 @@ in
       $terminal = kitty
       $menu = wofi --show drun
 
-      monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
-      monitor = eDP-2, 2880x1800@60, 0x1800, 1
+      ${lib.optionalString ((osConfig.networking.hostName or "") != "yuki") ''monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
+      monitor = eDP-2, 2880x1800@60, 0x1800, 1''}
 
       # Host-specific Hyprland quirks live in separately managed files so laptop-specific
       # workarounds do not get buried in this generic user config.

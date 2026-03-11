@@ -1,6 +1,30 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  nixos-hardware,
+  ...
+}: let
+  knownGoodScale = "1.33";
+  knownGoodMode = "2560x1600";
+  scalePresets = ["1" "1.25" "1.33" "1.6" "2"];
 
-let
+  yukiApplyDisplayScript = pkgs.writeShellScript "yuki-apply-display" ''
+    set -eu
+
+    refresh="''${1:?usage: yuki-apply-display <refresh> <scale>}"
+    scale="''${2:?usage: yuki-apply-display <refresh> <scale>}"
+
+    # Apply each panel independently.
+    #
+    # On yuki, the scaling itself appears fine, but only when the monitor keywords are
+    # sent as separate commands. A combined/batched dual-monitor update caused layout
+    # problems that did not reproduce with independent calls.
+    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+      "keyword monitor eDP-1,${knownGoodMode}@''${refresh},auto,''${scale},transform,2"
+    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+      "keyword monitor eDP-2,${knownGoodMode}@''${refresh},auto,''${scale}"
+  '';
+
   yukiRefreshRateScript = pkgs.writeShellScript "yuki-refresh-rate" ''
     set -eu
 
@@ -14,96 +38,200 @@ let
       refresh=60
     fi
 
-    stateFile="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/yuki-refresh-rate"
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    lockFile="$runtimeDir/yuki-display.lock"
+    refreshStateFile="$runtimeDir/yuki-refresh-rate"
+    scaleStateFile="$runtimeDir/yuki-scale"
     current=""
-    if [ -f "$stateFile" ]; then
-      current=$(cat "$stateFile")
+    scale="${knownGoodScale}"
+
+    exec 9>"$lockFile"
+    ${pkgs.util-linux}/bin/flock -x 9
+
+    if [ -f "$refreshStateFile" ]; then
+      current=$(cat "$refreshStateFile")
+    fi
+
+    if [ -f "$scaleStateFile" ]; then
+      scale=$(cat "$scaleStateFile")
     fi
 
     if [ "$current" = "$refresh" ]; then
       exit 0
     fi
 
-    if ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-1, 2880x1800@''${refresh}, 0x0, 1, transform, 2" \
-      && ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-2, 2880x1800@''${refresh}, 0x1800, 1"; then
-      printf '%s\n' "$refresh" > "$stateFile"
+    if ${yukiApplyDisplayScript} "$refresh" "$scale"; then
+      printf '%s\n' "$refresh" > "$refreshStateFile"
+    fi
+  '';
+
+  yukiScaleScript = pkgs.writeShellScript "yuki-scale" ''
+    set -eu
+
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    lockFile="$runtimeDir/yuki-display.lock"
+    refreshStateFile="$runtimeDir/yuki-refresh-rate"
+    scaleStateFile="$runtimeDir/yuki-scale"
+    presets=(${lib.concatStringsSep " " scalePresets})
+
+    current_scale() {
+      if [ -f "$scaleStateFile" ]; then
+        cat "$scaleStateFile"
+      else
+        printf '${knownGoodScale}\n'
+      fi
+    }
+
+    current_refresh() {
+      if [ -f "$refreshStateFile" ]; then
+        cat "$refreshStateFile"
+      elif [ -r /sys/class/power_supply/ADP0/online ] && [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
+        printf '120\n'
+      else
+        printf '60\n'
+      fi
+    }
+
+    find_index() {
+      target="$1"
+      idx=0
+      for preset in "''${presets[@]}"; do
+        if [ "$preset" = "$target" ]; then
+          printf '%s\n' "$idx"
+          return 0
+        fi
+        idx=$((idx + 1))
+      done
+      printf '0\n'
+    }
+
+    exec 9>"$lockFile"
+    ${pkgs.util-linux}/bin/flock -x 9
+
+    case "''${1:-}" in
+      up)
+        idx=$(find_index "$(current_scale)")
+        if [ "$idx" -lt $((''${#presets[@]} - 1)) ]; then
+          idx=$((idx + 1))
+        fi
+        target="''${presets[$idx]}"
+        ;;
+      down)
+        idx=$(find_index "$(current_scale)")
+        if [ "$idx" -gt 0 ]; then
+          idx=$((idx - 1))
+        fi
+        target="''${presets[$idx]}"
+        ;;
+      set)
+        target="''${2:?usage: yuki-scale set <scale>}"
+        ;;
+      get)
+        current_scale
+        exit 0
+        ;;
+      *)
+        echo "usage: yuki-scale {up|down|set <scale>|get}" >&2
+        exit 1
+        ;;
+    esac
+
+    current=$(current_scale)
+    if [ "$target" = "$current" ]; then
+      exit 0
+    fi
+
+    refresh=$(current_refresh)
+    if ${yukiApplyDisplayScript} "$refresh" "$target"; then
+      printf '%s\n' "$target" > "$scaleStateFile"
+      printf '%s\n' "$refresh" > "$refreshStateFile"
     fi
   '';
 
   yukiBrightnessScript = pkgs.writeShellScript "yuki-brightness" ''
-    set -eu
+        set -eu
 
-    min=5
-    max=100
-    stepDefault=5
-    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-    stateFile="$runtimeDir/yuki-brightness"
-    shaderFile="$runtimeDir/yuki-brightness.glsl"
+        min=5
+        max=100
+        stepDefault=5
+        runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+        stateFile="$runtimeDir/yuki-brightness"
+        shaderFile="$runtimeDir/yuki-brightness.glsl"
 
-    current_percent() {
-      if [ -f "$stateFile" ]; then
-        cat "$stateFile"
-      else
-        printf '100\n'
-      fi
+        current_percent() {
+          if [ -f "$stateFile" ]; then
+            cat "$stateFile"
+          else
+            printf '100\n'
+          fi
+        }
+
+        write_shader() {
+          opacity="$1"
+          cat > "$shaderFile" <<EOF
+    #version 300 es
+    precision highp float;
+    in vec2 v_texcoord;
+    out vec4 fragColor;
+    uniform sampler2D tex;
+    void main() {
+      vec4 c = texture(tex, v_texcoord);
+      c.rgb *= $opacity;
+      fragColor = c;
     }
+    EOF
+        }
 
-    write_shader() {
-      opacity="$1"
-      cat > "$shaderFile" <<EOF
-#version 300 es
-precision highp float;
-in vec2 v_texcoord;
-out vec4 fragColor;
-uniform sampler2D tex;
-void main() {
-  vec4 c = texture(tex, v_texcoord);
-  c.rgb *= $opacity;
-  fragColor = c;
-}
-EOF
-    }
+        apply_percent() {
+          target="$1"
+          [ "$target" -lt "$min" ] && target="$min"
+          [ "$target" -gt "$max" ] && target="$max"
+          printf '%s\n' "$target" > "$stateFile"
 
-    apply_percent() {
-      target="$1"
-      [ "$target" -lt "$min" ] && target="$min"
-      [ "$target" -gt "$max" ] && target="$max"
-      printf '%s\n' "$target" > "$stateFile"
+          if [ "$target" -ge 100 ]; then
+            rm -f "$shaderFile"
+            ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword decoration:screen_shader ""
+            exit 0
+          fi
 
-      if [ "$target" -ge 100 ]; then
-        rm -f "$shaderFile"
-        ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword decoration:screen_shader ""
-        exit 0
-      fi
+          opacity=$(awk "BEGIN { printf \"%.3f\", $target / 100 }")
+          write_shader "$opacity"
+          ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword decoration:screen_shader "$shaderFile"
+        }
 
-      opacity=$(awk "BEGIN { printf \"%.3f\", $target / 100 }")
-      write_shader "$opacity"
-      ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword decoration:screen_shader "$shaderFile"
-    }
-
-    case "''${1:-}" in
-      up)
-        step="''${2:-$stepDefault}"
-        apply_percent "$(( $(current_percent) + step ))"
-        ;;
-      down)
-        step="''${2:-$stepDefault}"
-        apply_percent "$(( $(current_percent) - step ))"
-        ;;
-      set)
-        apply_percent "''${2:?usage: yuki-brightness set <percent>}"
-        ;;
-      get)
-        current_percent
-        ;;
-      *)
-        echo "usage: yuki-brightness {up [step]|down [step]|set <percent>|get}" >&2
-        exit 1
-        ;;
-    esac
+        case "''${1:-}" in
+          up)
+            step="''${2:-$stepDefault}"
+            apply_percent "$(( $(current_percent) + step ))"
+            ;;
+          down)
+            step="''${2:-$stepDefault}"
+            apply_percent "$(( $(current_percent) - step ))"
+            ;;
+          set)
+            apply_percent "''${2:?usage: yuki-brightness set <percent>}"
+            ;;
+          get)
+            current_percent
+            ;;
+          *)
+            echo "usage: yuki-brightness {up [step]|down [step]|set <percent>|get}" >&2
+            exit 1
+            ;;
+        esac
   '';
-in
-{
+in {
+  imports = [
+    # There is not yet an exact nixos-hardware module for the Yoga Book 9i Gen 10 (83Q8),
+    # so we currently borrow the closest upstream Lenovo Intel laptop profile as part of
+    # the overall compatibility story for this host.
+    #
+    # This lives here instead of `hosts/yuki/default.nix` on purpose: the borrowed module
+    # is temporary and should be reviewed alongside the rest of yuki's quirks whenever we
+    # test newer kernels, firmware, or a future first-class upstream hardware module.
+    nixos-hardware.nixosModules.lenovo-ideapad-14imh9
+  ];
+
   # This module intentionally centralizes the host-specific quirks for yuki so they can
   # be audited, deleted, or re-tested as upstream support improves.
   #
@@ -159,8 +287,8 @@ in
 
   systemd.services.fix-backlight-permissions = {
     description = "Allow video group to control backlight devices";
-    after = [ "systemd-udev-settle.service" ];
-    wantedBy = [ "multi-user.target" ];
+    after = ["systemd-udev-settle.service"];
+    wantedBy = ["multi-user.target"];
     serviceConfig.Type = "oneshot";
     script = ''
       # During the original hardware-brightness investigation, Hyprland keybinds ran as
@@ -180,8 +308,8 @@ in
 
   systemd.services.disable-elan-wakeup-before-sleep = {
     description = "Disable ELAN touchpad wakeup sources before sleep";
-    before = [ "sleep.target" ];
-    wantedBy = [ "sleep.target" ];
+    before = ["sleep.target"];
+    wantedBy = ["sleep.target"];
     serviceConfig.Type = "oneshot";
     script = ''
       # On this dual-screen Lenovo, ELAN-related wakeup sources appeared to cause
@@ -203,6 +331,33 @@ in
       # Keep host-specific compositor quirks here instead of baking them deeper into the
       # generic home-manager config. When upstream support improves, this file should be
       # the first thing reviewed and trimmed.
+
+      # Base monitor layout
+      # -------------------
+      # This is the currently known-good scaled layout for yuki.
+      #
+      # Earlier attempts used native 2880x1800 plus explicit stacked coordinates, but
+      # that led to badly shifted window placement on the bottom panel. The stable setup
+      # we found in live testing is to let Hyprland auto-place both displays while using
+      # a 2560x1600 mode at 1.33 scale.
+      monitor = eDP-1, ${knownGoodMode}@60, auto, ${knownGoodScale}, transform, 2
+      monitor = eDP-2, ${knownGoodMode}@60, auto, ${knownGoodScale}
+
+      # Visual baseline
+      # ---------------
+      # Keep the desktop background as a plain solid black. That fits the dual-OLED
+      # hardware well, avoids distracting default wallpaper/splash visuals, and plays
+      # nicely with the software dimming path below.
+      misc:force_default_wallpaper = 0
+      misc:background_color = 0x000000
+
+      # Live scale stepping
+      # -------------------
+      # Restore scale controls, but apply them using two independent monitor commands.
+      # That matches the manual sequence that behaved correctly on yuki.
+      bind = $mod CTRL, equal, exec, ${yukiScaleScript} up
+      bind = $mod CTRL, minus, exec, ${yukiScaleScript} down
+      bind = $mod CTRL, 0, exec, ${yukiScaleScript} set ${knownGoodScale}
 
       # Software brightness implementation
       # ---------------------------------
@@ -245,8 +400,8 @@ in
     systemd.user.services.yuki-refresh-rate = {
       Unit = {
         Description = "Adjust Hyprland refresh rate based on AC power";
-        After = [ "graphical-session.target" ];
-        PartOf = [ "graphical-session.target" ];
+        After = ["graphical-session.target"];
+        PartOf = ["graphical-session.target"];
       };
       Service = {
         Type = "oneshot";
@@ -261,7 +416,7 @@ in
         OnUnitActiveSec = "20s";
         Unit = "yuki-refresh-rate.service";
       };
-      Install.WantedBy = [ "timers.target" ];
+      Install.WantedBy = ["timers.target"];
     };
   };
 }
