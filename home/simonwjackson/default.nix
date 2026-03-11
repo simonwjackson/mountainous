@@ -2,103 +2,6 @@
 
 let
   hyprlandEnabled = osConfig.programs.hyprland.enable or false;
-  isYuki = (osConfig.networking.hostName or "") == "yuki";
-  yukiRefreshRateScript = pkgs.writeShellScript "yuki-refresh-rate" ''
-    set -eu
-
-    if [ ! -r /sys/class/power_supply/ADP0/online ]; then
-      exit 0
-    fi
-
-    if [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
-      refresh=120
-    else
-      refresh=60
-    fi
-
-    stateFile="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/yuki-refresh-rate"
-    current=""
-    if [ -f "$stateFile" ]; then
-      current=$(cat "$stateFile")
-    fi
-
-    if [ "$current" = "$refresh" ]; then
-      exit 0
-    fi
-
-    if ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-1, 2880x1800@''${refresh}, 0x0, 1, transform, 2" \
-      && ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-2, 2880x1800@''${refresh}, 0x1800, 1"; then
-      printf '%s\n' "$refresh" > "$stateFile"
-    fi
-  '';
-  yukiBrightnessScript = pkgs.writeShellScript "yuki-brightness" ''
-    set -eu
-
-    min=5
-    max=100
-    stepDefault=5
-    devices="intel_backlight"
-
-    get_percent() {
-      line="$(${pkgs.brightnessctl}/bin/brightnessctl -m -d "$1" 2>/dev/null || true)"
-      [ -n "$line" ] || return 1
-
-      IFS=, read -r _ _ _ percent _ <<EOF
-$line
-EOF
-      percent="''${percent%%%}"
-      printf '%s\n' "$percent"
-    }
-
-    current_percent() {
-      current=""
-
-      for device in $devices; do
-        if value=$(get_percent "$device"); then
-          if [ -z "$current" ] || [ "$value" -gt "$current" ]; then
-            current="$value"
-          fi
-        fi
-      done
-
-      if [ -n "$current" ]; then
-        printf '%s\n' "$current"
-      else
-        printf '100\n'
-      fi
-    }
-
-    apply_percent() {
-      target="$1"
-      [ "$target" -lt "$min" ] && target="$min"
-      [ "$target" -gt "$max" ] && target="$max"
-
-      for device in $devices; do
-        ${pkgs.brightnessctl}/bin/brightnessctl -q -d "$device" set "''${target}%" 2>/dev/null || true
-      done
-    }
-
-    case "''${1:-}" in
-      up)
-        step="''${2:-$stepDefault}"
-        apply_percent "$(( $(current_percent) + step ))"
-        ;;
-      down)
-        step="''${2:-$stepDefault}"
-        apply_percent "$(( $(current_percent) - step ))"
-        ;;
-      set)
-        apply_percent "''${2:?usage: yuki-brightness set <percent>}"
-        ;;
-      get)
-        current_percent
-        ;;
-      *)
-        echo "usage: yuki-brightness {up [step]|down [step]|set <percent>|get}" >&2
-        exit 1
-        ;;
-    esac
-  '';
 in
 {
   home.stateVersion = "24.11";
@@ -246,10 +149,13 @@ in
       monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
       monitor = eDP-2, 2880x1800@60, 0x1800, 1
 
+      # Host-specific Hyprland quirks live in separately managed files so laptop-specific
+      # workarounds do not get buried in this generic user config.
+      ${lib.optionalString ((osConfig.networking.hostName or "") == "yuki") ''source = ~/.config/hypr/yuki-workarounds.conf''}
+
       exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland
       exec-once = nm-applet --indicator
       exec-once = waybar
-      ${lib.optionalString isYuki ''exec-once = systemctl --user start yuki-refresh-rate.service''}
 
       env = XCURSOR_SIZE,24
       env = NIXOS_OZONE_WL,1
@@ -294,8 +200,6 @@ in
       bind = $mod, F, fullscreen,
       bind = $mod, V, togglefloating,
       bind = $mod, P, exec, pavucontrol
-      ${lib.optionalString isYuki ''bind = , XF86MonBrightnessUp, exec, ${yukiBrightnessScript} up
-      bind = , XF86MonBrightnessDown, exec, ${yukiBrightnessScript} down''}
 
       bind = $mod, H, movefocus, l
       bind = $mod, L, movefocus, r
@@ -386,28 +290,6 @@ in
         padding: 0 8px;
       }
     '';
-  };
-
-  systemd.user.services.yuki-refresh-rate = lib.mkIf (hyprlandEnabled && isYuki) {
-    Unit = {
-      Description = "Adjust Hyprland refresh rate based on AC power";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${yukiRefreshRateScript}";
-    };
-  };
-
-  systemd.user.timers.yuki-refresh-rate = lib.mkIf (hyprlandEnabled && isYuki) {
-    Unit.Description = "Poll AC power and update Hyprland refresh rate";
-    Timer = {
-      OnBootSec = "20s";
-      OnUnitActiveSec = "20s";
-      Unit = "yuki-refresh-rate.service";
-    };
-    Install.WantedBy = [ "timers.target" ];
   };
 
   programs.git = {

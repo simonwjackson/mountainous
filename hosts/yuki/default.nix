@@ -8,6 +8,7 @@ in
   imports = [
     ./hardware.nix
     ./disko.nix
+    ./workarounds.nix
     ../../nix/profiles/laptop
     # TODO: nixos-hardware has no exact Lenovo Yoga Book 9i Gen 10 (83Q8) profile yet;
     # use the nearest available Lenovo IdeaPad 14-inch Intel module for now.
@@ -43,12 +44,6 @@ in
   boot = {
     # Arrow Lake-H suspend-to-idle support requires Linux 6.15 or newer.
     kernelPackages = pkgs.linuxPackages_latest;
-    kernelParams = [
-      "i915.enable_psr=0"
-      "i915.enable_dpcd_backlight=1"
-      ''acpi_osi="!Windows 2020"''
-      "mem_sleep_default=s2idle"
-    ];
   };
 
   swapDevices = [
@@ -124,35 +119,6 @@ in
 
   networking.networkmanager.enable = true;
   networking.wireless.enable = lib.mkForce false;
-
-  systemd.services.fix-backlight-permissions = {
-    description = "Allow video group to control backlight devices";
-    after = [ "systemd-udev-settle.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      for brightness in /sys/class/backlight/*/brightness; do
-        [ -e "$brightness" ] || continue
-        ${pkgs.coreutils}/bin/chgrp video "$brightness" || true
-        ${pkgs.coreutils}/bin/chmod g+w "$brightness" || true
-      done
-    '';
-  };
-
-  systemd.services.disable-elan-wakeup-before-sleep = {
-    description = "Disable ELAN touchpad wakeup sources before sleep";
-    before = [ "sleep.target" ];
-    wantedBy = [ "sleep.target" ];
-    serviceConfig.Type = "oneshot";
-    script = ''
-      # Lenovo dual-screen systems may wake immediately if ELAN wakeup stays enabled.
-      # Prefer the generic detection pattern first; replace with a fixed sysfs path if one
-      # proves stable on this machine after first boot.
-      while IFS= read -r wakeup; do
-        echo disabled > "$wakeup" || true
-      done < <(find /sys -name "wakeup" | xargs grep -l "enabled" 2>/dev/null | grep -i elan || true)
-    '';
-  };
 
   system.stateVersion = "24.11";
 }
