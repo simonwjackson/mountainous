@@ -3,8 +3,7 @@
     disk = {
       main = {
         type = "disk";
-        # TODO: replace with the actual Yoga Book 9i internal NVMe by-id path.
-        device = "/dev/disk/by-id/nvme-TODO_REPLACE_WITH_YUKI_INTERNAL_DRIVE";
+        device = "/dev/disk/by-id/nvme-SAMSUNG_MZAL81T0HDLB-00BL2_S77LNF0X561616";
         content = {
           type = "gpt";
           partitions = {
@@ -61,8 +60,7 @@
                     };
                     "@swap" = {
                       mountpoint = "/swap";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
-                      # TODO: create the actual swapfile at runtime inside /swap if needed.
+                      mountOptions = [ "noatime" "space_cache=v2" ];
                     };
                   };
                 };
