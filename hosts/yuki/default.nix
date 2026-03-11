@@ -8,6 +8,7 @@ in
   imports = [
     ./hardware.nix
     ./disko.nix
+    ../../nix/profiles/laptop
     # TODO: nixos-hardware has no exact Lenovo Yoga Book 9i Gen 10 (83Q8) profile yet;
     # use the nearest available Lenovo IdeaPad 14-inch Intel module for now.
     nixos-hardware.nixosModules.lenovo-ideapad-14imh9
@@ -19,6 +20,8 @@ in
   networking.useDHCP = lib.mkDefault true;
   time.timeZone = "America/Denver";
   i18n.defaultLocale = "en_US.UTF-8";
+
+  mountainous.profiles.laptop.enable = true;
 
   age.secrets.simonwjackson-password-hash = lib.mkIf hasPasswordSecret {
     file = passwordSecretFile;

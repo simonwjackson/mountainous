@@ -2,6 +2,35 @@
 
 let
   hyprlandEnabled = osConfig.programs.hyprland.enable or false;
+  isYuki = (osConfig.networking.hostName or "") == "yuki";
+  yukiRefreshRateScript = pkgs.writeShellScript "yuki-refresh-rate" ''
+    set -eu
+
+    if [ ! -r /sys/class/power_supply/ADP0/online ]; then
+      exit 0
+    fi
+
+    if [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
+      refresh=120
+    else
+      refresh=60
+    fi
+
+    stateFile="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/yuki-refresh-rate"
+    current=""
+    if [ -f "$stateFile" ]; then
+      current=$(cat "$stateFile")
+    fi
+
+    if [ "$current" = "$refresh" ]; then
+      exit 0
+    fi
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-1, 2880x1800@''${refresh}, 0x0, 1, transform, 2" \
+      && ${pkgs.hyprland}/bin/hyprctl --instance 0 keyword monitor "eDP-2, 2880x1800@''${refresh}, 0x1800, 1"; then
+      printf '%s\n' "$refresh" > "$stateFile"
+    fi
+  '';
 in
 {
   home.stateVersion = "24.11";
@@ -146,12 +175,13 @@ in
       $terminal = kitty
       $menu = wofi --show drun
 
-      monitor = eDP-1, preferred, 0x0, 1, transform, 2
-      monitor = eDP-2, preferred, 0x1800, 1
+      monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
+      monitor = eDP-2, 2880x1800@60, 0x1800, 1
 
       exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland
       exec-once = nm-applet --indicator
       exec-once = waybar
+      ${lib.optionalString isYuki ''exec-once = systemctl --user start yuki-refresh-rate.service''}
 
       env = XCURSOR_SIZE,24
       env = NIXOS_OZONE_WL,1
@@ -286,6 +316,28 @@ in
         padding: 0 8px;
       }
     '';
+  };
+
+  systemd.user.services.yuki-refresh-rate = lib.mkIf (hyprlandEnabled && isYuki) {
+    Unit = {
+      Description = "Adjust Hyprland refresh rate based on AC power";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${yukiRefreshRateScript}";
+    };
+  };
+
+  systemd.user.timers.yuki-refresh-rate = lib.mkIf (hyprlandEnabled && isYuki) {
+    Unit.Description = "Poll AC power and update Hyprland refresh rate";
+    Timer = {
+      OnBootSec = "20s";
+      OnUnitActiveSec = "20s";
+      Unit = "yuki-refresh-rate.service";
+    };
+    Install.WantedBy = [ "timers.target" ];
   };
 
   programs.git = {

@@ -42,8 +42,8 @@
         }
         ({ lib, ... }: {
           nix.settings = {
-            experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
-            trusted-users = lib.mkDefault [ "root" "@wheel" "simonwjackson" "admin" ];
+            experimental-features = [ "nix-command" "flakes" ];
+            trusted-users = [ "root" "@wheel" "simonwjackson" "admin" ];
           };
           security.sudo.wheelNeedsPassword = lib.mkDefault false;
         })
