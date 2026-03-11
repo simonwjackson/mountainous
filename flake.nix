@@ -40,6 +40,13 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         }
+        ({ lib, ... }: {
+          nix.settings = {
+            experimental-features = lib.mkDefault [ "nix-command" "flakes" ];
+            trusted-users = lib.mkDefault [ "root" "@wheel" "simonwjackson" "admin" ];
+          };
+          security.sudo.wheelNeedsPassword = lib.mkDefault false;
+        })
         { nixpkgs.overlays = import ./overlays; }
         hostPath
       ] ++ extraModules;
