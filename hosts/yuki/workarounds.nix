@@ -4,8 +4,9 @@
   nixos-hardware,
   ...
 }: let
-  knownGoodScale = "1.33";
-  knownGoodMode = "2560x1600";
+  defaultScale = "1.25";
+  defaultYOffset = "1280";
+  resolution = "2560x1600";
   scalePresets = ["1" "1.25" "1.33" "1.6" "2"];
 
   yukiApplyDisplayScript = pkgs.writeShellScript "yuki-apply-display" ''
@@ -14,15 +15,28 @@
     refresh="''${1:?usage: yuki-apply-display <refresh> <scale>}"
     scale="''${2:?usage: yuki-apply-display <refresh> <scale>}"
 
+    # Keep the two internal panels stacked vertically.
+    #
+    # The bottom panel's Y position must track the scaled logical height of the top
+    # panel. For 2560x1600 at scale 1.25 this becomes 1280, and we derive the same math
+    # for the other scale presets so the two displays keep touching edge-to-edge.
+    yOffset=$(awk "BEGIN {
+      y = 1600 / $scale;
+      printf \"%d\", y + 0.5;
+    }")
+
     # Apply each panel independently.
     #
-    # On yuki, the scaling itself appears fine, but only when the monitor keywords are
-    # sent as separate commands. A combined/batched dual-monitor update caused layout
-    # problems that did not reproduce with independent calls.
+    # On yuki, the scaling path behaved better when monitor keywords were sent as
+    # separate commands rather than a single dual-monitor batch update.
     ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
-      "keyword monitor eDP-1,${knownGoodMode}@''${refresh},auto,''${scale},transform,2"
+      "keyword monitor eDP-1,${resolution}@''${refresh},0x0,''${scale},transform,2"
     ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
-      "keyword monitor eDP-2,${knownGoodMode}@''${refresh},auto,''${scale}"
+      "keyword monitor eDP-2,${resolution}@''${refresh},0x''${yOffset},''${scale}"
+    # HACK: Bug in Hyprland needs this to get the placement right.
+    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+      "keyword monitor eDP-2,${resolution}@''${refresh},0x''${yOffset},''${scale}"
+
   '';
 
   yukiRefreshRateScript = pkgs.writeShellScript "yuki-refresh-rate" ''
@@ -43,7 +57,7 @@
     refreshStateFile="$runtimeDir/yuki-refresh-rate"
     scaleStateFile="$runtimeDir/yuki-scale"
     current=""
-    scale="${knownGoodScale}"
+    scale="${defaultScale}"
 
     exec 9>"$lockFile"
     ${pkgs.util-linux}/bin/flock -x 9
@@ -78,7 +92,7 @@
       if [ -f "$scaleStateFile" ]; then
         cat "$scaleStateFile"
       else
-        printf '${knownGoodScale}\n'
+        printf '${defaultScale}\n'
       fi
     }
 
@@ -334,14 +348,13 @@ in {
 
       # Base monitor layout
       # -------------------
-      # This is the currently known-good scaled layout for yuki.
+      # Keep yuki's two internal panels stacked vertically.
       #
-      # Earlier attempts used native 2880x1800 plus explicit stacked coordinates, but
-      # that led to badly shifted window placement on the bottom panel. The stable setup
-      # we found in live testing is to let Hyprland auto-place both displays while using
-      # a 2560x1600 mode at 1.33 scale.
-      monitor = eDP-1, ${knownGoodMode}@60, auto, ${knownGoodScale}, transform, 2
-      monitor = eDP-2, ${knownGoodMode}@60, auto, ${knownGoodScale}
+      # Using `auto` lets Hyprland place them side-by-side, so we pin the lower panel to
+      # the scaled logical height of the upper one. At the default 2560x1600 @ 1.25
+      # setup that means a Y offset of 1280.
+      monitor = eDP-1, ${resolution}@60, 0x0, ${defaultScale}, transform, 2
+      monitor = eDP-2, ${resolution}@60, 0x${defaultYOffset}, ${defaultScale}
 
       # Visual baseline
       # ---------------
@@ -357,7 +370,7 @@ in {
       # That matches the manual sequence that behaved correctly on yuki.
       bind = $mod CTRL, equal, exec, ${yukiScaleScript} up
       bind = $mod CTRL, minus, exec, ${yukiScaleScript} down
-      bind = $mod CTRL, 0, exec, ${yukiScaleScript} set ${knownGoodScale}
+      bind = $mod CTRL, 0, exec, ${yukiScaleScript} set ${defaultScale}
 
       # Software brightness implementation
       # ---------------------------------
