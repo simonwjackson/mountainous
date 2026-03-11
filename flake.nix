@@ -50,6 +50,10 @@
             experimental-features = [ "nix-command" "flakes" ];
             trusted-users = [ "root" "@wheel" "simonwjackson" "admin" ];
           };
+          users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
+            ./nix/modules/nixos/user/id_rsa.pub
+            ./nix/modules/nixos/user/id_ed25519.pub
+          ];
           security.sudo.wheelNeedsPassword = lib.mkDefault false;
           mountainous.tailscale.enable = lib.mkDefault true;
           services.openssh.enable = lib.mkDefault true;
