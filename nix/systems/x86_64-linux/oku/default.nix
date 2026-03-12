@@ -449,7 +449,6 @@
       touchpad = {
         naturalScrolling = true;
         tapping = true;
-        disableWhileTyping = false;
         accelProfile = "adaptive";
       };
     };

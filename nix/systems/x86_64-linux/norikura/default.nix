@@ -316,7 +316,6 @@
       touchpad = {
         naturalScrolling = true;
         tapping = true;
-        disableWhileTyping = false; # Important for small keyboard
         accelProfile = "adaptive";
       };
     };

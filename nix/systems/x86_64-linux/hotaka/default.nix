@@ -316,7 +316,6 @@
       touchpad = {
         naturalScrolling = false;
         tapping = true;
-        disableWhileTyping = false; # Handheld - no traditional typing
         accelProfile = "adaptive";
       };
     };

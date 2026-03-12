@@ -35,7 +35,6 @@
           natural_scroll = true;
           tap-to-click = true;
           tap-and-drag = true;
-          disable_while_typing = false;
         };
 
         # Stylus configuration
