@@ -63,9 +63,9 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 ```
 ├── flake.nix              # Main flake entry point
 ├── flake.lock             # Dependency lock file
-├── utils.nix              # Helper functions for the flake
-├── home/                  # Default home-manager configurations
-│   └── default.nix        # Applied to all systems
+├── home/                  # User home-manager configurations
+│   └── simonwjackson/
+│       └── default.nix    # Shared Simon user configuration
 ├── packages/              # Reusable packages (supports unlimited nesting)
 │   └── ex/                # Example package
 │       ├── default.nix    # Package definition
@@ -137,15 +137,15 @@ The default configuration creates a user with:
 - Username: `nixos`
 - Password: `changeme` (change this immediately after first login)
 - Admin privileges (part of the wheel group)
-- Home-manager configuration from `home/default.nix` and any system-specific `home.nix`
+- Home-manager configuration from `home/simonwjackson/default.nix` plus any host/profile-specific additions
 
 ### Home Manager Configuration
 
 The system uses a three-layer approach for home-manager configurations:
 
-1. **Modules** (`/modules/home/*/default.nix`): Reusable modules that are automatically loaded on all systems
-2. **Default configuration** (`/home/default.nix`): Applied to all systems, providing a consistent base
-3. **System-specific configuration** (`/systems/<arch>/<name>/home.nix`): Merged on top of the default configuration
+1. **Modules** (`/nix/modules/home/*/default.nix`): Reusable Home Manager modules
+2. **User base configuration** (`/home/simonwjackson/default.nix`): Shared Simon user configuration
+3. **Host/profile additions**: Host imports and profile modules merge additional settings on top
 
 If any of these files don't exist, the system will work fine without them. This approach allows you to:
 - Create reusable modules for specific functionality
@@ -164,7 +164,7 @@ All modules placed in the `modules/home/` directory (including any nested subdir
 To use the module, enable it in your home-manager configuration:
 
 ```nix
-# In home/default.nix or systems/<arch>/<name>/home.nix
+# In home/simonwjackson/default.nix or a host/profile home-manager module
 { config, pkgs, ... }: {
   modules.your-module-name.enable = true;
 }
@@ -382,23 +382,20 @@ To add overlays, modify your `flake.nix` file as follows:
 
 ```nix
 # In flake.nix
-outputs = inputs: let
-  utils = import ./utils.nix {inherit inputs;};
-in
-  utils.mkFlake {
-    inherit inputs;
-    namespace = "mountainous";
-    overlays = with inputs; [
-      (final: prev: {
-        # Example: pulling packages from the chaotic input
-        gamescope_git = chaotic.packages.${prev.system}.gamescope_git;
-        gamescope-wsi_git = chaotic.packages.${prev.system}.gamescope-wsi_git;
-        
-        # Add more overlays as needed
-      })
-      # Add more overlay functions as needed
+outputs = { nixpkgs, ... }: {
+  nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
+    system = "x86_64-linux";
+    modules = [
+      { nixpkgs.overlays = [
+          (final: prev: {
+            # Add overlays here
+          })
+        ];
+      }
+      ./hosts/my-host
     ];
   };
+};
 ```
 
 These overlays will be applied when importing nixpkgs, making the packages available in all your configurations.

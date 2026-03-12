@@ -18,7 +18,7 @@
 ## Development Workflow
 - **CRITICAL**: Always `git add` new files immediately - Nix flakes only see git-tracked files
 - **External Dependencies**: Prefer flake inputs with `flake = false` over `fetchurl`/`fetchFromGitHub` for updatability via `nix flake update`
-- Store common functions in `utils.nix`
+- Store common helper functions in `nix/lib` or dedicated modules
 - Test in VM with `nix build .#vm-<system>` before deploying
 - Use the three-layer approach for home-manager configurations
 - Enable modules with `mountainous.<module-name>.enable = true`
