@@ -22,9 +22,9 @@
 
   # ── SSH (Tailscale-only) ─────────────────────────────────────────────
 
-  services.openssh.listenAddresses = [
-    { addr = "100.90.129.5"; port = 22; }
-  ];
+  # Do not bind sshd to a specific Tailscale address at boot. tailscale0 can
+  # come up after sshd starts, which leaves the daemon failed after a reboot.
+  # The firewall still restricts remote SSH access to trusted Tailscale traffic.
 
   # ── Security ─────────────────────────────────────────────────────────
 

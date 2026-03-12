@@ -79,6 +79,7 @@
                 ./nix/modules/nixos/user/id_ed25519.pub
               ];
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
+              networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
               mountainous.tailscale.enable = lib.mkDefault true;
               services.openssh.enable = lib.mkDefault true;
               programs.mosh.enable = lib.mkDefault true;

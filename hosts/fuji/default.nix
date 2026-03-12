@@ -27,9 +27,9 @@
     hashedPassword = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
   };
 
-  services.openssh.listenAddresses = [
-    { addr = "100.69.49.119"; port = 22; }
-  ];
+  # Do not bind sshd to a specific Tailscale address at boot. tailscale0 can
+  # come up after sshd starts, which leaves the daemon failed after a reboot.
+  # The firewall still restricts remote SSH access to trusted Tailscale traffic.
 
   services.fail2ban = {
     enable = true;
