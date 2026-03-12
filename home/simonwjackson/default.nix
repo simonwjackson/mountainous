@@ -409,5 +409,26 @@ in {
       userName = "Simon W. Jackson";
       userEmail = "simon@simonwjackson.io";
     };
+
+    programs.lazygit = {
+      enable = true;
+      settings = {
+        keybinding.files = {
+          commitChanges = "C";
+          commitChangesWithEditor = "C";
+        };
+        customCommands = [
+          {
+            key = "c";
+            context = "files";
+            description = "Split changes into logical AI commits";
+            command = "nix run nixpkgs#bun -- x @mariozechner/pi-coding-agent -p --no-session --tools bash,read,grep,find,ls --model 'claude-haiku-4-5' --thinking off --append-system-prompt 'First determine the candidate change set: if any changes are staged, operate only on the currently staged changes. If nothing is staged, operate on all current working tree changes, including untracked files, but not ignored files. Split the candidate change set into the minimum sensible number of logical commits. You may inspect diffs, stage, unstage, and restage changes, including hunk splitting if needed. Do not edit file contents. Do not pull, push, rebase, amend old commits, or touch ignored files. When finished, output only a concise list of the commits you created as <sha> <subject>.' 'Split the repository changes into logical commits and create them.'";
+            loadingText = "🤖 Creating logical commits...";
+            output = "none";
+          }
+        ];
+        promptToReturnFromSubprocess = false;
+      };
+    };
   };
 }
