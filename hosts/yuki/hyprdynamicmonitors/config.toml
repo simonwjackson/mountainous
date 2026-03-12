@@ -1,0 +1,60 @@
+[general]
+destination = "$HOME/.config/hypr/monitors.conf"
+debounce_time_ms = 750
+
+[profiles.yukiInternal]
+config_file = "hyprconfigs/yuki-internal.go.tmpl"
+config_file_type = "template"
+post_apply_exec = "$HOME/.config/hyprdynamicmonitors/bin/yuki-undock-suspend yukiInternal"
+
+[[profiles.yukiInternal.conditions.required_monitors]]
+name = "eDP-1"
+monitor_tag = "upper"
+
+[[profiles.yukiInternal.conditions.required_monitors]]
+name = "eDP-2"
+monitor_tag = "lower"
+
+[profiles.yukiSingleDp]
+config_file = "hyprconfigs/yuki-single-dp.go.tmpl"
+config_file_type = "template"
+post_apply_exec = "$HOME/.config/hyprdynamicmonitors/bin/yuki-undock-suspend yukiSingleDp"
+
+[[profiles.yukiSingleDp.conditions.required_monitors]]
+name = "eDP-1"
+monitor_tag = "upper"
+
+[[profiles.yukiSingleDp.conditions.required_monitors]]
+name = "eDP-2"
+monitor_tag = "lower"
+
+[[profiles.yukiSingleDp.conditions.required_monitors]]
+name = "DP-.*"
+match_name_using_regex = true
+monitor_tag = "ext"
+
+[profiles.yukiDualYmk]
+config_file = "hyprconfigs/yuki-dual-ymk.go.tmpl"
+config_file_type = "template"
+post_apply_exec = "$HOME/.config/hyprdynamicmonitors/bin/yuki-undock-suspend yukiDualYmk"
+
+[[profiles.yukiDualYmk.conditions.required_monitors]]
+name = "eDP-1"
+monitor_tag = "upper"
+
+[[profiles.yukiDualYmk.conditions.required_monitors]]
+name = "eDP-2"
+monitor_tag = "lower"
+
+[[profiles.yukiDualYmk.conditions.required_monitors]]
+description = "YMK EM160TP-A 0x00000001"
+monitor_tag = "extTop"
+
+[[profiles.yukiDualYmk.conditions.required_monitors]]
+description = "YMK EM160TP-A 0x00000001"
+monitor_tag = "extBottom"
+
+[fallback_profile]
+config_file = "hyprconfigs/fallback.conf"
+config_file_type = "static"
+post_apply_exec = "$HOME/.config/hyprdynamicmonitors/bin/yuki-undock-suspend fallback"

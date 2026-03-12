@@ -1,0 +1,15 @@
+{{- $upper := index .MonitorsByTag "upper" -}}
+{{- $lower := index .MonitorsByTag "lower" -}}
+{{- $ext := index .MonitorsByTag "ext" -}}
+{{- if $upper }}
+monitor={{$upper.Name}},disable
+{{- end }}
+{{- if $lower }}
+monitor={{$lower.Name}},disable
+{{- end }}
+{{- if $ext }}
+monitor={{$ext.Name}},2880x1800@100,0x0,1
+{{- end }}
+{{- range .ExtraMonitors }}
+monitor={{.Name}},preferred,auto,1
+{{- end }}

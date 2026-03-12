@@ -1,0 +1,19 @@
+{{- $upper := index .MonitorsByTag "upper" -}}
+{{- $lower := index .MonitorsByTag "lower" -}}
+{{- $extTop := index .MonitorsByTag "extTop" -}}
+{{- $extBottom := index .MonitorsByTag "extBottom" -}}
+{{- if $upper }}
+monitor={{$upper.Name}},disable
+{{- end }}
+{{- if $lower }}
+monitor={{$lower.Name}},disable
+{{- end }}
+{{- if $extTop }}
+monitor={{$extTop.Name}},2880x1800@100,0x0,1
+{{- end }}
+{{- if $extBottom }}
+monitor={{$extBottom.Name}},2880x1800@100,0x1800,1
+{{- end }}
+{{- range .ExtraMonitors }}
+monitor={{.Name}},preferred,auto,1
+{{- end }}

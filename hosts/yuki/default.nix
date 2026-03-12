@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  hyprdynamicmonitors,
   ...
 }: let
   passwordSecretFile = ../../secrets/hosts/yuki/simonwjackson-password-hash.age;
@@ -15,7 +16,12 @@ in {
     ../../nix/profiles/workstation
   ];
 
-  home-manager.users.simonwjackson = import ../../home/simonwjackson;
+  home-manager.users.simonwjackson = {
+    imports = [
+      ../../home/simonwjackson
+      hyprdynamicmonitors.homeManagerModules.default
+    ];
+  };
 
   networking.hostName = "yuki";
   networking.useDHCP = lib.mkDefault true;
@@ -37,7 +43,11 @@ in {
   users.users.simonwjackson =
     {
       isNormalUser = true;
-      extraGroups = ["wheel" "networkmanager" "video"];
+      extraGroups = [
+        "wheel"
+        "networkmanager"
+        "video"
+      ];
     }
     // lib.optionalAttrs hasPasswordSecret {
       hashedPasswordFile = config.age.secrets.simonwjackson-password-hash.path;
@@ -62,10 +72,13 @@ in {
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend-then-hibernate";
     HandleLidSwitchExternalPower = "suspend-then-hibernate";
+    HandleLidSwitchDocked = "ignore";
     HandlePowerKey = "hibernate";
     HandleSuspendKey = "suspend-then-hibernate";
     HandleHibernateKey = "hibernate";
   };
+
+  services.upower.enable = true;
 
   # Keep Hyprland wiring local here instead of importing nix/features/hyprland/nixos.nix:
   # that module assumes a separate hyprland flake input and configures SDDM/autologin,
@@ -123,8 +136,25 @@ in {
 
   security.rtkit.enable = true;
 
-  hardware.bluetooth.enable = true;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
   services.blueman.enable = true;
+
+  systemd.services.unblock-bluetooth = {
+    description = "Unblock Bluetooth on boot";
+    wantedBy = [
+      "bluetooth.target"
+      "multi-user.target"
+    ];
+    after = ["systemd-rfkill.service"];
+    before = ["bluetooth.service"];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.util-linux}/bin/rfkill unblock bluetooth";
+    };
+  };
 
   networking.networkmanager.enable = true;
   networking.wireless.enable = lib.mkForce false;
