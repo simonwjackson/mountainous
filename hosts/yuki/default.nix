@@ -80,6 +80,23 @@ in {
 
   services.upower.enable = true;
 
+  # Favor maximum performance on AC while keeping an aggressive battery-saver
+  # profile when unplugged.
+  services.auto-cpufreq.enable = lib.mkForce false;
+  services.tlp.settings = {
+    CPU_SCALING_GOVERNOR_ON_AC = "performance";
+    CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
+
+    CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+    CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
+
+    CPU_BOOST_ON_AC = 1;
+    CPU_BOOST_ON_BAT = 0;
+
+    WIFI_PWR_ON_AC = "off";
+    WIFI_PWR_ON_BAT = "on";
+  };
+
   # Keep Hyprland wiring local here instead of importing nix/features/hyprland/nixos.nix:
   # that module assumes a separate hyprland flake input and configures SDDM/autologin,
   # while yuki should use greetd + tuigreet.

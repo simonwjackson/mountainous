@@ -96,6 +96,9 @@
       end = null;
       monitors = {
         "eDP-1" = ironbarBar;
+        "eDP-2" = ironbarBar;
+        "DP-1" = ironbarBar;
+        "DP-2" = ironbarBar;
       };
     }
     else ironbarBar;
