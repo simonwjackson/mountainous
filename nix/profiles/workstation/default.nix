@@ -80,6 +80,8 @@ in {
         defaultMode = mkDefault "dark";
       };
 
+      home.packages = [pkgs.lazygit];
+
       programs.firefox.profiles.default = {
         settings = {
           "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
