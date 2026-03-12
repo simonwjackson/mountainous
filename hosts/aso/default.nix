@@ -37,11 +37,6 @@
   nix = {
     package = pkgs.nixVersions.latest;
     optimise.automatic = true;
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = lib.mkForce "--delete-older-than 14d";
-    };
     settings = {
       experimental-features = ["nix-command" "flakes"];
       trusted-users = ["root" "@wheel" "simonwjackson"];
