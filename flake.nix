@@ -34,6 +34,10 @@
       url = "github:cascadefox/cascade";
       flake = false;
     };
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = {
     self,
@@ -48,6 +52,7 @@
     pyxis,
     tsnsrv,
     cascade,
+    nixos-wsl,
     ...
   }: let
     mkHost = {
@@ -118,6 +123,11 @@
         system = "x86_64-linux";
         hostPath = ./hosts/yuki;
         specialArgs = {inherit nixos-hardware;};
+      };
+      aso = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/aso;
+        extraModules = [nixos-wsl.nixosModules.default];
       };
     };
     devShells = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
