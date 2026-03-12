@@ -134,7 +134,10 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.mkShell {
-        buildInputs = with pkgs; [];
+        buildInputs = with pkgs; [
+          just
+          gitleaks
+        ];
       };
     });
   };
