@@ -444,6 +444,28 @@ in {
   # Yoga Book quirks instead of restoring the borrowed 14IMH9 workaround verbatim.
   boot.extraModprobeConfig = lib.mkForce "";
 
+  services.pipewire.wireplumber.configPackages = [
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-yuki-soft-mixer.conf" ''
+      monitor.alsa.rules = [
+        {
+          matches = [
+            {
+              device.name = "alsa_card.pci-0000_00_1f.3-platform-skl_hda_dsp_generic"
+            }
+          ]
+          actions = {
+            update-props = {
+              # Keep the laptop's quirky ALSA controls fixed and let PipeWire apply
+              # volume in software. This avoids the broken hardware volume curve where
+              # lowering volume mostly changes the brighter speaker path.
+              api.alsa.soft-mixer = true
+            }
+          }
+        }
+      ]
+    '')
+  ];
+
   boot.kernelParams = [
     # Historical note:
     # The borrowed 14IMH9 profile already disables PSR and adds a few Intel graphics
@@ -484,6 +506,12 @@ in {
     MatchBus=usb
     MatchUdevType=touchpad
     ModelTabletModeNoSuspend=1
+  '';
+
+  services.udev.extraRules = ''
+    # Ignore only the ThinkPad Bluetooth keyboard's integrated touchpad.
+    # Leave yuki's built-in touchpad, keyboard, pen, and touchscreen alone.
+    ACTION=="add|change", SUBSYSTEM=="input", ATTRS{name}=="ThinkPad Bluetooth TrackPoint Keyboard Touchpad", ENV{LIBINPUT_IGNORE_DEVICE}="1"
   '';
 
   # The borrowed 14IMH9 module ships an EDID override for eDP-1 to fix refresh-rate
@@ -609,6 +637,18 @@ in {
       misc:force_default_wallpaper = 0
       misc:background_color = 0x000000
 
+      # Smart single-window layout
+      # --------------------------
+      # When a workspace only has one tiled or one fullscreen window, drop the outer
+      # gaps and rounding so the app can use the whole panel instead of looking framed.
+      # This follows Hyprland's documented "smart gaps" workspace-selector pattern.
+      workspace = w[tv1], gapsout:0, gapsin:0
+      workspace = f[1], gapsout:0, gapsin:0
+      windowrule = bordersize 0, floating:0, onworkspace:w[tv1]
+      windowrule = rounding 0, floating:0, onworkspace:w[tv1]
+      windowrule = bordersize 0, floating:0, onworkspace:f[1]
+      windowrule = rounding 0, floating:0, onworkspace:f[1]
+
       # Live scale stepping
       # -------------------
       # Restore scale controls, applying them to whichever layout is currently active:
@@ -650,6 +690,12 @@ in {
       # machine even when the internal speakers are the real target. Kick a tiny helper
       # once per session so the built-in card lands on the `Speaker` profile instead.
       exec-once = systemctl --user start yuki-audio-profile.service
+
+      # Volume policy
+      # -------------
+      # Keep the real hardware mixer parked at a fixed state and let PipeWire do volume
+      # changes in software. This avoids the Yoga Book's quirky ALSA mixer mapping where
+      # hardware volume adjustments mostly change the brighter / treble-heavy speaker path.
 
       # Refresh-rate policy
       # -------------------
