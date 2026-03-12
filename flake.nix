@@ -20,6 +20,10 @@
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    hyprdynamicmonitors = {
+      url = "github:fiffeek/hyprdynamicmonitors";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Fuji-specific inputs
     pyxis.url = "github:simonwjackson/pyxis";
     tsnsrv = {
@@ -31,44 +35,65 @@
       flake = false;
     };
   };
-  outputs = { self, nixpkgs, disko, home-manager, agenix, nixos-hardware, impermanence, gomod2nix, pyxis, tsnsrv, cascade, ... }:
-  let
-    mkHost = { system, hostPath, specialArgs ? {}, extraModules ? [] }: nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = { inherit self cascade; } // specialArgs;
-      modules = [
-        disko.nixosModules.default
-        agenix.nixosModules.default
-        home-manager.nixosModules.home-manager
-        ./nix/modules/nixos/tailscale
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-        }
-        ({ lib, ... }: {
-          nix.settings = {
-            experimental-features = [ "nix-command" "flakes" ];
-            trusted-users = [ "root" "@wheel" "simonwjackson" "admin" ];
-          };
-          users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
-            ./nix/modules/nixos/user/id_rsa.pub
-            ./nix/modules/nixos/user/id_ed25519.pub
-          ];
-          security.sudo.wheelNeedsPassword = lib.mkDefault false;
-          mountainous.tailscale.enable = lib.mkDefault true;
-          services.openssh.enable = lib.mkDefault true;
-          programs.mosh.enable = lib.mkDefault true;
-        })
-        { nixpkgs.overlays = import ./overlays; }
-        hostPath
-      ] ++ extraModules;
-    };
+  outputs = {
+    self,
+    nixpkgs,
+    disko,
+    home-manager,
+    agenix,
+    nixos-hardware,
+    impermanence,
+    gomod2nix,
+    hyprdynamicmonitors,
+    pyxis,
+    tsnsrv,
+    cascade,
+    ...
+  }: let
+    mkHost = {
+      system,
+      hostPath,
+      specialArgs ? {},
+      extraModules ? [],
+    }:
+      nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = {inherit self cascade hyprdynamicmonitors;} // specialArgs;
+        modules =
+          [
+            disko.nixosModules.default
+            agenix.nixosModules.default
+            home-manager.nixosModules.home-manager
+            ./nix/modules/nixos/tailscale
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+            }
+            ({lib, ...}: {
+              nix.settings = {
+                experimental-features = ["nix-command" "flakes"];
+                trusted-users = ["root" "@wheel" "simonwjackson" "admin"];
+              };
+              users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
+                ./nix/modules/nixos/user/id_rsa.pub
+                ./nix/modules/nixos/user/id_ed25519.pub
+              ];
+              security.sudo.wheelNeedsPassword = lib.mkDefault false;
+              mountainous.tailscale.enable = lib.mkDefault true;
+              services.openssh.enable = lib.mkDefault true;
+              programs.mosh.enable = lib.mkDefault true;
+            })
+            {nixpkgs.overlays = import ./overlays;}
+            hostPath
+          ]
+          ++ extraModules;
+      };
   in {
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
         hostPath = ./hosts/fuji;
-        specialArgs = { inherit tsnsrv; };
+        specialArgs = {inherit tsnsrv;};
       };
       yari = mkHost {
         system = "aarch64-linux";
@@ -77,7 +102,7 @@
       rakku = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/rakku;
-        extraModules = [ impermanence.nixosModules.default ];
+        extraModules = [impermanence.nixosModules.default];
         specialArgs = {
           inherit gomod2nix;
         };
@@ -85,21 +110,21 @@
       kita = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/kita;
-        extraModules = [ impermanence.nixosModules.default ];
-        specialArgs = { inherit pyxis gomod2nix; };
+        extraModules = [impermanence.nixosModules.default];
+        specialArgs = {inherit pyxis gomod2nix;};
       };
       yuki = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/yuki;
-        specialArgs = { inherit nixos-hardware; };
+        specialArgs = {inherit nixos-hardware;};
       };
     };
-    devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        default = pkgs.mkShell {
-          buildInputs = with pkgs; [ ];
-        };
-      });
+    devShells = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      default = pkgs.mkShell {
+        buildInputs = with pkgs; [];
+      };
+    });
   };
 }
