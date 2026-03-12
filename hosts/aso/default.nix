@@ -69,6 +69,10 @@
   networking.nameservers = ["100.100.100.100" "1.1.1.1"];
   networking.search = ["hummingbird-lake.ts.net"];
 
+  networking.extraHosts = lib.mkForce ''
+    10.101.0.4 amazesql01.database.windows.net
+  '';
+
   # Port 22 is taken by Windows SSH in mirrored networking mode
   services.openssh.ports = lib.mkForce [8080];
 
