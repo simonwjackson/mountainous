@@ -62,7 +62,7 @@
     center = [
       {
         type = "clock";
-        format = "%a %Y-%m-%d %H:%M";
+        format = "%-I:%M";
       }
     ];
     end = [
@@ -96,9 +96,7 @@
       end = null;
       monitors = {
         "eDP-1" = ironbarBar;
-        "eDP-2" = ironbarBar;
         "DP-1" = ironbarBar;
-        "DP-2" = ironbarBar;
       };
     }
     else ironbarBar;
@@ -308,6 +306,7 @@ in {
                 touchpad {
                   natural_scroll = false
                   tap-to-click = true
+                  disable_while_typing = true
                 }
               }
 
@@ -323,7 +322,7 @@ in {
               }
 
               animations {
-                enabled = true
+                enabled = false
               }
 
               dwindle {
