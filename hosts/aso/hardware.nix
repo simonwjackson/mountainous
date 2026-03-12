@@ -1,5 +1,5 @@
 {...}: {
   wsl.enable = true;
-  wsl.defaultUser = "nixos";
+  wsl.defaultUser = "simonwjackson";
   wsl.wslConf.network.generateResolvConf = false;
 }
