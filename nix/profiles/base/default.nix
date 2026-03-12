@@ -424,6 +424,11 @@ in {
       # Enable TTY mouse
       gpm.enable = true;
 
+      libinput = {
+        enable = mkDefault true;
+        touchpad.disableWhileTyping = mkDefault true;
+      };
+
       # OpenSSH server
       openssh.enable = true;
 
