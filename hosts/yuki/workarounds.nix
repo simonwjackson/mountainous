@@ -212,6 +212,78 @@
     fi
   '';
 
+  yukiSelectSpeakerProfileScript = pkgs.writeShellScript "yuki-select-speaker-profile" ''
+    set -eu
+
+    wpctl='${pkgs.wireplumber}/bin/wpctl'
+    pwCli='${pkgs.pipewire}/bin/pw-cli'
+    awk='${pkgs.gawk}/bin/awk'
+    sleepCmd='${pkgs.coreutils}/bin/sleep'
+    seqCmd='${pkgs.coreutils}/bin/seq'
+
+    defaultSinkName=$($wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | $awk -F'"' '/node.name/ { print $2; exit }')
+
+    case "$defaultSinkName" in
+      ""|alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink|alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink)
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+
+    deviceId=""
+    for _ in $($seqCmd 1 20); do
+      deviceId=$($wpctl status | $awk '
+        /sof-hda-dsp[[:space:]]+\[alsa\]/ {
+          if (match($0, /[0-9]+\./)) {
+            print substr($0, RSTART, RLENGTH - 1)
+            exit
+          }
+        }
+      ')
+      if [ -n "$deviceId" ]; then
+        break
+      fi
+      $sleepCmd 1
+    done
+
+    if [ -z "$deviceId" ]; then
+      exit 0
+    fi
+
+    speakerProfile=$($pwCli e "$deviceId" EnumProfile | $awk '
+      /Prop: key .*Profile:index/ { wantInt = 1; next }
+      wantInt && $1 == "Int" { idx = $2; wantInt = 0; next }
+      /String "HiFi .*Speaker/ { print idx; exit }
+    ')
+
+    if [ -z "$speakerProfile" ]; then
+      exit 0
+    fi
+
+    $wpctl set-profile "$deviceId" "$speakerProfile"
+
+    speakerSinkId=""
+    for _ in $($seqCmd 1 10); do
+      speakerSinkId=$($wpctl status | $awk '
+        /sof-hda-dsp[[:space:]]+Speaker/ {
+          if (match($0, /[0-9]+\./)) {
+            print substr($0, RSTART, RLENGTH - 1)
+            exit
+          }
+        }
+      ')
+      if [ -n "$speakerSinkId" ]; then
+        break
+      fi
+      $sleepCmd 1
+    done
+
+    if [ -n "$speakerSinkId" ]; then
+      $wpctl set-default "$speakerSinkId"
+    fi
+  '';
+
   yukiUndockSuspendScript = pkgs.writeShellScript "yuki-undock-suspend" ''
     set -eu
 
@@ -354,6 +426,23 @@ in {
   # - Keeping all of those decisions in one file makes future clean-up much easier:
   #   when a kernel, firmware, or proper upstream hardware profile lands, this is the
   #   first file to review.
+
+  # The borrowed 14IMH9 profile also ships an old HDA modprobe workaround:
+  #
+  #   options snd-hda-intel model=generic
+  #   options snd-hda-intel snd-intel-dspcfg.dsp_driver=1
+  #   blacklist snd_soc_skl
+  #
+  # That was intended to avoid resume-related audio breakage on the borrowed machine, but
+  # on yuki it makes the analog route show up as `Headphones` while the internal speakers
+  # never appear as a proper sink. During profiling on yuki we also saw the second line is
+  # no longer valid on current kernels (`unknown parameter 'snd-intel-dspcfg' ignored`).
+  #
+  # Since the Yoga Book 9i Gen 10 already boots the SOF stack correctly and both CS35L56
+  # amps probe successfully, prefer the kernel's native machine-specific routing here.
+  # If resume audio regressions return, re-evaluate this together with newer upstream
+  # Yoga Book quirks instead of restoring the borrowed 14IMH9 workaround verbatim.
+  boot.extraModprobeConfig = lib.mkForce "";
 
   boot.kernelParams = [
     # Historical note:
@@ -555,6 +644,13 @@ in {
         no_hardware_cursors = true
       }
 
+      # Audio route selection
+      # ---------------------
+      # PipeWire/WirePlumber sometimes prefers the bogus `Headphones` profile on this
+      # machine even when the internal speakers are the real target. Kick a tiny helper
+      # once per session so the built-in card lands on the `Speaker` profile instead.
+      exec-once = systemctl --user start yuki-audio-profile.service
+
       # Refresh-rate policy
       # -------------------
       # yuki has two internal panels and benefits noticeably from dropping to 60 Hz on
@@ -564,6 +660,22 @@ in {
       # based on AC power state.
       exec-once = systemctl --user start yuki-refresh-rate.service
     '';
+
+    systemd.user.services.yuki-audio-profile = {
+      Unit = {
+        Description = "Select the internal speaker profile on yuki";
+        After = [
+          "graphical-session.target"
+          "pipewire.service"
+          "wireplumber.service"
+        ];
+        PartOf = ["graphical-session.target"];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${yukiSelectSpeakerProfileScript}";
+      };
+    };
 
     systemd.user.services.yuki-refresh-rate = {
       Unit = {
