@@ -385,6 +385,13 @@ in {
       '';
     };
 
+    programs.ssh = {
+      enable = true;
+      matchBlocks."aso" = {
+        port = 8080;
+      };
+    };
+
     programs.git = {
       enable = true;
       userName = "Simon W. Jackson";
