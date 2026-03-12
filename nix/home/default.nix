@@ -984,6 +984,9 @@
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
+    matchBlocks."aso" = {
+      port = 8080;
+    };
     matchBlocks."*" = {
       extraOptions = {
         WarnWeakCrypto = "no-pq-kex";
