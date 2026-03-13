@@ -80,42 +80,33 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 │   └── nixos/             # NixOS modules
 │       └── my-nixos-module/
 │           └── default.nix
-├── systems/               # System configurations by architecture
-│   └── x86_64-linux/      # x86_64 Linux configurations
-│       └── fuji/          # Example system named "fuji"
-│           ├── default.nix # System configuration
-│           └── home.nix    # System-specific home-manager configuration
+├── hosts/                 # Host-specific NixOS configurations
+│   └── fuji/              # Example host named "fuji"
+│       ├── default.nix    # Host configuration entry point
+│       ├── disko.nix      # Optional disk layout
+│       └── hardware.nix   # Hardware-specific settings
 ```
 
 ## Adding a New System
 
-1. Create a new directory under the appropriate architecture in `systems/`:
+1. Create a new host directory in `hosts/`:
    ```
-   mkdir -p systems/x86_64-linux/new-system
+   mkdir -p hosts/new-system
    ```
 
-2. Create a `default.nix` file with your system configuration:
+2. Create a `default.nix` file with your host configuration:
    ```nix
    {
      config,
      pkgs,
      ...
    }: {
-     # Your system configuration here
+     # Your host configuration here
      # See the fuji example for reference
    }
    ```
 
-3. Optionally add a `home.nix` file with system-specific home-manager configuration:
-   ```nix
-   { config, pkgs, ... }: {
-     # System-specific home-manager configuration
-     # This will be merged with the default configuration
-     home.packages = with pkgs; [
-       # Additional packages for this system
-     ];
-   }
-   ```
+3. Optionally split host-specific concerns into sibling files such as `hardware.nix`, `disko.nix`, or other host-local modules and import them from `hosts/<name>/default.nix`.
 
 4. Build and test the new configuration:
    ```
@@ -175,7 +166,7 @@ To use the module, enable it in your home-manager configuration:
 Similar to home-manager, NixOS modules are automatically loaded:
 
 1. **Modules** (`/modules/nixos/*/default.nix`): Reusable modules that are automatically loaded on all systems
-2. **System configuration** (`/systems/<arch>/<name>/default.nix`): System-specific configuration
+2. **Host configuration** (`/hosts/<name>/default.nix`): Host-specific configuration
 
 #### Module Auto-loading
 
@@ -188,7 +179,7 @@ All modules placed in the `modules/nixos/` directory (including any nested subdi
 To use the module, enable it in your system configuration:
 
 ```nix
-# In systems/<arch>/<name>/default.nix
+# In hosts/<name>/default.nix
 { config, pkgs, ... }: {
   modules.your-module-name.enable = true;
 }
@@ -223,7 +214,7 @@ The system includes a Sunshine game streaming server with preconfigured device p
 To enable impermanence for a system, add to your configuration:
 
 ```nix
-# In systems/<arch>/<name>/default.nix
+# In hosts/<name>/default.nix
 { config, pkgs, ... }: {
   mountainous.impermanence = {
     enable = true;
@@ -242,7 +233,7 @@ The system includes a module for auto-resizing VM displays when running as a QEM
 To enable VM display auto-resizing for a system, add to your configuration:
 
 ```nix
-# In systems/<arch>/<name>/default.nix
+# In hosts/<name>/default.nix
 { config, pkgs, ... }: {
   mountainous.vm.enable = true;
 }
@@ -304,7 +295,7 @@ This allows you to have different display settings for various devices and use c
 
 The scaling parameter is optional and defaults to 1 if not specified.
 
-Configuration is located at `nix/systems/x86_64-linux/aka/sunshine.nix`.
+Sunshine configuration now lives alongside the active host configs in `hosts/` and shared Nix modules under `nix/modules/`.
 
 ## Custom Packages
 
