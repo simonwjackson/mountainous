@@ -101,6 +101,12 @@
     }
     else ironbarBar;
 in {
+  options.mountainous.hyprland.extraSettings = mkOption {
+    type = types.attrsOf types.anything;
+    default = {};
+    description = "Extra Hyprland settings (stub for gaming module compatibility)";
+  };
+
   options.mountainous.hyprland.keybinds = mkOption {
     type = types.attrsOf (
       types.nullOr (
