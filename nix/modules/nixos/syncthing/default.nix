@@ -3,118 +3,75 @@
   options,
   lib,
   pkgs,
-  inputs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types filterAttrs mapAttrs filter attrNames elem optionalAttrs;
+  inherit (lib) mkEnableOption mkOption mkDefault mkIf types mapAttrs filter attrNames optionalAttrs;
 
   cfg = config.mountainous.syncthing;
   hostname = config.networking.hostName;
-  agenixEnabled = config.mountainous.agenix.enable or false;
 
-  # Path to secrets directory (go up 4 levels from nix/modules/nixos/syncthing/ to repo root)
+  # ── Device discovery from plain files ────────────────────────────────
+  # Each host/device drops a `syncthing-device-id` file in its directory.
+  # No cross-evaluation needed — just builtins.readFile on static data.
+
+  hostsRoot = ../../../../hosts;
+  devicesRoot = ../../../../devices;
+
+  # Scan a directory for subdirs containing syncthing-device-id files
+  discoverDevices = root:
+    let
+      entries =
+        if builtins.pathExists root
+        then builtins.readDir root
+        else {};
+      dirs = attrNames (lib.filterAttrs (_: type: type == "directory") entries);
+      hasId = name: builtins.pathExists (root + "/${name}/syncthing-device-id");
+      withIds = filter hasId dirs;
+    in
+      builtins.listToAttrs (map (name: {
+        inherit name;
+        value = lib.removeSuffix "\n" (builtins.readFile (root + "/${name}/syncthing-device-id"));
+      }) withIds);
+
+  # All known devices: hosts + external devices (phones, etc.)
+  allDeviceIds = (discoverDevices hostsRoot) // (discoverDevices devicesRoot);
+
+  # Peers = everyone except self
+  peerIds = removeAttrs allDeviceIds [hostname];
+  peerNames = attrNames peerIds;
+
+  # Build syncthing device entries
+  deviceEntries = mapAttrs (_: id: {
+    inherit id;
+    addresses = ["dynamic"];
+  }) peerIds;
+
+  # ── Secrets ──────────────────────────────────────────────────────────
   secretsRoot = ../../../../secrets;
-
-  # Check if syncthing secrets files exist for this host
   syncthingCertPath = secretsRoot + "/hosts/${hostname}/syncthing-cert.age";
   syncthingKeyPath = secretsRoot + "/hosts/${hostname}/syncthing-key.age";
   hasSyncthingSecrets = builtins.pathExists syncthingCertPath && builtins.pathExists syncthingKeyPath;
 
-  # All NixOS systems from the flake
-  allSystems = inputs.self.nixosConfigurations or {};
-
-  # Filter to systems with syncthing enabled AND valid device ID (excluding self)
-  syncthingSystems =
-    filterAttrs (
-      name: system:
-        name
-        != hostname
-        && (system.config.mountainous.syncthing.enable or false)
-        && (system.config.mountainous.syncthing.deviceId or "") != ""
-    )
-    allSystems;
-
-  # Build device entries from each system's declared deviceId
-  nixosDevices =
-    mapAttrs (name: system: {
-      id = system.config.mountainous.syncthing.deviceId;
-      addresses = ["dynamic"];
-    })
-    syncthingSystems;
-
-  # Build extraDevices entries (phones, external servers)
-  externalDevices =
-    mapAttrs (name: dev: {
-      inherit (dev) id;
-      addresses = dev.addresses or ["dynamic"];
-    })
-    cfg.extraDevices;
-
-  # Combine all devices
-  allDevices = nixosDevices // externalDevices;
-
-  # Check if a remote system has a given folder (either explicitly or via defaultFolders)
-  remoteHasFolder = systemConfig: folderName:
-    let
-      remoteSyncthing = systemConfig.config.mountainous.syncthing;
-      hasExplicit = (remoteSyncthing.folders or {}) ? ${folderName};
-      hasDefault = (remoteSyncthing.defaultFolders or true) && (defaultFolderNames ? ${folderName});
-    in
-    hasExplicit || hasDefault;
-
-  # Names of default folders (for checking remote systems)
-  defaultFolderNames = {
-    pi-config = true;
-  };
-
-  # For each folder, determine which devices should sync
-  resolveDevices = folderName: folderCfg:
-    if folderCfg.devices != []
-    then
-      # Explicit device list - filter to only those with valid IDs
-      filter (name: allDevices ? ${name}) folderCfg.devices
-    else
-      # Auto-discover: NixOS systems that also have this folder
-      (filter (
-        name: remoteHasFolder syncthingSystems.${name} folderName
-      ) (attrNames syncthingSystems))
-      ++
-      # Plus extraDevices that list this folder
-      (filter (
-        name:
-          elem folderName (cfg.extraDevices.${name}.folders or [])
-      ) (attrNames cfg.extraDevices));
-
-  # Default folders shared across all syncthing-enabled hosts
-  defaultFolderDefs = optionalAttrs cfg.defaultFolders {
-    pi-config = {
-      path = "/home/${cfg.user}/.pi";
-      devices = [];
-      type = "sendreceive";
-      ignorePerms = false;
-      rescanIntervalS = 3600;
-      versioning = null;
-    };
-  };
-
-  # Merge default folders with user-declared folders (user overrides win)
-  allFolders = defaultFolderDefs // cfg.folders;
-
-  # Build folder config for services.syncthing.settings.folders
+  # ── Folder config ───────────────────────────────────────────────────
+  # Every folder is shared with all peers. Syncthing gracefully handles
+  # peers that don't have a matching folder (they just ignore/prompt).
   folders = mapAttrs (name: folderCfg:
     {
       path = folderCfg.path;
-      devices = resolveDevices name folderCfg;
+      devices = peerNames;
       type = folderCfg.type;
       ignorePerms = folderCfg.ignorePerms;
       rescanIntervalS = folderCfg.rescanIntervalS;
     }
+    // optionalAttrs (folderCfg.ignorePatterns != null) {
+      inherit (folderCfg) ignorePatterns;
+    }
     // optionalAttrs (folderCfg.versioning != null) {
       inherit (folderCfg) versioning;
     })
-  allFolders;
+  cfg.folders;
 
-  # Folder submodule type
+  # ── Submodule types ─────────────────────────────────────────────────
   folderType = types.submodule {
     options = {
       path = mkOption {
@@ -123,20 +80,10 @@
         example = "/home/simonwjackson/documents";
       };
 
-      devices = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = ''
-          List of device names to share this folder with.
-          Empty list (default) means share with ALL peers that have this folder.
-        '';
-        example = ["zao" "aka" "fuji"];
-      };
-
       type = mkOption {
         type = types.enum ["sendreceive" "sendonly" "receiveonly"];
         default = "sendreceive";
-        description = "Folder type: sendreceive (default), sendonly, or receiveonly";
+        description = "Folder type";
       };
 
       ignorePerms = mkOption {
@@ -149,6 +96,20 @@
         type = types.int;
         default = 3600;
         description = "Rescan interval in seconds";
+      };
+
+      ignorePatterns = mkOption {
+        type = types.nullOr (types.listOf types.str);
+        default = null;
+        description = ''
+          Syncthing ignore patterns for this folder.
+          Set to [] to explicitly clear existing ignore patterns.
+        '';
+        example = [
+          "**/node_modules"
+          "**/.direnv"
+          "**/__pycache__"
+        ];
       };
 
       versioning = mkOption {
@@ -170,46 +131,9 @@
       };
     };
   };
-
-  # External device submodule type
-  extraDeviceType = types.submodule {
-    options = {
-      id = mkOption {
-        type = types.str;
-        description = "Syncthing device ID";
-        example = "XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX";
-      };
-
-      addresses = mkOption {
-        type = types.listOf types.str;
-        default = ["dynamic"];
-        description = "List of addresses for this device";
-      };
-
-      folders = mkOption {
-        type = types.listOf types.str;
-        default = [];
-        description = "List of folder names to share with this device";
-        example = ["notes" "photos"];
-      };
-    };
-  };
-
-  hasImpermanence = (options.mountainous ? impermanence) && (options.mountainous.impermanence ? enable);
 in {
   options.mountainous.syncthing = {
-    enable = mkEnableOption "Syncthing file synchronization with auto-discovery";
-
-    deviceId = mkOption {
-      type = types.str;
-      default = "";
-      description = ''
-        This system's syncthing device ID. Required for auto-discovery.
-        Get from existing system: syncthing -device-id
-        Or generate new: nix run .#syncthing-keygen -- <hostname>
-      '';
-      example = "XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX-XXXXXXX";
-    };
+    enable = mkEnableOption "Syncthing file synchronization";
 
     user = mkOption {
       type = types.str;
@@ -244,48 +168,72 @@ in {
     openFirewall = mkOption {
       type = types.bool;
       default = true;
-      description = "Open firewall ports for syncthing (22000/tcp, 22000/udp, 21027/udp)";
-    };
-
-    defaultFolders = mkOption {
-      type = types.bool;
-      default = true;
-      description = ''
-        Whether to include default shared folders (e.g., ~/.pi config).
-        Set to false to opt out of common folders on a specific host.
-      '';
+      description = "Open firewall ports for syncthing";
     };
 
     folders = mkOption {
       type = types.attrsOf folderType;
       default = {};
-      description = "Folders to synchronize";
+      description = "Folders to synchronize (shared with all peers by default)";
       example = {
-        notes = {
-          path = "/home/simonwjackson/notes";
-        };
-        documents = {
-          path = "/home/simonwjackson/documents";
-          devices = ["zao" "aka"];
-        };
-      };
-    };
-
-    extraDevices = mkOption {
-      type = types.attrsOf extraDeviceType;
-      default = {};
-      description = "Non-NixOS devices (phones, external servers)";
-      example = {
-        phone = {
-          id = "PHONE-ID-HERE";
-          folders = ["notes" "photos"];
-        };
+        notes.path = "/home/simonwjackson/notes";
       };
     };
   };
 
-  config = mkIf cfg.enable ({
-    # Configure syncthing service
+  config = mkIf cfg.enable {
+    # Default folders — hosts can override with mkForce or add more
+    mountainous.syncthing.folders = {
+      pi-config = {
+        path = mkDefault "/home/${cfg.user}/.pi";
+        ignorePatterns = mkDefault [
+          "**/.git"
+          "**/.git/**"
+          "**/node_modules"
+          "**/node_modules/**"
+          "**/.direnv"
+          "**/.direnv/**"
+          "**/.venv"
+          "**/.venv/**"
+          "**/venv"
+          "**/venv/**"
+          "**/__pycache__"
+          "**/__pycache__/**"
+          "**/.mypy_cache"
+          "**/.mypy_cache/**"
+          "**/.pytest_cache"
+          "**/.pytest_cache/**"
+          "**/.ruff_cache"
+          "**/.ruff_cache/**"
+          "**/.cache"
+          "**/.cache/**"
+          "**/dist"
+          "**/dist/**"
+          "**/build"
+          "**/build/**"
+          "**/result"
+          "**/result/**"
+          "**/tmp"
+          "**/tmp/**"
+          "**/.tmp"
+          "**/.tmp/**"
+          "**/agent/bin"
+          "**/agent/bin/**"
+          "**/*.log"
+        ];
+      };
+
+      biometrics.path = mkDefault "/home/${cfg.user}/biometrics";
+      fitness.path = mkDefault "/home/${cfg.user}/fitness";
+      flakey.path = mkDefault "/home/${cfg.user}/flakey";
+      omi.path = mkDefault "/home/${cfg.user}/omi";
+      research.path = mkDefault "/home/${cfg.user}/research";
+      therapy.path = mkDefault "/home/${cfg.user}/therapy";
+      transcripts.path = mkDefault "/home/${cfg.user}/transcripts";
+      nutrition.path = mkDefault "/home/${cfg.user}/.local/share/nutrition";
+      tasks.path = mkDefault "/home/${cfg.user}/.local/share/tasks";
+    };
+
     services.syncthing = {
       enable = true;
       user = cfg.user;
@@ -295,7 +243,6 @@ in {
       guiAddress = cfg.guiAddress;
       openDefaultPorts = cfg.openFirewall;
 
-      # Use agenix secrets for identity if available
       cert = mkIf hasSyncthingSecrets config.age.secrets.syncthing-cert.path;
       key = mkIf hasSyncthingSecrets config.age.secrets.syncthing-key.path;
 
@@ -303,11 +250,11 @@ in {
       overrideFolders = true;
 
       settings = {
-        devices = allDevices;
-        folders = folders;
+        devices = deviceEntries;
+        inherit folders;
 
         options = {
-          urAccepted = -1; # Disable usage reporting
+          urAccepted = -1;
           localAnnounceEnabled = true;
           globalAnnounceEnabled = true;
           relaysEnabled = true;
@@ -315,35 +262,28 @@ in {
       };
     };
 
-    # Set proper ownership on agenix secrets so syncthing user can read them
     age.secrets = mkIf hasSyncthingSecrets {
       syncthing-cert = {
+        file = syncthingCertPath;
         owner = cfg.user;
         group = cfg.group;
         mode = "400";
       };
       syncthing-key = {
+        file = syncthingKeyPath;
         owner = cfg.user;
         group = cfg.group;
         mode = "400";
       };
     };
 
-    # Increase inotify watches for large folder sets
     boot.kernel.sysctl."fs.inotify.max_user_watches" = 524288;
 
-  }
-  // (if hasImpermanence then {
-    # Impermanence integration - persist syncthing data
-    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf config.mountainous.impermanence.enable {
-      directories = [
-        {
-          directory = cfg.dataDir;
-          user = cfg.user;
-          group = cfg.group;
-          mode = "0700";
-        }
-      ];
+    # The upstream NixOS module applies devices/folders through a oneshot
+    # syncthing-init service. Ensure config changes on switch actually rerun it.
+    systemd.services.syncthing-init = {
+      restartIfChanged = true;
+      stopIfChanged = true;
     };
-  } else {}));
+  };
 }
