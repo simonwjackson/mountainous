@@ -37,8 +37,6 @@
 - Run tests before completing any task, adding or updating tests as needed
 - use ssh -F /dev/null when connecting
 
-**ALWAYS use `mgrep` for codebase exploration and understanding how code works.** This overrides any guidance to use the Task/explore agent.  `mgrep` is faster and provides better semantic matching.
-
 ## Extending Upstream NixOS Modules
 
 When wrapping an upstream module (e.g., `services.sunshine`) with custom options:
