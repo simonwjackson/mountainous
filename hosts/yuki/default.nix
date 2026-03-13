@@ -14,11 +14,14 @@ in {
     ./workarounds.nix
     ../../nix/profiles/laptop
     ../../nix/profiles/workstation
+    ../../nix/modules/nixos/device
+    ../../nix/features/gaming/nixos.nix
   ];
 
   home-manager.users.simonwjackson = {
     imports = [
       ../../home/simonwjackson
+      ../../nix/features/gaming/home.nix
       hyprdynamicmonitors.homeManagerModules.default
     ];
   };
@@ -32,6 +35,19 @@ in {
     laptop.enable = true;
     workstation.enable = true;
   };
+
+  mountainous.device = {
+    role = "portable";
+    capabilities = {
+      battery = true;
+      formFactor = "laptop";
+      touchscreen = false;
+    };
+  };
+
+  nixpkgs.config.allowUnfree = true;
+
+  mountainous.gaming.enable = true;
 
   age.secrets.simonwjackson-password-hash = lib.mkIf hasPasswordSecret {
     file = passwordSecretFile;
@@ -135,23 +151,11 @@ in {
     };
   };
 
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
+  # gaming module enables graphics, pipewire, and rtkit
+  # just add the 32-bit extras for native 32-bit apps
+  hardware.graphics.enable32Bit = true;
 
   services.xserver.videoDrivers = ["modesetting"];
-
-  services.pulseaudio.enable = false;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    wireplumber.enable = true;
-  };
-
-  security.rtkit.enable = true;
 
   hardware.bluetooth = {
     enable = true;
