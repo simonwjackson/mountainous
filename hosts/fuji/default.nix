@@ -20,6 +20,8 @@
   networking.useDHCP = true;
   time.timeZone = "UTC";
 
+  mountainous.syncthing.enable = true;
+
   users.users.simonwjackson = {
     isNormalUser = true;
     shell = pkgs.nushell;

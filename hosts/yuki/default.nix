@@ -27,6 +27,8 @@ in {
   };
 
   networking.hostName = "yuki";
+
+  mountainous.syncthing.enable = true;
   networking.useDHCP = lib.mkDefault true;
   time.timeZone = "America/Denver";
   i18n.defaultLocale = "en_US.UTF-8";
