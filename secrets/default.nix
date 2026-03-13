@@ -51,4 +51,10 @@ in {
 
   # Yuki secrets
   "secrets/hosts/yuki/simonwjackson-password-hash.age".publicKeys = yukiKeys;
+  "secrets/hosts/yuki/syncthing-cert.age".publicKeys = yukiKeys;
+  "secrets/hosts/yuki/syncthing-key.age".publicKeys = yukiKeys;
+
+  # Fuji syncthing secrets
+  "secrets/hosts/fuji/syncthing-cert.age".publicKeys = fujiKeys;
+  "secrets/hosts/fuji/syncthing-key.age".publicKeys = fujiKeys;
 }
