@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
   cfg = config.services.biker;
 in {
   options.services.biker = {
@@ -8,7 +11,7 @@ in {
 
     port = lib.mkOption {
       type = lib.types.port;
-      default = 8384;
+      default = 8484;
       description = "Port for the static file server";
     };
 
@@ -27,8 +30,8 @@ in {
   config = lib.mkIf cfg.enable {
     systemd.services.biker = {
       description = "Biker static site server";
-      after = [ "network.target" ];
-      wantedBy = [ "multi-user.target" ];
+      after = ["network.target"];
+      wantedBy = ["multi-user.target"];
 
       serviceConfig = {
         Type = "simple";
