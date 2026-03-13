@@ -85,7 +85,7 @@ cp "${HOST_KEY_ENC%.age}.pub" "$temp/$PERSIST_SSH/ssh_host_rsa_key.pub"
 chmod 644 "$temp/$PERSIST_SSH/ssh_host_rsa_key.pub"
 
 # Check for manual-disko.sh script
-MANUAL_DISKO_SCRIPT="nix/systems/${TARGET_ARCH}/${HOSTNAME}/manual-disko.sh"
+MANUAL_DISKO_SCRIPT="hosts/${HOSTNAME}/manual-disko.sh"
 USE_MANUAL_DISKO=false
 if [ -f "$MANUAL_DISKO_SCRIPT" ]; then
   echo "Found manual-disko.sh for $HOSTNAME - will use manual formatting"
