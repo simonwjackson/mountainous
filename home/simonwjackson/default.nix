@@ -67,6 +67,52 @@
     ];
     end = [
       {
+        type = "custom";
+        class = "codexbar";
+        bar = [
+          {
+            type = "button";
+            label = "{{120000:codexbar-claude}}";
+            on_click = "popup:toggle";
+          }
+        ];
+        popup = [
+          {
+            type = "box";
+            orientation = "vertical";
+            widgets = [
+              {
+                type = "label";
+                label = "{{120000:codexbar-claude-detail}}";
+              }
+            ];
+          }
+        ];
+      }
+      {
+        type = "custom";
+        class = "codexbar";
+        bar = [
+          {
+            type = "button";
+            label = "{{120000:codexbar-codex}}";
+            on_click = "popup:toggle";
+          }
+        ];
+        popup = [
+          {
+            type = "box";
+            orientation = "vertical";
+            widgets = [
+              {
+                type = "label";
+                label = "{{120000:codexbar-codex-detail}}";
+              }
+            ];
+          }
+        ];
+      }
+      {
         type = "volume";
         format = "{icon} {percentage}%";
       }
@@ -101,6 +147,10 @@
     }
     else ironbarBar;
 in {
+  imports = [
+    ../../nix/modules/home/codexbar
+  ];
+
   options.mountainous.hyprland.extraSettings = mkOption {
     type = types.attrsOf types.anything;
     default = {};
@@ -139,6 +189,8 @@ in {
   };
 
   config = {
+    mountainous.codexbar.enable = true;
+
     home.stateVersion = "24.11";
 
     programs.direnv = {
@@ -382,10 +434,21 @@ in {
         .network_manager,
         .battery,
         .tray,
+        .script,
         button {
           padding: 0 8px;
           background: transparent;
           box-shadow: none;
+        }
+
+        .codexbar button {
+          padding: 0 6px;
+        }
+
+        .popup-codexbar {
+          padding: 12px 16px;
+          font-family: monospace;
+          font-size: 12px;
         }
       '';
     };
