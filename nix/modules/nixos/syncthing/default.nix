@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   pkgs,
   inputs,
@@ -52,6 +53,20 @@
   # Combine all devices
   allDevices = nixosDevices // externalDevices;
 
+  # Check if a remote system has a given folder (either explicitly or via defaultFolders)
+  remoteHasFolder = systemConfig: folderName:
+    let
+      remoteSyncthing = systemConfig.config.mountainous.syncthing;
+      hasExplicit = (remoteSyncthing.folders or {}) ? ${folderName};
+      hasDefault = (remoteSyncthing.defaultFolders or true) && (defaultFolderNames ? ${folderName});
+    in
+    hasExplicit || hasDefault;
+
+  # Names of default folders (for checking remote systems)
+  defaultFolderNames = {
+    pi-config = true;
+  };
+
   # For each folder, determine which devices should sync
   resolveDevices = folderName: folderCfg:
     if folderCfg.devices != []
@@ -61,8 +76,7 @@
     else
       # Auto-discover: NixOS systems that also have this folder
       (filter (
-        name:
-          (syncthingSystems.${name}.config.mountainous.syncthing.folders or {}) ? ${folderName}
+        name: remoteHasFolder syncthingSystems.${name} folderName
       ) (attrNames syncthingSystems))
       ++
       # Plus extraDevices that list this folder
@@ -70,6 +84,21 @@
         name:
           elem folderName (cfg.extraDevices.${name}.folders or [])
       ) (attrNames cfg.extraDevices));
+
+  # Default folders shared across all syncthing-enabled hosts
+  defaultFolderDefs = optionalAttrs cfg.defaultFolders {
+    pi-config = {
+      path = "/home/${cfg.user}/.pi";
+      devices = [];
+      type = "sendreceive";
+      ignorePerms = false;
+      rescanIntervalS = 3600;
+      versioning = null;
+    };
+  };
+
+  # Merge default folders with user-declared folders (user overrides win)
+  allFolders = defaultFolderDefs // cfg.folders;
 
   # Build folder config for services.syncthing.settings.folders
   folders = mapAttrs (name: folderCfg:
@@ -83,7 +112,7 @@
     // optionalAttrs (folderCfg.versioning != null) {
       inherit (folderCfg) versioning;
     })
-  cfg.folders;
+  allFolders;
 
   # Folder submodule type
   folderType = types.submodule {
@@ -165,6 +194,8 @@
       };
     };
   };
+
+  hasImpermanence = (options.mountainous ? impermanence) && (options.mountainous.impermanence ? enable);
 in {
   options.mountainous.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization with auto-discovery";
@@ -216,6 +247,15 @@ in {
       description = "Open firewall ports for syncthing (22000/tcp, 22000/udp, 21027/udp)";
     };
 
+    defaultFolders = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Whether to include default shared folders (e.g., ~/.pi config).
+        Set to false to opt out of common folders on a specific host.
+      '';
+    };
+
     folders = mkOption {
       type = types.attrsOf folderType;
       default = {};
@@ -244,7 +284,7 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable ({
     # Configure syncthing service
     services.syncthing = {
       enable = true;
@@ -292,8 +332,10 @@ in {
     # Increase inotify watches for large folder sets
     boot.kernel.sysctl."fs.inotify.max_user_watches" = 524288;
 
+  }
+  // (if hasImpermanence then {
     # Impermanence integration - persist syncthing data
-    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf (config.mountainous.impermanence.enable or false) {
+    environment.persistence."${config.mountainous.impermanence.persistPath}" = mkIf config.mountainous.impermanence.enable {
       directories = [
         {
           directory = cfg.dataDir;
@@ -303,5 +345,5 @@ in {
         }
       ];
     };
-  };
+  } else {}));
 }
