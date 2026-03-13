@@ -70,6 +70,7 @@
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
             ./nix/modules/nixos/tailscale
+            ./nix/modules/nixos/syncthing
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
