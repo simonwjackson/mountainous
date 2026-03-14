@@ -4,8 +4,22 @@
   lib,
   pkgs,
   ...
-}: let
-  inherit (lib) mkEnableOption mkOption mkDefault mkIf types mapAttrs filter attrNames optionalAttrs;
+}:
+let
+  inherit (lib)
+    mkEnableOption
+    mkOption
+    mkDefault
+    mkIf
+    types
+    mapAttrs
+    filter
+    attrNames
+    optionalAttrs
+    mapAttrsToList
+    all
+    foldl'
+    ;
 
   cfg = config.mountainous.syncthing;
   hostname = config.networking.hostName;
@@ -18,32 +32,59 @@
   devicesRoot = ../../../devices;
 
   # Scan a directory for subdirs containing syncthing-device-id files
-  discoverDevices = root:
+  discoverDevices =
+    root:
     let
-      entries =
-        if builtins.pathExists root
-        then builtins.readDir root
-        else {};
+      entries = if builtins.pathExists root then builtins.readDir root else { };
       dirs = attrNames (lib.filterAttrs (_: type: type == "directory") entries);
       hasId = name: builtins.pathExists (root + "/${name}/syncthing-device-id");
       withIds = filter hasId dirs;
     in
-      builtins.listToAttrs (map (name: {
+    builtins.listToAttrs (
+      map (name: {
         inherit name;
         value = lib.removeSuffix "\n" (builtins.readFile (root + "/${name}/syncthing-device-id"));
-      }) withIds);
+      }) withIds
+    );
+
+  discoverHostShares =
+    root:
+    let
+      entries = if builtins.pathExists root then builtins.readDir root else { };
+      dirs = attrNames (lib.filterAttrs (_: type: type == "directory") entries);
+      hasShares = name: builtins.pathExists (root + "/${name}/syncthing-shares.nix");
+      withShares = filter hasShares dirs;
+    in
+    builtins.listToAttrs (
+      map (name: {
+        inherit name;
+        value = import (root + "/${name}/syncthing-shares.nix");
+      }) withShares
+    );
 
   # All known devices: hosts + external devices (phones, etc.)
   allDeviceIds = (discoverDevices hostsRoot) // (discoverDevices devicesRoot);
+  allDeviceNames = attrNames allDeviceIds;
+  hostShareRequests = discoverHostShares hostsRoot;
+  hostsByShare = foldl' (
+    acc: host:
+    foldl' (
+      shareAcc: share:
+      shareAcc
+      // {
+        "${share}" = (shareAcc.${share} or [ ]) ++ [ host ];
+      }
+    ) acc (attrNames hostShareRequests.${host})
+  ) { } (attrNames hostShareRequests);
 
   # Peers = everyone except self
-  peerIds = removeAttrs allDeviceIds [hostname];
+  peerIds = removeAttrs allDeviceIds [ hostname ];
   peerNames = attrNames peerIds;
 
   # Build syncthing device entries
   deviceEntries = mapAttrs (_: id: {
     inherit id;
-    addresses = ["dynamic"];
+    addresses = [ "dynamic" ];
   }) peerIds;
 
   # ── Secrets ──────────────────────────────────────────────────────────
@@ -53,12 +94,24 @@
   hasSyncthingSecrets = builtins.pathExists syncthingCertPath && builtins.pathExists syncthingKeyPath;
 
   # ── Folder config ───────────────────────────────────────────────────
-  # Every folder is shared with all peers. Syncthing gracefully handles
-  # peers that don't have a matching folder (they just ignore/prompt).
-  folders = mapAttrs (name: folderCfg:
+  # Hosts declare the shares they want, plus their local paths, via
+  # hosts/<name>/syncthing-shares.nix. A folder automatically shares with every
+  # other host that requested the same folder name, unless an explicit
+  # shareWith override is provided.
+  resolveFolderDevices =
+    name: folderCfg:
+    if folderCfg.shareWith != null then
+      filter (device: device != hostname) folderCfg.shareWith
+    else if builtins.hasAttr name hostsByShare then
+      filter (device: device != hostname) hostsByShare.${name}
+    else
+      peerNames;
+
+  folders = mapAttrs (
+    name: folderCfg:
     {
       path = folderCfg.path;
-      devices = peerNames;
+      devices = resolveFolderDevices name folderCfg;
       type = folderCfg.type;
       ignorePerms = folderCfg.ignorePerms;
       rescanIntervalS = folderCfg.rescanIntervalS;
@@ -68,8 +121,8 @@
     }
     // optionalAttrs (folderCfg.versioning != null) {
       inherit (folderCfg) versioning;
-    })
-  cfg.folders;
+    }
+  ) cfg.folders;
 
   # ── Submodule types ─────────────────────────────────────────────────
   folderType = types.submodule {
@@ -81,7 +134,11 @@
       };
 
       type = mkOption {
-        type = types.enum ["sendreceive" "sendonly" "receiveonly"];
+        type = types.enum [
+          "sendreceive"
+          "sendonly"
+          "receiveonly"
+        ];
         default = "sendreceive";
         description = "Folder type";
       };
@@ -90,6 +147,20 @@
         type = types.bool;
         default = false;
         description = "Whether to ignore permission changes";
+      };
+
+      shareWith = mkOption {
+        type = types.nullOr (types.listOf types.str);
+        default = null;
+        description = ''
+          Optional explicit device list for this folder.
+          Include or omit the local host name; it is filtered automatically.
+          Defaults to all known peers when unset.
+        '';
+        example = [
+          "fuji"
+          "yari"
+        ];
       };
 
       rescanIntervalS = mkOption {
@@ -113,25 +184,33 @@
       };
 
       versioning = mkOption {
-        type = types.nullOr (types.submodule {
-          options = {
-            type = mkOption {
-              type = types.enum ["simple" "staggered" "trashcan" "external"];
-              description = "Versioning type";
+        type = types.nullOr (
+          types.submodule {
+            options = {
+              type = mkOption {
+                type = types.enum [
+                  "simple"
+                  "staggered"
+                  "trashcan"
+                  "external"
+                ];
+                description = "Versioning type";
+              };
+              params = mkOption {
+                type = types.attrsOf types.str;
+                default = { };
+                description = "Versioning parameters";
+              };
             };
-            params = mkOption {
-              type = types.attrsOf types.str;
-              default = {};
-              description = "Versioning parameters";
-            };
-          };
-        });
+          }
+        );
         default = null;
         description = "Optional versioning configuration";
       };
     };
   };
-in {
+in
+{
   options.mountainous.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization";
 
@@ -173,7 +252,7 @@ in {
 
     folders = mkOption {
       type = types.attrsOf folderType;
-      default = {};
+      default = { };
       description = "Folders to synchronize (shared with all peers by default)";
       example = {
         notes.path = "/home/simonwjackson/notes";
@@ -182,6 +261,13 @@ in {
   };
 
   config = mkIf cfg.enable {
+    assertions = mapAttrsToList (name: folderCfg: {
+      assertion =
+        folderCfg.shareWith == null
+        || all (device: builtins.elem device allDeviceNames) folderCfg.shareWith;
+      message = "mountainous.syncthing.folders.${name}.shareWith contains an unknown device";
+    }) cfg.folders;
+
     # Default folders — hosts can override with mkForce or add more
     mountainous.syncthing.folders = {
       pi-config = {
