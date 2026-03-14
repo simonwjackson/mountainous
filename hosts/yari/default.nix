@@ -3,7 +3,19 @@
   lib,
   pkgs,
   ...
-}: {
+}:
+let
+  syncthingShares = import ./syncthing-shares.nix;
+  syncthingFolders = lib.mapAttrs (
+    name: hostCfg:
+    let
+      shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
+    in
+    assert (shareCfg.name or name) == name;
+    (builtins.removeAttrs shareCfg [ "name" ]) // hostCfg
+  ) syncthingShares;
+in
+{
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -25,10 +37,18 @@
   networking.useDHCP = true;
   time.timeZone = "UTC";
 
+  mountainous.syncthing = {
+    enable = true;
+    folders = syncthingFolders;
+  };
+
   users.users.simonwjackson = {
     isNormalUser = true;
-    shell = pkgs.bashInteractive;
-    extraGroups = ["wheel" "media"];
+    shell = pkgs.nushell;
+    extraGroups = [
+      "wheel"
+      "media"
+    ];
     hashedPassword = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
   };
 
@@ -53,10 +73,10 @@
   networking.firewall = {
     enable = true;
     # Default: block everything on public interfaces
-    allowedTCPPorts = [];
-    allowedUDPPorts = [41641]; # Tailscale WireGuard (needed on all interfaces)
+    allowedTCPPorts = [ ];
+    allowedUDPPorts = [ 41641 ]; # Tailscale WireGuard (needed on all interfaces)
     # Trust all Tailscale traffic
-    trustedInterfaces = ["tailscale0"];
+    trustedInterfaces = [ "tailscale0" ];
   };
 
   # ── Media Layout ─────────────────────────────────────────────────────
@@ -323,7 +343,7 @@
 
   mountainous.tailscale = {
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = ["--netfilter-mode=nodivert"];
+    extraSetFlags = [ "--netfilter-mode=nodivert" ];
   };
 
   mountainous.services.tsnet-proxy = {
@@ -344,7 +364,7 @@
   mountainous.vpn-ns = {
     enable = true;
     configFile = config.age.secrets."fastest-vpn".path;
-    localNetworks = ["100.64.0.0/10"];
+    localNetworks = [ "100.64.0.0/10" ];
     services.nzbget = {
       enable = true;
       unit = "nzbget.service";
@@ -361,10 +381,23 @@
 
   systemd.services.openclaw-node = {
     description = "OpenClaw Node Host";
-    after = ["network-online.target" "tailscale.service"];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-    path = [pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.cmake pkgs.gnumake pkgs.gcc];
+    after = [
+      "network-online.target"
+      "tailscale.service"
+    ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    path = [
+      pkgs.nodejs
+      pkgs.git
+      pkgs.curl
+      pkgs.chromium
+      pkgs.coreutils
+      pkgs.bash
+      pkgs.cmake
+      pkgs.gnumake
+      pkgs.gcc
+    ];
     environment = {
       HOME = "/home/simonwjackson";
       OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
@@ -376,24 +409,28 @@
       Group = "users";
       TimeoutStartSec = "30min";
       EnvironmentFile = config.age.secrets.openclaw-env.path;
-      ExecStartPre = let
-        setupScript = pkgs.writeShellScript "openclaw-node-setup" ''
-          export HOME=/home/simonwjackson
-          mkdir -p "$HOME/.openclaw"
-          cd "$HOME/.openclaw"
-          ${pkgs.nodejs}/bin/npm install openclaw@latest
-        '';
-      in "${setupScript}";
-      ExecStart = let
-        startScript = pkgs.writeShellScript "openclaw-node-start" ''
-          export HOME=/home/simonwjackson
-          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" node run \
-            --host openclaw.hummingbird-lake.ts.net \
-            --port 443 \
-            --tls \
-            --display-name yari
-        '';
-      in "${startScript}";
+      ExecStartPre =
+        let
+          setupScript = pkgs.writeShellScript "openclaw-node-setup" ''
+            export HOME=/home/simonwjackson
+            mkdir -p "$HOME/.openclaw"
+            cd "$HOME/.openclaw"
+            ${pkgs.nodejs}/bin/npm install openclaw@latest
+          '';
+        in
+        "${setupScript}";
+      ExecStart =
+        let
+          startScript = pkgs.writeShellScript "openclaw-node-start" ''
+            export HOME=/home/simonwjackson
+            exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" node run \
+              --host openclaw.hummingbird-lake.ts.net \
+              --port 443 \
+              --tls \
+              --display-name yari
+          '';
+        in
+        "${startScript}";
       Restart = "always";
       RestartSec = 10;
       KillMode = "process";
