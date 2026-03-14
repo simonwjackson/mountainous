@@ -27,23 +27,6 @@
           };
         };
       };
-      data = {
-        type = "disk";
-        device = "/dev/disk/by-id/scsi-36076c8dfc27a4c699aedd8d3b6965dec";
-        content = {
-          type = "gpt";
-          partitions = {
-            data = {
-              size = "100%";
-              content = {
-                type = "filesystem";
-                format = "xfs";
-                mountpoint = "/data";
-              };
-            };
-          };
-        };
-      };
     };
   };
 }
