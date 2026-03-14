@@ -1,10 +1,17 @@
-{ config, lib, pkgs, ... }:
-
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ./hardware.nix
     ./disko.nix
     ../../modules/server
+    ../../modules/nixos/media
+    ../../modules/nixos/nzbget
+    ../../modules/nixos/vpn-ns
+    ../../modules/tsnet-proxy
   ];
 
   home-manager.users.simonwjackson = import ../../home/simonwjackson;
@@ -16,7 +23,7 @@
   users.users.simonwjackson = {
     isNormalUser = true;
     shell = pkgs.nushell;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel" "media"];
     hashedPassword = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
   };
 
@@ -42,9 +49,39 @@
     enable = true;
     # Default: block everything on public interfaces
     allowedTCPPorts = [];
-    allowedUDPPorts = [ 41641 ];  # Tailscale WireGuard (needed on all interfaces)
+    allowedUDPPorts = [41641]; # Tailscale WireGuard (needed on all interfaces)
     # Trust all Tailscale traffic
-    trustedInterfaces = [ "tailscale0" ];
+    trustedInterfaces = ["tailscale0"];
+  };
+
+  # ── Media Layout ─────────────────────────────────────────────────────
+
+  # Yari is currently a single-disk system, so keep the service-facing paths
+  # stable on /srv for now. If dedicated media disks or a mergerfs pool are
+  # added later, /srv/storage can become the mountpoint without changing the
+  # downloader or library paths used by services.
+  mountainous.media = {
+    enable = true;
+    root = "/srv/storage";
+  };
+
+  mountainous.nzbget = {
+    enable = true;
+    openFirewall = false;
+    controlUsername = "";
+    settings = {
+      "Server1.Name" = "newsdemon";
+      "Server1.Host" = "news.newsdemon.com";
+      "Server1.Port" = 563;
+      "Server1.Encryption" = true;
+      "Server1.Connections" = 50;
+      ControlPassword = "";
+      UMask = "0022";
+    };
+    secretSettings = {
+      "Server1.Username" = config.age.secrets.newsdemon-user.path;
+      "Server1.Password" = config.age.secrets.newsdemon-pass.path;
+    };
   };
 
   # ── Packages ─────────────────────────────────────────────────────────
@@ -64,7 +101,9 @@
 
   age.secrets.tailscale-authkey = {
     file = ../../secrets/tailscale-authkey.age;
-    mode = "0440";
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+    mode = "0400";
   };
 
   age.secrets."fastest-vpn" = {
@@ -78,6 +117,20 @@
     owner = "simonwjackson";
   };
 
+  age.secrets.newsdemon-user = {
+    file = ../../secrets/system/usenet/newsdemon-user.age;
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+
+  age.secrets.newsdemon-pass = {
+    file = ../../secrets/system/usenet/newsdemon-pass.age;
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+
   # ── Tailscale ────────────────────────────────────────────────────────
 
   mountainous.tailscale = {
@@ -85,24 +138,27 @@
     extraSetFlags = ["--netfilter-mode=nodivert"];
   };
 
+  mountainous.services.tsnet-proxy = {
+    enable = true;
+    package = pkgs.tsnet-proxy;
+    authKeyFile = config.age.secrets.tailscale-authkey.path;
+  };
+
   # ── VPN Namespace ────────────────────────────────────────────────────
 
-  systemd.services.vpn-ns = {
-    description = "VPN Network Namespace";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
-    serviceConfig = {
-      Type = "notify";
-      NotifyAccess = "all";
-      ExecStart = "${pkgs.vpn-ns}/bin/vpn-ns --setup";
-      ExecStop = "${pkgs.vpn-ns}/bin/vpn-ns --cleanup";
-      Restart = "always";
-      RestartSec = "10s";
-    };
-    environment = {
-      VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
-      VPN_NS_LOCAL_NETS = "100.64.0.0/10";
+  mountainous.vpn-ns = {
+    enable = true;
+    configFile = config.age.secrets."fastest-vpn".path;
+    localNetworks = ["100.64.0.0/10"];
+    services.nzbget = {
+      enable = true;
+      unit = "nzbget.service";
+      port = config.mountainous.nzbget.port;
+      tailscale = {
+        enable = true;
+        hostname = "usenet";
+        protocol = "http";
+      };
     };
   };
 
@@ -110,10 +166,10 @@
 
   systemd.services.openclaw-node = {
     description = "OpenClaw Node Host";
-    after = [ "network-online.target" "tailscale.service" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.cmake pkgs.gnumake pkgs.gcc ];
+    after = ["network-online.target" "tailscale.service"];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
+    path = [pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.cmake pkgs.gnumake pkgs.gcc];
     environment = {
       HOME = "/home/simonwjackson";
       OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
