@@ -1,5 +1,21 @@
-{ config, lib, pkgs, tsnsrv, ... }:
-
+{
+  config,
+  lib,
+  pkgs,
+  tsnsrv,
+  ...
+}:
+let
+  syncthingShares = import ./syncthing-shares.nix;
+  syncthingFolders = lib.mapAttrs (
+    name: hostCfg:
+    let
+      shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
+    in
+    assert (shareCfg.name or name) == name;
+    (builtins.removeAttrs shareCfg [ "name" ]) // hostCfg
+  ) syncthingShares;
+in
 {
   imports = [
     ./hardware.nix
@@ -20,11 +36,14 @@
   networking.useDHCP = true;
   time.timeZone = "UTC";
 
-  mountainous.syncthing.enable = true;
+  mountainous.syncthing = {
+    enable = true;
+    folders = syncthingFolders;
+  };
 
   users.users.simonwjackson = {
     isNormalUser = true;
-    shell = pkgs.bashInteractive;
+    shell = pkgs.nushell;
     extraGroups = [ "wheel" ];
     hashedPassword = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
   };
@@ -47,33 +66,41 @@
   networking.firewall = {
     enable = true;
     # Default: block everything on public interfaces
-    allowedTCPPorts = [];
-    allowedUDPPorts = [ 41641 ];  # Tailscale WireGuard (needed on all interfaces)
+    allowedTCPPorts = [ ];
+    allowedUDPPorts = [ 41641 ]; # Tailscale WireGuard (needed on all interfaces)
     # Trust all Tailscale traffic
     trustedInterfaces = [ "tailscale0" ];
   };
 
-  environment.systemPackages = with pkgs; [
-    chromium stdenv.cc.cc.lib android-tools nodejs rclone
-    gogcli yq
-    (python3.withPackages (ps: [ ps.pyyaml ]))
-  ] ++ (with pkgs.lifted-scripts; [
-    biometrics-oura-sync
-    biometrics-withings-sync
-    biometrics-ketomojo-sync
-    biometrics-import-saa
-    biometrics-withings-auth
-    fitness-import
-    nutrition-lookup
-    nutrition-log-meal
-    nutrition-daily-summary
-    tasks-query
-    omi-pipeline
-    omi-cron
-    youtube-digest
-    ebay-api
-    ebay-publish
-  ]);
+  environment.systemPackages =
+    with pkgs;
+    [
+      chromium
+      stdenv.cc.cc.lib
+      android-tools
+      nodejs
+      rclone
+      gogcli
+      yq
+      (python3.withPackages (ps: [ ps.pyyaml ]))
+    ]
+    ++ (with pkgs.lifted-scripts; [
+      biometrics-oura-sync
+      biometrics-withings-sync
+      biometrics-ketomojo-sync
+      biometrics-import-saa
+      biometrics-withings-auth
+      fitness-import
+      nutrition-lookup
+      nutrition-log-meal
+      nutrition-daily-summary
+      tasks-query
+      omi-pipeline
+      omi-cron
+      youtube-digest
+      ebay-api
+      ebay-publish
+    ]);
 
   nix.settings.secret-key-files = [ "/etc/nix/signing-key.priv" ];
 
@@ -257,17 +284,21 @@
 
   services.ado-sync = {
     enable = true;
-    calendar = [ "*-*-* 15:00:00" "*-*-* 19:00:00" "*-*-* 00:00:00" ];  # 8am, noon, 5pm MST
+    calendar = [
+      "*-*-* 15:00:00"
+      "*-*-* 19:00:00"
+      "*-*-* 00:00:00"
+    ]; # 8am, noon, 5pm MST
   };
 
   # ── Tailscale ────────────────────────────────────────────────────────
 
   mountainous.tailscale = {
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = ["--netfilter-mode=nodivert"];
+    extraSetFlags = [ "--netfilter-mode=nodivert" ];
   };
 
-  users.groups.tsnsrv = {};
+  users.groups.tsnsrv = { };
   users.users.tsnsrv = {
     isSystemUser = true;
     group = "tsnsrv";
@@ -276,7 +307,10 @@
   # tsnsrv proxies (fuji uses tsnsrv, not tsnet-proxy)
   systemd.services.tsnsrv-etabli = {
     description = "tsnsrv Tailscale proxy for Etabli";
-    after = [ "network-online.target" "etabli.service" ];
+    after = [
+      "network-online.target"
+      "etabli.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     environment.HOME = "/var/lib/tsnsrv-etabli";
@@ -296,7 +330,10 @@
 
   systemd.services.tsnsrv-youtube = {
     description = "tsnsrv Tailscale proxy for Invidious";
-    after = [ "network-online.target" "invidious.service" ];
+    after = [
+      "network-online.target"
+      "invidious.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     environment.HOME = "/var/lib/tsnsrv-youtube";
@@ -316,7 +353,10 @@
 
   systemd.services.tsnsrv-biker = {
     description = "tsnsrv Tailscale proxy for Biker";
-    after = [ "network-online.target" "biker.service" ];
+    after = [
+      "network-online.target"
+      "biker.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     environment.HOME = "/var/lib/tsnsrv-biker";
@@ -336,7 +376,10 @@
 
   systemd.services.tsnsrv-openclaw = {
     description = "tsnsrv Tailscale proxy for OpenClaw";
-    after = [ "network-online.target" "openclaw-gateway.service" ];
+    after = [
+      "network-online.target"
+      "openclaw-gateway.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     environment.HOME = "/var/lib/tsnsrv-openclaw";
@@ -400,10 +443,24 @@
 
   systemd.services.openclaw-gateway = {
     description = "OpenClaw Gateway";
-    after = [ "network-online.target" "tailscale.service" ];
+    after = [
+      "network-online.target"
+      "tailscale.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.nodejs pkgs.git pkgs.curl pkgs.chromium pkgs.coreutils pkgs.bash pkgs.android-tools pkgs.cmake pkgs.gnumake pkgs.gcc ];
+    path = [
+      pkgs.nodejs
+      pkgs.git
+      pkgs.curl
+      pkgs.chromium
+      pkgs.coreutils
+      pkgs.bash
+      pkgs.android-tools
+      pkgs.cmake
+      pkgs.gnumake
+      pkgs.gcc
+    ];
     environment = {
       HOME = "/home/simonwjackson";
       OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
@@ -417,32 +474,36 @@
       Group = "users";
       TimeoutStartSec = "30min";
       EnvironmentFile = config.age.secrets.openclaw-env.path;
-      ExecStartPre = let
-        setupScript = pkgs.writeShellScript "openclaw-setup" ''
-          export HOME=/home/simonwjackson
-          mkdir -p "$HOME/.openclaw"
-          cd "$HOME/.openclaw"
-          ${pkgs.nodejs}/bin/npm install openclaw@latest
+      ExecStartPre =
+        let
+          setupScript = pkgs.writeShellScript "openclaw-setup" ''
+            export HOME=/home/simonwjackson
+            mkdir -p "$HOME/.openclaw"
+            cd "$HOME/.openclaw"
+            ${pkgs.nodejs}/bin/npm install openclaw@latest
 
-          CONFIG="$HOME/.openclaw/openclaw.json"
-          if [ -f "$CONFIG" ]; then
-            ${pkgs.jq}/bin/jq \
-              --arg token "$TELEGRAM_BOT_TOKEN" \
-              --arg gwtoken "$OPENCLAW_GATEWAY_TOKEN" \
-              --arg bravekey "$BRAVE_SEARCH_API_KEY" \
-              '.channels.telegram.botToken = $token |
-               .gateway.auth.token = $gwtoken |
-               .tools.web.search.apiKey = $bravekey' \
-              "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
-          fi
-        '';
-      in "${setupScript}";
-      ExecStart = let
-        startScript = pkgs.writeShellScript "openclaw-start" ''
-          export HOME=/home/simonwjackson
-          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
-        '';
-      in "${startScript}";
+            CONFIG="$HOME/.openclaw/openclaw.json"
+            if [ -f "$CONFIG" ]; then
+              ${pkgs.jq}/bin/jq \
+                --arg token "$TELEGRAM_BOT_TOKEN" \
+                --arg gwtoken "$OPENCLAW_GATEWAY_TOKEN" \
+                --arg bravekey "$BRAVE_SEARCH_API_KEY" \
+                '.channels.telegram.botToken = $token |
+                 .gateway.auth.token = $gwtoken |
+                 .tools.web.search.apiKey = $bravekey' \
+                "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+            fi
+          '';
+        in
+        "${setupScript}";
+      ExecStart =
+        let
+          startScript = pkgs.writeShellScript "openclaw-start" ''
+            export HOME=/home/simonwjackson
+            exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
+          '';
+        in
+        "${startScript}";
       Restart = "always";
       RestartSec = 5;
       KillMode = "process";
@@ -451,31 +512,66 @@
 
   # ── Borg Backup ──────────────────────────────────────────────────────
 
-  services.borgbackup.jobs = let
-    borgDefaults = {
-      exclude = [ "*/__pycache__" "*/.git" "*/shell.nix" ];
-      encryption = {
-        mode = "repokey";
-        passCommand = "cat ${config.age.secrets.borg-passphrase.path}";
+  services.borgbackup.jobs =
+    let
+      borgDefaults = {
+        exclude = [
+          "*/__pycache__"
+          "*/.git"
+          "*/shell.nix"
+        ];
+        encryption = {
+          mode = "repokey";
+          passCommand = "cat ${config.age.secrets.borg-passphrase.path}";
+        };
+        compression = "auto,zstd";
+        startAt = "daily";
+        prune.keep = {
+          daily = 7;
+          weekly = 4;
+          monthly = 6;
+        };
+        user = "simonwjackson";
       };
-      compression = "auto,zstd";
-      startAt = "daily";
-      prune.keep = { daily = 7; weekly = 4; monthly = 6; };
-      user = "simonwjackson";
+    in
+    {
+      biometrics = borgDefaults // {
+        paths = [ "/home/simonwjackson/biometrics" ];
+        repo = "/var/lib/borg/biometrics";
+      };
+      fitness = borgDefaults // {
+        paths = [ "/home/simonwjackson/fitness" ];
+        repo = "/var/lib/borg/fitness";
+      };
+      nutrition = borgDefaults // {
+        paths = [ "/home/simonwjackson/.local/share/nutrition" ];
+        repo = "/var/lib/borg/nutrition";
+      };
+      tasks = borgDefaults // {
+        paths = [ "/home/simonwjackson/.local/share/tasks" ];
+        repo = "/var/lib/borg/tasks";
+      };
+      omi = borgDefaults // {
+        paths = [ "/home/simonwjackson/omi" ];
+        repo = "/var/lib/borg/omi";
+      };
+      flakey = borgDefaults // {
+        paths = [ "/home/simonwjackson/flakey" ];
+        repo = "/var/lib/borg/flakey";
+      };
+      openclaw = borgDefaults // {
+        paths = [ "/home/simonwjackson/.openclaw" ];
+        exclude = [
+          "*/__pycache__"
+          "*/.git"
+          "*/shell.nix"
+          "*/node_modules"
+          "*/browser"
+          "*/.cache"
+        ];
+        repo = "/var/lib/borg/openclaw";
+      };
     };
-  in {
-    biometrics = borgDefaults // { paths = [ "/home/simonwjackson/biometrics" ]; repo = "/var/lib/borg/biometrics"; };
-    fitness = borgDefaults // { paths = [ "/home/simonwjackson/fitness" ]; repo = "/var/lib/borg/fitness"; };
-    nutrition = borgDefaults // { paths = [ "/home/simonwjackson/.local/share/nutrition" ]; repo = "/var/lib/borg/nutrition"; };
-    tasks = borgDefaults // { paths = [ "/home/simonwjackson/.local/share/tasks" ]; repo = "/var/lib/borg/tasks"; };
-    omi = borgDefaults // { paths = [ "/home/simonwjackson/omi" ]; repo = "/var/lib/borg/omi"; };
-    flakey = borgDefaults // { paths = [ "/home/simonwjackson/flakey" ]; repo = "/var/lib/borg/flakey"; };
-    openclaw = borgDefaults // {
-      paths = [ "/home/simonwjackson/.openclaw" ];
-      exclude = [ "*/__pycache__" "*/.git" "*/shell.nix" "*/node_modules" "*/browser" "*/.cache" ];
-      repo = "/var/lib/borg/openclaw";
-    };
-  };
 
   # ── Biometrics Sync Timers ──────────────────────────────────────────
 
@@ -485,7 +581,14 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-oura-sync ];
+    path = with pkgs; [
+      curl
+      jq
+      coreutils
+      bash
+      python3
+      lifted-scripts.biometrics-oura-sync
+    ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-oura-sync
@@ -507,7 +610,14 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-withings-sync ];
+    path = with pkgs; [
+      curl
+      jq
+      coreutils
+      bash
+      python3
+      lifted-scripts.biometrics-withings-sync
+    ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-withings-sync
@@ -529,7 +639,14 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ curl jq coreutils bash python3 lifted-scripts.biometrics-ketomojo-sync ];
+    path = with pkgs; [
+      curl
+      jq
+      coreutils
+      bash
+      python3
+      lifted-scripts.biometrics-ketomojo-sync
+    ];
     script = ''
       export HOME=/home/simonwjackson
       biometrics-ketomojo-sync
@@ -559,7 +676,10 @@
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ rsync openssh ];
+    path = with pkgs; [
+      rsync
+      openssh
+    ];
     script = ''
       for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
         if [ -d "/var/lib/borg/$repo" ]; then
