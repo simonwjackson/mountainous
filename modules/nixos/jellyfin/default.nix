@@ -134,6 +134,28 @@ in {
         description = "Open the host firewall for the tsnet-proxy listener.";
       };
     };
+
+    watchedCleaner = {
+      enable = mkEnableOption "automatic deletion of media watched beyond a configurable age";
+
+      maxAgeDays = mkOption {
+        type = types.int;
+        default = 7;
+        description = "Number of days after an item was last played before it becomes eligible for automatic deletion.";
+      };
+
+      interval = mkOption {
+        type = types.str;
+        default = "daily";
+        description = "Systemd calendar expression controlling how often the cleaner runs.";
+      };
+
+      mediaTypes = mkOption {
+        type = types.listOf (types.enum ["Movie" "Episode"]);
+        default = ["Movie" "Episode"];
+        description = "Jellyfin media types eligible for automatic cleanup.";
+      };
+    };
   };
 
   config = mkIf cfg.enable (mkMerge [
@@ -155,6 +177,10 @@ in {
         ++ optional cfg.bootstrap.enable {
           assertion = cfg.bootstrap.admin.passwordFile != null;
           message = "mountainous.jellyfin requires bootstrap.admin.passwordFile when bootstrap.enable = true";
+        }
+        ++ optional cfg.watchedCleaner.enable {
+          assertion = cfg.bootstrap.enable && cfg.bootstrap.admin.passwordFile != null;
+          message = "mountainous.jellyfin.watchedCleaner requires bootstrap.enable = true with a passwordFile for admin credentials";
         };
 
       # First pass stays intentionally simple:
@@ -602,6 +628,157 @@ in {
         openFirewall = cfg.proxy.openFirewall;
         port = cfg.port;
         protocol = cfg.proxy.protocol;
+      };
+    })
+
+    (mkIf cfg.watchedCleaner.enable {
+      systemd.timers.jellyfin-watched-cleaner = {
+        description = "Timer for cleaning watched Jellyfin media";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          OnCalendar = cfg.watchedCleaner.interval;
+          Persistent = true;
+          RandomizedDelaySec = "1h";
+        };
+      };
+
+      systemd.services.jellyfin-watched-cleaner = {
+        description = "Delete Jellyfin media watched for over ${toString cfg.watchedCleaner.maxAgeDays} days";
+        after = ["jellyfin.service"];
+        requires = ["jellyfin.service"];
+        serviceConfig = {
+          Type = "oneshot";
+          LoadCredential = bootstrapCredentialEntries;
+        };
+        script = ''
+          ${pkgs.python3}/bin/python <<'PY'
+          import json
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from datetime import datetime, timezone, timedelta
+          from pathlib import Path
+
+          base_url = "http://127.0.0.1:${toString cfg.port}"
+          max_age_days = ${toString cfg.watchedCleaner.maxAgeDays}
+          media_types = ${builtins.toJSON cfg.watchedCleaner.mediaTypes}
+          admin_username = ${builtins.toJSON cfg.bootstrap.admin.username}
+          auth_header = 'MediaBrowser Client="mountainous-jellyfin-watched-cleaner", Device="mountainous-jellyfin-watched-cleaner", DeviceId="mountainous-jellyfin-watched-cleaner", Version="1.0.0"'
+
+          credentials_dir = Path(os.environ["CREDENTIALS_DIRECTORY"])
+          password = (credentials_dir / "bootstrap-password").read_text().strip()
+          if "=" in password:
+              password = password.split("=", 1)[1].strip()
+
+          def api_request(path, *, method="GET", data=None, token=None, query=None):
+              url = f"{base_url}{path}"
+              if query:
+                  url = f"{url}?{urllib.parse.urlencode(query, doseq=True)}"
+              headers = {
+                  "Accept": "application/json",
+                  "Authorization": auth_header,
+              }
+              body = None
+              if data is not None:
+                  body = json.dumps(data).encode()
+                  headers["Content-Type"] = "application/json"
+              if token is not None:
+                  headers["X-Emby-Token"] = token
+              request = urllib.request.Request(url, data=body, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      raw = response.read()
+                      return None if not raw else json.loads(raw)
+              except urllib.error.HTTPError as error:
+                  body_text = error.read().decode()
+                  raise RuntimeError(f"Jellyfin API {method} {path}: {error.code} {body_text}") from error
+
+          # Wait for Jellyfin API
+          for _ in range(60):
+              try:
+                  api_request("/System/Info/Public")
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise RuntimeError("Timed out waiting for Jellyfin API")
+
+          # Authenticate as admin
+          auth_result = api_request(
+              "/Users/AuthenticateByName",
+              method="POST",
+              data={"Username": admin_username, "Pw": password},
+          )
+          token = auth_result["AccessToken"]
+          user_id = auth_result["User"]["Id"]
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+
+          # Query watched items for the admin user
+          result = api_request(
+              f"/Users/{user_id}/Items",
+              token=token,
+              query={
+                  "IsPlayed": "true",
+                  "Recursive": "true",
+                  "IncludeItemTypes": ",".join(media_types),
+                  "Fields": "Path",
+                  "EnableTotalRecordCount": "true",
+                  "Limit": "10000",
+              },
+          )
+
+          items = (result or {}).get("Items", [])
+          deleted = 0
+          skipped = 0
+
+          for item in items:
+              item_id = item.get("Id")
+              item_name = item.get("Name", "Unknown")
+              item_type = item.get("Type", "Unknown")
+              series_name = item.get("SeriesName", "")
+              season_name = item.get("SeasonName", "")
+              item_path = item.get("Path", "")
+              user_data = item.get("UserData", {})
+              last_played = user_data.get("LastPlayedDate")
+
+              if not last_played:
+                  continue
+
+              try:
+                  last_played_dt = datetime.fromisoformat(last_played.replace("Z", "+00:00"))
+              except ValueError:
+                  print(f"Skipping {item_name}: could not parse date {last_played}", file=sys.stderr)
+                  skipped += 1
+                  continue
+
+              if last_played_dt >= cutoff:
+                  continue
+
+              label = item_name
+              if series_name:
+                  parts = [series_name]
+                  if season_name:
+                      parts.append(season_name)
+                  parts.append(item_name)
+                  label = " - ".join(parts)
+
+              age_days = (datetime.now(timezone.utc) - last_played_dt).days
+              print(f"Deleting {item_type}: {label} (watched {age_days}d ago, path: {item_path})")
+
+              try:
+                  api_request(f"/Items/{item_id}", method="DELETE", token=token)
+                  deleted += 1
+              except RuntimeError as e:
+                  print(f"  Failed: {e}", file=sys.stderr)
+                  skipped += 1
+
+          print(f"Done: {deleted} deleted, {skipped} skipped, {len(items)} total watched items checked")
+          PY
+        '';
       };
     })
   ]);
