@@ -47,7 +47,10 @@ in {
   "secrets/tailscale-ephemeral.age".publicKeys = rakkuYariKeys;
   "secrets/system/usenet/newsdemon-user.age".publicKeys = yariKeys;
   "secrets/system/usenet/newsdemon-pass.age".publicKeys = yariKeys;
+  "secrets/system/usenet/nzbgeek-api.age".publicKeys = yariKeys;
   "secrets/system/usenet/nzbget-pass.age".publicKeys = yariKeys;
+  "secrets/system/radarr/radarr-pass.age".publicKeys = yariKeys;
+  "secrets/system/jellyfin/jellyfin-pass.age".publicKeys = yariKeys;
 
   # Rakku secrets
   "secrets/zwave-js-secrets.age".publicKeys = rakkuKeys;
