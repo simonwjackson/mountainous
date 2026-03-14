@@ -18,6 +18,10 @@
     "${cfg.usenetRoot}/queue"
     "${cfg.usenetRoot}/tmp"
     "${cfg.usenetRoot}/scripts"
+    cfg.torrentsRoot
+    cfg.torrentsCompletedDir
+    cfg.torrentsIncompleteDir
+    cfg.torrentsWatchDir
     cfg.mediaRoot
     cfg.moviesDir
     cfg.tvDir
@@ -26,7 +30,7 @@
   ];
 in {
   options.mountainous.media = {
-    enable = mkEnableOption "shared media and usenet storage layout";
+    enable = mkEnableOption "shared media, usenet, and torrent storage layout";
 
     owner = mkOption {
       type = types.str;
@@ -86,6 +90,30 @@ in {
       type = types.str;
       default = "${cfg.usenetRoot}/failed";
       description = "Directory for failed Usenet downloads and leftovers worth reviewing.";
+    };
+
+    torrentsRoot = mkOption {
+      type = types.str;
+      default = "${cfg.downloadsRoot}/torrents";
+      description = "Root directory for torrent downloads and work directories.";
+    };
+
+    torrentsCompletedDir = mkOption {
+      type = types.str;
+      default = "${cfg.torrentsRoot}/completed";
+      description = "Directory for completed torrent payloads before import.";
+    };
+
+    torrentsIncompleteDir = mkOption {
+      type = types.str;
+      default = "${cfg.torrentsRoot}/incomplete";
+      description = "Directory for active and partial torrent downloads.";
+    };
+
+    torrentsWatchDir = mkOption {
+      type = types.str;
+      default = "${cfg.torrentsRoot}/watch";
+      description = "Directory watched for incoming .torrent files.";
     };
 
     mediaRoot = mkOption {
