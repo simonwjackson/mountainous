@@ -140,6 +140,9 @@ in
       hostname = "watch";
       openFirewall = false;
     };
+    watchedCleaner = {
+      enable = true;
+    };
   };
 
   mountainous.prowlarr = {
