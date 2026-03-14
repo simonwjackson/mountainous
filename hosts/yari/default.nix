@@ -8,8 +8,13 @@
     ./hardware.nix
     ./disko.nix
     ../../modules/server
+    ../../modules/nixos/jellyfin
     ../../modules/nixos/media
     ../../modules/nixos/nzbget
+    ../../modules/nixos/prowlarr
+    ../../modules/nixos/radarr
+    ../../modules/nixos/sonarr
+    ../../modules/nixos/transmission
     ../../modules/nixos/vpn-ns
     ../../modules/tsnet-proxy
   ];
@@ -68,19 +73,166 @@
   mountainous.nzbget = {
     enable = true;
     openFirewall = false;
-    controlUsername = "";
     settings = {
       "Server1.Name" = "newsdemon";
       "Server1.Host" = "news.newsdemon.com";
       "Server1.Port" = 563;
       "Server1.Encryption" = true;
       "Server1.Connections" = 50;
-      ControlPassword = "";
-      UMask = "0022";
+      UMask = "0002";
     };
     secretSettings = {
+      ControlPassword = config.age.secrets.nzbget-pass.path;
       "Server1.Username" = config.age.secrets.newsdemon-user.path;
       "Server1.Password" = config.age.secrets.newsdemon-pass.path;
+    };
+  };
+
+  mountainous.transmission = {
+    enable = true;
+    openFirewall = false;
+  };
+
+  mountainous.jellyfin = {
+    enable = true;
+    openFirewall = false;
+    bootstrap = {
+      enable = true;
+      admin = {
+        username = "simonwjackson";
+        passwordFile = config.age.secrets.jellyfin-pass.path;
+      };
+      serverName = "yari";
+      remoteAccess = false;
+      libraries = {
+        tv = {
+          name = "TV";
+          path = "/srv/storage/media/tv";
+        };
+        movies = {
+          name = "Movies";
+          path = "/srv/storage/media/movies";
+        };
+      };
+    };
+    proxy = {
+      enable = true;
+      hostname = "watch";
+      openFirewall = false;
+    };
+  };
+
+  mountainous.prowlarr = {
+    enable = true;
+    openFirewall = false;
+    auth = {
+      enable = true;
+      username = "simonwjackson";
+      passwordFile = config.age.secrets.prowlarr-pass.path;
+    };
+    indexers.nzbgeek = {
+      enable = true;
+      apiKeyFile = config.age.secrets.nzbgeek-api.path;
+    };
+    applications.sonarr.enable = true;
+    applications.radarr.enable = true;
+    vpn.enable = true;
+    proxy = {
+      enable = true;
+      hostname = "indexers";
+      openFirewall = false;
+    };
+  };
+
+  mountainous.sonarr = {
+    enable = true;
+    openFirewall = false;
+    auth = {
+      enable = true;
+      username = "simonwjackson";
+      passwordFile = config.age.secrets.sonarr-pass.path;
+    };
+    vpn.enable = true;
+    proxy = {
+      enable = true;
+      hostname = "tv";
+      openFirewall = false;
+    };
+
+    # ARR/UI endpoint conventions on yari:
+    # - Sonarr: tv.*
+    # - Jellyfin: watch.*
+    # - Prowlarr: indexers.*
+    # - Radarr: movies.*
+    # - NZBGet UI/client: usenet.*
+    # - Transmission UI/client: torrents.*
+    #
+    # Import path/category conventions:
+    # - TV via NZBGet category: Series
+    # - TV via Transmission category: tv-sonarr
+    # - TV library root: /srv/storage/media/tv
+    tvLibraryDir = config.mountainous.media.tvDir;
+    usenetCompletedDir = config.mountainous.media.usenetCompletedDir;
+    torrentsCompletedDir = config.mountainous.media.torrentsCompletedDir;
+
+    # Selection intent:
+    # - Usenet releases go to NZBGet
+    # - Torrent releases go to Transmission
+    # - Priority mainly matters once we have multiple clients of the same protocol
+    downloadClients = {
+      nzbget = {
+        enable = true;
+        name = "NZBGet (usenet)";
+        priority = 10;
+        category = "Series";
+        passwordFile = config.age.secrets.nzbget-pass.path;
+      };
+      transmission = {
+        enable = true;
+        name = "Transmission (torrent)";
+        priority = 20;
+        category = "tv-sonarr";
+      };
+    };
+  };
+
+  mountainous.radarr = {
+    enable = true;
+    openFirewall = false;
+    auth = {
+      enable = true;
+      username = "simonwjackson";
+      passwordFile = config.age.secrets.radarr-pass.path;
+    };
+    vpn.enable = true;
+    proxy = {
+      enable = true;
+      hostname = "movies";
+      openFirewall = false;
+    };
+
+    # Movie import path/category conventions:
+    # - Movies via NZBGet category: Movies
+    # - Movies via Transmission category: movies-radarr
+    # - Movie library root: /srv/storage/media/movies
+    moviesLibraryDir = config.mountainous.media.moviesDir;
+    usenetCompletedDir = config.mountainous.media.usenetCompletedDir;
+    torrentsCompletedDir = config.mountainous.media.torrentsCompletedDir;
+
+    downloadClients = {
+      nzbget = {
+        enable = true;
+        name = "NZBGet (usenet)";
+        priority = 10;
+        category = "Movies";
+        passwordFile = config.age.secrets.nzbget-pass.path;
+      };
+      transmission = {
+        enable = true;
+        name = "Transmission (torrent)";
+        priority = 20;
+        category = "movies-radarr";
+      };
     };
   };
 
@@ -131,6 +283,42 @@
     mode = "0440";
   };
 
+  age.secrets.nzbget-pass = {
+    file = ../../secrets/system/usenet/nzbget-pass.age;
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+
+  age.secrets.sonarr-pass = {
+    file = ../../secrets/system/usenet/nzbget-pass.age;
+    owner = "sonarr";
+    group = "media";
+    mode = "0440";
+  };
+
+  age.secrets.prowlarr-pass = {
+    file = ../../secrets/system/usenet/nzbget-pass.age;
+    mode = "0400";
+  };
+
+  age.secrets.radarr-pass = {
+    file = ../../secrets/system/radarr/radarr-pass.age;
+    owner = "radarr";
+    group = "media";
+    mode = "0440";
+  };
+
+  age.secrets.jellyfin-pass = {
+    file = ../../secrets/system/jellyfin/jellyfin-pass.age;
+    mode = "0400";
+  };
+
+  age.secrets.nzbgeek-api = {
+    file = ../../secrets/system/usenet/nzbgeek-api.age;
+    mode = "0400";
+  };
+
   # ── Tailscale ────────────────────────────────────────────────────────
 
   mountainous.tailscale = {
@@ -146,6 +334,13 @@
 
   # ── VPN Namespace ────────────────────────────────────────────────────
 
+  # Current policy caveat: downloader daemons and VPN-routed apps such as
+  # NZBGet, Transmission, Prowlarr, and Sonarr run inside the FastestVPN
+  # namespace, but
+  # the Tailscale-facing tsnet-proxy services remain host-side and forward to
+  # the namespace over the veth link. That keeps downloader/app egress
+  # VPN-isolated, but it is not the stricter "all traffic through VPN" design
+  # for Tailscale UI/admin access.
   mountainous.vpn-ns = {
     enable = true;
     configFile = config.age.secrets."fastest-vpn".path;
