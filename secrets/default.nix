@@ -63,4 +63,8 @@ in {
   # Fuji syncthing secrets
   "secrets/hosts/fuji/syncthing-cert.age".publicKeys = fujiKeys;
   "secrets/hosts/fuji/syncthing-key.age".publicKeys = fujiKeys;
+
+  # Yari syncthing secrets
+  "secrets/hosts/yari/syncthing-cert.age".publicKeys = yariKeys;
+  "secrets/hosts/yari/syncthing-key.age".publicKeys = yariKeys;
 }
