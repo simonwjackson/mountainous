@@ -1,4 +1,8 @@
 {
+  nixConfig = {
+    warn-dirty = false;
+  };
+
   description = "Mountainous — unified NixOS configurations";
 
   inputs = {
