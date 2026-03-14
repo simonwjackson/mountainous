@@ -5,7 +5,7 @@
 - Search packages: `nix search nixpkgs <regex>` to find packages by name or description
 
 ## Code Style Guidelines
-- **Project Structure**: Follow modular approach with `/nix/modules/`, `/nix/packages/`, `/nix/profiles/`, `/hosts/`
+- **Project Structure**: Follow modular approach with `/modules/`, `/features/`, `/packages/`, `/hosts/`, `/home/`, and shared helpers in `/nix/lib/`
 - **Function Parameters**: Use destructuring pattern, e.g., `{ config, pkgs, lib, ... }: { ... }`
 - **Imports**: Place related imports together, use direct imports like `inherit (lib) mkEnableOption mkIf;`
 - **Module Options**: Define with `mkEnableOption` and `mkOption`, in `mountainous` namespace

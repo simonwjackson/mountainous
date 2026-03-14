@@ -45,7 +45,7 @@ This repository contains a NixOS configuration flake that makes it easy to manag
 1. Clone the repository:
    ```
    git clone <repository-url>
-   cd mountainous-rethink
+   cd mountainous
    ```
 
 2. Build a VM for testing:
@@ -134,7 +134,7 @@ The default configuration creates a user with:
 
 The system uses a three-layer approach for home-manager configurations:
 
-1. **Modules** (`/nix/modules/home/*/default.nix`): Reusable Home Manager modules
+1. **Modules** (`/modules/home/*/default.nix`): Reusable Home Manager modules
 2. **User base configuration** (`/home/simonwjackson/default.nix`): Shared Simon user configuration
 3. **Host/profile additions**: Host imports and profile modules merge additional settings on top
 
@@ -251,7 +251,7 @@ The mountainous configuration includes Hyprland as a window manager option with 
 |-------------|----------|-------------|
 | walker | SUPER + SPACE | Toggle application launcher |
 
-For more details on the Hyprland configuration, see the `nix/modules/home/hyprland/default.nix` file.
+For more details on the Hyprland-related home configuration, see `home/simonwjackson/default.nix` and the remaining shared modules under `modules/home/`.
 
 ## Sunshine Configuration
 
@@ -295,7 +295,7 @@ This allows you to have different display settings for various devices and use c
 
 The scaling parameter is optional and defaults to 1 if not specified.
 
-Sunshine configuration now lives alongside the active host configs in `hosts/` and shared Nix modules under `nix/modules/`.
+Sunshine configuration now lives alongside the active host configs in `hosts/` and shared Nix modules under `modules/`.
 
 ## Custom Packages
 
@@ -354,9 +354,9 @@ The packages are automatically available:
 
 Packages are made available through:
 
-1. Adding a `collectPackages` function that scans the `packages` directory.
-2. Making packages available via flake outputs (`packages.x86_64-linux.package-name`).
-3. Making packages available to NixOS and home-manager via an overlay.
+1. Automatic discovery of package directories under `packages/`.
+2. Flake package outputs such as `packages.x86_64-linux.package-name`.
+3. A generated overlay that makes them available in NixOS and home-manager via `pkgs.package-name`.
 
 When adding packages to the system, they should be used as:
 

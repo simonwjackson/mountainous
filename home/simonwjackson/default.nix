@@ -11,7 +11,7 @@
   hostName = osConfig.networking.hostName or "";
   isYuki = hostName == "yuki";
 
-  sharedHyprlandKeybindsConfig = import ../../nix/features/hyprland/keybinds.nix {
+  sharedHyprlandKeybindsConfig = import ../../features/hyprland/keybinds.nix {
     inherit config lib pkgs;
     inputs = {};
   };
@@ -148,7 +148,7 @@
     else ironbarBar;
 in {
   imports = [
-    ../../nix/modules/home/codexbar
+    ../../modules/home/codexbar
   ];
 
   options.mountainous.hyprland.extraSettings = mkOption {
@@ -315,6 +315,14 @@ in {
       enable = true;
     };
 
+    gtk = lib.mkIf hyprlandEnabled {
+      enable = true;
+      iconTheme = {
+        package = pkgs.adwaita-icon-theme;
+        name = "Adwaita";
+      };
+    };
+
     home.packages = with pkgs;
       lib.optionals hyprlandEnabled [
         ironbar
@@ -410,7 +418,7 @@ in {
 
       "ironbar/style.css".text = ''
         * {
-          font-family: monospace;
+          font-family: monospace, "Symbols Nerd Font";
           font-size: 12px;
         }
 
@@ -450,6 +458,14 @@ in {
           font-family: monospace;
           font-size: 12px;
         }
+
+        .popup {
+          background-color: @theme_bg_color;
+          color: @theme_fg_color;
+          border: 1px solid @borders;
+          border-radius: 8px;
+          padding: 8px;
+        }
       '';
     };
 
@@ -475,8 +491,10 @@ in {
 
     programs.git = {
       enable = true;
-      userName = "Simon W. Jackson";
-      userEmail = "simon@simonwjackson.io";
+      settings.user = {
+        name = "Simon W. Jackson";
+        email = "simon@simonwjackson.io";
+      };
     };
 
     programs.lazygit = {

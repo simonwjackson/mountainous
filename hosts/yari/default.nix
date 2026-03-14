@@ -4,7 +4,7 @@
   imports = [
     ./hardware.nix
     ./disko.nix
-    ../../profiles/server
+    ../../modules/server
   ];
 
   home-manager.users.simonwjackson = import ../../home/simonwjackson;

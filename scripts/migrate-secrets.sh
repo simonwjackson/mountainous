@@ -91,7 +91,7 @@ main() {
     echo ""
     log_info "=== Host-Specific Secrets (Syncthing) ==="
     # List of hosts with syncthing secrets
-    local hosts=(aka bandi fuji haku kita naka nyu oku onishi sobo tsukuba unzen usu yari zao)
+    local hosts=(aka bandi fuji haku naka nyu oku onishi sobo tsukuba unzen usu yari zao)
 
     for host in "${hosts[@]}"; do
         if [[ "$DRY_RUN" != "true" ]]; then
@@ -110,7 +110,6 @@ main() {
     move_secret "$SECRETS_OLD/user-simonwjackson-claude-credentials.age" "$SECRETS_NEW/user/simonwjackson/credentials/claude-credentials.age"
     move_secret "$SECRETS_OLD/user-simonwjackson-github-token.age" "$SECRETS_NEW/user/simonwjackson/credentials/github-token.age"
     move_secret "$SECRETS_OLD/user-simonwjackson-github-token-nix.age" "$SECRETS_NEW/user/simonwjackson/credentials/github-token-nix.age"
-    move_secret "$SECRETS_OLD/user-simonwjackson-kita.age" "$SECRETS_NEW/user/simonwjackson/credentials/kita.age"
     move_secret "$SECRETS_OLD/user-simonwjackson-pin.age" "$SECRETS_NEW/user/simonwjackson/credentials/pin.age"
     move_secret "$SECRETS_OLD/user-simonwjackson.age" "$SECRETS_NEW/user/simonwjackson/credentials/master.age"
 

@@ -496,7 +496,7 @@ systemd.services.backup.serviceConfig.Nice = 19;
 Based on your infrastructure (Tailscale, Syncthing, multiple home servers):
 
 1. **Uptime Kuma** (50MB RAM)
-   - Monitor all your mountain systems (aka, zao, fuji, kita, etc.)
+   - Monitor all your mountain systems (aka, zao, fuji, yuki, etc.)
    - Beautiful web interface
    - Notifications via Pushover (you're already using!)
 
@@ -700,7 +700,7 @@ They are **NOT suitable** for:
 - ❌ Large-scale production services
 - ❌ Container orchestration platforms
 
-**Strategy:** Use yake & nasu for lightweight, always-on services. Keep heavy workloads on your home servers (aka, zao, fuji, kita) where you have more resources.
+**Strategy:** Use yake & nasu for lightweight, always-on services. Keep heavy workloads on your home servers (aka, zao, fuji, yuki) where you have more resources.
 
 **Reality Check:** With proper service selection and resource management, you can comfortably run 5-8 lightweight services per instance. Choose wisely!
 

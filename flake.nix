@@ -1,5 +1,6 @@
 {
   description = "Mountainous — unified NixOS configurations";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     disko = {
@@ -24,8 +25,19 @@
       url = "github:fiffeek/hyprdynamicmonitors";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-anywhere = {
+      url = "github:nix-community/nixos-anywhere";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flexget-webui = {
+      url = "github:Flexget/webui";
+      flake = false;
+    };
+    taskwarrior-recurrence = {
+      url = "github:lyz-code/taskwarrior_recurrence";
+      flake = false;
+    };
     # Fuji-specific inputs
-    pyxis.url = "github:simonwjackson/pyxis";
     tsnsrv = {
       url = "github:boinkor-net/tsnsrv";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -39,6 +51,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
+
   outputs = {
     self,
     nixpkgs,
@@ -49,12 +62,66 @@
     impermanence,
     gomod2nix,
     hyprdynamicmonitors,
-    pyxis,
+    nixos-anywhere,
+    flexget-webui,
+    taskwarrior-recurrence,
     tsnsrv,
     cascade,
     nixos-wsl,
     ...
-  }: let
+  } @ inputs: let
+    lib = nixpkgs.lib;
+    systems = ["x86_64-linux" "aarch64-linux"];
+
+    collectPackagePaths =
+      prefix: dir: let
+        entries = builtins.readDir dir;
+        names = lib.sort (a: b: a < b) (builtins.attrNames entries);
+      in
+        lib.foldl' (
+          acc: name: let
+            type = entries.${name};
+            path = dir + "/${name}";
+            attrName =
+              if prefix == ""
+              then name
+              else "${prefix}-${name}";
+            current =
+              lib.optionalAttrs
+              (type == "directory" && builtins.pathExists (path + "/default.nix"))
+              {"${attrName}" = path;};
+            nested =
+              if type == "directory"
+              then collectPackagePaths attrName path
+              else {};
+          in
+            acc // current // nested
+        ) {}
+        names;
+
+    packagePaths = collectPackagePaths "" ./packages;
+
+    packageOverlay = final: prev: let
+      callPackage = lib.callPackageWith (final // {inherit inputs;});
+    in
+      lib.mapAttrs (_: path: callPackage path {}) packagePaths;
+
+    extraOverlays = import ./overlays;
+    projectOverlays = [packageOverlay] ++ extraOverlays;
+
+    mkPkgs = system:
+      import nixpkgs {
+        inherit system;
+        overlays = projectOverlays;
+      };
+
+    mkFlakePackages = system: let
+      pkgs = mkPkgs system;
+      callPackage = lib.callPackageWith (pkgs // {inherit inputs;});
+      packageSet = lib.mapAttrs (_: path: callPackage path {}) packagePaths;
+    in
+      lib.filterAttrs (_: value: lib.isDerivation value) packageSet;
+
     mkHost = {
       system,
       hostPath,
@@ -69,8 +136,8 @@
             disko.nixosModules.default
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
-            ./nix/modules/nixos/tailscale
-            ./nix/modules/nixos/syncthing
+            ./modules/nixos/tailscale
+            ./modules/nixos/syncthing
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
@@ -81,8 +148,8 @@
                 trusted-users = ["root" "@wheel" "simonwjackson" "admin"];
               };
               users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
-                ./nix/modules/nixos/user/id_rsa.pub
-                ./nix/modules/nixos/user/id_ed25519.pub
+                ./modules/nixos/user/id_rsa.pub
+                ./modules/nixos/user/id_ed25519.pub
               ];
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
               networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
@@ -90,12 +157,19 @@
               services.openssh.enable = lib.mkDefault true;
               programs.mosh.enable = lib.mkDefault true;
             })
-            {nixpkgs.overlays = import ./overlays;}
+            {nixpkgs.overlays = projectOverlays;}
             hostPath
           ]
           ++ extraModules;
       };
   in {
+    overlays = {
+      packages = packageOverlay;
+      default = lib.composeManyExtensions projectOverlays;
+    };
+
+    packages = lib.genAttrs systems mkFlakePackages;
+
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
@@ -114,12 +188,6 @@
           inherit gomod2nix;
         };
       };
-      kita = mkHost {
-        system = "x86_64-linux";
-        hostPath = ./hosts/kita;
-        extraModules = [impermanence.nixosModules.default];
-        specialArgs = {inherit pyxis gomod2nix;};
-      };
       yuki = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/yuki;
@@ -131,8 +199,9 @@
         extraModules = [nixos-wsl.nixosModules.default];
       };
     };
-    devShells = nixpkgs.lib.genAttrs ["x86_64-linux" "aarch64-linux"] (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+
+    devShells = lib.genAttrs systems (system: let
+      pkgs = mkPkgs system;
     in {
       default = pkgs.mkShell {
         buildInputs = with pkgs; [

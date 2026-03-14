@@ -17,7 +17,7 @@ The recommended design uses `@proseql/core`/`@proseql/node` for the control plan
 
 Repository patterns to reuse:
 - `nix/features/trove/usenet/nixos.nix` already models NZBGet declaratively with typed settings and secret injection.
-- `pkgs/scripts/tasks-query.sh` shows Bun is already an accepted runtime in this repo and that ProseQL is already part of the author’s toolchain.
+- `packages/scripts/tasks-query.sh` shows Bun is already an accepted runtime in this repo and that ProseQL is already part of the author’s toolchain.
 
 ## Key Decisions
 - **Headless-first scope**: the MVP is a daemon + API/CLI, not a web application.

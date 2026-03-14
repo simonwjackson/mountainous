@@ -1,12 +1,12 @@
 { config, lib, pkgs, gomod2nix, ... }:
 
 let
-  buildGoApplication = gomod2nix.legacyPackages.${pkgs.system}.buildGoApplication;
+  buildGoApplication = gomod2nix.legacyPackages.${pkgs.stdenv.hostPlatform.system}.buildGoApplication;
   tsnet-proxy-pkg = buildGoApplication {
     pname = "tsnet-proxy";
     version = "1.0.0";
-    src = ../../pkgs/tsnet-proxy;
-    modules = ../../pkgs/tsnet-proxy/gomod2nix.toml;
+    src = ../../packages/tsnet-proxy;
+    modules = ../../packages/tsnet-proxy/gomod2nix.toml;
     ldflags = [ "-s" "-w" ];
     doCheck = false;
   };
@@ -16,7 +16,7 @@ in
   imports = [
     ./hardware.nix
     ./disko.nix
-    ../../profiles/server
+    ../../modules/server
     ../../modules/tsnet-proxy
   ];
 

@@ -4,7 +4,7 @@
   imports = [
     ./hardware.nix
     ./disko.nix
-    ../../profiles/server
+    ../../modules/server
     ../../modules/tasks-calendar
     ../../modules/openclaw
     ../../modules/etabli

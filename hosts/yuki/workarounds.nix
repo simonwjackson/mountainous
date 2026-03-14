@@ -464,6 +464,25 @@ in {
         }
       ]
     '')
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-yuki-disable-hdmi-audio.conf" ''
+      monitor.alsa.rules = [
+        {
+          matches = [
+            {
+              # Match any HDMI / DisplayPort audio sink node.
+              # On the SOF card these show up as separate nodes whose names contain
+              # "HDMI" (e.g. HiFi__HDMI1__sink, HiFi__HDMI2__sink, etc.).
+              node.name = "~alsa_output.*HDMI.*"
+            }
+          ]
+          actions = {
+            update-props = {
+              node.disabled = true
+            }
+          }
+        }
+      ]
+    '')
   ];
 
   boot.kernelParams = [
