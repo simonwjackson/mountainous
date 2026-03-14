@@ -8,6 +8,15 @@
 }: let
   passwordSecretFile = ../../secrets/hosts/yuki/simonwjackson-password-hash.age;
   hasPasswordSecret = builtins.pathExists passwordSecretFile;
+  syncthingShares = import ./syncthing-shares.nix;
+  syncthingFolders = lib.mapAttrs (
+    name: hostCfg:
+      let
+        shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
+      in
+        assert (shareCfg.name or name) == name;
+          (builtins.removeAttrs shareCfg [ "name" ]) // hostCfg
+  ) syncthingShares;
 
   cascadeUserChrome = ''
     @import url("file://${cascade}/chrome/includes/cascade-config.css");
@@ -114,7 +123,10 @@ in {
 
   networking.hostName = "yuki";
 
-  mountainous.syncthing.enable = true;
+  mountainous.syncthing = {
+    enable = true;
+    folders = syncthingFolders;
+  };
   networking.useDHCP = lib.mkDefault true;
   time.timeZone = "America/Denver";
   i18n.defaultLocale = "en_US.UTF-8";
