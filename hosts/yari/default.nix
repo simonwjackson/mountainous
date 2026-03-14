@@ -27,7 +27,7 @@
 
   users.users.simonwjackson = {
     isNormalUser = true;
-    shell = pkgs.nushell;
+    shell = pkgs.bashInteractive;
     extraGroups = ["wheel" "media"];
     hashedPassword = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
   };
