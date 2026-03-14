@@ -261,7 +261,7 @@ HOST_CONFIG=$(
 
   users.users.${USERNAME} = {
     isNormalUser = true;
-    shell = pkgs.nushell;
+    shell = pkgs.bashInteractive;
     extraGroups = ["wheel"];
   };
 
