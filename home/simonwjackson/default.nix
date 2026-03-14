@@ -196,7 +196,7 @@ in {
     programs.direnv = {
       enable = true;
       nix-direnv.enable = true;
-      enableNushellIntegration = true;
+      enableBashIntegration = true;
       config = {
         whitelist.prefix = ["/home/simonwjackson/code"];
       };
@@ -205,7 +205,6 @@ in {
     programs.atuin = {
       enable = true;
       enableBashIntegration = true;
-      enableNushellIntegration = true;
       daemon.enable = true;
       settings = {
         auto_sync = true;
@@ -220,67 +219,34 @@ in {
       };
     };
 
-    programs.nushell = {
-      enable = true;
-      configFile.text = ''
-        $env.config = {
-          show_banner: false
-          edit_mode: emacs
+    home.sessionPath = [
+      "$HOME/.nix-profile/bin"
+      "$HOME/.local/bin"
+      "/etc/profiles/per-user/simonwjackson/bin"
+      "/run/current-system/sw/bin"
+    ];
 
-          completions: {
-            case_sensitive: false
-            quick: true
-            partial: true
-            algorithm: fuzzy
-          }
-
-          table: {
-            mode: rounded
-            index_mode: auto
-          }
-
-          history: {
-            max_size: 100_000
-            sync_on_enter: true
-            file_format: sqlite
-          }
-        }
-      '';
-      envFile.text = ''
-        $env.PATH = ($env.PATH | split row (char esep)
-          | prepend "/run/current-system/sw/bin"
-          | prepend "/etc/profiles/per-user/simonwjackson/bin"
-          | prepend $"($env.HOME)/.local/bin"
-          | prepend $"($env.HOME)/.nix-profile/bin"
-          | uniq)
-
-        # Load OpenClaw gateway token from system agenix secret
-        if ("/run/agenix/openclaw-env" | path exists) {
-          $env.OPENCLAW_GATEWAY_TOKEN = (open /run/agenix/openclaw-env | lines | where ($it | str starts-with "OPENCLAW_GATEWAY_TOKEN=") | first | split row "=" | skip 1 | str join "=")
-        }
-      '';
-      shellAliases = {
-        ll = "ls -l";
-        la = "ls -a";
-        lla = "ls -la";
-        g = "git";
-        gs = "git status";
-        gd = "git diff";
-        gl = "git log --oneline -20";
-        gp = "git push";
-        gc = "git commit";
-        rebuild = "sudo nixos-rebuild switch --flake ~/code/fuji";
-      };
+    home.shellAliases = {
+      ll = "ls -l";
+      la = "ls -a";
+      lla = "ls -la";
+      g = "git";
+      gs = "git status";
+      gd = "git diff";
+      gl = "git log --oneline -20";
+      gp = "git push";
+      gc = "git commit";
+      rebuild = "sudo nixos-rebuild switch --flake ~/code/fuji";
     };
 
     programs.carapace = {
       enable = true;
-      enableNushellIntegration = true;
+      enableBashIntegration = true;
     };
 
     programs.starship = {
       enable = true;
-      enableNushellIntegration = true;
+      enableBashIntegration = true;
       settings = {
         add_newline = false;
         format = "$directory$git_branch$git_status$nix_shell$character";
@@ -309,6 +275,18 @@ in {
 
     programs.bash = {
       enable = true;
+      initExtra = ''
+        if [[ -f /run/agenix/openclaw-env ]]; then
+          while IFS= read -r line; do
+            case "$line" in
+              OPENCLAW_GATEWAY_TOKEN=*)
+                export OPENCLAW_GATEWAY_TOKEN="''${line#OPENCLAW_GATEWAY_TOKEN=}"
+                break
+                ;;
+            esac
+          done < /run/agenix/openclaw-env
+        fi
+      '';
     };
 
     programs.kitty = {
