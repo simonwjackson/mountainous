@@ -9,7 +9,7 @@ buildGoModule rec {
 
   src = ./.;
 
-  vendorHash = null;  # Uses go.sum directly
+  vendorHash = "sha256-b0sf2rmvyPZQX1MVK28qXO+xktM4SQM+FkXuLQJcgGY=";
 
   ldflags = [
     "-s"
