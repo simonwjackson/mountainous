@@ -37,6 +37,7 @@ in {
     enable = true;
     passwordHash = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
   };
+  mountainous.presets.server.enable = true;
 
   mountainous.syncthing = {
     enable = true;
@@ -71,7 +72,6 @@ in {
       tasks-query
       omi-pipeline
       omi-cron
-      youtube-digest
       ebay-api
       ebay-publish
     ]);

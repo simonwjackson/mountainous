@@ -38,6 +38,7 @@ in {
     enable = true;
     passwordHash = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
   };
+  mountainous.presets.server.enable = true;
 
   mountainous.syncthing = {
     enable = true;
