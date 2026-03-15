@@ -17,6 +17,7 @@ in {
   };
 
   config = mkIf cfg.enable {
+    nixpkgs.config.allowUnfree = true;
     networking.useDHCP = mkDefault true;
     i18n.defaultLocale = "en_US.UTF-8";
     networking.networkmanager.enable = mkDefault true;
