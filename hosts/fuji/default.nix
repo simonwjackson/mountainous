@@ -39,7 +39,7 @@ in {
   };
   mountainous.presets.server.enable = true;
 
-  mountainous.syncthing = {
+  mountainous.features.syncthing = {
     enable = true;
     folders = syncthingFolders;
   };
