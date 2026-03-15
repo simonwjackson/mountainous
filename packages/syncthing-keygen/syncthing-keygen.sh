@@ -4,8 +4,9 @@ set -euo pipefail
 if [ $# -eq 0 ]; then
     echo "Usage: syncthing-keygen <hostname>"
     echo ""
-    echo "Generates syncthing identity for a host:"
-    echo "  - Writes device ID to hosts/<hostname>/syncthing-device-id"
+    echo "Generates syncthing identity for a host or external device:"
+    echo "  - For NixOS hosts: writes/updates hosts/<hostname>/syncthing.nix"
+    echo "  - For external devices: writes devices/<hostname>/syncthing-device-id"
     echo "  - Outputs key.pem and cert.pem for agenix encryption"
     echo ""
     echo "Example:"
@@ -23,9 +24,11 @@ DEVICE_DIR="$GIT_ROOT/devices/$HOSTNAME"
 
 # Determine where to write the device ID
 if [ -d "$HOST_DIR" ]; then
-    TARGET_DIR="$HOST_DIR"
+    TARGET_TYPE="host"
+    TARGET_PATH="$HOST_DIR/syncthing.nix"
 elif [ -d "$DEVICE_DIR" ]; then
-    TARGET_DIR="$DEVICE_DIR"
+    TARGET_TYPE="device"
+    TARGET_PATH="$DEVICE_DIR/syncthing-device-id"
 else
     echo "Error: Neither hosts/$HOSTNAME/ nor devices/$HOSTNAME/ exists"
     echo ""
@@ -57,9 +60,37 @@ if [ -z "$DEVICE_ID" ]; then
     exit 1
 fi
 
-# Write device ID file
-echo "$DEVICE_ID" > "$TARGET_DIR/syncthing-device-id"
-git -C "$GIT_ROOT" add "$TARGET_DIR/syncthing-device-id"
+if [ "$TARGET_TYPE" = "host" ]; then
+    if [ -f "$TARGET_PATH" ]; then
+        if grep -qE '^[[:space:]]*deviceId = "[^"]*";' "$TARGET_PATH"; then
+            sed -i -E "s|^[[:space:]]*deviceId = \"[^\"]*\";|  deviceId = \"$DEVICE_ID\";|" "$TARGET_PATH"
+        else
+            TEMP_MANIFEST="$TEMP_DIR/syncthing.nix"
+            INSERTED=false
+
+            while IFS= read -r line; do
+                printf '%s\n' "$line" >> "$TEMP_MANIFEST"
+                if [ "$INSERTED" = false ] && [[ "$line" =~ ^[[:space:]]*\{$ ]]; then
+                    printf '  deviceId = "%s";\n\n' "$DEVICE_ID" >> "$TEMP_MANIFEST"
+                    INSERTED=true
+                fi
+            done < "$TARGET_PATH"
+
+            if [ "$INSERTED" = false ]; then
+                echo "Error: $TARGET_PATH is not a Nix attrset; expected opening '{'"
+                exit 1
+            fi
+
+            mv "$TEMP_MANIFEST" "$TARGET_PATH"
+        fi
+    else
+        printf '{\n  deviceId = "%s";\n\n  shares = { };\n}\n' "$DEVICE_ID" > "$TARGET_PATH"
+    fi
+else
+    printf '%s\n' "$DEVICE_ID" > "$TARGET_PATH"
+fi
+
+git -C "$GIT_ROOT" add "$TARGET_PATH"
 
 # Copy key and cert for agenix encryption
 cp "$TEMP_DIR/key.pem" "./$HOSTNAME-syncthing-key.pem"
@@ -67,14 +98,18 @@ cp "$TEMP_DIR/cert.pem" "./$HOSTNAME-syncthing-cert.pem"
 
 echo "Done!"
 echo ""
-echo "Device ID written to: ${TARGET_DIR#$GIT_ROOT/}/syncthing-device-id"
 echo "Device ID: $DEVICE_ID"
+echo ""
+
+if [ "$TARGET_TYPE" = "host" ]; then
+    echo "Host manifest written to: ${TARGET_PATH#$GIT_ROOT/}"
+    echo ""
+    echo "Syncthing will be auto-enabled for this host when the manifest exists."
+else
+    echo "Device ID written to: ${TARGET_PATH#$GIT_ROOT/}"
+fi
+
 echo ""
 echo "Key and cert saved to:"
 echo "  ./$HOSTNAME-syncthing-key.pem"
 echo "  ./$HOSTNAME-syncthing-cert.pem"
-echo ""
-echo "Next: encrypt with agenix and enable syncthing:"
-echo ""
-echo "  # In your host config:"
-echo "  mountainous.features.syncthing.enable = true;"
