@@ -77,33 +77,49 @@
     lib = nixpkgs.lib;
     systems = ["x86_64-linux" "aarch64-linux"];
 
-    collectPackagePaths =
-      prefix: dir: let
-        entries = builtins.readDir dir;
-        names = lib.sort (a: b: a < b) (builtins.attrNames entries);
+    collectPackagePaths = prefix: dir: let
+      entries = builtins.readDir dir;
+      names = lib.sort (a: b: a < b) (builtins.attrNames entries);
+    in
+      lib.foldl' (
+        acc: name: let
+          type = entries.${name};
+          path = dir + "/${name}";
+          attrName =
+            if prefix == ""
+            then name
+            else "${prefix}-${name}";
+          current =
+            lib.optionalAttrs
+            (type == "directory" && builtins.pathExists (path + "/default.nix"))
+            {"${attrName}" = path;};
+          nested =
+            if type == "directory"
+            then collectPackagePaths attrName path
+            else {};
+        in
+          acc // current // nested
+      ) {}
+      names;
+
+    collectModulePaths = dir: let
+      entries = builtins.readDir dir;
+      names = lib.sort (a: b: a < b) (builtins.attrNames entries);
+    in
+      lib.concatMap (name: let
+        type = entries.${name};
+        path = dir + "/${name}";
       in
-        lib.foldl' (
-          acc: name: let
-            type = entries.${name};
-            path = dir + "/${name}";
-            attrName =
-              if prefix == ""
-              then name
-              else "${prefix}-${name}";
-            current =
-              lib.optionalAttrs
-              (type == "directory" && builtins.pathExists (path + "/default.nix"))
-              {"${attrName}" = path;};
-            nested =
-              if type == "directory"
-              then collectPackagePaths attrName path
-              else {};
-          in
-            acc // current // nested
-        ) {}
-        names;
+        if type != "directory"
+        then []
+        else
+          lib.optional (builtins.pathExists (path + "/default.nix")) path
+          ++ collectModulePaths path)
+      names;
 
     packagePaths = collectPackagePaths "" ./packages;
+    featureModulePaths = collectModulePaths ./features;
+    presetModulePaths = collectModulePaths ./presets;
 
     packageOverlay = final: prev: let
       callPackage = lib.callPackageWith (final // {inherit inputs;});
@@ -142,6 +158,10 @@
             home-manager.nixosModules.home-manager
             ./modules/nixos/tailscale
             ./modules/nixos/syncthing
+          ]
+          ++ featureModulePaths
+          ++ presetModulePaths
+          ++ [
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
