@@ -18,14 +18,28 @@
   hostname = config.networking.hostName;
 
   # ── Device discovery from plain files ────────────────────────────────
-  # Each host/device drops a `syncthing-device-id` file in its directory.
-  # No cross-evaluation needed — just builtins.readFile on static data.
+  # NixOS hosts expose Syncthing metadata via `hosts/<name>/syncthing.nix`.
+  # External devices (phones, etc.) still use `devices/<name>/syncthing-device-id`.
 
   hostsRoot = ../../hosts;
   devicesRoot = ../../devices;
 
-  # Scan a directory for subdirs containing syncthing-device-id files
-  discoverDevices =
+  discoverHostManifests =
+    root:
+    let
+      entries = if builtins.pathExists root then builtins.readDir root else { };
+      dirs = attrNames (lib.filterAttrs (_: type: type == "directory") entries);
+      hasManifest = name: builtins.pathExists (root + "/${name}/syncthing.nix");
+      withManifests = filter hasManifest dirs;
+    in
+    builtins.listToAttrs (
+      map (name: {
+        inherit name;
+        value = import (root + "/${name}/syncthing.nix");
+      }) withManifests
+    );
+
+  discoverExternalDevices =
     root:
     let
       entries = if builtins.pathExists root then builtins.readDir root else { };
@@ -40,25 +54,17 @@
       }) withIds
     );
 
-  discoverHostShares =
-    root:
-    let
-      entries = if builtins.pathExists root then builtins.readDir root else { };
-      dirs = attrNames (lib.filterAttrs (_: type: type == "directory") entries);
-      hasShares = name: builtins.pathExists (root + "/${name}/syncthing-shares.nix");
-      withShares = filter hasShares dirs;
-    in
-    builtins.listToAttrs (
-      map (name: {
-        inherit name;
-        value = attrNames (lib.filterAttrs (_: shareCfg: shareCfg.enable or false) (import (root + "/${name}/syncthing-shares.nix")));
-      }) withShares
-    );
+  hostManifests = discoverHostManifests hostsRoot;
 
-  # All known devices: hosts + external devices (phones, etc.)
-  allDeviceIds = (discoverDevices hostsRoot) // (discoverDevices devicesRoot);
+  # Device IDs come from host manifests plus any external non-host devices.
+  allDeviceIds = (mapAttrs (_: manifest: manifest.deviceId) hostManifests) // (discoverExternalDevices devicesRoot);
   allDeviceNames = attrNames allDeviceIds;
-  hostShareRequests = discoverHostShares hostsRoot;
+
+  # Share membership is derived only from enabled shares declared by hosts.
+  hostEnabledShares = mapAttrs (
+    _: manifest:
+    attrNames (lib.filterAttrs (_: shareCfg: shareCfg.enable or false) manifest.shares)
+  ) hostManifests;
   hostsByShare = foldl' (
     acc: host:
     foldl' (
@@ -67,8 +73,8 @@
       // {
         "${share}" = (shareAcc.${share} or [ ]) ++ [ host ];
       }
-    ) acc hostShareRequests.${host}
-  ) { } (attrNames hostShareRequests);
+    ) acc hostEnabledShares.${host}
+  ) { } (attrNames hostEnabledShares);
 
   # Peers = everyone except self
   peerIds = removeAttrs allDeviceIds [ hostname ];
@@ -89,7 +95,7 @@
   enabledShares = lib.filterAttrs (_: shareCfg: shareCfg.enable) cfg.shares;
 
   # ── Share config ────────────────────────────────────────────────────
-  # Hosts declare the shares they want via hosts/<name>/syncthing-shares.nix.
+  # Hosts declare the shares they want via hosts/<name>/syncthing.nix.
   # A share automatically shares with every other host that requested the same
   # share name, unless an explicit shareWith override is provided.
   resolveShareDevices =
