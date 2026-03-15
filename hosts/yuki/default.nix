@@ -71,7 +71,7 @@ in {
   imports = [
     ./hardware.nix
     ./disko.nix
-    ./workarounds.nix
+    ./quirks.nix
     ../../modules/nixos/device
     ../../features/gaming/nixos.nix
   ];

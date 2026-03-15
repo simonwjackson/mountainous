@@ -22,6 +22,17 @@
     refresh="''${1:?usage: yuki-apply-display <refresh> <scale>}"
     scale="''${2:?usage: yuki-apply-display <refresh> <scale>}"
     externalRefresh="100"
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    panelModeStateFile="$runtimeDir/yuki-edp-2-mode"
+    panelMode="''${YUKI_INTERNAL_PANEL_MODE:-}"
+
+    if [ -z "$panelMode" ] && [ -f "$panelModeStateFile" ]; then
+      panelMode=$(cat "$panelModeStateFile")
+    fi
+
+    if [ -z "$panelMode" ]; then
+      panelMode="dual"
+    fi
 
     internalYOffset=$(awk "BEGIN {
       y = 1600 / $scale;
@@ -58,7 +69,7 @@
       exit 0
     fi
 
-    # Keep the two internal panels stacked vertically.
+    # Keep the internal panels stacked vertically when both are enabled.
     #
     # The bottom panel's Y position must track the scaled logical height of the top
     # panel. For 2560x1600 at scale 1.25 this becomes 1280, and we derive the same math
@@ -70,12 +81,24 @@
     # separate commands rather than a single dual-monitor batch update.
     ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
       "keyword monitor eDP-1,${resolution}@''${refresh},0x0,''${scale},transform,2"
-    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
-      "keyword monitor eDP-2,${resolution}@''${refresh},0x''${internalYOffset},''${scale}"
-    # HACK: Bug in Hyprland needs this to get the placement right.
-    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
-      "keyword monitor eDP-2,${resolution}@''${refresh},0x''${internalYOffset},''${scale}"
 
+    case "$panelMode" in
+      dual)
+        ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+          "keyword monitor eDP-2,${resolution}@''${refresh},0x''${internalYOffset},''${scale}"
+        # HACK: Bug in Hyprland needs this to get the placement right.
+        ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+          "keyword monitor eDP-2,${resolution}@''${refresh},0x''${internalYOffset},''${scale}"
+        ;;
+      single)
+        ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+          "keyword monitor eDP-2,disable"
+        ;;
+      *)
+        echo "invalid yuki internal panel mode: $panelMode" >&2
+        exit 1
+        ;;
+    esac
   '';
 
   yukiRefreshRateScript = pkgs.writeShellScript "yuki-refresh-rate" ''
@@ -212,6 +235,236 @@
     fi
   '';
 
+  yukiSyncEdp2ModeScript = pkgs.writeShellScript "yuki-sync-edp-2-mode" ''
+    set -eu
+
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    panelModeStateFile="$runtimeDir/yuki-edp-2-mode"
+    refreshStateFile="$runtimeDir/yuki-refresh-rate"
+    scaleStateFile="$runtimeDir/yuki-scale"
+
+    current_scale() {
+      if [ -f "$scaleStateFile" ]; then
+        cat "$scaleStateFile"
+      else
+        printf '${defaultScale}\n'
+      fi
+    }
+
+    current_refresh() {
+      if [ -f "$refreshStateFile" ]; then
+        cat "$refreshStateFile"
+      elif [ -r /sys/class/power_supply/ADP0/online ] && [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
+        printf '120\n'
+      else
+        printf '60\n'
+      fi
+    }
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-'; then
+      exit 0
+    fi
+
+    lidClosed=$(${pkgs.systemd}/bin/busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsClosed 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }' || printf 'false\n')
+    if [ "$lidClosed" = "true" ]; then
+      exit 0
+    fi
+
+    if [ ! -f "$panelModeStateFile" ] || [ "$(cat "$panelModeStateFile")" != "single" ]; then
+      exit 0
+    fi
+
+    YUKI_INTERNAL_PANEL_MODE=single ${yukiApplyDisplayScript} "$(current_refresh)" "$(current_scale)"
+  '';
+
+  yukiDisableInternalDisplaysScript = pkgs.writeShellScript "yuki-disable-internal-displays" ''
+    set -eu
+
+    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+      "keyword monitor eDP-1,disable" >/dev/null 2>&1 || true
+    ${pkgs.hyprland}/bin/hyprctl --instance 0 --batch \
+      "keyword monitor eDP-2,disable" >/dev/null 2>&1 || true
+  '';
+
+  yukiRestoreUndockedDisplaysScript = pkgs.writeShellScript "yuki-restore-undocked-displays" ''
+    set -eu
+
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    refreshStateFile="$runtimeDir/yuki-refresh-rate"
+    scaleStateFile="$runtimeDir/yuki-scale"
+
+    current_scale() {
+      if [ -f "$scaleStateFile" ]; then
+        cat "$scaleStateFile"
+      else
+        printf '${defaultScale}\n'
+      fi
+    }
+
+    current_refresh() {
+      if [ -f "$refreshStateFile" ]; then
+        cat "$refreshStateFile"
+      elif [ -r /sys/class/power_supply/ADP0/online ] && [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
+        printf '120\n'
+      else
+        printf '60\n'
+      fi
+    }
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-'; then
+      exit 0
+    fi
+
+    lidClosed=$(${pkgs.systemd}/bin/busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsClosed 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }' || printf 'false\n')
+    if [ "$lidClosed" = "true" ]; then
+      exit 0
+    fi
+
+    ${yukiApplyDisplayScript} "$(current_refresh)" "$(current_scale)"
+  '';
+
+  yukiLidStateWatchScript = pkgs.writeShellScript "yuki-lid-state-watch" ''
+    set -eu
+
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    stateDir="$runtimeDir/yuki-hyprdynamicmonitors"
+    stateFile="$stateDir/undock-state"
+    lockFile="$stateDir/undock-state.lock"
+    pollIntervalSeconds="1"
+
+    mkdir -p "$stateDir"
+    exec 9>"$lockFile"
+
+    current_dp_count() {
+      ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -c '^Monitor DP-' || true
+    }
+
+    current_lid_state() {
+      ${pkgs.systemd}/bin/busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsClosed 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }' || printf 'false\n'
+    }
+
+    internal_panels_enabled() {
+      ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor eDP-'
+    }
+
+    while :; do
+      ${pkgs.util-linux}/bin/flock -x 9
+
+      prevProfile=""
+      prevDpCount="0"
+      prevLidClosed="false"
+      undockGeneration="0"
+      if [ -f "$stateFile" ]; then
+        . "$stateFile"
+      fi
+      prevLidClosed="''${prevLidClosed:-false}"
+      undockGeneration="''${undockGeneration:-0}"
+
+      dpCount=$(current_dp_count)
+      lidClosed=$(current_lid_state)
+      shouldRestoreUndockedDisplays="0"
+      shouldStopInhibitor="0"
+
+      if [ "$dpCount" -gt 0 ]; then
+        ${pkgs.systemd}/bin/systemctl --user start yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
+      fi
+
+      if [ "$lidClosed" = "true" ] && internal_panels_enabled; then
+        ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
+          "lid closed; disabling internal displays dpCount=$dpCount"
+        ${yukiDisableInternalDisplaysScript}
+      fi
+
+      if [ "$prevLidClosed" = "true" ] && [ "$lidClosed" != "true" ]; then
+        undockGeneration=$((undockGeneration + 1))
+        shouldRestoreUndockedDisplays="1"
+        if [ "$dpCount" -eq 0 ]; then
+          shouldStopInhibitor="1"
+        fi
+        ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
+          "lid opened; cancelling buffered suspend generation=$undockGeneration dpCount=$dpCount"
+      elif [ "$lidClosed" != "true" ] && [ "$dpCount" -eq 0 ] && ! internal_panels_enabled; then
+        shouldRestoreUndockedDisplays="1"
+        shouldStopInhibitor="1"
+        ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
+          "undocked with lid open and internal displays off; restoring internal layout"
+      elif [ "$lidClosed" != "true" ] && [ "$dpCount" -eq 0 ]; then
+        shouldStopInhibitor="1"
+      fi
+
+      printf 'prevProfile=%q\n' "$prevProfile" > "$stateFile"
+      printf 'prevDpCount=%q\n' "$prevDpCount" >> "$stateFile"
+      printf 'prevLidClosed=%q\n' "$lidClosed" >> "$stateFile"
+      printf 'undockGeneration=%q\n' "$undockGeneration" >> "$stateFile"
+
+      ${pkgs.util-linux}/bin/flock -u 9
+
+      if [ "$shouldStopInhibitor" = "1" ]; then
+        ${pkgs.systemd}/bin/systemctl --user stop yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
+      fi
+
+      if [ "$shouldRestoreUndockedDisplays" = "1" ]; then
+        ${yukiRestoreUndockedDisplaysScript}
+      fi
+
+      ${pkgs.coreutils}/bin/sleep "$pollIntervalSeconds"
+    done
+  '';
+
+  yukiEdp2ToggleScript = pkgs.writeShellScript "yuki-toggle-edp-2" ''
+    set -eu
+
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    lockFile="$runtimeDir/yuki-display.lock"
+    panelModeStateFile="$runtimeDir/yuki-edp-2-mode"
+    refreshStateFile="$runtimeDir/yuki-refresh-rate"
+    scaleStateFile="$runtimeDir/yuki-scale"
+    notifySend='${pkgs.libnotify}/bin/notify-send'
+
+    current_scale() {
+      if [ -f "$scaleStateFile" ]; then
+        cat "$scaleStateFile"
+      else
+        printf '${defaultScale}\n'
+      fi
+    }
+
+    current_refresh() {
+      if [ -f "$refreshStateFile" ]; then
+        cat "$refreshStateFile"
+      elif [ -r /sys/class/power_supply/ADP0/online ] && [ "$(cat /sys/class/power_supply/ADP0/online)" = "1" ]; then
+        printf '120\n'
+      else
+        printf '60\n'
+      fi
+    }
+
+    exec 9>"$lockFile"
+    ${pkgs.util-linux}/bin/flock -x 9
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-'; then
+      "$notifySend" "Displays" "eDP-2 toggle is only available while undocked."
+      exit 0
+    fi
+
+    refresh=$(current_refresh)
+    scale=$(current_scale)
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor eDP-2'; then
+      targetMode="single"
+      message="eDP-2 disabled"
+    else
+      targetMode="dual"
+      message="eDP-2 enabled"
+    fi
+
+    YUKI_INTERNAL_PANEL_MODE="$targetMode" ${yukiApplyDisplayScript} "$refresh" "$scale"
+    printf '%s\n' "$targetMode" > "$panelModeStateFile"
+    printf '%s\n' "$refresh" > "$refreshStateFile"
+    printf '%s\n' "$scale" > "$scaleStateFile"
+    "$notifySend" "Displays" "$message"
+  '';
+
   yukiSelectSpeakerProfileScript = pkgs.writeShellScript "yuki-select-speaker-profile" ''
     set -eu
 
@@ -300,34 +553,89 @@
 
     prevProfile=""
     prevDpCount="0"
+    prevLidClosed="false"
+    undockGeneration="0"
+    shouldScheduleSuspend="0"
+    scheduledUndockGeneration="0"
+    suspendBufferSeconds=$((15 * 60))
     if [ -f "$stateFile" ]; then
       . "$stateFile"
     fi
+    prevLidClosed="''${prevLidClosed:-false}"
+    undockGeneration="''${undockGeneration:-0}"
 
     dpCount=$(${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -c '^Monitor DP-' || true)
     lidClosed=$(${pkgs.systemd}/bin/busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsClosed 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }' || printf 'false\n')
 
     ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
-      "profile=$profile prevProfile=$prevProfile dpCount=$dpCount prevDpCount=$prevDpCount lidClosed=$lidClosed dryRun=$dryRun"
+      "profile=$profile prevProfile=$prevProfile dpCount=$dpCount prevDpCount=$prevDpCount lidClosed=$lidClosed prevLidClosed=$prevLidClosed undockGeneration=$undockGeneration dryRun=$dryRun"
 
-    printf 'prevProfile=%q\n' "$profile" > "$stateFile"
-    printf 'prevDpCount=%q\n' "$dpCount" >> "$stateFile"
+    if [ "$dpCount" -gt 0 ]; then
+      ${pkgs.systemd}/bin/systemctl --user start yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
+      if [ "$prevDpCount" -eq 0 ] && [ "$undockGeneration" -gt 0 ]; then
+        undockGeneration=$((undockGeneration + 1))
+        ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
+          "dock reconnected; cancelling buffered suspend generation=$undockGeneration"
+      fi
+    fi
 
     case "$profile" in
       yukiInternal|fallback)
         if [ "$lidClosed" = "true" ] && [ "$dpCount" -eq 0 ] && [ "$prevDpCount" -gt 0 ]; then
+          ${pkgs.systemd}/bin/systemctl --user start yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
+          shouldScheduleSuspend="1"
+          scheduledUndockGeneration=$((undockGeneration + 1))
+          undockGeneration="$scheduledUndockGeneration"
           ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
-            "closed-lid undock detected after profile=$profile; scheduling suspend-then-hibernate"
-          if [ "$dryRun" = "1" ]; then
-            exit 0
-          fi
-          (
-            sleep 2
-            ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
-          ) >/dev/null 2>&1 &
+            "closed-lid undock detected after profile=$profile; scheduling suspend-then-hibernate in 15 minutes generation=$scheduledUndockGeneration"
         fi
         ;;
     esac
+
+    if [ "$lidClosed" = "true" ]; then
+      ${yukiDisableInternalDisplaysScript}
+    elif [ "$dpCount" -eq 0 ]; then
+      ${pkgs.systemd}/bin/systemctl --user stop yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
+    fi
+
+    printf 'prevProfile=%q\n' "$profile" > "$stateFile"
+    printf 'prevDpCount=%q\n' "$dpCount" >> "$stateFile"
+    printf 'prevLidClosed=%q\n' "$lidClosed" >> "$stateFile"
+    printf 'undockGeneration=%q\n' "$undockGeneration" >> "$stateFile"
+
+    ${pkgs.util-linux}/bin/flock -u 9
+
+    if [ "$shouldScheduleSuspend" = "1" ] && [ "$dryRun" != "1" ]; then
+      (
+        ${pkgs.coreutils}/bin/sleep "$suspendBufferSeconds"
+
+        currentUndockGeneration="0"
+        if [ -f "$stateFile" ]; then
+          . "$stateFile"
+        fi
+        currentUndockGeneration="''${undockGeneration:-0}"
+        dpCountAfter=$(${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -c '^Monitor DP-' || true)
+        lidClosedAfter=$(${pkgs.systemd}/bin/busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsClosed 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }' || printf 'false\n')
+
+        if [ "$currentUndockGeneration" != "$scheduledUndockGeneration" ]; then
+          ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
+            "skipping stale suspend buffer generation=$scheduledUndockGeneration currentGeneration=$currentUndockGeneration"
+          exit 0
+        fi
+
+        if [ "$lidClosedAfter" != "true" ] || [ "$dpCountAfter" -ne 0 ]; then
+          ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
+            "cancelling buffered suspend generation=$scheduledUndockGeneration lidClosed=$lidClosedAfter dpCount=$dpCountAfter"
+          exit 0
+        fi
+
+        ${pkgs.util-linux}/bin/logger -t yuki-undock-suspend \
+          "buffer elapsed; running suspend-then-hibernate generation=$scheduledUndockGeneration"
+        ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
+      ) >/dev/null 2>&1 &
+    fi
+
+    ${yukiSyncEdp2ModeScript}
   '';
 
   yukiBrightnessScript = pkgs.writeShellScript "yuki-brightness" ''
@@ -508,6 +816,7 @@ in {
     "mem_sleep_default=s2idle"
   ];
 
+
   hardware.display.outputs."eDP-1".edid = lib.mkForce null;
 
   environment.etc."libinput/local-overrides.quirks".text = ''
@@ -527,11 +836,6 @@ in {
     ModelTabletModeNoSuspend=1
   '';
 
-  services.udev.extraRules = ''
-    # Ignore only the ThinkPad Bluetooth keyboard's integrated touchpad.
-    # Leave yuki's built-in touchpad, keyboard, pen, and touchscreen alone.
-    ACTION=="add|change", SUBSYSTEM=="input", ATTRS{name}=="ThinkPad Bluetooth TrackPoint Keyboard Touchpad", ENV{LIBINPUT_IGNORE_DEVICE}="1"
-  '';
 
   # The borrowed 14IMH9 module ships an EDID override for eDP-1 to fix refresh-rate
   # issues on that machine. On yuki, that borrowed EDID produced a visible greenish tint
@@ -547,6 +851,7 @@ in {
   # Current policy choice:
   # prefer correct panel identity / color over the borrowed EDID hack, and use software
   # dimming for day-to-day brightness control until a real Yoga Book 9i fix is found.
+
 
   systemd.services.fix-backlight-permissions = {
     description = "Allow video group to control backlight devices";
@@ -613,6 +918,10 @@ in {
         kind = "bindel";
         action = "exec, ${yukiBrightnessScript} down";
       };
+      "$mainMod, F7" = {
+        kind = "bind";
+        action = "exec, ${yukiEdp2ToggleScript}";
+      };
     };
 
     xdg.configFile."hyprdynamicmonitors/bin/yuki-undock-suspend" = {
@@ -631,12 +940,12 @@ in {
       '';
     };
 
-    xdg.configFile."hypr/yuki-workarounds.conf".text = ''
+    xdg.configFile."hypr/yuki-quirks.conf".text = ''
       # This file is sourced from the main Hyprland config only on yuki.
       #
-      # Keep host-specific compositor quirks here instead of baking them deeper into the
-      # generic home-manager config. When upstream support improves, this file should be
-      # the first thing reviewed and trimmed.
+      # Keep only the temporary compositor-side display, lid, and power workarounds here.
+      # Once kernel / firmware / Hyprland support improves, this should be the first file
+      # reviewed and trimmed.
 
       # Bootstrap monitor layout
       # ------------------------
@@ -647,26 +956,6 @@ in {
       # the daemon still gets to hotplug and manage any extra displays that appear later.
       monitor = eDP-1, ${resolution}@60, 0x0, ${defaultScale}, transform, 2
       monitor = eDP-2, ${resolution}@60, 0x${defaultYOffset}, ${defaultScale}
-
-      # Visual baseline
-      # ---------------
-      # Keep the desktop background as a plain solid black. That fits the dual-OLED
-      # hardware well, avoids distracting default wallpaper/splash visuals, and plays
-      # nicely with the software dimming path below.
-      misc:force_default_wallpaper = 0
-      misc:background_color = 0x000000
-
-      # Smart single-window layout
-      # --------------------------
-      # When a workspace only has one tiled or one fullscreen window, drop the outer
-      # gaps and rounding so the app can use the whole panel instead of looking framed.
-      # This follows Hyprland's documented "smart gaps" workspace-selector pattern.
-      workspace = w[tv1], gapsout:0, gapsin:0
-      workspace = f[1], gapsout:0, gapsin:0
-      windowrule = bordersize 0, floating:0, onworkspace:w[tv1]
-      windowrule = rounding 0, floating:0, onworkspace:w[tv1]
-      windowrule = bordersize 0, floating:0, onworkspace:f[1]
-      windowrule = rounding 0, floating:0, onworkspace:f[1]
 
       # Live scale stepping
       # -------------------
@@ -710,6 +999,13 @@ in {
       # once per session so the built-in card lands on the `Speaker` profile instead.
       exec-once = systemctl --user start yuki-audio-profile.service
 
+      # Lid / dock state policy
+      # -----------------------
+      # Keep a tiny watcher alive for the session so yuki can block logind's lid action
+      # while docked, keep the internal OLEDs dark whenever the lid is shut, and restore
+      # the internal layout immediately if we end up undocked with the lid open.
+      exec-once = systemctl --user start yuki-lid-state-watch.service
+
       # Volume policy
       # -------------
       # Keep the real hardware mixer parked at a fixed state and let PipeWire do volume
@@ -739,6 +1035,32 @@ in {
       Service = {
         Type = "oneshot";
         ExecStart = "${yukiSelectSpeakerProfileScript}";
+      };
+    };
+
+    systemd.user.services.yuki-docked-lid-inhibitor = {
+      Unit = {
+        Description = "Block logind lid handling while yuki manages dock transitions";
+        After = ["graphical-session.target"];
+        PartOf = ["graphical-session.target"];
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.systemd}/bin/systemd-inhibit --why=YukiDockedLidHandling --what=handle-lid-switch --mode=block ${pkgs.coreutils}/bin/tail -f /dev/null";
+      };
+    };
+
+    systemd.user.services.yuki-lid-state-watch = {
+      Unit = {
+        Description = "Keep yuki's lid, dock, and internal display state in sync";
+        After = ["graphical-session.target"];
+        PartOf = ["graphical-session.target"];
+      };
+      Service = {
+        Type = "simple";
+        ExecStart = "${yukiLidStateWatchScript}";
+        Restart = "always";
+        RestartSec = "2s";
       };
     };
 

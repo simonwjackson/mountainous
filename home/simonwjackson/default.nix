@@ -325,10 +325,29 @@ in {
           monitor = eDP-1, 2880x1800@60, 0x0, 1, transform, 2
                 monitor = eDP-2, 2880x1800@60, 0x1800, 1''}
 
+              ${lib.optionalString isYuki ''
+          # Yuki-specific visual baseline
+          # -----------------------------
+          # Keep the desktop background as a plain solid black. That fits the dual-OLED
+          # hardware well and avoids distracting default wallpaper or splash visuals.
+          misc:force_default_wallpaper = 0
+          misc:background_color = 0x000000
+
+          # Yuki-specific single-window layout
+          # ---------------------------------
+          # When a workspace only has one tiled or fullscreen window, let the app use the
+          # whole panel instead of keeping outer gaps and rounded corners.
+          workspace = w[tv1], gapsout:0, gapsin:0
+          workspace = f[1], gapsout:0, gapsin:0
+          windowrule = bordersize 0, floating:0, onworkspace:w[tv1]
+          windowrule = rounding 0, floating:0, onworkspace:w[tv1]
+          windowrule = bordersize 0, floating:0, onworkspace:f[1]
+          windowrule = rounding 0, floating:0, onworkspace:f[1]''}
+
               # Host-specific Hyprland quirks live in separately managed files so laptop-specific
-              # workarounds do not get buried in this generic user config.
+              # tweaks do not get buried in this generic user config.
               ${lib.optionalString isYuki ''source = ${
-            config.xdg.configFile."hypr/yuki-workarounds.conf".source
+            config.xdg.configFile."hypr/yuki-quirks.conf".source
           }''}
 
               # Source yuki's generated monitor layout after the bootstrap workaround file so
