@@ -157,7 +157,6 @@
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
             ./modules/nixos/tailscale
-            ./modules/nixos/syncthing
           ]
           ++ featureModulePaths
           ++ presetModulePaths
