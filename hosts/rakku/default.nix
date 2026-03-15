@@ -1,18 +1,20 @@
-{ config, lib, pkgs, gomod2nix, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  gomod2nix,
+  ...
+}: let
   buildGoApplication = gomod2nix.legacyPackages.${pkgs.stdenv.hostPlatform.system}.buildGoApplication;
   tsnet-proxy-pkg = buildGoApplication {
     pname = "tsnet-proxy";
     version = "1.0.0";
     src = ../../packages/tsnet-proxy;
     modules = ../../packages/tsnet-proxy/gomod2nix.toml;
-    ldflags = [ "-s" "-w" ];
+    ldflags = ["-s" "-w"];
     doCheck = false;
   };
-in
-
-{
+in {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -143,7 +145,7 @@ in
 
       http = {
         server_port = 8123;
-        trusted_proxies = [ "::1" "127.0.0.1" ];
+        trusted_proxies = ["::1" "127.0.0.1"];
         use_x_forwarded_for = true;
       };
     };
@@ -158,9 +160,7 @@ in
     secretsConfigFile = config.age.secrets."zwave-js-secrets".path;
   };
 
-  users.users.hass.extraGroups = [ "dialout" ];
-
-
+  users.users.hass.extraGroups = ["dialout"];
 
   # ── Tinyproxy (residential IP proxy for YouTube/scrapers) ────────────
 
@@ -170,10 +170,10 @@ in
       Port = 8888;
       Listen = "0.0.0.0";
       Timeout = 600;
-      Allow = ["127.0.0.1" "100.64.0.0/10"];  # localhost + Tailscale CGNAT
+      Allow = ["127.0.0.1" "100.64.0.0/10"]; # localhost + Tailscale CGNAT
       MaxClients = 20;
       LogLevel = "Warning";
-      ConnectPort = [443 563];  # HTTPS CONNECT support
+      ConnectPort = [443 563]; # HTTPS CONNECT support
     };
   };
 
@@ -181,9 +181,9 @@ in
 
   systemd.services.airconnect = {
     description = "AirConnect - AirPlay to Sonos/UPnP Bridge";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.airconnect}/bin/airupnp -l 1000:2000 -Z";
@@ -198,7 +198,7 @@ in
   fileSystems."/" = {
     device = "none";
     fsType = "tmpfs";
-    options = [ "defaults" "size=2G" "mode=755" ];
+    options = ["defaults" "size=2G" "mode=755"];
   };
 
   fileSystems."/nix".neededForBoot = true;
@@ -284,7 +284,7 @@ in
 
   users.users.simonwjackson = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "video" "dialout" ];
+    extraGroups = ["wheel" "networkmanager" "video" "dialout"];
   };
 
   # ── Network ──────────────────────────────────────────────────────────
