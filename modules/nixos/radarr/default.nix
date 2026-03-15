@@ -19,6 +19,11 @@
 
   cfg = config.mountainous.radarr;
   mediaCfg = config.mountainous.media;
+  vpnNsAddress = config.mountainous.vpn-ns.vethAddress;
+  nzbgetInVpn = (config.mountainous.vpn-ns.services.nzbget.enable or false);
+  transmissionInVpn = (config.mountainous.vpn-ns.services.transmission.enable or false);
+  nzbgetHost = if !cfg.vpn.enable && nzbgetInVpn then vpnNsAddress else "127.0.0.1";
+  transmissionHost = if !cfg.vpn.enable && transmissionInVpn then vpnNsAddress else "127.0.0.1";
   stateDir = "/var/lib/radarr";
   dataDir = "${stateDir}/.config/Radarr";
   configFile = "${dataDir}/config.xml";
@@ -188,7 +193,7 @@ in {
 
         host = mkOption {
           type = types.str;
-          default = "127.0.0.1";
+          default = nzbgetHost;
           description = "Host Radarr should use to reach NZBGet.";
         };
 
@@ -264,7 +269,7 @@ in {
 
         host = mkOption {
           type = types.str;
-          default = "127.0.0.1";
+          default = transmissionHost;
           description = "Host Radarr should use to reach Transmission.";
         };
 
