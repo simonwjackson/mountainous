@@ -53,7 +53,5 @@ in {
       allowedUDPPorts = mkDefault [41641];
       trustedInterfaces = mkDefault ["tailscale0"];
     };
-
-    mountainous.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
   };
 }
