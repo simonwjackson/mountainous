@@ -75,6 +75,9 @@ in {
   };
 
   config = mkIf cfg.enable {
+    # Trust the host-side veth so VPN-namespaced services can reach host services
+    networking.firewall.trustedInterfaces = [ "veth-vpn-host" ];
+
     systemd.services = mkMerge [
       {
         vpn-ns = {

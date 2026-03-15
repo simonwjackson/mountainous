@@ -175,7 +175,7 @@ in
       username = "simonwjackson";
       passwordFile = config.age.secrets.sonarr-pass.path;
     };
-    vpn.enable = true;
+    vpn.enable = false;
     proxy = {
       enable = true;
       hostname = "tv";
@@ -227,7 +227,7 @@ in
       username = "simonwjackson";
       passwordFile = config.age.secrets.radarr-pass.path;
     };
-    vpn.enable = true;
+    vpn.enable = false;
     proxy = {
       enable = true;
       hostname = "movies";

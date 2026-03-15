@@ -571,6 +571,76 @@ in
         ];
         repo = "/var/lib/borg/openclaw";
       };
+      code = borgDefaults // {
+        paths = [ "/home/simonwjackson/code" ];
+        exclude = [
+          # Version control
+          "*/.git"
+
+          # JS/TS
+          "*/node_modules"
+          "*/.next"
+          "*/.nuxt"
+          "*/.output"
+          "*/.svelte-kit"
+          "*/.parcel-cache"
+          "*/.turbo"
+          "*/.expo"
+          "*/.yarn/cache"
+          "*/.yarn/unplugged"
+          "*/.pnpm-store"
+
+          # Build output
+          "*/dist"
+          "*/build"
+          "*/out"
+          "*/_build"
+          "*/result"
+
+          # Python
+          "*/__pycache__"
+          "*/.venv"
+          "*/venv"
+          "*/.tox"
+          "*.pyc"
+          "*/.mypy_cache"
+          "*/.ruff_cache"
+
+          # Nix
+          "*/.direnv"
+          "*/.devenv"
+
+          # Rust/Go
+          "*/target"
+
+          # Java/Android
+          "*/.gradle"
+          "*/.idea"
+
+          # Logs
+          "*/.loop-worktrees"
+          "*/.loop-logs"
+          "*/.forgerie"
+          "*/logs/*.log"
+
+          # IDE / editor
+          "*/.vs"
+          "*/obj/Debug"
+
+          # Temp / ephemeral
+          "*/.tmp-home*"
+          "*/storybook-static"
+
+          # General
+          "*/.cache"
+          "*/coverage"
+          "*/.terraform"
+          "*.o"
+          "*.so"
+          "*.dylib"
+        ];
+        repo = "/var/lib/borg/code";
+      };
     };
 
   # ── Biometrics Sync Timers ──────────────────────────────────────────
@@ -670,6 +740,7 @@ in
       "borgbackup-job-nutrition.service"
       "borgbackup-job-tasks.service"
       "borgbackup-job-omi.service"
+      "borgbackup-job-code.service"
     ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
@@ -681,7 +752,7 @@ in
       openssh
     ];
     script = ''
-      for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
+      for repo in biometrics fitness nutrition tasks omi flakey openclaw code; do
         if [ -d "/var/lib/borg/$repo" ]; then
           rsync -az --delete "/var/lib/borg/$repo/" "aka:/tundra/merged/iceberg/backups/fuji/$repo/" || true
           rsync -az --delete "/var/lib/borg/$repo/" "yari:/var/lib/borg-mirror/fuji/$repo/" || true
@@ -709,6 +780,7 @@ in
       "borgbackup-job-omi.service"
       "borgbackup-job-flakey.service"
       "borgbackup-job-openclaw.service"
+      "borgbackup-job-code.service"
     ];
     serviceConfig = {
       Type = "oneshot";
@@ -716,7 +788,7 @@ in
     };
     path = with pkgs; [ rclone ];
     script = ''
-      for repo in biometrics fitness nutrition tasks omi flakey openclaw; do
+      for repo in biometrics fitness nutrition tasks omi flakey openclaw code; do
         if [ -d "/var/lib/borg/$repo" ]; then
           rclone sync "/var/lib/borg/$repo/" "dropbox:backups/fuji/$repo/" --transfers 4 --checkers 8
           rclone sync "/var/lib/borg/$repo/" "gdrive:backups/fuji/$repo/" --transfers 4 --checkers 8

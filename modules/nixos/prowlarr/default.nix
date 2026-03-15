@@ -31,6 +31,12 @@
   radarrPort = attrByPath ["mountainous" "radarr" "port"] 7878 config;
   radarrVpnEnabled = attrByPath ["mountainous" "radarr" "vpn" "enable"] false config;
   radarrConfigFile = "/var/lib/radarr/.config/Radarr/config.xml";
+  vpnHostAddress = "10.200.200.1";
+  vpnNsAddress = config.mountainous.vpn-ns.vethAddress;
+  sonarrHost = if cfg.vpn.enable && !sonarrVpnEnabled then vpnHostAddress else "127.0.0.1";
+  radarrHost = if cfg.vpn.enable && !radarrVpnEnabled then vpnHostAddress else "127.0.0.1";
+  prowlarrHostForSonarr = if cfg.vpn.enable && !sonarrVpnEnabled then vpnNsAddress else "127.0.0.1";
+  prowlarrHostForRadarr = if cfg.vpn.enable && !radarrVpnEnabled then vpnNsAddress else "127.0.0.1";
   applicationsRunInVpn =
     cfg.vpn.enable
     || (cfg.applications.sonarr.enable && sonarrVpnEnabled)
@@ -138,13 +144,13 @@ in {
 
       prowlarrUrl = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString cfg.port}";
+        default = "http://${prowlarrHostForSonarr}:${toString cfg.port}";
         description = "URL Sonarr should use to reach Prowlarr.";
       };
 
       baseUrl = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString sonarrPort}";
+        default = "http://${sonarrHost}:${toString sonarrPort}";
         description = "URL Prowlarr should use to reach Sonarr.";
       };
 
@@ -166,13 +172,13 @@ in {
 
       prowlarrUrl = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString cfg.port}";
+        default = "http://${prowlarrHostForRadarr}:${toString cfg.port}";
         description = "URL Radarr should use to reach Prowlarr.";
       };
 
       baseUrl = mkOption {
         type = types.str;
-        default = "http://127.0.0.1:${toString radarrPort}";
+        default = "http://${radarrHost}:${toString radarrPort}";
         description = "URL Prowlarr should use to reach Radarr.";
       };
 
