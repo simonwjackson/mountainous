@@ -4,9 +4,7 @@
   pkgs,
   tsnsrv,
   ...
-}: let
-  syncthingShares = import ./syncthing-shares.nix;
-in {
+}: {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -29,11 +27,6 @@ in {
     passwordHash = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
   };
   mountainous.presets.server.enable = true;
-
-  mountainous.features.syncthing = {
-    enable = true;
-    shares = syncthingShares;
-  };
 
   # Do not bind sshd to a specific Tailscale address at boot. tailscale0 can
   # come up after sshd starts, which leaves the daemon failed after a reboot.
