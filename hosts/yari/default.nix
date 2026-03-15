@@ -3,9 +3,7 @@
   lib,
   pkgs,
   ...
-}: let
-  syncthingShares = import ./syncthing-shares.nix;
-in {
+}: {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -30,11 +28,6 @@ in {
     passwordHash = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
   };
   mountainous.presets.server.enable = true;
-
-  mountainous.features.syncthing = {
-    enable = true;
-    shares = syncthingShares;
-  };
 
   users.users.simonwjackson.extraGroups = [
     "media"
