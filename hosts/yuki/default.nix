@@ -49,13 +49,13 @@ in {
       };
       bluetooth.enable = true;
       keyboard.enable = true;
+      syncthing = {
+        enable = true;
+        folders = syncthingFolders;
+      };
     };
   };
 
-  mountainous.features.syncthing = {
-    enable = true;
-    folders = syncthingFolders;
-  };
   time.timeZone = "America/Denver";
 
   mountainous.device = {
@@ -95,8 +95,6 @@ in {
 
     timesyncd.enable = lib.mkDefault true;
   };
-
-  nixpkgs.config.allowUnfree = true;
 
   mountainous.gaming.enable = true;
 
