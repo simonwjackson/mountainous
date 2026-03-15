@@ -29,47 +29,23 @@ in {
     ../../modules/ado-sync
   ];
 
-  home-manager.users.simonwjackson = import ../../home/simonwjackson;
-
   networking.hostName = "fuji";
   networking.useDHCP = true;
   time.timeZone = "UTC";
+
+  mountainous.presets.core = {
+    enable = true;
+    passwordHash = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
+  };
 
   mountainous.syncthing = {
     enable = true;
     folders = syncthingFolders;
   };
 
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    shell = pkgs.bash;
-    extraGroups = ["wheel"];
-    hashedPassword = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
-  };
-
   # Do not bind sshd to a specific Tailscale address at boot. tailscale0 can
   # come up after sshd starts, which leaves the daemon failed after a reboot.
   # The firewall still restricts remote SSH access to trusted Tailscale traffic.
-
-  services.fail2ban = {
-    enable = true;
-    ignoreIP = ["100.64.0.0/10"];
-    maxretry = 3;
-    bantime = "1h";
-    bantime-increment = {
-      enable = true;
-      maxtime = "168h";
-    };
-  };
-
-  networking.firewall = {
-    enable = true;
-    # Default: block everything on public interfaces
-    allowedTCPPorts = [];
-    allowedUDPPorts = [41641]; # Tailscale WireGuard (needed on all interfaces)
-    # Trust all Tailscale traffic
-    trustedInterfaces = ["tailscale0"];
-  };
 
   environment.systemPackages = with pkgs;
     [
@@ -129,12 +105,6 @@ in {
 
   age.secrets."omi-api-key" = {
     file = ../../secrets/omi-api-key.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."invidious-token" = {
-    file = ../../secrets/invidious-token.age;
     owner = "simonwjackson";
     mode = "0400";
   };
@@ -291,11 +261,6 @@ in {
 
   # ── Tailscale ────────────────────────────────────────────────────────
 
-  mountainous.tailscale = {
-    authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = ["--netfilter-mode=nodivert"];
-  };
-
   users.groups.tsnsrv = {};
   users.users.tsnsrv = {
     isSystemUser = true;
@@ -323,29 +288,6 @@ in {
     script = ''
       export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
       exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name etabli -stateDir /var/lib/tsnsrv-etabli http://127.0.0.1:7398
-    '';
-  };
-
-  systemd.services.tsnsrv-youtube = {
-    description = "tsnsrv Tailscale proxy for Invidious";
-    after = [
-      "network-online.target"
-      "invidious.service"
-    ];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-    environment.HOME = "/var/lib/tsnsrv-youtube";
-    serviceConfig = {
-      Type = "simple";
-      User = "tsnsrv";
-      Group = "tsnsrv";
-      StateDirectory = "tsnsrv-youtube";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
-    script = ''
-      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
-      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name youtube -stateDir /var/lib/tsnsrv-youtube http://127.0.0.1:3333
     '';
   };
 
@@ -413,27 +355,6 @@ in {
     environment = {
       VPN_NS_CONFIG = config.age.secrets."fastest-vpn".path;
       VPN_NS_LOCAL_NETS = "100.64.0.0/10";
-    };
-  };
-
-  # ── Invidious ────────────────────────────────────────────────────────
-
-  services.invidious = {
-    enable = true;
-    port = 3333;
-    settings = {
-      db.user = "invidious";
-      db.dbname = "invidious";
-      host_binding = lib.mkForce "127.0.0.1";
-      registration_enabled = false;
-      login_enabled = true;
-      captcha_enabled = false;
-      default_user_preferences = {
-        locale = "en-US";
-        region = "US";
-        quality = "hd720";
-        save_player_pos = true;
-      };
     };
   };
 

@@ -30,26 +30,23 @@ in {
     ../../modules/tsnet-proxy
   ];
 
-  home-manager.users.simonwjackson = import ../../home/simonwjackson;
-
   networking.hostName = "yari";
   networking.useDHCP = true;
   time.timeZone = "UTC";
+
+  mountainous.presets.core = {
+    enable = true;
+    passwordHash = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
+  };
 
   mountainous.syncthing = {
     enable = true;
     folders = syncthingFolders;
   };
 
-  users.users.simonwjackson = {
-    isNormalUser = true;
-    shell = pkgs.bash;
-    extraGroups = [
-      "wheel"
-      "media"
-    ];
-    hashedPassword = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
-  };
+  users.users.simonwjackson.extraGroups = [
+    "media"
+  ];
 
   # ── SSH (Tailscale-only) ─────────────────────────────────────────────
 
@@ -58,25 +55,6 @@ in {
   # The firewall still restricts remote SSH access to trusted Tailscale traffic.
 
   # ── Security ─────────────────────────────────────────────────────────
-
-  services.fail2ban = {
-    enable = true;
-    maxretry = 3;
-    bantime = "1h";
-    bantime-increment = {
-      enable = true;
-      maxtime = "168h";
-    };
-  };
-
-  networking.firewall = {
-    enable = true;
-    # Default: block everything on public interfaces
-    allowedTCPPorts = [];
-    allowedUDPPorts = [41641]; # Tailscale WireGuard (needed on all interfaces)
-    # Trust all Tailscale traffic
-    trustedInterfaces = ["tailscale0"];
-  };
 
   # ── Media Layout ─────────────────────────────────────────────────────
 
@@ -347,11 +325,6 @@ in {
   };
 
   # ── Tailscale ────────────────────────────────────────────────────────
-
-  mountainous.tailscale = {
-    authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = ["--netfilter-mode=nodivert"];
-  };
 
   mountainous.services.tsnet-proxy = {
     enable = true;
