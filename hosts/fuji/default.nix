@@ -4,19 +4,18 @@
   pkgs,
   tsnsrv,
   ...
-}:
-let
+}: let
   syncthingShares = import ./syncthing-shares.nix;
-  syncthingFolders = lib.mapAttrs (
-    name: hostCfg:
-    let
-      shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
-    in
-    assert (shareCfg.name or name) == name;
-    (builtins.removeAttrs shareCfg [ "name" ]) // hostCfg
-  ) syncthingShares;
-in
-{
+  syncthingFolders =
+    lib.mapAttrs (
+      name: hostCfg: let
+        shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
+      in
+        assert (shareCfg.name or name) == name;
+          (builtins.removeAttrs shareCfg ["name"]) // hostCfg
+    )
+    syncthingShares;
+in {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -43,8 +42,8 @@ in
 
   users.users.simonwjackson = {
     isNormalUser = true;
-    shell = pkgs.nushell;
-    extraGroups = [ "wheel" ];
+    shell = pkgs.bash;
+    extraGroups = ["wheel"];
     hashedPassword = "$6$4gXnXZmsRgERP5JC$0p8F935IKYb3wj0aiaTymqaWS0sJhgyZpu9vO8Q5SIF2hSpRZ7d.hy1JIn7TTbL.zjSScFrrjqq.BI6MZQfjW0";
   };
 
@@ -54,7 +53,7 @@ in
 
   services.fail2ban = {
     enable = true;
-    ignoreIP = [ "100.64.0.0/10" ];
+    ignoreIP = ["100.64.0.0/10"];
     maxretry = 3;
     bantime = "1h";
     bantime-increment = {
@@ -66,14 +65,13 @@ in
   networking.firewall = {
     enable = true;
     # Default: block everything on public interfaces
-    allowedTCPPorts = [ ];
-    allowedUDPPorts = [ 41641 ]; # Tailscale WireGuard (needed on all interfaces)
+    allowedTCPPorts = [];
+    allowedUDPPorts = [41641]; # Tailscale WireGuard (needed on all interfaces)
     # Trust all Tailscale traffic
-    trustedInterfaces = [ "tailscale0" ];
+    trustedInterfaces = ["tailscale0"];
   };
 
-  environment.systemPackages =
-    with pkgs;
+  environment.systemPackages = with pkgs;
     [
       chromium
       stdenv.cc.cc.lib
@@ -82,7 +80,7 @@ in
       rclone
       gogcli
       yq
-      (python3.withPackages (ps: [ ps.pyyaml ]))
+      (python3.withPackages (ps: [ps.pyyaml]))
     ]
     ++ (with pkgs.lifted-scripts; [
       biometrics-oura-sync
@@ -102,7 +100,7 @@ in
       ebay-publish
     ]);
 
-  nix.settings.secret-key-files = [ "/etc/nix/signing-key.priv" ];
+  nix.settings.secret-key-files = ["/etc/nix/signing-key.priv"];
 
   # ── Secrets ──────────────────────────────────────────────────────────
 
@@ -295,10 +293,10 @@ in
 
   mountainous.tailscale = {
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraSetFlags = [ "--netfilter-mode=nodivert" ];
+    extraSetFlags = ["--netfilter-mode=nodivert"];
   };
 
-  users.groups.tsnsrv = { };
+  users.groups.tsnsrv = {};
   users.users.tsnsrv = {
     isSystemUser = true;
     group = "tsnsrv";
@@ -311,8 +309,8 @@ in
       "network-online.target"
       "etabli.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     environment.HOME = "/var/lib/tsnsrv-etabli";
     serviceConfig = {
       Type = "simple";
@@ -334,8 +332,8 @@ in
       "network-online.target"
       "invidious.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     environment.HOME = "/var/lib/tsnsrv-youtube";
     serviceConfig = {
       Type = "simple";
@@ -357,8 +355,8 @@ in
       "network-online.target"
       "biker.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     environment.HOME = "/var/lib/tsnsrv-biker";
     serviceConfig = {
       Type = "simple";
@@ -380,8 +378,8 @@ in
       "network-online.target"
       "openclaw-gateway.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     environment.HOME = "/var/lib/tsnsrv-openclaw";
     serviceConfig = {
       Type = "simple";
@@ -401,9 +399,9 @@ in
 
   systemd.services.vpn-ns = {
     description = "VPN Network Namespace";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
+    wantedBy = ["multi-user.target"];
+    wants = ["network-online.target"];
+    after = ["network-online.target"];
     serviceConfig = {
       Type = "notify";
       NotifyAccess = "all";
@@ -447,8 +445,8 @@ in
       "network-online.target"
       "tailscale.service"
     ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
+    wants = ["network-online.target"];
+    wantedBy = ["multi-user.target"];
     path = [
       pkgs.nodejs
       pkgs.git
@@ -474,36 +472,32 @@ in
       Group = "users";
       TimeoutStartSec = "30min";
       EnvironmentFile = config.age.secrets.openclaw-env.path;
-      ExecStartPre =
-        let
-          setupScript = pkgs.writeShellScript "openclaw-setup" ''
-            export HOME=/home/simonwjackson
-            mkdir -p "$HOME/.openclaw"
-            cd "$HOME/.openclaw"
-            ${pkgs.nodejs}/bin/npm install openclaw@latest
+      ExecStartPre = let
+        setupScript = pkgs.writeShellScript "openclaw-setup" ''
+          export HOME=/home/simonwjackson
+          mkdir -p "$HOME/.openclaw"
+          cd "$HOME/.openclaw"
+          ${pkgs.nodejs}/bin/npm install openclaw@latest
 
-            CONFIG="$HOME/.openclaw/openclaw.json"
-            if [ -f "$CONFIG" ]; then
-              ${pkgs.jq}/bin/jq \
-                --arg token "$TELEGRAM_BOT_TOKEN" \
-                --arg gwtoken "$OPENCLAW_GATEWAY_TOKEN" \
-                --arg bravekey "$BRAVE_SEARCH_API_KEY" \
-                '.channels.telegram.botToken = $token |
-                 .gateway.auth.token = $gwtoken |
-                 .tools.web.search.apiKey = $bravekey' \
-                "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
-            fi
-          '';
-        in
-        "${setupScript}";
-      ExecStart =
-        let
-          startScript = pkgs.writeShellScript "openclaw-start" ''
-            export HOME=/home/simonwjackson
-            exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
-          '';
-        in
-        "${startScript}";
+          CONFIG="$HOME/.openclaw/openclaw.json"
+          if [ -f "$CONFIG" ]; then
+            ${pkgs.jq}/bin/jq \
+              --arg token "$TELEGRAM_BOT_TOKEN" \
+              --arg gwtoken "$OPENCLAW_GATEWAY_TOKEN" \
+              --arg bravekey "$BRAVE_SEARCH_API_KEY" \
+              '.channels.telegram.botToken = $token |
+               .gateway.auth.token = $gwtoken |
+               .tools.web.search.apiKey = $bravekey' \
+              "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+          fi
+        '';
+      in "${setupScript}";
+      ExecStart = let
+        startScript = pkgs.writeShellScript "openclaw-start" ''
+          export HOME=/home/simonwjackson
+          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" gateway --port 18789
+        '';
+      in "${startScript}";
       Restart = "always";
       RestartSec = 5;
       KillMode = "process";
@@ -512,55 +506,67 @@ in
 
   # ── Borg Backup ──────────────────────────────────────────────────────
 
-  services.borgbackup.jobs =
-    let
-      borgDefaults = {
-        exclude = [
-          "*/__pycache__"
-          "*/.git"
-          "*/shell.nix"
-        ];
-        encryption = {
-          mode = "repokey";
-          passCommand = "cat ${config.age.secrets.borg-passphrase.path}";
-        };
-        compression = "auto,zstd";
-        startAt = "daily";
-        prune.keep = {
-          daily = 7;
-          weekly = 4;
-          monthly = 6;
-        };
-        user = "simonwjackson";
+  services.borgbackup.jobs = let
+    borgDefaults = {
+      exclude = [
+        "*/__pycache__"
+        "*/.git"
+        "*/shell.nix"
+      ];
+      encryption = {
+        mode = "repokey";
+        passCommand = "cat ${config.age.secrets.borg-passphrase.path}";
       };
-    in
-    {
-      biometrics = borgDefaults // {
-        paths = [ "/home/simonwjackson/biometrics" ];
+      compression = "auto,zstd";
+      startAt = "daily";
+      prune.keep = {
+        daily = 7;
+        weekly = 4;
+        monthly = 6;
+      };
+      user = "simonwjackson";
+    };
+  in {
+    biometrics =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/biometrics"];
         repo = "/var/lib/borg/biometrics";
       };
-      fitness = borgDefaults // {
-        paths = [ "/home/simonwjackson/fitness" ];
+    fitness =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/fitness"];
         repo = "/var/lib/borg/fitness";
       };
-      nutrition = borgDefaults // {
-        paths = [ "/home/simonwjackson/.local/share/nutrition" ];
+    nutrition =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/.local/share/nutrition"];
         repo = "/var/lib/borg/nutrition";
       };
-      tasks = borgDefaults // {
-        paths = [ "/home/simonwjackson/.local/share/tasks" ];
+    tasks =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/.local/share/tasks"];
         repo = "/var/lib/borg/tasks";
       };
-      omi = borgDefaults // {
-        paths = [ "/home/simonwjackson/omi" ];
+    omi =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/omi"];
         repo = "/var/lib/borg/omi";
       };
-      flakey = borgDefaults // {
-        paths = [ "/home/simonwjackson/flakey" ];
+    flakey =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/flakey"];
         repo = "/var/lib/borg/flakey";
       };
-      openclaw = borgDefaults // {
-        paths = [ "/home/simonwjackson/.openclaw" ];
+    openclaw =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/.openclaw"];
         exclude = [
           "*/__pycache__"
           "*/.git"
@@ -571,8 +577,10 @@ in
         ];
         repo = "/var/lib/borg/openclaw";
       };
-      code = borgDefaults // {
-        paths = [ "/home/simonwjackson/code" ];
+    code =
+      borgDefaults
+      // {
+        paths = ["/home/simonwjackson/code"];
         exclude = [
           # Version control
           "*/.git"
@@ -641,7 +649,7 @@ in
         ];
         repo = "/var/lib/borg/code";
       };
-    };
+  };
 
   # ── Biometrics Sync Timers ──────────────────────────────────────────
 
@@ -667,7 +675,7 @@ in
 
   systemd.timers.biometrics-oura-sync = {
     description = "Daily Oura Ring sync";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*-*-* *:00,30:00";
       Persistent = true;
@@ -696,7 +704,7 @@ in
 
   systemd.timers.biometrics-withings-sync = {
     description = "Daily Withings sync";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*-*-* 16:00:00";
       Persistent = true;
@@ -725,7 +733,7 @@ in
 
   systemd.timers.biometrics-ketomojo-sync = {
     description = "Daily Keto-Mojo sync";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*-*-* 10:10:00";
       Persistent = true;
@@ -742,7 +750,7 @@ in
       "borgbackup-job-omi.service"
       "borgbackup-job-code.service"
     ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = ["multi-user.target"];
     serviceConfig = {
       Type = "oneshot";
       User = "simonwjackson";
@@ -763,7 +771,7 @@ in
 
   systemd.timers.borg-offsite-sync = {
     description = "Daily offsite sync of borg repos";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*-*-* 04:00:00";
       Persistent = true;
@@ -786,7 +794,7 @@ in
       Type = "oneshot";
       User = "simonwjackson";
     };
-    path = with pkgs; [ rclone ];
+    path = with pkgs; [rclone];
     script = ''
       for repo in biometrics fitness nutrition tasks omi flakey openclaw code; do
         if [ -d "/var/lib/borg/$repo" ]; then
@@ -799,7 +807,7 @@ in
 
   systemd.timers.borg-dropbox-sync = {
     description = "Daily Dropbox sync of borg repos";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "*-*-* 04:30:00";
       Persistent = true;

@@ -918,6 +918,17 @@ in {
         kind = "bindel";
         action = "exec, ${yukiBrightnessScript} down";
       };
+      # On yuki's keyboard, GUI+F7 appears to arrive as GUI+P in practice,
+      # so provide the display toggle on both chords and move the color picker
+      # to GUI+SHIFT+P for this host.
+      "$mainMod, P" = {
+        kind = "bind";
+        action = "exec, ${yukiEdp2ToggleScript}";
+      };
+      "$mainMod SHIFT, P" = {
+        kind = "bind";
+        action = "exec, ${pkgs.hyprpicker}/bin/hyprpicker -a";
+      };
       "$mainMod, F7" = {
         kind = "bind";
         action = "exec, ${yukiEdp2ToggleScript}";
