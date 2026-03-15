@@ -816,7 +816,6 @@ in {
     "mem_sleep_default=s2idle"
   ];
 
-
   hardware.display.outputs."eDP-1".edid = lib.mkForce null;
 
   environment.etc."libinput/local-overrides.quirks".text = ''
@@ -836,7 +835,6 @@ in {
     ModelTabletModeNoSuspend=1
   '';
 
-
   # The borrowed 14IMH9 module ships an EDID override for eDP-1 to fix refresh-rate
   # issues on that machine. On yuki, that borrowed EDID produced a visible greenish tint
   # on the top panel and also caused the panel to identify itself strangely.
@@ -851,7 +849,6 @@ in {
   # Current policy choice:
   # prefer correct panel identity / color over the borrowed EDID hack, and use software
   # dimming for day-to-day brightness control until a real Yoga Book 9i fix is found.
-
 
   systemd.services.fix-backlight-permissions = {
     description = "Allow video group to control backlight devices";
@@ -890,6 +887,20 @@ in {
         echo disabled > "$wakeup" || true
       done < <(find /sys -name "wakeup" | xargs grep -l "enabled" 2>/dev/null | grep -i elan || true)
     '';
+  };
+
+  systemd.services.unblock-bluetooth = {
+    description = "Unblock Bluetooth on boot";
+    wantedBy = [
+      "bluetooth.target"
+      "multi-user.target"
+    ];
+    after = ["systemd-rfkill.service"];
+    before = ["bluetooth.service"];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.util-linux}/bin/rfkill unblock bluetooth";
+    };
   };
 
   home-manager.users.simonwjackson = {
