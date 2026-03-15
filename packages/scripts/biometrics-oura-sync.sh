@@ -18,13 +18,13 @@ ENDPOINTS=(
   daily_cardiovascular_age
   sleep
   sleep_time
-  heartrate
   workout
   tag
-  enhanced_tag
   session
   rest_mode_period
   ring_configuration
+  enhanced_tag
+  heartrate
 )
 
 # --- Lock ---
@@ -92,8 +92,9 @@ for endpoint in "${ENDPOINTS[@]}"; do
     continue
   fi
 
-  # Collect all data (including paginated)
-  all_data=$(echo "$body" | jq -c '.data[]' 2>/dev/null || true)
+  # Collect all data (including paginated) into a temp file to avoid SIGPIPE on large responses
+  tmp_all=$(mktemp)
+  echo "$body" | jq -c '.data[]' >> "$tmp_all" 2>/dev/null || true
 
   next_token=$(echo "$body" | jq -r '.next_token // empty')
   while [[ -n "${next_token:-}" ]]; do
@@ -109,18 +110,18 @@ for endpoint in "${ENDPOINTS[@]}"; do
       break
     fi
 
-    page_data=$(echo "$body" | jq -c '.data[]' 2>/dev/null || true)
-    if [[ -n "$page_data" ]]; then
-      all_data=$(printf '%s\n%s' "$all_data" "$page_data")
-    fi
+    echo "$body" | jq -c '.data[]' >> "$tmp_all" 2>/dev/null || true
 
     next_token=$(echo "$body" | jq -r '.next_token // empty')
   done
 
-  if [[ -z "$all_data" ]]; then
+  if [[ ! -s "$tmp_all" ]]; then
     echo "$endpoint: no new data"
+    rm -f "$tmp_all"
     continue
   fi
+
+  all_data=$(cat "$tmp_all")
 
   # Deduplicate: build set of existing IDs (prefer 'id', fall back to 'day')
   # For endpoints with unique 'id' field, use that; otherwise use 'day'
@@ -163,7 +164,7 @@ for endpoint in "${ENDPOINTS[@]}"; do
     echo "$endpoint: no new data"
   fi
 
-  rm -f "$tmp_new"
+  rm -f "$tmp_new" "$tmp_all"
 
   # Track the latest day from API response for this endpoint
   latest_day=$(echo "$all_data" | jq -r '.day // (.timestamp // empty | split("T")[0])' | grep -v '^$' | sort | tail -1)
