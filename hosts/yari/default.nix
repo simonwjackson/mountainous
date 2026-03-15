@@ -99,6 +99,11 @@ in
       "Server1.Port" = 563;
       "Server1.Encryption" = true;
       "Server1.Connections" = 50;
+      # Buffer articles in RAM so 50 connections don't stall on HDD I/O.
+      # 500 MB cache lets NZBGet absorb bursts and flush to disk smoothly.
+      ArticleCache = 500;
+      WriteBuffer = 1024; # 1024 KB per connection write buffer
+      DirectUnpack = "yes";
       UMask = "0002";
     };
     secretSettings = {
