@@ -17,6 +17,10 @@ in {
   };
 
   config = mkIf cfg.enable {
+    networking.useDHCP = mkDefault true;
+    i18n.defaultLocale = "en_US.UTF-8";
+    networking.networkmanager.enable = mkDefault true;
+
     age.secrets.simonwjackson-password-hash = mkIf hasPasswordSecret {
       file = passwordSecretFile;
       owner = "root";
@@ -44,6 +48,14 @@ in {
       bantime-increment = {
         enable = mkDefault true;
         maxtime = mkDefault "168h";
+      };
+    };
+
+    services.openssh = {
+      enable = mkDefault true;
+      settings = {
+        PermitRootLogin = mkDefault "prohibit-password";
+        PasswordAuthentication = mkDefault false;
       };
     };
 
