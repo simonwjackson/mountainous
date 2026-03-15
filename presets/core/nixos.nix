@@ -5,6 +5,7 @@
 }: let
   inherit (lib) mkDefault mkIf mkOption types optionalAttrs;
   cfg = config.mountainous.presets.core;
+  syncthingUser = config.mountainous.features.syncthing.user;
   passwordSecretFile = ../../secrets/hosts/${config.networking.hostName}/simonwjackson-password-hash.age;
   hasPasswordSecret = builtins.pathExists passwordSecretFile;
 in {
@@ -21,6 +22,57 @@ in {
     networking.useDHCP = mkDefault true;
     i18n.defaultLocale = "en_US.UTF-8";
     networking.networkmanager.enable = mkDefault true;
+
+    mountainous.features.syncthing.shares = {
+      pi-config = {
+        path = mkDefault "/home/${syncthingUser}/.pi";
+        ignorePatterns = mkDefault [
+          "**/.git"
+          "**/.git/**"
+          "**/node_modules"
+          "**/node_modules/**"
+          "**/.direnv"
+          "**/.direnv/**"
+          "**/.venv"
+          "**/.venv/**"
+          "**/venv"
+          "**/venv/**"
+          "**/__pycache__"
+          "**/__pycache__/**"
+          "**/.mypy_cache"
+          "**/.mypy_cache/**"
+          "**/.pytest_cache"
+          "**/.pytest_cache/**"
+          "**/.ruff_cache"
+          "**/.ruff_cache/**"
+          "**/.cache"
+          "**/.cache/**"
+          "**/dist"
+          "**/dist/**"
+          "**/build"
+          "**/build/**"
+          "**/result"
+          "**/result/**"
+          "**/tmp"
+          "**/tmp/**"
+          "**/.tmp"
+          "**/.tmp/**"
+          "**/agent/bin"
+          "**/agent/bin/**"
+          "**/*.log"
+        ];
+      };
+
+      biometrics.path = mkDefault "/home/${syncthingUser}/biometrics";
+      fitness.path = mkDefault "/home/${syncthingUser}/fitness";
+      flakey.path = mkDefault "/home/${syncthingUser}/flakey";
+      omi.path = mkDefault "/home/${syncthingUser}/omi";
+      research.path = mkDefault "/home/${syncthingUser}/research";
+      therapy.path = mkDefault "/home/${syncthingUser}/therapy";
+      transcripts.path = mkDefault "/home/${syncthingUser}/transcripts";
+      nutrition.path = mkDefault "/home/${syncthingUser}/.local/share/nutrition";
+      tasks.path = mkDefault "/home/${syncthingUser}/.local/share/tasks";
+    };
 
     age.secrets.simonwjackson-password-hash = mkIf hasPasswordSecret {
       file = passwordSecretFile;

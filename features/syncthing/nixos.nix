@@ -4,7 +4,6 @@
   ...
 }: let
   inherit (lib)
-    mkDefault
     mkIf
     mapAttrs
     filter
@@ -52,7 +51,7 @@
     builtins.listToAttrs (
       map (name: {
         inherit name;
-        value = import (root + "/${name}/syncthing-shares.nix");
+        value = attrNames (lib.filterAttrs (_: shareCfg: shareCfg.enable or false) (import (root + "/${name}/syncthing-shares.nix")));
       }) withShares
     );
 
@@ -68,7 +67,7 @@
       // {
         "${share}" = (shareAcc.${share} or [ ]) ++ [ host ];
       }
-    ) acc (attrNames hostShareRequests.${host})
+    ) acc hostShareRequests.${host}
   ) { } (attrNames hostShareRequests);
 
   # Peers = everyone except self
@@ -87,96 +86,57 @@
   syncthingKeyPath = secretsRoot + "/hosts/${hostname}/syncthing-key.age";
   hasSyncthingSecrets = builtins.pathExists syncthingCertPath && builtins.pathExists syncthingKeyPath;
 
-  # ── Folder config ───────────────────────────────────────────────────
-  # Hosts declare the shares they want, plus their local paths, via
-  # hosts/<name>/syncthing-shares.nix. A folder automatically shares with every
-  # other host that requested the same folder name, unless an explicit
-  # shareWith override is provided.
-  resolveFolderDevices =
-    name: folderCfg:
-    if folderCfg.shareWith != null then
-      filter (device: device != hostname) folderCfg.shareWith
+  enabledShares = lib.filterAttrs (_: shareCfg: shareCfg.enable) cfg.shares;
+
+  # ── Share config ────────────────────────────────────────────────────
+  # Hosts declare the shares they want via hosts/<name>/syncthing-shares.nix.
+  # A share automatically shares with every other host that requested the same
+  # share name, unless an explicit shareWith override is provided.
+  resolveShareDevices =
+    name: shareCfg:
+    if shareCfg.shareWith != null then
+      filter (device: device != hostname) shareCfg.shareWith
     else if builtins.hasAttr name hostsByShare then
       filter (device: device != hostname) hostsByShare.${name}
     else
       peerNames;
 
-  folders = mapAttrs (
-    name: folderCfg:
+  resolveSharePath =
+    name: shareCfg:
+    if shareCfg.path != null then
+      shareCfg.path
+    else
+      throw "mountainous.features.syncthing.shares.${name} is enabled but no path is set";
+
+  syncthingFolders = mapAttrs (
+    name: shareCfg:
     {
-      path = folderCfg.path;
-      devices = resolveFolderDevices name folderCfg;
-      type = folderCfg.type;
-      ignorePerms = folderCfg.ignorePerms;
-      rescanIntervalS = folderCfg.rescanIntervalS;
+      path = resolveSharePath name shareCfg;
+      devices = resolveShareDevices name shareCfg;
+      type = shareCfg.type;
+      ignorePerms = shareCfg.ignorePerms;
+      rescanIntervalS = shareCfg.rescanIntervalS;
     }
-    // optionalAttrs (folderCfg.ignorePatterns != null) {
-      inherit (folderCfg) ignorePatterns;
+    // optionalAttrs (shareCfg.ignorePatterns != null) {
+      inherit (shareCfg) ignorePatterns;
     }
-    // optionalAttrs (folderCfg.versioning != null) {
-      inherit (folderCfg) versioning;
+    // optionalAttrs (shareCfg.versioning != null) {
+      inherit (shareCfg) versioning;
     }
-  ) cfg.folders;
+  ) enabledShares;
 in {
   config = mkIf cfg.enable {
-    assertions = mapAttrsToList (name: folderCfg: {
-      assertion =
-        folderCfg.shareWith == null
-        || all (device: builtins.elem device allDeviceNames) folderCfg.shareWith;
-      message = "mountainous.features.syncthing.folders.${name}.shareWith contains an unknown device";
-    }) cfg.folders;
-
-    # Default folders — hosts can override with mkForce or add more
-    mountainous.features.syncthing.folders = {
-      pi-config = {
-        path = mkDefault "/home/${cfg.user}/.pi";
-        ignorePatterns = mkDefault [
-          "**/.git"
-          "**/.git/**"
-          "**/node_modules"
-          "**/node_modules/**"
-          "**/.direnv"
-          "**/.direnv/**"
-          "**/.venv"
-          "**/.venv/**"
-          "**/venv"
-          "**/venv/**"
-          "**/__pycache__"
-          "**/__pycache__/**"
-          "**/.mypy_cache"
-          "**/.mypy_cache/**"
-          "**/.pytest_cache"
-          "**/.pytest_cache/**"
-          "**/.ruff_cache"
-          "**/.ruff_cache/**"
-          "**/.cache"
-          "**/.cache/**"
-          "**/dist"
-          "**/dist/**"
-          "**/build"
-          "**/build/**"
-          "**/result"
-          "**/result/**"
-          "**/tmp"
-          "**/tmp/**"
-          "**/.tmp"
-          "**/.tmp/**"
-          "**/agent/bin"
-          "**/agent/bin/**"
-          "**/*.log"
-        ];
-      };
-
-      biometrics.path = mkDefault "/home/${cfg.user}/biometrics";
-      fitness.path = mkDefault "/home/${cfg.user}/fitness";
-      flakey.path = mkDefault "/home/${cfg.user}/flakey";
-      omi.path = mkDefault "/home/${cfg.user}/omi";
-      research.path = mkDefault "/home/${cfg.user}/research";
-      therapy.path = mkDefault "/home/${cfg.user}/therapy";
-      transcripts.path = mkDefault "/home/${cfg.user}/transcripts";
-      nutrition.path = mkDefault "/home/${cfg.user}/.local/share/nutrition";
-      tasks.path = mkDefault "/home/${cfg.user}/.local/share/tasks";
-    };
+    assertions =
+      mapAttrsToList (name: shareCfg: {
+        assertion = shareCfg.path != null;
+        message = "mountainous.features.syncthing.shares.${name} is enabled but no path is set";
+      }) enabledShares
+      ++ mapAttrsToList (name: shareCfg: {
+        assertion =
+          shareCfg.shareWith == null
+          || all (device: builtins.elem device allDeviceNames) shareCfg.shareWith;
+        message = "mountainous.features.syncthing.shares.${name}.shareWith contains an unknown device";
+      }) enabledShares;
 
     services.syncthing = {
       enable = true;
@@ -195,7 +155,7 @@ in {
 
       settings = {
         devices = deviceEntries;
-        inherit folders;
+        folders = syncthingFolders;
 
         options = {
           urAccepted = -1;
@@ -223,7 +183,7 @@ in {
 
     boot.kernel.sysctl."fs.inotify.max_user_watches" = 524288;
 
-    # The upstream NixOS module applies devices/folders through a oneshot
+    # The upstream NixOS module applies devices/folder settings through a oneshot
     # syncthing-init service. Ensure config changes on switch actually rerun it.
     systemd.services.syncthing-init = {
       restartIfChanged = true;

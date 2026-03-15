@@ -5,15 +5,6 @@
   ...
 }: let
   syncthingShares = import ./syncthing-shares.nix;
-  syncthingFolders =
-    lib.mapAttrs (
-      name: hostCfg: let
-        shareCfg = import (../../home/simonwjackson/syncthing + "/${name}.nix");
-      in
-        assert (shareCfg.name or name) == name;
-          (builtins.removeAttrs shareCfg ["name"]) // hostCfg
-    )
-    syncthingShares;
 in {
   imports = [
     ./hardware.nix
@@ -42,7 +33,7 @@ in {
 
   mountainous.features.syncthing = {
     enable = true;
-    folders = syncthingFolders;
+    shares = syncthingShares;
   };
 
   users.users.simonwjackson.extraGroups = [

@@ -6,12 +6,18 @@
   inherit (lib) mkEnableOption mkIf mkOption types;
   cfg = config.mountainous.features.syncthing;
 
-  folderType = types.submodule {
+  shareType = types.submodule {
     options = {
+      enable = mkEnableOption "Syncthing share";
+
       path = mkOption {
-        type = types.str;
-        description = "Local path for this synced folder";
-        example = "/home/simonwjackson/documents";
+        type = types.nullOr types.str;
+        default = null;
+        description = ''
+          Explicit local path for this share.
+          Leave unset to use a default provided elsewhere, such as the core preset.
+        '';
+        example = "/srv/storage/media";
       };
 
       type = mkOption {
@@ -34,7 +40,7 @@
         type = types.nullOr (types.listOf types.str);
         default = null;
         description = ''
-          Optional explicit device list for this folder.
+          Optional explicit device list for this share.
           Include or omit the local host name; it is filtered automatically.
           Defaults to all known peers when unset.
         '';
@@ -54,7 +60,7 @@
         type = types.nullOr (types.listOf types.str);
         default = null;
         description = ''
-          Syncthing ignore patterns for this folder.
+          Syncthing ignore patterns for this share.
           Set to [] to explicitly clear existing ignore patterns.
         '';
         example = [
@@ -134,12 +140,15 @@ in {
       description = "Open firewall ports for syncthing";
     };
 
-    folders = mkOption {
-      type = types.attrsOf folderType;
+    shares = mkOption {
+      type = types.attrsOf shareType;
       default = { };
-      description = "Folders to synchronize (shared with all peers by default)";
+      description = "Shares to synchronize";
       example = {
-        notes.path = "/home/simonwjackson/notes";
+        notes = {
+          enable = true;
+          path = "/home/simonwjackson/notes";
+        };
       };
     };
   };
