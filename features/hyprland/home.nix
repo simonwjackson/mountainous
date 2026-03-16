@@ -12,7 +12,7 @@
   isYuki = hostName == "yuki";
 
   sharedHyprlandKeybindsConfig = import ./keybinds.nix {
-    inherit config lib pkgs;
+    inherit config lib pkgs osConfig;
     inputs = {};
   };
   sharedHyprlandKeybinds = sharedHyprlandKeybindsConfig.keybinds;
@@ -258,6 +258,7 @@ in {
               exec-once = systemctl --user start graphical-session.target
               exec-once = nm-applet --indicator
               exec-once = ironbar
+              exec-once = sh -c 'sleep 2 && touch "$XDG_RUNTIME_DIR/ironbar-dictation.css" && ${pkgs.ironbar}/bin/ironbar style load-css "$XDG_RUNTIME_DIR/ironbar-dictation.css"'
 
               env = XCURSOR_SIZE,24
               env = NIXOS_OZONE_WL,1

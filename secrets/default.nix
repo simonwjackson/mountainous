@@ -17,7 +17,7 @@ let
 in {
   # Shared machine Tailscale auth key
   "secrets/tailscale-authkey.age".publicKeys = allKeys;
-  "secrets/groq-env.age".publicKeys = fujiKeys;
+  "secrets/groq-env.age".publicKeys = fujiKeys ++ yukiKeys;
   "secrets/fastest-vpn.age".publicKeys = fujiYariKeys;
   "secrets/openclaw-env.age".publicKeys = fujiYariKeys;
   "secrets/outlook-calendar-url.age".publicKeys = fujiKeys;

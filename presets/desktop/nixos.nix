@@ -11,6 +11,7 @@ in {
     programs.dconf.enable = mkDefault true;
 
     mountainous.features.hyprland.enable = mkDefault true;
+    mountainous.features.dictation.enable = mkDefault true;
 
     xdg.portal = {
       enable = mkDefault true;

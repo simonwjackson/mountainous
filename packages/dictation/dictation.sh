@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# Dictation - speech-to-text for Wayland
-# Supports local (whisper-cli) and remote (SSH) transcription
+# Dictation - speech-to-text for Wayland via Groq Whisper API
+# Press once to start recording, press again to stop and type the transcription.
 
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOG_FILE="$RUNTIME_DIR/dictation.log"
 TRANSCRIPT_FILE="$RUNTIME_DIR/dictation-transcript.txt"
 PID_FILE="$RUNTIME_DIR/dictation-stt.pid"
-AMBIENT_PID_FILE="$RUNTIME_DIR/dictation-ambient.pid"
-WAITING_PID_FILE="$RUNTIME_DIR/dictation-waiting.pid"
 RETURN_FLAG_FILE="$RUNTIME_DIR/dictation-send-return"
 AUDIO_FILE="$RUNTIME_DIR/dictation-recording.wav"
+BAR_STATE_CSS="$RUNTIME_DIR/ironbar-dictation.css"
+
+GROQ_API_KEY="${GROQ_API_KEY:-}"
+DICTATION_MODEL="${DICTATION_MODEL:-whisper-large-v3-turbo}"
+DICTATION_LANGUAGE="${DICTATION_LANGUAGE:-en}"
 
 # Load config if exists
 if [[ -f "$CONFIG_DIR/dictation/config" ]]; then
@@ -18,20 +21,12 @@ if [[ -f "$CONFIG_DIR/dictation/config" ]]; then
   source "$CONFIG_DIR/dictation/config"
 fi
 
-REMOTE_HOST="${DICTATION_REMOTE_HOST:-}"
-WHISPER_MODEL="${DICTATION_WHISPER_MODEL:-~/.local/share/whisper/models/ggml-tiny.en.bin}"
-
 # Parse flags
 SEND_RETURN=false
-FORCE_LOCAL=false
 while [[ $# -gt 0 ]]; do
   case $1 in
     --return | -r)
       SEND_RETURN=true
-      shift
-      ;;
-    --local | -l)
-      FORCE_LOCAL=true
       shift
       ;;
     *)
@@ -40,86 +35,61 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Determine mode
-if [[ "$FORCE_LOCAL" == "true" ]] || [[ -z "$REMOTE_HOST" ]]; then
-  MODE="local"
-else
-  MODE="remote"
-fi
-
 log() {
-  echo "[$(date '+%H:%M:%S')] [$MODE${REMOTE_HOST:+:$REMOTE_HOST}] $*" >>"$LOG_FILE"
+  echo "[$(date '+%H:%M:%S')] $*" >>"$LOG_FILE"
 }
 
-play_start() {
-  play -n synth 0.8 sine 550:580 sine 825:870 fade l 0.18 0.8 0.55 vol 0.08 &
+bar_recording() {
+  cat >"$BAR_STATE_CSS" <<'CSS'
+#bar { background-color: rgba(191, 38, 38, 0.92); }
+CSS
+  ironbar style load-css "$BAR_STATE_CSS" >/dev/null 2>&1 || true
 }
 
-start_waiting() {
-  play -n synth 0.8 sine 550:580 sine 825:870 fade l 0.18 0.8 0.55 vol 0.08 repeat - &
-  echo $! >"$WAITING_PID_FILE"
+bar_processing() {
+  cat >"$BAR_STATE_CSS" <<'CSS'
+#bar { background-color: rgba(191, 130, 38, 0.92); }
+CSS
+  ironbar style load-css "$BAR_STATE_CSS" >/dev/null 2>&1 || true
 }
 
-stop_waiting() {
-  if [[ -f "$WAITING_PID_FILE" ]]; then
-    kill $(cat "$WAITING_PID_FILE") 2>/dev/null
-    rm -f "$WAITING_PID_FILE"
-  fi
-}
-
-start_ambient() {
-  play -n -c1 synth whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 fade t 2 &
-  echo $! >"$AMBIENT_PID_FILE"
-}
-
-stop_ambient() {
-  if [[ -f "$AMBIENT_PID_FILE" ]]; then
-    AMBIENT_PID=$(cat "$AMBIENT_PID_FILE")
-    rm -f "$AMBIENT_PID_FILE"
-    play -n -c1 synth 0.5 whitenoise lowpass -1 120 lowpass -1 120 lowpass -1 120 gain +16 vol 0.5 fade t 0 0.5 0.5 &
-    kill $AMBIENT_PID 2>/dev/null
-  fi
-}
-
-transcribe_local() {
-  local audio_file="$1"
-  local output_file="$2"
-
-  log "Transcribing with whisper-cli (model: $WHISPER_MODEL)"
-
-  if [[ -z "$WHISPER_MODEL" ]] || [[ ! -f "$WHISPER_MODEL" ]]; then
-    log "ERROR: Whisper model not found at $WHISPER_MODEL"
-    return 1
-  fi
-
-  whisper-cli -m "$WHISPER_MODEL" -f "$audio_file" -nt 2>>"$LOG_FILE" >"$output_file"
-  local exit_code=$?
-  log "whisper-cli exit code: $exit_code"
-  rm -f "$audio_file"
-}
-
-transcribe_remote() {
-  local audio_file="$1"
-  local output_file="$2"
-
-  log "Sending audio to $REMOTE_HOST (model: $WHISPER_MODEL)"
-  log "Audio file size: $(stat -c%s "$audio_file" 2>/dev/null || echo "unknown") bytes"
-
-  # Pipe audio to remote, run whisper via nix shell, get text back
-  cat "$audio_file" | ssh "$REMOTE_HOST" "nix shell nixpkgs#whisper-cpp --command sh -c 'cat > /tmp/dictation-audio.wav && whisper-cli -m $WHISPER_MODEL -f /tmp/dictation-audio.wav -nt 2>/dev/null && rm /tmp/dictation-audio.wav'" >"$output_file" 2>>"$LOG_FILE"
-
-  local exit_code=$?
-  log "SSH exit code: $exit_code"
-  log "Transcript file size: $(stat -c%s "$output_file" 2>/dev/null || echo "0") bytes"
-  rm -f "$audio_file"
+bar_idle() {
+  : >"$BAR_STATE_CSS"
+  ironbar style load-css "$BAR_STATE_CSS" >/dev/null 2>&1 || true
 }
 
 transcribe() {
-  if [[ "$MODE" == "local" ]]; then
-    transcribe_local "$@"
-  else
-    transcribe_remote "$@"
+  local audio_file="$1"
+  local output_file="$2"
+
+  log "Transcribing via Groq (model: $DICTATION_MODEL)"
+  log "Audio file size: $(stat -c%s "$audio_file" 2>/dev/null || echo "unknown") bytes"
+
+  local response
+  response=$(curl -s -w '\n%{http_code}' \
+    "https://api.groq.com/openai/v1/audio/transcriptions" \
+    -H "Authorization: Bearer $GROQ_API_KEY" \
+    -F "file=@${audio_file}" \
+    -F "model=${DICTATION_MODEL}" \
+    -F "response_format=text" \
+    -F "language=${DICTATION_LANGUAGE}" \
+    2>>"$LOG_FILE")
+
+  local http_code
+  http_code=$(echo "$response" | tail -1)
+  local body
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" != "200" ]]; then
+    log "ERROR: Groq API returned HTTP $http_code"
+    log "Response: $body"
+    rm -f "$audio_file"
+    return 1
   fi
+
+  echo "$body" >"$output_file"
+  log "Transcript: $body"
+  rm -f "$audio_file"
 }
 
 # Check if recording is currently running via PID file
@@ -127,16 +97,13 @@ if [[ -f "$PID_FILE" ]]; then
   PID=$(cat "$PID_FILE")
   if kill -0 "$PID" 2>/dev/null; then
     log "=== Stopping recording (PID: $PID) ==="
-    stop_ambient
-    start_waiting
+    bar_processing
 
-    # Brief delay to capture trailing audio before stopping
     sleep 1
 
     kill -INT "$PID"
     rm -f "$PID_FILE"
 
-    # Wait for rec process to fully exit and flush buffers
     while kill -0 "$PID" 2>/dev/null; do
       sleep 0.1
     done
@@ -147,10 +114,9 @@ if [[ -f "$PID_FILE" ]]; then
       log "ERROR: Audio file not found at $AUDIO_FILE"
     fi
 
-    stop_waiting
+    bar_idle
     if [[ -s "$TRANSCRIPT_FILE" ]]; then
       TRANSCRIPT=$(cat "$TRANSCRIPT_FILE")
-      log "Transcript: $TRANSCRIPT"
       sleep 0.2
       wtype -P super -P shift -P ctrl -P alt
       echo -n "$TRANSCRIPT" | wtype -
@@ -169,22 +135,20 @@ if [[ -f "$PID_FILE" ]]; then
   else
     log "Stale PID file, removing"
     rm -f "$PID_FILE"
+    bar_idle
   fi
 fi
 
-# Validate local mode has model
-if [[ "$MODE" == "local" ]]; then
-  if [[ -z "$WHISPER_MODEL" ]] || [[ ! -f "$WHISPER_MODEL" ]]; then
-    log "ERROR: Whisper model not found at $WHISPER_MODEL"
-    echo "ERROR: DICTATION_WHISPER_MODEL not set or file not found" >&2
-    exit 1
-  fi
+# Validate API key
+if [[ -z "$GROQ_API_KEY" ]]; then
+  log "ERROR: GROQ_API_KEY not set"
+  echo "ERROR: GROQ_API_KEY not set" >&2
+  exit 1
 fi
 
 # Start recording
-log "=== Starting recording (mode: $MODE) ==="
-play_start
-start_ambient
+log "=== Starting recording ==="
+bar_recording
 rm -f "$TRANSCRIPT_FILE"
 rm -f "$AUDIO_FILE"
 

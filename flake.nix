@@ -184,6 +184,7 @@
               nix.settings = {
                 experimental-features = ["nix-command" "flakes"];
                 trusted-users = ["root" "@wheel" "simonwjackson" "admin"];
+                warn-dirty = false;
               };
               users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
                 ./modules/nixos/user/id_rsa.pub

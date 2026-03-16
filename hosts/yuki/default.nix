@@ -53,7 +53,7 @@
           path = "/swap/swapfile";
         };
       };
-      keyboard.enable = true;
+      keyboard.enable = false;
     };
 
     device = {

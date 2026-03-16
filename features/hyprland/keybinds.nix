@@ -4,8 +4,9 @@
   lib,
   pkgs,
   inputs,
+  osConfig ? {},
 }: let
-  dictationEnabled = config.mountainous.dictation.enable or false;
+  dictationEnabled = osConfig.mountainous.features.dictation.enable or false;
 
   brightnessSync = pkgs.callPackage ../../packages/brightness-sync {};
   dictationPackage = pkgs.callPackage ../../packages/dictation {};
