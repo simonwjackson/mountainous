@@ -14,15 +14,15 @@
   rpcs3Config = import ./rpcs3.nix {inherit config lib pkgs osConfig;};
 
   # Get gaming config from NixOS (source of truth)
-  gamingEnabled = osConfig.mountainous.gaming.enable or false;
-  gamingCfg = osConfig.mountainous.gaming or {};
+  gamingEnabled = osConfig.mountainous.features.gaming.enable or false;
+  gamingCfg = osConfig.mountainous.features.gaming or {};
 
   # Get device config from NixOS
   device = osConfig.mountainous.device or {};
   deviceCaps = device.capabilities or {};
 
   # Check if Hyprland is enabled
-  hyprlandEnabled = osConfig.mountainous.hyprland.enable or false;
+  hyprlandEnabled = osConfig.mountainous.features.hyprland.enable or false;
 
   # Determine device characteristics from shared device module
   isHandheld = (deviceCaps.formFactor or "tower") == "handheld" || (deviceCaps.formFactor or "tower") == "tablet";

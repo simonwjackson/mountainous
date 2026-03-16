@@ -15,8 +15,8 @@
   inherit (builtins) toJSON;
 
   # Get config from NixOS (source of truth)
-  gamingEnabled = osConfig.mountainous.gaming.enable or false;
-  cfg = osConfig.mountainous.gaming.steamPrefs or {};
+  gamingEnabled = osConfig.mountainous.features.gaming.enable or false;
+  cfg = osConfig.mountainous.features.gaming.steamPrefs or {};
   steamPrefsEnabled = cfg.enable or false;
 
   # Get Steam package from NixOS

@@ -16,8 +16,8 @@
   inherit (builtins) toJSON;
 
   # Get citron config from NixOS (source of truth)
-  gamingEnabled = osConfig.mountainous.gaming.enable or false;
-  citronCfg = osConfig.mountainous.gaming.citron or {};
+  gamingEnabled = osConfig.mountainous.features.gaming.enable or false;
+  citronCfg = osConfig.mountainous.features.gaming.citron or {};
   citronEnabled = citronCfg.enable or false;
   keysPath = citronCfg.keys or null;
   savePath = citronCfg.savePath or null;

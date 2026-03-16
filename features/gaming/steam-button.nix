@@ -19,12 +19,12 @@
   inherit (builtins) toString;
 
   # Get config from NixOS (source of truth)
-  gamingEnabled = osConfig.mountainous.gaming.enable or false;
-  cfg = osConfig.mountainous.gaming.steamButton or {};
+  gamingEnabled = osConfig.mountainous.features.gaming.enable or false;
+  cfg = osConfig.mountainous.features.gaming.steamButton or {};
   steamButtonEnabled = cfg.enable or false;
 
   # Check if Hyprland is enabled
-  hyprlandEnabled = osConfig.mountainous.hyprland.enable or false;
+  hyprlandEnabled = osConfig.mountainous.features.hyprland.enable or false;
 
   # Get Steam package from NixOS
   steam = osConfig.programs.steam.package or pkgs.steam;
@@ -92,7 +92,7 @@ in {
       assertions = [
         {
           assertion = hyprlandEnabled;
-          message = "mountainous.gaming.steamButton requires mountainous.hyprland.enable = true";
+          message = "mountainous.features.gaming.steamButton requires mountainous.features.hyprland.enable = true";
         }
       ];
     })

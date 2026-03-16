@@ -6,7 +6,7 @@
 }: let
   inherit (lib) mkIf mkMerge;
 
-  cfg = config.mountainous.gaming;
+  cfg = config.mountainous.features.gaming;
   device = config.mountainous.device;
 
   # Import streaming module configuration
@@ -71,8 +71,6 @@
     # (can be extended as needed)
   ];
 in {
-  options.mountainous.gaming = import ./options.nix {inherit lib;};
-
   config = mkIf cfg.enable (mkMerge [
     # Base gaming configuration (all device types)
     {

@@ -19,8 +19,8 @@
 }: let
   inherit (lib) mkIf mkMerge;
 
-  gamingEnabled = osConfig.mountainous.gaming.enable or false;
-  rpcs3Cfg = osConfig.mountainous.gaming.rpcs3 or {};
+  gamingEnabled = osConfig.mountainous.features.gaming.enable or false;
+  rpcs3Cfg = osConfig.mountainous.features.gaming.rpcs3 or {};
   rpcs3Enabled = rpcs3Cfg.enable or false;
   savePath = rpcs3Cfg.savePath or null;
   installPath = rpcs3Cfg.installPath or null;
