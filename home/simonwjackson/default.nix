@@ -39,6 +39,7 @@
     };
 
     home.sessionPath = [
+      "/run/wrappers/bin"
       "$HOME/.nix-profile/bin"
       "$HOME/.local/bin"
       "/etc/profiles/per-user/simonwjackson/bin"
