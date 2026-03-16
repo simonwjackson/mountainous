@@ -2,7 +2,6 @@
   lib,
   pkgs,
   hyprdynamicmonitors,
-  nixos-hardware,
   ...
 }: let
   defaultScale = "1.25";
@@ -470,6 +469,7 @@
 
     wpctl='${pkgs.wireplumber}/bin/wpctl'
     pwCli='${pkgs.pipewire}/bin/pw-cli'
+    amixer='${pkgs.alsa-utils}/bin/amixer'
     awk='${pkgs.gawk}/bin/awk'
     sleepCmd='${pkgs.coreutils}/bin/sleep'
     seqCmd='${pkgs.coreutils}/bin/seq'
@@ -535,6 +535,16 @@
     if [ -n "$speakerSinkId" ]; then
       $wpctl set-default "$speakerSinkId"
     fi
+
+    # Park the ALSA hardware Master at full scale and unmuted.
+    #
+    # With api.alsa.soft-mixer = true, PipeWire does volume in software and never
+    # touches the hardware mixer. Without alsa-store/alsa-restore the kernel
+    # default for this card leaves Master at 0 / muted, so no audio reaches the
+    # CS35L56 amps. Setting it to max (0 dB, no attenuation) once here lets the
+    # software mixer be the sole volume control, matching the intent of the
+    # soft-mixer WirePlumber rule in this same config.
+    $amixer -c0 sset Master 87 unmute >/dev/null 2>&1 || true
   '';
 
   yukiUndockSuspendScript = pkgs.writeShellScript "yuki-undock-suspend" ''
@@ -711,17 +721,6 @@
         esac
   '';
 in {
-  imports = [
-    # There is not yet an exact nixos-hardware module for the Yoga Book 9i Gen 10 (83Q8),
-    # so we currently borrow the closest upstream Lenovo Intel laptop profile as part of
-    # the overall compatibility story for this host.
-    #
-    # This lives here instead of `hosts/yuki/default.nix` on purpose: the borrowed module
-    # is temporary and should be reviewed alongside the rest of yuki's quirks whenever we
-    # test newer kernels, firmware, or a future first-class upstream hardware module.
-    nixos-hardware.nixosModules.lenovo-ideapad-14imh9
-  ];
-
   # This module intentionally centralizes the host-specific quirks for yuki so they can
   # be audited, deleted, or re-tested as upstream support improves.
   #
@@ -734,6 +733,59 @@ in {
   # - Keeping all of those decisions in one file makes future clean-up much easier:
   #   when a kernel, firmware, or proper upstream hardware profile lands, this is the
   #   first file to review.
+  #
+  # We previously imported `nixos-hardware.nixosModules.lenovo-ideapad-14imh9` directly,
+  # but current nixpkgs now asserts on that borrowed module's deprecated
+  # `systemd.sleep.extraConfig` usage. Mirror the still-useful baseline settings here so
+  # yuki keeps the same compatibility profile without depending on the deprecated option.
+  boot.initrd.kernelModules = ["i915"];
+
+  environment.variables.INTEL_DEBUG = lib.mkDefault "no32";
+
+  security.tpm2.enable = lib.mkDefault true;
+
+  hardware = {
+    enableRedistributableFirmware = lib.mkDefault true;
+    i2c.enable = lib.mkDefault true;
+    graphics = {
+      extraPackages = [
+        pkgs.intel-media-driver
+        pkgs.intel-compute-runtime
+        (pkgs.vpl-gpu-rt or pkgs.onevpl-intel-gpu)
+      ];
+      extraPackages32 = [pkgs.driversi686Linux.intel-media-driver];
+    };
+  };
+
+  services = {
+    fstrim.enable = lib.mkDefault true;
+    fwupd.enable = lib.mkDefault true;
+    hardware.bolt.enable = lib.mkDefault true;
+    thermald.enable = lib.mkDefault true;
+  };
+
+  systemd.sleep.settings.Sleep.HibernateMode = lib.mkDefault "shutdown";
+
+  systemd.services.workaround-reset-xhci-driver-after-resume-if-needed = {
+    script = ''
+      result=$(${pkgs.usbutils}/bin/lsusb | ${pkgs.gnugrep}/bin/grep Chicony)
+      if [[ -z $result ]]; then
+        ${pkgs.kmod}/bin/rmmod xhci_pci xhci_hcd
+        ${pkgs.kmod}/bin/modprobe xhci_pci xhci_hcd
+      fi
+    '';
+    after = [
+      "suspend.target"
+      "hibernate.target"
+      "hybrid-sleep.target"
+    ];
+    wantedBy = [
+      "suspend.target"
+      "hibernate.target"
+      "hybrid-sleep.target"
+      "multi-user.target"
+    ];
+  };
 
   # The borrowed 14IMH9 profile also ships an old HDA modprobe workaround:
   #
@@ -794,6 +846,12 @@ in {
   ];
 
   boot.kernelParams = [
+    # Mirrored from the borrowed 14IMH9 compatibility profile.
+    "i915.enable_psr=0"
+    "iommu.strict=1"
+    "iommu.passthrough=1"
+    ''i915.dmc_firmware_path=""''
+
     # Historical note:
     # The borrowed 14IMH9 profile already disables PSR and adds a few Intel graphics
     # workarounds. We still add our own flags here because they were discovered while
@@ -1046,7 +1104,7 @@ in {
 
     systemd.user.services.yuki-audio-profile = {
       Unit = {
-        Description = "Select the internal speaker profile on yuki";
+        Description = "Select the internal speaker profile and unmute Master on yuki";
         After = [
           "graphical-session.target"
           "pipewire.service"
@@ -1058,6 +1116,16 @@ in {
         Type = "oneshot";
         ExecStart = "${yukiSelectSpeakerProfileScript}";
       };
+    };
+
+    systemd.user.timers.yuki-audio-profile = {
+      Unit.Description = "Periodically ensure speaker profile and ALSA Master are correct";
+      Timer = {
+        OnBootSec = "15s";
+        OnUnitActiveSec = "30s";
+        Unit = "yuki-audio-profile.service";
+      };
+      Install.WantedBy = ["timers.target"];
     };
 
     systemd.user.services.yuki-docked-lid-inhibitor = {

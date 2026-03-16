@@ -10,14 +10,12 @@
     ./disko.nix
     ./quirks.nix
     ../../modules/nixos/device
-    ../../features/gaming/nixos.nix
   ];
 
   home-manager = {
     users = {
       simonwjackson = {
         imports = [
-          ../../features/gaming/home.nix
           hyprdynamicmonitors.homeManagerModules.default
         ];
 
@@ -66,7 +64,7 @@
       };
     };
 
-    gaming.enable = true;
+    features.gaming.enable = true;
   };
 
   time = {
