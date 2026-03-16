@@ -123,8 +123,9 @@
 
     packageOverlay = final: prev: let
       callPackage = lib.callPackageWith (final // {inherit inputs;});
+      overlayPackagePaths = builtins.removeAttrs packagePaths ["scripts"];
     in
-      lib.mapAttrs (_: path: callPackage path {}) packagePaths;
+      lib.mapAttrs (_: path: callPackage path {}) overlayPackagePaths;
 
     extraOverlays = import ./overlays;
     projectOverlays = [packageOverlay] ++ extraOverlays;
