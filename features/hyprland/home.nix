@@ -121,6 +121,29 @@
         ];
       }
       {
+        type = "custom";
+        class = "codexbar";
+        bar = [
+          {
+            type = "button";
+            label = "{{3600000:codexbar-oci}}";
+            on_click = "popup:toggle";
+          }
+        ];
+        popup = [
+          {
+            type = "box";
+            orientation = "vertical";
+            widgets = [
+              {
+                type = "label";
+                label = "{{3600000:codexbar-oci-detail}}";
+              }
+            ];
+          }
+        ];
+      }
+      {
         type = "volume";
         format = "{icon} {percentage}%";
       }
