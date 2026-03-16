@@ -44,9 +44,7 @@ in {
       };
     };
 
-    systemd.sleep.extraConfig = mkDefault ''
-      HibernateDelaySec=15min
-    '';
+    systemd.sleep.settings.Sleep.HibernateDelaySec = mkDefault "15min";
 
     services.logind.settings.Login = {
       HandleLidSwitch = mkDefault "suspend-then-hibernate";

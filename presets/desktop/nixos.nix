@@ -10,10 +10,7 @@ in {
   config = mkIf cfg.enable {
     programs.dconf.enable = mkDefault true;
 
-    programs.hyprland = {
-      enable = mkDefault true;
-      xwayland.enable = mkDefault true;
-    };
+    mountainous.features.hyprland.enable = mkDefault true;
 
     xdg.portal = {
       enable = mkDefault true;

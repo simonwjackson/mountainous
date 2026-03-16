@@ -3,7 +3,7 @@
   lib,
   ...
 }: let
-  inherit (lib) mkEnableOption mkIf;
+  inherit (lib) mkEnableOption mkIf mkOption types;
   cfg = config.mountainous.presets.desktop;
 in {
   imports = [
@@ -12,6 +12,11 @@ in {
 
   options.mountainous.presets.desktop = {
     enable = mkEnableOption "desktop preset";
+    defaultMode = mkOption {
+      type = types.enum ["dark" "light"];
+      default = "dark";
+      description = "The default appearance mode written to user config files before darkman applies any runtime changes.";
+    };
   };
 
   config = mkIf cfg.enable {
