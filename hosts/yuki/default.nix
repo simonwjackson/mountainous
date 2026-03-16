@@ -9,6 +9,7 @@
     ./hardware.nix
     ./disko.nix
     ./quirks.nix
+    ./lid-suspend.nix
     ../../modules/nixos/device
   ];
 
