@@ -80,6 +80,25 @@ in {
       mode = "0400";
     };
 
+    age.secrets."oci-config" = {
+      file = ../../secrets/oci-config.age;
+      owner = "simonwjackson";
+      mode = "0400";
+      path = "/home/simonwjackson/.oci/config";
+    };
+
+    age.secrets."oci-api-key" = {
+      file = ../../secrets/oci-api-key.age;
+      owner = "simonwjackson";
+      mode = "0400";
+    };
+
+    age.secrets."oci-yari-key" = {
+      file = ../../secrets/oci-yari-key.age;
+      owner = "simonwjackson";
+      mode = "0400";
+    };
+
     users.users.simonwjackson =
       {
         isNormalUser = true;

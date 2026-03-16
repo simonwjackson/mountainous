@@ -43,6 +43,11 @@ in {
   "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
   "secrets/ado-refresh-token.age".publicKeys = fujiKeys;
 
+  # OCI secrets (all machines)
+  "secrets/oci-config.age".publicKeys = allKeys;
+  "secrets/oci-api-key.age".publicKeys = allKeys;
+  "secrets/oci-yari-key.age".publicKeys = allKeys;
+
   # Rakku / Yari shared service secrets
   "secrets/tailscale-ephemeral.age".publicKeys = rakkuYariKeys;
   "secrets/system/usenet/newsdemon-user.age".publicKeys = yariKeys;
