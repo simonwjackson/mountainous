@@ -824,7 +824,45 @@ in {
         }
       ]
     '')
-    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-yuki-disable-hdmi-audio.conf" ''
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-yuki-audioengine-priority.conf" ''
+      monitor.alsa.rules = [
+        {
+          matches = [
+            {
+              # The Audioengine 2+ USB DAC (shows as "Mpow HC5" in descriptions
+              # due to a USB descriptor quirk). When connected it should always be
+              # the preferred audio output over the laptop's built-in speakers.
+              node.name = "alsa_output.usb-Audioengine_LLC_Audioengine_2__AE202302221C0006-00.analog-stereo"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 2000
+              priority.session = 2000
+            }
+          }
+        }
+      ]
+    '')
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/53-yuki-disable-x2u-sink.conf" ''
+      monitor.alsa.rules = [
+        {
+          matches = [
+            {
+              # The Shure X2u is used exclusively as a microphone on yuki.
+              # Disable its headphone output so it never appears as a speaker choice.
+              node.name = "alsa_output.usb-Shure_Incorporated_Shure_Digital-00.analog-stereo"
+            }
+          ]
+          actions = {
+            update-props = {
+              node.disabled = true
+            }
+          }
+        }
+      ]
+    '')
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/54-yuki-disable-hdmi-audio.conf" ''
       monitor.alsa.rules = [
         {
           matches = [
