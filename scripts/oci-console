@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# OCI Serial Console helper
+# Usage: oci-console [host]
+#   host: fuji (default) or yari
+
+declare -A INSTANCE_IDS=(
+  [fuji]="ocid1.instance.oc1.phx.anyhqljsujrkrvycczwmxpnijfnihdphclg3f7gb624hrzac345pbpyg4goa"
+)
+
+declare -A COMPARTMENT_IDS=(
+  [fuji]="ocid1.tenancy.oc1..aaaaaaaagkch2ju5efcgygw276vpazapixjysunryxyy4ac6rbjevkh2xesa"
+)
+
+declare -A OCI_PROFILES=(
+  [fuji]="fuji"
+)
+
+HOST="${1:-fuji}"
+SSH_KEY="${OCI_CONSOLE_SSH_KEY:-$HOME/.ssh/id_ed25519}"
+SSH_PUB_KEY="${SSH_KEY}.pub"
+
+if [[ -z "${INSTANCE_IDS[$HOST]:-}" ]]; then
+  echo "Unknown host: $HOST"
+  echo "Available hosts: ${!INSTANCE_IDS[*]}"
+  exit 1
+fi
+
+INSTANCE_ID="${INSTANCE_IDS[$HOST]}"
+COMPARTMENT_ID="${COMPARTMENT_IDS[$HOST]}"
+PROFILE="${OCI_PROFILES[$HOST]}"
+
+if [[ ! -f "$SSH_PUB_KEY" ]]; then
+  echo "SSH public key not found: $SSH_PUB_KEY"
+  echo "Set OCI_CONSOLE_SSH_KEY to the path of your private key (without .pub)"
+  exit 1
+fi
+
+oci_cmd() {
+  oci --profile "$PROFILE" "$@"
+}
+
+# Clean up stale console connections
+cleanup_connections() {
+  local ids
+  ids=$(oci_cmd compute instance-console-connection list \
+    --compartment-id "$COMPARTMENT_ID" \
+    --instance-id "$INSTANCE_ID" \
+    --query 'data[?"lifecycle-state"!=`DELETED`].id' \
+    --raw-output 2>/dev/null | tr -d '[]" \n' | tr ',' '\n')
+
+  for id in $ids; do
+    [[ -z "$id" ]] && continue
+    echo "Deleting old console connection..."
+    oci_cmd compute instance-console-connection delete \
+      --instance-console-connection-id "$id" --force 2>/dev/null || true
+  done
+}
+
+# Create a new console connection
+create_connection() {
+  echo "Creating console connection for $HOST..."
+  oci_cmd compute instance-console-connection create \
+    --instance-id "$INSTANCE_ID" \
+    --ssh-public-key-file "$SSH_PUB_KEY" \
+    --query 'data.id' \
+    --raw-output
+}
+
+# Wait for the connection to become ACTIVE
+wait_for_active() {
+  local conn_id="$1"
+  echo -n "Waiting for connection to become active"
+  for _ in $(seq 1 30); do
+    state=$(oci_cmd compute instance-console-connection get \
+      --instance-console-connection-id "$conn_id" \
+      --query 'data."lifecycle-state"' \
+      --raw-output 2>/dev/null)
+    if [[ "$state" == "ACTIVE" ]]; then
+      echo " ready!"
+      return 0
+    fi
+    echo -n "."
+    sleep 5
+  done
+  echo " timed out."
+  return 1
+}
+
+# Get the SSH connection string
+get_connection_string() {
+  local conn_id="$1"
+  oci_cmd compute instance-console-connection get \
+    --instance-console-connection-id "$conn_id" \
+    --query 'data."connection-string"' \
+    --raw-output
+}
+
+# --- Main ---
+
+cleanup_connections
+
+CONN_ID=$(create_connection)
+if [[ -z "$CONN_ID" ]]; then
+  echo "Failed to create console connection."
+  exit 1
+fi
+echo "Connection ID: $CONN_ID"
+
+trap 'echo "Cleaning up..."; oci_cmd compute instance-console-connection delete --instance-console-connection-id "$CONN_ID" --force 2>/dev/null || true' EXIT
+
+wait_for_active "$CONN_ID"
+
+CONN_STRING=$(get_connection_string "$CONN_ID")
+echo ""
+echo "Connecting to serial console ($HOST)..."
+echo "  Tip: Press Enter after connecting if you see a blank screen."
+echo "  Exit: ~. (tilde dot)"
+echo ""
+
+# The connection string from OCI uses the default ssh key.
+# Replace with our specific key if needed.
+CONN_STRING="${CONN_STRING//-i \/home\/*/"-i $SSH_KEY"}"
+
+# If the connection string doesn't have -i, inject it
+if [[ "$CONN_STRING" != *"-i "* ]]; then
+  CONN_STRING="${CONN_STRING/ssh /ssh -i $SSH_KEY }"
+fi
+
+eval "$CONN_STRING"
