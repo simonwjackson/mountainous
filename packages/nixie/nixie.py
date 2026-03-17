@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+
+"""CLI contract and backend execution for the nixie rewrite.
+
+V1 goals frozen here:
+- stdlib-only Python implementation
+- CLI shape: ``nixie <build|test|switch> <host[,host...]>``
+- execute hosts sequentially
+- stop immediately on the first failure
+- resolve hosts from flake outputs, not manifests or inventories
+- use platform-specific backends for NixOS and nix-on-droid
+- stream subprocess output live and show the exact command being run
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shlex
+import subprocess
+import sys
+from dataclasses import dataclass
+from typing import Literal, Sequence
+
+ACTIONS = ("build", "test", "switch")
+Platform = Literal["nixos", "droid"]
+DROID_REMOTE_PATH = "~/mountainous"
+DROID_RSYNC_PATH = "/etc/profiles/per-user/nix-on-droid/bin/rsync"
+DROID_NIX_ON_DROID = "/etc/profiles/per-user/nix-on-droid/bin/nix-on-droid"
+
+
+class NixieError(Exception):
+    """Raised for user-facing nixie errors."""
+
+
+@dataclass(frozen=True)
+class Invocation:
+    action: str
+    hosts: tuple[str, ...]
+    sequential: bool = True
+    stop_on_failure: bool = True
+
+
+@dataclass(frozen=True)
+class FlakeHosts:
+    nixos: frozenset[str]
+    droid: frozenset[str]
+
+
+@dataclass(frozen=True)
+class ResolvedHost:
+    name: str
+    platform: Platform
+
+
+@dataclass(frozen=True)
+class PlannedCommand:
+    argv: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class HostPlan:
+    host: ResolvedHost
+    requested_action: str
+    effective_action: str
+    commands: tuple[PlannedCommand, ...]
+    warning: str | None = None
+
+
+
+def parse_hosts(hosts_arg: str) -> tuple[str, ...]:
+    parts = [part.strip() for part in hosts_arg.split(",")]
+    if not parts or any(not part for part in parts):
+        raise argparse.ArgumentTypeError(
+            "hosts must be a comma-separated list like 'yari,fuji,usu'"
+        )
+    return tuple(parts)
+
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="nixie",
+        description=(
+            "Run a Nix action across one or more hosts. "
+            "Hosts are processed sequentially and execution stops on the first failure."
+        ),
+    )
+    parser.add_argument(
+        "action",
+        choices=ACTIONS,
+        help="Action to run for each host.",
+    )
+    parser.add_argument(
+        "hosts",
+        type=parse_hosts,
+        help="Comma-separated host list, e.g. 'yari,fuji,usu'.",
+    )
+    return parser
+
+
+
+def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
+    args = build_parser().parse_args(argv)
+    return Invocation(
+        action=args.action,
+        hosts=args.hosts,
+        sequential=True,
+        stop_on_failure=True,
+    )
+
+
+
+def load_flake_hosts() -> FlakeHosts:
+    expr = (
+        "let flake = builtins.getFlake (toString ./.); in "
+        "{ "
+        '  nixos = builtins.attrNames (flake.nixosConfigurations or {}); '
+        '  droid = builtins.attrNames (flake.nixOnDroidConfigurations or {}); '
+        "}"
+    )
+    command = ["nix", "eval", "--impure", "--json", "--expr", expr]
+
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as exc:
+        raise NixieError("'nix' was not found in PATH") from exc
+    except subprocess.CalledProcessError as exc:
+        message = (exc.stderr or exc.stdout).strip() or "unknown nix evaluation failure"
+        raise NixieError(f"failed to query flake hosts: {message}") from exc
+
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise NixieError("failed to parse flake host list from nix eval output") from exc
+
+    return FlakeHosts(
+        nixos=frozenset(payload.get("nixos", [])),
+        droid=frozenset(payload.get("droid", [])),
+    )
+
+
+
+def resolve_host(host: str, flake_hosts: FlakeHosts) -> ResolvedHost:
+    in_nixos = host in flake_hosts.nixos
+    in_droid = host in flake_hosts.droid
+
+    if in_nixos and in_droid:
+        raise NixieError(
+            f"host '{host}' is ambiguous: present in both nixosConfigurations and nixOnDroidConfigurations"
+        )
+    if in_nixos:
+        return ResolvedHost(name=host, platform="nixos")
+    if in_droid:
+        return ResolvedHost(name=host, platform="droid")
+
+    raise NixieError(
+        f"unknown host '{host}': not found in nixosConfigurations or nixOnDroidConfigurations"
+    )
+
+
+
+def resolve_hosts(hosts: Sequence[str]) -> tuple[ResolvedHost, ...]:
+    flake_hosts = load_flake_hosts()
+    return tuple(resolve_host(host, flake_hosts) for host in hosts)
+
+
+
+def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
+    if host.platform != "nixos":
+        raise NixieError(
+            f"host '{host.name}' is platform '{host.platform}', not nixos"
+        )
+
+    return HostPlan(
+        host=host,
+        requested_action=action,
+        effective_action=action,
+        commands=(
+            PlannedCommand(
+                argv=(
+                    "nixos-rebuild",
+                    action,
+                    "--flake",
+                    f".#{host.name}",
+                    "--build-host",
+                    host.name,
+                    "--target-host",
+                    host.name,
+                    "--sudo",
+                )
+            ),
+        ),
+    )
+
+
+
+def build_droid_build_plan(action: str, host: ResolvedHost) -> HostPlan:
+    return HostPlan(
+        host=host,
+        requested_action=action,
+        effective_action="build",
+        commands=(
+            PlannedCommand(
+                argv=(
+                    "nix",
+                    "build",
+                    f".#nixOnDroidConfigurations.{host.name}.activationPackage",
+                )
+            ),
+        ),
+    )
+
+
+
+def build_droid_switch_plan(
+    action: str, host: ResolvedHost, warning: str | None = None
+) -> HostPlan:
+    return HostPlan(
+        host=host,
+        requested_action=action,
+        effective_action="switch",
+        commands=(
+            PlannedCommand(
+                argv=(
+                    "rsync",
+                    "-av",
+                    "--delete",
+                    "--exclude",
+                    ".git",
+                    f"--rsync-path={DROID_RSYNC_PATH}",
+                    "./",
+                    f"{host.name}:{DROID_REMOTE_PATH}/",
+                )
+            ),
+            PlannedCommand(
+                argv=(
+                    "ssh",
+                    host.name,
+                    (
+                        f"cd {DROID_REMOTE_PATH} && "
+                        f"{DROID_NIX_ON_DROID} switch --flake .#{host.name}"
+                    ),
+                )
+            ),
+        ),
+        warning=warning,
+    )
+
+
+
+def build_droid_plan(action: str, host: ResolvedHost) -> HostPlan:
+    if host.platform != "droid":
+        raise NixieError(
+            f"host '{host.name}' is platform '{host.platform}', not droid"
+        )
+
+    if action == "build":
+        return build_droid_build_plan(action, host)
+    if action == "switch":
+        return build_droid_switch_plan(action, host)
+    if action == "test":
+        return build_droid_switch_plan(
+            action,
+            host,
+            warning=(
+                f"droid host '{host.name}' does not support a separate test mode; "
+                "treating 'test' as 'switch'"
+            ),
+        )
+
+    raise NixieError(f"unsupported droid action '{action}' for host '{host.name}'")
+
+
+
+def build_host_plan(action: str, host: ResolvedHost) -> HostPlan:
+    if host.platform == "nixos":
+        return build_nixos_plan(action, host)
+    if host.platform == "droid":
+        return build_droid_plan(action, host)
+
+    raise NixieError(f"unsupported platform '{host.platform}' for host '{host.name}'")
+
+
+
+def plan_commands(invocation: Invocation) -> tuple[HostPlan, ...]:
+    hosts = resolve_hosts(invocation.hosts)
+    return tuple(build_host_plan(invocation.action, host) for host in hosts)
+
+
+
+def format_command(argv: Sequence[str]) -> str:
+    return shlex.join(argv)
+
+
+
+def execute_command(command: PlannedCommand) -> int:
+    print(f"+ {format_command(command.argv)}", flush=True)
+    completed = subprocess.run(command.argv)
+    return completed.returncode
+
+
+
+def execute_plan(plan: HostPlan) -> None:
+    print(
+        f"==> {plan.host.name} ({plan.host.platform}) {plan.requested_action}",
+        flush=True,
+    )
+    if plan.warning:
+        print(f"warning: {plan.warning}", file=sys.stderr, flush=True)
+
+    for command in plan.commands:
+        returncode = execute_command(command)
+        if returncode != 0:
+            raise NixieError(
+                f"host '{plan.host.name}' action '{plan.requested_action}' failed "
+                f"while running: {format_command(command.argv)} (exit {returncode})"
+            )
+
+
+
+def execute_invocation(invocation: Invocation) -> None:
+    plans = plan_commands(invocation)
+    for plan in plans:
+        execute_plan(plan)
+
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    try:
+        invocation = parse_invocation(argv)
+        execute_invocation(invocation)
+    except NixieError as exc:
+        print(f"nixie: error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

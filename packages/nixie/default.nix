@@ -2,20 +2,20 @@
   lib,
   pkgs,
   writeShellApplication,
-  inputs,
   ...
 }:
 writeShellApplication {
   name = "nixie";
   runtimeInputs = with pkgs; [
-    bash
-    gum
-    jq
+    python3
+    nix
+    nixos-rebuild
+    rsync
     openssh
-    nix-output-monitor
-    parallel
   ];
-  text = builtins.readFile ./nixie.sh;
+  text = ''
+    exec python3 ${./nixie.py} "$@"
+  '';
 }
 // {
   meta = with lib; {
