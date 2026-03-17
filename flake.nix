@@ -7,6 +7,11 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-droid.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nix-on-droid = {
+      url = "github:nix-community/nix-on-droid/release-24.05";
+      inputs.nixpkgs.follows = "nixpkgs-droid";
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -59,6 +64,8 @@
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-droid,
+    nix-on-droid,
     disko,
     home-manager,
     agenix,
@@ -117,9 +124,29 @@
           ++ collectModulePaths path)
       names;
 
+    collectPlatformModulePaths = dir: platformFile: let
+      entries = builtins.readDir dir;
+      names = lib.sort (a: b: a < b) (builtins.attrNames entries);
+    in
+      lib.concatMap (name: let
+        type = entries.${name};
+        path = dir + "/${name}";
+        platformPath = path + "/${platformFile}";
+        hasDefault = builtins.pathExists (path + "/default.nix");
+        hasPlatform = type == "directory" && builtins.pathExists platformPath;
+      in
+        if hasPlatform
+        then (lib.optional hasDefault path) ++ [platformPath]
+        else if type == "directory"
+        then collectPlatformModulePaths path platformFile
+        else [])
+      names;
+
     packagePaths = collectPackagePaths "" ./packages;
-    featureModulePaths = collectModulePaths ./features;
-    presetModulePaths = collectModulePaths ./presets;
+    nixosFeatureModulePaths = collectModulePaths ./features;
+    nixosPresetModulePaths = collectModulePaths ./presets;
+    droidFeatureModulePaths = collectPlatformModulePaths ./features "droid.nix";
+    droidPresetModulePaths = collectPlatformModulePaths ./presets "droid.nix";
 
     packageOverlay = final: prev: let
       callPackage = lib.callPackageWith (final // {inherit inputs;});
@@ -132,6 +159,12 @@
 
     mkPkgs = system:
       import nixpkgs {
+        inherit system;
+        overlays = projectOverlays;
+      };
+
+    mkDroidPkgs = system:
+      import nixpkgs-droid {
         inherit system;
         overlays = projectOverlays;
       };
@@ -173,8 +206,8 @@
             home-manager.nixosModules.home-manager
             ./modules/nixos/tailscale
           ]
-          ++ featureModulePaths
-          ++ presetModulePaths
+          ++ nixosFeatureModulePaths
+          ++ nixosPresetModulePaths
           ++ [
             {
               home-manager.useGlobalPkgs = true;
@@ -199,6 +232,22 @@
             {nixpkgs.overlays = projectOverlays;}
           ]
           ++ hostAutoModules
+          ++ [hostPath]
+          ++ extraModules;
+      };
+
+    mkDroidHost = {
+      system ? "aarch64-linux",
+      hostPath,
+      specialArgs ? {},
+      extraModules ? [],
+    }:
+      nix-on-droid.lib.nixOnDroidConfiguration {
+        pkgs = mkDroidPkgs system;
+        extraSpecialArgs = {inherit self inputs;} // specialArgs;
+        modules =
+          droidFeatureModulePaths
+          ++ droidPresetModulePaths
           ++ [hostPath]
           ++ extraModules;
       };
