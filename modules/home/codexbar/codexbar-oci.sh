@@ -4,6 +4,7 @@
 
 set -euo pipefail
 
+export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
 OCI_CONFIG="${OCI_CONFIG:-${HOME}/.oci/config}"
 LIMIT_GB=10240  # 10 TB per tenancy
 
@@ -18,7 +19,9 @@ END=$(date -u -d "+1 day" +%Y-%m-%dT00:00:00Z 2>/dev/null || date -u -v+1d +%Y-%
 segments=()
 
 for profile in $(grep '^\[' "$OCI_CONFIG" | tr -d '[]'); do
-  tenancy=$(oci --profile "$profile" iam region-subscription list --query 'data[0]."tenancy-id"' --raw-output 2>/dev/null || true)
+  tenancy=$(awk -v p="$profile" '
+    /^\[/{found=($0 == "["p"]")} found && /^tenancy=/{sub(/^tenancy=/,""); print; exit}
+  ' "$OCI_CONFIG")
   [[ -z "$tenancy" ]] && continue
 
   egress=$(oci --profile "$profile" usage-api usage-summary request-summarized-usages \
