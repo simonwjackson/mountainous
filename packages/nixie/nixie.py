@@ -10,6 +10,7 @@ Current behavior:
 - execution stops on the first failure
 - child process output streams live
 - exact commands are printed before execution
+- `switch` and `test` preflight SSH reachability before doing anything
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import json
 import shlex
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
@@ -29,6 +31,8 @@ DROID_RSYNC_PATH = "/etc/profiles/per-user/nix-on-droid/bin/rsync"
 DROID_NIX_ON_DROID = "/etc/profiles/per-user/nix-on-droid/bin/nix-on-droid"
 SSH_BASE = ("ssh", "-F", "/dev/null")
 RSYNC_SSH = "ssh -F /dev/null"
+SSH_CHECK_OPTS = ("-o", "BatchMode=yes", "-o", "ConnectTimeout=2")
+ONLINE_CHECK_ACTIONS = frozenset({"switch", "test"})
 
 
 class NixieError(Exception):
@@ -39,6 +43,7 @@ class NixieError(Exception):
 class Invocation:
     action: str
     hosts: tuple[str, ...]
+    check_online: bool = True
     sequential: bool = True
     stop_on_failure: bool = True
 
@@ -69,6 +74,12 @@ class HostPlan:
     warning: str | None = None
 
 
+@dataclass(frozen=True)
+class HostReachability:
+    host: ResolvedHost
+    online: bool
+
+
 def parse_hosts(hosts_arg: str) -> tuple[str, ...]:
     parts = [part.strip() for part in hosts_arg.split(",")]
     if not parts or any(not part for part in parts):
@@ -96,6 +107,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=parse_hosts,
         help="Comma-separated host list, e.g. 'yari,fuji,usu'.",
     )
+    parser.add_argument(
+        "--no-check-online",
+        action="store_false",
+        dest="check_online",
+        help="Skip default SSH reachability preflight for switch/test.",
+    )
     return parser
 
 
@@ -104,6 +121,7 @@ def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
     return Invocation(
         action=args.action,
         hosts=args.hosts,
+        check_online=args.check_online,
         sequential=True,
         stop_on_failure=True,
     )
@@ -289,13 +307,57 @@ def build_host_plan(action: str, host: ResolvedHost) -> HostPlan:
     raise NixieError(f"unsupported platform '{host.platform}' for host '{host.name}'")
 
 
+def build_plans(action: str, hosts: Sequence[ResolvedHost]) -> tuple[HostPlan, ...]:
+    return tuple(build_host_plan(action, host) for host in hosts)
+
+
 def plan_commands(invocation: Invocation) -> tuple[HostPlan, ...]:
     hosts = resolve_hosts(invocation.hosts)
-    return tuple(build_host_plan(invocation.action, host) for host in hosts)
+    return build_plans(invocation.action, hosts)
 
 
 def format_command(argv: Sequence[str]) -> str:
     return shlex.join(argv)
+
+
+def should_check_online(action: str) -> bool:
+    return action in ONLINE_CHECK_ACTIONS
+
+
+def probe_host_online(host: ResolvedHost) -> HostReachability:
+    command = [*SSH_BASE, *SSH_CHECK_OPTS, host.name, "true"]
+    completed = subprocess.run(
+        command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return HostReachability(host=host, online=(completed.returncode == 0))
+
+
+def check_hosts_online(hosts: Sequence[ResolvedHost]) -> tuple[HostReachability, ...]:
+    if not hosts:
+        return ()
+
+    max_workers = min(32, len(hosts))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        return tuple(executor.map(probe_host_online, hosts))
+
+
+def preflight_online_hosts(action: str, hosts: Sequence[ResolvedHost]) -> None:
+    if not should_check_online(action):
+        return
+
+    print("Checking host reachability...", flush=True)
+    statuses = check_hosts_online(hosts)
+    online_hosts = [status.host.name for status in statuses if status.online]
+    offline_hosts = [status.host.name for status in statuses if not status.online]
+
+    print(f"online: {' '.join(online_hosts) if online_hosts else '(none)'}", flush=True)
+    if offline_hosts:
+        print(f"offline: {' '.join(offline_hosts)}", flush=True)
+        raise NixieError(
+            f"refusing to run {action} because some hosts are offline: {', '.join(offline_hosts)}"
+        )
 
 
 def execute_command(command: PlannedCommand) -> int:
@@ -322,7 +384,10 @@ def execute_plan(plan: HostPlan) -> None:
 
 
 def execute_invocation(invocation: Invocation) -> None:
-    plans = plan_commands(invocation)
+    hosts = resolve_hosts(invocation.hosts)
+    if invocation.check_online:
+        preflight_online_hosts(invocation.action, hosts)
+    plans = build_plans(invocation.action, hosts)
     for plan in plans:
         execute_plan(plan)
 

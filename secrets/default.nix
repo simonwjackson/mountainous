@@ -20,7 +20,6 @@ in {
   "secrets/groq-env.age".publicKeys = fujiKeys ++ yukiKeys;
   "secrets/fastest-vpn.age".publicKeys = fujiYariKeys;
   "secrets/openclaw-env.age".publicKeys = fujiYariKeys;
-  "secrets/outlook-calendar-url.age".publicKeys = fujiKeys;
   "secrets/ebay-api-env.age".publicKeys = fujiKeys;
   "secrets/ebay-refresh-token.age".publicKeys = fujiKeys;
   "secrets/nutrition-api-keys.age".publicKeys = fujiKeys;
@@ -39,9 +38,7 @@ in {
   "secrets/gogcli-credentials.age".publicKeys = fujiKeys;
   "secrets/gogcli-keyring.age".publicKeys = fujiKeys;
   "secrets/hf-token.age".publicKeys = fujiKeys;
-  "secrets/anthropic-api-key.age".publicKeys = fujiKeys;
   "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
-  "secrets/ado-refresh-token.age".publicKeys = fujiKeys;
 
   # Search API keys (all machines)
   "secrets/serper-api-key.age".publicKeys = allKeys;

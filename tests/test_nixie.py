@@ -20,6 +20,16 @@ class ParseHostsTest(unittest.TestCase):
             nixie.parse_hosts("yari,,usu")
 
 
+class ParseInvocationTest(unittest.TestCase):
+    def test_parse_invocation_enables_online_check_by_default(self):
+        invocation = nixie.parse_invocation(["switch", "yari"])
+        self.assertTrue(invocation.check_online)
+
+    def test_parse_invocation_allows_disabling_online_check(self):
+        invocation = nixie.parse_invocation(["switch", "yari", "--no-check-online"])
+        self.assertFalse(invocation.check_online)
+
+
 class ResolveHostsTest(unittest.TestCase):
     def test_resolve_host_prefers_flake_outputs(self):
         flake_hosts = nixie.FlakeHosts(nixos=frozenset({"yari"}), droid=frozenset({"usu"}))
@@ -62,7 +72,10 @@ class PlanGenerationTest(unittest.TestCase):
         plan = nixie.build_droid_plan(
             "switch", nixie.ResolvedHost(name="usu", platform="droid")
         )
-        self.assertEqual(plan.commands[0].argv, ("ssh", "-F", "/dev/null", "usu", "mkdir -p ~/mountainous"))
+        self.assertEqual(
+            plan.commands[0].argv,
+            ("ssh", "-F", "/dev/null", "usu", "mkdir -p ~/mountainous"),
+        )
         self.assertEqual(
             plan.commands[1].argv,
             (
@@ -92,29 +105,94 @@ class PlanGenerationTest(unittest.TestCase):
             nixie.build_droid_plan("boot", nixie.ResolvedHost(name="usu", platform="droid"))
 
 
-class ExecutionTest(unittest.TestCase):
-    def test_execute_invocation_runs_hosts_in_order(self):
-        seen = []
+class OnlineCheckTest(unittest.TestCase):
+    def test_switch_and_test_require_online_check(self):
+        self.assertTrue(nixie.should_check_online("switch"))
+        self.assertTrue(nixie.should_check_online("test"))
+        self.assertFalse(nixie.should_check_online("build"))
+        self.assertFalse(nixie.should_check_online("boot"))
+
+    def test_preflight_online_hosts_aborts_when_any_host_is_offline(self):
+        hosts = (
+            nixie.ResolvedHost(name="yari", platform="nixos"),
+            nixie.ResolvedHost(name="usu", platform="droid"),
+        )
+        stdout = io.StringIO()
         with patch.object(
             nixie,
-            "plan_commands",
+            "check_hosts_online",
             return_value=(
-                nixie.HostPlan(
-                    host=nixie.ResolvedHost(name="yari", platform="nixos"),
-                    requested_action="build",
-                    effective_action="build",
-                    commands=(),
-                ),
-                nixie.HostPlan(
-                    host=nixie.ResolvedHost(name="usu", platform="droid"),
-                    requested_action="build",
-                    effective_action="build",
-                    commands=(),
-                ),
+                nixie.HostReachability(host=hosts[0], online=True),
+                nixie.HostReachability(host=hosts[1], online=False),
             ),
-        ), patch.object(nixie, "execute_plan", side_effect=lambda plan: seen.append(plan.host.name)):
+        ), redirect_stdout(stdout):
+            with self.assertRaisesRegex(
+                nixie.NixieError,
+                "refusing to run switch because some hosts are offline: usu",
+            ):
+                nixie.preflight_online_hosts("switch", hosts)
+        self.assertIn("Checking host reachability...", stdout.getvalue())
+        self.assertIn("online: yari", stdout.getvalue())
+        self.assertIn("offline: usu", stdout.getvalue())
+
+    def test_preflight_online_hosts_skips_build(self):
+        hosts = (nixie.ResolvedHost(name="yari", platform="nixos"),)
+        with patch.object(nixie, "check_hosts_online") as check_hosts_online:
+            nixie.preflight_online_hosts("build", hosts)
+        check_hosts_online.assert_not_called()
+
+
+class ExecutionTest(unittest.TestCase):
+    def test_execute_invocation_runs_hosts_in_order(self):
+        hosts = (
+            nixie.ResolvedHost(name="yari", platform="nixos"),
+            nixie.ResolvedHost(name="usu", platform="droid"),
+        )
+        plans = (
+            nixie.HostPlan(
+                host=hosts[0],
+                requested_action="build",
+                effective_action="build",
+                commands=(),
+            ),
+            nixie.HostPlan(
+                host=hosts[1],
+                requested_action="build",
+                effective_action="build",
+                commands=(),
+            ),
+        )
+        seen = []
+        with patch.object(nixie, "resolve_hosts", return_value=hosts), patch.object(
+            nixie, "preflight_online_hosts"
+        ) as preflight_online_hosts, patch.object(
+            nixie, "build_plans", return_value=plans
+        ), patch.object(
+            nixie, "execute_plan", side_effect=lambda plan: seen.append(plan.host.name)
+        ):
             nixie.execute_invocation(nixie.Invocation(action="build", hosts=("yari", "usu")))
+        preflight_online_hosts.assert_called_once_with("build", hosts)
         self.assertEqual(seen, ["yari", "usu"])
+
+    def test_execute_invocation_skips_preflight_when_disabled(self):
+        hosts = (nixie.ResolvedHost(name="yari", platform="nixos"),)
+        plans = (
+            nixie.HostPlan(
+                host=hosts[0],
+                requested_action="switch",
+                effective_action="switch",
+                commands=(),
+            ),
+        )
+        with patch.object(nixie, "resolve_hosts", return_value=hosts), patch.object(
+            nixie, "preflight_online_hosts"
+        ) as preflight_online_hosts, patch.object(
+            nixie, "build_plans", return_value=plans
+        ), patch.object(nixie, "execute_plan"):
+            nixie.execute_invocation(
+                nixie.Invocation(action="switch", hosts=("yari",), check_online=False)
+            )
+        preflight_online_hosts.assert_not_called()
 
     def test_execute_plan_prints_warning_and_fails_fast(self):
         plan = nixie.HostPlan(
@@ -132,7 +210,10 @@ class ExecutionTest(unittest.TestCase):
         with redirect_stdout(stdout), redirect_stderr(stderr):
             with self.assertRaisesRegex(nixie.NixieError, "host 'usu' action 'test' failed"):
                 nixie.execute_plan(plan)
-        self.assertIn("warning: droid host 'usu' does not support a separate test mode", stderr.getvalue())
+        self.assertIn(
+            "warning: droid host 'usu' does not support a separate test mode",
+            stderr.getvalue(),
+        )
         self.assertIn("+ python3 -c", stdout.getvalue())
 
 
