@@ -14,7 +14,7 @@ in {
 
       port = mkOption {
         type = types.port;
-        default = 2345;
+        default = 22;
         description = "Port for the SSH server.";
       };
 

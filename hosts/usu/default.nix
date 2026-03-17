@@ -9,6 +9,7 @@
 
   mountainous.features.ssh.server = {
     enable = true;
+    port = 2345;
     mosh.enable = true;
   };
 
