@@ -198,7 +198,7 @@
       in
       nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = {inherit self cascade hyprdynamicmonitors;} // specialArgs;
+        specialArgs = {inherit self cascade hyprdynamicmonitors; mountainousPlatform = "nixos";} // specialArgs;
         modules =
           [
             disko.nixosModules.default
@@ -244,7 +244,7 @@
     }:
       nix-on-droid.lib.nixOnDroidConfiguration {
         pkgs = mkDroidPkgs system;
-        extraSpecialArgs = {inherit self inputs;} // specialArgs;
+        extraSpecialArgs = {inherit self inputs; mountainousPlatform = "droid";} // specialArgs;
         modules =
           droidFeatureModulePaths
           ++ droidPresetModulePaths
