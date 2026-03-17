@@ -208,7 +208,6 @@
             disko.nixosModules.default
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
-            ./modules/nixos/tailscale
           ]
           ++ nixosFeatureModulePaths
           ++ nixosPresetModulePaths
@@ -229,7 +228,7 @@
               ];
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
               networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
-              mountainous.tailscale.enable = lib.mkDefault true;
+              mountainous.features.tailscale.enable = lib.mkDefault true;
               services.openssh.enable = lib.mkDefault true;
               programs.mosh.enable = lib.mkDefault true;
             })

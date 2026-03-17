@@ -57,7 +57,7 @@
   };
 
   # WSL2: netfilter not fully supported
-  mountainous.tailscale.extraUpFlags = ["--netfilter-mode=off"];
+  mountainous.features.tailscale.extraUpFlags = ["--netfilter-mode=off"];
 
   networking.firewall = {
     enable = true;

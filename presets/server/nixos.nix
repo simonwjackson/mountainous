@@ -7,6 +7,6 @@
   cfg = config.mountainous.presets.server;
 in {
   config = mkIf cfg.enable {
-    mountainous.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
+    mountainous.features.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
   };
 }
