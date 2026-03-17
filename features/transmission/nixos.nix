@@ -4,59 +4,21 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkAfter mkEnableOption mkIf mkOption optional types;
+  inherit (lib) mkAfter mkIf optional;
 
-  cfg = config.mountainous.transmission;
+  cfg = config.mountainous.features.transmission;
   mediaCfg = config.mountainous.features.media;
   stateDir = "/var/lib/transmission";
 in {
-  options.mountainous.transmission = {
-    enable = mkEnableOption "Transmission with Mountainous defaults";
-
-    user = mkOption {
-      type = types.str;
-      default = "transmission";
-      description = "User account under which Transmission runs.";
-    };
-
-    group = mkOption {
-      type = types.str;
-      default = "media";
-      description = "Primary group for Transmission; usually the shared media group.";
-    };
-
-    port = mkOption {
-      type = types.port;
-      default = 9091;
-      description = "Transmission RPC and web UI port.";
-    };
-
-    openFirewall = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Open the Transmission RPC port in the firewall.";
-    };
-
-    settings = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Additional settings forwarded to services.transmission.settings.";
-      example = {
-        "download-dir" = "/srv/storage/downloads/torrents/completed";
-        "watch-dir-enabled" = true;
-      };
-    };
-  };
-
   config = mkIf cfg.enable {
     assertions = [
       {
         assertion = mediaCfg.enable;
-        message = "mountainous.transmission requires mountainous.features.media.enable = true";
+        message = "mountainous.features.transmission requires mountainous.features.media.enable = true";
       }
       {
         assertion = config.mountainous.features.vpn-ns.enable;
-        message = "mountainous.transmission requires mountainous.features.vpn-ns.enable = true";
+        message = "mountainous.features.transmission requires mountainous.features.vpn-ns.enable = true";
       }
     ];
 

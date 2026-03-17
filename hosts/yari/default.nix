@@ -9,11 +9,9 @@
     ../../modules/server
     ../../modules/nixos/jellyfin
 
-    ../../modules/nixos/nzbget
     ../../modules/nixos/prowlarr
     ../../modules/nixos/radarr
     ../../modules/nixos/sonarr
-    ../../modules/nixos/transmission
 
   ];
 
@@ -50,7 +48,7 @@
     root = "/srv/storage";
   };
 
-  mountainous.nzbget = {
+  mountainous.features.nzbget = {
     enable = true;
     openFirewall = false;
     settings = {
@@ -73,7 +71,7 @@
     };
   };
 
-  mountainous.transmission = {
+  mountainous.features.transmission = {
     enable = true;
     openFirewall = false;
   };
@@ -331,7 +329,7 @@
     services.nzbget = {
       enable = true;
       unit = "nzbget.service";
-      port = config.mountainous.nzbget.port;
+      port = config.mountainous.features.nzbget.port;
       tailscale = {
         enable = true;
         hostname = "usenet";

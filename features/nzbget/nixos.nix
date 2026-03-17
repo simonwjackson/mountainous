@@ -4,89 +4,20 @@
   pkgs,
   ...
 }: let
-  inherit (lib) concatStringsSep mkAfter mkEnableOption mkIf mkOption optional types;
+  inherit (lib) concatStringsSep mkAfter mkIf optional;
 
-  cfg = config.mountainous.nzbget;
+  cfg = config.mountainous.features.nzbget;
   mediaCfg = config.mountainous.features.media;
 
   stateDir = "/var/lib/nzbget";
   configFile = "${stateDir}/nzbget.conf";
   secretSettingsJson = builtins.toJSON cfg.secretSettings;
 in {
-  options.mountainous.nzbget = {
-    enable = mkEnableOption "NZBGet with shared media defaults";
-
-    user = mkOption {
-      type = types.str;
-      default = "nzbget";
-      description = "User account under which NZBGet runs.";
-    };
-
-    group = mkOption {
-      type = types.str;
-      default = "media";
-      description = "Primary group for NZBGet; usually the shared media group.";
-    };
-
-    listenAddress = mkOption {
-      type = types.str;
-      default = "0.0.0.0";
-      description = "Bind address for the NZBGet UI and RPC interface.";
-    };
-
-    port = mkOption {
-      type = types.port;
-      default = 6789;
-      description = "NZBGet control port.";
-    };
-
-    controlUsername = mkOption {
-      type = types.str;
-      default = "nzbget";
-      description = "Username for the NZBGet web UI and RPC interface.";
-    };
-
-    openFirewall = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Open the NZBGet port in the firewall.";
-    };
-
-    settings = mkOption {
-      type = types.attrsOf (types.oneOf [types.bool types.int types.str]);
-      default = {};
-      description = "Non-secret NZBGet settings forwarded to services.nzbget.settings.";
-      example = {
-        "Server1.Name" = "primary";
-        "Server1.Host" = "news.example.com";
-        "Server1.Port" = 563;
-        "Server1.Encryption" = true;
-        "Server1.Connections" = 20;
-        "Server1.Username" = "my-user";
-      };
-    };
-
-    secretSettings = mkOption {
-      type = types.attrsOf types.str;
-      default = {};
-      description = ''
-        Secret-backed NZBGet settings, mapping config key to a runtime file path.
-
-        These values are patched into ${configFile} during service startup so they
-        do not end up in the Nix store.
-      '';
-      example = {
-        ControlPassword = "/run/agenix/nzbget-control-password";
-        "Server1.Password" = "/run/agenix/usenet-primary-password";
-      };
-    };
-  };
-
   config = mkIf cfg.enable {
     assertions = [
       {
         assertion = mediaCfg.enable;
-        message = "mountainous.nzbget requires mountainous.features.media.enable = true";
+        message = "mountainous.features.nzbget requires mountainous.features.media.enable = true";
       }
     ];
 

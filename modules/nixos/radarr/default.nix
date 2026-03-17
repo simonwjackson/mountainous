@@ -199,7 +199,7 @@ in {
 
         port = mkOption {
           type = types.port;
-          default = config.mountainous.nzbget.port;
+          default = config.mountainous.features.nzbget.port;
           description = "Port Radarr should use to reach NZBGet.";
         };
 
@@ -217,7 +217,7 @@ in {
 
         username = mkOption {
           type = types.str;
-          default = config.mountainous.nzbget.controlUsername;
+          default = config.mountainous.features.nzbget.controlUsername;
           description = "Username Radarr should use for NZBGet.";
         };
 
@@ -275,7 +275,7 @@ in {
 
         port = mkOption {
           type = types.port;
-          default = config.mountainous.transmission.port;
+          default = config.mountainous.features.transmission.port;
           description = "Port Radarr should use to reach Transmission.";
         };
 
@@ -364,12 +364,12 @@ in {
           message = "mountainous.radarr requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
         }
         ++ optional cfg.downloadClients.nzbget.enable {
-          assertion = config.mountainous.nzbget.enable;
-          message = "mountainous.radarr.downloadClients.nzbget requires mountainous.nzbget.enable = true";
+          assertion = config.mountainous.features.nzbget.enable;
+          message = "mountainous.radarr.downloadClients.nzbget requires mountainous.features.nzbget.enable = true";
         }
         ++ optional cfg.downloadClients.transmission.enable {
-          assertion = config.mountainous.transmission.enable;
-          message = "mountainous.radarr.downloadClients.transmission requires mountainous.transmission.enable = true";
+          assertion = config.mountainous.features.transmission.enable;
+          message = "mountainous.radarr.downloadClients.transmission requires mountainous.features.transmission.enable = true";
         };
 
       services.radarr = {
