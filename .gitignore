@@ -9,3 +9,4 @@ secrets/rekeyed/
 packages/steam-prefs/__pycache__
 history
 AGENTS.local.md
+packages/nixie/__pycache__
