@@ -18,18 +18,18 @@
     types
     ;
 
-  cfg = config.mountainous.prowlarr;
+  cfg = config.mountainous.features.prowlarr;
   dataDir = "/var/lib/prowlarr";
   configFile = "${dataDir}/config.xml";
   authCredentialEntries = optional cfg.auth.enable "auth-password:${toString cfg.auth.passwordFile}";
   nzbgeekCredentialEntries = optional cfg.indexers.nzbgeek.enable "nzbgeek-api:${toString cfg.indexers.nzbgeek.apiKeyFile}";
-  sonarrEnabled = attrByPath ["mountainous" "sonarr" "enable"] false config;
-  sonarrPort = attrByPath ["mountainous" "sonarr" "port"] 8989 config;
-  sonarrVpnEnabled = attrByPath ["mountainous" "sonarr" "vpn" "enable"] false config;
+  sonarrEnabled = attrByPath ["mountainous" "features" "sonarr" "enable"] false config;
+  sonarrPort = attrByPath ["mountainous" "features" "sonarr" "port"] 8989 config;
+  sonarrVpnEnabled = attrByPath ["mountainous" "features" "sonarr" "vpn" "enable"] false config;
   sonarrConfigFile = "/var/lib/sonarr/.config/NzbDrone/config.xml";
-  radarrEnabled = attrByPath ["mountainous" "radarr" "enable"] false config;
-  radarrPort = attrByPath ["mountainous" "radarr" "port"] 7878 config;
-  radarrVpnEnabled = attrByPath ["mountainous" "radarr" "vpn" "enable"] false config;
+  radarrEnabled = attrByPath ["mountainous" "features" "radarr" "enable"] false config;
+  radarrPort = attrByPath ["mountainous" "features" "radarr" "port"] 7878 config;
+  radarrVpnEnabled = attrByPath ["mountainous" "features" "radarr" "vpn" "enable"] false config;
   radarrConfigFile = "/var/lib/radarr/.config/Radarr/config.xml";
   vpnHostAddress = "10.200.200.1";
   vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
@@ -62,197 +62,33 @@
     }
   );
 in {
-  options.mountainous.prowlarr = {
-    enable = mkEnableOption "Prowlarr with Mountainous defaults";
-
-    port = mkOption {
-      type = types.port;
-      default = 9696;
-      description = "Prowlarr web UI and API port.";
-    };
-
-    openFirewall = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Open the Prowlarr port in the firewall.";
-    };
-
-    auth = {
-      enable = mkEnableOption "Prowlarr web authentication";
-
-      username = mkOption {
-        type = types.str;
-        default = "simonwjackson";
-        description = "Username for Prowlarr web authentication.";
-      };
-
-      passwordFile = mkOption {
-        type = types.nullOr types.path;
-        default = null;
-        description = "Path to a secret file containing the Prowlarr password.";
-      };
-
-      required = mkOption {
-        type = types.enum ["Enabled" "DisabledForLocalAddresses"];
-        default = "Enabled";
-        description = "How broadly Prowlarr auth is enforced.";
-      };
-    };
-
-    indexers.nzbgeek = {
-      enable = mkEnableOption "seed NZBGeek in Prowlarr";
-
-      name = mkOption {
-        type = types.str;
-        default = "NZBGeek";
-        description = "Display name for the NZBGeek indexer in Prowlarr.";
-      };
-
-      apiKeyFile = mkOption {
-        type = types.nullOr types.path;
-        default = null;
-        description = "Path to a secret file containing the NZBGeek API key.";
-      };
-
-      baseUrl = mkOption {
-        type = types.str;
-        default = "https://api.nzbgeek.info";
-        description = "Base URL for the NZBGeek Newznab endpoint.";
-      };
-
-      apiPath = mkOption {
-        type = types.str;
-        default = "/api";
-        description = "API path for the NZBGeek Newznab endpoint.";
-      };
-
-      priority = mkOption {
-        type = types.int;
-        default = 25;
-        description = "Priority to assign to the seeded NZBGeek indexer.";
-      };
-    };
-
-    applications.sonarr = {
-      enable = mkEnableOption "seed Sonarr as a managed application in Prowlarr";
-
-      name = mkOption {
-        type = types.str;
-        default = "Sonarr";
-        description = "Display name for the Sonarr application in Prowlarr.";
-      };
-
-      prowlarrUrl = mkOption {
-        type = types.str;
-        default = "http://${prowlarrHostForSonarr}:${toString cfg.port}";
-        description = "URL Sonarr should use to reach Prowlarr.";
-      };
-
-      baseUrl = mkOption {
-        type = types.str;
-        default = "http://${sonarrHost}:${toString sonarrPort}";
-        description = "URL Prowlarr should use to reach Sonarr.";
-      };
-
-      syncLevel = mkOption {
-        type = types.str;
-        default = "fullSync";
-        description = "Sync level passed to the Prowlarr Sonarr application integration.";
-      };
-    };
-
-    applications.radarr = {
-      enable = mkEnableOption "seed Radarr as a managed application in Prowlarr";
-
-      name = mkOption {
-        type = types.str;
-        default = "Radarr";
-        description = "Display name for the Radarr application in Prowlarr.";
-      };
-
-      prowlarrUrl = mkOption {
-        type = types.str;
-        default = "http://${prowlarrHostForRadarr}:${toString cfg.port}";
-        description = "URL Radarr should use to reach Prowlarr.";
-      };
-
-      baseUrl = mkOption {
-        type = types.str;
-        default = "http://${radarrHost}:${toString radarrPort}";
-        description = "URL Prowlarr should use to reach Radarr.";
-      };
-
-      syncLevel = mkOption {
-        type = types.str;
-        default = "fullSync";
-        description = "Sync level passed to the Prowlarr Radarr application integration.";
-      };
-    };
-
-    vpn.enable = mkEnableOption "run Prowlarr inside the VPN namespace";
-
-    proxy = {
-      enable = mkEnableOption "expose Prowlarr through tsnet-proxy";
-
-      hostname = mkOption {
-        type = types.str;
-        default = "prowlarr";
-        description = "Tailscale hostname for Prowlarr.";
-      };
-
-      protocol = mkOption {
-        type = types.enum ["http" "https"];
-        default = "http";
-        description = "Backend protocol used by tsnet-proxy.";
-      };
-
-      openFirewall = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Open the host firewall for the tsnet-proxy listener.";
-      };
-    };
-
-    settings = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Additional settings forwarded to services.prowlarr.settings.";
-      example = {
-        server = {
-          bindaddress = "*";
-          port = 9696;
-        };
-      };
-    };
-  };
-
   config = mkIf cfg.enable (mkMerge [
     {
       assertions =
         []
         ++ optional cfg.auth.enable {
           assertion = cfg.auth.passwordFile != null;
-          message = "mountainous.prowlarr requires auth.passwordFile when auth.enable = true";
+          message = "mountainous.features.prowlarr requires auth.passwordFile when auth.enable = true";
         }
         ++ optional cfg.indexers.nzbgeek.enable {
           assertion = cfg.indexers.nzbgeek.apiKeyFile != null;
-          message = "mountainous.prowlarr.indexers.nzbgeek requires apiKeyFile when enabled";
+          message = "mountainous.features.prowlarr.indexers.nzbgeek requires apiKeyFile when enabled";
         }
         ++ optional cfg.applications.sonarr.enable {
           assertion = sonarrEnabled;
-          message = "mountainous.prowlarr.applications.sonarr requires mountainous.sonarr.enable = true";
+          message = "mountainous.features.prowlarr.applications.sonarr requires mountainous.features.sonarr.enable = true";
         }
         ++ optional cfg.applications.radarr.enable {
           assertion = radarrEnabled;
-          message = "mountainous.prowlarr.applications.radarr requires mountainous.radarr.enable = true";
+          message = "mountainous.features.prowlarr.applications.radarr requires mountainous.features.radarr.enable = true";
         }
         ++ optional cfg.vpn.enable {
           assertion = config.mountainous.features.vpn-ns.enable;
-          message = "mountainous.prowlarr requires mountainous.features.vpn-ns.enable = true when vpn.enable = true";
+          message = "mountainous.features.prowlarr requires mountainous.features.vpn-ns.enable = true when vpn.enable = true";
         }
         ++ optional cfg.proxy.enable {
           assertion = config.mountainous.features.tsnet-proxy.enable or false;
-          message = "mountainous.prowlarr requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
+          message = "mountainous.features.prowlarr requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
         };
 
       services.prowlarr = {

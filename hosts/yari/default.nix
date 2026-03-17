@@ -7,12 +7,6 @@
     ./hardware.nix
     ./disko.nix
     ../../modules/server
-    ../../modules/nixos/jellyfin
-
-    ../../modules/nixos/prowlarr
-    ../../modules/nixos/radarr
-    ../../modules/nixos/sonarr
-
   ];
 
   networking.hostName = "yari";
@@ -76,7 +70,7 @@
     openFirewall = false;
   };
 
-  mountainous.jellyfin = {
+  mountainous.features.jellyfin = {
     enable = true;
     openFirewall = false;
     bootstrap = {
@@ -108,7 +102,7 @@
     };
   };
 
-  mountainous.prowlarr = {
+  mountainous.features.prowlarr = {
     enable = true;
     openFirewall = false;
     auth = {
@@ -130,7 +124,7 @@
     };
   };
 
-  mountainous.sonarr = {
+  mountainous.features.sonarr = {
     enable = true;
     openFirewall = false;
     auth = {
@@ -182,7 +176,7 @@
     };
   };
 
-  mountainous.radarr = {
+  mountainous.features.radarr = {
     enable = true;
     openFirewall = false;
     auth = {
