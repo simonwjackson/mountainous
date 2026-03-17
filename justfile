@@ -99,12 +99,12 @@ _post_deploy TARGET_HOST:
 # Deploy configuration changes to systems
 [group('deploy')]
 switch *ARGS:
-    just _run_nixie switch {{ ARGS }}
+    nix run .#nixie -- switch {{ ARGS }}
 
 # Test configuration without applying
 [group('deploy')]
 test *ARGS:
-    just _run_nixie test {{ ARGS }}
+    nix run .#nixie -- test {{ ARGS }}
 
 # Set configuration for next boot
 [group('deploy')]
@@ -114,17 +114,7 @@ boot *ARGS:
 # Build configuration (dry-run)
 [group('deploy')]
 build *ARGS:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Determine target host
-    if [ -z "{{ ARGS }}" ]; then
-        TARGET_HOST=$(hostname)
-    else
-        TARGET_HOST="{{ ARGS }}"
-    fi
-
-    nix build .#nixosConfigurations.${TARGET_HOST}.config.system.build.toplevel --dry-run
+    nix run .#nixie -- build {{ ARGS }}
 
 # Deploy a new system and home configuration
 [group('deploy')]
