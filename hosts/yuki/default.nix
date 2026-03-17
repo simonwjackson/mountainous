@@ -9,7 +9,6 @@
     ./disko.nix
     ./quirks.nix
     ./lid-suspend.nix
-    ../../modules/nixos/device
   ];
 
   home-manager = {
@@ -55,7 +54,7 @@
       keyboard.enable = false;
     };
 
-    device = {
+    features.device = {
       role = "portable";
       capabilities = {
         battery = true;

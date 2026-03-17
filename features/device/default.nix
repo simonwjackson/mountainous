@@ -4,9 +4,9 @@
   ...
 }: let
   inherit (lib) mkOption types;
-  cfg = config.mountainous.device;
+  cfg = config.mountainous.features.device;
 in {
-  options.mountainous.device = {
+  options.mountainous.features.device = {
     # === ROLE (how you USE it) ===
     role = mkOption {
       type = types.enum ["desktop" "portable" "server" "kiosk"];
@@ -45,5 +45,5 @@ in {
   };
 
   # No config here - this is purely declarative options
-  # Features read from config.mountainous.device.*
+  # Features read from config.mountainous.features.device.*
 }

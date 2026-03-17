@@ -18,7 +18,7 @@
   gamingCfg = osConfig.mountainous.features.gaming or {};
 
   # Get device config from NixOS
-  device = osConfig.mountainous.device or {};
+  device = osConfig.mountainous.features.device or {};
   deviceCaps = device.capabilities or {};
 
   # Check if Hyprland is enabled

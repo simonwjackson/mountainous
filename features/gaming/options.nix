@@ -225,8 +225,8 @@ in {
     };
   };
 
-  # NOTE: Device type is now defined at mountainous.device.role and mountainous.device.traits
-  # This feature reads from config.mountainous.device instead of having its own deviceType
+  # NOTE: Device type is now defined at mountainous.features.device.role and mountainous.features.device.capabilities
+  # This feature reads from config.mountainous.features.device instead of having its own deviceType
 
   rpcs3 = {
     enable = mkEnableOption "RPCS3 PS3 emulator";

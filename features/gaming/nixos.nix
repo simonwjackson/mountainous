@@ -7,7 +7,7 @@
   inherit (lib) mkIf mkMerge;
 
   cfg = config.mountainous.features.gaming;
-  device = config.mountainous.device;
+  device = config.mountainous.features.device;
 
   # Import streaming module configuration
   streamingModule = import ./streaming.nix {
