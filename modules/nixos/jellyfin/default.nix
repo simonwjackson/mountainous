@@ -8,7 +8,7 @@
 
   cfg = config.mountainous.jellyfin;
   mediaCfg = config.mountainous.media;
-  tsnetProxyEnabled = attrByPath ["mountainous" "services" "tsnet-proxy" "enable"] false config;
+  tsnetProxyEnabled = attrByPath ["mountainous" "features" "tsnet-proxy" "enable"] false config;
   jellyfinConfigDir = config.services.jellyfin.configDir;
   systemConfigFile = "${jellyfinConfigDir}/system.xml";
   networkConfigFile = "${jellyfinConfigDir}/network.xml";
@@ -172,7 +172,7 @@ in {
         }
         ++ optional cfg.proxy.enable {
           assertion = tsnetProxyEnabled;
-          message = "mountainous.jellyfin requires mountainous.services.tsnet-proxy.enable = true when proxy.enable = true";
+          message = "mountainous.jellyfin requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
         }
         ++ optional cfg.bootstrap.enable {
           assertion = cfg.bootstrap.admin.passwordFile != null;
@@ -634,7 +634,7 @@ in {
     }
 
     (mkIf cfg.proxy.enable {
-      mountainous.services.tsnet-proxy.services.jellyfin = {
+      mountainous.features.tsnet-proxy.services.jellyfin = {
         host = "127.0.0.1";
         hostname = cfg.proxy.hostname;
         openFirewall = cfg.proxy.openFirewall;

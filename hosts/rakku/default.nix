@@ -19,7 +19,6 @@ in {
     ./hardware.nix
     ./disko.nix
     ../../modules/server
-    ../../modules/tsnet-proxy
   ];
 
   networking.hostName = "rakku";
@@ -42,7 +41,7 @@ in {
 
   # ── Tsnet Proxy ──────────────────────────────────────────────────────
 
-  mountainous.services.tsnet-proxy = {
+  mountainous.features.tsnet-proxy = {
     enable = true;
     package = tsnet-proxy-pkg;
     authKeyFile = config.age.secrets."tailscale-ephemeral".path;

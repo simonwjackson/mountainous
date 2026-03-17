@@ -360,8 +360,8 @@ in {
           message = "mountainous.radarr requires mountainous.vpn-ns.enable = true when vpn.enable = true";
         }
         ++ optional cfg.proxy.enable {
-          assertion = config.mountainous.services.tsnet-proxy.enable or false;
-          message = "mountainous.radarr requires mountainous.services.tsnet-proxy.enable = true when proxy.enable = true";
+          assertion = config.mountainous.features.tsnet-proxy.enable or false;
+          message = "mountainous.radarr requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
         }
         ++ optional cfg.downloadClients.nzbget.enable {
           assertion = config.mountainous.nzbget.enable;
@@ -776,7 +776,7 @@ in {
         };
     })
     (mkIf (!cfg.vpn.enable && cfg.proxy.enable) {
-      mountainous.services.tsnet-proxy.services.radarr = {
+      mountainous.features.tsnet-proxy.services.radarr = {
         hostname = cfg.proxy.hostname;
         protocol = cfg.proxy.protocol;
         host = "localhost";
@@ -785,7 +785,7 @@ in {
       };
     })
     (mkIf (cfg.vpn.enable && cfg.proxy.enable) {
-      mountainous.services.tsnet-proxy.services.radarr.openFirewall = cfg.proxy.openFirewall;
+      mountainous.features.tsnet-proxy.services.radarr.openFirewall = cfg.proxy.openFirewall;
     })
   ]);
 }

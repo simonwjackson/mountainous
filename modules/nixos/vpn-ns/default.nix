@@ -113,7 +113,7 @@ in {
             }
         )
         enabledServices)
-      (optionalAttrs (config.mountainous.services.tsnet-proxy.enable or false) (
+      (optionalAttrs (config.mountainous.features.tsnet-proxy.enable or false) (
         mapAttrs' (
           name: _:
             nameValuePair "tsnet-proxy-${name}" {
@@ -126,7 +126,7 @@ in {
       ))
     ];
 
-    mountainous.services.tsnet-proxy.services =
+    mountainous.features.tsnet-proxy.services =
       mapAttrs' (
         name: service:
           nameValuePair name {

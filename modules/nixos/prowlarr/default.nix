@@ -251,8 +251,8 @@ in {
           message = "mountainous.prowlarr requires mountainous.vpn-ns.enable = true when vpn.enable = true";
         }
         ++ optional cfg.proxy.enable {
-          assertion = config.mountainous.services.tsnet-proxy.enable or false;
-          message = "mountainous.prowlarr requires mountainous.services.tsnet-proxy.enable = true when proxy.enable = true";
+          assertion = config.mountainous.features.tsnet-proxy.enable or false;
+          message = "mountainous.prowlarr requires mountainous.features.tsnet-proxy.enable = true when proxy.enable = true";
         };
 
       services.prowlarr = {
@@ -622,7 +622,7 @@ in {
         };
     })
     (mkIf (!cfg.vpn.enable && cfg.proxy.enable) {
-      mountainous.services.tsnet-proxy.services.prowlarr = {
+      mountainous.features.tsnet-proxy.services.prowlarr = {
         hostname = cfg.proxy.hostname;
         protocol = cfg.proxy.protocol;
         host = "localhost";
@@ -631,7 +631,7 @@ in {
       };
     })
     (mkIf (cfg.vpn.enable && cfg.proxy.enable) {
-      mountainous.services.tsnet-proxy.services.prowlarr.openFirewall = cfg.proxy.openFirewall;
+      mountainous.features.tsnet-proxy.services.prowlarr.openFirewall = cfg.proxy.openFirewall;
     })
   ]);
 }

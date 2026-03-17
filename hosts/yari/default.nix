@@ -15,7 +15,6 @@
     ../../modules/nixos/sonarr
     ../../modules/nixos/transmission
     ../../modules/nixos/vpn-ns
-    ../../modules/tsnet-proxy
   ];
 
   networking.hostName = "yari";
@@ -310,7 +309,7 @@
 
   # ── Tailscale ────────────────────────────────────────────────────────
 
-  mountainous.services.tsnet-proxy = {
+  mountainous.features.tsnet-proxy = {
     enable = true;
     package = pkgs.tsnet-proxy;
     authKeyFile = config.age.secrets.tailscale-authkey.path;

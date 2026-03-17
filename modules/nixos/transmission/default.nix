@@ -103,7 +103,7 @@ in {
       };
     };
 
-    mountainous.services.tsnet-proxy.services.transmission.openFirewall = false;
+    mountainous.features.tsnet-proxy.services.transmission.openFirewall = false;
 
     networking.firewall.allowedTCPPorts = optional cfg.openFirewall cfg.port;
   };
