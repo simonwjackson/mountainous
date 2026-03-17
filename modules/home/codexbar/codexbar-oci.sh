@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # codexbar-oci: OCI egress usage for ironbar label
-# Shows combined egress percentage across all OCI tenancies
+# Shows per-profile egress percentage (e.g. "fuji: 1.2% yari: 0.3%")
 
 set -euo pipefail
 
@@ -15,8 +15,7 @@ fi
 NOW=$(date -u +%Y-%m-01T00:00:00Z)
 END=$(date -u -d "+1 day" +%Y-%m-%dT00:00:00Z 2>/dev/null || date -u -v+1d +%Y-%m-%dT00:00:00Z)
 
-# Collect egress for each profile
-max_pct=0
+segments=()
 
 for profile in $(grep '^\[' "$OCI_CONFIG" | tr -d '[]'); do
   tenancy=$(oci --profile "$profile" iam region-subscription list --query 'data[0]."tenancy-id"' --raw-output 2>/dev/null || true)
@@ -35,15 +34,21 @@ for profile in $(grep '^\[' "$OCI_CONFIG" | tr -d '[]'); do
   [[ "$egress" == "null" || -z "$egress" ]] && egress=0
 
   pct=$(echo "$egress $LIMIT_GB" | awk '{printf "%.1f", ($1 / $2) * 100}')
-  is_higher=$(echo "$pct $max_pct" | awk '{print ($1 > $2) ? 1 : 0}')
-  [[ "$is_higher" == "1" ]] && max_pct="$pct"
+  pct_int=${pct%.*}
+
+  if (( pct_int >= 80 )); then
+    color="#f38ba8"
+  elif (( pct_int >= 50 )); then
+    color="#fab387"
+  else
+    color="#a6e3a1"
+  fi
+
+  segments+=("<span color=\"${color}\">${profile}: ${pct}%</span>")
 done
 
-pct_int=${max_pct%.*}
-if (( pct_int >= 80 )); then
-  echo "<span color=\"#f38ba8\">OCI:${max_pct}%</span>"
-elif (( pct_int >= 50 )); then
-  echo "<span color=\"#fab387\">OCI:${max_pct}%</span>"
+if (( ${#segments[@]} == 0 )); then
+  echo '<span color="#6c7086">OCI:--</span>'
 else
-  echo "<span color=\"#a6e3a1\">OCI:${max_pct}%</span>"
+  echo "${segments[*]}"
 fi
