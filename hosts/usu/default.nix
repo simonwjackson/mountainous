@@ -7,9 +7,8 @@
     hostName = "usu";
   };
 
-  mountainous.features.sshd = {
+  mountainous.features.ssh.server = {
     enable = true;
-    authorizedKeysUrl = "https://github.com/simonwjackson.keys";
     mosh.enable = true;
   };
 

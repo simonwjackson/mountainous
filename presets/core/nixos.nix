@@ -23,6 +23,8 @@ in {
       ./home.nix
     ];
 
+    mountainous.features.ssh.server.enable = mkDefault true;
+
     nixpkgs.config.allowUnfree = true;
     networking.useDHCP = mkDefault true;
     i18n.defaultLocale = "en_US.UTF-8";
@@ -127,25 +129,6 @@ in {
       // optionalAttrs (!hasPasswordSecret && cfg.passwordHash != null) {
         hashedPassword = mkDefault cfg.passwordHash;
       };
-
-    services.fail2ban = {
-      enable = mkDefault true;
-      ignoreIP = mkDefault ["100.64.0.0/10"];
-      maxretry = mkDefault 3;
-      bantime = mkDefault "1h";
-      bantime-increment = {
-        enable = mkDefault true;
-        maxtime = mkDefault "168h";
-      };
-    };
-
-    services.openssh = {
-      enable = mkDefault true;
-      settings = {
-        PermitRootLogin = mkDefault "prohibit-password";
-        PasswordAuthentication = mkDefault false;
-      };
-    };
 
     networking.firewall = {
       enable = mkDefault true;

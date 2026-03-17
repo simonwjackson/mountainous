@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  cfg = config.mountainous.features.sshd;
+  cfg = config.mountainous.features.ssh.server;
   userName = config.user.userName;
   home = config.user.home;
   sshDir = "${home}/.ssh";
