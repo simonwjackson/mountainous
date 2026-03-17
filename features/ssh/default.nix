@@ -1,10 +1,13 @@
 {
   config,
   lib,
+  mountainousPlatform ? "nixos",
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption types;
+  inherit (lib) mkEnableOption mkOption optional types;
 in {
+  imports = optional (mountainousPlatform == "nixos") ./nixos.nix;
+
   options.mountainous.features.ssh = {
     server = {
       enable = mkEnableOption "SSH server";
