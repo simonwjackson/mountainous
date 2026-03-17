@@ -18,10 +18,10 @@
     ;
 
   cfg = config.mountainous.radarr;
-  mediaCfg = config.mountainous.media;
-  vpnNsAddress = config.mountainous.vpn-ns.vethAddress;
-  nzbgetInVpn = (config.mountainous.vpn-ns.services.nzbget.enable or false);
-  transmissionInVpn = (config.mountainous.vpn-ns.services.transmission.enable or false);
+  mediaCfg = config.mountainous.features.media;
+  vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
+  nzbgetInVpn = (config.mountainous.features.vpn-ns.services.nzbget.enable or false);
+  transmissionInVpn = (config.mountainous.features.vpn-ns.services.transmission.enable or false);
   nzbgetHost = if !cfg.vpn.enable && nzbgetInVpn then vpnNsAddress else "127.0.0.1";
   transmissionHost = if !cfg.vpn.enable && transmissionInVpn then vpnNsAddress else "127.0.0.1";
   stateDir = "/var/lib/radarr";
@@ -348,7 +348,7 @@ in {
         [
           {
             assertion = mediaCfg.enable;
-            message = "mountainous.radarr requires mountainous.media.enable = true";
+            message = "mountainous.radarr requires mountainous.features.media.enable = true";
           }
         ]
         ++ optional cfg.auth.enable {
@@ -356,8 +356,8 @@ in {
           message = "mountainous.radarr requires auth.passwordFile when auth.enable = true";
         }
         ++ optional cfg.vpn.enable {
-          assertion = config.mountainous.vpn-ns.enable;
-          message = "mountainous.radarr requires mountainous.vpn-ns.enable = true when vpn.enable = true";
+          assertion = config.mountainous.features.vpn-ns.enable;
+          message = "mountainous.radarr requires mountainous.features.vpn-ns.enable = true when vpn.enable = true";
         }
         ++ optional cfg.proxy.enable {
           assertion = config.mountainous.features.tsnet-proxy.enable or false;
@@ -761,7 +761,7 @@ in {
       networking.firewall.allowedTCPPorts = optional cfg.openFirewall cfg.port;
     }
     (mkIf cfg.vpn.enable {
-      mountainous.vpn-ns.services.radarr =
+      mountainous.features.vpn-ns.services.radarr =
         {
           enable = true;
           unit = "radarr.service";

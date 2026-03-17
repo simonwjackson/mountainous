@@ -7,7 +7,7 @@
   inherit (lib) attrByPath mkAfter mkEnableOption mkIf mkMerge mkOption optional types;
 
   cfg = config.mountainous.jellyfin;
-  mediaCfg = config.mountainous.media;
+  mediaCfg = config.mountainous.features.media;
   tsnetProxyEnabled = attrByPath ["mountainous" "features" "tsnet-proxy" "enable"] false config;
   jellyfinConfigDir = config.services.jellyfin.configDir;
   systemConfigFile = "${jellyfinConfigDir}/system.xml";
@@ -164,7 +164,7 @@ in {
         []
         ++ optional (!mediaCfg.enable) {
           assertion = false;
-          message = "mountainous.jellyfin requires mountainous.media.enable = true";
+          message = "mountainous.jellyfin requires mountainous.features.media.enable = true";
         }
         ++ optional (cfg.port != 8096) {
           assertion = false;
@@ -184,7 +184,7 @@ in {
         };
 
       # First pass stays intentionally simple:
-      # - host-side service, not inside mountainous.vpn-ns
+      # - host-side service, not inside mountainous.features.vpn-ns
       # - no hardware transcoding work yet
       # - tailnet-only exposure handled separately via tsnet-proxy
       services.jellyfin = {

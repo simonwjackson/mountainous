@@ -32,7 +32,7 @@
   radarrVpnEnabled = attrByPath ["mountainous" "radarr" "vpn" "enable"] false config;
   radarrConfigFile = "/var/lib/radarr/.config/Radarr/config.xml";
   vpnHostAddress = "10.200.200.1";
-  vpnNsAddress = config.mountainous.vpn-ns.vethAddress;
+  vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
   sonarrHost = if cfg.vpn.enable && !sonarrVpnEnabled then vpnHostAddress else "127.0.0.1";
   radarrHost = if cfg.vpn.enable && !radarrVpnEnabled then vpnHostAddress else "127.0.0.1";
   prowlarrHostForSonarr = if cfg.vpn.enable && !sonarrVpnEnabled then vpnNsAddress else "127.0.0.1";
@@ -247,8 +247,8 @@ in {
           message = "mountainous.prowlarr.applications.radarr requires mountainous.radarr.enable = true";
         }
         ++ optional cfg.vpn.enable {
-          assertion = config.mountainous.vpn-ns.enable;
-          message = "mountainous.prowlarr requires mountainous.vpn-ns.enable = true when vpn.enable = true";
+          assertion = config.mountainous.features.vpn-ns.enable;
+          message = "mountainous.prowlarr requires mountainous.features.vpn-ns.enable = true when vpn.enable = true";
         }
         ++ optional cfg.proxy.enable {
           assertion = config.mountainous.features.tsnet-proxy.enable or false;
@@ -607,7 +607,7 @@ in {
       };
     }
     (mkIf cfg.vpn.enable {
-      mountainous.vpn-ns.services.prowlarr =
+      mountainous.features.vpn-ns.services.prowlarr =
         {
           enable = true;
           unit = "prowlarr.service";

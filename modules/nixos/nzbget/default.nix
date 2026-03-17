@@ -7,7 +7,7 @@
   inherit (lib) concatStringsSep mkAfter mkEnableOption mkIf mkOption optional types;
 
   cfg = config.mountainous.nzbget;
-  mediaCfg = config.mountainous.media;
+  mediaCfg = config.mountainous.features.media;
 
   stateDir = "/var/lib/nzbget";
   configFile = "${stateDir}/nzbget.conf";
@@ -86,7 +86,7 @@ in {
     assertions = [
       {
         assertion = mediaCfg.enable;
-        message = "mountainous.nzbget requires mountainous.media.enable = true";
+        message = "mountainous.nzbget requires mountainous.features.media.enable = true";
       }
     ];
 

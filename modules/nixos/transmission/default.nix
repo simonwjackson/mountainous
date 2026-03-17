@@ -7,7 +7,7 @@
   inherit (lib) mkAfter mkEnableOption mkIf mkOption optional types;
 
   cfg = config.mountainous.transmission;
-  mediaCfg = config.mountainous.media;
+  mediaCfg = config.mountainous.features.media;
   stateDir = "/var/lib/transmission";
 in {
   options.mountainous.transmission = {
@@ -52,11 +52,11 @@ in {
     assertions = [
       {
         assertion = mediaCfg.enable;
-        message = "mountainous.transmission requires mountainous.media.enable = true";
+        message = "mountainous.transmission requires mountainous.features.media.enable = true";
       }
       {
-        assertion = config.mountainous.vpn-ns.enable;
-        message = "mountainous.transmission requires mountainous.vpn-ns.enable = true";
+        assertion = config.mountainous.features.vpn-ns.enable;
+        message = "mountainous.transmission requires mountainous.features.vpn-ns.enable = true";
       }
     ];
 
@@ -92,7 +92,7 @@ in {
       mediaCfg.torrentsWatchDir
     ];
 
-    mountainous.vpn-ns.services.transmission = {
+    mountainous.features.vpn-ns.services.transmission = {
       enable = true;
       unit = "transmission.service";
       port = cfg.port;

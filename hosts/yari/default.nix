@@ -8,13 +8,13 @@
     ./disko.nix
     ../../modules/server
     ../../modules/nixos/jellyfin
-    ../../modules/nixos/media
+
     ../../modules/nixos/nzbget
     ../../modules/nixos/prowlarr
     ../../modules/nixos/radarr
     ../../modules/nixos/sonarr
     ../../modules/nixos/transmission
-    ../../modules/nixos/vpn-ns
+
   ];
 
   networking.hostName = "yari";
@@ -45,7 +45,7 @@
   # stable on /srv for now. If dedicated media disks or a mergerfs pool are
   # added later, /srv/storage can become the mountpoint without changing the
   # downloader or library paths used by services.
-  mountainous.media = {
+  mountainous.features.media = {
     enable = true;
     root = "/srv/storage";
   };
@@ -159,9 +159,9 @@
     # - TV via NZBGet category: Series
     # - TV via Transmission category: tv-sonarr
     # - TV library root: /srv/storage/media/tv
-    tvLibraryDir = config.mountainous.media.tvDir;
-    usenetCompletedDir = config.mountainous.media.usenetCompletedDir;
-    torrentsCompletedDir = config.mountainous.media.torrentsCompletedDir;
+    tvLibraryDir = config.mountainous.features.media.tvDir;
+    usenetCompletedDir = config.mountainous.features.media.usenetCompletedDir;
+    torrentsCompletedDir = config.mountainous.features.media.torrentsCompletedDir;
 
     # Selection intent:
     # - Usenet releases go to NZBGet
@@ -203,9 +203,9 @@
     # - Movies via NZBGet category: Movies
     # - Movies via Transmission category: movies-radarr
     # - Movie library root: /srv/storage/media/movies
-    moviesLibraryDir = config.mountainous.media.moviesDir;
-    usenetCompletedDir = config.mountainous.media.usenetCompletedDir;
-    torrentsCompletedDir = config.mountainous.media.torrentsCompletedDir;
+    moviesLibraryDir = config.mountainous.features.media.moviesDir;
+    usenetCompletedDir = config.mountainous.features.media.usenetCompletedDir;
+    torrentsCompletedDir = config.mountainous.features.media.torrentsCompletedDir;
 
     downloadClients = {
       nzbget = {
@@ -324,7 +324,7 @@
   # the namespace over the veth link. That keeps downloader/app egress
   # VPN-isolated, but it is not the stricter "all traffic through VPN" design
   # for Tailscale UI/admin access.
-  mountainous.vpn-ns = {
+  mountainous.features.vpn-ns = {
     enable = true;
     configFile = config.age.secrets."fastest-vpn".path;
     localNetworks = ["100.64.0.0/10"];
