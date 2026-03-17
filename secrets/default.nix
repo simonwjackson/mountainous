@@ -43,6 +43,10 @@ in {
   "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
   "secrets/ado-refresh-token.age".publicKeys = fujiKeys;
 
+  # Search API keys (all machines)
+  "secrets/serper-api-key.age".publicKeys = allKeys;
+  "secrets/brave-api-key.age".publicKeys = allKeys;
+
   # OCI secrets (all machines)
   "secrets/oci-config.age".publicKeys = allKeys;
   "secrets/oci-api-key.age".publicKeys = allKeys;

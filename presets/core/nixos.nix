@@ -80,6 +80,18 @@ in {
       mode = "0400";
     };
 
+    age.secrets."serper-api-key" = {
+      file = ../../secrets/serper-api-key.age;
+      owner = "simonwjackson";
+      mode = "0400";
+    };
+
+    age.secrets."brave-api-key" = {
+      file = ../../secrets/brave-api-key.age;
+      owner = "simonwjackson";
+      mode = "0400";
+    };
+
     age.secrets."oci-config" = {
       file = ../../secrets/oci-config.age;
       owner = "simonwjackson";
