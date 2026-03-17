@@ -223,8 +223,8 @@
                 warn-dirty = false;
               };
               users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
-                ./modules/nixos/user/id_rsa.pub
-                ./modules/nixos/user/id_ed25519.pub
+                ./secrets/keys/users/id_rsa.pub
+                ./secrets/keys/users/id_ed25519.pub
               ];
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
               networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
