@@ -229,8 +229,6 @@
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
               networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
               mountainous.features.tailscale.enable = lib.mkDefault true;
-              services.openssh.enable = lib.mkDefault true;
-              programs.mosh.enable = lib.mkDefault true;
             })
             {nixpkgs.overlays = projectOverlays;}
           ]

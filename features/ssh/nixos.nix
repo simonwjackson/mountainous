@@ -19,6 +19,8 @@ in {
       };
     };
 
+    programs.mosh.enable = mkDefault true;
+
     services.fail2ban = {
       enable = mkDefault true;
       ignoreIP = mkDefault ["100.64.0.0/10"];

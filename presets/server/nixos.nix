@@ -8,6 +8,7 @@
   cfg = config.mountainous.presets.server;
 in {
   config = mkIf cfg.enable {
+    mountainous.features.ssh.server.enable = mkDefault true;
     mountainous.features.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
 
     nix.gc = {
