@@ -10,9 +10,8 @@
   mountainous.features.sshd = {
     enable = true;
     authorizedKeysUrl = "https://github.com/simonwjackson.keys";
+    mosh.enable = true;
   };
-
-  mountainous.features.mosh.enable = true;
 
   mountainous.features.secrets = {
     enable = true;

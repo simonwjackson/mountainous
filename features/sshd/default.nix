@@ -28,5 +28,16 @@ in {
       example = ["100.64.0.0/10"];
       description = "Client CIDR ranges allowed to connect to sshd.";
     };
+
+    mosh = {
+      enable = mkEnableOption "Mosh remote shell support";
+
+      ports = mkOption {
+        type = types.str;
+        default = "60000:60010";
+        example = "60000:60010";
+        description = "UDP port range used by mosh-server for remote sessions.";
+      };
+    };
   };
 }

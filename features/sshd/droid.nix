@@ -26,11 +26,21 @@
   ];
   allowedAddresses = lib.unique (cfg.allowedCidrs ++ ["127.0.0.1/32" "::1/128"]);
   deniedAddressPattern = "*,!" + lib.concatStringsSep ",!" allowedAddresses;
+
+  moshServerWrapper = pkgs.writeShellScriptBin "mosh-server" ''
+    export LANG="''${LANG:-C.UTF-8}"
+    export LC_CTYPE="''${LC_CTYPE:-$LANG}"
+    exec ${pkgs.mosh}/bin/mosh-server "$@"
+  '';
 in {
   config = lib.mkIf cfg.enable {
     environment.packages =
       [pkgs.openssh]
-      ++ lib.optionals (cfg.authorizedKeysUrl != null) [pkgs.curl];
+      ++ lib.optionals (cfg.authorizedKeysUrl != null) [pkgs.curl]
+      ++ lib.optionals cfg.mosh.enable [
+        (lib.hiPrio moshServerWrapper)
+        pkgs.mosh
+      ];
 
     mountainous.sessionServices.sshd = {
       enable = true;
