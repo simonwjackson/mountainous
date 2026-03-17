@@ -15,6 +15,8 @@ in {
   };
 
   config = mkIf cfg.enable {
+    mountainous.features.codexbar.enable = lib.mkDefault true;
+
     home-manager.users.simonwjackson.imports = [
       ./home.nix
     ];

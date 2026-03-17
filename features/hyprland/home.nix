@@ -216,8 +216,6 @@ in {
   };
 
   config = lib.mkIf hyprlandEnabled {
-    mountainous.codexbar.enable = true;
-
     # NOTE: Do NOT use gtk.enable here. The desktop theme system
     # (presets/desktop/home.nix) manages gtk settings.ini as mutable files
     # so darkman can switch themes at runtime. HM's gtk module would create

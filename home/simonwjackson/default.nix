@@ -5,10 +5,6 @@
   osConfig ? {},
   ...
 }: {
-  imports = [
-    ../../modules/home/codexbar
-  ];
-
   config = {
     home.stateVersion = "24.11";
 

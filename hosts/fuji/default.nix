@@ -9,13 +9,6 @@
     ./hardware.nix
     ./disko.nix
     ../../modules/server
-    ../../modules/tasks-calendar
-    ../../modules/openclaw
-    ../../modules/etabli
-    ../../modules/omi
-    ../../modules/kroger
-    ../../modules/biker
-    ../../modules/ado-sync
   ];
 
   networking.hostName = "fuji";
@@ -81,12 +74,6 @@
     mode = "0400";
   };
 
-  age.secrets."outlook-calendar-url" = {
-    file = ../../secrets/outlook-calendar-url.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
   age.secrets."omi-api-key" = {
     file = ../../secrets/omi-api-key.age;
     owner = "simonwjackson";
@@ -137,18 +124,6 @@
 
   age.secrets."telegram-bot-token" = {
     file = ../../secrets/telegram-bot-token.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."ado-refresh-token" = {
-    file = ../../secrets/ado-refresh-token.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."anthropic-api-key" = {
-    file = ../../secrets/anthropic-api-key.age;
     owner = "simonwjackson";
     mode = "0400";
   };
@@ -204,43 +179,21 @@
 
   # ── Services ─────────────────────────────────────────────────────────
 
-  services.etabli = {
-    enable = true;
-    anthropicKeyFile = config.age.secrets."anthropic-api-key".path;
-  };
-
-  services.openclaw-skills = {
+  mountainous.features.openclaw = {
     enable = true;
     user = "simonwjackson";
     hfTokenFile = config.age.secrets."hf-token".path;
   };
 
-  services.tasks-calendar = {
-    enable = true;
-    timezone = "America/Denver";
-    calendarUrlFile = "/run/agenix/outlook-calendar-url";
-  };
-
-  services.omi = {
+  mountainous.features.omi = {
     enable = true;
     schedule = "*:0/15:00";
   };
 
-  services.kroger = {
+  mountainous.features.kroger = {
     enable = true;
     clientIdFile = config.age.secrets."kroger-client-id".path;
     clientSecretFile = config.age.secrets."kroger-client-secret".path;
-  };
-
-  services.biker.enable = true;
-
-  services.ado-sync = {
-    enable = true;
-    calendar = [
-      "*-*-* 15:00:00"
-      "*-*-* 19:00:00"
-      "*-*-* 00:00:00"
-    ]; # 8am, noon, 5pm MST
   };
 
   # ── Tailscale ────────────────────────────────────────────────────────
@@ -252,52 +205,6 @@
   };
 
   # tsnsrv proxies (fuji uses tsnsrv, not tsnet-proxy)
-  systemd.services.tsnsrv-etabli = {
-    description = "tsnsrv Tailscale proxy for Etabli";
-    after = [
-      "network-online.target"
-      "etabli.service"
-    ];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-    environment.HOME = "/var/lib/tsnsrv-etabli";
-    serviceConfig = {
-      Type = "simple";
-      User = "tsnsrv";
-      Group = "tsnsrv";
-      StateDirectory = "tsnsrv-etabli";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
-    script = ''
-      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
-      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name etabli -stateDir /var/lib/tsnsrv-etabli http://127.0.0.1:7398
-    '';
-  };
-
-  systemd.services.tsnsrv-biker = {
-    description = "tsnsrv Tailscale proxy for Biker";
-    after = [
-      "network-online.target"
-      "biker.service"
-    ];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-    environment.HOME = "/var/lib/tsnsrv-biker";
-    serviceConfig = {
-      Type = "simple";
-      User = "tsnsrv";
-      Group = "tsnsrv";
-      StateDirectory = "tsnsrv-biker";
-      Restart = "on-failure";
-      RestartSec = 5;
-    };
-    script = ''
-      export TS_AUTHKEY="$(cat ${config.age.secrets.tailscale-authkey.path})"
-      exec ${tsnsrv.packages.aarch64-linux.default}/bin/tsnsrv -name biker -stateDir /var/lib/tsnsrv-biker http://127.0.0.1:8384
-    '';
-  };
-
   systemd.services.tsnsrv-openclaw = {
     description = "tsnsrv Tailscale proxy for OpenClaw";
     after = [

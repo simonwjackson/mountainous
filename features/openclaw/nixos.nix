@@ -1,7 +1,11 @@
-{ config, lib, pkgs, ... }:
-
-let
-  cfg = config.services.openclaw-skills;
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkIf;
+  cfg = config.mountainous.features.openclaw;
 
   # Pollinations image generation script
   pollinations-generate = pkgs.writeScriptBin "pollinations-generate" ''
@@ -56,96 +60,97 @@ let
 
   # Hugging Face image generation script
   huggingface-generate = let
-    python = pkgs.python3.withPackages (ps: [ ps.requests ]);
-  in pkgs.writeScriptBin "huggingface-generate" ''
-    #!${python}/bin/python3
-    """Generate images using Hugging Face Inference API."""
+    python = pkgs.python3.withPackages (ps: [ps.requests]);
+  in
+    pkgs.writeScriptBin "huggingface-generate" ''
+      #!${python}/bin/python3
+      """Generate images using Hugging Face Inference API."""
 
-    import argparse
-    import os
-    import sys
-    import time
-    import requests
+      import argparse
+      import os
+      import sys
+      import time
+      import requests
 
-    MODELS = {
-        "flux-schnell": "black-forest-labs/FLUX.1-schnell",
-        "flux-dev": "black-forest-labs/FLUX.1-dev",
-        "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
-        "sd3": "stabilityai/stable-diffusion-3-medium-diffusers",
-    }
+      MODELS = {
+          "flux-schnell": "black-forest-labs/FLUX.1-schnell",
+          "flux-dev": "black-forest-labs/FLUX.1-dev",
+          "sdxl": "stabilityai/stable-diffusion-xl-base-1.0",
+          "sd3": "stabilityai/stable-diffusion-3-medium-diffusers",
+      }
 
-    DEFAULT_MODEL = "flux-schnell"
-    API_URL = "https://api-inference.huggingface.co/models/{model}"
-
-
-    def main():
-        parser = argparse.ArgumentParser(description="Generate images via Hugging Face")
-        parser.add_argument("--prompt", required=True, help="Image description")
-        parser.add_argument("--filename", required=True, help="Output filename")
-        parser.add_argument("--model", default=DEFAULT_MODEL, choices=list(MODELS.keys()),
-                            help=f"Model to use (default: {DEFAULT_MODEL})")
-        parser.add_argument("--negative-prompt", default=None, help="What to avoid")
-        parser.add_argument("--width", type=int, default=1024)
-        parser.add_argument("--height", type=int, default=1024)
-        parser.add_argument("--seed", type=int, default=None)
-        parser.add_argument("--api-key", default=None, help="HF token (or set HF_TOKEN env)")
-        args = parser.parse_args()
-
-        token = args.api_key or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-        if not token:
-            token_file = os.environ.get("HF_TOKEN_FILE", "")
-            if token_file and os.path.isfile(token_file):
-                token = open(token_file).read().strip()
-        if not token:
-            print("Error: No API token. Set HF_TOKEN, HF_TOKEN_FILE, or pass --api-key", file=sys.stderr)
-            sys.exit(1)
-
-        model_id = MODELS[args.model]
-        url = API_URL.format(model=model_id)
-
-        payload = {"inputs": args.prompt}
-        parameters = {}
-        if args.negative_prompt:
-            parameters["negative_prompt"] = args.negative_prompt
-        if args.width:
-            parameters["width"] = args.width
-        if args.height:
-            parameters["height"] = args.height
-        if args.seed is not None:
-            parameters["seed"] = args.seed
-        if parameters:
-            payload["parameters"] = parameters
-
-        headers = {"Authorization": f"Bearer {token}"}
-
-        print(f"Generating image...")
-        print(f"Model: {args.model} ({model_id})")
-        print(f"Size: {args.width}x{args.height}")
-
-        resp = requests.post(url, headers=headers, json=payload, timeout=120)
-
-        if resp.status_code == 503:
-            print("Model is loading... retrying in 30s")
-            time.sleep(30)
-            resp = requests.post(url, headers=headers, json=payload, timeout=120)
-
-        if resp.status_code != 200:
-            print(f"Error: HTTP {resp.status_code}", file=sys.stderr)
-            try:
-                print(resp.json(), file=sys.stderr)
-            except Exception:
-                print(resp.text[:500], file=sys.stderr)
-            sys.exit(1)
-
-        with open(args.filename, "wb") as f:
-            f.write(resp.content)
-
-        print(f"Saved: {os.path.abspath(args.filename)}")
+      DEFAULT_MODEL = "flux-schnell"
+      API_URL = "https://api-inference.huggingface.co/models/{model}"
 
 
-    if __name__ == "__main__":
-        main()
-  '';
+      def main():
+          parser = argparse.ArgumentParser(description="Generate images via Hugging Face")
+          parser.add_argument("--prompt", required=True, help="Image description")
+          parser.add_argument("--filename", required=True, help="Output filename")
+          parser.add_argument("--model", default=DEFAULT_MODEL, choices=list(MODELS.keys()),
+                              help=f"Model to use (default: {DEFAULT_MODEL})")
+          parser.add_argument("--negative-prompt", default=None, help="What to avoid")
+          parser.add_argument("--width", type=int, default=1024)
+          parser.add_argument("--height", type=int, default=1024)
+          parser.add_argument("--seed", type=int, default=None)
+          parser.add_argument("--api-key", default=None, help="HF token (or set HF_TOKEN env)")
+          args = parser.parse_args()
+
+          token = args.api_key or os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+          if not token:
+              token_file = os.environ.get("HF_TOKEN_FILE", "")
+              if token_file and os.path.isfile(token_file):
+                  token = open(token_file).read().strip()
+          if not token:
+              print("Error: No API token. Set HF_TOKEN, HF_TOKEN_FILE, or pass --api-key", file=sys.stderr)
+              sys.exit(1)
+
+          model_id = MODELS[args.model]
+          url = API_URL.format(model=model_id)
+
+          payload = {"inputs": args.prompt}
+          parameters = {}
+          if args.negative_prompt:
+              parameters["negative_prompt"] = args.negative_prompt
+          if args.width:
+              parameters["width"] = args.width
+          if args.height:
+              parameters["height"] = args.height
+          if args.seed is not None:
+              parameters["seed"] = args.seed
+          if parameters:
+              payload["parameters"] = parameters
+
+          headers = {"Authorization": f"Bearer {token}"}
+
+          print(f"Generating image...")
+          print(f"Model: {args.model} ({model_id})")
+          print(f"Size: {args.width}x{args.height}")
+
+          resp = requests.post(url, headers=headers, json=payload, timeout=120)
+
+          if resp.status_code == 503:
+              print("Model is loading... retrying in 30s")
+              time.sleep(30)
+              resp = requests.post(url, headers=headers, json=payload, timeout=120)
+
+          if resp.status_code != 200:
+              print(f"Error: HTTP {resp.status_code}", file=sys.stderr)
+              try:
+                  print(resp.json(), file=sys.stderr)
+              except Exception:
+                  print(resp.text[:500], file=sys.stderr)
+              sys.exit(1)
+
+          with open(args.filename, "wb") as f:
+              f.write(resp.content)
+
+          print(f"Saved: {os.path.abspath(args.filename)}")
+
+
+      if __name__ == "__main__":
+          main()
+    '';
 
   # SKILL.md files reference {baseDir} which OpenClaw replaces at runtime
   pollinations-skill = pkgs.writeTextDir "pollinations/SKILL.md" ''
@@ -230,33 +235,15 @@ let
     - Free tier is rate-limited but generous for casual use
     - Models may need ~30s cold start on first request (auto-retried)
   '';
-
 in {
-  options.services.openclaw-skills = {
-    enable = lib.mkEnableOption "OpenClaw image generation skills";
-
-    user = lib.mkOption {
-      type = lib.types.str;
-      default = "simonwjackson";
-      description = "User whose ~/.openclaw/skills to manage";
-    };
-
-    hfTokenFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Path to file containing Hugging Face API token (agenix secret)";
-    };
-  };
-
-  config = lib.mkIf cfg.enable {
+  config = mkIf cfg.enable {
     # Symlink skill dirs into ~/.openclaw/skills/
-    systemd.tmpfiles.rules =
-      let
-        home = "/home/${cfg.user}";
-      in [
-        "d ${home}/.openclaw/skills 0755 ${cfg.user} users -"
-        "L+ ${home}/.openclaw/skills/pollinations - - - - ${pollinations-skill}/pollinations"
-        "L+ ${home}/.openclaw/skills/huggingface-image - - - - ${huggingface-skill}/huggingface-image"
-      ];
+    systemd.tmpfiles.rules = let
+      home = "/home/${cfg.user}";
+    in [
+      "d ${home}/.openclaw/skills 0755 ${cfg.user} users -"
+      "L+ ${home}/.openclaw/skills/pollinations - - - - ${pollinations-skill}/pollinations"
+      "L+ ${home}/.openclaw/skills/huggingface-image - - - - ${huggingface-skill}/huggingface-image"
+    ];
   };
 }

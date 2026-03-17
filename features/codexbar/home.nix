@@ -1,12 +1,10 @@
 {
-  config,
+  osConfig,
   lib,
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption mkIf types;
-
-  cfg = config.mountainous.codexbar;
+  cfg = osConfig.mountainous.features.codexbar;
 
   deps = with pkgs; [curl jq coreutils gawk oci-cli];
 
@@ -25,17 +23,7 @@
   codexbar-oci = mkScript "codexbar-oci" ./codexbar-oci.sh;
   codexbar-oci-detail = mkScript "codexbar-oci-detail" ./codexbar-oci-detail.sh;
 in {
-  options.mountainous.codexbar = {
-    enable = mkEnableOption "CodexBar usage monitor for ironbar";
-
-    interval = mkOption {
-      type = types.int;
-      default = 120000;
-      description = "Polling interval in milliseconds (default: 2 minutes)";
-    };
-  };
-
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     home.packages = [
       codexbar-claude
       codexbar-claude-detail
