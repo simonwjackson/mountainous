@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   inherit (lib) mkDefault mkIf;
@@ -8,5 +9,21 @@
 in {
   config = mkIf cfg.enable {
     mountainous.features.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
+
+    nix.gc = {
+      automatic = mkDefault true;
+      dates = mkDefault "daily";
+      options = mkDefault "--delete-older-than 7d";
+    };
+
+    nix.settings.auto-optimise-store = mkDefault true;
+
+    environment.systemPackages = with pkgs; [
+      vim
+      curl
+      htop
+      git
+      jq
+    ];
   };
 }

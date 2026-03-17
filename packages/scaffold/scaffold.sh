@@ -251,7 +251,6 @@ HOST_CONFIG=$(
   imports = [
     # ./hardware.nix
     # ./disko.nix
-    ../../modules/server
   ];
 
   home-manager.users.${USERNAME} = import ../../home/${USERNAME};

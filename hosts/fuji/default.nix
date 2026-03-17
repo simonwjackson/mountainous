@@ -8,7 +8,6 @@
   imports = [
     ./hardware.nix
     ./disko.nix
-    ../../modules/server
   ];
 
   networking.hostName = "fuji";

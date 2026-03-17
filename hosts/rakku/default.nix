@@ -18,10 +18,20 @@ in {
   imports = [
     ./hardware.nix
     ./disko.nix
-    ../../modules/server
   ];
 
   networking.hostName = "rakku";
+
+  # Rakku doesn't use presets.core (no standard HM user setup), so the
+  # server-class defaults that used to come from modules/server are set
+  # inline here instead of via presets.server.
+  nix.gc = {
+    automatic = true;
+    dates = "daily";
+    options = "--delete-older-than 7d";
+  };
+  nix.settings.auto-optimise-store = true;
+  environment.systemPackages = with pkgs; [vim curl htop git jq];
 
   # ── Agenix ───────────────────────────────────────────────────────────
 

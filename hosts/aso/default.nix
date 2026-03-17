@@ -6,12 +6,12 @@
 }: {
   imports = [
     ./hardware.nix
-    ../../modules/server
   ];
 
   home-manager.users.simonwjackson = import ../../home/simonwjackson;
 
   networking.hostName = "aso";
+  mountainous.presets.server.enable = true;
   time.timeZone = "America/Denver";
 
   i18n.defaultLocale = "en_US.UTF-8";
