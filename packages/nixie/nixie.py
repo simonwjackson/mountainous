@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-"""CLI contract and backend execution for the nixie rewrite.
+"""Unified deploy helper for NixOS and nix-on-droid hosts.
 
-V1 goals frozen here:
+Current behavior:
 - stdlib-only Python implementation
-- CLI shape: ``nixie <build|test|switch> <host[,host...]>``
-- execute hosts sequentially
-- stop immediately on the first failure
-- resolve hosts from flake outputs, not manifests or inventories
-- use platform-specific backends for NixOS and nix-on-droid
-- stream subprocess output live and show the exact command being run
+- CLI shape: ``nixie <build|test|switch|boot> <host[,host...]>``
+- hosts are resolved from flake outputs, not manifests
+- hosts execute sequentially
+- execution stops on the first failure
+- child process output streams live
+- exact commands are printed before execution
 """
 
 from __future__ import annotations
@@ -22,11 +22,13 @@ import sys
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
-ACTIONS = ("build", "test", "switch")
+ACTIONS = ("build", "test", "switch", "boot")
 Platform = Literal["nixos", "droid"]
 DROID_REMOTE_PATH = "~/mountainous"
 DROID_RSYNC_PATH = "/etc/profiles/per-user/nix-on-droid/bin/rsync"
 DROID_NIX_ON_DROID = "/etc/profiles/per-user/nix-on-droid/bin/nix-on-droid"
+SSH_BASE = ("ssh", "-F", "/dev/null")
+RSYNC_SSH = "ssh -F /dev/null"
 
 
 class NixieError(Exception):
@@ -67,7 +69,6 @@ class HostPlan:
     warning: str | None = None
 
 
-
 def parse_hosts(hosts_arg: str) -> tuple[str, ...]:
     parts = [part.strip() for part in hosts_arg.split(",")]
     if not parts or any(not part for part in parts):
@@ -75,7 +76,6 @@ def parse_hosts(hosts_arg: str) -> tuple[str, ...]:
             "hosts must be a comma-separated list like 'yari,fuji,usu'"
         )
     return tuple(parts)
-
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -99,7 +99,6 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
 def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
     args = build_parser().parse_args(argv)
     return Invocation(
@@ -108,7 +107,6 @@ def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
         sequential=True,
         stop_on_failure=True,
     )
-
 
 
 def load_flake_hosts() -> FlakeHosts:
@@ -145,7 +143,6 @@ def load_flake_hosts() -> FlakeHosts:
     )
 
 
-
 def resolve_host(host: str, flake_hosts: FlakeHosts) -> ResolvedHost:
     in_nixos = host in flake_hosts.nixos
     in_droid = host in flake_hosts.droid
@@ -164,11 +161,9 @@ def resolve_host(host: str, flake_hosts: FlakeHosts) -> ResolvedHost:
     )
 
 
-
 def resolve_hosts(hosts: Sequence[str]) -> tuple[ResolvedHost, ...]:
     flake_hosts = load_flake_hosts()
     return tuple(resolve_host(host, flake_hosts) for host in hosts)
-
 
 
 def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
@@ -199,11 +194,10 @@ def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
     )
 
 
-
-def build_droid_build_plan(action: str, host: ResolvedHost) -> HostPlan:
+def build_droid_build_plan(host: ResolvedHost) -> HostPlan:
     return HostPlan(
         host=host,
-        requested_action=action,
+        requested_action="build",
         effective_action="build",
         commands=(
             PlannedCommand(
@@ -217,15 +211,21 @@ def build_droid_build_plan(action: str, host: ResolvedHost) -> HostPlan:
     )
 
 
-
 def build_droid_switch_plan(
-    action: str, host: ResolvedHost, warning: str | None = None
+    requested_action: str, host: ResolvedHost, warning: str | None = None
 ) -> HostPlan:
     return HostPlan(
         host=host,
-        requested_action=action,
+        requested_action=requested_action,
         effective_action="switch",
         commands=(
+            PlannedCommand(
+                argv=(
+                    *SSH_BASE,
+                    host.name,
+                    f"mkdir -p {DROID_REMOTE_PATH}",
+                )
+            ),
             PlannedCommand(
                 argv=(
                     "rsync",
@@ -233,6 +233,8 @@ def build_droid_switch_plan(
                     "--delete",
                     "--exclude",
                     ".git",
+                    "-e",
+                    RSYNC_SSH,
                     f"--rsync-path={DROID_RSYNC_PATH}",
                     "./",
                     f"{host.name}:{DROID_REMOTE_PATH}/",
@@ -240,7 +242,7 @@ def build_droid_switch_plan(
             ),
             PlannedCommand(
                 argv=(
-                    "ssh",
+                    *SSH_BASE,
                     host.name,
                     (
                         f"cd {DROID_REMOTE_PATH} && "
@@ -253,7 +255,6 @@ def build_droid_switch_plan(
     )
 
 
-
 def build_droid_plan(action: str, host: ResolvedHost) -> HostPlan:
     if host.platform != "droid":
         raise NixieError(
@@ -261,21 +262,22 @@ def build_droid_plan(action: str, host: ResolvedHost) -> HostPlan:
         )
 
     if action == "build":
-        return build_droid_build_plan(action, host)
+        return build_droid_build_plan(host)
     if action == "switch":
-        return build_droid_switch_plan(action, host)
+        return build_droid_switch_plan("switch", host)
     if action == "test":
         return build_droid_switch_plan(
-            action,
+            "test",
             host,
             warning=(
                 f"droid host '{host.name}' does not support a separate test mode; "
                 "treating 'test' as 'switch'"
             ),
         )
+    if action == "boot":
+        raise NixieError(f"droid host '{host.name}' does not support action 'boot'")
 
     raise NixieError(f"unsupported droid action '{action}' for host '{host.name}'")
-
 
 
 def build_host_plan(action: str, host: ResolvedHost) -> HostPlan:
@@ -287,23 +289,19 @@ def build_host_plan(action: str, host: ResolvedHost) -> HostPlan:
     raise NixieError(f"unsupported platform '{host.platform}' for host '{host.name}'")
 
 
-
 def plan_commands(invocation: Invocation) -> tuple[HostPlan, ...]:
     hosts = resolve_hosts(invocation.hosts)
     return tuple(build_host_plan(invocation.action, host) for host in hosts)
-
 
 
 def format_command(argv: Sequence[str]) -> str:
     return shlex.join(argv)
 
 
-
 def execute_command(command: PlannedCommand) -> int:
     print(f"+ {format_command(command.argv)}", flush=True)
     completed = subprocess.run(command.argv)
     return completed.returncode
-
 
 
 def execute_plan(plan: HostPlan) -> None:
@@ -323,12 +321,10 @@ def execute_plan(plan: HostPlan) -> None:
             )
 
 
-
 def execute_invocation(invocation: Invocation) -> None:
     plans = plan_commands(invocation)
     for plan in plans:
         execute_plan(plan)
-
 
 
 def main(argv: Sequence[str] | None = None) -> int:

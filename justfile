@@ -4,97 +4,10 @@
 #
 ############################################################################
 
-HOSTS := env_var_or_default('HOSTS', '')
-BUILDERS := env_var_or_default('BUILDERS', '')
-
 # Default recipe
 [private]
 _default:
     @just --list --unsorted
-
-[group('internal')]
-[private]
-_run_nixie_command ACTION *ARGS:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Strip leading and trailing spaces from ARGS
-    ARGS_STRIPPED=$(echo "{{ ARGS }}" | xargs)
-
-    # Check if ARGS starts with -a or --all
-    if [[ "$ARGS_STRIPPED" =~ ^(-a|--all) ]]; then
-        # Remove -a or --all from ARGS
-        ARGS_STRIPPED=$(echo "$ARGS_STRIPPED" | sed 's/^-a\s*//; s/^--all\s*//')
-        # Set HOSTS to @all
-        HOSTS_VALUE="@all"
-    else
-        HOSTS_VALUE="{{ HOSTS }}"
-    fi
-
-    COMMAND="nix run .#nixie -- {{ ACTION }} $ARGS_STRIPPED"
-
-    get_all_hosts() {
-        nix flake show --json | nix run nixpkgs#jq -- --raw-output '.nixosConfigurations | keys | join(",")'
-    }
-
-    # Check for various "all systems" triggers
-    if [ "$HOSTS_VALUE" = "@all" ] || [ "$HOSTS_VALUE" = "*" ]; then
-        COMMAND="HOSTS='$(get_all_hosts)' $COMMAND"
-    elif [ -n "$HOSTS_VALUE" ]; then
-        COMMAND="HOSTS='$HOSTS_VALUE' $COMMAND"
-    fi
-
-    if [ -n "{{ BUILDERS }}" ]; then
-        COMMAND="NIXIE_BUILDERS='{{ BUILDERS }}' $COMMAND"
-    fi
-
-    echo "Executing: $COMMAND"
-    eval $COMMAND
-
-[group('internal')]
-[private]
-_run_nixie ACTION *ARGS:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=({{ ARGS }})
-
-    # Determine target host
-    if [ ${#args[@]} -eq 0 ]; then
-        TARGET_HOST=$(hostname)
-        EXTRA_ARGS=()
-    else
-        TARGET_HOST="${args[0]}"
-        EXTRA_ARGS=("${args[@]:1}")
-    fi
-
-    # Pre-deploy sync (only for switch)
-    if [ "{{ ACTION }}" = "switch" ]; then
-        just _pre_deploy "${TARGET_HOST}"
-    fi
-
-    # Run nixie command
-    nix run .#nixie {{ ACTION }} ${TARGET_HOST} "${EXTRA_ARGS[@]}"
-
-    # Post-deploy sync (only for switch)
-    if [ "{{ ACTION }}" = "switch" ]; then
-        just _post_deploy "${TARGET_HOST}"
-    fi
-
-[group('internal')]
-[private]
-_pre_deploy TARGET_HOST:
-    #!/usr/bin/env bash
-    # set -euo pipefail
-    #
-    # # Skip if deploying to localhost
-    # Future: add any pre-deployment bidirectional file syncs here.
-
-[group('internal')]
-[private]
-_post_deploy TARGET_HOST:
-    #!/usr/bin/env bash
-    # No operation - bidirectional sync handled in pre-deploy
-    :
 
 # Deploy configuration changes to systems
 [group('deploy')]
@@ -109,7 +22,7 @@ test *ARGS:
 # Set configuration for next boot
 [group('deploy')]
 boot *ARGS:
-    just _run_nixie boot {{ ARGS }}
+    nix run .#nixie -- boot {{ ARGS }}
 
 # Build configuration (dry-run)
 [group('deploy')]
