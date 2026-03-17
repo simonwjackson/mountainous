@@ -325,6 +325,18 @@ in {
                   time.sleep(1)
               raise RuntimeError("Timed out waiting for Jellyfin API")
 
+          def wait_for_startup_configuration(token=None):
+              for _ in range(60):
+                  try:
+                      configuration = api_request("/Startup/Configuration", token=token)
+                      if configuration is not None:
+                          return configuration
+                  except Exception:
+                      time.sleep(1)
+                      continue
+                  time.sleep(1)
+              raise RuntimeError("Timed out waiting for Jellyfin startup configuration")
+
           def library_matches(folder, desired_library):
               locations = folder.get("Locations") or []
               return (
@@ -483,7 +495,7 @@ in {
               ):
                   raise SystemExit(0)
 
-          startup_configuration = api_request("/Startup/Configuration", token=startup_token)
+          startup_configuration = wait_for_startup_configuration(token=startup_token)
           desired_startup_configuration = dict(startup_configuration or {})
           desired_startup_configuration["ServerName"] = desired_server_name
 
