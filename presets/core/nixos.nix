@@ -18,6 +18,11 @@ in {
   };
 
   config = mkIf cfg.enable {
+    home-manager.users.simonwjackson.imports = [
+      ../../home/simonwjackson
+      ./home.nix
+    ];
+
     nixpkgs.config.allowUnfree = true;
     networking.useDHCP = mkDefault true;
     i18n.defaultLocale = "en_US.UTF-8";

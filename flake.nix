@@ -12,6 +12,10 @@
       url = "github:nix-community/nix-on-droid/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs-droid";
     };
+    dnshack = {
+      url = "github:ettom/dnshack";
+      flake = false;
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -251,6 +255,10 @@
           ++ [hostPath]
           ++ extraModules;
       };
+
+    usuDroid = mkDroidHost {
+      hostPath = ./hosts/usu;
+    };
   in {
     overlays = {
       packages = packageOverlay;
@@ -287,6 +295,11 @@
         hostPath = ./hosts/aso;
         extraModules = [nixos-wsl.nixosModules.default];
       };
+    };
+
+    nixOnDroidConfigurations = {
+      usu = usuDroid;
+      default = usuDroid;
     };
 
     devShells = lib.genAttrs systems (system: let
