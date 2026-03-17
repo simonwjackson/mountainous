@@ -721,6 +721,11 @@ in {
       # `mountainous.hyprland.keybinds` so yuki can reuse the shared global keymap while
       # swapping only the command implementation.
 
+      # Keyboard remapping
+      # ------------------
+      # Remap Caps Lock to Escape for this host.
+      input:kb_options = caps:escape
+
       cursor {
         # Important companion setting for shader-based dimming.
         #
