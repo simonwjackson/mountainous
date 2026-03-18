@@ -1,11 +1,14 @@
 {
   config,
   lib,
+  mountainousPlatform ? "nixos",
   ...
 }: let
-  inherit (lib) mkEnableOption mkOption types;
+  inherit (lib) mkEnableOption mkOption optional types;
   cfg = config.mountainous.features.starship;
 in {
+  imports = optional (mountainousPlatform == "nixos") ./nixos.nix;
+
   options.mountainous.features.starship = {
     enable = mkEnableOption "Starship prompt";
 
