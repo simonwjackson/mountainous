@@ -8,9 +8,8 @@
     ./hardware.nix
   ];
 
-  home-manager.users.simonwjackson = import ../../home/simonwjackson;
-
   networking.hostName = "aso";
+  mountainous.presets.core.enable = true;
   mountainous.presets.server.enable = true;
   time.timeZone = "America/Denver";
 
