@@ -1,3 +1,7 @@
+# Auto-generated from directory conventions.
+# All secrets are encrypted for every host + the user key so that any
+# machine can decrypt any secret.  Host-scoping is handled at the NixOS
+# module level (only the matching host *declares* a host-specific secret).
 let
   fuji = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2";
   yari = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvcfPMD8iAvxwWA8Epfk95CvszjzsQSDpetkjgdPZPh";
@@ -6,76 +10,31 @@ let
   aso = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB4uSTAyOR0h8hrNltBDAQ9UnszVBZ9IVzyoA19r3uet root@nixos";
   simonwjackson = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/PwyhdbVKd6jcG55m/1sUgEf0x3LUeS9H4EK5vk9PKhvDsjOQOISyR1LBmmXUFamkpFo2c84ZgPMj33qaPfOF0VfmF79vdAIDdDt5bmsTU6IbT7tGJ1ocpHDqhqbDO3693RdbTt1jTQN/eo3AKOfnrMouwBZPbPVqoWEhrLUvUTuTq7VQ+lUqWkvGs4D6D8UeIlG9VVgVhad3gCohYsjGdzgOUy0V4c8t3BuHrIE6//+6YVJ9VWK/ImSWmN8it5RIREDgdSYujs1Uod+ovr8AvaGFlFC9GuYMsj7xDYL1TgaWhy5ojk6JcuuF0cmoqffoW/apYdYM6Vxi5Xe6aJUhVyguZDovWcqRdPv2q0xtZn6xvNkoElEkrb6t0CAbGKf++H4h8/v5MsMt9wUPJAJBa24v0MlU8mXTUwhFLP5YQ/A8AAb5Y3ty/6DaOlvvTzt5Om2SMrZ1XaL1II35dFNZ/Os3zRpqdWq9SnpisRA+Bpf0bPUjdi8D8rRJn8g3zO5EsldBlZg82PiJcRHANbydTSK6Jzw7A8S5gMyPoH80Pq5MbQPvPpevTfOKy14NyTYPHGj0j5y7EQP7yb6w70LtqdRLRLQSTCdF0qTjVWw/qdt9MXkS7cdQe4yBADmjwozwPuxAs/jNpxELcVPEWBK6DcAIFD0vv3Xaw7reXpXFTQ==";
 
-  fujiKeys = [fuji simonwjackson];
-  yariKeys = [yari simonwjackson];
-  fujiYariKeys = [fuji yari simonwjackson];
-  rakkuKeys = [rakku simonwjackson];
-  rakkuYariKeys = [rakku yari simonwjackson];
-  yukiKeys = [yuki simonwjackson];
-  asoKeys = [aso simonwjackson];
   allKeys = [fuji yari rakku yuki aso simonwjackson];
-in {
-  # Shared machine Tailscale auth key
-  "secrets/tailscale-authkey.age".publicKeys = allKeys;
-  "secrets/groq-env.age".publicKeys = fujiKeys ++ yukiKeys;
-  "secrets/fastest-vpn.age".publicKeys = fujiYariKeys;
-  "secrets/openclaw-env.age".publicKeys = fujiYariKeys;
-  "secrets/ebay-api-env.age".publicKeys = fujiKeys;
-  "secrets/ebay-refresh-token.age".publicKeys = fujiKeys;
-  "secrets/nutrition-api-keys.age".publicKeys = fujiKeys;
-  "secrets/omi-api-key.age".publicKeys = fujiKeys;
-  "secrets/invidious-token.age".publicKeys = fujiKeys;
-  "secrets/google-oauth-client.age".publicKeys = fujiKeys;
-  "secrets/oura-api-token.age".publicKeys = fujiKeys;
-  "secrets/withings-client-id.age".publicKeys = fujiKeys;
-  "secrets/withings-client-secret.age".publicKeys = fujiKeys;
-  "secrets/ketomojo-client-id.age".publicKeys = fujiKeys;
-  "secrets/ketomojo-client-secret.age".publicKeys = fujiKeys;
-  "secrets/borg-passphrase.age".publicKeys = fujiKeys;
-  "secrets/kroger-client-id.age".publicKeys = fujiKeys;
-  "secrets/kroger-client-secret.age".publicKeys = fujiKeys;
-  "secrets/rclone-conf.age".publicKeys = fujiKeys;
-  "secrets/gogcli-credentials.age".publicKeys = fujiKeys;
-  "secrets/gogcli-keyring.age".publicKeys = fujiKeys;
-  "secrets/hf-token.age".publicKeys = fujiKeys;
-  "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
 
-  # Atuin sync credentials (all machines)
-  "secrets/user/simonwjackson/atuin/key.age".publicKeys = allKeys;
-  "secrets/user/simonwjackson/atuin/session.age".publicKeys = allKeys;
-  "secrets/user/simonwjackson/atuin/password.age".publicKeys = allKeys;
+  # ── Auto-discovery ───────────────────────────────────────────────────
+  # Recursively find every .age file under ./  (skipping archived/ and keys/).
+  scanDir = dir: prefix:
+    builtins.foldl' (
+      acc: name: let
+        type = (builtins.readDir dir).${name};
+        path = dir + "/${name}";
+        rel =
+          if prefix == ""
+          then name
+          else "${prefix}/${name}";
+      in
+        if type == "directory" && name != "archived" && name != "keys"
+        then acc ++ (scanDir path rel)
+        else if type == "regular" && builtins.match ".*\\.age$" name != null
+        then acc ++ [rel]
+        else acc
+    ) [] (builtins.attrNames (builtins.readDir dir));
 
-  # Search API keys (all machines)
-  "secrets/serper-api-key.age".publicKeys = allKeys;
-  "secrets/brave-api-key.age".publicKeys = allKeys;
-
-  # OCI secrets (all machines)
-  "secrets/oci-config.age".publicKeys = allKeys;
-  "secrets/oci-api-key.age".publicKeys = allKeys;
-  "secrets/oci-yari-key.age".publicKeys = allKeys;
-
-  # Rakku / Yari shared service secrets
-  "secrets/tailscale-ephemeral.age".publicKeys = rakkuYariKeys;
-  "secrets/system/usenet/newsdemon-user.age".publicKeys = yariKeys;
-  "secrets/system/usenet/newsdemon-pass.age".publicKeys = yariKeys;
-  "secrets/system/usenet/nzbgeek-api.age".publicKeys = yariKeys;
-  "secrets/system/usenet/nzbget-pass.age".publicKeys = yariKeys;
-  "secrets/system/radarr/radarr-pass.age".publicKeys = yariKeys;
-  "secrets/system/jellyfin/jellyfin-pass.age".publicKeys = yariKeys;
-
-  # Rakku secrets
-  "secrets/zwave-js-secrets.age".publicKeys = rakkuKeys;
-
-  # Yuki secrets
-  "secrets/hosts/yuki/simonwjackson-password-hash.age".publicKeys = yukiKeys;
-  "secrets/hosts/yuki/syncthing-cert.age".publicKeys = yukiKeys;
-  "secrets/hosts/yuki/syncthing-key.age".publicKeys = yukiKeys;
-
-  # Fuji syncthing secrets
-  "secrets/hosts/fuji/syncthing-cert.age".publicKeys = fujiKeys;
-  "secrets/hosts/fuji/syncthing-key.age".publicKeys = fujiKeys;
-
-  # Yari syncthing secrets
-  "secrets/hosts/yari/syncthing-cert.age".publicKeys = yariKeys;
-  "secrets/hosts/yari/syncthing-key.age".publicKeys = yariKeys;
-}
+  allAgeFiles = scanDir ./. "";
+in
+  builtins.listToAttrs (map (rel: {
+      name = "secrets/${rel}";
+      value.publicKeys = allKeys;
+    })
+    allAgeFiles)
