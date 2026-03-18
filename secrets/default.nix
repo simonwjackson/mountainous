@@ -40,6 +40,10 @@ in {
   "secrets/hf-token.age".publicKeys = fujiKeys;
   "secrets/telegram-bot-token.age".publicKeys = fujiKeys;
 
+  # Atuin sync credentials (all machines)
+  "secrets/user/simonwjackson/atuin/key.age".publicKeys = allKeys;
+  "secrets/user/simonwjackson/atuin/session.age".publicKeys = allKeys;
+
   # Search API keys (all machines)
   "secrets/serper-api-key.age".publicKeys = allKeys;
   "secrets/brave-api-key.age".publicKeys = allKeys;
