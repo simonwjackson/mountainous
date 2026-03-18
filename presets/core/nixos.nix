@@ -25,6 +25,7 @@ in {
 
     mountainous.features.atuin.enable = mkDefault true;
     mountainous.features.ssh.server.enable = mkDefault true;
+    mountainous.features.starship.enable = mkDefault true;
 
     nixpkgs.config.allowUnfree = true;
     networking.useDHCP = mkDefault true;
