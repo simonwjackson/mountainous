@@ -74,7 +74,7 @@ class PlanGenerationTest(unittest.TestCase):
         )
         self.assertEqual(
             plan.commands[0].argv,
-            ("ssh", "-F", "/dev/null", "usu", "mkdir -p ~/mountainous"),
+            ("ssh", "usu", "mkdir -p ~/mountainous"),
         )
         self.assertEqual(
             plan.commands[1].argv,
@@ -85,13 +85,13 @@ class PlanGenerationTest(unittest.TestCase):
                 "--exclude",
                 ".git",
                 "-e",
-                "ssh -F /dev/null",
+                "ssh",
                 "--rsync-path=/etc/profiles/per-user/nix-on-droid/bin/rsync",
                 "./",
                 "usu:~/mountainous/",
             ),
         )
-        self.assertEqual(plan.commands[2].argv[0:4], ("ssh", "-F", "/dev/null", "usu"))
+        self.assertEqual(plan.commands[2].argv[0:2], ("ssh", "usu"))
 
     def test_droid_test_aliases_to_switch_with_warning(self):
         plan = nixie.build_droid_plan(

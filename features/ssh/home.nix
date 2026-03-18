@@ -1,26 +1,35 @@
-{...}: {
+{lib, ...}: let
+  knownHosts = import ./hosts.nix;
+
+  defaultUser = "simonwjackson";
+  defaultPort = 22;
+
+  hostBlocks =
+    lib.mapAttrs (name: meta: {
+      user = meta.user or defaultUser;
+      port = meta.port or defaultPort;
+    })
+    knownHosts;
+in {
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    matchBlocks."aso" = {
-      port = 8080;
-    };
-    matchBlocks."usu" = {
-      user = "nix-on-droid";
-      port = 2345;
-    };
-    matchBlocks."*" = {
-      user = "simonwjackson";
-      forwardAgent = false;
-      addKeysToAgent = "no";
-      compression = false;
-      serverAliveInterval = 0;
-      serverAliveCountMax = 3;
-      hashKnownHosts = false;
-      userKnownHostsFile = "~/.ssh/known_hosts";
-      controlMaster = "no";
-      controlPath = "~/.ssh/master-%r@%n:%p";
-      controlPersist = "no";
-    };
+    matchBlocks =
+      hostBlocks
+      // {
+        "*" = {
+          user = defaultUser;
+          forwardAgent = false;
+          addKeysToAgent = "no";
+          compression = false;
+          serverAliveInterval = 0;
+          serverAliveCountMax = 3;
+          hashKnownHosts = false;
+          userKnownHostsFile = "~/.ssh/known_hosts";
+          controlMaster = "no";
+          controlPath = "~/.ssh/master-%r@%n:%p";
+          controlPersist = "no";
+        };
+      };
   };
 }

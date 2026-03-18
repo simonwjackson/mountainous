@@ -29,8 +29,8 @@ Platform = Literal["nixos", "droid"]
 DROID_REMOTE_PATH = "~/mountainous"
 DROID_RSYNC_PATH = "/etc/profiles/per-user/nix-on-droid/bin/rsync"
 DROID_NIX_ON_DROID = "/etc/profiles/per-user/nix-on-droid/bin/nix-on-droid"
-SSH_BASE = ("ssh", "-F", "/dev/null")
-RSYNC_SSH = "ssh -F /dev/null"
+SSH_BASE = ("ssh",)
+RSYNC_SSH = "ssh"
 SSH_CHECK_OPTS = ("-o", "BatchMode=yes", "-o", "ConnectTimeout=2")
 ONLINE_CHECK_ACTIONS = frozenset({"switch", "test"})
 
