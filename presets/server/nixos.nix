@@ -18,8 +18,6 @@ in {
       options = mkDefault "--delete-older-than 7d";
     };
 
-    nix.settings.auto-optimise-store = mkDefault true;
-
     environment.systemPackages = with pkgs; [
       vim
       curl
