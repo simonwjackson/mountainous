@@ -139,7 +139,7 @@ in {
       enable = mkDefault true;
       allowedTCPPorts = mkDefault [];
       allowedUDPPorts = mkDefault [41641];
-      trustedInterfaces = mkDefault ["tailscale0"];
+      trustedInterfaces = ["tailscale0"];
     };
   };
 }

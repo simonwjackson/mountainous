@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  mountainousPlatform ? "nixos",
   ...
 }: let
   inherit (lib) mkEnableOption mkIf mkOption types;
@@ -97,9 +98,7 @@
     };
   };
 in {
-  imports = [
-    ./nixos.nix
-  ];
+  imports = lib.optional (mountainousPlatform == "nixos") ./nixos.nix;
 
   options.mountainous.features.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization";
@@ -153,9 +152,9 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (lib.optionalAttrs (mountainousPlatform == "nixos") {
     home-manager.users.simonwjackson.imports = [
       ./home.nix
     ];
-  };
+  });
 }

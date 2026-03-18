@@ -243,12 +243,25 @@
       specialArgs ? {},
       extraModules ? [],
     }:
+      let
+        syncthingManifestPath = hostPath + "/syncthing.nix";
+        syncthingManifest =
+          if builtins.pathExists syncthingManifestPath
+          then import syncthingManifestPath
+          else null;
+        hostAutoModules = lib.optional (syncthingManifest != null) {
+          mountainous.features.syncthing = {
+            enable = true;
+          } // builtins.removeAttrs syncthingManifest ["deviceId"];
+        };
+      in
       nix-on-droid.lib.nixOnDroidConfiguration {
         pkgs = mkDroidPkgs system;
         extraSpecialArgs = {inherit self inputs; mountainousPlatform = "droid";} // specialArgs;
         modules =
           droidFeatureModulePaths
           ++ droidPresetModulePaths
+          ++ hostAutoModules
           ++ [hostPath]
           ++ extraModules;
       };
