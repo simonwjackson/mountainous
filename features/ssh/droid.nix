@@ -93,6 +93,8 @@ in {
       AuthenticationMethods publickey
       SetEnv PATH=${sshSessionPath}
       SetEnv LANG=C.UTF-8
+      ClientAliveInterval 30
+      ClientAliveCountMax 3
       PidFile ${pidFile}
       ${lib.optionalString (cfg.allowedCidrs != []) ''
         Match Address ${deniedAddressPattern}
