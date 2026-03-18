@@ -23,6 +23,7 @@ in {
       ./home.nix
     ];
 
+    mountainous.features.atuin.enable = mkDefault true;
     mountainous.features.ssh.server.enable = mkDefault true;
 
     nixpkgs.config.allowUnfree = true;

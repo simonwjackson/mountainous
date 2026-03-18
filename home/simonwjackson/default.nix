@@ -17,23 +17,6 @@
       };
     };
 
-    programs.atuin = {
-      enable = true;
-      enableBashIntegration = true;
-      daemon.enable = true;
-      settings = {
-        auto_sync = true;
-        enter_accept = true;
-        filter_mode_shell_up_key_binding = "workspace";
-        inline_height = 10;
-        search_mode = "fuzzy";
-        secrets_filter = false;
-        style = "compact";
-        sync_address = "https://api.atuin.sh";
-        sync_frequency = "5m";
-      };
-    };
-
     home.sessionPath = [
       "/run/wrappers/bin"
       "$HOME/.nix-profile/bin"
