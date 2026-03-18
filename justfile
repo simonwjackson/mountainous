@@ -77,11 +77,17 @@ format:
 encrypt:
     nix run .#secrets -- encrypt
 
-# Re-encrypt all secrets for all hosts (agenix-rekey)
+# Re-encrypt all secrets for all hosts
 [group('secrets')]
 rekey:
-    nix run .#agenix-rekey.x86_64-linux.rekey -- -a
-    mkdir -p secrets/rekeyed && git add secrets/rekeyed/ 2>/dev/null || true
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Collect all available host identity files
+    ids=(-i "$HOME/.ssh/id_rsa" -i "$HOME/.ssh/id_ed25519")
+    for k in /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_rsa_key; do
+      [ -r "$k" ] && ids+=(-i "$k")
+    done
+    RULES=secrets/default.nix nix run github:ryantm/agenix -- -r "${ids[@]}"
 
 # Generate syncthing identity for a host
 [group('syncthing')]
