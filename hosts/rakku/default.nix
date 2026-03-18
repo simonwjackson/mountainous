@@ -44,17 +44,19 @@ in {
     group = "tsnet-proxy";
   };
 
-  # ── Tsnet Proxy ──────────────────────────────────────────────────────
+  # ── Mountainous Features ──────────────────────────────────────────────
 
-  mountainous.features.tsnet-proxy = {
-    enable = true;
-    package = tsnet-proxy-pkg;
-    authKeyFile = config.age.secrets.tailscale-ephemeral.path;
-    services.habitat = {
-      hostname = "habitat";
-      protocol = "http";
-      host = "localhost";
-      port = 8123;
+  mountainous.features = {
+    tsnet-proxy = {
+      enable = true;
+      package = tsnet-proxy-pkg;
+      authKeyFile = config.age.secrets.tailscale-ephemeral.path;
+      services.habitat = {
+        hostname = "habitat";
+        protocol = "http";
+        host = "localhost";
+        port = 8123;
+      };
     };
   };
 
