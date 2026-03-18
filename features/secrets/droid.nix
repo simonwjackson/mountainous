@@ -4,18 +4,36 @@
   pkgs,
   ...
 }: let
+  inherit (lib) mkIf mapAttrsToList concatStringsSep;
   cfg = config.mountainous.features.secrets;
+  secretsLib = import ./lib.nix {inherit lib;};
 
-  decryptScript = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: secret: ''
-      $VERBOSE_ECHO "Decrypting secret: ${name} -> ${secret.path}"
-      mkdir -p "$(dirname '${secret.path}')"
-      rm -f '${secret.path}'
-      ${pkgs.age}/bin/age -d -i '${cfg.identityFile}' -o '${secret.path}' '${secret.file}'
-      chmod ${secret.mode} '${secret.path}'
-    '')
-    cfg.secrets);
+  discovered = secretsLib.discover {
+    secretsRoot = ../../secrets;
+    hostname = cfg.hostname;
+  };
+
+  # Merge auto-discovered secrets with any manually declared extras.
+  # Manual entries override auto-discovered ones with the same name.
+  autoEntries = builtins.mapAttrs (_: s: {
+    inherit (s) file mode;
+  }) discovered;
+
+  manualEntries = builtins.mapAttrs (_: s: {
+    inherit (s) file mode;
+  }) cfg.secrets;
+
+  allSecrets = autoEntries // manualEntries;
+
+  decryptScript = concatStringsSep "\n" (mapAttrsToList (name: secret: ''
+    $VERBOSE_ECHO "Decrypting secret: ${name} -> ${cfg.secretsDir}/${name}"
+    mkdir -p "${cfg.secretsDir}"
+    rm -f '${cfg.secretsDir}/${name}'
+    ${pkgs.age}/bin/age -d -i '${cfg.identityFile}' -o '${cfg.secretsDir}/${name}' '${secret.file}'
+    chmod ${secret.mode} '${cfg.secretsDir}/${name}'
+  '') allSecrets);
 in {
-  config = lib.mkIf (cfg.enable && cfg.secrets != {}) {
+  config = mkIf (cfg.enable && allSecrets != {}) {
     environment.packages = [pkgs.age];
 
     build.activationAfter.decryptSecrets = ''
@@ -28,5 +46,9 @@ in {
         ${decryptScript}
       fi
     '';
+
+    # Unified path accessor
+    mountainous.features.secrets.path =
+      builtins.mapAttrs (name: _: "${cfg.secretsDir}/${name}") allSecrets;
   };
 }
