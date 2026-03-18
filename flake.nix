@@ -202,7 +202,7 @@
       in
       nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = {inherit self cascade hyprdynamicmonitors; mountainousPlatform = "nixos";} // specialArgs;
+        specialArgs = {inherit self cascade hyprdynamicmonitors tsnsrv; mountainousPlatform = "nixos";} // specialArgs;
         modules =
           [
             disko.nixosModules.default
@@ -268,7 +268,6 @@
       fuji = mkHost {
         system = "aarch64-linux";
         hostPath = ./hosts/fuji;
-        specialArgs = {inherit tsnsrv;};
       };
       yari = mkHost {
         system = "aarch64-linux";
