@@ -52,9 +52,24 @@ in {
         pkgs.mosh
       ];
 
-    mountainous.features.session-services.sshd = {
+    mountainous.features.session-services.sshd = let
+      # Wrapper that kills any orphaned sshd on our port before starting,
+      # so we recover from manually-started instances that service-ensure
+      # doesn't track.
+      sshdWrapper = pkgs.writeShellScript "sshd-wrapper" ''
+        if [[ -f "${pidFile}" ]]; then
+          pid=$(<"${pidFile}")
+          if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            ${pkgs.coreutils}/bin/sleep 1
+          fi
+          ${pkgs.coreutils}/bin/rm -f "${pidFile}"
+        fi
+        exec ${pkgs.openssh}/bin/sshd -D -f ${configFile}
+      '';
+    in {
       enable = true;
-      command = "${pkgs.openssh}/bin/sshd -D -f ${configFile}";
+      command = "${sshdWrapper}";
     };
 
     home-manager.config.programs.ssh = {
