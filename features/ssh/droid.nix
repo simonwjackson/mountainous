@@ -30,7 +30,16 @@
   moshServerWrapper = pkgs.writeShellScriptBin "mosh-server" ''
     export LANG="''${LANG:-C.UTF-8}"
     export LC_CTYPE="''${LC_CTYPE:-$LANG}"
-    exec ${pkgs.mosh}/bin/mosh-server "$@"
+
+    # Bind mosh-server to the Tailscale interface so the UDP data
+    # channel is not reachable from other networks.
+    TAILSCALE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null)
+    if [[ -n "$TAILSCALE_IP" ]]; then
+      exec ${pkgs.mosh}/bin/mosh-server -i "$TAILSCALE_IP" "$@"
+    else
+      echo "mosh-server: could not determine Tailscale IP, refusing to start" >&2
+      exit 1
+    fi
   '';
 
   # Wrap the mosh client so dnshack's LD_PRELOAD is preserved through
