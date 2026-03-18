@@ -8,17 +8,23 @@
   ];
 
   networking.hostName = "aso";
-  mountainous.presets.core.enable = true;
-  mountainous.presets.server.enable = true;
   time.timeZone = "America/Denver";
+
+  mountainous = {
+    presets = {
+      core.enable = true;
+      server.enable = true;
+    };
+
+    features = {
+      tailscale.extraUpFlags = ["--netfilter-mode=off"];
+    };
+  };
 
   users.users.simonwjackson = {
     isNormalUser = true;
     extraGroups = ["wheel" "video"];
   };
-
-  # WSL2: netfilter not fully supported
-  mountainous.features.tailscale.extraUpFlags = ["--netfilter-mode=off"];
 
   networking.firewall = {
     enable = true;
