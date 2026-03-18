@@ -12,6 +12,8 @@ in {
     mountainous.features.ssh.server.enable = mkDefault true;
     mountainous.features.tailscale.extraSetFlags = mkDefault ["--netfilter-mode=nodivert"];
 
+    nix.settings.secret-key-files = mkIf (cfg.signingKeyFile != null) [cfg.signingKeyFile];
+
     nix.gc = {
       automatic = mkDefault true;
       dates = mkDefault "daily";
