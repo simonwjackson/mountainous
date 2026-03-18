@@ -32,6 +32,15 @@
     export LC_CTYPE="''${LC_CTYPE:-$LANG}"
     exec ${pkgs.mosh}/bin/mosh-server "$@"
   '';
+
+  # Wrap the mosh client so dnshack's LD_PRELOAD is preserved through
+  # Nix binary wrappers. Without this, mosh resolves hostnames with
+  # plain getaddrinfo which bypasses the dnshack bridge on Android.
+  moshClientWrapper = pkgs.writeShellScriptBin "mosh" ''
+    export LD_PRELOAD="''${LD_PRELOAD:-}"
+    export DNSHACK_RESOLVER_CMD="''${DNSHACK_RESOLVER_CMD:-}"
+    exec ${pkgs.mosh}/bin/mosh "$@"
+  '';
 in {
   config = lib.mkIf cfg.enable {
     environment.packages =
@@ -39,6 +48,7 @@ in {
       ++ lib.optionals (cfg.authorizedKeysUrl != null) [pkgs.curl]
       ++ lib.optionals cfg.mosh.enable [
         (lib.hiPrio moshServerWrapper)
+        (lib.hiPrio moshClientWrapper)
         pkgs.mosh
       ];
 
