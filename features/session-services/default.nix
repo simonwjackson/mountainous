@@ -48,7 +48,7 @@
     };
   });
 in {
-  options.mountainous.sessionServices = mkOption {
+  options.mountainous.features.session-services = mkOption {
     type = types.attrsOf sessionServiceType;
     default = {};
     description = "Session-managed services started and monitored from interactive shell sessions.";

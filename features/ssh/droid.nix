@@ -52,7 +52,7 @@ in {
         pkgs.mosh
       ];
 
-    mountainous.sessionServices.sshd = {
+    mountainous.features.session-services.sshd = {
       enable = true;
       command = "${pkgs.openssh}/bin/sshd -D -f ${configFile}";
     };

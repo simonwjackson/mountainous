@@ -82,7 +82,7 @@ in {
 
     # Hyprland integration (only if Hyprland is enabled)
     (mkIf hyprlandEnabled {
-      mountainous.hyprland.extraSettings = mkMerge [
+      mountainous.features.hyprland.extraSettings = mkMerge [
         # Add gaming keybinds
         (mkIf (gamingCfg.home.keybinds != {}) {
           bind = lib.mapAttrsToList (key: cmd: "${key}, ${cmd}") gamingCfg.home.keybinds;

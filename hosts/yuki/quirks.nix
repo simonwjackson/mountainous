@@ -646,7 +646,7 @@ in {
       ];
     };
 
-    mountainous.hyprland.keybinds = {
+    mountainous.features.hyprland.keybinds = {
       ",XF86MonBrightnessUp" = {
         kind = "bindel";
         action = "exec, ${yukiBrightnessScript} up";
@@ -718,7 +718,7 @@ in {
       # borrowed EDID hack they do not currently produce reliable visible dimming.
       #
       # The actual XF86 brightness keybindings are overridden via
-      # `mountainous.hyprland.keybinds` so yuki can reuse the shared global keymap while
+      # `mountainous.features.hyprland.keybinds` so yuki can reuse the shared global keymap while
       # swapping only the command implementation.
 
       # Keyboard remapping

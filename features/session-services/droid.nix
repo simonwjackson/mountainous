@@ -6,7 +6,7 @@
 }: let
   inherit (lib) concatMapStringsSep escapeShellArg filterAttrs mkAfter mkIf optionalString;
 
-  enabledServices = filterAttrs (_: service: service.enable) config.mountainous.sessionServices;
+  enabledServices = filterAttrs (_: service: service.enable) config.mountainous.features.session-services;
   enabledServiceNames = builtins.attrNames enabledServices;
   hasEnabledServices = enabledServiceNames != [];
 

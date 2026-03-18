@@ -43,7 +43,7 @@
     };
   };
   finalHyprlandKeybinds = lib.filterAttrs (_: spec: spec != null) (
-    sharedHyprlandKeybinds // homeHyprlandKeybinds // config.mountainous.hyprland.keybinds
+    sharedHyprlandKeybinds // homeHyprlandKeybinds // config.mountainous.features.hyprland.keybinds
   );
   renderHyprlandKeybinds = kind:
     lib.concatStringsSep "\n" (
@@ -178,13 +178,13 @@
     }
     else ironbarBar;
 in {
-  options.mountainous.hyprland.extraSettings = mkOption {
+  options.mountainous.features.hyprland.extraSettings = mkOption {
     type = types.attrsOf types.anything;
     default = {};
     description = "Extra Hyprland settings (composable from multiple home-manager modules)";
   };
 
-  options.mountainous.hyprland.keybinds = mkOption {
+  options.mountainous.features.hyprland.keybinds = mkOption {
     type = types.attrsOf (
       types.nullOr (
         types.submodule {

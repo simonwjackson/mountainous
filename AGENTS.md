@@ -2,7 +2,7 @@
 
 - **CRITICAL**: Always `git add` new files immediately - Nix flakes only see git-tracked files
 - **External Dependencies**: Prefer flake inputs with `flake = false` over `fetchurl`/`fetchFromGitHub` for updatability via `nix flake update`
-- Enable modules with `mountainous.<module-name>.enable = true`
+- Enable features with `mountainous.features.<name>.enable = true`
 - use `just [test|build|switch|..]` instead of raw nix commands where possible
 - `hyprctl --instance 0 ..` for all hyprctl commands
 - `nix run .#deploy` - **DESTRUCTIVE** - For fresh system installs only. Will wipe the target system.

@@ -99,7 +99,7 @@ in {
 
     # Actual configuration
     (mkIf (gamingEnabled && steamButtonEnabled && hyprlandEnabled) {
-      mountainous.hyprland.extraSettings = {
+      mountainous.features.hyprland.extraSettings = {
         # Steam button keybind - switches to gaming workspace and launches game-session
         bind = [
           "${keybind}, exec, ${steamButtonHandler}"
