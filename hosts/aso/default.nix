@@ -17,6 +17,7 @@
     };
 
     features = {
+      # ── Networking ───────────────────────────────────────────────────
       tailscale.extraUpFlags = ["--netfilter-mode=off"];
     };
   };

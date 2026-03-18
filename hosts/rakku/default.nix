@@ -47,6 +47,7 @@ in {
   # ── Mountainous Features ──────────────────────────────────────────────
 
   mountainous.features = {
+    # ── Networking ───────────────────────────────────────────────────
     tsnet-proxy = {
       enable = true;
       package = tsnet-proxy-pkg;

@@ -25,24 +25,29 @@
     };
   };
 
-  networking = {
-    hostName = "yuki";
-  };
+  networking.hostName = "yuki";
+  time.timeZone = "America/Denver";
 
   mountainous = {
     presets = {
       core.enable = true;
-      workstation.enable = true;
       desktop.enable = true;
       portable.enable = true;
+      workstation.enable = true;
     };
 
     features = {
-      firefox = {
-        enable = true;
-        cascade.enable = true;
+      # ── Networking ───────────────────────────────────────────────────
+      device = {
+        role = "portable";
+        capabilities = {
+          battery = true;
+          formFactor = "laptop";
+          touchscreen = false;
+        };
       };
-      bluetooth.enable = true;
+
+      # ── Services ─────────────────────────────────────────────────────
       hibernation = {
         enable = true;
         resumeDevice = "/dev/mapper/cryptroot";
@@ -51,23 +56,16 @@
           path = "/swap/swapfile";
         };
       };
+
+      # ── User tools ──────────────────────────────────────────────────
+      bluetooth.enable = true;
+      firefox = {
+        enable = true;
+        cascade.enable = true;
+      };
+      gaming.enable = true;
       keyboard.enable = false;
     };
-
-    features.device = {
-      role = "portable";
-      capabilities = {
-        battery = true;
-        formFactor = "laptop";
-        touchscreen = false;
-      };
-    };
-
-    features.gaming.enable = true;
-  };
-
-  time = {
-    timeZone = "America/Denver";
   };
 
   services = {

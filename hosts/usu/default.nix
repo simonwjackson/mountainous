@@ -3,23 +3,24 @@
     presets.core.enable = true;
 
     features = {
-      atuin.enable = true;
-      starship = {
+      # ── Networking ───────────────────────────────────────────────────
+      secrets = {
         enable = true;
-        hostName = "usu";
+        hostname = "usu";
+        identityFile = "/data/data/com.termux.nix/files/home/.ssh/id_rsa";
+        secretsDir = "/data/data/com.termux.nix/files/home/.secrets";
       };
-
       ssh.server = {
         enable = true;
         port = 2345;
         mosh.enable = true;
       };
 
-      secrets = {
+      # ── User tools ──────────────────────────────────────────────────
+      atuin.enable = true;
+      starship = {
         enable = true;
-        hostname = "usu";
-        identityFile = "/data/data/com.termux.nix/files/home/.ssh/id_rsa";
-        secretsDir = "/data/data/com.termux.nix/files/home/.secrets";
+        hostName = "usu";
       };
     };
   };
