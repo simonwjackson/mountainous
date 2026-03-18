@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   inherit (lib) mkDefault mkIf;
@@ -9,6 +10,7 @@
   atuinSessionFile = ../../secrets/user/simonwjackson/atuin/session.age;
   hasKeySecret = builtins.pathExists atuinKeyFile;
   hasSessionSecret = builtins.pathExists atuinSessionFile;
+  atuinDataDir = "/home/simonwjackson/.local/share/atuin";
 in {
   config = mkIf cfg.enable {
     age.secrets.atuin-key = mkIf hasKeySecret {
@@ -21,6 +23,19 @@ in {
       file = atuinSessionFile;
       owner = "simonwjackson";
       mode = "0400";
+    };
+
+    # Copy agenix secrets to atuin's default data dir so atuin finds them
+    # without needing key_path/session_path overrides (which break sync).
+    system.activationScripts.atuin-secrets = mkIf (hasKeySecret && hasSessionSecret) {
+      text = ''
+        install -d -o simonwjackson -g users -m 0700 ${atuinDataDir}
+        install -o simonwjackson -g users -m 0600 \
+          ${config.age.secrets.atuin-key.path} ${atuinDataDir}/key
+        install -o simonwjackson -g users -m 0600 \
+          ${config.age.secrets.atuin-session.path} ${atuinDataDir}/session
+      '';
+      deps = ["agenix"];
     };
 
     home-manager.users.simonwjackson.programs.atuin = {
@@ -37,8 +52,6 @@ in {
         style = "compact";
         sync_address = "https://api.atuin.sh";
         sync_frequency = "5m";
-        key_path = mkIf hasKeySecret config.age.secrets.atuin-key.path;
-        session_path = mkIf hasSessionSecret config.age.secrets.atuin-session.path;
       };
     };
   };
