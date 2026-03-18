@@ -120,43 +120,8 @@ in {
       tasks.path = mkDefault "/home/${syncthingUser}/.local/share/tasks";
     };
 
-    age.secrets.simonwjackson-password-hash = mkIf hasPasswordSecret {
-      file = passwordSecretFile;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-
-    age.secrets."serper-api-key" = {
-      file = ../../secrets/serper-api-key.age;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
-
-    age.secrets."brave-api-key" = {
-      file = ../../secrets/brave-api-key.age;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
-
-    age.secrets."oci-config" = {
-      file = ../../secrets/oci-config.age;
-      owner = "simonwjackson";
-      mode = "0400";
-      path = "/home/simonwjackson/.oci/config";
-    };
-
-    age.secrets."oci-api-key" = {
-      file = ../../secrets/oci-api-key.age;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
-
-    age.secrets."oci-yari-key" = {
-      file = ../../secrets/oci-yari-key.age;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
+    # OCI config needs a custom path (auto-discovered ownership is fine)
+    age.secrets.oci-config.path = "/home/simonwjackson/.oci/config";
 
     users.users.simonwjackson =
       {

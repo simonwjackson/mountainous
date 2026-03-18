@@ -15,11 +15,8 @@
 
   mountainous.features.secrets = {
     enable = true;
+    hostname = "usu";
     identityFile = "/data/data/com.termux.nix/files/home/.ssh/id_rsa";
     secretsDir = "/data/data/com.termux.nix/files/home/.secrets";
-    secrets = {
-      atuin-key.file = ../../secrets/user/simonwjackson/atuin/key.age;
-      atuin-session.file = ../../secrets/user/simonwjackson/atuin/session.age;
-    };
   };
 }

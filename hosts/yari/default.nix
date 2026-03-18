@@ -230,74 +230,29 @@
     gcc
   ];
 
-  # ── Secrets ──────────────────────────────────────────────────────────
+  # ── Secrets (overrides for auto-discovered defaults) ──────────────────
 
   age.secrets.tailscale-authkey = {
-    file = ../../secrets/tailscale-authkey.age;
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
-    mode = "0400";
   };
 
-  age.secrets."fastest-vpn" = {
-    file = ../../secrets/fastest-vpn.age;
-    mode = "0400";
-  };
+  # Service-specific ownership for usenet/media secrets
+  age.secrets.nzbget-pass = { owner = "nzbget"; group = "media"; mode = "0440"; };
+  age.secrets.newsdemon-user = { owner = "nzbget"; group = "media"; mode = "0440"; };
+  age.secrets.newsdemon-pass = { owner = "nzbget"; group = "media"; mode = "0440"; };
+  age.secrets.radarr-pass = { owner = "radarr"; group = "media"; mode = "0440"; };
 
-  age.secrets.openclaw-env = {
-    file = ../../secrets/openclaw-env.age;
-    mode = "0400";
-    owner = "simonwjackson";
-  };
-
-  age.secrets.newsdemon-user = {
-    file = ../../secrets/system/usenet/newsdemon-user.age;
-    owner = "nzbget";
-    group = "media";
-    mode = "0440";
-  };
-
-  age.secrets.newsdemon-pass = {
-    file = ../../secrets/system/usenet/newsdemon-pass.age;
-    owner = "nzbget";
-    group = "media";
-    mode = "0440";
-  };
-
-  age.secrets.nzbget-pass = {
-    file = ../../secrets/system/usenet/nzbget-pass.age;
-    owner = "nzbget";
-    group = "media";
-    mode = "0440";
-  };
-
+  # Aliases: same nzbget-pass file decrypted for different service users
   age.secrets.sonarr-pass = {
-    file = ../../secrets/system/usenet/nzbget-pass.age;
+    file = config.age.secrets.nzbget-pass.file;
     owner = "sonarr";
     group = "media";
     mode = "0440";
   };
 
   age.secrets.prowlarr-pass = {
-    file = ../../secrets/system/usenet/nzbget-pass.age;
-    mode = "0400";
-  };
-
-  age.secrets.radarr-pass = {
-    file = ../../secrets/system/radarr/radarr-pass.age;
-    owner = "radarr";
-    group = "media";
-    mode = "0440";
-  };
-
-  age.secrets.jellyfin-pass = {
-    file = ../../secrets/system/jellyfin/jellyfin-pass.age;
-    mode = "0400";
-  };
-
-  age.secrets.nzbgeek-api = {
-    file = ../../secrets/system/usenet/nzbgeek-api.age;
-    mode = "0400";
+    file = config.age.secrets.nzbget-pass.file;
   };
 
   # ── Tailscale ────────────────────────────────────────────────────────

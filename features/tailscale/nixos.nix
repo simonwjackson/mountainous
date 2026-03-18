@@ -5,17 +5,8 @@
 }: let
   inherit (lib) mkDefault mkIf;
   cfg = config.mountainous.features.tailscale;
-  sharedAuthKeyFile = ../../secrets/tailscale-authkey.age;
-  hasSharedAuthKeyFile = builtins.pathExists sharedAuthKeyFile;
 in {
   config = mkIf cfg.enable {
-    age.secrets.tailscale-authkey = mkIf hasSharedAuthKeyFile {
-      file = mkDefault sharedAuthKeyFile;
-      owner = mkDefault "root";
-      group = mkDefault "root";
-      mode = mkDefault "0400";
-    };
-
     services.tailscale = {
       enable = true;
       authKeyFile = mkIf (cfg.authKeyFile != null) cfg.authKeyFile;

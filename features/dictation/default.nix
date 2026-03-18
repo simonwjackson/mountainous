@@ -35,12 +35,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    age.secrets.groq-env = {
-      file = ../../secrets/groq-env.age;
-      mode = "0440";
-      owner = "simonwjackson";
-    };
-
     home-manager.users.simonwjackson.imports = [
       ./home.nix
     ];

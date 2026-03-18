@@ -172,18 +172,15 @@ in {
       };
     };
 
+    # Override auto-discovered ownership to match the syncthing service user.
     age.secrets = mkIf hasSyncthingSecrets {
       syncthing-cert = {
-        file = syncthingCertPath;
         owner = cfg.user;
         group = cfg.group;
-        mode = "400";
       };
       syncthing-key = {
-        file = syncthingKeyPath;
         owner = cfg.user;
         group = cfg.group;
-        mode = "400";
       };
     };
 

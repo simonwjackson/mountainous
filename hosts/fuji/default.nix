@@ -54,127 +54,14 @@
 
   nix.settings.secret-key-files = ["/etc/nix/signing-key.priv"];
 
-  # ── Secrets ──────────────────────────────────────────────────────────
+  # ── Secrets (overrides for auto-discovered defaults) ──────────────────
 
   age.secrets.tailscale-authkey = {
-    file = ../../secrets/tailscale-authkey.age;
-    mode = "0440";
     group = "tsnsrv";
-  };
-
-  age.secrets.groq-env = {
-    file = ../../secrets/groq-env.age;
     mode = "0440";
-    owner = "simonwjackson";
   };
 
-  age.secrets."fastest-vpn" = {
-    file = ../../secrets/fastest-vpn.age;
-    mode = "0400";
-  };
-
-  age.secrets."omi-api-key" = {
-    file = ../../secrets/omi-api-key.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."google-oauth-client" = {
-    file = ../../secrets/google-oauth-client.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."oura-api-token" = {
-    file = ../../secrets/oura-api-token.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."withings-client-id" = {
-    file = ../../secrets/withings-client-id.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."withings-client-secret" = {
-    file = ../../secrets/withings-client-secret.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."ketomojo-client-id" = {
-    file = ../../secrets/ketomojo-client-id.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."ketomojo-client-secret" = {
-    file = ../../secrets/ketomojo-client-secret.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."hf-token" = {
-    file = ../../secrets/hf-token.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."telegram-bot-token" = {
-    file = ../../secrets/telegram-bot-token.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets.openclaw-env = {
-    file = ../../secrets/openclaw-env.age;
-    mode = "0400";
-    owner = "simonwjackson";
-  };
-
-  age.secrets.ebay-api-env = {
-    file = ../../secrets/ebay-api-env.age;
-    mode = "0400";
-    owner = "simonwjackson";
-  };
-
-  age.secrets.ebay-refresh-token = {
-    file = ../../secrets/ebay-refresh-token.age;
-    mode = "0400";
-    owner = "simonwjackson";
-  };
-
-  age.secrets.nutrition-api-keys = {
-    file = ../../secrets/nutrition-api-keys.age;
-    mode = "0400";
-    owner = "simonwjackson";
-  };
-
-  age.secrets."rclone-conf" = {
-    file = ../../secrets/rclone-conf.age;
-    owner = "simonwjackson";
-    mode = "0400";
-    path = "/home/simonwjackson/.config/rclone/rclone.conf";
-  };
-
-  age.secrets."gogcli-credentials" = {
-    file = ../../secrets/gogcli-credentials.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets."gogcli-keyring" = {
-    file = ../../secrets/gogcli-keyring.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
-
-  age.secrets.borg-passphrase = {
-    file = ../../secrets/borg-passphrase.age;
-    owner = "simonwjackson";
-    mode = "0400";
-  };
+  age.secrets.rclone-conf.path = "/home/simonwjackson/.config/rclone/rclone.conf";
 
   # ── Services ─────────────────────────────────────────────────────────
 
@@ -191,8 +78,8 @@
 
   mountainous.features.kroger = {
     enable = true;
-    clientIdFile = config.age.secrets."kroger-client-id".path;
-    clientSecretFile = config.age.secrets."kroger-client-secret".path;
+    clientIdFile = config.age.secrets.kroger-client-id.path;
+    clientSecretFile = config.age.secrets.kroger-client-secret.path;
   };
 
   # ── Tailscale ────────────────────────────────────────────────────────

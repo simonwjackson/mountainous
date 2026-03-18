@@ -39,14 +39,9 @@ in {
     "/tundra/permafrost/etc/ssh/ssh_host_rsa_key"
   ];
 
-  age.secrets."tailscale-ephemeral" = {
-    file = ../../secrets/tailscale-ephemeral.age;
+  age.secrets.tailscale-ephemeral = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
-  };
-
-  age.secrets."zwave-js-secrets" = {
-    file = ../../secrets/zwave-js-secrets.age;
   };
 
   # ── Tsnet Proxy ──────────────────────────────────────────────────────
@@ -54,7 +49,7 @@ in {
   mountainous.features.tsnet-proxy = {
     enable = true;
     package = tsnet-proxy-pkg;
-    authKeyFile = config.age.secrets."tailscale-ephemeral".path;
+    authKeyFile = config.age.secrets.tailscale-ephemeral.path;
     services.habitat = {
       hostname = "habitat";
       protocol = "http";
@@ -166,7 +161,7 @@ in {
     enable = true;
     serialPort = "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if00-port0";
     port = 3000;
-    secretsConfigFile = config.age.secrets."zwave-js-secrets".path;
+    secretsConfigFile = config.age.secrets.zwave-js-secrets.path;
   };
 
   users.users.hass.extraGroups = ["dialout"];

@@ -8,19 +8,6 @@
   cfg = config.mountainous.features.kroger;
 in {
   config = mkIf cfg.enable {
-    # Secrets
-    age.secrets."kroger-client-id" = {
-      file = ../../secrets/kroger-client-id.age;
-      owner = cfg.user;
-      mode = "0400";
-    };
-
-    age.secrets."kroger-client-secret" = {
-      file = ../../secrets/kroger-client-secret.age;
-      owner = cfg.user;
-      mode = "0400";
-    };
-
     # Put kroger tools in system PATH
     environment.systemPackages = [
       pkgs.lifted-scripts.kroger

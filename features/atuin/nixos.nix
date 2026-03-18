@@ -6,25 +6,11 @@
 }: let
   inherit (lib) mkDefault mkIf;
   cfg = config.mountainous.features.atuin;
-  atuinKeyFile = ../../secrets/user/simonwjackson/atuin/key.age;
-  atuinSessionFile = ../../secrets/user/simonwjackson/atuin/session.age;
-  hasKeySecret = builtins.pathExists atuinKeyFile;
-  hasSessionSecret = builtins.pathExists atuinSessionFile;
+  hasKeySecret = config.age.secrets ? atuin-key;
+  hasSessionSecret = config.age.secrets ? atuin-session;
   atuinDataDir = "/home/simonwjackson/.local/share/atuin";
 in {
   config = mkIf cfg.enable {
-    age.secrets.atuin-key = mkIf hasKeySecret {
-      file = atuinKeyFile;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
-
-    age.secrets.atuin-session = mkIf hasSessionSecret {
-      file = atuinSessionFile;
-      owner = "simonwjackson";
-      mode = "0400";
-    };
-
     # Copy agenix secrets to atuin's default data dir so atuin finds them
     # without needing key_path/session_path overrides (which break sync).
     system.activationScripts.atuin-secrets = mkIf (hasKeySecret && hasSessionSecret) {
