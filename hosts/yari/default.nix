@@ -12,11 +12,13 @@
   networking.useDHCP = true;
   time.timeZone = "UTC";
 
-  mountainous.presets.core = {
-    enable = true;
-    passwordHash = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
+  mountainous.presets = {
+    core = {
+      enable = true;
+      passwordHash = "$6$2Kj4v9kellv./s7d$NkKiUruNiNPDtFJSwsTCIaTGLZ9hf1Yak64FXzFL2ZBMTiQDFW3RcEzOwCCezYOXC7b3UrxmEGbAw/TPehWKv1";
+    };
+    server.enable = true;
   };
-  mountainous.presets.server.enable = true;
 
   users.users.simonwjackson.extraGroups = [
     "media"
@@ -389,7 +391,6 @@
 
   # Trust fuji's signing key for remote deployments
   nix.settings.trusted-public-keys = [
-    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     "fuji-1:0mnvKZa4ZzMJgSgFfQLdQzwcdUtiGqZxxcImE/i9wDo="
   ];
 
