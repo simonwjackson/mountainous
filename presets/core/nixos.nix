@@ -19,7 +19,6 @@ in {
 
   config = mkIf cfg.enable {
     home-manager.users.simonwjackson.imports = [
-      ../../home/simonwjackson
       ./home.nix
     ];
 

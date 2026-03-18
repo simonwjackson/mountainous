@@ -237,6 +237,19 @@
   '';
 in {
   config = mkIf cfg.enable {
+    home-manager.users.${cfg.user}.programs.bash.initExtra = lib.mkAfter ''
+      if [[ -f /run/agenix/openclaw-env ]]; then
+        while IFS= read -r line; do
+          case "$line" in
+            OPENCLAW_GATEWAY_TOKEN=*)
+              export OPENCLAW_GATEWAY_TOKEN="''${line#OPENCLAW_GATEWAY_TOKEN=}"
+              break
+              ;;
+          esac
+        done < /run/agenix/openclaw-env
+      fi
+    '';
+
     # Symlink skill dirs into ~/.openclaw/skills/
     systemd.tmpfiles.rules = let
       home = "/home/${cfg.user}";
