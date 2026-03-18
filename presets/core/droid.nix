@@ -7,6 +7,7 @@
   cfg = config.mountainous.presets.core;
 in {
   config = lib.mkIf cfg.enable {
+    mountainous.features.atuin.enable = lib.mkDefault true;
     mountainous.features.dnshack.enable = true;
 
     environment.packages = with pkgs; [
