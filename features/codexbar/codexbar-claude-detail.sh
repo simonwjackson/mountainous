@@ -4,6 +4,22 @@
 set -euo pipefail
 
 AUTH_FILE="${PI_AUTH_FILE:-$HOME/.pi/agent/auth.json}"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/codexbar"
+CACHE_FILE="$CACHE_DIR/claude-usage.json"
+CACHE_MAX_AGE=600  # 10 minutes: serve cached data if fetch fails
+
+mkdir -p "$CACHE_DIR"
+
+use_cache() {
+  if [[ -f "$CACHE_FILE" ]]; then
+    local age=$(( $(date +%s) - $(stat -c %Y "$CACHE_FILE" 2>/dev/null || stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0) ))
+    if (( age < CACHE_MAX_AGE )); then
+      USAGE=$(cat "$CACHE_FILE")
+      return 0
+    fi
+  fi
+  return 1
+}
 
 if [[ ! -f "$AUTH_FILE" ]]; then
   echo "No auth file found"
@@ -17,7 +33,8 @@ if [[ -z "$CLAUDE_TOKEN" ]]; then
   exit 0
 fi
 
-USAGE=$(curl -sf --max-time 10 \
+USAGE=$(curl -sf --max-time 15 \
+  --retry 3 --retry-delay 2 --retry-max-time 30 \
   -H "Authorization: Bearer $CLAUDE_TOKEN" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
@@ -25,16 +42,33 @@ USAGE=$(curl -sf --max-time 10 \
   -H "User-Agent: claude-code/2.1.0" \
   "https://api.anthropic.com/api/oauth/usage" 2>/dev/null || true)
 
+CACHED=false
+
 if [[ -z "$USAGE" ]]; then
-  echo "Failed to fetch usage"
-  exit 0
+  if use_cache; then
+    CACHED=true
+  else
+    echo "Failed to fetch usage"
+    exit 0
+  fi
 fi
 
 ERROR_TYPE=$(echo "$USAGE" | jq -r '.type // empty' 2>/dev/null || true)
 if [[ "$ERROR_TYPE" == "error" ]]; then
-  echo "$USAGE" | jq -r '.error.message // "API error"' 2>/dev/null
-  exit 0
+  if use_cache; then
+    CACHED=true
+  else
+    echo "$USAGE" | jq -r '.error.message // "API error"' 2>/dev/null
+    exit 0
+  fi
 fi
+
+# Cache successful response
+if [[ "$CACHED" == "false" ]]; then
+  echo "$USAGE" > "$CACHE_FILE"
+fi
+
+export CODEXBAR_CACHED="$CACHED"
 
 echo "$USAGE" | jq -r '
   def color_pct:
@@ -76,7 +110,8 @@ echo "$USAGE" | jq -r '
     end;
 
   [
-    "<span color=\"#89b4fa\" font_weight=\"bold\">Claude</span>",
+    "<span color=\"#89b4fa\" font_weight=\"bold\">Claude</span>" +
+    (if $ENV.CODEXBAR_CACHED == "true" then "  <span color=\"#6c7086\">(cached)</span>" else "" end),
     "",
     (.five_hour | fmt_window("Session")),
     (.seven_day | fmt_window("Weekly ")),
