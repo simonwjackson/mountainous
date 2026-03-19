@@ -84,6 +84,20 @@
           "lid closed while undocked; scheduling suspend-then-hibernate in $suspendBufferSeconds seconds generation=$scheduledSuspendGeneration"
       fi
 
+      # Dock disconnected while lid already closed → schedule buffered suspend
+      #
+      # This catches the case where yuki-undock-suspend was killed by
+      # hyprdynamicmonitors during rapid monitor flicker. Without this,
+      # the laptop stays awake indefinitely with the screen off.
+      if [ "$prevLidClosed" = "true" ] && [ "$lidClosed" = "true" ] \
+         && [ "$dpCount" -eq 0 ] && [ "$prevDpCount" -gt 0 ]; then
+        shouldScheduleSuspend="1"
+        scheduledSuspendGeneration=$((undockGeneration + 1))
+        undockGeneration="$scheduledSuspendGeneration"
+        ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
+          "dock disconnected while lid closed; scheduling suspend-then-hibernate in $suspendBufferSeconds seconds generation=$scheduledSuspendGeneration"
+      fi
+
       if [ "$prevLidClosed" = "true" ] && [ "$lidClosed" != "true" ]; then
         undockGeneration=$((undockGeneration + 1))
         shouldRestoreUndockedDisplays="1"
@@ -102,7 +116,7 @@
       fi
 
       printf 'prevProfile=%q\n' "$prevProfile" > "$stateFile"
-      printf 'prevDpCount=%q\n' "$prevDpCount" >> "$stateFile"
+      printf 'prevDpCount=%q\n' "$dpCount" >> "$stateFile"
       printf 'prevLidClosed=%q\n' "$lidClosed" >> "$stateFile"
       printf 'undockGeneration=%q\n' "$undockGeneration" >> "$stateFile"
 
@@ -290,5 +304,16 @@ in {
         RestartSec = "2s";
       };
     };
+
+    # Defense-in-depth: if the lid-close and undock scripts both fail to
+    # schedule a suspend (e.g. due to monitor flicker killing the callback),
+    # this idle listener catches the system after 15 minutes of inactivity
+    # and suspends-then-hibernates.
+    services.hypridle.settings.listener = lib.mkAfter [
+      {
+        timeout = 900;
+        on-timeout = "systemctl suspend-then-hibernate";
+      }
+    ];
   };
 }
