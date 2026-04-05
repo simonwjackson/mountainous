@@ -14,6 +14,10 @@ in {
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
+    extraConfig = lib.mkDefault ''
+      IgnoreUnknown WarnWeakCrypto
+      WarnWeakCrypto no
+    '';
     matchBlocks =
       hostBlocks
       // {

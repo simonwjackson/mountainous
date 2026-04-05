@@ -11,6 +11,11 @@ in {
       ./home.nix
     ];
 
+    programs.ssh.extraConfig = mkDefault ''
+      IgnoreUnknown WarnWeakCrypto
+      WarnWeakCrypto no
+    '';
+
     services.openssh = {
       enable = mkDefault true;
       settings = {

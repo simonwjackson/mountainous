@@ -83,6 +83,10 @@ in {
 
     home-manager.config.programs.ssh = {
       enable = true;
+      extraConfig = lib.mkDefault ''
+        IgnoreUnknown WarnWeakCrypto
+        WarnWeakCrypto no
+      '';
       matchBlocks.localhost = {
         hostname = "localhost";
         port = cfg.port;
