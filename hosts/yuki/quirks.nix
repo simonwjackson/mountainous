@@ -748,6 +748,22 @@ in {
     };
 
     mountainous.features.hyprland.keybinds = {
+      # Override the global scale-adjust keybinds to use yuki's display-aware
+      # script, which recalculates the Y offset between stacked monitors when
+      # changing scale.  The generic scale-adjust leaves positions fixed and
+      # creates a gap that blocks the cursor.
+      "$mainMod SHIFT, plus" = {
+        kind = "bindel";
+        action = "exec, ${yukiScaleScript} up";
+      };
+      "$mainMod SHIFT, equal" = {
+        kind = "bindel";
+        action = "exec, ${yukiScaleScript} up";
+      };
+      "$mainMod SHIFT, minus" = {
+        kind = "bindel";
+        action = "exec, ${yukiScaleScript} down";
+      };
       ",XF86MonBrightnessUp" = {
         kind = "bindel";
         action = "exec, ${yukiBrightnessScript} up";
@@ -850,10 +866,10 @@ in {
 
       # Lid / dock state policy
       # -----------------------
-      # Keep a tiny watcher alive for the session so yuki can block logind's lid action
-      # while docked, keep the internal OLEDs dark whenever the lid is shut, and restore
-      # the internal layout immediately if we end up undocked with the lid open.
-      exec-once = systemctl --user start yuki-lid-state-watch.service
+      # A dedicated user service now starts from systemd's default target so it survives
+      # user-manager restarts during rebuilds, keeps the internal OLEDs dark whenever the
+      # lid is shut, and restores the internal layout immediately if we end up undocked
+      # with the lid open.
 
       # Volume policy
       # -------------

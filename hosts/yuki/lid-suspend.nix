@@ -33,7 +33,16 @@
     mkdir -p "$stateDir"
     exec 9>"$lockFile"
 
+    hyprland_ready() {
+      ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all >/dev/null 2>&1
+    }
+
     current_dp_count() {
+      if ! hyprland_ready; then
+        printf '0\n'
+        return 0
+      fi
+
       ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -c '^Monitor DP-' || true
     }
 
@@ -42,6 +51,10 @@
     }
 
     internal_panels_enabled() {
+      if ! hyprland_ready; then
+        return 1
+      fi
+
       ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor eDP-'
     }
 
@@ -69,7 +82,7 @@
         ${pkgs.systemd}/bin/systemctl --user start yuki-docked-lid-inhibitor.service >/dev/null 2>&1 || true
       fi
 
-      if [ "$lidClosed" = "true" ] && internal_panels_enabled; then
+      if [ "$lidClosed" = "true" ] && hyprland_ready && internal_panels_enabled; then
         ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
           "lid closed; disabling internal displays dpCount=$dpCount"
         ${display.yukiDisableInternalDisplaysScript}
@@ -106,7 +119,7 @@
         fi
         ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
           "lid opened; cancelling buffered suspend generation=$undockGeneration dpCount=$dpCount"
-      elif [ "$lidClosed" != "true" ] && [ "$dpCount" -eq 0 ] && ! internal_panels_enabled; then
+      elif [ "$lidClosed" != "true" ] && [ "$dpCount" -eq 0 ] && hyprland_ready && ! internal_panels_enabled; then
         shouldRestoreUndockedDisplays="1"
         shouldStopInhibitor="1"
         ${pkgs.util-linux}/bin/logger -t yuki-lid-state-watch \
@@ -264,6 +277,79 @@
 
     ${display.yukiSyncEdp2ModeScript}
   '';
+
+  yukiIdleSuspendIfBatteryScript = pkgs.writeShellScript "yuki-idle-suspend-if-battery" ''
+    set -eu
+
+    acOnlineFile="/sys/class/power_supply/ADP0/online"
+
+    if [ ! -r "$acOnlineFile" ]; then
+      ${pkgs.util-linux}/bin/logger -t yuki-idle-suspend-if-battery \
+        "AC power state unavailable; skipping idle suspend-then-hibernate"
+      exit 0
+    fi
+
+    if [ "$(cat "$acOnlineFile")" = "1" ]; then
+      ${pkgs.util-linux}/bin/logger -t yuki-idle-suspend-if-battery \
+        "on AC power; skipping idle suspend-then-hibernate"
+      exit 0
+    fi
+
+    if ${pkgs.hyprland}/bin/hyprctl --instance 0 monitors all 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q '^Monitor DP-'; then
+      ${pkgs.util-linux}/bin/logger -t yuki-idle-suspend-if-battery \
+        "external display connected; skipping idle suspend-then-hibernate"
+      exit 0
+    fi
+
+    ${pkgs.util-linux}/bin/logger -t yuki-idle-suspend-if-battery \
+      "on battery and undocked; running idle suspend-then-hibernate"
+    ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
+  '';
+
+  yukiHyprlandSessionBridgeScript = pkgs.writeShellScript "yuki-hyprland-session-bridge" ''
+    set -eu
+
+    maxAttempts=60
+    sleepSeconds=1
+    runtimeDir="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+    if ${pkgs.systemd}/bin/systemctl --user --quiet is-active graphical-session.target; then
+      exit 0
+    fi
+
+    attempt=1
+    while [ "$attempt" -le "$maxAttempts" ]; do
+      hyprlandPid=$(${pkgs.procps}/bin/pgrep -u "$(id -u)" -x Hyprland | ${pkgs.coreutils}/bin/head -n 1 || true)
+      if [ -n "$hyprlandPid" ] && [ -r "/proc/$hyprlandPid/environ" ]; then
+        waylandDisplay=$(${pkgs.coreutils}/bin/tr '\000' '\n' < "/proc/$hyprlandPid/environ" | ${pkgs.gnused}/bin/sed -n 's/^WAYLAND_DISPLAY=//p' | ${pkgs.coreutils}/bin/head -n 1)
+        hyprlandInstanceSignature=$(${pkgs.coreutils}/bin/tr '\000' '\n' < "/proc/$hyprlandPid/environ" | ${pkgs.gnused}/bin/sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' | ${pkgs.coreutils}/bin/head -n 1)
+        xdgCurrentDesktop=$(${pkgs.coreutils}/bin/tr '\000' '\n' < "/proc/$hyprlandPid/environ" | ${pkgs.gnused}/bin/sed -n 's/^XDG_CURRENT_DESKTOP=//p' | ${pkgs.coreutils}/bin/head -n 1)
+
+        if [ -n "$waylandDisplay" ] && [ -n "$hyprlandInstanceSignature" ]; then
+          export WAYLAND_DISPLAY="$waylandDisplay"
+          export HYPRLAND_INSTANCE_SIGNATURE="$hyprlandInstanceSignature"
+          export XDG_RUNTIME_DIR="$runtimeDir"
+          export XDG_CURRENT_DESKTOP="''${xdgCurrentDesktop:-Hyprland}"
+
+          ${pkgs.systemd}/bin/systemctl --user import-environment \
+            WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_RUNTIME_DIR XDG_CURRENT_DESKTOP
+          ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd \
+            WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_RUNTIME_DIR XDG_CURRENT_DESKTOP
+          ${pkgs.systemd}/bin/systemctl --user start graphical-session.target
+
+          ${pkgs.util-linux}/bin/logger -t yuki-hyprland-session-bridge \
+            "restored graphical-session.target from Hyprland pid=$hyprlandPid waylandDisplay=$waylandDisplay"
+          exit 0
+        fi
+      fi
+
+      attempt=$((attempt + 1))
+      ${pkgs.coreutils}/bin/sleep "$sleepSeconds"
+    done
+
+    ${pkgs.util-linux}/bin/logger -t yuki-hyprland-session-bridge \
+      "Hyprland not detected after $maxAttempts seconds; leaving graphical-session.target inactive"
+  '';
 in {
   # Override the portable preset's logind lid handling. yuki manages all
   # lid-close suspend behavior itself through the scripts above, both with
@@ -280,39 +366,45 @@ in {
     };
 
     systemd.user.services.yuki-docked-lid-inhibitor = {
-      Unit = {
-        Description = "Block logind lid handling while yuki manages dock transitions";
-        After = ["graphical-session.target"];
-        PartOf = ["graphical-session.target"];
-      };
+      Unit.Description = "Block logind lid handling while yuki manages dock transitions";
       Service = {
         Type = "simple";
         ExecStart = "${pkgs.systemd}/bin/systemd-inhibit --why=YukiDockedLidHandling --what=handle-lid-switch --mode=block ${pkgs.coreutils}/bin/tail -f /dev/null";
       };
     };
 
-    systemd.user.services.yuki-lid-state-watch = {
-      Unit = {
-        Description = "Keep yuki's lid, dock, and internal display state in sync";
-        After = ["graphical-session.target"];
-        PartOf = ["graphical-session.target"];
+    systemd.user.services.yuki-hyprland-session-bridge = {
+      Unit.Description = "Re-announce Hyprland to the user manager after it restarts";
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${yukiHyprlandSessionBridgeScript}";
       };
+      Install = {
+        WantedBy = ["default.target"];
+      };
+    };
+
+    systemd.user.services.yuki-lid-state-watch = {
+      Unit.Description = "Keep yuki's lid, dock, and internal display state in sync";
       Service = {
         Type = "simple";
         ExecStart = "${yukiLidStateWatchScript}";
         Restart = "always";
         RestartSec = "2s";
       };
+      Install = {
+        WantedBy = ["default.target"];
+      };
     };
 
     # Defense-in-depth: if the lid-close and undock scripts both fail to
     # schedule a suspend (e.g. due to monitor flicker killing the callback),
-    # this idle listener catches the system after 15 minutes of inactivity
-    # and suspends-then-hibernates.
+    # this idle listener catches the system after 15 minutes of inactivity.
+    # Only hibernate when yuki is actually on battery and undocked.
     services.hypridle.settings.listener = lib.mkAfter [
       {
         timeout = 900;
-        on-timeout = "systemctl suspend-then-hibernate";
+        on-timeout = "${yukiIdleSuspendIfBatteryScript}";
       }
     ];
   };
