@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib) attrByPath mkAfter mkEnableOption mkIf mkMerge mkOption optional types;
+  inherit (lib) attrByPath mkEnableOption mkIf mkMerge mkOption optional types;
 
   cfg = config.mountainous.features.jellyfin;
   mediaCfg = config.mountainous.features.media;
@@ -49,11 +49,6 @@ in {
       };
 
       users.users.${cfg.user}.extraGroups = optional (cfg.group != mediaCfg.group) mediaCfg.group;
-
-      systemd.services.jellyfin.serviceConfig.BindReadOnlyPaths = mkAfter [
-        cfg.moviesLibraryDir
-        cfg.tvLibraryDir
-      ];
 
       systemd.services.jellyfin-seed-bootstrap = mkIf cfg.bootstrap.enable {
         description = "Seed declarative Jellyfin bootstrap state";
@@ -351,20 +346,20 @@ in {
               ):
                   raise SystemExit(0)
 
-          startup_configuration = wait_for_startup_configuration(token=startup_token)
-          desired_startup_configuration = dict(startup_configuration or {})
-          desired_startup_configuration["ServerName"] = desired_server_name
-
-          if current_server_name != desired_server_name:
-              api_request(
-                  "/Startup/Configuration",
-                  method="POST",
-                  data=desired_startup_configuration,
-                  token=startup_token,
-              )
-              changes.append(f"set server name to {desired_server_name}")
-
           if not startup_completed:
+              startup_configuration = wait_for_startup_configuration(token=startup_token)
+              desired_startup_configuration = dict(startup_configuration or {})
+              desired_startup_configuration["ServerName"] = desired_server_name
+
+              if current_server_name != desired_server_name:
+                  api_request(
+                      "/Startup/Configuration",
+                      method="POST",
+                      data=desired_startup_configuration,
+                      token=startup_token,
+                  )
+                  changes.append(f"set server name to {desired_server_name}")
+
               startup_user = api_request("/Startup/User") or {}
               auth_matches = try_authenticate(desired_username, password) is not None
               if startup_user.get("Name") != desired_username or not auth_matches:
@@ -375,16 +370,16 @@ in {
                   )
                   changes.append(f"configured startup admin {desired_username}")
 
-          if current_remote_access is None or current_remote_access != desired_remote_access:
-              api_request(
-                  "/Startup/RemoteAccess",
-                  method="POST",
-                  data={"EnableRemoteAccess": desired_remote_access},
-                  token=startup_token,
-              )
-              changes.append(
-                  "enabled remote access" if desired_remote_access else "disabled remote access"
-              )
+              if current_remote_access is None or current_remote_access != desired_remote_access:
+                  api_request(
+                      "/Startup/RemoteAccess",
+                      method="POST",
+                      data={"EnableRemoteAccess": desired_remote_access},
+                      token=startup_token,
+                  )
+                  changes.append(
+                      "enabled remote access" if desired_remote_access else "disabled remote access"
+                  )
 
           if admin_auth is None:
               admin_auth = try_authenticate(desired_username, password)
