@@ -8,6 +8,7 @@
     (lib)
     mkAfter
     mkEnableOption
+    mkForce
     mkIf
     mkMerge
     mkOption
@@ -116,6 +117,8 @@ in {
           }
           cfg.settings;
       };
+
+      systemd.services.sonarr.serviceConfig.UMask = mkForce "0002";
 
       systemd.services.sonarr.environment = {
         DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT = "0";

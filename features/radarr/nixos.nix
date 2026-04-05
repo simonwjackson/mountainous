@@ -8,6 +8,7 @@
     (lib)
     mkAfter
     mkEnableOption
+    mkForce
     mkIf
     mkMerge
     mkOption
@@ -116,6 +117,8 @@ in {
           }
           cfg.settings;
       };
+
+      systemd.services.radarr.serviceConfig.UMask = mkForce "0002";
 
       systemd.services.radarr.preStart = mkAfter ''
         ${pkgs.python3}/bin/python <<'PY'
