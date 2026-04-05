@@ -12,6 +12,15 @@ in {
 
     mountainous.features.hyprland.enable = mkDefault true;
     mountainous.features.dictation.enable = mkDefault true;
+    mountainous.features.matrix-notifications.enable = mkDefault true;
+    mountainous.features.evdev-hotkey = {
+      enable = mkDefault true;
+      bindings.saramonic-dictation = {
+        deviceName = mkDefault "Saramonic BTW";
+        keyCode = mkDefault 200;
+        command = mkDefault ["dictation"];
+      };
+    };
 
     xdg.portal = {
       enable = mkDefault true;

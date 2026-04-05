@@ -146,8 +146,20 @@ in {
         config_file = Path(${builtins.toJSON configFile})
         config_file.parent.mkdir(parents=True, exist_ok=True)
 
+        def new_config_from_existing(reason: str) -> ET.Element:
+            backup = config_file.with_name(f"{config_file.name}.{reason}-{uuid.uuid4().hex}")
+            config_file.replace(backup)
+            return ET.Element("Config")
+
         if config_file.exists():
-            root = ET.fromstring(config_file.read_text())
+            raw = config_file.read_text()
+            if not raw.strip():
+                root = new_config_from_existing("empty")
+            else:
+                try:
+                    root = ET.fromstring(raw)
+                except ET.ParseError:
+                    root = new_config_from_existing("corrupt")
         else:
             root = ET.Element("Config")
 
@@ -389,6 +401,122 @@ in {
                       updated if item.get("id") == existing_client["id"] else item
                       for item in existing_clients
                   ]
+          PY
+        '';
+      };
+
+      systemd.services.sonarr-seed-notifications = mkIf cfg.notifications.webhookRelay.enable {
+        description = "Seed Sonarr webhook notification for Matrix relay";
+        after =
+          ["sonarr.service"]
+          ++ optional cfg.vpn.enable "vpn-ns.service";
+        requires =
+          ["sonarr.service"]
+          ++ optional cfg.vpn.enable "vpn-ns.service";
+        wantedBy = ["multi-user.target"];
+        serviceConfig = mkMerge [
+          {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          }
+          (mkIf cfg.vpn.enable {
+            NetworkNamespacePath = "/run/netns/vpn";
+            BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+          })
+        ];
+        script = let
+          webhookUrl =
+            if cfg.notifications.webhookRelay.actionUrl != null
+            then "${cfg.notifications.webhookRelay.url}?url=${cfg.notifications.webhookRelay.actionUrl}"
+            else cfg.notifications.webhookRelay.url;
+        in ''
+          ${pkgs.python3}/bin/python <<'PY'
+          import copy
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          config_root = ET.fromstring(Path(${builtins.toJSON configFile}).read_text())
+          api_key = config_root.findtext("ApiKey")
+          if not api_key:
+              raise RuntimeError("Sonarr ApiKey missing from config.xml")
+
+          base_url = "http://127.0.0.1:${toString cfg.port}"
+          headers = {
+              "X-Api-Key": api_key,
+              "Content-Type": "application/json",
+          }
+
+          def request_json(path, *, method="GET", data=None):
+              payload = None if data is None else json.dumps(data).encode()
+              request = urllib.request.Request(f"{base_url}{path}", data=payload, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      raw = response.read()
+                      return None if not raw else json.loads(raw)
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode()
+                  raise RuntimeError(f"Sonarr API {method} {path} failed: {error.code} {body}") from error
+
+          # Wait for Sonarr API
+          for _ in range(30):
+              try:
+                  request_json("/api/v3/notification")
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise RuntimeError("Timed out waiting for Sonarr API")
+
+          existing = request_json("/api/v3/notification")
+          webhook_url = ${builtins.toJSON webhookUrl}
+
+          # Check if our notification already exists
+          existing_notif = next(
+              (n for n in existing if n.get("name") == "Matrix Webhook Relay"),
+              None,
+          )
+
+          # Get the Webhook schema template
+          schema = request_json("/api/v3/notification/schema")
+          template = copy.deepcopy(
+              next(s for s in schema if s.get("implementation") == "Webhook")
+          )
+
+          template["enable"] = True
+          template["name"] = "Matrix Webhook Relay"
+          template["onGrab"] = True
+          template["onDownload"] = True
+          template["onUpgrade"] = True
+          template["onSeriesAdd"] = True
+          template["onSeriesDelete"] = True
+          template["onHealthIssue"] = True
+          template["onHealthRestored"] = False
+          template["onApplicationUpdate"] = False
+          template["onManualInteractionRequired"] = True
+          template["includeHealthWarnings"] = True
+
+          # Set webhook fields
+          for field in template.get("fields", []):
+              if field.get("name") == "url":
+                  field["value"] = webhook_url
+              elif field.get("name") == "method":
+                  field["value"] = 1  # POST
+
+          if existing_notif is None:
+              request_json("/api/v3/notification?forceSave=true", method="POST", data=template)
+              print("Created Sonarr notification: Matrix Webhook Relay")
+          else:
+              template["id"] = existing_notif["id"]
+              request_json(
+                  f"/api/v3/notification/{existing_notif['id']}?forceSave=true",
+                  method="PUT",
+                  data=template,
+              )
+              print("Updated Sonarr notification: Matrix Webhook Relay")
           PY
         '';
       };

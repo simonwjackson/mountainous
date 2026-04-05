@@ -39,6 +39,10 @@
         enable = true;
         configFile = config.age.secrets."fastest-vpn".path;
         localNetworks = ["100.64.0.0/10"];
+        tailscaleHosts = [
+          "tv.hummingbird-lake.ts.net"
+          "movies.hummingbird-lake.ts.net"
+        ];
         services.nzbget = {
           enable = true;
           unit = "nzbget.service";
@@ -127,8 +131,16 @@
           enable = true;
           apiKeyFile = config.age.secrets.nzbgeek-api.path;
         };
-        applications.sonarr.enable = true;
-        applications.radarr.enable = true;
+        applications.sonarr = {
+          enable = true;
+          prowlarrUrl = "https://indexers.hummingbird-lake.ts.net";
+          baseUrl = "https://tv.hummingbird-lake.ts.net";
+        };
+        applications.radarr = {
+          enable = true;
+          prowlarrUrl = "https://indexers.hummingbird-lake.ts.net";
+          baseUrl = "https://movies.hummingbird-lake.ts.net";
+        };
         vpn.enable = true;
         proxy = {
           enable = true;
@@ -151,6 +163,11 @@
           hostname = "movies";
           openFirewall = false;
         };
+        notifications.webhookRelay = {
+          enable = true;
+          url = "http://127.0.0.1:9100/hook/radarr";
+          actionUrl = "https://movies.hummingbird-lake.ts.net";
+        };
 
         # Movie import path/category conventions:
         # - Movies via NZBGet category: Movies
@@ -166,6 +183,9 @@
             name = "NZBGet (usenet)";
             priority = 10;
             category = "Movies";
+            host = "usenet.hummingbird-lake.ts.net";
+            port = 443;
+            useSsl = true;
             passwordFile = config.age.secrets.nzbget-pass.path;
           };
           transmission = {
@@ -173,6 +193,9 @@
             name = "Transmission (torrent)";
             priority = 20;
             category = "movies-radarr";
+            host = "torrents.hummingbird-lake.ts.net";
+            port = 443;
+            useSsl = true;
           };
         };
       };
@@ -191,6 +214,11 @@
           hostname = "tv";
           openFirewall = false;
         };
+        notifications.webhookRelay = {
+          enable = true;
+          url = "http://127.0.0.1:9100/hook/sonarr";
+          actionUrl = "https://tv.hummingbird-lake.ts.net";
+        };
 
         # ARR/UI endpoint conventions on yari:
         # - Sonarr: tv.*    - Jellyfin: watch.*
@@ -206,6 +234,9 @@
             name = "NZBGet (usenet)";
             priority = 10;
             category = "Series";
+            host = "usenet.hummingbird-lake.ts.net";
+            port = 443;
+            useSsl = true;
             passwordFile = config.age.secrets.nzbget-pass.path;
           };
           transmission = {
@@ -213,6 +244,9 @@
             name = "Transmission (torrent)";
             priority = 20;
             category = "tv-sonarr";
+            host = "torrents.hummingbird-lake.ts.net";
+            port = 443;
+            useSsl = true;
           };
         };
       };
@@ -220,6 +254,57 @@
       transmission = {
         enable = true;
         openFirewall = false;
+      };
+
+      # ── Messaging ─────────────────────────────────────────────────────
+      matrix = {
+        enable = true;
+        serverName = "yari";
+        admin = {
+          username = "simonwjackson";
+          passwordFile = config.age.secrets.matrix-admin-pass.path;
+        };
+        registrationSharedSecretFile = config.age.secrets.matrix-shared-secret.path;
+        extraUsers.openclaw = {
+          passwordFile = config.age.secrets.openclaw-matrix-pass.path;
+          admin = false;
+        };
+        backup = {
+          enable = true;
+          passphraseFile = config.age.secrets.borg-passphrase.path;
+          cloudSync = {
+            enable = true;
+            rcloneConfigFile = config.age.secrets.rclone-conf.path;
+          };
+        };
+        proxy.enable = true;
+        notifications = {
+          enable = true;
+          bot.passwordFile = config.age.secrets.matrix-notify-bot-pass.path;
+          webhookRelay.enable = true;
+          systemdAlerts = {
+            enable = true;
+            services = [
+              "matrix-synapse"
+              "borgbackup-job-matrix"
+              "sonarr"
+              "radarr"
+              "nzbget"
+              "jellyfin"
+              "transmission"
+            ];
+          };
+        };
+        bridges = {
+          signal = {
+            enable = true;
+            environmentFile = config.age.secrets.mautrix-signal-env.path;
+          };
+          whatsapp = {
+            enable = true;
+            environmentFile = config.age.secrets.mautrix-whatsapp-env.path;
+          };
+        };
       };
     };
   };
@@ -244,6 +329,18 @@
   ];
 
   # ── Secrets (overrides for auto-discovered defaults) ──────────────────
+
+  age.secrets.mautrix-signal-env = {
+    owner = "mautrix-signal";
+    group = "mautrix-signal";
+    mode = "0400";
+  };
+
+  age.secrets.mautrix-whatsapp-env = {
+    owner = "mautrix-whatsapp";
+    group = "mautrix-whatsapp";
+    mode = "0400";
+  };
 
   age.secrets.tailscale-authkey = {
     owner = "tsnet-proxy";

@@ -32,6 +32,21 @@ in {
       description = "Address of the namespace-side veth interface.";
     };
 
+    tailscaleHosts = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      example = ["tv.example.ts.net" "movies.example.ts.net"];
+      description = ''
+        Tailscale MagicDNS hostnames to resolve from the host and inject as
+        static /etc/hosts entries inside the VPN namespace. This allows
+        namespaced services to reach Tailscale peers by DNS name without
+        adding a DNS resolver that would leak queries outside the VPN tunnel.
+
+        Entries are resolved at namespace setup time. Restart vpn-ns to
+        refresh if a peer's Tailscale IP changes.
+      '';
+    };
+
     services = mkOption {
       type = types.attrsOf (types.submodule ({name, ...}: {
         options = {

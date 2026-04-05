@@ -45,6 +45,11 @@ in {
         // cfg.settings;
     };
 
+    # The upstream nzbget module runs `nzbget --quit` without --configfile,
+    # which fails because NixOS doesn't place the config in any of nzbget's
+    # default search paths.  Override ExecStop to pass the config explicitly.
+    systemd.services.nzbget.serviceConfig.ExecStop = lib.mkForce "${pkgs.nzbget}/bin/nzbget --quit --configfile ${configFile}";
+
     users.users.${cfg.user}.extraGroups = optional (cfg.group != mediaCfg.group) mediaCfg.group;
 
     networking.firewall.allowedTCPPorts = optional cfg.openFirewall cfg.port;

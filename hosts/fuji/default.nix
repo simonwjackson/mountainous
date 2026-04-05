@@ -63,6 +63,14 @@
       openclaw-gateway = {
         enable = true;
         envFile = config.age.secrets.openclaw-env.path;
+        matrix = {
+          enable = true;
+          homeserver = "https://matrix.hummingbird-lake.ts.net";
+          userId = "@openclaw:yari";
+          passwordFile = config.age.secrets.openclaw-matrix-pass.path;
+          dmPolicy = "open";
+          allowFrom = ["*"];
+        };
       };
 
       # ── Sync / scheduled ────────────────────────────────────────────

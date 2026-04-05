@@ -130,8 +130,20 @@ in {
         config_file = Path(${builtins.toJSON configFile})
         config_file.parent.mkdir(parents=True, exist_ok=True)
 
+        def new_config_from_existing(reason: str) -> ET.Element:
+            backup = config_file.with_name(f"{config_file.name}.{reason}-{uuid.uuid4().hex}")
+            config_file.replace(backup)
+            return ET.Element("Config")
+
         if config_file.exists():
-            root = ET.fromstring(config_file.read_text())
+            raw = config_file.read_text()
+            if not raw.strip():
+                root = new_config_from_existing("empty")
+            else:
+                try:
+                    root = ET.fromstring(raw)
+                except ET.ParseError:
+                    root = new_config_from_existing("corrupt")
         else:
             root = ET.Element("Config")
 

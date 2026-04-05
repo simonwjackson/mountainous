@@ -1,29 +1,7 @@
-Here's a filtered list focusing on what the Mac Mini would be uniquely suited for given you already have a file/download server:
-
-Unique Mac Mini Linux Use Cases
-
-Low-Power Always-On Services (Mac Mini excels at 24/7 operation)
-
 - DNS/DHCP server - Primary network infrastructure
 - VPN endpoint - WireGuard/Tailscale exit node (low latency)
 - MQTT broker - IoT message broker (instant response needed)
-- Home Assistant - Automation hub (needs constant availability)
 - Pi-hole/AdGuard Home - Network-wide ad blocking
-
-Real-Time Communication (Benefits from dedicated, low-latency host)
-
-- Matrix/XMPP server - Instant messaging
-- Jitsi Meet - Video conferencing server
-- Mumble/TeamSpeak - Voice chat server
-- SIP/VoIP server - Asterisk/FreePBX
-
-Development & Testing (Separate from production storage)
-
-- GitLab/Gitea - Code repository (separate from data)
-- CI/CD runner - Jenkins/Drone for build automation
-- Staging environment - Test deployments before production
-- Database development - PostgreSQL/MySQL for app development
-- Container registry - Local Docker image storage
 
 Network Security & Monitoring (Dedicated security appliance)
 

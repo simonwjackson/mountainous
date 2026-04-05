@@ -121,14 +121,12 @@ for endpoint in "${ENDPOINTS[@]}"; do
     continue
   fi
 
-  all_data=$(cat "$tmp_all")
-
   # Deduplicate: build set of existing IDs (prefer 'id', fall back to 'day')
   # For endpoints with unique 'id' field, use that; otherwise use 'day'
   tmp_new=$(mktemp)
   if [[ -f "$outfile" ]]; then
     # Check if records have 'id' field
-    has_id=$(echo "$all_data" | head -1 | jq -r '.id // empty')
+    has_id=$(head -1 "$tmp_all" | jq -r '.id // empty')
     if [[ -n "$has_id" ]]; then
       # Deduplicate by id
       existing_ids=$(jq -r '.id // empty' "$outfile" | sort -u)
@@ -138,7 +136,7 @@ for endpoint in "${ENDPOINTS[@]}"; do
         if ! grep -qxF "$rid" <<< "$existing_ids"; then
           echo "$line" >> "$tmp_new"
         fi
-      done <<< "$all_data"
+      done < "$tmp_all"
     else
       # Deduplicate by day
       existing_days=$(jq -r '.day // empty' "$outfile" | sort -u)
@@ -148,11 +146,11 @@ for endpoint in "${ENDPOINTS[@]}"; do
         if ! grep -qxF "$rday" <<< "$existing_days"; then
           echo "$line" >> "$tmp_new"
         fi
-      done <<< "$all_data"
+      done < "$tmp_all"
     fi
   else
     # No existing file — all data is new
-    echo "$all_data" > "$tmp_new"
+    cp "$tmp_all" "$tmp_new"
   fi
 
   count=$(wc -l < "$tmp_new" | tr -d ' ')
@@ -164,13 +162,13 @@ for endpoint in "${ENDPOINTS[@]}"; do
     echo "$endpoint: no new data"
   fi
 
-  rm -f "$tmp_new" "$tmp_all"
-
   # Track the latest day from API response for this endpoint
-  latest_day=$(echo "$all_data" | jq -r '.day // (.timestamp // empty | split("T")[0])' | grep -v '^$' | sort | tail -1)
+  latest_day=$(jq -r '.day // (.timestamp // empty | split("T")[0])' "$tmp_all" | grep -v '^$' | sort | tail -1)
   if [[ -n "$latest_day" ]]; then
     NEW_ENDPOINTS_STATE=$(echo "$NEW_ENDPOINTS_STATE" | jq --arg ep "$endpoint" --arg d "$latest_day" '.[$ep] = $d')
   fi
+
+  rm -f "$tmp_new" "$tmp_all"
 done
 
 # Update state with per-endpoint tracking

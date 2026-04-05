@@ -6,6 +6,7 @@
   curl,
   ironbar,
   sox,
+  wl-clipboard,
   wtype,
   coreutils,
   ...
@@ -29,6 +30,7 @@ stdenv.mkDerivation {
       curl
       ironbar
       sox
+      wl-clipboard
       wtype
       coreutils
     ]}

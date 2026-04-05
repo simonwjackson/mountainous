@@ -294,6 +294,10 @@
           inherit gomod2nix;
         };
       };
+      kita = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/kita;
+      };
       yuki = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/yuki;

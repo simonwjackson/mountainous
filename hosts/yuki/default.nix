@@ -65,6 +65,7 @@
       };
       gaming.enable = true;
       keyboard.enable = false;
+
     };
   };
 

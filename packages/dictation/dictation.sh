@@ -118,8 +118,13 @@ if [[ -f "$PID_FILE" ]]; then
     if [[ -s "$TRANSCRIPT_FILE" ]]; then
       TRANSCRIPT=$(cat "$TRANSCRIPT_FILE")
       sleep 0.2
+      # Release any held modifiers from the keybind that triggered dictation
       wtype -P super -P shift -P ctrl -P alt
-      echo -n "$TRANSCRIPT" | wtype -
+      # Inject text via the PRIMARY selection (not the clipboard) and
+      # Shift+Insert to paste. This is O(1) regardless of transcript length
+      # and leaves the user's clipboard untouched.
+      echo -n "$TRANSCRIPT" | wl-copy --primary --trim-newline
+      wtype -M shift -k Insert
       if [[ -f "$RETURN_FLAG_FILE" ]]; then
         wtype -k Return
         rm -f "$RETURN_FLAG_FILE"

@@ -13,6 +13,7 @@
   glibc,
   iputils,
   systemd,
+  gawk,
   ...
 }:
 (writeShellApplication {
@@ -30,6 +31,7 @@
     glibc.getent # getent for DNS lookups
     iputils # ping for health checks
     systemd # systemd-notify for readiness signaling
+    gawk # awk for parsing getent output (tailscaleHosts)
   ];
   text = builtins.readFile ./vpn-ns.sh;
 })

@@ -284,5 +284,31 @@ in {
         };
       };
     };
+
+    notifications = {
+      webhookRelay = {
+        enable = mkEnableOption "send Sonarr events to the Matrix webhook relay";
+
+        url = mkOption {
+          type = types.str;
+          default = "http://10.200.200.1:9100/hook/sonarr";
+          description = ''
+            Webhook relay URL for Sonarr notifications.
+            Default uses the vpn-ns host-side veth address (10.200.200.1)
+            since Sonarr typically runs inside the VPN namespace.
+          '';
+        };
+
+        actionUrl = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          example = "https://tv.example.ts.net";
+          description = ''
+            Optional URL passed as ?url= query parameter. When set, clicking
+            the desktop notification opens this URL (e.g., the Sonarr web UI).
+          '';
+        };
+      };
+    };
   };
 }

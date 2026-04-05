@@ -35,6 +35,7 @@ in {
           environment = {
             VPN_NS_CONFIG = cfg.configFile;
             VPN_NS_LOCAL_NETS = concatStringsSep " " cfg.localNetworks;
+            VPN_NS_TAILSCALE_HOSTS = concatStringsSep " " cfg.tailscaleHosts;
           };
         };
       }

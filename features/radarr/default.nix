@@ -284,5 +284,31 @@ in {
         };
       };
     };
+
+    notifications = {
+      webhookRelay = {
+        enable = mkEnableOption "send Radarr events to the Matrix webhook relay";
+
+        url = mkOption {
+          type = types.str;
+          default = "http://10.200.200.1:9100/hook/radarr";
+          description = ''
+            Webhook relay URL for Radarr notifications.
+            Default uses the vpn-ns host-side veth address (10.200.200.1)
+            since Radarr may run inside the VPN namespace.
+          '';
+        };
+
+        actionUrl = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          example = "https://movies.example.ts.net";
+          description = ''
+            Optional URL passed as ?url= query parameter. When set, clicking
+            the desktop notification opens this URL (e.g., the Radarr web UI).
+          '';
+        };
+      };
+    };
   };
 }

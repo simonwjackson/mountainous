@@ -239,6 +239,28 @@ setup_namespace() {
   mkdir -p "/etc/netns/$NS"
   echo "nameserver $WG_DNS" >"/etc/netns/$NS/resolv.conf"
 
+  # Resolve Tailscale MagicDNS names from the host and inject as static
+  # hosts inside the namespace. This avoids adding a DNS resolver that
+  # would leak queries outside the VPN tunnel.
+  local ts_hosts="${VPN_NS_TAILSCALE_HOSTS:-}"
+  if [[ -n "$ts_hosts" ]]; then
+    : > "/etc/netns/$NS/hosts"
+    echo "127.0.0.1 localhost" >> "/etc/netns/$NS/hosts"
+    local resolved=0
+    for name in $ts_hosts; do
+      local ts_ip
+      ts_ip=$(getent hosts "$name" 2>/dev/null | awk '{print $1}' | head -1)
+      if [[ -n "$ts_ip" ]]; then
+        echo "$ts_ip $name" >> "/etc/netns/$NS/hosts"
+        echo "Resolved Tailscale host: $name → $ts_ip"
+        ((resolved++)) || true
+      else
+        echo "WARNING: Could not resolve Tailscale host: $name (skipped)"
+      fi
+    done
+    echo "Injected $resolved Tailscale host(s) into namespace"
+  fi
+
   echo "VPN namespace ready (VPN: $WG_ADDR, Local: ${VETH_NS_IP%/*}, DNS: $WG_DNS)"
 }
 

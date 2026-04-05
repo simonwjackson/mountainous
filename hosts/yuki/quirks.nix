@@ -202,18 +202,9 @@
     pwCli='${pkgs.pipewire}/bin/pw-cli'
     amixer='${pkgs.alsa-utils}/bin/amixer'
     awk='${pkgs.gawk}/bin/awk'
+    sed='${pkgs.gnused}/bin/sed'
     sleepCmd='${pkgs.coreutils}/bin/sleep'
     seqCmd='${pkgs.coreutils}/bin/seq'
-
-    defaultSinkName=$($wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | $awk -F'"' '/node.name/ { print $2; exit }')
-
-    case "$defaultSinkName" in
-      ""|alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Headphones__sink|alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink)
-        ;;
-      *)
-        exit 0
-        ;;
-    esac
 
     deviceId=""
     for _ in $($seqCmd 1 20); do
@@ -247,6 +238,7 @@
 
     $wpctl set-profile "$deviceId" "$speakerProfile"
 
+    # Wait for the Speaker sink node to appear after profile switch.
     speakerSinkId=""
     for _ in $($seqCmd 1 10); do
       speakerSinkId=$($wpctl status | $awk '
@@ -263,8 +255,18 @@
       $sleepCmd 1
     done
 
-    if [ -n "$speakerSinkId" ]; then
-      $wpctl set-default "$speakerSinkId"
+    # Clear any stale "configured default" for sinks and sources that pins an
+    # internal device. Previous versions of this script called `wpctl set-default`
+    # for the internal speaker, which writes a persistent configured default to
+    # WirePlumber's state file. That configured default overrides the
+    # priority.session-based automatic selection, preventing external USB and
+    # Bluetooth devices from becoming the default even when they have higher
+    # priority. Removing these entries lets WirePlumber fall back to pure
+    # priority-based selection.
+    stateFile="''${XDG_STATE_HOME:-$HOME/.local/state}/wireplumber/default-nodes"
+    if [ -f "$stateFile" ]; then
+      $sed -i '/^default\.configured\.audio\.sink=alsa_output\.pci-0000_00_1f\.3/d' "$stateFile"
+      $sed -i '/^default\.configured\.audio\.source=alsa_input\.pci-0000_00_1f\.3/d' "$stateFile"
     fi
 
     # Park the ALSA hardware Master at full scale and unmuted.
@@ -377,6 +379,14 @@ in {
   hardware = {
     enableRedistributableFirmware = lib.mkDefault true;
     i2c.enable = lib.mkDefault true;
+    # Persist the ALSA mixer state across reboots.
+    #
+    # yuki's internal SOF card comes up with the hardware mixer parked in a bad
+    # state often enough that audio and capture can appear dead until the
+    # session-side repair script runs. Restoring the last known-good ALSA state
+    # at boot makes the fix survive full reboots instead of only the current
+    # login session.
+    alsa.enablePersistence = true;
     graphics = {
       extraPackages = [
         pkgs.intel-media-driver
@@ -454,8 +464,41 @@ in {
         }
       ]
     '')
-    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-yuki-audioengine-priority.conf" ''
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-yuki-internal-low-priority.conf" ''
       monitor.alsa.rules = [
+        {
+          matches = [
+            {
+              # All sinks on the internal sound card (Speaker, Headphones, etc.)
+              # should have low priority so any external USB or Bluetooth audio
+              # device automatically becomes the default output.
+              node.name = "~alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.*"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 100
+              priority.session = 100
+            }
+          }
+        }
+        {
+          matches = [
+            {
+              # All sources on the internal sound card (Stereo Microphone,
+              # Digital Microphone, etc.) should have low priority so any
+              # external USB or Bluetooth microphone automatically becomes
+              # the default input.
+              node.name = "~alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.*"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 100
+              priority.session = 100
+            }
+          }
+        }
         {
           matches = [
             {
@@ -474,19 +517,77 @@ in {
         }
       ]
     '')
-    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/53-yuki-disable-x2u-sink.conf" ''
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/53-yuki-external-mic-priority.conf" ''
       monitor.alsa.rules = [
         {
           matches = [
             {
               # The Shure X2u is used exclusively as a microphone on yuki.
-              # Disable its headphone output so it never appears as a speaker choice.
+              # Disable its headphone output so audio never routes there.
               node.name = "alsa_output.usb-Shure_Incorporated_Shure_Digital-00.analog-stereo"
             }
           ]
           actions = {
             update-props = {
               node.disabled = true
+            }
+          }
+        }
+        {
+          matches = [
+            {
+              # Boost the Shure X2u microphone input so it becomes the default
+              # source whenever connected, taking precedence over internal mics
+              # and other lower-priority external devices.
+              node.name = "alsa_input.usb-Shure_Incorporated_Shure_Digital-00.mono-fallback"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 2500
+              priority.session = 2500
+            }
+          }
+        }
+      ]
+    '')
+    # Suppress the Saramonic BTW's headphone/speaker output.
+    #
+    # Bluetooth HSP/HFP profiles inherently bundle source + sink; there is no
+    # source-only profile. Destroying the sink node (request_destroy) tears down
+    # the entire SCO connection, killing the microphone too.
+    #
+    # Instead, demote the BT sink to the lowest possible priority so it is never
+    # auto-selected by WirePlumber's default policy. The node still exists (to
+    # keep the BT transport alive for the microphone) but will never be chosen
+    # over any other sink.
+    (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/55-yuki-disable-bt-mic-sinks.conf" ''
+      monitor.bluez.rules = [
+        {
+          matches = [
+            {
+              # Saramonic BTW sink (colon-separated MAC variant).
+              node.name = "~bluez_output.F4:4E:FC:84:E6:61*"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 0
+              priority.session = 0
+            }
+          }
+        }
+        {
+          matches = [
+            {
+              # Saramonic BTW sink (underscore-separated MAC variant).
+              node.name = "~bluez_output.F4_4E_FC_84_E6_61*"
+            }
+          ]
+          actions = {
+            update-props = {
+              priority.driver = 0
+              priority.session = 0
             }
           }
         }
@@ -743,9 +844,9 @@ in {
       # Audio route selection
       # ---------------------
       # PipeWire/WirePlumber sometimes prefers the bogus `Headphones` profile on this
-      # machine even when the internal speakers are the real target. Kick a tiny helper
-      # once per session so the built-in card lands on the `Speaker` profile instead.
-      exec-once = systemctl --user start yuki-audio-profile.service
+      # machine even when the internal speakers are the real target. A dedicated user
+      # service now starts with the graphical session and keeps the built-in card on the
+      # `Speaker` profile instead of relying on a compositor-side `exec-once` hook.
 
       # Lid / dock state policy
       # -----------------------
@@ -773,6 +874,10 @@ in {
     systemd.user.services.yuki-audio-profile = {
       Unit = {
         Description = "Select the internal speaker profile and unmute Master on yuki";
+        Wants = [
+          "pipewire.service"
+          "wireplumber.service"
+        ];
         After = [
           "graphical-session.target"
           "pipewire.service"
@@ -783,6 +888,9 @@ in {
       Service = {
         Type = "oneshot";
         ExecStart = "${yukiSelectSpeakerProfileScript}";
+      };
+      Install = {
+        WantedBy = ["graphical-session.target"];
       };
     };
 
