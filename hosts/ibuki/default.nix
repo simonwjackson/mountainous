@@ -31,6 +31,9 @@
       titlebar_border_thickness 0
       titlebar_padding 0
 
+      # AYANEO AIR: portrait-native panel, rotate to landscape
+      output eDP-1 transform 90
+
       # Hide cursor after 3 seconds of inactivity
       seat * hide_cursor 3000
 
