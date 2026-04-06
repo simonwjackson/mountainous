@@ -33,8 +33,8 @@
       titlebar_padding 0
 
       # AYANEO AIR: portrait-native panel, rotate to landscape
-      # Zen kernel may report the connector as Unknown-1 instead of eDP-1
-      output * transform 90
+      # Zen kernel reports the connector as Unknown-1 instead of eDP-1
+      output * mode 1080x1920 transform 270
 
       # Hide cursor after 3 seconds of inactivity
       seat * hide_cursor 3000

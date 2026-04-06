@@ -22,5 +22,6 @@
 
   nixpkgs.hostPlatform = "x86_64-linux";
 
+  hardware.enableRedistributableFirmware = true;
   hardware.cpu.amd.updateMicrocode = true;
 }
