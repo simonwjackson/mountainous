@@ -308,6 +308,10 @@
         hostPath = ./hosts/aso;
         extraModules = [nixos-wsl.nixosModules.default];
       };
+      zao = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/zao;
+      };
     };
 
     nixOnDroidConfigurations = {
