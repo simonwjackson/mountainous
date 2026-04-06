@@ -1,5 +1,14 @@
-{pkgs, ...}: let
-  # Steam kiosk session: cage → sway with Steam in normal mode
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  # The real steam binary from programs.steam (with extraCompatPackages etc),
+  # NOT the gaming module's steam-cage wrapper.
+  steamPkg = config.programs.steam.package;
+
+  # Steam kiosk session: sway with Steam in normal mode
   # NOTE: Steam is NOT launched in Big Picture mode
   steamKioskSession = pkgs.writeShellApplication {
     name = "steam-kiosk-session";
@@ -16,13 +25,6 @@
       SWAY_CONFIG=$(mktemp --suffix=.sway-steam)
       trap 'rm -f "$SWAY_CONFIG"' EXIT
 
-      # Determine GPU launcher
-      if command -v nvidia-offload &>/dev/null; then
-        STEAM_LAUNCHER="nvidia-offload steam"
-      else
-        STEAM_LAUNCHER="steam"
-      fi
-
       cat >"$SWAY_CONFIG" <<EOF
       # Minimal sway config for Steam kiosk mode
       default_border none
@@ -36,8 +38,8 @@
       # Hide cursor after 3 seconds of inactivity
       seat * hide_cursor 3000
 
-      # Launch Steam in normal (non-Big Picture) mode
-      exec $STEAM_LAUNCHER
+      # Launch Steam directly (bypass gaming module's steam-cage wrapper)
+      exec ${steamPkg}/bin/steam
 
       # Keybindings
       bindsym Mod4+Return exec foot
