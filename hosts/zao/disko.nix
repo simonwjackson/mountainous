@@ -1,15 +1,16 @@
 {
   disko.devices = {
     disk = {
-      # SD card: ESP only (systemd-boot needs kernel on the ESP)
-      boot = {
+      # NVMe 1: ESP + btrfs partition (btrfs RAID created from nvme1)
+      # Alphabetically first so disko processes it before the RAID member.
+      nvme0 = {
         type = "disk";
-        device = "/dev/disk/by-id/mmc-SD32G_0xfcf357fa";
+        device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725";
         content = {
           type = "gpt";
           partitions = {
             ESP = {
-              size = "100%";
+              size = "1G";
               type = "EF00";
               content = {
                 type = "filesystem";
@@ -19,19 +20,6 @@
                 extraArgs = ["-n" "ESP"];
               };
             };
-          };
-        };
-      };
-
-      # NVMe 1: partition only — btrfs RAID created from nvme1
-      # Alphabetically first so disko processes it before the RAID member.
-      # No content inside: the btrfs mkfs on nvme1 pulls this partition in.
-      nvme0 = {
-        type = "disk";
-        device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725";
-        content = {
-          type = "gpt";
-          partitions = {
             root = {
               size = "100%";
               content = {
@@ -57,7 +45,7 @@
                 extraArgs = [
                   "-f"
                   "-d raid0"
-                  "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725-part1"
+                  "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800725-part2"
                 ];
                 subvolumes = {
                   "@" = {
