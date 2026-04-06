@@ -1,4 +1,4 @@
-#! /usr/bin/env -S nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#openssl nixpkgs#age nixpkgs#gnused --command bash
+# Dependencies provided by writeShellApplication in default.nix
 
 set -euo pipefail
 
@@ -9,6 +9,7 @@ SECRETS_FILE="${BASE_DIR}/secrets/default.nix"
 SSH_KEY=""
 ARCH="$DEFAULT_ARCH"
 USER_PUBKEY=""
+
 
 show_usage() {
   echo "Usage: scaffold [username@]<system-name> [--arch <architecture>] [--identity <ssh-key-path>]"
@@ -261,6 +262,51 @@ generate_host_keys "$SYSTEM_NAME"
 update_secrets_nix "$SYSTEM_NAME"
 generate_syncthing_keys "$SYSTEM_NAME"
 
+# ── Rekey if secrets are out of sync with allKeys ──────────────────
+
+check_needs_rekey() {
+  # Count keys in allKeys
+  local expected
+  expected=$(grep 'allKeys = \[' "$SECRETS_FILE" | tr '[]' ' ' | tr ';' ' ' | xargs -n1 | grep -cv '^\(allKeys\|=\)$' || true)
+
+  # Pick the first .age file and count recipient stanzas
+  local sample_age
+  sample_age=$(find "${BASE_DIR}/secrets" -name '*.age' -not -path '*/keys/*' -not -path '*/archived/*' -print -quit)
+
+  if [ -z "$sample_age" ]; then
+    echo "false"
+    return
+  fi
+
+  local actual
+  actual=$(grep -c '^-> ' "$sample_age" || true)
+
+  if [ "$actual" -lt "$expected" ]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+if [ "$(check_needs_rekey)" = "true" ]; then
+  echo ""
+  echo "🔑 Secrets have fewer recipients than allKeys — re-encrypting..."
+  ids=()
+  for k in "$HOME/.ssh/id_rsa" "$HOME/.ssh/id_ed25519" \
+           /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_rsa_key; do
+    [ -r "$k" ] && ids+=(-i "$k")
+  done
+  if [ ${#ids[@]} -eq 0 ]; then
+    echo "⚠️  No identity files found — skipping rekey. Run 'just rekey' manually."
+  else
+    RULES="$SECRETS_FILE" agenix -r "${ids[@]}"
+    git add "${BASE_DIR}/secrets/"
+    echo "✅ Rekey complete"
+  fi
+else
+  echo "All secrets already encrypted for all keys — rekey not needed"
+fi
+
 echo ""
 echo "✅ Successfully scaffolded host ${SYSTEM_NAME}"
 echo ""
@@ -271,5 +317,4 @@ echo "         system = \"${ARCH}\";"
 echo "         hostPath = ./hosts/${SYSTEM_NAME};"
 echo "       };"
 echo "  2. Create hosts/${SYSTEM_NAME}/hardware.nix and hosts/${SYSTEM_NAME}/disko.nix"
-echo "  3. Run: just rekey"
-echo "  4. Commit and deploy: nix run .#deploy -- ${SYSTEM_NAME} <user@ip>"
+echo "  3. Commit and deploy: nix run .#deploy -- ${SYSTEM_NAME} <user@ip>"

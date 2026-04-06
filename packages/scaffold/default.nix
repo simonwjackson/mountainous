@@ -1,4 +1,4 @@
-{pkgs, ...}:
+{inputs, pkgs, ...}:
 pkgs.writeShellApplication {
   name = "scaffold";
   runtimeInputs = with pkgs; [
@@ -8,6 +8,7 @@ pkgs.writeShellApplication {
     openssl
     gnused
     unixtools.xxd
+    inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.agenix
   ];
   text = builtins.readFile ./scaffold.sh;
 }
