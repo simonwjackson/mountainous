@@ -133,7 +133,7 @@ update_secrets_nix() {
 
   # Add host to allKeys if not already present (word-boundary match)
   if ! grep -q "allKeys.*[[:space:]]${hostname}[[:space:]]" "$SECRETS_FILE"; then
-    sed -i "s/\(allKeys = \[.*\)\(simonwjackson\]/\1${hostname} \2/" "$SECRETS_FILE"
+    sed -i "s/ simonwjackson\]/ ${hostname} simonwjackson]/" "$SECRETS_FILE"
     echo "  Added ${hostname} to allKeys"
   else
     echo "  ${hostname} already in allKeys"
