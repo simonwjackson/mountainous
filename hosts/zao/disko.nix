@@ -1,7 +1,7 @@
 {
   disko.devices = {
     disk = {
-      # SD card: boot only
+      # SD card: ESP only (systemd-boot needs kernel on the ESP)
       boot = {
         type = "disk";
         device = "/dev/disk/by-id/mmc-SD32G_0xfcf357fa";
@@ -9,23 +9,14 @@
           type = "gpt";
           partitions = {
             ESP = {
-              size = "1G";
+              size = "100%";
               type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
-                mountpoint = "/boot/efi";
+                mountpoint = "/boot";
                 mountOptions = ["umask=0077"];
                 extraArgs = ["-n" "ESP"];
-              };
-            };
-            boot = {
-              size = "100%";
-              content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = "/boot";
-                extraArgs = ["-L" "boot"];
               };
             };
           };
