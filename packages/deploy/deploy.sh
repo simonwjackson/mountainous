@@ -135,6 +135,6 @@ nixos-anywhere "${NIXOS_ANYWHERE_ARGS[@]}"
 
 echo "Setting correct ownership..."
 ssh "${SSH_OPTS[@]}" -t "$TARGET" \
-  "sudo mkdir -p /home/simonwjackson && sudo chown -R 1000:100 /home/simonwjackson && sudo reboot"
+  "sudo mkdir -p /home/simonwjackson/.local/state/nix/profiles && sudo chown -R 1000:100 /home/simonwjackson && sudo reboot"
 
 echo "✅ Installation complete! The system will reboot automatically."
