@@ -31,13 +31,24 @@
         };
       };
 
-      # NVMe 2: creates the btrfs RAID 0 spanning both NVMe drives
+      # NVMe 2: ESP mirror + btrfs RAID 0 spanning both NVMe drives
       nvme1 = {
         type = "disk";
         device = "/dev/disk/by-id/nvme-WD_Blue_SN570_2TB_22343V800890";
         content = {
           type = "gpt";
           partitions = {
+            ESP = {
+              size = "1G";
+              type = "EF00";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                # Not mounted — nvme0 ESP is the primary /boot.
+                # This is a spare for recovery if nvme0 fails.
+                extraArgs = ["-n" "ESP2"];
+              };
+            };
             root = {
               size = "100%";
               content = {
