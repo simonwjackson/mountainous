@@ -4,7 +4,6 @@
   steamKioskSession = pkgs.writeShellApplication {
     name = "steam-kiosk-session";
     runtimeInputs = [
-      pkgs.cage
       pkgs.sway
       pkgs.foot
       pkgs.coreutils
@@ -46,7 +45,7 @@
       bindsym Mod4+Shift+e exit
       EOF
 
-      exec dbus-run-session cage -s -- sway -c "$SWAY_CONFIG"
+      exec dbus-run-session sway -c "$SWAY_CONFIG"
     '';
   };
 in {
