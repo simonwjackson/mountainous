@@ -93,37 +93,12 @@ ssh "${SSH_OPTS[@]}" "$TARGET" \
   < <(ssh-keygen -y -f "$SSH_KEY")
 ssh "${SSH_OPTS[@]}" "$TARGET" "chmod 600 ~/.ssh/authorized_keys"
 
-# ── Manual disko (optional) ──────────────────────────────────────────
-
-MANUAL_DISKO_SCRIPT="hosts/${HOSTNAME}/manual-disko.sh"
-USE_MANUAL_DISKO=false
-if [ -f "$MANUAL_DISKO_SCRIPT" ]; then
-  echo "Found manual-disko.sh for $HOSTNAME — will use manual formatting"
-  USE_MANUAL_DISKO=true
-
-  echo "Transferring manual-disko.sh to target..."
-  scp "${SSH_OPTS[@]}" "$MANUAL_DISKO_SCRIPT" "$TARGET:/tmp/manual-disko.sh"
-
-  echo "Running manual disk formatting on target..."
-  ssh "${SSH_OPTS[@]}" "$TARGET" "chmod +x /tmp/manual-disko.sh && sudo /tmp/manual-disko.sh"
-
-  echo "Manual formatting complete"
-fi
-
 # ── Deploy ───────────────────────────────────────────────────────────
-
-if [ "$USE_MANUAL_DISKO" = true ]; then
-  NIXOS_PHASES="kexec,install"
-  echo "Using phases: kexec,install (skipping disko — manual formatting already done)"
-else
-  NIXOS_PHASES="kexec,disko,install"
-  echo "Using phases: kexec,disko,install"
-fi
 
 NIXOS_ANYWHERE_ARGS=(
   --flake ".#$HOSTNAME"
   --extra-files "$temp"
-  --phases "$NIXOS_PHASES"
+  --phases "kexec,disko,install"
   --target-host "$TARGET"
 )
 
