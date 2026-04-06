@@ -32,6 +32,8 @@ build *ARGS:
 # Deploy a new system and home configuration
 [group('deploy')]
 deploy *ARGS:
+    @# Ensure host keys and secrets exist (idempotent)
+    nix run .#scaffold -- $(echo {{ ARGS }} | awk '{print $1}')
     nix run .#deploy -- {{ ARGS }}
 
 # Update all flake inputs or specific inputs (e.g., just up INPUT1 INPUT2)
