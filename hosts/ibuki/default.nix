@@ -136,6 +136,20 @@ in {
     "input" # for gamepad / touchscreen access
   ];
 
+  # ── Controller deadzone ─────────────────────────────────────────────
+  # The AYANEO AIR's Xbox 360 controller emulation drifts after heavy
+  # stick deflection (~28% off-center at rest). Increase the kernel
+  # flat (deadzone) to absorb drift for all applications, not just Steam.
+  # EVDEV_ABS format: <min>:<max>:<resolution>:<fuzz>:<flat>
+  services.udev.extraRules = ''
+    # AYANEO AIR built-in Xbox 360 pad — increase stick deadzone
+    ACTION=="add", ATTRS{idVendor}=="045e", ATTRS{idProduct}=="028e", \
+      ENV{EVDEV_ABS_00}="::16:12000", \
+      ENV{EVDEV_ABS_01}="::16:12000", \
+      ENV{EVDEV_ABS_03}="::16:12000", \
+      ENV{EVDEV_ABS_04}="::16:12000"
+  '';
+
   # ── microSD ownership ───────────────────────────────────────────────
   # Ensure the Steam library mount is owned by the gaming user
   systemd.tmpfiles.settings."10-tank-ownership" = {
