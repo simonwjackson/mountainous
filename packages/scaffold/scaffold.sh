@@ -121,17 +121,17 @@ update_secrets_nix() {
   local pubkey
   pubkey="$(cat "$host_key_pub")"
 
-  # Add host key variable if not already present
-  if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*=" "$SECRETS_FILE"; then
-    # Insert after the last host key definition, before simonwjackson
+  # Add host key variable if not already present (exact match on variable name)
+  if ! grep -qE "^[[:space:]]+${hostname}[[:space:]]*=" "$SECRETS_FILE"; then
+    # Insert before simonwjackson
     sed -i "/^[[:space:]]*simonwjackson[[:space:]]*=/i\\  ${hostname} = \"${pubkey}\";" "$SECRETS_FILE"
     echo "  Added ${hostname} key variable"
   else
     echo "  ${hostname} key variable already exists"
   fi
 
-  # Add host to allKeys if not already present
-  if ! grep -q "allKeys.*${hostname}" "$SECRETS_FILE"; then
+  # Add host to allKeys if not already present (word-boundary match)
+  if ! grep -q "allKeys.*[[:space:]]${hostname}[[:space:]]" "$SECRETS_FILE"; then
     sed -i "s/\(allKeys = \[.*\)\(simonwjackson\]/\1${hostname} \2/" "$SECRETS_FILE"
     echo "  Added ${hostname} to allKeys"
   else
@@ -191,6 +191,7 @@ if [ $# -lt 1 ]; then
   show_usage
 fi
 
+# shellcheck disable=SC2034  # set via printf -v indirection
 USERNAME=""
 SYSTEM_NAME=""
 parse_system_arg "$1" USERNAME SYSTEM_NAME
