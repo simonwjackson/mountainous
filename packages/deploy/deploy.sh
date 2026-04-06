@@ -15,6 +15,7 @@ if [ "$#" -lt 2 ]; then
   echo "Environment variables:"
   echo "  DEPLOY_PROXY_JUMP  - SSH ProxyJump host (e.g., rakku)"
   echo "  DEPLOY_BUILD_ON    - Where to build: local (default) or remote"
+  echo "  SSHPASS            - Installer password (enables password auth for initial setup)"
   exit 1
 fi
 
@@ -24,12 +25,23 @@ SSH_KEY="${3:-$HOME/.ssh/id_rsa}"
 TARGET_ARCH="${4:-x86_64-linux}"
 PROXY_JUMP="${DEPLOY_PROXY_JUMP:-}"
 BUILD_ON="${DEPLOY_BUILD_ON:-local}"
+USE_PASS="${SSHPASS:+true}"
+USE_PASS="${USE_PASS:-false}"
 
 # SSH options shared across all ssh/scp calls
 SSH_OPTS=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 if [ -n "$PROXY_JUMP" ]; then
   SSH_OPTS+=(-o "ProxyJump=$PROXY_JUMP")
 fi
+
+# Wrapper for SSH commands — uses sshpass when SSHPASS is set
+run_ssh() {
+  if [ "$USE_PASS" = true ]; then
+    sshpass -e ssh "${SSH_OPTS[@]}" "$@"
+  else
+    ssh "${SSH_OPTS[@]}" "$@"
+  fi
+}
 
 # Create a temporary directory for extra files
 temp=$(mktemp -d)
@@ -87,11 +99,13 @@ chmod 644 "$temp/etc/ssh/ssh_host_rsa_key.pub"
 cp "$SSH_KEY" "$temp/home/simonwjackson/.ssh/"
 chmod 600 "$temp/home/simonwjackson/.ssh/$(basename "$SSH_KEY")"
 
-# Push authorized_keys to the installer so nixos-anywhere can connect
-ssh "${SSH_OPTS[@]}" "$TARGET" \
+# Push authorized_keys to the installer so nixos-anywhere can connect via key
+echo "📤 Pushing authorized_keys to installer..."
+run_ssh "$TARGET" \
   "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat > ~/.ssh/authorized_keys" \
   < <(ssh-keygen -y -f "$SSH_KEY")
-ssh "${SSH_OPTS[@]}" "$TARGET" "chmod 600 ~/.ssh/authorized_keys"
+run_ssh "$TARGET" "chmod 600 ~/.ssh/authorized_keys"
+echo "✅ Key auth configured on installer"
 
 # ── Deploy ───────────────────────────────────────────────────────────
 
@@ -112,7 +126,7 @@ fi
 
 NIXOS_ANYWHERE_ARGS+=(--ssh-option StrictHostKeyChecking=no --ssh-option UserKnownHostsFile=/dev/null)
 
-echo "Deploying NixOS configuration..."
+echo "🚀 Deploying NixOS configuration..."
 nixos-anywhere "${NIXOS_ANYWHERE_ARGS[@]}"
 
 # ── Post-install fixup ───────────────────────────────────────────────
@@ -121,4 +135,4 @@ echo "Setting correct ownership..."
 ssh "${SSH_OPTS[@]}" -t "$TARGET" \
   "sudo mkdir -p /home/simonwjackson && sudo chown -R 1000:100 /home/simonwjackson && sudo reboot"
 
-echo "Installation complete! The system will reboot automatically."
+echo "✅ Installation complete! The system will reboot automatically."

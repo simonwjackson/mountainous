@@ -11,6 +11,7 @@ pkgs.writeShellApplication {
     coreutils
     openssh
     age
+    sshpass
     inputs.nixos-anywhere.packages.${pkgs.stdenv.hostPlatform.system}.nixos-anywhere
   ];
 
