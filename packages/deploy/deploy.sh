@@ -133,8 +133,13 @@ nixos-anywhere "${NIXOS_ANYWHERE_ARGS[@]}"
 
 # ── Post-install fixup ───────────────────────────────────────────────
 
-echo "Setting correct ownership..."
-ssh "${SSH_OPTS[@]}" -t "$TARGET" \
-  "sudo mkdir -p /home/simonwjackson/.local/state/nix/profiles && sudo chown -R 1000:100 /home/simonwjackson && sudo reboot"
+echo "Setting correct ownership and creating profile directories..."
+ssh "${SSH_OPTS[@]}" -t "$TARGET" "
+  sudo mkdir -p /nix/var/nix/profiles/per-user/simonwjackson
+  sudo chown simonwjackson:users /nix/var/nix/profiles/per-user/simonwjackson
+  sudo mkdir -p /home/simonwjackson/.local/state/nix/profiles
+  sudo chown -R 1000:100 /home/simonwjackson
+  sudo reboot
+"
 
 echo "✅ Installation complete! The system will reboot automatically."
