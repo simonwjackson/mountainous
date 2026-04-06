@@ -1,4 +1,4 @@
-{lib, modulesPath, ...}: {
+{lib, pkgs, modulesPath, ...}: {
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
@@ -6,6 +6,14 @@
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
+    systemd-boot.extraInstallCommands = ''
+      # Mirror ESP to second NVMe for boot redundancy
+      mkdir -p /boot/efi-backup
+      ${pkgs.util-linux}/bin/mountpoint -q /boot/efi-backup || \
+        ${pkgs.util-linux}/bin/mount /dev/disk/by-partlabel/disk-nvme1-ESP /boot/efi-backup
+      ${pkgs.rsync}/bin/rsync -a --delete /boot/ /boot/efi-backup/
+      ${pkgs.util-linux}/bin/umount /boot/efi-backup
+    '';
   };
 
   boot.initrd.availableKernelModules = [
