@@ -90,10 +90,22 @@
         };
         proxy = {
           enable = true;
-          hostname = "watch";
+          hostname = "watch-yari";
           openFirewall = false;
         };
         watchedCleaner.enable = true;
+      };
+
+      jellyswarrm = {
+        enable = true;
+        username = "simonwjackson";
+        passwordFile = config.age.secrets.jellyswarrm-pass.path;
+        openFirewall = false;
+        proxy = {
+          enable = true;
+          hostname = "watch";
+          openFirewall = false;
+        };
       };
 
       nzbget = {
@@ -291,6 +303,7 @@
               "radarr"
               "nzbget"
               "jellyfin"
+              "jellyswarrm"
               "transmission"
             ];
           };
@@ -363,6 +376,14 @@
 
   age.secrets.prowlarr-pass = {
     file = config.age.secrets.nzbget-pass.file;
+  };
+
+  # Jellyswarrm admin password (reuse jellyfin-pass)
+  age.secrets.jellyswarrm-pass = {
+    file = config.age.secrets.jellyfin-pass.file;
+    owner = "jellyswarrm";
+    group = "jellyswarrm";
+    mode = "0400";
   };
 
   # ── OpenClaw Node ────────────────────────────────────────────────────

@@ -63,6 +63,10 @@
       url = "github:nix-community/NixOS-WSL";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    jellyswarrm = {
+      url = "github:LLukas22/Jellyswarrm/v0.2.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -83,6 +87,7 @@
     tsnsrv,
     cascade,
     nixos-wsl,
+    jellyswarrm,
     ...
   } @ inputs: let
     lib = nixpkgs.lib;
@@ -202,12 +207,13 @@
       in
       nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = {inherit self cascade hyprdynamicmonitors tsnsrv; mountainousPlatform = "nixos";} // specialArgs;
+        specialArgs = {inherit self cascade hyprdynamicmonitors tsnsrv jellyswarrm; mountainousPlatform = "nixos";} // specialArgs;
         modules =
           [
             disko.nixosModules.default
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
+            jellyswarrm.nixosModules.default
           ]
           ++ nixosFeatureModulePaths
           ++ nixosPresetModulePaths

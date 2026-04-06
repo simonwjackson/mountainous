@@ -1,4 +1,4 @@
-{lib, ...}: {
+{config, lib, ...}: {
   imports = [
     ./disko.nix
     ./hardware.nix
@@ -67,6 +67,35 @@
         usb = {
           disableAutosuspend = true;
           udevRules = [{vendor = "152d"; product = "0578";}];
+        };
+      };
+    };
+
+    features.media = {
+      enable = true;
+      root = "/srv/pool/tank0";
+    };
+
+    features.jellyfin = {
+      enable = true;
+      openFirewall = false;
+      bootstrap = {
+        enable = true;
+        admin = {
+          username = "simonwjackson";
+          passwordFile = config.age.secrets.jellyfin-pass.path;
+        };
+        serverName = "zao";
+        remoteAccess = false;
+        libraries = {
+          tv = {
+            name = "TV";
+            path = "/srv/pool/tank0/media/tv";
+          };
+          movies = {
+            name = "Movies";
+            path = "/srv/pool/tank0/media/movies";
+          };
         };
       };
     };
