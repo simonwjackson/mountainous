@@ -114,6 +114,9 @@ in {
     };
   };
 
+  # ── Network ──────────────────────────────────────────────────────────
+  networking.networkmanager.enable = true;
+
   # ── Kernel ───────────────────────────────────────────────────────────
   boot.kernelPackages = pkgs.linuxPackages_zen;
 
