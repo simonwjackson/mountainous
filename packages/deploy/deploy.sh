@@ -37,8 +37,10 @@ fi
 # Wrapper for SSH commands — uses sshpass when SSHPASS is set
 run_ssh() {
   if [ "$USE_PASS" = true ]; then
+    # shellcheck disable=SC2029  # args are intentionally expanded client-side
     sshpass -e ssh "${SSH_OPTS[@]}" "$@"
   else
+    # shellcheck disable=SC2029
     ssh "${SSH_OPTS[@]}" "$@"
   fi
 }
