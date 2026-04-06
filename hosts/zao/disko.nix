@@ -89,6 +89,10 @@
                     mountpoint = "/.snapshots";
                     mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                   };
+                  "@cache" = {
+                    mountpoint = "/srv/cache";
+                    mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
+                  };
                 };
               };
             };
