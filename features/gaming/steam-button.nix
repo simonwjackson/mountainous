@@ -98,7 +98,9 @@ in {
     })
 
     # Actual configuration
-    (mkIf (gamingEnabled && steamButtonEnabled && hyprlandEnabled) {
+    # Guard with optionalAttrs so the option path is never referenced when
+    # the hyprland HM module is not loaded (e.g. kiosk hosts).
+    (lib.optionalAttrs (gamingEnabled && steamButtonEnabled && hyprlandEnabled) {
       mountainous.features.hyprland.extraSettings = {
         # Steam button keybind - switches to gaming workspace and launches game-session
         bind = [

@@ -8,6 +8,7 @@
   aso = {
     port = 8080;
   };
+  ibuki = {};
   usu = {
     user = "nix-on-droid";
     port = 2345;

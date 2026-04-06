@@ -1,8 +1,30 @@
 {
-  lib,
   pkgs,
   ...
-}: {
+}: let
+  jellyfinKioskSession = pkgs.writeShellApplication {
+    name = "jellyfin-kiosk-session";
+    runtimeInputs = [
+      pkgs.cage
+      pkgs.chromium
+      pkgs.dbus
+    ];
+    text = ''
+      export NIXOS_OZONE_WL=1
+      export XDG_CURRENT_DESKTOP=cage
+      export XDG_SESSION_TYPE=wayland
+
+      exec dbus-run-session cage -- chromium \
+        --enable-features=UseOzonePlatform \
+        --ozone-platform=wayland \
+        --kiosk \
+        --no-first-run \
+        --no-default-browser-check \
+        --disable-session-crashed-bubble \
+        --app=https://watch.hummingbird-lake.ts.net/web/
+    '';
+  };
+in {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -14,7 +36,6 @@
   mountainous = {
     presets = {
       core.enable = true;
-      desktop.enable = true;
     };
 
     features = {
@@ -36,26 +57,13 @@
     };
   };
 
-  home-manager.users.simonwjackson = {
-    home.packages = [pkgs.chromium];
+  hardware.graphics.enable = true;
 
-    # Keep the TV/UI alive until we decide on idle/display policy for this box.
-    services.hypridle.enable = lib.mkForce false;
-
-    systemd.user.services.jellyfin-kiosk = {
-      Unit = {
-        Description = "Chromium Jellyfin kiosk";
-        After = ["graphical-session.target"];
-        PartOf = ["graphical-session.target"];
-      };
-
-      Service = {
-        ExecStart = "${pkgs.chromium}/bin/chromium --enable-features=UseOzonePlatform --ozone-platform=wayland --kiosk --no-first-run --no-default-browser-check --disable-session-crashed-bubble --app=https://watch.hummingbird-lake.ts.net/web/";
-        Restart = "always";
-        RestartSec = 5;
-      };
-
-      Install.WantedBy = ["graphical-session.target"];
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${jellyfinKioskSession}/bin/jellyfin-kiosk-session";
+      user = "simonwjackson";
     };
   };
 

@@ -312,6 +312,10 @@
         system = "x86_64-linux";
         hostPath = ./hosts/zao;
       };
+      ibuki = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/ibuki;
+      };
     };
 
     nixOnDroidConfigurations = {

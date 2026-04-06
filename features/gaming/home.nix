@@ -81,7 +81,9 @@ in {
     }
 
     # Hyprland integration (only if Hyprland is enabled)
-    (mkIf hyprlandEnabled {
+    # Guard with optionalAttrs so the option path is never referenced when
+    # the hyprland HM module is not loaded (e.g. kiosk hosts).
+    (lib.optionalAttrs hyprlandEnabled {
       mountainous.features.hyprland.extraSettings = mkMerge [
         # Add gaming keybinds
         (mkIf (gamingCfg.home.keybinds != {}) {
