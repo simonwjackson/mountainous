@@ -72,33 +72,6 @@ parse_system_arg() {
   fi
 }
 
-ensure_home_config() {
-  local username="$1"
-  local home_dir="${BASE_DIR}/home/${username}"
-  local home_file="${home_dir}/default.nix"
-
-  if [ -f "$home_file" ]; then
-    return 0
-  fi
-
-  local home_config
-  home_config=$(
-    cat <<EOF
-{
-  ...
-}: {
-  home = {
-    username = "${username}";
-    homeDirectory = "/home/${username}";
-    stateVersion = "24.11";
-  };
-}
-EOF
-  )
-
-  create_config "$home_dir" "$home_file" "$home_config"
-}
-
 generate_host_keys() {
   local hostname="$1"
   local host_key_enc="${BASE_DIR}/secrets/keys/hosts/${ARCH}_${hostname}_ssh_host_rsa_key.age"
@@ -131,24 +104,38 @@ generate_host_keys() {
 
 update_secrets_nix() {
   local hostname="$1"
+  local host_key_pub="${BASE_DIR}/secrets/keys/hosts/${ARCH}_${hostname}_ssh_host_rsa_key.pub"
 
   if [ ! -f "$SECRETS_FILE" ]; then
     echo "Error: ${SECRETS_FILE} not found"
     exit 1
   fi
 
+  if [ ! -f "$host_key_pub" ]; then
+    echo "Error: Host public key not found: $host_key_pub"
+    exit 1
+  fi
+
   echo "Updating ${SECRETS_FILE} for ${hostname}..."
 
+  local pubkey
+  pubkey="$(cat "$host_key_pub")"
+
+  # Add host key variable if not already present
   if ! grep -q "^[[:space:]]*${hostname}[[:space:]]*=" "$SECRETS_FILE"; then
-    sed -i "/^let$/a\\  ${hostname} = builtins.readFile ./keys/hosts/${ARCH}_${hostname}_ssh_host_rsa_key.pub;" "$SECRETS_FILE"
+    # Insert after the last host key definition, before simonwjackson
+    sed -i "/^[[:space:]]*simonwjackson[[:space:]]*=/i\\  ${hostname} = \"${pubkey}\";" "$SECRETS_FILE"
+    echo "  Added ${hostname} key variable"
+  else
+    echo "  ${hostname} key variable already exists"
   fi
 
-  if ! grep -q "^[[:space:]]*${hostname}Keys[[:space:]]*=" "$SECRETS_FILE"; then
-    sed -i "/^  allKeys = \[/i\\  ${hostname}Keys = [${hostname} simonwjackson];" "$SECRETS_FILE"
-  fi
-
-  if ! grep -Eq "^  allKeys = \[.*(^|[[:space:]])${hostname}([[:space:]]|\]).*\];$" "$SECRETS_FILE"; then
-    sed -i "/^  allKeys = \[/ s/\];$/ ${hostname}];/" "$SECRETS_FILE"
+  # Add host to allKeys if not already present
+  if ! grep -q "allKeys.*${hostname}" "$SECRETS_FILE"; then
+    sed -i "s/\(allKeys = \[.*\)\(simonwjackson\]/\1${hostname} \2/" "$SECRETS_FILE"
+    echo "  Added ${hostname} to allKeys"
+  else
+    echo "  ${hostname} already in allKeys"
   fi
 
   git add "$SECRETS_FILE"
@@ -180,6 +167,8 @@ generate_syncthing_keys() {
   openssl ecparam -genkey -name secp521r1 -noout -out "$key_path"
   openssl req -new -x509 -key "$key_path" -out "$cert_path" -days 3650 -subj "/CN=syncthing"
 
+  # Encrypt for all keys (host + user) — secrets/default.nix auto-discovery
+  # handles the agenix wiring; we just need the files to exist.
   age --encrypt \
     --recipient "$(cat "$host_pubkey_file")" \
     --recipient "$(cat "$USER_PUBKEY")" \
@@ -196,21 +185,7 @@ generate_syncthing_keys() {
   git add "$encrypted_key" "$encrypted_cert"
 }
 
-update_secrets_nix_syncthing() {
-  local hostname="$1"
-  local key_entry="\"secrets/hosts/${hostname}/syncthing-key.age\".publicKeys = ${hostname}Keys;"
-  local cert_entry="\"secrets/hosts/${hostname}/syncthing-cert.age\".publicKeys = ${hostname}Keys;"
-
-  if ! grep -qF "$key_entry" "$SECRETS_FILE"; then
-    sed -i "/^}$/i\\  ${key_entry}" "$SECRETS_FILE"
-  fi
-
-  if ! grep -qF "$cert_entry" "$SECRETS_FILE"; then
-    sed -i "/^}$/i\\  ${cert_entry}" "$SECRETS_FILE"
-  fi
-
-  git add "$SECRETS_FILE"
-}
+# ── Argument parsing ─────────────────────────────────────────────────
 
 if [ $# -lt 1 ]; then
   show_usage
@@ -239,32 +214,37 @@ while [[ $# -gt 0 ]]; do
 done
 
 check_ssh_key
-ensure_home_config "$USERNAME"
+
+# ── Host config ──────────────────────────────────────────────────────
 
 HOST_CONFIG=$(
   cat <<EOF
-{
-  config,
-  pkgs,
-  ...
-}: {
+{lib, ...}: {
   imports = [
-    # ./hardware.nix
     # ./disko.nix
+    # ./hardware.nix
   ];
 
-  home-manager.users.${USERNAME} = import ../../home/${USERNAME};
-
   networking.hostName = "${SYSTEM_NAME}";
-  time.timeZone = "UTC";
+  time.timeZone = "America/Denver";
 
-  users.users.${USERNAME} = {
-    isNormalUser = true;
-    shell = pkgs.bashInteractive;
-    extraGroups = ["wheel"];
+  nixpkgs.config.allowUnfree = true;
+
+  mountainous = {
+    presets.core.enable = true;
+    presets.server.enable = true;
+
+    features.device = {
+      role = "portable";
+      capabilities = {
+        battery = false;
+        formFactor = "desktop";
+        touchscreen = false;
+      };
+    };
   };
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
 }
 EOF
 )
@@ -274,13 +254,21 @@ create_config \
   "${BASE_DIR}/hosts/${SYSTEM_NAME}/default.nix" \
   "$HOST_CONFIG"
 
+# ── Secrets & keys ───────────────────────────────────────────────────
+
 generate_host_keys "$SYSTEM_NAME"
 update_secrets_nix "$SYSTEM_NAME"
 generate_syncthing_keys "$SYSTEM_NAME"
-update_secrets_nix_syncthing "$SYSTEM_NAME"
 
-echo "Successfully scaffolded host ${SYSTEM_NAME} for user ${USERNAME}"
+echo ""
+echo "✅ Successfully scaffolded host ${SYSTEM_NAME}"
+echo ""
 echo "Next steps:"
-echo "  - add ${SYSTEM_NAME} to flake.nix nixosConfigurations (system = \"${ARCH}\")"
-echo "  - update hosts/${SYSTEM_NAME}/default.nix imports and hardware/disko settings"
-echo "  - run: just rekey"
+echo "  1. Add ${SYSTEM_NAME} to flake.nix nixosConfigurations:"
+echo "       ${SYSTEM_NAME} = mkHost {"
+echo "         system = \"${ARCH}\";"
+echo "         hostPath = ./hosts/${SYSTEM_NAME};"
+echo "       };"
+echo "  2. Create hosts/${SYSTEM_NAME}/hardware.nix and hosts/${SYSTEM_NAME}/disko.nix"
+echo "  3. Run: just rekey"
+echo "  4. Commit and deploy: nix run .#deploy -- ${SYSTEM_NAME} <user@ip>"
