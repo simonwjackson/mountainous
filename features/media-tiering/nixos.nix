@@ -195,6 +195,8 @@ PY
       size=$(${pkgs.coreutils}/bin/stat -c %s "$src")
 
       ${pkgs.coreutils}/bin/mkdir -p "$dest_dir"
+      ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$dest_dir"
+      ${pkgs.coreutils}/bin/chmod g+rws "$dest_dir"
 
       if [ -e "$dest" ]; then
         if ${pkgs.diffutils}/bin/cmp -s "$src" "$dest"; then
@@ -208,6 +210,8 @@ PY
       fi
 
       ${pkgs.rsync}/bin/rsync -aHAXWES --preallocate "$src" "$tmp"
+      ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$tmp"
+      ${pkgs.coreutils}/bin/chmod g+rwX "$tmp"
       if ! ${pkgs.diffutils}/bin/cmp -s "$src" "$tmp"; then
         echo "verification failed for $src" >&2
         ${pkgs.coreutils}/bin/rm -f "$tmp"
@@ -246,6 +250,33 @@ PY
 in {
   config = mkIf cfg.enable (mkMerge [
     {
+      assertions = [
+        {
+          assertion = mediaCfg.enable;
+          message = "mountainous.features.media-tiering requires mountainous.features.media.enable = true";
+        }
+        {
+          assertion = mediaCfg.group == "media";
+          message = ''
+            mountainous.features.media-tiering relies on the shared `media`
+            group identity from mountainous.features.media.gid instead of
+            per-service UID parity across hosts.
+          '';
+        }
+        {
+          assertion = cfg.nfs.anonuid == 0;
+          message = "mountainous.features.media-tiering requires nfs.anonuid = 0 to preserve the root:media all_squash ownership model";
+        }
+        {
+          assertion = cfg.nfs.anongid == mediaCfg.gid;
+          message = ''
+            mountainous.features.media-tiering requires nfs.anongid to match
+            mountainous.features.media.gid so files created over NFS land with
+            the expected root:media ownership.
+          '';
+        }
+      ];
+
       environment.systemPackages = [pkgs.mergerfs];
 
       systemd.tmpfiles.rules = [
@@ -285,6 +316,8 @@ in {
       services.nfs.server = {
         enable = true;
         exports = ''
+          # Tiered media exports use all_squash with anonuid=0 and
+          # anongid=${toString cfg.nfs.anongid} so new files arrive as root:media.
           ${cfg.localBackingRoot}  ${cfg.nfs.clients}(${exportMode},fsid=0,no_subtree_check,crossmnt,all_squash,anonuid=${toString cfg.nfs.anonuid},anongid=${toString cfg.nfs.anongid})
         '';
       };

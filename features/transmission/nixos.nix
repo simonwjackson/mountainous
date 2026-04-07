@@ -39,6 +39,7 @@ in {
           "rpc-port" = cfg.port;
           "rpc-username" = "";
           "rpc-whitelist-enabled" = false;
+          "umask" = "002";
           "watch-dir" = mediaCfg.torrentsWatchDir;
           "watch-dir-enabled" = false;
         }

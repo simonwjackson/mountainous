@@ -22,7 +22,23 @@ in {
     group = mkOption {
       type = types.str;
       default = "media";
-      description = "Shared group for media services and users.";
+      description = ''
+        Shared group for media services and users.
+        Tiered hosts rely on this shared group identity, together with
+        `mountainous.features.media.gid`, instead of per-service UID parity
+        across hosts.
+      '';
+    };
+
+    gid = mkOption {
+      type = types.int;
+      default = 993;
+      description = ''
+        Fixed numeric GID for the shared `media` group.
+        Hosts participating in media-tiering must use the same GID so NFS and
+        mergerfs permission handling can rely on shared group access instead of
+        matching per-service UIDs across hosts.
+      '';
     };
 
     directoryMode = mkOption {

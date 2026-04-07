@@ -63,13 +63,22 @@ in {
       anonuid = mkOption {
         type = types.int;
         default = 0;
-        description = "UID that all NFS clients are mapped to (all_squash).";
+        description = ''
+          UID that all NFS clients are mapped to under `all_squash`.
+          Keep this at `0` so cross-host writes arrive as `root:<shared-media-group>`
+          rather than depending on per-service UID parity across hosts.
+        '';
       };
 
       anongid = mkOption {
         type = types.int;
-        default = 0;
-        description = "GID that all NFS clients are mapped to (all_squash).";
+        default = mediaCfg.gid;
+        description = ''
+          GID that all NFS clients are mapped to under `all_squash`.
+          Defaults to `mountainous.features.media.gid` so files created over NFS
+          land with the expected `root:media` ownership model when the shared
+          media group is in use.
+        '';
       };
     };
 

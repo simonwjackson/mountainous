@@ -136,6 +136,7 @@
   users.users.simonwjackson.extraGroups = [
     "networkmanager"
     "video"
+    "media"
   ];
 
   # ── Secrets ────────────────────────────────────────────────────────

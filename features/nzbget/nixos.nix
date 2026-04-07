@@ -41,6 +41,7 @@ in {
           ControlIP = cfg.listenAddress;
           ControlPort = cfg.port;
           ControlUsername = cfg.controlUsername;
+          UMask = "0002";
         }
         // cfg.settings;
     };
