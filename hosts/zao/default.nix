@@ -80,11 +80,10 @@
       enable = true;
       role = "sink";
       peerHost = "yari";
-      # localBackingRoot defaults to ${media.root}/media = /srv/lakes/towada/media
-      localSources = {
-        movies = "/srv/lakes/towada/movies";
-        tv = "/srv/lakes/towada/series";
-      };
+      # localBackingRoot defaults to /srv/lakes/towada/media (inside the
+      # lake mergerfs). Media has been moved from the legacy movies/ and
+      # series/ dirs into media/{movies,tv} on each shore, so no bind
+      # mounts (localSources) are needed.
     };
 
     # ── Networking ───────────────────────────────────────────────────
