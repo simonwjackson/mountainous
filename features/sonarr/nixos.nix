@@ -524,6 +524,143 @@ in {
         '';
       };
 
+      systemd.services.sonarr-seed-jellyfin-notification = mkIf cfg.notifications.jellyfin.enable {
+        description = "Seed Sonarr Jellyfin/Emby notification connection";
+        after =
+          ["sonarr.service"]
+          ++ optional cfg.vpn.enable "vpn-ns.service";
+        requires =
+          ["sonarr.service"]
+          ++ optional cfg.vpn.enable "vpn-ns.service";
+        wantedBy = ["multi-user.target"];
+        serviceConfig = mkMerge [
+          {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          }
+          (mkIf cfg.vpn.enable {
+            NetworkNamespacePath = "/run/netns/vpn";
+            BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+          })
+        ];
+        script = ''
+          ${pkgs.python3}/bin/python <<'PY'
+          import copy
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          config_root = ET.fromstring(Path(${builtins.toJSON configFile}).read_text())
+          api_key = config_root.findtext("ApiKey")
+          if not api_key:
+              raise RuntimeError("Sonarr ApiKey missing from config.xml")
+
+          jellyfin_password = Path(${builtins.toJSON cfg.notifications.jellyfin.passwordFile}).read_text().strip()
+          if "=" in jellyfin_password:
+              jellyfin_password = jellyfin_password.split("=", 1)[1].strip()
+
+          base_url = "http://127.0.0.1:${toString cfg.port}"
+          headers = {
+              "X-Api-Key": api_key,
+              "Content-Type": "application/json",
+          }
+          jellyfin_base_url = "${if cfg.notifications.jellyfin.useSsl then "https" else "http"}://${cfg.notifications.jellyfin.host}:${toString cfg.notifications.jellyfin.port}"
+
+          def request_json(path, *, method="GET", data=None):
+              payload = None if data is None else json.dumps(data).encode()
+              request = urllib.request.Request(f"{base_url}{path}", data=payload, headers=headers, method=method)
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      raw = response.read()
+                      return None if not raw else json.loads(raw)
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode()
+                  raise RuntimeError(f"Sonarr API {method} {path} failed: {error.code} {body}") from error
+
+          def authenticate_jellyfin():
+              auth_header = 'MediaBrowser Client="mountainous", Device="mountainous", DeviceId="sonarr-jellyfin", Version="1.0.0"'
+              payload = json.dumps({
+                  "Username": ${builtins.toJSON cfg.notifications.jellyfin.username},
+                  "Pw": jellyfin_password,
+              }).encode()
+              request = urllib.request.Request(
+                  f"{jellyfin_base_url}/Users/AuthenticateByName",
+                  data=payload,
+                  headers={
+                      "Authorization": auth_header,
+                      "Content-Type": "application/json",
+                  },
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      return json.loads(response.read())["AccessToken"]
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode()
+                  raise RuntimeError(f"Jellyfin authentication failed: {error.code} {body}") from error
+
+          for _ in range(30):
+              try:
+                  request_json("/api/v3/notification")
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise RuntimeError("Timed out waiting for Sonarr API")
+
+          jellyfin_token = authenticate_jellyfin()
+
+          existing = request_json("/api/v3/notification")
+          notification_name = "Jellyfin Library Update"
+
+          existing_notif = next(
+              (n for n in existing if n.get("name") == notification_name),
+              None,
+          )
+
+          schema = request_json("/api/v3/notification/schema")
+          template = copy.deepcopy(
+              next(s for s in schema if s.get("implementation") == "MediaBrowser")
+          )
+
+          template["enable"] = True
+          template["name"] = notification_name
+          template["onDownload"] = True
+          template["onUpgrade"] = True
+          template["onRename"] = True
+          template["onSeriesAdd"] = False
+          template["onSeriesDelete"] = True
+          template["onEpisodeFileDelete"] = True
+          template["onEpisodeFileDeleteForUpgrade"] = True
+
+          for field in template.get("fields", []):
+              if field.get("name") == "host":
+                  field["value"] = ${builtins.toJSON cfg.notifications.jellyfin.host}
+              elif field.get("name") == "port":
+                  field["value"] = ${toString cfg.notifications.jellyfin.port}
+              elif field.get("name") == "apiKey":
+                  field["value"] = jellyfin_token
+              elif field.get("name") == "useSsl":
+                  field["value"] = ${if cfg.notifications.jellyfin.useSsl then "True" else "False"}
+
+          if existing_notif is None:
+              request_json("/api/v3/notification?forceSave=true", method="POST", data=template)
+              print(f"Created Sonarr notification: {notification_name}")
+          else:
+              template["id"] = existing_notif["id"]
+              request_json(
+                  f"/api/v3/notification/{existing_notif['id']}?forceSave=true",
+                  method="PUT",
+                  data=template,
+              )
+              print(f"Updated Sonarr notification: {notification_name}")
+          PY
+        '';
+      };
+
       networking.firewall.allowedTCPPorts = optional cfg.openFirewall cfg.port;
     }
     (mkIf cfg.vpn.enable {

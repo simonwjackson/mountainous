@@ -33,8 +33,8 @@ in {
 
     root = mkOption {
       type = types.str;
-      default = "/srv/storage";
-      description = "Root directory used by media services on this host.";
+      default = "/srv/basin";
+      description = "Root directory for this host's physical media and download storage.";
     };
 
     downloadsRoot = mkOption {
@@ -100,19 +100,50 @@ in {
     mediaRoot = mkOption {
       type = types.str;
       default = "${cfg.root}/media";
-      description = "Root directory for served media libraries.";
+      description = "Root directory for this host's physical media libraries (basin layer).";
     };
+
+    # ── Range layer (app-visible, potentially merged across hosts) ────
+
+    rangeRoot = mkOption {
+      type = types.str;
+      default = "/srv/range";
+      description = ''
+        Root of the app-visible merged media layer.
+        When media-tiering is enabled, mergerfs mounts the union of local
+        basin media and remote peer media here.  When tiering is not
+        enabled, services that reference the range paths should override
+        moviesDir / tvDir to point back to the basin.
+      '';
+    };
+
+    rangeMoviesDir = mkOption {
+      type = types.str;
+      default = "${cfg.rangeRoot}/media/movies";
+      description = "Merged movies library path (range layer).";
+    };
+
+    rangeTvDir = mkOption {
+      type = types.str;
+      default = "${cfg.rangeRoot}/media/tv";
+      description = "Merged TV library path (range layer).";
+    };
+
+    # ── App-facing library paths ─────────────────────────────────────
+    # These are what Radarr, Sonarr, Jellyfin, etc. actually use.
+    # They default to the range (merged) layer so apps automatically
+    # see the cross-host union when media-tiering is active.
 
     moviesDir = mkOption {
       type = types.str;
-      default = "${cfg.mediaRoot}/movies";
-      description = "Shared movies library path.";
+      default = cfg.rangeMoviesDir;
+      description = "Movies library path used by media services.";
     };
 
     tvDir = mkOption {
       type = types.str;
-      default = "${cfg.mediaRoot}/tv";
-      description = "Shared TV library path.";
+      default = cfg.rangeTvDir;
+      description = "TV library path used by media services.";
     };
 
     musicDir = mkOption {

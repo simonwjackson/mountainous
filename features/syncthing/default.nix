@@ -18,7 +18,7 @@
           Explicit local path for this share.
           Leave unset to use a default provided elsewhere, such as the core preset.
         '';
-        example = "/srv/storage/media";
+        example = "/srv/basin/media";
       };
 
       type = mkOption {

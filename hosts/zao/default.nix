@@ -1,4 +1,4 @@
-{config, lib, ...}: {
+{config, lib, pkgs, ...}: {
   imports = [
     ./disko.nix
     ./hardware.nix
@@ -24,8 +24,8 @@
       # physically present as of 2026-04-05. The missing 6th disk was:
       #   id = "05"; device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGK9H0C-0:0"
       # It appeared in the old fstab but is not connected. Investigate whether
-      # this disk still exists and should be added back to the pool.
-      pools.tank0 = {
+      # this disk still exists and should be added back to the lake.
+      pools.towada = {
         disks = [
           {
             id = "00";
@@ -73,9 +73,28 @@
 
     features.media = {
       enable = true;
-      root = "/srv/pool/tank0";
+      root = "/srv/lakes/towada";
     };
 
+    features.media-tiering = {
+      enable = true;
+      role = "sink";
+      peerHost = "yari";
+      # localBackingRoot defaults to ${media.root}/media = /srv/lakes/towada/media
+      localSources = {
+        movies = "/srv/lakes/towada/movies";
+        tv = "/srv/lakes/towada/series";
+      };
+    };
+
+    # ── Networking ───────────────────────────────────────────────────
+    features.tsnet-proxy = {
+      enable = true;
+      package = pkgs.tsnet-proxy;
+      authKeyFile = config.age.secrets.tailscale-authkey.path;
+    };
+
+    # ── Services ─────────────────────────────────────────────────────
     features.jellyfin = {
       enable = true;
       openFirewall = false;
@@ -86,17 +105,22 @@
           passwordFile = config.age.secrets.jellyfin-pass.path;
         };
         serverName = "zao";
-        remoteAccess = false;
+        remoteAccess = true;
         libraries = {
           tv = {
             name = "TV";
-            path = "/srv/pool/tank0/media/tv";
+            path = "/srv/range/media/tv";
           };
           movies = {
             name = "Movies";
-            path = "/srv/pool/tank0/media/movies";
+            path = "/srv/range/media/movies";
           };
         };
+      };
+      proxy = {
+        enable = true;
+        hostname = "watch";
+        openFirewall = false;
       };
     };
 
@@ -114,6 +138,12 @@
     "networkmanager"
     "video"
   ];
+
+  # ── Secrets ────────────────────────────────────────────────────────
+  age.secrets.tailscale-authkey = {
+    owner = "tsnet-proxy";
+    group = "tsnet-proxy";
+  };
 
   system.stateVersion = "26.05";
 }

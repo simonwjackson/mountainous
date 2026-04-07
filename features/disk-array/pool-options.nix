@@ -43,13 +43,13 @@ in {
 
     mountBase = mkOption {
       type = types.str;
-      default = "/srv/disks/${poolName}";
+      default = "/srv/shores/${poolName}";
       description = "Base path for individual disk mounts. Each disk mounts at <mountBase>/<id>.";
     };
 
     mergedPath = mkOption {
       type = types.str;
-      default = "/srv/pool/${poolName}";
+      default = "/srv/lakes/${poolName}";
       description = "Path for the mergerfs merged view of this pool.";
     };
 

@@ -42,7 +42,7 @@ in {
       default = {};
       description = "Additional settings forwarded to services.transmission.settings.";
       example = {
-        "download-dir" = "/srv/storage/downloads/torrents/completed";
+        "download-dir" = "/srv/basin/downloads/torrents/completed";
         "watch-dir-enabled" = true;
       };
     };

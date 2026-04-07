@@ -80,7 +80,7 @@
                     mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                   };
                   "@cache" = {
-                    mountpoint = "/srv/cache";
+                    mountpoint = "/srv/cache/towada";
                     mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                   };
                 };

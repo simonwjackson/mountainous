@@ -321,8 +321,8 @@ in {
 
     systemd.tmpfiles.rules =
       [
-        "d /srv/disks 0755 root root - -"
-        "d /srv/pool 0755 root root - -"
+        "d /srv/shores 0755 root root - -"
+        "d /srv/lakes 0755 root root - -"
       ]
       ++ concatMap (p: poolTmpfiles p.name p.pool) poolList;
 

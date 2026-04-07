@@ -64,6 +64,7 @@ in {
           ${pkgs.python3}/bin/python <<'PY'
           import json
           import os
+          import subprocess
           import time
           import urllib.error
           import urllib.parse
@@ -113,6 +114,21 @@ in {
               if value is None:
                   return None
               return value.strip().lower() == "true"
+
+          def write_xml_bool(path: Path, tag: str, value: bool):
+              if path.exists():
+                  try:
+                      root = ET.fromstring(path.read_text())
+                  except ET.ParseError as exc:
+                      raise RuntimeError(f"Failed to parse XML config {path}: {exc}") from exc
+              else:
+                  root = ET.Element("NetworkConfiguration")
+
+              node = root.find(tag)
+              if node is None:
+                  node = ET.SubElement(root, tag)
+              node.text = "true" if value else "false"
+              path.write_text(ET.tostring(root, encoding="unicode"))
 
           def api_request(path, *, method="GET", data=None, token=None, query=None, allow_statuses=()):
               url = f"{base_url}{path}"
@@ -387,6 +403,22 @@ in {
                   raise RuntimeError("Failed to authenticate Jellyfin bootstrap admin after applying startup settings")
               admin_token = admin_auth["AccessToken"]
               admin_user_id = admin_auth.get("User", {}).get("Id")
+
+          if startup_completed and current_remote_access != desired_remote_access:
+              write_xml_bool(network_config_file, "EnableRemoteAccess", desired_remote_access)
+              subprocess.run(["systemctl", "restart", "jellyfin.service"], check=True)
+              changes.append(
+                  "enabled remote access" if desired_remote_access else "disabled remote access"
+              )
+
+              public_info = wait_for_public_info()
+              current_remote_access = read_xml_bool(network_config_file, "EnableRemoteAccess")
+              admin_auth = try_authenticate(desired_username, password)
+              if admin_auth is None:
+                  raise RuntimeError("Failed to authenticate Jellyfin bootstrap admin after restarting Jellyfin for remote-access reconciliation")
+              admin_token = admin_auth["AccessToken"]
+              admin_user_id = admin_auth.get("User", {}).get("Id")
+              existing_libraries = None
 
           if existing_libraries is None:
               existing_libraries = api_request("/Library/VirtualFolders", token=admin_token) or []

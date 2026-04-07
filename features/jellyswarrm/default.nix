@@ -37,6 +37,57 @@ in {
       description = "Open the Jellyswarrm port in the firewall.";
     };
 
+    serverName = mkOption {
+      type = types.str;
+      default = "Jellyswarrm Proxy";
+      description = "Display name shown to Jellyfin clients.";
+    };
+
+    servers = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          name = mkOption {
+            type = types.str;
+            description = "Display name for this Jellyfin server.";
+          };
+
+          url = mkOption {
+            type = types.str;
+            description = "URL of the Jellyfin server (e.g. http://zao:8096).";
+          };
+
+          priority = mkOption {
+            type = types.int;
+            description = "Priority for this server. Lower number = higher priority. Used for deduplication.";
+          };
+
+          streamingMode = mkOption {
+            type = types.enum ["Proxy" "Redirect"];
+            default = "Proxy";
+            description = "Whether to proxy media through Jellyswarrm or redirect clients directly.";
+          };
+        };
+      });
+      default = [];
+      description = "Jellyfin servers to preconfigure. Seeded into the database on first start.";
+    };
+
+    bootstrap = {
+      enable = mkEnableOption "seed a Jellyswarrm user by performing an initial login after all backends are healthy";
+
+      username = mkOption {
+        type = types.str;
+        default = "simonwjackson";
+        description = "Username to log into Jellyswarrm with during bootstrap.";
+      };
+
+      passwordFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = "Secret file containing the bootstrap user's password.";
+      };
+    };
+
     proxy = {
       enable = mkEnableOption "expose Jellyswarrm through tsnet-proxy";
 

@@ -56,57 +56,26 @@
       };
 
       # ── Storage ──────────────────────────────────────────────────────
-      # Yari is currently a single-disk system, so keep the service-facing
-      # paths stable on /srv for now. If dedicated media disks or a mergerfs
-      # pool are added later, /srv/storage can become the mountpoint without
-      # changing the downloader or library paths used by services.
+      # Yari is currently a single-disk system. Physical media and downloads
+      # live under /srv/basin. The media-tiering module mounts mergerfs at
+      # /srv/range/media/{movies,tv} so ARR services see a unified view of
+      # local and remote (zao) content.
       media = {
         enable = true;
-        root = "/srv/storage";
+        root = "/srv/basin";
+      };
+
+      media-tiering = {
+        enable = true;
+        role = "source";
+        peerHost = "zao";
+        mover = {
+          enable = true;
+          jellyfin.passwordFile = config.age.secrets.jellyfin-pass.path;
+        };
       };
 
       # ── Services ─────────────────────────────────────────────────────
-      jellyfin = {
-        enable = true;
-        openFirewall = false;
-        bootstrap = {
-          enable = true;
-          admin = {
-            username = "simonwjackson";
-            passwordFile = config.age.secrets.jellyfin-pass.path;
-          };
-          serverName = "yari";
-          remoteAccess = false;
-          libraries = {
-            tv = {
-              name = "TV";
-              path = "/srv/storage/media/tv";
-            };
-            movies = {
-              name = "Movies";
-              path = "/srv/storage/media/movies";
-            };
-          };
-        };
-        proxy = {
-          enable = true;
-          hostname = "watch-yari";
-          openFirewall = false;
-        };
-        watchedCleaner.enable = true;
-      };
-
-      jellyswarrm = {
-        enable = true;
-        username = "simonwjackson";
-        passwordFile = config.age.secrets.jellyswarrm-pass.path;
-        openFirewall = false;
-        proxy = {
-          enable = true;
-          hostname = "watch";
-          openFirewall = false;
-        };
-      };
 
       nzbget = {
         enable = true;
@@ -180,11 +149,17 @@
           url = "http://127.0.0.1:9100/hook/radarr";
           actionUrl = "https://movies.hummingbird-lake.ts.net";
         };
+        notifications.jellyfin = {
+          enable = true;
+          host = "zao";
+          username = "simonwjackson";
+          passwordFile = config.age.secrets.jellyfin-pass.path;
+        };
 
         # Movie import path/category conventions:
         # - Movies via NZBGet category: Movies
         # - Movies via Transmission category: movies-radarr
-        # - Movie library root: /srv/storage/media/movies
+        # - Movie library root: /srv/range/media/movies (mergerfs union)
         moviesLibraryDir = config.mountainous.features.media.moviesDir;
         usenetCompletedDir = config.mountainous.features.media.usenetCompletedDir;
         torrentsCompletedDir = config.mountainous.features.media.torrentsCompletedDir;
@@ -230,6 +205,12 @@
           enable = true;
           url = "http://127.0.0.1:9100/hook/sonarr";
           actionUrl = "https://tv.hummingbird-lake.ts.net";
+        };
+        notifications.jellyfin = {
+          enable = true;
+          host = "zao";
+          username = "simonwjackson";
+          passwordFile = config.age.secrets.jellyfin-pass.path;
         };
 
         # ARR/UI endpoint conventions on yari:
@@ -302,8 +283,6 @@
               "sonarr"
               "radarr"
               "nzbget"
-              "jellyfin"
-              "jellyswarrm"
               "transmission"
             ];
           };
@@ -376,14 +355,6 @@
 
   age.secrets.prowlarr-pass = {
     file = config.age.secrets.nzbget-pass.file;
-  };
-
-  # Jellyswarrm admin password (reuse jellyfin-pass)
-  age.secrets.jellyswarrm-pass = {
-    file = config.age.secrets.jellyfin-pass.file;
-    owner = "jellyswarrm";
-    group = "jellyswarrm";
-    mode = "0400";
   };
 
   # ── OpenClaw Node ────────────────────────────────────────────────────

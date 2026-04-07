@@ -309,6 +309,39 @@ in {
           '';
         };
       };
+
+      jellyfin = {
+        enable = mkEnableOption "notify a Jellyfin server when Sonarr imports media";
+
+        host = mkOption {
+          type = types.str;
+          description = "Jellyfin server hostname or IP.";
+          example = "zao";
+        };
+
+        port = mkOption {
+          type = types.port;
+          default = 8096;
+          description = "Jellyfin server port.";
+        };
+
+        useSsl = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Whether the Jellyfin server uses HTTPS.";
+        };
+
+        username = mkOption {
+          type = types.str;
+          default = "simonwjackson";
+          description = "Jellyfin username used to authenticate notification requests.";
+        };
+
+        passwordFile = mkOption {
+          type = types.path;
+          description = "Path to a file containing the Jellyfin password for the notification user.";
+        };
+      };
     };
   };
 }
