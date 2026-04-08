@@ -246,6 +246,7 @@ in {
         script = ''
           ${pkgs.python3}/bin/python <<'PY'
           import json
+          import re
           import time
           import urllib.error
           import urllib.request
@@ -274,6 +275,9 @@ in {
                   body = error.read().decode()
                   raise RuntimeError(f"Sonarr API {method} {path} failed: {error.code} {body}") from error
 
+          def normalize_name(name: str) -> str:
+              return re.sub(r"[^a-z0-9]", "", name.lower())
+
           for _ in range(30):
               try:
                   request_json("/api/v3/rootfolder")
@@ -283,12 +287,48 @@ in {
           else:
               raise RuntimeError("Timed out waiting for Sonarr API")
 
-          root_folders = request_json("/api/v3/rootfolder")
           target_path = ${builtins.toJSON cfg.tvLibraryDir}
-          if any(root_folder.get("path") == target_path for root_folder in root_folders):
-              raise SystemExit(0)
+          root_folders = request_json("/api/v3/rootfolder")
+          if not any(root_folder.get("path") == target_path for root_folder in root_folders):
+              request_json("/api/v3/rootfolder", method="POST", data={"path": target_path})
+              root_folders = request_json("/api/v3/rootfolder")
 
-          request_json("/api/v3/rootfolder", method="POST", data={"path": target_path})
+          target_children = {}
+          target_root = Path(target_path)
+          if target_root.exists():
+              for child in target_root.iterdir():
+                  if child.is_dir():
+                      target_children.setdefault(normalize_name(child.name), child.name)
+
+          series_list = request_json("/api/v3/series")
+          for series in series_list:
+              current_root = series.get("rootFolderPath") or ""
+              current_path = series.get("path") or ""
+              if current_root == target_path and current_path.startswith(f"{target_path}/"):
+                  continue
+
+              relative_path = ""
+              if current_root and current_path.startswith(f"{current_root.rstrip('/')}/"):
+                  relative_path = current_path[len(current_root):].lstrip("/")
+              elif current_path:
+                  relative_path = Path(current_path).name
+
+              if relative_path:
+                  parts = relative_path.split("/", 1)
+                  matched_top = target_children.get(normalize_name(parts[0]), parts[0])
+                  relative_path = matched_top if len(parts) == 1 else f"{matched_top}/{parts[1]}"
+                  series["path"] = f"{target_path}/{relative_path}"
+              else:
+                  series["path"] = target_path
+              series["rootFolderPath"] = target_path
+              request_json(f"/api/v3/series/{series['id']}?moveFiles=false", method="PUT", data=series)
+
+          root_folders = request_json("/api/v3/rootfolder")
+          referenced_roots = {series.get("rootFolderPath") for series in request_json("/api/v3/series")}
+          for root_folder in root_folders:
+              root_path = root_folder.get("path")
+              if root_path and root_path != target_path and root_path not in referenced_roots:
+                  request_json(f"/api/v3/rootfolder/{root_folder['id']}", method="DELETE")
           PY
         '';
       };
