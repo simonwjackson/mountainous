@@ -143,25 +143,46 @@ wait_for_dns() {
   echo "DNS resolved: $endpoint"
 }
 
+check_vpn_health() {
+  ip netns exec "$NS" ip link show "$WG_IF" up &>/dev/null || {
+    echo "wireguard interface '$WG_IF' is not up"
+    return 1
+  }
+
+  ip netns exec "$NS" ip route show default 2>/dev/null | grep -q "dev $WG_IF" || {
+    echo "default route is not bound to '$WG_IF'"
+    return 1
+  }
+
+  # Prefer an HTTPS probe over ICMP. Some providers rate-limit or drop echo
+  # requests even when the tunnel is healthy, which can cause false restarts of
+  # long-running VPN-bound services like Prowlarr.
+  ip netns exec "$NS" curl -fsS --max-time 10 --output /dev/null https://1.1.1.1 || {
+    echo "HTTPS probe to 1.1.1.1 failed"
+    return 1
+  }
+}
+
 # Health check loop for daemon mode (runs forever until tunnel dies)
 health_loop() {
   local failures=0
   local max_failures=3
   local check_interval=60
+  local output
 
   echo "Starting health check loop (interval: ${check_interval}s, max failures: $max_failures)"
 
   while true; do
     sleep "$check_interval"
 
-    if ip netns exec "$NS" ping -c1 -W5 1.1.1.1 &>/dev/null; then
+    if output=$(check_vpn_health 2>&1); then
       if ((failures > 0)); then
         echo "VPN health restored after $failures failed check(s)"
         failures=0
       fi
     else
       ((failures++)) || true
-      echo "VPN health check failed ($failures/$max_failures)"
+      echo "VPN health check failed ($failures/$max_failures): $output"
 
       if ((failures >= max_failures)); then
         echo "VPN tunnel appears dead, exiting for systemd restart"
