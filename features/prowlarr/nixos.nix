@@ -50,6 +50,7 @@
       syncLevel = cfg.applications.sonarr.syncLevel;
       configFile = sonarrConfigFile;
       healthPath = "/api/v3/system/status";
+      indexersPath = "/api/v3/indexer";
     }
     ++ optional cfg.applications.radarr.enable {
       implementation = "Radarr";
@@ -59,6 +60,7 @@
       syncLevel = cfg.applications.radarr.syncLevel;
       configFile = radarrConfigFile;
       healthPath = "/api/v3/system/status";
+      indexersPath = "/api/v3/indexer";
     }
   );
 in {
@@ -386,7 +388,10 @@ in {
               app_api_key = app_root.findtext("ApiKey")
               if not app_api_key:
                   raise RuntimeError(f"{app['implementation']} ApiKey missing from {app['configFile']}")
-              app_headers[app["implementation"]] = {"X-Api-Key": app_api_key}
+              app_headers[app["implementation"]] = {
+                  "X-Api-Key": app_api_key,
+                  "Content-Type": "application/json",
+              }
 
           for _ in range(30):
               try:
@@ -450,6 +455,35 @@ in {
                       updated if application.get("id") == existing["id"] else application
                       for application in existing_applications
                   ]
+
+              # Prowlarr's proxied indexer entries in downstream apps must use
+              # Prowlarr's own API key. If Prowlarr rotates its API key, the
+              # synced Sonarr/Radarr indexer entries can keep a stale key and
+              # start failing with 401 Unauthorized until they are rewritten.
+              app_indexers = request_json(app["baseUrl"], app["indexersPath"], app_headers[app["implementation"]])
+              prowlarr_prefix = app["prowlarrUrl"].rstrip("/") + "/"
+              for indexer in app_indexers:
+                  fields = indexer.get("fields") or []
+                  base_url_field = next((field for field in fields if field.get("name") == "baseUrl"), None)
+                  api_key_field = next((field for field in fields if field.get("name") == "apiKey"), None)
+                  if base_url_field is None or api_key_field is None:
+                      continue
+
+                  indexer_base_url = (base_url_field.get("value") or "").rstrip("/") + "/"
+                  if not indexer_base_url.startswith(prowlarr_prefix):
+                      continue
+
+                  if api_key_field.get("value") == prowlarr_api_key:
+                      continue
+
+                  api_key_field["value"] = prowlarr_api_key
+                  request_json(
+                      app["baseUrl"],
+                      f"{app['indexersPath']}/{indexer['id']}",
+                      app_headers[app["implementation"]],
+                      method="PUT",
+                      data=indexer,
+                  )
           PY
         '';
       };
