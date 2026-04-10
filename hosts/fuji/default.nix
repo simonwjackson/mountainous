@@ -32,7 +32,6 @@
       tsnsrv = {
         enable = true;
         authKeyFile = config.age.secrets.tailscale-authkey.path;
-        services.openclaw.backendUrl = "http://127.0.0.1:18789";
       };
       vpn-ns = {
         enable = true;
@@ -52,25 +51,6 @@
           ];
         };
         cloudSync.enable = true;
-      };
-
-      # ── Services ─────────────────────────────────────────────────────
-      openclaw = {
-        enable = true;
-        user = "simonwjackson";
-        hfTokenFile = config.age.secrets."hf-token".path;
-      };
-      openclaw-gateway = {
-        enable = true;
-        envFile = config.age.secrets.openclaw-env.path;
-        matrix = {
-          enable = true;
-          homeserver = "https://matrix.hummingbird-lake.ts.net";
-          userId = "@openclaw:yari";
-          passwordFile = config.age.secrets.openclaw-matrix-pass.path;
-          dmPolicy = "open";
-          allowFrom = ["*"];
-        };
       };
 
       # ── Sync / scheduled ────────────────────────────────────────────

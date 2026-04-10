@@ -258,10 +258,6 @@
           passwordFile = config.age.secrets.matrix-admin-pass.path;
         };
         registrationSharedSecretFile = config.age.secrets.matrix-shared-secret.path;
-        extraUsers.openclaw = {
-          passwordFile = config.age.secrets.openclaw-matrix-pass.path;
-          admin = false;
-        };
         backup = {
           enable = true;
           passphraseFile = config.age.secrets.borg-passphrase.path;
@@ -355,62 +351,6 @@
 
   age.secrets.prowlarr-pass = {
     file = config.age.secrets.nzbget-pass.file;
-  };
-
-  # ── OpenClaw Node ────────────────────────────────────────────────────
-
-  systemd.services.openclaw-node = {
-    description = "OpenClaw Node Host";
-    after = [
-      "network-online.target"
-      "tailscale.service"
-    ];
-    wants = ["network-online.target"];
-    wantedBy = ["multi-user.target"];
-    path = [
-      pkgs.nodejs
-      pkgs.git
-      pkgs.curl
-      pkgs.chromium
-      pkgs.coreutils
-      pkgs.bash
-      pkgs.cmake
-      pkgs.gnumake
-      pkgs.gcc
-    ];
-    environment = {
-      HOME = "/home/simonwjackson";
-      OPENCLAW_STATE_DIR = "/home/simonwjackson/.openclaw";
-      LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
-    };
-    serviceConfig = {
-      Type = "simple";
-      User = "simonwjackson";
-      Group = "users";
-      TimeoutStartSec = "30min";
-      EnvironmentFile = config.age.secrets.openclaw-env.path;
-      ExecStartPre = let
-        setupScript = pkgs.writeShellScript "openclaw-node-setup" ''
-          export HOME=/home/simonwjackson
-          mkdir -p "$HOME/.openclaw"
-          cd "$HOME/.openclaw"
-          ${pkgs.nodejs}/bin/npm install openclaw@latest
-        '';
-      in "${setupScript}";
-      ExecStart = let
-        startScript = pkgs.writeShellScript "openclaw-node-start" ''
-          export HOME=/home/simonwjackson
-          exec ${pkgs.nodejs}/bin/node "$HOME/.openclaw/node_modules/openclaw/dist/index.js" node run \
-            --host openclaw.hummingbird-lake.ts.net \
-            --port 443 \
-            --tls \
-            --display-name yari
-        '';
-      in "${startScript}";
-      Restart = "always";
-      RestartSec = 10;
-      KillMode = "process";
-    };
   };
 
   # Trust fuji's signing key for remote deployments
