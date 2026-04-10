@@ -67,6 +67,7 @@
       url = "github:LLukas22/Jellyswarrm/v0.2.1";
       flake = false;
     };
+    pyxis.url = "github:simonwjackson/pyxis";
   };
 
   outputs = {
@@ -189,30 +190,35 @@
       hostPath,
       specialArgs ? {},
       extraModules ? [],
-    }:
-      let
-        syncthingManifestPath = hostPath + "/syncthing.nix";
-        syncthingManifest =
-          if builtins.pathExists syncthingManifestPath
-          then import syncthingManifestPath
-          else null;
-        # Host manifests are plain data. Keep the feature module as the schema
-        # owner for runtime options by only forwarding option-shaped attrs here.
-        hostAutoModules = lib.optional (syncthingManifest != null) {
-          mountainous.features.syncthing = {
+    }: let
+      syncthingManifestPath = hostPath + "/syncthing.nix";
+      syncthingManifest =
+        if builtins.pathExists syncthingManifestPath
+        then import syncthingManifestPath
+        else null;
+      # Host manifests are plain data. Keep the feature module as the schema
+      # owner for runtime options by only forwarding option-shaped attrs here.
+      hostAutoModules = lib.optional (syncthingManifest != null) {
+        mountainous.features.syncthing =
+          {
             enable = true;
-          } // builtins.removeAttrs syncthingManifest ["deviceId"];
-        };
-      in
+          }
+          // builtins.removeAttrs syncthingManifest ["deviceId"];
+      };
+    in
       nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = {inherit self cascade hyprdynamicmonitors tsnsrv; mountainousPlatform = "nixos";} // specialArgs;
+        specialArgs =
+          {
+            inherit self inputs cascade hyprdynamicmonitors tsnsrv;
+            mountainousPlatform = "nixos";
+          }
+          // specialArgs;
         modules =
           [
             disko.nixosModules.default
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
-
           ]
           ++ nixosFeatureModulePaths
           ++ nixosPresetModulePaths
@@ -247,22 +253,28 @@
       hostPath,
       specialArgs ? {},
       extraModules ? [],
-    }:
-      let
-        syncthingManifestPath = hostPath + "/syncthing.nix";
-        syncthingManifest =
-          if builtins.pathExists syncthingManifestPath
-          then import syncthingManifestPath
-          else null;
-        hostAutoModules = lib.optional (syncthingManifest != null) {
-          mountainous.features.syncthing = {
+    }: let
+      syncthingManifestPath = hostPath + "/syncthing.nix";
+      syncthingManifest =
+        if builtins.pathExists syncthingManifestPath
+        then import syncthingManifestPath
+        else null;
+      hostAutoModules = lib.optional (syncthingManifest != null) {
+        mountainous.features.syncthing =
+          {
             enable = true;
-          } // builtins.removeAttrs syncthingManifest ["deviceId"];
-        };
-      in
+          }
+          // builtins.removeAttrs syncthingManifest ["deviceId"];
+      };
+    in
       nix-on-droid.lib.nixOnDroidConfiguration {
         pkgs = mkDroidPkgs system;
-        extraSpecialArgs = {inherit self inputs; mountainousPlatform = "droid";} // specialArgs;
+        extraSpecialArgs =
+          {
+            inherit self inputs;
+            mountainousPlatform = "droid";
+          }
+          // specialArgs;
         modules =
           droidFeatureModulePaths
           ++ droidPresetModulePaths

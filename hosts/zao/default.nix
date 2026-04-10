@@ -94,6 +94,25 @@
     };
 
     # ── Services ─────────────────────────────────────────────────────
+    features.pyxis = {
+      enable = true;
+      externalUrl = "https://pyxis.hummingbird-lake.ts.net";
+      allowedHosts = ["pyxis.hummingbird-lake.ts.net"];
+      sources.pandora = {
+        username = "simon@simonwjackson.com";
+        passwordFile = config.age.secrets.pyxis-pandora-password.path;
+      };
+      proxy = {
+        enable = true;
+        hostname = "pyxis";
+        openFirewall = false;
+      };
+      backup = {
+        enable = true;
+        passphraseFile = config.age.secrets.borg-passphrase.path;
+      };
+    };
+
     features.jellyfin = {
       enable = true;
       openFirewall = false;
@@ -143,6 +162,13 @@
   age.secrets.tailscale-authkey = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
+  };
+
+  age.secrets.pyxis-pandora-password = {
+    file = config.age.secrets.credentials-pandora-password.file;
+    owner = "root";
+    group = "pyxis-secrets";
+    mode = "0440";
   };
 
   system.stateVersion = "26.05";
