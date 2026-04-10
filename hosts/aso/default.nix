@@ -34,7 +34,8 @@
   };
 
   networking.extraHosts = lib.mkForce ''
-    10.101.0.4 amazesql01.database.windows.net
+    10.101.0.4  amazesql01.database.windows.net
+    10.100.0.10 amazeportalsql.database.windows.net
   '';
 
   # Port 22 is taken by Windows SSH in mirrored networking mode

@@ -238,7 +238,10 @@
                 ./secrets/keys/users/id_ed25519.pub
               ];
               security.sudo.wheelNeedsPassword = lib.mkDefault false;
-              networking.extraHosts = lib.mkDefault "127.0.0.1 amazesql01.database.windows.net";
+              networking.extraHosts = lib.mkDefault ''
+                127.0.0.1 amazesql01.database.windows.net
+                127.0.0.1 amazeportalsql.database.windows.net
+              '';
               mountainous.features.tailscale.enable = lib.mkDefault true;
             })
             {nixpkgs.overlays = projectOverlays;}
