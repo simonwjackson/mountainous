@@ -9,25 +9,27 @@
 _default:
     @just --list --unsorted
 
+NIXIE_EXTRA_ARGS := env_var_or_default("NIXIE_EXTRA_ARGS", "")
+
 # Deploy configuration changes to systems
 [group('deploy')]
 switch *ARGS:
-    nix run .#nixie -- switch {{ ARGS }}
+    nix run .#nixie -- switch {{ ARGS }} {{ NIXIE_EXTRA_ARGS }}
 
 # Test configuration without applying
 [group('deploy')]
 test *ARGS:
-    nix run .#nixie -- test {{ ARGS }}
+    nix run .#nixie -- test {{ ARGS }} {{ NIXIE_EXTRA_ARGS }}
 
 # Set configuration for next boot
 [group('deploy')]
 boot *ARGS:
-    nix run .#nixie -- boot {{ ARGS }}
+    nix run .#nixie -- boot {{ ARGS }} {{ NIXIE_EXTRA_ARGS }}
 
 # Build configuration (dry-run)
 [group('deploy')]
 build *ARGS:
-    nix run .#nixie -- build {{ ARGS }}
+    nix run .#nixie -- build {{ ARGS }} {{ NIXIE_EXTRA_ARGS }}
 
 # Deploy a new system and home configuration
 [group('deploy')]
