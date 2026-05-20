@@ -72,6 +72,18 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # ROCKNIX-on-SM8550 NixOS guest. Owns the device schema (rocknix.sm8550),
+    # the main-space profile, and the Odin 2 Portal device profile. We compose
+    # those modules into nixosConfigurations.sobo below and expose the rootfs
+    # tarball via packages.aarch64-linux.sobo-rootfs.
+    #
+    # Local path during co-development; flip to
+    #   url = "github:simonwjackson/nix-on-rocks?dir=guest";
+    # once the upstream commit is pushed.
+    nix-on-rocks-guest = {
+      url = "git+file:///home/simonwjackson/code/sandbox/nix-on-rocks?dir=guest";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -299,7 +311,20 @@
       default = lib.composeManyExtensions projectOverlays;
     };
 
-    packages = lib.genAttrs systems mkFlakePackages;
+    packages = lib.genAttrs systems (
+      system:
+        (mkFlakePackages system)
+        // (lib.optionalAttrs (system == "aarch64-linux") {
+          # Deployable rootfs tarball for the AYN Odin 2 Portal nspawn guest.
+          # Reuses the upstream packaging plumbing so mountainous owns the
+          # *contents* of the guest while nix-on-rocks owns the substrate
+          # delivery channel.
+          sobo-rootfs =
+            inputs.nix-on-rocks-guest.lib.mkGuestRootfs
+            "aarch64-linux"
+            self.nixosConfigurations.sobo;
+        })
+    );
 
     nixosConfigurations = {
       fuji = mkHost {
@@ -336,6 +361,20 @@
         system = "x86_64-linux";
         hostPath = ./hosts/aka;
         extraModules = [inputs.korri.nixosModules.korri];
+      };
+      # AYN Odin 2 Portal: NixOS guest inside a systemd-nspawn container on
+      # patched ROCKNIX. Device hostname is forced to "sobo" by the upstream
+      # device profile. Module composition order: SM8550 options schema, then
+      # the main-space profile, then the device profile (which overrides only
+      # the measured per-device differences).
+      sobo = mkHost {
+        system = "aarch64-linux";
+        hostPath = ./hosts/sobo;
+        extraModules = [
+          inputs.nix-on-rocks-guest.nixosModules.sm8550
+          inputs.nix-on-rocks-guest.nixosModules.main-space
+          inputs.nix-on-rocks-guest.nixosModules.odin2portal
+        ];
       };
       zao = mkHost {
         system = "x86_64-linux";
