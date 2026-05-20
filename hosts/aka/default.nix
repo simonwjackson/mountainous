@@ -35,8 +35,7 @@ let
       WAYLAND_DISPLAY \
       SWAYSOCK
 
-    ${pkgs.coreutils}/bin/install -d -m 700 "$XDG_RUNTIME_DIR/korri-game-stream"
-    ${pkgs.systemd}/bin/systemctl --user start sunshine.service korri-server.service
+    ${pkgs.systemd}/bin/systemctl --user start sunshine.service
   '';
 in
 {
@@ -156,6 +155,9 @@ in
     korri = {
       server = {
         enable = true;
+        serviceMode = "system";
+        user = "simonwjackson";
+        group = "users";
         host = "0.0.0.0";
         port = korriApiPort;
         serverId = "aka";
@@ -169,7 +171,6 @@ in
         streamHost = {
           enable = true;
           appName = "Korri Stream";
-          intentMaxAgeSeconds = 300;
         };
       };
 

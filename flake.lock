@@ -491,8 +491,8 @@
         "nixpkgs-2405": "nixpkgs-2405"
       },
       "locked": {
-        "lastModified": 1779295129,
-        "narHash": "sha256-TIXrOO8Ac2H5NPJsa/+l/KQ4CNkAZc9uVHQly3nevlU=",
+        "lastModified": 1779305940,
+        "narHash": "sha256-yPFVVXtX/KmslH26OlX1uKSQRSO24+lJasxupJWUhv8=",
         "path": "/home/simonwjackson/code/sandbox/korri",
         "type": "path"
       },
