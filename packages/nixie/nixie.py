@@ -40,9 +40,16 @@ class NixieError(Exception):
 
 
 @dataclass(frozen=True)
+class FlakeOverride:
+    name: str
+    value: str
+
+
+@dataclass(frozen=True)
 class Invocation:
     action: str
     hosts: tuple[str, ...]
+    flake_overrides: tuple[FlakeOverride, ...] = ()
     check_online: bool = True
     sequential: bool = True
     stop_on_failure: bool = True
@@ -113,6 +120,14 @@ def build_parser() -> argparse.ArgumentParser:
         dest="check_online",
         help="Skip default SSH reachability preflight for switch/test.",
     )
+    parser.add_argument(
+        "--override-input",
+        nargs=2,
+        action="append",
+        metavar=("NAME", "VALUE"),
+        default=[],
+        help="Pass a Nix flake input override, e.g. --override-input korri path:/src/korri.",
+    )
     return parser
 
 
@@ -121,13 +136,25 @@ def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
     return Invocation(
         action=args.action,
         hosts=args.hosts,
+        flake_overrides=tuple(
+            FlakeOverride(name=name, value=value)
+            for name, value in args.override_input
+        ),
         check_online=args.check_online,
         sequential=True,
         stop_on_failure=True,
     )
 
 
-def load_flake_hosts() -> FlakeHosts:
+def flake_override_args(overrides: Sequence[FlakeOverride]) -> tuple[str, ...]:
+    return tuple(
+        part
+        for override in overrides
+        for part in ("--override-input", override.name, override.value)
+    )
+
+
+def load_flake_hosts(overrides: Sequence[FlakeOverride] = ()) -> FlakeHosts:
     expr = (
         "let flake = builtins.getFlake (toString ./.); in "
         "{ "
@@ -135,7 +162,15 @@ def load_flake_hosts() -> FlakeHosts:
         '  droid = builtins.attrNames (flake.nixOnDroidConfigurations or {}); '
         "}"
     )
-    command = ["nix", "eval", "--impure", "--json", "--expr", expr]
+    command = [
+        "nix",
+        "eval",
+        *flake_override_args(overrides),
+        "--impure",
+        "--json",
+        "--expr",
+        expr,
+    ]
 
     try:
         result = subprocess.run(
@@ -179,12 +214,16 @@ def resolve_host(host: str, flake_hosts: FlakeHosts) -> ResolvedHost:
     )
 
 
-def resolve_hosts(hosts: Sequence[str]) -> tuple[ResolvedHost, ...]:
-    flake_hosts = load_flake_hosts()
+def resolve_hosts(
+    hosts: Sequence[str], overrides: Sequence[FlakeOverride] = ()
+) -> tuple[ResolvedHost, ...]:
+    flake_hosts = load_flake_hosts(overrides)
     return tuple(resolve_host(host, flake_hosts) for host in hosts)
 
 
-def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
+def build_nixos_plan(
+    action: str, host: ResolvedHost, overrides: Sequence[FlakeOverride] = ()
+) -> HostPlan:
     if host.platform != "nixos":
         raise NixieError(
             f"host '{host.name}' is platform '{host.platform}', not nixos"
@@ -201,6 +240,7 @@ def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
                     action,
                     "--flake",
                     f".#{host.name}",
+                    *flake_override_args(overrides),
                     "--build-host",
                     host.name,
                     "--target-host",
@@ -212,7 +252,9 @@ def build_nixos_plan(action: str, host: ResolvedHost) -> HostPlan:
     )
 
 
-def build_droid_build_plan(host: ResolvedHost) -> HostPlan:
+def build_droid_build_plan(
+    host: ResolvedHost, overrides: Sequence[FlakeOverride] = ()
+) -> HostPlan:
     return HostPlan(
         host=host,
         requested_action="build",
@@ -222,6 +264,7 @@ def build_droid_build_plan(host: ResolvedHost) -> HostPlan:
                 argv=(
                     "nix",
                     "build",
+                    *flake_override_args(overrides),
                     f".#nixOnDroidConfigurations.{host.name}.activationPackage",
                 )
             ),
@@ -230,7 +273,10 @@ def build_droid_build_plan(host: ResolvedHost) -> HostPlan:
 
 
 def build_droid_switch_plan(
-    requested_action: str, host: ResolvedHost, warning: str | None = None
+    requested_action: str,
+    host: ResolvedHost,
+    overrides: Sequence[FlakeOverride] = (),
+    warning: str | None = None,
 ) -> HostPlan:
     return HostPlan(
         host=host,
@@ -264,7 +310,8 @@ def build_droid_switch_plan(
                     host.name,
                     (
                         f"cd {DROID_REMOTE_PATH} && "
-                        f"{DROID_NIX_ON_DROID} switch --flake .#{host.name}"
+                        f"{DROID_NIX_ON_DROID} switch --flake .#{host.name} "
+                        f"{shlex.join(flake_override_args(overrides))}"
                     ),
                 )
             ),
@@ -273,20 +320,23 @@ def build_droid_switch_plan(
     )
 
 
-def build_droid_plan(action: str, host: ResolvedHost) -> HostPlan:
+def build_droid_plan(
+    action: str, host: ResolvedHost, overrides: Sequence[FlakeOverride] = ()
+) -> HostPlan:
     if host.platform != "droid":
         raise NixieError(
             f"host '{host.name}' is platform '{host.platform}', not droid"
         )
 
     if action == "build":
-        return build_droid_build_plan(host)
+        return build_droid_build_plan(host, overrides)
     if action == "switch":
-        return build_droid_switch_plan("switch", host)
+        return build_droid_switch_plan("switch", host, overrides)
     if action == "test":
         return build_droid_switch_plan(
             "test",
             host,
+            overrides,
             warning=(
                 f"droid host '{host.name}' does not support a separate test mode; "
                 "treating 'test' as 'switch'"
@@ -298,22 +348,26 @@ def build_droid_plan(action: str, host: ResolvedHost) -> HostPlan:
     raise NixieError(f"unsupported droid action '{action}' for host '{host.name}'")
 
 
-def build_host_plan(action: str, host: ResolvedHost) -> HostPlan:
+def build_host_plan(
+    action: str, host: ResolvedHost, overrides: Sequence[FlakeOverride] = ()
+) -> HostPlan:
     if host.platform == "nixos":
-        return build_nixos_plan(action, host)
+        return build_nixos_plan(action, host, overrides)
     if host.platform == "droid":
-        return build_droid_plan(action, host)
+        return build_droid_plan(action, host, overrides)
 
     raise NixieError(f"unsupported platform '{host.platform}' for host '{host.name}'")
 
 
-def build_plans(action: str, hosts: Sequence[ResolvedHost]) -> tuple[HostPlan, ...]:
-    return tuple(build_host_plan(action, host) for host in hosts)
+def build_plans(
+    action: str, hosts: Sequence[ResolvedHost], overrides: Sequence[FlakeOverride] = ()
+) -> tuple[HostPlan, ...]:
+    return tuple(build_host_plan(action, host, overrides) for host in hosts)
 
 
 def plan_commands(invocation: Invocation) -> tuple[HostPlan, ...]:
-    hosts = resolve_hosts(invocation.hosts)
-    return build_plans(invocation.action, hosts)
+    hosts = resolve_hosts(invocation.hosts, invocation.flake_overrides)
+    return build_plans(invocation.action, hosts, invocation.flake_overrides)
 
 
 def format_command(argv: Sequence[str]) -> str:
@@ -384,10 +438,10 @@ def execute_plan(plan: HostPlan) -> None:
 
 
 def execute_invocation(invocation: Invocation) -> None:
-    hosts = resolve_hosts(invocation.hosts)
+    hosts = resolve_hosts(invocation.hosts, invocation.flake_overrides)
     if invocation.check_online:
         preflight_online_hosts(invocation.action, hosts)
-    plans = build_plans(invocation.action, hosts)
+    plans = build_plans(invocation.action, hosts, invocation.flake_overrides)
     for plan in plans:
         execute_plan(plan)
 
