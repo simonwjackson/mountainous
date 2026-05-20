@@ -69,7 +69,7 @@
     };
     pyxis.url = "github:simonwjackson/pyxis";
     korri = {
-      url = "path:/home/simonwjackson/code/sandbox/korri";
+      url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
