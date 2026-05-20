@@ -68,6 +68,10 @@
       flake = false;
     };
     pyxis.url = "github:simonwjackson/pyxis";
+    korri = {
+      url = "path:/home/simonwjackson/code/sandbox/korri";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -327,6 +331,11 @@
         system = "x86_64-linux";
         hostPath = ./hosts/aso;
         extraModules = [nixos-wsl.nixosModules.default];
+      };
+      aka = mkHost {
+        system = "x86_64-linux";
+        hostPath = ./hosts/aka;
+        extraModules = [inputs.korri.nixosModules.korri-game-stream];
       };
       zao = mkHost {
         system = "x86_64-linux";
