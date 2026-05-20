@@ -335,7 +335,7 @@
       aka = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/aka;
-        extraModules = [inputs.korri.nixosModules.korri-game-stream];
+        extraModules = [inputs.korri.nixosModules.korri];
       };
       zao = mkHost {
         system = "x86_64-linux";
