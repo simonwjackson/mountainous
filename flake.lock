@@ -27,8 +27,8 @@
       "inputs": {
         "flake-parts": "flake-parts_2",
         "import-tree": "import-tree",
-        "nixpkgs": "nixpkgs_4",
-        "systems": "systems_6",
+        "nixpkgs": "nixpkgs_5",
+        "systems": "systems_7",
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
@@ -286,6 +286,24 @@
         "type": "github"
       }
     },
+    "flake-utils_5": {
+      "inputs": {
+        "systems": "systems_6"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flexget-webui": {
       "flake": false,
       "locked": {
@@ -491,14 +509,37 @@
         "nixpkgs-2405": "nixpkgs-2405"
       },
       "locked": {
-        "lastModified": 1779305940,
-        "narHash": "sha256-yPFVVXtX/KmslH26OlX1uKSQRSO24+lJasxupJWUhv8=",
-        "path": "/home/simonwjackson/code/sandbox/korri",
-        "type": "path"
+        "lastModified": 1779319247,
+        "narHash": "sha256-aTCug40+34pS1QXk2sWXyUNFOUoOjluYEAcnRKPFs/k=",
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "9a169ee0e56b8aa81344ac94c0dae6033f59dec2",
+        "type": "github"
       },
       "original": {
-        "path": "/home/simonwjackson/code/sandbox/korri",
-        "type": "path"
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "type": "github"
+      }
+    },
+    "korri_2": {
+      "inputs": {
+        "flake-utils": "flake-utils_5",
+        "nixpkgs": "nixpkgs_3",
+        "nixpkgs-2405": "nixpkgs-2405_2"
+      },
+      "locked": {
+        "lastModified": 1778632169,
+        "narHash": "sha256-G5sdaKQbR0amZhyCYrugLszcxLn48cpO+c9h1icMb+c=",
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "efeec3cf7303631eb80255b0e62cb491efc9423d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "type": "github"
       }
     },
     "nix-formatter-pack": {
@@ -548,6 +589,30 @@
         "ref": "release-24.05",
         "repo": "nix-on-droid",
         "type": "github"
+      }
+    },
+    "nix-on-rocks-guest": {
+      "inputs": {
+        "korri": "korri_2",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nixpkgs-sdl2-classic": "nixpkgs-sdl2-classic"
+      },
+      "locked": {
+        "dir": "guest",
+        "lastModified": 1779320774,
+        "narHash": "sha256-M3GRq4YIYXSXUfehAY7CzOMM7qzssEVT7pISK2vyz5Q=",
+        "ref": "refs/heads/main",
+        "rev": "1a3a22baf926f5faa0a0be116c8a6bd87eef993e",
+        "revCount": 37,
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/nix-on-rocks"
+      },
+      "original": {
+        "dir": "guest",
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/nix-on-rocks"
       }
     },
     "nix-vm-test": {
@@ -708,6 +773,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-2405_2": {
+      "locked": {
+        "lastModified": 1735563628,
+        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-docs": {
       "locked": {
         "lastModified": 1705957679,
@@ -786,6 +867,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-sdl2-classic": {
+      "locked": {
+        "lastModified": 1751274312,
+        "narHash": "sha256-/bVBlRpECLVzjV19t5KMdMFWSwKLtb5RyXdjz3LJT+g=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1775036866,
@@ -804,6 +901,22 @@
     },
     "nixpkgs_3": {
       "locked": {
+        "lastModified": 1777270315,
+        "narHash": "sha256-yKB4G6cKsQsWN7M6rZGk6gkJPDNPIzT05y4qzRyCDlI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6368eda62c9775c38ef7f714b2555a741c20c72d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
+      "locked": {
         "lastModified": 1773389992,
         "narHash": "sha256-wvfdLLWJ2I9oEpDd9PfMA8osfIZicoQ5MT1jIwNs9Tk=",
         "owner": "NixOS",
@@ -818,7 +931,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1764950072,
         "narHash": "sha256-BmPWzogsG2GsXZtlT+MTcAWeDK5hkbGRZTeZNW42fwA=",
@@ -834,7 +947,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1770562336,
         "narHash": "sha256-ub1gpAONMFsT/GU2hV6ZWJjur8rJ6kKxdm9IlCT0j84=",
@@ -907,7 +1020,7 @@
     "pyxis": {
       "inputs": {
         "bun2nix": "bun2nix",
-        "nixpkgs": "nixpkgs_5",
+        "nixpkgs": "nixpkgs_6",
         "yt-dlp-src": "yt-dlp-src"
       },
       "locked": {
@@ -938,10 +1051,11 @@
         "jellyswarrm": "jellyswarrm",
         "korri": "korri",
         "nix-on-droid": "nix-on-droid",
+        "nix-on-rocks-guest": "nix-on-rocks-guest",
         "nixos-anywhere": "nixos-anywhere",
         "nixos-hardware": "nixos-hardware",
         "nixos-wsl": "nixos-wsl",
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "nixpkgs-droid": "nixpkgs-droid",
         "pyxis": "pyxis",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
@@ -1061,6 +1175,21 @@
       }
     },
     "systems_6": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_7": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
