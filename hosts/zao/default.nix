@@ -96,7 +96,10 @@
     # ── Services ─────────────────────────────────────────────────────
     features.pyxis = {
       enable = true;
-      externalUrl = "https://pyxis.hummingbird-lake.ts.net";
+      # Sonos must be able to fetch streams directly over the LAN; do not
+      # advertise the Tailscale hostname here.
+      openFirewall = true;
+      externalUrl = "http://192.168.1.243:8765";
       allowedHosts = ["pyxis.hummingbird-lake.ts.net"];
       sources.pandora = {
         username = "simon@simonwjackson.com";
@@ -156,6 +159,72 @@
     "networkmanager"
     "video"
     "media"
+    "lp"
+  ];
+
+  # ── Printing ─────────────────────────────────────────────────────
+  # Brother HL-L2300D mono laser connected via USB (idVendor=04f9,
+  # idProduct=0061, serial=U63878A0N138131). brlaser is the recommended
+  # open-source driver. The deviceUri below is tied to this specific
+  # physical unit's USB serial.
+  services.printing = {
+    enable = true;
+    drivers = [pkgs.brlaser];
+    # Share the printer with other hosts on the LAN.
+    listenAddresses = ["*:631"];
+    allowFrom = ["all"];
+    browsing = true;
+    defaultShared = true;
+    openFirewall = true;
+
+  };
+
+  # Declaratively ensure the Office Printer queue exists and is the
+  # default. This nixpkgs revision doesn't have services.printing.
+  # ensurePrinters, so we wire up lpadmin ourselves via a oneshot unit
+  # that runs after cupsd is ready. lpadmin is idempotent: it modifies
+  # an existing queue with the same name rather than erroring.
+  systemd.services.ensure-office-printer = {
+    description = "Ensure Office Printer CUPS queue";
+    after = ["cups.service"];
+    requires = ["cups.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = [pkgs.cups];
+    script = ''
+      # Wait for cupsd to accept connections.
+      for i in $(seq 1 30); do
+        if lpstat -r >/dev/null 2>&1; then break; fi
+        sleep 1
+      done
+
+      lpadmin -p Office_Printer -E \
+        -v 'usb://Brother/HL-L2300D%20series?serial=U63878A0N138131' \
+        -m 'drv:///brlaser.drv/brl2300d.ppd' \
+        -D 'Office Printer' \
+        -L 'Office' \
+        -o printer-is-shared=true
+      lpadmin -d Office_Printer
+    '';
+  };
+
+  # Advertise the shared printer via mDNS so other machines auto-discover it.
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+    publish = {
+      enable = true;
+      userServices = true;
+    };
+  };
+
+  networking.firewall.allowedTCPPorts = [
+    8765 # Pyxis service port
+    9000 # Pyxis dev server port
   ];
 
   # ── Secrets ────────────────────────────────────────────────────────

@@ -65,6 +65,7 @@
       };
       gaming.enable = true;
       keyboard.enable = false;
+      pencil-dev.enable = true;
 
     };
   };
@@ -94,6 +95,21 @@
     xserver = {
       videoDrivers = ["modesetting"];
     };
+
+    # ── Printing (client) ─────────────────────────────────────────
+    # Discovers and uses the Brother HL-L2300D shared by zao over the LAN.
+    # brlaser is included so jobs can render locally if needed.
+    printing = {
+      enable = true;
+      drivers = [pkgs.brlaser];
+      browsing = true;
+    };
+
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+      openFirewall = true;
+    };
   };
 
   users = {
@@ -102,6 +118,7 @@
         extraGroups = [
           "networkmanager"
           "video"
+          "lp"
         ];
       };
     };
