@@ -28,7 +28,7 @@
         "flake-parts": "flake-parts_2",
         "import-tree": "import-tree",
         "nixpkgs": "nixpkgs_4",
-        "systems": "systems_5",
+        "systems": "systems_6",
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
@@ -268,6 +268,24 @@
         "type": "github"
       }
     },
+    "flake-utils_4": {
+      "inputs": {
+        "systems": "systems_5"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flexget-webui": {
       "flake": false,
       "locked": {
@@ -464,6 +482,25 @@
         "type": "github"
       }
     },
+    "korri": {
+      "inputs": {
+        "flake-utils": "flake-utils_4",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nixpkgs-2405": "nixpkgs-2405"
+      },
+      "locked": {
+        "lastModified": 1779261234,
+        "narHash": "sha256-hSL0gFhDoE4sEcklnaR3DaJKYNRAJ5BhXmGAncN50Ac=",
+        "path": "/home/simonwjackson/code/sandbox/korri",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/simonwjackson/code/sandbox/korri",
+        "type": "path"
+      }
+    },
     "nix-formatter-pack": {
       "inputs": {
         "nixpkgs": [
@@ -651,6 +688,22 @@
       "original": {
         "owner": "nixos",
         "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-2405": {
+      "locked": {
+        "lastModified": 1735563628,
+        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.05",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -883,6 +936,7 @@
         "hyprdynamicmonitors": "hyprdynamicmonitors",
         "impermanence": "impermanence",
         "jellyswarrm": "jellyswarrm",
+        "korri": "korri",
         "nix-on-droid": "nix-on-droid",
         "nixos-anywhere": "nixos-anywhere",
         "nixos-hardware": "nixos-hardware",
@@ -992,6 +1046,21 @@
       }
     },
     "systems_5": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_6": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
