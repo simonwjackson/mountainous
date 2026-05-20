@@ -1,3 +1,32 @@
+pre-push:
+  parallel: true
+  commands:
+    no-local-flake-paths:
+      # Block pushes that reference a local filesystem path from flake.nix
+      # or flake.lock. Catches `url = "path:/..."`, `url = "path:./..."`,
+      # `"type": "path"` lock entries, and absolute paths in lock entries.
+      run: |
+        set -e
+        bad=0
+        if [ -f flake.nix ]; then
+          if grep -nE '(^|[^A-Za-z0-9_])url[[:space:]]*=[[:space:]]*"path:' flake.nix; then
+            echo "flake.nix references a local path input."
+            bad=1
+          fi
+        fi
+        if [ -f flake.lock ]; then
+          if grep -nE '"type"[[:space:]]*:[[:space:]]*"path"' flake.lock; then
+            echo "flake.lock has a path-type input."
+            bad=1
+          fi
+        fi
+        if [ "$bad" -ne 0 ]; then
+          echo
+          echo "Refusing to push: replace local path inputs with a git/github ref"
+          echo "and run \`nix flake update <input>\` before pushing."
+          exit 1
+        fi
+
 pre-commit:
   parallel: true
   commands:
