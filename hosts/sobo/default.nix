@@ -11,7 +11,13 @@
 # This file owns mountainous-side adjustments only: turning off mountainous
 # features that the guest already owns, and dialling in presets/syncthing
 # wiring the way mountainous does it for every other host.
-{lib, ...}: {
+{
+  lib,
+  inputs,
+  pkgs,
+  config,
+  ...
+}: {
   mountainous = {
     presets.core = {
       enable = true;
@@ -48,4 +54,17 @@
   # same priority as the mountainous core preset enables them. Force the
   # container-friendly value here so the two mkDefaults don't deadlock.
   nix.optimise.automatic = lib.mkForce false;
+
+  # Korri client (desktop frontend). The upstream main-space + odin2portal
+  # profiles compose the ROCKNIX Layer 14 sway kiosk but do not select a
+  # Korri package — mountainous owns sobo's nix config, so the device build
+  # variant is wired here. Adding the package to the sway-kiosk service
+  # path makes the binary reachable from `swaymsg exec` keybinds without
+  # callers having to hard-code absolute store paths.
+  services.korri.client = {
+    enable = true;
+    package = inputs.korri.packages.${pkgs.stdenv.hostPlatform.system}.korri-desktop-device;
+  };
+
+  systemd.services.rocknix-sway-kiosk.path = [config.services.korri.client.package];
 }

@@ -370,6 +370,7 @@
           inputs.nix-on-rocks-guest.nixosModules.sm8550
           inputs.nix-on-rocks-guest.nixosModules.main-space
           inputs.nix-on-rocks-guest.nixosModules.odin2portal
+          inputs.korri.nixosModules.korri-client
         ];
       };
       zao = mkHost {
