@@ -86,11 +86,18 @@ encrypt:
 rekey:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Collect all available host identity files
-    ids=(-i "$HOME/.ssh/id_rsa" -i "$HOME/.ssh/id_ed25519")
-    for k in /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_rsa_key; do
+    # Probe user + host identity files; only include ones that actually exist.
+    # id_rsa is the universally-deployed user key; id_ed25519 is on most
+    # machines but not all, so it must be conditional too.
+    ids=()
+    for k in "$HOME/.ssh/id_rsa" "$HOME/.ssh/id_ed25519" \
+             /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_rsa_key; do
       [ -r "$k" ] && ids+=(-i "$k")
     done
+    if [ ${#ids[@]} -eq 0 ]; then
+      echo "rekey: no SSH identity files found; cannot decrypt any secret" >&2
+      exit 1
+    fi
     RULES=secrets/default.nix nix run github:ryantm/agenix -- -r "${ids[@]}"
 
 # Generate syncthing identity for a host
