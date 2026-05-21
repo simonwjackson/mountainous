@@ -601,18 +601,18 @@
       },
       "locked": {
         "dir": "guest",
-        "lastModified": 1779320774,
-        "narHash": "sha256-M3GRq4YIYXSXUfehAY7CzOMM7qzssEVT7pISK2vyz5Q=",
-        "ref": "refs/heads/main",
-        "rev": "1a3a22baf926f5faa0a0be116c8a6bd87eef993e",
-        "revCount": 37,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/nix-on-rocks"
+        "lastModified": 1779321237,
+        "narHash": "sha256-/YdBFzuICdn8YZgqVb1kAoQYawmTpD2jCVXv/Z8FTsQ=",
+        "owner": "simonwjackson",
+        "repo": "nix-on-rocks",
+        "rev": "fbebfdec38fd0818e7d4f1b8b36cf97660044f94",
+        "type": "github"
       },
       "original": {
         "dir": "guest",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/nix-on-rocks"
+        "owner": "simonwjackson",
+        "repo": "nix-on-rocks",
+        "type": "github"
       }
     },
     "nix-vm-test": {

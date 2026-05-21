@@ -76,12 +76,8 @@
     # the main-space profile, and the Odin 2 Portal device profile. We compose
     # those modules into nixosConfigurations.sobo below and expose the rootfs
     # tarball via packages.aarch64-linux.sobo-rootfs.
-    #
-    # Local path during co-development; flip to
-    #   url = "github:simonwjackson/nix-on-rocks?dir=guest";
-    # once the upstream commit is pushed.
     nix-on-rocks-guest = {
-      url = "git+file:///home/simonwjackson/code/sandbox/nix-on-rocks?dir=guest";
+      url = "github:simonwjackson/nix-on-rocks?dir=guest";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
