@@ -139,11 +139,22 @@ in
       openFirewall = true;
       autoStart = false;
 
-      applications.env.PATH = lib.makeBinPath [
-        pkgs.coreutils
-        pkgs.nix
-        pkgs.util-linux
-      ];
+      applications = {
+        # Empty command: Sunshine's Desktop app streams the already-running
+        # Sway session that starts this user service.
+        apps = [
+          {
+            name = "Desktop (Sway)";
+            image-path = "desktop.png";
+          }
+        ];
+
+        env.PATH = lib.makeBinPath [
+          pkgs.coreutils
+          pkgs.nix
+          pkgs.util-linux
+        ];
+      };
 
       settings = {
         output_name = 0;
@@ -180,12 +191,8 @@ in
           pkgs.nix
           pkgs.util-linux
         ];
-        gamescope.enable = false;
         sunshine.outputLog = "${korriStateRoot}/game-stream-runner.log";
-        sway = {
-          repair = false;
-          package = pkgs.sway;
-        };
+        sway.package = pkgs.sway;
       };
     };
 
@@ -200,6 +207,9 @@ in
     enable = true;
     enable32Bit = true;
   };
+
+  # services.korri.server.streamHost.enable pulls in services.korri.gameStream,
+  # which owns the Sunshine /dev/uinput udev defaults needed for streamed input.
 
   systemd.tmpfiles.settings."10-korri-game-stream" = {
     "${korriStateRoot}".d = {

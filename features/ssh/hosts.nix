@@ -4,6 +4,9 @@
   fuji = {};
   yari = {};
   yuki = {};
+  sobo = {
+    port = 2222;
+  };
   rakku = {};
   aso = {
     port = 8080;

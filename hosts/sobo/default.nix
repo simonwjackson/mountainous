@@ -17,7 +17,8 @@
   pkgs,
   config,
   ...
-}: {
+}:
+{
   mountainous = {
     presets.core = {
       enable = true;
@@ -54,6 +55,54 @@
   # same priority as the mountainous core preset enables them. Force the
   # container-friendly value here so the two mkDefaults don't deadlock.
   nix.optimise.automatic = lib.mkForce false;
+
+  # Upstream owns the Tailscale daemon; mountainous only supplies the shared
+  # auth key and the equivalent `tailscale up` flags so sobo can reach its
+  # remote builders after activation without a browser login.
+  services.tailscale = {
+    authKeyFile = config.age.secrets.tailscale-authkey.path;
+    extraUpFlags = [
+      "--accept-dns=false"
+      "--netfilter-mode=off"
+      "--hostname=sobo"
+    ];
+  };
+
+  # Upstream Tailscale runs with accept-dns=false, so pin the builder names
+  # to their stable tailnet addresses for Nix's root-owned SSH calls.
+  networking.extraHosts = ''
+    100.69.49.119 fuji fuji.hummingbird-lake.ts.net
+    100.90.129.5 yari yari.hummingbird-lake.ts.net
+  '';
+
+  # Keep the handheld from compiling locally. Sobo's Nix daemon logs in to the
+  # aarch64 servers with a dedicated agenix-managed key and copies build
+  # products back to the local store.
+  nix = {
+    distributedBuilds = true;
+    buildMachines = [
+      {
+        hostName = "fuji";
+        protocol = "ssh-ng";
+        system = "aarch64-linux";
+        sshUser = "simonwjackson";
+        sshKey = config.age.secrets.nix-builder-ssh-key.path;
+        maxJobs = 8;
+        speedFactor = 10;
+        supportedFeatures = [
+          "benchmark"
+          "big-parallel"
+          "kvm"
+          "nixos-test"
+        ];
+        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU1LZE5aYjZxbmNTSGNBTEZ4dHpBRENEU0V0KzAzVkxoUlFtTlNuK3JIYTIgcm9vdEBmdWppCg==";
+      }
+    ];
+    settings = {
+      builders-use-substitutes = true;
+      max-jobs = 0;
+    };
+  };
 
   # Korri client package selection remains mountainous-owned, while the
   # product kiosk session/autostart comes from services.korri.kiosk defaults

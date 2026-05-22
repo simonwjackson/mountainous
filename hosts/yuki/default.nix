@@ -70,6 +70,15 @@
     };
   };
 
+  environment.systemPackages = with pkgs; [
+    v4l-utils
+  ];
+
+  programs.obs-studio = {
+    enable = true;
+    enableVirtualCamera = true;
+  };
+
   services = {
     geoclue2 = {
       enable = true;

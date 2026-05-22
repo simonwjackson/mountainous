@@ -297,9 +297,16 @@
     };
   };
 
-  users.users.simonwjackson.extraGroups = [
-    "media"
-  ];
+  users.users.simonwjackson = {
+    extraGroups = [
+      "media"
+    ];
+    openssh.authorizedKeys.keyFiles = [
+      ../../secrets/keys/users/id_rsa.pub
+      ../../secrets/keys/users/id_ed25519.pub
+      ../../secrets/keys/users/sobo_nix_builder_ed25519.pub
+    ];
+  };
 
   # Do not bind sshd to a specific Tailscale address at boot. tailscale0 can
   # come up after sshd starts, which leaves the daemon failed after a reboot.

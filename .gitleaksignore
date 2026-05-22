@@ -1,0 +1,5 @@
+# Public SSH host key for the fuji aarch64 remote builder. Required by
+# nix.buildMachines.publicHostKey, which expects a base64-encoded
+# `ssh-ed25519 AAAA... root@fuji` line. Public host keys are not secrets;
+# they let the local Nix daemon verify the builder's identity.
+hosts/sobo/default.nix:generic-api-key:98
