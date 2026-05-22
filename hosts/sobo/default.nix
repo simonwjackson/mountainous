@@ -55,16 +55,20 @@
   # container-friendly value here so the two mkDefaults don't deadlock.
   nix.optimise.automatic = lib.mkForce false;
 
-  # Korri client (desktop frontend). The upstream main-space + odin2portal
-  # profiles compose the ROCKNIX Layer 14 sway kiosk but do not select a
-  # Korri package — mountainous owns sobo's nix config, so the device build
-  # variant is wired here. Adding the package to the sway-kiosk service
-  # path makes the binary reachable from `swaymsg exec` keybinds without
-  # callers having to hard-code absolute store paths.
+  # Korri client package selection remains mountainous-owned, while the
+  # product kiosk session/autostart comes from services.korri.kiosk defaults
+  # supplied by the nix-on-rocks main-space platform module.
   services.korri.client = {
     enable = true;
     package = inputs.korri.packages.${pkgs.stdenv.hostPlatform.system}.korri-desktop-device;
   };
 
-  systemd.services.rocknix-sway-kiosk.path = [config.services.korri.client.package];
+  # The desktop launch bridge tries the `moonlight` binary first; keep it in
+  # the Korri kiosk PATH instead of relying on the slower nixpkgs fallback in a
+  # sealed device session.
+  environment.systemPackages = [ pkgs.moonlight-qt ];
+  services.korri.kiosk.path = [
+    config.services.korri.client.package
+    pkgs.moonlight-qt
+  ];
 }

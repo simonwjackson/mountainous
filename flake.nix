@@ -366,11 +366,14 @@
       sobo = mkHost {
         system = "aarch64-linux";
         hostPath = ./hosts/sobo;
+        specialArgs = {
+          korriHasKiosk = true;
+        };
         extraModules = [
           inputs.nix-on-rocks-guest.nixosModules.sm8550
           inputs.nix-on-rocks-guest.nixosModules.main-space
           inputs.nix-on-rocks-guest.nixosModules.odin2portal
-          inputs.korri.nixosModules.korri-client
+          inputs.korri.nixosModules.korri-kiosk
         ];
       };
       zao = mkHost {
