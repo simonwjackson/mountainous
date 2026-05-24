@@ -173,6 +173,7 @@ in
         port = korriApiPort;
         serverId = "aka";
         library.root = korriLibraryRoot;
+        publicApiBaseUrl = "http://192.168.1.117:${toString korriApiPort}";
         streamControl.enable = true;
         openFirewall = true;
         advertise = {
