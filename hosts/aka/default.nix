@@ -9,6 +9,36 @@ let
   korriLibraryRoot = "/home/simonwjackson/.local/share/korri/library";
   korriStateRoot = "/home/simonwjackson/.local/state/korri";
 
+  akaLlamaQwen32Port = 18080;
+  akaLlamaQwen32CtxSize = 32768;
+  akaLlamaQwen32Host = "0.0.0.0";
+  akaLlamaQwen32DefaultModel = "bartowski/Qwen2.5-Coder-32B-Instruct-GGUF:Q4_K_S";
+  akaLlamaQwen32FallbackModel = "Qwen/Qwen2.5-Coder-32B-Instruct-GGUF:q3_k_m";
+  akaLlamaQwen32Package = pkgs.llama-cpp.override {
+    vulkanSupport = true;
+  };
+
+  akaLlamaQwen32Start = pkgs.writeShellScript "aka-llama-qwen32-start" ''
+    set -euo pipefail
+
+    : "''${AKA_LLAMA_QWEN32_MODEL:=${akaLlamaQwen32DefaultModel}}"
+    : "''${AKA_LLAMA_QWEN32_CTX_SIZE:=${toString akaLlamaQwen32CtxSize}}"
+    : "''${AKA_LLAMA_QWEN32_HOST:=${akaLlamaQwen32Host}}"
+    : "''${AKA_LLAMA_QWEN32_PORT:=${toString akaLlamaQwen32Port}}"
+
+    export HOME=/home/simonwjackson
+    export XDG_CACHE_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}"
+    export HF_HOME="''${HF_HOME:-$HOME/.cache/huggingface}"
+
+    exec ${akaLlamaQwen32Package}/bin/llama-server \
+      -hf "$AKA_LLAMA_QWEN32_MODEL" \
+      --device Vulkan0 \
+      --gpu-layers all \
+      --ctx-size "$AKA_LLAMA_QWEN32_CTX_SIZE" \
+      --host "$AKA_LLAMA_QWEN32_HOST" \
+      --port "$AKA_LLAMA_QWEN32_PORT"
+  '';
+
   korriSwayStartup = pkgs.writeShellScript "korri-sway-startup" ''
     set -eu
 
@@ -211,6 +241,43 @@ in
 
   # services.korri.server.streamHost.enable pulls in services.korri.gameStream,
   # which owns the Sunshine /dev/uinput udev defaults needed for streamed input.
+
+  users.users.simonwjackson.extraGroups = ["render" "video"];
+
+  # Keep the llama.cpp server reachable from trusted Tailscale peers without
+  # opening port 18080 on the broad LAN. The core preset marks tailscale0 as a
+  # trusted interface; intentionally do not add this port to allowedTCPPorts.
+  systemd.services.aka-llama-qwen32 = {
+    description = "Qwen2.5-Coder 32B llama.cpp server for Pi";
+    after = ["network-online.target" "tailscaled.service"];
+    wants = ["network-online.target" "tailscaled.service"];
+
+    environment = {
+      HOME = "/home/simonwjackson";
+      XDG_CACHE_HOME = "/home/simonwjackson/.cache";
+      HF_HOME = "/home/simonwjackson/.cache/huggingface";
+      AKA_LLAMA_QWEN32_FALLBACK_MODEL = akaLlamaQwen32FallbackModel;
+    };
+
+    serviceConfig = {
+      Type = "simple";
+      User = "simonwjackson";
+      Group = "users";
+      SupplementaryGroups = ["render" "video"];
+      ExecStart = akaLlamaQwen32Start;
+      Restart = "on-failure";
+      RestartSec = 5;
+      TimeoutStartSec = "30min";
+      UMask = "0077";
+      NoNewPrivileges = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ReadWritePaths = ["/home/simonwjackson/.cache"];
+      RestrictAddressFamilies = ["AF_UNIX" "AF_INET" "AF_INET6"];
+      LockPersonality = true;
+      RestrictRealtime = true;
+    };
+  };
 
   systemd.tmpfiles.settings."10-korri-game-stream" = {
     "${korriStateRoot}".d = {
