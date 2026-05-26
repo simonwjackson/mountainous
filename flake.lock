@@ -558,11 +558,11 @@
         "nixpkgs-2405": "nixpkgs-2405"
       },
       "locked": {
-        "lastModified": 1779815615,
-        "narHash": "sha256-j87CqDmK67cFW/CHFcCiVp11exTBpHAkTXzwia04Pc0=",
+        "lastModified": 1779817902,
+        "narHash": "sha256-OX4EFfagw/iqTjZiCCVpydCKgkWUGq+uqOP2Zm01QMg=",
         "owner": "simonwjackson",
         "repo": "korri",
-        "rev": "fa677f49cd05123ee7d8b380c616118501685af5",
+        "rev": "fedda7bd6afc3380f4562f1eb3e1c6b157b3c49f",
         "type": "github"
       },
       "original": {
