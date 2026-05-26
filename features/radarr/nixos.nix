@@ -21,10 +21,16 @@
   cfg = config.mountainous.features.radarr;
   mediaCfg = config.mountainous.features.media;
   vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
-  nzbgetInVpn = (config.mountainous.features.vpn-ns.services.nzbget.enable or false);
-  transmissionInVpn = (config.mountainous.features.vpn-ns.services.transmission.enable or false);
-  nzbgetHost = if !cfg.vpn.enable && nzbgetInVpn then vpnNsAddress else "127.0.0.1";
-  transmissionHost = if !cfg.vpn.enable && transmissionInVpn then vpnNsAddress else "127.0.0.1";
+  nzbgetInVpn = config.mountainous.features.vpn-ns.services.nzbget.enable or false;
+  transmissionInVpn = config.mountainous.features.vpn-ns.services.transmission.enable or false;
+  nzbgetHost =
+    if !cfg.vpn.enable && nzbgetInVpn
+    then vpnNsAddress
+    else "127.0.0.1";
+  transmissionHost =
+    if !cfg.vpn.enable && transmissionInVpn
+    then vpnNsAddress
+    else "127.0.0.1";
   stateDir = "/var/lib/radarr";
   dataDir = "${stateDir}/.config/Radarr";
   configFile = "${dataDir}/config.xml";
@@ -222,13 +228,15 @@ in {
         after = ["radarr.service"] ++ optional cfg.vpn.enable "vpn-ns.service";
         requires = ["radarr.service"] ++ optional cfg.vpn.enable "vpn-ns.service";
         wantedBy = ["multi-user.target"];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        } // optionalAttrs cfg.vpn.enable {
-          NetworkNamespacePath = "/run/netns/vpn";
-          BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
-        };
+        serviceConfig =
+          {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          }
+          // optionalAttrs cfg.vpn.enable {
+            NetworkNamespacePath = "/run/netns/vpn";
+            BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+          };
         script = ''
           ${pkgs.python3}/bin/python <<'PY'
           import base64
@@ -300,13 +308,15 @@ in {
         after = ["radarr.service"] ++ optional cfg.vpn.enable "vpn-ns.service";
         requires = ["radarr.service"] ++ optional cfg.vpn.enable "vpn-ns.service";
         wantedBy = ["multi-user.target"];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        } // optionalAttrs cfg.vpn.enable {
-          NetworkNamespacePath = "/run/netns/vpn";
-          BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
-        };
+        serviceConfig =
+          {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          }
+          // optionalAttrs cfg.vpn.enable {
+            NetworkNamespacePath = "/run/netns/vpn";
+            BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+          };
         script = ''
           ${pkgs.python3}/bin/python <<'PY'
           import json
@@ -422,13 +432,15 @@ in {
           ++ optional cfg.downloadClients.nzbget.enable "nzbget.service"
           ++ optional cfg.downloadClients.transmission.enable "transmission.service";
         wantedBy = ["multi-user.target"];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        } // optionalAttrs cfg.vpn.enable {
-          NetworkNamespacePath = "/run/netns/vpn";
-          BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
-        };
+        serviceConfig =
+          {
+            Type = "oneshot";
+            RemainAfterExit = true;
+          }
+          // optionalAttrs cfg.vpn.enable {
+            NetworkNamespacePath = "/run/netns/vpn";
+            BindReadOnlyPaths = ["/etc/netns/vpn/resolv.conf:/etc/resolv.conf"];
+          };
         script = ''
           ${pkgs.python3}/bin/python <<'PY'
           import copy
@@ -716,7 +728,11 @@ in {
               "X-Api-Key": api_key,
               "Content-Type": "application/json",
           }
-          jellyfin_base_url = "${if cfg.notifications.jellyfin.useSsl then "https" else "http"}://${cfg.notifications.jellyfin.host}:${toString cfg.notifications.jellyfin.port}"
+          jellyfin_base_url = "${
+            if cfg.notifications.jellyfin.useSsl
+            then "https"
+            else "http"
+          }://${cfg.notifications.jellyfin.host}:${toString cfg.notifications.jellyfin.port}"
 
           def request_json(path, *, method="GET", data=None):
               payload = None if data is None else json.dumps(data).encode()
@@ -793,7 +809,11 @@ in {
               elif field.get("name") == "apiKey":
                   field["value"] = jellyfin_token
               elif field.get("name") == "useSsl":
-                  field["value"] = ${if cfg.notifications.jellyfin.useSsl then "True" else "False"}
+                  field["value"] = ${
+            if cfg.notifications.jellyfin.useSsl
+            then "True"
+            else "False"
+          }
 
           if existing_notif is None:
               request_json("/api/v3/notification?forceSave=true", method="POST", data=template)

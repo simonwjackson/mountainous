@@ -33,10 +33,22 @@
   radarrConfigFile = "/var/lib/radarr/.config/Radarr/config.xml";
   vpnHostAddress = "10.200.200.1";
   vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
-  sonarrHost = if cfg.vpn.enable && !sonarrVpnEnabled then vpnHostAddress else "127.0.0.1";
-  radarrHost = if cfg.vpn.enable && !radarrVpnEnabled then vpnHostAddress else "127.0.0.1";
-  prowlarrHostForSonarr = if cfg.vpn.enable && !sonarrVpnEnabled then vpnNsAddress else "127.0.0.1";
-  prowlarrHostForRadarr = if cfg.vpn.enable && !radarrVpnEnabled then vpnNsAddress else "127.0.0.1";
+  sonarrHost =
+    if cfg.vpn.enable && !sonarrVpnEnabled
+    then vpnHostAddress
+    else "127.0.0.1";
+  radarrHost =
+    if cfg.vpn.enable && !radarrVpnEnabled
+    then vpnHostAddress
+    else "127.0.0.1";
+  prowlarrHostForSonarr =
+    if cfg.vpn.enable && !sonarrVpnEnabled
+    then vpnNsAddress
+    else "127.0.0.1";
+  prowlarrHostForRadarr =
+    if cfg.vpn.enable && !radarrVpnEnabled
+    then vpnNsAddress
+    else "127.0.0.1";
   applicationsRunInVpn =
     cfg.vpn.enable
     || (cfg.applications.sonarr.enable && sonarrVpnEnabled)

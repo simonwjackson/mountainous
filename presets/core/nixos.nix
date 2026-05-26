@@ -27,6 +27,14 @@ in {
     mountainous.features.ssh.server.enable = mkDefault true;
     mountainous.features.starship.enable = mkDefault true;
 
+    # Expose user-scoped API keys in interactive shells. Each entry maps an
+    # env-var name to an agenix secret attr. Adding a new key here is the
+    # only step needed once the corresponding .age file exists under secrets/.
+    mountainous.features.shell-secrets = {
+      enable = mkDefault true;
+      vars = import ./shell-secrets.nix;
+    };
+
     nixpkgs.config.allowUnfree = true;
     networking.useDHCP = mkDefault true;
 

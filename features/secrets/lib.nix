@@ -79,7 +79,13 @@
       if type == "directory" && entryName != "archived" && entryName != "keys"
       then scanDir fullPath newRelDir
       else if type == "regular" && hasSuffix ".age" entryName
-      then [{filename = entryName; file = fullPath; inherit relDir;}]
+      then [
+        {
+          filename = entryName;
+          file = fullPath;
+          inherit relDir;
+        }
+      ]
       else [];
   in
     concatMap process (builtins.attrNames entries);
@@ -202,7 +208,9 @@
         user = 1;
         system = 2;
       }
-      .${scope}
+      .${
+        scope
+      }
       or 99;
 
     hostEntries = filter (e: e.value.scope == "host") processed;

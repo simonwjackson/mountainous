@@ -21,12 +21,14 @@ in {
 
     # When enabled, declare all discovered secrets in agenix and expose paths.
     (mkIf cfg.enable {
-      age.secrets = mapAttrs (_name: secret: {
-        file = mkDefault secret.file;
-        owner = mkDefault secret.owner;
-        group = mkDefault secret.group;
-        mode = mkDefault secret.mode;
-      }) discovered;
+      age.secrets =
+        mapAttrs (_name: secret: {
+          file = mkDefault secret.file;
+          owner = mkDefault secret.owner;
+          group = mkDefault secret.group;
+          mode = mkDefault secret.mode;
+        })
+        discovered;
 
       mountainous.features.secrets.path =
         mapAttrs (name: _: config.age.secrets.${name}.path) discovered;

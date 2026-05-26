@@ -343,10 +343,26 @@
   };
 
   # Service-specific ownership for usenet/media secrets
-  age.secrets.nzbget-pass = { owner = "nzbget"; group = "media"; mode = "0440"; };
-  age.secrets.newsdemon-user = { owner = "nzbget"; group = "media"; mode = "0440"; };
-  age.secrets.newsdemon-pass = { owner = "nzbget"; group = "media"; mode = "0440"; };
-  age.secrets.radarr-pass = { owner = "radarr"; group = "media"; mode = "0440"; };
+  age.secrets.nzbget-pass = {
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+  age.secrets.newsdemon-user = {
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+  age.secrets.newsdemon-pass = {
+    owner = "nzbget";
+    group = "media";
+    mode = "0440";
+  };
+  age.secrets.radarr-pass = {
+    owner = "radarr";
+    group = "media";
+    mode = "0440";
+  };
 
   # Aliases: same nzbget-pass file decrypted for different service users
   age.secrets.sonarr-pass = {

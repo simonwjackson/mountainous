@@ -1,4 +1,8 @@
-{inputs, pkgs, ...}:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 pkgs.writeShellApplication {
   name = "scaffold";
   runtimeInputs = with pkgs; [

@@ -17,8 +17,7 @@
   pkgs,
   config,
   ...
-}:
-{
+}: {
   mountainous = {
     presets.core = {
       enable = true;
@@ -115,7 +114,7 @@
   # The desktop launch bridge tries the `moonlight` binary first; keep it in
   # the Korri kiosk PATH instead of relying on the slower nixpkgs fallback in a
   # sealed device session.
-  environment.systemPackages = [ pkgs.moonlight-qt ];
+  environment.systemPackages = [pkgs.moonlight-qt];
   services.korri.kiosk.path = [
     config.services.korri.client.package
     pkgs.moonlight-qt

@@ -28,44 +28,46 @@
   # then PUT devices and folders via the REST API.
 
   devicePuts = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: entry: ''
-    put "/rest/config/devices/${entry.id}" '${builtins.toJSON {
-      deviceID = entry.id;
-      name = name;
-      addresses = entry.addresses;
-      compression = "metadata";
-      introducer = false;
-      paused = false;
-    }}'
-  '') syncConfig.deviceEntries);
+      put "/rest/config/devices/${entry.id}" '${builtins.toJSON {
+        deviceID = entry.id;
+        name = name;
+        addresses = entry.addresses;
+        compression = "metadata";
+        introducer = false;
+        paused = false;
+      }}'
+    '')
+    syncConfig.deviceEntries);
 
   folderPuts = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: folder: let
-    deviceList =
-      [
-        {
-          deviceID = localDeviceId;
+      deviceList =
+        [
+          {
+            deviceID = localDeviceId;
+            introducedBy = "";
+            encryptionPassword = "";
+          }
+        ]
+        ++ map (devName: {
+          deviceID = syncConfig.allDeviceIds.${devName};
           introducedBy = "";
           encryptionPassword = "";
-        }
-      ]
-      ++ map (devName: {
-        deviceID = syncConfig.allDeviceIds.${devName};
-        introducedBy = "";
-        encryptionPassword = "";
-      })
-      folder.devices;
-  in ''
-    put "/rest/config/folders/${name}" '${builtins.toJSON {
-      id = name;
-      label = name;
-      path = folder.path;
-      type = folder.type;
-      devices = deviceList;
-      rescanIntervalS = folder.rescanIntervalS;
-      ignorePerms = folder.ignorePerms;
-      autoNormalize = true;
-      fsWatcherEnabled = true;
-    }}'
-  '') syncConfig.syncthingFolders);
+        })
+        folder.devices;
+    in ''
+      put "/rest/config/folders/${name}" '${builtins.toJSON {
+        id = name;
+        label = name;
+        path = folder.path;
+        type = folder.type;
+        devices = deviceList;
+        rescanIntervalS = folder.rescanIntervalS;
+        ignorePerms = folder.ignorePerms;
+        autoNormalize = true;
+        fsWatcherEnabled = true;
+      }}'
+    '')
+    syncConfig.syncthingFolders);
 
   expectedDeviceIds = lib.mapAttrsToList (_: e: e.id) syncConfig.deviceEntries;
   expectedFolderIds = lib.attrNames syncConfig.syncthingFolders;

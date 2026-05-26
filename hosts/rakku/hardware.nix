@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{...}: {
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -14,9 +12,9 @@
   ];
 
   boot.kernelModules = [
-    "igb"       # Intel I211 Gigabit NIC
-    "cp210x"    # USB-to-serial for HubZ Smart Home Controller
-    "mt7921u"   # MediaTek MT7921U WiFi (Netgear A8000)
+    "igb" # Intel I211 Gigabit NIC
+    "cp210x" # USB-to-serial for HubZ Smart Home Controller
+    "mt7921u" # MediaTek MT7921U WiFi (Netgear A8000)
   ];
 
   # Udev rules for HubZ Smart Home Controller

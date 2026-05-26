@@ -15,23 +15,28 @@
 
   # Merge auto-discovered secrets with any manually declared extras.
   # Manual entries override auto-discovered ones with the same name.
-  autoEntries = builtins.mapAttrs (_: s: {
-    inherit (s) file mode;
-  }) discovered;
+  autoEntries =
+    builtins.mapAttrs (_: s: {
+      inherit (s) file mode;
+    })
+    discovered;
 
-  manualEntries = builtins.mapAttrs (_: s: {
-    inherit (s) file mode;
-  }) cfg.secrets;
+  manualEntries =
+    builtins.mapAttrs (_: s: {
+      inherit (s) file mode;
+    })
+    cfg.secrets;
 
   allSecrets = autoEntries // manualEntries;
 
   decryptScript = concatStringsSep "\n" (mapAttrsToList (name: secret: ''
-    $VERBOSE_ECHO "Decrypting secret: ${name} -> ${cfg.secretsDir}/${name}"
-    mkdir -p "${cfg.secretsDir}"
-    rm -f '${cfg.secretsDir}/${name}'
-    ${pkgs.age}/bin/age -d -i '${cfg.identityFile}' -o '${cfg.secretsDir}/${name}' '${secret.file}'
-    chmod ${secret.mode} '${cfg.secretsDir}/${name}'
-  '') allSecrets);
+      $VERBOSE_ECHO "Decrypting secret: ${name} -> ${cfg.secretsDir}/${name}"
+      mkdir -p "${cfg.secretsDir}"
+      rm -f '${cfg.secretsDir}/${name}'
+      ${pkgs.age}/bin/age -d -i '${cfg.identityFile}' -o '${cfg.secretsDir}/${name}' '${secret.file}'
+      chmod ${secret.mode} '${cfg.secretsDir}/${name}'
+    '')
+    allSecrets);
 in {
   config = mkIf (cfg.enable && allSecrets != {}) {
     environment.packages = [pkgs.age];

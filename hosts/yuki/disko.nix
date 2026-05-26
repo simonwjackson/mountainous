@@ -14,8 +14,8 @@
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot/efi";
-                mountOptions = [ "umask=0077" ];
-                extraArgs = [ "-n" "ESP" ];
+                mountOptions = ["umask=0077"];
+                extraArgs = ["-n" "ESP"];
               };
             };
             boot = {
@@ -24,7 +24,7 @@
                 type = "filesystem";
                 format = "ext4";
                 mountpoint = "/boot";
-                extraArgs = [ "-L" "boot" ];
+                extraArgs = ["-L" "boot"];
               };
             };
             root = {
@@ -33,34 +33,34 @@
                 type = "luks";
                 name = "cryptroot";
                 settings.allowDiscards = true;
-                extraFormatArgs = [ "--label=cryptroot" ];
+                extraFormatArgs = ["--label=cryptroot"];
                 content = {
                   type = "btrfs";
-                  extraArgs = [ "-f" ];
+                  extraArgs = ["-f"];
                   subvolumes = {
                     "@" = {
                       mountpoint = "/";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
+                      mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                     };
                     "@home" = {
                       mountpoint = "/home";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
+                      mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                     };
                     "@nix" = {
                       mountpoint = "/nix";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
+                      mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                     };
                     "@persist" = {
                       mountpoint = "/persist";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
+                      mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                     };
                     "@snapshots" = {
                       mountpoint = "/.snapshots";
-                      mountOptions = [ "compress=zstd" "noatime" "space_cache=v2" ];
+                      mountOptions = ["compress=zstd" "noatime" "space_cache=v2"];
                     };
                     "@swap" = {
                       mountpoint = "/swap";
-                      mountOptions = [ "noatime" "space_cache=v2" ];
+                      mountOptions = ["noatime" "space_cache=v2"];
                     };
                   };
                 };

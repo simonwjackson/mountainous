@@ -3,11 +3,9 @@
   lib,
   pkgs,
   ...
-}:
-let
+}: let
   korriApiPort = 3001;
   korriLibraryRoot = "/home/simonwjackson/.local/share/korri/library";
-  korriStateRoot = "/home/simonwjackson/.local/state/korri";
 
   akaLlamaQwen32Port = 18080;
   akaLlamaQwen32CtxSize = 32768;
@@ -38,37 +36,7 @@ let
       --host "$AKA_LLAMA_QWEN32_HOST" \
       --port "$AKA_LLAMA_QWEN32_PORT"
   '';
-
-  korriSwayStartup = pkgs.writeShellScript "korri-sway-startup" ''
-    set -eu
-
-    if [ -z "''${XDG_RUNTIME_DIR:-}" ]; then
-      echo "korri-sway-startup: XDG_RUNTIME_DIR is required" >&2
-      exit 1
-    fi
-    if [ -z "''${WAYLAND_DISPLAY:-}" ]; then
-      echo "korri-sway-startup: WAYLAND_DISPLAY is required" >&2
-      exit 1
-    fi
-    if [ -z "''${SWAYSOCK:-}" ]; then
-      echo "korri-sway-startup: SWAYSOCK is required" >&2
-      exit 1
-    fi
-
-    export XDG_CURRENT_DESKTOP=sway
-    export XDG_SESSION_TYPE=wayland
-
-    ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd \
-      XDG_CURRENT_DESKTOP \
-      XDG_SESSION_TYPE \
-      XDG_RUNTIME_DIR \
-      WAYLAND_DISPLAY \
-      SWAYSOCK
-
-    ${pkgs.systemd}/bin/systemctl --user start sunshine.service
-  '';
-in
-{
+in {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -134,20 +102,11 @@ in
   xdg.portal = {
     enable = true;
     wlr.enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    extraPortals = [pkgs.xdg-desktop-portal-gtk];
     config.common = lib.mkForce {
       default = "*";
     };
   };
-
-  # The default sway config (included below) defines a status bar. Sway's bar
-  # blocks are additive and not overridable by id from outside, so we hide
-  # every bar at runtime instead of forking the upstream config.
-  home-manager.users.simonwjackson.xdg.configFile."sway/config".text = ''
-    include ${pkgs.sway}/etc/sway/config
-    exec_always ${pkgs.sway}/bin/swaymsg bar mode invisible
-    exec_always ${korriSwayStartup}
-  '';
 
   services = {
     greetd = {
@@ -157,34 +116,15 @@ in
           command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
           user = "greeter";
         };
-        initial_session = {
-          command = "sway";
-          user = "simonwjackson";
-        };
       };
     };
+
+    seatd.enable = true;
 
     sunshine = {
       enable = true;
       openFirewall = true;
       autoStart = false;
-
-      applications = {
-        # Empty command: Sunshine's Desktop app streams the already-running
-        # Sway session that starts this user service.
-        apps = [
-          {
-            name = "Desktop (Sway)";
-            image-path = "desktop.png";
-          }
-        ];
-
-        env.PATH = lib.makeBinPath [
-          pkgs.coreutils
-          pkgs.nix
-          pkgs.util-linux
-        ];
-      };
 
       settings = {
         output_name = 0;
@@ -194,6 +134,25 @@ in
     };
 
     korri = {
+      client.enable = false;
+
+      compositor = {
+        enable = true;
+        kiosk.enable = false;
+        user = "simonwjackson";
+        group = "users";
+        createUser = false;
+        home = "/home/simonwjackson";
+        wants = ["seatd.service"];
+        after = ["seatd.service"];
+        sway.package = pkgs.sway;
+      };
+
+      input.provider = {
+        enable = true;
+        name = "inputplumber";
+      };
+
       server = {
         enable = true;
         serviceMode = "system";
@@ -210,20 +169,10 @@ in
           enable = true;
           name = "Korri Stream on aka";
         };
-        streamHost = {
+        streaming = {
           enable = true;
           appName = "Korri Stream";
         };
-      };
-
-      gameStream = {
-        path = [
-          pkgs.coreutils
-          pkgs.nix
-          pkgs.util-linux
-        ];
-        sunshine.outputLog = "${korriStateRoot}/game-stream-runner.log";
-        sway.package = pkgs.sway;
       };
     };
 
@@ -239,10 +188,12 @@ in
     enable32Bit = true;
   };
 
-  # services.korri.server.streamHost.enable pulls in services.korri.gameStream,
-  # which owns the Sunshine /dev/uinput udev defaults needed for streamed input.
-
-  users.users.simonwjackson.extraGroups = ["render" "video"];
+  users.users.simonwjackson.extraGroups = [
+    "input"
+    "render"
+    "seat"
+    "video"
+  ];
 
   # Keep the llama.cpp server reachable from trusted Tailscale peers without
   # opening port 18080 on the broad LAN. The core preset marks tailscale0 as a
@@ -276,14 +227,6 @@ in
       RestrictAddressFamilies = ["AF_UNIX" "AF_INET" "AF_INET6"];
       LockPersonality = true;
       RestrictRealtime = true;
-    };
-  };
-
-  systemd.tmpfiles.settings."10-korri-game-stream" = {
-    "${korriStateRoot}".d = {
-      user = "simonwjackson";
-      group = "users";
-      mode = "0700";
     };
   };
 

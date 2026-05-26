@@ -1,4 +1,9 @@
-{config, lib, pkgs, ...}: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   imports = [
     ./disko.nix
     ./hardware.nix
@@ -66,7 +71,12 @@
 
         usb = {
           disableAutosuspend = true;
-          udevRules = [{vendor = "152d"; product = "0578";}];
+          udevRules = [
+            {
+              vendor = "152d";
+              product = "0578";
+            }
+          ];
         };
       };
     };
@@ -176,7 +186,6 @@
     browsing = true;
     defaultShared = true;
     openFirewall = true;
-
   };
 
   # Declaratively ensure the Office Printer queue exists and is the

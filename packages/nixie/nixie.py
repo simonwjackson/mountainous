@@ -43,6 +43,7 @@ class NixieError(Exception):
 class FlakeOverride:
     name: str
     value: str
+    host: str | None = None
 
 
 @dataclass(frozen=True)
@@ -126,7 +127,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         metavar=("NAME", "VALUE"),
         default=[],
-        help="Pass a Nix flake input override, e.g. --override-input korri path:/src/korri.",
+        help=(
+            "Pass a Nix flake input override, e.g. --override-input korri path:/src/korri. "
+            "Prefix NAME as HOST:INPUT to apply the override only to one host."
+        ),
     )
     return parser
 
@@ -137,8 +141,7 @@ def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
         action=args.action,
         hosts=args.hosts,
         flake_overrides=tuple(
-            FlakeOverride(name=name, value=value)
-            for name, value in args.override_input
+            parse_flake_override(name, value) for name, value in args.override_input
         ),
         check_online=args.check_online,
         sequential=True,
@@ -146,10 +149,25 @@ def parse_invocation(argv: Sequence[str] | None = None) -> Invocation:
     )
 
 
-def flake_override_args(overrides: Sequence[FlakeOverride]) -> tuple[str, ...]:
+def parse_flake_override(name: str, value: str) -> FlakeOverride:
+    if ":" not in name:
+        return FlakeOverride(name=name, value=value)
+
+    host, input_name = name.split(":", 1)
+    if not host or not input_name:
+        raise argparse.ArgumentTypeError(
+            "host-scoped override names must use HOST:INPUT, e.g. sobo:nix-on-rocks-guest"
+        )
+    return FlakeOverride(name=input_name, value=value, host=host)
+
+
+def flake_override_args(
+    overrides: Sequence[FlakeOverride], host: str | None = None
+) -> tuple[str, ...]:
     return tuple(
         part
         for override in overrides
+        if override.host is None or override.host == host
         for part in ("--override-input", override.name, override.value)
     )
 
@@ -240,7 +258,7 @@ def build_nixos_plan(
                     action,
                     "--flake",
                     f".#{host.name}",
-                    *flake_override_args(overrides),
+                    *flake_override_args(overrides, host.name),
                     "--build-host",
                     host.name,
                     "--target-host",
@@ -264,7 +282,7 @@ def build_droid_build_plan(
                 argv=(
                     "nix",
                     "build",
-                    *flake_override_args(overrides),
+                    *flake_override_args(overrides, host.name),
                     f".#nixOnDroidConfigurations.{host.name}.activationPackage",
                 )
             ),
@@ -311,7 +329,7 @@ def build_droid_switch_plan(
                     (
                         f"cd {DROID_REMOTE_PATH} && "
                         f"{DROID_NIX_ON_DROID} switch --flake .#{host.name} "
-                        f"{shlex.join(flake_override_args(overrides))}"
+                        f"{shlex.join(flake_override_args(overrides, host.name))}"
                     ),
                 )
             ),

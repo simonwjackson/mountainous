@@ -29,13 +29,16 @@ in {
       mapAttrsToList (name: shareCfg: {
         assertion = shareCfg.path != null;
         message = "mountainous.features.syncthing.shares.${name} is enabled but no path is set";
-      }) enabledShares
+      })
+      enabledShares
       ++ mapAttrsToList (name: shareCfg: {
         assertion =
-          shareCfg.shareWith == null
+          shareCfg.shareWith
+          == null
           || all (device: builtins.elem device allDeviceNames) shareCfg.shareWith;
         message = "mountainous.features.syncthing.shares.${name}.shareWith contains an unknown device";
-      }) enabledShares;
+      })
+      enabledShares;
 
     services.syncthing = {
       enable = true;

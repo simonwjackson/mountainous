@@ -9,25 +9,32 @@
     if cfg.hostName == null
     then "$hostname"
     else "\${custom.host}";
-  hostHash = builtins.hashString "sha256" (if cfg.hostName == null then "localhost" else cfg.hostName);
-  brightenHex = c: {
-    "0" = "8";
-    "1" = "9";
-    "2" = "a";
-    "3" = "b";
-    "4" = "c";
-    "5" = "d";
-    "6" = "e";
-    "7" = "f";
-    "8" = "8";
-    "9" = "9";
-    "a" = "a";
-    "b" = "b";
-    "c" = "c";
-    "d" = "d";
-    "e" = "e";
-    "f" = "f";
-  }.${c};
+  hostHash = builtins.hashString "sha256" (
+    if cfg.hostName == null
+    then "localhost"
+    else cfg.hostName
+  );
+  brightenHex = c:
+    {
+      "0" = "8";
+      "1" = "9";
+      "2" = "a";
+      "3" = "b";
+      "4" = "c";
+      "5" = "d";
+      "6" = "e";
+      "7" = "f";
+      "8" = "8";
+      "9" = "9";
+      "a" = "a";
+      "b" = "b";
+      "c" = "c";
+      "d" = "d";
+      "e" = "e";
+      "f" = "f";
+    }.${
+      c
+    };
   hostColor = let
     c = n: brightenHex (builtins.substring n 1 hostHash);
   in "#${c 0}${c 1}${c 2}${c 3}${c 4}${c 5}";

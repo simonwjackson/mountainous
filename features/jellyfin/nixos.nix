@@ -78,7 +78,11 @@ in {
           network_config_file = Path(${builtins.toJSON networkConfigFile})
           desired_server_name = ${builtins.toJSON cfg.bootstrap.serverName}
           desired_username = ${builtins.toJSON cfg.bootstrap.admin.username}
-          desired_remote_access = ${if cfg.bootstrap.remoteAccess then "True" else "False"}
+          desired_remote_access = ${
+            if cfg.bootstrap.remoteAccess
+            then "True"
+            else "False"
+          }
           desired_libraries = [
               {
                   "name": ${builtins.toJSON cfg.bootstrap.libraries.tv.name},

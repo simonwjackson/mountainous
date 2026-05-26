@@ -14,7 +14,7 @@
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = [ "defaults" "umask=0077" ];
+                mountOptions = ["defaults" "umask=0077"];
               };
             };
             swap = {
@@ -28,19 +28,19 @@
               size = "100%";
               content = {
                 type = "btrfs";
-                extraArgs = [ "-f" ];
+                extraArgs = ["-f"];
                 subvolumes = {
                   "@nix" = {
                     mountpoint = "/nix";
-                    mountOptions = [ "compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2" ];
+                    mountOptions = ["compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2"];
                   };
                   "@log" = {
                     mountpoint = "/var/log";
-                    mountOptions = [ "compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2" ];
+                    mountOptions = ["compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2"];
                   };
                   "@permafrost" = {
                     mountpoint = "/tundra/permafrost";
-                    mountOptions = [ "compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2" ];
+                    mountOptions = ["compress=zstd" "noatime" "nodiratime" "discard=async" "space_cache=v2"];
                   };
                 };
               };

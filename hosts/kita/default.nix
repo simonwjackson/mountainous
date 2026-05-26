@@ -1,7 +1,4 @@
-{
-  pkgs,
-  ...
-}: let
+{pkgs, ...}: let
   jellyfinKioskSession = pkgs.writeShellApplication {
     name = "jellyfin-kiosk-session";
     runtimeInputs = [

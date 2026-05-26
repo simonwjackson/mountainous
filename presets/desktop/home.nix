@@ -16,8 +16,14 @@
   lightKittyTheme = "${pkgs.kitty-themes}/share/kitty-themes/themes/tokyo_night_day.conf";
 
   gtkSettings = mode: let
-    preferDark = if mode == "dark" then "1" else "0";
-    gtkTheme = if mode == "dark" then darkGtkTheme else lightGtkTheme;
+    preferDark =
+      if mode == "dark"
+      then "1"
+      else "0";
+    gtkTheme =
+      if mode == "dark"
+      then darkGtkTheme
+      else lightGtkTheme;
   in ''
     [Settings]
     gtk-application-prefer-dark-theme=${preferDark}
@@ -25,7 +31,10 @@
   '';
 
   gtk4Css = mode: let
-    gtkTheme = if mode == "dark" then darkGtkTheme else lightGtkTheme;
+    gtkTheme =
+      if mode == "dark"
+      then darkGtkTheme
+      else lightGtkTheme;
   in ''
     @import url("file://${pkgs.tokyonight-gtk-theme}/share/themes/${gtkTheme}/gtk-4.0/gtk.css");
   '';
@@ -80,10 +89,22 @@
     '';
 
   makoConfig = mode: let
-    bg = if mode == "dark" then "#1a1b26CC" else "#e1e2e7EE";
-    text = if mode == "dark" then "#c0caf5" else "#3760bf";
-    border = if mode == "dark" then "#7aa2f7" else "#2e7de9";
-    progress = if mode == "dark" then "#7aa2f7" else "#2e7de9";
+    bg =
+      if mode == "dark"
+      then "#1a1b26CC"
+      else "#e1e2e7EE";
+    text =
+      if mode == "dark"
+      then "#c0caf5"
+      else "#3760bf";
+    border =
+      if mode == "dark"
+      then "#7aa2f7"
+      else "#2e7de9";
+    progress =
+      if mode == "dark"
+      then "#7aa2f7"
+      else "#2e7de9";
   in ''
     font=monospace 11
     anchor=top-right
@@ -202,8 +223,14 @@ in {
     };
 
     dconf.settings."org/gnome/desktop/interface" = {
-      color-scheme = if cfg.defaultMode == "dark" then "prefer-dark" else "prefer-light";
-      gtk-theme = if cfg.defaultMode == "dark" then darkGtkTheme else lightGtkTheme;
+      color-scheme =
+        if cfg.defaultMode == "dark"
+        then "prefer-dark"
+        else "prefer-light";
+      gtk-theme =
+        if cfg.defaultMode == "dark"
+        then darkGtkTheme
+        else lightGtkTheme;
     };
 
     programs.kitty = {
@@ -240,12 +267,36 @@ in {
 
       run rm -f "$HOME/.config/gtk-3.0/settings.ini" "$HOME/.config/gtk-4.0/settings.ini" "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/kitty/current-theme.conf" "$HOME/.config/tofi/config" "$HOME/.config/mako/config"
 
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkGtkSettingsFile else lightGtkSettingsFile} "$HOME/.config/gtk-3.0/settings.ini"
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkGtkSettingsFile else lightGtkSettingsFile} "$HOME/.config/gtk-4.0/settings.ini"
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkGtk4CssFile else lightGtk4CssFile} "$HOME/.config/gtk-4.0/gtk.css"
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkTofiConfigFile else lightTofiConfigFile} "$HOME/.config/tofi/config"
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkMakoConfigFile else lightMakoConfigFile} "$HOME/.config/mako/config"
-      run install -m 0644 ${if cfg.defaultMode == "dark" then darkKittyCurrentThemeFile else lightKittyCurrentThemeFile} "$HOME/.config/kitty/current-theme.conf"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkGtkSettingsFile
+        else lightGtkSettingsFile
+      } "$HOME/.config/gtk-3.0/settings.ini"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkGtkSettingsFile
+        else lightGtkSettingsFile
+      } "$HOME/.config/gtk-4.0/settings.ini"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkGtk4CssFile
+        else lightGtk4CssFile
+      } "$HOME/.config/gtk-4.0/gtk.css"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkTofiConfigFile
+        else lightTofiConfigFile
+      } "$HOME/.config/tofi/config"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkMakoConfigFile
+        else lightMakoConfigFile
+      } "$HOME/.config/mako/config"
+      run install -m 0644 ${
+        if cfg.defaultMode == "dark"
+        then darkKittyCurrentThemeFile
+        else lightKittyCurrentThemeFile
+      } "$HOME/.config/kitty/current-theme.conf"
     '';
   };
 }

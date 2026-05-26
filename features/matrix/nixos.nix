@@ -190,13 +190,17 @@ in {
         path = [pkgs.rclone];
         script = let
           hostname = config.networking.hostName;
-          rcloneConf = lib.optionalString (cfg.backup.cloudSync.rcloneConfigFile != null)
+          rcloneConf =
+            lib.optionalString (cfg.backup.cloudSync.rcloneConfigFile != null)
             "--config ${cfg.backup.cloudSync.rcloneConfigFile}";
-          syncLines = lib.concatMapStringsSep "\n" (remote: ''
-            echo "Syncing to ${remote}..."
-            rclone sync ${rcloneConf} "${cfg.backup.repoPath}/" "${remote}:backups/${hostname}/matrix/" --transfers 4 --checkers 8 || true
-          '') cfg.backup.cloudSync.remotes;
-        in syncLines;
+          syncLines =
+            lib.concatMapStringsSep "\n" (remote: ''
+              echo "Syncing to ${remote}..."
+              rclone sync ${rcloneConf} "${cfg.backup.repoPath}/" "${remote}:backups/${hostname}/matrix/" --transfers 4 --checkers 8 || true
+            '')
+            cfg.backup.cloudSync.remotes;
+        in
+          syncLines;
       };
 
       systemd.timers.matrix-backup-cloud-sync = {
@@ -297,7 +301,8 @@ in {
               exit 1
             fi
           '';
-        }) cfg.extraUsers;
+        })
+      cfg.extraUsers;
     })
 
     # ── Notifications room & bot ─────────────────────────────────────────

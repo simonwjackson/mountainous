@@ -10,13 +10,15 @@
   diskMountPath = pool: disk: "${pool.mountBase}/${disk.id}";
 
   poolDiskFileSystems = name: pool:
-    listToAttrs (map (disk:
-      nameValuePair (diskMountPath pool disk) {
-        device = "${disk.device}-part${disk.partition}";
-        fsType = pool.fsType;
-        options = disk.mountOptions;
-      }
-    ) pool.disks);
+    listToAttrs (map (
+        disk:
+          nameValuePair (diskMountPath pool disk) {
+            device = "${disk.device}-part${disk.partition}";
+            fsType = pool.fsType;
+            options = disk.mountOptions;
+          }
+      )
+      pool.disks);
 
   poolMergerfsFileSystem = name: pool: let
     dataDiskPaths = map (id: "${pool.mountBase}/${id}") pool.mergerfs.dataDisks;
@@ -27,16 +29,22 @@
     ${pool.mergedPath} = {
       device = concatStringsSep ":" allBranches;
       fsType = "fuse.mergerfs";
-      options = [
-        "noauto"
-        "x-systemd.automount=false"
-        "allow_other"
-        "use_ino"
-        "cache.files=partial"
-        "dropcacheonclose=true"
-        "category.create=${if pool.cache.enable then "ff" else pool.mergerfs.createPolicy}"
-        "fsname=mergerfs-${name}"
-      ] ++ pool.mergerfs.extraOptions;
+      options =
+        [
+          "noauto"
+          "x-systemd.automount=false"
+          "allow_other"
+          "use_ino"
+          "cache.files=partial"
+          "dropcacheonclose=true"
+          "category.create=${
+            if pool.cache.enable
+            then "ff"
+            else pool.mergerfs.createPolicy
+          }"
+          "fsname=mergerfs-${name}"
+        ]
+        ++ pool.mergerfs.extraOptions;
     };
   };
 
@@ -123,18 +131,25 @@
   poolSnapraidConf = name: pool: let
     sr = pool.snapraid;
   in ''
-    ${concatStringsSep "\n" (imap0 (i: diskId:
-      "data d${toString (i + 1)} ${pool.mountBase}/${diskId}"
-    ) sr.dataDisks)}
+    ${concatStringsSep "\n" (imap0 (
+        i: diskId: "data d${toString (i + 1)} ${pool.mountBase}/${diskId}"
+      )
+      sr.dataDisks)}
 
-    ${concatStringsSep "\n" (imap0 (i: diskId:
-      "${if i == 0 then "parity" else "${toString (i + 1)}-parity"} ${pool.mountBase}/${diskId}/snapraid.${toString i}.parity"
-    ) sr.parityDisks)}
+    ${concatStringsSep "\n" (imap0 (
+        i: diskId: "${
+          if i == 0
+          then "parity"
+          else "${toString (i + 1)}-parity"
+        } ${pool.mountBase}/${diskId}/snapraid.${toString i}.parity"
+      )
+      sr.parityDisks)}
 
     content /var/lib/snapraid/${name}.content
-    ${concatStringsSep "\n" (map (disk:
-      "content ${diskMountPath pool disk}/snapraid.content"
-    ) pool.disks)}
+    ${concatStringsSep "\n" (map (
+        disk: "content ${diskMountPath pool disk}/snapraid.content"
+      )
+      pool.disks)}
 
     blocksize 256
     hashsize 16
@@ -306,18 +321,21 @@
   # --- USB helpers ---
   poolNeedsUsbFix = _name: pool: pool.usb.disableAutosuspend;
   poolUdevRules = _name: pool:
-    map (rule:
-      ''SUBSYSTEM=="usb", ATTRS{idVendor}=="${rule.vendor}", ATTRS{idProduct}=="${rule.product}", ATTR{power/autosuspend}="-1"''
-    ) pool.usb.udevRules;
+    map (
+      rule: ''SUBSYSTEM=="usb", ATTRS{idVendor}=="${rule.vendor}", ATTRS{idProduct}=="${rule.product}", ATTR{power/autosuspend}="-1"''
+    )
+    pool.usb.udevRules;
 
   # --- Collect across all pools ---
   poolNames = builtins.attrNames cfg.pools;
   poolList = mapAttrsToList (name: pool: {inherit name pool;}) cfg.pools;
 in {
   config = mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      mergerfs
-    ] ++ optional (builtins.any (p: p.pool.snapraid.enable) poolList) pkgs.snapraid;
+    environment.systemPackages = with pkgs;
+      [
+        mergerfs
+      ]
+      ++ optional (builtins.any (p: p.pool.snapraid.enable) poolList) pkgs.snapraid;
 
     systemd.tmpfiles.rules =
       [
@@ -333,38 +351,48 @@ in {
 
     systemd.services = mkMerge (
       (map (p: poolMergerfsService p.name p.pool) poolList)
-      ++ (map (p:
-        if p.pool.snapraid.enable
-        then poolSnapraidServices p.name p.pool
-        else {}
-      ) poolList)
-      ++ (map (p:
-        if p.pool.cache.enable
-        then poolCacheMoverService p.name p.pool
-        else {}
-      ) poolList)
+      ++ (map (
+          p:
+            if p.pool.snapraid.enable
+            then poolSnapraidServices p.name p.pool
+            else {}
+        )
+        poolList)
+      ++ (map (
+          p:
+            if p.pool.cache.enable
+            then poolCacheMoverService p.name p.pool
+            else {}
+        )
+        poolList)
     );
 
     systemd.targets = mkMerge (map (p: poolTargets p.name p.pool) poolList);
 
     systemd.timers = mkMerge (
-      (map (p:
-        if p.pool.snapraid.enable
-        then poolSnapraidTimers p.name p.pool
-        else {}
-      ) poolList)
-      ++ (map (p:
-        if p.pool.cache.enable
-        then poolCacheMoverTimer p.name p.pool
-        else {}
-      ) poolList)
+      (map (
+          p:
+            if p.pool.snapraid.enable
+            then poolSnapraidTimers p.name p.pool
+            else {}
+        )
+        poolList)
+      ++ (map (
+          p:
+            if p.pool.cache.enable
+            then poolCacheMoverTimer p.name p.pool
+            else {}
+        )
+        poolList)
     );
 
-    environment.etc = mkMerge (map (p:
-      if p.pool.snapraid.enable
-      then {"snapraid-${p.name}.conf".text = poolSnapraidConf p.name p.pool;}
-      else {}
-    ) poolList);
+    environment.etc = mkMerge (map (
+        p:
+          if p.pool.snapraid.enable
+          then {"snapraid-${p.name}.conf".text = poolSnapraidConf p.name p.pool;}
+          else {}
+      )
+      poolList);
 
     boot.kernelParams =
       optional (builtins.any (p: p.pool.usb.disableAutosuspend) poolList)

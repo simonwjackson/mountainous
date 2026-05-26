@@ -26,16 +26,22 @@
       command=${escapeShellArg service.command}
       expected_binary=${escapeShellArg (expectedBinaryFor service.command)}
       startup=${escapeShellArg service.startup}
-      validate_command=${escapeShellArg (if service.validateCommand == null then "" else service.validateCommand)}
+      validate_command=${escapeShellArg (
+      if service.validateCommand == null
+      then ""
+      else service.validateCommand
+    )}
       ${optionalString (builtins.attrNames service.environment != []) (mkEnvironmentExports service.environment)}
       ;;
   '';
 
-  initExtra = concatMapStringsSep "\n" (name: ''
-    ${serviceEnsure}/bin/service-ensure ${escapeShellArg name}
-    (${pkgs.coreutils}/bin/sleep 3; ${serviceEnsure}/bin/service-ensure ${escapeShellArg name} >/dev/null 2>&1 || true) >/dev/null 2>&1 &
-    disown "$!" 2>/dev/null || true
-  '') enabledServiceNames;
+  initExtra =
+    concatMapStringsSep "\n" (name: ''
+      ${serviceEnsure}/bin/service-ensure ${escapeShellArg name}
+      (${pkgs.coreutils}/bin/sleep 3; ${serviceEnsure}/bin/service-ensure ${escapeShellArg name} >/dev/null 2>&1 || true) >/dev/null 2>&1 &
+      disown "$!" 2>/dev/null || true
+    '')
+    enabledServiceNames;
 
   serviceEnsure = pkgs.writeShellScriptBin "service-ensure" ''
     set -euo pipefail

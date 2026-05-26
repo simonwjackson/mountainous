@@ -307,6 +307,8 @@
       default = lib.composeManyExtensions projectOverlays;
     };
 
+    formatter = lib.genAttrs systems (system: nixpkgs.legacyPackages.${system}.alejandra);
+
     packages = lib.genAttrs systems (
       system:
         (mkFlakePackages system)

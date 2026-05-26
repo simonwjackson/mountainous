@@ -11,10 +11,22 @@
   radarrVpnEnabled = attrByPath ["mountainous" "features" "radarr" "vpn" "enable"] false config;
   vpnHostAddress = "10.200.200.1";
   vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
-  sonarrHost = if cfg.vpn.enable && !sonarrVpnEnabled then vpnHostAddress else "127.0.0.1";
-  radarrHost = if cfg.vpn.enable && !radarrVpnEnabled then vpnHostAddress else "127.0.0.1";
-  prowlarrHostForSonarr = if cfg.vpn.enable && !sonarrVpnEnabled then vpnNsAddress else "127.0.0.1";
-  prowlarrHostForRadarr = if cfg.vpn.enable && !radarrVpnEnabled then vpnNsAddress else "127.0.0.1";
+  sonarrHost =
+    if cfg.vpn.enable && !sonarrVpnEnabled
+    then vpnHostAddress
+    else "127.0.0.1";
+  radarrHost =
+    if cfg.vpn.enable && !radarrVpnEnabled
+    then vpnHostAddress
+    else "127.0.0.1";
+  prowlarrHostForSonarr =
+    if cfg.vpn.enable && !sonarrVpnEnabled
+    then vpnNsAddress
+    else "127.0.0.1";
+  prowlarrHostForRadarr =
+    if cfg.vpn.enable && !radarrVpnEnabled
+    then vpnNsAddress
+    else "127.0.0.1";
 in {
   imports = [
     ./nixos.nix

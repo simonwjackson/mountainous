@@ -66,7 +66,6 @@
       gaming.enable = true;
       keyboard.enable = false;
       pencil-dev.enable = true;
-
     };
   };
 

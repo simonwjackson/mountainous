@@ -65,187 +65,187 @@
   };
 
   moverScript = pkgs.writeShellScript "media-tiering-mover" ''
-    set -euo pipefail
+        set -euo pipefail
 
-    mode="''${1:-low-space}"
-    case "$mode" in
-      nightly|low-space) ;;
-      *)
-        echo "unknown mode: $mode" >&2
-        exit 2
-        ;;
-    esac
+        mode="''${1:-low-space}"
+        case "$mode" in
+          nightly|low-space) ;;
+          *)
+            echo "unknown mode: $mode" >&2
+            exit 2
+            ;;
+        esac
 
-    lock=/run/media-tiering-mover.lock
-    exec 9>"$lock"
-    if ! ${pkgs.util-linux}/bin/flock -n 9; then
-      echo "media-tiering mover already running; skipping"
-      exit 0
-    fi
-
-    SOURCE_ROOT=${lib.escapeShellArg cfg.localBackingRoot}
-    DEST_ROOT=${lib.escapeShellArg cfg.peerMountRoot}
-    MIN_AGE_MINUTES=${toString cfg.mover.minAgeMinutes}
-    MIN_FREE_PERCENT=${toString cfg.mover.minFreePercent}
-    mkdir -p /var/lib/media-tiering
-
-    used_percent() {
-      ${pkgs.coreutils}/bin/df --output=pcent "$SOURCE_ROOT" | tail -1 | tr -d ' %'
-    }
-
-    free_percent() {
-      local used
-      used=$(used_percent)
-      echo $((100 - used))
-    }
-
-    low_space() {
-      [ "$(free_percent)" -le "$MIN_FREE_PERCENT" ]
-    }
-
-    mountain_now() {
-      TZ=America/Denver ${pkgs.coreutils}/bin/date "+%Y-%m-%d %H:%M:%S"
-    }
-
-    echo "media-tiering run starting at $(mountain_now)"
-    echo "requested mode: $mode"
-    echo "source free space before: $(free_percent)%"
-
-    if [ "$mode" = "low-space" ] && ! low_space; then
-      echo "free space above threshold; skipping low-space run"
-      exit 0
-    fi
-
-    moved_files=0
-    moved_bytes=0
-
-    generate_candidates() {
-      ${pkgs.python3}/bin/python3 - "$SOURCE_ROOT" "$MIN_AGE_MINUTES" <<'PY'
-import os
-import sys
-import time
-
-source_root = sys.argv[1]
-min_age_minutes = int(sys.argv[2])
-cutoff = time.time() - (min_age_minutes * 60)
-items = []
-for library in ("movies", "tv"):
-    root = os.path.join(source_root, library)
-    if not os.path.isdir(root):
-        continue
-    for dirpath, _, filenames in os.walk(root):
-        for filename in filenames:
-            path = os.path.join(dirpath, filename)
-            try:
-                st = os.stat(path)
-            except FileNotFoundError:
-                continue
-            if st.st_mtime > cutoff:
-                continue
-            items.append((st.st_mtime, path))
-items.sort()
-out = sys.stdout.buffer
-for _, path in items:
-    out.write(path.encode())
-    out.write(b"\0")
-PY
-    }
-
-    refresh_jellyfin() {
-      ${optionalString (cfg.mover.jellyfin.passwordFile != null) ''
-        local password response token payload
-        password=$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg (toString cfg.mover.jellyfin.passwordFile)})
-        case "$password" in *=*) password="$(printf '%s' "$password" | ${pkgs.coreutils}/bin/cut -d= -f2-)" ;; esac
-        payload=$(${pkgs.jq}/bin/jq -nc \
-          --arg username ${lib.escapeShellArg cfg.mover.jellyfin.username} \
-          --arg pw "$password" \
-          '{Username: $username, Pw: $pw}')
-        response=$(${pkgs.curl}/bin/curl -sS -X POST "http://${cfg.mover.jellyfin.host}:8096/Users/AuthenticateByName" \
-          -H 'Content-Type: application/json' \
-          -H 'Authorization: MediaBrowser Client="mountainous", Device="mountainous", DeviceId="media-tiering", Version="1.0.0"' \
-          -d "$payload" || true)
-        token=$(printf '%s' "$response" | ${pkgs.jq}/bin/jq -r '.AccessToken // empty' 2>/dev/null || true)
-        if [ -n "$token" ]; then
-          ${pkgs.curl}/bin/curl -sS -X POST "http://${cfg.mover.jellyfin.host}:8096/Library/Refresh" -H "X-Emby-Token: $token" >/dev/null || true
-          echo "queued Jellyfin refresh on ${cfg.mover.jellyfin.host}"
-        else
-          echo "warning: failed to refresh Jellyfin on ${cfg.mover.jellyfin.host}" >&2
-          echo "$response" >&2
+        lock=/run/media-tiering-mover.lock
+        exec 9>"$lock"
+        if ! ${pkgs.util-linux}/bin/flock -n 9; then
+          echo "media-tiering mover already running; skipping"
+          exit 0
         fi
-      ''}
-    }
 
-    move_one() {
-      local src="$1"
-      local rel dest dest_dir tmp size
+        SOURCE_ROOT=${lib.escapeShellArg cfg.localBackingRoot}
+        DEST_ROOT=${lib.escapeShellArg cfg.peerMountRoot}
+        MIN_AGE_MINUTES=${toString cfg.mover.minAgeMinutes}
+        MIN_FREE_PERCENT=${toString cfg.mover.minFreePercent}
+        mkdir -p /var/lib/media-tiering
 
-      if ! [ -f "$src" ]; then
-        return 0
+        used_percent() {
+          ${pkgs.coreutils}/bin/df --output=pcent "$SOURCE_ROOT" | tail -1 | tr -d ' %'
+        }
+
+        free_percent() {
+          local used
+          used=$(used_percent)
+          echo $((100 - used))
+        }
+
+        low_space() {
+          [ "$(free_percent)" -le "$MIN_FREE_PERCENT" ]
+        }
+
+        mountain_now() {
+          TZ=America/Denver ${pkgs.coreutils}/bin/date "+%Y-%m-%d %H:%M:%S"
+        }
+
+        echo "media-tiering run starting at $(mountain_now)"
+        echo "requested mode: $mode"
+        echo "source free space before: $(free_percent)%"
+
+        if [ "$mode" = "low-space" ] && ! low_space; then
+          echo "free space above threshold; skipping low-space run"
+          exit 0
+        fi
+
+        moved_files=0
+        moved_bytes=0
+
+        generate_candidates() {
+          ${pkgs.python3}/bin/python3 - "$SOURCE_ROOT" "$MIN_AGE_MINUTES" <<'PY'
+    import os
+    import sys
+    import time
+
+    source_root = sys.argv[1]
+    min_age_minutes = int(sys.argv[2])
+    cutoff = time.time() - (min_age_minutes * 60)
+    items = []
+    for library in ("movies", "tv"):
+        root = os.path.join(source_root, library)
+        if not os.path.isdir(root):
+            continue
+        for dirpath, _, filenames in os.walk(root):
+            for filename in filenames:
+                path = os.path.join(dirpath, filename)
+                try:
+                    st = os.stat(path)
+                except FileNotFoundError:
+                    continue
+                if st.st_mtime > cutoff:
+                    continue
+                items.append((st.st_mtime, path))
+    items.sort()
+    out = sys.stdout.buffer
+    for _, path in items:
+        out.write(path.encode())
+        out.write(b"\0")
+    PY
+        }
+
+        refresh_jellyfin() {
+          ${optionalString (cfg.mover.jellyfin.passwordFile != null) ''
+      local password response token payload
+      password=$(${pkgs.coreutils}/bin/cat ${lib.escapeShellArg (toString cfg.mover.jellyfin.passwordFile)})
+      case "$password" in *=*) password="$(printf '%s' "$password" | ${pkgs.coreutils}/bin/cut -d= -f2-)" ;; esac
+      payload=$(${pkgs.jq}/bin/jq -nc \
+        --arg username ${lib.escapeShellArg cfg.mover.jellyfin.username} \
+        --arg pw "$password" \
+        '{Username: $username, Pw: $pw}')
+      response=$(${pkgs.curl}/bin/curl -sS -X POST "http://${cfg.mover.jellyfin.host}:8096/Users/AuthenticateByName" \
+        -H 'Content-Type: application/json' \
+        -H 'Authorization: MediaBrowser Client="mountainous", Device="mountainous", DeviceId="media-tiering", Version="1.0.0"' \
+        -d "$payload" || true)
+      token=$(printf '%s' "$response" | ${pkgs.jq}/bin/jq -r '.AccessToken // empty' 2>/dev/null || true)
+      if [ -n "$token" ]; then
+        ${pkgs.curl}/bin/curl -sS -X POST "http://${cfg.mover.jellyfin.host}:8096/Library/Refresh" -H "X-Emby-Token: $token" >/dev/null || true
+        echo "queued Jellyfin refresh on ${cfg.mover.jellyfin.host}"
+      else
+        echo "warning: failed to refresh Jellyfin on ${cfg.mover.jellyfin.host}" >&2
+        echo "$response" >&2
       fi
+    ''}
+        }
 
-      if ${pkgs.lsof}/bin/lsof "$src" >/dev/null 2>&1; then
-        echo "skipping busy file: $src"
-        return 0
-      fi
+        move_one() {
+          local src="$1"
+          local rel dest dest_dir tmp size
 
-      rel="''${src#$SOURCE_ROOT/}"
-      dest="$DEST_ROOT/$rel"
-      dest_dir=$(dirname "$dest")
-      tmp="$dest.__tiering_tmp__.$$"
-      size=$(${pkgs.coreutils}/bin/stat -c %s "$src")
+          if ! [ -f "$src" ]; then
+            return 0
+          fi
 
-      ${pkgs.coreutils}/bin/mkdir -p "$dest_dir"
-      ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$dest_dir"
-      ${pkgs.coreutils}/bin/chmod g+rws "$dest_dir"
+          if ${pkgs.lsof}/bin/lsof "$src" >/dev/null 2>&1; then
+            echo "skipping busy file: $src"
+            return 0
+          fi
 
-      if [ -e "$dest" ]; then
-        if ${pkgs.diffutils}/bin/cmp -s "$src" "$dest"; then
+          rel="''${src#$SOURCE_ROOT/}"
+          dest="$DEST_ROOT/$rel"
+          dest_dir=$(dirname "$dest")
+          tmp="$dest.__tiering_tmp__.$$"
+          size=$(${pkgs.coreutils}/bin/stat -c %s "$src")
+
+          ${pkgs.coreutils}/bin/mkdir -p "$dest_dir"
+          ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$dest_dir"
+          ${pkgs.coreutils}/bin/chmod g+rws "$dest_dir"
+
+          if [ -e "$dest" ]; then
+            if ${pkgs.diffutils}/bin/cmp -s "$src" "$dest"; then
+              ${pkgs.coreutils}/bin/rm -f "$src"
+              moved_files=$((moved_files + 1))
+              moved_bytes=$((moved_bytes + size))
+              return 0
+            fi
+            echo "destination already exists with different content: $dest" >&2
+            return 1
+          fi
+
+          ${pkgs.rsync}/bin/rsync -aHAXWES --preallocate "$src" "$tmp"
+          ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$tmp"
+          ${pkgs.coreutils}/bin/chmod g+rwX "$tmp"
+          if ! ${pkgs.diffutils}/bin/cmp -s "$src" "$tmp"; then
+            echo "verification failed for $src" >&2
+            ${pkgs.coreutils}/bin/rm -f "$tmp"
+            return 1
+          fi
+
+          ${pkgs.coreutils}/bin/mv "$tmp" "$dest"
           ${pkgs.coreutils}/bin/rm -f "$src"
           moved_files=$((moved_files + 1))
           moved_bytes=$((moved_bytes + size))
-          return 0
+        }
+
+        status=0
+        while IFS= read -r -d $'\0' src; do
+          if ! move_one "$src"; then
+            status=1
+            continue
+          fi
+          if [ "$mode" = "low-space" ] && ! low_space; then
+            break
+          fi
+        done < <(generate_candidates)
+
+        ${pkgs.findutils}/bin/find "$SOURCE_ROOT" -depth -type d -empty -delete 2>/dev/null || true
+
+        echo "moved files: $moved_files"
+        echo "moved bytes: $moved_bytes"
+        echo "source free space after: $(free_percent)%"
+
+        if [ "$moved_files" -gt 0 ]; then
+          refresh_jellyfin
         fi
-        echo "destination already exists with different content: $dest" >&2
-        return 1
-      fi
 
-      ${pkgs.rsync}/bin/rsync -aHAXWES --preallocate "$src" "$tmp"
-      ${pkgs.coreutils}/bin/chgrp ${lib.escapeShellArg mediaCfg.group} "$tmp"
-      ${pkgs.coreutils}/bin/chmod g+rwX "$tmp"
-      if ! ${pkgs.diffutils}/bin/cmp -s "$src" "$tmp"; then
-        echo "verification failed for $src" >&2
-        ${pkgs.coreutils}/bin/rm -f "$tmp"
-        return 1
-      fi
-
-      ${pkgs.coreutils}/bin/mv "$tmp" "$dest"
-      ${pkgs.coreutils}/bin/rm -f "$src"
-      moved_files=$((moved_files + 1))
-      moved_bytes=$((moved_bytes + size))
-    }
-
-    status=0
-    while IFS= read -r -d $'\0' src; do
-      if ! move_one "$src"; then
-        status=1
-        continue
-      fi
-      if [ "$mode" = "low-space" ] && ! low_space; then
-        break
-      fi
-    done < <(generate_candidates)
-
-    ${pkgs.findutils}/bin/find "$SOURCE_ROOT" -depth -type d -empty -delete 2>/dev/null || true
-
-    echo "moved files: $moved_files"
-    echo "moved bytes: $moved_bytes"
-    echo "source free space after: $(free_percent)%"
-
-    if [ "$moved_files" -gt 0 ]; then
-      refresh_jellyfin
-    fi
-
-    exit "$status"
+        exit "$status"
   '';
 in {
   config = mkIf cfg.enable (mkMerge [

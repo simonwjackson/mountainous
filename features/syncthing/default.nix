@@ -86,7 +86,7 @@
               };
               params = mkOption {
                 type = types.attrsOf types.str;
-                default = { };
+                default = {};
                 description = "Versioning parameters";
               };
             };
@@ -141,7 +141,7 @@ in {
 
     shares = mkOption {
       type = types.attrsOf shareType;
-      default = { };
+      default = {};
       description = "Shares to synchronize";
       example = {
         notes = {

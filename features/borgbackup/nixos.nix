@@ -184,7 +184,7 @@ in {
             parts = lib.splitString ":" target;
             host = builtins.head parts;
             basePath = lib.concatStringsSep ":" (builtins.tail parts);
-          in ''    rsync -az --delete "${cfg.repoBase}/$repo/" "${host}:${basePath}/${hostname}/$repo/" || true'')
+          in ''rsync -az --delete "${cfg.repoBase}/$repo/" "${host}:${basePath}/${hostname}/$repo/" || true'')
           cfg.offsiteSync.targets;
         in ''
           for repo in ${repos}; do
@@ -219,9 +219,9 @@ in {
         path = [pkgs.rclone];
         script = let
           repos = concatStringsSep " " repoNames;
-          syncLines = concatMapStringsSep "\n" (remote:
-            ''    rclone sync "${cfg.repoBase}/$repo/" "${remote}:backups/${hostname}/$repo/" --transfers 4 --checkers 8'')
-          cfg.cloudSync.remotes;
+          syncLines =
+            concatMapStringsSep "\n" (remote: ''rclone sync "${cfg.repoBase}/$repo/" "${remote}:backups/${hostname}/$repo/" --transfers 4 --checkers 8'')
+            cfg.cloudSync.remotes;
         in ''
           for repo in ${repos}; do
             if [ -d "${cfg.repoBase}/$repo" ]; then

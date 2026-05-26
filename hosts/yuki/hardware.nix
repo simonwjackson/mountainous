@@ -1,6 +1,4 @@
-{ ... }:
-
-{
+{...}: {
   boot.loader = {
     systemd-boot.enable = true;
     efi = {
@@ -17,7 +15,7 @@
     "sd_mod"
   ];
 
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = ["kvm-intel"];
 
   nixpkgs.hostPlatform = "x86_64-linux";
 

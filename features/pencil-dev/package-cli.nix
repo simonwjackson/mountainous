@@ -24,7 +24,7 @@ buildNpmPackage rec {
     description = "Pencil CLI from pencil.dev";
     homepage = "https://pencil.dev";
     license = licenses.unfree;
-    sourceProvenance = [ sourceTypes.binaryBytecode sourceTypes.binaryNativeCode ];
+    sourceProvenance = [sourceTypes.binaryBytecode sourceTypes.binaryNativeCode];
     mainProgram = "pencil";
     platforms = platforms.linux;
   };

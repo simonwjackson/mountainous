@@ -76,10 +76,10 @@ scaffold *ARGS:
 format:
     nix fmt .
 
-# Interactively encrypt a new secret
+# Encrypt a new secret. Pass `--help` for usage.
 [group('secrets')]
-encrypt:
-    nix run .#secrets -- encrypt
+encrypt *ARGS:
+    nix run .#secrets -- encrypt {{ ARGS }}
 
 # Re-encrypt all secrets for all hosts
 [group('secrets')]

@@ -61,40 +61,42 @@ in {
           JELLYSWARRM_DATA_DIR = dataDir;
         };
 
-        serviceConfig = {
-          Type = "simple";
-          User = "jellyswarrm";
-          Group = "jellyswarrm";
-          WorkingDirectory = dataDir;
-          Restart = "on-failure";
-          RestartSec = "5s";
+        serviceConfig =
+          {
+            Type = "simple";
+            User = "jellyswarrm";
+            Group = "jellyswarrm";
+            WorkingDirectory = dataDir;
+            Restart = "on-failure";
+            RestartSec = "5s";
 
-          # Security hardening
-          NoNewPrivileges = true;
-          PrivateTmp = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          ReadWritePaths = [dataDir];
-          ProtectKernelTunables = true;
-          ProtectKernelModules = true;
-          ProtectControlGroups = true;
-          RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
-          RestrictNamespaces = true;
-          LockPersonality = true;
-          RestrictRealtime = true;
-          RestrictSUIDSGID = true;
-          RemoveIPC = true;
-          PrivateMounts = true;
-        } // (
-          if cfg.passwordFile != null
-          then {
-            LoadCredential = "password:${cfg.passwordFile}";
-            ExecStart = ''${pkgs.bash}/bin/bash -c 'password=$(cat "$CREDENTIALS_DIRECTORY/password"); if [[ "$password" == *=* ]]; then password=$(printf "%s" "$password" | cut -d= -f2-); fi; export JELLYSWARRM_PASSWORD="$password"; exec ${pkgs.jellyswarrm}/bin/jellyswarrm-proxy' '';
+            # Security hardening
+            NoNewPrivileges = true;
+            PrivateTmp = true;
+            ProtectSystem = "strict";
+            ProtectHome = true;
+            ReadWritePaths = [dataDir];
+            ProtectKernelTunables = true;
+            ProtectKernelModules = true;
+            ProtectControlGroups = true;
+            RestrictAddressFamilies = ["AF_INET" "AF_INET6" "AF_UNIX"];
+            RestrictNamespaces = true;
+            LockPersonality = true;
+            RestrictRealtime = true;
+            RestrictSUIDSGID = true;
+            RemoveIPC = true;
+            PrivateMounts = true;
           }
-          else {
-            ExecStart = "${pkgs.jellyswarrm}/bin/jellyswarrm-proxy";
-          }
-        );
+          // (
+            if cfg.passwordFile != null
+            then {
+              LoadCredential = "password:${cfg.passwordFile}";
+              ExecStart = ''${pkgs.bash}/bin/bash -c 'password=$(cat "$CREDENTIALS_DIRECTORY/password"); if [[ "$password" == *=* ]]; then password=$(printf "%s" "$password" | cut -d= -f2-); fi; export JELLYSWARRM_PASSWORD="$password"; exec ${pkgs.jellyswarrm}/bin/jellyswarrm-proxy' '';
+            }
+            else {
+              ExecStart = "${pkgs.jellyswarrm}/bin/jellyswarrm-proxy";
+            }
+          );
 
         # Seed the TOML config on first start. Subsequent starts use the
         # existing file so that runtime changes (session_key, server_id)

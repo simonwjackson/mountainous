@@ -48,10 +48,12 @@ in {
       // (discoverExternalDevices devicesRoot);
     allDeviceNames = attrNames allDeviceIds;
 
-    hostEnabledShares = mapAttrs (
-      _: m:
-        attrNames (filterAttrs (_: s: s.enable or false) m.shares)
-    ) hostManifests;
+    hostEnabledShares =
+      mapAttrs (
+        _: m:
+          attrNames (filterAttrs (_: s: s.enable or false) m.shares)
+      )
+      hostManifests;
 
     hostsByShare = foldl' (
       acc: host:
@@ -66,10 +68,12 @@ in {
     peerIds = builtins.removeAttrs allDeviceIds [hostname];
     peerNames = attrNames peerIds;
 
-    deviceEntries = mapAttrs (_: id: {
-      inherit id;
-      addresses = ["dynamic"];
-    }) peerIds;
+    deviceEntries =
+      mapAttrs (_: id: {
+        inherit id;
+        addresses = ["dynamic"];
+      })
+      peerIds;
 
     enabledShares = filterAttrs (_: s: s.enable) shares;
 
@@ -85,22 +89,24 @@ in {
       then shareCfg.path
       else throw "mountainous.features.syncthing.shares.${name} is enabled but no path is set";
 
-    syncthingFolders = mapAttrs (
-      name: shareCfg:
-        {
-          path = resolveSharePath name shareCfg;
-          devices = resolveShareDevices name shareCfg;
-          type = shareCfg.type;
-          ignorePerms = shareCfg.ignorePerms;
-          rescanIntervalS = shareCfg.rescanIntervalS;
-        }
-        // optionalAttrs (shareCfg.ignorePatterns != null) {
-          inherit (shareCfg) ignorePatterns;
-        }
-        // optionalAttrs (shareCfg.versioning != null) {
-          inherit (shareCfg) versioning;
-        }
-    ) enabledShares;
+    syncthingFolders =
+      mapAttrs (
+        name: shareCfg:
+          {
+            path = resolveSharePath name shareCfg;
+            devices = resolveShareDevices name shareCfg;
+            type = shareCfg.type;
+            ignorePerms = shareCfg.ignorePerms;
+            rescanIntervalS = shareCfg.rescanIntervalS;
+          }
+          // optionalAttrs (shareCfg.ignorePatterns != null) {
+            inherit (shareCfg) ignorePatterns;
+          }
+          // optionalAttrs (shareCfg.versioning != null) {
+            inherit (shareCfg) versioning;
+          }
+      )
+      enabledShares;
   in {
     inherit
       allDeviceIds

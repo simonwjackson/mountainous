@@ -29,6 +29,31 @@ class ParseInvocationTest(unittest.TestCase):
         invocation = nixie.parse_invocation(["switch", "yari", "--no-check-online"])
         self.assertFalse(invocation.check_online)
 
+    def test_parse_invocation_accepts_host_scoped_flake_overrides(self):
+        invocation = nixie.parse_invocation(
+            [
+                "switch",
+                "aka",
+                "--override-input",
+                "korri",
+                "path:/src/korri",
+                "--override-input",
+                "sobo:nix-on-rocks-guest",
+                "path:/src/nix-on-rocks/guest",
+            ]
+        )
+        self.assertEqual(
+            invocation.flake_overrides,
+            (
+                nixie.FlakeOverride(name="korri", value="path:/src/korri"),
+                nixie.FlakeOverride(
+                    name="nix-on-rocks-guest",
+                    value="path:/src/nix-on-rocks/guest",
+                    host="sobo",
+                ),
+            ),
+        )
+
 
 class ResolveHostsTest(unittest.TestCase):
     def test_resolve_host_prefers_flake_outputs(self):
@@ -67,6 +92,26 @@ class PlanGenerationTest(unittest.TestCase):
                 "--sudo",
             ),
         )
+
+    def test_nixos_plan_applies_only_global_and_host_scoped_overrides(self):
+        overrides = (
+            nixie.FlakeOverride(name="korri", value="path:/src/korri"),
+            nixie.FlakeOverride(
+                name="nix-on-rocks-guest",
+                value="path:/src/nix-on-rocks/guest",
+                host="sobo",
+            ),
+        )
+        aka_plan = nixie.build_nixos_plan(
+            "switch", nixie.ResolvedHost(name="aka", platform="nixos"), overrides
+        )
+        sobo_plan = nixie.build_nixos_plan(
+            "switch", nixie.ResolvedHost(name="sobo", platform="nixos"), overrides
+        )
+
+        self.assertNotIn("nix-on-rocks-guest", aka_plan.commands[0].argv)
+        self.assertIn("korri", aka_plan.commands[0].argv)
+        self.assertIn("nix-on-rocks-guest", sobo_plan.commands[0].argv)
 
     def test_droid_switch_plan_hardens_transport(self):
         plan = nixie.build_droid_plan(
@@ -200,8 +245,8 @@ class ExecutionTest(unittest.TestCase):
             requested_action="test",
             effective_action="switch",
             commands=(
-                nixie.PlannedCommand(("python3", "-c", "pass")),
-                nixie.PlannedCommand(("python3", "-c", "import sys; sys.exit(9)")),
+                nixie.PlannedCommand((sys.executable, "-c", "pass")),
+                nixie.PlannedCommand((sys.executable, "-c", "import sys; sys.exit(9)")),
             ),
             warning="droid host 'usu' does not support a separate test mode; treating 'test' as 'switch'",
         )
@@ -214,7 +259,7 @@ class ExecutionTest(unittest.TestCase):
             "warning: droid host 'usu' does not support a separate test mode",
             stderr.getvalue(),
         )
-        self.assertIn("+ python3 -c", stdout.getvalue())
+        self.assertIn(f"+ {sys.executable} -c", stdout.getvalue())
 
 
 if __name__ == "__main__":

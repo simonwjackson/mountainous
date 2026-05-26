@@ -7,10 +7,16 @@
   cfg = config.mountainous.features.sonarr;
   mediaCfg = config.mountainous.features.media;
   vpnNsAddress = config.mountainous.features.vpn-ns.vethAddress;
-  nzbgetInVpn = (config.mountainous.features.vpn-ns.services.nzbget.enable or false);
-  transmissionInVpn = (config.mountainous.features.vpn-ns.services.transmission.enable or false);
-  nzbgetHost = if !cfg.vpn.enable && nzbgetInVpn then vpnNsAddress else "127.0.0.1";
-  transmissionHost = if !cfg.vpn.enable && transmissionInVpn then vpnNsAddress else "127.0.0.1";
+  nzbgetInVpn = config.mountainous.features.vpn-ns.services.nzbget.enable or false;
+  transmissionInVpn = config.mountainous.features.vpn-ns.services.transmission.enable or false;
+  nzbgetHost =
+    if !cfg.vpn.enable && nzbgetInVpn
+    then vpnNsAddress
+    else "127.0.0.1";
+  transmissionHost =
+    if !cfg.vpn.enable && transmissionInVpn
+    then vpnNsAddress
+    else "127.0.0.1";
 in {
   imports = [
     ./nixos.nix

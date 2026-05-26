@@ -13,7 +13,7 @@
   time.timeZone = "UTC";
 
   # Transparent x86_64 emulation (needed for SQL Server, etc.)
-  boot.binfmt.emulatedSystems = [ "x86_64-linux" ];
+  boot.binfmt.emulatedSystems = ["x86_64-linux"];
 
   mountainous = {
     presets = {
