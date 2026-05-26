@@ -558,11 +558,11 @@
         "nixpkgs-2405": "nixpkgs-2405"
       },
       "locked": {
-        "lastModified": 1779690894,
-        "narHash": "sha256-ipS2IMKsu0BnuKIz4QkgDEh/hg4LdwMBeq+O7G0DKL0=",
+        "lastModified": 1779815375,
+        "narHash": "sha256-8yOT2Ydh2smgDdwpN68s8k6/ZgXgfox8cUY6h7wb8Ss=",
         "owner": "simonwjackson",
         "repo": "korri",
-        "rev": "1956294c043c2fea4b7638e44e7f6032f0e373e1",
+        "rev": "3ca49a9657215777c99e996c05488294999b81a3",
         "type": "github"
       },
       "original": {
@@ -646,11 +646,11 @@
         "nixpkgs-sdl2-classic": "nixpkgs-sdl2-classic"
       },
       "locked": {
-        "lastModified": 1779664888,
-        "narHash": "sha256-XQWu7mLQXGh4tg6v1QvfZkY3LIXR2FKQ109uAhBHXZQ=",
+        "lastModified": 1779758776,
+        "narHash": "sha256-/ts6lbQTyxg8r2A+fg12AEGW28upLzjfzXqDt81pclM=",
         "owner": "simonwjackson",
         "repo": "nix-on-rocks",
-        "rev": "bfe1923a40d27ea6184eaada799c9d4a054b9327",
+        "rev": "86b0ad5a29e6c447ece7c95abeafeb4016951f36",
         "type": "github"
       },
       "original": {

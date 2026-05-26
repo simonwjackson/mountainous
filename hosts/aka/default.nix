@@ -121,10 +121,19 @@ in {
 
     seatd.enable = true;
 
+    # Sunshine config + supporting plumbing (sunshine.conf rendering,
+    # firewall, /dev/uinput udev, avahi mDNS, uinput kernel module) is
+    # owned by the upstream nixpkgs services.sunshine module. The actual
+    # systemd unit that runs Sunshine is
+    # `systemd.services.korri-sunshine`, emitted by
+    # services.korri.server.streaming below: it runs sunshine-korri as a
+    # system service ordered after korri-compositor.service, so streaming
+    # works at boot without a graphical-session.target dance. Korri
+    # forces `services.sunshine.autoStart = false` to keep the upstream
+    # user unit from racing with it.
     sunshine = {
       enable = true;
       openFirewall = true;
-      autoStart = false;
 
       settings = {
         output_name = 0;
