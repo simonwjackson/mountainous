@@ -1,11 +1,11 @@
 {
+  config,
   inputs,
   lib,
   pkgs,
   ...
 }: let
   korriApiPort = 3001;
-  korriLibraryRoot = "/home/simonwjackson/.local/share/korri/library";
 
   akaLlamaQwen32Port = 18080;
   akaLlamaQwen32CtxSize = 32768;
@@ -93,9 +93,19 @@ in {
 
   programs = {
     hyprland.enable = false;
+
+    steam = {
+      enable = true;
+      protontricks.enable = true;
+      extraCompatPackages = [pkgs.proton-ge-bin];
+    };
+
+    gamemode.enable = true;
+
     sway = {
       enable = true;
       xwayland.enable = true;
+      extraOptions = ["--unsupported-gpu"];
     };
   };
 
@@ -109,28 +119,31 @@ in {
   };
 
   services = {
-    greetd = {
-      enable = true;
-      settings = {
-        default_session = {
-          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
-          user = "greeter";
-        };
-      };
-    };
-
     seatd.enable = true;
+
+    pulseaudio.enable = false;
+
+    pipewire = {
+      enable = true;
+      alsa = {
+        enable = true;
+        support32Bit = true;
+      };
+      pulse.enable = true;
+      jack.enable = true;
+      wireplumber.enable = true;
+    };
 
     # Sunshine config + supporting plumbing (sunshine.conf rendering,
     # firewall, /dev/uinput udev, avahi mDNS, uinput kernel module) is
     # owned by the upstream nixpkgs services.sunshine module. The actual
-    # systemd unit that runs Sunshine is
-    # `systemd.services.korri-sunshine`, emitted by
-    # services.korri.server.streaming below: it runs sunshine-korri as a
-    # system service ordered after korri-compositor.service, so streaming
-    # works at boot without a graphical-session.target dance. Korri
-    # forces `services.sunshine.autoStart = false` to keep the upstream
-    # user unit from racing with it.
+    # user unit that runs Sunshine is
+    # `systemd.user.services.korri-sunshine`, emitted by
+    # services.korri.daemon.streaming below: it runs sunshine-korri inside
+    # Korri's user-level korri-session.target, ordered after the managed
+    # korri-compositor user service. Korri forces
+    # `services.sunshine.autoStart = false` to keep the upstream user unit
+    # from racing with it.
     sunshine = {
       enable = true;
       openFirewall = true;
@@ -143,45 +156,31 @@ in {
     };
 
     korri = {
-      client.enable = false;
-
-      compositor = {
-        enable = true;
-        kiosk.enable = false;
+      runtime = {
         user = "simonwjackson";
         group = "users";
-        createUser = false;
         home = "/home/simonwjackson";
-        wants = ["seatd.service"];
-        after = ["seatd.service"];
-        sway.package = pkgs.sway;
+        stateRoot = "/var/lib/korri";
+        createUser = false;
       };
 
-      input.provider = {
-        enable = true;
-        name = "inputplumber";
-      };
+      compositor.sway.package = config.programs.sway.package;
 
-      server = {
-        enable = true;
-        serviceMode = "system";
-        user = "simonwjackson";
-        group = "users";
+      daemon = {
         host = "0.0.0.0";
         port = korriApiPort;
         serverId = "aka";
-        library.root = korriLibraryRoot;
         publicApiBaseUrl = "http://192.168.1.117:${toString korriApiPort}";
         streamControl.enable = true;
         openFirewall = true;
+        firewallInterfaces = ["tailscale0"];
+        # advertise.enable removed in Korri federation v1 (R14): every
+        # korrid now advertises unconditionally with caps including
+        # `source` baseline. Only the human-readable name is still tunable.
         advertise = {
-          enable = true;
           name = "Korri Stream on aka";
         };
-        streaming = {
-          enable = true;
-          appName = "Korri Stream";
-        };
+        streaming.appName = "Korri Stream";
       };
     };
 
@@ -196,6 +195,14 @@ in {
     enable = true;
     enable32Bit = true;
   };
+
+  security.rtkit.enable = true;
+
+  boot.kernelModules = ["uinput"];
+
+  services.udev.extraRules = ''
+    SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput", TAG+="uaccess"
+  '';
 
   users.users.simonwjackson.extraGroups = [
     "input"
@@ -242,6 +249,10 @@ in {
   environment.systemPackages = [
     pkgs.btrfs-progs
     pkgs.ethtool
+    pkgs.gamescope
+    pkgs.gamemode
+    pkgs.mangohud
+    pkgs.protontricks
   ];
 
   system.stateVersion = "24.11";

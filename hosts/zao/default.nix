@@ -3,7 +3,9 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  korriApiPort = 39217;
+in {
   imports = [
     ./disko.nix
     ./hardware.nix
@@ -13,6 +15,22 @@
   time.timeZone = "America/Denver";
 
   nixpkgs.config.allowUnfree = true;
+
+  # ── Memory pressure ──────────────────────────────────────────────
+  # Zao ships with 31 GiB RAM and 0 swap. On 2026-06-01 a single `nix`
+  # eval process reached ~15.2 GiB anon RSS during `just test-nix`,
+  # triggered the kernel OOM killer inside the user tmux scope, and
+  # made interactive SSH sessions unresponsive while sshd itself stayed
+  # up (oom_score_adj=-1000). zram-backed swap absorbs the burst at the
+  # cost of CPU instead of the OOM killer; zstd gives a good
+  # ratio/throughput tradeoff for Nix eval heaps. memoryPercent=50 caps
+  # the compressed device at half of RAM so it cannot starve real
+  # workloads.
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+  };
 
   mountainous = {
     presets.core = {
@@ -128,7 +146,8 @@
 
     features.jellyfin = {
       enable = true;
-      openFirewall = false;
+      # Opened to the LAN so the LG webOS TV (no Tailscale client) can reach Jellyfin directly.
+      openFirewall = true;
       bootstrap = {
         enable = true;
         admin = {
@@ -165,11 +184,158 @@
     };
   };
 
+  programs = {
+    hyprland.enable = false;
+
+    steam = {
+      enable = true;
+      protontricks.enable = true;
+      extraCompatPackages = [pkgs.proton-ge-bin];
+    };
+
+    gamemode.enable = true;
+
+    sway = {
+      enable = true;
+      xwayland.enable = true;
+      extraOptions = ["--unsupported-gpu"];
+    };
+  };
+
+  xdg.portal = {
+    enable = true;
+    wlr.enable = true;
+    extraPortals = [pkgs.xdg-desktop-portal-gtk];
+    config.common = lib.mkForce {
+      default = "*";
+    };
+  };
+
+  services = {
+    greetd = {
+      enable = true;
+      settings = {
+        default_session = {
+          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
+          user = "greeter";
+        };
+      };
+    };
+
+    seatd.enable = true;
+
+    pulseaudio.enable = false;
+
+    pipewire = {
+      enable = true;
+      alsa = {
+        enable = true;
+        support32Bit = true;
+      };
+      pulse.enable = true;
+      jack.enable = true;
+      wireplumber.enable = true;
+    };
+
+    sunshine = {
+      enable = true;
+      openFirewall = true;
+
+      settings = {
+        output_name = 0;
+        encoder = "nvenc";
+        key_rightalt_to_key_win = "enabled";
+      };
+    };
+
+    korri = {
+      client.enable = false;
+
+      runtime = {
+        user = "simonwjackson";
+        group = "users";
+        home = "/home/simonwjackson";
+        createUser = false;
+      };
+
+      # Intentionally not enabling services.korri.login: zao uses tuigreet via
+      # services.greetd below for interactive sway sessions and runs korrid as a
+      # background daemon, instead of greetd auto-starting the Korri user target.
+
+      compositor = {
+        enable = true;
+        kiosk.enable = false;
+        user = "simonwjackson";
+        group = "users";
+        createUser = false;
+        home = "/home/simonwjackson";
+        wants = ["seatd.service"];
+        after = ["seatd.service"];
+        sway.package = config.programs.sway.package;
+      };
+
+      input.provider = {
+        enable = true;
+        name = "inputplumber";
+      };
+
+      gameStream.displayCompat.extraEnv = {
+        __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+        __NV_PRIME_RENDER_OFFLOAD = "1";
+        __VK_LAYER_NV_optimus = "NVIDIA_only";
+      };
+
+      daemon = {
+        enable = true;
+        host = "0.0.0.0";
+        port = korriApiPort;
+        serverId = "zao";
+        publicApiBaseUrl = "http://192.168.1.243:${toString korriApiPort}";
+        streamControl.enable = true;
+        openFirewall = true;
+        firewallInterfaces = ["tailscale0"];
+        # advertise.enable removed in Korri federation v1 (R14): every
+        # korrid now advertises unconditionally with caps including
+        # `source` baseline. Only the human-readable name is still tunable.
+        advertise = {
+          name = "Korri Stream on zao";
+        };
+        streaming = {
+          enable = true;
+          appName = "Korri Stream";
+        };
+      };
+    };
+  };
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
+
+  security.rtkit.enable = true;
+
+  boot.kernelModules = ["uinput"];
+
+  services.udev.extraRules = ''
+    SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput", TAG+="uaccess"
+  '';
+
   users.users.simonwjackson.extraGroups = [
-    "networkmanager"
-    "video"
-    "media"
+    "input"
     "lp"
+    "media"
+    "networkmanager"
+    "render"
+    "seat"
+    "video"
+  ];
+
+  environment.systemPackages = [
+    pkgs.gamescope
+    pkgs.gamemode
+    pkgs.mangohud
+    pkgs.protontricks
   ];
 
   # ── Printing ─────────────────────────────────────────────────────

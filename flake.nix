@@ -367,7 +367,7 @@
       aka = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/aka;
-        extraModules = [inputs.korri.nixosModules.korri];
+        extraModules = [inputs.korri.nixosModules.korri-source-machine];
       };
       # AYN Odin 2 Portal: NixOS guest inside a systemd-nspawn container on
       # patched ROCKNIX. Device hostname is forced to "sobo" by the upstream
@@ -384,12 +384,14 @@
           inputs.nix-on-rocks-guest.nixosModules.sm8550
           inputs.nix-on-rocks-guest.nixosModules.main-space
           inputs.nix-on-rocks-guest.nixosModules.odin2portal
-          inputs.korri.nixosModules.korri-kiosk
+          inputs.korri.nixosModules.korri
+          "${inputs.korri}/nix/images/kiosk.nix"
         ];
       };
       zao = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/zao;
+        extraModules = [inputs.korri.nixosModules.korri];
       };
       ibuki = mkHost {
         system = "x86_64-linux";

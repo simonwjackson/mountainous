@@ -48,6 +48,7 @@
   # Upstream base.nix already pins system.stateVersion = "25.11" and
   # owns boot.isContainer + nix.gc + journald + time.timeZone, so we do
   # not redeclare them here.
+  services.inputplumber.package = lib.mkForce pkgs.inputplumber;
   #
   # boot.isContainer = true pulls in nixpkgs's container-config module,
   # which disables host-only knobs (nix.optimise.automatic, etc.) at the
@@ -115,7 +116,7 @@
   # the Korri kiosk PATH instead of relying on the slower nixpkgs fallback in a
   # sealed device session.
   environment.systemPackages = [pkgs.moonlight-qt];
-  services.korri.kiosk.path = [
+  services.korri.compositor.path = [
     config.services.korri.client.package
     pkgs.moonlight-qt
   ];
