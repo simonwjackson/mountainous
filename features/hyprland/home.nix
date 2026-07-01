@@ -52,6 +52,34 @@
       )
     );
 
+  ironbarCountdowns = pkgs.writeShellApplication {
+    name = "ironbar-countdowns";
+    runtimeInputs = [pkgs.python3];
+    text = ''
+      exec python3 ${./ironbar-countdowns.py} "$@"
+    '';
+  };
+  ironbarCountdownsExample = pkgs.writeText "ironbar-countdowns.example" ''
+    # One countdown per line. Edit this file and Ironbar will refresh automatically.
+    # Formats:
+    #   Label | YYYY-MM-DD
+    #   Label | YYYY-MM-DD | business
+    #   YYYY-MM-DD Label with spaces
+    # Example:
+    #   Trip | 2026-07-02
+    #   Sprint | 2026-07-02 | business
+  '';
+  yukiCountdownWidget = {
+    type = "custom";
+    class = "countdownbar";
+    bar = [
+      {
+        type = "button";
+        label = "{{3600000:ironbar-countdowns}}";
+      }
+    ];
+  };
+
   ironbarBar = {
     position = "top";
     height = 32;
@@ -73,97 +101,53 @@
         format = "%-I:%M";
       }
     ];
-    end = [
-      {
-        type = "custom";
-        class = "codexbar";
-        bar = [
-          {
-            type = "button";
-            label = "{{120000:codexbar-claude}}";
-            on_click = "popup:toggle";
-          }
-        ];
-        popup = [
-          {
-            type = "box";
-            orientation = "vertical";
-            widgets = [
-              {
-                type = "label";
-                label = "{{120000:codexbar-claude-detail}}";
-              }
-            ];
-          }
-        ];
-      }
-      {
-        type = "custom";
-        class = "codexbar";
-        bar = [
-          {
-            type = "button";
-            label = "{{120000:codexbar-codex}}";
-            on_click = "popup:toggle";
-          }
-        ];
-        popup = [
-          {
-            type = "box";
-            orientation = "vertical";
-            widgets = [
-              {
-                type = "label";
-                label = "{{120000:codexbar-codex-detail}}";
-              }
-            ];
-          }
-        ];
-      }
-      {
-        type = "custom";
-        class = "codexbar";
-        bar = [
-          {
-            type = "button";
-            label = "{{3600000:codexbar-oci}}";
-            on_click = "popup:toggle";
-          }
-        ];
-        popup = [
-          {
-            type = "box";
-            orientation = "vertical";
-            widgets = [
-              {
-                type = "label";
-                label = "{{3600000:codexbar-oci-detail}}";
-              }
-            ];
-          }
-        ];
-      }
-      {
-        type = "volume";
-        format = "{icon} {percentage}%";
-      }
-      {
-        type = "network_manager";
-        icon_size = 18;
-      }
-      {
-        type = "battery";
-        format = "{percentage}%";
-        thresholds = {
-          warning = 20;
-          critical = 5;
-        };
-      }
-      {
-        type = "tray";
-        icon_size = 16;
-      }
-    ];
+    end =
+      lib.optionals isYuki [yukiCountdownWidget]
+      ++ [
+        {
+          type = "custom";
+          class = "codexbar";
+          bar = [
+            {
+              type = "button";
+              label = "{{3600000:codexbar-oci}}";
+              on_click = "popup:toggle";
+            }
+          ];
+          popup = [
+            {
+              type = "box";
+              orientation = "vertical";
+              widgets = [
+                {
+                  type = "label";
+                  label = "{{3600000:codexbar-oci-detail}}";
+                }
+              ];
+            }
+          ];
+        }
+        {
+          type = "volume";
+          format = "{icon} {percentage}%";
+        }
+        {
+          type = "network_manager";
+          icon_size = 18;
+        }
+        {
+          type = "battery";
+          format = "{percentage}%";
+          thresholds = {
+            warning = 20;
+            critical = 5;
+          };
+        }
+        {
+          type = "tray";
+          icon_size = 16;
+        }
+      ];
   };
   ironbarConfig =
     if isYuki
@@ -221,17 +205,26 @@ in {
     # so darkman can switch themes at runtime. HM's gtk module would create
     # immutable symlinks for the same files, causing "clobber" errors on
     # every subsequent activation.
-    home.packages = with pkgs; [
-      adwaita-icon-theme
-      ironbar
-      tofi
-      wl-clipboard
-      grim
-      slurp
-      brightnessctl
-      pavucontrol
-      networkmanagerapplet
-    ];
+    home.packages = with pkgs;
+      [
+        adwaita-icon-theme
+        ironbar
+        tofi
+        wl-clipboard
+        grim
+        slurp
+        brightnessctl
+        pavucontrol
+        networkmanagerapplet
+      ]
+      ++ lib.optionals isYuki [ironbarCountdowns];
+
+    home.activation.initIronbarCountdowns = lib.mkIf isYuki (lib.hm.dag.entryAfter ["writeBoundary"] ''
+      run mkdir -p "$HOME/.config/ironbar"
+      if [ ! -e "$HOME/.config/ironbar/countdowns" ]; then
+        run install -m 0644 ${ironbarCountdownsExample} "$HOME/.config/ironbar/countdowns"
+      fi
+    '');
 
     xdg.configFile = {
       "hypr/hyprland.conf".text = ''
@@ -367,7 +360,8 @@ in {
           box-shadow: none;
         }
 
-        .codexbar button {
+        .codexbar button,
+        .countdownbar button {
           padding: 0 6px;
         }
 
