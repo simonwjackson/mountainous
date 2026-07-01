@@ -11,4 +11,5 @@ packages/steam-prefs/__pycache__
 history
 AGENTS.local.md
 .envrc.local
+.env.local
 packages/nixie/__pycache__

@@ -24,6 +24,14 @@ in {
     ];
 
     mountainous.features.atuin.enable = mkDefault true;
+    mountainous.features.pi = {
+      enable = mkDefault true;
+      # Same agenix secret shell-secrets exposes as GROQ_API_KEY in
+      # interactive shells. Threading it through pi's `environment` makes
+      # the key available when pi is launched outside an interactive shell
+      # (systemd units, scaffolded scripts, etc.).
+      environment.GROQ_API_KEY = mkDefault config.age.secrets.credentials-groq-api-key.path;
+    };
     mountainous.features.ssh.server.enable = mkDefault true;
     mountainous.features.starship.enable = mkDefault true;
 

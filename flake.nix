@@ -72,6 +72,15 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Lukas's unofficial Nix flake for pi (earendil-works/pi), the terminal
+    # coding agent. Exposes a NixOS module under programs.pi.coding-agent
+    # and a package via inputs.pi.packages.<system>.coding-agent. We wrap
+    # both behind mountainous.features.pi so every host gets the binary
+    # without leaking the upstream option path into host files.
+    pi = {
+      url = "github:lukasl-dev/pi.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # ROCKNIX-on-SM8550 NixOS guest. Owns the device schema (rocknix.sm8550),
     # the main-space profile, and the Odin 2 Portal device profile. We compose
     # those modules into nixosConfigurations.sobo below and expose the rootfs

@@ -55,6 +55,7 @@ in {
       tasks.path = lib.mkDefault "${home}/.local/share/tasks";
     };
     mountainous.features.atuin.enable = lib.mkDefault true;
+    mountainous.features.pi.enable = lib.mkDefault true;
     mountainous.features.dnshack.enable = true;
 
     environment.packages = with pkgs; [

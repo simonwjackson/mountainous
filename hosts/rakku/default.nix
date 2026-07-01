@@ -47,6 +47,15 @@ in {
   # ── Mountainous Features ──────────────────────────────────────────────
 
   mountainous.features = {
+    # ── Coding agent ─────────────────────────────────────────────────
+    # Rakku skips presets.core, so opt into pi directly here to match
+    # every other host in the fleet. Threads the Groq key the same way
+    # the core preset does.
+    pi = {
+      enable = true;
+      environment.GROQ_API_KEY = config.age.secrets.credentials-groq-api-key.path;
+    };
+
     # ── Networking ───────────────────────────────────────────────────
     tsnet-proxy = {
       enable = true;
