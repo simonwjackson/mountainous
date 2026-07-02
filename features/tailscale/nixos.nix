@@ -3,15 +3,16 @@
   lib,
   ...
 }: let
-  inherit (lib) mkDefault mkIf;
+  inherit (lib) mkDefault mkIf optional;
   cfg = config.mountainous.features.tailscale;
+  acceptDnsFlag = optional cfg.acceptDns "--accept-dns=true";
 in {
   config = mkIf cfg.enable {
     services.tailscale = {
       enable = true;
       authKeyFile = mkIf (cfg.authKeyFile != null) cfg.authKeyFile;
-      extraUpFlags = cfg.extraUpFlags;
-      extraSetFlags = cfg.extraSetFlags;
+      extraUpFlags = acceptDnsFlag ++ cfg.extraUpFlags;
+      extraSetFlags = acceptDnsFlag ++ cfg.extraSetFlags;
       extraDaemonFlags = cfg.extraDaemonFlags;
     };
 

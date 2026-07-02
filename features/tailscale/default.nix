@@ -29,6 +29,16 @@ in {
       description = "Path to a Tailscale auth key file used for automatic tailscale up.";
     };
 
+    acceptDns = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Whether personal machines should accept Tailscale DNS configuration.
+        Keep this enabled so short MagicDNS names resolve inside the trusted
+        tailnet boundary instead of falling through to LAN search domains.
+      '';
+    };
+
     extraUpFlags = mkOption {
       type = types.listOf types.str;
       default = [];
