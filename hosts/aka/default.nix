@@ -4,7 +4,8 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   korriApiPort = 3001;
 
   akaLlamaQwen32Port = 18080;
@@ -36,7 +37,9 @@
       --host "$AKA_LLAMA_QWEN32_HOST" \
       --port "$AKA_LLAMA_QWEN32_PORT"
   '';
-in {
+
+in
+{
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -97,7 +100,7 @@ in {
     steam = {
       enable = true;
       protontricks.enable = true;
-      extraCompatPackages = [pkgs.proton-ge-bin];
+      extraCompatPackages = [ pkgs.proton-ge-bin ];
     };
 
     gamemode.enable = true;
@@ -105,18 +108,20 @@ in {
     sway = {
       enable = true;
       xwayland.enable = true;
-      extraOptions = ["--unsupported-gpu"];
+      extraOptions = [ "--unsupported-gpu" ];
     };
   };
 
-  xdg.portal = {
-    enable = true;
-    wlr.enable = true;
-    extraPortals = [pkgs.xdg-desktop-portal-gtk];
-    config.common = lib.mkForce {
-      default = "*";
-    };
-  };
+  # aka is a headless Korri source machine (no interactive desktop) and nothing
+  # in the game-stream path needs xdg-desktop-portal: Sunshine captures the
+  # screen directly (it streamed fine all along while the portal was failed).
+  # Leaving the portal enabled cost ~25s of black screen per game launch: apps
+  # (RetroArch) probe the portal on startup, and the frontend blocks ~25s on a
+  # D-Bus activation timeout for each interface with no working backend. The
+  # GTK backend can never start here (`cannot open display`), and even a
+  # wlr-only config still stalled ~25s on the Settings interface. Measured
+  # locally: portal enabled -> ~45s to first frame; disabled -> ~3s. Disable it.
+  xdg.portal.enable = lib.mkForce false;
 
   services = {
     seatd.enable = true;
@@ -166,6 +171,13 @@ in {
 
       compositor.sway.package = config.programs.sway.package;
 
+      rpcs3 = {
+        enable = true;
+        package = pkgs."rpcs3-v0.0.41-unstable-2026-06-04";
+        gamesRoot = "/srv/lakes/towada/gaming/games/sony-playstation-3";
+        stateRoot = "/home/simonwjackson/.config/rpcs3";
+      };
+
       daemon = {
         host = "0.0.0.0";
         port = korriApiPort;
@@ -173,7 +185,10 @@ in {
         publicApiBaseUrl = "http://192.168.1.117:${toString korriApiPort}";
         streamControl.enable = true;
         openFirewall = true;
-        firewallInterfaces = ["tailscale0"];
+        # Source-machine peers connect over the host's advertised LAN address.
+        # Do not inherit Korri's older guessed interface defaults (`lan0`/tailscale0):
+        # aka's wired interface is `eno1`, and a bad scope advertises an unreachable source.
+        firewallInterfaces = [ ];
         # advertise.enable removed in Korri federation v1 (R14): every
         # korrid now advertises unconditionally with caps including
         # `source` baseline. Only the human-readable name is still tunable.
@@ -198,7 +213,7 @@ in {
 
   security.rtkit.enable = true;
 
-  boot.kernelModules = ["uinput"];
+  boot.kernelModules = [ "uinput" ];
 
   services.udev.extraRules = ''
     SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput", TAG+="uaccess"
@@ -216,8 +231,14 @@ in {
   # trusted interface; intentionally do not add this port to allowedTCPPorts.
   systemd.services.aka-llama-qwen32 = {
     description = "Qwen2.5-Coder 32B llama.cpp server for Pi";
-    after = ["network-online.target" "tailscaled.service"];
-    wants = ["network-online.target" "tailscaled.service"];
+    after = [
+      "network-online.target"
+      "tailscaled.service"
+    ];
+    wants = [
+      "network-online.target"
+      "tailscaled.service"
+    ];
 
     environment = {
       HOME = "/home/simonwjackson";
@@ -230,7 +251,10 @@ in {
       Type = "simple";
       User = "simonwjackson";
       Group = "users";
-      SupplementaryGroups = ["render" "video"];
+      SupplementaryGroups = [
+        "render"
+        "video"
+      ];
       ExecStart = akaLlamaQwen32Start;
       Restart = "on-failure";
       RestartSec = 5;
@@ -239,8 +263,12 @@ in {
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
-      ReadWritePaths = ["/home/simonwjackson/.cache"];
-      RestrictAddressFamilies = ["AF_UNIX" "AF_INET" "AF_INET6"];
+      ReadWritePaths = [ "/home/simonwjackson/.cache" ];
+      RestrictAddressFamilies = [
+        "AF_UNIX"
+        "AF_INET"
+        "AF_INET6"
+      ];
       LockPersonality = true;
       RestrictRealtime = true;
     };
@@ -254,6 +282,17 @@ in {
     pkgs.mangohud
     pkgs.protontricks
   ];
+
+  # Enable the RetroArch first-party plugin on this headless streaming source so
+  # library entries can launch GBA content through @korri:retroarch/retroarch +
+  # @korri:retroarch/mgba instead of the starter-kit `nix run nixpkgs#mgba` path.
+  # The RetroArch closure itself (/etc/korri/bin/retroarch, /etc/korri/cores/*.so,
+  # shaders, joypad autoconfig, sessiond PATH) is now provided by the
+  # korri-source-machine module's retroarch source-machine plugin module; we only
+  # opt the plugins into the runtime enable list here (korri-source-machine
+  # enables @korri:gamescope by default).
+  systemd.user.services.korrid.environment.KORRI_ENABLED_PLUGINS =
+    lib.mkForce "@korri:gamescope,@korri:retroarch,@korri:rpcs3";
 
   system.stateVersion = "24.11";
 }
