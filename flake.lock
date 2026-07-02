@@ -627,15 +627,15 @@
         ],
         "nixpkgs-2405": "nixpkgs-2405",
         "nixpkgs-godot": "nixpkgs-godot",
-        "sm127-src": "sm127-src",
-        "smbr-src": "smbr-src"
+        "nixpkgs-mesa": "nixpkgs-mesa",
+        "wasm4-src": "wasm4-src"
       },
       "locked": {
-        "lastModified": 1781028646,
-        "narHash": "sha256-HEJd7YmZbGxyZTnvG3QxxiMZwb6fqS69Zgr2YuE1Rdo=",
-        "ref": "refs/heads/trunk",
-        "rev": "7f74025e801de18c833d2a8eea4273961acc5fe6",
-        "revCount": 1137,
+        "lastModified": 1782944674,
+        "narHash": "sha256-PNHvrPofqVdnaL3kfW6pfugCaZEfzyAh99i+rj5pX+U=",
+        "ref": "trunk",
+        "rev": "886f3aa87bd0f7d8f863ce1ce2af218d662395be",
+        "revCount": 2040,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
@@ -720,11 +720,11 @@
         "nixpkgs-sdl2-classic": "nixpkgs-sdl2-classic"
       },
       "locked": {
-        "lastModified": 1780961150,
-        "narHash": "sha256-UXNzfmGu7n2y43WOccS4xcwinYIWe5+8XpzOdo1jyz8=",
+        "lastModified": 1782578642,
+        "narHash": "sha256-ylSfhdb4RkJhoNiUPSzByRnQhWTvpGUre8t/5s5dGqg=",
         "owner": "simonwjackson",
         "repo": "nix-on-rocks",
-        "rev": "3783c227c92d4442734b485fdcfcc3ee35b64b64",
+        "rev": "38d662a585c81862c7f2e93024d78cf6c4bc9850",
         "type": "github"
       },
       "original": {
@@ -1026,6 +1026,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-mesa": {
+      "locked": {
+        "lastModified": 1781074563,
+        "narHash": "sha256-md8WlXOlfnIeHeOScMTTHFyf2d6iaTwPl2apR5EQ3P4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9ae611a455b90cf061d8f332b977e387bda8e1ca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9ae611a455b90cf061d8f332b977e387bda8e1ca",
+        "type": "github"
+      }
+    },
     "nixpkgs-sdl2-classic": {
       "locked": {
         "lastModified": 1751274312,
@@ -1313,40 +1329,6 @@
         "type": "github"
       }
     },
-    "sm127-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1734805364,
-        "narHash": "sha256-G46nJ6aaCiStworbAx1+sTH1QAygY5haoCVohfXEScw=",
-        "owner": "Level-Share-Square",
-        "repo": "SuperMario127",
-        "rev": "6118c65d8e799dae73f2c02596af827c8056a330",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Level-Share-Square",
-        "repo": "SuperMario127",
-        "rev": "6118c65d8e799dae73f2c02596af827c8056a330",
-        "type": "github"
-      }
-    },
-    "smbr-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1779874410,
-        "narHash": "sha256-AIQVH8xZkAx4JMnUtCu0mnMcmLdz7jUpWsf7Clay62k=",
-        "owner": "JHDev2006",
-        "repo": "Super-Mario-Bros.-Remastered-Public",
-        "rev": "21b068182fdf07bf5aa7c73b4d399650970fd2f0",
-        "type": "github"
-      },
-      "original": {
-        "owner": "JHDev2006",
-        "repo": "Super-Mario-Bros.-Remastered-Public",
-        "rev": "21b068182fdf07bf5aa7c73b4d399650970fd2f0",
-        "type": "github"
-      }
-    },
     "systems": {
       "locked": {
         "lastModified": 1681028828,
@@ -1604,6 +1586,25 @@
         "owner": "boinkor-net",
         "repo": "tsnsrv",
         "type": "github"
+      }
+    },
+    "wasm4-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1734062069,
+        "narHash": "sha256-QmSqQh+8w8pxoQcgHrsTfv/lIb5Xh7LkATnSMDUwjKo=",
+        "ref": "refs/heads/main",
+        "rev": "92490f261659921d8b724f10b5b842cdf5a0a1bb",
+        "revCount": 1738,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/aduros/wasm4"
+      },
+      "original": {
+        "rev": "92490f261659921d8b724f10b5b842cdf5a0a1bb",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/aduros/wasm4"
       }
     },
     "yt-dlp-src": {
