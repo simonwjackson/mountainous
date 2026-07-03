@@ -72,6 +72,7 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixpkgs-rpcs3-v0-0-41.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Lukas's unofficial Nix flake for pi (earendil-works/pi), the terminal
     # coding agent. Exposes a NixOS module under programs.pi.coding-agent
     # and a package via inputs.pi.packages.<system>.coding-agent. We wrap

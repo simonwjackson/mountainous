@@ -1042,6 +1042,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-rpcs3-v0-0-41": {
+      "locked": {
+        "lastModified": 1782723713,
+        "narHash": "sha256-oPXCU/SSUokcGaJREHibG1CBX3+s/W7orDWQOZDsEeQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b5aa0fbd538984f6e3d201be0005b4463d8b09f8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-sdl2-classic": {
       "locked": {
         "lastModified": 1751274312,
@@ -1286,6 +1302,7 @@
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-droid": "nixpkgs-droid",
+        "nixpkgs-rpcs3-v0-0-41": "nixpkgs-rpcs3-v0-0-41",
         "pi": "pi",
         "pyxis": "pyxis",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
