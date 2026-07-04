@@ -631,11 +631,11 @@
         "wasm4-src": "wasm4-src"
       },
       "locked": {
-        "lastModified": 1783132694,
-        "narHash": "sha256-WestpbtPFEJXvft+GOsxy5HMSxhCFAsDWoMMrIbc51k=",
+        "lastModified": 1783139472,
+        "narHash": "sha256-E8nppCTr2urpchV1zK8vRD3A71b57r5sRBk40R8jbSo=",
         "ref": "trunk",
-        "rev": "1221bb51fd795a4b84e02d905acae55422bfc7da",
-        "revCount": 2285,
+        "rev": "cdfcd15678bb0afa0984857e0c2bf234a78441fc",
+        "revCount": 2314,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
