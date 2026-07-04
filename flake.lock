@@ -631,11 +631,11 @@
         "wasm4-src": "wasm4-src"
       },
       "locked": {
-        "lastModified": 1782944674,
-        "narHash": "sha256-PNHvrPofqVdnaL3kfW6pfugCaZEfzyAh99i+rj5pX+U=",
+        "lastModified": 1783132694,
+        "narHash": "sha256-WestpbtPFEJXvft+GOsxy5HMSxhCFAsDWoMMrIbc51k=",
         "ref": "trunk",
-        "rev": "886f3aa87bd0f7d8f863ce1ce2af218d662395be",
-        "revCount": 2040,
+        "rev": "1221bb51fd795a4b84e02d905acae55422bfc7da",
+        "revCount": 2285,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
@@ -720,11 +720,11 @@
         "nixpkgs-sdl2-classic": "nixpkgs-sdl2-classic"
       },
       "locked": {
-        "lastModified": 1782578642,
-        "narHash": "sha256-ylSfhdb4RkJhoNiUPSzByRnQhWTvpGUre8t/5s5dGqg=",
+        "lastModified": 1783110913,
+        "narHash": "sha256-unpy3IMydKfhAFHlwcfSsx1c6geUSnVVk1ZTguocsJw=",
         "owner": "simonwjackson",
         "repo": "nix-on-rocks",
-        "rev": "38d662a585c81862c7f2e93024d78cf6c4bc9850",
+        "rev": "2261d0065622690e887990d5f442bb797218076b",
         "type": "github"
       },
       "original": {
