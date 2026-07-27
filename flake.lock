@@ -1269,11 +1269,11 @@
         "yt-dlp-src": "yt-dlp-src"
       },
       "locked": {
-        "lastModified": 1785123300,
-        "narHash": "sha256-RWn3fDy6Amt4jiFOJzFxRLRO3XSFnKrPnecGl9ZcyEs=",
+        "lastModified": 1785123710,
+        "narHash": "sha256-DECwedgNtLCWcNP3sF4qEd2yE6a996rMH/AM2R0VnMc=",
         "owner": "simonwjackson",
         "repo": "pyxis",
-        "rev": "4e5b571e7bf28c80145aefa799a54211ee20a713",
+        "rev": "1205a1fb801b2c3fe70c9fd9e1f0b76b5456522a",
         "type": "github"
       },
       "original": {
