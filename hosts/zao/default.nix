@@ -130,6 +130,19 @@ in {
         username = "simon@simonwjackson.com";
         passwordFile = config.age.secrets.pyxis-pandora-password.path;
       };
+      sonos = {
+        enable = true;
+        lanStreamBaseUrl = "http://192.168.1.243:8765";
+        seedHosts = [
+          "192.168.1.118"
+          "192.168.1.216"
+          "192.168.1.226"
+          "192.168.1.241"
+        ];
+        discoveryIntervalSeconds = 30;
+        pollIntervalMs = 1000;
+        requestTimeoutMs = 3000;
+      };
       proxy = {
         enable = true;
         hostname = "pyxis";

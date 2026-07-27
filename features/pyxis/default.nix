@@ -77,6 +77,42 @@ in {
       };
     };
 
+    sonos = {
+      enable = mkEnableOption "Sonos playback output";
+
+      lanStreamBaseUrl = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "LAN HTTP base URL Sonos speakers use to fetch Pyxis streams.";
+        example = "http://192.168.1.243:8765";
+      };
+
+      seedHosts = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = "Known Sonos hosts used when SSDP discovery is unavailable.";
+        example = ["192.168.1.118"];
+      };
+
+      discoveryIntervalSeconds = mkOption {
+        type = types.ints.positive;
+        default = 30;
+        description = "Seconds to cache Sonos topology discovery.";
+      };
+
+      pollIntervalMs = mkOption {
+        type = types.ints.positive;
+        default = 1000;
+        description = "Sonos transport polling interval in milliseconds.";
+      };
+
+      requestTimeoutMs = mkOption {
+        type = types.ints.positive;
+        default = 3000;
+        description = "Timeout for Sonos HTTP and SOAP requests.";
+      };
+    };
+
     proxy = {
       enable = mkEnableOption "expose Pyxis through tsnet-proxy";
 

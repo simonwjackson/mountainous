@@ -43,6 +43,15 @@ in {
           discogs.tokenFile = mkDefault cfg.sources.discogs.tokenFile;
         };
 
+        sonos = {
+          enabled = mkDefault cfg.sonos.enable;
+          lanStreamBaseUrl = mkDefault cfg.sonos.lanStreamBaseUrl;
+          seedHosts = mkDefault cfg.sonos.seedHosts;
+          discoveryIntervalSeconds = mkDefault cfg.sonos.discoveryIntervalSeconds;
+          pollIntervalMs = mkDefault cfg.sonos.pollIntervalMs;
+          requestTimeoutMs = mkDefault cfg.sonos.requestTimeoutMs;
+        };
+
         log.level = mkDefault cfg.logLevel;
       };
 
