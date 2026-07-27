@@ -30,7 +30,6 @@ in {
         server = {
           port = mkDefault cfg.port;
           hostname = mkDefault cfg.hostname;
-          externalUrl = mkDefault cfg.externalUrl;
         };
 
         web.allowedHosts = mkDefault cfg.allowedHosts;

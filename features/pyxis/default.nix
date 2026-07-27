@@ -35,12 +35,6 @@ in {
       description = "Hostname Pyxis should advertise for local URLs and non-proxied access.";
     };
 
-    externalUrl = mkOption {
-      type = types.nullOr types.str;
-      default = null;
-      description = "External URL Pyxis should use when generating stream URLs for external clients such as Sonos.";
-    };
-
     openFirewall = mkOption {
       type = types.bool;
       default = false;

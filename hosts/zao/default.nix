@@ -124,10 +124,7 @@ in {
     # ── Services ─────────────────────────────────────────────────────
     features.pyxis = {
       enable = true;
-      # Sonos must be able to fetch streams directly over the LAN; do not
-      # advertise the Tailscale hostname here.
       openFirewall = true;
-      externalUrl = "http://192.168.1.243:8765";
       allowedHosts = ["pyxis.hummingbird-lake.ts.net"];
       sources.pandora = {
         username = "simon@simonwjackson.com";
