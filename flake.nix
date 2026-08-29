@@ -113,7 +113,10 @@
     ...
   } @ inputs: let
     lib = nixpkgs.lib;
-    systems = ["x86_64-linux" "aarch64-linux"];
+    systems = [
+      "x86_64-linux"
+      "aarch64-linux"
+    ];
 
     collectPackagePaths = prefix: dir: let
       entries = builtins.readDir dir;
@@ -127,10 +130,9 @@
             if prefix == ""
             then name
             else "${prefix}-${name}";
-          current =
-            lib.optionalAttrs
-            (type == "directory" && builtins.pathExists (path + "/default.nix"))
-            {"${attrName}" = path;};
+          current = lib.optionalAttrs (type == "directory" && builtins.pathExists (path + "/default.nix")) {
+            "${attrName}" = path;
+          };
           nested =
             if type == "directory"
             then collectPackagePaths attrName path
@@ -144,33 +146,35 @@
       entries = builtins.readDir dir;
       names = lib.sort (a: b: a < b) (builtins.attrNames entries);
     in
-      lib.concatMap (name: let
-        type = entries.${name};
-        path = dir + "/${name}";
-      in
-        if type != "directory"
-        then []
-        else
-          lib.optional (builtins.pathExists (path + "/default.nix")) path
-          ++ collectModulePaths path)
+      lib.concatMap (
+        name: let
+          type = entries.${name};
+          path = dir + "/${name}";
+        in
+          if type != "directory"
+          then []
+          else lib.optional (builtins.pathExists (path + "/default.nix")) path ++ collectModulePaths path
+      )
       names;
 
     collectPlatformModulePaths = dir: platformFile: let
       entries = builtins.readDir dir;
       names = lib.sort (a: b: a < b) (builtins.attrNames entries);
     in
-      lib.concatMap (name: let
-        type = entries.${name};
-        path = dir + "/${name}";
-        platformPath = path + "/${platformFile}";
-        hasDefault = builtins.pathExists (path + "/default.nix");
-        hasPlatform = type == "directory" && builtins.pathExists platformPath;
-      in
-        if hasPlatform
-        then (lib.optional hasDefault path) ++ [platformPath]
-        else if type == "directory"
-        then collectPlatformModulePaths path platformFile
-        else [])
+      lib.concatMap (
+        name: let
+          type = entries.${name};
+          path = dir + "/${name}";
+          platformPath = path + "/${platformFile}";
+          hasDefault = builtins.pathExists (path + "/default.nix");
+          hasPlatform = type == "directory" && builtins.pathExists platformPath;
+        in
+          if hasPlatform
+          then (lib.optional hasDefault path) ++ [platformPath]
+          else if type == "directory"
+          then collectPlatformModulePaths path platformFile
+          else []
+      )
       names;
 
     packagePaths = collectPackagePaths "" ./packages;
@@ -232,7 +236,13 @@
         inherit system;
         specialArgs =
           {
-            inherit self inputs cascade hyprdynamicmonitors tsnsrv;
+            inherit
+              self
+              inputs
+              cascade
+              hyprdynamicmonitors
+              tsnsrv
+              ;
             mountainousPlatform = "nixos";
           }
           // specialArgs;
@@ -249,23 +259,33 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
             }
-            ({lib, ...}: {
-              nix.settings = {
-                experimental-features = ["nix-command" "flakes"];
-                trusted-users = ["root" "@wheel" "simonwjackson" "admin"];
-                warn-dirty = false;
-              };
-              users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
-                ./secrets/keys/users/id_rsa.pub
-                ./secrets/keys/users/id_ed25519.pub
-              ];
-              security.sudo.wheelNeedsPassword = lib.mkDefault false;
-              networking.extraHosts = lib.mkDefault ''
-                127.0.0.1 amazesql01.database.windows.net
-                127.0.0.1 amazeportalsql.database.windows.net
-              '';
-              mountainous.features.tailscale.enable = lib.mkDefault true;
-            })
+            (
+              {lib, ...}: {
+                nix.settings = {
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
+                  trusted-users = [
+                    "root"
+                    "@wheel"
+                    "simonwjackson"
+                    "admin"
+                  ];
+                  warn-dirty = false;
+                };
+                users.users.simonwjackson.openssh.authorizedKeys.keyFiles = lib.mkDefault [
+                  ./secrets/keys/users/id_rsa.pub
+                  ./secrets/keys/users/id_ed25519.pub
+                ];
+                security.sudo.wheelNeedsPassword = lib.mkDefault false;
+                networking.extraHosts = lib.mkDefault ''
+                  127.0.0.1 amazesql01.database.windows.net
+                  127.0.0.1 amazeportalsql.database.windows.net
+                '';
+                mountainous.features.tailscale.enable = lib.mkDefault true;
+              }
+            )
             {nixpkgs.overlays = projectOverlays;}
           ]
           ++ hostAutoModules
@@ -327,10 +347,7 @@
           # Reuses the upstream packaging plumbing so mountainous owns the
           # *contents* of the guest while nix-on-rocks owns the substrate
           # delivery channel.
-          sobo-rootfs =
-            inputs.nix-on-rocks-guest.lib.mkGuestRootfs
-            "aarch64-linux"
-            self.nixosConfigurations.sobo;
+          sobo-rootfs = inputs.nix-on-rocks-guest.lib.mkGuestRootfs "aarch64-linux" self.nixosConfigurations.sobo;
         })
     );
 
@@ -405,15 +422,17 @@
       default = usuDroid;
     };
 
-    devShells = lib.genAttrs systems (system: let
-      pkgs = mkPkgs system;
-    in {
-      default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          just
-          gitleaks
-        ];
-      };
-    });
+    devShells = lib.genAttrs systems (
+      system: let
+        pkgs = mkPkgs system;
+      in {
+        default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            just
+            gitleaks
+          ];
+        };
+      }
+    );
   };
 }

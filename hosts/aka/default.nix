@@ -4,8 +4,7 @@
   lib,
   pkgs,
   ...
-}:
-let
+}: let
   korriApiPort = 3001;
 
   akaLlamaQwen32Port = 18080;
@@ -37,9 +36,7 @@ let
       --host "$AKA_LLAMA_QWEN32_HOST" \
       --port "$AKA_LLAMA_QWEN32_PORT"
   '';
-
-in
-{
+in {
   imports = [
     ./hardware.nix
     ./disko.nix
@@ -100,7 +97,7 @@ in
     steam = {
       enable = true;
       protontricks.enable = true;
-      extraCompatPackages = [ pkgs.proton-ge-bin ];
+      extraCompatPackages = [pkgs.proton-ge-bin];
     };
 
     gamemode.enable = true;
@@ -108,7 +105,7 @@ in
     sway = {
       enable = true;
       xwayland.enable = true;
-      extraOptions = [ "--unsupported-gpu" ];
+      extraOptions = ["--unsupported-gpu"];
     };
   };
 
@@ -188,7 +185,7 @@ in
         # Source-machine peers connect over the host's advertised LAN address.
         # Do not inherit Korri's older guessed interface defaults (`lan0`/tailscale0):
         # aka's wired interface is `eno1`, and a bad scope advertises an unreachable source.
-        firewallInterfaces = [ ];
+        firewallInterfaces = [];
         # advertise.enable removed in Korri federation v1 (R14): every
         # korrid now advertises unconditionally with caps including
         # `source` baseline. Only the human-readable name is still tunable.
@@ -213,7 +210,7 @@ in
 
   security.rtkit.enable = true;
 
-  boot.kernelModules = [ "uinput" ];
+  boot.kernelModules = ["uinput"];
 
   services.udev.extraRules = ''
     SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput", TAG+="uaccess"
@@ -263,7 +260,7 @@ in
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
-      ReadWritePaths = [ "/home/simonwjackson/.cache" ];
+      ReadWritePaths = ["/home/simonwjackson/.cache"];
       RestrictAddressFamilies = [
         "AF_UNIX"
         "AF_INET"
