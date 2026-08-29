@@ -37,7 +37,10 @@ class AkaQwen32ServiceTest(unittest.TestCase):
         self.assertIn('User = "simonwjackson"', service_block)
         self.assertIn('HOME = "/home/simonwjackson"', service_block)
         self.assertIn('XDG_CACHE_HOME = "/home/simonwjackson/.cache"', service_block)
-        self.assertIn('SupplementaryGroups = ["render" "video"]', service_block)
+        self.assertRegex(
+            service_block,
+            r'SupplementaryGroups\s*=\s*\[\s*"render"\s*"video"\s*\];',
+        )
 
     def test_does_not_open_broad_firewall_port(self):
         self.assertNotIn("allowedTCPPorts = [18080]", self.config)
