@@ -13,7 +13,7 @@
     efi.canTouchEfiVariables = true;
     systemd-boot.extraInstallCommands = ''
       # Mirror ESP to second NVMe for boot redundancy
-      mkdir -p /boot/efi-backup
+      ${pkgs.coreutils}/bin/mkdir -p /boot/efi-backup
       if ! ${pkgs.util-linux}/bin/mountpoint -q /boot/efi-backup; then
         ${pkgs.util-linux}/bin/mount /dev/disk/by-partlabel/disk-nvme1-ESP /boot/efi-backup || true
       fi

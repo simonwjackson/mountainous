@@ -444,6 +444,22 @@
         touch "$out"
       '';
 
+    checks.x86_64-linux.zao-esp-mirror = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      script = self.nixosConfigurations.zao.config.system.build.installBootLoader;
+    in
+      pkgs.runCommand "zao-esp-mirror" {} ''
+        ${pkgs.gnugrep}/bin/grep -Fq '${pkgs.coreutils}/bin/mkdir -p /boot/efi-backup' ${script}
+        if ${pkgs.gnugrep}/bin/grep -Eq '^mkdir[[:space:]]' ${script}; then
+          echo "Zao boot installer must not rely on PATH for mkdir" >&2
+          exit 1
+        fi
+        ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-partlabel/disk-nvme1-ESP /boot/efi-backup' ${script}
+        ${pkgs.gnugrep}/bin/grep -Fq -- "--exclude='/efi-backup' /boot/ /boot/efi-backup/" ${script}
+        ${pkgs.gnugrep}/bin/grep -Fq '/bin/umount /boot/efi-backup' ${script}
+        touch "$out"
+      '';
+
     checks.x86_64-linux.zao-peer-media = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;
