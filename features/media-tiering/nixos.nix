@@ -12,11 +12,30 @@
   localTvDir = "${cfg.localBackingRoot}/tv";
   peerMoviesDir = "${cfg.peerMountRoot}/movies";
   peerTvDir = "${cfg.peerMountRoot}/tv";
+  rangeMoviesBranches = [localMoviesDir] ++ optionals (cfg.role == "source") [peerMoviesDir];
+  rangeTvBranches = [localTvDir] ++ optionals (cfg.role == "source") [peerTvDir];
 
   # Both sides export and mount rw: the mover writes source→sink,
   # and Jellyfin on the sink needs to delete files on the source.
   exportMode = "rw";
   peerMountMode = "rw";
+  peerNfsOptions = [
+    peerMountMode
+    "nfsvers=4.2"
+    "soft"
+    "timeo=50"
+    "retrans=2"
+    "noatime"
+  ];
+  sinkPeerMountOptions = concatStringsSep "," [
+    peerMountMode
+    "nfsvers=4.2"
+    "soft"
+    "timeo=10"
+    "retrans=1"
+    "noatime"
+    "retry=0"
+  ];
 
   mergerfsOptions = mountpoint: [
     "noauto"
@@ -63,6 +82,90 @@
       };
     };
   };
+
+  peerMountScript = pkgs.writeShellScript "media-tiering-peer-mount" ''
+    set -u
+
+    set_branches() {
+      local movies_branches="$1" tv_branches="$2" status=0
+
+      if ! ${pkgs.util-linux}/bin/mountpoint -q ${lib.escapeShellArg mediaCfg.rangeMoviesDir}; then
+        echo "movies range is not mounted" >&2
+        status=1
+      elif ! ${pkgs.attr}/bin/setfattr \
+        -n user.mergerfs.branches \
+        -v "$movies_branches" \
+        ${lib.escapeShellArg "${mediaCfg.rangeMoviesDir}/.mergerfs"}; then
+        echo "failed to update movies range branches" >&2
+        status=1
+      fi
+
+      if ! ${pkgs.util-linux}/bin/mountpoint -q ${lib.escapeShellArg mediaCfg.rangeTvDir}; then
+        echo "TV range is not mounted" >&2
+        status=1
+      elif ! ${pkgs.attr}/bin/setfattr \
+        -n user.mergerfs.branches \
+        -v "$tv_branches" \
+        ${lib.escapeShellArg "${mediaCfg.rangeTvDir}/.mergerfs"}; then
+        echo "failed to update TV range branches" >&2
+        status=1
+      fi
+
+      return "$status"
+    }
+
+    local_only() {
+      set_branches \
+        ${lib.escapeShellArg localMoviesDir} \
+        ${lib.escapeShellArg localTvDir}
+    }
+
+    local_and_peer() {
+      set_branches \
+        ${lib.escapeShellArg "${localMoviesDir}:${peerMoviesDir}"} \
+        ${lib.escapeShellArg "${localTvDir}:${peerTvDir}"}
+    }
+
+    peer_is_healthy() {
+      ${pkgs.coreutils}/bin/timeout --signal=TERM --kill-after=2s 5s \
+        ${pkgs.coreutils}/bin/stat \
+          ${lib.escapeShellArg peerMoviesDir} \
+          ${lib.escapeShellArg peerTvDir} \
+          >/dev/null 2>&1
+    }
+
+    if ${pkgs.util-linux}/bin/mountpoint -q ${lib.escapeShellArg cfg.peerMountRoot}; then
+      if peer_is_healthy && local_and_peer; then
+        exit 0
+      fi
+
+      local_only || true
+      ${pkgs.util-linux}/bin/umount -l ${lib.escapeShellArg cfg.peerMountRoot} 2>/dev/null || true
+      echo "removed unavailable peer media from the range views" >&2
+    fi
+
+    ${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg cfg.peerMountRoot}
+    mount_status=0
+    if ${pkgs.coreutils}/bin/timeout --signal=TERM --kill-after=2s 10s \
+      ${pkgs.util-linux}/bin/mount \
+        -t nfs \
+        -o ${lib.escapeShellArg sinkPeerMountOptions} \
+        ${lib.escapeShellArg "${cfg.peerHost}:/"} \
+        ${lib.escapeShellArg cfg.peerMountRoot}; then
+      if local_and_peer; then
+        echo "mounted peer media from ${cfg.peerHost}"
+        exit 0
+      fi
+      mount_status=70
+    else
+      mount_status=$?
+    fi
+
+    local_only || true
+    ${pkgs.util-linux}/bin/umount -l ${lib.escapeShellArg cfg.peerMountRoot} 2>/dev/null || true
+    echo "peer media from ${cfg.peerHost} is unavailable; keeping local-only range views (mount status $mount_status)" >&2
+    exit 0
+  '';
 
   moverScript = pkgs.writeShellScript "media-tiering-mover" ''
         set -euo pipefail
@@ -279,39 +382,22 @@ in {
 
       environment.systemPackages = [pkgs.mergerfs];
 
-      systemd.tmpfiles.rules = [
-        "d ${cfg.localBackingRoot} 2775 root media - -"
-        "d ${localMoviesDir} 2775 root media - -"
-        "d ${localTvDir} 2775 root media - -"
-        "d ${cfg.peerMountRoot} 0755 root root - -"
-        "d ${peerMoviesDir} 0755 root root - -"
-        "d ${peerTvDir} 0755 root root - -"
-        "d ${mediaCfg.rangeRoot} 0755 root root - -"
-        "d ${mediaCfg.rangeRoot}/media 0755 root root - -"
-        "d ${mediaCfg.rangeMoviesDir} 2775 root media - -"
-        "d ${mediaCfg.rangeTvDir} 2775 root media - -"
-        "d /var/lib/media-tiering 0755 root root - -"
-      ];
-
-      fileSystems.${cfg.peerMountRoot} = {
-        device = "${cfg.peerHost}:/";
-        fsType = "nfs";
-        options = [
-          peerMountMode
-          "_netdev"
-          "nfsvers=4.2"
-          "soft"
-          "timeo=50"
-          "retrans=2"
-          "noatime"
-          "nofail"
-          "x-systemd.automount"
-          "x-systemd.idle-timeout=600"
-          "x-systemd.mount-timeout=10s"
-          "x-systemd.after=tailscaled.service"
-          "x-systemd.requires=tailscaled.service"
+      systemd.tmpfiles.rules =
+        [
+          "d ${cfg.localBackingRoot} 2775 root media - -"
+          "d ${localMoviesDir} 2775 root media - -"
+          "d ${localTvDir} 2775 root media - -"
+          "d ${mediaCfg.rangeRoot} 0755 root root - -"
+          "d ${mediaCfg.rangeRoot}/media 0755 root root - -"
+          "d ${mediaCfg.rangeMoviesDir} 2775 root media - -"
+          "d ${mediaCfg.rangeTvDir} 2775 root media - -"
+          "d /var/lib/media-tiering 0755 root root - -"
+        ]
+        ++ optionals (cfg.role == "source") [
+          "d ${cfg.peerMountRoot} 0755 root root - -"
+          "d ${peerMoviesDir} 0755 root root - -"
+          "d ${peerTvDir} 0755 root root - -"
         ];
-      };
 
       services.nfs.server = {
         enable = true;
@@ -322,6 +408,47 @@ in {
         '';
       };
     }
+
+    (mkIf (cfg.role == "source") {
+      fileSystems.${cfg.peerMountRoot} = {
+        device = "${cfg.peerHost}:/";
+        fsType = "nfs";
+        options =
+          peerNfsOptions
+          ++ [
+            "_netdev"
+            "nofail"
+            "x-systemd.automount"
+            "x-systemd.idle-timeout=600"
+            "x-systemd.mount-timeout=10s"
+            "x-systemd.after=tailscaled.service"
+            "x-systemd.requires=tailscaled.service"
+          ];
+      };
+    })
+
+    (mkIf (cfg.role == "sink") {
+      systemd.services.media-tiering-peer-mount = {
+        description = "Best-effort mount of peer media from ${cfg.peerHost}";
+        after = ["tailscaled.service"];
+        wants = ["tailscaled.service"];
+        wantedBy = [];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = peerMountScript;
+        };
+      };
+
+      systemd.timers.media-tiering-peer-mount = {
+        description = "Retry the peer media mount outside host activation";
+        wantedBy = ["timers.target"];
+        timerConfig = {
+          Unit = "media-tiering-peer-mount.service";
+          OnActiveSec = "30s";
+          OnUnitInactiveSec = "5min";
+        };
+      };
+    })
 
     (mkIf (cfg.localSources.movies != null) {
       fileSystems.${localMoviesDir} = {
@@ -339,8 +466,8 @@ in {
       };
     })
 
-    (mergerfsMount "media-tiering-movies-mount" mediaCfg.rangeMoviesDir [localMoviesDir peerMoviesDir])
-    (mergerfsMount "media-tiering-tv-mount" mediaCfg.rangeTvDir [localTvDir peerTvDir])
+    (mergerfsMount "media-tiering-movies-mount" mediaCfg.rangeMoviesDir rangeMoviesBranches)
+    (mergerfsMount "media-tiering-tv-mount" mediaCfg.rangeTvDir rangeTvBranches)
 
     (mkIf (cfg.role == "source") {
       systemd.services.media-tiering-source-migrate = {

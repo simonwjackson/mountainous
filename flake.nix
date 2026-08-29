@@ -444,6 +444,45 @@
         touch "$out"
       '';
 
+    checks.x86_64-linux.zao-peer-media = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      zao = self.nixosConfigurations.zao.config;
+      yari = self.nixosConfigurations.yari.config;
+      serviceName = "media-tiering-peer-mount";
+      peerRoot = zao.mountainous.features.media-tiering.peerMountRoot;
+      yariPeerRoot = yari.mountainous.features.media-tiering.peerMountRoot;
+      serviceExists = builtins.hasAttr serviceName zao.systemd.services;
+      service = zao.systemd.services.${serviceName};
+      timer = zao.systemd.timers.${serviceName};
+      scriptPath = builtins.head (lib.splitString " " service.serviceConfig.ExecStart);
+      rangeMoviesDir = zao.mountainous.features.media.rangeMoviesDir;
+      rangeTvDir = zao.mountainous.features.media.rangeTvDir;
+      localBackingRoot = zao.mountainous.features.media-tiering.localBackingRoot;
+      zaoTmpfiles = zao.systemd.tmpfiles.rules;
+      yariMountOptions = yari.fileSystems.${yariPeerRoot}.options;
+    in
+      assert lib.assertMsg serviceExists "Zao must use a best-effort peer media mount service";
+      assert lib.assertMsg (!(builtins.hasAttr peerRoot zao.fileSystems)) "Zao peer media must not create a failing systemd mount unit";
+      assert lib.assertMsg (service.wantedBy == []) "Zao peer media mount must stay outside the activation transaction";
+      assert lib.assertMsg (builtins.elem "timers.target" timer.wantedBy) "Zao peer media mount must retain its retry timer";
+      assert lib.assertMsg (timer.timerConfig.OnActiveSec == "30s") "Zao peer media retry must start after activation";
+      assert lib.assertMsg (timer.timerConfig.OnUnitInactiveSec == "5min") "Zao peer media retry must continue every five minutes";
+      assert lib.assertMsg (zao.fileSystems.${rangeMoviesDir}.device == "${localBackingRoot}/movies") "Zao movies must start with its local branch only";
+      assert lib.assertMsg (zao.fileSystems.${rangeTvDir}.device == "${localBackingRoot}/tv") "Zao TV must start with its local branch only";
+      assert lib.assertMsg (lib.all (rule: !(lib.hasInfix peerRoot rule)) zaoTmpfiles) "Zao tmpfiles must not touch the peer mount path";
+      assert lib.assertMsg (builtins.hasAttr yariPeerRoot yari.fileSystems) "Yari must retain its on-demand Zao mount";
+      assert lib.assertMsg (builtins.elem "x-systemd.automount" yariMountOptions) "Yari must retain peer media automounting";
+        pkgs.runCommand "zao-peer-media" {} ''
+          ${pkgs.gnugrep}/bin/grep -Fq 'timeo=10,retrans=1' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'retry=0' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'timeout --signal=TERM --kill-after=2s 10s' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'peer_is_healthy' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'user.mergerfs.branches' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'mount_status=$?' ${scriptPath}
+          ${pkgs.gnugrep}/bin/grep -Fq 'exit 0' ${scriptPath}
+          touch "$out"
+        '';
+
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
