@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   pkgs,
   writeShellApplication,
@@ -262,9 +263,66 @@
     '';
   };
 
+  secrets-rekey = writeShellApplication {
+    name = "secrets-rekey";
+    runtimeInputs = [
+      pkgs.git
+      inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
+    text = ''
+      usage() {
+        cat <<'USAGE'
+      Usage: secrets rekey
+
+      Re-encrypt every managed secret for the recipients declared in
+      secrets/default.nix. The command probes readable user and host SSH
+      identities and passes all available identities to agenix.
+      USAGE
+      }
+
+      if [ $# -gt 0 ]; then
+        case "$1" in
+          -h|--help|help) usage; exit 0 ;;
+          *) echo "❌ Unknown rekey argument: $1" >&2; usage >&2; exit 1 ;;
+        esac
+      fi
+
+      git_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+        echo "❌ Not inside a git repository" >&2
+        exit 1
+      }
+      rules_file="$git_root/secrets/default.nix"
+      if [ ! -f "$rules_file" ]; then
+        echo "❌ Secrets rules not found at $rules_file" >&2
+        exit 1
+      fi
+
+      ids=()
+      for key in \
+        "$HOME/.ssh/id_rsa" \
+        "$HOME/.ssh/id_ed25519" \
+        /etc/ssh/ssh_host_ed25519_key \
+        /etc/ssh/ssh_host_rsa_key; do
+        if [ -r "$key" ]; then
+          ids+=(-i "$key")
+        fi
+      done
+
+      if [ "''${#ids[@]}" -eq 0 ]; then
+        echo "❌ No readable SSH identity files found" >&2
+        exit 1
+      fi
+
+      RULES="$rules_file" agenix -r "''${ids[@]}"
+    '';
+  };
+
   secrets-wrapper = writeShellApplication {
     name = "secrets";
-    runtimeInputs = [secrets-encrypt];
+    runtimeInputs = [
+      secrets-encrypt
+      secrets-rekey
+    ];
     text = ''
       if [ $# -eq 0 ]; then
         cat <<'USAGE'
@@ -272,8 +330,7 @@
 
       Commands:
         encrypt    Encrypt a new secret (see 'secrets encrypt --help')
-
-      For re-encrypting all existing secrets, use 'just rekey'.
+        rekey      Re-encrypt all secrets for the declared recipients
       USAGE
         exit 1
       fi
@@ -281,10 +338,7 @@
       cmd="$1"; shift
       case "$cmd" in
         encrypt) exec secrets-encrypt "$@" ;;
-        rekey)
-          echo "ℹ️  'secrets rekey' has moved to 'just rekey' (uses your local SSH keys)." >&2
-          exit 2
-          ;;
+        rekey) exec secrets-rekey "$@" ;;
         -h|--help|help)
           exec "$0"  # re-print usage
           ;;
@@ -295,7 +349,11 @@
 in
   pkgs.symlinkJoin {
     name = "secrets";
-    paths = [secrets-wrapper secrets-encrypt];
+    paths = [
+      secrets-wrapper
+      secrets-encrypt
+      secrets-rekey
+    ];
     meta = {
       description = "Convention-based agenix secret authoring for mountainous";
       mainProgram = "secrets";
