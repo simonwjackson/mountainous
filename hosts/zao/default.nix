@@ -7,6 +7,7 @@
   korriApiPort = 39217;
 in {
   imports = [
+    ./commitments.nix
     ./disko.nix
     ./hardware.nix
   ];

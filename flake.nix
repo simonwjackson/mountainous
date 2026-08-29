@@ -350,6 +350,14 @@
         })
     );
 
+    checks.x86_64-linux.zao-commitments = let
+      commitments = self.nixosConfigurations.zao.config.mountainous.hosts.zao.commitments;
+      failed = lib.filterAttrs (_: satisfied: !satisfied) commitments;
+      failedNames = lib.concatStringsSep ", " (builtins.attrNames failed);
+    in
+      assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
+        nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
+
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
