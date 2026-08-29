@@ -359,6 +359,76 @@
       assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
         nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
 
+    checks.x86_64-linux.zao-runtime-commitments = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      zao = self.nixosConfigurations.zao.config;
+      runtimeVerifier = zao.mountainous.hosts.zao.runtimeVerifier;
+      script = lib.getExe runtimeVerifier;
+      commitmentNames = builtins.attrNames zao.mountainous.hosts.zao.commitments;
+      namesFile = pkgs.writeText "zao-runtime-commitment-names" (lib.concatLines commitmentNames);
+      korrid = zao.systemd.user.services.korrid;
+      korridRefresh = zao.systemd.services.zao-korrid-unit-refresh;
+      korridRefreshScript = pkgs.writeText "zao-korrid-unit-refresh" korridRefresh.script;
+    in
+      assert lib.assertMsg (builtins.elem runtimeVerifier zao.environment.systemPackages) "Zao must install its runtime commitment verifier";
+      assert lib.assertMsg (zao.users.users.simonwjackson.linger != true) "Zao must not start Korri before a real user session";
+      assert lib.assertMsg (!(builtins.elem "default.target" korrid.wantedBy)) "Zao must keep korrid inside korri-session.target";
+      assert lib.assertMsg (builtins.elem "multi-user.target" korridRefresh.wantedBy) "Zao must refresh its selected korrid user unit after activation";
+      assert lib.assertMsg (korridRefresh.serviceConfig.User == "simonwjackson") "Zao must refresh korrid through its owning user manager";
+      assert lib.assertMsg korridRefresh.serviceConfig.RemainAfterExit "Zao korrid refresh must record successful completion";
+        pkgs.runCommand "zao-runtime-commitments" {} ''
+          ${pkgs.bash}/bin/bash -n ${script}
+
+          while IFS= read -r name; do
+            ${pkgs.gnugrep}/bin/grep -Fq "$name" ${script}
+          done < ${namesFile}
+
+          ${pkgs.gnugrep}/bin/grep -Fq 'runuser --user' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'XDG_RUNTIME_DIR=' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'fuse.mergerfs' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'Office_Printer' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'zramctl' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'readlink --canonicalize-existing "/etc/systemd/user/$unit"' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'korri-compositor.service' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'korri-sunshine.service' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.service' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.service' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'wireplumber.service' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'expect_mount_device' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0-part1' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0-part1' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'getfattr --name=user.mergerfs.branches' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'committed_korrid_exec=' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq '"$expected_executable" != "$committed_korrid_exec"' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq -- '--property Environment' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq '/proc/$main_pid/environ' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq '/proc/$main_pid/cmdline' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'ss --no-header --listening --numeric --processes --tcp' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pid=$main_pid,' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'mounted_source="$(findmnt' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq 'head --lines=1 || true)' ${script}
+          ${pkgs.gnugrep}/bin/grep -Fq ' disabled ' ${script}
+
+          if ${pkgs.gnugrep}/bin/grep -Eq '(^|[^[:alnum:]_-])(ping|showmount|yari)([^[:alnum:]_-]|$)' ${script}; then
+            echo "Zao runtime commitments must not depend on Yari or another peer" >&2
+            exit 1
+          fi
+
+          ${pkgs.bash}/bin/bash -n ${korridRefreshScript}
+          ${pkgs.gnugrep}/bin/grep -Fq '/home/simonwjackson/.config/systemd/user/korrid.service' ${korridRefreshScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'legacy_hash=2ce364c76061f3befaca4934becd147e5847a85a8c1bf6d6695f841b763f78fe' ${korridRefreshScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'sha256sum "$legacy_unit"' ${korridRefreshScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'mv --backup=numbered "$legacy_unit" "$legacy_backup"' ${korridRefreshScript}
+          if ${pkgs.gnugrep}/bin/grep -Fq 'rm --force "$legacy_unit"' ${korridRefreshScript}; then
+            echo "Zao must preserve the exact legacy korrid unit before removing its shadow" >&2
+            exit 1
+          fi
+          ${pkgs.gnugrep}/bin/grep -Fq 'daemon-reload' ${korridRefreshScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'restart korrid.service' ${korridRefreshScript}
+
+          touch "$out"
+        '';
+
     checks.x86_64-linux.zao-media-normalization = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;

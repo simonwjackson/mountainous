@@ -238,8 +238,8 @@ in {
       };
 
       # Intentionally not enabling services.korri.login: zao uses tuigreet via
-      # services.greetd below for interactive sway sessions and runs korrid as a
-      # background daemon, instead of greetd auto-starting the Korri user target.
+      # services.greetd below for interactive sway sessions. Korri starts from
+      # the real greetd/logind session instead of pre-session user lingering.
 
       compositor = {
         enable = true;
