@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib) concatMapStringsSep listToAttrs map mkAfter mkIf mkMerge nameValuePair optional optionalAttrs unique;
+  inherit (lib) any concatMapStringsSep filter hasPrefix listToAttrs map mkAfter mkIf mkMerge nameValuePair optional optionalAttrs removeSuffix unique;
   cfg = config.mountainous.features.media;
   tieringCfg = config.mountainous.features.media-tiering;
 
@@ -38,7 +38,27 @@
     localAudiobooksDir
   ];
 
-  normalizationRoots = unique directories;
+  uniqueDirectories = unique directories;
+  fileSystemMounts = builtins.attrNames config.fileSystems;
+  isNestedUnder = parent: child:
+    parent
+    != child
+    && hasPrefix "${removeSuffix "/" parent}/" child;
+  crossesFileSystemBoundary = parent: child:
+    any (
+      mountPoint:
+        isNestedUnder parent mountPoint
+        && (mountPoint == child || isNestedUnder mountPoint child)
+    )
+    fileSystemMounts;
+  isCoveredBy = parent: child:
+    isNestedUnder parent child
+    && !(crossesFileSystemBoundary parent child);
+  normalizationRoots =
+    filter (
+      candidate: !(any (parent: isCoveredBy parent candidate) uniqueDirectories)
+    )
+    uniqueDirectories;
 
   permissionsNormalizeScript = pkgs.writeShellScript "mountainous-media-normalize-permissions" ''
         set -euo pipefail
@@ -94,7 +114,6 @@ in {
         description = "Normalize ownership and group-write permissions for local managed media paths";
         after = ["local-fs.target" "systemd-tmpfiles-setup.service"];
         wants = ["systemd-tmpfiles-setup.service"];
-        wantedBy = ["multi-user.target"];
         serviceConfig = {
           Type = "oneshot";
           ExecStart = permissionsNormalizeScript;
@@ -106,20 +125,13 @@ in {
         wantedBy = ["timers.target"];
         timerConfig = {
           Unit = "mountainous-media-normalize-permissions.service";
-          OnBootSec = "15min";
+          OnActiveSec = "15min";
           OnUnitActiveSec = "6h";
           RandomizedDelaySec = "5min";
           Persistent = true;
         };
       };
     }
-
-    (mkIf (config.mountainous.features.jellyfin.enable or false) {
-      systemd.services.jellyfin = {
-        after = mkAfter ["mountainous-media-normalize-permissions.service"];
-        wants = ["mountainous-media-normalize-permissions.service"];
-      };
-    })
 
     (mkIf (config.mountainous.features.radarr.enable or false) {
       systemd.services.radarr = {

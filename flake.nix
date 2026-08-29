@@ -358,6 +358,77 @@
       assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
         nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
 
+    checks.x86_64-linux.zao-media-normalization = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      zao = self.nixosConfigurations.zao.config;
+      normalizationUnit = "mountainous-media-normalize-permissions.service";
+      service = zao.systemd.services.mountainous-media-normalize-permissions;
+      timer = zao.systemd.timers.mountainous-media-normalize-permissions;
+      jellyfin = zao.systemd.services.jellyfin;
+      script = service.serviceConfig.ExecStart;
+      nestedMountConfig =
+        (lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./features/media/default.nix
+            ({lib, ...}: {
+              options.mountainous.features =
+                lib.genAttrs [
+                  "media-tiering"
+                  "jellyfin"
+                  "radarr"
+                  "sonarr"
+                  "nzbget"
+                  "transmission"
+                ] (_: {
+                  enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                  };
+                });
+
+              config = {
+                mountainous.features.media = {
+                  enable = true;
+                  root = "/srv/library";
+                  mediaRoot = "/srv/library/media-volume/media";
+                };
+                fileSystems."/srv/library/media-volume" = {
+                  device = "none";
+                  fsType = "tmpfs";
+                };
+                system.stateVersion = "26.05";
+              };
+            })
+          ];
+        }).config;
+      nestedMountScript = nestedMountConfig.systemd.services.mountainous-media-normalize-permissions.serviceConfig.ExecStart;
+    in
+      assert lib.assertMsg (!(builtins.elem "multi-user.target" service.wantedBy)) "Zao media normalization must not block multi-user.target";
+      assert lib.assertMsg (builtins.elem "timers.target" timer.wantedBy) "Zao media normalization must retain its timer";
+      assert lib.assertMsg (timer.timerConfig.OnActiveSec == "15min") "Zao media normalization must wait 15 minutes after timer activation";
+      assert lib.assertMsg (timer.timerConfig.OnUnitActiveSec == "6h") "Zao media normalization must retain its six-hour schedule";
+      assert lib.assertMsg (!(builtins.elem normalizationUnit jellyfin.after)) "Jellyfin must not wait for Zao media normalization";
+      assert lib.assertMsg (!(builtins.elem normalizationUnit jellyfin.wants)) "Jellyfin must not start Zao media normalization";
+        pkgs.runCommand "zao-media-normalization" {} ''
+          root_count=$(${pkgs.gnugrep}/bin/grep -Ec '^[[:space:]]*normalize_root[[:space:]]+' ${script})
+          if [ "$root_count" -ne 1 ]; then
+            echo "expected one Zao normalization root, found $root_count" >&2
+            exit 1
+          fi
+          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/lakes/towada$' ${script}
+
+          nested_root_count=$(${pkgs.gnugrep}/bin/grep -Ec '^[[:space:]]*normalize_root[[:space:]]+' ${nestedMountScript})
+          if [ "$nested_root_count" -ne 2 ]; then
+            echo "expected two roots across the nested filesystem boundary, found $nested_root_count" >&2
+            exit 1
+          fi
+          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/library$' ${nestedMountScript}
+          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/library/media-volume/media$' ${nestedMountScript}
+
+          touch "$out"
+        '';
+
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
