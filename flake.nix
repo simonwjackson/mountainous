@@ -351,6 +351,21 @@
         })
     );
 
+    checks.x86_64-linux.gogcli-platforms = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      x86 = self.packages.x86_64-linux.gogcli;
+      arm = self.packages.aarch64-linux.gogcli;
+    in
+      assert lib.assertMsg (x86.meta.platforms == ["aarch64-linux" "x86_64-linux"]) "gogcli metadata must expose every packaged Linux release";
+      assert lib.assertMsg (arm.meta.platforms == x86.meta.platforms) "gogcli metadata must stay platform-independent";
+      assert lib.assertMsg (x86.releaseArch == "amd64") "gogcli must select the amd64 asset on x86_64-linux";
+      assert lib.assertMsg (x86.releaseHash == "sha256-ypi6VuKczTcT/nv4Nf3KAK4bl83LewvF45Pn7bQInIQ=") "gogcli must retain the verified amd64 hash";
+      assert lib.assertMsg (arm.releaseArch == "arm64") "gogcli must select the arm64 asset on aarch64-linux";
+      assert lib.assertMsg (arm.releaseHash == "sha256-G/6YBUVkFQFIj+2Txm/HZnHHKkYFKF9XRXLaxwDv3TU=") "gogcli must retain the verified arm64 hash";
+        pkgs.runCommand "gogcli-platforms" {nativeBuildInputs = [x86];} ''
+          gog --version > "$out"
+        '';
+
     checks.x86_64-linux.zao-commitments = let
       commitments = self.nixosConfigurations.zao.config.mountainous.hosts.zao.commitments;
       failed = lib.filterAttrs (_: satisfied: !satisfied) commitments;
