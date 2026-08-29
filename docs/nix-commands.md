@@ -54,12 +54,17 @@ Run activation from an existing repository checkout on the device.
 nix-on-droid switch --flake .#usu
 ```
 
-To deploy from another host, send the committed `HEAD` archive into a clean deployment directory. Usu exposes SSH on port `2345` as `nix-on-droid`.
+To deploy from another host, extract the committed `HEAD` locally and use Usu's declared `rsync` transport. Usu exposes SSH on port `2345` as `nix-on-droid`.
 
 ```bash
-ssh -F /dev/null -p 2345 nix-on-droid@usu 'rm -rf ~/mountainous && mkdir -p ~/mountainous'
-git archive HEAD | ssh -F /dev/null -p 2345 nix-on-droid@usu \
-  'tar -xf - -C ~/mountainous'
+deploy_dir=$(mktemp -d)
+trap 'rm -rf "$deploy_dir"' EXIT
+git archive HEAD | tar -xf - -C "$deploy_dir"
+ssh -F /dev/null -p 2345 nix-on-droid@usu 'mkdir -p ~/mountainous'
+rsync -av --delete \
+  --rsync-path=/etc/profiles/per-user/nix-on-droid/bin/rsync \
+  -e 'ssh -F /dev/null -p 2345' \
+  "$deploy_dir/" nix-on-droid@usu:~/mountainous/
 ssh -F /dev/null -p 2345 nix-on-droid@usu \
   'cd ~/mountainous && /etc/profiles/per-user/nix-on-droid/bin/nix-on-droid switch --flake .#usu'
 ```
