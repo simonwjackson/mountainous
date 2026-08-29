@@ -233,7 +233,7 @@ The origin requirements define a durable replacement for ad hoc local helper scr
 ## Documentation / Operational Notes
 
 - Add `docs/runbooks/aka-qwen32-llama-service.md` as the durable operator reference.
-- Use direct NixOS validation with `nixos-rebuild build --flake .#aka` or `sudo nixos-rebuild test --flake .#aka`.
+- On Aka, use direct NixOS validation from its local checkout with `nixos-rebuild build --flake .#aka` or `sudo nixos-rebuild test --flake .#aka`.
 - After deploy, verify the real runtime on `aka` with a service start, a server health/API request, a Pi prompt smoke test, and a service stop.
 
 ---

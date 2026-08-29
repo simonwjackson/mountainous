@@ -56,15 +56,6 @@
   # container-friendly value here so the two mkDefaults don't deadlock.
   nix.optimise.automatic = lib.mkForce false;
 
-  # Non-root deploys (same model as bandai/aka): upstream sshd runs on :2222
-  # with PermitRootLogin=no, so nixos-rebuild connects as the korri user and
-  # activates via its wheel sudo. The closure-copy step rejects unsigned
-  # paths from the build host unless the deploy user is a trusted Nix user.
-  nix.settings.trusted-users = [
-    "root"
-    "korri"
-  ];
-
   # Upstream owns the Tailscale daemon; mountainous only supplies the shared
   # auth key and the equivalent `tailscale up` flags so sobo can reach its
   # remote builders after activation without a browser login.

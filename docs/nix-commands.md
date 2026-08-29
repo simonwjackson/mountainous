@@ -1,6 +1,6 @@
 # Direct Nix commands
 
-Mountainous uses direct Nix and NixOS commands. The repository has no deployment wrapper.
+Mountainous uses direct Nix and NixOS commands for routine rebuilds. The destructive fresh-install app and specialized Sobo script remain separate.
 
 ## NixOS hosts
 
@@ -31,34 +31,22 @@ nixos-rebuild build --flake .#<host>
 For remote deployment, state the build and target hosts explicitly.
 
 ```bash
-nixos-rebuild switch \
+NIX_SSHOPTS="-F /dev/null" nixos-rebuild switch \
   --flake .#<host> \
   --build-host <build-host> \
   --target-host <user@target-host> \
   --sudo
 ```
 
-Pass input overrides directly to `nixos-rebuild`.
+Use the specialized script for Sobo input overrides. It pins port `2222`, verifies the checked-in host key, builds on Fuji, and activates through the `simonwjackson` wheel user.
 
 ```bash
-nixos-rebuild switch \
-  --flake .#sobo \
-  --override-input korri path:/path/to/korri \
-  --override-input nix-on-rocks-guest path:/path/to/nix-on-rocks/guest \
-  --build-host fuji \
-  --target-host korri@sobo \
-  --sudo
+NIX_ON_ROCKS_GUEST=/path/to/nix-on-rocks/guest \
+KORRI=/path/to/korri \
+./switch-sobo-overrides.sh
 ```
-
-`switch-sobo-overrides.sh` keeps Sobo's checked host-key and port setup for this specialized deployment path.
 
 ## Nix-on-Droid
-
-Build the activation package from any compatible Nix host.
-
-```bash
-nix build .#nixOnDroidConfigurations.usu.activationPackage -L
-```
 
 Run activation from an existing repository checkout on the device.
 
@@ -66,14 +54,16 @@ Run activation from an existing repository checkout on the device.
 nix-on-droid switch --flake .#usu
 ```
 
-To deploy from another host, copy the checkout first. This preserves the transport that the removed deployment wrapper provided.
+To deploy from another host, copy only committed files into a clean deployment directory. Usu exposes SSH on port `2345` as `nix-on-droid`.
 
 ```bash
-ssh usu 'mkdir -p ~/mountainous'
-rsync -av --delete --exclude .git \
+ssh -F /dev/null -p 2345 nix-on-droid@usu 'rm -rf ~/mountainous && mkdir -p ~/mountainous'
+git ls-files -z | rsync -av --from0 --files-from=- \
   --rsync-path=/etc/profiles/per-user/nix-on-droid/bin/rsync \
-  ./ usu:~/mountainous/
-ssh usu 'cd ~/mountainous && /etc/profiles/per-user/nix-on-droid/bin/nix-on-droid switch --flake .#usu'
+  -e 'ssh -F /dev/null -p 2345' \
+  ./ nix-on-droid@usu:~/mountainous/
+ssh -F /dev/null -p 2345 nix-on-droid@usu \
+  'cd ~/mountainous && /etc/profiles/per-user/nix-on-droid/bin/nix-on-droid switch --flake .#usu'
 ```
 
 ## Repository maintenance
@@ -81,7 +71,7 @@ ssh usu 'cd ~/mountainous && /etc/profiles/per-user/nix-on-droid/bin/nix-on-droi
 ```bash
 nix flake update
 nix flake update <input>
-nix fmt .
+git ls-files -z '*.nix' | xargs -0 nix fmt --
 nix develop
 nix repl -f flake:nixpkgs
 nix profile history --profile /nix/var/nix/profiles/system

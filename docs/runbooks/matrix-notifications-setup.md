@@ -26,8 +26,8 @@ systemd failures─┤              │  ↕ D-Bus (mako)            │
 
 ## Prerequisites
 
-- yari deployed with `sudo nixos-rebuild switch --flake .#yari` (Matrix server, webhook relay, notification room)
-- yuki deployed with `sudo nixos-rebuild switch --flake .#yuki` (desktop notification daemon)
+- yari deployed from its local repository checkout with `sudo nixos-rebuild switch --flake .#yari` (Matrix server, webhook relay, notification room)
+- yuki deployed from its local repository checkout with `sudo nixos-rebuild switch --flake .#yuki` (desktop notification daemon)
 - Phone on the Tailscale network
 
 ## Step 1: Generate the user access token
@@ -53,14 +53,13 @@ curl -s -X POST http://localhost:8008/_matrix/client/v3/login \
 Copy the token, then on the machine with the repo:
 
 ```bash
-# Re-encrypt the placeholder with the real token
-echo -n "syt_ACTUAL_TOKEN_HERE" | age -R <(nix eval --raw .#nixosConfigurations.yuki.config.age.secrets.matrix-access-token.publicKeys) \
-  -o secrets/user/simonwjackson/matrix-access-token.age
-
-# Or use the repository's Nix app:
-printf '%s' 'syt_ACTUAL_TOKEN_HERE' | nix run .#secrets -- encrypt \
+# Use the repository's Nix app without placing the token in shell history.
+read -rsp 'Matrix access token: ' MATRIX_TOKEN; echo
+printf '%s' "$MATRIX_TOKEN" | nix run .#secrets -- encrypt \
   user/simonwjackson/matrix-access-token --from-stdin --force
+unset MATRIX_TOKEN
 
+# On yuki, from its repository checkout:
 sudo nixos-rebuild switch --flake .#yuki
 ```
 
