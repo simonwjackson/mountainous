@@ -20,32 +20,9 @@
     '')
     towadaDisks;
   jellyfinLibraries = get ["mountainous" "features" "jellyfin" "bootstrap" "libraries"] {};
-
-  runtimeUser = get ["services" "korri" "runtime" "user"] "simonwjackson";
-  korriPort = get ["services" "korri" "daemon" "port"] 39217;
   localMediaRoot = get ["mountainous" "features" "media-tiering" "localBackingRoot"] "/srv/lakes/towada/media";
   rangeMoviesDir = get ["mountainous" "features" "media" "rangeMoviesDir"] "/srv/range/media/movies";
   rangeTvDir = get ["mountainous" "features" "media" "rangeTvDir"] "/srv/range/media/tv";
-  korridExecStart = get ["systemd" "user" "services" "korrid" "serviceConfig" "ExecStart"] "";
-  legacyKorridUnit = ''
-    [Unit]
-    Description=Korri native host daemon
-    After=network-online.target
-    Wants=network-online.target
-
-    [Service]
-    Environment=KORRID_MODE=host
-    Environment=KORRID_ADDRESS=0.0.0.0:43117
-    Environment=KORRID_HOST_CONFIG=%h/.config/korrid/host.toml
-    Environment=KORRID_STORAGE_ROOT=%h/.local/share/korri
-    ExecStart=%h/.local/state/korrid/current/bin/korrid
-    Restart=on-failure
-    RestartSec=2s
-
-    [Install]
-    WantedBy=default.target
-  '';
-  legacyKorridUnitHash = builtins.hashString "sha256" legacyKorridUnit;
 
   commitments = {
     towada-storage = {
@@ -84,35 +61,6 @@
         && attrByPath ["movies" "path"] null jellyfinLibraries == "/srv/range/media/movies"
         && hasSecret "jellyfin-pass";
       message = "Zao must retain Jellyfin with its TV and movie libraries and admin secret.";
-    };
-
-    korri-stream-source = {
-      assertion =
-        enabled ["services" "korri" "daemon" "enable"]
-        && enabled ["services" "korri" "daemon" "openFirewall"]
-        && builtins.elem "tailscale0" (get ["services" "korri" "daemon" "firewallInterfaces"] [])
-        && enabled ["services" "korri" "daemon" "streamControl" "enable"]
-        && enabled ["services" "korri" "daemon" "streaming" "enable"]
-        && enabled ["services" "korri" "compositor" "enable"]
-        && enabled ["services" "sunshine" "enable"]
-        && enabled ["services" "sunshine" "openFirewall"];
-      message = "Zao must retain the Korri daemon, compositor, stream control, and Sunshine source.";
-    };
-
-    korri-runtime = {
-      assertion =
-        enabled ["programs" "sway" "enable"]
-        && enabled ["programs" "sway" "xwayland" "enable"]
-        && enabled ["programs" "steam" "enable"]
-        && enabled ["programs" "gamemode" "enable"]
-        && enabled ["services" "seatd" "enable"]
-        && enabled ["services" "pipewire" "enable"]
-        && enabled ["services" "pipewire" "wireplumber" "enable"]
-        && enabled ["hardware" "graphics" "enable"]
-        && enabled ["hardware" "graphics" "enable32Bit"]
-        && enabled ["services" "korri" "input" "provider" "enable"]
-        && builtins.elem "uinput" config.boot.kernelModules;
-      message = "Zao must retain the graphics, audio, input, and gaming runtime required by Korri.";
     };
 
     shared-office-printer = {
@@ -154,7 +102,6 @@
       gnugrep
       iproute2
       jq
-      kmod
       systemd
       tailscale
       util-linux
@@ -165,30 +112,10 @@
       declare -a reasons=()
       failed=0
       passed=0
-      runtime_user="${runtimeUser}"
-      korri_port="${toString korriPort}"
       range_movies_dir="${rangeMoviesDir}"
       range_tv_dir="${rangeTvDir}"
       local_movies_branch="${localMediaRoot}/movies"
       local_tv_branch="${localMediaRoot}/tv"
-      committed_korrid_exec="${korridExecStart}"
-
-      if [ "$(id --user --name)" = "$runtime_user" ]; then
-        runtime_uid="$(id --user)"
-        export XDG_RUNTIME_DIR="/run/user/$runtime_uid"
-        user_systemctl() {
-          systemctl --user "$@"
-        }
-      elif [ "$EUID" -eq 0 ]; then
-        runtime_uid="$(id --user "$runtime_user")"
-        user_systemctl() {
-          runuser --user "$runtime_user" -- \
-            env XDG_RUNTIME_DIR="/run/user/$runtime_uid" systemctl --user "$@"
-        }
-      else
-        echo "zao-verify-commitments must run as $runtime_user or root" >&2
-        exit 2
-      fi
 
       add_failure() {
         reasons+=("$1")
@@ -231,13 +158,6 @@
         fi
       }
 
-      expect_system_binary() {
-        local name="$1"
-        if [ ! -x "/run/current-system/sw/bin/$name" ]; then
-          add_failure "$name is absent from the current system"
-        fi
-      }
-
       expect_mergerfs_branch() {
         local view="$1"
         local branch="$2"
@@ -245,31 +165,6 @@
         branches="$(getfattr --name=user.mergerfs.branches --only-values "$view/.mergerfs" 2>/dev/null || true)"
         if ! printf '%s' "$branches" | grep --fixed-strings --quiet "$branch=RW"; then
           add_failure "$view does not retain local branch $branch"
-        fi
-      }
-
-      expect_nixos_user_unit() {
-        local unit="$1"
-        local fragment
-        local resolved
-        local current
-        fragment="$(user_systemctl show "$unit" --property FragmentPath --value 2>/dev/null || true)"
-        resolved="$(readlink --canonicalize-existing "$fragment" 2>/dev/null || true)"
-        current="$(readlink --canonicalize-existing "/etc/systemd/user/$unit" 2>/dev/null || true)"
-        case "$current" in
-          /nix/store/*) ;;
-          "") add_failure "$unit is absent from the current NixOS generation"; return ;;
-          *) add_failure "$unit has an unexpected current target: $current"; return ;;
-        esac
-        if [ "$resolved" != "$current" ]; then
-          add_failure "$unit has stale or shadowed loaded state: $fragment"
-        fi
-      }
-
-      expect_user_unit_enabled() {
-        local unit="$1"
-        if ! user_systemctl is-enabled --quiet "$unit"; then
-          add_failure "$unit is not enabled"
         fi
       }
 
@@ -304,73 +199,6 @@
         expect_active tsnet-proxy-jellyfin.service
         if ! curl --fail --silent --show-error --max-time 5 http://127.0.0.1:8096/health | grep --fixed-strings --line-regexp --quiet Healthy; then
           add_failure "Jellyfin health endpoint is not healthy"
-        fi
-      }
-
-      check_korri_stream_source() {
-        expect_nixos_user_unit korrid.service
-        expect_nixos_user_unit korri-compositor.service
-        expect_nixos_user_unit korri-sunshine.service
-
-        expect_user_unit_enabled korrid.service
-        expect_user_unit_enabled korri-compositor.service
-        expect_user_unit_enabled korri-sunshine.service
-        effective_environment="$(user_systemctl show korrid.service --property Environment --value 2>/dev/null || true)"
-        if ! printf '%s\n' "$effective_environment" \
-          | grep --extended-regexp --quiet '(^|[[:space:]])"?PORT=${toString korriPort}"?([[:space:]]|$)'; then
-          add_failure "korrid.service does not use configured port $korri_port"
-        fi
-
-        if ! user_systemctl is-active --quiet korrid.service; then
-          return
-        fi
-
-        main_pid="$(user_systemctl show korrid.service --property MainPID --value 2>/dev/null || true)"
-        executable="$(readlink "/proc/$main_pid/exe" 2>/dev/null || true)"
-        exec_start="$(user_systemctl show korrid.service --property ExecStart --value 2>/dev/null || true)"
-        expected_executable="''${exec_start#*path=}"
-        expected_executable="''${expected_executable%% ;*}"
-        if [ "$expected_executable" != "$committed_korrid_exec" ]; then
-          add_failure "korrid.service effective command is $expected_executable, expected $committed_korrid_exec"
-        fi
-        expected_package="''${committed_korrid_exec%/bin/*}"
-        if ! tr '\0' '\n' < "/proc/$main_pid/environ" | grep --fixed-strings --line-regexp --quiet "PORT=$korri_port"; then
-          add_failure "active korrid process does not use port $korri_port"
-        fi
-        if ! tr '\0' '\n' < "/proc/$main_pid/cmdline" | grep --fixed-strings --quiet "$expected_package/"; then
-          add_failure "active korrid process is not from current package $expected_package"
-        fi
-        case "$executable" in
-          /nix/store/*) ;;
-          *) add_failure "active korrid process is outside the Nix store: ''${executable:-unknown}" ;;
-        esac
-        if ! ss --no-header --listening --numeric --processes --tcp "sport = :$korri_port" \
-          | grep --fixed-strings --quiet "pid=$main_pid,"; then
-          add_failure "active korrid process is not listening on port $korri_port"
-        fi
-      }
-
-      check_korri_runtime() {
-        expect_active seatd.service
-        expect_nixos_user_unit pipewire.service
-        expect_nixos_user_unit pipewire-pulse.service
-        expect_nixos_user_unit wireplumber.service
-        expect_user_unit_enabled wireplumber.service
-        expect_system_binary sway
-        expect_system_binary steam
-        expect_system_binary gamemoderun
-
-        if [ ! -c /dev/uinput ]; then
-          add_failure "/dev/uinput is unavailable"
-        fi
-        if ! grep --quiet '^uinput ' /proc/modules; then
-          add_failure "uinput kernel module is not loaded"
-        fi
-        if ! ls /dev/dri/renderD* >/dev/null 2>&1; then
-          add_failure "no DRM render device is available"
-        fi
-        if [ ! -e /run/opengl-driver-32/lib/libGLX_nvidia.so.0 ]; then
-          add_failure "32-bit NVIDIA graphics runtime is unavailable"
         fi
       }
 
@@ -435,8 +263,6 @@
       run_commitment towada-storage check_towada_storage
       run_commitment media-tiering-sink check_media_tiering_sink
       run_commitment jellyfin-media-server check_jellyfin_media_server
-      run_commitment korri-stream-source check_korri_stream_source
-      run_commitment korri-runtime check_korri_runtime
       run_commitment shared-office-printer check_shared_office_printer
       run_commitment tailnet-access check_tailnet_access
       run_commitment eval-memory-safety check_eval_memory_safety
@@ -468,51 +294,62 @@ in {
 
     environment.systemPackages = [runtimeVerifier];
 
-    systemd.services.zao-korrid-unit-refresh = {
-      description = "Select the NixOS-generated Zao korrid user unit";
+    systemd.services.zao-retire-korri = {
+      description = "Retire loaded Korri user services from Zao";
       after = ["systemd-user-sessions.service"];
       wantedBy = ["multi-user.target"];
-      path = with pkgs; [coreutils gnugrep systemd];
+      path = with pkgs; [coreutils systemd];
       serviceConfig = {
         Type = "oneshot";
-        User = runtimeUser;
+        User = "simonwjackson";
         RemainAfterExit = true;
       };
       script = ''
         set -euo pipefail
 
-        legacy_unit=/home/${runtimeUser}/.config/systemd/user/korrid.service
-        legacy_backup="$legacy_unit.mountainous-legacy"
-        legacy_wants=/home/${runtimeUser}/.config/systemd/user/default.target.wants/korrid.service
-        legacy_hash=${legacyKorridUnitHash}
-
-        if [ -f "$legacy_unit" ]; then
-          current_hash="$(sha256sum "$legacy_unit" | cut --delimiter=' ' --fields=1)"
-          if [ "$current_hash" = "$legacy_hash" ]; then
-            mv --backup=numbered "$legacy_unit" "$legacy_backup"
-            if [ -L "$legacy_wants" ] \
-              && [ "$(readlink "$legacy_wants")" = "$legacy_unit" ]; then
-              rm --force "$legacy_wants"
-            fi
-          else
-            echo "warning: refusing to move unrecognized user-managed korrid.service" >&2
-          fi
-        fi
-
         runtime_uid="$(id --user)"
         export XDG_RUNTIME_DIR="/run/user/$runtime_uid"
-        if [ ! -S "$XDG_RUNTIME_DIR/systemd/private" ]; then
-          exit 0
+        user_manager="$XDG_RUNTIME_DIR/systemd/private"
+        legacy_sunshine=/home/simonwjackson/.config/systemd/user/sunshine.service
+        sunshine_backup="$legacy_sunshine.mountainous-retired"
+        sunshine_wants=/home/simonwjackson/.config/systemd/user/default.target.wants/sunshine.service
+
+        if [ -S "$user_manager" ]; then
+          systemctl --user stop korri-session.target || true
+          systemctl --user stop \
+            pipewire.socket \
+            pipewire-pulse.socket \
+            gamemoded.service \
+            pipewire.service \
+            pipewire-pulse.service \
+            wireplumber.service \
+            korrid.service \
+            korri-compositor.service \
+            korri-sunshine.service \
+            sunshine.service || true
+          systemctl --user disable \
+            pipewire.socket \
+            pipewire-pulse.socket \
+            gamemoded.service \
+            pipewire.service \
+            pipewire-pulse.service \
+            wireplumber.service \
+            korrid.service \
+            korri-compositor.service \
+            korri-sunshine.service \
+            sunshine.service || true
         fi
 
-        was_active=0
-        if systemctl --user is-active --quiet korrid.service; then
-          was_active=1
+        if [ -f "$legacy_sunshine" ]; then
+          mv --backup=numbered "$legacy_sunshine" "$sunshine_backup"
+        fi
+        if [ -L "$sunshine_wants" ]; then
+          rm --force "$sunshine_wants"
         fi
 
-        systemctl --user daemon-reload
-        if [ "$was_active" -eq 1 ]; then
-          systemctl --user restart korrid.service
+        if [ -S "$user_manager" ]; then
+          systemctl --user daemon-reload || true
+          systemctl --user reset-failed || true
         fi
       '';
     };

@@ -1,11 +1,8 @@
 {
   config,
-  lib,
   pkgs,
   ...
-}: let
-  korriApiPort = 39217;
-in {
+}: {
   imports = [
     ./commitments.nix
     ./disko.nix
@@ -163,158 +160,10 @@ in {
     };
   };
 
-  programs = {
-    hyprland.enable = false;
-
-    steam = {
-      enable = true;
-      protontricks.enable = true;
-      extraCompatPackages = [pkgs.proton-ge-bin];
-    };
-
-    gamemode.enable = true;
-
-    sway = {
-      enable = true;
-      xwayland.enable = true;
-      extraOptions = ["--unsupported-gpu"];
-    };
-  };
-
-  xdg.portal = {
-    enable = true;
-    wlr.enable = true;
-    extraPortals = [pkgs.xdg-desktop-portal-gtk];
-    config.common = lib.mkForce {
-      default = "*";
-    };
-  };
-
-  services = {
-    greetd = {
-      enable = true;
-      settings = {
-        default_session = {
-          command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
-          user = "greeter";
-        };
-      };
-    };
-
-    seatd.enable = true;
-
-    pulseaudio.enable = false;
-
-    pipewire = {
-      enable = true;
-      alsa = {
-        enable = true;
-        support32Bit = true;
-      };
-      pulse.enable = true;
-      jack.enable = true;
-      wireplumber.enable = true;
-    };
-
-    sunshine = {
-      enable = true;
-      openFirewall = true;
-
-      settings = {
-        output_name = 0;
-        encoder = "nvenc";
-        key_rightalt_to_key_win = "enabled";
-      };
-    };
-
-    korri = {
-      client.enable = false;
-
-      runtime = {
-        user = "simonwjackson";
-        group = "users";
-        home = "/home/simonwjackson";
-        createUser = false;
-      };
-
-      # Intentionally not enabling services.korri.login: zao uses tuigreet via
-      # services.greetd below for interactive sway sessions. Korri starts from
-      # the real greetd/logind session instead of pre-session user lingering.
-
-      compositor = {
-        enable = true;
-        kiosk.enable = false;
-        user = "simonwjackson";
-        group = "users";
-        createUser = false;
-        home = "/home/simonwjackson";
-        wants = ["seatd.service"];
-        after = ["seatd.service"];
-        sway.package = config.programs.sway.package;
-      };
-
-      input.provider = {
-        enable = true;
-        name = "inputplumber";
-      };
-
-      gameStream.displayCompat.extraEnv = {
-        __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-        __NV_PRIME_RENDER_OFFLOAD = "1";
-        __VK_LAYER_NV_optimus = "NVIDIA_only";
-      };
-
-      daemon = {
-        enable = true;
-        host = "0.0.0.0";
-        port = korriApiPort;
-        serverId = "zao";
-        publicApiBaseUrl = "http://192.168.1.243:${toString korriApiPort}";
-        streamControl.enable = true;
-        openFirewall = true;
-        firewallInterfaces = ["tailscale0"];
-        # advertise.enable removed in Korri federation v1 (R14): every
-        # korrid now advertises unconditionally with caps including
-        # `source` baseline. Only the human-readable name is still tunable.
-        advertise = {
-          name = "Korri Stream on zao";
-        };
-        streaming = {
-          enable = true;
-          appName = "Korri Stream";
-        };
-      };
-    };
-  };
-
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-
-  security.rtkit.enable = true;
-
-  boot.kernelModules = ["uinput"];
-
-  services.udev.extraRules = ''
-    SUBSYSTEM=="misc", KERNEL=="uinput", OPTIONS+="static_node=uinput", TAG+="uaccess"
-  '';
-
   users.users.simonwjackson.extraGroups = [
-    "input"
     "lp"
     "media"
     "networkmanager"
-    "render"
-    "seat"
-    "video"
-  ];
-
-  environment.systemPackages = [
-    pkgs.gamescope
-    pkgs.gamemode
-    pkgs.mangohud
-    pkgs.protontricks
   ];
 
   # ── Printing ─────────────────────────────────────────────────────

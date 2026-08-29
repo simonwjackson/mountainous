@@ -359,23 +359,83 @@
       assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
         nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
 
+    checks.x86_64-linux.zao-korri-retired = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      zao = self.nixosConfigurations.zao.config;
+      retirement = zao.systemd.services.zao-retire-korri;
+      retirementScript = pkgs.writeText "zao-retire-korri" retirement.script;
+      packageNames = map lib.getName zao.environment.systemPackages;
+      retiredPackages = ["gamescope" "gamemode" "mangohud" "protontricks"];
+      retiredSystemUnits = [
+        "greetd"
+        "inputplumber"
+        "korri-bluetooth-power-on"
+        "korri-setup"
+        "seatd"
+        "zao-korrid-unit-refresh"
+      ];
+      retiredUserUnits = [
+        "korri-compositor"
+        "korri-sunshine"
+        "korrid"
+        "sunshine"
+      ];
+      retiredUserTargets = ["korri-session" "sway-session"];
+    in
+      assert lib.assertMsg (!(builtins.hasAttr "korri" zao.services)) "Zao must not import Korri services";
+      assert lib.assertMsg (!zao.services.sunshine.enable) "Zao must retire Sunshine";
+      assert lib.assertMsg (!zao.programs.sway.enable) "Zao must retire Sway";
+      assert lib.assertMsg (!zao.programs.steam.enable) "Zao must retire Steam";
+      assert lib.assertMsg (!zao.programs.gamemode.enable) "Zao must retire GameMode";
+      assert lib.assertMsg (!zao.xdg.portal.enable) "Zao must retire its desktop portal";
+      assert lib.assertMsg (!zao.services.greetd.enable) "Zao must retire its local desktop login";
+      assert lib.assertMsg (!zao.services.seatd.enable) "Zao must retire seatd";
+      assert lib.assertMsg (!zao.services.pipewire.enable) "Zao must retire the desktop audio session";
+      assert lib.assertMsg (!zao.hardware.graphics.enable) "Zao must retire the Korri graphics runtime";
+      assert lib.assertMsg (!(builtins.elem "uinput" zao.boot.kernelModules)) "Zao must retire the Korri uinput module";
+      assert lib.assertMsg (lib.intersectLists packageNames retiredPackages == []) "Zao must retire gaming packages";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.services)) retiredSystemUnits) "Zao must retire generated Korri system units";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.services)) retiredUserUnits) "Zao must retire generated Korri user services";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.targets)) retiredUserTargets) "Zao must retire generated Korri user targets";
+      assert lib.assertMsg (builtins.elem "multi-user.target" retirement.wantedBy) "Zao must stop any loaded Korri user services after activation";
+      assert lib.assertMsg (retirement.serviceConfig.User == "simonwjackson") "Zao must retire Korri through its former owning user";
+        pkgs.runCommand "zao-korri-retired" {} ''
+          ${pkgs.bash}/bin/bash -n ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'stop korri-session.target' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'korrid.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'korri-compositor.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'korri-sunshine.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'sunshine.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'gamemoded.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.socket' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.socket' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'wireplumber.service' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'sunshine_backup="$legacy_sunshine.mountainous-retired"' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'systemctl --user daemon-reload || true' ${retirementScript}
+          ${pkgs.gnugrep}/bin/grep -Fq 'systemctl --user reset-failed || true' ${retirementScript}
+          touch "$out"
+        '';
+
     checks.x86_64-linux.zao-runtime-commitments = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;
       runtimeVerifier = zao.mountainous.hosts.zao.runtimeVerifier;
       script = lib.getExe runtimeVerifier;
       commitmentNames = builtins.attrNames zao.mountainous.hosts.zao.commitments;
+      expectedNames = [
+        "eval-memory-safety"
+        "jellyfin-media-server"
+        "media-tiering-sink"
+        "shared-office-printer"
+        "tailnet-access"
+        "towada-storage"
+      ];
       namesFile = pkgs.writeText "zao-runtime-commitment-names" (lib.concatLines commitmentNames);
-      korrid = zao.systemd.user.services.korrid;
-      korridRefresh = zao.systemd.services.zao-korrid-unit-refresh;
-      korridRefreshScript = pkgs.writeText "zao-korrid-unit-refresh" korridRefresh.script;
     in
+      assert lib.assertMsg (commitmentNames == expectedNames) "Zao must retain exactly its six non-Korri commitments";
       assert lib.assertMsg (builtins.elem runtimeVerifier zao.environment.systemPackages) "Zao must install its runtime commitment verifier";
-      assert lib.assertMsg (zao.users.users.simonwjackson.linger != true) "Zao must not start Korri before a real user session";
-      assert lib.assertMsg (!(builtins.elem "default.target" korrid.wantedBy)) "Zao must keep korrid inside korri-session.target";
-      assert lib.assertMsg (builtins.elem "multi-user.target" korridRefresh.wantedBy) "Zao must refresh its selected korrid user unit after activation";
-      assert lib.assertMsg (korridRefresh.serviceConfig.User == "simonwjackson") "Zao must refresh korrid through its owning user manager";
-      assert lib.assertMsg korridRefresh.serviceConfig.RemainAfterExit "Zao korrid refresh must record successful completion";
         pkgs.runCommand "zao-runtime-commitments" {} ''
           ${pkgs.bash}/bin/bash -n ${script}
 
@@ -383,48 +443,25 @@
             ${pkgs.gnugrep}/bin/grep -Fq "$name" ${script}
           done < ${namesFile}
 
-          ${pkgs.gnugrep}/bin/grep -Fq 'runuser --user' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'XDG_RUNTIME_DIR=' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'fuse.mergerfs' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'Office_Printer' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'zramctl' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'readlink --canonicalize-existing "/etc/systemd/user/$unit"' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'korri-compositor.service' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'korri-sunshine.service' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.service' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.service' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'wireplumber.service' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'expect_mount_device' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0-part1' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0-part1' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'getfattr --name=user.mergerfs.branches' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'committed_korrid_exec=' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq '"$expected_executable" != "$committed_korrid_exec"' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq -- '--property Environment' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq '/proc/$main_pid/environ' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq '/proc/$main_pid/cmdline' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'ss --no-header --listening --numeric --processes --tcp' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pid=$main_pid,' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'mounted_source="$(findmnt' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'head --lines=1 || true)' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq ' disabled ' ${script}
 
+          if ${pkgs.gnugrep}/bin/grep -Eqi 'korri|sunshine|sway|steam|pipewire|wireplumber|seatd|uinput' ${script}; then
+            echo "Zao runtime commitments must not retain retired Korri capabilities" >&2
+            exit 1
+          fi
           if ${pkgs.gnugrep}/bin/grep -Eq '(^|[^[:alnum:]_-])(ping|showmount|yari)([^[:alnum:]_-]|$)' ${script}; then
             echo "Zao runtime commitments must not depend on Yari or another peer" >&2
             exit 1
           fi
-
-          ${pkgs.bash}/bin/bash -n ${korridRefreshScript}
-          ${pkgs.gnugrep}/bin/grep -Fq '/home/simonwjackson/.config/systemd/user/korrid.service' ${korridRefreshScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'legacy_hash=2ce364c76061f3befaca4934becd147e5847a85a8c1bf6d6695f841b763f78fe' ${korridRefreshScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'sha256sum "$legacy_unit"' ${korridRefreshScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'mv --backup=numbered "$legacy_unit" "$legacy_backup"' ${korridRefreshScript}
-          if ${pkgs.gnugrep}/bin/grep -Fq 'rm --force "$legacy_unit"' ${korridRefreshScript}; then
-            echo "Zao must preserve the exact legacy korrid unit before removing its shadow" >&2
-            exit 1
-          fi
-          ${pkgs.gnugrep}/bin/grep -Fq 'daemon-reload' ${korridRefreshScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'restart korrid.service' ${korridRefreshScript}
 
           touch "$out"
         '';
@@ -629,7 +666,6 @@
       zao = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/zao;
-        extraModules = [inputs.korri.nixosModules.korri];
       };
       ibuki = mkHost {
         system = "x86_64-linux";
