@@ -72,6 +72,8 @@ in {
           import xml.etree.ElementTree as ET
           from pathlib import Path
 
+          ${builtins.readFile ./bootstrap_state.py}
+
           base_url = "http://127.0.0.1:${toString cfg.port}"
           auth_header = 'MediaBrowser Client="mountainous-jellyfin-bootstrap", Device="mountainous-jellyfin-bootstrap", DeviceId="mountainous-jellyfin-bootstrap", Version="1.0.0"'
           system_config_file = Path(${builtins.toJSON systemConfigFile})
@@ -183,30 +185,6 @@ in {
                       return None
                   body_text = error.read().decode()
                   raise RuntimeError(f"Jellyfin authentication failed unexpectedly: {error.code} {body_text}") from error
-
-          def wait_for_public_info():
-              for _ in range(60):
-                  try:
-                      info = api_request("/System/Info/Public")
-                      if info is not None:
-                          return info
-                  except Exception:
-                      time.sleep(1)
-                      continue
-                  time.sleep(1)
-              raise RuntimeError("Timed out waiting for Jellyfin API")
-
-          def wait_for_startup_configuration(token=None):
-              for _ in range(60):
-                  try:
-                      configuration = api_request("/Startup/Configuration", token=token)
-                      if configuration is not None:
-                          return configuration
-                  except Exception:
-                      time.sleep(1)
-                      continue
-                  time.sleep(1)
-              raise RuntimeError("Timed out waiting for Jellyfin startup configuration")
 
           def library_matches(folder, desired_library):
               locations = folder.get("Locations") or []
@@ -325,8 +303,13 @@ in {
 
               return False
 
-          public_info = wait_for_public_info()
-          startup_completed = bool(public_info.get("StartupWizardCompleted"))
+          known_initialized = read_xml_bool(system_config_file, "IsStartupWizardCompleted") is True
+          startup_state, public_info, startup_configuration = wait_for_startup_state(
+              api_request,
+              sleep=time.sleep,
+              known_initialized=known_initialized,
+          )
+          startup_completed = startup_state == "initialized"
           current_server_name = public_info.get("ServerName") or ""
           current_remote_access = read_xml_bool(network_config_file, "EnableRemoteAccess")
           changes = []
@@ -367,7 +350,6 @@ in {
                   raise SystemExit(0)
 
           if not startup_completed:
-              startup_configuration = wait_for_startup_configuration(token=startup_token)
               desired_startup_configuration = dict(startup_configuration or {})
               desired_startup_configuration["ServerName"] = desired_server_name
 
@@ -415,7 +397,13 @@ in {
                   "enabled remote access" if desired_remote_access else "disabled remote access"
               )
 
-              public_info = wait_for_public_info()
+              restart_state, public_info, _ = wait_for_startup_state(
+                  api_request,
+                  sleep=time.sleep,
+                  known_initialized=True,
+              )
+              if restart_state != "initialized":
+                  raise RuntimeError("Jellyfin returned to first-run state after an initialized-server restart")
               current_remote_access = read_xml_bool(network_config_file, "EnableRemoteAccess")
               admin_auth = try_authenticate(desired_username, password)
               if admin_auth is None:

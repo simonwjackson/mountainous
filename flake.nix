@@ -429,6 +429,21 @@
           touch "$out"
         '';
 
+    checks.x86_64-linux.zao-jellyfin-bootstrap = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      script = self.nixosConfigurations.zao.config.systemd.services.jellyfin-seed-bootstrap.script;
+      scriptFile = pkgs.writeText "zao-jellyfin-bootstrap.sh" script;
+    in
+      pkgs.runCommand "zao-jellyfin-bootstrap" {} ''
+        ${pkgs.gnused}/bin/sed -n "/<<'PY'$/,/^PY$/p" ${scriptFile} \
+          | ${pkgs.gnused}/bin/sed '1d;$d' > bootstrap.py
+        test -s bootstrap.py
+        ${pkgs.python3}/bin/python -m py_compile bootstrap.py
+        ${pkgs.gnugrep}/bin/grep -Fq 'known_initialized=known_initialized' bootstrap.py
+        ${pkgs.gnugrep}/bin/grep -Fq 'known_initialized=True' bootstrap.py
+        touch "$out"
+      '';
+
     nixosConfigurations = {
       fuji = mkHost {
         system = "aarch64-linux";
