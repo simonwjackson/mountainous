@@ -12,5 +12,4 @@ history
 AGENTS.local.md
 .envrc.local
 .env.local
-packages/nixie/__pycache__
 .worktrees

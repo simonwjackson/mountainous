@@ -330,13 +330,11 @@ Option 3 is the least invasive.
 
 ## Deployment Notes
 
-- `just switch zao` works (local switch)
-- `just switch yari` fails with the remote sudo wrapper issue — use:
+- Local activation on Zao uses `sudo nixos-rebuild switch --flake .#zao`.
+- Yari activation runs from its local checkout:
   ```bash
   ssh -F /dev/null yari 'cd ~/code/mountainous && git pull && sudo nixos-rebuild switch --flake ".#yari"'
   ```
-- The `systemd-run` wrapper on NixOS 26.05 returns exit code 4 even when the
-  switch succeeds. The config IS applied despite the error.
 
 ---
 

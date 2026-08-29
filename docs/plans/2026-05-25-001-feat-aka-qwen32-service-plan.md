@@ -60,7 +60,7 @@ The origin requirements define a durable replacement for ad hoc local helper scr
 - `features/openclaw-gateway/nixos.nix` is a useful pattern for a system service that runs as `simonwjackson`, sets `HOME`, uses a generated shell script, and exposes a long-running service through systemd.
 - `features/tsnet-proxy/nixos.nix` is a useful pattern for hardening network services when they run as dedicated system users; this plan intentionally does not copy its dedicated-user pattern because cache reuse is a requirement.
 - `flake.nix` automatically imports feature modules and host configs; host-specific work can land in `hosts/aka/default.nix` without adding new import wiring.
-- `justfile` defines `just build`, `just test`, and `just switch` as the preferred wrappers around Nix deployment commands.
+- `docs/nix-commands.md` defines the direct Nix build, test, and switch commands.
 - Nixpkgs provides `pkgs.llama-cpp`; the package supports a `vulkanSupport` override and installs the server binary needed for OpenAI-compatible serving.
 
 ### Institutional Learnings
@@ -233,7 +233,7 @@ The origin requirements define a durable replacement for ad hoc local helper scr
 ## Documentation / Operational Notes
 
 - Add `docs/runbooks/aka-qwen32-llama-service.md` as the durable operator reference.
-- Prefer project wrappers for validation: use `just build aka` or `just test aka` where appropriate rather than raw `nixos-rebuild` commands.
+- Use direct NixOS validation with `nixos-rebuild build --flake .#aka` or `sudo nixos-rebuild test --flake .#aka`.
 - After deploy, verify the real runtime on `aka` with a service start, a server health/API request, a Pi prompt smoke test, and a service stop.
 
 ---
@@ -246,4 +246,4 @@ The origin requirements define a durable replacement for ad hoc local helper scr
 - Related code: `presets/core/nixos.nix`
 - Related code: `features/openclaw-gateway/nixos.nix`
 - Related code: `features/tsnet-proxy/nixos.nix`
-- Related code: `justfile`
+- Related documentation: `docs/nix-commands.md`

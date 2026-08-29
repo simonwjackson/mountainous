@@ -54,6 +54,6 @@ Chose **Option 2** because:
 
 ## Next Steps
 
-→ Deploy to yari with `just switch yari`
+→ Deploy to yari with `sudo nixos-rebuild switch --flake .#yari`
 → Register an admin user on the homeserver
 → Connect a Matrix client and link Signal account via the bridge bot

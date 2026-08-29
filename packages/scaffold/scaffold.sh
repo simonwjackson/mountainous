@@ -348,7 +348,7 @@ if [ "$(check_needs_rekey)" = "true" ]; then
     [ -r "$k" ] && ids+=(-i "$k")
   done
   if [ ${#ids[@]} -eq 0 ]; then
-    echo "⚠️  No identity files found — skipping rekey. Run 'just rekey' manually."
+    echo "⚠️  No identity files found — skipping rekey. Run 'nix run .#secrets -- rekey' manually."
   else
     RULES="$SECRETS_FILE" agenix -r "${ids[@]}"
     git add "${BASE_DIR}/secrets/"

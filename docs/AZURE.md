@@ -6,7 +6,7 @@ Enable reliable access to `amazesql01.database.windows.net:1433` from local deve
 ## What was tested
 
 ### Local app/API reverse tunnels
-A local `autossh` setup was added for `just dev` so these reverse forwards are created:
+A local `autossh` setup was added to the former development command so these reverse forwards are created:
 
 - `yuki:3000 -> local:3000`
 - `yuki:3001 -> local:3001`
@@ -63,10 +63,10 @@ So:
 
 ---
 
-## `just gen` findings
-`just gen` runs locally and connects to SQL from the local machine using Azure AD token auth.
+## Generation command findings
+The former generation command ran locally and connected to SQL from the local machine using Azure AD token auth.
 
-Even after creating a local tunnel through `aso`, `just gen` still failed with:
+Even after creating a local tunnel through `aso`, the generation command still failed with:
 
 > Connection was denied because Deny Public Network Access is set to Yes.
 
@@ -209,7 +209,7 @@ Set up split DNS inside `aso` so that:
 - the tunnel can target a hostname instead of a raw IP
 
 ### Keep in repo
-Keep the current `just dev` tunnel behavior only for:
+Keep the current development tunnel behavior only for:
 - `3000`
 - `3001`
 

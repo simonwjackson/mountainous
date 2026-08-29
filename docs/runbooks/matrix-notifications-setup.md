@@ -26,8 +26,8 @@ systemd failures─┤              │  ↕ D-Bus (mako)            │
 
 ## Prerequisites
 
-- yari deployed with `just switch yari` (Matrix server, webhook relay, notification room)
-- yuki deployed with `just switch yuki` (desktop notification daemon)
+- yari deployed with `sudo nixos-rebuild switch --flake .#yari` (Matrix server, webhook relay, notification room)
+- yuki deployed with `sudo nixos-rebuild switch --flake .#yuki` (desktop notification daemon)
 - Phone on the Tailscale network
 
 ## Step 1: Generate the user access token
@@ -57,13 +57,11 @@ Copy the token, then on the machine with the repo:
 echo -n "syt_ACTUAL_TOKEN_HERE" | age -R <(nix eval --raw .#nixosConfigurations.yuki.config.age.secrets.matrix-access-token.publicKeys) \
   -o secrets/user/simonwjackson/matrix-access-token.age
 
-# Or use the interactive tool:
-just encrypt
-# → name: user/simonwjackson/matrix-access-token
-# → paste the token
+# Or use the repository's Nix app:
+printf '%s' 'syt_ACTUAL_TOKEN_HERE' | nix run .#secrets -- encrypt \
+  user/simonwjackson/matrix-access-token --from-stdin --force
 
-git add secrets/user/simonwjackson/matrix-access-token.age
-just switch yuki
+sudo nixos-rebuild switch --flake .#yuki
 ```
 
 ## Step 2: Verify server-side services (yari)

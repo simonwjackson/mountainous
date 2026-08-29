@@ -37,4 +37,5 @@ NIX_SSHOPTS="-F ${ssh_tmpdir}/ssh_config ${NIX_SSHOPTS:-}" \
   --override-input nix-on-rocks-guest "path:${NIX_ON_ROCKS_GUEST}" \
   --override-input korri "path:${KORRI}" \
   --build-host fuji \
-  --target-host root@sobo
+  --target-host korri@sobo \
+  --sudo

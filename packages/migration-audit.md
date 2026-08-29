@@ -29,7 +29,6 @@ Validated with `nix flake show --json --all-systems .`, which currently exposes:
 Notable package outputs include:
 
 - `deploy`
-- `nixie`
 - `scaffold`
 - `secrets`
 - `syncthing-keygen`
