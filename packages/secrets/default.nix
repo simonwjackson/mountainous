@@ -313,7 +313,10 @@
         exit 1
       fi
 
-      RULES="$rules_file" agenix -r "''${ids[@]}"
+      (
+        cd "$git_root"
+        RULES="$rules_file" agenix -r "''${ids[@]}"
+      )
     '';
   };
 
