@@ -177,6 +177,9 @@
       names;
 
     packagePaths = collectPackagePaths "" ./packages;
+    # Keep non-derivation collections explicit. Filtering by isDerivation here
+    # forces every package whenever Nix only needs the flake output names.
+    derivationPackagePaths = builtins.removeAttrs packagePaths ["scripts"];
     nixosFeatureModulePaths = collectModulePaths ./features;
     nixosPresetModulePaths = collectModulePaths ./presets;
     droidFeatureModulePaths = collectPlatformModulePaths ./features "droid.nix";
@@ -184,9 +187,8 @@
 
     packageOverlay = final: prev: let
       callPackage = lib.callPackageWith (final // {inherit inputs;});
-      overlayPackagePaths = builtins.removeAttrs packagePaths ["scripts"];
     in
-      lib.mapAttrs (_: path: callPackage path {}) overlayPackagePaths;
+      lib.mapAttrs (_: path: callPackage path {}) derivationPackagePaths;
 
     extraOverlays = import ./overlays;
     projectOverlays = [packageOverlay] ++ extraOverlays;
@@ -206,9 +208,8 @@
     mkFlakePackages = system: let
       pkgs = mkPkgs system;
       callPackage = lib.callPackageWith (pkgs // {inherit inputs;});
-      packageSet = lib.mapAttrs (_: path: callPackage path {}) packagePaths;
     in
-      lib.filterAttrs (_: value: lib.isDerivation value) packageSet;
+      lib.mapAttrs (_: path: callPackage path {}) derivationPackagePaths;
 
     mkHost = {
       system,
