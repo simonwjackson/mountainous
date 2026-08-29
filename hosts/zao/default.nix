@@ -122,38 +122,6 @@ in {
     };
 
     # ── Services ─────────────────────────────────────────────────────
-    features.pyxis = {
-      enable = true;
-      openFirewall = true;
-      allowedHosts = ["pyxis.hummingbird-lake.ts.net"];
-      sources.pandora = {
-        username = "simon@simonwjackson.com";
-        passwordFile = config.age.secrets.pyxis-pandora-password.path;
-      };
-      sonos = {
-        enable = true;
-        lanStreamBaseUrl = "http://192.168.1.243:8765";
-        seedHosts = [
-          "192.168.1.118"
-          "192.168.1.216"
-          "192.168.1.226"
-          "192.168.1.241"
-        ];
-        discoveryIntervalSeconds = 30;
-        pollIntervalMs = 1000;
-        requestTimeoutMs = 3000;
-      };
-      proxy = {
-        enable = true;
-        hostname = "pyxis";
-        openFirewall = false;
-      };
-      backup = {
-        enable = true;
-        passphraseFile = config.age.secrets.borg-passphrase.path;
-      };
-    };
-
     features.jellyfin = {
       enable = true;
       # Opened to the LAN so the LG webOS TV (no Tailscale client) can reach Jellyfin directly.
@@ -407,22 +375,10 @@ in {
     };
   };
 
-  networking.firewall.allowedTCPPorts = [
-    8765 # Pyxis service port
-    9000 # Pyxis dev server port
-  ];
-
   # ── Secrets ────────────────────────────────────────────────────────
   age.secrets.tailscale-authkey = {
     owner = "tsnet-proxy";
     group = "tsnet-proxy";
-  };
-
-  age.secrets.pyxis-pandora-password = {
-    file = config.age.secrets.credentials-pandora-password.file;
-    owner = "root";
-    group = "pyxis-secrets";
-    mode = "0440";
   };
 
   system.stateVersion = "26.05";

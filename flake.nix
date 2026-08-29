@@ -67,7 +67,6 @@
       url = "github:LLukas22/Jellyswarrm/v0.2.1";
       flake = false;
     };
-    pyxis.url = "github:simonwjackson/pyxis";
     korri = {
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
