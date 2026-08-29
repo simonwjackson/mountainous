@@ -418,6 +418,18 @@
           touch "$out"
         '';
 
+    checks.x86_64-linux.zao-workstation-retired = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      zao = self.nixosConfigurations.zao.config;
+    in
+      assert lib.assertMsg (!zao.mountainous.presets.workstation.enable) "Zao must not enable the generic workstation preset";
+      assert lib.assertMsg zao.networking.networkmanager.enable "Zao must retain explicit NetworkManager ownership";
+      assert lib.assertMsg zao.services.avahi.enable "Zao must retain Avahi for printer publication";
+      assert lib.assertMsg (zao.services.avahi.nssmdns4 && zao.services.avahi.nssmdns6) "Zao must retain dual-stack mDNS resolution";
+      assert lib.assertMsg zao.services.avahi.publish.enable "Zao must retain Avahi publication";
+      assert lib.assertMsg zao.services.avahi.publish.userServices "Zao must retain user-service publication for the shared printer";
+        pkgs.writeText "zao-workstation-retired" "Zao owns networking and printer discovery without the workstation preset.\n";
+
     checks.x86_64-linux.zao-runtime-commitments = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;

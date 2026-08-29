@@ -9,7 +9,10 @@
     ./hardware.nix
   ];
 
-  networking.hostName = "zao";
+  networking = {
+    hostName = "zao";
+    networkmanager.enable = true;
+  };
   time.timeZone = "America/Denver";
 
   nixpkgs.config.allowUnfree = true;
@@ -36,7 +39,6 @@
       # TODO: remove before committing
       passwordHash = "$6$bGAB/OPwyzz7AKMK$5MV3Ak8izkYQDdRFmzt8R/8joddHc1fHXMK9qBbwM3UQRlRMwX5JtsyGpq5tnU7BX7K8ibq1HshEp2kvKv/aA1";
     };
-    presets.workstation.enable = true;
     presets.server.enable = true;
 
     features.disk-array = {
@@ -218,6 +220,7 @@
   services.avahi = {
     enable = true;
     nssmdns4 = true;
+    nssmdns6 = true;
     openFirewall = true;
     publish = {
       enable = true;
