@@ -69,6 +69,9 @@ in {
         resumeDevice = "/dev/disk/by-id/nvme-SAMSUNG_MZQLB7T6HMLA-00007_S4BGNC0R803650-part2";
         swap.mode = "partition";
       };
+
+      # Korri source-machine owns the tailnet DNS/hostname posture for Aka.
+      tailscale.acceptDns = false;
     };
   };
 

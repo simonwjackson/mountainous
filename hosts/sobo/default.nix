@@ -56,6 +56,15 @@
   # container-friendly value here so the two mkDefaults don't deadlock.
   nix.optimise.automatic = lib.mkForce false;
 
+  # Non-root deploys (same model as bandai/aka): upstream sshd runs on :2222
+  # with PermitRootLogin=no, so nixos-rebuild connects as the korri user and
+  # activates via its wheel sudo. The closure-copy step rejects unsigned
+  # paths from the build host unless the deploy user is a trusted Nix user.
+  nix.settings.trusted-users = [
+    "root"
+    "korri"
+  ];
+
   # Upstream owns the Tailscale daemon; mountainous only supplies the shared
   # auth key and the equivalent `tailscale up` flags so sobo can reach its
   # remote builders after activation without a browser login.
@@ -104,13 +113,11 @@
     };
   };
 
-  # Korri client package selection remains mountainous-owned, while the
-  # product kiosk session/autostart comes from services.korri.kiosk defaults
-  # supplied by the nix-on-rocks main-space platform module.
-  services.korri.client = {
-    enable = true;
-    package = inputs.korri.packages.${pkgs.stdenv.hostPlatform.system}.korri-desktop-device;
-  };
+  # Kiosk session/autostart comes from services.korri.kiosk defaults supplied
+  # by the nix-on-rocks main-space platform module. The client package pin was
+  # dropped 2026-07: trunk's korri-client module defaults to the Chromium
+  # kiosk renderer package (korri-desktop-device no longer exists).
+  services.korri.client.enable = true;
 
   # The desktop launch bridge tries the `moonlight` binary first; keep it in
   # the Korri kiosk PATH instead of relying on the slower nixpkgs fallback in a

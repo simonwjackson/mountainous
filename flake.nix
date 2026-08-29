@@ -402,7 +402,8 @@
           inputs.nix-on-rocks-guest.nixosModules.main-space
           inputs.nix-on-rocks-guest.nixosModules.odin2portal
           inputs.korri.nixosModules.korri
-          "${inputs.korri}/nix/images/kiosk.nix"
+          inputs.korri.nixosModules.korri-sessiond
+          "${inputs.korri}/product/systems/nixos/images/kiosk.nix"
         ];
       };
       zao = mkHost {
