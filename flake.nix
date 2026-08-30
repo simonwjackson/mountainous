@@ -71,6 +71,12 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Zao consumes the isolated Linux host profile without changing the Korri
+    # revision used by Aka and Sobo.
+    korri-input-host = {
+      url = "github:simonwjackson/korri";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs-rpcs3-v0-0-41.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Lukas's unofficial Nix flake for pi (earendil-works/pi), the terminal
     # coding agent. Exposes a NixOS module under programs.pi.coding-agent
@@ -374,7 +380,7 @@
       assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
         nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
 
-    checks.x86_64-linux.zao-korri-retired = let
+    checks.x86_64-linux.zao-korri-consumer = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;
       retirement = zao.systemd.services.zao-retire-korri;
@@ -383,7 +389,6 @@
       retiredPackages = ["gamescope" "gamemode" "mangohud" "protontricks"];
       retiredSystemUnits = [
         "greetd"
-        "inputplumber"
         "korri-bluetooth-power-on"
         "korri-setup"
         "seatd"
@@ -393,43 +398,30 @@
         "korri-compositor"
         "korri-sunshine"
         "korrid"
-        "sunshine"
       ];
       retiredUserTargets = ["korri-session" "sway-session"];
     in
-      assert lib.assertMsg (!(builtins.hasAttr "korri" zao.services)) "Zao must not import Korri services";
-      assert lib.assertMsg (!zao.services.sunshine.enable) "Zao must retire Sunshine";
-      assert lib.assertMsg (!zao.programs.sway.enable) "Zao must retire Sway";
-      assert lib.assertMsg (!zao.programs.steam.enable) "Zao must retire Steam";
-      assert lib.assertMsg (!zao.programs.gamemode.enable) "Zao must retire GameMode";
-      assert lib.assertMsg (!zao.xdg.portal.enable) "Zao must retire its desktop portal";
-      assert lib.assertMsg (!zao.services.greetd.enable) "Zao must retire its local desktop login";
-      assert lib.assertMsg (!zao.services.seatd.enable) "Zao must retire seatd";
-      assert lib.assertMsg (!zao.services.pipewire.enable) "Zao must retire the desktop audio session";
-      assert lib.assertMsg (!zao.hardware.graphics.enable) "Zao must retire the Korri graphics runtime";
-      assert lib.assertMsg (!(builtins.elem "uinput" zao.boot.kernelModules)) "Zao must retire the Korri uinput module";
-      assert lib.assertMsg (lib.intersectLists packageNames retiredPackages == []) "Zao must retire gaming packages";
-      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.services)) retiredSystemUnits) "Zao must retire generated Korri system units";
-      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.services)) retiredUserUnits) "Zao must retire generated Korri user services";
-      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.targets)) retiredUserTargets) "Zao must retire generated Korri user targets";
-      assert lib.assertMsg (builtins.elem "multi-user.target" retirement.wantedBy) "Zao must stop any loaded Korri user services after activation";
-      assert lib.assertMsg (retirement.serviceConfig.User == "simonwjackson") "Zao must retire Korri through its former owning user";
-        pkgs.runCommand "zao-korri-retired" {} ''
+      assert lib.assertMsg zao.services.korriLinuxHost.enable "Zao must consume Korri's isolated Linux host profile";
+      assert lib.assertMsg (!(builtins.hasAttr "korri" zao.services)) "Zao must keep the legacy Korri source stack retired";
+      assert lib.assertMsg (!zao.programs.sway.enable) "Zao must keep Sway retired";
+      assert lib.assertMsg (!zao.programs.steam.enable) "Zao must keep Steam retired";
+      assert lib.assertMsg (!zao.programs.gamemode.enable) "Zao must keep GameMode retired";
+      assert lib.assertMsg (!zao.xdg.portal.enable) "Zao must keep its desktop portal retired";
+      assert lib.assertMsg (!zao.services.greetd.enable) "Zao must keep its local desktop login retired";
+      assert lib.assertMsg (!zao.services.seatd.enable) "Zao must keep seatd retired";
+      assert lib.assertMsg (!zao.services.pipewire.enable) "Zao must keep the desktop audio session retired";
+      assert lib.assertMsg (lib.intersectLists packageNames retiredPackages == []) "Zao must keep broad gaming packages retired";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.services)) retiredSystemUnits) "Zao must keep legacy Korri system units retired";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.services)) retiredUserUnits) "Zao must keep legacy Korri user services retired";
+      assert lib.assertMsg (lib.all (name: !(builtins.hasAttr name zao.systemd.user.targets)) retiredUserTargets) "Zao must keep legacy Korri user targets retired";
+      assert lib.assertMsg (builtins.elem "multi-user.target" retirement.wantedBy) "Zao must stop any loaded legacy Korri user services after activation";
+      assert lib.assertMsg (retirement.serviceConfig.User == "simonwjackson") "Zao must retire legacy user services through their former owner";
+        pkgs.runCommand "zao-korri-consumer" {} ''
           ${pkgs.bash}/bin/bash -n ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'stop korri-session.target' ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'korrid.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'korri-compositor.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'korri-sunshine.service' ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'sunshine.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'gamemoded.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.service' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire.socket' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'pipewire-pulse.socket' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'wireplumber.service' ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'sunshine_backup="$legacy_sunshine.mountainous-retired"' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'systemctl --user daemon-reload || true' ${retirementScript}
-          ${pkgs.gnugrep}/bin/grep -Fq 'systemctl --user reset-failed || true' ${retirementScript}
           touch "$out"
         '';
 
@@ -693,6 +685,7 @@
       zao = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/zao;
+        extraModules = [inputs.korri-input-host.nixosModules.korri-linux-host];
       };
       ibuki = mkHost {
         system = "x86_64-linux";

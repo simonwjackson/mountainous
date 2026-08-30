@@ -162,6 +162,14 @@
     };
   };
 
+  services.korriLinuxHost = {
+    enable = true;
+    gameplayUser = "simonwjackson";
+    gameplayUid = 1000;
+    gameplayGid = 100;
+    firewallInterfaces = ["tailscale0"];
+  };
+
   users.users.simonwjackson.extraGroups = [
     "lp"
     "media"
