@@ -98,8 +98,6 @@
       nutrition-log-meal
       nutrition-daily-summary
       tasks-query
-      ebay-api
-      ebay-publish
     ]);
 
   # ── Secrets (overrides for auto-discovered defaults) ──────────────────

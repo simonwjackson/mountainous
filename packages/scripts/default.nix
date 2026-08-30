@@ -190,16 +190,4 @@ in {
         exec ${python}/bin/python3 ${./kroger-lib.py} "$@"
       '';
     };
-
-  # === EBAY ===
-
-  ebay-api = mkShellScript "ebay-api" {
-    deps = with pkgs; [coreutils jq];
-    text = builtins.readFile ./ebay-api.sh;
-  };
-
-  ebay-publish = mkShellScript "ebay-publish" {
-    deps = with pkgs; [curl jq coreutils gnused findutils];
-    text = builtins.readFile ./ebay-publish.sh;
-  };
 }
