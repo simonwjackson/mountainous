@@ -651,11 +651,11 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1788193819,
-        "narHash": "sha256-JABYSCVdTqMlpeHi3973UDYC758lMnXsxoJXBQJddJ4=",
+        "lastModified": 1788197211,
+        "narHash": "sha256-IGf1uOvg0HcA1c60iH90Mwxt8toRu+Phe+Gu/yKC9QY=",
         "ref": "refs/heads/feat/restore-linux-inputplumber",
-        "rev": "378658a786f4c6712c814d1005aece2ac5501803",
-        "revCount": 504,
+        "rev": "69251d9d6d990ae6d599676940ca7c7a28e5a0d5",
+        "revCount": 507,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri/.worktrees/feat/restore-linux-inputplumber"
       },
