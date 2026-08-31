@@ -573,22 +573,6 @@
         "type": "github"
       }
     },
-    "inputplumber-nixpkgs": {
-      "locked": {
-        "lastModified": 1773268795,
-        "narHash": "sha256-Uf9UIDZE1Obwn2JLNo9pgZBNWxWLqukNYaAKetVmL28=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "9a37a7b2ae651b6182ef08d0d446a964339bcdfe",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "9a37a7b2ae651b6182ef08d0d446a964339bcdfe",
-        "type": "github"
-      }
-    },
     "jellyswarrm": {
       "inputs": {
         "flake-utils": "flake-utils_3",
@@ -643,7 +627,6 @@
       "inputs": {
         "crane": "crane",
         "flake-utils": "flake-utils_5",
-        "inputplumber-nixpkgs": "inputplumber-nixpkgs",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -651,13 +634,12 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1788206179,
-        "narHash": "sha256-KWzzmtAEITSWAb9GzhNyh1ySMmfL8YzqQ1xCz5UxxTw=",
-        "ref": "refs/heads/feat/restore-linux-inputplumber",
-        "rev": "69976b709212d0a0f439805b77eceb256e3e262e",
-        "revCount": 516,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri/.worktrees/feat/restore-linux-inputplumber"
+        "lastModified": 1785900031,
+        "narHash": "sha256-Eo2rP+8iGUkifWCNwWeL9ttqzhTy1eYUMSTYPrZa3rs=",
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "8dfe5aa8304da4bb0ec42a1455b19fb2b33cf811",
+        "type": "github"
       },
       "original": {
         "owner": "simonwjackson",
