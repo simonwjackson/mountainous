@@ -168,6 +168,7 @@
     gameplayUid = 1000;
     gameplayGid = 100;
     firewallInterfaces = ["tailscale0"];
+    sunshine.encoder = "nvenc";
   };
 
   users.users.simonwjackson.extraGroups = [
