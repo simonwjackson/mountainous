@@ -168,6 +168,7 @@
     gameplayUid = 1000;
     gameplayGid = 100;
     firewallInterfaces = ["tailscale0"];
+    compositor.renderDevice = "/dev/dri/by-path/pci-0000:01:00.0-render";
     sunshine.encoder = "nvenc";
   };
 
