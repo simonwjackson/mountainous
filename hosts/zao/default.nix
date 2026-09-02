@@ -169,6 +169,8 @@
     gameplayGid = 100;
     firewallInterfaces = ["tailscale0"];
     compositor.renderDevice = "/dev/dri/by-path/pci-0000:01:00.0-render";
+    compositor.mode = "1920x1080@120Hz";
+    compositor.renderer = "pixman";
     sunshine.encoder = "nvenc";
   };
 

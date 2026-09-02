@@ -651,13 +651,13 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1788365457,
-        "narHash": "sha256-wVf2uSqVOeJCmEEzCgAZYwUpEJ4AsCyC9Ebz3DMFlYs=",
-        "ref": "plan/zao-headless-sway",
-        "rev": "b56b7ef0e93ed361f8311cf5d6b937c489b03a79",
-        "revCount": 581,
+        "lastModified": 1788423732,
+        "narHash": "sha256-YK1MLlJShLz1Gv37m6+utqnj5bwdQ+kGR6ZRvL2kSXI=",
+        "ref": "refs/heads/main",
+        "rev": "a224f26793d8ef6904a0efd53ec779c60821e581",
+        "revCount": 601,
         "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri/.worktrees/plan/zao-headless-sway"
+        "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
       "original": {
         "owner": "simonwjackson",
