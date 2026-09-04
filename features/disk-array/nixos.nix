@@ -170,6 +170,10 @@
       after = ["${name}-array.target"];
       wants = ["${name}-array.target"];
       unitConfig.ConditionPathExists = map (id: "${pool.mountBase}/${id}") sr.dataDisks;
+      # Without this the script's bare `mountpoint` and `grep` calls are not on
+      # PATH, the mount guard fails with a false "not mounted" error, and the
+      # diff thresholds silently parse as 0.
+      path = with pkgs; [util-linux gnugrep coreutils];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "${name}-snapraid-sync" ''
@@ -194,8 +198,23 @@
           DIFF_OUTPUT=$(${pkgs.snapraid}/bin/snapraid -c ${confPath} diff 2>&1) || true
           echo "$DIFF_OUTPUT"
 
-          REMOVED=$(echo "$DIFF_OUTPUT" | grep -oP '^\s*\K\d+(?=\s+removed)' || echo "0")
-          UPDATED=$(echo "$DIFF_OUTPUT" | grep -oP '^\s*\K\d+(?=\s+updated)' || echo "0")
+          # A missing or broken grep must abort, never report 0. Reporting 0
+          # would disarm the removed/updated guards below.
+          parse_count() {
+            local label="$1" out status=0
+            out=$(echo "$DIFF_OUTPUT" | grep -oP "^\s*\K\d+(?=\s+$label)" | tail -n 1) || status=$?
+            if [ "$status" -eq 0 ]; then
+              printf '%s\n' "$out"
+            elif [ "$status" -eq 1 ]; then
+              printf '0\n'
+            else
+              printf 'ERROR: cannot parse %s count from snapraid diff (exit %s). Refusing to sync.\n' "$label" "$status" >&2
+              return 1
+            fi
+          }
+
+          REMOVED=$(parse_count removed) || exit 1
+          UPDATED=$(parse_count updated) || exit 1
 
           if [ "$REMOVED" -gt "$MAX_REMOVED" ]; then
             echo "ERROR: $REMOVED removed exceeds threshold ($MAX_REMOVED). Aborting."
@@ -263,6 +282,9 @@
       description = "Move aged files from ${name} cache to backing disks";
       after = ["${name}-mergerfs-mount.service"];
       wants = ["${name}-merged.target"];
+      # The script calls mountpoint, df, tail, tr, find and mkdir directly.
+      # Without them on PATH it exits 0 with "not mounted" and moves nothing.
+      path = with pkgs; [util-linux coreutils findutils];
       serviceConfig = {
         Type = "oneshot";
         Nice = 19;
