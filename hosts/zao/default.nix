@@ -168,6 +168,11 @@
     gameplayUid = 1000;
     gameplayGid = 100;
     firewallInterfaces = ["tailscale0"];
+    relays = [
+      "wss://relay.nostr.band"
+      "wss://relay.primal.net"
+    ];
+    ownerBindingFile = ./korrid-owner-binding.json;
     compositor.renderDevice = "/dev/dri/by-path/pci-0000:01:00.0-render";
     compositor.mode = "1920x1080@120Hz";
     compositor.renderer = "pixman";

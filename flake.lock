@@ -651,13 +651,12 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1788423732,
-        "narHash": "sha256-YK1MLlJShLz1Gv37m6+utqnj5bwdQ+kGR6ZRvL2kSXI=",
-        "ref": "refs/heads/main",
-        "rev": "a224f26793d8ef6904a0efd53ec779c60821e581",
-        "revCount": 601,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri"
+        "lastModified": 1788499619,
+        "narHash": "sha256-jBnulZtW/WK/6l8UW/30P2vVf5kmgjJNbIlWmXWLD+4=",
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "2a45bd531aafb85315efdeff20d714b55d22604c",
+        "type": "github"
       },
       "original": {
         "owner": "simonwjackson",
