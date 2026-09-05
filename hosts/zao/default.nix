@@ -177,6 +177,7 @@
     compositor.mode = "1920x1080@120Hz";
     compositor.renderer = "pixman";
     sunshine.encoder = "nvenc";
+    sunshine.inputSeats.enable = true;
   };
 
   users.users.simonwjackson.extraGroups = [
