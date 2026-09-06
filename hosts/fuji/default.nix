@@ -66,6 +66,8 @@
       };
 
       # ── User tools ──────────────────────────────────────────────────
+      # Pi and its synced history are retired on this device only.
+      pi.enable = false;
       kroger = {
         enable = true;
         clientIdFile = config.age.secrets.kroger-client-id.path;

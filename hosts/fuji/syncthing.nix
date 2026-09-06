@@ -7,7 +7,7 @@
     flakey.enable = true;
     nutrition.enable = true;
     omi.enable = true;
-    "pi-config".enable = true;
+    "pi-config".enable = false;
     research.enable = true;
     tasks.enable = true;
     therapy.enable = true;

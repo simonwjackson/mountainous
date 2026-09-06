@@ -58,11 +58,11 @@ in {
     programs.lazygit = {
       enable = true;
       settings = {
-        keybinding.files = {
+        keybinding.files = lib.mkIf osConfig.mountainous.features.pi.enable {
           commitChanges = "C";
           commitChangesWithEditor = "C";
         };
-        customCommands = [
+        customCommands = lib.optionals osConfig.mountainous.features.pi.enable [
           {
             key = "c";
             context = "files";
