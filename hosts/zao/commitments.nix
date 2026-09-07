@@ -99,6 +99,7 @@
       coreutils
       cups
       curl
+      findutils # The zram check calls xargs, also in a clean supervisor environment.
       gnugrep
       iproute2
       jq
