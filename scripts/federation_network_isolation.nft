@@ -1,0 +1,21 @@
+# One exclusive, atomic transaction. Never add/flush an existing table.
+create table inet korri_maintenance_isolation { comment "korri-maintenance-network-isolation"; }
+add set inet korri_maintenance_isolation service_tcp { type inet_service; elements = { 39217, 47984, 47989, 47990, 48010 }; }
+add set inet korri_maintenance_isolation service_udp { type inet_service; flags interval; elements = { 47998, 47999, 48000, 48002, 48010, 60000-61000 }; }
+
+# Before ordinary filter/established accepts, including trusted tailscale0/lo.
+# These new chains fall through. No existing chain's default policy changes.
+add chain inet korri_maintenance_isolation ingress { type filter hook input priority -310; }
+add chain inet korri_maintenance_isolation egress { type filter hook output priority -310; }
+add rule inet korri_maintenance_isolation ingress iifname != "lo" tcp dport @service_tcp drop
+add rule inet korri_maintenance_isolation ingress iifname != "lo" udp dport @service_udp drop
+
+# UID976 may have an already-established outbound relay on an unrelated port.
+add rule inet korri_maintenance_isolation egress oifname != "lo" meta skuid 976 drop
+add rule inet korri_maintenance_isolation egress oifname != "lo" tcp sport @service_tcp drop
+add rule inet korri_maintenance_isolation egress oifname != "lo" udp sport @service_udp drop
+
+# Root may reach the maintenance API. Other local clients must not reach any
+# service port, even over existing sockets or a local non-loopback IP address.
+add rule inet korri_maintenance_isolation egress oifname "lo" meta skuid != 0 tcp dport @service_tcp reject with tcp reset
+add rule inet korri_maintenance_isolation egress oifname "lo" meta skuid != 0 udp dport @service_udp reject with icmpx type port-unreachable
