@@ -74,7 +74,7 @@
     # Zao consumes the isolated Linux host profile without changing the Korri
     # revision used by Aka and Sobo.
     korri-input-host = {
-      url = "github:simonwjackson/korri";
+      url = "git+file:///home/simonwjackson/code/sandbox/korri?ref=refs/tags/zao-federation-d39ea55d&rev=d39ea55d7e39162eaf0e175e4fa91e02d9b2feaa";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs-rpcs3-v0-0-41.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -402,6 +402,8 @@
       retiredUserTargets = ["korri-session" "sway-session"];
     in
       assert lib.assertMsg zao.services.korriLinuxHost.enable "Zao must consume Korri's isolated Linux host profile";
+      assert lib.assertMsg (zao.services.korriLinuxHost.runtimeUser == "simonwjackson" && zao.services.korriLinuxHost.runtimeUid == 1000 && zao.services.korriLinuxHost.runtimeGroup == "users" && zao.services.korriLinuxHost.runtimeGid == 100) "Zao must preserve its existing Korri runtime identity";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.advertisedEndpoints == ["http://zao:39217"] && zao.services.korridLinuxDevice.moonlightAddress == "zao:47989") "Zao must forward its federation endpoints to korrid";
       assert lib.assertMsg (!(builtins.hasAttr "korri" zao.services)) "Zao must keep the legacy Korri source stack retired";
       assert lib.assertMsg (!zao.programs.sway.enable) "Zao must keep Sway retired";
       assert lib.assertMsg (!zao.programs.steam.enable) "Zao must keep Steam retired";
