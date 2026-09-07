@@ -46,6 +46,38 @@ KORRI=/path/to/korri \
 ./switch-sobo-overrides.sh
 ```
 
+## Zao reviewed local federation pin — build only
+
+Zao's `korri-input-host` URL and lock pin the reviewed producer revision
+`d39ea55d7e39162eaf0e175e4fa91e02d9b2feaa` through the retained local Git tag
+`refs/tags/zao-federation-d39ea55d` in
+`/home/simonwjackson/code/sandbox/korri`. This is a local-only pin, not remote
+publication. The separate `korri` input for Aka and Sobo remains unchanged.
+
+Keep that repository, tag and commit until an approved replacement pin is
+available. Do not move/delete the tag or substitute a raw `path:` input: Git
+exports the pinned tracked tree, not the producer's untracked private state.
+The absolute local URL is not portable; another build machine needs the retained
+repository at that path or a separately reviewed published replacement.
+
+A normal Zao rebuild from the checkout containing this `flake.nix`/`flake.lock`
+pair now consumes the pin without `--override-input`. Build and retain it with:
+
+```bash
+nix build .#nixosConfigurations.zao.config.system.build.toplevel \
+  --no-write-lock-file --out-link result-federation-configured -L
+```
+
+Retain `result-federation-configured` and its `-producer-source` and
+`-consumer-source` roots with the existing candidate/recovery roots. Source roots
+preserve immutable exports; they do not replace local Git retention for resolving
+the URL. These roots retain store data and therefore have a storage cost.
+
+This source configuration does not activate Zao or satisfy live cutover gates.
+Do not use the general activation commands above for this cutover without separate
+approval. Other checkouts, including the shared main checkout, are not updated by
+this worktree-only change.
+
 ## Nix-on-Droid
 
 Run activation from an existing repository checkout on the device.
