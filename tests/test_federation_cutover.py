@@ -1,5 +1,6 @@
 """Real files/subprocesses; no service-control replacements or private host reads."""
 
+import ast
 import importlib.util
 import json
 import os
@@ -525,6 +526,49 @@ class SunshineReadinessTests(unittest.TestCase):
         source = (ROOT / "scripts/federation_cutover.py").read_text()
         self.assertEqual(source.count("47984"), 1)
         self.assertEqual(source.count("socket.create_connection(SUNSHINE_HTTPS"), 2)
+
+    def test_no_supervisor_path_can_signal_sunshine_without_waiting_first(self):
+        """Every Sunshine restart the supervisor issues waits for readiness.
+
+        The whole module is the unit under test here: one unguarded restart
+        anywhere reopens the reported early-signal race, and no single runtime
+        call can observe that absence.
+        """
+        tree = ast.parse((ROOT / "scripts/federation_cutover.py").read_text())
+        restarts = {}
+        for owner in ast.walk(tree):
+            if not isinstance(owner, ast.FunctionDef):
+                continue
+            for node in ast.walk(owner):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "call"
+                    and node.args
+                    and getattr(node.args[0], "value", None) == "restart"
+                ):
+                    restarts.setdefault(owner.name, []).append(node)
+        self.assertEqual(sorted(restarts), ["restart_sunshine"])
+        (restart,) = restarts["restart_sunshine"]
+        self.assertEqual(
+            [argument.id for argument in restart.args[1:]],
+            ["SUNSHINE_UNIT"],
+            "the restarted unit must be the one recorded Sunshine unit",
+        )
+        (helper,) = [
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "restart_sunshine"
+        ]
+        waits = [
+            node.lineno
+            for node in ast.walk(helper)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "await_sunshine_ready"
+        ]
+        self.assertEqual(len(waits), 1)
+        self.assertLess(waits[0], restart.lineno)
 
 
 if __name__ == "__main__":

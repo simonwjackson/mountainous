@@ -1836,6 +1836,20 @@ def await_sunshine_ready(manager):
             time.sleep(0.2)
 
 
+def restart_sunshine(manager):
+    """The only permitted Sunshine restart in this supervisor.
+
+    A restart is a signal to the process that is running now, so the wait lives
+    here rather than at the call sites: a later caller cannot reintroduce the
+    early-signal race by forgetting it. The restarted instance is not waited on
+    here, because `sunshine.service` takes its bound daemon down with it and the
+    caller must start that again first; the next stop signal in every path is
+    itself issued through a fresh readiness observation.
+    """
+    await_sunshine_ready(manager)
+    manager.call("restart", SUNSHINE_UNIT)
+
+
 def certificate_tls(certificate, key, host_uuid, *, accepted):
     # nvhttp.cpp performs cert_chain.verify AFTER the TLS handshake. Require
     # actual XML acceptance/denial, never count a socket error as a result.
@@ -2076,8 +2090,7 @@ def automatic_certificate_probe(
     verify_new_state(args, tools, baseline)
     await_certificate_tls(certificate, key, args.host_uuid, accepted=False)
     manager = isolation.managers[0][0]
-    await_sunshine_ready(manager)
-    manager.call("restart", "sunshine.service")
+    restart_sunshine(manager)
     await_certificate_tls(certificate, key, args.host_uuid, accepted=False)
     # Socket activation may already have restarted the selected daemon. Repeated
     # start jobs also rerun its oneshot importer and can exhaust its rate limit.
@@ -2116,8 +2129,7 @@ def local_acceptance(args, tools, isolation, network, baseline):
     )
     verify_new_state(args, tools, baseline)
     manager = isolation.managers[0][0]
-    await_sunshine_ready(manager)
-    manager.call("restart", "sunshine.service")
+    restart_sunshine(manager)
     # Requires/BindsTo may stop korrid when Sunshine restarts. Start only if socket
     # activation has not already done so; never reset or disable start limits.
     if manager.show("korrid.service", "ActiveState") not in ("active", "activating"):

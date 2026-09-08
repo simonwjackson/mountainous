@@ -624,32 +624,37 @@ def assert_preserved_state(bundle=None):
     assert (cutover.SUNSHINE / "apps.json").read_bytes() == b'{"apps":[],"env":{}}'
 
 
-def sunshine_marks(cursor):
-    """Real monotonic journal marks of the actual Sunshine unit after `cursor`."""
-    text = call(
+def sunshine_marks(invocation):
+    """Real monotonic journal marks of exactly one Sunshine invocation.
+
+    Both the daemon's own records and systemd's records about it carry the
+    invocation id, so an earlier instance's stop can never be read as this
+    one's. A journal cursor cannot give that: an entry generated before the
+    cursor is taken can still be written after it.
+    """
+    marks = {}
+    for line in call(
         [
             "journalctl",
-            "-u",
-            "sunshine.service",
             "-o",
-            "short-monotonic",
+            "json",
             "--no-pager",
-            "--after-cursor",
-            cursor,
+            f"_SYSTEMD_INVOCATION_ID={invocation}",
+            "+",
+            f"INVOCATION_ID={invocation}",
         ]
-    )
-    marks = {}
-    for line in text.splitlines():
-        stamp = re.match(r"\[\s*([0-9.]+)\]", line)
-        if not stamp:
-            continue
-        for label, needle in (
-            ("main_loop", "Starting main loop"),
-            ("stopping", "Stopping sunshine.service"),
-            ("terminate", "Terminate handler called"),
+    ).splitlines():
+        entry = json.loads(line)
+        message = entry.get("MESSAGE", "")
+        stamp = int(entry["__MONOTONIC_TIMESTAMP"]) / 1e6
+        for label, source, needle in (
+            ("main_loop", "sunshine", "Starting main loop"),
+            ("stopping", "systemd", "Stopping "),
+            ("terminate", "sunshine", "Terminate handler called"),
         ):
-            if needle in line:
-                marks.setdefault(label, float(stamp[1]))
+            emitter = "systemd" if entry.get("_PID") == "1" else "sunshine"
+            if emitter == source and needle in message:
+                marks.setdefault(label, round(stamp, 6))
     return marks
 
 
@@ -666,18 +671,17 @@ def terminate_handler_installed(pid):
 
 
 def restart_observation(manager, *, guarded):
-    """One real stop-signal observation against the actual Sunshine unit."""
+    """One real stop-signal observation against the actual Sunshine unit.
+
+    The guarded observation issues the supervisor's own `restart_sunshine`, so
+    removing its wait reproduces the reported race here instead of hiding it.
+    """
     manager.call("stop", "sunshine.service")
-    cursor = (
-        call(["journalctl", "-n", "0", "--show-cursor", "--no-pager"])
-        .split("cursor: ")[-1]
-        .strip()
-    )
     manager.call("start", "sunshine.service")
-    if guarded:
-        cutover.await_sunshine_ready(manager)
-    else:
-        pid = int(manager.show("sunshine.service", "MainPID"))
+    invocation = manager.show("sunshine.service", "InvocationID")
+    assert re.fullmatch("[0-9a-f]{32}", invocation), invocation
+    pid = int(manager.show("sunshine.service", "MainPID"))
+    if not guarded:
         deadline = time.monotonic() + 60
         while not terminate_handler_installed(pid):
             assert time.monotonic() < deadline, "Sunshine never installed a handler"
@@ -685,7 +689,10 @@ def restart_observation(manager, *, guarded):
     started = time.monotonic()
     refused = None
     try:
-        manager.call("restart", "sunshine.service")
+        if guarded:
+            cutover.restart_sunshine(manager)
+        else:
+            manager.call("restart", "sunshine.service")
     except cutover.Refusal as error:
         refused = str(error)
     seconds = round(time.monotonic() - started, 3)
@@ -693,11 +700,14 @@ def restart_observation(manager, *, guarded):
     while manager.show("sunshine.service", "ActiveState") not in ("active", "failed"):
         assert time.monotonic() < deadline, "Sunshine never settled after the restart"
         time.sleep(0.5)
-    marks = sunshine_marks(cursor)
+    marks = sunshine_marks(invocation)
     assert "stopping" in marks, marks
+    assert refused or manager.show("sunshine.service", "InvocationID") != invocation
     return {
         "guarded": guarded,
-        "restart_seconds": seconds,
+        "invocation": invocation,
+        "signalled_pid": pid,
+        "call_seconds": seconds,
         "refused": refused,
         "marks": marks,
         "signal_before_main_loop": "main_loop" not in marks
@@ -726,8 +736,8 @@ def sunshine_restart_race():
     Reported blocker: a stop signal that reaches Sunshine before its main loop
     runs is ignored for the whole 90 s stop timeout, so the supervisor can only
     report unknown containment. The unguarded observation waits for Sunshine's
-    own installed handler and so lands in exactly that window; no guarded
-    observation may ever reproduce the ordering.
+    own installed handler and so lands in exactly that window; no observation
+    through the supervisor's `restart_sunshine` may reproduce the ordering.
     """
     manager = Manager()
     window = start_limit_window(manager)
@@ -741,7 +751,8 @@ def sunshine_restart_race():
         assert not guarded["signal_before_main_loop"], guarded
         assert guarded["acted_on_signal"], guarded
         assert guarded["refused"] is None, guarded
-        assert guarded["restart_seconds"] < 30, guarded
+        assert guarded["call_seconds"] < 30, guarded
+        assert guarded["marks"]["terminate"] - guarded["marks"]["main_loop"] > 0
     # A readiness timeout refuses and contains: it never proceeds or signals.
     time.sleep(window)
     manager.call("stop", "sunshine.service")

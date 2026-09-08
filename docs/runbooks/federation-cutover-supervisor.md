@@ -188,8 +188,8 @@ wrong tag, decryption error, transport failure or malformed response does not.
    temporary certificate after revoke**, not a historically paired client.
    `automatic-revoked.json` records completion only after all those checks.
 
-   Every Sunshine restart and every fresh Sunshine start in this sequence is
-   preceded, and followed, by a bounded wait for **actual Sunshine readiness**.
+   Every stop signal this sequence sends to Sunshine, and every fresh Sunshine
+   start it makes, is guarded by a bounded wait for **actual Sunshine readiness**.
    See [Sunshine readiness before any stop signal](#sunshine-readiness-before-any-stop-signal).
 5. Only now remove the exact owned nft table by its live receipt. Persistent gates
    and owned runtime permits remain. Use the daemon's configured relay list with
@@ -231,11 +231,14 @@ manager call has already expired, and the supervisor can only record
 `{"containment": "unknown", "reason": "systemd operation failed: restart"}`. This
 race predates the user-bus transport change; observed passes won it by 26-270 ms.
 
-`await_sunshine_ready()` is therefore called immediately before **and** after every
-restart, and after every fresh start, of `sunshine.service`: maintenance start,
-matching-candidate start, the acceptance restart, the automatic-probe restart and
-the final release start. It is a wait for evidence, never a delay, retry or longer
-timeout. One observation requires all of:
+`restart_sunshine()` is the supervisor's **only** restart of `sunshine.service`. It
+waits for readiness and then issues the restart, so the acceptance restart and the
+automatic-probe restart cannot be issued without the wait and a later caller cannot
+reintroduce the race by forgetting it. `await_sunshine_ready()` is also called after
+every fresh start of the unit: the maintenance-permit start, whose block ends by
+stopping Sunshine again, the matching-candidate start and the final release start.
+It is a wait for evidence, never a delay, retry or longer timeout. One observation
+requires all of:
 
 - systemd reports `ActiveState=active`, `SubState=running` and a positive `MainPID`;
 - the actual listening endpoint `127.0.0.1:47984` - the same one the certificate
@@ -263,11 +266,40 @@ limits and never downgrades the provision/TLS/revoke, idle, journal, preservatio
 containment checks. Containment paths (`emergency_stop`, `close`) are unchanged and
 deliberately do not wait: containment must stay prompt.
 
+`restart_sunshine()` deliberately does **not** wait on the instance it just started.
+A variant that waited immediately after the restart refused after its full bound and
+contained (`{"containment": "closed with verified persistent gates", "reason":
+"Sunshine did not reach actual observable readiness"}`). The recorded cause is a port
+conflict, not a korrid dependency: in `vm-postrestart-attempt.log` the restarted
+Sunshine died at monotonic 96.260737 with `Couldn't start http server on ports
+[47984, 47984]: bind: Address already in use`, so it never became ready. Socket
+activation had already returned `korrid.service` 13.7 ms after the restart, while the
+supervisor was still blocked in that wait.
+
+The restarted instance is therefore covered by later evidence rather than by a wait.
+The probe path requires an actual XML denial from the restarted listener before it
+continues, which proves that listener serves. The remaining normal-path stop of that
+instance is `persist_boot`'s `isolation.close()`, which does not wait, because
+containment must stay prompt. **Residual risk:** if that stop ever reached a
+starting Sunshine, the supervisor would report unknown containment, exactly as the
+race above. Measured margin in a passing run is 2.74 s of intervening work, against a
+start-up window of roughly 0.26 s. This margin predates centralised restarts; it is
+incidental timing, not a guarantee.
+
 `tests/federation-cutover.nix`'s `restartrace` node in the probes suite runs the
 real binary under real systemd 259. It reproduces the race with one unguarded
-restart, requires three guarded restarts to signal only a running main loop and to
-log `Terminate handler called`, and requires a stopped Sunshine to exhaust the bound
-and refuse without changing `NRestarts` or `ActiveState`.
+restart, requires three restarts through `restart_sunshine()` to signal only a
+running main loop and to log `Terminate handler called` after it, and requires a
+stopped Sunshine to exhaust the bound and refuse without changing `NRestarts` or
+`ActiveState`. Each observation reads the journal of exactly one systemd invocation
+id, so an earlier instance's stop can never be counted as the observed one.
+
+The accompanying unit test asserts that `manager.call("restart", …)` appears only
+inside `restart_sunshine()`, after the wait. It catches a direct restart elsewhere, a
+deleted or reordered wait, and a restart hidden in a nested function or method. It
+does not catch a direct `stop`, a `try-restart`, a verb passed through a variable, or
+a `systemctl` subprocess. Treat it as a guard on the one known regression, not proof
+that no future path can signal Sunshine.
 
 The fixed library metadata and Sunshine state-target requirements may refuse a
 different real baseline.
