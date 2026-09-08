@@ -74,7 +74,7 @@
     # Zao consumes the isolated Linux host profile without changing the Korri
     # revision used by Aka and Sobo.
     korri-input-host = {
-      url = "git+file:///home/simonwjackson/code/sandbox/korri?ref=refs/tags/zao-federation-d39ea55d&rev=d39ea55d7e39162eaf0e175e4fa91e02d9b2feaa";
+      url = "github:simonwjackson/korri/37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixpkgs-rpcs3-v0-0-41.url = "github:NixOS/nixpkgs/nixos-unstable";

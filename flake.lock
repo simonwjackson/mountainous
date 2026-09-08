@@ -651,19 +651,18 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1788738573,
-        "narHash": "sha256-a1ZnRthiDsVtua9Ys5YaJaCPAETCdJiSrsuAJvPMCXs=",
-        "ref": "refs/tags/zao-federation-d39ea55d",
-        "rev": "d39ea55d7e39162eaf0e175e4fa91e02d9b2feaa",
-        "revCount": 727,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri"
+        "lastModified": 1788833704,
+        "narHash": "sha256-a9tVNvRHkYkLlQ3Bfpd1x+YHY9bOJ5v9tR1TIA+Xj9U=",
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2",
+        "type": "github"
       },
       "original": {
-        "ref": "refs/tags/zao-federation-d39ea55d",
-        "rev": "d39ea55d7e39162eaf0e175e4fa91e02d9b2feaa",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri"
+        "owner": "simonwjackson",
+        "repo": "korri",
+        "rev": "37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2",
+        "type": "github"
       }
     },
     "korri_2": {
