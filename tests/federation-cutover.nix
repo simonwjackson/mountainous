@@ -139,12 +139,21 @@
           base_domain = "fixture.invalid";
           nameservers.global = [];
         };
+        # The fixture crashes these guests on purpose. Headscale's own keys are
+        # created on first start and are not fsynced, so a crashed guest can come
+        # back with an unparseable key and fail `tailnet-access` for a reason that
+        # has nothing to do with the supervisor. Read fixed disposable keys from
+        # the store instead: no runtime write, nothing to lose in a crash. A
+        # global sync is deliberately not used, because it would also mask the
+        # supervisor's own durability, which these tests exist to prove.
+        noise.private_key_path = toString (pkgs.writeText "fixture-noise.key" "privkey:0000000000000000000000000000000000000000000000000000000000000031\n");
         derp = {
           urls = [];
           server = {
             enabled = true;
             region_id = 999;
             stun_listen_addr = "127.0.0.1:3478";
+            private_key_path = toString (pkgs.writeText "fixture-derp.key" "privkey:0000000000000000000000000000000000000000000000000000000000000032\n");
           };
         };
       };
