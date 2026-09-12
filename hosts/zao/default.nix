@@ -152,6 +152,11 @@
       };
     };
 
+    # Zao builds Korri's x86_64 outputs. Reading them from Korri's cache is
+    # cheaper than rebuilding what another peer already built and signed.
+    # Publishing stays off here: see the publish option's own warning.
+    features.korri-cache.enable = true;
+
     features.device = {
       role = "portable";
       capabilities = {

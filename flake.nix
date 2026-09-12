@@ -77,6 +77,14 @@
       url = "github:simonwjackson/korri/37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # mountainous.features.korri-cache reads Korri's cache address and the keys
+    # allowed to sign for it, so this repository keeps no second copy to drift.
+    # It is pinned apart from the inputs above so that trusting a new builder
+    # never moves the Korri revision any host's services are built from.
+    korri-cache = {
+      url = "github:korri-os/korri/95c8d8a7ceee1830fcd09b454d51f7b21076197a";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs-rpcs3-v0-0-41.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Lukas's unofficial Nix flake for pi (earendil-works/pi), the terminal
     # coding agent. Exposes a NixOS module under programs.pi.coding-agent
@@ -424,6 +432,62 @@
           ${pkgs.gnugrep}/bin/grep -Fq 'korrid.service' ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'sunshine.service' ${retirementScript}
           ${pkgs.gnugrep}/bin/grep -Fq 'sunshine_backup="$legacy_sunshine.mountainous-retired"' ${retirementScript}
+          touch "$out"
+        '';
+
+    # Korri owns the cache address and the keys allowed to sign for it. These
+    # assertions fail if this repository ever grows its own copy, because a
+    # second list means a builder revoked in Korri stays trusted here.
+    checks.x86_64-linux.korri-cache = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      korriSource = inputs.korri-cache;
+      cache = korriSource.cache;
+      consumers = {
+        inherit (self.nixosConfigurations) fuji zao;
+      };
+      reads = host: let
+        settings = host.config.nix.settings;
+      in
+        builtins.elem cache.url settings.substituters
+        && lib.all (key: builtins.elem key settings.trusted-public-keys) cache.publicKeys
+        && (settings.require-sigs or true);
+      unread = builtins.attrNames (lib.filterAttrs (_: host: !(reads host)) consumers);
+      # The publish half is off everywhere, so exercise it the way a host would
+      # turn it on. Nothing else proves the hook and the timer exist at all.
+      publisher = self.nixosConfigurations.zao.extendModules {
+        modules = [
+          {
+            mountainous.features.korri-cache.publish = {
+              enable = true;
+              signingKeyFile = "/etc/nix/korri-cache-key.secret";
+              githubTokenFile = "/run/agenix/korri-cache-github-token";
+            };
+          }
+        ];
+      };
+      upload = publisher.config.systemd.services.korri-nix-cache-upload;
+      timer = publisher.config.systemd.timers.korri-nix-cache-upload;
+      hook = publisher.config.nix.settings.post-build-hook;
+    in
+      assert lib.assertMsg (unread == [])
+      "These hosts do not read Korri's cache on Korri's terms: ${lib.concatStringsSep ", " unread}";
+      assert lib.assertMsg (cache.publicKeys != [])
+      "Korri's cache identity lists no signing key, so nothing it serves could be trusted";
+      assert lib.assertMsg (upload.environment.KORRI_ROOT == "${korriSource}")
+      "The upload service must publish from the same pinned Korri source the keys come from";
+      assert lib.assertMsg (upload.serviceConfig.EnvironmentFile == "/run/agenix/korri-cache-github-token")
+      "The upload service must take its GitHub token from a file, not a unit";
+      assert lib.assertMsg (builtins.elem "timers.target" timer.wantedBy)
+      "Publishing must happen on a timer, not in the build path";
+      assert lib.assertMsg (self.nixosConfigurations.zao.config.nix.settings.post-build-hook or null == null)
+      "Publishing must stay off until a host opts in";
+        pkgs.runCommand "korri-cache" {} ''
+          # What the daemon runs after every build, and what the timer runs.
+          ${pkgs.gnugrep}/bin/grep -Fq 'KORRI_CACHE_SECRET_KEY=/etc/nix/korri-cache-key.secret' ${hook}
+          ${pkgs.gnugrep}/bin/grep -Fq 'KORRI_CACHE_STAGING=/var/cache/korri-nix-cache' ${hook}
+          ${pkgs.gnugrep}/bin/grep -Fq '${korriSource}/nix/cache/post-build-hook.sh' ${hook}
+          ${pkgs.gnugrep}/bin/grep -Fq '${korriSource}/nix/cache/upload-staged.sh' \
+            ${pkgs.writeText "korri-nix-cache-upload" upload.script}
           touch "$out"
         '';
 

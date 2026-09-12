@@ -28,6 +28,12 @@
     };
 
     features = {
+      # ── Korri ────────────────────────────────────────────────────────
+      # Fuji is the aarch64 builder for Korri's devices, so it reads Korri's
+      # own cache instead of recompiling what a peer already signed. Publishing
+      # stays off here: see the publish option's own warning.
+      korri-cache.enable = true;
+
       # ── Networking ───────────────────────────────────────────────────
       tsnsrv = {
         enable = true;
