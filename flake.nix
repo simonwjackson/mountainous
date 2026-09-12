@@ -474,6 +474,33 @@
           touch "$out"
         '';
 
+    # A builder matrix is only worth having if it is declared once and correct.
+    checks.x86_64-linux.nix-builders = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      registry = import ./features/nix-builders/hosts.nix;
+      zao = self.nixosConfigurations.zao.config;
+      fuji = builtins.head (builtins.filter (m: m.hostName == "fuji") zao.nix.buildMachines);
+      # Fuji has no /dev/kvm. Claiming otherwise sends it work it cannot run.
+      virtualised = ["kvm" "nixos-test"];
+    in
+      assert lib.assertMsg zao.nix.distributedBuilds
+      "Zao must dispatch builds it cannot do itself";
+      assert lib.assertMsg (fuji.system == "aarch64-linux" && fuji.protocol == "ssh-ng")
+      "Zao must reach Fuji as an aarch64 builder over ssh-ng";
+      assert lib.assertMsg (fuji.publicHostKey == registry.fuji.publicHostKey)
+      "A builder must carry its host key, or root's SSH stops to ask about it";
+      assert lib.assertMsg (lib.intersectLists registry.fuji.supportedFeatures virtualised == [])
+      "Fuji has no /dev/kvm, so it must not advertise virtualisation features";
+      assert lib.assertMsg zao.nix.settings.builders-use-substitutes
+      "A builder must fetch dependencies from the caches, not over the lossy link from here";
+      assert lib.assertMsg (!(builtins.elem "zao" (map (m: m.hostName) zao.nix.buildMachines)))
+      "Zao must not dispatch work to itself";
+        pkgs.runCommand "nix-builders" {} ''
+          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simonwjackson@fuji aarch64-linux' \
+            ${zao.environment.etc."nix/machines".source}
+          touch "$out"
+        '';
+
     checks.x86_64-linux.zao-workstation-retired = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;
