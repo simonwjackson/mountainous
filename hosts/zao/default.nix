@@ -153,8 +153,9 @@
     };
 
     # Zao builds Korri's x86_64 outputs. Reading them from Korri's cache is
-    # cheaper than rebuilding what another peer already built and signed.
-    # Publishing stays off here: see the publish option's own warning.
+    # cheaper than rebuilding what another peer already built and signed. It
+    # publishes through Korri's own `nix run .#korri-nix-cache-publish`; nothing
+    # here watches Zao's builds, which would also publish Zao's own system.
     features.korri-cache.enable = true;
 
     features.device = {

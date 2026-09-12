@@ -30,8 +30,9 @@
     features = {
       # ── Korri ────────────────────────────────────────────────────────
       # Fuji is the aarch64 builder for Korri's devices, so it reads Korri's
-      # own cache instead of recompiling what a peer already signed. Publishing
-      # stays off here: see the publish option's own warning.
+      # own cache instead of recompiling what a peer already signed. It publishes
+      # through Korri's own `nix run .#korri-nix-cache-publish`, which knows which
+      # closure a device installs; nothing here watches Fuji's builds.
       korri-cache.enable = true;
 
       # ── Networking ───────────────────────────────────────────────────
