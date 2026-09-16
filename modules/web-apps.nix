@@ -26,11 +26,56 @@
 #
 # An --app window has no chrome to reveal. Kamoi's Ctrl+L shows a hidden
 # address bar; this window never builds one, so it cannot be pointed elsewhere
-# through the interface. It can still be driven over the DevTools protocol,
-# which is how Kamoi drives page zoom, and how an omni bar would navigate it.
+# through the interface. It is driven over the DevTools protocol instead,
+# which is how Kamoi drives page zoom.
+#
+# Every window therefore launches through `web-app`, which pins three things
+# the protocol depends on, all measured on ridge:
+#
+#   * one shared --user-data-dir, so a second --app window JOINS the first
+#     browser and both appear on ONE CDP endpoint. Verified: two windows,
+#     two page targets, one endpoint.
+#
+#   * --remote-debugging-port=0, so Chromium picks a free port and writes it
+#     to <profile>/DevToolsActivePort. A random high port is a smaller target
+#     than the 9222 every tutorial scans, though it is still unauthenticated:
+#     any process running as this user can drive the browser. Chromium's
+#     --remote-debugging-pipe would close that hole, but it needs fd 3 and 4
+#     and Quickshell's Process exposes only stdin/stdout/stderr.
+#
+#   * the flag is passed on EVERY launch, not just the first. Whichever window
+#     starts the browser owns the port; later launches hand their arguments to
+#     the running instance and the flag is ignored.
 {
   nixos.modules.desktop =
     { pkgs, ... }:
+    let
+      # Kept in one place: modules/browser.nix reads DevToolsActivePort from
+      # this directory, and the path is baked into both sides.
+      profileDir = "$HOME/.local/share/cairn/browser";
+
+      web-app = pkgs.writeShellApplication {
+        name = "web-app";
+        runtimeInputs = [ pkgs.chromium ];
+        text = ''
+          # usage: web-app <url> [extra chromium args...]
+          url="''${1:?url required}"
+          shift || true
+
+          profile="${profileDir}"
+          mkdir -p "$profile"
+
+          exec chromium \
+            --app="$url" \
+            --ozone-platform=wayland \
+            --user-data-dir="$profile" \
+            --remote-debugging-port=0 \
+            --no-first-run \
+            --no-default-browser-check \
+            "$@"
+        '';
+      };
+    in
     let
       # One entry per app. `host` must match the URL's host exactly, because
       # Chromium builds the window class from it.
@@ -73,7 +118,7 @@
           desktopName = app.name;
           comment = "${app.name}, as an app window";
           categories = [ "Network" ];
-          exec = "${pkgs.chromium}/bin/chromium --app=${app.url} --ozone-platform=wayland";
+          exec = "${web-app}/bin/web-app ${app.url}";
           icon = "webapp-${id}";
           # Observed on ridge, not guessed:
           #   https://www.reddit.com    -> chrome-www.reddit.com__-Default
@@ -86,7 +131,10 @@
     in
     {
       environment.systemPackages =
-        [ pkgs.chromium ]
+        [
+          pkgs.chromium
+          web-app
+        ]
         ++ pkgs.lib.mapAttrsToList mkWebApp webApps
         ++ pkgs.lib.mapAttrsToList mkWebAppIcon webApps;
 
