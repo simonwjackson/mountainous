@@ -145,7 +145,24 @@
 
       services.greetd = {
         enable = true;
-        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        # start-hyprland, not Hyprland. It is "a binary to properly start
+        # Hyprland via a watchdog process", and it is what Hyprland's own
+        # session entry runs:
+        #
+        #   share/wayland-sessions/hyprland.desktop
+        #     Exec=.../bin/start-hyprland
+        #
+        # Launching the compositor directly makes it warn on every start:
+        #   i18n/Engine.cpp:253  TXT_KEY_NOTIF_NO_WATCHDOG
+        #   "Hyprland was started without start-hyprland. This is strongly
+        #    discouraged unless you are in a debugging environment."
+        #
+        # Deliberately unqualified. start-hyprland resolves "Hyprland"
+        # through PATH, and NixOS puts /run/wrappers/bin first, where
+        # programs/wayland/hyprland.nix installs a wrapper carrying
+        # cap_sys_nice+ep for realtime scheduling. An absolute store path
+        # would execute the uncapped binary instead.
+        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd start-hyprland";
       };
 
       security.pam.services.greetd.enableGnomeKeyring = true;
