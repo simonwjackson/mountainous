@@ -730,6 +730,24 @@
         hl.bind("F1",                  hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
         hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c cairn ipc call omni gotowindow"))
 
+        -- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
+        -- navigate mode, which is the address bar an --app window never built.
+        --
+        -- Bound conditionally on purpose: Ctrl+L belongs to whatever is
+        -- focused, and a terminal clears its screen with it. Only a Chromium
+        -- window has an address to change, and Chromium always names those
+        -- chrome-<host>__-Default, so the class is the test. Anything else has
+        -- the key handed straight back to it.
+        hl.bind("CTRL + L", function()
+            local w = hl.get_active_window()
+            if w == nil then return end
+            if (w.class or ""):match("^chrome%-") then
+                hl.dispatch(hl.dsp.exec_cmd("qs -c cairn ipc call omni navigate"))
+            else
+                hl.dispatch(hl.dsp.pass({ window = "address:" .. w.address }))
+            end
+        end)
+
         -- Kamoi Meta+S captures the screen, Meta+Shift+S the focused window.
         -- Kamoi opens both for markup; that surface is not built yet.
         hl.bind(mod .. " + S", hl.dsp.exec_cmd(

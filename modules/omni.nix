@@ -47,6 +47,13 @@
           property string mode: "root"
           property string query: ""
 
+          // The window that was focused when the bar was summoned.
+          //
+          // Kamoi's Ctrl+L acts on the active window, and the veil below takes
+          // keyboard focus the instant it maps, so by the time anything is
+          // typed the focused window is the veil. Capture it on the way in.
+          property var caller: null
+
           function enterRoot() {
               // Kamoi's list is ordered by focus history, and Hyprland does
               // not push that on every change, so ask for it on open.
@@ -59,6 +66,17 @@
           function enterMode(m) {
               Hyprland.refreshToplevels();
               root.mode = m;
+              root.query = "";
+              root.shown = true;
+          }
+
+          // Kamoi's Ctrl+L: "show and focus browser chrome". An --app window
+          // has no chrome to show, so this IS the chrome -- one field that
+          // points the active window somewhere else.
+          function enterNavigate() {
+              if (!root.shown) root.caller = Hyprland.activeToplevel;
+              CdpBrowser.refresh();
+              root.mode = "nav";
               root.query = "";
               root.shown = true;
           }
@@ -77,6 +95,7 @@
               function reveal(): void { root.enterRoot(); }
               function gotowindow(): void { root.enterMode("window"); }
               function apps(): void { root.enterMode("app"); }
+              function navigate(): void { root.enterNavigate(); }
               function dismiss(): void { root.shown = false; }
           }
 
@@ -127,6 +146,7 @@
 
           readonly property var commandRows: [
               { kind: "cmd", label: "New terminal",          detail: "Super+N",           act: "term" },
+              { kind: "cmd", label: "Go to address",         detail: "Ctrl+L",            act: "mode:nav" },
               { kind: "cmd", label: "Go to window",          detail: "mode",              act: "mode:window" },
               { kind: "cmd", label: "Applications",          detail: "mode",              act: "mode:app" },
               { kind: "cmd", label: "Close window",          detail: "Super+C",           act: "close" },
@@ -148,8 +168,34 @@
                   || (row.detail || "").toLowerCase().includes(needle);
           }
 
+          // Navigate mode shows the typed address as the actionable row, so
+          // Enter always has something to land on, then blends the pages the
+          // browser already has open underneath it.
+          readonly property var navRows: {
+              const q = root.query;
+              const out = [];
+              if (q !== "") {
+                  out.push({
+                      kind: "nav", label: q,
+                      detail: root.caller && CdpBrowser.isBrowserWindow(root.caller)
+                          ? "navigate this window" : "open in a new window",
+                      order: 0, toplevel: null, entry: null
+                  });
+              }
+              for (const p of CdpBrowser.pages) {
+                  if (q !== "" && !(p.url.toLowerCase().includes(q.toLowerCase())
+                                 || (p.title || "").toLowerCase().includes(q.toLowerCase()))) continue;
+                  out.push({
+                      kind: "nav", label: p.url,
+                      detail: p.title || "", order: 1, toplevel: null, entry: null
+                  });
+              }
+              return out;
+          }
+
           readonly property var rows: {
               const q = root.query;
+              if (root.mode === "nav")    return navRows;
               if (root.mode === "window") return windowRows.filter(function (r) { return matches(r, q); });
               if (root.mode === "app")    return appRows.filter(function (r) { return matches(r, q); });
 
@@ -182,7 +228,14 @@
                   return;
               }
 
+              if (row.kind === "nav") {
+                  CdpBrowser.navigate(root.caller, row.label);
+                  root.shown = false;
+                  return;
+              }
+
               const a = row.act;
+              if (a === "mode:nav")    { root.enterNavigate(); return; }
               if (a === "mode:window") { root.enterMode("window"); return; }
               if (a === "mode:app")    { root.enterMode("app"); return; }
 
@@ -267,6 +320,7 @@
                                   anchors.verticalCenter: parent.verticalCenter
                                   text: root.mode === "root" ? ">"
                                       : root.mode === "window" ? "window"
+                                      : root.mode === "nav" ? "go"
                                       : "app"
                                   color: "#707070"
                                   font.pixelSize: 13
@@ -338,7 +392,8 @@
                                           anchors.verticalCenter: parent.verticalCenter
                                           width: 20
                                           text: modelData.kind === "window" ? "\u25a0"
-                                              : modelData.kind === "app" ? "\u25cf" : "\u203a"
+                                              : modelData.kind === "app" ? "\u25cf"
+                                              : modelData.kind === "nav" ? "\u2192" : "\u203a"
                                           color: "#606060"
                                           font.pixelSize: 11
                                           font.family: "monospace"
