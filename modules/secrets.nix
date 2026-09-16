@@ -50,6 +50,18 @@
           # and delete devices on the tailnet.
           tailscale-oauth-id.mode = "0400";
           tailscale-oauth-secret.mode = "0400";
+
+          # The login password hash, for users.users.*.hashedPasswordFile.
+          #
+          # neededForUsers is the whole reason this works. Ordinary secrets are
+          # installed during activation, which is after update-users-groups.pl
+          # has already written /etc/shadow -- a password arriving then is a
+          # password that arrives too late. neededForUsers decrypts into
+          # /run/secrets-for-users before users are created.
+          #
+          # The option forbids setting owner or group: the accounts that would
+          # own the file do not exist yet at the point it is written.
+          user-password.neededForUsers = true;
         };
       };
 

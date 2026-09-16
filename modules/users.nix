@@ -3,62 +3,80 @@
 # hjem is a NixOS module, so there is no second module system here. Files in
 # $HOME are declared in the same evaluation as the rest of the machine.
 { config, inputs, ... }:
+# Two module systems meet in this file and both call their argument `config`.
+#
+#   flake  -- the flake-parts config, where mountainous.sshKey is declared
+#             (modules/identity.nix, at the top level)
+#   config -- the NixOS config, where sops.secrets lives
+#
+# Writing the layer as a plain attrset leaves only the flake-parts config in
+# scope, and reaching for config.sops from there fails with the unhelpful
+# "attribute 'sops' missing". Taking NixOS module arguments fixes that but
+# shadows the outer name, so the outer one is captured here first.
+let
+  flake = config;
+in
 {
-  nixos.modules.base = {
-    imports = [ inputs.hjem.nixosModules.default ];
+  nixos.modules.base =
+    { config, ... }:
+    {
+      imports = [ inputs.hjem.nixosModules.default ];
 
-    # The config owns the accounts, not the machine.
-    #
-    # This is not a style preference. update-users-groups.pl only applies
-    # hashedPassword to an account that already exists when mutableUsers is
-    # false:
-    #
-    #   $sp_pwdp = $u->{hashedPassword}
-    #     if defined $u->{hashedPassword} && !$spec->{mutableUsers}; # FIXME
-    #
-    # With mutableUsers = true, an account created locked stays locked for
-    # ever, no matter what the config later says. That is how hiyori ended up
-    # unloggable after its first install.
-    #
-    # The cost: `passwd` no longer sticks across a rebuild. Change the
-    # password in this file, or move to hashedPasswordFile with sops-nix.
-    users.mutableUsers = false;
-
-    users.users.simon = {
-      isNormalUser = true;
-      description = "simon";
-      extraGroups = [
-        "wheel"
-        "networkmanager"
-        "video"
-      ];
-      openssh.authorizedKeys.keys = [ config.mountainous.sshKey ];
-
-      # Bootstrap only. Without a password NixOS creates a locked account,
-      # which means no console login, which on a wifi-only laptop means no
-      # way to reach a network and therefore no way to SSH in at all.
+      # The config owns the accounts, not the machine.
       #
-      # hashedPassword, not initialPassword: initialPassword applies only when
-      # the account is first created, and these accounts already exist on the
-      # stick. hashedPassword is re-applied on every activation, so it repairs
-      # an account that was created locked.
+      # This is not a style preference. update-users-groups.pl only applies a
+      # password to an account that already exists when mutableUsers is false:
       #
-      # This hash is yescrypt of "mountainous" and it sits in the world-readable Nix
-      # store. It is a bootstrap credential, not a secret. Replace it with a
-      # sops-nix backed hashedPasswordFile once the machine can fetch secrets.
-      hashedPassword = "$y$j9T$O5HJmtS8uIVq0xLPJqrTh1$cr61VV5WOS1Ex5dQ7Wlw47/xUYN1h8.9SIP0viOZUR5";
-    };
+      #   $sp_pwdp = $u->{hashedPassword}
+      #     if defined $u->{hashedPassword} && !$spec->{mutableUsers}; # FIXME
+      #
+      # With mutableUsers = true, an account created locked stays locked for
+      # ever, no matter what the config later says. That is how hiyori ended up
+      # unloggable after its first install.
+      #
+      # The cost: `passwd` no longer sticks across a rebuild. Change the
+      # password by replacing the hash in sops:
+      #
+      #   ./scripts/secrets secrets/fleet.yaml
+      #   mkpasswd -m yescrypt        # to generate a new one
+      users.mutableUsers = false;
 
-    # Remote deploys land as root over SSH, so root needs the same key.
-    users.users.root = {
-      openssh.authorizedKeys.keys = [ config.mountainous.sshKey ];
-      # Escape hatch if the graphical login breaks. Same caveats as above.
-      hashedPassword = "$y$j9T$O5HJmtS8uIVq0xLPJqrTh1$cr61VV5WOS1Ex5dQ7Wlw47/xUYN1h8.9SIP0viOZUR5";
-    };
+      users.users.simon = {
+        isNormalUser = true;
+        description = "simon";
+        extraGroups = [
+          "wheel"
+          "networkmanager"
+          "video"
+        ];
+        openssh.authorizedKeys.keys = [ flake.mountainous.sshKey ];
 
-    hjem = {
-      clobberByDefault = true;
-      users.simon.directory = "/home/simon";
+        # A password is not optional here. Without one NixOS creates a locked
+        # account, which means no console login, which on a wifi-only laptop
+        # means no way to reach a network and therefore no way to SSH in.
+        #
+        # The hash used to sit inline, and so in the world-readable Nix store,
+        # where anyone with store access could attack it offline at their
+        # leisure. It now lives encrypted in secrets/fleet.yaml and lands in
+        # /run/secrets-for-users, which is root-only and on a ramfs.
+        #
+        # hashedPasswordFile, not hashedPassword: the file is re-read on every
+        # activation, so it repairs an account that was created locked rather
+        # than only applying at creation time.
+        hashedPasswordFile = config.sops.secrets.user-password.path;
+      };
+
+      # Remote deploys land as root over SSH, so root needs the same key.
+      users.users.root = {
+        openssh.authorizedKeys.keys = [ flake.mountainous.sshKey ];
+        # Escape hatch if the graphical login breaks. Same file as the user:
+        # one password for the machine, not two to keep in step.
+        hashedPasswordFile = config.sops.secrets.user-password.path;
+      };
+
+      hjem = {
+        clobberByDefault = true;
+        users.simon.directory = "/home/simon";
+      };
     };
-  };
 }
