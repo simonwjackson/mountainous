@@ -365,13 +365,34 @@
                                             return wl && wl.appId ? wl.appId : "";
                                         }
 
+                                        // A window class is not an icon name.
+                                        // Chromium reports the class
+                                        // chromium-browser while its icon is
+                                        // named chromium, so asking the theme
+                                        // for the class filled the journal
+                                        // with: Could not load icon
+                                        // "chromium-browser?fallback=...".
+                                        //
+                                        // The desktop entry is the mapping
+                                        // between the two. heuristicLookup
+                                        // matches on id, name and
+                                        // StartupWMClass, which is how the
+                                        // --app web apps resolve: their class
+                                        // is chrome-<host>__-Default and only
+                                        // their entry knows that.
+                                        readonly property string iconName: {
+                                            if (cell.appId === "") return "";
+                                            const e = DesktopEntries.heuristicLookup(cell.appId);
+                                            return (e && e.icon) ? e.icon : cell.appId;
+                                        }
+
                                         IconImage {
                                             anchors.centerIn: parent
                                             implicitSize: 20
                                             visible: source !== ""
-                                            source: cell.appId === ""
+                                            source: cell.iconName === ""
                                                 ? ""
-                                                : Quickshell.iconPath(cell.appId, "application-x-executable")
+                                                : Quickshell.iconPath(cell.iconName, "application-x-executable")
                                         }
 
                                         // Until the icon resolves, show the first

@@ -39,13 +39,32 @@
           name = "Reddit";
           url = "https://www.reddit.com";
           host = "www.reddit.com";
+          letter = "R";
+          tint = "#ff4500";
         };
         youtube-music = {
           name = "YouTube Music";
           url = "https://music.youtube.com";
           host = "music.youtube.com";
+          letter = "M";
+          tint = "#ff0033";
         };
       };
+
+      # An entry with no Icon= makes every icon lookup fail, and the dock logs
+      # the failure on each frame it repaints. The site's own favicon needs a
+      # download, which a Nix build cannot do without a pinned hash, so each
+      # app gets a drawn lettermark instead. It is offline, reproducible, and
+      # distinct per app.
+      mkWebAppIcon =
+        id: app:
+        pkgs.writeTextDir "share/icons/hicolor/scalable/apps/webapp-${id}.svg" ''
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+            <rect width="64" height="64" rx="14" fill="${app.tint}"/>
+            <text x="32" y="45" text-anchor="middle" fill="#ffffff"
+                  font-family="monospace" font-size="38" font-weight="bold">${app.letter}</text>
+          </svg>
+        '';
 
       mkWebApp =
         id: app:
@@ -55,16 +74,21 @@
           comment = "${app.name}, as an app window";
           categories = [ "Network" ];
           exec = "${pkgs.chromium}/bin/chromium --app=${app.url} --ozone-platform=wayland";
+          icon = "webapp-${id}";
           # Observed on ridge, not guessed:
           #   https://www.reddit.com    -> chrome-www.reddit.com__-Default
           #   https://music.youtube.com -> chrome-music.youtube.com__-Default
+          #
+          # The dock reads this field to turn a window class into an icon
+          # name, so it must stay exact.
           startupWMClass = "chrome-${app.host}__-Default";
         };
     in
     {
       environment.systemPackages =
         [ pkgs.chromium ]
-        ++ pkgs.lib.mapAttrsToList mkWebApp webApps;
+        ++ pkgs.lib.mapAttrsToList mkWebApp webApps
+        ++ pkgs.lib.mapAttrsToList mkWebAppIcon webApps;
 
       # Correct for anything launched after a fresh login, and harmless for
       # the app entries above, which no longer depend on it.
