@@ -387,6 +387,10 @@
         local DEFAULT_CAPACITY = 1
         local capacity = {}
 
+        -- Forward declaration: enforce() finishes by compacting the strip, and
+        -- compact() is defined further down next to the page lifecycle.
+        local compact
+
         local function cap_of(id)
             return capacity[id] or DEFAULT_CAPACITY
         end
@@ -401,18 +405,37 @@
             return out
         end
 
-        -- Move everything past the cap onto the next workspace, newest first,
-        -- so the master end of the page keeps the windows already there.
+        -- The first id past the end of the strip.
+        local function end_of_strip()
+            local maxid = 0
+            for _, w in ipairs(hl.get_workspaces()) do
+                if w.id > 0 and w.windows > 0 and w.id > maxid then maxid = w.id end
+            end
+            return maxid + 1
+        end
+
+        -- Move everything past the cap off the page, newest first, so the
+        -- master end keeps the windows already there.
+        --
+        -- Each overflow window gets a fresh page at the end of the strip, not
+        -- ws.id + 1. Two reasons, both found by testing: id+1 may already be
+        -- full, and an overflow landing on a full page raises no event, so
+        -- nothing would ever correct it. Compaction then pulls the new page
+        -- back next to its neighbours, so "the end" is only where it lands,
+        -- not where it stays.
         local function enforce(ws)
             if ws == nil or ws.special then return end
             local wins = tiled_windows(ws)
             local over = #wins - cap_of(ws.id)
             if over <= 0 then return end
 
+            local target = end_of_strip()
             for i = #wins, #wins - over + 1, -1 do
                 hl.dispatch(hl.dsp.focus({ window = "address:" .. wins[i].address }))
-                hl.dispatch(hl.dsp.window.move({ workspace = ws.id + 1 }))
+                hl.dispatch(hl.dsp.window.move({ workspace = target }))
+                target = target + 1
             end
+            compact()
         end
 
         local function set_capacity(n)
@@ -483,6 +506,46 @@
         hl.on("window.destroy", leave_if_empty)
         -- A window moved off the page empties it just as a close does.
         hl.on("workspace.active", leave_if_empty)
+
+        -- Keep the strip numbered 1..N with no holes.
+        --
+        -- Pages are positions on Kamoi's strip, not names, so a gap in the
+        -- numbering is meaningless. Left alone the ids only climb: creating
+        -- and collecting pages walked this machine up to 21..23 in one
+        -- session of testing.
+        --
+        -- Renaming in ascending order cannot collide. For a sorted list of
+        -- distinct positive ids, occ[i] >= i always, so by the time occ[i] is
+        -- renamed to i every smaller page already holds 1..i-1, and every
+        -- page not yet renamed holds occ[j] > occ[i] >= i. Target i is free.
+        local compacting = false
+
+        compact = function()
+            -- hl.dispatch runs synchronously and change_id raises workspace
+            -- events, so without this guard compact() re-enters itself.
+            if compacting then return end
+            compacting = true
+
+            local occ = {}
+            for _, w in ipairs(hl.get_workspaces()) do
+                -- Only pages that hold something. A focused-but-empty page is
+                -- about to be collected, and special workspaces are not part
+                -- of the strip at all.
+                if w.id > 0 and w.windows > 0 then occ[#occ + 1] = w.id end
+            end
+            table.sort(occ)
+
+            for i, id in ipairs(occ) do
+                if id ~= i then
+                    hl.dispatch(hl.dsp.workspace.change_id({ workspace = id, id = i }))
+                end
+            end
+
+            compacting = false
+        end
+
+        hl.on("workspace.created", compact)
+        hl.on("workspace.removed", compact)
 
         -- Even versus golden split.
         hl.bind(mod .. " + G", hl.dsp.exec_cmd("hypr-split"))
