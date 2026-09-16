@@ -30,6 +30,16 @@
 
       # A stick should boot machines with no UEFI at all.
       mountainous.disk.biosBoot = true;
+
+      # A stick lives in a pocket, so it is the host most likely to be lost.
+      # LUKS2 with a passphrase typed at boot is the only option that fits: it
+      # moves between machines, so it cannot be sealed to one machine's TPM,
+      # and a stick that unlocks itself unlocks for whoever finds it.
+      #
+      # The cost is that hiyori alone does not satisfy "rejoins the tailnet
+      # unattended" -- someone has to type the passphrase. That is the right
+      # thing to give up here. A fixed machine keeps it, via TPM2.
+      mountainous.disk.encrypt = true;
     };
   };
 }
