@@ -1,12 +1,37 @@
 # Kanata: hardware-level keyboard remapping below the compositor.
 #
-# Kamoi specifies:
-#   * Tap A to type A; hold A for 180ms to turn HJKL into arrow keys.
-#   * Swap Left Alt and Left Meta so thumb navigation and window management
-#     are ergonomic on standard PC laptop keyboards.
+# This is a port of the left home row from simonwjackson/zmk-config, so the
+# Corne and this laptop answer to the same fingers:
 #
-# Remapping lives in Kanata rather than Hyprland because timed hold-layers and
+#   hold A -> DIR    arrows, and the way into PAG and FUN
+#   hold S -> NUM    a numpad under the right hand, and the way into SYM
+#   hold D -> WRP    bracket pairs, one tap opens and two taps close
+#   hold F -> CHK    backspace, tab, shift-tab, delete
+#   G       -> plain, exactly as on the Corne
+#
+# Left Alt and Left Meta are also swapped, which puts Hyprland's SUPER binds
+# on the key beside the spacebar.
+#
+# Remapping lives here rather than in Hyprland because timed hold layers and
 # key interception belong at the evdev/uinput layer, before keys reach Wayland.
+#
+# Three things about the port that are decisions, not transcription:
+#
+#   * Timings are per finger, copied from the Corne rather than flattened.
+#     ZMK's flavor = "balanced" means the hold wins early when another key is
+#     pressed AND released, which is exactly kanata's tap-hold-release.
+#     quick-tap-ms is kanata's tap-repress timeout, and require-prior-idle-ms
+#     has a direct equivalent.
+#
+#   * Rows 1 and 2 are identical between the Corne and a US laptop, so they
+#     port by letter. Row 3 is not: the Corne carries ", " on the left and "B"
+#     on the right. Row 3 therefore ports by POSITION, because a numpad whose
+#     1-2-3 are not adjacent is not a numpad. So Corne "M N B" becomes the
+#     laptop's "m , ." under the same three fingers.
+#
+#   * The Corne's KP_PLUS and KP_MULTIPLY are keypad codes, which need numlock
+#     to produce a character. The shifted main-row forms produce "+" and "*"
+#     unconditionally, so those are used instead.
 {
   nixos.modules.desktop =
     {
@@ -18,32 +43,129 @@
       services.kanata = {
         enable = true;
         keyboards.all = {
-          # Empty devices list lets Kanata discover and intercept all connected keyboards.
+          # Empty list: kanata finds and intercepts every keyboard itself.
           devices = [ ];
           extraDefCfg = ''
             process-unmapped-keys yes
           '';
           config = ''
-            (defsrc
-              a
-              h j k l
-              lalt lmet
+            ;; deflayermap maps only what a layer changes; everything else is
+            ;; transparent and falls through. That keeps eight layers readable
+            ;; and matches ZMK's &trans exactly.
+            (defsrc)
+
+            (defvar
+              ;; quick-tap-ms, shared by every hold-tap in the Corne config.
+              qt 175
+
+              ;; tapping-term-ms, weakest finger to strongest.
+              t-pinky  280
+              t-ring   250
+              t-middle 230
+              t-index  200
+
+              ;; require-prior-idle-ms. The index finger is trusted sooner.
+              idle-slow 150
+              idle-fast 125
+
+              ;; tapping-term-ms for the bracket tap dances.
+              td 300
             )
 
             (defalias
-              a-arr (tap-hold 180 180 a (layer-toggle arrows))
+              a-dir (tap-hold-release $qt $t-pinky  a (layer-while-held dir) (require-prior-idle $idle-slow))
+              s-num (tap-hold-release $qt $t-ring   s (layer-while-held num) (require-prior-idle $idle-slow))
+              d-wrp (tap-hold-release $qt $t-middle d (layer-while-held wrp) (require-prior-idle $idle-slow))
+              f-chk (tap-hold-release $qt $t-index  f (layer-while-held chk) (require-prior-idle $idle-fast))
+
+              ;; One tap opens the pair, two taps close it.
+              td-brk (tap-dance $td ([ ]))
+              td-par (tap-dance $td (S-9 S-0))
+              td-brc (tap-dance $td (S-[ S-]))
+              td-ang (tap-dance $td (S-, S-.))
             )
 
-            (deflayer base
-              @a-arr
-              h j k l
+            (deflayermap (base)
+              a @a-dir
+              s @s-num
+              d @d-wrp
+              f @f-chk
+
+              ;; Swap the left thumb modifiers. Every layer below inherits
+              ;; this by falling through, so it holds while a layer is active.
+              lalt lmet
               lmet lalt
             )
 
-            (deflayer arrows
-              _
-              left down up right
-              lmet lalt
+            ;; --------------------------------------------------------------
+            ;; DIR, held with the left pinky on A.
+            ;; The Corne also parks bluetooth pairing on the top row here.
+            ;; That is radio management for a split keyboard and means nothing
+            ;; on a laptop, so it is deliberately not ported.
+            ;; --------------------------------------------------------------
+            (deflayermap (dir)
+              h left
+              j down
+              k up
+              l rght
+              ; =
+
+              s (layer-while-held pag)
+              f (layer-while-held fun)
+            )
+
+            (deflayermap (pag)
+              h home
+              j pgdn
+              k pgup
+              l end
+            )
+
+            (deflayermap (fun)
+              y f1  u f2   i f3   o f4  p f5
+              h f6  j f7   k f8   l f9  ; f10
+              m f11 , f12
+            )
+
+            ;; --------------------------------------------------------------
+            ;; NUM, held with the left ring finger on S.
+            ;; --------------------------------------------------------------
+            (deflayermap (num)
+              y S-3  u 7  i 8  o 9  p S-5
+              h S-=  j 4  k 5  l 6  ; -
+              n S-8  m 1  , 2  . 3
+
+              d (layer-while-held sym)
+
+              ;; The Corne puts zero on the right thumb, opposite the holding
+              ;; hand. Space is that thumb here.
+              spc 0
+            )
+
+            (deflayermap (sym)
+              y S-grv  u /     i S-\   o \  p grv
+              h S-6    j S-2   k S-7   l S-4
+              m S-/    , S-1
+            )
+
+            ;; --------------------------------------------------------------
+            ;; WRP, held with the left middle finger on D.
+            ;; --------------------------------------------------------------
+            (deflayermap (wrp)
+              h @td-brk
+              j @td-par
+              k @td-brc
+              l @td-ang
+            )
+
+            ;; --------------------------------------------------------------
+            ;; CHK, held with the left index finger on F.
+            ;; --------------------------------------------------------------
+            (deflayermap (chk)
+              h bspc
+              j tab
+              k S-tab
+              l del
             )
           '';
         };
