@@ -2,7 +2,7 @@
 #
 # hjem is a NixOS module, so there is no second module system here. Files in
 # $HOME are declared in the same evaluation as the rest of the machine.
-{ inputs, ... }:
+{ config, inputs, ... }:
 {
   nixos.modules.base = {
     imports = [ inputs.hjem.nixosModules.default ];
@@ -15,10 +15,11 @@
         "networkmanager"
         "video"
       ];
-      openssh.authorizedKeys.keys = [
-        # "ssh-ed25519 AAAA... simon"
-      ];
+      openssh.authorizedKeys.keys = [ config.cairn.sshKey ];
     };
+
+    # Remote deploys land as root over SSH, so root needs the same key.
+    users.users.root.openssh.authorizedKeys.keys = [ config.cairn.sshKey ];
 
     hjem = {
       clobberByDefault = true;
