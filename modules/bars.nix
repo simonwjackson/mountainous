@@ -128,6 +128,52 @@
                 return (toplevel && toplevel.workspace) ? toplevel.workspace.id : -1;
             }
 
+            // Hyprland addresses a window as address:0x... in a dispatcher.
+            // The Wayland handle carries no address, so it comes from the last
+            // IPC payload, which is empty until Hyprland has reported the
+            // window once.
+            function addressOf(toplevel) {
+                const o = toplevel ? toplevel.lastIpcObject : null;
+                return (o && o.address) ? o.address : "";
+            }
+
+            // Kamoi's dock shows one page, so dragging an icon onto another
+            // swaps two window positions. This dock shows every page, which
+            // makes a drop across a page boundary mean something else: send
+            // the window to that page. Inside one page it still swaps.
+            //
+            // Both actions go through hyprctl rather than the Wayland toplevel
+            // protocol, because neither has a protocol equivalent. The two
+            // dispatchers differ in shape, measured on ridge:
+            //
+            //   window.move accepts `window`, so it names its own subject.
+            //   window.swap does not. It acts on the focused window, so the
+            //   dragged window has to be focused first, in the same batch to
+            //   keep the two steps from racing.
+            function dropOnto(fromIndex, toIndex) {
+                if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+                const from = root.allWindows[fromIndex];
+                const to   = root.allWindows[toIndex];
+                const a = root.addressOf(from);
+                const b = root.addressOf(to);
+                if (a === "" || b === "") return;
+
+                const fromPage = root.pageOf(from);
+                const toPage   = root.pageOf(to);
+                if (fromPage < 0 || toPage < 0) return;
+
+                if (fromPage === toPage) {
+                    Quickshell.execDetached(["hyprctl", "--batch",
+                        'dispatch hl.dsp.focus({ window = "address:' + a + '" }) ; '
+                        + 'dispatch hl.dsp.window.swap({ target = "address:' + b + '" })']);
+                } else {
+                    Quickshell.execDetached(["hyprctl", "dispatch",
+                        'hl.dsp.window.move({ window = "address:' + a + '", '
+                        + 'workspace = ' + toPage + ' })']);
+                }
+            }
+
             SystemClock {
                 id: clock
                 precision: SystemClock.Minutes
@@ -302,12 +348,27 @@
                     color: "transparent"
 
                     Rectangle {
+                        id: dock
                         anchors.centerIn: parent
                         implicitWidth: dockRow.implicitWidth + 16
                         implicitHeight: 38
                         radius: 6
                         color: "#141414"
                         visible: root.allWindows.length > 0
+
+                        // -1 means no drag is in progress. Holding both ends
+                        // here rather than in each icon keeps one owner for the
+                        // gesture, so the icons only read it.
+                        property int dragIndex: -1
+                        property int dropIndex: -1
+
+                        // The row is one flat strip, so the icon under the
+                        // pointer is whatever child sits at that x. childAt
+                        // returns the slot, and each slot knows its own index.
+                        function slotIndexAt(x, y) {
+                            const item = dockRow.childAt(x, y);
+                            return (item && item.slotIndex !== undefined) ? item.slotIndex : -1;
+                        }
 
                         RowLayout {
                             id: dockRow
@@ -320,6 +381,11 @@
                                 delegate: Rectangle {
                                     required property var modelData
                                     required property int index
+
+                                    // dock.slotIndexAt reads this off whatever
+                                    // childAt returns, so a drop can name the
+                                    // window it landed on.
+                                    readonly property int slotIndex: index
 
                                     // A hairline before the first window of each
                                     // workspace, so the strip's shape is visible
@@ -421,10 +487,59 @@
                                             font.family: "monospace"
                                         }
 
+                                        // The icon lifts while it is dragged, and
+                                        // the icon under the pointer lights up, so
+                                        // the drop target is never a guess.
+                                        scale: dock.dragIndex === index ? 1.18 : 1.0
+                                        border.width: dock.dropIndex === index
+                                                      && dock.dragIndex !== index ? 1 : 0
+                                        border.color: "#6a9fb5"
+
                                         MouseArea {
+                                            id: grip
                                             anchors.fill: parent
                                             acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+
+                                            // A click and a drag start the same
+                                            // way, so the gesture only becomes a
+                                            // drag after the pointer travels far
+                                            // enough to rule out a shaky click.
+                                            readonly property int threshold: 8
+                                            property real pressX: 0
+                                            property bool dragging: false
+
+                                            function targetAt(mx, my) {
+                                                const p = grip.mapToItem(dockRow, mx, my);
+                                                return dock.slotIndexAt(p.x, p.y);
+                                            }
+
+                                            onPressed: function (mouse) {
+                                                grip.pressX = mouse.x;
+                                                grip.dragging = false;
+                                            }
+
+                                            onPositionChanged: function (mouse) {
+                                                if (!(mouse.buttons & Qt.LeftButton)) return;
+                                                if (!grip.dragging
+                                                    && Math.abs(mouse.x - grip.pressX) < grip.threshold) return;
+                                                grip.dragging = true;
+                                                dock.dragIndex = index;
+                                                dock.dropIndex = grip.targetAt(mouse.x, mouse.y);
+                                            }
+
+                                            onReleased: function (mouse) {
+                                                if (!grip.dragging) return;
+                                                root.dropOnto(index, grip.targetAt(mouse.x, mouse.y));
+                                                dock.dragIndex = -1;
+                                                dock.dropIndex = -1;
+                                            }
+
+                                            // A release after a drag still emits
+                                            // clicked, and activating the window
+                                            // there would undo the drop by pulling
+                                            // focus to the old page.
                                             onClicked: function (mouse) {
+                                                if (grip.dragging) { grip.dragging = false; return; }
                                                 const wl = modelData.wayland;
                                                 if (!wl) return;
                                                 // Go through the Wayland toplevel
@@ -436,6 +551,12 @@
                                                 // to that window's workspace.
                                                 if (mouse.button === Qt.MiddleButton) wl.close();
                                                 else wl.activate();
+                                            }
+
+                                            onCanceled: {
+                                                grip.dragging = false;
+                                                dock.dragIndex = -1;
+                                                dock.dropIndex = -1;
                                             }
                                         }
                                     }
