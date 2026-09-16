@@ -39,6 +39,13 @@
         partOf = [ "graphical-session.target" ];
         after = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
+        # QtWebSockets is not in Quickshell's own closure -- it is built
+        # against qtbase, qtdeclarative, qtsvg and qtwayland only. Adding it
+        # here is what lets modules/browser.nix speak the DevTools protocol
+        # from QML with no helper binary. The version must match Quickshell's
+        # Qt exactly; both are 6.11.2.
+        environment.QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+
         serviceConfig = {
           ExecStart = "${pkgs.quickshell}/bin/qs -c cairn";
           Restart = "on-failure";
