@@ -44,7 +44,25 @@
         # here is what lets modules/browser.nix speak the DevTools protocol
         # from QML with no helper binary. The version must match Quickshell's
         # Qt exactly; both are 6.11.2.
-        environment.QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+        environment = {
+          QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+
+          # Pin the platform plugin. Without it Qt guesses, and on a login it
+          # guessed wrong and took the whole shell down:
+          #
+          #   WARN qt.qpa.xcb: could not connect to display
+          #   FATAL: This application failed to start because no Qt platform
+          #          plugin could be initialized.
+          #   ERROR: Quickshell crashed within 10 seconds of launching.
+          #          Not restarting to avoid a crash loop.
+          #
+          # Two things made that fatal rather than transient. Qt tried xcb
+          # because WAYLAND_DISPLAY had not reached the unit's environment
+          # yet, and Quickshell's own guard then refused to retry, so nothing
+          # brought the bars back even once the session was up. Naming the
+          # plugin removes the guess entirely.
+          QT_QPA_PLATFORM = "wayland";
+        };
 
         # A systemd user service is handed a minimal PATH. Measured on ridge
         # it carried only coreutils, findutils, gnugrep, gnused and systemd,
