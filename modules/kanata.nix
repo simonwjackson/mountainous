@@ -5,7 +5,7 @@
 #
 #   hold A -> DIR    arrows, and the way into PAG and FUN
 #   hold S -> NUM    a numpad under the right hand, and the way into SYM
-#   hold D -> WRP    bracket pairs, one tap opens and two taps close
+#   hold D -> WRP    bracket pairs, open and close side by side
 #   hold F -> CHK    backspace, tab, shift-tab, delete
 #   G       -> plain, exactly as on the Corne
 #
@@ -67,9 +67,6 @@
               ;; require-prior-idle-ms. The index finger is trusted sooner.
               idle-slow 150
               idle-fast 125
-
-              ;; tapping-term-ms for the bracket tap dances.
-              td 300
             )
 
             (defalias
@@ -77,12 +74,6 @@
               s-num (tap-hold-release $qt $t-ring   s (layer-while-held num) (require-prior-idle $idle-slow))
               d-wrp (tap-hold-release $qt $t-middle d (layer-while-held wrp) (require-prior-idle $idle-slow))
               f-chk (tap-hold-release $qt $t-index  f (layer-while-held chk) (require-prior-idle $idle-fast))
-
-              ;; One tap opens the pair, two taps close it.
-              td-brk (tap-dance $td ([ ]))
-              td-par (tap-dance $td (S-9 S-0))
-              td-brc (tap-dance $td (S-[ S-]))
-              td-ang (tap-dance $td (S-, S-.))
             )
 
             (deflayermap (base)
@@ -150,12 +141,24 @@
 
             ;; --------------------------------------------------------------
             ;; WRP, held with the left middle finger on D.
+            ;;
+            ;; Each pair sits open-then-close on two adjacent keys, stacked
+            ;; down the index and middle columns, per corne.keymap.backup:
+            ;;
+            ;;     u i   ->  [ ]
+            ;;     j k   ->  ( )
+            ;;     m ,   ->  { }
+            ;;
+            ;; The Corne puts < > on two right thumb keys. A laptop has one
+            ;; thumb key, so that pair has no faithful home. It goes to the
+            ;; two keys right of { } instead, which are free in this layer and
+            ;; keep the pair adjacent and on the same hand.
             ;; --------------------------------------------------------------
             (deflayermap (wrp)
-              h @td-brk
-              j @td-par
-              k @td-brc
-              l @td-ang
+              u [    i ]
+              j S-9  k S-0
+              m S-[  , S-]
+              . S-,  / S-.
             )
 
             ;; --------------------------------------------------------------
