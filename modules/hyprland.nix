@@ -436,6 +436,54 @@
             enforce(win.workspace)
         end)
 
+        -- Closing the last window on a page should leave the page, not strand
+        -- you on it.
+        --
+        -- Hyprland destroys an empty workspace only when you walk away from
+        -- it, so the focused one is the single empty workspace that can
+        -- exist. Measured on this machine:
+        --
+        --   after closing everything   known=[3] occupied=[] EMPTY=[3]
+        --   after visiting ws 7        known=[7] occupied=[] EMPTY=[7]
+        --   after leaving ws 7         known=[1] occupied=[] EMPTY=[1]
+        --
+        -- Kamoi's strip has no dead pages: a page exists while it holds
+        -- something. Stepping away on the last close gives the same result,
+        -- because Hyprland then collects the workspace itself.
+        local function nearest_occupied(from)
+            local best = nil
+            for _, w in ipairs(hl.get_workspaces()) do
+                if w.id > 0 and w.id ~= from and w.windows > 0 then
+                    if best == nil then
+                        best = w.id
+                    else
+                        local d, bd = math.abs(w.id - from), math.abs(best - from)
+                        -- On a tie, step back along the strip rather than
+                        -- forward, so closing a window walks you towards the
+                        -- work you already had open.
+                        if d < bd or (d == bd and w.id < best) then best = w.id end
+                    end
+                end
+            end
+            return best
+        end
+
+        local function leave_if_empty()
+            local ws = hl.get_active_workspace()
+            if ws == nil or ws.special then return end
+            if ws.windows > 0 then return end
+            local target = nearest_occupied(ws.id)
+            -- No target means this was the last window anywhere. Stay put:
+            -- an empty desktop is a real state, not a page to flee.
+            if target ~= nil then
+                hl.dispatch(hl.dsp.focus({ workspace = target }))
+            end
+        end
+
+        hl.on("window.destroy", leave_if_empty)
+        -- A window moved off the page empties it just as a close does.
+        hl.on("workspace.active", leave_if_empty)
+
         -- Even versus golden split.
         hl.bind(mod .. " + G", hl.dsp.exec_cmd("hypr-split"))
 
