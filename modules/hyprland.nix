@@ -720,12 +720,15 @@
         -- The omni bar. See modules/omni.nix.
         --
         -- Kamoi reserves F1 for it so a keyboard with no Escape key can
-        -- still reach Settings, and binds Meta+Shift+Space straight into the
+        -- still reach Settings, and binds a second chord straight into the
         -- window list.
+        --
+        -- On P rather than Kamoi's Space: held Space is now SUPER itself, so
+        -- SUPER+Space would mean holding one key to modify the same key.
         --------------------------------------------------------------------
-        hl.bind(mod .. " + Space",         hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
-        hl.bind("F1",                      hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
-        hl.bind(mod .. " + SHIFT + Space", hl.dsp.exec_cmd("qs -c cairn ipc call omni gotowindow"))
+        hl.bind(mod .. " + P",         hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
+        hl.bind("F1",                  hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
+        hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c cairn ipc call omni gotowindow"))
 
         -- Kamoi Meta+S captures the screen, Meta+Shift+S the focused window.
         -- Kamoi opens both for markup; that surface is not built yet.
@@ -751,7 +754,9 @@
         -- browsing. The bars are Quickshell; see modules/bars.nix.
         hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c cairn ipc call chrome toggle"))
 
-        hl.bind(mod .. " + SHIFT + P", hl.dsp.dpms({ action = "off" }))
+        -- O for off. Moved off SHIFT+P, which the omni bar's window list now
+        -- owns.
+        hl.bind(mod .. " + SHIFT + O", hl.dsp.dpms({ action = "off" }))
         hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
       '';
     };
