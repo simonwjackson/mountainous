@@ -67,6 +67,33 @@
               ;; require-prior-idle-ms. The index finger is trusted sooner.
               idle-slow 150
               idle-fast 125
+
+              ;; The Corne's hm_shift, used for both shift keys.
+              t-shift    200
+              idle-shift 125
+
+              ;; Space is the one key that must never misfire, so it gets its
+              ;; own numbers rather than borrowing a finger's.
+              ;;
+              ;; A wrong hold here does not merely swallow a space: SUPER+C
+              ;; closes the focused window in this Hyprland config, so a
+              ;; misfire can destroy work. The guards are deliberately blunt.
+              ;;
+              ;; Two independent guards, and a misfire needs BOTH to fail.
+              ;;
+              ;; idle-space: space may only hold if no key was pressed in the
+              ;; preceding window. Space almost always lands a few tens of
+              ;; milliseconds after the letter ending a word, so this alone
+              ;; rules out virtually every space typed in prose.
+              ;;
+              ;; t-space: how long space must then be held. Measured on ridge,
+              ;; prose was clean at 250ms until each key was held a full 250ms,
+              ;; at which point space reached its own term and fired SUPER.
+              ;; A heavy hand on the spacebar is real, so the term is set well
+              ;; beyond any natural press. It costs a deliberate pause before
+              ;; SUPER, which is the trade this key is worth.
+              t-space    400
+              idle-space 300
             )
 
             (defalias
@@ -74,6 +101,28 @@
               s-num (tap-hold-release $qt $t-ring   s (layer-while-held num) (require-prior-idle $idle-slow))
               d-wrp (tap-hold-release $qt $t-middle d (layer-while-held wrp) (require-prior-idle $idle-slow))
               f-chk (tap-hold-release $qt $t-index  f (layer-while-held chk) (require-prior-idle $idle-fast))
+
+              ;; Deliberately plain tap-hold, not the -press or -release
+              ;; variants the letters use. Those resolve the hold EARLY when
+              ;; another key is pressed, which is exactly what typing looks
+              ;; like. Plain tap-hold only ever holds on timeout, so a letter
+              ;; arriving before the term always yields a space. The cost is
+              ;; that SUPER needs space held first, then the letter; the gain
+              ;; is that no roll can ever produce SUPER.
+              spc-gui (tap-hold $qt $t-space spc lmet (require-prior-idle $idle-space))
+
+              ;; Shift and control on the bottom row, mirroring the Corne's
+              ;; hm_shift and hm_pinky. Each hand gets one of each, so a
+              ;; modifier is always available on the hand opposite the key it
+              ;; modifies.
+              ;;
+              ;; A wrong shift only capitalises a letter. A wrong control is
+              ;; worse, since Ctrl+W and Ctrl+C destroy work, so the slash
+              ;; takes the pinky's slower 280ms term rather than the 200ms
+              ;; the shifts use.
+              c-sft  (tap-hold-release $qt $t-shift c lsft (require-prior-idle $idle-shift))
+              m-sft  (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
+              sl-ctl (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
             )
 
             (deflayermap (base)
@@ -86,6 +135,19 @@
               ;; this by falling through, so it holds while a layer is active.
               lalt lmet
               lmet lalt
+
+              ;; Held space is the same SUPER that physical Left Alt emits.
+              spc @spc-gui
+
+              c @c-sft
+              m @m-sft
+              / @sl-ctl
+
+              ;; Left Shift becomes control outright, which is Kamoi's own
+              ;; rule: "use Left Shift as Left Ctrl". No tap-hold here, because
+              ;; a tap of Shift produces nothing to preserve. Shift itself now
+              ;; comes from held C, held M, or the right Shift key.
+              lsft lctl
             )
 
             ;; --------------------------------------------------------------
