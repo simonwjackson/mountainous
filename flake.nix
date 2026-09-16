@@ -728,6 +728,10 @@
         hostPath = ./hosts/yuki;
         specialArgs = {inherit nixos-hardware;};
       };
+      myoko = mkHost {
+        system = "aarch64-linux";
+        hostPath = ./hosts/myoko;
+      };
       aso = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/aso;
