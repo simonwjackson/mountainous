@@ -59,7 +59,7 @@
       ...
     }:
     let
-      cfg = config.cairn.tailscale;
+      cfg = config.mountainous.tailscale;
       inherit (lib) mkOption types mkIf;
 
       stateFile = "/var/lib/tailscale/tailscaled.state";
@@ -133,7 +133,7 @@
       canClaim = autoJoins && cfg.oauthClientIdFile != null;
     in
     {
-      options.cairn.tailscale = {
+      options.mountainous.tailscale = {
         enable = mkOption {
           type = types.bool;
           default = true;
@@ -142,7 +142,7 @@
 
         tags = mkOption {
           type = types.listOf types.str;
-          default = [ "tag:cairn" ];
+          default = [ "tag:mountainous" ];
           description = ''
             Tags to claim at registration. Required when registering with an
             OAuth secret, and the OAuth client must own every tag listed.
@@ -193,7 +193,7 @@
         assertions = [
           {
             assertion = !autoJoins || cfg.tags != [ ];
-            message = "cairn.tailscale.tags must not be empty: registering with an OAuth secret requires --advertise-tags.";
+            message = "mountainous.tailscale.tags must not be empty: registering with an OAuth secret requires --advertise-tags.";
           }
         ];
 

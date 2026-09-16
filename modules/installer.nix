@@ -38,7 +38,7 @@
             };
           };
 
-          users.users.root.openssh.authorizedKeys.keys = [ config.cairn.sshKey ];
+          users.users.root.openssh.authorizedKeys.keys = [ config.mountainous.sshKey ];
 
           # Tools the remote install needs to already be on the target.
           environment.systemPackages = with pkgs; [
@@ -56,7 +56,7 @@
 
           services.getty.helpLine = lib.mkAfter ''
 
-            cairn installer. Join a network with:  nmtui
+            mountainous installer. Join a network with:  nmtui
             Then read the address with:            ip -4 addr
           '';
         }

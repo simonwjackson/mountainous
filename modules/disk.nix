@@ -1,12 +1,12 @@
-# One disk layout, for every machine that cairn installs onto.
+# One disk layout, for every machine that mountainous installs onto.
 #
 # The layout is the same everywhere: an ESP and an ext4 root, found after
 # install through /dev/disk/by-partlabel/ so the same system boots no matter
 # which letter the kernel hands the drive. Only two things vary, and both are
 # options rather than copied blocks:
 #
-#   cairn.disk.device    which drive to partition
-#   cairn.disk.biosBoot  whether to also carry a BIOS boot partition
+#   mountainous.disk.device    which drive to partition
+#   mountainous.disk.biosBoot  whether to also carry a BIOS boot partition
 #
 # `device` is read only while partitioning. Nothing in the installed system
 # depends on it, which is what lets a stick move between machines.
@@ -19,13 +19,13 @@
       ...
     }:
     let
-      cfg = config.cairn.disk;
+      cfg = config.mountainous.disk;
       inherit (lib) mkOption types;
     in
     {
       imports = [ inputs.disko.nixosModules.disko ];
 
-      options.cairn.disk = {
+      options.mountainous.disk = {
         device = mkOption {
           type = types.str;
           description = ''

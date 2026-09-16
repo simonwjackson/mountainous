@@ -37,7 +37,7 @@
 # lost. Kamoi documents the same limitation.
 {
   nixos.modules.desktop = {
-    hjem.users.simon.files.".config/quickshell/cairn/CdpBrowser.qml".text = ''
+    hjem.users.simon.files.".config/quickshell/mountainous/CdpBrowser.qml".text = ''
       pragma Singleton
 
       import Quickshell
@@ -50,7 +50,7 @@
           id: root
 
           readonly property string profile:
-              Quickshell.env("HOME") + "/.local/share/cairn/browser"
+              Quickshell.env("HOME") + "/.local/share/mountainous/browser"
 
           property int port: 0
           property var pages: []          // [{ id, url, title, host, ws }]

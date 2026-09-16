@@ -229,8 +229,8 @@
       # it is the supported route: systemd starts a refused target when another
       # unit depends on it. RefuseManualStop is no, so exit can tear the whole
       # session down through it.
-      start-cairn = pkgs.writeShellApplication {
-        name = "start-cairn";
+      start-mountainous = pkgs.writeShellApplication {
+        name = "start-mountainous";
         # hyprPkg is deliberately absent. writeShellApplication prepends
         # runtimeInputs to PATH, which would make start-hyprland resolve
         # "Hyprland" to the bare store binary instead of the wrapper in
@@ -256,7 +256,7 @@
               fi
               sleep 0.1
             done
-            echo "start-cairn: Hyprland never published HYPRLAND_INSTANCE_SIGNATURE" >&2
+            echo "start-mountainous: Hyprland never published HYPRLAND_INSTANCE_SIGNATURE" >&2
             exit 1
           ) &
 
@@ -276,7 +276,7 @@
     {
       programs.hyprland.enable = true;
 
-      # The bridge to graphical-session.target. start-cairn starts this one;
+      # The bridge to graphical-session.target. start-mountainous starts this one;
       # systemd pulls in graphical-session.target because this target binds to
       # it, which is legal where a manual start is not.
       systemd.user.targets.hyprland-session = {
@@ -307,9 +307,9 @@
         # cap_sys_nice+ep for realtime scheduling. An absolute store path
         # would execute the uncapped binary instead.
         #
-        # start-cairn wraps start-hyprland to reach graphical-session.target.
+        # start-mountainous wraps start-hyprland to reach graphical-session.target.
         # It calls start-hyprland unqualified for the reason above.
-        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${start-cairn}/bin/start-cairn";
+        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${start-mountainous}/bin/start-mountainous";
       };
 
       security.pam.services.greetd.enableGnomeKeyring = true;
@@ -798,7 +798,7 @@
         -- compositor's.
         --------------------------------------------------------------------
         local TERM_WS    = "term"
-        local TERM_CLASS = "cairn-term"
+        local TERM_CLASS = "mountainous-term"
         local TERM_CMD   = "alacritty --class " .. TERM_CLASS .. " -e herdr"
 
         -- Sized against the monitor, centred, and floating.
@@ -848,9 +848,9 @@
         -- On P rather than Kamoi's Space: held Space is now SUPER itself, so
         -- SUPER+Space would mean holding one key to modify the same key.
         --------------------------------------------------------------------
-        hl.bind(mod .. " + P",         hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
-        hl.bind("F1",                  hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
-        hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c cairn ipc call omni gotowindow"))
+        hl.bind(mod .. " + P",         hl.dsp.exec_cmd("qs -c mountainous ipc call omni toggle"))
+        hl.bind("F1",                  hl.dsp.exec_cmd("qs -c mountainous ipc call omni toggle"))
+        hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c mountainous ipc call omni gotowindow"))
 
         -- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
         -- navigate mode, which is the address bar an --app window never built.
@@ -864,7 +864,7 @@
             local w = hl.get_active_window()
             if w == nil then return end
             if (w.class or ""):match("^chrome%-") then
-                hl.dispatch(hl.dsp.exec_cmd("qs -c cairn ipc call omni navigate"))
+                hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call omni navigate"))
             else
                 hl.dispatch(hl.dsp.pass({ window = "address:" .. w.address }))
             end
@@ -892,7 +892,7 @@
 
         -- Kamoi Meta+I hides the top bar and the dock together for immersive
         -- browsing. The bars are Quickshell; see modules/bars.nix.
-        hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c cairn ipc call chrome toggle"))
+        hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle"))
 
         -- O for off. Moved off SHIFT+P, which the omni bar's window list now
         -- owns.

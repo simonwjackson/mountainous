@@ -52,7 +52,7 @@
     let
       # Kept in one place: modules/browser.nix reads DevToolsActivePort from
       # this directory, and the path is baked into both sides.
-      profileDir = "$HOME/.local/share/cairn/browser";
+      profileDir = "$HOME/.local/share/mountainous/browser";
 
       web-app = pkgs.writeShellApplication {
         name = "web-app";

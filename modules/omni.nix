@@ -31,7 +31,7 @@
     # shell.qml in modules/bars.nix instantiates OmniBar. QML resolves a
     # component by filename from the same directory, so the two files must
     # ship together -- both are in this one `desktop` layer.
-    hjem.users.simon.files.".config/quickshell/cairn/OmniBar.qml".text = ''
+    hjem.users.simon.files.".config/quickshell/mountainous/OmniBar.qml".text = ''
       import Quickshell
       import Quickshell.Hyprland
       import Quickshell.Io
@@ -251,7 +251,7 @@
               else if (a === "scaleup")    Quickshell.execDetached(["hypr-scale", "up"]);
               else if (a === "scaledown")  Quickshell.execDetached(["hypr-scale", "down"]);
               else if (a === "scalereset") Quickshell.execDetached(["hypr-scale", "reset"]);
-              else if (a === "chrome")     Quickshell.execDetached(["qs", "-c", "cairn", "ipc", "call", "chrome", "toggle"]);
+              else if (a === "chrome")     Quickshell.execDetached(["qs", "-c", "mountainous", "ipc", "call", "chrome", "toggle"]);
               else if (a === "shot")       Quickshell.execDetached(["sh", "-c",
                   "mkdir -p ~/Pictures/Screenshots && grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"]);
 

@@ -6,7 +6,7 @@
 #
 # Two facts are missing, and both are marked REPLACE below:
 #
-#   1. cairn.disk.device -- the real drive, as a by-id path.
+#   1. mountainous.disk.device -- the real drive, as a by-id path.
 #   2. a hardware layer, if the machine needs one.
 #
 # Nothing else should change when the laptop arrives. myoko and hiyori import
@@ -46,12 +46,12 @@
       # serial so a mistake fails instead of destroying.
       #
       # The whole drive is wiped. The laptop arrives with nothing to keep.
-      cairn.disk.device = "/dev/disk/by-id/REPLACE-WITH-REAL-DISK-BEFORE-INSTALL";
+      mountainous.disk.device = "/dev/disk/by-id/REPLACE-WITH-REAL-DISK-BEFORE-INSTALL";
 
       # No EF02. This drive boots one machine, that machine has UEFI, and an
       # EF02 partition would make disko pin boot.loader.grub.devices to the
       # install-time path.
-      cairn.disk.biosBoot = false;
+      mountainous.disk.biosBoot = false;
     };
   };
 }

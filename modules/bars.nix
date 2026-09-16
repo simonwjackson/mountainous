@@ -73,14 +73,14 @@
         path = [ "/run/current-system/sw" ];
 
         serviceConfig = {
-          ExecStart = "${pkgs.quickshell}/bin/qs -c cairn";
+          ExecStart = "${pkgs.quickshell}/bin/qs -c mountainous";
           Restart = "on-failure";
           RestartSec = 2;
           Slice = "session.slice";
         };
       };
 
-      hjem.users.simon.files.".config/quickshell/cairn/shell.qml".text = ''
+      hjem.users.simon.files.".config/quickshell/mountainous/shell.qml".text = ''
         // Kamoi's two bars. See modules/bars.nix for provenance.
         import Quickshell
         import Quickshell.Io
@@ -101,7 +101,7 @@
             // QML resolves by filename from this directory.
             OmniBar { id: omniBar }
 
-            // Reached from the compositor with:  qs -c cairn ipc call chrome toggle
+            // Reached from the compositor with:  qs -c mountainous ipc call chrome toggle
             IpcHandler {
                 target: "chrome"
                 function toggle(): void { root.chromeVisible = !root.chromeVisible; }

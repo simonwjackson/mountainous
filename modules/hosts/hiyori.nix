@@ -26,10 +26,10 @@
       # /dev/sdi is where the stick appears on the workstation that builds it.
       # The installed system never reads this; it finds its filesystems
       # through /dev/disk/by-partlabel/.
-      cairn.disk.device = "/dev/sdi";
+      mountainous.disk.device = "/dev/sdi";
 
       # A stick should boot machines with no UEFI at all.
-      cairn.disk.biosBoot = true;
+      mountainous.disk.biosBoot = true;
     };
   };
 }
