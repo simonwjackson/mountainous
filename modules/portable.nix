@@ -1,36 +1,37 @@
 # A system that boots on hardware it has never seen.
 #
-# This is the layer that makes a USB stick a real machine rather than a live
-# image. Three things differ from a fixed install:
+# This layer is only the difference between a stick and a fixed install. Two
+# things change:
 #
-#  1. The initrd carries drivers for controllers we cannot predict, because
-#     the stick may be moved between machines.
+#  1. The initrd carries drivers for controllers we cannot predict, on top of
+#     the baseline in `base`.
 #  2. The bootloader installs to the removable fallback path and never writes
 #     UEFI variables, so plugging the stick into a laptop does not edit that
 #     laptop's firmware.
-#  3. No nixos-facter report. Facter describes one machine, which is the
-#     opposite of what a portable system wants.
+#
+# Firmware and flash-wear settings used to live here. They were never about
+# portability, and a fixed host that stopped importing this layer lost them
+# silently, so they now sit in `base`.
+#
+# There is no nixos-facter report. Facter describes one machine, which is the
+# opposite of what a portable system wants.
 {
   nixos.modules.portable =
     { lib, ... }:
     {
+      # Added to the baseline in `base`, not replacing it.
       boot.initrd.availableKernelModules = [
         # USB controllers and mass storage, the path this system boots over.
-        "xhci_pci"
         "xhci_hcd"
         "ehci_pci"
         "ohci_pci"
-        "usbhid"
         "usb_storage"
         "uas"
-        # Internal controllers, so the stick can also see local disks.
-        "ahci"
-        "nvme"
-        "sd_mod"
+        # Removable and optical media on unfamiliar machines.
         "sr_mod"
         "sdhci_pci"
         "rtsx_pci_sdmmc"
-        # Common laptop storage oddities.
+        # So the stick also boots inside a virtual machine.
         "virtio_pci"
         "virtio_blk"
         "virtio_scsi"
@@ -69,18 +70,5 @@
         devices = lib.mkForce [ "nodev" ];
       };
 
-      # Drivers are useless without the blobs they load at probe time.
-      #
-      # A fixed install gets this from nixos-generate-config or a facter
-      # report. A portable system has neither, so it must carry firmware for
-      # hardware it has not met. Without it an Intel Iris Xe GPU fails to
-      # initialise and opening /dev/dri/cardN returns EINVAL, which looks like
-      # a compositor bug and is not one.
-      hardware.enableRedistributableFirmware = true;
-
-      # Flash wears out. Cut the obvious write amplification.
-      services.fstrim.enable = true;
-      boot.tmp.useTmpfs = true;
-      nix.settings.auto-optimise-store = true;
     };
 }

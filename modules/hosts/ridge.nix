@@ -1,72 +1,35 @@
-# The laptop, currently living on a USB stick.
+# The USB stick.
 #
 # ridge is a real, writable NixOS install that happens to sit on removable
 # media. You boot it, SSH in, `nixos-rebuild switch`, and the change is still
-# there after a reboot. The laptop's internal disk is never touched.
+# there after a reboot. The host machine's internal disk is never touched.
 #
-# There is no hardware-configuration.nix and no facter report, on purpose.
-# The `portable` layer carries broad drivers instead, because this system has
-# to boot on whatever machine the stick is plugged into.
+# It carries the galaxy-book3 layer because that is the machine it is used on.
+# That layer pins a panel mode -- video=eDP-1:2880x1800@60 -- so this stick is
+# portable in the sense that it boots elsewhere, not in the sense that it is
+# tuned for elsewhere.
 #
-# When ridge eventually moves to the laptop's internal disk, drop `portable`,
-# add a facter report, and point `device` at the internal drive.
-{ inputs, ... }:
+# Everything above the disk is shared with summit. If the two ever disagree
+# about the desktop, the difference is a bug in a layer, not in this file.
 {
   nixos.hosts.ridge = {
     system = "x86_64-linux";
     layers = [
       "base"
       "desktop"
+      "disk"
       "portable"
       "galaxy-book3"
     ];
 
     module = {
-      imports = [ inputs.disko.nixosModules.disko ];
+      # /dev/sdi is where the stick appears on the workstation that builds it.
+      # The installed system never reads this; it finds its filesystems
+      # through /dev/disk/by-partlabel/.
+      cairn.disk.device = "/dev/sdi";
 
-      # This path is only read while partitioning. The installed system finds
-      # its filesystems through /dev/disk/by-partlabel/, so the stick boots
-      # regardless of which letter it lands on elsewhere.
-      disko.devices.disk.main = {
-        device = "/dev/sdi";
-        type = "disk";
-        content = {
-          type = "gpt";
-          partitions = {
-            # 1M BIOS Boot Partition. GRUB embeds core.img here for legacy
-            # boot. Without it, grub-install refuses the i386-pc target on a
-            # GPT disk, and disko-install always attempts that target because
-            # it forces boot.loader.grub.devices to the install disk at
-            # mkVMOverride priority. Carrying it also means the stick boots on
-            # machines with no UEFI at all.
-            bios = {
-              size = "1M";
-              type = "EF02";
-              priority = 1;
-            };
-            ESP = {
-              size = "1G";
-              type = "EF00";
-              priority = 2;
-              content = {
-                type = "filesystem";
-                format = "vfat";
-                mountpoint = "/boot";
-                mountOptions = [ "umask=0077" ];
-              };
-            };
-            root = {
-              size = "100%";
-              priority = 3;
-              content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = "/";
-              };
-            };
-          };
-        };
-      };
+      # A stick should boot machines with no UEFI at all.
+      cairn.disk.biosBoot = true;
     };
   };
 }
