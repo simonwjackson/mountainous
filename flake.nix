@@ -21,6 +21,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # herdr is not in nixpkgs. These are the upstream release binaries, taken
     # as inputs rather than fetchurl so `nix flake update` can move them and
     # flake.lock records what shipped. file+https keeps Nix from trying to
