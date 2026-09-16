@@ -46,6 +46,14 @@
         # Qt exactly; both are 6.11.2.
         environment.QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
 
+        # A systemd user service is handed a minimal PATH. Measured on ridge
+        # it carried only coreutils, findutils, gnugrep, gnused and systemd,
+        # so anything the shell spawns -- web-app, qs, hypr-scale, grim --
+        # failed with "Process failed to start, likely because the binary
+        # could not be found", and did so at warning level with exit status 0
+        # from the caller's point of view.
+        path = [ "/run/current-system/sw" ];
+
         serviceConfig = {
           ExecStart = "${pkgs.quickshell}/bin/qs -c cairn";
           Restart = "on-failure";

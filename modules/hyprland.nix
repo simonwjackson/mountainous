@@ -422,6 +422,15 @@
                 force_default_wallpaper = 0,
                 -- Kamoi: "The gap always shows the black backdrop."
                 background_color        = 0x000000,
+
+                -- Load-bearing for the terminal overlay, not a preference:
+                -- it is what hides the special workspace once its last
+                -- window unmaps, and that is the first step in retiring the
+                -- workspace so the next SUPER+T builds a fresh terminal. Set
+                -- rather than inherited, because the default was not read
+                -- out of the source and the overlay must not depend on it.
+                -- See the TERMINAL OVERLAY section below.
+                close_special_on_empty  = true,
             },
         })
 
@@ -715,6 +724,68 @@
         hl.bind(mod .. " + mouse_down",        hl.dsp.exec_cmd("hypr-scale down"))
         hl.bind(mod .. " + CTRL + mouse_up",   hl.dsp.exec_cmd("hypr-scale fine-up"))
         hl.bind(mod .. " + CTRL + mouse_down", hl.dsp.exec_cmd("hypr-scale fine-down"))
+
+        --------------------------------------------------------------------
+        -- GROUP 4: the terminal overlay
+        --
+        -- One terminal, on a special workspace, shown and hidden with
+        -- SUPER+T. It sits outside Kamoi's strip on purpose: a page is
+        -- somewhere you navigate to, and this is something you drop in front
+        -- of whichever page you are on, then dismiss. SUPER+N still opens
+        -- ordinary terminals as windows on the strip; this is not that.
+        --
+        -- Nothing below spawns, counts or tracks the terminal by hand,
+        -- because 0.56.2 already does all of it. Read out of the source
+        -- rather than a wiki, and these five facts are the whole mechanism:
+        --
+        --   DispatcherTranslator.cpp:414  togglespecialworkspace looks the
+        --     workspace up by id and, when it is absent, calls
+        --     create(id, monitor, name) with no isEmpty argument.
+        --   WorkspaceState.hpp:28         isEmpty defaults to true, so a
+        --     workspace made that way is flagged as created empty. The
+        --     ordinary-page path at DispatcherTranslator.cpp:60 passes false
+        --     explicitly, which is what makes the special path distinct.
+        --   Workspace.cpp:68              init() runs the on-created-empty
+        --     command whenever that flag is set, with no special-workspace
+        --     exclusion, through spawnWithRules(cmd, self). The spawn is
+        --     bound to this workspace, so the terminal cannot land on the
+        --     page underneath and there is no race to lose.
+        --   Window.cpp:730                close_special_on_empty hides the
+        --     workspace when its last window unmaps. It fires on unmap only,
+        --     never on a timer, so an empty workspace waiting for its
+        --     terminal to start is never swept out from under it.
+        --   WorkspaceState.hpp:38         m_workspaces holds weak refs. Once
+        --     the monitor drops the hidden workspace, nothing holds it and
+        --     it is destroyed.
+        --
+        -- Chained: the first SUPER+T builds the terminal, later presses show
+        -- and hide that same one, and closing it with `exit` means the next
+        -- SUPER+T builds a fresh one. There is no way to end up with a
+        -- second terminal stacked behind the first.
+        --
+        -- The dock and the omni bar need no change to ignore it. Both filter
+        -- on workspace.id > 0 (modules/bars.nix, modules/omni.nix) and
+        -- special workspace ids are negative, so the overlay stays out of
+        -- the window list and out of the strip.
+        --
+        -- Deliberately NOT scaled down into a floating panel.
+        -- master.special_scale_factor is still a live config name in 0.56.2
+        -- and the binary still carries the string, but MasterAlgorithm.cpp
+        -- never reads it. Setting it would read as a decision and do
+        -- nothing. The overlay fills the page instead.
+        --
+        -- DEFERRED: this terminal is meant to become the one window onto the
+        -- other machines, so that SUPER+T reaches them from wherever it is
+        -- pressed. That needs those machines reachable from this host, which
+        -- this system does not set up yet. When it does, the command on the
+        -- next line is the only thing that changes.
+        --------------------------------------------------------------------
+        hl.workspace_rule({
+            workspace        = "special:term",
+            on_created_empty = "alacritty",
+        })
+
+        hl.bind(mod .. " + T", hl.dsp.workspace.toggle_special("term"))
 
         --------------------------------------------------------------------
         -- The omni bar. See modules/omni.nix.

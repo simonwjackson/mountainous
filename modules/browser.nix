@@ -56,29 +56,48 @@
           property var pages: []          // [{ id, url, title, host, ws }]
           property string lastError: ""
 
-          readonly property bool ready: port > 0
+          // A dead browser leaves DevToolsActivePort behind holding the port
+          // it used to own. Zeroing `port` when a request fails made the
+          // poller rediscover that stale value every cycle and log it every
+          // cycle. `port` is now only what the file says, and `live` is
+          // whether anything is answering on it.
+          property bool live: false
+          readonly property bool ready: port > 0 && live
 
           function log(msg) { console.log("[cdp] " + msg); }
 
           //--------------------------------------------------------------
           // PORT DISCOVERY
           //--------------------------------------------------------------
-          // Chromium writes the port it chose into the profile. Read it with
-          // a process rather than FileView so the whole path is one proven
-          // mechanism; the file appears only once a browser is running.
+          // Chromium writes the port it chose into the profile.
+          //
+          // No shell here. A systemd user service gets a minimal PATH --
+          // measured on ridge it held only coreutils, findutils, gnugrep,
+          // gnused and systemd -- so `sh -c` failed with "Process failed to
+          // start, likely because the binary could not be found". head comes
+          // from coreutils, which is present, and needs no shell. A missing
+          // file simply yields no output.
           Process {
               id: portReader
-              command: ["sh", "-c", "head -1 '" + root.profile + "/DevToolsActivePort' 2>/dev/null || true"]
+              command: ["head", "-1", root.profile + "/DevToolsActivePort"]
               stdout: StdioCollector {
                   onStreamFinished: {
                       const n = parseInt(this.text.trim());
-                      if (!isNaN(n) && n > 0 && n !== root.port) {
+                      if (isNaN(n) || n <= 0) {
+                          root.port = 0;
+                          root.live = false;
+                          return;
+                      }
+                      if (n !== root.port) {
                           root.port = n;
                           root.log("port " + n);
+                      }
+                      // Reconnect only while nothing is answering, so a
+                      // browser that restarts on the same port is picked up
+                      // without hammering a live one.
+                      if (!root.live) {
                           root.refresh();
                           browserSock.reconnect();
-                      } else if (isNaN(n) || n <= 0) {
-                          root.port = 0;
                       }
                   }
               }
@@ -107,7 +126,8 @@
               const xhr = new XMLHttpRequest();
               xhr.onreadystatechange = function () {
                   if (xhr.readyState !== XMLHttpRequest.DONE) return;
-                  if (xhr.status !== 200) { root.port = 0; return; }
+                  if (xhr.status !== 200) { root.live = false; root.pages = []; return; }
+                  root.live = true;
                   try {
                       const all = JSON.parse(xhr.responseText);
                       const out = [];
@@ -244,12 +264,15 @@
 
               onStatusChanged: {
                   if (status === WebSocket.Open) {
+                      root.live = true;
                       root.log("browser socket open");
                       browserSock.sendTextMessage(JSON.stringify({
                           id: 1,
                           method: "Target.setDiscoverTargets",
                           params: { discover: true }
                       }));
+                  } else if (status === WebSocket.Closed || status === WebSocket.Error) {
+                      root.live = false;
                   }
               }
 
@@ -321,7 +344,7 @@
           // data when the omni bar opens.
           Timer {
               interval: 4000
-              running: root.ready
+              running: root.port > 0
               repeat: true
               onTriggered: root.refresh()
           }
