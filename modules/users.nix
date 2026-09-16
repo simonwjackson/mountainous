@@ -7,6 +7,23 @@
   nixos.modules.base = {
     imports = [ inputs.hjem.nixosModules.default ];
 
+    # The config owns the accounts, not the machine.
+    #
+    # This is not a style preference. update-users-groups.pl only applies
+    # hashedPassword to an account that already exists when mutableUsers is
+    # false:
+    #
+    #   $sp_pwdp = $u->{hashedPassword}
+    #     if defined $u->{hashedPassword} && !$spec->{mutableUsers}; # FIXME
+    #
+    # With mutableUsers = true, an account created locked stays locked for
+    # ever, no matter what the config later says. That is how ridge ended up
+    # unloggable after its first install.
+    #
+    # The cost: `passwd` no longer sticks across a rebuild. Change the
+    # password in this file, or move to hashedPasswordFile with sops-nix.
+    users.mutableUsers = false;
+
     users.users.simon = {
       isNormalUser = true;
       description = "simon";
