@@ -75,14 +75,23 @@
                 function reveal(): void { root.chromeVisible = true; }
             }
 
-            // The windows on the focused workspace, in Hyprland's own order.
-            // Kamoi's dock lists exactly the windows of the current page.
-            readonly property var pageWindows: {
-                const ws = Hyprland.focusedWorkspace;
-                if (!ws) return [];
-                return [...Hyprland.toplevels.values].filter(function (t) {
-                    return t.workspace && t.workspace.id === ws.id;
+            // Every window on every workspace, ordered along the strip.
+            //
+            // Not just the focused workspace: the dock is how you see the
+            // whole session at once, so a window two pages away is reachable
+            // in one click rather than by walking the strip to find it.
+            // Special workspaces are excluded; they are not part of the strip.
+            readonly property var allWindows: {
+                const list = [...Hyprland.toplevels.values].filter(function (t) {
+                    return t.workspace && t.workspace.id > 0;
                 });
+                list.sort(function (a, b) { return a.workspace.id - b.workspace.id; });
+                return list;
+            }
+
+            SystemClock {
+                id: clock
+                precision: SystemClock.Minutes
             }
 
             //----------------------------------------------------------------
@@ -100,8 +109,32 @@
                     implicitHeight: 26
                     color: "#000000"
 
-                    // Kamoi's top bar carries status only, on the right.
-                    // No network name, no carrier, no cell identity.
+                    // Left: the focused window's title. Elided, and stopping
+                    // well short of the clock so a long title never collides
+                    // with it.
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.max(0, parent.width / 2 - 90)
+                        elide: Text.ElideRight
+                        text: Hyprland.activeToplevel ? Hyprland.activeToplevel.title : ""
+                        color: "#c8c8c8"
+                        font.pixelSize: 11
+                        font.family: "monospace"
+                    }
+
+                    // Centre: the time.
+                    Text {
+                        anchors.centerIn: parent
+                        text: Qt.formatDateTime(clock.date, "ddd d MMM  hh:mm")
+                        color: "#e0e0e0"
+                        font.pixelSize: 11
+                        font.family: "monospace"
+                    }
+
+                    // Right: status only. Kamoi shows no network name, no
+                    // carrier and no cell identity, so neither do we.
                     RowLayout {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
@@ -151,7 +184,7 @@
                         implicitHeight: 38
                         radius: 6
                         color: "#141414"
-                        visible: root.pageWindows.length > 0
+                        visible: root.allWindows.length > 0
 
                         RowLayout {
                             id: dockRow
@@ -159,60 +192,97 @@
                             spacing: 6
 
                             Repeater {
-                                model: ScriptModel { values: root.pageWindows }
+                                model: ScriptModel { values: root.allWindows }
 
                                 delegate: Rectangle {
                                     required property var modelData
-                                    implicitWidth: 30
+                                    required property int index
+
+                                    // A hairline before the first window of each
+                                    // workspace, so the strip's shape is visible
+                                    // without labelling every group.
+                                    readonly property bool startsWorkspace: {
+                                        if (index === 0) return false;
+                                        const prev = root.allWindows[index - 1];
+                                        return !prev || prev.workspace.id !== modelData.workspace.id;
+                                    }
+
+                                    implicitWidth: 30 + (startsWorkspace ? 9 : 0)
                                     implicitHeight: 30
                                     radius: 4
-                                    // The active window is the only one marked,
-                                    // matching Kamoi's borderless look.
-                                    color: modelData.activated ? "#303030" : "transparent"
+                                    color: "transparent"
 
-                                    // A toplevel has no wayland handle until
-                                    // Hyprland reports its address, so appId is
-                                    // briefly empty. Calling iconPath("") builds
-                                    // a malformed url and the journal fills with
-                                    //   Could not load icon "?fallback=..."
-                                    readonly property string appId: {
-                                        const wl = modelData.wayland;
-                                        return wl && wl.appId ? wl.appId : "";
+                                    Rectangle {
+                                        visible: parent.startsWorkspace
+                                        anchors.left: parent.left
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 1
+                                        height: 18
+                                        color: "#3a3a3a"
                                     }
 
-                                    IconImage {
-                                        anchors.centerIn: parent
-                                        implicitSize: 20
-                                        visible: source !== ""
-                                        source: parent.appId === ""
-                                            ? ""
-                                            : Quickshell.iconPath(parent.appId, "application-x-executable")
-                                    }
+                                    Rectangle {
+                                        id: cell
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 30
+                                        height: 30
+                                        radius: 4
+                                        // The focused window is marked. Windows
+                                        // on other pages are dimmed rather than
+                                        // hidden, so the whole session reads at
+                                        // a glance.
+                                        color: modelData.activated ? "#303030" : "transparent"
+                                        opacity: (Hyprland.focusedWorkspace
+                                                  && modelData.workspace.id === Hyprland.focusedWorkspace.id)
+                                                 ? 1.0 : 0.45
 
-                                    // Until the icon resolves, show the first
-                                    // letter rather than an empty square.
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: parent.appId === ""
-                                        text: (modelData.title || "?").charAt(0).toUpperCase()
-                                        color: "#c0c0c0"
-                                        font.pixelSize: 13
-                                        font.family: "monospace"
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                                        onClicked: function (mouse) {
+                                        // A toplevel has no wayland handle until
+                                        // Hyprland reports its address, so appId
+                                        // is briefly empty. iconPath("") builds a
+                                        // malformed url and the journal fills up
+                                        // with: Could not load icon "?fallback="
+                                        readonly property string appId: {
                                             const wl = modelData.wayland;
-                                            if (!wl) return;
-                                            // Go through the Wayland toplevel
-                                            // protocol, not Hyprland.dispatch:
-                                            // dispatcher syntax differs under a
-                                            // Lua config (Hyprland.usingLua),
-                                            // and this path avoids the question.
-                                            if (mouse.button === Qt.MiddleButton) wl.close();
-                                            else wl.activate();
+                                            return wl && wl.appId ? wl.appId : "";
+                                        }
+
+                                        IconImage {
+                                            anchors.centerIn: parent
+                                            implicitSize: 20
+                                            visible: source !== ""
+                                            source: cell.appId === ""
+                                                ? ""
+                                                : Quickshell.iconPath(cell.appId, "application-x-executable")
+                                        }
+
+                                        // Until the icon resolves, show the first
+                                        // letter rather than an empty square.
+                                        Text {
+                                            anchors.centerIn: parent
+                                            visible: cell.appId === ""
+                                            text: (modelData.title || "?").charAt(0).toUpperCase()
+                                            color: "#c0c0c0"
+                                            font.pixelSize: 13
+                                            font.family: "monospace"
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                                            onClicked: function (mouse) {
+                                                const wl = modelData.wayland;
+                                                if (!wl) return;
+                                                // Go through the Wayland toplevel
+                                                // protocol, not Hyprland.dispatch:
+                                                // dispatcher syntax differs under
+                                                // a Lua config (Hyprland.usingLua)
+                                                // and this path avoids the issue.
+                                                // activate() also pulls the focus
+                                                // to that window's workspace.
+                                                if (mouse.button === Qt.MiddleButton) wl.close();
+                                                else wl.activate();
+                                            }
                                         }
                                     }
                                 }
