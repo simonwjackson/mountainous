@@ -52,6 +52,7 @@
         import Quickshell
         import Quickshell.Io
         import Quickshell.Hyprland
+        import Quickshell.Networking
         import Quickshell.Widgets
         import Quickshell.Services.UPower
         import QtQuick
@@ -135,11 +136,95 @@
 
                     // Right: status only. Kamoi shows no network name, no
                     // carrier and no cell identity, so neither do we.
+                    //
+                    // Both items here are readouts, not controls, so they may
+                    // shrink or truncate if they ever compete for width. They
+                    // cannot collide with the centred clock above roughly
+                    // 290px of panel width, which no real display is below.
+                    // Noted rather than defended with machinery.
                     RowLayout {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.rightMargin: 10
                         spacing: 12
+
+                        // Wi-Fi strength. The one status item Kamoi's README
+                        // actually specifies, at line 32:
+                        //
+                        //   "The top bar shows Wi-Fi and cellular signal
+                        //    strength as fixed-width Lucide icons. It does not
+                        //    show a network name, carrier name, or cell
+                        //    identity."
+                        //
+                        // Strength only, never the SSID, and a fixed 11px so
+                        // the bar never reflows as the signal moves. No
+                        // cellular rung: the Galaxy Book3 has no cellular
+                        // radio, and Kamoi draws no icon for an absent radio.
+                        //
+                        // Written against Quickshell 0.3.1's own
+                        // quickshell-network.qmltypes:
+                        //   Networking    singleton, devices UntypedObjectModel
+                        //   NetworkDevice type DeviceType::Enum, connected,
+                        //                 networks
+                        //   WifiDevice  : NetworkDevice
+                        //   WifiNetwork : Network, signalStrength double
+                        //
+                        // signalStrength is 0.0 to 1.0, not 0 to 100. Measured
+                        // on ridge against nmcli on the same association:
+                        // nmcli said 81, this said 0.8.
+                        //
+                        // The NetworkManager backend fills in over D-Bus after
+                        // the engine loads. Sampled on ridge: at 1.5s
+                        // devices=0 and wifiEnabled=false, at 3.0s the device
+                        // is present. Every property read here is notifiable,
+                        // so the bindings simply fill in and nothing polls.
+                        Row {
+                            id: wifi
+                            spacing: 1
+                            height: 9
+                            Layout.alignment: Qt.AlignVCenter
+                            visible: Networking.wifiHardwareEnabled
+
+                            readonly property var device: {
+                                if (!Networking.devices) return null;
+                                const found = [...Networking.devices.values].filter(function (d) {
+                                    return d.type === DeviceType.Wifi;
+                                });
+                                return found.length > 0 ? found[0] : null;
+                            }
+
+                            readonly property var network: {
+                                const d = wifi.device;
+                                if (!d || !d.connected || !d.networks) return null;
+                                const up = [...d.networks.values].filter(function (n) {
+                                    return n.connected;
+                                });
+                                return up.length > 0 ? up[0] : null;
+                            }
+
+                            // Four rungs, so one bar is a quarter of the scale.
+                            // Zero bars means the radio is on with no link,
+                            // which is a different fact from having no radio.
+                            readonly property int level: {
+                                if (!wifi.network) return 0;
+                                const s = wifi.network.signalStrength;
+                                if (s >= 0.75) return 4;
+                                if (s >= 0.5) return 3;
+                                if (s >= 0.25) return 2;
+                                return 1;
+                            }
+
+                            Repeater {
+                                model: 4
+                                Rectangle {
+                                    required property int index
+                                    width: 2
+                                    height: 3 + index * 2
+                                    y: wifi.height - height
+                                    color: index < wifi.level ? "#e0e0e0" : "#404040"
+                                }
+                            }
+                        }
 
                         Text {
                             text: UPower.onBattery ? "BAT" : "AC"
