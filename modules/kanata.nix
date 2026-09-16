@@ -123,6 +123,11 @@
               c-sft  (tap-hold-release $qt $t-shift c lsft (require-prior-idle $idle-shift))
               m-sft  (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
               sl-ctl (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
+
+              ;; A keypress that reaches the system and means nothing, used to
+              ;; retire the arrow cluster. See the note at its use site for
+              ;; why this is not XX.
+              dead f24
             )
 
             (deflayermap (base)
@@ -148,6 +153,28 @@
               ;; a tap of Shift produces nothing to preserve. Shift itself now
               ;; comes from held C, held M, or the right Shift key.
               lsft lctl
+
+              ;; The arrow cluster is dead on purpose. Reaching for it is the
+              ;; habit that stops hold-A from ever becoming automatic, and a
+              ;; half-learned layer is worse than none.
+              ;;
+              ;; This does not affect DIR. Kanata writes its output to its own
+              ;; virtual keyboard and never feeds that back through this map,
+              ;; so hold-A + H still emits a real Left.
+              ;;
+              ;; f24 rather than XX, and that is not a style choice. Measured
+              ;; on kanata 1.12.0: pressing a key mapped to XX breaks the very
+              ;; next tap-hold, which resolves as a tap instead of a hold. It
+              ;; is one-shot and time-independent, still broken after eight
+              ;; seconds idle and fine on the attempt after. That turns the
+              ;; exact habit this mapping exists to break -- reach for the
+              ;; arrows, get nothing, fall back to hold-A -- into a failure
+              ;; every single time. f24 is the inert key kanata's own docs use
+              ;; as a no-op, and nothing in this system binds it.
+              left @dead
+              down @dead
+              up   @dead
+              rght @dead
             )
 
             ;; --------------------------------------------------------------
