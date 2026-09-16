@@ -21,7 +21,9 @@
         enable = true;
         settings = {
           PasswordAuthentication = false;
-          PermitRootLogin = "no";
+          # Key-only root. "no" blocks remote deploys entirely, which is how
+          # ridge ended up reachable only as simon with an interactive sudo.
+          PermitRootLogin = "prohibit-password";
         };
       };
 

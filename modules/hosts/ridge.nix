@@ -18,6 +18,7 @@
       "base"
       "desktop"
       "portable"
+      "galaxy-book3"
     ];
 
     module = {

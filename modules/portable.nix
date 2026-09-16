@@ -49,7 +49,34 @@
         efiSupport = true;
         efiInstallAsRemovable = true;
         device = "nodev";
+
+        # disko appends the install-time device path here whenever the layout
+        # contains an EF02 partition:
+        #
+        #   lib/types/gpt.nix:
+        #     ++ (lib.optional (lib.any (part: part.type == "EF02") ...) {
+        #          boot.loader.grub.devices = [ config.device ];
+        #        });
+        #
+        # That path is right while installing and wrong for ever after. The
+        # stick is /dev/sdi on the workstation that built it and something
+        # else on every machine that boots it, so a later rebuild fails with
+        # "cannot find a GRUB drive for /dev/sdi".
+        #
+        # BIOS core.img is written once during the install and does not need
+        # rewriting on a rebuild. Only the EFI loader and grub.cfg change, and
+        # those live on the mounted ESP, which needs no device path.
+        devices = lib.mkForce [ "nodev" ];
       };
+
+      # Drivers are useless without the blobs they load at probe time.
+      #
+      # A fixed install gets this from nixos-generate-config or a facter
+      # report. A portable system has neither, so it must carry firmware for
+      # hardware it has not met. Without it an Intel Iris Xe GPU fails to
+      # initialise and opening /dev/dri/cardN returns EINVAL, which looks like
+      # a compositor bug and is not one.
+      hardware.enableRedistributableFirmware = true;
 
       # Flash wears out. Cut the obvious write amplification.
       services.fstrim.enable = true;
