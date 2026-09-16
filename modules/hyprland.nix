@@ -206,9 +206,86 @@
           fi
         '';
       };
+
+      # The session, not just the compositor.
+      #
+      # Hyprland publishes its own environment to the systemd user manager and
+      # withdraws it on exit. Both command lines are literals in the 0.56.2
+      # binary:
+      #
+      #   systemctl --user import-environment DISPLAY WAYLAND_DISPLAY
+      #     HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP
+      #     QT_QPA_PLATFORMTHEME PATH XDG_DATA_DIRS
+      #   systemctl --user unset-environment <the same list>
+      #
+      # It never starts graphical-session.target, and neither does
+      # start-hyprland. The string "graphical-session" appears in neither
+      # binary. So a unit with WantedBy=graphical-session.target never ran at
+      # login. The bars only ever appeared because a person started them by
+      # hand, and they stayed dead after the compositor restarted.
+      #
+      # graphical-session.target sets RefuseManualStart=yes, so no script can
+      # start it directly. Verified on ridge. A compositor target that binds to
+      # it is the supported route: systemd starts a refused target when another
+      # unit depends on it. RefuseManualStop is no, so exit can tear the whole
+      # session down through it.
+      start-cairn = pkgs.writeShellApplication {
+        name = "start-cairn";
+        # hyprPkg is deliberately absent. writeShellApplication prepends
+        # runtimeInputs to PATH, which would make start-hyprland resolve
+        # "Hyprland" to the bare store binary instead of the wrapper in
+        # /run/wrappers/bin that carries cap_sys_nice+ep.
+        runtimeInputs = [
+          pkgs.systemd
+          pkgs.coreutils
+        ];
+        text = ''
+          # A compositor that died took its units down with it and may have
+          # burned their restart budget. start refuses a unit still marked
+          # failed, so clear the slate before the new session begins.
+          systemctl --user reset-failed || true
+
+          # Hyprland publishes the environment only once it is up, so watch for
+          # the signature rather than race it. Bash pattern matching, to keep
+          # grep out of PATH and out of this script's closure.
+          (
+            for _ in {1..100}; do
+              if [[ "$(systemctl --user show-environment)" == *HYPRLAND_INSTANCE_SIGNATURE=* ]]; then
+                systemctl --user start hyprland-session.target
+                exit 0
+              fi
+              sleep 0.1
+            done
+            echo "start-cairn: Hyprland never published HYPRLAND_INSTANCE_SIGNATURE" >&2
+            exit 1
+          ) &
+
+          # Unqualified, so PATH finds /run/wrappers/bin/Hyprland first. See
+          # the note on runtimeInputs above.
+          rc=0
+          start-hyprland "$@" || rc=$?
+
+          # Stop the session so its services exit cleanly. Without this they
+          # restart against a compositor that is gone, fail five times, and
+          # stay failed.
+          systemctl --user stop graphical-session.target || true
+          exit "$rc"
+        '';
+      };
     in
     {
       programs.hyprland.enable = true;
+
+      # The bridge to graphical-session.target. start-cairn starts this one;
+      # systemd pulls in graphical-session.target because this target binds to
+      # it, which is legal where a manual start is not.
+      systemd.user.targets.hyprland-session = {
+        description = "Hyprland session";
+        documentation = [ "man:systemd.special(7)" ];
+        bindsTo = [ "graphical-session.target" ];
+        wants = [ "graphical-session-pre.target" ];
+        after = [ "graphical-session-pre.target" ];
+      };
 
       services.greetd = {
         enable = true;
@@ -229,7 +306,10 @@
         # programs/wayland/hyprland.nix installs a wrapper carrying
         # cap_sys_nice+ep for realtime scheduling. An absolute store path
         # would execute the uncapped binary instead.
-        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd start-hyprland";
+        #
+        # start-cairn wraps start-hyprland to reach graphical-session.target.
+        # It calls start-hyprland unqualified for the reason above.
+        settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${start-cairn}/bin/start-cairn";
       };
 
       security.pam.services.greetd.enableGnomeKeyring = true;
