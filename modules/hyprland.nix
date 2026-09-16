@@ -717,12 +717,15 @@
         hl.bind(mod .. " + CTRL + mouse_down", hl.dsp.exec_cmd("hypr-scale fine-down"))
 
         --------------------------------------------------------------------
-        -- Placeholder for Kamoi's omni bar, which is not built yet. fuzzel
-        -- launches applications and nothing else. Kamoi reserves F1 for the
-        -- bar so a keyboard with no Escape key can still reach Settings.
+        -- The omni bar. See modules/omni.nix.
+        --
+        -- Kamoi reserves F1 for it so a keyboard with no Escape key can
+        -- still reach Settings, and binds Meta+Shift+Space straight into the
+        -- window list.
         --------------------------------------------------------------------
-        hl.bind(mod .. " + Space", hl.dsp.exec_cmd("fuzzel"))
-        hl.bind("F1", hl.dsp.exec_cmd("fuzzel"))
+        hl.bind(mod .. " + Space",         hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
+        hl.bind("F1",                      hl.dsp.exec_cmd("qs -c cairn ipc call omni toggle"))
+        hl.bind(mod .. " + SHIFT + Space", hl.dsp.exec_cmd("qs -c cairn ipc call omni gotowindow"))
 
         -- Kamoi Meta+S captures the screen, Meta+Shift+S the focused window.
         -- Kamoi opens both for markup; that surface is not built yet.

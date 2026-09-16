@@ -64,6 +64,10 @@
             // Kamoi Meta+I hides the top bar and the dock together.
             property bool chromeVisible: true
 
+            // The omni bar. Its component lives in modules/omni.nix, which
+            // QML resolves by filename from this directory.
+            OmniBar { id: omniBar }
+
             // Reached from the compositor with:  qs -c cairn ipc call chrome toggle
             IpcHandler {
                 target: "chrome"
@@ -88,6 +92,25 @@
                 });
                 list.sort(function (a, b) { return a.workspace.id - b.workspace.id; });
                 return list;
+            }
+
+            // Which page a window is on, or -1 while it is between pages.
+            //
+            // allWindows filters on t.workspace before building the list, but
+            // that only makes the list safe at the moment it is built. Each
+            // delegate binding re-runs when the property changes, and Hyprland
+            // nulls workspace while it moves or closes a window, so the filter
+            // cannot protect the delegate. Reproduced on ridge by moving one
+            // window across pages and closing it:
+            //
+            //   WARN scene: @shell.qml[242]: TypeError: Cannot read property
+            //                                'id' of null
+            //   WARN scene: @shell.qml[272]: same
+            //
+            // -1 is safe as the unknown value because allWindows keeps only
+            // ids above zero; special workspaces are already excluded.
+            function pageOf(toplevel) {
+                return (toplevel && toplevel.workspace) ? toplevel.workspace.id : -1;
             }
 
             SystemClock {
@@ -288,8 +311,13 @@
                                     // without labelling every group.
                                     readonly property bool startsWorkspace: {
                                         if (index === 0) return false;
-                                        const prev = root.allWindows[index - 1];
-                                        return !prev || prev.workspace.id !== modelData.workspace.id;
+                                        const here = root.pageOf(modelData);
+                                        const prev = root.pageOf(root.allWindows[index - 1]);
+                                        // While either window is between pages,
+                                        // draw nothing rather than a separator
+                                        // that moves again a moment later.
+                                        if (here < 0 || prev < 0) return false;
+                                        return here !== prev;
                                     }
 
                                     implicitWidth: 30 + (startsWorkspace ? 9 : 0)
@@ -318,9 +346,14 @@
                                         // hidden, so the whole session reads at
                                         // a glance.
                                         color: modelData.activated ? "#303030" : "transparent"
-                                        opacity: (Hyprland.focusedWorkspace
-                                                  && modelData.workspace.id === Hyprland.focusedWorkspace.id)
-                                                 ? 1.0 : 0.45
+                                        opacity: {
+                                            const page = root.pageOf(modelData);
+                                            // A window between pages is not on
+                                            // the focused one as far as anybody
+                                            // can tell, so it stays dimmed.
+                                            if (page < 0 || !Hyprland.focusedWorkspace) return 0.45;
+                                            return page === Hyprland.focusedWorkspace.id ? 1.0 : 0.45;
+                                        }
 
                                         // A toplevel has no wayland handle until
                                         // Hyprland reports its address, so appId
