@@ -64,7 +64,7 @@
           QT_QPA_PLATFORM = "wayland";
         };
 
-        # A systemd user service is handed a minimal PATH. Measured on ridge
+        # A systemd user service is handed a minimal PATH. Measured on hiyori
         # it carried only coreutils, findutils, gnugrep, gnused and systemd,
         # so anything the shell spawns -- web-app, qs, hypr-scale, grim --
         # failed with "Process failed to start, likely because the binary
@@ -133,7 +133,7 @@
             // that only makes the list safe at the moment it is built. Each
             // delegate binding re-runs when the property changes, and Hyprland
             // nulls workspace while it moves or closes a window, so the filter
-            // cannot protect the delegate. Reproduced on ridge by moving one
+            // cannot protect the delegate. Reproduced on hiyori by moving one
             // window across pages and closing it:
             //
             //   WARN scene: @shell.qml[242]: TypeError: Cannot read property
@@ -162,7 +162,7 @@
             //
             // Both actions go through hyprctl rather than the Wayland toplevel
             // protocol, because neither has a protocol equivalent. The two
-            // dispatchers differ in shape, measured on ridge:
+            // dispatchers differ in shape, measured on hiyori:
             //
             //   window.move accepts `window`, so it names its own subject.
             //   window.swap does not. It acts on the focused window, so the
@@ -272,11 +272,11 @@
                         //   WifiNetwork : Network, signalStrength double
                         //
                         // signalStrength is 0.0 to 1.0, not 0 to 100. Measured
-                        // on ridge against nmcli on the same association:
+                        // on hiyori against nmcli on the same association:
                         // nmcli said 81, this said 0.8.
                         //
                         // The NetworkManager backend fills in over D-Bus after
-                        // the engine loads. Sampled on ridge: at 1.5s
+                        // the engine loads. Sampled on hiyori: at 1.5s
                         // devices=0 and wifiEnabled=false, at 3.0s the device
                         // is present. Every property read here is notifiable,
                         // so the bindings simply fill in and nothing polls.

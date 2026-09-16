@@ -40,7 +40,19 @@
         "type": "github"
       }
     },
-    "herdr-bin": {
+    "herdr-bin-aarch64": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-R601f2zqwH2tIdD2Er71useseL+DFsXoBzsEK1hOZFU=",
+        "type": "file",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.0/herdr-linux-aarch64"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/herdrdev/herdr/releases/download/v0.9.0/herdr-linux-aarch64"
+      }
+    },
+    "herdr-bin-x86_64": {
       "flake": false,
       "locked": {
         "narHash": "sha256-93gKqKlPLHjf3Ulg/1csBF9/qO9FNs40lS/902mIEIU=",
@@ -107,7 +119,8 @@
       "inputs": {
         "disko": "disko",
         "flake-parts": "flake-parts",
-        "herdr-bin": "herdr-bin",
+        "herdr-bin-aarch64": "herdr-bin-aarch64",
+        "herdr-bin-x86_64": "herdr-bin-x86_64",
         "hjem": "hjem",
         "import-tree": "import-tree",
         "nixpkgs": "nixpkgs"

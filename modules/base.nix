@@ -56,7 +56,7 @@
         settings = {
           PasswordAuthentication = false;
           # Key-only root. "no" blocks remote deploys entirely, which is how
-          # ridge ended up reachable only as simon with an interactive sudo.
+          # hiyori ended up reachable only as simon with an interactive sudo.
           PermitRootLogin = "prohibit-password";
         };
       };

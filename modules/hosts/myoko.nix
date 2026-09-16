@@ -9,17 +9,17 @@
 #   1. cairn.disk.device -- the real drive, as a by-id path.
 #   2. a hardware layer, if the machine needs one.
 #
-# Nothing else should change when the laptop arrives. summit and ridge import
+# Nothing else should change when the laptop arrives. myoko and hiyori import
 # the same base and desktop, so the environment is the same setup by
 # construction rather than by copying.
 #
-# summit needs no `portable` layer and no bootloader block. `base` already
+# myoko needs no `portable` layer and no bootloader block. `base` already
 # defaults to systemd-boot with canTouchEfiVariables, which is exactly what a
 # machine that stays in one place wants. `portable` is the deviation from that
 # default, not the other way round.
 {
-  nixos.hosts.summit = {
-    system = "x86_64-linux";
+  nixos.hosts.myoko = {
+    system = "aarch64-linux";
     layers = [
       "base"
       "desktop"

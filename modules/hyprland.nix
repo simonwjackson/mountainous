@@ -225,7 +225,7 @@
       # hand, and they stayed dead after the compositor restarted.
       #
       # graphical-session.target sets RefuseManualStart=yes, so no script can
-      # start it directly. Verified on ridge. A compositor target that binds to
+      # start it directly. Verified on hiyori. A compositor target that binds to
       # it is the supported route: systemd starts a refused target when another
       # unit depends on it. RefuseManualStop is no, so exit can tear the whole
       # session down through it.
@@ -742,7 +742,7 @@
         --   hl.workspace_rule({ workspace        = "special:term",
         --                       on_created_empty = "alacritty" })
         --
-        -- On ridge that spawned terminals without stopping. The reasoning
+        -- On hiyori that spawned terminals without stopping. The reasoning
         -- behind it was traced through 0.56.2's source and every statement
         -- in it is still true: togglespecialworkspace creates the workspace
         -- with isEmpty defaulting to true (WorkspaceState.hpp:28), init()

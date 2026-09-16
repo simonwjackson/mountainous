@@ -17,7 +17,7 @@
     #     if defined $u->{hashedPassword} && !$spec->{mutableUsers}; # FIXME
     #
     # With mutableUsers = true, an account created locked stays locked for
-    # ever, no matter what the config later says. That is how ridge ended up
+    # ever, no matter what the config later says. That is how hiyori ended up
     # unloggable after its first install.
     #
     # The cost: `passwd` no longer sticks across a rebuild. Change the

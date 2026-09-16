@@ -21,15 +21,22 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # herdr is not in nixpkgs. This is the upstream release binary, taken as an
-    # input rather than a fetchurl so `nix flake update` can move it and
+    # herdr is not in nixpkgs. These are the upstream release binaries, taken
+    # as inputs rather than fetchurl so `nix flake update` can move them and
     # flake.lock records what shipped. file+https keeps Nix from trying to
     # unpack a bare executable as an archive.
     #
-    # x86_64 only, which is all cairn has. Adding an aarch64 host means adding
-    # the matching asset here; see modules/herdr.nix.
-    herdr-bin = {
+    # One input per architecture, each named after the asset it holds. A single
+    # `herdr-bin` read fine while every host was x86_64. myoko is aarch64, and
+    # at that point the name no longer said which machine it was for.
+    # modules/herdr.nix picks between them on the host platform.
+    herdr-bin-x86_64 = {
       url = "file+https://github.com/herdrdev/herdr/releases/download/v0.9.0/herdr-linux-x86_64";
+      flake = false;
+    };
+
+    herdr-bin-aarch64 = {
+      url = "file+https://github.com/herdrdev/herdr/releases/download/v0.9.0/herdr-linux-aarch64";
       flake = false;
     };
   };

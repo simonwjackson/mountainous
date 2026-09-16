@@ -3,7 +3,7 @@
 # Kamoi installs a page as a PWA and lists it in the omni bar under "PWA
 # apps". The desktop equivalent is Chromium's --app mode, which draws the page
 # with no tab strip, no address bar and no title bar, so Hyprland tiles it like
-# any other window. Verified on ridge against chromium 153.
+# any other window. Verified on hiyori against chromium 153.
 #
 # Three things learned the hard way on this machine:
 #
@@ -30,7 +30,7 @@
 # which is how Kamoi drives page zoom.
 #
 # Every window therefore launches through `web-app`, which pins three things
-# the protocol depends on, all measured on ridge:
+# the protocol depends on, all measured on hiyori:
 #
 #   * one shared --user-data-dir, so a second --app window JOINS the first
 #     browser and both appear on ONE CDP endpoint. Verified: two windows,
@@ -120,7 +120,7 @@
           categories = [ "Network" ];
           exec = "${web-app}/bin/web-app ${app.url}";
           icon = "webapp-${id}";
-          # Observed on ridge, not guessed:
+          # Observed on hiyori, not guessed:
           #   https://www.reddit.com    -> chrome-www.reddit.com__-Default
           #   https://music.youtube.com -> chrome-music.youtube.com__-Default
           #

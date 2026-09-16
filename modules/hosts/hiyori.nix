@@ -1,6 +1,6 @@
 # The USB stick.
 #
-# ridge is a real, writable NixOS install that happens to sit on removable
+# hiyori is a real, writable NixOS install that happens to sit on removable
 # media. You boot it, SSH in, `nixos-rebuild switch`, and the change is still
 # there after a reboot. The host machine's internal disk is never touched.
 #
@@ -12,7 +12,7 @@
 # Everything above the disk is shared with summit. If the two ever disagree
 # about the desktop, the difference is a bug in a layer, not in this file.
 {
-  nixos.hosts.ridge = {
+  nixos.hosts.hiyori = {
     system = "x86_64-linux";
     layers = [
       "base"

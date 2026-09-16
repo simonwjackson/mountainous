@@ -5,7 +5,7 @@
 # way -- its README describes driving pages "over the WebView DevTools
 # socket". This is that socket, spoken from Quickshell.
 #
-# It is pure QML. Measured on ridge: a Quickshell config imported QtWebSockets
+# It is pure QML. Measured on hiyori: a Quickshell config imported QtWebSockets
 # 6.11.2, opened a socket to Chromium's DevTools endpoint, sent Page.navigate
 # and the window moved. No helper binary is involved.
 #
@@ -72,7 +72,7 @@
           // Chromium writes the port it chose into the profile.
           //
           // No shell here. A systemd user service gets a minimal PATH --
-          // measured on ridge it held only coreutils, findutils, gnugrep,
+          // measured on hiyori it held only coreutils, findutils, gnugrep,
           // gnused and systemd -- so `sh -c` failed with "Process failed to
           // start, likely because the binary could not be found". head comes
           // from coreutils, which is present, and needs no shell. A missing

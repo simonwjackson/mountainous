@@ -86,7 +86,7 @@
               ;; milliseconds after the letter ending a word, so this alone
               ;; rules out virtually every space typed in prose.
               ;;
-              ;; t-space: how long space must then be held. Measured on ridge,
+              ;; t-space: how long space must then be held. Measured on hiyori,
               ;; prose was clean at 250ms until each key was held a full 250ms,
               ;; at which point space reached its own term and fired SUPER.
               ;; A heavy hand on the spacebar is real, so the term is set well
@@ -268,7 +268,7 @@
       };
 
       # Kanata sometimes never grabs a keyboard that is plugged in while it is
-      # running, and it never retries that device. Measured on ridge against
+      # running, and it never retries that device. Measured on hiyori against
       # kanata 1.12.0: a device on a path kanata had previously held was
       # ignored for 40s while alone, and grabbed immediately after a restart.
       # It is not a permission race; udev applies group 'input' in 13-56ms and

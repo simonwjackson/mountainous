@@ -26,34 +26,47 @@
 # publishes, and the trade is stated plainly: this is a prebuilt blob, trusted
 # because flake.lock pins its hash, not because Nix built it.
 #
-# x86_64-linux only. ridge is the only host, and it is x86_64. The input in
-# flake.nix names that asset directly, so an aarch64 host needs a second input
-# and a platform switch here rather than a silent wrong-architecture install.
+# Upstream publishes one binary per architecture, so this picks by host
+# platform. The static-pie reasoning above was checked on the x86_64 asset;
+# the aarch64 asset is assumed to be built the same way by the same release
+# job, which is an assumption, not a measurement. If herdr fails to run on
+# myoko, `patchelf --print-interpreter` on the installed file is the check.
 { inputs, ... }:
 {
   nixos.modules.desktop =
     { pkgs, lib, ... }:
     let
+      # Named by the Nix system string so a new platform fails as a missing
+      # attribute here, naming the platform, rather than installing a binary
+      # for the wrong architecture.
+      binaries = {
+        "x86_64-linux" = inputs.herdr-bin-x86_64;
+        "aarch64-linux" = inputs.herdr-bin-aarch64;
+      };
+
+      inherit (pkgs.stdenv.hostPlatform) system;
+
       herdr = pkgs.runCommand "herdr-0.9.0" {
         meta = {
           description = "The runtime your coding agents live on";
           homepage = "https://herdr.dev";
           license = lib.licenses.asl20;
-          platforms = [ "x86_64-linux" ];
+          platforms = lib.attrNames binaries;
           mainProgram = "herdr";
         };
       } ''
-        install -Dm755 ${inputs.herdr-bin} $out/bin/herdr
+        install -Dm755 ${binaries.${system}} $out/bin/herdr
       '';
     in
     {
       assertions = [
         {
-          assertion = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+          assertion = binaries ? ${system};
           message = ''
-            modules/herdr.nix installs the x86_64 herdr release, but this host is
-            ${pkgs.stdenv.hostPlatform.system}. Add the matching release asset as a
-            flake input and select on the platform here.
+            modules/herdr.nix has no herdr release for ${system}.
+            Add the matching asset from
+            https://github.com/herdrdev/herdr/releases/tag/v0.9.0
+            as a flake input and list it in `binaries` here.
           '';
         }
       ];
