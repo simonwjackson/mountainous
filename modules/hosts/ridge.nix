@@ -32,9 +32,21 @@
         content = {
           type = "gpt";
           partitions = {
+            # 1M BIOS Boot Partition. GRUB embeds core.img here for legacy
+            # boot. Without it, grub-install refuses the i386-pc target on a
+            # GPT disk, and disko-install always attempts that target because
+            # it forces boot.loader.grub.devices to the install disk at
+            # mkVMOverride priority. Carrying it also means the stick boots on
+            # machines with no UEFI at all.
+            bios = {
+              size = "1M";
+              type = "EF02";
+              priority = 1;
+            };
             ESP = {
               size = "1G";
               type = "EF00";
+              priority = 2;
               content = {
                 type = "filesystem";
                 format = "vfat";
@@ -44,6 +56,7 @@
             };
             root = {
               size = "100%";
+              priority = 3;
               content = {
                 type = "filesystem";
                 format = "ext4";
