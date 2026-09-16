@@ -25,66 +25,129 @@
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
 {
   nixos.modules.desktop =
-    { pkgs, ... }:
+    { config, pkgs, ... }:
     let
-      # Kamoi's interface scale: one control that resizes the whole UI.
+      hyprPkg = config.programs.hyprland.package;
+
+      # Under a Lua config, hyprctl changes shape and the legacy forms die
+      # quietly. Verified on the machine:
       #
-      # This walks a ladder instead of adding a delta. Hyprland refuses any
-      # scale that does not divide the panel into whole pixels:
+      #   hyprctl keyword monitor ...
+      #     -> "keyword can't work with non-legacy parsers. Use eval."
+      #   hyprctl dispatch layoutmsg "mfact exact 0.5"
+      #     -> error: [string "return hl.dispatch(layoutmsg mfact exact 0.5)"]
+      #        ')' expected near 'mfact'
       #
-      #   Monitor.cpp:996
-      #     "Invalid scale passed to monitor, {} failed to find a clean divisor"
+      # So `dispatch` now evaluates its argument as Lua, and `keyword` is
+      # refused outright in favour of `eval`. Worse, hyprctl still exits 0
+      # after printing those errors, so a broken helper looks like a working
+      # one. Everything below uses the Lua forms.
+      # Kamoi's interface scale: one control that resizes the whole UI, held
+      # apart from per-application zoom.
       #
-      # Every rung below divides 2880x1800 exactly:
-      #   1.0  -> 2880x1800    1.6 -> 1800x1125
-      #   1.2  -> 2400x1500    1.8 -> 1600x1000
-      #   1.25 -> 2304x1440    2.0 -> 1440x900
-      #   1.5  -> 1920x1200
+      # Hyprland quantises scale to 1/120 and then demands whole logical
+      # pixels. From output/Monitor.cpp:
+      #
+      #   float    searchScale = std::round(m_scale * 120.0);
+      #   double   scaleZero   = searchScale / 120.0;
+      #   Vector2D logicalZero = m_pixelSize / scaleZero;
+      #   if (logicalZero == logicalZero.round()) m_scale = scaleZero;
+      #
+      # So a legal scale is N/120 where both pw*120/N and ph*120/N are whole,
+      # which means N divides 120 * gcd(pw, ph). For this 2880x1800 panel that
+      # is 43200, giving 11 legal scales between 1.0 and 2.0.
+      #
+      # Miss the set and Hyprland does not fail outright: it hunts +/-1/120 up
+      # to 90 steps, and on success raises a red notification naming the scale
+      # it substituted. Working off the exact set avoids that notification.
+      #
+      # The ladder is computed from the live mode rather than written down, so
+      # it stays correct on whatever monitor this stick is plugged into. Fine
+      # steps move one rung, coarse steps three, which is how Kamoi's
+      # Meta+scroll and Ctrl+Meta+scroll differ.
+      #
+      # The 1/120 rounding also absorbs decimal truncation: 160/120 prints as
+      # 1.333333, and Hyprland multiplies by 120 and rounds straight back.
       hypr-scale = pkgs.writeShellApplication {
         name = "hypr-scale";
         runtimeInputs = [
           pkgs.jq
           pkgs.gawk
+          hyprPkg # hyprctl; do not rely on inheriting it from the session
         ];
         text = ''
-          LADDER=(1.0 1.2 1.25 1.5 1.6 1.8 2.0)
+          MIN=0.8
+          MAX=3.0
           DEFAULT=1.5
+          COARSE_RUNGS=3
+
+          case "''${1:-}" in
+            up)        rungs=$COARSE_RUNGS ;;
+            down)      rungs=-$COARSE_RUNGS ;;
+            fine-up)   rungs=1 ;;
+            fine-down) rungs=-1 ;;
+            # Quoted because `reset` and `list` are also real commands; a
+            # bare word there trips SC2209 as a likely missing $(...).
+            # (Keep "shellcheck" off the start of a comment line: that is
+            # its directive syntax and it errors with SC1124 inside a case.)
+            reset)     rungs="reset" ;;
+            get)       rungs="get" ;;
+            list)      rungs="list" ;;
+            *) echo "usage: hypr-scale up|down|fine-up|fine-down|reset|get|list" >&2; exit 2 ;;
+          esac
 
           mon=$(hyprctl -j monitors | jq -r 'map(select(.focused))[0]')
           name=$(printf '%s' "$mon" | jq -r '.name')
           cur=$(printf '%s' "$mon" | jq -r '.scale')
-          w=$(printf '%s' "$mon" | jq -r '.width')
-          h=$(printf '%s' "$mon" | jq -r '.height')
+          pw=$(printf '%s' "$mon" | jq -r '.width')
+          ph=$(printf '%s' "$mon" | jq -r '.height')
           rr=$(printf '%s' "$mon" | jq -r '.refreshRate | . * 1000 | round / 1000')
           x=$(printf '%s' "$mon" | jq -r '.x')
           y=$(printf '%s' "$mon" | jq -r '.y')
 
+          [ "$rungs" = get ] && { echo "$cur"; exit 0; }
+
           apply() {
-            hyprctl keyword monitor "$name,''${w}x''${h}@''${rr},''${x}x''${y},$1"
+            hyprctl eval "hl.monitor({ output = \"$name\", mode = \"''${pw}x''${ph}@''${rr}\", position = \"''${x}x''${y}\", scale = \"$1\" })"
           }
 
-          # Nearest rung to the live value; the compositor may hold something
-          # that is not exactly on the ladder.
-          idx=0
-          best=99
-          for i in "''${!LADDER[@]}"; do
-            d=$(awk -v a="''${LADDER[$i]}" -v b="$cur" 'BEGIN { d = a - b; if (d < 0) d = -d; print d }')
-            if awk -v d="$d" -v b="$best" 'BEGIN { exit !(d < b) }'; then
-              best=$d
-              idx=$i
-            fi
-          done
+          [ "$rungs" = reset ] && { apply "$DEFAULT"; exit 0; }
 
-          last=$(( ''${#LADDER[@]} - 1 ))
-          case "''${1:-}" in
-            up)    idx=$(( idx + 1 )); [ "$idx" -gt "$last" ] && idx=$last ;;
-            down)  idx=$(( idx - 1 )); [ "$idx" -lt 0 ] && idx=0 ;;
-            reset) apply "$DEFAULT"; exit 0 ;;
-            get)   echo "$cur"; exit 0 ;;
-            *)     echo "usage: hypr-scale up|down|reset|get" >&2; exit 2 ;;
-          esac
+          ladder() {
+            awk -v cur="$cur" -v n="$1" -v pw="$pw" -v ph="$ph" \
+                -v lo="$MIN" -v hi="$MAX" -v mode="$2" '
+              function gcd(a, b) { while (b) { t = b; b = a % b; a = t } return a }
+              BEGIN {
+                # Legal scales are N/120 for N dividing 120*gcd(pw, ph).
+                M = 120 * gcd(pw, ph)
+                count = 0
+                for (k = int(lo * 120 + 0.5); k <= int(hi * 120 + 0.5); k++)
+                  if (M % k == 0) L[++count] = k
 
-          apply "''${LADDER[$idx]}"
+                if (mode == "list") {
+                  for (i = 1; i <= count; i++)
+                    printf "%.4f -> %dx%d\n", L[i]/120, pw*120/L[i], ph*120/L[i]
+                  exit
+                }
+
+                # Nearest rung to the live value, which may sit off-ladder.
+                curN = cur * 120
+                bi = 1; bd = 1e9
+                for (i = 1; i <= count; i++) {
+                  d = L[i] - curN; if (d < 0) d = -d
+                  if (d < bd) { bd = d; bi = i }
+                }
+
+                i = bi + n
+                if (i < 1) i = 1
+                if (i > count) i = count
+                printf "%.6f", L[i] / 120
+              }'
+          }
+
+          [ "$rungs" = list ] && { ladder 0 list; exit 0; }
+
+          apply "$(ladder "$rungs" step)"
         '';
       };
 
@@ -98,6 +161,7 @@
         runtimeInputs = [
           pkgs.jq
           pkgs.gawk
+          hyprPkg
         ];
         text = ''
           state="''${XDG_RUNTIME_DIR:-/tmp}/hypr-zen"
@@ -105,8 +169,8 @@
 
           if [ -e "$state" ]; then
             rm -f "$state"
-            hyprctl keyword general:gaps_out "$NORMAL_GAPS"
-            hyprctl dispatch fullscreen 0
+            hyprctl eval "hl.config({ general = { gaps_out = $NORMAL_GAPS } })"
+            hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "unset" })'
             exit 0
           fi
 
@@ -117,8 +181,11 @@
           vert=$(awk -v h="$lh" 'BEGIN { printf "%d", h * 0.05 }')
 
           touch "$state"
-          hyprctl keyword general:gaps_out "''${vert},''${side},''${vert},''${side}"
-          hyprctl dispatch fullscreen 1
+          # A comma string is the legacy form. Lua's css_gap type refuses it:
+          #   "css_gap type requires an integer or a table with optional
+          #    top, right, bottom, left fields"
+          hyprctl eval "hl.config({ general = { gaps_out = { top = ''${vert}, right = ''${side}, bottom = ''${vert}, left = ''${side} } } })"
+          hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "set" })'
         '';
       };
 
@@ -127,15 +194,15 @@
       # not the master:mfact option, so the state cannot be read back.
       hypr-split = pkgs.writeShellApplication {
         name = "hypr-split";
-        runtimeInputs = [ ];
+        runtimeInputs = [ hyprPkg ];
         text = ''
           state="''${XDG_RUNTIME_DIR:-/tmp}/hypr-split-golden"
           if [ -e "$state" ]; then
             rm -f "$state"
-            hyprctl dispatch layoutmsg "mfact exact 0.5"
+            hyprctl dispatch 'hl.dsp.layout("mfact exact 0.5")'
           else
             touch "$state"
-            hyprctl dispatch layoutmsg "mfact exact 0.61803"
+            hyprctl dispatch 'hl.dsp.layout("mfact exact 0.61803")'
           fi
         '';
       };
@@ -297,9 +364,69 @@
         -- "maximized" fills the usable area and leaves room for a bar;
         -- "fullscreen" below covers everything. That is exactly Kamoi's
         -- distinction between capacity 1 and monocle mode.
-        hl.bind(mod .. " + 1", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
-        hl.bind(mod .. " + 2", hl.dsp.layout("mfact exact 0.5"))
-        hl.bind(mod .. " + 3", hl.dsp.layout("mfact exact 0.61803"))
+        -- Capacity is a CAP on how many windows the page holds, not a split
+        -- ratio. Hyprland has no such cap, so this keeps the number per
+        -- workspace and pushes the overflow onto the next one, which is what
+        -- Kamoi's ordered strip does.
+        --
+        -- The shapes then fall out of the master layout by themselves: one
+        -- window fills the screen, two give two columns, three give a master
+        -- with two stacked beside it. No mfact is set here; that is Meta+G.
+        --
+        -- hl.bind takes a plain Lua function as well as a dispatcher object:
+        --   "bind: dispatcher must be a dispatcher (e.g. hl.dsp.window.close())
+        --    or a lua function"
+        local DEFAULT_CAPACITY = 1
+        local capacity = {}
+
+        local function cap_of(id)
+            return capacity[id] or DEFAULT_CAPACITY
+        end
+
+        local function tiled_windows(ws)
+            local out = {}
+            for _, w in ipairs(ws:get_windows()) do
+                -- Floating windows sit outside the tiled page, so Kamoi's
+                -- capacity does not count them.
+                if not w.floating then out[#out + 1] = w end
+            end
+            return out
+        end
+
+        -- Move everything past the cap onto the next workspace, newest first,
+        -- so the master end of the page keeps the windows already there.
+        local function enforce(ws)
+            if ws == nil or ws.special then return end
+            local wins = tiled_windows(ws)
+            local over = #wins - cap_of(ws.id)
+            if over <= 0 then return end
+
+            for i = #wins, #wins - over + 1, -1 do
+                hl.dispatch(hl.dsp.focus({ window = "address:" .. wins[i].address }))
+                hl.dispatch(hl.dsp.window.move({ workspace = ws.id + 1 }))
+            end
+        end
+
+        local function set_capacity(n)
+            return function()
+                local ws = hl.get_active_workspace()
+                if ws == nil or ws.special then return end
+                capacity[ws.id] = n
+                enforce(ws)
+            end
+        end
+
+        hl.bind(mod .. " + 1", set_capacity(1))
+        hl.bind(mod .. " + 2", set_capacity(2))
+        hl.bind(mod .. " + 3", set_capacity(3))
+
+        -- A new window over the cap goes straight to the next page. Moving a
+        -- window raises no open event, so this cannot cascade: if the next
+        -- page is also full, the window simply stays there.
+        hl.on("window.open", function(win)
+            if win == nil or win.floating then return end
+            enforce(win.workspace)
+        end)
 
         -- Even versus golden split.
         hl.bind(mod .. " + G", hl.dsp.exec_cmd("hypr-split"))
@@ -357,8 +484,20 @@
         hl.bind(mod .. " + Page_Up",   hl.dsp.focus({ workspace = "e-1" }))
         hl.bind(mod .. " + CTRL + Page_Down", hl.dsp.window.move({ workspace = "e+1" }))
         hl.bind(mod .. " + CTRL + Page_Up",   hl.dsp.window.move({ workspace = "e-1" }))
-        hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-        hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+        -- Kamoi reaches the workspace strip with a three-finger swipe, and
+        -- gives Meta+scroll to the interface scale instead. Meta+scroll is
+        -- deliberately NOT bound to workspaces here for that reason.
+
+        -- Kamoi: "Meta+Enter promotes the focused window"; jumping to the
+        -- master pane without swapping is the other half of that pair.
+        hl.bind(mod .. " + SHIFT + Return", hl.dsp.layout("focusmaster master"))
+
+        -- Kamoi's capacity is a cap on how many windows a page holds. Hyprland
+        -- has no such cap, so these add and remove windows in the master area,
+        -- which is the nearest real control over how the page is divided.
+        hl.bind(mod .. " + A",         hl.dsp.layout("addmaster"))
+        hl.bind(mod .. " + SHIFT + A", hl.dsp.layout("removemaster"))
 
         --------------------------------------------------------------------
         -- GROUP 3: scale
@@ -368,8 +507,15 @@
         hl.bind(mod .. " + equal", hl.dsp.exec_cmd("hypr-scale up"))
         hl.bind(mod .. " + minus", hl.dsp.exec_cmd("hypr-scale down"))
         hl.bind(mod .. " + 0",     hl.dsp.exec_cmd("hypr-scale reset"))
-        hl.bind(mod .. " + SHIFT + mouse_up",   hl.dsp.exec_cmd("hypr-scale up"))
-        hl.bind(mod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd("hypr-scale down"))
+
+        -- Kamoi: "Meta+scroll: preview the complete interface scale; release
+        -- Meta to save it" and "Ctrl+Meta+scroll: adjust the interface scale
+        -- in smaller steps". Each detent commits on its own here, because
+        -- Hyprland has no press-and-hold bind to preview against.
+        hl.bind(mod .. " + mouse_up",          hl.dsp.exec_cmd("hypr-scale up"))
+        hl.bind(mod .. " + mouse_down",        hl.dsp.exec_cmd("hypr-scale down"))
+        hl.bind(mod .. " + CTRL + mouse_up",   hl.dsp.exec_cmd("hypr-scale fine-up"))
+        hl.bind(mod .. " + CTRL + mouse_down", hl.dsp.exec_cmd("hypr-scale fine-down"))
 
         --------------------------------------------------------------------
         -- Placeholder for Kamoi's omni bar, which is not built yet. fuzzel
