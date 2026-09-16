@@ -63,7 +63,13 @@ in
             nixpkgs.hostPlatform = host.system;
           }
           host.module
-        ] ++ map (layer: config.nixos.modules.${layer}) host.layers;
+        ]
+        # `base` first and unconditionally. Every machine is on the tailnet,
+        # carries the same accounts and can read its own secrets. None of that
+        # is a per-host decision, so no per-host list gets a say in it.
+        ++ map (layer: config.nixos.modules.${layer}) (
+          lib.unique ([ "base" ] ++ host.layers)
+        );
       }
     ) config.nixos.hosts;
   };
