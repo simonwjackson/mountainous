@@ -1,0 +1,46 @@
+# Who can decrypt what.
+#
+# The master is the operator's ed25519 SSH key -- the same identity the old
+# agenix tree used, so ~/.ssh stays the only thing under management. sops
+# cannot read an SSH private key itself, so it is converted at call time:
+#
+#   SOPS_AGE_KEY="$(ssh-to-age -private-key -i ~/.ssh/id_ed25519)" sops ...
+#
+# scripts/secrets wraps that. Nothing is written to disk.
+#
+# Host entries are the age form of each machine's ed25519 SSH host key, so a
+# machine decrypts with an identity it already holds. The private halves live
+# in ~/.local/share/mountainous/hostkeys/ and are planted at install time via
+# --extra-files, which is what lets a fresh machine decrypt on first boot.
+#
+# Every secret file must match exactly one creation rule. A file matching none
+# cannot be created; a file matching two silently uses the first.
+keys:
+  - &master age1zlz3fwumguttvgv6qpkrtm5q7ehx2whxlez7endyvzx82wssrdwsg63685
+  - &hiyori age1eec4gj5lck03lz88z4xclul9853w0jlzfc3maz63rv7uaa2kp59qg4ywk5
+  - &myoko  age1l4gzp97jqkp8ephesxz6qpqg03z5ym42cgg6u7vvzkrqq89279fsw4ldxu
+
+creation_rules:
+  # Fleet-wide. Every machine needs these, so every machine can read them.
+  - path_regex: secrets/fleet\.yaml$
+    key_groups:
+      - age:
+          - *master
+
+          - *hiyori
+          - *myoko
+
+  # Per-host. A machine reads only its own file.
+  - path_regex: secrets/hosts/hiyori\.yaml$
+    key_groups:
+      - age:
+          - *master
+
+          - *hiyori
+
+  - path_regex: secrets/hosts/myoko\.yaml$
+    key_groups:
+      - age:
+          - *master
+
+          - *myoko
