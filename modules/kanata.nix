@@ -149,16 +149,15 @@
             ;;     j k   ->  ( )
             ;;     m ,   ->  { }
             ;;
-            ;; The Corne puts < > on two right thumb keys. A laptop has one
-            ;; thumb key, so that pair has no faithful home. It goes to the
-            ;; two keys right of { } instead, which are free in this layer and
-            ;; keep the pair adjacent and on the same hand.
+            ;; The Corne puts < > on two right thumb keys. Space and the key
+            ;; to its right are the laptop's right thumb, so the pair stays on
+            ;; the thumb rather than moving up into the letters.
             ;; --------------------------------------------------------------
             (deflayermap (wrp)
-              u [    i ]
-              j S-9  k S-0
-              m S-[  , S-]
-              . S-,  / S-.
+              u   [    i ]
+              j   S-9  k S-0
+              m   S-[  , S-]
+              spc S-,  ralt S-.
             )
 
             ;; --------------------------------------------------------------
