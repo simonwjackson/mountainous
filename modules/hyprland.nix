@@ -734,34 +734,40 @@
         -- of whichever page you are on, then dismiss. SUPER+N still opens
         -- ordinary terminals as windows on the strip; this is not that.
         --
-        -- Nothing below spawns, counts or tracks the terminal by hand,
-        -- because 0.56.2 already does all of it. Read out of the source
-        -- rather than a wiki, and these five facts are the whole mechanism:
+        -- The spawn happens on the key press, not on a compositor event.
+        -- That is the whole design, and it is a correction.
         --
-        --   DispatcherTranslator.cpp:414  togglespecialworkspace looks the
-        --     workspace up by id and, when it is absent, calls
-        --     create(id, monitor, name) with no isEmpty argument.
-        --   WorkspaceState.hpp:28         isEmpty defaults to true, so a
-        --     workspace made that way is flagged as created empty. The
-        --     ordinary-page path at DispatcherTranslator.cpp:60 passes false
-        --     explicitly, which is what makes the special path distinct.
-        --   Workspace.cpp:68              init() runs the on-created-empty
-        --     command whenever that flag is set, with no special-workspace
-        --     exclusion, through spawnWithRules(cmd, self). The spawn is
-        --     bound to this workspace, so the terminal cannot land on the
-        --     page underneath and there is no race to lose.
-        --   Window.cpp:730                close_special_on_empty hides the
-        --     workspace when its last window unmaps. It fires on unmap only,
-        --     never on a timer, so an empty workspace waiting for its
-        --     terminal to start is never swept out from under it.
-        --   WorkspaceState.hpp:38         m_workspaces holds weak refs. Once
-        --     the monitor drops the hidden workspace, nothing holds it and
-        --     it is destroyed.
+        -- This was first written as a workspace rule:
         --
-        -- Chained: the first SUPER+T builds the terminal, later presses show
-        -- and hide that same one, and closing it with `exit` means the next
-        -- SUPER+T builds a fresh one. There is no way to end up with a
-        -- second terminal stacked behind the first.
+        --   hl.workspace_rule({ workspace        = "special:term",
+        --                       on_created_empty = "alacritty" })
+        --
+        -- On ridge that spawned terminals without stopping. The reasoning
+        -- behind it was traced through 0.56.2's source and every statement
+        -- in it is still true: togglespecialworkspace creates the workspace
+        -- with isEmpty defaulting to true (WorkspaceState.hpp:28), init()
+        -- runs on-created-empty for that flag with no special-workspace
+        -- exclusion (Workspace.cpp:68), and close_special_on_empty retires
+        -- the workspace when its last window unmaps (Window.cpp:730).
+        --
+        -- The conclusion drawn from those facts was the wrong part. "The
+        -- workspace is created once per press" is not something the source
+        -- says anywhere. on-created-empty fires on workspace creation, so
+        -- anything that recreates the workspace spawns another terminal,
+        -- and a terminal that arrives late enough to find the workspace
+        -- rebuilt spawns the next one. Nothing in that chain needs a person.
+        --
+        -- So the spawn is no longer reachable from a compositor event. It
+        -- runs on the bind, behind a check for the terminal it is about to
+        -- create. A runaway needs a spawn that causes a spawn, and a keybind
+        -- cannot press itself.
+        --
+        -- term_window() searches every workspace rather than the overlay
+        -- alone, so a terminal that lands somewhere unexpected is still
+        -- found and still not duplicated. That makes the worst remaining
+        -- failure bounded and visible: if the spawn rule does not place the
+        -- window, one stray terminal appears on the current page and SUPER+T
+        -- toggles an empty overlay. Wrong, but finite, and it stops.
         --
         -- The dock and the omni bar need no change to ignore it. Both filter
         -- on workspace.id > 0 (modules/bars.nix, modules/omni.nix) and
@@ -777,15 +783,30 @@
         -- DEFERRED: this terminal is meant to become the one window onto the
         -- other machines, so that SUPER+T reaches them from wherever it is
         -- pressed. That needs those machines reachable from this host, which
-        -- this system does not set up yet. When it does, the command on the
-        -- next line is the only thing that changes.
+        -- this system does not set up yet. When it does, TERM_CMD is the
+        -- only thing that changes.
         --------------------------------------------------------------------
-        hl.workspace_rule({
-            workspace        = "special:term",
-            on_created_empty = "alacritty",
-        })
+        local TERM_WS    = "term"
+        local TERM_CLASS = "cairn-term"
+        local TERM_CMD   = "alacritty --class " .. TERM_CLASS
 
-        hl.bind(mod .. " + T", hl.dsp.workspace.toggle_special("term"))
+        -- The overlay's terminal, wherever it currently is, or nil. Matching
+        -- on class rather than on workspace is deliberate: a terminal that
+        -- missed the overlay must still count as existing, or the bind would
+        -- build a new one on every press.
+        local function term_window()
+            for _, w in ipairs(hl.get_windows()) do
+                if w.class == TERM_CLASS then return w end
+            end
+            return nil
+        end
+
+        hl.bind(mod .. " + T", function()
+            if term_window() == nil then
+                hl.exec_cmd(TERM_CMD, { workspace = "special:" .. TERM_WS .. " silent" })
+            end
+            hl.dispatch(hl.dsp.workspace.toggle_special(TERM_WS))
+        end)
 
         --------------------------------------------------------------------
         -- The omni bar. See modules/omni.nix.
