@@ -780,15 +780,45 @@
         -- never reads it. Setting it would read as a decision and do
         -- nothing. The overlay fills the page instead.
         --
-        -- DEFERRED: this terminal is meant to become the one window onto the
-        -- other machines, so that SUPER+T reaches them from wherever it is
-        -- pressed. That needs those machines reachable from this host, which
-        -- this system does not set up yet. When it does, TERM_CMD is the
-        -- only thing that changes.
+        -- The overlay runs herdr, not a shell. herdr keeps its sessions on a
+        -- server that outlives the client, so closing this window costs
+        -- nothing and the next launch attaches to the same work. `herdr` with
+        -- no arguments is the documented form for that; from its own --help:
+        --
+        --   herdr    Launch or attach to the persistent session
+        --
+        -- So the overlay never has to decide between creating and resuming,
+        -- and two launches cannot produce two sessions. See modules/herdr.nix.
+        --
+        -- DEFERRED: the machines. herdr reaches other hosts with `herdr
+        -- machine add <ssh-target>`, which needs those hosts reachable over
+        -- SSH from here. This system does not set that up yet, so the overlay
+        -- currently shows local work only. Nothing below changes when it
+        -- does: the machines become part of herdr's own state, not the
+        -- compositor's.
         --------------------------------------------------------------------
         local TERM_WS    = "term"
         local TERM_CLASS = "cairn-term"
-        local TERM_CMD   = "alacritty --class " .. TERM_CLASS
+        local TERM_CMD   = "alacritty --class " .. TERM_CLASS .. " -e herdr"
+
+        -- Sized against the monitor, centred, and floating.
+        --
+        -- 61.8% is the same golden split hypr-split gives SUPER+G, used here
+        -- on both axes so the overlay reads as one object over the page
+        -- rather than a pane of it. The page stays visible around all four
+        -- edges, which is what makes it legible as a thing on top.
+        --
+        -- Percentages, not pixels, so the rule is a function of whatever
+        -- monitor the stick is plugged into rather than of this panel. A
+        -- floating window is required for the size to mean anything: a tiled
+        -- window is sized by the layout, and the rule would be ignored.
+        hl.window_rule({
+            name   = "term-overlay",
+            match  = { class = TERM_CLASS },
+            float  = true,
+            size   = "61.8% 61.8%",
+            center = true,
+        })
 
         -- The overlay's terminal, wherever it currently is, or nil. Matching
         -- on class rather than on workspace is deliberate: a terminal that
