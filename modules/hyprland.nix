@@ -241,7 +241,15 @@
       };
       security.rtkit.enable = true;
 
-      xdg.portal.enable = true;
+      xdg.portal = {
+        enable = true;
+        # Without a backend the portal never activates, and the journal shows:
+        #   "Could not activate remote peer 'org.freedesktop.portal.Desktop'"
+        # The hyprland backend serves screencast and screenshot; the gtk one
+        # serves file pickers, which the hyprland backend does not implement.
+        extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+        config.common.default = "*";
+      };
 
       environment.systemPackages = with pkgs; [
         alacritty
@@ -544,6 +552,10 @@
         hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
         hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"), { locked = true })
         hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+
+        -- Kamoi Meta+I hides the top bar and the dock together for immersive
+        -- browsing. The bars are Quickshell; see modules/bars.nix.
+        hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c cairn ipc call chrome toggle"))
 
         hl.bind(mod .. " + SHIFT + P", hl.dsp.dpms({ action = "off" }))
         hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
