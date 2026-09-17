@@ -84,6 +84,15 @@ echo "  present in .sops.yaml"
 
 echo
 echo "=== staging the files to plant ==="
+# --extra-files takes SOURCE and DEST as two separate arguments, and may be
+# repeated. Its own usage line:
+#
+#   --extra-files SOURCE DEST   Copy the specified file or directory from the
+#                               host into the NixOS configuration.
+#
+# Passing a single pre-built tree fails with "Option --extra-files requires
+# two arguments: source, destination", which is how the first attempt died.
+# disko copies with `cp -ar`, so the modes set here survive.
 EXTRA=$(mktemp -d)
 trap 'rm -rf "$EXTRA"' EXIT
 install -d -m 0755 "$EXTRA/etc/ssh"
@@ -116,7 +125,8 @@ set -x
 nix run "github:nix-community/disko/$DISKO_REV#disko-install" -- \
   --flake ".#$HOST" \
   --disk main "$REAL" \
-  --extra-files "$EXTRA"
+  --extra-files "$EXTRA/etc/ssh/ssh_host_ed25519_key" /etc/ssh/ssh_host_ed25519_key \
+  --extra-files "$EXTRA/etc/ssh/ssh_host_ed25519_key.pub" /etc/ssh/ssh_host_ed25519_key.pub
 set +x
 
 echo
