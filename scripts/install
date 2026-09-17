@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p coreutils util-linux gnugrep gnused ssh-to-age openssh
+#! nix-shell -i bash -p coreutils util-linux gnugrep gnused ssh-to-age openssh jq
 # Install a host onto a disk, with its identity already in place.
 #
 #   ./scripts/install hiyori /dev/disk/by-id/usb-...
@@ -99,9 +99,21 @@ if [ "$ENC" = "true" ]; then
   echo
 fi
 
+# The disko that formats the disk must be the disko that generated the layout.
+# Running github:nix-community/disko unpinned fetches whatever is current,
+# which can be months ahead of the module in flake.lock -- so the partitioning
+# tool and the partition description would come from different versions of the
+# same project. The revision is read back out of the lock instead.
+DISKO_REV=$(nix flake metadata --json 2>/dev/null | jq -r '.locks.nodes.disko.locked.rev')
+[ -n "$DISKO_REV" ] && [ "$DISKO_REV" != "null" ] || die "could not read the pinned disko revision from flake.lock"
+echo
 echo "=== installing ==="
+echo "  disko pinned at $DISKO_REV"
+if [ "$ENC" = "true" ]; then
+  echo "  a passphrase prompt is coming; it is asked once and not confirmed"
+fi
 set -x
-nix run "github:nix-community/disko#disko-install" -- \
+nix run "github:nix-community/disko/$DISKO_REV#disko-install" -- \
   --flake ".#$HOST" \
   --disk main "$REAL" \
   --extra-files "$EXTRA"
