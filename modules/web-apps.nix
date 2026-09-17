@@ -1,51 +1,5 @@
-# Web apps: a site that behaves like an application.
-#
-# Kamoi installs a page as a PWA and lists it in the omni bar under "PWA
-# apps". The desktop equivalent is Chromium's --app mode, which draws the page
-# with no tab strip, no address bar and no title bar, so Hyprland tiles it like
-# any other window. Verified on hiyori against chromium 153.
-#
-# Three things learned the hard way on this machine:
-#
-#   * --ozone-platform=wayland is required, spelled out. Neither
-#     NIXOS_OZONE_WL nor --ozone-platform-hint=auto was enough: a Hyprland
-#     session started before the variable existed passes its old environment
-#     to every child, and Chromium then picks X11 and exits with
-#     "Missing X server or $DISPLAY".
-#
-#   * Chromium logs "'--ozone-platform=wayland' is not compatible with Vulkan"
-#     and then runs anyway. The message is noise, not a failure.
-#
-#   * --class is IGNORED on Wayland. Chromium always derives the app_id from
-#     the URL, so the window class is chrome-<host>__-Default no matter what
-#     is passed. The host is therefore written out below and used for
-#     startupWMClass, rather than a name of our choosing.
-#
-# All apps share one profile on purpose: a separate --user-data-dir per app
-# would mean logging into Google once per app.
-#
-# An --app window has no chrome to reveal. Kamoi's Ctrl+L shows a hidden
-# address bar; this window never builds one, so it cannot be pointed elsewhere
-# through the interface. It is driven over the DevTools protocol instead,
-# which is how Kamoi drives page zoom.
-#
-# Every window therefore launches through `web-app`, which pins three things
-# the protocol depends on, all measured on hiyori:
-#
-#   * one shared --user-data-dir, so a second --app window JOINS the first
-#     browser and both appear on ONE CDP endpoint. Verified: two windows,
-#     two page targets, one endpoint.
-#
-#   * --remote-debugging-port=0, so Chromium picks a free port and writes it
-#     to <profile>/DevToolsActivePort. A random high port is a smaller target
-#     than the 9222 every tutorial scans, though it is still unauthenticated:
-#     any process running as this user can drive the browser. Chromium's
-#     --remote-debugging-pipe would close that hole, but it needs fd 3 and 4
-#     and Quickshell's Process exposes only stdin/stdout/stderr.
-#
-#   * the flag is passed on EVERY launch, not just the first. Whichever window
-#     starts the browser owns the port; later launches hand their arguments to
-#     the running instance and the flag is ignored.
+# Web apps: Chromium in --app mode, tiled as windows without browser chrome.
+# See docs/decisions/web-apps.md for Wayland flags, single-profile architecture, and CDP flags.
 {
   nixos.modules.desktop =
     { pkgs, ... }:

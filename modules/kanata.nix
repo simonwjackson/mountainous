@@ -1,37 +1,6 @@
 # Kanata: hardware-level keyboard remapping below the compositor.
-#
-# This is a port of the left home row from simonwjackson/zmk-config, so the
-# Corne and this laptop answer to the same fingers:
-#
-#   hold A -> DIR    arrows, and the way into PAG and FUN
-#   hold S -> NUM    a numpad under the right hand, and the way into SYM
-#   hold D -> WRP    bracket pairs, open and close side by side
-#   hold F -> CHK    backspace, tab, shift-tab, delete
-#   G       -> plain, exactly as on the Corne
-#
-# Left Alt and Left Meta are also swapped, which puts Hyprland's SUPER binds
-# on the key beside the spacebar.
-#
-# Remapping lives here rather than in Hyprland because timed hold layers and
-# key interception belong at the evdev/uinput layer, before keys reach Wayland.
-#
-# Three things about the port that are decisions, not transcription:
-#
-#   * Timings are per finger, copied from the Corne rather than flattened.
-#     ZMK's flavor = "balanced" means the hold wins early when another key is
-#     pressed AND released, which is exactly kanata's tap-hold-release.
-#     quick-tap-ms is kanata's tap-repress timeout, and require-prior-idle-ms
-#     has a direct equivalent.
-#
-#   * Rows 1 and 2 are identical between the Corne and a US laptop, so they
-#     port by letter. Row 3 is not: the Corne carries ", " on the left and "B"
-#     on the right. Row 3 therefore ports by POSITION, because a numpad whose
-#     1-2-3 are not adjacent is not a numpad. So Corne "M N B" becomes the
-#     laptop's "m , ." under the same three fingers.
-#
-#   * The Corne's KP_PLUS and KP_MULTIPLY are keypad codes, which need numlock
-#     to produce a character. The shifted main-row forms produce "+" and "*"
-#     unconditionally, so those are used instead.
+# Ports Corne home-row mods from simonwjackson/zmk-config.
+# See docs/decisions/kanata.md for layer layout, timings, and device regrab architecture.
 {
   nixos.modules.desktop =
     {

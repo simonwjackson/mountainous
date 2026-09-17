@@ -1,22 +1,6 @@
-# The laptop, on its own internal disk.
-#
-# This host exists before the machine does. It builds today, which proves the
-# desktop and the layers evaluate, and it deliberately cannot install today,
-# which is the safe half of that trade.
-#
-# Two facts are missing, and both are marked REPLACE below:
-#
-#   1. mountainous.disk.device -- the real drive, as a by-id path.
-#   2. a hardware layer, if the machine needs one.
-#
-# Nothing else should change when the laptop arrives. myoko and hiyori import
-# the same base and desktop, so the environment is the same setup by
-# construction rather than by copying.
-#
-# myoko needs no `portable` layer and no bootloader block. `base` already
-# defaults to systemd-boot with canTouchEfiVariables, which is exactly what a
-# machine that stays in one place wants. `portable` is the deviation from that
-# default, not the other way round.
+# Host myoko: primary laptop on its internal disk (aarch64).
+# Evaluates and builds now; installs once hardware arrives.
+# See docs/decisions/myoko.md for layering choices and placeholder guards.
 {
   nixos.hosts.myoko = {
     system = "aarch64-linux";
