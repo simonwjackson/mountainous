@@ -388,8 +388,17 @@
             },
 
             decoration = {
-                -- Kamoi draws no rounded corners, no blur, no shadows.
-                rounding = 0,
+                -- A deliberate departure from Kamoi, which draws square
+                -- corners. Blur and shadows stay off: those cost a pass over
+                -- every frame, and a radius costs nothing but a shader
+                -- branch already present.
+                --
+                -- 6 was chosen by photographing one window's corner at 0, 4,
+                -- 6, 8 and 12 on this panel rather than guessing. 4 is
+                -- invisible at 215 PPI, 12 reads as decorative. 6 is 9
+                -- physical pixels at scale 1.5, about a millimetre: enough to
+                -- look intended, not enough to notice.
+                rounding = 6,
                 blur   = { enabled = false },
                 shadow = { enabled = false },
             },
