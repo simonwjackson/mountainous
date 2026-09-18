@@ -34,6 +34,7 @@
           imports = [ "${modulesPath}/installer/netboot/netboot-minimal.nix" ];
 
           nixpkgs.hostPlatform = "aarch64-linux";
+          system.stateVersion = "26.11";
           networking.hostName = "myoko-probe";
 
           # The store lives in the initrd, so the UKI must carry that one
@@ -58,10 +59,55 @@
           networking.wireless.enable = lib.mkForce false;
           networking.networkmanager.enable = true;
 
+          # The point of mDNS here is that nobody has to read an address off a
+          # screen and type it somewhere else. Plug in wired ethernet and the
+          # machine is `myoko-probe.local` from the workstation, which is
+          # enough to drive the whole bring-up over SSH.
+          services.avahi = {
+            enable = true;
+            nssmdns4 = true;
+            publish = {
+              enable = true;
+              addresses = true;
+              workstation = true;
+            };
+          };
+
           # ZFS does not build against a 7.3 release candidate, and the
           # installer profile would otherwise drag it in. Nothing this image
           # reads is on a ZFS pool.
           boot.supportedFilesystems.zfs = lib.mkForce false;
+
+          # netboot-base sets hardware.enableAllHardware, which asks the initrd
+          # for every storage driver NixOS knows: 3ware RAID, Adaptec SAS, PCMCIA
+          # SCSI. The trimmed kernel does not build them, and a requested module
+          # that does not exist fails the build outright:
+          #
+          #   root module: 3w-9xxx
+          #   modprobe: FATAL: Module 3w-9xxx not found
+          #
+          # This image boots one known laptop, so it asks for that laptop's
+          # hardware instead of the world's.
+          hardware.enableAllHardware = lib.mkForce false;
+
+          # Same reasoning one level down: nixpkgs' default initrd list is
+          # written for x86 desktops and asks for ata_piix, ehci_pci and
+          # friends. None of them exist in a trimmed arm64 kernel.
+          boot.initrd.includeDefaultModules = false;
+          boot.swraid.enable = lib.mkForce false;
+
+          boot.initrd.availableKernelModules = [
+            "nvme"
+            "xhci_pci"
+            "xhci_hcd"
+            "usbhid"
+            "usb_storage"
+            "sd_mod"
+            "vfat"
+            "nls_cp437"
+            "nls_iso8859_1"
+            "hid_generic"
+          ];
 
           environment.systemPackages = with pkgs; [
             pciutils
@@ -73,6 +119,11 @@
           services.getty.helpLine = lib.mkAfter ''
 
             myoko probe. Nothing has been written to this laptop.
+
+            This console is the fallback. With a wired connection the machine
+            answers to myoko-probe.local and the work happens over SSH.
+
+              address: \4        (blank means no network yet)
 
             The question this image exists to answer:
 

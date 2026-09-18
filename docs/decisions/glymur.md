@@ -41,7 +41,7 @@ Extracted from the Windows driver store, and nowhere else to be found:
 | `qcadsp8480.mbn`, `adsp_dtbs.elf`, `adspr.jsn`, `adsps.jsn`, `adspua.jsn` | `qcsubsys_ext_adsp8480.inf` |
 | `qccdsp8480.mbn`, `cdsp_dtbs.elf` | `qcnspmcdm8480.inf` |
 
-Already upstream in `linux-firmware`, confirmed by byte-identical size: the GPU zap shader (`qcdxkmsuc8480.mbn`, 12,088 bytes, ships as `qcom/glymur/gen80100_zap.mbn`) and the video firmware (`qcvss8480.mbn`, 2,503,368 bytes, ships as `qcom/vpu/vpu36_p4_s7.mbn`).
+`linux-firmware` has Glymur GPU zap and video firmware at `qcom/glymur/gen80100_zap.mbn` and `qcom/vpu/vpu36_p4_s7.mbn`. Their sizes match the Windows files `qcdxkmsuc8480.mbn` and `qcvss8480.mbn`. A size match alone does not prove that the files are identical.
 
 Wi-Fi board data is in `qcwlanhmt8480.inf` and `qcwlancol8480.inf` as dozens of `bdwlan*` files. The ath12k board file for this laptop was still in review upstream in September 2026, so these are the raw material for building one.
 
@@ -56,10 +56,8 @@ HKR, LiveHandoff\SOCCP,"UefiLoadedImageTZProcID",%REG_DWORD%,0x33
 UEFI loads the SoC Control Processor and the OS performs a live handoff. Linux does the same. `glymur_soccp_resource` in `qcom_q6v5_pas.c` sets `.early_boot = true`, and probe reacts to that with `pas->rproc->state = RPROC_DETACHED` — the kernel adopts a processor the bootloader already started. The firmware names are only used to reload it after a crash, so their absence costs subsystem restart, not USB-C or charging.
 
 ## Do not erase the whole disk
-The laptop has one internal disk. Windows reports sixteen partitions on it, the first eleven small and of a type Windows does not recognise, sitting ahead of the 450 MB ESP: 1 MB, 16 MB, 1 MB, 1 MB, 70 MB, 120 MB, 120 MB, 1 MB, 1 MB, 1 MB, 512 MB. That is the Qualcomm firmware set, and the UEFI that boots this machine lives among it.
+The laptop has one internal disk. Windows reports sixteen partitions on it. The first eleven are small, use types Windows does not recognise, and sit before the 450 MB ESP: 1 MB, 16 MB, 1 MB, 1 MB, 70 MB, 120 MB, 120 MB, 1 MB, 1 MB, 1 MB, 512 MB.
 
-Linaro states the failure mode for exactly this layout: where firmware shares the disk with the OS, "if you allow the installer to erase the disk, your board will NO LONGER BOOT." Recovery means EDL mode and a vendor image.
+Qualcomm systems often store platform firmware in partitions like these. Linaro documents the failure mode when an installer erases such a disk: "if you allow the installer to erase the disk, your board will NO LONGER BOOT." We have not verified the names or contents of this machine's eleven partitions yet.
 
-So the install must keep partitions 1 to 11, reuse the existing ESP, and claim only the Windows partitions after it. `mountainous.disk` describes a whole drive and therefore cannot be used on this machine as written.
-
-Partition names are unverified at the time of writing: Windows only reports sizes and calls the type Unknown. Reading the real GPT labels is the first job of the probe image.
+The probe must read the real GPT labels before any install layout is written. Until then, preserve partitions 1 to 11 and avoid `mountainous.disk`, because it owns the whole partition table. Whether the final install reuses the existing ESP also depends on that inspection.
