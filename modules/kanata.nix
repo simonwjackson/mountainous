@@ -96,9 +96,9 @@
             m-sft  (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
             sl-ctl (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
 
-            ;; A keypress that reaches the system and means nothing, used to
-            ;; retire the arrow cluster. See the note at its use site for
-            ;; why this is not XX.
+            ;; A keypress that reaches the system and means nothing. It retires
+            ;; the arrow cluster and the four editing keys. See the notes at
+            ;; their use sites for why this is not XX.
             dead f24
           )
 
@@ -157,6 +157,27 @@
             down @dead
             up   @dead
             rght @dead
+
+            ;; The four editing keys are dead on the same principle as the
+            ;; arrow cluster: reaching for the key is the habit that stops the
+            ;; chord or the layer from ever becoming automatic. Each function
+            ;; keeps a channel, so nothing is lost:
+            ;;
+            ;;   Enter      press jk or kj
+            ;;   Escape     press kl or lk
+            ;;   Backspace  hold F, then h
+            ;;   Tab        hold F, then j  (shift-tab is hold F, then k)
+            ;;
+            ;; The chords and the CHK layer emit from kanata's own virtual
+            ;; keyboard, so this map never sees them and they still produce the
+            ;; real keys. The one consequence is at boot: the greetd password
+            ;; prompt takes Enter only from the jk chord.
+            ;;
+            ;; f24 and not XX, for the measured reason above.
+            esc  @dead
+            ret  @dead
+            tab  @dead
+            bspc @dead
           )
 
           ;; --------------------------------------------------------------
