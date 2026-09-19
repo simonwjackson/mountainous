@@ -32,6 +32,7 @@
             --remote-debugging-port=0 \
             --no-first-run \
             --no-default-browser-check \
+            --enable-features=TurnOffStreamingMediaCachingOnBattery,QuickIntensiveWakeUpThrottlingAfterLoading \
             "$@"
         '';
       };
