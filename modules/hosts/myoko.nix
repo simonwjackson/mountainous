@@ -47,15 +47,46 @@
           return 1
         }
 
+        state_file="/run/myoko-power-state"
+        prev_state=$(cat "$state_file" 2>/dev/null || echo "")
+        force=0
+        if [ "''${1:-}" = "--force" ]; then force=1; fi
+
         if is_ac; then
-          echo default > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
+          current_state="ac"
           target_mode="2880x1800@120"
         else
+          current_state="battery"
+          target_mode="2880x1800@60"
+        fi
+
+        if [ "$force" -eq 0 ] && [ "$current_state" = "$prev_state" ]; then
+          exit 0
+        fi
+
+        echo "$current_state" > "$state_file"
+
+        if [ "$current_state" = "ac" ]; then
+          echo default > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
+          # Restore full max frequencies on AC
+          for c in $(seq 0 5); do
+            [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 3609600 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
+          done
+          for c in $(seq 6 17); do
+            [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 4454400 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
+          done
+        else
           echo powersupersave > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
-          for d in /sys/bus/pci/devices/*; do
+          for d in /sys/bus/pci/devices/* /sys/bus/usb/devices/*; do
             [ -f "$d/power/control" ] && echo auto > "$d/power/control" 2>/dev/null || true
           done
-          target_mode="2880x1800@60"
+          # Cap max frequencies on battery to 2.4-2.5 GHz
+          for c in $(seq 0 5); do
+            [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 2496000 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
+          done
+          for c in $(seq 6 17); do
+            [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 2400000 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
+          done
         fi
 
         uid=$(${pkgs.coreutils}/bin/id -u simon 2>/dev/null || echo 1000)
@@ -175,11 +206,12 @@
       ];
 
       services.udev.extraRules = ''
-        # Enable runtime PM for all PCI devices (Wi-Fi 7 and NVMe endpoints)
+        # Enable runtime PM for all PCI and USB devices
         ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
+        ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="auto"
 
-        # Apply battery vs AC power profiles and display refresh rates on power events
-        SUBSYSTEM=="power_supply", RUN+="${myoko-power-sync}/bin/myoko-power-sync"
+        # Apply battery vs AC power profiles and display refresh rates only on AC/mains/USB status changes
+        ACTION=="change", SUBSYSTEM=="power_supply", KERNEL!="qcom-battmgr-bat", ENV{POWER_SUPPLY_ONLINE}!="", RUN+="${myoko-power-sync}/bin/myoko-power-sync"
       '';
 
       systemd.services.myoko-power-sync = {

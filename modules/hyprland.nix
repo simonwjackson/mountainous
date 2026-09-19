@@ -277,6 +277,9 @@
           for _ in {1..100}; do
             if [[ "$(systemctl --user show-environment)" == *HYPRLAND_INSTANCE_SIGNATURE=* ]]; then
               systemctl --user start hyprland-session.target
+              if command -v myoko-power-sync >/dev/null 2>&1; then
+                myoko-power-sync --force || true
+              fi
               exit 0
             fi
             sleep 0.1
