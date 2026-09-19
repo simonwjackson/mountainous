@@ -89,12 +89,17 @@
             ;; modifies.
             ;;
             ;; A wrong shift only capitalises a letter. A wrong control is
-            ;; worse, since Ctrl+W and Ctrl+C destroy work, so the slash
-            ;; takes the pinky's slower 280ms term rather than the 200ms
-            ;; the shifts use.
-            c-sft  (tap-hold-release $qt $t-shift c lsft (require-prior-idle $idle-shift))
-            m-sft  (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
-            sl-ctl (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
+            ;; worse, since Ctrl+W and Ctrl+C destroy work, so the control
+            ;; holds take the pinky's slower 280ms term rather than the
+            ;; 200ms the shifts use.
+            ;;
+            ;; The physical C key taps v and holds shift. The physical Left
+            ;; Shift key taps z and holds control. Both keep a modifier on
+            ;; the bottom row while its letters sit one key to the right.
+            c-sft    (tap-hold-release $qt $t-shift v lsft (require-prior-idle $idle-shift))
+            m-sft    (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
+            sl-ctl   (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
+            lsft-ctl (tap-hold-release $qt $t-pinky z lctl (require-prior-idle $idle-slow))
 
             ;; A keypress that reaches the system and means nothing. It retires
             ;; the arrow cluster and the four editing keys. See the notes at
@@ -126,15 +131,22 @@
             ;; Held space is the same SUPER that physical Left Alt emits.
             spc @spc-gui
 
+            ;; The bottom-row letters sit one key to the right of their
+            ;; labels: the physical Z key types x and the physical X key
+            ;; types c. The physical C key takes v and holds shift, and the
+            ;; physical Left Shift key takes z and holds control. Every
+            ;; letter on the row stays reachable.
+            z x
+            x c
+
             c @c-sft
             m @m-sft
             / @sl-ctl
 
-            ;; Left Shift becomes control outright, which is Kamoi's own
-            ;; rule: "use Left Shift as Left Ctrl". No tap-hold here, because
-            ;; a tap of Shift produces nothing to preserve. Shift itself now
-            ;; comes from held C, held M, or the right Shift key.
-            lsft lctl
+            ;; Left Shift taps z and holds Left Ctrl, which keeps Kamoi's
+            ;; rule that Left Shift acts as Left Ctrl. Shift itself comes
+            ;; from held C, held M, or the right Shift key.
+            lsft @lsft-ctl
 
             ;; The arrow cluster is dead on purpose. Reaching for it is the
             ;; habit that stops hold-A from ever becoming automatic, and a
