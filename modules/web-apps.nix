@@ -1,5 +1,11 @@
 # Web apps: Chromium in --app mode, tiled as windows without browser chrome.
 # See docs/decisions/web-apps.md for Wayland flags, single-profile architecture, and CDP flags.
+#
+# A web app is declared here and never installed through Chromium's own
+# Install button. The two paths draw different window frames: --app=<url>
+# produces a frameless window, while a Chromium-installed PWA (--app-id=<id>)
+# always draws Chromium's own client-side title bar. That choice is upstream
+# and there is no flag for it. See docs/decisions/web-apps.md.
 {
   nixos.modules.desktop =
     { pkgs, ... }:
@@ -47,6 +53,13 @@
           host = "music.youtube.com";
           letter = "M";
           tint = "#ff0033";
+        };
+        forgerie = {
+          name = "Forgerie";
+          url = "https://forgerie.hummingbird-lake.ts.net/";
+          host = "forgerie.hummingbird-lake.ts.net";
+          letter = "F";
+          tint = "#111214";
         };
       };
 
