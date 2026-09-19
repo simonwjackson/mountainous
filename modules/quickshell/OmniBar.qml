@@ -60,7 +60,7 @@ Scope {
         function toggle(): void { if (root.shown) root.shown = false; else root.enterRoot(); }
         function reveal(): void { root.enterRoot(); }
         function gotowindow(): void { root.enterMode("window"); }
-        function apps(): void { root.enterMode("app"); }
+        function apps(): void { root.enterRoot(); }
         function navigate(): void { root.enterNavigate(); }
         function dismiss(): void { root.shown = false; }
     }
@@ -97,9 +97,12 @@ Scope {
     readonly property var appRows: {
         const out = [];
         for (const e of DesktopEntries.applications.values) {
+            if (!e) continue;
+            const name = e.name && e.name !== "" ? e.name : (e.id || "");
+            if (name === "") continue;
             out.push({
                 kind: "app",
-                label: e.name,
+                label: name,
                 detail: e.genericName && e.genericName !== "" ? e.genericName : (e.comment || ""),
                 order: 0,
                 toplevel: null,
@@ -114,7 +117,6 @@ Scope {
         { kind: "cmd", label: "New terminal",          detail: "Super+N",           act: "term" },
         { kind: "cmd", label: "Go to address",         detail: "Ctrl+L",            act: "mode:nav" },
         { kind: "cmd", label: "Go to window",          detail: "mode",              act: "mode:window" },
-        { kind: "cmd", label: "Applications",          detail: "mode",              act: "mode:app" },
         { kind: "cmd", label: "Close window",          detail: "Super+C",           act: "close" },
         { kind: "cmd", label: "Monocle",               detail: "Super+M",           act: "monocle" },
         { kind: "cmd", label: "Zen",                   detail: "Super+Shift+M",     act: "zen" },
@@ -130,8 +132,9 @@ Scope {
     function matches(row, q) {
         if (q === "") return true;
         const needle = q.toLowerCase();
-        return row.label.toLowerCase().includes(needle)
-            || (row.detail || "").toLowerCase().includes(needle);
+        return (row.label || "").toLowerCase().includes(needle)
+            || (row.detail || "").toLowerCase().includes(needle)
+            || (row.entry && row.entry.id && row.entry.id.toLowerCase().includes(needle));
     }
 
     // Navigate mode shows the typed address as the actionable row, so
@@ -166,10 +169,11 @@ Scope {
         if (root.mode === "app")    return appRows.filter(function (r) { return matches(r, q); });
 
         // Root. Empty field leads with windows. Typing puts matching
-        // commands first and blends matching windows underneath.
+        // applications and commands first and blends matching windows underneath.
         const w = windowRows.filter(function (r) { return matches(r, q); });
+        const a = appRows.filter(function (r) { return matches(r, q); });
         const c = commandRows.filter(function (r) { return matches(r, q); });
-        return q === "" ? w.concat(c) : c.concat(w);
+        return q === "" ? w.concat(c).concat(a) : a.concat(c).concat(w);
     }
 
     //--------------------------------------------------------------
@@ -203,7 +207,7 @@ Scope {
         const a = row.act;
         if (a === "mode:nav")    { root.enterNavigate(); return; }
         if (a === "mode:window") { root.enterMode("window"); return; }
-        if (a === "mode:app")    { root.enterMode("app"); return; }
+        if (a === "mode:app")    { root.enterRoot(); return; }
 
         if (a === "term")            Quickshell.execDetached(["alacritty"]);
         else if (a === "close") {
