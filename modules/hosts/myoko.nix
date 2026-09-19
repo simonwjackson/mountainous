@@ -169,6 +169,11 @@
       # Enable power-profiles-daemon for userspace power management
       services.power-profiles-daemon.enable = true;
 
+      environment.systemPackages = [
+        myoko-power-sync
+        myoko-power-logger
+      ];
+
       services.udev.extraRules = ''
         # Enable runtime PM for all PCI devices (Wi-Fi 7 and NVMe endpoints)
         ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
