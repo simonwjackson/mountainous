@@ -19,9 +19,13 @@
       script = "setterm --blank 5";
       serviceConfig = {
         Type = "oneshot";
-        StandardInput = "tty";
+        # Do not wait to acquire tty1 from a running greetd during a switch.
+        # setterm only writes an escape sequence, so stdin needs no terminal.
+        StandardInput = "null";
         StandardOutput = "tty";
         TTYPath = "/dev/tty1";
+        RemainAfterExit = true;
+        TimeoutStartSec = 5;
       };
     };
 
