@@ -259,24 +259,62 @@ PCIe root ports 13.0, 13.1, 13.2, 13.3 report `retraining failed` on boot.
         ];
       };
 
-      hardware.bluetooth.enable = true;
+      hardware.bluetooth.enable = lib.mkDefault true;
       services.acpid.enable = true;
       services.thermald.enable = true;
 
       # Dual UEFI / BIOS boot capability for AMI Aptio firmware
-      boot.loader.systemd-boot.enable = false;
-      boot.loader.efi.canTouchEfiVariables = false;
+      boot.loader.systemd-boot.enable = lib.mkForce false;
+      boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
       boot.loader.grub = {
         enable = true;
         efiSupport = true;
         efiInstallAsRemovable = true;
-        device = "/dev/disk/by-id/mmc-CGND3R_0x96f945e3";
+        device = lib.mkDefault "/dev/disk/by-id/mmc-CGND3R_0x96f945e3";
       };
 
       environment.systemPackages = with pkgs; [
         pciutils
         usbutils
         ethtool
+      ];
+    };
+}
+```
+
+### Server Layer (`modules/server.nix`)
+```nix
+{
+  nixos.modules.server =
+    { lib, pkgs, ... }:
+    {
+      # A server must stay awake unattended.
+      systemd.targets.sleep.enable = lib.mkDefault false;
+      systemd.targets.suspend.enable = lib.mkDefault false;
+      systemd.targets.hibernate.enable = lib.mkDefault false;
+      systemd.targets.hybrid-sleep.enable = lib.mkDefault false;
+
+      services.logind.settings.Login = {
+        HandleLidSwitch = lib.mkDefault "ignore";
+        HandleLidSwitchDocked = lib.mkDefault "ignore";
+      };
+
+      boot.kernelParams = [ "consoleblank=300" ];
+      hardware.bluetooth.enable = lib.mkForce false;
+      mountainous.tailscale.routingFeatures = lib.mkDefault "both";
+
+      nix.gc = {
+        automatic = lib.mkDefault true;
+        dates = lib.mkDefault "weekly";
+        options = lib.mkDefault "--delete-older-than 14d";
+      };
+
+      environment.systemPackages = with pkgs; [
+        htop
+        tmux
+        curl
+        git
+        jq
       ];
     };
 }
@@ -289,9 +327,9 @@ PCIe root ports 13.0, 13.1, 13.2, 13.3 report `retraining failed` on boot.
     system = "x86_64-linux";
     layers = [
       "base"
-      "desktop"
       "disk"
       "gemini-lake"
+      "server"
     ];
 
     module = {

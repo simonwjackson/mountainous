@@ -44,7 +44,7 @@
 
       hardware.graphics = {
         enable = true;
-        enable32Bit = true;
+        enable32Bit = lib.mkDefault false;
         extraPackages = with pkgs; [
           intel-media-driver
           intel-vaapi-driver
@@ -52,7 +52,7 @@
         ];
       };
 
-      hardware.bluetooth.enable = true;
+      hardware.bluetooth.enable = lib.mkDefault true;
       services.acpid.enable = true;
       services.thermald.enable = true;
 

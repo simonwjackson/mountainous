@@ -1,6 +1,6 @@
 # Intel Gemini Lake desktop mini PC (Shenzhen CYX Technology Co., Ltd.).
 #
-# A fixed desktop install targeting the internal 64 GB Samsung eMMC 5.1 drive.
+# A fixed headless server install targeting the internal 64 GB Samsung eMMC 5.1 drive.
 #
 # Hardware profile: docs/research/tate-hardware.md
 {
@@ -8,9 +8,9 @@
     system = "x86_64-linux";
     layers = [
       "base"
-      "desktop"
       "disk"
       "gemini-lake"
+      "server"
     ];
 
     module = {
