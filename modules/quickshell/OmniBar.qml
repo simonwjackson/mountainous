@@ -126,6 +126,8 @@ Scope {
         { kind: "cmd", label: "Interface scale down",  detail: "Super+-",           act: "scaledown" },
         { kind: "cmd", label: "Interface scale 100%",  detail: "Super+0",           act: "scalereset" },
         { kind: "cmd", label: "Toggle bars",           detail: "Super+I",           act: "chrome" },
+        { kind: "cmd", label: "Dark appearance",        detail: "Super+D",           act: "theme:dark" },
+        { kind: "cmd", label: "Light appearance",       detail: "Super+D",           act: "theme:light" },
         { kind: "cmd", label: "Screenshot",            detail: "Super+S",           act: "shot" }
     ]
 
@@ -222,6 +224,8 @@ Scope {
         else if (a === "scaledown")  Quickshell.execDetached(["hypr-scale", "down"]);
         else if (a === "scalereset") Quickshell.execDetached(["hypr-scale", "reset"]);
         else if (a === "chrome")     Quickshell.execDetached(["qs", "-c", "mountainous", "ipc", "call", "chrome", "toggle"]);
+        else if (a === "theme:dark")   Quickshell.execDetached(["desktop-theme", "dark"]);
+        else if (a === "theme:light")  Quickshell.execDetached(["desktop-theme", "light"]);
         else if (a === "shot")       Quickshell.execDetached(["sh", "-c",
             "mkdir -p ~/Pictures/Screenshots && grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"]);
 
