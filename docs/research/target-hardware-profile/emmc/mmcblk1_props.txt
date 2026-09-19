@@ -1,0 +1,32 @@
+cid: 15010043474e4433520196f945e34200
+cmdq_en: 0
+csd: d02701320f5903fff6dbffef8e404000
+date: 04/2015
+dsr: 0x404
+enhanced_area_offset: 18446744073709551594
+enhanced_area_size: 4294967274
+enhanced_rpmb_supported: 0x0
+erase_size: 524288
+ffu_capable: 1
+fwrev: 0x0100000000000000
+hwrev: 0x0
+life_time: 0x01 0x01
+manfid: 0x000015
+name: CGND3R
+ocr: 0x00000080
+oemid: 0x0100
+pre_eol_info: 0x01
+preferred_erase_size: 4194304
+prv: 0x1
+raw_rpmb_size_mult: 0x20
+rca: 0x0001
+rel_sectors: 0x1
+removable: fixed
+rev: 0x7
+serial: 0x96f945e3
+type: MMC
+uevent: DRIVER=mmcblk
+MMC_TYPE=MMC
+MMC_NAME=CGND3R
+MODALIAS=mmc:block
+wp_grp_size: 8388608

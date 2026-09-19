@@ -1,0 +1,21 @@
+-[0000:00]-+-00.0  Intel Corporation Gemini Lake Host Bridge
+           +-00.1  Intel Corporation Celeron/Pentium Silver Processor Dynamic Platform and Thermal Framework Processor Participant
+           +-02.0  Intel Corporation GeminiLake [UHD Graphics 600]
+           +-0e.0  Intel Corporation Celeron/Pentium Silver Processor High Definition Audio
+           +-0f.0  Intel Corporation Celeron/Pentium Silver Processor Trusted Execution Engine Interface
+           +-12.0  Intel Corporation Celeron/Pentium Silver Processor SATA Controller
+           +-13.0-[01]--
+           +-13.1-[02]--
+           +-13.2-[03]--
+           +-13.3-[04]--
+           +-14.0-[05]----00.0  Realtek Semiconductor Co., Ltd. RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller
+           +-14.1-[06]----00.0  Intel Corporation Wireless 3165
+           +-15.0  Intel Corporation Celeron/Pentium Silver Processor USB 3.0 xHCI Controller
+           +-18.0  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.1  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.2  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.3  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-1c.0  Intel Corporation Celeron/Pentium Silver Processor SDA Standard Compliant SD Host Controller
+           +-1e.0  Intel Corporation Device 31d0
+           +-1f.0  Intel Corporation Celeron/Pentium Silver Processor LPC Controller
+           \-1f.1  Intel Corporation Celeron/Pentium Silver Processor Gaussian Mixture Model

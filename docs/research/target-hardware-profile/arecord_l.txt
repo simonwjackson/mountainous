@@ -1,0 +1,4 @@
+**** List of CAPTURE Hardware Devices ****
+card 0: PCH [HDA Intel PCH], device 0: ALC269VC Analog [ALC269VC Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0

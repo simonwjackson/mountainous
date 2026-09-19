@@ -1,0 +1,10 @@
+driver: iwlwifi
+version: 6.18.51
+firmware-version: 29.9ef079ed.0 7265D-29.ucode
+expansion-rom-version: 
+bus-info: 0000:06:00.0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no

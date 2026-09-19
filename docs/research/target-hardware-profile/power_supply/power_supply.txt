@@ -1,0 +1,26 @@
+power_supply ADP1:
+  online: 0
+  type: Mains
+  uevent: DEVTYPE=power_supply
+POWER_SUPPLY_NAME=ADP1
+POWER_SUPPLY_TYPE=Mains
+POWER_SUPPLY_ONLINE=0
+POWER_SUPPLY_TYPE=Mains
+power_supply hid-F0T9026020UJ1XLAX-battery:
+  capacity: 94
+  model_name: Apple Inc. Magic Keyboard
+  online: 1
+  present: 1
+  scope: Device
+  status: Charging
+  type: Battery
+  uevent: DEVTYPE=power_supply
+POWER_SUPPLY_NAME=hid-F0T9026020UJ1XLAX-battery
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_STATUS=Charging
+POWER_SUPPLY_PRESENT=1
+POWER_SUPPLY_ONLINE=1
+POWER_SUPPLY_CAPACITY=94
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_SCOPE=Device
+POWER_SUPPLY_MODEL_NAME=Apple Inc. Magic Keyboard

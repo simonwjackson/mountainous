@@ -1,0 +1,114 @@
+I: Bus=0019 Vendor=0000 Product=0006 Version=0000
+N: Name="Video Bus"
+P: Phys=LNXVIDEO/video/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/input/input0
+U: Uniq=
+H: Handlers=kbd event0 
+B: PROP=0
+B: EV=3
+B: KEY=3e000b00000000 0 0 0
+
+I: Bus=0003 Vendor=05ac Product=0267 Version=0110
+N: Name="Apple Inc. Magic Keyboard"
+P: Phys=usb-0000:00:15.0-2/input0
+S: Sysfs=/devices/pci0000:00/0000:00:15.0/usb1/1-2/1-2:1.0/0003:05AC:0267.0001/input/input1
+U: Uniq=F0T9026020UJ1XLAX
+H: Handlers=event1 
+B: PROP=0
+B: EV=13
+B: KEY=1 0 0 0 0
+B: MSC=10
+
+I: Bus=0003 Vendor=05ac Product=0267 Version=0110
+N: Name="Apple Inc. Magic Keyboard"
+P: Phys=usb-0000:00:15.0-2/input1
+S: Sysfs=/devices/pci0000:00/0000:00:15.0/usb1/1-2/1-2:1.1/0003:05AC:0267.0002/input/input2
+U: Uniq=F0T9026020UJ1XLAX
+H: Handlers=sysrq kbd leds event2 
+B: PROP=0
+B: EV=120013
+B: KEY=10000 0 0 0 101007b02011007 ff9f217ac14057ff ffbeffdfffefffff fffffffffffffffe
+B: MSC=10
+B: LED=1f
+
+I: Bus=0019 Vendor=0000 Product=0005 Version=0000
+N: Name="Lid Switch"
+P: Phys=PNP0C0D/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:03/PNP0C09:00/PNP0C0D:00/input/input3
+U: Uniq=
+H: Handlers=event3 
+B: PROP=0
+B: EV=21
+B: SW=1
+
+I: Bus=0019 Vendor=0000 Product=0001 Version=0000
+N: Name="Power Button"
+P: Phys=PNP0C0C/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input4
+U: Uniq=
+H: Handlers=kbd event4 
+B: PROP=0
+B: EV=3
+B: KEY=8000 10000000000000 0
+
+I: Bus=0001 Vendor=10ec Product=0269 Version=0001
+N: Name="HDA Digital PCBeep"
+P: Phys=card0/codec#0/beep0
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input5
+U: Uniq=
+H: Handlers=kbd event5 
+B: PROP=0
+B: EV=40001
+B: SND=6
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH Front Headphone"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input6
+U: Uniq=
+H: Handlers=event6 
+B: PROP=0
+B: EV=21
+B: SW=4
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=3"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input7
+U: Uniq=
+H: Handlers=event7 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=7"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input8
+U: Uniq=
+H: Handlers=event8 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=8"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input9
+U: Uniq=
+H: Handlers=event9 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0011 Vendor=0001 Product=0001 Version=0001
+N: Name="kanata"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input11
+U: Uniq=
+H: Handlers=sysrq kbd rfkill event10 mouse0 
+B: PROP=0
+B: EV=7
+B: KEY=ffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff fffffffffffffffe
+B: REL=1bff
+

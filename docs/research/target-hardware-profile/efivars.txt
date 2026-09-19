@@ -1,0 +1,1 @@
+ls: cannot access '/sys/firmware/efi/efivars/': No such file or directory

@@ -1,0 +1,13 @@
+affected_cpus: 0
+cpuinfo_avg_freq: 2396160
+cpuinfo_max_freq: 2500000
+cpuinfo_min_freq: 800000
+cpuinfo_transition_latency: 20000
+related_cpus: 0
+scaling_available_governors: performance schedutil 
+scaling_cur_freq: 2396160
+scaling_driver: intel_cpufreq
+scaling_governor: schedutil
+scaling_max_freq: 2500000
+scaling_min_freq: 800000
+scaling_setspeed: <unsupported>

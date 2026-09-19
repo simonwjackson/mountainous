@@ -1,0 +1,23 @@
+bios_date: 09/30/2019
+bios_release: 5.13
+bios_vendor: American Megatrends Inc.
+bios_version: 5.13
+board_asset_tag: Default string
+board_name: Default string
+board_serial: Default string
+board_vendor: Default string
+board_version: Default string
+chassis_asset_tag: Default string
+chassis_serial: Default string
+chassis_type: 3
+chassis_vendor: Default string
+chassis_version: Default string
+modalias: dmi:bvnAmericanMegatrendsInc.:bvr5.13:bd09/30/2019:br5.13:svnDefaultstring:pnDefaultstring:pvrDefaultstring:rvnDefaultstring:rnDefaultstring:rvrDefaultstring:cvnDefaultstring:ct3:cvrDefaultstring:skuDefaultstring:
+product_family: Default string
+product_name: Default string
+product_serial: Default string
+product_sku: Default string
+product_uuid: 03000200-0400-0500-0006-000700080009
+product_version: Default string
+sys_vendor: Default string
+uevent: MODALIAS=dmi:bvnAmericanMegatrendsInc.:bvr5.13:bd09/30/2019:br5.13:svnDefaultstring:pnDefaultstring:pvrDefaultstring:rvnDefaultstring:rnDefaultstring:rvrDefaultstring:cvnDefaultstring:ct3:cvrDefaultstring:skuDefaultstring:

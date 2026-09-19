@@ -1,0 +1,1 @@
+BOOT_IMAGE=(hd0,gpt2)//kernels/bas45p3nkp5vnhpav592a78a3bjivbr1-linux-6.18.51-bzImage init=/nix/store/76nbwf1wiiii2frjppznh0d9xd4qfb7c-nixos-system-hiyori-26.11.20260913.ef34387/init i915.fastboot=1 i915.enable_fbc=1 i915.enable_psr=2 video=eDP-1:2880x1800@60 root=fstab loglevel=4 lsm=landlock,yama,bpf

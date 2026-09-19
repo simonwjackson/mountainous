@@ -1,0 +1,12 @@
+Disk /dev/sda: 465.76 GiB, 500107862016 bytes, 976773168 sectors
+Disk model: USB 3.2.2 FD    
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disklabel type: gpt
+Disk identifier: E155C955-626C-4F6E-8943-5DC701858DA2
+
+Device       Start       End   Sectors   Size Type
+/dev/sda1     2048      4095      2048     1M BIOS boot
+/dev/sda2     4096   2101247   2097152     1G EFI System
+/dev/sda3  2101248 976773119 974671872 464.8G Linux filesystem

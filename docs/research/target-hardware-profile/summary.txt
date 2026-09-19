@@ -1,0 +1,905 @@
+Collecting hardware profile on hiyori at Sat Sep 19 11:00:17 PM UTC 2026...
+
+=== DMI / System Identity ===
+bios_date: 09/30/2019
+bios_release: 5.13
+bios_vendor: American Megatrends Inc.
+bios_version: 5.13
+board_asset_tag: Default string
+board_name: Default string
+board_serial: Default string
+board_vendor: Default string
+board_version: Default string
+chassis_asset_tag: Default string
+chassis_serial: Default string
+chassis_type: 3
+chassis_vendor: Default string
+chassis_version: Default string
+modalias: dmi:bvnAmericanMegatrendsInc.:bvr5.13:bd09/30/2019:br5.13:svnDefaultstring:pnDefaultstring:pvrDefaultstring:rvnDefaultstring:rnDefaultstring:rvrDefaultstring:cvnDefaultstring:ct3:cvrDefaultstring:skuDefaultstring:
+product_family: Default string
+product_name: Default string
+product_serial: Default string
+product_sku: Default string
+product_uuid: 03000200-0400-0500-0006-000700080009
+product_version: Default string
+sys_vendor: Default string
+uevent: MODALIAS=dmi:bvnAmericanMegatrendsInc.:bvr5.13:bd09/30/2019:br5.13:svnDefaultstring:pnDefaultstring:pvrDefaultstring:rvnDefaultstring:rnDefaultstring:rvrDefaultstring:cvnDefaultstring:ct3:cvrDefaultstring:skuDefaultstring:
+
+--- hostnamectl ---
+ Static hostname: hiyori
+       Icon name: computer-desktop
+         Chassis: desktop 🖥️
+      Machine ID: 0ff33443d0a849f1beeb9af24afef084
+         Boot ID: e939cae5014b4d1bba61e3f93f735e70
+    Product UUID: 03000200-0400-0500-0006-000700080009
+Operating System: NixOS 26.11 (Zokor)
+     CPE OS Name: cpe:/o:nixos:nixos:26.11
+          Kernel: Linux 6.18.51
+    Architecture: x86-64
+ Hardware Vendor: Default string
+  Hardware Model: Default string
+ Hardware Serial: Default string
+Firmware Version: 5.13
+   Firmware Date: Mon 2019-09-30
+    Firmware Age: 6y 11month 2w 6d
+
+--- dmidecode_system ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0001, DMI type 1, 27 bytes
+System Information
+	Manufacturer: Default string
+	Product Name: Default string
+	Version: Default string
+	Serial Number: Default string
+	UUID: 03000200-0400-0500-0006-000700080009
+	Wake-up Type: Power Switch
+	SKU Number: Default string
+	Family: Default string
+
+Handle 0x0022, DMI type 12, 5 bytes
+System Configuration Options
+	Option 1: Default string
+
+Handle 0x002D, DMI type 32, 20 bytes
+System Boot Information
+	Status: No errors detected
+
+
+--- dmidecode_bios ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0000, DMI type 0, 26 bytes
+Platform Firmware Information
+	Vendor: American Megatrends Inc.
+	Version: 5.13
+	Release Date: 09/30/2019
+	Address: 0xF0000
+	Runtime Size: 64 KiB
+	ROM Size: 5 MiB
+	Characteristics:
+		PCI is supported
+		Firmware is upgradeable
+		Firmware shadowing is allowed
+		Boot from CD is supported
+		Selectable boot is supported
+		Firmware ROM is socketed
+		EDD is supported
+		5.25"/1.2 MB floppy services are supported (int 13h)
+		3.5"/720 kB floppy services are supported (int 13h)
+		3.5"/2.88 MB floppy services are supported (int 13h)
+		Print screen service is supported (int 5h)
+		Serial services are supported (int 14h)
+  [... 40 total lines in dmidecode_bios.txt ...]
+
+--- dmidecode_baseboard ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0002, DMI type 2, 15 bytes
+Base Board Information
+	Manufacturer: Default string
+	Product Name: Default string
+	Version: Default string
+	Serial Number: Default string
+	Asset Tag: Default string
+	Features:
+		Board is a hosting board
+		Board is replaceable
+	Location In Chassis: Default string
+	Chassis Handle: 0x0003
+	Type: Motherboard
+	Contained Object Handles: 0
+
+Handle 0x0020, DMI type 10, 6 bytes
+On Board Device Information
+	Type: Video
+	Status: Enabled
+	Description:    To Be Filled By O.E.M.
+
+  [... 169 total lines in dmidecode_baseboard.txt ...]
+
+--- dmidecode_chassis ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0003, DMI type 3, 22 bytes
+Chassis Information
+	Manufacturer: Default string
+	Type: Desktop
+	Lock: Not Present
+	Version: Default string
+	Serial Number: Default string
+	Asset Tag: Default string
+	Boot-up State: Safe
+	Power Supply State: Safe
+	Thermal State: Safe
+	Security Status: None
+	OEM Information: 0x00000000
+	Height: Unspecified
+	Number Of Power Cords: 1
+	Contained Elements: 0
+	SKU Number: Default string
+
+
+--- dmidecode_full ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+Table at 0x000EA900.
+
+Handle 0x0000, DMI type 0, 26 bytes
+Platform Firmware Information
+	Vendor: American Megatrends Inc.
+	Version: 5.13
+	Release Date: 09/30/2019
+	Address: 0xF0000
+	Runtime Size: 64 KiB
+	ROM Size: 5 MiB
+	Characteristics:
+		PCI is supported
+		Firmware is upgradeable
+		Firmware shadowing is allowed
+		Boot from CD is supported
+		Selectable boot is supported
+		Firmware ROM is socketed
+		EDD is supported
+		5.25"/1.2 MB floppy services are supported (int 13h)
+		3.5"/720 kB floppy services are supported (int 13h)
+		3.5"/2.88 MB floppy services are supported (int 13h)
+		Print screen service is supported (int 5h)
+  [... 709 total lines in dmidecode_full.txt ...]
+
+=== Processor ===
+--- lscpu ---
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           39 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  4
+On-line CPU(s) list:                     0-3
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Celeron(R) J4105 CPU @ 1.50GHz
+CPU family:                              6
+Model:                                   122
+Thread(s) per core:                      1
+Core(s) per socket:                      4
+Socket(s):                               1
+Stepping:                                1
+Microcode version:                       0x42
+CPU(s) scaling MHz:                      96%
+CPU max MHz:                             2500.0000
+CPU min MHz:                             800.0000
+BogoMIPS:                                2995.20
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg cx16 xtpr pdcm sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave rdrand lahf_lm 3dnowprefetch cpuid_fault cat_l2 pti cdp_l2 ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust smep erms mpx rdt_a rdseed smap clflushopt intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts vnmi umip rdpid md_clear arch_capabilities
+Virtualization:                          VT-x
+L1d cache:                               96 KiB (4 instances)
+L1i cache:                               128 KiB (4 instances)
+L2 cache:                                4 MiB (1 instance)
+NUMA node(s):                            1
+  [... 45 total lines in lscpu.txt ...]
+
+affected_cpus: 0
+cpuinfo_avg_freq: 2396160
+cpuinfo_max_freq: 2500000
+cpuinfo_min_freq: 800000
+cpuinfo_transition_latency: 20000
+related_cpus: 0
+scaling_available_governors: performance schedutil 
+scaling_cur_freq: 2396160
+scaling_driver: intel_cpufreq
+scaling_governor: schedutil
+scaling_max_freq: 2500000
+scaling_min_freq: 800000
+scaling_setspeed: <unsupported>
+gather_data_sampling: Not affected
+ghostwrite: Not affected
+indirect_target_selection: Not affected
+itlb_multihit: Not affected
+l1tf: Not affected
+mds: Not affected
+meltdown: Mitigation: PTI
+mmio_stale_data: Not affected
+old_microcode: Not affected
+reg_file_data_sampling: Mitigation: Clear Register File
+retbleed: Not affected
+spec_rstack_overflow: Not affected
+spec_store_bypass: Mitigation: Speculative Store Bypass disabled via prctl
+spectre_v1: Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+spectre_v2: Mitigation: Enhanced / Automatic IBRS; IBPB: conditional; PBRSB-eIBRS: Not affected; BHI: SW loop, KVM: SW loop
+srbds: Not affected
+tsa: Not affected
+tsx_async_abort: Not affected
+vmscape: Not affected
+=== Memory ===
+--- free ---
+               total        used        free      shared  buff/cache   available
+Mem:           3.6Gi       1.0Gi       1.4Gi       248Mi       1.7Gi       2.7Gi
+Swap:             0B          0B          0B
+
+--- dmidecode_memory ---
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0023, DMI type 16, 23 bytes
+Physical Memory Array
+	Location: System Board Or Motherboard
+	Use: System Memory
+	Error Correction Type: None
+	Maximum Capacity: 64 GiB
+	Error Information Handle: Not Provided
+	Number Of Devices: 4
+
+Handle 0x0025, DMI type 17, 84 bytes
+Memory Device
+	Array Handle: 0x0023
+	Error Information Handle: Not Provided
+	Total Width: 16 bits
+	Data Width: 16 bits
+	Size: 2 GiB
+	Form Factor: DIMM
+	Set: None
+	Locator: A1_DIMM0
+	Bank Locator: A1_BANK0
+	Type: LPDDR4
+  [... 111 total lines in dmidecode_memory.txt ...]
+
+=== PCI Devices ===
+--- lspci_brief ---
+00:00.0 Host bridge [0600]: Intel Corporation Gemini Lake Host Bridge [8086:31f0] (rev 03)
+00:00.1 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Dynamic Platform and Thermal Framework Processor Participant [8086:318c] (rev 03)
+00:02.0 VGA compatible controller [0300]: Intel Corporation GeminiLake [UHD Graphics 600] [8086:3185] (rev 03)
+00:0e.0 Audio device [0403]: Intel Corporation Celeron/Pentium Silver Processor High Definition Audio [8086:3198] (rev 03)
+00:0f.0 Communication controller [0780]: Intel Corporation Celeron/Pentium Silver Processor Trusted Execution Engine Interface [8086:319a] (rev 03)
+00:12.0 SATA controller [0106]: Intel Corporation Celeron/Pentium Silver Processor SATA Controller [8086:31e3] (rev 03)
+00:13.0 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31d8] (rev f3)
+00:13.1 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31d9] (rev f3)
+00:13.2 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31da] (rev f3)
+00:13.3 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31db] (rev f3)
+00:14.0 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31d6] (rev f3)
+00:14.1 PCI bridge [0604]: Intel Corporation Gemini Lake PCI Express Root Port [8086:31d7] (rev f3)
+00:15.0 USB controller [0c03]: Intel Corporation Celeron/Pentium Silver Processor USB 3.0 xHCI Controller [8086:31a8] (rev 03)
+00:18.0 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller [8086:31bc] (rev 03)
+00:18.1 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller [8086:31be] (rev 03)
+00:18.2 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller [8086:31c0] (rev 03)
+00:18.3 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller [8086:31ee] (rev 03)
+00:1c.0 SD Host controller [0805]: Intel Corporation Celeron/Pentium Silver Processor SDA Standard Compliant SD Host Controller [8086:31cc] (rev 03)
+00:1e.0 SD Host controller [0805]: Intel Corporation Device [8086:31d0] (rev 03)
+00:1f.0 ISA bridge [0601]: Intel Corporation Celeron/Pentium Silver Processor LPC Controller [8086:31e8] (rev 03)
+00:1f.1 SMBus [0c05]: Intel Corporation Celeron/Pentium Silver Processor Gaussian Mixture Model [8086:31d4] (rev 03)
+05:00.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller [10ec:8168] (rev 07)
+06:00.0 Network controller [0280]: Intel Corporation Wireless 3165 [8086:3165] (rev 91)
+
+--- lspci_tree ---
+-[0000:00]-+-00.0  Intel Corporation Gemini Lake Host Bridge
+           +-00.1  Intel Corporation Celeron/Pentium Silver Processor Dynamic Platform and Thermal Framework Processor Participant
+           +-02.0  Intel Corporation GeminiLake [UHD Graphics 600]
+           +-0e.0  Intel Corporation Celeron/Pentium Silver Processor High Definition Audio
+           +-0f.0  Intel Corporation Celeron/Pentium Silver Processor Trusted Execution Engine Interface
+           +-12.0  Intel Corporation Celeron/Pentium Silver Processor SATA Controller
+           +-13.0-[01]--
+           +-13.1-[02]--
+           +-13.2-[03]--
+           +-13.3-[04]--
+           +-14.0-[05]----00.0  Realtek Semiconductor Co., Ltd. RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller
+           +-14.1-[06]----00.0  Intel Corporation Wireless 3165
+           +-15.0  Intel Corporation Celeron/Pentium Silver Processor USB 3.0 xHCI Controller
+           +-18.0  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.1  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.2  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-18.3  Intel Corporation Celeron/Pentium Silver Processor Serial IO UART Host Controller
+           +-1c.0  Intel Corporation Celeron/Pentium Silver Processor SDA Standard Compliant SD Host Controller
+           +-1e.0  Intel Corporation Device 31d0
+           +-1f.0  Intel Corporation Celeron/Pentium Silver Processor LPC Controller
+           \-1f.1  Intel Corporation Celeron/Pentium Silver Processor Gaussian Mixture Model
+
+--- lspci_verbose ---
+00:00.0 Host bridge [0600]: Intel Corporation Gemini Lake Host Bridge [8086:31f0] (rev 03)
+	DeviceName: Onboard - Other
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0
+
+00:00.1 Signal processing controller [1180]: Intel Corporation Celeron/Pentium Silver Processor Dynamic Platform and Thermal Framework Processor Participant [8086:318c] (rev 03)
+	DeviceName: Onboard - Other
+	Subsystem: Intel Corporation Device [8086:7270]
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx+
+	Latency: 0
+	Interrupts: pin C routed to IRQ 24
+	Region 0: Memory at 80000000 (64-bit, non-prefetchable) [size=32K]
+	Capabilities: [d0] Power Management version 3
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [e0] Vendor Specific Information: Intel Capabilities v1
+		CapA: Peg60Dis- Peg12Dis- Peg11Dis- Peg10Dis- PeLWUDis- DmiWidth=x4
+		      EccDis- ForceEccEn- VTdDis- DmiG2Dis- PegG2Dis- DDRMaxSize=Unlimited
+		      1NDis- CDDis- DDPCDis- X2APICEn- PDCDis- IGDis- CDID=0 CRID=0
+		      DDROCCAP- OCEn- DDRWrtVrefEn- DDR3LEn-
+		CapB: ImguDis+ OCbySSKUCap- OCbySSKUEn- SMTCap- CacheSzCap 0x0
+		      SoftBinCap- DDR3MaxFreqWithRef100=Disabled PegG3Dis-
+		      PkgTyp- AddGfxEn- AddGfxCap- PegX16Dis- DmiG3Dis- GmmDis-
+  [... 843 total lines in lspci_verbose.txt ...]
+
+=== USB Devices ===
+--- lsusb ---
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 002: ID 0bda:0129 Realtek Semiconductor Corp. RTS5129 Card Reader Controller
+Bus 001 Device 003: ID 8087:0a2a Intel Corp. Bluetooth wireless interface
+Bus 001 Device 004: ID 05ac:0267 Apple, Inc. Magic Keyboard A1644
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 002: ID 154b:1007 PNY USB 3.2.2 FD
+
+--- lsusb_tree ---
+/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/9p, 480M
+    |__ Port 002: Dev 004, If 0, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 002: Dev 004, If 1, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 002: Dev 004, If 2, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 003: Dev 002, If 0, Class=Vendor Specific Class, Driver=rtsx_usb, 480M
+    |__ Port 004: Dev 003, If 0, Class=Wireless, Driver=btusb, 12M
+    |__ Port 004: Dev 003, If 1, Class=Wireless, Driver=btusb, 12M
+/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/7p, 5000M
+    |__ Port 001: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
+
+--- lsusb_verbose ---
+
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Negotiated speed: High Speed (480Mbps)
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass            9 Hub
+  bDeviceSubClass         0 [unknown]
+  bDeviceProtocol         1 Single TT
+  bMaxPacketSize0        64
+  idVendor           0x1d6b Linux Foundation
+  idProduct          0x0002 2.0 root hub
+  bcdDevice            6.18
+  iManufacturer           3 Linux 6.18.51 xhci-hcd
+  iProduct                2 xHCI Host Controller
+  iSerial                 1 0000:00:15.0
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength       0x0019
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0 
+  [... 779 total lines in lsusb_verbose.txt ...]
+
+=== Storage & Block Devices ===
+--- lsblk_tree ---
+NAME                 KNAME          SIZE TYPE  FSTYPE      LABEL PARTLABEL      UUID                                 PARTUUID                             MOUNTPOINTS ROTA TRAN MODEL        VENDOR    REV
+sda                  sda          465.8G disk                                                                                                                            0 usb  USB 3.2.2 FD PNY      PMAP
+├─sda1               sda1             1M part                    disk-main-bios                                      1046bc17-9168-4db8-80ed-463a5a1c927c                0                            
+├─sda2               sda2             1G part  vfat              disk-main-ESP  12CE-A600                            e982d963-22c4-4f35-b7cc-bc6c9b8287ad /boot          0                            
+└─sda3               sda3         464.8G part  crypto_LUKS       disk-main-root 774f8781-132a-4d62-92cb-6c730ec97faa 061d5725-d047-4cc2-8db4-40a4c09d7125                0                            
+  └─mountainous-root dm-0         464.7G crypt btrfs                            3fe7639b-d4dd-44e6-a193-32291b1b7c30                                      /home          0                            
+                                                                                                                                                          /nix/store                                  
+                                                                                                                                                          /nix                                        
+                                                                                                                                                          /                                           
+mmcblk1              mmcblk1       58.2G disk                                                                                                                            0 mmc                         0x7
+mmcblk1boot0         mmcblk1boot0     4M disk                                                                                                                            0 mmc                        
+mmcblk1boot1         mmcblk1boot1     4M disk                                                                                                                            0 mmc                        
+
+--- lsblk_json ---
+{
+   "blockdevices": [
+      {
+         "name": "sda",
+         "kname": "sda",
+         "size": "465.8G",
+         "type": "disk",
+         "fstype": null,
+         "label": null,
+         "partlabel": null,
+         "uuid": null,
+         "partuuid": null,
+         "mountpoints": [],
+         "rota": false,
+         "tran": "usb",
+         "model": "USB 3.2.2 FD",
+         "vendor": "PNY     ",
+         "rev": "PMAP",
+         "children": [
+            {
+               "name": "sda1",
+               "kname": "sda1",
+               "size": "1M",
+               "type": "part",
+               "fstype": null,
+  [... 143 total lines in lsblk_json.txt ...]
+
+--- fdisk_mmcblk1 ---
+Disk /dev/mmcblk1: 58.24 GiB, 62537072640 bytes, 122142720 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0xfbde8b48
+
+--- fdisk_sda ---
+Disk /dev/sda: 465.76 GiB, 500107862016 bytes, 976773168 sectors
+Disk model: USB 3.2.2 FD    
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+Disklabel type: gpt
+Disk identifier: E155C955-626C-4F6E-8943-5DC701858DA2
+
+Device       Start       End   Sectors   Size Type
+/dev/sda1     2048      4095      2048     1M BIOS boot
+/dev/sda2     4096   2101247   2097152     1G EFI System
+/dev/sda3  2101248 976773119 974671872 464.8G Linux filesystem
+
+--- findmnt ---
+TARGET                                    SOURCE                                    FSTYPE      OPTIONS
+/                                         /dev/mapper/mountainous-root[/@]          btrfs       rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvolid=256,subvol=/@
+/run                                      tmpfs                                     tmpfs       rw,nosuid,nodev,size=956452k,nr_inodes=819200,mode=755
+/nix                                      /dev/mapper/mountainous-root[/@nix]       btrfs       rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvolid=258,subvol=/@nix
+/dev                                      devtmpfs                                  devtmpfs    rw,nosuid,size=191292k,nr_inodes=470963,mode=755
+/dev/pts                                  devpts                                    devpts      rw,nosuid,noexec,relatime,gid=3,mode=620,ptmxmode=666
+/dev/shm                                  tmpfs                                     tmpfs       rw,nosuid,nodev,size=1912904k
+/proc                                     proc                                      proc        rw,nosuid,nodev,noexec,relatime
+/run/keys                                 ramfs                                     ramfs       rw,nosuid,nodev,relatime,mode=750
+/sys                                      sysfs                                     sysfs       rw,nosuid,nodev,noexec,relatime
+/nix/store                                /dev/mapper/mountainous-root[/@nix/store] btrfs       ro,nosuid,nodev,noatime,compress=zstd:1,ssd,space_cache=v2,subvolid=258,subvol=/@nix
+/run/secrets-for-users.d                  none                                      ramfs       rw,nosuid,nodev,noexec,relatime,mode=751
+/run/secrets.d                            none                                      ramfs       rw,nosuid,nodev,noexec,relatime,mode=751
+/sys/kernel/security                      securityfs                                securityfs  rw,nosuid,nodev,noexec,relatime
+/sys/fs/cgroup                            cgroup2                                   cgroup2     rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot,memory_hugetlb_accounting
+/sys/fs/pstore                            none                                      pstore      rw,nosuid,nodev,noexec,relatime
+/sys/fs/bpf                               bpf                                       bpf         rw,nosuid,nodev,noexec,relatime,mode=700
+/dev/mqueue                               mqueue                                    mqueue      rw,nosuid,nodev,noexec,relatime
+/sys/kernel/debug                         debugfs                                   debugfs     rw,nosuid,nodev,noexec,relatime
+/sys/kernel/tracing                       tracefs                                   tracefs     rw,nosuid,nodev,noexec,relatime
+/dev/hugepages                            hugetlbfs                                 hugetlbfs   rw,nosuid,nodev,relatime,pagesize=2M
+/run/credentials/systemd-journald.service none                                      tmpfs       ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap
+/sys/fs/fuse/connections                  fusectl                                   fusectl     rw,nosuid,nodev,noexec,relatime
+/sys/kernel/config                        configfs                                  configfs    rw,nosuid,nodev,noexec,relatime
+/home                                     /dev/mapper/mountainous-root[/@home]      btrfs       rw,noatime,compress=zstd:1,ssd,space_cache=v2,subvolid=257,subvol=/@home
+  [... 31 total lines in findmnt.txt ...]
+
+cid: 15010043474e4433520196f945e34200
+cmdq_en: 0
+csd: d02701320f5903fff6dbffef8e404000
+date: 04/2015
+dsr: 0x404
+enhanced_area_offset: 18446744073709551594
+enhanced_area_size: 4294967274
+enhanced_rpmb_supported: 0x0
+erase_size: 524288
+ffu_capable: 1
+fwrev: 0x0100000000000000
+hwrev: 0x0
+life_time: 0x01 0x01
+manfid: 0x000015
+name: CGND3R
+ocr: 0x00000080
+oemid: 0x0100
+pre_eol_info: 0x01
+preferred_erase_size: 4194304
+prv: 0x1
+raw_rpmb_size_mult: 0x20
+rca: 0x0001
+rel_sectors: 0x1
+removable: fixed
+rev: 0x7
+serial: 0x96f945e3
+type: MMC
+uevent: DRIVER=mmcblk
+MMC_TYPE=MMC
+MMC_NAME=CGND3R
+MODALIAS=mmc:block
+wp_grp_size: 8388608
+=== Graphics & DRM ===
+--- dri_nodes ---
+total 0
+drwxr-xr-x   3 root root        100 Mar 17  2026 .
+drwxr-xr-x  19 root root       3680 Dec 31  2011 ..
+drwxr-xr-x   2 root root         80 Dec 31  2011 by-path
+crw-rw----+  1 root video  226,   0 Dec 31  2011 card0
+crw-rw-rw-   1 root render 226, 128 Sep 17 02:32 renderD128
+
+card0:
+card0-DP-1:
+  status: disconnected
+  enabled: disabled
+  modes: 
+card0-HDMI-A-1:
+  status: disconnected
+  enabled: disabled
+  modes: 
+card0-HDMI-A-2:
+  status: connected
+  enabled: enabled
+  modes: 2880x1800 2560x1600 2560x1600 2560x1440 2560x1440 1920x1200 1920x1200 1920x1080 1920x1080 1920x1080 1920x1080 1920x1080 1920x1080 1600x900 1280x1024 1280x960 1280x800 1280x720 1280x720 1280x720 1280x720 1280x720 1280x720 1024x768 800x600 720x480 720x480 640x480 640x480 640x480 
+renderD128:
+=== Audio ===
+--- aplay_l ---
+**** List of PLAYBACK Hardware Devices ****
+card 0: PCH [HDA Intel PCH], device 0: ALC269VC Analog [ALC269VC Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: PCH [HDA Intel PCH], device 3: HDMI 0 [EM160TP-A]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: PCH [HDA Intel PCH], device 7: HDMI 1 [HDMI 1]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: PCH [HDA Intel PCH], device 8: HDMI 2 [HDMI 2]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+--- arecord_l ---
+**** List of CAPTURE Hardware Devices ****
+card 0: PCH [HDA Intel PCH], device 0: ALC269VC Analog [ALC269VC Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+=== Network Interfaces ===
+--- ip_addr ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 promiscuity 0 allmulti 0 minmtu 0 maxmtu 0 netns-immutable numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 524280 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: wlp6s0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether 6e:e0:4a:fc:24:81 brd ff:ff:ff:ff:ff:ff permaddr 50:eb:71:4d:e3:29 promiscuity 0 allmulti 0 minmtu 256 maxmtu 2304 netns-immutable numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:06:00.0 
+    altname wlx50eb714de329
+3: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 68:1d:ef:18:a2:e1 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 9194 numtxqueues 1 numrxqueues 1 gso_max_size 64000 gso_max_segs 64 tso_max_size 64000 tso_max_segs 64 gro_max_size 65536 gso_ipv4_max_size 64000 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:05:00.0 
+    altname enx681def18a2e1
+    inet 192.168.1.189/24 brd 192.168.1.255 scope global dynamic noprefixroute enp5s0
+       valid_lft 42151sec preferred_lft 42151sec
+    inet6 2605:b40:1524:e800::71f/128 scope global dynamic noprefixroute 
+       valid_lft 77515sec preferred_lft 77515sec
+    inet6 2605:b40:1524:e800:193d:dfdb:e7c3:a57/64 scope global temporary dynamic 
+       valid_lft 77514sec preferred_lft 77514sec
+    inet6 2605:b40:1524:e800:e1c6:bdcf:db3b:fd23/64 scope global dynamic mngtmpaddr noprefixroute 
+       valid_lft 77514sec preferred_lft 77514sec
+    inet6 fe80::616f:babd:f0b7:bc83/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+4: tailscale0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1280 qdisc fq_codel state UNKNOWN group default qlen 500
+    link/none  promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 
+    tun type tun pi off vnet_hdr on persist off numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+  [... 31 total lines in ip_addr.txt ...]
+
+--- ip_link ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 promiscuity 0 allmulti 0 minmtu 0 maxmtu 0 netns-immutable addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 524280 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+2: wlp6s0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN mode DORMANT group default qlen 1000
+    link/ether 6e:e0:4a:fc:24:81 brd ff:ff:ff:ff:ff:ff permaddr 50:eb:71:4d:e3:29 promiscuity 0 allmulti 0 minmtu 256 maxmtu 2304 netns-immutable addrgenmode none numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:06:00.0 
+    altname wlx50eb714de329
+3: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 68:1d:ef:18:a2:e1 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 9194 addrgenmode none numtxqueues 1 numrxqueues 1 gso_max_size 64000 gso_max_segs 64 tso_max_size 64000 tso_max_segs 64 gro_max_size 65536 gso_ipv4_max_size 64000 gro_ipv4_max_size 65536 parentbus pci parentdev 0000:05:00.0 
+    altname enx681def18a2e1
+4: tailscale0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1280 qdisc fq_codel state UNKNOWN mode DEFAULT group default qlen 500
+    link/none  promiscuity 0 allmulti 0 minmtu 68 maxmtu 65535 
+    tun type tun pi off vnet_hdr on persist off addrgenmode random numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+
+--- ip_route ---
+default via 192.168.1.1 dev enp5s0 proto dhcp src 192.168.1.189 metric 100 
+192.168.1.0/24 dev enp5s0 proto kernel scope link src 192.168.1.189 metric 100 
+
+--- rfkill ---
+0: hci0: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
+1: phy0: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+
+--- ethtool_wlp6s0 ---
+Settings for wlp6s0:
+	Link detected: no
+
+--- ethtool_driver_wlp6s0 ---
+driver: iwlwifi
+version: 6.18.51
+firmware-version: 29.9ef079ed.0 7265D-29.ucode
+expansion-rom-version: 
+bus-info: 0000:06:00.0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no
+
+--- ethtool_enp5s0 ---
+Settings for enp5s0:
+	Supported ports: [ TP	 MII ]
+	Supported link modes:   10baseT/Half 10baseT/Full
+	                        100baseT/Half 100baseT/Full
+	                        1000baseT/Half 1000baseT/Full
+	Supported pause frame use: Symmetric Receive-only
+	Supports auto-negotiation: Yes
+	Supported FEC modes: Not reported
+	Advertised link modes:  10baseT/Half 10baseT/Full
+	                        100baseT/Half 100baseT/Full
+	                        1000baseT/Half 1000baseT/Full
+	Advertised pause frame use: Symmetric Receive-only
+	Advertised auto-negotiation: Yes
+	Advertised FEC modes: Not reported
+	Link partner advertised link modes:  10baseT/Half 10baseT/Full
+	                                     100baseT/Half 100baseT/Full
+	                                     1000baseT/Full
+	Link partner advertised pause frame use: No
+	Link partner advertised auto-negotiation: Yes
+	Link partner advertised FEC modes: Not reported
+	Speed: 1000Mb/s
+	Duplex: Full
+	Auto-negotiation: on
+	master-slave cfg: preferred slave
+	master-slave status: slave
+  [... 32 total lines in ethtool_enp5s0.txt ...]
+
+--- ethtool_driver_enp5s0 ---
+driver: r8169
+version: 6.18.51
+firmware-version: rtl8168e-3_0.0.4 03/27/12
+expansion-rom-version: 
+bus-info: 0000:05:00.0
+supports-statistics: yes
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: yes
+supports-priv-flags: no
+
+--- ethtool_tailscale0 ---
+Settings for tailscale0:
+	Supported ports: [  ]
+	Supported link modes:   Not reported
+	Supported pause frame use: No
+	Supports auto-negotiation: No
+	Supported FEC modes: Not reported
+	Advertised link modes:  Not reported
+	Advertised pause frame use: No
+	Advertised auto-negotiation: No
+	Advertised FEC modes: Not reported
+	Speed: Unknown!
+	Duplex: Full
+	Auto-negotiation: off
+	Port: Twisted Pair
+	PHYAD: 0
+	Transceiver: internal
+	MDI-X: Unknown
+        Current message level: 0x00000000 (0)
+                              
+	Link detected: yes
+
+--- ethtool_driver_tailscale0 ---
+driver: tun
+version: 1.6
+firmware-version: 
+expansion-rom-version: 
+bus-info: tun
+supports-statistics: no
+supports-test: no
+supports-eeprom-access: no
+supports-register-dump: no
+supports-priv-flags: no
+
+=== Input Devices ===
+I: Bus=0019 Vendor=0000 Product=0006 Version=0000
+N: Name="Video Bus"
+P: Phys=LNXVIDEO/video/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/input/input0
+U: Uniq=
+H: Handlers=kbd event0 
+B: PROP=0
+B: EV=3
+B: KEY=3e000b00000000 0 0 0
+
+I: Bus=0003 Vendor=05ac Product=0267 Version=0110
+N: Name="Apple Inc. Magic Keyboard"
+P: Phys=usb-0000:00:15.0-2/input0
+S: Sysfs=/devices/pci0000:00/0000:00:15.0/usb1/1-2/1-2:1.0/0003:05AC:0267.0001/input/input1
+U: Uniq=F0T9026020UJ1XLAX
+H: Handlers=event1 
+B: PROP=0
+B: EV=13
+B: KEY=1 0 0 0 0
+B: MSC=10
+
+I: Bus=0003 Vendor=05ac Product=0267 Version=0110
+N: Name="Apple Inc. Magic Keyboard"
+P: Phys=usb-0000:00:15.0-2/input1
+S: Sysfs=/devices/pci0000:00/0000:00:15.0/usb1/1-2/1-2:1.1/0003:05AC:0267.0002/input/input2
+U: Uniq=F0T9026020UJ1XLAX
+H: Handlers=sysrq kbd leds event2 
+B: PROP=0
+B: EV=120013
+B: KEY=10000 0 0 0 101007b02011007 ff9f217ac14057ff ffbeffdfffefffff fffffffffffffffe
+B: MSC=10
+B: LED=1f
+
+I: Bus=0019 Vendor=0000 Product=0005 Version=0000
+N: Name="Lid Switch"
+P: Phys=PNP0C0D/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:03/PNP0C09:00/PNP0C0D:00/input/input3
+U: Uniq=
+H: Handlers=event3 
+B: PROP=0
+B: EV=21
+B: SW=1
+
+I: Bus=0019 Vendor=0000 Product=0001 Version=0000
+N: Name="Power Button"
+P: Phys=PNP0C0C/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input4
+U: Uniq=
+H: Handlers=kbd event4 
+B: PROP=0
+B: EV=3
+B: KEY=8000 10000000000000 0
+
+I: Bus=0001 Vendor=10ec Product=0269 Version=0001
+N: Name="HDA Digital PCBeep"
+P: Phys=card0/codec#0/beep0
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input5
+U: Uniq=
+H: Handlers=kbd event5 
+B: PROP=0
+B: EV=40001
+B: SND=6
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH Front Headphone"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input6
+U: Uniq=
+H: Handlers=event6 
+B: PROP=0
+B: EV=21
+B: SW=4
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=3"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input7
+U: Uniq=
+H: Handlers=event7 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=7"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input8
+U: Uniq=
+H: Handlers=event8 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="HDA Intel PCH HDMI/DP,pcm=8"
+P: Phys=ALSA
+S: Sysfs=/devices/pci0000:00/0000:00:0e.0/sound/card0/input9
+U: Uniq=
+H: Handlers=event9 
+B: PROP=0
+B: EV=21
+B: SW=140
+
+I: Bus=0011 Vendor=0001 Product=0001 Version=0001
+N: Name="kanata"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input11
+U: Uniq=
+H: Handlers=sysrq kbd rfkill event10 mouse0 
+B: PROP=0
+B: EV=7
+B: KEY=ffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffff fffffffffffffffe
+B: REL=1bff
+
+=== Power & Thermal ===
+thermal_zone0 (iwlwifi_1): 39000 mC
+thermal_zone1 (INT3400 Thermal): 20000 mC
+thermal_zone2 (SEN1): 50 mC
+thermal_zone3 (SEN2): 50 mC
+thermal_zone4 (SEN3): 3550 mC
+thermal_zone5 (SEN4): unknown mC
+thermal_zone6 (acpitz): 48000 mC
+thermal_zone7 (TCPU): 49000 mC
+thermal_zone8 (x86_pkg_temp): 49000 mC
+power_supply ADP1:
+  online: 0
+  type: Mains
+  uevent: DEVTYPE=power_supply
+POWER_SUPPLY_NAME=ADP1
+POWER_SUPPLY_TYPE=Mains
+POWER_SUPPLY_ONLINE=0
+POWER_SUPPLY_TYPE=Mains
+power_supply hid-F0T9026020UJ1XLAX-battery:
+  capacity: 94
+  model_name: Apple Inc. Magic Keyboard
+  online: 1
+  present: 1
+  scope: Device
+  status: Charging
+  type: Battery
+  uevent: DEVTYPE=power_supply
+POWER_SUPPLY_NAME=hid-F0T9026020UJ1XLAX-battery
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_STATUS=Charging
+POWER_SUPPLY_PRESENT=1
+POWER_SUPPLY_ONLINE=1
+POWER_SUPPLY_CAPACITY=94
+POWER_SUPPLY_TYPE=Battery
+POWER_SUPPLY_SCOPE=Device
+POWER_SUPPLY_MODEL_NAME=Apple Inc. Magic Keyboard
+=== EFI & Firmware ===
+--- efibootmgr ---
+EFI variables are not supported on this system.
+error trace:
+
+=== Kernel & Diagnostics ===
+--- uname ---
+Linux hiyori 6.18.51 #1-NixOS SMP PREEMPT_DYNAMIC Fri Sep 11 09:49:46 UTC 2026 x86_64 GNU/Linux
+
+--- lsmod ---
+Module                  Size  Used by
+xt_connmark            12288  6
+xt_MASQUERADE          16384  2
+xt_mark                12288  2
+nft_chain_nat          12288  2
+nf_nat                 61440  2 nft_chain_nat,xt_MASQUERADE
+rfcomm                102400  4
+snd_seq_dummy          16384  0
+snd_hrtimer            16384  1
+snd_seq               118784  7 snd_seq_dummy
+snd_seq_device         20480  1 snd_seq
+tun                    73728  2
+af_packet              69632  6
+joydev                 28672  0
+mousedev               28672  0
+cmac                   16384  3
+algif_hash             16384  1
+algif_skcipher         12288  1
+af_alg                 32768  6 algif_hash,algif_skcipher
+bnep                   28672  2
+ofpart                 16384  0
+cmdlinepart            16384  0
+intel_pmc_bxt          16384  0
+spi_nor               180224  1
+nls_iso8859_1          12288  1
+  [... 239 total lines in lsmod.txt ...]
+
+--- failed_units ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+

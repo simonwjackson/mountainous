@@ -1,0 +1,111 @@
+# dmidecode 3.7
+Getting SMBIOS data from sysfs.
+SMBIOS 3.2.0 present.
+
+Handle 0x0023, DMI type 16, 23 bytes
+Physical Memory Array
+	Location: System Board Or Motherboard
+	Use: System Memory
+	Error Correction Type: None
+	Maximum Capacity: 64 GiB
+	Error Information Handle: Not Provided
+	Number Of Devices: 4
+
+Handle 0x0025, DMI type 17, 84 bytes
+Memory Device
+	Array Handle: 0x0023
+	Error Information Handle: Not Provided
+	Total Width: 16 bits
+	Data Width: 16 bits
+	Size: 2 GiB
+	Form Factor: DIMM
+	Set: None
+	Locator: A1_DIMM0
+	Bank Locator: A1_BANK0
+	Type: LPDDR4
+	Type Detail: Synchronous
+	Speed: 2400 MT/s
+	Manufacturer: ABCD
+	Serial Number: 1234
+	Asset Tag: 9876543210
+	Part Number: 123456789012345678
+	Rank: Unknown
+	Configured Memory Speed: 2400 MT/s
+	Minimum Voltage: 1.1 V
+	Maximum Voltage: 1.1 V
+	Configured Voltage: 1.1 V
+	Memory Technology: DRAM
+	Memory Operating Mode Capability: Volatile memory
+	Firmware Version: Not Specified
+	Module Manufacturer ID: Unknown
+	Module Product ID: Unknown
+	Memory Subsystem Controller Manufacturer ID: Unknown
+	Memory Subsystem Controller Product ID: Unknown
+	Non-Volatile Size: None
+	Volatile Size: 2 GiB
+	Cache Size: None
+	Logical Size: None
+
+Handle 0x0027, DMI type 17, 84 bytes
+Memory Device
+	Array Handle: 0x0023
+	Error Information Handle: Not Provided
+	Total Width: 16 bits
+	Data Width: 16 bits
+	Size: 2 GiB
+	Form Factor: DIMM
+	Set: None
+	Locator: A1_DIMM1
+	Bank Locator: A1_BANK1
+	Type: LPDDR4
+	Type Detail: Synchronous
+	Speed: 2400 MT/s
+	Manufacturer: ABCD
+	Serial Number: 1234
+	Asset Tag: 9876543210
+	Part Number: 123456789012345678
+	Rank: Unknown
+	Configured Memory Speed: 2400 MT/s
+	Minimum Voltage: 1.1 V
+	Maximum Voltage: 1.1 V
+	Configured Voltage: 1.1 V
+	Memory Technology: DRAM
+	Memory Operating Mode Capability: Volatile memory
+	Firmware Version: Not Specified
+	Module Manufacturer ID: Unknown
+	Module Product ID: Unknown
+	Memory Subsystem Controller Manufacturer ID: Unknown
+	Memory Subsystem Controller Product ID: Unknown
+	Non-Volatile Size: None
+	Volatile Size: 2 GiB
+	Cache Size: None
+	Logical Size: None
+
+Handle 0x0029, DMI type 17, 84 bytes
+Memory Device
+	Array Handle: 0x0023
+	Error Information Handle: Not Provided
+	Total Width: Unknown
+	Data Width: 64 bits
+	Size: No Module Installed
+	Form Factor: Unknown
+	Set: None
+	Locator: A1_DIMM2
+	Bank Locator: A1_BANK2
+	Type: Unknown
+	Type Detail: Synchronous
+
+Handle 0x002B, DMI type 17, 84 bytes
+Memory Device
+	Array Handle: 0x0023
+	Error Information Handle: Not Provided
+	Total Width: Unknown
+	Data Width: 64 bits
+	Size: No Module Installed
+	Form Factor: Unknown
+	Set: None
+	Locator: A1_DIMM3
+	Bank Locator: A1_BANK3
+	Type: Unknown
+	Type Detail: Synchronous
+

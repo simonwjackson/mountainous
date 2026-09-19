@@ -1,0 +1,12 @@
+NAME                 KNAME          SIZE TYPE  FSTYPE      LABEL PARTLABEL      UUID                                 PARTUUID                             MOUNTPOINTS ROTA TRAN MODEL        VENDOR    REV
+sda                  sda          465.8G disk                                                                                                                            0 usb  USB 3.2.2 FD PNY      PMAP
+├─sda1               sda1             1M part                    disk-main-bios                                      1046bc17-9168-4db8-80ed-463a5a1c927c                0                            
+├─sda2               sda2             1G part  vfat              disk-main-ESP  12CE-A600                            e982d963-22c4-4f35-b7cc-bc6c9b8287ad /boot          0                            
+└─sda3               sda3         464.8G part  crypto_LUKS       disk-main-root 774f8781-132a-4d62-92cb-6c730ec97faa 061d5725-d047-4cc2-8db4-40a4c09d7125                0                            
+  └─mountainous-root dm-0         464.7G crypt btrfs                            3fe7639b-d4dd-44e6-a193-32291b1b7c30                                      /home          0                            
+                                                                                                                                                          /nix/store                                  
+                                                                                                                                                          /nix                                        
+                                                                                                                                                          /                                           
+mmcblk1              mmcblk1       58.2G disk                                                                                                                            0 mmc                         0x7
+mmcblk1boot0         mmcblk1boot0     4M disk                                                                                                                            0 mmc                        
+mmcblk1boot1         mmcblk1boot1     4M disk                                                                                                                            0 mmc                        

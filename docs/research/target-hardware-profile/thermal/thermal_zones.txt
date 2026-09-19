@@ -1,0 +1,9 @@
+thermal_zone0 (iwlwifi_1): 39000 mC
+thermal_zone1 (INT3400 Thermal): 20000 mC
+thermal_zone2 (SEN1): 50 mC
+thermal_zone3 (SEN2): 50 mC
+thermal_zone4 (SEN3): 3550 mC
+thermal_zone5 (SEN4): unknown mC
+thermal_zone6 (acpitz): 48000 mC
+thermal_zone7 (TCPU): 49000 mC
+thermal_zone8 (x86_pkg_temp): 49000 mC

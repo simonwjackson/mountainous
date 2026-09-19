@@ -1,0 +1,239 @@
+Module                  Size  Used by
+xt_connmark            12288  6
+xt_MASQUERADE          16384  2
+xt_mark                12288  2
+nft_chain_nat          12288  2
+nf_nat                 61440  2 nft_chain_nat,xt_MASQUERADE
+rfcomm                102400  4
+snd_seq_dummy          16384  0
+snd_hrtimer            16384  1
+snd_seq               118784  7 snd_seq_dummy
+snd_seq_device         20480  1 snd_seq
+tun                    73728  2
+af_packet              69632  6
+joydev                 28672  0
+mousedev               28672  0
+cmac                   16384  3
+algif_hash             16384  1
+algif_skcipher         12288  1
+af_alg                 32768  6 algif_hash,algif_skcipher
+bnep                   28672  2
+ofpart                 16384  0
+cmdlinepart            16384  0
+intel_pmc_bxt          16384  0
+spi_nor               180224  1
+nls_iso8859_1          12288  1
+nls_cp437              16384  1
+intel_telemetry_pltdrv    24576  0
+intel_punit_ipc        12288  1 intel_telemetry_pltdrv
+vfat                   28672  1
+intel_telemetry_core    16384  1 intel_telemetry_pltdrv
+mtd                   114688  6 spi_nor,cmdlinepart,ofpart
+x86_pkg_temp_thermal    16384  0
+fat                   114688  1 vfat
+intel_powerclamp       20480  0
+coretemp               24576  0
+kvm_intel             442368  0
+spi_intel_platform     12288  1
+spi_intel              36864  1 spi_intel_platform
+rtsx_usb_ms            24576  0
+rtsx_usb_sdmmc         40960  0
+memstick               28672  1 rtsx_usb_ms
+mei_hdcp               28672  0
+8250_dw                24576  0
+mei_pxp                20480  0
+intel_rapl_msr         20480  0
+kvm                  1409024  1 kvm_intel
+irqbypass              16384  1 kvm
+ghash_clmulni_intel    12288  0
+rapl                   24576  0
+snd_hda_codec_intelhdmi    28672  1
+intel_cstate           20480  0
+wdat_wdt               20480  0
+watchdog               49152  1 wdat_wdt
+r8169                 143360  0
+snd_hda_codec_alc269   147456  1
+snd_hda_scodec_component    20480  1 snd_hda_codec_alc269
+i2c_i801               40960  0
+snd_hda_codec_realtek_lib    65536  1 snd_hda_codec_alc269
+lpc_ich                28672  0
+i2c_smbus              20480  1 i2c_i801
+i2c_mux                20480  1 i2c_i801
+snd_hda_codec_generic   114688  2 snd_hda_codec_realtek_lib,snd_hda_codec_alc269
+rtsx_usb               36864  2 rtsx_usb_sdmmc,rtsx_usb_ms
+realtek                57344  1
+processor_thermal_device_pci_legacy    12288  0
+processor_thermal_device    20480  1 processor_thermal_device_pci_legacy
+mdio_devres            12288  1 r8169
+of_mdio                24576  1 mdio_devres
+processor_thermal_wt_hint    12288  1 processor_thermal_device
+platform_temperature_control    16384  1 processor_thermal_device
+fixed_phy              16384  1 of_mdio
+fwnode_mdio            16384  1 of_mdio
+processor_thermal_soc_slider    16384  1 processor_thermal_device
+platform_profile       24576  1 processor_thermal_soc_slider
+intel_lpss_pci         28672  0
+processor_thermal_rfim    28672  1 processor_thermal_device
+intel_lpss             12288  1 intel_lpss_pci
+processor_thermal_rapl    16384  1 processor_thermal_device
+idma64                 24576  0
+snd_hda_intel          69632  1
+virt_dma               16384  1 idma64
+libphy                188416  6 r8169,mdio_devres,fwnode_mdio,of_mdio,realtek,fixed_phy
+intel_rapl_common      53248  2 intel_rapl_msr,processor_thermal_rapl
+mdio_bus               65536  4 r8169,libphy,of_mdio,realtek
+snd_sof_pci_intel_apl    16384  0
+xt_conntrack           12288  6
+processor_thermal_wt_req    12288  1 processor_thermal_device
+snd_soc_avs           270336  0
+nf_conntrack          196608  4 xt_conntrack,nf_nat,xt_connmark,xt_MASQUERADE
+processor_thermal_power_floor    12288  1 processor_thermal_device
+mei_me                 57344  2
+nf_defrag_ipv6         24576  1 nf_conntrack
+snd_soc_hda_codec      28672  1 snd_soc_avs
+nf_defrag_ipv4         12288  1 nf_conntrack
+mei                   208896  5 mei_hdcp,mei_pxp,mei_me
+processor_thermal_mbox    12288  4 processor_thermal_power_floor,processor_thermal_wt_req,processor_thermal_rfim,processor_thermal_wt_hint
+intel_soc_dts_iosf     16384  1 processor_thermal_device_pci_legacy
+thermal                28672  0
+xt_tcpudp              16384  3
+rtc_cmos               28672  0
+i2c_hid_acpi           12288  0
+ip6t_rpfilter          12288  1
+tiny_power_button      12288  0
+i2c_hid                45056  1 i2c_hid_acpi
+ipt_rpfilter           12288  1
+ac                     16384  0
+button                 28672  0
+xt_pkttype             12288  2
+nft_compat             28672  23
+x_tables               53248  9 xt_conntrack,ip6t_rpfilter,nft_compat,xt_tcpudp,xt_connmark,ipt_rpfilter,xt_pkttype,xt_MASQUERADE,xt_mark
+intel_pmc_core        159744  0
+pinctrl_geminilake     24576  0
+pmt_telemetry          20480  1 intel_pmc_core
+pmt_discovery          16384  1 pmt_telemetry
+int3406_thermal        12288  0
+apple_mfi_fastcharge    16384  0
+pmt_class              20480  2 pmt_telemetry,pmt_discovery
+dptf_power             16384  0
+intel_pmc_ssram_telemetry    16384  1 intel_pmc_core
+intel_vsec             28672  2 intel_pmc_ssram_telemetry,pmt_telemetry
+int3403_thermal        16384  0
+int3400_thermal        24576  0
+fan                    28672  0
+acpi_thermal_rel       24576  1 int3400_thermal
+nf_tables             397312  221 nft_compat,nft_chain_nat
+int340x_thermal_zone    16384  2 int3403_thermal,processor_thermal_device
+nfnetlink              24576  2 nft_compat,nf_tables
+sch_fq_codel           28672  3
+evdev                  32768  20
+mac_hid                16384  0
+snd_sof_pci_intel_tgl    20480  0
+snd_sof_pci_intel_cnl    20480  1 snd_sof_pci_intel_tgl
+snd_sof_intel_hda_generic    40960  3 snd_sof_pci_intel_tgl,snd_sof_pci_intel_apl,snd_sof_pci_intel_cnl
+soundwire_intel        94208  1 snd_sof_intel_hda_generic
+snd_sof_intel_hda_sdw_bpt    24576  1 soundwire_intel
+snd_sof_intel_hda_common   204800  5 snd_sof_intel_hda_sdw_bpt,snd_sof_intel_hda_generic,snd_sof_pci_intel_tgl,snd_sof_pci_intel_apl,snd_sof_pci_intel_cnl
+snd_soc_hdac_hda       24576  1 snd_sof_intel_hda_common
+snd_sof_intel_hda_mlink    36864  4 snd_sof_intel_hda_sdw_bpt,soundwire_intel,snd_sof_intel_hda_common,snd_sof_intel_hda_generic
+iwlmvm                626688  0
+snd_sof_intel_hda      20480  2 snd_sof_intel_hda_common,snd_sof_intel_hda_generic
+snd_hda_codec_hdmi     61440  1 snd_hda_codec_intelhdmi
+soundwire_cadence      57344  1 soundwire_intel
+snd_sof_pci            24576  4 snd_sof_intel_hda_generic,snd_sof_pci_intel_tgl,snd_sof_pci_intel_apl,snd_sof_pci_intel_cnl
+snd_sof_xtensa_dsp     16384  1 snd_sof_intel_hda_generic
+snd_sof               499712  6 snd_sof_intel_hda_sdw_bpt,snd_sof_pci,snd_sof_intel_hda_common,snd_sof_intel_hda_generic,snd_sof_intel_hda,snd_sof_pci_intel_cnl
+snd_sof_utils          16384  1 snd_sof
+iwlwifi               589824  1 iwlmvm
+snd_hda_ext_core       36864  7 snd_sof_intel_hda_sdw_bpt,snd_soc_avs,snd_soc_hda_codec,snd_sof_intel_hda_common,snd_soc_hdac_hda,snd_sof_intel_hda_mlink,snd_sof_intel_hda
+snd_hda_codec         217088  10 snd_hda_codec_generic,snd_soc_avs,snd_hda_codec_hdmi,snd_soc_hda_codec,snd_hda_intel,snd_hda_codec_realtek_lib,snd_soc_hdac_hda,snd_hda_codec_alc269,snd_sof_intel_hda,snd_hda_codec_intelhdmi
+snd_hda_core          147456  13 snd_hda_codec_generic,snd_soc_avs,snd_hda_codec_hdmi,snd_soc_hda_codec,snd_hda_intel,snd_hda_ext_core,snd_hda_codec,snd_sof_intel_hda_common,snd_hda_codec_realtek_lib,snd_soc_hdac_hda,snd_hda_codec_alc269,snd_sof_intel_hda,snd_hda_codec_intelhdmi
+snd_intel_dspcfg       45056  5 snd_soc_avs,snd_hda_intel,snd_sof,snd_sof_intel_hda_common,snd_sof_intel_hda_generic
+snd_intel_sdw_acpi     16384  2 snd_intel_dspcfg,snd_sof_intel_hda_generic
+snd_soc_acpi_intel_match   143360  4 snd_sof_intel_hda_generic,snd_sof_pci_intel_tgl,snd_sof_pci_intel_apl,snd_sof_pci_intel_cnl
+mac80211             1712128  1 iwlmvm
+snd_soc_acpi_intel_sdca_quirks    12288  1 snd_soc_acpi_intel_match
+soundwire_generic_allocation    20480  1 soundwire_intel
+snd_soc_acpi           16384  2 snd_soc_acpi_intel_match,snd_sof_intel_hda_generic
+snd_hwdep              24576  1 snd_hda_codec
+soundwire_bus        1208320  3 soundwire_intel,soundwire_generic_allocation,soundwire_cadence
+snd_soc_sdca          102400  2 snd_soc_acpi_intel_sdca_quirks,soundwire_bus
+snd_soc_core          442368  7 snd_soc_avs,snd_soc_hda_codec,soundwire_intel,snd_sof,snd_soc_sdca,snd_sof_intel_hda_common,snd_soc_hdac_hda
+btusb                  86016  0
+btrtl                  36864  1 btusb
+btintel                73728  1 btusb
+btmtk                  32768  1 btusb
+snd_compress           36864  2 snd_soc_avs,snd_soc_core
+btbcm                  28672  1 btusb
+ac97_bus               12288  1 snd_soc_core
+snd_pcm_dmaengine      20480  1 snd_soc_core
+bluetooth            1122304  34 btrtl,btmtk,btintel,btbcm,bnep,btusb,rfcomm
+cfg80211             1454080  3 iwlmvm,iwlwifi,mac80211
+snd_pcm               204800  14 snd_soc_avs,snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec,soundwire_intel,snd_sof,snd_soc_sdca,snd_sof_intel_hda_common,snd_compress,snd_sof_intel_hda_generic,snd_soc_core,snd_sof_utils,snd_hda_core,snd_pcm_dmaengine
+snd_timer              57344  3 snd_seq,snd_hrtimer,snd_pcm
+snd                   159744  19 snd_hda_codec_generic,snd_seq,snd_seq_device,snd_hda_codec_hdmi,snd_hwdep,snd_hda_intel,snd_hda_codec,snd_sof,snd_soc_sdca,snd_timer,snd_hda_codec_realtek_lib,snd_compress,snd_hda_codec_alc269,snd_soc_core,snd_pcm
+uinput                 24576  1
+soundcore              20480  1 snd
+crc8                   12288  1 soundwire_cadence
+ptp                    57344  1 iwlmvm
+pps_core               32768  1 ptp
+libarc4                12288  1 mac80211
+ecdh_generic           20480  2 bluetooth
+loop                   49152  0
+rfkill                 45056  7 iwlmvm,bluetooth,cfg80211
+atkbd                  40960  0
+intel_ishtp            86016  0
+libps2                 24576  1 atkbd
+serio                  32768  1 atkbd
+ecc                    49152  1 ecdh_generic
+hid_multitouch         36864  0
+vivaldi_fmap           12288  1 atkbd
+crc16                  12288  1 bluetooth
+fuse                  282624  3
+configfs               69632  1
+dmi_sysfs              28672  0
+crc32c_cryptoapi       12288  1
+dm_crypt               69632  1
+encrypted_keys         32768  1 dm_crypt
+trusted                45056  2 encrypted_keys,dm_crypt
+asn1_encoder           12288  1 trusted
+tee                    53248  1 trusted
+input_leds             16384  0
+hid_apple              32768  0
+hid_generic            12288  0
+usbhid                 90112  0
+hid                   286720  6 i2c_hid,usbhid,hid_apple,hid_multitouch,snd_soc_sdca,hid_generic
+sd_mod                 86016  2
+uas                    36864  2
+mmc_block              69632  0
+rpmb_core              20480  1 mmc_block
+sdhci_pci             114688  0
+sdhci_uhs2             36864  1 sdhci_pci
+sdhci                 102400  2 sdhci_uhs2,sdhci_pci
+cqhci                  36864  1 sdhci_pci
+ahci                   57344  0
+mmc_core              307200  6 sdhci_uhs2,sdhci,rtsx_usb_sdmmc,cqhci,mmc_block,sdhci_pci
+libahci                65536  1 ahci
+xhci_pci               28672  0
+xhci_hcd              430080  1 xhci_pci
+aesni_intel            98304  4
+libata                499712  2 libahci,ahci
+led_class              24576  7 snd_hda_codec_generic,sdhci,input_leds,libphy,iwlmvm,rtsx_usb_sdmmc,hid_apple
+i915                 4866048  23
+btrfs                2281472  1
+blake2b_generic        20480  0
+xor                    24576  1 btrfs
+drm_buddy              12288  1 i915
+i2c_algo_bit           24576  1 i915
+video                  81920  2 int3406_thermal,i915
+wmi                    36864  1 video
+ttm                   126976  1 i915
+intel_gtt              32768  1 i915
+usb_storage            94208  1 uas
+drm_display_helper    319488  1 i915
+scsi_mod              339968  4 sd_mod,usb_storage,uas,libata
+raid6_pq              126976  1 btrfs
+dm_mod                241664  3 dm_crypt
+cec                    81920  2 drm_display_helper,i915
+scsi_common            16384  5 scsi_mod,sd_mod,usb_storage,uas,libata
+autofs4                65536  0

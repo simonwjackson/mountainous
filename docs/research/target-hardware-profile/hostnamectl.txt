@@ -1,0 +1,16 @@
+ Static hostname: hiyori
+       Icon name: computer-desktop
+         Chassis: desktop 🖥️
+      Machine ID: 0ff33443d0a849f1beeb9af24afef084
+         Boot ID: e939cae5014b4d1bba61e3f93f735e70
+    Product UUID: 03000200-0400-0500-0006-000700080009
+Operating System: NixOS 26.11 (Zokor)
+     CPE OS Name: cpe:/o:nixos:nixos:26.11
+          Kernel: Linux 6.18.51
+    Architecture: x86-64
+ Hardware Vendor: Default string
+  Hardware Model: Default string
+ Hardware Serial: Default string
+Firmware Version: 5.13
+   Firmware Date: Mon 2019-09-30
+    Firmware Age: 6y 11month 2w 6d

@@ -1,0 +1,62 @@
+[    0.000000] DMI: Default string Default string/Default string, BIOS 5.13 09/30/2019
+[    0.204265] pid_max: default: 32768 minimum: 301
+[    1.948074] pci 0000:00:13.0: retraining failed
+[    3.949072] pci 0000:00:13.1: retraining failed
+[    5.949072] pci 0000:00:13.2: retraining failed
+[    7.949072] pci 0000:00:13.3: retraining failed
+[    8.974164] iommu: Default domain type: Translated
+[    8.974842] NetLabel:  unlabeled traffic allowed by default
+[    9.048901] PCI: CLS 64 bytes, default 64
+[    9.193505] RAS: Correctable Errors collector initialized.
+[   10.164431] systemd[1]: Queued start job for default target Initrd Default Target.
+[   11.550612] i915 0000:00:02.0: [drm] Finished loading DMC firmware i915/glk_dmc_ver1_04.bin (v1.4)
+[   12.082002] mmc0: Failed to initialize a non-removable card
+[   77.204998] systemd[1]: Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
+[   77.691532] Bluetooth: hci0: Intel Bluetooth firmware file: intel/ibt-hw-37.8.10-fw-1.10.3.11.e.bseq
+[   77.943794] iwlwifi 0000:06:00.0: loaded firmware version 29.9ef079ed.0 7265D-29.ucode op_mode iwlmvm
+[   78.014085] iwlwifi 0000:06:00.0: Allocated 0x00400000 bytes for firmware monitor.
+[   78.349123] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.CFSP], AE_NOT_FOUND (20250807/psargs-332)
+[   78.351776] ACPI Error: Aborting method \_SB.TFN1._FST due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   78.382488] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   78.384441] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   78.388804] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   78.391420] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   78.394376] thermal thermal_zone5: Temperature check failed (-5)
+[   78.615023] rtc_cmos PNP0B00:00: error -ENXIO: IRQ index 0 not found
+[   78.648583] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   78.650867] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   79.032355] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   79.034464] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   79.657360] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   79.657380] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   80.175285] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.CFSP], AE_NOT_FOUND (20250807/psargs-332)
+[   80.177483] ACPI Error: Aborting method \_SB.TFN1._FST due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   80.553356] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   80.555267] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   81.896782] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   81.901131] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   83.880715] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   83.883488] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   86.888366] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   86.890385] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   92.264778] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   92.265046] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[   98.920854] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[   98.921003] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  109.160754] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  109.161005] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  124.008765] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  124.008814] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  146.024811] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  146.024874] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  181.371681] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  181.371745] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  230.526344] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  230.526409] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[  304.254462] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[  304.254525] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[ 1082.989104] r8169 0000:05:00.0: invalid VPD tag 0x00 (size 0) at offset 0; assume missing optional EEPROM
+[ 1083.977391] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[ 1083.977422] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)
+[ 1135.981481] ACPI BIOS Error (bug): Could not resolve symbol [\_SB.PCI0.SBRG.HEC.TSR4], AE_NOT_FOUND (20250807/psargs-332)
+[ 1135.981513] ACPI Error: Aborting method \_SB.SEN4._TMP due to previous error (AE_NOT_FOUND) (20250807/psparse-529)

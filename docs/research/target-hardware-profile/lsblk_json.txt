@@ -1,0 +1,143 @@
+{
+   "blockdevices": [
+      {
+         "name": "sda",
+         "kname": "sda",
+         "size": "465.8G",
+         "type": "disk",
+         "fstype": null,
+         "label": null,
+         "partlabel": null,
+         "uuid": null,
+         "partuuid": null,
+         "mountpoints": [],
+         "rota": false,
+         "tran": "usb",
+         "model": "USB 3.2.2 FD",
+         "vendor": "PNY     ",
+         "rev": "PMAP",
+         "children": [
+            {
+               "name": "sda1",
+               "kname": "sda1",
+               "size": "1M",
+               "type": "part",
+               "fstype": null,
+               "label": null,
+               "partlabel": "disk-main-bios",
+               "uuid": null,
+               "partuuid": "1046bc17-9168-4db8-80ed-463a5a1c927c",
+               "mountpoints": [],
+               "rota": false,
+               "tran": null,
+               "model": null,
+               "vendor": null,
+               "rev": null
+            },{
+               "name": "sda2",
+               "kname": "sda2",
+               "size": "1G",
+               "type": "part",
+               "fstype": "vfat",
+               "label": null,
+               "partlabel": "disk-main-ESP",
+               "uuid": "12CE-A600",
+               "partuuid": "e982d963-22c4-4f35-b7cc-bc6c9b8287ad",
+               "mountpoints": [
+                   "/boot"
+               ],
+               "rota": false,
+               "tran": null,
+               "model": null,
+               "vendor": null,
+               "rev": null
+            },{
+               "name": "sda3",
+               "kname": "sda3",
+               "size": "464.8G",
+               "type": "part",
+               "fstype": "crypto_LUKS",
+               "label": null,
+               "partlabel": "disk-main-root",
+               "uuid": "774f8781-132a-4d62-92cb-6c730ec97faa",
+               "partuuid": "061d5725-d047-4cc2-8db4-40a4c09d7125",
+               "mountpoints": [],
+               "rota": false,
+               "tran": null,
+               "model": null,
+               "vendor": null,
+               "rev": null,
+               "children": [
+                  {
+                     "name": "mountainous-root",
+                     "kname": "dm-0",
+                     "size": "464.7G",
+                     "type": "crypt",
+                     "fstype": "btrfs",
+                     "label": null,
+                     "partlabel": null,
+                     "uuid": "3fe7639b-d4dd-44e6-a193-32291b1b7c30",
+                     "partuuid": null,
+                     "mountpoints": [
+                         "/home", "/nix/store", "/nix", "/"
+                     ],
+                     "rota": false,
+                     "tran": null,
+                     "model": null,
+                     "vendor": null,
+                     "rev": null
+                  }
+               ]
+            }
+         ]
+      },{
+         "name": "mmcblk1",
+         "kname": "mmcblk1",
+         "size": "58.2G",
+         "type": "disk",
+         "fstype": null,
+         "label": null,
+         "partlabel": null,
+         "uuid": null,
+         "partuuid": null,
+         "mountpoints": [],
+         "rota": false,
+         "tran": "mmc",
+         "model": null,
+         "vendor": null,
+         "rev": "0x7"
+      },{
+         "name": "mmcblk1boot0",
+         "kname": "mmcblk1boot0",
+         "size": "4M",
+         "type": "disk",
+         "fstype": null,
+         "label": null,
+         "partlabel": null,
+         "uuid": null,
+         "partuuid": null,
+         "mountpoints": [],
+         "rota": false,
+         "tran": "mmc",
+         "model": null,
+         "vendor": null,
+         "rev": null
+      },{
+         "name": "mmcblk1boot1",
+         "kname": "mmcblk1boot1",
+         "size": "4M",
+         "type": "disk",
+         "fstype": null,
+         "label": null,
+         "partlabel": null,
+         "uuid": null,
+         "partuuid": null,
+         "mountpoints": [],
+         "rota": false,
+         "tran": "mmc",
+         "model": null,
+         "vendor": null,
+         "rev": null
+      }
+   ]
+}
