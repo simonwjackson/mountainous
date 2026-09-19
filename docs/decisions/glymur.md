@@ -9,19 +9,17 @@ The UEFI on this machine publishes ACPI tables for Windows. Linux drives Qualcom
 ## Kernel floor is 7.3
 The board devicetree, `qcom/glymur-asus-zenbook-a16-ux3607oa.dts`, landed in Linux 7.3 as commit `e8fbbca94db7`. No earlier release can describe this laptop. `linux_testing` is 7.3-rc3 as of nixpkgs `b1b8759`, which is why the nixpkgs pin moved from March to September 2026.
 
-## Two patches the panel needs
-Mainline 7.3-rc3 programs the v8 eDP PHY with one shared case for HBR2 and HBR3:
+## Four patches the panel path needs
+The reproducible same-model reference is `jc372/A16UbuntuBuild` at commit `3de6f0a4921641dde5fae0e912725821b7396c55`. It reports Linux `7.3.0-rc3-next-20260914` on the UX3607OA with the internal panel at 2880x1800 and both 120 Hz and 60 Hz modes. The reviewed details are in `docs/research/ux3607oa-linux-reference.md`.
 
-```c
-	case 5400:
-	case 8100:
-		hsclk_sel = 0x2;
-		dec_start_mode0 = 0x4f;
-```
+The reference carries Bjorn Andersson's two-patch v8 eDP PHY series. Those patches correct rate-specific and lane-specific programming. They do not make this panel train at its advertised four-lane HBR2 rate. The report records successful clock recovery followed by a channel-equalization timeout at HBR2.
 
-The panel in this laptop advertises HBR2 as its maximum, so the link trains at the rate the PHY mis-programs and the screen stays dark. Bjorn Andersson's two-patch series, posted 2026-06-22 and still not in mainline, gives HBR2 its own PLL programming. A reporter on this exact model confirmed a native 2880x1800 at 120 Hz link with them applied.
+Two more patches complete the working path:
 
-Both patches are carried in `modules/glymur/` and were checked to apply to `v7.3-rc3` before being committed.
+- An HBR3 override selects the 8.1 Gbit/s rate allowed by the device tree. The panel then trains and exposes its 2880x1800 modes.
+- A failed-enable guard skips `PUSH_IDLE` when the link never came up. The report says the unguarded disable path can trigger a TrustZone SOCCP/ADSP force-stop and a silent SoC reset.
+
+All four patches are carried in `modules/glymur/`. The two PHY patch bodies match the same-model reference. This corrects the earlier claim that the PHY series alone produced a native HBR2 link.
 
 ## CPUCP mailbox must be built in
 `arm64` defconfig builds `QCOM_CPUCP_MBOX` as a module. On Glymur it then loads after SCMI has already timed out, and no CPU gets a frequency governor. Reported during the HP EliteBook X G2q bring-up on the same SoC, so `structuredExtraConfig` forces it in.
@@ -41,7 +39,9 @@ Extracted from the Windows driver store, and nowhere else to be found:
 | `qcadsp8480.mbn`, `adsp_dtbs.elf`, `adspr.jsn`, `adsps.jsn`, `adspua.jsn` | `qcsubsys_ext_adsp8480.inf` |
 | `qccdsp8480.mbn`, `cdsp_dtbs.elf` | `qcnspmcdm8480.inf` |
 
-`linux-firmware` has Glymur GPU zap and video firmware at `qcom/glymur/gen80100_zap.mbn` and `qcom/vpu/vpu36_p4_s7.mbn`. Their sizes match the Windows files `qcdxkmsuc8480.mbn` and `qcvss8480.mbn`. A size match alone does not prove that the files are identical.
+`linux-firmware` 20260910 has the upstream GPU files at `qcom/gen80100_aqe.fw`, `qcom/gen80100_gmu.bin`, `qcom/gen80100_sqe.fw`, and `qcom/glymur/gen80100_zap.mbn`. It has video firmware at `qcom/vpu/vpu36_p4_s7.mbn`. The probe packages only these files instead of adding the 1.9 GiB firmware tree to the UKI.
+
+The Windows files `qcdxkmsuc8480.mbn` and `qcvss8480.mbn` have the same sizes as the upstream zap and video files. A size match alone does not prove that the files are identical.
 
 Wi-Fi board data is in `qcwlanhmt8480.inf` and `qcwlancol8480.inf` as dozens of `bdwlan*` files. The ath12k board file for this laptop was still in review upstream in September 2026, so these are the raw material for building one.
 
@@ -56,8 +56,46 @@ HKR, LiveHandoff\SOCCP,"UefiLoadedImageTZProcID",%REG_DWORD%,0x33
 UEFI loads the SoC Control Processor and the OS performs a live handoff. Linux does the same. `glymur_soccp_resource` in `qcom_q6v5_pas.c` sets `.early_boot = true`, and probe reacts to that with `pas->rproc->state = RPROC_DETACHED` — the kernel adopts a processor the bootloader already started. The firmware names are only used to reload it after a crash, so their absence costs subsystem restart, not USB-C or charging.
 
 ## Do not erase the whole disk
-The laptop has one internal disk. Windows reports sixteen partitions on it. The first eleven are small, use types Windows does not recognise, and sit before the 450 MB ESP: 1 MB, 16 MB, 1 MB, 1 MB, 70 MB, 120 MB, 120 MB, 1 MB, 1 MB, 1 MB, 512 MB.
+The first Linux probe read the GPT from the 512 GB Samsung drive. The platform partitions are now known:
 
-Qualcomm systems often store platform firmware in partitions like these. Linaro documents the failure mode when an installer erases such a disk: "if you allow the installer to erase the disk, your board will NO LONGER BOOT." We have not verified the names or contents of this machine's eleven partitions yet.
+| Number | Label | Size |
+|---:|---|---:|
+| 1 | `ToolsFv` | 1 MiB |
+| 2 | `LogFs` | 16 MiB |
+| 3 | `EnterpriseFV` | 1 MiB |
+| 4 | `ToolsFv_BACKUP` | 1 MiB |
+| 5 | `UpdateCapsule` | 70 MiB |
+| 6 | `NHLOS` | 120 MiB |
+| 7 | `core_nhlos_a` | 120 MiB |
+| 8 | `quantumsdk` | 1 MiB |
+| 9 | `quantumfv` | 1 MiB |
+| 10 | `catecontentfv` | 1 MiB |
+| 11 | `logdump` | 512 MiB |
+| 12 | `EFI system partition` | 450 MiB |
 
-The probe must read the real GPT labels before any install layout is written. Until then, preserve partitions 1 to 11 and avoid `mountainous.disk`, because it owns the whole partition table. Whether the final install reuses the existing ESP also depends on that inspection.
+Partitions 13 to 16 are the Microsoft reserved partition, Windows, Windows recovery, and MYASUS recovery. NixOS can reclaim those four partitions without changing partitions 1 to 12.
+
+Raw images of partitions 1 to 11, the GPT, and the first probe report are stored outside the repository at `/persist/backups/myoko-platform-S7X8NX0L344749-2026-09-18`. Every raw image passed its recorded SHA-256 check.
+
+`mountainous.disk` cannot install this machine because it owns the whole partition table. The myoko installer needs a board-specific partition script that deletes only partitions 13 to 16.
+
+## First probe findings
+The first probe booted Linux 7.3-rc3 from the DTB-carrying UKI on September 18, 2026. The DT model and compatible strings match `ASUS Zenbook A16 (UX3607OA)` and `qcom,glymur`.
+
+Verified working in that boot:
+
+- The UEFI framebuffer and early internal-panel output.
+- NVMe and all sixteen GPT entries.
+- The internal keyboard, touchpad, touchscreen, and stylus input devices.
+- The Realtek RTL8156 USB Ethernet adapter, even without its optional firmware patch.
+- SCMI CPU frequency drivers for policies 0, 6, and 12.
+- Battery reporting through `qcom-battmgr`.
+- SoCCP late attach.
+
+`/sys/power/mem_sleep` reports `s2idle [deep]`. This corrects the earlier assumption that only s2idle exists. It does not prove that deep sleep works or reaches a useful power state.
+
+The known-good probe has no `CONFIG_CLK_GLYMUR_GPUCC`, so MSM DRM cannot bind. It remains reachable through SSH and uses the firmware framebuffer. A second probe built the GPU clock controller in, but it produced no usable panel or SSH session.
+
+A later probe carried the complete same-model display patch set, built GPUCC in, and tried to delay MSM through `modprobe.blacklist=msm`. It still produced a black panel and no SSH, although the Ethernet interface answered ICMP. It created no USB log, so the system stopped before the multi-user logging service ran. The next probe keeps GPUCC, GXCLKCTL, and MSM as matching modules and blocks all three aliases until logging is active.
+
+The probe also waited twice for TPM devices that firmware advertises but Linux does not expose. Probe TPM support is disabled after the first boot. ADSP, cDSP, Wi-Fi, and the full DRM path still need verification with their firmware present.

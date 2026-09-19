@@ -1,8 +1,9 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -i bash -p coreutils gnugrep kmod
+# shellcheck shell=bash
 # Prove the trimmed kernel still contains what the machine cannot boot without.
 #
-#   ./scripts/check-kernel-config
+#   ./scripts/check-kernel-config [myoko-probe|myoko]
 #
 # modules/glymur.nix turns nixpkgs' automatic "build every driver as a module"
 # pass off. The arm64 defconfig remains broad, but this removes nixpkgs' extra
@@ -19,10 +20,12 @@ set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$REPO"
+HOST=${1:-myoko-probe}
+ATTR=".#nixosConfigurations.$HOST.config"
 
-CONFIG=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.boot.kernelPackages.kernel.configfile)
-MODULES=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.boot.kernelPackages.kernel.modules)
-VERSION=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.boot.kernelPackages.kernel.modDirVersion)
+CONFIG=$(nix eval --raw "$ATTR.boot.kernelPackages.kernel.configfile")
+MODULES=$(nix eval --raw "$ATTR.system.modulesTree")
+VERSION=$(nix eval --raw "$ATTR.boot.kernelPackages.kernel.modDirVersion")
 
 [ -f "$CONFIG" ] || { echo "error: no configfile at $CONFIG; build the kernel first" >&2; exit 1; }
 [ -d "$MODULES/lib/modules/$VERSION" ] || {
@@ -41,7 +44,13 @@ required=(
   "EFI|y|same"
   "ARCH_QCOM|y|without it nothing on this SoC is driven"
   "QCOM_CPUCP_MBOX|y|as a module SCMI times out and no CPU gets a governor"
+  "CLK_GLYMUR_GPUCC|m|the probe delays this clock controller until USB logging is active"
   "BLK_DEV_NVME|y|the internal disk we are here to read"
+  "INPUT_UINPUT|m|Kanata creates its virtual keyboard through /dev/uinput"
+  "NF_TABLES|m|the installed firewall uses iptables-nft"
+  "NF_TABLES_IPV4|y|the installed firewall filters IPv4"
+  "NF_TABLES_IPV6|y|the installed firewall filters IPv6"
+  "NFT_COMPAT|m|iptables rules run over nf_tables"
   "SQUASHFS|y|the nix store rides in the initrd as a squashfs"
   "EXT4_FS|y m|installed root later"
   "VFAT_FS|y m|the ESP"
@@ -94,7 +103,7 @@ requested=$(
     boot.kernelModules
   do
     nix eval --raw \
-      ".#nixosConfigurations.myoko-probe.config.$option" \
+      "$ATTR.$option" \
       --apply 'modules: builtins.concatStringsSep "\n" modules'
     echo
   done | grep -v '^$' | sort -u

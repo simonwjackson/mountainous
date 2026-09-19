@@ -1,0 +1,92 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils file gnugrep diffutils llvm squashfsTools
+# shellcheck shell=bash
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$REPO"
+
+./scripts/check-kernel-config myoko-probe
+
+RESULT_LINK=${1:-result-probe}
+RESULT=$(readlink -f "$RESULT_LINK")
+[ -d "$RESULT" ] || { echo "probe result is missing: $RESULT_LINK" >&2; exit 1; }
+mapfile -t images < <(find "$RESULT" -maxdepth 1 -type f -name '*.efi' -print)
+[ "${#images[@]}" -eq 1 ] || {
+  echo "expected one EFI image in $RESULT, found ${#images[@]}" >&2
+  exit 1
+}
+EFI=${images[0]}
+
+file "$EFI" | grep -Eq 'PE32\+.*EFI application.*Aarch64'
+SIZE=$(stat -c%s "$EFI")
+[ "$SIZE" -gt 0 ]
+[ "$SIZE" -lt 4294967296 ] || { echo "EFI image exceeds FAT32 file limit" >&2; exit 1; }
+
+SECTIONS=$(mktemp)
+DTB=$(mktemp)
+INITRD=$(mktemp)
+CMDLINE=$(mktemp)
+PE_COPY=$(mktemp)
+cleanup() { rm -f "$SECTIONS" "$DTB" "$INITRD" "$CMDLINE" "$PE_COPY"; }
+trap cleanup EXIT
+llvm-objdump -h "$EFI" > "$SECTIONS"
+for section in .linux .initrd .cmdline .dtb; do
+  grep -Eq "[[:space:]]${section//./\.}[[:space:]]" "$SECTIONS" || {
+    echo "missing UKI section $section" >&2
+    exit 1
+  }
+done
+
+EXPECTED_DTB=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.boot.uki.settings.UKI.DeviceTree)
+[ -f "$EXPECTED_DTB" ] || { echo "configured DTB is missing: $EXPECTED_DTB" >&2; exit 1; }
+llvm-objcopy \
+  --dump-section .dtb="$DTB" \
+  --dump-section .initrd="$INITRD" \
+  --dump-section .cmdline="$CMDLINE" \
+  "$EFI" "$PE_COPY"
+cmp "$EXPECTED_DTB" "$DTB"
+cmdline=$(tr -d '\0' < "$CMDLINE")
+for parameter in drm.debug=0x1ff log_buf_len=8M; do
+  [[ " $cmdline " == *" $parameter "* ]] || {
+    echo "embedded command line is missing $parameter" >&2
+    exit 1
+  }
+done
+EXPECTED_INITRD=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.boot.uki.settings.UKI.Initrd)
+cmp "$EXPECTED_INITRD" "$INITRD"
+
+FIRMWARE_OUTPUT=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.hardware.firmware.outPath)
+for firmware in \
+  qcom/gen80100_aqe.fw \
+  qcom/gen80100_gmu.bin \
+  qcom/gen80100_sqe.fw \
+  qcom/glymur/gen80100_zap.mbn \
+  qcom/vpu/vpu36_p4_s7.mbn \
+  rtl_nic/rtl8156b-2.fw; do
+  [ -f "$FIRMWARE_OUTPUT/lib/firmware/$firmware.zst" ] || {
+    echo "configured compressed firmware is missing: $firmware" >&2
+    exit 1
+  }
+done
+SQUASHFS=$(nix eval --raw .#nixosConfigurations.myoko-probe.config.system.build.squashfsStore)
+SQUASHFS_LIST=$(mktemp)
+trap 'rm -f "$SECTIONS" "$DTB" "$INITRD" "$CMDLINE" "$PE_COPY" "$SQUASHFS_LIST"' EXIT
+unsquashfs -ll "$SQUASHFS" > "$SQUASHFS_LIST"
+for firmware in \
+  qcom/gen80100_aqe.fw.zst \
+  qcom/gen80100_gmu.bin.zst \
+  qcom/gen80100_sqe.fw.zst \
+  qcom/glymur/gen80100_zap.mbn.zst \
+  qcom/vpu/vpu36_p4_s7.mbn.zst \
+  rtl_nic/rtl8156b-2.fw.zst; do
+  grep -q "/lib/firmware/$firmware$" "$SQUASHFS_LIST" || {
+    echo "firmware is not embedded in the probe store: $firmware" >&2
+    exit 1
+  }
+done
+
+CONFIG_OK=$(nix eval --json .#nixosConfigurations.myoko-probe.config --apply 'c: c.services.openssh.enable && c.services.avahi.enable && c.networking.networkmanager.enable && builtins.length c.users.users.root.openssh.authorizedKeys.keys == 1 && builtins.elem "multi-user.target" c.systemd.services.myoko-probe-display-log.wantedBy && builtins.all (module: builtins.elem module c.boot.blacklistedKernelModules) [ "gpucc-glymur" "gxclkctl-kaanapali" "msm" ]')
+[ "$CONFIG_OK" = true ] || { echo "probe access configuration is not intact" >&2; exit 1; }
+
+echo "PROBE_VERIFIED $EFI $((SIZE / 1024 / 1024))MiB"

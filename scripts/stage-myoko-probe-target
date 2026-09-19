@@ -1,0 +1,58 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils util-linux
+# shellcheck shell=bash
+# Replace only the removable-media UKI after preserving a fixed recovery copy.
+set -euo pipefail
+
+DEVICE=/dev/sda1
+MOUNT=/mnt/probe-usb
+SOURCE=/tmp/BOOTAA64.EFI.new
+EXPECTED_RECOVERY=adaa51ec60135d38fee4a8170ae6875712249bee873f355192c2d72006175191
+
+die() { echo "error: $*" >&2; exit 1; }
+
+[ -b "$DEVICE" ] || die "$DEVICE is missing"
+[ "$(blkid -s TYPE -o value "$DEVICE")" = vfat ] || die "$DEVICE is not vfat"
+[ "$(blkid -s LABEL -o value "$DEVICE")" = MYOKO-FW ] || die "USB label mismatch"
+[ "$(blkid -s UUID -o value "$DEVICE")" = B09A-2505 ] || die "USB UUID mismatch"
+[ -s "$SOURCE" ] || die "staged UKI is missing"
+
+mkdir -p "$MOUNT"
+existing_mount=$(findmnt -nr -S "$DEVICE" -o TARGET || true)
+[ -z "$existing_mount" ] || die "$DEVICE is already mounted at $existing_mount"
+mountpoint -q "$MOUNT" && die "$MOUNT is already mounted"
+mount -o rw,sync "$DEVICE" "$MOUNT"
+trap 'umount "$MOUNT" 2>/dev/null || true' EXIT
+
+dir=$MOUNT/EFI/BOOT
+target=$dir/BOOTAA64.EFI
+previous=$dir/BOOTAA64.EFI.previous
+recovery=$dir/BOOTAA64.EFI.recovery
+[ -s "$target" ] || die "current BOOTAA64.EFI is missing"
+
+if [ ! -e "$recovery" ]; then
+  current_hash=$(sha256sum "$target" | cut -d' ' -f1)
+  [ "$current_hash" = "$EXPECTED_RECOVERY" ] \
+    || die "cannot create recovery copy from an unrecognized current UKI"
+  install -m 0644 "$target" "$recovery.new"
+  cmp "$target" "$recovery.new"
+  mv "$recovery.new" "$recovery"
+fi
+
+recovery_hash=$(sha256sum "$recovery" | cut -d' ' -f1)
+[ "$recovery_hash" = "$EXPECTED_RECOVERY" ] || die "recovery UKI hash mismatch"
+
+install -m 0644 "$SOURCE" "$target.new"
+cmp "$SOURCE" "$target.new"
+rm -f "$previous"
+mv "$target" "$previous"
+mv "$target.new" "$target"
+sync
+cmp "$SOURCE" "$target"
+[ "$(sha256sum "$recovery" | cut -d' ' -f1)" = "$EXPECTED_RECOVERY" ] \
+  || die "recovery UKI changed during staging"
+
+printf 'STAGED %s\n' "$(sha256sum "$target")"
+printf 'RECOVERY %s\n' "$(sha256sum "$recovery")"
+umount "$MOUNT"
+trap - EXIT

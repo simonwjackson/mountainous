@@ -22,16 +22,18 @@
   inputs,
   lib,
   ...
-}:
-{
+}: {
   flake.nixosConfigurations.myoko-probe = inputs.nixpkgs.lib.nixosSystem {
-    specialArgs = { inherit inputs; };
+    specialArgs = {inherit inputs;};
     modules = [
       config.nixos.modules.glymur
       (
-        { modulesPath, pkgs, ... }:
         {
-          imports = [ "${modulesPath}/installer/netboot/netboot-minimal.nix" ];
+          modulesPath,
+          pkgs,
+          ...
+        }: {
+          imports = ["${modulesPath}/installer/netboot/netboot-minimal.nix"];
 
           nixpkgs.hostPlatform = "aarch64-linux";
           system.stateVersion = "26.11";
@@ -54,10 +56,24 @@
               PasswordAuthentication = false;
             };
           };
-          users.users.root.openssh.authorizedKeys.keys = [ config.mountainous.sshKey ];
+          users.users.root.openssh.authorizedKeys.keys = [config.mountainous.sshKey];
 
           networking.wireless.enable = lib.mkForce false;
           networking.networkmanager.enable = true;
+
+          # Keep the display dependency chain from loading through OF aliases
+          # before the USB log is mounted. The logging service loads each
+          # matching module by name after its synchronous follower is active.
+          # A modprobe blacklist blocks aliases but permits an explicit load.
+          boot.blacklistedKernelModules = [
+            "gpucc-glymur"
+            "gxclkctl-kaanapali"
+            "msm"
+          ];
+          boot.kernelParams = [
+            "drm.debug=0x1ff"
+            "log_buf_len=8M"
+          ];
 
           # The point of mDNS here is that nobody has to read an address off a
           # screen and type it somewhere else. Plug in wired ethernet and the
@@ -94,7 +110,14 @@
           # written for x86 desktops and asks for ata_piix, ehci_pci and
           # friends. None of them exist in a trimmed arm64 kernel.
           boot.initrd.includeDefaultModules = false;
+          boot.initrd.systemd.tpm2.enable = false;
+          systemd.tpm2.enable = false;
           boot.swraid.enable = lib.mkForce false;
+
+          # This disposable image is reachable only on the local wired link.
+          # The trimmed kernel has no nftables support, and a failed firewall
+          # only marks an otherwise useful probe boot as degraded.
+          networking.firewall.enable = false;
 
           boot.initrd.availableKernelModules = [
             "nvme"
@@ -110,11 +133,83 @@
           ];
 
           environment.systemPackages = with pkgs; [
+            btrfs-progs
+            cryptsetup
+            dosfstools
+            gptfdisk
             pciutils
             usbutils
-            gptfdisk
             util-linux
           ];
+
+          # The previous display probe could reset before SSH or the panel
+          # worked. This service makes the firmware USB an independent flight
+          # recorder. The mount uses synchronous writes, then dmesg follows the
+          # kernel before the GPU clock controllers and MSM load explicitly.
+          # If display bring-up fails, recovery can read the completed lines.
+          systemd.services.myoko-probe-display-log = {
+            description = "Capture myoko display bring-up to the firmware USB";
+            wantedBy = ["multi-user.target"];
+            wants = ["dev-disk-by\\x2dlabel-MYOKO\\x2dFW.device"];
+            after = ["dev-disk-by\\x2dlabel-MYOKO\\x2dFW.device"];
+            path = with pkgs; [
+              coreutils
+              kmod
+              util-linux
+            ];
+            script = ''
+              set -eu
+
+              device=/dev/disk/by-label/MYOKO-FW
+              mountpoint=/run/myoko-probe-usb
+              boot_id=$(cat /proc/sys/kernel/random/boot_id)
+              log="$mountpoint/myoko-display-$boot_id.log"
+
+              mkdir -p "$mountpoint"
+              mount -o rw,sync "$device" "$mountpoint"
+              trap 'umount "$mountpoint" 2>/dev/null || true' EXIT
+
+              {
+                echo "myoko display probe $boot_id"
+                echo "cmdline: $(cat /proc/cmdline)"
+                echo "kernel: $(uname -a)"
+                echo "--- dmesg before msm ---"
+                dmesg --color=never
+                echo "--- following dmesg; loading display modules ---"
+              } > "$log"
+              sync -f "$log"
+
+              for module in gpucc_glymur gxclkctl_kaanapali msm; do
+                if [ -d "/sys/module/$module" ]; then
+                  echo "SAFETY FAILURE: $module loaded before the USB logger" >> "$log"
+                  sync -f "$log"
+                  exit 1
+                fi
+              done
+
+              stdbuf -oL dmesg --follow-new --color=never >> "$log" &
+              follower=$!
+              trap 'kill "$follower" 2>/dev/null || true; sync -f "$log" 2>/dev/null || true; umount "$mountpoint" 2>/dev/null || true' EXIT
+
+              echo "--- modprobe gpucc-glymur ---" >> "$log"
+              sync -f "$log"
+              modprobe -v gpucc-glymur >> "$log" 2>&1
+              echo "--- modprobe gxclkctl-kaanapali ---" >> "$log"
+              sync -f "$log"
+              modprobe -v gxclkctl-kaanapali >> "$log" 2>&1
+              echo "--- modprobe msm ---" >> "$log"
+              sync -f "$log"
+              modprobe -v msm >> "$log" 2>&1
+              echo "--- display modules loaded; logger remains active ---" >> "$log"
+              sync -f "$log"
+
+              wait "$follower"
+            '';
+            serviceConfig = {
+              Type = "simple";
+              Restart = "no";
+            };
+          };
 
           services.getty.helpLine = lib.mkAfter ''
 
@@ -135,14 +230,17 @@
               dmesg | grep -iE 'soccp|remoteproc|adsp|cdsp'
               dmesg | grep -iE 'edp|dp_display|panel'
               ip -4 addr                        if a USB ethernet adapter is in
+
+            Display bring-up is also written synchronously to the firmware USB:
+
+              /myoko-display-<boot-id>.log
           '';
         }
       )
     ];
   };
 
-  perSystem =
-    { system, ... }:
+  perSystem = {system, ...}:
     lib.mkIf (system == "aarch64-linux") {
       packages.myoko-probe = config.flake.nixosConfigurations.myoko-probe.config.system.build.uki;
     };

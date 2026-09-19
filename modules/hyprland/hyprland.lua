@@ -17,11 +17,19 @@ hl.monitor({
 hl.env("XCURSOR_THEME", "Adwaita")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XDG_SESSION_TYPE", "wayland")
+hl.env("NIXOS_OZONE_WL", "1")
 
 --------------------------------------------------------------------
 -- LOOK AND FEEL
 --------------------------------------------------------------------
 hl.config({
+    xwayland = {
+        -- Prevent compositor bilinear scaling of any remaining X11 apps at
+        -- fractional display scale.
+        force_zero_scaling = true,
+    },
+
     general = {
         -- Kamoi's window gap default is 8dp, sitting between the
         -- visible windows. gaps_in is per window edge, so 4 gives 8
@@ -543,6 +551,8 @@ hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd(
 --------------------------------------------------------------------
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --class=backlight set +10%"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%-"), { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set +1"), { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set 1-"), { locked = true, repeating = true })
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })

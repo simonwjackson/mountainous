@@ -1,0 +1,44 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils gptfdisk
+# shellcheck shell=bash
+set -euo pipefail
+
+BACKUP=/persist/backups/myoko-platform-S7X8NX0L344749-2026-09-18/nvme0n1.gpt
+work=$(mktemp -d /tmp/myoko-partition-test.XXXXXX)
+IMAGE=$work/disk.img
+trap 'rm -rf "$work"' EXIT
+truncate -s $((1000215216 * 512)) "$IMAGE"
+sgdisk --load-backup="$BACKUP" "$IMAGE" >/dev/null
+
+for number in $(seq 1 12); do
+  sgdisk -i "$number" "$IMAGE" > "$work/before-$number"
+done
+
+sgdisk --delete=16 --delete=15 --delete=14 --delete=13 "$IMAGE" >/dev/null
+sgdisk \
+  --new=13:2652160:+4G \
+  --typecode=13:BC13C2FF-59E6-4262-A352-B275FD6F7172 \
+  --change-name=13:XBOOTLDR \
+  --new=14:0:1000214527 \
+  --typecode=14:0FC63DAF-8483-4772-8E79-3D69D8477DE4 \
+  --change-name=14:myoko-root \
+  "$IMAGE" >/dev/null
+
+for number in $(seq 1 12); do
+  sgdisk -i "$number" "$IMAGE" > "$work/after-$number"
+  cmp "$work/before-$number" "$work/after-$number"
+done
+
+p13=$(sgdisk -i 13 "$IMAGE")
+p14=$(sgdisk -i 14 "$IMAGE")
+grep -q "First sector: 2652160" <<< "$p13"
+grep -q "Partition size: 8388608 sectors (4.0 GiB)" <<< "$p13"
+grep -q "Partition name: 'XBOOTLDR'" <<< "$p13"
+grep -q "Partition name: 'myoko-root'" <<< "$p14"
+grep -q "Partition GUID code: 0FC63DAF-8483-4772-8E79-3D69D8477DE4" <<< "$p14"
+grep -q "First sector: 11040768" <<< "$p14"
+grep -q "Last sector: 1000214527" <<< "$p14"
+grep -q "Partition size: 989173760 sectors" <<< "$p14"
+
+sgdisk -v "$IMAGE"
+echo PARTITION_PLAN_VERIFIED

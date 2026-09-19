@@ -1,0 +1,13 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils
+# shellcheck shell=bash
+# Test the actual assembled firmware tree, not just the source package.
+set -euo pipefail
+[ "$#" -eq 1 ] || { echo "usage: $0 <firmware-directory>" >&2; exit 2; }
+board=$1/ath12k/QCC2072/hw1.0/board.bin
+[ -s "$board" ] || { echo "MYOKO_WIFI_BOARD_MISSING $board" >&2; exit 1; }
+printf '%s  %s\n' \
+  960e9e93da708f5e1086ce15d82d3e44d846ec9441eac40e1725467d357965d8 \
+  "$board" | sha256sum --check --status
+[ "$(stat -Lc %s "$board")" = 125288 ]
+echo MYOKO_FACTORY_WIFI_BOARD_VERIFIED
