@@ -142,9 +142,13 @@ Writing 0, 1, 2, and 3 to `brightness` all succeeded.
 `systemd-backlight@leds:asus::kbd_backlight.service` already exists from
 `99-systemd.rules` and saves the value across reboots.
 
-The keyboard backlight Fn keys map to `KEY_KBDILLUMUP` (vendor usage `0xc4`) and
-`KEY_KBDILLUMDOWN` (`0xc5`), so Hyprland binds `XF86KbdBrightnessUp` and
-`XF86KbdBrightnessDown` to `brightnessctl --device='asus::kbd_backlight'`.
+The Zenbook A16 has one keyboard-illumination key. Fn+F4 emits
+`KEY_KBDILLUMTOGGLE` (vendor usage `0xc7`), which xkb maps to
+`XF86KbdLightOnOff`. It does not emit the `KEY_KBDILLUMUP`/`KEY_KBDILLUMDOWN`
+codes that the driver also maps, so a plain up/down binding never fires.
+Hyprland binds `XF86KbdLightOnOff` to `kbd-backlight-cycle`, a small script
+that steps the LED through 0, 1, 2, 3 and back to 0. The up/down bindings stay
+for keyboards that do emit those codes.
 
 `brightnessctl` writes the sysfs `brightness` file as the logged-in user. The
 package ships `90-brightnessctl.rules`, but NixOS links a package's udev rules

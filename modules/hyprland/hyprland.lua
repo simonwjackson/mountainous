@@ -521,6 +521,16 @@ hl.bind(mod .. " + P",         hl.dsp.exec_cmd("qs -c mountainous ipc call omni 
 hl.bind("F1",                  hl.dsp.exec_cmd("qs -c mountainous ipc call omni toggle"))
 hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c mountainous ipc call omni gotowindow"))
 
+--------------------------------------------------------------------
+-- Appearance. See modules/theme.nix.
+--
+-- One command, and every layer that can follow changes with it: the
+-- XDG portal republishes the color scheme for Chromium, GTK and Qt,
+-- Alacritty reloads the file named in its import, and Quickshell reads
+-- the state file the command writes.
+--------------------------------------------------------------------
+hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))
+
 -- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
 -- navigate mode, which is the address bar an --app window never built.
 --
@@ -553,6 +563,10 @@ hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --class=backligh
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%-"), { locked = true, repeating = true })
 hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set +1"), { locked = true, repeating = true })
 hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set 1-"), { locked = true, repeating = true })
+-- The Zenbook A16 has one keyboard-illumination key, Fn+F4. It emits
+-- KEY_KBDILLUMTOGGLE, which xkb maps to XF86KbdLightOnOff, so the key steps
+-- through the four levels instead of raising or lowering one.
+hl.bind("XF86KbdLightOnOff",    hl.dsp.exec_cmd("kbd-backlight-cycle"), { locked = true })
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })

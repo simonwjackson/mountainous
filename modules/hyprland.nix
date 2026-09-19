@@ -387,6 +387,23 @@
       hypr-split
       zed-editor
       zed-wrapper
+
+      # The Zenbook A16 keyboard has one illumination key (Fn+F4) that emits
+      # KEY_KBDILLUMTOGGLE. The firmware's own breathing mode is off, so the
+      # key steps through the LED's four levels here instead. The script exits
+      # early when the machine has no asus::kbd_backlight.
+      (pkgs.writeShellScriptBin "kbd-backlight-cycle" ''
+        set -eu
+        led=/sys/class/leds/asus::kbd_backlight/brightness
+        [ -r "$led" ] || exit 0
+        case "$(cat "$led")" in
+          0) next=1 ;;
+          1) next=2 ;;
+          2) next=3 ;;
+          *) next=0 ;;
+        esac
+        exec ${pkgs.brightnessctl}/bin/brightnessctl --device='asus::kbd_backlight' set "$next"
+      '')
     ];
 
     # brightnessctl ships 90-brightnessctl.rules, which hands the panel
@@ -408,6 +425,10 @@
       NIXOS_OZONE_WL = "1";
       XDG_SESSION_TYPE = "wayland";
       XDG_CURRENT_DESKTOP = "Hyprland";
+      # Qt 6.5 and later read the XDG portal's color-scheme through this
+      # platform theme, so Qt applications follow the desktop-theme command
+      # instead of keeping a palette of their own. See modules/theme.nix.
+      QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
     };
 
     hjem.users.simon.files.".config/hypr/hyprland.lua".source =
