@@ -114,18 +114,12 @@
       '';
 
       myoko-display-resume = pkgs.writeShellScriptBin "myoko-display-resume" ''
-        uid=$(${pkgs.coreutils}/bin/id -u simon 2>/dev/null || echo 1000)
-        runtime_dir="/run/user/$uid"
-
         for _attempt in $(${pkgs.coreutils}/bin/seq 1 40); do
-          if ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
-            ${config.programs.hyprland.package}/bin/hyprctl --instance 0 monitors >/dev/null 2>&1; then
+          if ${config.programs.hyprland.package}/bin/hyprctl --instance 0 monitors >/dev/null 2>&1; then
             ${pkgs.util-linux}/bin/logger -t myoko-display-resume "cycling eDP after resume"
-            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
-              ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "off" })' || true
+            ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "off" })' || true
             ${pkgs.coreutils}/bin/sleep 1
-            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
-              ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "on" })' || true
+            ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "on" })' || true
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 0.5
@@ -291,6 +285,7 @@
       '';
       powerManagement.resumeCommands = lib.mkAfter ''
         ${pkgs.systemd}/bin/systemd-run --quiet --no-block --collect --unit=myoko-display-resume --on-active=8s \
+          --uid=simon --setenv=XDG_RUNTIME_DIR=/run/user/1000 --setenv=WAYLAND_DISPLAY=wayland-1 \
           ${myoko-display-resume}/bin/myoko-display-resume || true
       '';
 
