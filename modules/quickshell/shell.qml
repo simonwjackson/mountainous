@@ -116,7 +116,7 @@ ShellRoot {
 
     function formatClock(date) {
         const hour = date.getHours() % 12 || 12;
-        return Qt.formatDateTime(date, "ddd d MMM  ")
+        return Qt.formatDateTime(date, "M/d  ")
             + hour
             + Qt.formatDateTime(date, ":mm");
     }
