@@ -114,6 +114,9 @@
       '';
 
       myoko-display-resume = pkgs.writeShellScriptBin "myoko-display-resume" ''
+        # Let DRM and the panel settle after the user session thaws.
+        ${pkgs.coreutils}/bin/sleep 2
+
         for _attempt in $(${pkgs.coreutils}/bin/seq 1 40); do
           if ${config.programs.hyprland.package}/bin/hyprctl --instance 0 monitors >/dev/null 2>&1; then
             ${pkgs.util-linux}/bin/logger -t myoko-display-resume "cycling eDP after resume"
@@ -284,9 +287,9 @@
         ${myoko-enable-wowlan}/bin/myoko-enable-wowlan
       '';
       powerManagement.resumeCommands = lib.mkAfter ''
-        ${pkgs.systemd}/bin/systemd-run --quiet --no-block --collect --unit=myoko-display-resume --on-active=3s \
-          --uid=simon --setenv=XDG_RUNTIME_DIR=/run/user/1000 --setenv=WAYLAND_DISPLAY=wayland-1 \
-          ${myoko-display-resume}/bin/myoko-display-resume || true
+        if [ -d /run/user/1000 ]; then
+          ${pkgs.coreutils}/bin/touch /run/user/1000/myoko-display-resume
+        fi
       '';
 
       # Enable power-profiles-daemon for userspace power management
@@ -326,6 +329,23 @@
         # Apply battery vs AC power profiles and display refresh rates only on AC/mains/USB status changes
         ACTION=="change", SUBSYSTEM=="power_supply", KERNEL!="qcom-battmgr-bat", ENV{POWER_SUPPLY_ONLINE}!="", RUN+="${myoko-power-sync}/bin/myoko-power-sync"
       '';
+
+      systemd.user.paths.myoko-display-resume = {
+        description = "Watch for Myoko display resume requests";
+        wantedBy = ["default.target"];
+        pathConfig = {
+          PathChanged = "%t/myoko-display-resume";
+          Unit = "myoko-display-resume.service";
+        };
+      };
+
+      systemd.user.services.myoko-display-resume = {
+        description = "Retrain Myoko eDP after resume";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${myoko-display-resume}/bin/myoko-display-resume";
+        };
+      };
 
       systemd.services.myoko-card-reader-power = {
         description = "Enable runtime power management for Myoko's SD reader";
