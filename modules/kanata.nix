@@ -96,9 +96,10 @@
             ;; The physical C key taps v and holds shift. The physical Left
             ;; Shift key taps z and holds control. Both keep a modifier on
             ;; the bottom row while its letters sit one key to the right.
+            ;; Physical / taps ' and holds control.
             c-sft    (tap-hold-release $qt $t-shift v lsft (require-prior-idle $idle-shift))
             m-sft    (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
-            sl-ctl   (tap-hold-release $qt $t-pinky / lctl (require-prior-idle $idle-slow))
+            apos-ctl (tap-hold-release $qt $t-pinky ' lctl (require-prior-idle $idle-slow))
             lsft-ctl (tap-hold-release $qt $t-pinky z lctl (require-prior-idle $idle-slow))
 
             ;; A keypress that reaches the system and means nothing. It retires
@@ -136,12 +137,23 @@
             ;; types c. The physical C key takes v and holds shift, and the
             ;; physical Left Shift key takes z and holds control. Every
             ;; letter on the row stays reachable.
+            ;;
+            ;; Extended bottom row mapping:
+            ;; Physical V types comma (,).
+            ;; Physical N types period (.).
+            ;; Physical comma (,) types n.
+            ;; Physical period (.) types b.
+            ;; Physical slash (/) taps apostrophe (') and holds Left Ctrl.
             z x
             x c
 
             c @c-sft
+            v ,
+            n .
             m @m-sft
-            / @sl-ctl
+            , n
+            . b
+            / @apos-ctl
 
             ;; Left Shift taps z and holds Left Ctrl, which keeps Kamoi's
             ;; rule that Left Shift acts as Left Ctrl. Shift itself comes
@@ -190,6 +202,42 @@
             ret  @dead
             tab  @dead
             bspc @dead
+
+            ;; Number row, punctuation, right shift, and function keys
+            ;; are inert on the base layer to reinforce Corne layer discipline.
+            ;; Numbers/symbols come from NUM, SYM, WRP; function keys from FUN.
+            grv  @dead
+            1    @dead
+            2    @dead
+            3    @dead
+            4    @dead
+            5    @dead
+            6    @dead
+            7    @dead
+            8    @dead
+            9    @dead
+            0    @dead
+            -    @dead
+            =    @dead
+
+            [    @dead
+            ]    @dead
+            \    @dead
+            '    @dead
+            rsft @dead
+
+            f1   @dead
+            f2   @dead
+            f3   @dead
+            f4   @dead
+            f5   @dead
+            f6   @dead
+            f7   @dead
+            f8   @dead
+            f9   @dead
+            f10  @dead
+            f11  @dead
+            f12  @dead
           )
 
           ;; --------------------------------------------------------------
