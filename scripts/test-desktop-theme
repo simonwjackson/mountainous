@@ -9,41 +9,41 @@ if [[ ${1:-} != --session ]]; then
   export HOME="$temp" XDG_CONFIG_HOME="$temp/config" XDG_STATE_HOME="$temp/state" XDG_RUNTIME_DIR="$temp/run"
   mkdir -m 700 "$XDG_RUNTIME_DIR"
   unset DCONF_PROFILE
+  dconf_root=$(dirname "$(dirname "$(command -v dconf)")")
+  export XDG_DATA_DIRS="$dconf_root/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
   exec_path=$(realpath "$0")
   dbus-run-session -- bash "$exec_path" --session "$command_path"
   exit
 fi
 command_path=$2
 state="$XDG_STATE_HOME/mountainous/theme"
-active="$XDG_CONFIG_HOME/alacritty/active-theme.toml"
 check() {
-  local mode=$1 scheme=$2 background=$3
+  local mode=$1 scheme=$2
   [[ $("$command_path" status) == "$mode" ]]
   [[ $(<"$state") == "$mode" ]]
   [[ $(dconf read /org/gnome/desktop/interface/color-scheme) == "'$scheme'" ]]
-  grep -qF "background = \"$background\"" "$active"
 }
 [[ $("$command_path" status) == dark ]]
 "$command_path" light
-check light prefer-light '#f5f5f5'
+check light prefer-light
 [[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita'" ]]
 "$command_path" reapply
-check light prefer-light '#f5f5f5'
+check light prefer-light
 "$command_path" toggle
-check dark prefer-dark '#000000'
+check dark prefer-dark
 [[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita-dark'" ]]
 "$command_path" toggle
-check light prefer-light '#f5f5f5'
+check light prefer-light
 "$command_path" dark
-check dark prefer-dark '#000000'
+check dark prefer-dark
 if "$command_path" invalid; then
   echo 'FAIL: invalid command succeeded' >&2
   exit 1
 fi
-check dark prefer-dark '#000000'
+check dark prefer-dark
 if DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" light; then
   echo 'FAIL: session bus failure was hidden' >&2
   exit 1
 fi
-check dark prefer-dark '#000000'
+check dark prefer-dark
 echo 'DESKTOP_THEME_TESTS_PASSED'

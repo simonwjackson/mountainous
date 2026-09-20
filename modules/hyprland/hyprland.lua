@@ -137,7 +137,7 @@ hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 --------------------------------------------------------------------
 -- GROUP 1: layout and windows
 --------------------------------------------------------------------
-hl.bind(mod .. " + N", hl.dsp.exec_cmd("alacritty"))
+hl.bind(mod .. " + N", hl.dsp.exec_cmd("ghostty"))
 hl.bind(mod .. " + C", hl.dsp.window.close())
 
 -- Kamoi Meta+1/2/3 set the page capacity: one fullscreen window, two
@@ -521,7 +521,7 @@ hl.bind(mod .. " + CTRL + mouse_down", hl.dsp.exec_cmd("hypr-scale fine-down"))
 -- This was first written as a workspace rule:
 --
 --   hl.workspace_rule({ workspace        = "special:term",
---                       on_created_empty = "alacritty" })
+--                       on_created_empty = "ghostty" })
 --
 -- On hiyori that spawned terminals without stopping. The reasoning
 -- behind it was traced through 0.56.2's source and every statement
@@ -579,8 +579,9 @@ hl.bind(mod .. " + CTRL + mouse_down", hl.dsp.exec_cmd("hypr-scale fine-down"))
 -- compositor's.
 --------------------------------------------------------------------
 local TERM_WS    = "term"
-local TERM_CLASS = "mountainous-term"
-local TERM_CMD   = "alacritty --class " .. TERM_CLASS .. " -e herdr"
+-- Ghostty uses the class as its GTK application ID, so it must contain a dot.
+local TERM_CLASS = "io.github.simonwjackson.mountainous.term"
+local TERM_CMD   = "ghostty --class=" .. TERM_CLASS .. " -e herdr"
 
 -- Sized against the monitor, centred, and floating.
 --
@@ -594,11 +595,9 @@ local TERM_CMD   = "alacritty --class " .. TERM_CLASS .. " -e herdr"
 -- floating window is required for the size to mean anything: a tiled
 -- window is sized by the layout, and the rule would be ignored.
 hl.window_rule({
-    name   = "term-overlay",
-    match  = { class = TERM_CLASS },
-    float  = true,
-    size   = "61.8% 61.8%",
-    center = true,
+    name  = "term-overlay",
+    match = { class = TERM_CLASS },
+    float = true,
 })
 
 -- The overlay's terminal, wherever it currently is, or nil. Matching
@@ -611,6 +610,36 @@ local function term_window()
     end
     return nil
 end
+
+-- Ghostty applies its initial GTK geometry after Hyprland's static size rule.
+-- Resize one tick later, from the monitor's logical dimensions, so the 61.8%
+-- contract remains intrinsic at every scale and the terminal cannot restore
+-- its 800x600 default over it.
+local term_resize_timers = {}
+local function fit_term_overlay(win)
+    if win == nil or win.class ~= TERM_CLASS then return end
+    local address = win.address
+    local timer
+    timer = hl.timer(function()
+        local current = nil
+        for _, candidate in ipairs(hl.get_windows()) do
+            if candidate.address == address then current = candidate; break end
+        end
+        if current ~= nil and current.monitor ~= nil then
+            local monitor = current.monitor
+            local width = math.floor(monitor.width / monitor.scale * 0.618 + 0.5)
+            local height = math.floor(monitor.height / monitor.scale * 0.618 + 0.5)
+            local selector = "address:" .. address
+            hl.dispatch(hl.dsp.window.resize({
+                x = width, y = height, window = selector,
+            }))
+            hl.dispatch(hl.dsp.window.center({ window = selector }))
+        end
+        term_resize_timers[address] = nil
+    end, { timeout = 100, type = "oneshot" })
+    term_resize_timers[address] = timer
+end
+hl.on("window.open", fit_term_overlay)
 
 hl.bind(mod .. " + T", function()
     if term_window() == nil then
@@ -638,7 +667,7 @@ hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c mountainous ipc call omni 
 --
 -- One command, and every layer that can follow changes with it: the
 -- XDG portal republishes the color scheme for Chromium, GTK and Qt,
--- Alacritty reloads the file named in its import, and Quickshell reads
+-- Ghostty follows the published desktop color scheme, and Quickshell reads
 -- the state file the command writes.
 --------------------------------------------------------------------
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))

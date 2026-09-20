@@ -376,8 +376,13 @@
       config.common.default = "*";
     };
 
+    xdg.terminal-exec = {
+      enable = true;
+      settings.default = ["com.mitchellh.ghostty.desktop"];
+    };
+
     environment.systemPackages = with pkgs; [
-      alacritty
+      ghostty
       fuzzel
       grim
       slurp
@@ -429,6 +434,7 @@
       NIXOS_OZONE_WL = "1";
       XDG_SESSION_TYPE = "wayland";
       XDG_CURRENT_DESKTOP = "Hyprland";
+      TERMINAL = "ghostty";
       # Qt 6.5 and later read the XDG portal's color-scheme through this
       # platform theme, so Qt applications follow the desktop-theme command
       # instead of keeping a palette of their own. See modules/theme.nix.

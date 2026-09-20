@@ -1,80 +1,62 @@
-# Publish the desktop preference through dconf and the Settings portal.
-# Alacritty and Quickshell also consume generated user files. Applications
-# with explicit theme overrides can ignore the desktop preference.
+# Publish one desktop appearance preference through dconf and the Settings
+# portal. Ghostty follows that preference directly, while Quickshell reads the
+# generated state file. Applications with explicit theme overrides can ignore
+# the desktop preference.
 {
   nixos.modules.desktop = {pkgs, ...}: let
-    alacrittyDark = pkgs.writeText "alacritty-dark.toml" ''
-      [colors.primary]
-      background = "#000000"
-      foreground = "#e0e0e0"
-
-      [colors.cursor]
-      text = "#000000"
-      cursor = "#6a9fb5"
-
-      [colors.selection]
-      text = "CellForeground"
-      background = "#2a2a2a"
-
-      [colors.normal]
-      black = "#141414"
-      red = "#e06c75"
-      green = "#98c379"
-      yellow = "#e5c07b"
-      blue = "#61afef"
-      magenta = "#c678dd"
-      cyan = "#56b6c2"
-      white = "#e0e0e0"
-
-      [colors.bright]
-      black = "#606060"
-      red = "#e06c75"
-      green = "#98c379"
-      yellow = "#e5c07b"
-      blue = "#61afef"
-      magenta = "#c678dd"
-      cyan = "#56b6c2"
-      white = "#ffffff"
+    ghosttyDark = pkgs.writeText "mountainous-dark" ''
+      background = 000000
+      foreground = e0e0e0
+      cursor-color = 6a9fb5
+      cursor-text = 000000
+      selection-foreground = cell-foreground
+      selection-background = 2a2a2a
+      palette = 0=141414
+      palette = 1=e06c75
+      palette = 2=98c379
+      palette = 3=e5c07b
+      palette = 4=61afef
+      palette = 5=c678dd
+      palette = 6=56b6c2
+      palette = 7=e0e0e0
+      palette = 8=606060
+      palette = 9=e06c75
+      palette = 10=98c379
+      palette = 11=e5c07b
+      palette = 12=61afef
+      palette = 13=c678dd
+      palette = 14=56b6c2
+      palette = 15=ffffff
     '';
 
-    alacrittyLight = pkgs.writeText "alacritty-light.toml" ''
-      [colors.primary]
-      background = "#f5f5f5"
-      foreground = "#1a1a1a"
-
-      [colors.cursor]
-      text = "#f5f5f5"
-      cursor = "#3d7a94"
-
-      [colors.selection]
-      text = "CellForeground"
-      background = "#d8d8d8"
-
-      [colors.normal]
-      black = "#1a1a1a"
-      red = "#b3261e"
-      green = "#2e7d32"
-      yellow = "#8a6d00"
-      blue = "#1f5fa8"
-      magenta = "#8e24aa"
-      cyan = "#00695c"
-      white = "#3a3a3a"
-
-      [colors.bright]
-      black = "#606060"
-      red = "#c62828"
-      green = "#388e3c"
-      yellow = "#a07800"
-      blue = "#2962a8"
-      magenta = "#9c27b0"
-      cyan = "#00897b"
-      white = "#1a1a1a"
+    ghosttyLight = pkgs.writeText "mountainous-light" ''
+      background = f5f5f5
+      foreground = 1a1a1a
+      cursor-color = 3d7a94
+      cursor-text = f5f5f5
+      selection-foreground = cell-foreground
+      selection-background = d8d8d8
+      palette = 0=1a1a1a
+      palette = 1=b3261e
+      palette = 2=2e7d32
+      palette = 3=8a6d00
+      palette = 4=1f5fa8
+      palette = 5=8e24aa
+      palette = 6=00695c
+      palette = 7=3a3a3a
+      palette = 8=606060
+      palette = 9=c62828
+      palette = 10=388e3c
+      palette = 11=a07800
+      palette = 12=2962a8
+      palette = 13=9c27b0
+      palette = 14=00897b
+      palette = 15=1a1a1a
     '';
 
-    themeDir = pkgs.runCommand "mountainous-themes" {} ''
-      mkdir -p $out
-      cp ${alacrittyDark} $out/alacritty-dark.toml
-      cp ${alacrittyLight} $out/alacritty-light.toml
+    ghosttyConfig = pkgs.writeText "ghostty-config" ''
+      theme = light:mountainous-light,dark:mountainous-dark
+      window-theme = system
     '';
 
     desktop-theme = pkgs.writeShellApplication {
@@ -87,8 +69,6 @@
       text = ''
         state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/mountainous"
         state_file="$state_dir/theme"
-        alacritty_dir="''${XDG_CONFIG_HOME:-$HOME/.config}/alacritty"
-        themes="${themeDir}"
 
         # Serialize toggles and publish only complete files.
         mkdir -p "$state_dir"
@@ -110,26 +90,20 @@
 
         apply() {
           mode="$1"
-          mkdir -p "$alacritty_dir"
 
           if [ "$mode" = light ]; then
             scheme=prefer-light
             gtk_theme=Adwaita
-            theme_file="$themes/alacritty-light.toml"
           else
             mode=dark
             scheme=prefer-dark
             gtk_theme=Adwaita-dark
-            theme_file="$themes/alacritty-dark.toml"
           fi
 
           # Do not report success if the session preference could not change.
+          # Ghostty, GTK, Chromium, Qt and Electron all follow this preference.
           dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'"
           dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'"
-
-          # Alacritty watches this file and reloads every open window.
-          install -m 0644 "$theme_file" "$alacritty_dir/active-theme.toml.new"
-          mv -f "$alacritty_dir/active-theme.toml.new" "$alacritty_dir/active-theme.toml"
 
           printf '%s\n' "$mode" > "$state_file.new"
           mv -f "$state_file.new" "$state_file"
@@ -156,8 +130,23 @@
       '';
     };
   in {
-    # A direct build target lets regression tests exercise the packaged command.
+    # Direct build targets let regression tests exercise the packaged command
+    # and inspect the exact Ghostty configuration delivered by hjem.
     system.build.desktopTheme = desktop-theme;
+    system.build.ghosttyConfig = pkgs.linkFarm "mountainous-ghostty-config" [
+      {
+        name = "ghostty/config.ghostty";
+        path = ghosttyConfig;
+      }
+      {
+        name = "ghostty/themes/mountainous-dark";
+        path = ghosttyDark;
+      }
+      {
+        name = "ghostty/themes/mountainous-light";
+        path = ghosttyLight;
+      }
+    ];
 
     environment.systemPackages = [
       desktop-theme
@@ -181,11 +170,10 @@
       };
     };
 
-    # Only the import lives here. The imported file is the one the switcher
-    # rewrites, so Alacritty reloads on change instead of on restart.
-    hjem.users.simon.files.".config/alacritty/alacritty.toml".source = pkgs.writeText "alacritty.toml" ''
-      [general]
-      import = ["~/.config/alacritty/active-theme.toml"]
-    '';
+    hjem.users.simon.files = {
+      ".config/ghostty/config.ghostty".source = ghosttyConfig;
+      ".config/ghostty/themes/mountainous-dark".source = ghosttyDark;
+      ".config/ghostty/themes/mountainous-light".source = ghosttyLight;
+    };
   };
 }

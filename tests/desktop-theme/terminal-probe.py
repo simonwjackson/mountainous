@@ -1,6 +1,6 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i python3 -p python3
-"""Query one running Alacritty's rendered background through OSC 11."""
+"""Query one running Ghostty terminal's rendered background through OSC 11."""
 import os
 from pathlib import Path
 import select

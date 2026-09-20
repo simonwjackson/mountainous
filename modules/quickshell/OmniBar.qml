@@ -211,7 +211,7 @@ Scope {
         if (a === "mode:window") { root.enterMode("window"); return; }
         if (a === "mode:app")    { root.enterRoot(); return; }
 
-        if (a === "term")            Quickshell.execDetached(["alacritty"]);
+        if (a === "term")            Quickshell.execDetached(["ghostty"]);
         else if (a === "close") {
             const w = Hyprland.activeToplevel;
             if (w && w.wayland) w.wayland.close();
