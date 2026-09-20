@@ -88,7 +88,15 @@ The package installs this file as `ath12k/QCC2072/hw1.0/board.bin`, which the dr
 
 Generation 4 installed the factory fallback. Its system is `/nix/store/8xjkgipngvf87bcaa22bnl6i0msi7q79-nixos-system-myoko-26.11.20260916.b1b8759`. The ASUS completed the final system build in 16 seconds without a kernel rebuild. The assembled firmware tree passed the factory hash check. The installed initrd passed the storage-driver test. Kernel and matching modules remained unchanged from generation 3.
 
-After reboot, `wlP4p1s0` appeared and a scan found 21 access points. The user then reported that Wi-Fi works. The scan log also contains regulatory-update timeout warnings; do not describe the driver as error-free. Sustained throughput and suspend/resume behavior remain untested. The user also confirmed keyboard remapping works. Sound and recurrent display-link failures remain unresolved.
+After reboot, `wlP4p1s0` appeared and a scan found 21 access points. The user then reported that Wi-Fi works. The scan log also contains regulatory-update timeout warnings; do not describe the driver as error-free. The user also confirmed keyboard remapping works. Sound remains unresolved.
+
+## Suspend status
+
+Battery lid close uses `s2idle`. Before sleep, the system enables magic-packet WoWLAN. On resume, a system sleep hook touches `/run/user/1000/myoko-display-resume`. A systemd user path unit waits two seconds and cycles eDP DPMS off and on. The OLED becomes stable about four seconds after lid open. Wi-Fi can take about 25 seconds to reconnect and continues to report regulatory-update timeouts.
+
+The internal `usb@a400000` controller remains disabled. It hosts the Realtek SD reader and caused the SMMU SID `0xda0` and xHCI resume failure. An attached Realtek USB Ethernet adapter caused the separate `usb@a600000` xHCI host to die on resume, so USB Ethernet must be unplugged before sleep. Lid close remains ignored on external power and while docked.
+
+The kernel advertises `deep`, and the complete `pm_test` ladder passed in that mode: `freezer`, `devices`, `platform`, `processors`, and `core`. A real direct deep transition did not complete. The kernel logged `PM: suspend entry (deep)`, offlined CPUs 1 through 17, and then returned `-95` (`EOPNOTSUPP`) from the platform entry. `/sys/power/suspend_stats` recorded one failure with `last_failed_errno=-95`. The PSCI boot log also reports `[Firmware Bug]: failed to set PC mode: -3`. Keep `s2idle` as the default until the platform firmware or kernel gains a working final deep-suspend entry.
 
 ## Brightness command
 
