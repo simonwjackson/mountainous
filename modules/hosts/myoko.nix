@@ -208,6 +208,28 @@
       # Panel self-refresh makes static frames go black on this Samsung OLED.
       # Keep MSM's load-time-only PSR option at its disabled default.
 
+      # Diagnostic: SID 0xda0 is usb_mp, which currently hosts only the
+      # internal Realtek SD reader. Remove that controller from the test
+      # generation to isolate its resume fault without changing xHCI code.
+      hardware.deviceTree.overlays = [
+        {
+          name = "myoko-disable-usb-mp";
+          filter = "qcom/glymur-asus-zenbook-a16-ux3607oa.dtb";
+          dtsText = ''
+            /dts-v1/;
+            /plugin/;
+
+            / {
+              compatible = "asus,zenbook-a16-ux3607oa";
+            };
+
+            &usb_mp {
+              status = "disabled";
+            };
+          '';
+        }
+      ];
+
       # Preserve the GPU-to-GMU dependency until the ordered display service
       # runs during stage 2. Force PCIe ASPM powersupersave for battery life.
       boot.kernelParams = [
