@@ -5,7 +5,7 @@
 # Meta+I toggles both for immersive browsing.
 {
   nixos.modules.desktop =
-    { pkgs, ... }:
+    { config, lib, pkgs, ... }:
     {
       environment.systemPackages = [ pkgs.quickshell ];
 
@@ -14,6 +14,24 @@
 
       # A user service rather than exec-once, so the bars restart on their own
       # and their logs land in the journal instead of Hyprland's stdout.
+      # Quickshell 0.3.1 can request pairing but cannot answer BlueZ
+      # authentication callbacks. This no-input agent covers devices that use
+      # Just Works pairing. The adapter remains non-pairable for unsolicited
+      # incoming requests.
+      systemd.user.services.bluetooth-pairing-agent = lib.mkIf config.hardware.bluetooth.enable {
+        description = "BlueZ pairing agent for Quickshell";
+        partOf = [ "graphical-session.target" ];
+        after = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+
+        serviceConfig = {
+          ExecStart = "${pkgs.bluez-tools}/bin/bt-agent -c NoInputNoOutput";
+          Restart = "on-failure";
+          RestartSec = 2;
+          Slice = "session.slice";
+        };
+      };
+
       systemd.user.services.quickshell = {
         description = "Quickshell: top bar and window dock";
         partOf = [ "graphical-session.target" ];
@@ -41,5 +59,9 @@
         ./quickshell/shell.qml;
       hjem.users.simon.files.".config/quickshell/mountainous/Theme.qml".source =
         ./quickshell/Theme.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/TogglePill.qml".source =
+        ./quickshell/TogglePill.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/BluetoothPanel.qml".source =
+        ./quickshell/BluetoothPanel.qml;
     };
 }

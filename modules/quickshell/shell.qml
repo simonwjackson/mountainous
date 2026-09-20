@@ -13,6 +13,17 @@ ShellRoot {
 
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
+    property bool topbarAccessVisible: false
+    property var bluetoothScreen: null
+
+    function toggleBluetooth(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = root.bluetoothScreen === screen ? null : screen;
+    }
+
+    function primaryScreen() {
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
 
     // The omni bar. Its component lives in modules/omni.nix, which
     // QML resolves by filename from this directory.
@@ -28,6 +39,25 @@ ShellRoot {
         // with the qs CLI's own introspection verb. toggle and hide
         // both work, and Meta+I uses toggle.
         function reveal(): void { root.chromeVisible = true; }
+    }
+
+    IpcHandler {
+        target: "bluetooth"
+        function toggle(): void { root.toggleBluetooth(root.primaryScreen()); }
+        function hide(): void { root.bluetoothScreen = null; }
+        function reveal(): void {
+            root.topbarAccessVisible = false;
+            root.bluetoothScreen = root.primaryScreen();
+        }
+    }
+
+    IpcHandler {
+        target: "topbar"
+        function hide(): void { root.topbarAccessVisible = false; }
+        function reveal(): void {
+            root.chromeVisible = true;
+            root.topbarAccessVisible = true;
+        }
     }
 
     // Every window on every workspace, ordered along the strip.
@@ -128,9 +158,18 @@ ShellRoot {
         model: Quickshell.screens
 
         PanelWindow {
+            id: topBar
+
             required property var modelData
             screen: modelData
             visible: root.chromeVisible
+
+            BluetoothPanel {
+                id: bluetoothPanel
+                screen: modelData
+                shown: root.bluetoothScreen === modelData
+                onCloseRequested: root.bluetoothScreen = null
+            }
 
             anchors { top: true; left: true; right: true }
             implicitHeight: 26
@@ -151,28 +190,54 @@ ShellRoot {
                 font.family: Theme.fontFamily
             }
 
-            // Centre: the time.
+            // Centre: the time, or the active keyboard chord.
             Text {
                 anchors.centerIn: parent
-                text: root.formatClock(clock.date)
-                color: Theme.textPrimary
+                text: root.topbarAccessVisible
+                    ? "B Bluetooth  ·  Esc cancel"
+                    : root.formatClock(clock.date)
+                color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
                 font.family: Theme.fontFamily
             }
 
-            // Right: status only. Kamoi shows no network name, no
-            // carrier and no cell identity, so neither do we.
-            //
-            // Both items here are readouts, not controls, so they may
-            // shrink or truncate if they ever compete for width. They
-            // cannot collide with the centred clock above roughly
-            // 290px of panel width, which no real display is below.
-            // Noted rather than defended with machinery.
+            // Right: Bluetooth is a control. The remaining items are
+            // readouts, so Wi-Fi and the power source yield first when
+            // the bar is narrow. Battery percentage stays visible.
             RowLayout {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.rightMargin: 10
                 spacing: 12
+
+                Rectangle {
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 26
+                    visible: bluetoothPanel.adapter !== null
+                    color: bluetoothArea.containsMouse ? Theme.bgSelected : "transparent"
+                    radius: Theme.radiusSmall
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: bluetoothPanel.connectedCount > 0
+                            ? "BT " + bluetoothPanel.connectedCount
+                            : "BT"
+                        color: {
+                            if (bluetoothPanel.connectedCount > 0) return Theme.accent;
+                            return bluetoothPanel.adapter && bluetoothPanel.adapter.enabled
+                                ? Theme.textPrimary : Theme.textOff;
+                        }
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+
+                    MouseArea {
+                        id: bluetoothArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleBluetooth(modelData)
+                    }
+                }
 
                 // Wi-Fi strength. The one status item Kamoi's README
                 // actually specifies, at line 32:
@@ -209,7 +274,7 @@ ShellRoot {
                     spacing: 1
                     height: 9
                     Layout.alignment: Qt.AlignVCenter
-                    visible: Networking.wifiHardwareEnabled
+                    visible: Networking.wifiHardwareEnabled && topBar.width >= 420
 
                     readonly property var device: {
                         if (!Networking.devices) return null;
@@ -253,6 +318,7 @@ ShellRoot {
                 }
 
                 Text {
+                    visible: topBar.width >= 360
                     text: UPower.onBattery ? "BAT" : "AC"
                     color: Theme.textMuted
                     font.pixelSize: 11

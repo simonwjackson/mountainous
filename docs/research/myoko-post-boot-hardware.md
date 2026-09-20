@@ -90,6 +90,56 @@ Generation 4 installed the factory fallback. Its system is `/nix/store/8xjkgipng
 
 After reboot, `wlP4p1s0` appeared and a scan found 21 access points. The user then reported that Wi-Fi works. The scan log also contains regulatory-update timeout warnings; do not describe the driver as error-free. The user also confirmed keyboard remapping works. Sound remains unresolved.
 
+## Bluetooth
+
+The initial system had no BlueZ service, no controller, and no Bluetooth child
+under `uart14`. The kernel already included `BT=m`, `BT_HCIUART=m`,
+`BT_HCIUART_QCA=y`, `SERIAL_DEV_BUS=y`, and the PCI M.2 power sequencer. The
+missing pieces were BlueZ configuration and board device-tree data.
+
+The Myoko host now enables BlueZ and applies a board-only device-tree overlay.
+The overlay adds a `qcom,wcn7850-bt` serdev child at 3.2 Mbaud, supplies the six
+regulators required by `hci_qca`, and changes `w-disable2-gpios` to active-high.
+That polarity makes the power sequencer's initial logical high a physical high,
+which deasserts the active-low Bluetooth disable line.
+
+The built artifact test decompiles the final DTB and checks the serdev node,
+UART speed, six regulators, GPIO polarity, and BlueZ service. Runtime
+verification found controller `C4:13:75:BE:4B:14`, powered and unblocked. The
+controller reported product `0x20`, SoC `0x40292100`, ROM `0x00000101`, and
+patch `0x7b40`. A 20-second scan discovered nine nearby devices.
+
+The controller requests `qca/hmtbtfw11.tlv`, which neither linux-firmware nor
+the factory Windows package contains. The request logs `-2`, then the controller
+runs from its ROM firmware and scans successfully. The factory `hmtbtfw20.tlv`
+files were tested in an intermediate build but are not requested by this
+controller. The final configuration does not carry that unused private firmware
+dependency.
+
+Quickshell now uses its native `Quickshell.Bluetooth` API for the top-bar status
+and device panel. The panel can power the adapter, scan, pair, connect,
+disconnect, forget, and show battery state without calling `bluetoothctl`.
+Quickshell 0.3.1 cannot answer authenticated pairing callbacks, so a user
+service runs `bt-agent -c NoInputNoOutput`. This supports locally initiated
+Just Works pairing. It does not support devices that require entering or
+confirming a passkey.
+
+The approved `MX Vertical` mouse paired, bonded, connected, and reported 100%
+battery. BlueZ initially logged `input-hog profile accept failed` because the
+trimmed kernel did not include UHID. The matching out-of-tree module at
+`nix/myoko-uhid.nix` now provides `/dev/uhid` without rebuilding the kernel.
+The mouse appeared as `MX Vertical Mouse` on `/dev/input/event13`, and the user
+confirmed that pointer movement works.
+
+Keyboard access uses `Super+O`, then `B`. The top bar shows the active chord and
+cancels it after three seconds. Inside the Bluetooth panel, Up and Down select a
+device, Enter or Space runs its main action, `S` toggles scanning, `P` toggles
+adapter power, Shift+Delete forgets a paired device, and Escape closes the
+panel. The live Hyprland binding list contains the `Super+O` entry and the `B`
+and Escape submap entries. The panel opened, scanned, and rendered in the live
+session. Keyboard event handling has static and QML checks but still needs a
+user-approved live key test.
+
 ## Suspend status
 
 Battery lid close uses `s2idle`. Before sleep, the system enables magic-packet WoWLAN. On resume, a system sleep hook touches `/run/user/1000/myoko-display-resume`. A systemd user path unit waits two seconds and cycles eDP DPMS off and on. The OLED becomes stable about four seconds after lid open. Wi-Fi can take about 25 seconds to reconnect and continues to report regulatory-update timeouts.

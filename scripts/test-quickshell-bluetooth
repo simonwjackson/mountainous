@@ -1,0 +1,52 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils gnugrep lua quickshell qt6.qtdeclarative
+# shellcheck shell=bash
+# Validate the Bluetooth panel against the Quickshell QML type metadata.
+set -euo pipefail
+
+qml_dir=$(realpath "${1:?pass the mountainous Quickshell directory}")
+panel="$qml_dir/BluetoothPanel.qml"
+shell="$qml_dir/shell.qml"
+bars="$qml_dir/../bars.nix"
+hyprland="$qml_dir/../hyprland/hyprland.lua"
+
+[ -f "$panel" ] || { echo "QUICKSHELL_BLUETOOTH_PANEL_MISSING" >&2; exit 1; }
+[ -f "$shell" ] || { echo "QUICKSHELL_SHELL_MISSING" >&2; exit 1; }
+
+qml_root=$(find "$(dirname "$(dirname "$(readlink -f "$(command -v qs)")")")" \
+  -path '*/qml/Quickshell/qmldir' -printf '%h\n' -quit)
+qml_root=${qml_root%/Quickshell}
+[ -n "$qml_root" ] || { echo "QUICKSHELL_QML_IMPORT_PATH_MISSING" >&2; exit 1; }
+
+luac -p "$hyprland"
+
+lint_log=$(mktemp)
+trap 'rm -f "$lint_log"' EXIT
+if ! qmllint -I "$qml_root" "$qml_dir/TogglePill.qml" "$panel" "$shell" >"$lint_log" 2>&1; then
+  cat "$lint_log" >&2
+  echo "QUICKSHELL_BLUETOOTH_QML_INVALID" >&2
+  exit 1
+fi
+
+grep -q '^import Quickshell.Bluetooth$' "$panel"
+grep -q 'Bluetooth.defaultAdapter' "$panel"
+grep -q 'adapter.discovering' "$panel"
+grep -q '\.pair()' "$panel"
+grep -q '\.cancelPair()' "$panel"
+grep -q '\.connect()' "$panel"
+grep -q '\.disconnect()' "$panel"
+grep -q '\.forget()' "$panel"
+grep -q 'batteryAvailable' "$panel"
+grep -q 'bt-agent -c NoInputNoOutput' "$bars"
+grep -q 'Pairing failed' "$panel"
+grep -q 'Keys.onPressed' "$panel"
+grep -q 'Shift+Del forget' "$panel"
+grep -Fq 'hl.bind(mod .. " + O"' "$hyprland"
+grep -Fq 'hl.define_submap("topbar-access", "reset"' "$hyprland"
+grep -q 'ipc call bluetooth reveal' "$hyprland"
+if grep -Eq 'bluetoothctl|btmgmt|Quickshell\.execDetached' "$panel"; then
+  echo "QUICKSHELL_BLUETOOTH_BYPASSES_NATIVE_API" >&2
+  exit 1
+fi
+
+echo "QUICKSHELL_BLUETOOTH_TESTS_PASSED"

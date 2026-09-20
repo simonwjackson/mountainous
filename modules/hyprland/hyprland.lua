@@ -720,6 +720,30 @@ hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"), { locked
 -- browsing. The bars are Quickshell; see modules/bars.nix.
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle"))
 
+-- Top-bar keyboard access uses one mnemonic namespace. SUPER+O enters the
+-- namespace, then B opens Bluetooth. The top bar shows the available key while
+-- the submap is active. Escape or three seconds of inactivity cancels it.
+local topbar_access_timer = nil
+hl.bind(mod .. " + O", function()
+    hl.dispatch(hl.dsp.submap("topbar-access"))
+    hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call topbar reveal"))
+
+    if topbar_access_timer then
+        topbar_access_timer:set_enabled(false)
+    end
+    topbar_access_timer = hl.timer(function()
+        if hl.get_current_submap() == "topbar-access" then
+            hl.dispatch(hl.dsp.submap("reset"))
+            hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
+        end
+    end, { timeout = 3000, type = "oneshot" })
+end)
+
+hl.define_submap("topbar-access", "reset", function()
+    hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call bluetooth reveal"))
+    hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
+end)
+
 -- O for off. Moved off SHIFT+P, which the omni bar's window list now
 -- owns.
 hl.bind(mod .. " + SHIFT + O", hl.dsp.dpms({ action = "off" }))

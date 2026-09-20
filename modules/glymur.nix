@@ -131,11 +131,17 @@
     # running kernel package, so the module keeps matching its kernel.
     boot.extraModulePackages = [
       (config.boot.kernelPackages.callPackage ../nix/myoko-hid-asus.nix {})
+      # BlueZ creates Bluetooth Low Energy input devices through /dev/uhid.
+      # Build this one matching module instead of rebuilding the trimmed kernel.
+      (config.boot.kernelPackages.callPackage ../nix/myoko-uhid.nix {})
     ];
 
-    # Load the model-specific keyboard driver before the desktop starts. It
-    # maps the vendor HID usages to KEY_BRIGHTNESSDOWN and KEY_BRIGHTNESSUP.
-    boot.kernelModules = ["hid_asus"];
+    # Load both modules before the desktop starts. hid_asus maps the vendor
+    # keyboard usages. uhid lets BlueZ create Bluetooth LE input devices.
+    boot.kernelModules = [
+      "hid_asus"
+      "uhid"
+    ];
 
     # Keep the firmware closure to the files this platform can request. The
     # full linux-firmware package is 1.9 GiB and would make the probe UKI too

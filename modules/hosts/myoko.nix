@@ -209,6 +209,11 @@
       nixpkgs.config.allowUnfreePredicate = pkg:
         lib.getName pkg == "bdwlan_qcc2072_1p0_ncm820A.elf";
 
+      hardware.bluetooth = {
+        enable = true;
+        powerOnBoot = true;
+      };
+
       # ath12k tries board.bin after both board-2.bin key lookups fail.
       # This scopes the fallback to Myoko and leaves upstream board-2.bin
       # and its regulatory data unchanged. No driver reload runs on activation.
@@ -240,6 +245,89 @@
       # internal Realtek SD reader. Remove that controller from the test
       # generation to isolate its resume fault without changing xHCI code.
       hardware.deviceTree.overlays = [
+        {
+          name = "myoko-bluetooth";
+          filter = "qcom/glymur-asus-zenbook-a16-ux3607oa.dtb";
+          dtsText = ''
+            /dts-v1/;
+            /plugin/;
+
+            #include <dt-bindings/gpio/gpio.h>
+
+            / {
+              compatible = "asus,zenbook-a16-ux3607oa";
+            };
+
+            &{/} {
+              bt_vddio: regulator-bt-vddio {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDIO";
+                regulator-min-microvolt = <1800000>;
+                regulator-max-microvolt = <1800000>;
+                regulator-always-on;
+              };
+
+              bt_vddaon: regulator-bt-vddaon {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDAON";
+                regulator-min-microvolt = <600000>;
+                regulator-max-microvolt = <600000>;
+                regulator-always-on;
+              };
+
+              bt_vdddig: regulator-bt-vdddig {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDDIG";
+                regulator-min-microvolt = <850000>;
+                regulator-max-microvolt = <850000>;
+                regulator-always-on;
+              };
+
+              bt_vddrfa0p8: regulator-bt-vddrfa0p8 {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDRFA0P8";
+                regulator-min-microvolt = <800000>;
+                regulator-max-microvolt = <800000>;
+                regulator-always-on;
+              };
+
+              bt_vddrfa1p2: regulator-bt-vddrfa1p2 {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDRFA1P2";
+                regulator-min-microvolt = <1200000>;
+                regulator-max-microvolt = <1200000>;
+                regulator-always-on;
+              };
+
+              bt_vddrfa1p9: regulator-bt-vddrfa1p9 {
+                compatible = "regulator-fixed";
+                regulator-name = "A16_BT_VDDRFA1P9";
+                regulator-min-microvolt = <1900000>;
+                regulator-max-microvolt = <1900000>;
+                regulator-always-on;
+              };
+            };
+
+            &uart14 {
+              bluetooth {
+                compatible = "qcom,wcn7850-bt";
+                max-speed = <3200000>;
+                vddio-supply = <&bt_vddio>;
+                vddaon-supply = <&bt_vddaon>;
+                vdddig-supply = <&bt_vdddig>;
+                vddrfa0p8-supply = <&bt_vddrfa0p8>;
+                vddrfa1p2-supply = <&bt_vddrfa1p2>;
+                vddrfa1p9-supply = <&bt_vddrfa1p9>;
+              };
+            };
+
+            &{/wlan-connector} {
+              // pwrseq-pcie-m2 starts with logical high. Active-high makes
+              // that a physical high, which deasserts W_DISABLE2#.
+              w-disable2-gpios = <&tlmm 116 GPIO_ACTIVE_HIGH>;
+            };
+          '';
+        }
         {
           name = "myoko-disable-usb-mp";
           filter = "qcom/glymur-asus-zenbook-a16-ux3607oa.dtb";
