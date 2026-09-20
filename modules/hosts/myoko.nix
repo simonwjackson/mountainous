@@ -228,6 +228,19 @@
       # Enable power-profiles-daemon for userspace power management
       services.power-profiles-daemon.enable = true;
 
+      # Hardware quirks for the Zenbook A16 trackpad and Kanata virtual keyboard.
+      # Ignore clicks without touch (chassis flex) and tag Kanata as internal.
+      environment.etc."libinput/local-overrides.quirks".text = ''
+        [Asus Zenbook A16 Touchpad]
+        MatchName=*2808:0219 Touchpad*
+        MatchBus=i2c
+        ModelTouchpadPhantomClicks=1
+
+        [Kanata Virtual Keyboard]
+        MatchName=kanata
+        AttrKeyboardIntegration=internal
+      '';
+
       environment.systemPackages = [
         myoko-power-sync
         myoko-power-logger

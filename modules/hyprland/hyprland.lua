@@ -86,6 +86,9 @@ hl.config({
         touchpad = {
             natural_scroll       = true,
             disable_while_typing = true,
+            tap_to_click         = false,
+            tap_and_drag         = false,
+            clickfinger_behavior = true,
         },
     },
 
@@ -105,6 +108,17 @@ hl.config({
         -- See the TERMINAL OVERLAY section below.
         close_special_on_empty  = true,
     },
+})
+
+-- Zenbook A16 internal trackpad: explicitly require mechanical clicks
+-- and enable disable-while-typing to prevent palm interference.
+hl.device({
+    name                 = "hid-over-i2c-2808:0219-touchpad",
+    natural_scroll       = true,
+    disable_while_typing = true,
+    tap_to_click         = false,
+    tap_and_drag         = false,
+    clickfinger_behavior = true,
 })
 
 hl.curve("quick", { type = "bezier", points = { {0.15, 0}, {0.1, 1} } })
