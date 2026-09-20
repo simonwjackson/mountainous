@@ -268,10 +268,10 @@
       boot.consoleLogLevel = 3;
       boot.initrd.verbose = false;
 
-      # Keep lid close non-destructive while the suspend workaround disables
-      # the internal SD reader and external USB hosts remain peripheral-sensitive.
+      # Suspend on battery lid close. Keep plugged-in and docked lid actions
+      # non-destructive because external USB hosts remain peripheral-sensitive.
       services.logind.settings.Login = {
-        HandleLidSwitch = "ignore";
+        HandleLidSwitch = "suspend";
         HandleLidSwitchDocked = "ignore";
         HandleLidSwitchExternalPower = "ignore";
         HandlePowerKey = "ignore";
