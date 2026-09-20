@@ -353,6 +353,7 @@
       #
       # start-mountainous wraps start-hyprland to reach graphical-session.target.
       # It calls start-hyprland unqualified for the reason above.
+      useTextGreeter = true;
       settings.default_session.command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd ${start-mountainous}/bin/start-mountainous";
     };
 

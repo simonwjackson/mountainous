@@ -232,11 +232,16 @@
 
       # Preserve the GPU-to-GMU dependency until the ordered display service
       # runs during stage 2. Force PCIe ASPM powersupersave for battery life.
+      # Silence kernel warnings and systemd status lines from flooding tty1.
       boot.kernelParams = [
         "deferred_probe_timeout=300"
         "pcie_aspm=force"
         "pcie_aspm.policy=powersupersave"
+        "quiet"
+        "systemd.show_status=auto"
       ];
+      boot.consoleLogLevel = 3;
+      boot.initrd.verbose = false;
 
       # Keep lid close non-destructive until a full suspend can restore the
       # QCC2072 Wi-Fi MHI transport. The staged platform rehearsal resumes the
