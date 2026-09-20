@@ -45,6 +45,10 @@ hl.config({
         layout = "master",
 
         resize_on_border = false,
+
+        -- Do not wrap around within the current workspace when focus hits the edge.
+        -- Enables cross-workspace directional navigation.
+        no_focus_fallback = true,
     },
 
     decoration = {
@@ -262,8 +266,9 @@ local function leave_if_empty()
 end
 
 hl.on("window.destroy", leave_if_empty)
--- A window moved off the page empties it just as a close does.
-hl.on("workspace.active", leave_if_empty)
+-- Do not run leave_if_empty on workspace.active. That would kick the user off
+-- an empty workspace when they intentionally swipe or switch to it, and causes
+-- a re-entrant crash in CUnifiedWorkspaceSwipeGesture::end().
 
 -- Keep the strip numbered 1..N with no holes.
 --
@@ -302,7 +307,9 @@ compact = function()
     compacting = false
 end
 
-hl.on("workspace.created", compact)
+-- Compaction runs when a workspace is removed (leaving a possible hole).
+-- It must not run on workspace.created, which cannot create holes and would
+-- disrupt active gesture completion.
 hl.on("workspace.removed", compact)
 
 -- Even versus golden split.
@@ -340,13 +347,104 @@ hl.bind(mod .. " + SHIFT + mouse:273", hl.dsp.window.resize({ keep_aspect_ratio 
 --------------------------------------------------------------------
 -- GROUP 2: navigation and switching
 --------------------------------------------------------------------
+local function find_window_by(wins, comparator)
+    if #wins == 0 then return nil end
+    local best = wins[1]
+    for i = 2, #wins do
+        if comparator(wins[i], best) then best = wins[i] end
+    end
+    return best
+end
+
+local function prev_occupied_workspace(from_id)
+    local best = nil
+    for _, w in ipairs(hl.get_workspaces()) do
+        if w.id > 0 and w.id < from_id and w.windows > 0 then
+            if best == nil or w.id > best.id then best = w end
+        end
+    end
+    return best
+end
+
+local function next_occupied_workspace(from_id)
+    local best = nil
+    for _, w in ipairs(hl.get_workspaces()) do
+        if w.id > 0 and w.id > from_id and w.windows > 0 then
+            if best == nil or w.id < best.id then best = w end
+        end
+    end
+    return best
+end
+
+local function move_focus(dir)
+    local cur_win = hl.get_active_window()
+    local ws = hl.get_active_workspace()
+    if ws == nil or ws.special then return end
+
+    if cur_win ~= nil then
+        hl.dispatch(hl.dsp.focus({ direction = dir }))
+        local after = hl.get_active_window()
+        if after ~= nil and after.address ~= cur_win.address then
+            return
+        end
+    end
+
+    local target_ws = nil
+    local select_target_window = nil
+
+    if dir == "left" then
+        target_ws = prev_occupied_workspace(ws.id)
+        select_target_window = function(wins)
+            return find_window_by(wins, function(a, b)
+                if a.at.x ~= b.at.x then return a.at.x > b.at.x end
+                return a.at.y < b.at.y
+            end)
+        end
+    elseif dir == "right" then
+        target_ws = next_occupied_workspace(ws.id)
+        select_target_window = function(wins)
+            return find_window_by(wins, function(a, b)
+                if a.at.x ~= b.at.x then return a.at.x < b.at.x end
+                return a.at.y < b.at.y
+            end)
+        end
+    elseif dir == "up" then
+        target_ws = prev_occupied_workspace(ws.id)
+        select_target_window = function(wins)
+            return find_window_by(wins, function(a, b)
+                if a.at.y ~= b.at.y then return a.at.y > b.at.y end
+                return a.at.x < b.at.x
+            end)
+        end
+    elseif dir == "down" then
+        target_ws = next_occupied_workspace(ws.id)
+        select_target_window = function(wins)
+            return find_window_by(wins, function(a, b)
+                if a.at.y ~= b.at.y then return a.at.y < b.at.y end
+                return a.at.x < b.at.x
+            end)
+        end
+    end
+
+    if target_ws == nil then return end
+
+    local wins = tiled_windows(target_ws)
+    local win_to_focus = select_target_window(wins)
+
+    if win_to_focus ~= nil then
+        hl.dispatch(hl.dsp.focus({ window = "address:" .. win_to_focus.address }))
+    else
+        hl.dispatch(hl.dsp.focus({ workspace = target_ws.id }))
+    end
+end
+
 local dirs = { H = "left", L = "right", K = "up", J = "down" }
 for key, dir in pairs(dirs) do
-    hl.bind(mod .. " + " .. key, hl.dsp.focus({ direction = dir }))
+    hl.bind(mod .. " + " .. key, function() move_focus(dir) end)
     hl.bind(mod .. " + CTRL + " .. key, hl.dsp.window.move({ direction = dir }))
 end
 for _, dir in ipairs({ "left", "right", "up", "down" }) do
-    hl.bind(mod .. " + " .. dir, hl.dsp.focus({ direction = dir }))
+    hl.bind(mod .. " + " .. dir, function() move_focus(dir) end)
 end
 
 -- Kamoi Meta+Tab, quick press: straight back to the window you came
