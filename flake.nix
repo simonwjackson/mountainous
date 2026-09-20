@@ -67,6 +67,10 @@
       url = "github:LLukas22/Jellyswarrm/v0.2.1";
       flake = false;
     };
+    whisper-large-v3-turbo-model = {
+      url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin";
+      flake = false;
+    };
     korri = {
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";

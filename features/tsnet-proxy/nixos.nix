@@ -7,6 +7,13 @@
   cfg = config.mountainous.features.tsnet-proxy;
 in {
   config = mkIf cfg.enable {
+    assertions =
+      lib.mapAttrsToList (serviceName: serviceConfig: {
+        assertion = serviceConfig.interactiveLogin || serviceConfig.authKeyFile != null || cfg.authKeyFile != null;
+        message = "mountainous.features.tsnet-proxy.services.${serviceName} requires an auth key or interactiveLogin = true";
+      })
+      cfg.services;
+
     systemd.services =
       lib.mapAttrs' (serviceName: serviceConfig: {
         name = "tsnet-proxy-${serviceName}";
@@ -56,7 +63,9 @@ in {
               else cfg.authKeyFile;
             backendUrl = "${serviceConfig.protocol}://${serviceConfig.host}:${toString serviceConfig.port}";
           in ''
-            export TS_AUTHKEY="$(cat ${effectiveAuthKeyFile} | tr -d '\n')"
+            ${lib.optionalString (!serviceConfig.interactiveLogin) ''
+              export TS_AUTHKEY="$(cat ${effectiveAuthKeyFile} | tr -d '\n')"
+            ''}
             mkdir -p "$TS_STATE_DIR/.config"
             exec ${cfg.package}/bin/tsnet-proxy \
               -hostname "${serviceConfig.hostname}" \

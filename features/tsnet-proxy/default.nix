@@ -52,6 +52,12 @@ in {
             default = null;
           };
 
+          interactiveLogin = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Use tsnet's browser approval flow instead of an auth key for first login.";
+          };
+
           listenPort = mkOption {
             type = types.str;
             default = "443";

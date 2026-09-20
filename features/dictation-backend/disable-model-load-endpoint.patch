@@ -1,0 +1,50 @@
+--- a/examples/server/server.cpp
++++ b/examples/server/server.cpp
+@@ -1112,47 +1112,6 @@
+         // reset params to their defaults
+         params = default_params;
+     });
+-    svr->Post(sparams.request_path + "/load", [&](const Request &req, Response &res){
+-        std::lock_guard<std::mutex> lock(whisper_mutex);
+-        state.store(SERVER_STATE_LOADING_MODEL);
+-        if (!req.has_file("model"))
+-        {
+-            fprintf(stderr, "error: no 'model' field in the request\n");
+-            const std::string error_resp = "{\"error\":\"no 'model' field in the request\"}";
+-            res.set_content(error_resp, "application/json");
+-            return;
+-        }
+-        std::string model = req.get_file_value("model").content;
+-        if (!is_file_exist(model.c_str()))
+-        {
+-            fprintf(stderr, "error: 'model': %s not found!\n", model.c_str());
+-            const std::string error_resp = "{\"error\":\"model not found!\"}";
+-            res.set_content(error_resp, "application/json");
+-            return;
+-        }
+-
+-        // clean up
+-        whisper_free(ctx);
+-
+-        // whisper init
+-        ctx = whisper_init_from_file_with_params(model.c_str(), cparams);
+-
+-        // TODO perhaps load prior model here instead of exit
+-        if (ctx == nullptr) {
+-            fprintf(stderr, "error: model init  failed, no model loaded must exit\n");
+-            exit(1);
+-        }
+-
+-        // initialize openvino encoder. this has no effect on whisper.cpp builds that don't have OpenVINO configured
+-        whisper_ctx_init_openvino_encoder(ctx, nullptr, params.openvino_encode_device.c_str(), nullptr);
+-
+-        state.store(SERVER_STATE_READY);
+-        const std::string success = "Load was successful!";
+-        res.set_content(success, "application/text");
+-
+-        // check if the model is in the file system
+-    });
+-
+     svr->Get(sparams.request_path + "/health", [&](const Request &, Response &res){
+         server_state current_state = state.load();
+         if (current_state == SERVER_STATE_READY) {

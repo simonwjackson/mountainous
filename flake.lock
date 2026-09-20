@@ -1369,7 +1369,8 @@
         "nixpkgs-rpcs3-v0-0-41": "nixpkgs-rpcs3-v0-0-41",
         "pi": "pi",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
-        "tsnsrv": "tsnsrv"
+        "tsnsrv": "tsnsrv",
+        "whisper-large-v3-turbo-model": "whisper-large-v3-turbo-model"
       }
     },
     "rust-overlay": {
@@ -1720,6 +1721,18 @@
         "submodules": true,
         "type": "git",
         "url": "https://github.com/aduros/wasm4"
+      }
+    },
+    "whisper-large-v3-turbo-model": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-BLGIsJDqpQ3L+zST09VJ+ui7SWdgCS/SndwM5DFrMls=",
+        "type": "file",
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin"
       }
     }
   },

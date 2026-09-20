@@ -122,6 +122,12 @@
     };
 
     # ── Services ─────────────────────────────────────────────────────
+    features.dictation-backend = {
+      enable = true;
+      audioContext = 1500;
+      proxy.enable = true;
+    };
+
     features.jellyfin = {
       enable = true;
       # Opened to the LAN so the LG webOS TV (no Tailscale client) can reach Jellyfin directly.

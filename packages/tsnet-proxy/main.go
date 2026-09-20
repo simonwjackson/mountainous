@@ -29,7 +29,7 @@ func main() {
 		*authKey = os.Getenv("TS_AUTHKEY")
 	}
 	if *authKey == "" {
-		log.Fatal("Auth key required via -authkey flag or TS_AUTHKEY environment variable")
+		log.Printf("No auth key provided; using saved state or interactive login")
 	}
 
 	// Parse backend URL
