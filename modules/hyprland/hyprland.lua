@@ -721,9 +721,9 @@ hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"), { locked
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle"))
 
 -- Top-bar keyboard access uses one mnemonic namespace. SUPER+O enters the
--- namespace, then B opens Bluetooth or W opens Wi-Fi. The top bar shows the
--- available keys while the submap is active. Escape or three seconds of
--- inactivity cancels it.
+-- namespace, then B opens Bluetooth, W opens Wi-Fi, or S opens Sound. The top
+-- bar shows the available keys while the submap is active. Escape or three
+-- seconds of inactivity cancels it.
 local topbar_access_timer = nil
 hl.bind(mod .. " + O", function()
     hl.dispatch(hl.dsp.submap("topbar-access"))
@@ -743,6 +743,7 @@ end)
 hl.define_submap("topbar-access", "reset", function()
     hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call bluetooth reveal"))
     hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call wifi reveal"))
+    hl.bind("S", hl.dsp.exec_cmd("qs -c mountainous ipc call sound reveal"))
     hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
 end)
 

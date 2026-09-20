@@ -1,0 +1,62 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils gnugrep gnused jq nix
+# shellcheck shell=bash
+# Run qmllint against the exact Quickshell and Qt this repository pins, not
+# whatever <nixpkgs> happens to resolve to.
+#
+# Why this exists: `nix-shell -p quickshell` resolved to Quickshell 0.2.1 on
+# this workstation, a build with no Quickshell.Networking module at all. The
+# panel tests still reported success, because qmllint exits 0 on warnings and
+# an unresolved import is only a warning. A gate that cannot fail is not a
+# gate, so this script pins the toolchain and classifies the output itself.
+set -euo pipefail
+
+repo=$(git rev-parse --show-toplevel)
+host=${QUICKSHELL_LINT_HOST:-hiyori}
+
+qs=$(nix build --no-link --print-out-paths \
+  "$repo#nixosConfigurations.$host.pkgs.quickshell")
+qt=$(nix build --no-link --print-out-paths \
+  "$repo#nixosConfigurations.$host.pkgs.qt6.qtdeclarative")
+qtbase=$(nix build --no-link --print-out-paths \
+  "$repo#nixosConfigurations.$host.pkgs.qt6.qtbase")
+
+test -d "$qs/lib/qt-6/qml/Quickshell/Networking" \
+  || { echo "QUICKSHELL_TOO_OLD: $qs" >&2; exit 1; }
+test -d "$qs/lib/qt-6/qml/Quickshell/Services/Pipewire" \
+  || { echo "QUICKSHELL_NO_PIPEWIRE: $qs" >&2; exit 1; }
+
+echo "QUICKSHELL: $qs"
+echo "QTDECLARATIVE: $qt"
+
+report=$(mktemp)
+trap 'rm -f "$report"' EXIT
+
+"$qt/bin/qmllint" \
+  -I "$qs/lib/qt-6/qml" \
+  -I "$qt/lib/qt-6/qml" \
+  -I "$qtbase/lib/qt-6/qml" \
+  "$@" >"$report" 2>&1 || true
+
+# Unqualified access and uncreatable-type fire on every panel in this repo,
+# including the two that already shipped; they are the LazyLoader idiom, not
+# defects. A member that does not exist on a Quickshell type is a defect,
+# because it means the panel was written against an API that is not there.
+#
+# Three findings predate this script and appear identically on cairn's
+# shell.qml: the dock's two slotIndex reads off ListView.currentItem, and
+# PanelWindow's margins group. They are allowed by name so the gate stays
+# usable. Anything else fails the run.
+known='not found on type "Theme"|Member "slotIndex" not found on type "QQuickItem"|Type margins is used but it is not resolved'
+
+if grep -E '\[(missing-property|missing-type|unresolved-type)\]' "$report" \
+  | grep -vE "$known" | grep -q .; then
+  echo "--- type errors ---" >&2
+  grep -E '\[(missing-property|missing-type|unresolved-type)\]' "$report" \
+    | grep -vE "$known" >&2
+  echo "QUICKSHELL_QML_TYPE_ERRORS" >&2
+  exit 1
+fi
+
+printf 'QMLLINT_CLEAN (%s warnings, all known idiom)\n' \
+  "$(grep -c '^Warning:' "$report" || true)"

@@ -1,0 +1,81 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils gnugrep lua
+# shellcheck shell=bash
+# Validate the native Quickshell sound panel and its top-bar keyboard route.
+set -euo pipefail
+
+qml_dir=$(realpath "${1:-modules/quickshell}")
+panel="$qml_dir/SoundPanel.qml"
+shell="$qml_dir/shell.qml"
+theme="$qml_dir/Theme.qml"
+bars="$qml_dir/../bars.nix"
+hyprland="$qml_dir/../hyprland/hyprland.lua"
+
+for file in "$panel" "$shell" "$theme" "$bars" "$hyprland"; do
+  test -f "$file"
+done
+
+# The panel reads PipeWire through Quickshell's own service, never a
+# command wrapper. Node data does not arrive until the node is bound, so a
+# PwObjectTracker must hold every node the panel or the bar reads.
+grep -q '^import Quickshell.Services.Pipewire$' "$panel"
+grep -q 'PwObjectTracker {' "$panel"
+grep -q 'Pipewire.defaultAudioSink' "$panel"
+grep -q 'Pipewire.preferredDefaultAudioSink' "$panel"
+grep -q 'Pipewire.preferredDefaultAudioSource' "$panel"
+
+# Every capability the panel offers has a key. Volume and mute are the two
+# that must never sit behind the pointer alone.
+grep -q 'context: Qt.WindowShortcut' "$panel"
+grep -q 'sequence: "Up"' "$panel"
+grep -q 'sequence: "Down"' "$panel"
+grep -q 'sequence: "Left"' "$panel"
+grep -q 'sequence: "Right"' "$panel"
+grep -q 'sequence: "Return"' "$panel"
+grep -q 'sequence: "M"' "$panel"
+grep -q 'sequence: "Tab"' "$panel"
+grep -q 'sequence: "Escape"' "$panel"
+
+# The list takes focus the way the Bluetooth panel does, and the veil
+# closes on a lost grab rather than trapping the session.
+grep -q 'Component.onCompleted: forceActiveFocus()' "$panel"
+grep -q 'HyprlandFocusGrab {' "$panel"
+
+# Layout is a pure function of the container, not of a device class.
+grep -q 'function layoutPlan(width, height)' "$panel"
+
+# shell.qml owns the panel, the IPC route, and the mnemonic hint.
+grep -q 'SoundPanel {' "$shell"
+grep -q 'target: "sound"' "$shell"
+grep -q 'function toggleSound(screen)' "$shell"
+grep -q 'S Sound' "$shell"
+
+# Opening one top-bar panel closes the others.
+grep -q 'root.soundScreen = null' "$shell"
+
+# The file only exists on the device if bars.nix installs it.
+grep -q 'SoundPanel.qml' "$bars"
+
+# The compositor route into the shared topbar-access namespace.
+grep -Fq 'hl.bind("S", hl.dsp.exec_cmd("qs -c mountainous ipc call sound reveal"))' "$hyprland"
+
+# Code only. The comments name wpctl on purpose, because the panel has to
+# agree with the hardware keys in hyprland.lua about the top of the scale.
+if grep -v '^[[:space:]]*//' "$panel" \
+  | grep -Eq 'wpctl|pactl|amixer|pamixer|execDetached|Process *\{'; then
+  echo "SOUND_PANEL_USES_COMMAND_WRAPPER" >&2
+  exit 1
+fi
+
+luac -p "$hyprland"
+
+# The layout policy is executed across the size ladder, not eyeballed.
+"$(dirname "$0")/test-sound-panel-layout" "$qml_dir"
+
+# Types are checked against the Quickshell this repository pins. Do not put a
+# bare `qmllint` here: it exits 0 on warnings, and `nix-shell -p quickshell`
+# on this workstation resolves 0.2.1, which has no Networking module at all.
+"$(dirname "$0")/lint-quickshell-qml" \
+  "$qml_dir/TogglePill.qml" "$panel" "$shell"
+
+echo "QUICKSHELL_SOUND_TESTS_PASSED"

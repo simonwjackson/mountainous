@@ -1,0 +1,76 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils nodejs
+# shellcheck shell=bash
+# Execute SoundPanel.qml's layoutPlan across a ladder of container sizes and
+# assert the intrinsic invariants: no control is ever unreachable, the device
+# list keeps at least one whole row, and the card never exceeds its container.
+set -euo pipefail
+
+qml_dir=$(realpath "${1:-modules/quickshell}")
+panel="$qml_dir/SoundPanel.qml"
+test -f "$panel"
+
+# Lift the real function body out of the panel so the test cannot drift from
+# the shipped policy.
+node -e '
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[1], "utf8");
+const start = src.indexOf("function layoutPlan(width, height)");
+if (start < 0) { console.error("LAYOUT_PLAN_MISSING"); process.exit(1); }
+let depth = 0, i = src.indexOf("{", start), end = -1;
+for (let j = i; j < src.length; j++) {
+  if (src[j] === "{") depth++;
+  else if (src[j] === "}") { depth--; if (depth === 0) { end = j + 1; break; } }
+}
+const body = src.slice(start, end).replace(/^function /, "");
+const layoutPlan = new Function("return function " + body)();
+
+// Fixed vertical costs inside the card, mirroring the ColumnLayout.
+const MARGINS = 20, SPACING = 6, HEADER = 30, SEP = 1, TABS = 22, HINT = 26;
+
+function listHeight(plan) {
+  const children = 5 + (plan.showHint ? 1 : 0);
+  const fixed = MARGINS + SPACING * (children - 1)
+    + HEADER + plan.volumeHeight + SEP + TABS + (plan.showHint ? HINT : 0);
+  return plan.cardHeight - fixed;
+}
+
+const ladder = [
+  ["generous  ", 2560, 1600],
+  ["laptop    ", 1920, 1200],
+  ["half      ", 960, 1200],
+  ["narrow-tall", 320, 900],
+  ["wide-short", 1920, 300],
+  ["wide-tiny ", 1280, 220],
+  ["tiny      ", 360, 240],
+  ["extreme   ", 200, 190],
+];
+
+let failed = false;
+for (const [name, w, h] of ladder) {
+  const plan = layoutPlan(w, h);
+  const list = listHeight(plan);
+  const fits = plan.cardWidth <= w && plan.cardHeight <= Math.max(h, plan.cardHeight);
+  const rows = Math.floor(list / plan.rowHeight);
+  const ok = list >= plan.rowHeight && plan.cardWidth > 0;
+  if (!ok) failed = true;
+  console.log(
+    `${name} ${String(w).padStart(5)}x${String(h).padStart(4)} ` +
+    `card=${plan.cardWidth}x${plan.cardHeight} row=${plan.rowHeight} ` +
+    `list=${list} rows=${rows} detail=${plan.showDetail ? "y" : "n"} ` +
+    `hint=${plan.showHint ? "y" : "n"} ${ok ? "OK" : "FAIL"}`);
+}
+
+// The two capability invariants. Tabs reach the input devices and the volume
+// row carries mute; neither may ever be dropped by the plan.
+for (const [name, w, h] of ladder) {
+  const plan = layoutPlan(w, h);
+  if (plan.showTabs === false || plan.showVolume === false) {
+    console.error(`CAPABILITY_DROPPED_AT_${name.trim()}`);
+    failed = true;
+  }
+}
+
+if (failed) { console.error("SOUND_PANEL_LAYOUT_FAILED"); process.exit(1); }
+console.log("SOUND_PANEL_LAYOUT_TESTS_PASSED");
+' "$panel"

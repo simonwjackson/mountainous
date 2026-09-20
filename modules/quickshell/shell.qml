@@ -16,17 +16,27 @@ ShellRoot {
     property bool topbarAccessVisible: false
     property var bluetoothScreen: null
     property var wifiScreen: null
+    property var soundScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
         root.wifiScreen = null;
+        root.soundScreen = null;
         root.bluetoothScreen = root.bluetoothScreen === screen ? null : screen;
     }
 
     function toggleWifi(screen) {
         root.topbarAccessVisible = false;
         root.bluetoothScreen = null;
+        root.soundScreen = null;
         root.wifiScreen = root.wifiScreen === screen ? null : screen;
+    }
+
+    function toggleSound(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = root.soundScreen === screen ? null : screen;
     }
 
     function primaryScreen() {
@@ -67,6 +77,18 @@ ShellRoot {
             root.topbarAccessVisible = false;
             root.bluetoothScreen = null;
             root.wifiScreen = root.primaryScreen();
+        }
+    }
+
+    IpcHandler {
+        target: "sound"
+        function toggle(): void { root.toggleSound(root.primaryScreen()); }
+        function hide(): void { root.soundScreen = null; }
+        function reveal(): void {
+            root.topbarAccessVisible = false;
+            root.bluetoothScreen = null;
+            root.wifiScreen = null;
+            root.soundScreen = root.primaryScreen();
         }
     }
 
@@ -233,6 +255,13 @@ ShellRoot {
                 onCloseRequested: root.wifiScreen = null
             }
 
+            SoundPanel {
+                id: soundPanel
+                screen: modelData
+                shown: root.soundScreen === modelData
+                onCloseRequested: root.soundScreen = null
+            }
+
             anchors { top: true; left: true; right: true }
             implicitHeight: 26
             color: Theme.bgBase
@@ -256,7 +285,7 @@ ShellRoot {
             Text {
                 anchors.centerIn: parent
                 text: root.topbarAccessVisible
-                    ? "B Bluetooth  ·  W Wi-Fi  ·  Esc cancel"
+                    ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  Esc cancel"
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
@@ -376,6 +405,41 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: root.toggleWifi(modelData)
+                    }
+                }
+
+                // Volume. The control is always here once PipeWire has a
+                // sink, because opening the panel is a capability. The
+                // number beside it is a readout, so it is what yields when
+                // the bar runs short of width.
+                Rectangle {
+                    id: soundControl
+
+                    readonly property bool showLevel: topBar.width >= 460
+
+                    Layout.preferredWidth: showLevel ? 50 : 28
+                    Layout.preferredHeight: 26
+                    visible: soundPanel.available
+                    color: soundArea.containsMouse ? Theme.bgSelected : "transparent"
+                    radius: Theme.radiusSmall
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: {
+                            if (!soundControl.showLevel) return "VOL";
+                            if (soundPanel.muted) return "VOL --";
+                            return "VOL " + soundPanel.volumePercent;
+                        }
+                        color: soundPanel.muted ? Theme.textOff : Theme.textPrimary
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+
+                    MouseArea {
+                        id: soundArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleSound(modelData)
                     }
                 }
 

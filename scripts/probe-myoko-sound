@@ -1,0 +1,29 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Read Myoko's PipeWire graph the way SoundPanel.qml reads it, so the panel's
+# assumptions are checked against the real machine instead of against a
+# guess. Answers three questions:
+#   1. Is there a real sink, or only the Dummy Output?
+#   2. Is PwNode.audio populated before a PwObjectTracker binds the node?
+#   3. Do isSink and isStream split the graph the way the panel expects?
+set -euo pipefail
+
+host=${MYOKO_HOST:-100.88.70.113}
+known=$(mktemp)
+trap 'rm -f "$known"' EXIT
+
+read -r type key _comment \
+  < "$HOME/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub"
+printf '%s %s %s\n' "$host" "$type" "$key" > "$known"
+
+opts=(-F /dev/null -o BatchMode=yes -o ConnectTimeout=10
+  -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known")
+
+here=$(dirname "$(readlink -f "$0")")
+scp "${opts[@]}" "$here/probe-myoko-sound-target" "root@$host:/tmp/probe-myoko-sound-target"
+scp "${opts[@]}" "$here/probe-myoko-sound-target.qml" "root@$host:/tmp/pw-probe/shell.qml" 2>/dev/null || {
+  ssh "${opts[@]}" "root@$host" "mkdir -p /tmp/pw-probe"
+  scp "${opts[@]}" "$here/probe-myoko-sound-target.qml" "root@$host:/tmp/pw-probe/shell.qml"
+}
+ssh "${opts[@]}" "root@$host" "bash /tmp/probe-myoko-sound-target"
