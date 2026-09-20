@@ -231,27 +231,19 @@ Scope {
                             if (count === 0) currentIndex = -1;
                         }
 
-                        Keys.onPressed: function (event) {
-                            if (event.key === Qt.Key_Escape) {
-                                root.closeRequested();
-                            } else if (event.key === Qt.Key_S && root.adapter && root.adapter.enabled) {
-                                root.adapter.discovering = !root.adapter.discovering;
-                            } else if (event.key === Qt.Key_P && root.adapter) {
-                                root.adapter.enabled = !root.adapter.enabled;
-                            } else if ((event.key === Qt.Key_Return
-                                        || event.key === Qt.Key_Enter
-                                        || event.key === Qt.Key_Space)
-                                       && currentItem) {
-                                currentItem.runAction();
-                            } else if (event.key === Qt.Key_Delete
-                                       && (event.modifiers & Qt.ShiftModifier)
-                                       && currentItem
-                                       && currentItem.modelData.paired) {
+                        function moveSelection(offset) {
+                            if (count === 0) return;
+                            currentIndex = (currentIndex + offset + count) % count;
+                            positionViewAtIndex(currentIndex, ListView.Contain);
+                        }
+
+                        function runCurrentAction() {
+                            if (currentItem) currentItem.runAction();
+                        }
+
+                        function forgetCurrentDevice() {
+                            if (currentItem && currentItem.modelData.paired)
                                 currentItem.modelData.forget();
-                            } else {
-                                return;
-                            }
-                            event.accepted = true;
                         }
 
                         delegate: Rectangle {
@@ -451,7 +443,58 @@ Scope {
             }
 
             Shortcut {
+                sequence: "Up"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.moveSelection(-1)
+            }
+
+            Shortcut {
+                sequence: "Down"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.moveSelection(1)
+            }
+
+            Shortcut {
+                sequence: "Return"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.runCurrentAction()
+            }
+
+            Shortcut {
+                sequence: "Enter"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.runCurrentAction()
+            }
+
+            Shortcut {
+                sequence: "Space"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.runCurrentAction()
+            }
+
+            Shortcut {
+                sequence: "S"
+                context: Qt.WindowShortcut
+                enabled: root.adapter && root.adapter.enabled
+                onActivated: root.adapter.discovering = !root.adapter.discovering
+            }
+
+            Shortcut {
+                sequence: "P"
+                context: Qt.WindowShortcut
+                enabled: root.adapter !== null
+                onActivated: root.adapter.enabled = !root.adapter.enabled
+            }
+
+            Shortcut {
+                sequence: "Shift+Delete"
+                context: Qt.WindowShortcut
+                onActivated: deviceList.forgetCurrentDevice()
+            }
+
+            Shortcut {
                 sequence: "Escape"
+                context: Qt.WindowShortcut
                 onActivated: root.closeRequested()
             }
         }
