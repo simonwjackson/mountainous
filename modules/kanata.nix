@@ -140,6 +140,7 @@
             ;;
             ;; Extended bottom row mapping:
             ;; Physical V types comma (,).
+            ;; Physical B is inert (@dead / f24).
             ;; Physical N types period (.).
             ;; Physical comma (,) types n.
             ;; Physical period (.) types b.
@@ -149,6 +150,7 @@
 
             c @c-sft
             v ,
+            b @dead
             n .
             m @m-sft
             , n

@@ -18,9 +18,10 @@ Hardware-level keyboard remapping below the compositor, porting the home-row mod
 5. **Combos (Chords)**: Pressing `jk` or `kj` quickly produces `Enter` (`ret`). Pressing `kl` or `lk` quickly produces `Escape` (`esc`). These are implemented with `defchordsv2` using a 150ms timeout and `first-release`. `concurrent-tap-hold yes` is enabled in `defcfg`. The combos are disabled on sub-layers (`dir`, `pag`, `fun`, `num`, `sym`, `wrp`, `chk`) so arrow movement, bracket insertion, and number typing are not interrupted.
 6. **Dead Editing Keys**: The physical Tab, Escape, Enter, and Backspace keys are inert on the base layer. Each function keeps a channel. Enter comes from the `jk` and `kj` chords, Escape from the `kl` and `lk` chords, Backspace from hold `F` then `h`, and Tab from hold `F` then `j`. The keys map to `f24`, not `XX`, because a key mapped to `XX` breaks the next tap-hold on kanata 1.12.0. The greetd password prompt takes Enter only from the `jk` chord.
 7. **Bottom Row Offset**: The bottom-row letters sit one key to the right of their labels. The physical `z` key types `x`, `x` types `c`, `c` taps `v`, and the physical Left Shift key taps `z`. Holding `c` still yields Left Shift, and holding Left Shift yields Left Ctrl, so the row keeps both modifiers.
-8. **Inert Outer and Number Keys**: The physical number row (`1` through `0`, `-`, `=`, `` ` ``), brackets (`[`, `]`), backslash (`\`), apostrophe (`'`), right shift (`rsft`), and function keys (`f1` through `f12`) map to `@dead` (`f24`) on the base layer. Numbers and symbols are accessed via the `num`, `sym`, and `wrp` layers; function keys via the `fun` layer; and shift via held `c` or held `m`.
+8. **Inert Outer, Number, and Unused Physical Keys**: The physical number row (`1` through `0`, `-`, `=`, `` ` ``), brackets (`[`, `]`), backslash (`\`), apostrophe (`'`), right shift (`rsft`), function keys (`f1` through `f12`), and physical `b` map to `@dead` (`f24`) on the base layer. Numbers and symbols are accessed via the `num`, `sym`, and `wrp` layers; function keys via the `fun` layer; shift via held `c` or held `m`; and `b` via physical period (`.`).
 9. **Extended Bottom Row Remapping**:
    - Physical `v` types comma (`,`).
+   - Physical `b` is inert (`@dead`).
    - Physical `n` types period (`.`).
    - Physical comma (`,`) types `n`.
    - Physical period (`.`) types `b`.
