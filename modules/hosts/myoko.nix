@@ -245,6 +245,7 @@
         HandleLidSwitch = "ignore";
         HandleLidSwitchDocked = "ignore";
         HandleLidSwitchExternalPower = "ignore";
+        HandlePowerKey = "ignore";
       };
 
       # Enable power-profiles-daemon for userspace power management
