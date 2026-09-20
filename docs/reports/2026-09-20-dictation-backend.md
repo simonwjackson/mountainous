@@ -44,7 +44,7 @@ The short-sample result initially favored 512. A 33-second sample then disproved
 | 1280 | 0.963 s | Repeated the sentence eight times. |
 | 1500 | 0.652 s | All three sentences were exact. |
 
-The fixed audio context is 1500. It preserves long-take accuracy. The 11-second request took 0.262 seconds over loopback. From Myoko through the tailnet, the first request after restart took 0.703 seconds and the next warm request took 0.557 seconds.
+The fixed audio context is 1500. It preserves long-take accuracy. The 11-second request took 0.262 seconds over loopback. From Myoko through the tailnet, the first request after restart took 0.703 seconds. Final verification after the persistent deployment took 0.562 seconds.
 
 ## Live resource use
 
@@ -67,7 +67,7 @@ Verified on the test-activated Zao candidate:
 Tailnet verification completed after interactive browser approval:
 
 - The tsnet node is online as `dictate.hummingbird-lake.ts.net`.
-- `https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions` returned the exact sentence from Myoko in 0.557 seconds on a warm request with the full audio context.
+- `https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions` returned the exact sentence from Myoko in 0.562 seconds after the persistent deployment.
 - `https://dictate` fails certificate validation. Tailscale issues the certificate only for the full MagicDNS name.
 - The client must use `https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions`.
 - The backend remains unreachable at Zao's LAN address on port 8178.
