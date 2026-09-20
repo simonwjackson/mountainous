@@ -1,0 +1,33 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils gnugrep quickshell qt6.qtdeclarative
+# shellcheck shell=bash
+# Validate the dock's Hyprland model reconciliation and QML syntax.
+set -euo pipefail
+
+qml_dir=$(realpath "${1:-modules/quickshell}")
+shell="$qml_dir/shell.qml"
+test -f "$shell"
+
+grep -q '^import Quickshell.Hyprland$' "$shell"
+grep -q 'Hyprland.toplevels.values' "$shell"
+grep -q 'model: ScriptModel { values: root.allWindows }' "$shell"
+grep -q 'event.name !== "openwindow"' "$shell"
+grep -q 'event.name !== "movewindowv2"' "$shell"
+grep -q 'Hyprland.refreshWorkspaces()' "$shell"
+grep -q 'dockToplevelRefresh.restart()' "$shell"
+grep -q 'onTriggered: Hyprland.refreshToplevels()' "$shell"
+
+qml_root=$(find "$(dirname "$(dirname "$(readlink -f "$(command -v qs)")")")" \
+  -path '*/qml/Quickshell/qmldir' -printf '%h\n' -quit)
+qml_root=${qml_root%/Quickshell}
+[ -n "$qml_root" ] || { echo "QUICKSHELL_QML_IMPORT_PATH_MISSING" >&2; exit 1; }
+
+lint_log=$(mktemp)
+trap 'rm -f "$lint_log"' EXIT
+if ! qmllint -I "$qml_root" "$shell" >"$lint_log" 2>&1; then
+  cat "$lint_log" >&2
+  echo "QUICKSHELL_DOCK_QML_INVALID" >&2
+  exit 1
+fi
+
+echo "QUICKSHELL_DOCK_TESTS_PASSED"

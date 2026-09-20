@@ -79,6 +79,42 @@ ShellRoot {
         }
     }
 
+    // Quickshell 0.3.1 drops an openwindow event when Hyprland creates the
+    // destination workspace at the same time. Its journal says:
+    //
+    //   Got openwindow for workspace "1" which was not previously tracked.
+    //
+    // The missing event leaves Hyprland.toplevels one window behind until a
+    // later full refresh. Refresh workspaces first, then toplevels. The timer
+    // is a fallback when the workspace already existed and valuesChanged does
+    // not fire. movewindowv2 has the same race for a newly created page.
+    Timer {
+        id: dockToplevelRefresh
+        interval: 100
+        repeat: false
+        onTriggered: Hyprland.refreshToplevels()
+    }
+
+    Connections {
+        target: Hyprland.workspaces
+
+        function onValuesChanged() {
+            if (!dockToplevelRefresh.running) return;
+            dockToplevelRefresh.stop();
+            Hyprland.refreshToplevels();
+        }
+    }
+
+    Connections {
+        target: Hyprland
+
+        function onRawEvent(event) {
+            if (event.name !== "openwindow" && event.name !== "movewindowv2") return;
+            dockToplevelRefresh.restart();
+            Hyprland.refreshWorkspaces();
+        }
+    }
+
     // Every window on every workspace, ordered along the strip.
     //
     // Not just the focused workspace: the dock is how you see the
