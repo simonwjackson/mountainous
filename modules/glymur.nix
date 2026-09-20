@@ -121,13 +121,6 @@
               name = "myoko-edp-force-hbr3";
               patch = ./glymur/0004-drm-msm-dp-force-edp-rate-to-hbr3.patch;
             }
-            # Glymur's USB GDSCs lose xHCI state during system suspend. Make
-            # DWC3 rebuild the core and tell xHCI to discard its stale DMA
-            # rings instead of restoring them into the resumed controller.
-            {
-              name = "glymur-dwc3-reinitialize-after-power-loss";
-              patch = ./glymur/0005-usb-dwc3-reinitialize-glymur-hosts-after-power-loss.patch;
-            }
           ];
       })
     );
