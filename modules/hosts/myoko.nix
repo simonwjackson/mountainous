@@ -107,7 +107,9 @@
         for phy_path in /sys/class/ieee80211/*; do
           [ -d "$phy_path" ] || continue
           phy=$(${pkgs.coreutils}/bin/basename "$phy_path")
-          ${pkgs.iw}/bin/iw phy "$phy" wowlan enable magic-packet disconnect || true
+          # NetworkManager can disconnect while preparing a normal sleep.
+          # A disconnect wake trigger would immediately wake the machine.
+          ${pkgs.iw}/bin/iw phy "$phy" wowlan enable magic-packet || true
         done
       '';
 
@@ -115,18 +117,21 @@
         uid=$(${pkgs.coreutils}/bin/id -u simon 2>/dev/null || echo 1000)
         runtime_dir="/run/user/$uid"
 
-        for _attempt in $(${pkgs.coreutils}/bin/seq 1 20); do
-          if ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+        for _attempt in $(${pkgs.coreutils}/bin/seq 1 40); do
+          if ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
             ${config.programs.hyprland.package}/bin/hyprctl --instance 0 monitors >/dev/null 2>&1; then
-            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+            ${pkgs.util-linux}/bin/logger -t myoko-display-resume "cycling eDP after resume"
+            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
               ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "off" })' || true
             ${pkgs.coreutils}/bin/sleep 1
-            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" WAYLAND_DISPLAY=wayland-1 \
               ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "on" })' || true
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 0.5
         done
+
+        ${pkgs.util-linux}/bin/logger -t myoko-display-resume "Hyprland IPC unavailable after resume"
       '';
 
       myoko-card-reader-power = pkgs.writeShellScriptBin "myoko-card-reader-power" ''
@@ -278,14 +283,14 @@
         HandlePowerKey = "ignore";
       };
 
-      # Program WoWLAN immediately before each sleep. A delayed DPMS cycle
+      # Program magic-packet WoWLAN immediately before each sleep. A delayed DPMS cycle
       # retrains eDP after userspace thaws; an immediate DPMS-on can race the
       # panel and leave the OLED black after an otherwise successful resume.
       powerManagement.powerDownCommands = lib.mkAfter ''
         ${myoko-enable-wowlan}/bin/myoko-enable-wowlan
       '';
       powerManagement.resumeCommands = lib.mkAfter ''
-        ${pkgs.systemd}/bin/systemd-run --quiet --collect --unit=myoko-display-resume --on-active=3s \
+        ${pkgs.systemd}/bin/systemd-run --quiet --collect --unit=myoko-display-resume --on-active=8s \
           ${myoko-display-resume}/bin/myoko-display-resume || true
       '';
 
