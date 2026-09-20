@@ -205,11 +205,8 @@
       ];
 
       # Let the panel hold a static frame while the DPU and eDP link idle.
-      # msm is loaded explicitly by myoko-display-modules after boot, so its
-      # load-time-only option must live in modprobe.d rather than sysfs.
-      boot.extraModprobeConfig = ''
-        options msm psr_enabled=1
-      '';
+      # Panel self-refresh makes static frames go black on this Samsung OLED.
+      # Keep MSM's load-time-only PSR option at its disabled default.
 
       # Preserve the GPU-to-GMU dependency until the ordered display service
       # runs during stage 2. Force PCIe ASPM powersupersave for battery life.
