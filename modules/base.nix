@@ -48,7 +48,8 @@
         trusted-users = [ "@wheel" ];
       };
 
-      time.timeZone = lib.mkDefault "America/New_York";
+      services.automatic-timezoned.enable = true;
+      services.timesyncd.enable = lib.mkDefault true;
       i18n.defaultLocale = "en_US.UTF-8";
 
       services.openssh = {
