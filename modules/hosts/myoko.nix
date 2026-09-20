@@ -284,7 +284,7 @@
         ${myoko-enable-wowlan}/bin/myoko-enable-wowlan
       '';
       powerManagement.resumeCommands = lib.mkAfter ''
-        ${pkgs.systemd}/bin/systemd-run --quiet --no-block --collect --unit=myoko-display-resume --on-active=8s \
+        ${pkgs.systemd}/bin/systemd-run --quiet --no-block --collect --unit=myoko-display-resume --on-active=3s \
           --uid=simon --setenv=XDG_RUNTIME_DIR=/run/user/1000 --setenv=WAYLAND_DISPLAY=wayland-1 \
           ${myoko-display-resume}/bin/myoko-display-resume || true
       '';
