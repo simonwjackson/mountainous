@@ -114,6 +114,13 @@ ShellRoot {
         precision: SystemClock.Minutes
     }
 
+    function formatClock(date) {
+        const hour = date.getHours() % 12 || 12;
+        return Qt.formatDateTime(date, "ddd d MMM  ")
+            + hour
+            + Qt.formatDateTime(date, ":mm");
+    }
+
     //----------------------------------------------------------------
     // TOP BAR
     //----------------------------------------------------------------
@@ -147,7 +154,7 @@ ShellRoot {
             // Centre: the time.
             Text {
                 anchors.centerIn: parent
-                text: Qt.formatDateTime(clock.date, "ddd d MMM  hh:mm")
+                text: root.formatClock(clock.date)
                 color: Theme.textPrimary
                 font.pixelSize: 11
                 font.family: Theme.fontFamily
