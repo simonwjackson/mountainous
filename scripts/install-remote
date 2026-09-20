@@ -1,0 +1,95 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils openssh jq
+# Install a host onto a remote machine that is already running some Linux.
+#
+#   ./scripts/install-remote tate root@192.168.1.189
+#
+# The remote does not have to be NixOS. nixos-anywhere kexecs into a NixOS
+# installer first, so anything with SSH and a working network will do.
+#
+# The host key is planted before the machine ever boots, which is what lets it
+# decrypt its secrets unattended on first boot:
+#
+#   key exists -> its age form is in .sops.yaml -> secrets encrypted to it
+#     -> planted by --extra-files -> sops decrypts during activation
+#       -> tailscale joins -> the machine is reachable
+#
+# Everything on the disks named by the host's disko layout is destroyed. This
+# script refuses to run until that layout names at least one disk, because an
+# empty disk list means disko would format nothing and the install would
+# quietly do nothing.
+set -euo pipefail
+
+KEYSTORE="${MOUNTAINOUS_KEYSTORE:-$HOME/.local/share/mountainous/hostkeys}"
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+die() { echo "error: $*" >&2; exit 1; }
+
+HOST="${1:-}"
+TARGET="${2:-}"
+[ -n "$HOST" ] && [ -n "$TARGET" ] || die "usage: $0 <host> <user@address>
+
+  host     a name under modules/hosts/, e.g. tate
+  target   ssh destination, e.g. root@192.168.1.189
+
+Every disk in that host's disko layout is destroyed."
+
+cd "$REPO"
+
+echo "=== host ==="
+nix eval --raw ".#nixosConfigurations.$HOST.config.networking.hostName" >/dev/null 2>&1 \
+  || die "no host named '$HOST' in this flake"
+
+# The disks about to be destroyed. Read from the host's own disko layout so
+# the warning and the action cannot disagree.
+DISKS=$(nix eval --json ".#nixosConfigurations.$HOST.config.disko.devices.disk" \
+  --apply 'd: builtins.attrValues (builtins.mapAttrs (_: v: v.device) d)')
+COUNT=$(echo "$DISKS" | jq 'length')
+[ "$COUNT" -gt 0 ] || die "$HOST names no disks in its disko layout; nothing would be formatted"
+echo "  host    $HOST"
+echo "  target  $TARGET"
+echo "  disks   $DISKS"
+
+echo
+echo "=== host key ==="
+KEY="$KEYSTORE/$HOST/ssh_host_ed25519_key"
+[ -s "$KEY" ] || die "no host key at $KEY. Run ./scripts/host-key $HOST first."
+AGE=$(./scripts/host-key "$HOST" 2>/dev/null)
+grep -q "$AGE" .sops.yaml || die "that age key is not in .sops.yaml.
+Add it and run ./scripts/secrets --rekey before installing, or this machine
+boots unable to decrypt anything."
+echo "  $AGE"
+echo "  present in .sops.yaml"
+
+echo
+echo "=== staging the files to plant ==="
+# --extra-files copies the CONTENTS of a directory to the root of the new
+# install, so the staging tree mirrors the target filesystem. Modes set here
+# survive: the copy preserves them.
+EXTRA=$(mktemp -d)
+trap 'rm -rf "$EXTRA"' EXIT
+install -d -m 0755 "$EXTRA/etc/ssh"
+install -m 0600 "$KEY" "$EXTRA/etc/ssh/ssh_host_ed25519_key"
+install -m 0644 "$KEY.pub" "$EXTRA/etc/ssh/ssh_host_ed25519_key.pub"
+find "$EXTRA" -type f -printf '  %M %P\n'
+
+echo
+echo "=== installing ==="
+echo "  the target kexecs into a NixOS installer, then reboots"
+echo "  if it has a USB boot device plugged in, remove it when this finishes"
+echo
+set -x
+nix run github:nix-community/nixos-anywhere -- \
+  --flake ".#$HOST" \
+  --target-host "$TARGET" \
+  --build-on local \
+  --ssh-option UserKnownHostsFile=/dev/null \
+  --ssh-option StrictHostKeyChecking=no \
+  --extra-files "$EXTRA"
+set +x
+
+echo
+echo "=== done ==="
+echo "  The machine holds its host key already, so on first boot it should"
+echo "  decrypt its secrets and join the tailnet without anyone logging in."
+echo "  Watch for it to appear as: $HOST"
