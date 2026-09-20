@@ -1,0 +1,55 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils openssh ssh-to-age gnused gnugrep
+# Create or read a host's SSH host key, and print its age form.
+#
+#   ./scripts/host-key tate
+#
+# A machine that generates its own host key on first boot cannot be sent
+# secrets in advance, because nothing knew its public half when the secrets
+# were encrypted. So the key is made here and kept in a keystore outside the
+# repo. Its age form goes into .sops.yaml, secrets are encrypted to it, and
+# the private half is planted at install time with --extra-files.
+#
+# Re-running this for a host that already has a key prints the same age key
+# and changes nothing, so a reinstall does not churn known_hosts.
+set -euo pipefail
+
+KEYSTORE="${MOUNTAINOUS_KEYSTORE:-$HOME/.local/share/mountainous/hostkeys}"
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+die() { echo "error: $*" >&2; exit 1; }
+
+HOST="${1:-}"
+[ -n "$HOST" ] || die "usage: $0 <host>
+
+  host   a name under modules/hosts/, e.g. tate"
+
+cd "$REPO"
+
+# The host must exist, or a key would be minted for a name nothing builds.
+nix eval --raw ".#nixosConfigurations.$HOST.config.networking.hostName" >/dev/null 2>&1 \
+  || die "no host named '$HOST' in this flake"
+
+KEY="$KEYSTORE/$HOST/ssh_host_ed25519_key"
+mkdir -p "$KEYSTORE/$HOST"
+
+if [ -s "$KEY" ]; then
+  echo "reusing the key already in the keystore" >&2
+else
+  ssh-keygen -t ed25519 -N "" -C "root@$HOST" -f "$KEY" -q
+  echo "generated a new key" >&2
+fi
+
+chmod 0600 "$KEY"
+chmod 0644 "$KEY.pub"
+
+# ssh-to-age prints "skipped key: ..." and exits 0 for anything but ed25519,
+# so the exit status proves nothing. Check the shape instead.
+AGE=$(ssh-to-age -i "$KEY.pub" 2>/dev/null || true)
+case "$AGE" in
+  age1*) ;;
+  *) die "key did not convert to an age identity: '$AGE'" ;;
+esac
+
+# stdout is the age key alone, so callers can capture it.
+echo "$AGE"

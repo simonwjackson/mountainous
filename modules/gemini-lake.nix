@@ -59,13 +59,16 @@
       # The AMI Aptio V firmware supports both UEFI and legacy BIOS boot.
       # Configuring GRUB with removable EFI support allows booting whether the
       # firmware is configured for native UEFI or legacy CSM.
+      #
+      # No `grub.device` is set here. disko already appends the install disk to
+      # `grub.devices` whenever the layout carries an EF02 partition (see
+      # modules/disk.nix), so naming it again only duplicates the entry.
       boot.loader.systemd-boot.enable = lib.mkForce false;
       boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
       boot.loader.grub = {
         enable = true;
         efiSupport = true;
         efiInstallAsRemovable = true;
-        device = lib.mkDefault "/dev/disk/by-id/mmc-CGND3R_0x96f945e3";
       };
 
       environment.systemPackages = with pkgs; [

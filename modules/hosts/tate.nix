@@ -11,6 +11,7 @@
       "disk"
       "gemini-lake"
       "server"
+      "printing"
     ];
 
     module = {
@@ -18,6 +19,14 @@
       # Include a 1M EF02 BIOS boot partition alongside the 1G ESP so
       # GRUB can boot under both legacy CSM and UEFI modes.
       mountainous.disk.biosBoot = true;
+
+      # The office Brother HL-L2300D moves its USB cable from zao to here.
+      # The serial in the URI identifies that one physical unit, so the queue
+      # follows the printer rather than the USB port.
+      mountainous.printing = {
+        enable = true;
+        deviceUri = "usb://Brother/HL-L2300D%20series?serial=U63878A0N138131";
+      };
     };
   };
 }
