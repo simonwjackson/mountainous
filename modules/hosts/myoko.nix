@@ -290,7 +290,7 @@
         ${myoko-enable-wowlan}/bin/myoko-enable-wowlan
       '';
       powerManagement.resumeCommands = lib.mkAfter ''
-        ${pkgs.systemd}/bin/systemd-run --quiet --collect --unit=myoko-display-resume --on-active=8s \
+        ${pkgs.systemd}/bin/systemd-run --quiet --no-block --collect --unit=myoko-display-resume --on-active=8s \
           ${myoko-display-resume}/bin/myoko-display-resume || true
       '';
 
