@@ -103,6 +103,21 @@
         fi
       '';
 
+      myoko-card-reader-power = pkgs.writeShellScriptBin "myoko-card-reader-power" ''
+        set -eu
+
+        block="''${1:-}"
+        [ -d "$block/device/power" ] || exit 0
+        vendor=$(tr -d '[:space:]' < "$block/device/vendor" 2>/dev/null || true)
+        model=$(tr -d '[:space:]' < "$block/device/model" 2>/dev/null || true)
+        [ "$vendor" = "Generic-" ] || exit 0
+        [ "$model" = "SD/MMCCRW" ] || exit 0
+
+        echo 2000 > "$block/device/power/autosuspend_delay_ms"
+        echo auto > "$block/device/power/control"
+        echo 30000 > "$block/events_poll_msecs"
+      '';
+
       myoko-power-logger = pkgs.writeShellScriptBin "myoko-power-logger" ''
         set -eu
 
@@ -189,6 +204,13 @@
         "msm"
       ];
 
+      # Let the panel hold a static frame while the DPU and eDP link idle.
+      # msm is loaded explicitly by myoko-display-modules after boot, so its
+      # load-time-only option must live in modprobe.d rather than sysfs.
+      boot.extraModprobeConfig = ''
+        options msm psr_enabled=1
+      '';
+
       # Preserve the GPU-to-GMU dependency until the ordered display service
       # runs during stage 2. Force PCIe ASPM powersupersave for battery life.
       boot.kernelParams = [
@@ -197,12 +219,22 @@
         "pcie_aspm.policy=powersupersave"
       ];
 
+      # Keep lid close non-destructive until a full suspend can restore the
+      # QCC2072 Wi-Fi MHI transport. The staged platform rehearsal resumes the
+      # display and NVMe but leaves ath12k unavailable until reboot.
+      services.logind.settings.Login = {
+        HandleLidSwitch = "ignore";
+        HandleLidSwitchDocked = "ignore";
+        HandleLidSwitchExternalPower = "ignore";
+      };
+
       # Enable power-profiles-daemon for userspace power management
       services.power-profiles-daemon.enable = true;
 
       environment.systemPackages = [
         myoko-power-sync
         myoko-power-logger
+        myoko-card-reader-power
       ];
 
       services.udev.extraRules = ''
@@ -210,9 +242,27 @@
         ACTION=="add", SUBSYSTEM=="pci", ATTR{power/control}="auto"
         ACTION=="add", SUBSYSTEM=="usb", ATTR{power/control}="auto"
 
+        # The Realtek SD reader's SCSI target defaults to runtime PM disabled.
+        # Configure it after the block event because the SCSI core resets its
+        # autosuspend delay after the earlier USB and SCSI add events.
+        ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd*", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0329", RUN+="${myoko-card-reader-power}/bin/myoko-card-reader-power /sys%p"
+
         # Apply battery vs AC power profiles and display refresh rates only on AC/mains/USB status changes
         ACTION=="change", SUBSYSTEM=="power_supply", KERNEL!="qcom-battmgr-bat", ENV{POWER_SUPPLY_ONLINE}!="", RUN+="${myoko-power-sync}/bin/myoko-power-sync"
       '';
+
+      systemd.services.myoko-card-reader-power = {
+        description = "Enable runtime power management for Myoko's SD reader";
+        wantedBy = ["multi-user.target"];
+        after = ["systemd-udev-settle.service"];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          for block in /sys/block/sd*; do
+            [ -d "$block" ] || continue
+            ${myoko-card-reader-power}/bin/myoko-card-reader-power "$block"
+          done
+        '';
+      };
 
       systemd.services.myoko-power-sync = {
         description = "Synchronize hardware power settings with power source";
