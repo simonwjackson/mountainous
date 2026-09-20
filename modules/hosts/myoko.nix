@@ -103,6 +103,32 @@
         fi
       '';
 
+      myoko-enable-wowlan = pkgs.writeShellScriptBin "myoko-enable-wowlan" ''
+        for phy_path in /sys/class/ieee80211/*; do
+          [ -d "$phy_path" ] || continue
+          phy=$(${pkgs.coreutils}/bin/basename "$phy_path")
+          ${pkgs.iw}/bin/iw phy "$phy" wowlan enable magic-packet disconnect || true
+        done
+      '';
+
+      myoko-display-resume = pkgs.writeShellScriptBin "myoko-display-resume" ''
+        uid=$(${pkgs.coreutils}/bin/id -u simon 2>/dev/null || echo 1000)
+        runtime_dir="/run/user/$uid"
+
+        for _attempt in $(${pkgs.coreutils}/bin/seq 1 20); do
+          if ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+            ${config.programs.hyprland.package}/bin/hyprctl --instance 0 monitors >/dev/null 2>&1; then
+            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+              ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "off" })' || true
+            ${pkgs.coreutils}/bin/sleep 1
+            ${pkgs.util-linux}/bin/runuser -u simon -- env XDG_RUNTIME_DIR="$runtime_dir" \
+              ${config.programs.hyprland.package}/bin/hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = "on" })' || true
+            exit 0
+          fi
+          ${pkgs.coreutils}/bin/sleep 0.5
+        done
+      '';
+
       myoko-card-reader-power = pkgs.writeShellScriptBin "myoko-card-reader-power" ''
         set -eu
 
@@ -243,15 +269,25 @@
       boot.consoleLogLevel = 3;
       boot.initrd.verbose = false;
 
-      # Keep lid close non-destructive until a full suspend can restore the
-      # QCC2072 Wi-Fi MHI transport. The staged platform rehearsal resumes the
-      # display and NVMe but leaves ath12k unavailable until reboot.
+      # Keep lid close non-destructive while the suspend workaround disables
+      # the internal SD reader and external USB hosts remain peripheral-sensitive.
       services.logind.settings.Login = {
         HandleLidSwitch = "ignore";
         HandleLidSwitchDocked = "ignore";
         HandleLidSwitchExternalPower = "ignore";
         HandlePowerKey = "ignore";
       };
+
+      # Program WoWLAN immediately before each sleep. A delayed DPMS cycle
+      # retrains eDP after userspace thaws; an immediate DPMS-on can race the
+      # panel and leave the OLED black after an otherwise successful resume.
+      powerManagement.powerDownCommands = lib.mkAfter ''
+        ${myoko-enable-wowlan}/bin/myoko-enable-wowlan
+      '';
+      powerManagement.resumeCommands = lib.mkAfter ''
+        ${pkgs.systemd}/bin/systemd-run --quiet --collect --unit=myoko-display-resume --on-active=3s \
+          ${myoko-display-resume}/bin/myoko-display-resume || true
+      '';
 
       # Enable power-profiles-daemon for userspace power management
       services.power-profiles-daemon.enable = true;
@@ -273,6 +309,8 @@
         myoko-power-sync
         myoko-power-logger
         myoko-card-reader-power
+        myoko-enable-wowlan
+        myoko-display-resume
       ];
 
       services.udev.extraRules = ''
