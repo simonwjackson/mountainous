@@ -121,13 +121,6 @@
               name = "myoko-edp-force-hbr3";
               patch = ./glymur/0004-drm-msm-dp-force-edp-rate-to-hbr3.patch;
             }
-            # Glymur restores stale xHCI DMA rings after system suspend. Reset
-            # only xHCI so USB devices re-enumerate without reinitializing the
-            # parent DWC3 core or its shared PHY clocks.
-            {
-              name = "glymur-xhci-reset-after-resume";
-              patch = ./glymur/0005-usb-dwc3-reset-glymur-xhci-after-resume.patch;
-            }
           ];
       })
     );
