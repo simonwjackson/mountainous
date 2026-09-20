@@ -10,7 +10,6 @@
   ];
 
   networking.hostName = "myoko";
-  time.timeZone = "America/Denver";
 
   nixpkgs.config.allowUnfree = true;
 

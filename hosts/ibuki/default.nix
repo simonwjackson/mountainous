@@ -58,7 +58,6 @@ in {
   ];
 
   networking.hostName = "ibuki";
-  time.timeZone = "America/Denver";
 
   mountainous = {
     presets = {

@@ -36,6 +36,22 @@ in {
     services.power-profiles-daemon.enable = mkDefault false;
     services.auto-cpufreq.enable = mkDefault false;
 
+    services.automatic-timezoned.enable = mkDefault true;
+    services.geoclue2 = {
+      enable = mkDefault true;
+      enableDemoAgent = mkDefault true;
+      geoProviderUrl = mkDefault "https://api.beacondb.net/v1/geolocate";
+      submissionUrl = mkDefault "https://api.beacondb.net/v2/geosubmit";
+      appConfig = {
+        "automatic-timezoned" = {
+          isAllowed = true;
+          isSystem = true;
+          users = [];
+        };
+      };
+    };
+    services.timesyncd.enable = mkDefault true;
+
     services.libinput = {
       enable = mkDefault true;
       touchpad = {

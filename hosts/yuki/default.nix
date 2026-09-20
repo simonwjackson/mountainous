@@ -26,7 +26,6 @@
   };
 
   networking.hostName = "yuki";
-  time.timeZone = "America/Denver";
 
   mountainous = {
     presets = {
