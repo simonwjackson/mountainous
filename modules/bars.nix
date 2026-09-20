@@ -63,5 +63,7 @@
         ./quickshell/TogglePill.qml;
       hjem.users.simon.files.".config/quickshell/mountainous/BluetoothPanel.qml".source =
         ./quickshell/BluetoothPanel.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/WifiPanel.qml".source =
+        ./quickshell/WifiPanel.qml;
     };
 }

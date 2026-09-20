@@ -1,0 +1,52 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils gnugrep lua quickshell qt6.qtdeclarative
+# shellcheck shell=bash
+# Validate the native Quickshell Wi-Fi panel and its top-bar keyboard route.
+set -euo pipefail
+
+qml_dir=$(realpath "${1:-modules/quickshell}")
+panel="$qml_dir/WifiPanel.qml"
+shell="$qml_dir/shell.qml"
+theme="$qml_dir/Theme.qml"
+bars="$qml_dir/../bars.nix"
+hyprland="$qml_dir/../hyprland/hyprland.lua"
+
+for file in "$panel" "$shell" "$theme" "$bars" "$hyprland"; do
+  test -f "$file"
+done
+
+grep -q '^import Quickshell.Networking$' "$panel"
+grep -q 'Networking.wifiEnabled' "$panel"
+grep -q 'scannerEnabled' "$panel"
+grep -q 'connectWithPsk' "$panel"
+grep -q 'modelData.forget()' "$panel"
+grep -q 'context: Qt.WindowShortcut' "$panel"
+grep -q 'sequence: "Up"' "$panel"
+grep -q 'sequence: "Return"' "$panel"
+grep -q 'sequence: "Shift+Delete"' "$panel"
+grep -q 'WifiPanel {' "$shell"
+grep -q 'target: "wifi"' "$shell"
+grep -q 'B Bluetooth  ·  W Wi-Fi' "$shell"
+grep -q 'WifiPanel.qml' "$bars"
+grep -Fq 'hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call wifi reveal"))' "$hyprland"
+if grep -Eq 'nmcli|iwctl|wpa_cli|Process *\{' "$panel"; then
+  echo "WIFI_PANEL_USES_COMMAND_WRAPPER" >&2
+  exit 1
+fi
+
+qml_root=$(find "$(dirname "$(dirname "$(readlink -f "$(command -v qs)")")")" \
+  -path '*/qml/Quickshell/qmldir' -printf '%h\n' -quit)
+qml_root=${qml_root%/Quickshell}
+[ -n "$qml_root" ] || { echo "QUICKSHELL_QML_IMPORT_PATH_MISSING" >&2; exit 1; }
+
+luac -p "$hyprland"
+
+lint_log=$(mktemp)
+trap 'rm -f "$lint_log"' EXIT
+if ! qmllint -I "$qml_root" "$qml_dir/TogglePill.qml" "$panel" "$shell" >"$lint_log" 2>&1; then
+  cat "$lint_log" >&2
+  echo "QUICKSHELL_WIFI_QML_INVALID" >&2
+  exit 1
+fi
+
+echo "QUICKSHELL_WIFI_TESTS_PASSED"

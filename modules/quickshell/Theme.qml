@@ -51,6 +51,7 @@ Singleton {
     readonly property color bgPanel: dark ? "#141414" : "#ffffff"
     readonly property color bgSelected: dark ? "#2a2a2a" : "#e4e4e4"
     readonly property color bgActive: dark ? "#303030" : "#dcdcdc"
+    readonly property color bgInput: dark ? "#0d0d0d" : "#f8f8f8"
     readonly property color bgSeparator: dark ? "#3a3a3a" : "#c8c8c8"
 
     // The scrim behind the omni bar stays dark in both themes on purpose.
@@ -62,6 +63,7 @@ Singleton {
     // Borders and accents
     readonly property color borderMuted: dark ? "#2e2e2e" : "#c0c0c0"
     readonly property color accent: dark ? "#6a9fb5" : "#3d7a94"
+    readonly property color danger: dark ? "#d27d7d" : "#9f3333"
 
     // Text hierarchy
     readonly property color textPrimary: dark ? "#e0e0e0" : "#1a1a1a"

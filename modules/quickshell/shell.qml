@@ -15,10 +15,18 @@ ShellRoot {
     property bool chromeVisible: true
     property bool topbarAccessVisible: false
     property var bluetoothScreen: null
+    property var wifiScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
+        root.wifiScreen = null;
         root.bluetoothScreen = root.bluetoothScreen === screen ? null : screen;
+    }
+
+    function toggleWifi(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = root.wifiScreen === screen ? null : screen;
     }
 
     function primaryScreen() {
@@ -48,6 +56,17 @@ ShellRoot {
         function reveal(): void {
             root.topbarAccessVisible = false;
             root.bluetoothScreen = root.primaryScreen();
+        }
+    }
+
+    IpcHandler {
+        target: "wifi"
+        function toggle(): void { root.toggleWifi(root.primaryScreen()); }
+        function hide(): void { root.wifiScreen = null; }
+        function reveal(): void {
+            root.topbarAccessVisible = false;
+            root.bluetoothScreen = null;
+            root.wifiScreen = root.primaryScreen();
         }
     }
 
@@ -171,6 +190,13 @@ ShellRoot {
                 onCloseRequested: root.bluetoothScreen = null
             }
 
+            WifiPanel {
+                id: wifiPanel
+                screen: modelData
+                shown: root.wifiScreen === modelData
+                onCloseRequested: root.wifiScreen = null
+            }
+
             anchors { top: true; left: true; right: true }
             implicitHeight: 26
             color: Theme.bgBase
@@ -194,16 +220,16 @@ ShellRoot {
             Text {
                 anchors.centerIn: parent
                 text: root.topbarAccessVisible
-                    ? "B Bluetooth  ·  Esc cancel"
+                    ? "B Bluetooth  ·  W Wi-Fi  ·  Esc cancel"
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
                 font.family: Theme.fontFamily
             }
 
-            // Right: Bluetooth is a control. The remaining items are
-            // readouts, so Wi-Fi and the power source yield first when
-            // the bar is narrow. Battery percentage stays visible.
+            // Right: Bluetooth and Wi-Fi are controls. The power source is a
+            // readout, so it yields first when the bar is narrow. Battery
+            // percentage stays visible.
             RowLayout {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
@@ -269,51 +295,51 @@ ShellRoot {
                 // devices=0 and wifiEnabled=false, at 3.0s the device
                 // is present. Every property read here is notifiable,
                 // so the bindings simply fill in and nothing polls.
-                Row {
-                    id: wifi
-                    spacing: 1
-                    height: 9
-                    Layout.alignment: Qt.AlignVCenter
+                Rectangle {
+                    id: wifiControl
+
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 26
                     visible: Networking.wifiHardwareEnabled && topBar.width >= 420
-
-                    readonly property var device: {
-                        if (!Networking.devices) return null;
-                        const found = [...Networking.devices.values].filter(function (d) {
-                            return d.type === DeviceType.Wifi;
-                        });
-                        return found.length > 0 ? found[0] : null;
-                    }
-
-                    readonly property var network: {
-                        const d = wifi.device;
-                        if (!d || !d.connected || !d.networks) return null;
-                        const up = [...d.networks.values].filter(function (n) {
-                            return n.connected;
-                        });
-                        return up.length > 0 ? up[0] : null;
-                    }
+                    color: wifiArea.containsMouse ? Theme.bgSelected : "transparent"
+                    radius: Theme.radiusSmall
 
                     // Four rungs, so one bar is a quarter of the scale.
                     // Zero bars means the radio is on with no link,
                     // which is a different fact from having no radio.
                     readonly property int level: {
-                        if (!wifi.network) return 0;
-                        const s = wifi.network.signalStrength;
-                        if (s >= 0.75) return 4;
-                        if (s >= 0.5) return 3;
-                        if (s >= 0.25) return 2;
+                        if (!wifiPanel.connectedNetwork) return 0;
+                        const strength = wifiPanel.connectedNetwork.signalStrength;
+                        if (strength >= 0.75) return 4;
+                        if (strength >= 0.5) return 3;
+                        if (strength >= 0.25) return 2;
                         return 1;
                     }
 
-                    Repeater {
-                        model: 4
-                        Rectangle {
-                            required property int index
-                            width: 2
-                            height: 3 + index * 2
-                            y: wifi.height - height
-                            color: index < wifi.level ? Theme.textPrimary : Theme.textOff
+                    Row {
+                        id: wifiBars
+                        anchors.centerIn: parent
+                        spacing: 1
+                        height: 9
+
+                        Repeater {
+                            model: 4
+                            Rectangle {
+                                required property int index
+                                width: 2
+                                height: 3 + index * 2
+                                y: wifiBars.height - height
+                                color: index < wifiControl.level
+                                    ? Theme.accent : Theme.textOff
+                            }
                         }
+                    }
+
+                    MouseArea {
+                        id: wifiArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleWifi(modelData)
                     }
                 }
 
