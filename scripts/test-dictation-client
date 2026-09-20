@@ -1,0 +1,350 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 bash jq lua nodejs
+"""Test the local dictation helper and source-level state guards."""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+HELPER = ROOT / "modules" / "dictation-submit.sh"
+MODULE = ROOT / "modules" / "dictation.nix"
+QML = ROOT / "modules" / "quickshell" / "Dictation.qml"
+HYPRLAND = ROOT / "modules" / "hyprland" / "hyprland.lua"
+
+FIXTURE_COMMAND = r'''#!/usr/bin/env python3
+import json
+import os
+from pathlib import Path
+import sys
+
+name = Path(sys.argv[0]).name
+log_dir = Path(os.environ["TEST_LOG_DIR"])
+log_dir.mkdir(parents=True, exist_ok=True)
+
+
+def append_log(log_name, value):
+    with (log_dir / log_name).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(value) + "\n")
+
+
+def next_value(env_name, counter_name, default):
+    counter_path = log_dir / counter_name
+    count = int(counter_path.read_text() if counter_path.exists() else "0")
+    counter_path.write_text(str(count + 1))
+    values = [value for value in os.environ.get(env_name, default).split(",") if value]
+    return values[min(count, len(values) - 1)], count + 1
+
+
+if name == "curl":
+    result, call = next_value("CURL_RESULTS", "curl-count", "ok")
+    append_log("curl.jsonl", {"call": call, "args": sys.argv[1:]})
+    if result == "fail":
+        raise SystemExit(7)
+    print(os.environ.get("CURL_BODY", '{"text":"  Test sentence.  "}'))
+    print("200")
+elif name == "loginctl":
+    result, call = next_value("LOCK_RESULTS", "loginctl-count", "no")
+    append_log("loginctl.jsonl", {"call": call, "args": sys.argv[1:], "result": result})
+    if result == "fail":
+        raise SystemExit(1)
+    print(result)
+elif name == "wl-copy":
+    content = sys.stdin.read()
+    _, call = next_value("WL_COPY_RESULTS", "wl-copy-count", "ok")
+    append_log("wl-copy.jsonl", {"call": call, "args": sys.argv[1:], "content": content})
+    fail_call = int(os.environ.get("WL_COPY_FAIL_CALL", "0"))
+    if call == fail_call:
+        raise SystemExit(1)
+elif name == "wtype":
+    _, call = next_value("WTYPE_RESULTS", "wtype-count", "ok")
+    append_log("wtype.jsonl", {"call": call, "args": sys.argv[1:]})
+    fail_call = int(os.environ.get("WTYPE_FAIL_CALL", "0"))
+    if call == fail_call:
+        raise SystemExit(1)
+elif name == "sleep":
+    append_log("sleep.jsonl", {"args": sys.argv[1:]})
+else:
+    raise SystemExit(f"unknown fixture command: {name}")
+'''
+
+
+def read_json_lines(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line]
+
+
+def run_helper(
+    send_enter: str = "0", **overrides: str
+) -> tuple[subprocess.CompletedProcess[str], Path, tempfile.TemporaryDirectory[str]]:
+    temp = tempfile.TemporaryDirectory(prefix="dictation-client-test-")
+    work = Path(temp.name)
+    bin_dir = work / "bin"
+    log_dir = work / "log"
+    bin_dir.mkdir()
+    driver = bin_dir / "fixture-command"
+    driver.write_text(FIXTURE_COMMAND)
+    driver.chmod(0o755)
+    for name in ("curl", "loginctl", "wl-copy", "wtype", "sleep"):
+        (bin_dir / name).symlink_to(driver.name)
+
+    audio = work / "take.wav"
+    audio.write_bytes(b"wave")
+    key = work / "groq-key"
+    key.write_text("test-key\n")
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{bin_dir}:{env['PATH']}",
+            "TEST_LOG_DIR": str(log_dir),
+            "DICTATION_BACKEND_ORDER": "zao,groq",
+            "DICTATION_GROQ_KEY_FILE": str(key),
+            "DICTATION_ZAO_FALLBACK_MS": "0",
+        }
+    )
+    env.update(overrides)
+    result = subprocess.run(
+        ["bash", str(HELPER), str(audio), send_enter, "test-session"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return result, log_dir, temp
+
+
+def test_default_endpoint_and_single_insertion() -> None:
+    result, log_dir, temp = run_helper(DICTATION_BACKEND_ORDER="zao", LOCK_RESULTS="no,no")
+    with temp:
+        assert result.returncode == 0, result.stderr
+        curl_calls = read_json_lines(log_dir / "curl.jsonl")
+        assert len(curl_calls) == 1
+        assert "https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions" in curl_calls[0]["args"]
+        copies = read_json_lines(log_dir / "wl-copy.jsonl")
+        assert [copy["content"] for copy in copies] == ["Test sentence.", "Test sentence."]
+        assert len(read_json_lines(log_dir / "wtype.jsonl")) == 1
+        assert "Test sentence." not in result.stdout
+
+
+def test_insertion_failure_does_not_fallback() -> None:
+    result, log_dir, temp = run_helper(
+        CURL_RESULTS="ok,ok",
+        LOCK_RESULTS="no,no",
+        WL_COPY_FAIL_CALL="2",
+    )
+    with temp:
+        assert result.returncode != 0
+        assert len(read_json_lines(log_dir / "curl.jsonl")) == 1
+        assert len(read_json_lines(log_dir / "wtype.jsonl")) == 0
+
+
+def test_locked_session_blocks_backend() -> None:
+    result, log_dir, temp = run_helper(LOCK_RESULTS="yes")
+    with temp:
+        assert result.returncode == 21
+        assert read_json_lines(log_dir / "curl.jsonl") == []
+        assert read_json_lines(log_dir / "wl-copy.jsonl") == []
+        assert read_json_lines(log_dir / "wtype.jsonl") == []
+
+
+def test_lock_before_insertion_blocks_clipboard_and_keyboard() -> None:
+    result, log_dir, temp = run_helper(
+        DICTATION_BACKEND_ORDER="zao",
+        LOCK_RESULTS="no,no,yes",
+    )
+    with temp:
+        assert result.returncode == 21
+        assert len(read_json_lines(log_dir / "curl.jsonl")) == 1
+        assert read_json_lines(log_dir / "wl-copy.jsonl") == []
+        assert read_json_lines(log_dir / "wtype.jsonl") == []
+
+
+def test_lock_after_clipboard_blocks_keyboard() -> None:
+    result, log_dir, temp = run_helper(
+        DICTATION_BACKEND_ORDER="zao",
+        LOCK_RESULTS="no,no,no,yes",
+    )
+    with temp:
+        assert result.returncode == 21
+        assert len(read_json_lines(log_dir / "wl-copy.jsonl")) == 2
+        assert read_json_lines(log_dir / "wtype.jsonl") == []
+
+
+def test_lock_after_paste_skips_enter_without_retry() -> None:
+    result, log_dir, temp = run_helper(
+        send_enter="1",
+        DICTATION_BACKEND_ORDER="zao",
+        LOCK_RESULTS="no,no,no,no,yes",
+    )
+    with temp:
+        assert result.returncode == 0, result.stderr
+        assert "done zao" in result.stdout
+        wtype_calls = read_json_lines(log_dir / "wtype.jsonl")
+        assert len(wtype_calls) == 1
+        assert "Return" not in wtype_calls[0]["args"]
+
+
+def test_lock_before_fallback_blocks_next_backend() -> None:
+    result, log_dir, temp = run_helper(
+        CURL_RESULTS="fail,ok",
+        LOCK_RESULTS="no,no,yes",
+    )
+    with temp:
+        assert result.returncode == 21
+        assert len(read_json_lines(log_dir / "curl.jsonl")) == 1
+        assert read_json_lines(log_dir / "wl-copy.jsonl") == []
+
+
+def test_groq_fallback_has_total_timeout_and_inserts_once() -> None:
+    result, log_dir, temp = run_helper(CURL_RESULTS="fail,ok", LOCK_RESULTS="no,no")
+    with temp:
+        assert result.returncode == 0, result.stderr
+        calls = read_json_lines(log_dir / "curl.jsonl")
+        assert len(calls) == 2
+        groq_args = calls[1]["args"]
+        max_time = groq_args.index("--max-time")
+        assert groq_args[max_time + 1] == "30"
+        assert len(read_json_lines(log_dir / "wtype.jsonl")) == 1
+
+
+def function_block(source: str, name: str, next_name: str) -> str:
+    start = source.index(f"    function {name}")
+    end = source.index(f"    function {next_name}", start)
+    return source[start:end]
+
+
+def run_javascript(source: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="dictation-qml-state-") as temp:
+        script = Path(temp) / "state-test.js"
+        script.write_text(source)
+        subprocess.run(["node", str(script)], check=True)
+
+
+def test_press_resumes_a_queue_when_done_timer_is_cancelled() -> None:
+    source = QML.read_text()
+    press = function_block(source, "press", "finishCapture")
+    run_javascript(
+        press
+        + r'''
+let workerStarts = 0;
+let timerStops = 0;
+const root = {
+    captureState: "idle",
+    sessionLocked: false,
+    deliveryState: "done",
+    backend: "zao",
+    runtimeDir: "/run/user/1000",
+    queue: [{ path: "/run/queued.wav" }],
+    takeSerial: 0,
+    maybeStartWorker() { workerStarts += 1; },
+    audioPath() { return "/run/user/1000/new.wav"; },
+    failRecorder() { throw new Error("unexpected recorder failure"); }
+};
+const doneTimer = { stop() { timerStops += 1; } };
+const maxTakeTimer = { restart() {} };
+const recorder = { exec() {} };
+press(false);
+if (timerStops !== 1) throw new Error("done timer was not stopped");
+if (workerStarts !== 1) throw new Error("queued worker was not resumed");
+'''
+    )
+
+
+def test_lock_during_recorder_shutdown_keeps_completed_take() -> None:
+    source = QML.read_text()
+    update_lock = function_block(source, "updateSessionLock", "dismissFailure")
+    run_javascript(
+        update_lock
+        + r'''
+let cancels = 0;
+let workerStarts = 0;
+const root = {
+    sessionLocked: false,
+    captureState: "stopping",
+    cancel() { cancels += 1; },
+    maybeStartWorker() { workerStarts += 1; }
+};
+updateSessionLock(true);
+if (cancels !== 0) throw new Error("completed take was cancelled while recorder stopped");
+root.captureState = "recording";
+updateSessionLock(true);
+if (cancels !== 1) throw new Error("live recording was not cancelled on lock");
+'''
+    )
+
+
+def test_qml_guards_process_lifecycle() -> None:
+    source = QML.read_text()
+    capture_exited = function_block(source, "captureExited", "maybeStartWorker")
+    maybe_start = function_block(source, "maybeStartWorker", "handleWorkerLine")
+    worker_exited = function_block(source, "workerExited", "retryFailed")
+    retry = function_block(source, "retryFailed", "updateSessionLock")
+
+    assert "exitCode !== 0" in capture_exited
+    assert "root.sessionLocked" in maybe_start
+    assert "exitCode === 21" in worker_exited
+    assert "doneTimer.stop()" in maybe_start
+    assert "doneTimer.stop()" in retry
+
+
+def test_nix_namespace_and_helper_source() -> None:
+    source = MODULE.read_text()
+    assert "cfg = config.mountainous.features.dictation;" in source
+    assert "options.mountainous.features.dictation" in source
+    assert "nixos.hosts.myoko.module.mountainous.features.dictation.enable = true;" in source
+    assert "text = builtins.readFile ./dictation-submit.sh;" in source
+    assert "https://dictate/v1/audio/transcriptions" not in source
+
+
+def test_escape_binding_checks_physical_right_alt() -> None:
+    source = HYPRLAND.read_text()
+    assert 'hl.bind("Escape", function()' in source
+    assert 'hl.is_key_down("Alt_R")' in source
+    assert "auto_consuming = true" in source
+    assert "ignore_mods = true" in source
+    assert 'hl.bind("Alt_R + Escape"' not in source
+    subprocess.run(["luac", "-p", str(HYPRLAND)], check=True)
+
+
+def main() -> int:
+    tests = [
+        test_default_endpoint_and_single_insertion,
+        test_insertion_failure_does_not_fallback,
+        test_locked_session_blocks_backend,
+        test_lock_before_insertion_blocks_clipboard_and_keyboard,
+        test_lock_after_clipboard_blocks_keyboard,
+        test_lock_after_paste_skips_enter_without_retry,
+        test_lock_before_fallback_blocks_next_backend,
+        test_groq_fallback_has_total_timeout_and_inserts_once,
+        test_press_resumes_a_queue_when_done_timer_is_cancelled,
+        test_lock_during_recorder_shutdown_keeps_completed_take,
+        test_qml_guards_process_lifecycle,
+        test_nix_namespace_and_helper_source,
+        test_escape_binding_checks_physical_right_alt,
+    ]
+    failures = []
+    for test in tests:
+        try:
+            test()
+            print(f"PASS {test.__name__}")
+        except Exception as error:  # noqa: BLE001 - each test must report and continue
+            failures.append((test.__name__, error))
+            print(f"FAIL {test.__name__}: {error}", file=sys.stderr)
+
+    if failures:
+        print(f"DICTATION_CLIENT_TESTS_FAILED={len(failures)}", file=sys.stderr)
+        return 1
+    print("DICTATION_CLIENT_TESTS_PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

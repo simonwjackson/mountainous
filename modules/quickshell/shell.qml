@@ -47,6 +47,27 @@ ShellRoot {
     // QML resolves by filename from this directory.
     OmniBar { id: omniBar }
 
+    // One owner for capture, queueing, backend work, insertion, and the
+    // bottom-centre state overlay. The top bar only reads its public state.
+    Dictation { id: dictation }
+
+    // Quickshell 0.3.1 registers IPC handlers reliably at the shell root. Keep
+    // transport here and forward every event to the dictation state owner.
+    IpcHandler {
+        target: "dictation"
+        function press(): void { dictation.press(false); }
+        function pressEnter(): void { dictation.press(true); }
+        function release(): void { dictation.release(); }
+        function cancel(): void { dictation.cancel(); }
+        function retry(): void { dictation.retryFailed(); }
+        function dismiss(): void { dictation.dismissFailure(); }
+        function current(): string {
+            return dictation.state + " "
+                + (dictation.backend || "none") + " "
+                + dictation.queueCount;
+        }
+    }
+
     // Reached from the compositor with:  qs -c mountainous ipc call chrome toggle
     IpcHandler {
         target: "chrome"
@@ -266,19 +287,105 @@ ShellRoot {
             implicitHeight: 26
             color: Theme.bgBase
 
-            // Left: the focused window's title. Elided, and stopping
-            // well short of the clock so a long title never collides
-            // with it.
-            Text {
+            // Left: dictation state replaces the window-title readout while
+            // it matters. The readout yields before controls, so Retry and
+            // Dismiss stay reachable after a failure.
+            Item {
+                id: leftStatus
                 anchors.left: parent.left
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, parent.width / 2 - 90)
-                elide: Text.ElideRight
-                text: Hyprland.activeToplevel ? Hyprland.activeToplevel.title : ""
-                color: Theme.textPage
-                font.pixelSize: 11
-                font.family: Theme.fontFamily
+                height: parent.height
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !dictation.barVisible
+                    elide: Text.ElideRight
+                    text: Hyprland.activeToplevel ? Hyprland.activeToplevel.title : ""
+                    color: Theme.textPage
+                    font.pixelSize: 11
+                    font.family: Theme.fontFamily
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    visible: dictation.barVisible
+                    spacing: 6
+
+                    Rectangle {
+                        Layout.preferredWidth: 7
+                        Layout.preferredHeight: 7
+                        radius: 4
+                        color: dictation.accentColor
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                        text: {
+                            let value = dictation.statusText;
+                            if (dictation.backendLabel !== "") {
+                                value += " · " + dictation.backendLabel;
+                            }
+                            if (dictation.queueCount > 1) {
+                                value += " · " + dictation.queueCount;
+                            }
+                            return value;
+                        }
+                        color: Theme.textPrimary
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: 38
+                        Layout.preferredHeight: 22
+                        visible: dictation.state === "failed" && dictation.canRetry
+                        radius: Theme.radiusSmall
+                        color: retryArea.containsMouse ? Theme.bgActive : Theme.bgSelected
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Retry"
+                            color: Theme.accent
+                            font.pixelSize: 9
+                            font.family: Theme.fontFamily
+                        }
+
+                        MouseArea {
+                            id: retryArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: dictation.retryFailed()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: 46
+                        Layout.preferredHeight: 22
+                        visible: dictation.state === "failed"
+                        radius: Theme.radiusSmall
+                        color: dismissArea.containsMouse ? Theme.bgActive : Theme.bgSelected
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Dismiss"
+                            color: Theme.textSecondary
+                            font.pixelSize: 9
+                            font.family: Theme.fontFamily
+                        }
+
+                        MouseArea {
+                            id: dismissArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: dictation.dismissFailure()
+                        }
+                    }
+                }
             }
 
             // Centre: the time, or the active keyboard chord.

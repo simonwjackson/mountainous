@@ -663,6 +663,27 @@ hl.bind("F1",                  hl.dsp.exec_cmd("qs -c mountainous ipc call omni 
 hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("qs -c mountainous ipc call omni gotowindow"))
 
 --------------------------------------------------------------------
+-- Hold-to-talk dictation. See modules/dictation.nix.
+--
+-- Alt_R is the physical Right Alt key that Kanata leaves untouched. The
+-- release binding ignores modifiers so releasing Right Alt still ends the
+-- take when Shift was held for the send-Enter variant. Neither binding is
+-- marked locked, so Hyprland blocks it while a session lock owns input.
+-- Kanata's K+L chord emits the real Escape keysym. Right Alt is a modifier,
+-- not a member of Hyprland's pressed non-modifier key set, so the Escape bind
+-- checks the exact physical modifier. auto_consuming passes ordinary Escape
+-- through and consumes only the dictation cancel gesture.
+--------------------------------------------------------------------
+hl.bind("Alt_R",         hl.dsp.exec_cmd("qs -c mountainous ipc call dictation press"))
+hl.bind("SHIFT + Alt_R", hl.dsp.exec_cmd("qs -c mountainous ipc call dictation pressEnter"))
+hl.bind("Alt_R",         hl.dsp.exec_cmd("qs -c mountainous ipc call dictation release"), { release = true, ignore_mods = true })
+hl.bind("Escape", function()
+    if not hl.is_key_down("Alt_R") then return { ok = false } end
+    hl.exec_cmd("qs -c mountainous ipc call dictation cancel")
+    return { ok = true }
+end, { ignore_mods = true, auto_consuming = true })
+
+--------------------------------------------------------------------
 -- Appearance. See modules/theme.nix.
 --
 -- One command, and every layer that can follow changes with it: the
