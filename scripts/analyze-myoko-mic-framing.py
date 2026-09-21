@@ -69,9 +69,14 @@ for offset in range(2):
 
 label, score = max(best, key=lambda item: item[1])
 print(f"best_framing={label!r} lag1={score:.4f}")
-if score > 0.5 and label != "as-recorded":
-    print("MYOKO_MIC_FRAMING_MISMATCH")
-elif score > 0.5:
+# A correctly framed capture is coherent as recorded. Narrower reframings of
+# a real signal can also score high (the top bytes of a smooth waveform are a
+# smooth waveform), so they only indicate a mismatch when the recorded framing
+# itself is incoherent.
+recorded_score = best[0][1]
+if recorded_score > 0.5:
     print("MYOKO_MIC_FRAMING_OK")
+elif score > 0.5:
+    print("MYOKO_MIC_FRAMING_MISMATCH")
 else:
     print("MYOKO_MIC_NO_SIGNAL_IN_ANY_FRAMING")
