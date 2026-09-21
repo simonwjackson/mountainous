@@ -3,6 +3,7 @@
 # shellcheck shell=bash
 # Print a synthetic Git tree containing HEAD plus only the staged Myoko audio
 # slice. This keeps concurrent staged work out of build and deploy evidence.
+# When nothing at all is staged, HEAD is already that tree, so print it.
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -39,10 +40,14 @@ mapfile -t paths < <(
     scripts/test-myoko-audio-topology scripts/test-myoko-audio-topology-target \
     scripts/test-myoko-audio-ucm scripts/test-myoko-initrd
 )
-[ "${#paths[@]}" -gt 0 ] || {
+if [ "${#paths[@]}" -eq 0 ]; then
+  if git -C "$repo" diff --cached --quiet HEAD; then
+    git -C "$repo" rev-parse 'HEAD^{tree}'
+    exit 0
+  fi
   echo MYOKO_AUDIO_STAGED_SLICE_EMPTY >&2
   exit 1
-}
+fi
 
 rm -f "$index"
 GIT_INDEX_FILE=$index git -C "$repo" read-tree HEAD
