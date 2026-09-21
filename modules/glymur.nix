@@ -121,6 +121,15 @@
               name = "myoko-edp-force-hbr3";
               patch = ./glymur/0004-drm-msm-dp-force-edp-rate-to-hbr3.patch;
             }
+            # The internal microphones return packed 3-byte samples when opened
+            # as ALSA S24_LE because the driver tells the DSP the container is
+            # 24 bits wide. Reframing captured bytes as packed 24-bit stereo
+            # recovers clean audio, so the DSP is fine and the media format is
+            # wrong. Send a 32-bit container for S24_LE.
+            {
+              name = "myoko-audioreach-s24-container";
+              patch = ./glymur/0005-ASoC-qcom-audioreach-keep-S24-LE-in-32-bit-containers.patch;
+            }
           ];
       })
     );

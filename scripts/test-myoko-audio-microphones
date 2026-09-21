@@ -1,8 +1,9 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p bash coreutils openssh
+#! nix-shell -i bash -p bash coreutils openssh python3
 # shellcheck shell=bash
-# Run Myoko's direct ALSA microphone level gate. Transport alone does not
-# establish speech quality, and this command fails on the known-invalid signal.
+# Run Myoko's direct ALSA microphone gate. The target checks capture level;
+# this controller then pulls the WAV back and checks that the bytes form a
+# real signal in their recorded framing, not only in a packed reframing.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -26,4 +27,13 @@ set -e
 
 printf 'report: %s\n' "$REPORT"
 tail -n 40 "$REPORT"
-exit "$status"
+[ "$status" -eq 0 ] || exit "$status"
+
+capture=/tmp/myoko-audio-microphones.wav
+scp "${ssh_options[@]}" root@"$HOST":"$capture" "$capture"
+python3 "$REPO/scripts/analyze-myoko-mic-framing.py" "$capture" | tee -a "$REPORT" \
+  | grep -q '^MYOKO_MIC_FRAMING_OK$' || {
+  echo MYOKO_MICROPHONE_FRAMING_INVALID >&2
+  exit 1
+}
+echo MYOKO_MICROPHONES_VERIFIED
