@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p bash btrfs-progs coreutils dosfstools gawk gptfdisk util-linux
+#! nix-shell -i bash -p bash btrfs-progs coreutils dosfstools efibootmgr gawk gptfdisk util-linux
 # shellcheck shell=bash
 # Run on the myoko probe. It preserves Qualcomm partitions 1 to 11 and the
 # factory ESP, then replaces only the four Windows partitions.
@@ -266,6 +266,7 @@ case "$mode" in
     }
     trap cleanup_update EXIT
 
+    mkdir -p /mnt
     mount -o subvol=@,compress=zstd:1,noatime "$(part 14)" /mnt
     mkdir -p /mnt/{boot,efi,home,nix}
     mount -o subvol=@home,compress=zstd:1,noatime "$(part 14)" /mnt/home

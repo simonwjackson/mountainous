@@ -1,0 +1,42 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils gnugrep
+# shellcheck shell=bash
+# Check that ALSA UCM maps Myoko's ALSA names to its four-speaker profile
+# without exposing the known-invalid microphone signal.
+set -euo pipefail
+
+[ "$#" -eq 1 ] || {
+  echo "usage: $0 <ucm2-directory>" >&2
+  exit 2
+}
+
+root=$1
+profile=$root/Qualcomm/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf
+hifi=$root/Qualcomm/glymur/Myoko-HiFi.conf
+
+[ -s "$profile" ]
+[ -s "$hifi" ]
+for name in \
+  ASUSTeKCOMPUTERINC.-ZenbookA16UX3607OA-1.0-UX3607OA \
+  GLYMUR-ASUS-Zenbook-A16-UX3607OA \
+  GLYMUR-ASUS-Zenbook-A16-UX3607O; do
+  link=$root/conf.d/glymur/$name.conf
+  [ -L "$link" ] || { echo "MYOKO_AUDIO_UCM_LINK_MISSING $link" >&2; exit 1; }
+  [ "$(readlink -f "$link")" = "$(readlink -f "$profile")" ]
+done
+
+grep -qF "WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1" "$hifi"
+grep -qF 'PlaybackChannels 4' "$hifi"
+grep -qF 'PlaybackPCM "hw:${CardId},0"' "$hifi"
+if grep -qF 'SectionDevice."Mic"' "$hifi" || \
+   grep -qF 'CapturePCM' "$hifi" || \
+   grep -qF 'MultiMedia2 Mixer VA_CODEC_DMA_TX_0' "$hifi"; then
+  echo MYOKO_INVALID_MICROPHONE_EXPOSED >&2
+  exit 1
+fi
+if grep -q "PA Volume' 12" \
+  "$root/codecs/wsa884x/four-speakers/SpeakerSeq.conf"; then
+  echo "MYOKO_AUDIO_UCM_UNSAFE_PA_VOLUME" >&2
+  exit 1
+fi
+echo MYOKO_AUDIO_UCM_VERIFIED

@@ -1,0 +1,35 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Copy a candidate AudioReach topology to Myoko, parse it without changing
+# live firmware state, and confirm the booted Glymur card remains present.
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+HOST=${1:-100.88.70.113}
+TOPOLOGY=${2:?usage: test-myoko-audio-topology HOST TOPOLOGY [REPORT]}
+REPORT=${3:-/tmp/myoko-audio-topology-test.txt}
+REMOTE_SCRIPT=/tmp/test-myoko-audio-topology-target
+REMOTE_TOPOLOGY=/tmp/GLYMUR-CRD-tplg.bin
+
+ssh_options=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=accept-new
+)
+
+scp "${ssh_options[@]}" \
+  "$REPO/scripts/test-myoko-audio-topology-target" \
+  root@"$HOST":"$REMOTE_SCRIPT"
+scp "${ssh_options[@]}" "$TOPOLOGY" root@"$HOST":"$REMOTE_TOPOLOGY"
+
+set +e
+ssh "${ssh_options[@]}" root@"$HOST" \
+  "$REMOTE_SCRIPT" "$REMOTE_TOPOLOGY" > "$REPORT" 2>&1
+status=$?
+set -e
+
+printf 'report: %s\n' "$REPORT"
+tail -n 20 "$REPORT"
+exit "$status"

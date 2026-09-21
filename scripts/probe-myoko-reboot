@@ -1,0 +1,46 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Why did Myoko restart? Reads the tail of the previous boot and the reboot
+# record, so a deploy failure is not blamed on the deploy when the machine
+# went down underneath it.
+set -euo pipefail
+
+host=${MYOKO_HOST:-100.88.70.113}
+known=$(mktemp)
+trap 'rm -f "$known"' EXIT
+
+read -r type key _comment \
+  < "$HOME/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub"
+printf '%s %s %s\n' "$host" "$type" "$key" > "$known"
+
+opts=(-F /dev/null -o BatchMode=yes -o ConnectTimeout=15
+  -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known")
+
+ssh "${opts[@]}" "root@$host" 'bash -s' <<'REMOTE'
+echo "=== boots ==="
+journalctl --list-boots --no-pager 2>/dev/null | tail -5
+
+echo
+echo "=== tail of the previous boot ==="
+journalctl -b -1 --no-pager -n 40 2>/dev/null \
+  | grep -viE 'audit|systemd-logind: New session' | tail -25
+
+echo
+echo "=== power and thermal events in the previous boot ==="
+journalctl -b -1 --no-pager 2>/dev/null \
+  | grep -iE 'thermal|critical|shutdown|power[- ]off|battery|undervolt|watchdog|oom' \
+  | tail -15
+
+echo
+echo "=== kernel oops or panic in the previous boot ==="
+journalctl -b -1 -k --no-pager 2>/dev/null \
+  | grep -iE 'oops|panic|BUG:|Call trace|segfault|firmware crash|remoteproc' \
+  | tail -20
+
+echo
+echo "=== battery now ==="
+for f in status capacity power_now; do
+  printf '%-12s %s\n' "$f" "$(cat "/sys/class/power_supply/qcom-battmgr-bat/$f" 2>/dev/null)"
+done
+REMOTE

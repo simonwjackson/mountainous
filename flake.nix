@@ -26,6 +26,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # linux-firmware has only the Glymur reference topology. Pin the upstream
+    # AudioReach sources that add the UX3607OA's S32_LE microphone graph.
+    audioreach-topology = {
+      url = "github:linux-msm/audioreach-topology/993a17dcb672357998a463a73f120064d6c74f4f";
+      flake = false;
+    };
+
     # herdr is not in nixpkgs. These are the upstream release binaries, taken
     # as inputs rather than fetchurl so `nix flake update` can move them and
     # flake.lock records what shipped. file+https keeps Nix from trying to

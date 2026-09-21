@@ -1,0 +1,78 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils nix util-linux
+# shellcheck shell=bash
+# Build and verify Myoko's NixOS system on Myoko itself. No generation is
+# activated and no boot files are changed.
+set -euo pipefail
+
+repo=${1:?usage: build-myoko-audio-target REPOSITORY}
+backup=/persist/backups/myoko-fw-B09A-2505/myoko-firmware/qcom/glymur/ASUSTeK/UX3607OA
+if [ -s "$backup/qcadsp8480.mbn" ]; then
+  adsp=$backup/qcadsp8480.mbn
+  adsp_dtb=$backup/adsp_dtbs.elf
+elif [ -s /tmp/myoko-audio-firmware/qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn ]; then
+  adsp=/tmp/myoko-audio-firmware/qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn
+  adsp_dtb=/tmp/myoko-audio-firmware/qcom/glymur/ASUSTeK/UX3607OA/adsp_dtbs.elf
+else
+  adsp=/nix/store/bxsrcm9vcnwgwk2wc7ya8vzmpmhb7x4a-qcadsp8480.mbn
+  adsp_dtb=/nix/store/6fslib7j03nbqi6imzzk3y60ak0cpk5y-adsp_dtbs.elf
+fi
+
+model=$(tr -d '\0' < /sys/firmware/devicetree/base/model)
+[ "$model" = "ASUS Zenbook A16 (UX3607OA)" ] || {
+  echo "UNEXPECTED_MODEL $model" >&2
+  exit 1
+}
+root_source=$(findmnt -nro SOURCE /)
+case "$root_source" in
+  /dev/nvme0n1p14 | /dev/nvme0n1p14\[*\]) ;;
+  *) echo "UNEXPECTED_ROOT $root_source" >&2; exit 1 ;;
+esac
+
+printf '%s  %s\n' \
+  6e98746ddb4a4c1b8c11f13f99319a1bf2e13ea6e9911865e120dfb27972b34d "$adsp" \
+  213b2eba8f82a387806b6e334d5fdcaf6325acdb5f03a3c1d03a9ecb9c611a18 "$adsp_dtb" \
+  | sha256sum --check
+
+case "$adsp" in
+  /nix/store/*) ;;
+  *)
+    nix-store --add-fixed sha256 "$adsp"
+    nix-store --add-fixed sha256 "$adsp_dtb"
+    ;;
+esac
+
+cd "$repo"
+source_tree_file=$repo/.myoko-audio-source-tree
+verified_marker=$repo/.myoko-audio-verified
+[ -s "$source_tree_file" ] || {
+  echo MYOKO_AUDIO_SOURCE_TREE_MISSING >&2
+  exit 1
+}
+source_tree=$(cat "$source_tree_file")
+[[ "$source_tree" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "MYOKO_AUDIO_SOURCE_TREE_INVALID $source_tree" >&2
+  exit 1
+}
+rm -f "$verified_marker"
+cores=${MYOKO_BUILD_CORES:-8}
+echo "MYOKO_AUDIO_BUILD_CORES=$cores"
+nix build .#nixosConfigurations.myoko.config.system.build.toplevel \
+  --cores "$cores" --max-jobs 2 \
+  --out-link result-myoko-audio --print-build-logs
+
+result=$(readlink -f result-myoko-audio)
+kernel_config=$(nix eval --raw \
+  .#nixosConfigurations.myoko.config.boot.kernelPackages.kernel.configfile)
+ucm=$(nix eval --raw \
+  .#nixosConfigurations.myoko.config.environment.variables.ALSA_CONFIG_UCM2)
+
+./scripts/test-myoko-initrd "$kernel_config" "$result/initrd"
+./scripts/test-myoko-audio-firmware "$result/firmware"
+./scripts/test-myoko-audio-ucm "$ucm"
+./scripts/test-myoko-audio-headphones "$ucm"
+
+printf '%s %s\n' "$source_tree" "$result" > "$verified_marker"
+printf 'MYOKO_AUDIO_SOURCE_TREE=%s\n' "$source_tree"
+printf 'MYOKO_AUDIO_SYSTEM=%s\n' "$result"
+echo MYOKO_AUDIO_BUILD_VERIFIED

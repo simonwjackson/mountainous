@@ -1,0 +1,42 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils git
+# shellcheck shell=bash
+# Print a synthetic Git tree containing HEAD plus only the staged Myoko audio
+# slice. This keeps concurrent staged work out of build and deploy evidence.
+set -euo pipefail
+
+repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+index=$(mktemp)
+patch=$(mktemp)
+trap 'rm -f "$index" "$patch"' EXIT
+
+mapfile -t paths < <(
+  git -C "$repo" diff --cached --name-only --diff-filter=ACMRD HEAD -- \
+    docs/research/myoko-audio-upstream.md \
+    docs/research/ux3607oa-linux-reference.md \
+    flake.lock flake.nix \
+    modules/hosts/myoko.nix \
+    modules/hosts/myoko-audio-ucm/ \
+    modules/myoko-disk.nix \
+    scripts/build-myoko-audio scripts/build-myoko-audio-target \
+    scripts/deploy-myoko-audio scripts/deploy-myoko-audio-target \
+    scripts/install-myoko-target scripts/myoko-audio-staged-tree \
+    scripts/probe-myoko-audio scripts/probe-myoko-audio-target \
+    scripts/reset-myoko-audio-profile scripts/reset-myoko-audio-profile-target \
+    scripts/test-myoko-audio-firmware scripts/test-myoko-audio-headphones \
+    scripts/test-myoko-audio-microphones scripts/test-myoko-audio-microphones-target \
+    scripts/test-myoko-audio-speakers scripts/test-myoko-audio-speakers-target \
+    scripts/test-myoko-audio-streams scripts/test-myoko-audio-streams-target \
+    scripts/test-myoko-audio-topology scripts/test-myoko-audio-topology-target \
+    scripts/test-myoko-audio-ucm scripts/test-myoko-initrd
+)
+[ "${#paths[@]}" -gt 0 ] || {
+  echo MYOKO_AUDIO_STAGED_SLICE_EMPTY >&2
+  exit 1
+}
+
+rm -f "$index"
+GIT_INDEX_FILE=$index git -C "$repo" read-tree HEAD
+git -C "$repo" diff --cached --binary HEAD -- "${paths[@]}" > "$patch"
+GIT_INDEX_FILE=$index git -C "$repo" apply --cached --whitespace=nowarn "$patch"
+GIT_INDEX_FILE=$index git -C "$repo" write-tree

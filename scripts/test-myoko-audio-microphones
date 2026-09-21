@@ -1,0 +1,29 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Run Myoko's direct ALSA microphone level gate. Transport alone does not
+# establish speech quality, and this command fails on the known-invalid signal.
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+HOST=${1:-100.88.70.113}
+REPORT=${2:-/tmp/myoko-audio-microphones.txt}
+REMOTE=/tmp/test-myoko-audio-microphones-target
+
+ssh_options=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=accept-new
+)
+
+scp "${ssh_options[@]}" "$REPO/scripts/test-myoko-audio-microphones-target" \
+  root@"$HOST":"$REMOTE"
+set +e
+ssh "${ssh_options[@]}" root@"$HOST" "$REMOTE" > "$REPORT" 2>&1
+status=$?
+set -e
+
+printf 'report: %s\n' "$REPORT"
+tail -n 40 "$REPORT"
+exit "$status"

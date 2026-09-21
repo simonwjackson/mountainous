@@ -29,7 +29,12 @@ The reference reports these items working:
 - Wi-Fi and Bluetooth after board data, firmware, and device-tree changes.
 - Battery reporting and charge control.
 - HDMI.
-- Audio playback, with microphone capture still incomplete.
+
+The pinned repository does not report working internal audio. Its later audio
+state creates an ALSA card with the Glymur CRD topology, but playback does not
+advance and the second SoundWire bus faults. The upstream board submission
+separately reports four-speaker playback working. See
+[`myoko-audio-upstream.md`](myoko-audio-upstream.md) for the source comparison.
 
 The kernel binds the gen8 Adreno GPU and creates `/dev/dri/renderD128`. Mesa freedreno does not support chip ID `0x18444070041`, so rendering falls back to software. A bound kernel driver does not mean accelerated graphics work.
 

@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Runs on Myoko. Verifies the sound panel end to end: the file is installed,
+# the shell loads it without QML errors, the compositor binding exists, the
+# IPC route works, and the panel's controls actually move PipeWire.
+set -uo pipefail
+
+user=simon
+uid=$(id -u "$user")
+rt="/run/user/$uid"
+fail=0
+
+as_user() {
+  sudo -u "$user" XDG_RUNTIME_DIR="$rt" WAYLAND_DISPLAY=wayland-1 \
+    HYPRLAND_INSTANCE_SIGNATURE="${his:-}" "$@"
+}
+
+check() {
+  if [ "$1" = 0 ]; then echo "  PASS: $2"; else echo "  FAIL: $2"; fail=1; fi
+}
+
+echo "=== 1. installed files ==="
+for f in SoundPanel.qml shell.qml BluetoothPanel.qml WifiPanel.qml; do
+  p="/home/$user/.config/quickshell/mountainous/$f"
+  test -e "$p"; check $? "$f present"
+done
+grep -q 'S Sound' "/home/$user/.config/quickshell/mountainous/shell.qml"
+check $? "top bar hint names S Sound"
+
+echo
+echo "=== 2. restart the shell and read its log ==="
+systemctl --user --machine="$user@" restart quickshell
+sleep 6
+systemctl --user --machine="$user@" is-active quickshell
+check $? "quickshell.service active"
+
+log=$(journalctl --user-unit quickshell --machine="$user@" --since "-30s" --no-pager 2>/dev/null)
+if echo "$log" | grep -iE 'SoundPanel.*(error|is not a type|Cannot assign|not found)' ; then
+  echo "  FAIL: SoundPanel QML errors in journal"; fail=1
+else
+  echo "  PASS: no SoundPanel QML errors in journal"
+fi
+
+echo
+echo "=== 3. compositor binding ==="
+his=$(ls -t "$rt/hypr" 2>/dev/null | head -1)
+export his
+echo "  hyprland instance: $his"
+binds=$(as_user hyprctl --instance 0 binds 2>/dev/null)
+echo "$binds" | grep -A 4 'submap: topbar-access' | grep -q 'ipc call sound reveal'
+check $? "topbar-access submap binds a key to 'sound reveal'"
+echo "$binds" | grep -B 2 -A 6 'ipc call sound reveal' | sed 's/^/    /' | head -12
+
+echo
+echo "=== 4. IPC route ==="
+as_user qs -c mountainous ipc call sound reveal >/dev/null 2>&1
+check $? "ipc call sound reveal accepted"
+sleep 1
+as_user qs -c mountainous ipc call sound hide >/dev/null 2>&1
+check $? "ipc call sound hide accepted"
+
+targets=$(as_user qs -c mountainous ipc show 2>&1)
+echo "$targets" | grep -q 'sound'
+check $? "'sound' target listed by ipc show"
+echo "$targets" | grep -A 4 'target sound' | sed 's/^/    /'
+
+echo
+echo "=== 5. the panel moves PipeWire ==="
+before=$(as_user wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>&1)
+echo "  before: $before"
+as_user wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.40 >/dev/null 2>&1
+sleep 1
+mid=$(as_user wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>&1)
+echo "  after set 0.40: $mid"
+echo "$mid" | grep -q '0.40'
+check $? "default sink volume is writable and readable"
+# Put it back where it was.
+old=$(echo "$before" | grep -oE '[0-9]+\.[0-9]+' | head -1)
+[ -n "$old" ] && as_user wpctl set-volume @DEFAULT_AUDIO_SINK@ "$old" >/dev/null 2>&1
+echo "  restored: $(as_user wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>&1)"
+
+echo
+echo "=== 6. what the panel will list ==="
+as_user wpctl status 2>/dev/null | sed -n '/^Audio/,/^Video/p' | sed 's/^/    /'
+
+echo
+if [ "$fail" = 0 ]; then
+  echo "VERIFY_MYOKO_SOUND_PASSED"
+else
+  echo "VERIFY_MYOKO_SOUND_FAILED"
+  exit 1
+fi

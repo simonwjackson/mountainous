@@ -15,6 +15,7 @@
 
     module = {
       config,
+      inputs,
       lib,
       pkgs,
       ...
@@ -31,6 +32,103 @@
           See docs/research/myoko-post-boot-hardware.md for the source and hash.
         '';
       };
+
+      audioAdsp = pkgs.requireFile {
+        name = "qcadsp8480.mbn";
+        sha256 = "6e98746ddb4a4c1b8c11f13f99319a1bf2e13ea6e9911865e120dfb27972b34d";
+        message = ''
+          Import Myoko's backed-up factory ADSP firmware on the native builder:
+            nix-store --add-fixed sha256 /path/to/qcadsp8480.mbn
+        '';
+      };
+
+      audioAdspDtb = pkgs.requireFile {
+        name = "adsp_dtbs.elf";
+        sha256 = "213b2eba8f82a387806b6e334d5fdcaf6325acdb5f03a3c1d03a9ecb9c611a18";
+        message = ''
+          Import Myoko's backed-up factory ADSP device trees on the native builder:
+            nix-store --add-fixed sha256 /path/to/adsp_dtbs.elf
+        '';
+      };
+
+      myokoAudioTopology = pkgs.stdenvNoCC.mkDerivation {
+        pname = "myoko-audioreach-topology";
+        version = "2026-09-18";
+        src = inputs.audioreach-topology;
+        nativeBuildInputs = [pkgs.alsa-utils pkgs.m4];
+        dontConfigure = true;
+        buildPhase = ''
+          runHook preBuild
+          # The hardware author reports S16_LE distortion and working S24_LE.
+          # This kernel's Q6APM capture PCM supports S16_LE and S24_LE, not the
+          # S32_LE selected by the upstream proposal. Advertise S24_LE at the
+          # topology frontend so direct ALSA diagnostics use supported params.
+          sed -i '/dnl Capture MultiMedia3/{n;n;s/S16_LE/S24_LE/}' \
+            GLYMUR-ASUS-Zenbook-A16-UX3607OA.m4
+          grep -A2 'dnl Capture MultiMedia3' \
+            GLYMUR-ASUS-Zenbook-A16-UX3607OA.m4 | grep -q S24_LE
+          m4 -I . GLYMUR-ASUS-Zenbook-A16-UX3607OA.m4 \
+            > GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf
+          alsatplg \
+            -c GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf \
+            -o GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin
+          runHook postBuild
+        '';
+        installPhase = ''
+          runHook preInstall
+          install -Dm644 GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin \
+            "$out/lib/firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin"
+          printf '%s\n' \
+            'linux-msm/audioreach-topology@993a17dcb672357998a463a73f120064d6c74f4f:GLYMUR-ASUS-Zenbook-A16-UX3607OA.m4+mountainous:S24_LE-capture-frontend' \
+            > "$out/lib/firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin.source"
+          runHook postInstall
+        '';
+      };
+
+      myokoAudioFirmware = pkgs.runCommand "myoko-audio-firmware" {
+        passthru.compressFirmware = false;
+      } ''
+        firmware="$out/lib/firmware"
+        install -Dm644 ${audioAdsp} \
+          "$firmware/qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn"
+        install -Dm644 ${audioAdspDtb} \
+          "$firmware/qcom/glymur/ASUSTeK/UX3607OA/adsp_dtbs.elf"
+        install -Dm644 \
+          ${myokoAudioTopology}/lib/firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin \
+          "$firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin"
+        install -Dm644 \
+          ${myokoAudioTopology}/lib/firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin.source \
+          "$firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin.source"
+        bash ${../../scripts/test-myoko-audio-firmware} "$firmware"
+      '';
+
+      myokoAudioUcm = pkgs.runCommand "myoko-audio-ucm" {} ''
+        mkdir -p "$out/share/alsa"
+        cp -a ${pkgs.alsa-ucm-conf}/share/alsa/ucm2 "$out/share/alsa/"
+        chmod -R u+w "$out/share/alsa/ucm2"
+
+        # The generic WSA884x sequence writes PA volume 12, but this kernel's
+        # four amplifier controls have a maximum of 6. Keep the hardware
+        # defaults instead of applying an out-of-range reference-board value.
+        sed -i "/PA Volume' 12/d" \
+          "$out/share/alsa/ucm2/codecs/wsa884x/four-speakers/SpeakerSeq.conf"
+
+        install -m 0644 \
+          ${./myoko-audio-ucm/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf} \
+          "$out/share/alsa/ucm2/Qualcomm/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf"
+        install -m 0644 ${./myoko-audio-ucm/Myoko-HiFi.conf} \
+          "$out/share/alsa/ucm2/Qualcomm/glymur/Myoko-HiFi.conf"
+
+        glymur="$out/share/alsa/ucm2/conf.d/glymur"
+        ln -s ../../Qualcomm/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf \
+          "$glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf"
+        ln -s ../../Qualcomm/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf \
+          "$glymur/GLYMUR-ASUS-Zenbook-A16-UX3607O.conf"
+        ln -s ../../Qualcomm/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA.conf \
+          "$glymur/ASUSTeKCOMPUTERINC.-ZenbookA16UX3607OA-1.0-UX3607OA.conf"
+        bash ${../../scripts/test-myoko-audio-ucm} "$out/share/alsa/ucm2"
+        bash ${../../scripts/test-myoko-audio-headphones} "$out/share/alsa/ucm2"
+      '';
 
       myoko-power-sync = pkgs.writeShellScriptBin "myoko-power-sync" ''
         set -eu
@@ -207,7 +305,11 @@
       '';
     in {
       nixpkgs.config.allowUnfreePredicate = pkg:
-        lib.getName pkg == "bdwlan_qcc2072_1p0_ncm820A.elf";
+        builtins.elem (lib.getName pkg) [
+          "adsp_dtbs.elf"
+          "bdwlan_qcc2072_1p0_ncm820A.elf"
+          "qcadsp8480.mbn"
+        ];
 
       hardware.bluetooth = {
         enable = true;
@@ -226,6 +328,15 @@
               "$out/lib/firmware/ath12k/QCC2072/hw1.0/board.bin"
             bash ${../../scripts/test-myoko-wifi-firmware} "$out/lib/firmware"
           '')
+        myokoAudioFirmware
+      ];
+
+      # The ADSP firmware request happens early, and a failed remoteproc start
+      # does not retry after switch-root. Include the signed image and matching
+      # device trees in the initrd. The topology is needed later at card probe.
+      boot.initrd.extraFirmwarePaths = [
+        "qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn"
+        "qcom/glymur/ASUSTeK/UX3607OA/adsp_dtbs.elf"
       ];
 
       # Match the display sequence that survived the probe. Alias loading can
@@ -329,6 +440,24 @@
           '';
         }
         {
+          name = "myoko-audio-dmic";
+          filter = "qcom/glymur-asus-zenbook-a16-ux3607oa.dtb";
+          dtsText = ''
+            /dts-v1/;
+            /plugin/;
+
+            / {
+              compatible = "asus,zenbook-a16-ux3607oa";
+            };
+
+            &lpass_vamacro {
+              // Match the microphone clock recorded from the factory system.
+              // This correction is queued upstream for the UX3607OA.
+              qcom,dmic-sample-rate = <2400000>;
+            };
+          '';
+        }
+        {
           name = "myoko-disable-usb-mp";
           filter = "qcom/glymur-asus-zenbook-a16-ux3607oa.dtb";
           dtsText = ''
@@ -395,6 +524,13 @@
         MatchName=kanata
         AttrKeyboardIntegration=internal
       '';
+
+      # alsa-ucm-conf 1.2.16.1 lacks this model. Map Myoko's card names,
+      # including ALSA's 31-character truncation, to the verified speaker-only
+      # profile. Keep the invalid microphone signal out of normal applications.
+      environment.variables.ALSA_CONFIG_UCM2 = "${myokoAudioUcm}/share/alsa/ucm2";
+      systemd.user.services.wireplumber.environment.ALSA_CONFIG_UCM2 =
+        "${myokoAudioUcm}/share/alsa/ucm2";
 
       environment.systemPackages = [
         myoko-power-sync

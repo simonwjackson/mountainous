@@ -1,0 +1,39 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils git gnutar openssh rsync
+# shellcheck shell=bash
+# Stage the current cairn worktree and build Myoko's system natively. This does
+# not switch generations or reboot the laptop.
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+HOST=${1:-100.88.70.113}
+REPORT=${2:-/tmp/myoko-audio-build.txt}
+REMOTE_REPO=/tmp/mountainous-cairn-audio
+REMOTE_SCRIPT=/tmp/build-myoko-audio-target
+snapshot=$(mktemp -d)
+trap 'rm -rf "$snapshot"' EXIT
+
+ssh_options=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=accept-new
+)
+
+# Export only the staged audio slice. Other work can share this worktree's
+# real index without entering the verified system artifact.
+tree=$("$REPO/scripts/myoko-audio-staged-tree")
+git -C "$REPO" archive "$tree" | tar -x -C "$snapshot"
+printf '%s\n' "$tree" > "$snapshot/.myoko-audio-source-tree"
+
+rsync -a --delete --delete-excluded \
+  --exclude '/result*' \
+  -e "ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=accept-new" \
+  "$snapshot/" root@"$HOST":"$REMOTE_REPO/"
+scp "${ssh_options[@]}" "$snapshot/scripts/build-myoko-audio-target" \
+  root@"$HOST":"$REMOTE_SCRIPT"
+
+ssh "${ssh_options[@]}" root@"$HOST" \
+  "$REMOTE_SCRIPT" "$REMOTE_REPO" 2>&1 | tee "$REPORT"
+
+printf 'report: %s\n' "$REPORT"

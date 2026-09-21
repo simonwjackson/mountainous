@@ -29,7 +29,13 @@
       };
     };
 
-    boot.loader.efi.efiSysMountPoint = "/efi";
+    boot.loader.efi = {
+      efiSysMountPoint = "/efi";
+      # ASUS firmware rejects runtime Boot#### writes. The guarded installer
+      # preserves the existing Windows entry and places systemd-boot at that
+      # entry's path after NixOS writes the ESP and XBOOTLDR files.
+      canTouchEfiVariables = lib.mkForce false;
+    };
     boot.loader.systemd-boot = {
       enable = true;
       xbootldrMountPoint = "/boot";

@@ -1,0 +1,143 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p alsa-utils bash coreutils dtc findutils gnugrep gzip kmod pipewire procps systemd util-linux
+# shellcheck shell=bash
+# Read-only Myoko audio probe. It reports kernel, DT, DSP, ALSA, and PipeWire
+# state, then fails when Linux exposes no ALSA sound card.
+set -uo pipefail
+
+section() {
+  printf '\n=== %s ===\n' "$1"
+}
+
+read_file() {
+  local path=$1
+  if [ -r "$path" ]; then
+    printf '%s: ' "$path"
+    tr '\0' '\n' < "$path"
+  fi
+}
+
+section "system"
+uname -a
+readlink -f /run/booted-system 2>/dev/null || true
+readlink -f /run/current-system 2>/dev/null || true
+read_file /sys/firmware/devicetree/base/model
+read_file /sys/firmware/devicetree/base/compatible
+
+section "kernel audio configuration"
+config=/proc/config.gz
+if [ -r "$config" ]; then
+  gzip -cd "$config" | grep -E '^(CONFIG_(SND|SOUNDWIRE|QCOM_.*(APR|LPASS|Q6|ADSP|CDSP)|RPMSG|REMOTEPROC|QCOM_Q6V5_PAS|QCOM_SYSMON|QCOM_WCNSS_PIL))=' | sort
+else
+  echo "KERNEL_CONFIG_UNAVAILABLE"
+fi
+
+section "relevant modules"
+lsmod | grep -Ei '(^|_)(snd|soundwire|q6|apr|lpass|wsa|wcd|remoteproc|rpmsg)' || true
+for module in \
+  snd_soc_qcom_common snd_soc_sc8280xp snd_soc_x1e80100 \
+  qcom_q6v5_pas q6_core q6_notifier q6_pdr_interface \
+  snd_q6dsp_common snd_q6apm snd_q6apm_dai snd_q6routing; do
+  modinfo "$module" 2>/dev/null | grep -E '^(filename|name|description|alias):' || true
+done
+
+section "remote processors"
+for remoteproc in /sys/class/remoteproc/remoteproc*; do
+  [ -d "$remoteproc" ] || continue
+  echo "-- $remoteproc"
+  for field in name state firmware recovery coredump; do
+    read_file "$remoteproc/$field"
+  done
+done
+
+section "firmware availability"
+read_file /sys/module/firmware_class/parameters/path
+firmware_root=/run/current-system/firmware/qcom/glymur
+if [ -d "$firmware_root" ]; then
+  find -L "$firmware_root" -maxdepth 3 -type f -printf '%P %s bytes\n' | sort
+else
+  echo "FIRMWARE_DIRECTORY_MISSING $firmware_root"
+fi
+
+section "audio device binding"
+for bus in apr platform soundwire; do
+  [ -d "/sys/bus/$bus/devices" ] || continue
+  echo "-- $bus"
+  for device in /sys/bus/$bus/devices/*; do
+    [ -e "$device" ] || continue
+    name=$(basename "$device")
+    case "$name" in
+      *audio*|*codec*|*gpr*|*pinctrl*|*q6*|*sound*|*0217*)
+        driver=$(basename "$(readlink -f "$device/driver" 2>/dev/null)" 2>/dev/null || true)
+        printf '%s driver=%s\n' "$name" "${driver:-UNBOUND}"
+        ;;
+    esac
+  done
+done
+
+section "device tree audio nodes"
+dts=$(mktemp)
+dtc -I fs -O dts /sys/firmware/devicetree/base > "$dts" 2>/dev/null || true
+grep -Ein -C 2 'sound|audio|lpass|adsp|cdsp|codec|speaker|headphone|microphone|wsa|wcd' "$dts" | head -n 1000 || true
+rm -f "$dts"
+
+section "deferred probes"
+if [ -r /sys/kernel/debug/devices_deferred ]; then
+  cat /sys/kernel/debug/devices_deferred
+else
+  echo "DEFERRED_PROBE_LIST_UNAVAILABLE"
+fi
+
+section "kernel audio log"
+dmesg | grep -Ei 'audio|sound|alsa|asoc|adsp|cdsp|lpass|q6|apr|wsa|wcd|codec|firmware|defer' | tail -n 1000 || true
+
+section "ALSA"
+if [ -r /proc/asound/cards ]; then
+  cat /proc/asound/cards
+else
+  echo "PROC_ASOUND_CARDS_MISSING"
+fi
+cat /proc/asound/devices 2>/dev/null || true
+aplay -l 2>&1 || true
+arecord -l 2>&1 || true
+amixer -c 0 contents 2>&1 || true
+
+section "SoundWire state"
+for device in /sys/bus/soundwire/devices/*; do
+  [ -e "$device" ] || continue
+  echo "-- $(basename "$device")"
+  read_file "$device/status"
+done
+
+section "ASoC debugfs"
+if [ -d /sys/kernel/debug/asoc ]; then
+  find /sys/kernel/debug/asoc -maxdepth 3 -type f -print | sort
+  for file in /sys/kernel/debug/asoc/cards /sys/kernel/debug/asoc/dais /sys/kernel/debug/asoc/codecs /sys/kernel/debug/asoc/platforms; do
+    [ -r "$file" ] && { echo "-- $file"; cat "$file"; }
+  done
+else
+  echo "ASOC_DEBUGFS_MISSING"
+fi
+
+section "PipeWire and WirePlumber"
+systemctl --no-pager --failed || true
+uid=$(id -u simon 2>/dev/null || echo 1000)
+runtime=/run/user/$uid
+if [ -d "$runtime" ]; then
+  runuser -u simon -- env XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" wpctl status 2>&1 || true
+  runuser -u simon -- env XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" pw-cli list-objects Device 2>&1 || true
+  runuser -u simon -- env XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" systemctl --user --no-pager status pipewire.service wireplumber.service 2>&1 || true
+else
+  echo "USER_RUNTIME_MISSING $runtime"
+fi
+
+section "verdict"
+if [ ! -r /proc/asound/cards ] || grep -q '^--- no soundcards ---$' /proc/asound/cards; then
+  echo "AUDIO_CARD_MISSING"
+  exit 1
+fi
+
+echo "ALSA_CARD_PRESENT"

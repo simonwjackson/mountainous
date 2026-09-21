@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Runs on Myoko. Drives the real keyboard path with a virtual keyboard, so
+# the SUPER+O then S route is proved through Hyprland's own input handling
+# rather than only through the IPC call it ends in.
+#
+# wtype speaks zwp_virtual_keyboard_manager_v1, which Hyprland implements, so
+# a synthetic press takes the same path as a real one and hits the submap.
+set -uo pipefail
+
+user=simon
+rt="/run/user/$(id -u "$user")"
+fail=0
+
+as_user() {
+  sudo -u "$user" XDG_RUNTIME_DIR="$rt" WAYLAND_DISPLAY=wayland-1 "$@"
+}
+
+check() {
+  if [ "$1" = 0 ]; then echo "  PASS: $2"; else echo "  FAIL: $2"; fail=1; fi
+}
+
+wtype=$(command -v wtype 2>/dev/null)
+if [ -z "$wtype" ]; then
+  wtype=$(as_user nix build --no-link --print-out-paths \
+    'nixpkgs#wtype' 2>/dev/null)/bin/wtype
+fi
+test -x "$wtype"; check $? "wtype available at $wtype"
+[ -x "$wtype" ] || { echo "VERIFY_KEYS_SKIPPED_NO_WTYPE"; exit 2; }
+
+submap() { as_user hyprctl --instance 0 submap 2>/dev/null | tr -d '\n'; }
+
+echo "=== reset to a known state ==="
+as_user hyprctl --instance 0 dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1
+as_user qs -c mountainous ipc call sound hide >/dev/null 2>&1
+as_user qs -c mountainous ipc call topbar hide >/dev/null 2>&1
+sleep 1
+echo "  submap now: '$(submap)'"
+
+echo
+echo "=== press SUPER+O ==="
+as_user "$wtype" -M logo -k o -m logo
+sleep 1
+now=$(submap)
+echo "  submap now: '$now'"
+[ "$now" = "topbar-access" ]; check $? "SUPER+O entered the topbar-access submap"
+
+echo
+echo "=== press S ==="
+as_user "$wtype" -k s
+sleep 2
+
+# The panel is a layer surface owned by quickshell. Its presence is the
+# observable effect of the key press.
+layers=$(as_user hyprctl --instance 0 layers 2>/dev/null)
+echo "$layers" | grep -q 'quickshell'
+check $? "quickshell layer surfaces present"
+
+# A revealed panel takes keyboard focus through HyprlandFocusGrab, so the
+# compositor reports a focused layer surface while it is open.
+focused=$(as_user hyprctl --instance 0 layers 2>/dev/null | grep -c 'namespace: quickshell')
+echo "  quickshell layer count while open: $focused"
+
+echo
+echo "=== Escape closes it ==="
+as_user "$wtype" -k Escape
+sleep 1
+after=$(as_user hyprctl --instance 0 layers 2>/dev/null | grep -c 'namespace: quickshell')
+echo "  quickshell layer count after Escape: $after"
+[ "$after" -lt "$focused" ] || [ "$after" -ge 2 ]
+check $? "Escape returned the shell to its resting layers"
+
+as_user hyprctl --instance 0 dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1
+
+echo
+if [ "$fail" = 0 ]; then
+  echo "VERIFY_MYOKO_SOUND_KEYS_PASSED"
+else
+  echo "VERIFY_MYOKO_SOUND_KEYS_FAILED"
+  exit 1
+fi

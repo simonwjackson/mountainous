@@ -1,0 +1,20 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils gnugrep
+# shellcheck shell=bash
+# Confirm that Myoko does not advertise a headphone or headset route that the
+# current DTS, topology, and codec graph cannot provide.
+set -euo pipefail
+
+[ "$#" -eq 1 ] || {
+  echo "usage: $0 <ucm2-directory>" >&2
+  exit 2
+}
+
+hifi=$1/Qualcomm/glymur/Myoko-HiFi.conf
+[ -s "$hifi" ]
+if grep -Eqi 'SectionDevice\."(Headphones?|Headset)"|PlaybackPCM.*Head|JackControl' "$hifi"; then
+  echo MYOKO_UNSUPPORTED_HEADPHONE_ROUTE_EXPOSED >&2
+  exit 1
+fi
+
+echo MYOKO_HEADPHONE_UNSUPPORTED_CONFIRMED

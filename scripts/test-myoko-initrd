@@ -35,10 +35,22 @@ check_driver() {
   fi
 }
 
+check_firmware() {
+  local path=$1
+  if grep -Eq "/lib/firmware/${path}([.](xz|zst|gz))?$" "$listing"; then
+    echo "FIRMWARE_IN_INITRD $path"
+  else
+    echo "FIRMWARE_MISSING_FROM_INITRD $path" >&2
+    failed=1
+  fi
+}
+
 check_driver BLK_DEV_NVME nvme
 check_driver PCIE_QCOM pcie-qcom
 check_driver CLK_GLYMUR_TCSRCC tcsrcc-glymur
 check_driver PHY_QCOM_QMP_PCIE phy-qcom-qmp-pcie
 check_driver BTRFS_FS btrfs
+check_firmware qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn
+check_firmware qcom/glymur/ASUSTeK/UX3607OA/adsp_dtbs.elf
 [ "$failed" -eq 0 ]
-echo MYOKO_INITRD_STORAGE_DRIVERS_VERIFIED
+echo MYOKO_INITRD_STORAGE_AND_AUDIO_VERIFIED
