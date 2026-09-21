@@ -32,4 +32,15 @@ done
 find -L "$system/etc/systemd/system" -name bluetooth.service -print -quit | grep -q . \
   || { echo "MYOKO_BLUETOOTH_SERVICE_MISSING" >&2; exit 1; }
 
+# HFP carries its AT command channel over an RFCOMM socket. The trimmed Glymur
+# kernel does not build RFCOMM, so the matching out-of-tree module must be in
+# the system module tree and must load at boot. Without it a headset connects
+# as an output only and its microphone never reaches PipeWire.
+find -L "$system/kernel-modules/lib/modules" -name 'rfcomm.ko*' -print -quit \
+  | grep -q . \
+  || { echo "MYOKO_BLUETOOTH_RFCOMM_MODULE_MISSING" >&2; exit 1; }
+
+grep -qx 'rfcomm' "$system/etc/modules-load.d/nixos.conf" \
+  || { echo "MYOKO_BLUETOOTH_RFCOMM_NOT_LOADED_AT_BOOT" >&2; exit 1; }
+
 echo "MYOKO_BLUETOOTH_ARTIFACTS_OK $system"

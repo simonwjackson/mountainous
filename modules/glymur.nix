@@ -134,12 +134,19 @@
       # BlueZ creates Bluetooth Low Energy input devices through /dev/uhid.
       # Build this one matching module instead of rebuilding the trimmed kernel.
       (config.boot.kernelPackages.callPackage ../nix/myoko-uhid.nix {})
+      # Bluetooth headset microphones need HFP, and HFP carries its AT command
+      # channel over an RFCOMM socket. Without this module the kernel answers
+      # socket(STREAM, RFCOMM) with EPROTONOSUPPORT, BlueZ never connects the
+      # Hands-Free profile, and PipeWire exposes the headset as output only.
+      (config.boot.kernelPackages.callPackage ../nix/myoko-rfcomm.nix {})
     ];
 
-    # Load both modules before the desktop starts. hid_asus maps the vendor
+    # Load these modules before the desktop starts. hid_asus maps the vendor
     # keyboard usages. uhid lets BlueZ create Bluetooth LE input devices.
+    # rfcomm lets BlueZ and PipeWire open the HFP command channel.
     boot.kernelModules = [
       "hid_asus"
+      "rfcomm"
       "uhid"
     ];
 

@@ -130,6 +130,14 @@
         bash ${../../scripts/test-myoko-audio-headphones} "$out/share/alsa/ucm2"
       '';
 
+      # The Saramonic BTW is a wireless microphone with a headset Bluetooth
+      # class. Every profile it offers also carries a speaker, and this machine
+      # must never play audio into it. Its node name uses the address with
+      # underscores, which is how PipeWire names Bluetooth nodes.
+      saramonicAddress = "F4:4E:FC:84:E6:61";
+      saramonicOutputPrefix =
+        "bluez_output." + lib.replaceStrings [":"] ["_"] saramonicAddress;
+
       myoko-power-sync = pkgs.writeShellScriptBin "myoko-power-sync" ''
         set -eu
 
@@ -314,6 +322,30 @@
       hardware.bluetooth = {
         enable = true;
         powerOnBoot = true;
+      };
+
+      # Keep the Saramonic microphone as an input only. The hook makes
+      # node.disabled work for Bluetooth nodes; the rule applies it to this one
+      # device. Other Bluetooth devices keep their normal outputs, and the
+      # microphone source is a separate loopback node that this does not match.
+      services.pipewire.wireplumber.extraScripts."bluez-node-disabled.lua" =
+        builtins.readFile ./myoko-wireplumber/bluez-node-disabled.lua;
+
+      services.pipewire.wireplumber.extraConfig."51-myoko-saramonic-input-only" = {
+        "wireplumber.components" = [
+          {
+            name = "bluez-node-disabled.lua";
+            type = "script/lua";
+            provides = "custom.bluez-node-disabled";
+          }
+        ];
+        "wireplumber.profiles".main."custom.bluez-node-disabled" = "required";
+        "monitor.bluez.rules" = [
+          {
+            matches = [{"node.name" = "~${saramonicOutputPrefix}[.].*";}];
+            actions.update-props."node.disabled" = true;
+          }
+        ];
       };
 
       # ath12k tries board.bin after both board-2.bin key lookups fail.

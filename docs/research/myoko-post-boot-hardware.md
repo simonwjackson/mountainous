@@ -131,6 +131,41 @@ trimmed kernel did not include UHID. The matching out-of-tree module at
 The mouse appeared as `MX Vertical Mouse` on `/dev/input/event13`, and the user
 confirmed that pointer movement works.
 
+### Bluetooth headset microphones need RFCOMM
+
+The paired `Saramonic BTW` wireless microphone appeared as an output only. Its
+SDP record advertises Handsfree (`0000111e`), A2DP Sink, and AVRCP, but BlueZ
+logged `socket(STREAM, RFCOMM): Protocol not supported (93)` and then
+`Connecting Hands-Free Voice gateway failed`. The trimmed Glymur kernel builds
+no `BT_RFCOMM`, and HFP carries its AT command channel over an RFCOMM socket.
+Without HFP the device offered only `a2dp-sink` profiles, so PipeWire created a
+sink and WirePlumber created no microphone. A2DP Source is absent from the
+device, so A2DP could never carry its microphone.
+
+The matching out-of-tree module at `nix/myoko-rfcomm.nix` builds `core.c` and
+`sock.c` from the running kernel source. The serial port emulation in `tty.c`
+needs `CONFIG_BT_RFCOMM_TTY`, and `rfcomm.h` stubs out its two entry points
+when that symbol is absent. After loading the module, the device gained
+`headset-head-unit` and `headset-head-unit-cvsd` profiles, and WirePlumber
+created the always-present microphone loopback source
+`bluez_input.F4:4E:FC:84:E6:61`. A 12-second capture reached a maximum
+amplitude of 0.34 and an RMS amplitude of 0.0065.
+
+### The Saramonic output stays disabled
+
+Every profile this device offers also carries a speaker, so removing the output
+is a session-manager decision. WirePlumber 0.5.17 honours `node.disabled` in
+its ALSA, V4L2, and libcamera monitors, but its BlueZ monitor reads only
+`device.disabled`, which would remove the microphone as well. A hook at
+`modules/hosts/myoko-wireplumber/bluez-node-disabled.lua` runs after
+`monitor/bluez/name-node` applies `monitor.bluez.rules` and before the three
+node-creating hooks. It stops the event when `node.disabled` is set. The Myoko
+rule matches `bluez_output.F4_4E_FC_84_E6_61[.].*` only, so other Bluetooth
+devices keep their outputs and the microphone loopback is untouched.
+
+On the deployed system the device reports one source and no sink, the internal
+speaker sink remains the default output, and no unit failed.
+
 Keyboard access uses `Super+O`, then `B`. The top bar shows the active chord and
 cancels it after three seconds. Inside the Bluetooth panel, Up and Down select a
 device, Enter or Space runs its main action, `S` toggles scanning, `P` toggles

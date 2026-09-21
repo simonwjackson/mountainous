@@ -71,6 +71,8 @@ ucm=$(nix eval --raw \
 ./scripts/test-myoko-audio-firmware "$result/firmware"
 ./scripts/test-myoko-audio-ucm "$ucm"
 ./scripts/test-myoko-audio-headphones "$ucm"
+./scripts/test-myoko-bluetooth "$result"
+./scripts/test-myoko-saramonic-policy "$result"
 
 printf '%s %s\n' "$source_tree" "$result" > "$verified_marker"
 printf 'MYOKO_AUDIO_SOURCE_TREE=%s\n' "$source_tree"

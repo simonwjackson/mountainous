@@ -1,0 +1,161 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash bluez coreutils gawk gnugrep gzip jq kmod pipewire pulseaudio systemd util-linux
+# shellcheck shell=bash
+# Read-only Bluetooth and PipeWire probe for the paired Saramonic device.
+# The verdict is green only when a Saramonic input exists and its output does not.
+set -uo pipefail
+
+section() {
+  printf '\n=== %s ===\n' "$1"
+}
+
+user=simon
+uid=$(id -u "$user" 2>/dev/null || echo 1000)
+runtime=/run/user/$uid
+pw_dump=$(mktemp)
+trap 'rm -f "$pw_dump"' EXIT
+
+run_as_user() {
+  runuser -u "$user" -- env \
+    XDG_RUNTIME_DIR="$runtime" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus" \
+    "$@"
+}
+
+section "Bluetooth devices"
+devices=$(bluetoothctl devices 2>&1)
+printf '%s\n' "$devices"
+matches=$(printf '%s\n' "$devices" | gawk 'BEGIN { IGNORECASE=1 } /saramonic/ { print }')
+match_count=$(printf '%s\n' "$matches" | grep -c '^Device ' || true)
+
+if [ "$match_count" -eq 0 ]; then
+  section "verdict"
+  echo SARAMONIC_BLUETOOTH_DEVICE_NOT_FOUND
+  exit 2
+fi
+if [ "$match_count" -ne 1 ]; then
+  printf '%s\n' "$matches"
+  section "verdict"
+  echo SARAMONIC_BLUETOOTH_DEVICE_AMBIGUOUS
+  exit 2
+fi
+
+address=$(printf '%s\n' "$matches" | gawk '/^Device / { print $2; exit }')
+address_key=$(printf '%s' "$address" | tr ':' '_')
+device_path=/org/bluez/hci0/dev_$address_key
+
+section "Saramonic BlueZ device"
+echo "address=$address"
+info=$(bluetoothctl info "$address" 2>&1)
+printf '%s\n' "$info"
+connected=$(printf '%s\n' "$info" | gawk -F': ' '/^[[:space:]]*Connected:/ { print $2; exit }')
+
+section "BlueZ D-Bus properties"
+busctl get-property org.bluez "$device_path" org.bluez.Device1 UUIDs 2>&1 || true
+busctl get-property org.bluez "$device_path" org.bluez.Device1 ServicesResolved 2>&1 || true
+
+section "kernel Bluetooth audio support"
+if [ -r /proc/config.gz ]; then
+  gzip -cd /proc/config.gz \
+    | grep -E '^CONFIG_BT_(RFCOMM|RFCOMM_TTY|SCO)=' \
+    || true
+else
+  echo KERNEL_CONFIG_UNAVAILABLE
+fi
+lsmod | grep -E '^(rfcomm|sco)[[:space:]]' || true
+modprobe -n -v rfcomm 2>&1 || true
+modinfo rfcomm 2>&1 | grep -E '^(filename|name|description|alias):' || true
+grep -Ei 'RFCOMM|SCO' /proc/net/protocols 2>/dev/null || true
+
+section "PipeWire status"
+run_as_user wpctl status -n 2>&1 || true
+
+section "Pulse card profiles"
+run_as_user pactl list cards 2>&1 || true
+
+if ! run_as_user pw-dump > "$pw_dump" 2>&1; then
+  section "verdict"
+  echo SARAMONIC_PIPEWIRE_DUMP_FAILED
+  exit 2
+fi
+
+device_ids=$(jq -r --arg address "$address" '
+  .[]
+  | select(.type == "PipeWire:Interface:Device")
+  | select((.info.props["api.bluez5.address"] // "") == $address)
+  | .id
+' "$pw_dump")
+
+section "Saramonic PipeWire devices"
+if [ -n "$device_ids" ]; then
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    jq --argjson id "$id" '
+      .[]
+      | select(.id == $id and .type == "PipeWire:Interface:Device")
+      | {
+          id,
+          properties: .info.props,
+          profile: (.info.params.Profile // []),
+          profiles: (.info.params.EnumProfile // [])
+        }
+    ' "$pw_dump"
+    run_as_user pw-cli enum-params "$id" EnumProfile 2>&1 || true
+    run_as_user pw-cli enum-params "$id" Profile 2>&1 || true
+  done <<< "$device_ids"
+else
+  echo SARAMONIC_PIPEWIRE_DEVICE_MISSING
+fi
+
+section "Saramonic PipeWire nodes"
+node_json=$(jq --arg ids "$device_ids" --arg key "$address_key" '
+  ($ids | split("\n") | map(select(length > 0))) as $device_ids
+  | [
+      .[]
+      | select(.type == "PipeWire:Interface:Node")
+      | .info.props as $props
+      | select(
+          (($props["device.id"] // "") | tostring) as $device_id
+          | ($device_ids | index($device_id)) != null
+            or (($props["node.name"] // "") | contains($key))
+        )
+      | {
+          id,
+          name: $props["node.name"],
+          description: ($props["node.description"] // $props["node.nick"] // ""),
+          media_class: $props["media.class"],
+          profile: ($props["api.bluez5.profile"] // ""),
+          codec: ($props["api.bluez5.codec"] // ""),
+          state: .info.state
+        }
+    ]
+' "$pw_dump")
+printf '%s\n' "$node_json"
+
+source_count=$(printf '%s\n' "$node_json" | jq '[.[] | select(.media_class == "Audio/Source")] | length')
+sink_count=$(printf '%s\n' "$node_json" | jq '[.[] | select(.media_class == "Audio/Sink")] | length')
+
+section "recent logs"
+journalctl -u bluetooth.service --since '-10 min' --no-pager 2>&1 | tail -n 100 || true
+run_as_user journalctl --user -u wireplumber.service --since '-10 min' --no-pager 2>&1 | tail -n 150 || true
+
+section "verdict"
+echo "connected=${connected:-unknown} sources=$source_count sinks=$sink_count"
+if [ "${connected:-no}" != yes ]; then
+  echo SARAMONIC_BLUETOOTH_DEVICE_NOT_CONNECTED
+  exit 2
+fi
+if [ "$source_count" -eq 0 ] && [ "$sink_count" -gt 0 ]; then
+  echo SARAMONIC_SOURCE_MISSING_OUTPUT_PRESENT
+  exit 1
+fi
+if [ "$source_count" -eq 0 ]; then
+  echo SARAMONIC_SOURCE_MISSING
+  exit 1
+fi
+if [ "$sink_count" -gt 0 ]; then
+  echo SARAMONIC_OUTPUT_PRESENT
+  exit 1
+fi
+
+echo SARAMONIC_INPUT_ONLY_OK

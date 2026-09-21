@@ -15,13 +15,21 @@ mapfile -t paths < <(
     docs/research/myoko-audio-upstream.md \
     docs/research/ux3607oa-linux-reference.md \
     flake.lock flake.nix \
+    modules/glymur.nix \
+    modules/glymur/0005-ASoC-qcom-audioreach-keep-S24-LE-in-32-bit-containers.patch \
+    modules/glymur/rfcomm/ \
     modules/hosts/myoko.nix \
     modules/hosts/myoko-audio-ucm/ \
+    modules/hosts/myoko-wireplumber/ \
     modules/myoko-disk.nix \
+    nix/myoko-rfcomm.nix \
     scripts/build-myoko-audio scripts/build-myoko-audio-target \
     scripts/deploy-myoko-audio scripts/deploy-myoko-audio-target \
     scripts/install-myoko-target scripts/myoko-audio-staged-tree \
     scripts/probe-myoko-audio scripts/probe-myoko-audio-target \
+    scripts/analyze-myoko-mic-framing.py scripts/reframe-myoko-mic-capture.py \
+    scripts/probe-myoko-saramonic scripts/probe-myoko-saramonic-target \
+    scripts/test-myoko-bluetooth scripts/test-myoko-saramonic-policy \
     scripts/reset-myoko-audio-profile scripts/reset-myoko-audio-profile-target \
     scripts/test-myoko-audio-firmware scripts/test-myoko-audio-headphones \
     scripts/test-myoko-audio-microphones scripts/test-myoko-audio-microphones-target \
