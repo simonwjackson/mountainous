@@ -107,6 +107,12 @@ hl.config({
         -- out of the source and the overlay must not depend on it.
         -- See the TERMINAL OVERLAY section below.
         close_special_on_empty  = true,
+
+        -- A key press must be able to wake a panel that DPMS turned off.
+        -- The default is false, and on 2026-09-20 that left Myoko dark after
+        -- SUPER+SHIFT+O with no way back from the keyboard.
+        key_press_enables_dpms  = true,
+        mouse_move_enables_dpms = true,
     },
 })
 
@@ -768,7 +774,16 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
 end)
 
--- O for off. Moved off SHIFT+P, which the omni bar's window list now
--- owns.
-hl.bind(mod .. " + SHIFT + O", hl.dsp.dpms({ action = "off" }))
+-- O toggles the panels. Moved off SHIFT+P, which the omni bar's window
+-- list now owns. A toggle rather than "off" so the same key that darkens
+-- the screen also lights it, and so a second press retrains an eDP link
+-- that failed at boot (msm_dp_ctrl link training ret=-110, seen in 3 of 7
+-- boots on Myoko).
+hl.bind(mod .. " + SHIFT + O", function()
+    local any_on = false
+    for _, m in ipairs(hl.get_monitors()) do
+        if m.dpms_status then any_on = true end
+    end
+    hl.dispatch(hl.dsp.dpms({ action = any_on and "off" or "on" }))
+end)
 hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
