@@ -12,6 +12,7 @@ trap 'rm -f "$index" "$patch"' EXIT
 
 mapfile -t paths < <(
   git -C "$repo" diff --cached --name-only --diff-filter=ACMRD HEAD -- \
+    docs/decisions/myoko.md \
     docs/research/myoko-audio-upstream.md \
     docs/research/ux3607oa-linux-reference.md \
     flake.lock flake.nix \

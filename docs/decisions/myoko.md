@@ -55,3 +55,9 @@ Runtime inspection found a Hyprland session for `simon`, the Samsung `ATNA60HR07
 The factory destructive mode requires `MYOKO_ERASE_WINDOWS` to equal the NVMe serial. Reformatting an existing partition 14 requires the separate `MYOKO_REFORMAT_ROOT` guard. `scripts/install-myoko` supplies either value only after it verifies the raw partition images, GPT backup, captured layout, probe report, and myoko host key.
 
 `scripts/test-myoko-partition-plan` restores the GPT backup into a disposable sparse image, applies the partition change, and compares the full `sgdisk -i` record for partitions 1 to 12 before and after. It also verifies the exact new partition geometry.
+
+## PCIe ASPM is not forced
+
+Commit `62f46ec6` added `pcie_aspm=force` and `pcie_aspm.policy=powersupersave` to `boot.kernelParams`, and `myoko-power-sync` wrote `powersupersave` on battery. On 2026-09-20 a native kernel build on battery (91 %) ran for four minutes, then the NVMe root port `0005:00:00.0` logged an AER storm: 223 correctable `RxErr` errors on the root port plus about 1,800 rate-limited `Timeout` and `Rollover` data-link errors on the Samsung NVMe `0005:01:00.0` in 90 seconds. The kernel then reported `nvme0: controller is down; will reset: CSTS=0x3`, Btrfs forced `/` read-only, and the machine needed a power cycle. After reboot `btrfs device stats` were all zero and NVMe SMART showed `media_errors 0`, so the drive and filesystem were not at fault. L1.2 exit under sustained I/O was.
+
+The kernel parameters are removed and the battery branch writes `powersave`. `powersave` keeps L0s and L1 but not the L1 substates that the storm points at. The cost is some battery life; the power figures in `62f46ec6` no longer describe this configuration. Do not restore `powersupersave` or `pcie_aspm=force` without a build-length I/O test on battery that shows zero `PCIe Bus Error` lines in `journalctl -k`.

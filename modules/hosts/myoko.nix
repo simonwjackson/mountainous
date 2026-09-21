@@ -182,7 +182,11 @@
             [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 4454400 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
           done
         else
-          echo powersupersave > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
+          # powersave, not powersupersave. With L1.2 forced on the NVMe link,
+          # a native kernel build on battery on 2026-09-20 produced an AER
+          # RxErr/Timeout/Rollover storm, "nvme0: controller is down", and a
+          # read-only root. See docs/decisions/myoko.md.
+          echo powersave > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
           for d in /sys/bus/pci/devices/* /sys/bus/usb/devices/*; do
             [ -f "$d/power/control" ] && echo auto > "$d/power/control" 2>/dev/null || true
           done
@@ -508,12 +512,13 @@
       ];
 
       # Preserve the GPU-to-GMU dependency until the ordered display service
-      # runs during stage 2. Force PCIe ASPM powersupersave for battery life.
-      # Silence kernel warnings and systemd status lines from flooding tty1.
+      # runs during stage 2. Do not force PCIe ASPM: pcie_aspm=force with
+      # powersupersave let the NVMe PCIe link collapse under build I/O
+      # (docs/decisions/myoko.md). myoko-power-sync picks the policy at
+      # runtime. Silence kernel warnings and systemd status lines from
+      # flooding tty1.
       boot.kernelParams = [
         "deferred_probe_timeout=300"
-        "pcie_aspm=force"
-        "pcie_aspm.policy=powersupersave"
         "quiet"
         "systemd.show_status=auto"
       ];
