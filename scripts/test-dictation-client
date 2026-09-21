@@ -281,6 +281,42 @@ if (cancels !== 1) throw new Error("live recording was not cancelled on lock");
     )
 
 
+def test_interrupted_recorder_queues_the_take() -> None:
+    """pw-record exits 1 after SIGINT on a capture stream; that is a whole take."""
+    source = QML.read_text()
+    capture_exited = function_block(source, "captureExited", "maybeStartWorker")
+    assert "exitCode !== 0 && exitCode !== 1" in capture_exited
+    run_javascript(
+        capture_exited
+        + r'''
+let root, maxTakeTimer = { stop() {} };
+function attempt(exitCode, reason) {
+    const seen = { removed: 0, failed: 0, started: 0 };
+    root = {
+        activeTake: { path: "/run/user/1000/take.wav" },
+        captureStopReason: reason,
+        captureState: "stopping",
+        queue: [],
+        removeAudio() { seen.removed += 1; },
+        failRecorder() { seen.failed += 1; },
+        maybeStartWorker() { seen.started += 1; }
+    };
+    captureExited(exitCode);
+    seen.queued = root.queue.length;
+    return seen;
+}
+let r = attempt(1, "complete");
+if (r.failed !== 0 || r.queued !== 1 || r.started !== 1) throw new Error("exit 1 after SIGINT must queue the take: " + JSON.stringify(r));
+r = attempt(0, "complete");
+if (r.failed !== 0 || r.queued !== 1) throw new Error("exit 0 must queue the take");
+r = attempt(127, "complete");
+if (r.failed !== 1 || r.queued !== 0 || r.removed !== 1) throw new Error("exit 127 must fail the recorder");
+r = attempt(1, "cancel");
+if (r.failed !== 0 || r.queued !== 0 || r.removed !== 1) throw new Error("cancel must drop the take");
+'''
+    )
+
+
 def test_qml_guards_process_lifecycle() -> None:
     source = QML.read_text()
     capture_exited = function_block(source, "captureExited", "maybeStartWorker")
@@ -326,6 +362,7 @@ def main() -> int:
         test_groq_fallback_has_total_timeout_and_inserts_once,
         test_press_resumes_a_queue_when_done_timer_is_cancelled,
         test_lock_during_recorder_shutdown_keeps_completed_take,
+        test_interrupted_recorder_queues_the_take,
         test_qml_guards_process_lifecycle,
         test_nix_namespace_and_helper_source,
         test_escape_binding_checks_physical_right_alt,

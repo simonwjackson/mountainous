@@ -171,7 +171,11 @@ Scope {
             root.failRecorder();
             return;
         }
-        if (exitCode !== 0) {
+        // pw-record exits 1 when SIGINT stops a capture: pw-cat returns 0 only
+        // after draining a playback stream. The stop signal is how every take
+        // ends, so exit 1 is the normal outcome and the file is still whole.
+        // Any other code means the recorder never ran or died on its own.
+        if (exitCode !== 0 && exitCode !== 1) {
             root.removeAudio(take.path);
             root.failRecorder();
             return;

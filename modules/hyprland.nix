@@ -268,7 +268,9 @@
         export XDG_SESSION_TYPE=wayland
         export XDG_CURRENT_DESKTOP=Hyprland
         export NIXOS_OZONE_WL=1
-        systemctl --user import-environment XDG_SESSION_TYPE XDG_CURRENT_DESKTOP NIXOS_OZONE_WL || true
+        # XDG_SESSION_ID lets user services ask logind about this seat's
+        # session. Dictation stays locked without it (Dictation.qml).
+        systemctl --user import-environment XDG_SESSION_TYPE XDG_CURRENT_DESKTOP NIXOS_OZONE_WL XDG_SESSION_ID || true
 
         # Hyprland publishes the environment only once it is up, so watch for
         # the signature rather than race it. Bash pattern matching, to keep
