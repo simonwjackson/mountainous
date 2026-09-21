@@ -2,7 +2,8 @@
 #! nix-shell -i bash -p bash coreutils gnugrep
 # shellcheck shell=bash
 # Check that ALSA UCM maps Myoko's ALSA names to its four-speaker profile
-# without exposing the known-invalid microphone signal.
+# and exposes the internal microphones only at the format the kernel frames
+# correctly. S32_LE is rejected by the DSP for VA port 110 on this board.
 set -euo pipefail
 
 [ "$#" -eq 1 ] || {
@@ -28,12 +29,21 @@ done
 grep -qF "WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1" "$hifi"
 grep -qF 'PlaybackChannels 4' "$hifi"
 grep -qF 'PlaybackPCM "hw:${CardId},0"' "$hifi"
-if grep -qF 'SectionDevice."Mic"' "$hifi" || \
-   grep -qF 'CapturePCM' "$hifi" || \
-   grep -qF 'MultiMedia2 Mixer VA_CODEC_DMA_TX_0' "$hifi"; then
-  echo MYOKO_INVALID_MICROPHONE_EXPOSED >&2
+grep -qF 'MultiMedia2 Mixer VA_CODEC_DMA_TX_0' "$hifi"
+grep -qF 'SectionDevice."Mic"' "$hifi"
+grep -qF 'CapturePCM "hw:${CardId},1"' "$hifi"
+grep -qF 'Format S24_LE' "$hifi"
+if grep -qE '^[[:space:]]*Format[[:space:]]+S32_LE' "$hifi"; then
+  echo MYOKO_MICROPHONE_FORMAT_UNSUPPORTED >&2
   exit 1
 fi
+for seq in DMIC0EnableSeq DMIC0DisableSeq DMIC1EnableSeq DMIC1DisableSeq; do
+  grep -qF "/codecs/qcom-lpass/va-macro/$seq.conf" "$hifi"
+  [ -s "$root/codecs/qcom-lpass/va-macro/$seq.conf" ] || {
+    echo "MYOKO_AUDIO_UCM_VA_SEQ_MISSING $seq" >&2
+    exit 1
+  }
+done
 if grep -q "PA Volume' 12" \
   "$root/codecs/wsa884x/four-speakers/SpeakerSeq.conf"; then
   echo "MYOKO_AUDIO_UCM_UNSAFE_PA_VOLUME" >&2
