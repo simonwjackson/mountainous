@@ -1,0 +1,43 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Dump how Hyprland reports the topbar-access submap, so the verification
+# grep matches the real output format rather than an assumed one.
+set -euo pipefail
+
+host=${MYOKO_HOST:-100.88.70.113}
+known=$(mktemp)
+trap 'rm -f "$known"' EXIT
+
+read -r type key _comment \
+  < "$HOME/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub"
+printf '%s %s %s\n' "$host" "$type" "$key" > "$known"
+
+opts=(-F /dev/null -o BatchMode=yes -o ConnectTimeout=15
+  -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known")
+
+ssh "${opts[@]}" "root@$host" 'bash -s' <<'REMOTE'
+as_simon() {
+  sudo -u simon XDG_RUNTIME_DIR=/run/user/1000 "$@"
+}
+
+echo "=== every bind registered inside the topbar-access submap ==="
+# The binds are Lua closures (dispatcher __lua), so the command text never
+# reaches hyprctl. Match on the submap and key fields instead.
+as_simon hyprctl --instance 0 binds 2>/dev/null \
+  | awk '/^bind/{block=""} {block=block $0 "\n"} /^$/{if (block ~ /submap: topbar-access/) printf "%s\n", block}'
+
+echo
+echo "=== raw shape of one bind entry ==="
+as_simon hyprctl --instance 0 binds 2>/dev/null | head -20
+
+echo
+echo "=== does the installed lua carry the S bind? ==="
+grep -n 'ipc call sound reveal' \
+  /home/simon/.config/hypr/hyprland.lua 2>/dev/null \
+  || find /home/simon/.config/hypr /nix/store -maxdepth 3 -name 'hyprland.lua' 2>/dev/null | head -3
+
+echo
+echo "=== submaps hyprland knows ==="
+as_simon hyprctl --instance 0 binds 2>/dev/null | grep -i 'submap' | sort -u | head -20
+REMOTE

@@ -45,10 +45,27 @@ echo "=== 3. compositor binding ==="
 his=$(ls -t "$rt/hypr" 2>/dev/null | head -1)
 export his
 echo "  hyprland instance: $his"
+# The binds are Lua closures registered by hyprland.lua, so hyprctl reports
+# `dispatcher: __lua` and an opaque arg index. The command text is never in
+# this output; match the submap and key fields instead.
 binds=$(as_user hyprctl --instance 0 binds 2>/dev/null)
-echo "$binds" | grep -A 4 'submap: topbar-access' | grep -q 'ipc call sound reveal'
-check $? "topbar-access submap binds a key to 'sound reveal'"
-echo "$binds" | grep -B 2 -A 6 'ipc call sound reveal' | sed 's/^/    /' | head -12
+submap_keys=$(echo "$binds" | awk '
+  /^bind/ { block = "" }
+  { block = block $0 "\n" }
+  /^$/ { if (block ~ /submap: topbar-access/) print block }
+' | grep -oP '(?<=key: ).*' | sort | tr '\n' ' ')
+echo "  topbar-access keys: $submap_keys"
+echo "$submap_keys" | grep -qw S
+check $? "topbar-access submap registers the S key"
+for k in B W Escape; do
+  echo "$submap_keys" | grep -qw "$k"
+  check $? "topbar-access submap still registers $k"
+done
+
+# The S closure runs a shell command, so prove the command it runs exists in
+# the installed config rather than trusting the closure index.
+grep -q 'ipc call sound reveal' /home/$user/.config/hypr/hyprland.lua
+check $? "installed hyprland.lua calls 'ipc call sound reveal'"
 
 echo
 echo "=== 4. IPC route ==="
