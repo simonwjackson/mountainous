@@ -17,6 +17,7 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  programs.nix-ld.enable = true;
   virtualisation.podman.enable = true;
   environment.sessionVariables.ASPIRE_CONTAINER_RUNTIME = "podman";
 
