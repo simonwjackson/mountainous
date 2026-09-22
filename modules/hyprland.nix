@@ -209,6 +209,19 @@
       '';
     };
 
+    mountainous-screenshot = pkgs.writeShellApplication {
+      name = "mountainous-screenshot";
+      runtimeInputs = [
+        pkgs.coreutils
+        pkgs.grim
+        pkgs.jq
+        pkgs.satty
+        pkgs.wl-clipboard
+        hyprPkg
+      ];
+      text = builtins.readFile ./hyprland/screenshot.sh;
+    };
+
     oled-idle = pkgs.writeShellApplication {
       name = "oled-idle";
       runtimeInputs = [
@@ -396,6 +409,7 @@
       hypr-scale
       hypr-zen
       hypr-split
+      mountainous-screenshot
       zed-editor
       zed-wrapper
 

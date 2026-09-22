@@ -1,0 +1,84 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils jq gnugrep gnused
+# shellcheck shell=bash
+# Exercise the screenshot command through its public screen|window CLI.
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+command_source="$repo/modules/hyprland/screenshot.sh"
+test -f "$command_source"
+
+temp=$(mktemp -d)
+trap 'rm -rf "$temp"' EXIT
+mkdir -p "$temp/bin" "$temp/home"
+export HOME="$temp/home"
+export TEST_LOG="$temp/calls"
+export PATH="$temp/bin:$PATH"
+
+cat > "$temp/bin/hyprctl" <<'EOF'
+#!/usr/bin/env bash
+printf 'hyprctl' > "$TEST_LOG.hyprctl"
+printf ' <%s>' "$@" >> "$TEST_LOG.hyprctl"
+printf '\n' >> "$TEST_LOG.hyprctl"
+printf '%s\n' '{"address":"0xabc","at":[10,20],"size":[300,400]}'
+EOF
+
+cat > "$temp/bin/grim" <<'EOF'
+#!/usr/bin/env bash
+printf 'grim' > "$TEST_LOG.grim"
+printf ' <%s>' "$@" >> "$TEST_LOG.grim"
+printf '\n' >> "$TEST_LOG.grim"
+printf 'PNG-DATA'
+EOF
+
+cat > "$temp/bin/satty" <<'EOF'
+#!/usr/bin/env bash
+printf 'satty' > "$TEST_LOG.satty"
+printf ' <%s>' "$@" >> "$TEST_LOG.satty"
+printf '\n' >> "$TEST_LOG.satty"
+cat > "$TEST_LOG.stdin"
+EOF
+
+cat > "$temp/bin/wl-copy" <<'EOF'
+#!/usr/bin/env bash
+cat >/dev/null
+EOF
+chmod +x "$temp/bin/"*
+
+run() {
+  bash "$command_source" "$@"
+}
+
+run screen
+[ -d "$HOME/Pictures/Screenshots" ]
+grep -qFx 'grim <->' "$TEST_LOG.grim"
+grep -qF 'satty <--filename> <->' "$TEST_LOG.satty"
+grep -qF '<--output-filename> <' "$TEST_LOG.satty"
+grep -qF '/Pictures/Screenshots/' "$TEST_LOG.satty"
+grep -qF '<--copy-command> <wl-copy>' "$TEST_LOG.satty"
+grep -qF '<--save-after-copy>' "$TEST_LOG.satty"
+grep -qF '<--early-exit> <all>' "$TEST_LOG.satty"
+grep -qF '<--initial-tool> <brush>' "$TEST_LOG.satty"
+grep -qF '<--fullscreen> <current-screen>' "$TEST_LOG.satty"
+grep -qF '<--no-window-decoration>' "$TEST_LOG.satty"
+[ "$(cat "$TEST_LOG.stdin")" = PNG-DATA ]
+
+run window
+grep -qFx 'hyprctl <--instance> <0> <-j> <activewindow>' "$TEST_LOG.hyprctl"
+grep -qFx 'grim <-g> <10,20 300x400> <->' "$TEST_LOG.grim"
+
+first=$(sed -n 's/.*<--output-filename> <\([^>]*\)>.*/\1/p' "$TEST_LOG.satty")
+sleep 0.01
+run window
+second=$(sed -n 's/.*<--output-filename> <\([^>]*\)>.*/\1/p' "$TEST_LOG.satty")
+[ -n "$first" ]
+[ -n "$second" ]
+[ "$first" != "$second" ]
+
+if run invalid 2>"$temp/error"; then
+  echo 'FAIL: invalid capture mode succeeded' >&2
+  exit 1
+fi
+grep -qFx 'usage: mountainous-screenshot screen|window' "$temp/error"
+
+echo 'SCREENSHOT_WORKFLOW_TESTS_PASSED'

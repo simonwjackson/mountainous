@@ -717,12 +717,11 @@ hl.bind("CTRL + L", function()
     end
 end)
 
--- Kamoi Meta+S captures the screen, Meta+Shift+S the focused window.
--- Kamoi opens both for markup; that surface is not built yet.
-hl.bind(mod .. " + S", hl.dsp.exec_cmd(
-    "mkdir -p ~/Pictures/Screenshots && grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"))
-hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd(
-    "mkdir -p ~/Pictures/Screenshots && grim -g \"$(slurp)\" ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"))
+-- Both captures open the same Satty markup surface. The helper owns output
+-- naming, clipboard behavior, and focused-window geometry so the keybinds and
+-- omni bar cannot drift into different screenshot workflows.
+hl.bind(mod .. " + S", hl.dsp.exec_cmd("mountainous-screenshot screen"))
+hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("mountainous-screenshot window"))
 
 --------------------------------------------------------------------
 -- Hardware keys

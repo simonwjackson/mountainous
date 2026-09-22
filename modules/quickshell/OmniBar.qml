@@ -226,8 +226,7 @@ Scope {
         else if (a === "chrome")     Quickshell.execDetached(["qs", "-c", "mountainous", "ipc", "call", "chrome", "toggle"]);
         else if (a === "theme:dark")   Quickshell.execDetached(["desktop-theme", "dark"]);
         else if (a === "theme:light")  Quickshell.execDetached(["desktop-theme", "light"]);
-        else if (a === "shot")       Quickshell.execDetached(["sh", "-c",
-            "mkdir -p ~/Pictures/Screenshots && grim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"]);
+        else if (a === "shot")       Quickshell.execDetached(["mountainous-screenshot", "screen"]);
 
         root.shown = false;
     }
