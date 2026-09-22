@@ -69,6 +69,13 @@ hl.config({
 
     animations = { enabled = true },
 
+    cursor = {
+        -- Quickshell activates dock items through the foreign-toplevel
+        -- protocol. Hyprland handles that request with CWindow::activate(),
+        -- which otherwise warps the pointer to the activated window's centre.
+        no_warps = true,
+    },
+
     master = {
         -- Even split by default; Meta+G toggles to golden.
         mfact       = 0.5,

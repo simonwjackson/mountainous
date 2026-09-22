@@ -1,0 +1,130 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils jq ydotool
+# shellcheck shell=bash
+# Run as root on the live Hyprland host. Click an inactive bottom-dock item
+# through a temporary uinput mouse and assert that focus changes without the
+# pointer leaving the clicked icon.
+set -euo pipefail
+
+export XDG_RUNTIME_DIR=/run/user/1000
+socket=$(mktemp -u /tmp/ydotool-dock-pointer.XXXXXX.sock)
+daemon_pid=
+original_address=
+original_x=
+original_y=
+
+hypr() {
+  sudo -u simon env XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+    hyprctl --instance 0 "$@"
+}
+
+cleanup() {
+  set +e
+  if [ -n "$original_address" ]; then
+    hypr dispatch "hl.dsp.focus({ window = \"address:$original_address\" })" >/dev/null 2>&1
+  fi
+  if [ -n "$original_x" ] && [ -n "$original_y" ]; then
+    hypr dispatch "hl.dsp.cursor.move({ x = $original_x, y = $original_y })" >/dev/null 2>&1
+  fi
+  if [ -n "$daemon_pid" ]; then
+    kill "$daemon_pid" >/dev/null 2>&1
+    wait "$daemon_pid" >/dev/null 2>&1
+  fi
+  rm -f "$socket"
+}
+trap cleanup EXIT
+
+original_address=$(hypr -j activewindow | jq -r '.address')
+read -r original_x original_y < <(hypr cursorpos -j | jq -r '[.x, .y] | @tsv')
+
+clients=$(hypr -j clients | jq '[.[] | select(.workspace.id > 0)] | sort_by(.workspace.id)')
+count=$(jq 'length' <<<"$clients")
+if [ "$count" -lt 2 ]; then
+  echo "DOCK_POINTER_TEST_NEEDS_TWO_WINDOWS" >&2
+  exit 2
+fi
+
+# The QML model sorts only by workspace. Keep the automated click deterministic
+# by requiring one window per workspace. This is the live two-page case that
+# first exposed the bug.
+if ! jq -e 'group_by(.workspace.id) | all(length == 1)' <<<"$clients" >/dev/null; then
+  echo "DOCK_POINTER_TEST_NEEDS_ONE_WINDOW_PER_WORKSPACE" >&2
+  exit 2
+fi
+
+target_index=$(jq -r --arg active "$original_address" \
+  'to_entries | map(select(.value.address != $active)) | first | .key' <<<"$clients")
+target_address=$(jq -r --argjson index "$target_index" '.[$index].address' <<<"$clients")
+target_workspace=$(jq -r --argjson index "$target_index" '.[$index].workspace.id' <<<"$clients")
+
+layer=$(hypr -j layers | jq -r '
+  [to_entries[].value.levels[][]
+    | select(.namespace == "quickshell" and .y > 100)]
+  | max_by(.y)
+  | [.x, .y, .w, .h]
+  | @tsv')
+read -r layer_x layer_y layer_w layer_h <<<"$layer"
+
+row_width=0
+target_offset=0
+target_width=0
+previous_workspace=
+for ((index = 0; index < count; index++)); do
+  workspace=$(jq -r --argjson index "$index" '.[$index].workspace.id' <<<"$clients")
+  width=30
+  if [ "$index" -gt 0 ] && [ "$workspace" != "$previous_workspace" ]; then
+    width=39
+  fi
+
+  if [ "$index" -eq "$target_index" ]; then
+    target_offset=$row_width
+    target_width=$width
+  fi
+
+  row_width=$((row_width + width))
+  if [ "$index" -lt $((count - 1)) ]; then
+    row_width=$((row_width + 6))
+  fi
+  previous_workspace=$workspace
+done
+
+# dock has 8px horizontal padding. Each cell is right-aligned in its slot.
+dock_width=$((row_width + 16))
+dock_left=$((layer_x + (layer_w - dock_width) / 2))
+icon_x=$((dock_left + 8 + target_offset + target_width - 15))
+icon_y=$((layer_y + layer_h / 2))
+
+YDOTOOL_SOCKET="$socket" ydotoold --socket-path="$socket" --socket-perm=0600 >/tmp/ydotool-dock-pointer.log 2>&1 &
+daemon_pid=$!
+for _ in $(seq 1 50); do
+  [ -S "$socket" ] && break
+  sleep 0.02
+done
+[ -S "$socket" ] || { echo "YDOTOOL_DAEMON_FAILED" >&2; exit 2; }
+
+hypr dispatch "hl.dsp.cursor.move({ x = $icon_x, y = $icon_y })" >/dev/null
+sleep 0.2
+read -r before_x before_y < <(hypr cursorpos -j | jq -r '[.x, .y] | @tsv')
+
+YDOTOOL_SOCKET="$socket" ydotool click 0xC0
+sleep 1
+
+active_after=$(hypr -j activewindow | jq -r '.address')
+read -r after_x after_y < <(hypr cursorpos -j | jq -r '[.x, .y] | @tsv')
+
+printf 'target address:   %s (workspace %s)\n' "$target_address" "$target_workspace"
+printf 'active after:     %s\n' "$active_after"
+printf 'pointer before:   %s,%s\n' "$before_x" "$before_y"
+printf 'pointer after:    %s,%s\n' "$after_x" "$after_y"
+
+if [ "$active_after" != "$target_address" ]; then
+  echo "DOCK_POINTER_TEST_DID_NOT_ACTIVATE_TARGET" >&2
+  exit 1
+fi
+
+if [ "$after_x" != "$before_x" ] || [ "$after_y" != "$before_y" ]; then
+  echo "DOCK_POINTER_WARP_REPRODUCED" >&2
+  exit 1
+fi
+
+echo "DOCK_POINTER_STAYED_ON_CLICKED_ITEM"
