@@ -17,6 +17,9 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  virtualisation.podman.enable = true;
+  environment.sessionVariables.ASPIRE_CONTAINER_RUNTIME = "podman";
+
   # ── Memory pressure ──────────────────────────────────────────────
   # Zao ships with 31 GiB RAM and 0 swap. On 2026-06-01 a single `nix`
   # eval process reached ~15.2 GiB anon RSS during a full Nix test evaluation,
