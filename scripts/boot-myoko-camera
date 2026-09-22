@@ -1,0 +1,33 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+# Reboot Myoko once into the deployed camera candidate. Do not run this until
+# the user gives explicit reboot approval.
+set -euo pipefail
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+host=${MYOKO_HOST:-myoko}
+expected_tree=$("$root/scripts/myoko-camera-staged-tree")
+approval=${MYOKO_CAMERA_REBOOT_APPROVED:-}
+[ "$approval" = "$expected_tree" ] || {
+  echo "MYOKO_CAMERA_REBOOT_APPROVAL_REQUIRED expected=$expected_tree" >&2
+  exit 1
+}
+remote_repo=/var/tmp/mountainous-cairn-camera-$expected_tree
+known=$(mktemp)
+trap 'rm -f "$known"' EXIT
+
+read -r type key _comment < /home/simonwjackson/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub
+printf '%s %s %s\n' "$host" "$type" "$key" > "$known"
+opts=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=yes
+  -o UserKnownHostsFile="$known"
+)
+
+remote_script=/var/tmp/boot-myoko-camera-target-$expected_tree
+scp "${opts[@]}" "$root/scripts/boot-myoko-camera-target" root@"$host":"$remote_script"
+ssh "${opts[@]}" root@"$host" \
+  "$remote_script" "$remote_repo" "$expected_tree" "$approval"

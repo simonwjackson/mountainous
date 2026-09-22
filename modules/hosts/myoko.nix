@@ -51,6 +51,24 @@
         '';
       };
 
+      cameraCdsp = pkgs.requireFile {
+        name = "qccdsp8480.mbn";
+        sha256 = "acf13d29288d283793f418a36650e8a261eed927d30de109a59cb2210f458794";
+        message = ''
+          Import Myoko's backed-up factory CDSP firmware on the native builder:
+            nix-store --add-fixed sha256 /path/to/qccdsp8480.mbn
+        '';
+      };
+
+      cameraCdspDtb = pkgs.requireFile {
+        name = "cdsp_dtbs.elf";
+        sha256 = "9bee104a48d4aac647287d6c1454df170c1cff7158a2352711fd1e2163ea6d1d";
+        message = ''
+          Import Myoko's backed-up factory CDSP device trees on the native builder:
+            nix-store --add-fixed sha256 /path/to/cdsp_dtbs.elf
+        '';
+      };
+
       myokoAudioTopology = pkgs.stdenvNoCC.mkDerivation {
         pname = "myoko-audioreach-topology";
         version = "2026-09-18";
@@ -100,6 +118,15 @@
           ${myokoAudioTopology}/lib/firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin.source \
           "$firmware/qcom/glymur/GLYMUR-ASUS-Zenbook-A16-UX3607OA-tplg.bin.source"
         bash ${../../scripts/test-myoko-audio-firmware} "$firmware"
+      '';
+
+      myokoCameraFirmware = pkgs.runCommand "myoko-camera-firmware" {
+        passthru.compressFirmware = false;
+      } ''
+        install -Dm644 ${cameraCdsp} \
+          "$out/lib/firmware/qcom/glymur/ASUSTeK/UX3607OA/qccdsp8480.mbn"
+        install -Dm644 ${cameraCdspDtb} \
+          "$out/lib/firmware/qcom/glymur/ASUSTeK/UX3607OA/cdsp_dtbs.elf"
       '';
 
       myokoAudioUcm = pkgs.runCommand "myoko-audio-ucm" {} ''
@@ -173,7 +200,10 @@
         echo "$current_state" > "$state_file"
 
         if [ "$current_state" = "ac" ]; then
-          echo default > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
+          # The firmware's default enables L1.2 on the Samsung NVMe link.
+          # Sustained kernel builds have collapsed that link on both battery
+          # and USB power, so keep PCIe ASPM disabled in every power state.
+          echo performance > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
           # Restore full max frequencies on AC
           for c in $(seq 0 5); do
             [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 3609600 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
@@ -182,11 +212,10 @@
             [ -f "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" ] && echo 4454400 > "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_max_freq" 2>/dev/null || true
           done
         else
-          # powersave, not powersupersave. With L1.2 forced on the NVMe link,
-          # a native kernel build on battery on 2026-09-20 produced an AER
-          # RxErr/Timeout/Rollover storm, "nvme0: controller is down", and a
-          # read-only root. See docs/decisions/myoko.md.
-          echo powersave > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
+          # Keep the same stable policy on battery. powersave excluded L1.2,
+          # but the firmware default restored it on AC and reproduced the
+          # controller reset storm. See docs/decisions/myoko.md.
+          echo performance > /sys/module/pcie_aspm/parameters/policy 2>/dev/null || true
           for d in /sys/bus/pci/devices/* /sys/bus/usb/devices/*; do
             [ -f "$d/power/control" ] && echo auto > "$d/power/control" 2>/dev/null || true
           done
@@ -319,8 +348,10 @@
       nixpkgs.config.allowUnfreePredicate = pkg:
         builtins.elem (lib.getName pkg) [
           "adsp_dtbs.elf"
+          "cdsp_dtbs.elf"
           "bdwlan_qcc2072_1p0_ncm820A.elf"
           "qcadsp8480.mbn"
+          "qccdsp8480.mbn"
         ];
 
       hardware.bluetooth = {
@@ -365,6 +396,7 @@
             bash ${../../scripts/test-myoko-wifi-firmware} "$out/lib/firmware"
           '')
         myokoAudioFirmware
+        myokoCameraFirmware
       ];
 
       # The ADSP firmware request happens early, and a failed remoteproc start
@@ -373,6 +405,8 @@
       boot.initrd.extraFirmwarePaths = [
         "qcom/glymur/ASUSTeK/UX3607OA/qcadsp8480.mbn"
         "qcom/glymur/ASUSTeK/UX3607OA/adsp_dtbs.elf"
+        "qcom/glymur/ASUSTeK/UX3607OA/qccdsp8480.mbn"
+        "qcom/glymur/ASUSTeK/UX3607OA/cdsp_dtbs.elf"
       ];
 
       # Match the display sequence that survived the probe. Alias loading can
@@ -512,13 +546,13 @@
       ];
 
       # Preserve the GPU-to-GMU dependency until the ordered display service
-      # runs during stage 2. Do not force PCIe ASPM: pcie_aspm=force with
-      # powersupersave let the NVMe PCIe link collapse under build I/O
-      # (docs/decisions/myoko.md). myoko-power-sync picks the policy at
-      # runtime. Silence kernel warnings and systemd status lines from
-      # flooding tty1.
+      # runs during stage 2. Disable PCIe ASPM before the root filesystem sees
+      # sustained I/O. L1.2 collapsed the NVMe link under native kernel builds
+      # on both battery and USB power (docs/decisions/myoko.md).
+      # Silence kernel warnings and systemd status lines from flooding tty1.
       boot.kernelParams = [
         "deferred_probe_timeout=300"
+        "pcie_aspm.policy=performance"
         "quiet"
         "systemd.show_status=auto"
       ];
@@ -575,6 +609,8 @@
         myoko-card-reader-power
         myoko-enable-wowlan
         myoko-display-resume
+        pkgs.libcamera
+        pkgs.v4l-utils
       ];
 
       services.udev.extraRules = ''

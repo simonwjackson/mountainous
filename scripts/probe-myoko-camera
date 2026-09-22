@@ -1,0 +1,22 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils openssh
+# shellcheck shell=bash
+set -euo pipefail
+
+host=${MYOKO_HOST:-100.88.70.113}
+root=$(cd "$(dirname "$0")/.." && pwd)
+known=$(mktemp)
+trap 'rm -f "$known"' EXIT
+
+read -r type key _comment < /home/simonwjackson/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub
+printf '%s %s %s\n' "$host" "$type" "$key" >"$known"
+opts=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=yes
+  -o UserKnownHostsFile="$known"
+)
+
+scp "${opts[@]}" "$root/scripts/probe-myoko-camera-target" root@"$host":/tmp/probe-myoko-camera-target
+ssh "${opts[@]}" root@"$host" 'chmod +x /tmp/probe-myoko-camera-target && /tmp/probe-myoko-camera-target; status=$?; rm -f /tmp/probe-myoko-camera-target; exit $status'

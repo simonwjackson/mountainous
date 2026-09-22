@@ -68,6 +68,14 @@
           # Kanata needs a virtual input device to emit remapped keys.
           INPUT_UINPUT = module;
 
+          # Myoko's camera path is not in arm64 defconfig yet. Keep the whole
+          # chain modular so a failed camera probe cannot prevent boot.
+          I2C_QCOM_CCI = module;
+          MFD_QCOM_PM8008 = module;
+          REGULATOR_QCOM_PM8008 = module;
+          VIDEO_QCOM_CAMSS = module;
+          VIDEO_OV02C10 = module;
+
           # If msm never lights the panel, the UEFI framebuffer still gives
           # a console to read. That is the difference between a failed boot
           # we can diagnose and one we cannot see.
@@ -129,6 +137,21 @@
             {
               name = "myoko-audioreach-s24-container";
               patch = ./glymur/0005-ASoC-qcom-audioreach-keep-S24-LE-in-32-bit-containers.patch;
+            }
+            # Glymur camera support is still under upstream review. Use the
+            # legacy CAMSS integration because this 7.3 tree does not yet have
+            # the standalone X1E CSI PHY API required by the newer series.
+            {
+              name = "glymur-camss-legacy";
+              patch = ./glymur/camera/0001-media-qcom-camss-add-glymur-legacy-support.patch;
+            }
+            {
+              name = "glymur-pm8010-i2c";
+              patch = ./glymur/camera/0002-mfd-regulator-add-pm8010-i2c-support.patch;
+            }
+            {
+              name = "myoko-front-camera-dts";
+              patch = ./glymur/camera/0003-arm64-dts-qcom-enable-ux3607oa-front-camera.patch;
             }
           ];
       })

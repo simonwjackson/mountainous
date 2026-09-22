@@ -1,0 +1,48 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils
+# shellcheck shell=bash
+# Restore the working persistent boot default after a boot-counted camera test.
+set -euo pipefail
+
+repo=${1:?usage: restore-myoko-camera-boot-default-target REPOSITORY SOURCE_TREE}
+expected_tree=${2:?usage: restore-myoko-camera-boot-default-target REPOSITORY SOURCE_TREE}
+deployed_marker=$repo/.myoko-camera-deployed
+loader_conf=/efi/loader/loader.conf
+loader_backup=/efi/loader/loader.conf.myoko-camera-$expected_tree
+
+[ -s "$deployed_marker" ] || {
+  echo MYOKO_CAMERA_DEPLOYED_MARKER_MISSING >&2
+  exit 1
+}
+mapfile -t deployed < "$deployed_marker"
+[ "${#deployed[@]}" -eq 4 ] || {
+  echo MYOKO_CAMERA_DEPLOYED_MARKER_INVALID >&2
+  exit 1
+}
+[ "${deployed[0]}" = "$expected_tree" ] || {
+  echo "MYOKO_CAMERA_SOURCE_TREE_MISMATCH expected=$expected_tree deployed=${deployed[0]}" >&2
+  exit 1
+}
+candidate_system=${deployed[1]}
+rollback_system=${deployed[2]}
+current_system=$(readlink -f /run/current-system)
+booted_system=$(readlink -f /run/booted-system)
+profile_system=$(readlink -f /nix/var/nix/profiles/system)
+[ "$current_system" = "$candidate_system" ] && [ "$booted_system" = "$candidate_system" ] || {
+  echo "MYOKO_CAMERA_CANDIDATE_NOT_BOOTED current=$current_system booted=$booted_system expected=$candidate_system" >&2
+  exit 1
+}
+[ "$profile_system" = "$rollback_system" ] || {
+  echo "MYOKO_CAMERA_ROLLBACK_DEFAULT_CHANGED profile=$profile_system expected=$rollback_system" >&2
+  exit 1
+}
+
+if [ -s "$loader_backup" ]; then
+  cp "$loader_backup" "$loader_conf"
+  rm -f "$loader_backup"
+  sync
+fi
+
+grep -Fq "default " "$loader_conf"
+printf 'MYOKO_CAMERA_WORKING_DEFAULT=%s\n' "$rollback_system"
+echo MYOKO_CAMERA_BOOT_DEFAULT_RESTORED

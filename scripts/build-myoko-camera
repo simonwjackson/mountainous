@@ -1,0 +1,41 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils git gnutar openssh rsync
+# shellcheck shell=bash
+# Stage the current camera slice and build Myoko's system natively. This does
+# not switch generations or change boot files.
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+HOST=${1:-100.88.70.113}
+REPORT=${2:-/tmp/myoko-camera-build.txt}
+snapshot=$(mktemp -d)
+known=$(mktemp)
+trap 'rm -rf "$snapshot"; rm -f "$known"' EXIT
+
+tree=$("$REPO/scripts/myoko-camera-staged-tree")
+REMOTE_REPO=/var/tmp/mountainous-cairn-camera-$tree
+REMOTE_SCRIPT=/var/tmp/build-myoko-camera-target-$tree
+
+read -r type key _comment < /home/simonwjackson/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key.pub
+printf '%s %s %s\n' "$HOST" "$type" "$key" > "$known"
+ssh_options=(
+  -F /dev/null
+  -o BatchMode=yes
+  -o ConnectTimeout=10
+  -o StrictHostKeyChecking=yes
+  -o UserKnownHostsFile="$known"
+)
+git -C "$REPO" archive "$tree" | tar -x -C "$snapshot"
+printf '%s\n' "$tree" > "$snapshot/.myoko-camera-source-tree"
+
+rsync -a --delete --delete-excluded \
+  --exclude '/result*' \
+  -e "ssh -F /dev/null -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$known" \
+  "$snapshot/" root@"$HOST":"$REMOTE_REPO/"
+scp "${ssh_options[@]}" "$snapshot/scripts/build-myoko-camera-target" \
+  root@"$HOST":"$REMOTE_SCRIPT"
+
+ssh "${ssh_options[@]}" root@"$HOST" \
+  "$REMOTE_SCRIPT" "$REMOTE_REPO" 2>&1 | tee "$REPORT"
+
+printf 'report: %s\n' "$REPORT"
