@@ -40,11 +40,11 @@
             ;; The Corne's hm_shift, used for both shift keys.
             t-shift 200
 
-            ;; A 250ms hold lets GUI respond sooner after typing. A space
-            ;; held this long during prose can also become GUI and run a
-            ;; shortcut, including SUPER+C (close window). The user accepted
-            ;; that risk for shorter latency. See the decision doc.
-            t-space 250
+            ;; A 150ms hold lets GUI respond sooner after typing. An ordinary
+            ;; space held this long can instead become GUI, lose the space,
+            ;; and run a shortcut, including SUPER+C (close window).
+            ;; Trial with normal typing before making it permanent.
+            t-space 150
 
             ;; Simultaneous combo timeout.
             t-combo 150
@@ -61,7 +61,7 @@
             ;; another key is pressed, which is exactly what typing looks
             ;; like. Plain tap-hold only ever holds on timeout, so a letter
             ;; arriving before the term yields a space. A space held past
-            ;; 250ms can become SUPER even during prose; keep the close-window
+            ;; 150ms can become SUPER even during prose; keep the close-window
             ;; risk visible rather than calling the mapping harmless.
             spc-gui (tap-hold $qt $t-space spc lmet)
 
