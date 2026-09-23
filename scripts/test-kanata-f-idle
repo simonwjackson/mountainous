@@ -1,0 +1,123 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3Packages.evdev
+"""Test the live Kanata F hold with a harmless F24 chord.
+
+Creates a virtual keyboard and briefly restarts Kanata through udev. Run only
+when nobody is typing. A rejected hold can type 'f' in the focused app.
+This does not test F+L: that chord sends Delete on the CHK layer.
+"""
+import os
+import re
+import select
+import subprocess
+import time
+from evdev import InputDevice, UInput, ecodes as K
+
+
+def output_path():
+    with open('/proc/bus/input/devices', encoding='utf-8') as devices:
+        for block in devices.read().split('\n\n'):
+            if 'N: Name="kanata"' in block:
+                match = re.search(r'event\d+', block)
+                if match:
+                    return '/dev/input/' + match.group()
+    raise RuntimeError('Kanata output device not found')
+
+
+def grabbed(path):
+    device = InputDevice(path)
+    try:
+        device.grab()
+        device.ungrab()
+        return False
+    except OSError:
+        return True
+    finally:
+        device.close()
+
+
+def send(source, key, value):
+    source.write(K.EV_KEY, key, value)
+    source.syn()
+
+
+def presses(output, duration):
+    result = []
+    end = time.monotonic() + duration
+    while time.monotonic() < end:
+        if select.select([output.fd], [], [], max(0, end - time.monotonic()))[0]:
+            result.extend(ev.code for ev in output.read() if ev.type == K.EV_KEY and ev.value == 1)
+    return result
+
+
+def exercise(source, output, name, idle_ms, chord_ms, expect_hold):
+    presses(output, 0.04)
+    if idle_ms is None:
+        time.sleep(0.35)
+    else:
+        send(source, K.KEY_F24, 1)
+        send(source, K.KEY_F24, 0)
+        time.sleep(idle_ms / 1000)
+    send(source, K.KEY_F, 1)
+    time.sleep(chord_ms / 1000)
+    send(source, K.KEY_F24, 1)
+    time.sleep(0.025)
+    send(source, K.KEY_F24, 0)
+    send(source, K.KEY_F, 0)
+    got = presses(output, 0.2)
+    held = K.KEY_F not in got
+    passed = held == expect_hold
+    emitted = [K.KEY.get(key, str(key)) for key in got if key != K.KEY_F24]
+    print(f'{"PASS" if passed else "FAIL"} {name}: held={held}, emitted={emitted}', flush=True)
+    return passed
+
+
+def tap_f(source, output):
+    presses(output, 0.04)
+    send(source, K.KEY_F, 1)
+    time.sleep(0.05)
+    send(source, K.KEY_F, 0)
+    got = [key for key in presses(output, 0.3) if key != K.KEY_F24]
+    passed = got == [K.KEY_F]
+    print(f'{"PASS" if passed else "FAIL"} quick F tap: emitted={got}', flush=True)
+    return passed
+
+
+def main():
+    with UInput({K.EV_KEY: list(range(K.KEY_ESC, K.KEY_MICMUTE))},
+                name='kanata-f-idle-check', version=1) as source:
+        for _ in range(50):
+            if grabbed(source.device.path):
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError('Kanata did not grab the test keyboard')
+        stable = 0
+        for _ in range(70):
+            state = subprocess.run(['systemctl', 'is-active', 'kanata-regrab.service'],
+                                   capture_output=True, text=True).stdout.strip()
+            stable = 0 if state in ('active', 'activating') else stable + 1
+            if stable >= 6 and grabbed(source.device.path):
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError('Kanata restart did not settle')
+        output = InputDevice(output_path())
+        try:
+            os.set_blocking(output.fd, False)
+            cases = [
+                ('F after rest, next key at 45ms', None, 45, True),
+                ('F 30ms after a key, next key at 45ms', 30, 45, True),
+                ('F 30ms after a key, held 250ms', 30, 250, True),
+                ('F 150ms after a key, next key at 45ms', 150, 45, True),
+            ]
+            failures = sum(not exercise(source, output, *item) for item in cases)
+            failures += not tap_f(source, output)
+            print(f'RESULT {failures}/{len(cases) + 1} failed', flush=True)
+            return int(failures > 0)
+        finally:
+            output.close()
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

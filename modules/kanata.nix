@@ -33,9 +33,9 @@
             t-middle 230
             t-index  200
 
-            ;; require-prior-idle-ms. The index finger is trusted sooner.
+            ;; Require prior idle for A/S/D layers and the control holds.
+            ;; F has no such guard so CHK can open after fast typing.
             idle-slow 150
-            idle-fast 125
 
             ;; The Corne's hm_shift, used for both shift keys.
             t-shift 200
@@ -54,7 +54,9 @@
             a-dir (tap-hold-release $qt $t-pinky  a (layer-while-held dir) (require-prior-idle $idle-slow))
             s-num (tap-hold-release $qt $t-ring   s (layer-while-held num) (require-prior-idle $idle-slow))
             d-wrp (tap-hold-release $qt $t-middle d (layer-while-held wrp) (require-prior-idle $idle-slow))
-            f-chk (tap-hold-release $qt $t-index  f (layer-while-held chk) (require-prior-idle $idle-fast))
+            ;; Without an idle gate, an ordinary fast 'fl' can activate
+            ;; CHK+L (Delete). Trial this trade-off before keeping it.
+            f-chk (tap-hold-release $qt $t-index  f (layer-while-held chk))
 
             ;; Deliberately plain tap-hold, not the -press or -release
             ;; variants the letters use. Those resolve the hold EARLY when
