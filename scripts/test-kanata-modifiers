@@ -1,0 +1,118 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3Packages.evdev
+"""Check real, running Kanata with timed uinput events and its evdev output.
+
+This test adds a virtual keyboard and briefly restarts Kanata through udev.
+Run on the affected host only when nobody is typing. F24 is unbound in
+Hyprland, but a failed hold can emit v, m, or a space into the focused app.
+"""
+import os
+import re
+import select
+import subprocess
+import time
+from evdev import InputDevice, UInput, ecodes as K
+
+
+def kanata_output():
+    with open('/proc/bus/input/devices', encoding='utf-8') as devices:
+        for block in devices.read().split('\n\n'):
+            if 'N: Name="kanata"' in block:
+                match = re.search(r'event\d+', block)
+                if match:
+                    return '/dev/input/' + match.group()
+    raise RuntimeError('Kanata output device not found')
+
+
+def is_grabbed(path):
+    device = InputDevice(path)
+    try:
+        device.grab()
+        device.ungrab()
+        return False
+    except OSError:
+        return True
+    finally:
+        device.close()
+
+
+def read_keys(device, duration):
+    found = []
+    deadline = time.monotonic() + duration
+    while time.monotonic() < deadline:
+        if select.select([device.fd], [], [], max(0, deadline - time.monotonic()))[0]:
+            found.extend((event.code, event.value) for event in device.read()
+                         if event.type == K.EV_KEY and event.value in (0, 1))
+    return found
+
+
+def emit(source, key, value):
+    source.write(K.EV_KEY, key, value)
+    source.syn()
+
+
+def exercise(source, output, label, key, modifier, prior_gap_ms, hold_ms, expect):
+    read_keys(output, 0.03)
+    if prior_gap_ms is None:
+        time.sleep(0.43)
+    else:
+        emit(source, K.KEY_F24, 1)
+        emit(source, K.KEY_F24, 0)
+        time.sleep(prior_gap_ms / 1000)
+    emit(source, key, 1)
+    time.sleep(hold_ms / 1000)
+    emit(source, K.KEY_F24, 1)
+    time.sleep(0.025)
+    emit(source, K.KEY_F24, 0)
+    emit(source, key, 0)
+    presses = [code for code, value in read_keys(output, 0.18) if value == 1]
+    got = modifier in presses
+    other = [K.KEY.get(code, str(code)) for code in presses if code != K.KEY_F24]
+    passed = got == expect
+    print(f'{"PASS" if passed else "FAIL"} {label}: modifier={got}, emitted={other}', flush=True)
+    return passed
+
+
+def main():
+    caps = {K.EV_KEY: list(range(K.KEY_ESC, K.KEY_MICMUTE))}
+    with UInput(caps, name='kanata-modifier-check', version=1) as source:
+        path = source.device.path
+        for _ in range(50):
+            if is_grabbed(path):
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError(f'Kanata did not grab {path}')
+        # A keyboard-add udev event restarts Kanata and replaces its output.
+        settled = 0
+        for _ in range(70):
+            state = subprocess.run(['systemctl', 'is-active', 'kanata-regrab.service'],
+                                   capture_output=True, text=True).stdout.strip()
+            settled = 0 if state in ('active', 'activating') else settled + 1
+            if settled >= 6 and is_grabbed(path):
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError('Kanata regrab did not settle')
+        output = InputDevice(kanata_output())
+        try:
+            os.set_blocking(output.fd, False)
+            cases = [
+                ('C Shift after 30ms prior key', K.KEY_C, K.KEY_LEFTSHIFT, 30, 45, True),
+                ('C Shift after 30ms prior key, held 250ms', K.KEY_C, K.KEY_LEFTSHIFT, 30, 250, True),
+                ('M Shift after 30ms prior key', K.KEY_M, K.KEY_RIGHTSHIFT, 30, 45, True),
+                ('C Shift after 150ms prior key', K.KEY_C, K.KEY_LEFTSHIFT, 150, 45, True),
+                ('Space GUI after 30ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 450, True),
+                ('Space GUI after 320ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 320, 450, True),
+                ('quick Space still types a space', K.KEY_SPACE, K.KEY_LEFTMETA, None, 80, False),
+                ('physical Left Alt GUI after 30ms prior key', K.KEY_LEFTALT, K.KEY_LEFTMETA, 30, 20, True),
+            ]
+            failed = sum(not exercise(source, output, *case) for case in cases)
+            print(f'RESULT {failed}/{len(cases)} failed', flush=True)
+            return int(failed != 0)
+        finally:
+            output.close()
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

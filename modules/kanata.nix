@@ -38,31 +38,13 @@
             idle-fast 125
 
             ;; The Corne's hm_shift, used for both shift keys.
-            t-shift    200
-            idle-shift 125
+            t-shift 200
 
-            ;; Space is the one key that must never misfire, so it gets its
-            ;; own numbers rather than borrowing a finger's.
-            ;;
-            ;; A wrong hold here does not merely swallow a space: SUPER+C
-            ;; closes the focused window in this Hyprland config, so a
-            ;; misfire can destroy work. The guards are deliberately blunt.
-            ;;
-            ;; Two independent guards, and a misfire needs BOTH to fail.
-            ;;
-            ;; idle-space: space may only hold if no key was pressed in the
-            ;; preceding window. Space almost always lands a few tens of
-            ;; milliseconds after the letter ending a word, so this alone
-            ;; rules out virtually every space typed in prose.
-            ;;
-            ;; t-space: how long space must then be held. Measured on hiyori,
-            ;; prose was clean at 250ms until each key was held a full 250ms,
-            ;; at which point space reached its own term and fired SUPER.
-            ;; A heavy hand on the spacebar is real, so the term is set well
-            ;; beyond any natural press. It costs a deliberate pause before
-            ;; SUPER, which is the trade this key is worth.
-            t-space    400
-            idle-space 300
+            ;; A 400ms hold distinguishes a deliberate GUI from a quick space.
+            ;; A long space in prose can still become GUI and run a shortcut,
+            ;; including SUPER+C (close window). Prior idle was removed on
+            ;; purpose so GUI works directly after typing. See the decision doc.
+            t-space 400
 
             ;; Simultaneous combo timeout.
             t-combo 150
@@ -78,27 +60,28 @@
             ;; variants the letters use. Those resolve the hold EARLY when
             ;; another key is pressed, which is exactly what typing looks
             ;; like. Plain tap-hold only ever holds on timeout, so a letter
-            ;; arriving before the term always yields a space. The cost is
-            ;; that SUPER needs space held first, then the letter; the gain
-            ;; is that no roll can ever produce SUPER.
-            spc-gui (tap-hold $qt $t-space spc lmet (require-prior-idle $idle-space))
+            ;; arriving before the term yields a space. A space held past
+            ;; 400ms can become SUPER even during prose; keep the close-window
+            ;; risk visible rather than calling the mapping harmless.
+            spc-gui (tap-hold $qt $t-space spc lmet)
 
             ;; Shift and control on the bottom row, mirroring the Corne's
             ;; hm_shift and hm_pinky. Each hand gets one of each, so a
             ;; modifier is always available on the hand opposite the key it
             ;; modifies.
             ;;
-            ;; A wrong shift only capitalises a letter. A wrong control is
-            ;; worse, since Ctrl+W and Ctrl+C destroy work, so the control
-            ;; holds take the pinky's slower 280ms term rather than the
-            ;; 200ms the shifts use.
+            ;; The shifts have no prior-idle gate: a modifier must work when
+            ;; the preceding key was just typed. The cost is that rolling
+            ;; through physical C or M while typing v or m can turn that
+            ;; letter into Shift. Controls keep their prior-idle gate because
+            ;; Ctrl+W and Ctrl+C can destroy work.
             ;;
             ;; The physical C key taps v and holds shift. The physical Left
             ;; Shift key taps z and holds control. Both keep a modifier on
             ;; the bottom row while its letters sit one key to the right.
             ;; Physical / taps ' and holds control.
-            c-sft    (tap-hold-release $qt $t-shift v lsft (require-prior-idle $idle-shift))
-            m-sft    (tap-hold-release $qt $t-shift m rsft (require-prior-idle $idle-shift))
+            c-sft    (tap-hold-release $qt $t-shift v lsft)
+            m-sft    (tap-hold-release $qt $t-shift m rsft)
             apos-ctl (tap-hold-release $qt $t-pinky ' lctl (require-prior-idle $idle-slow))
             lsft-ctl (tap-hold-release $qt $t-pinky z lctl (require-prior-idle $idle-slow))
 
