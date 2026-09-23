@@ -102,6 +102,7 @@ def main():
                 ('C Shift after 30ms prior key, held 250ms', K.KEY_C, K.KEY_LEFTSHIFT, 30, 250, True),
                 ('M Shift after 30ms prior key', K.KEY_M, K.KEY_RIGHTSHIFT, 30, 45, True),
                 ('C Shift after 150ms prior key', K.KEY_C, K.KEY_LEFTSHIFT, 150, 45, True),
+                ('Space GUI after 30ms prior key, held 275ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 275, True),
                 ('Space GUI after 30ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 450, True),
                 ('Space GUI after 320ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 320, 450, True),
                 ('quick Space still types a space', K.KEY_SPACE, K.KEY_LEFTMETA, None, 80, False),
