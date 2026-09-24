@@ -23,6 +23,12 @@
       # This file comes from this laptop's backed-up Windows driver store.
       # Public A16 board containers differ from it. Keep the private binary
       # outside Git and require its exact content on the native builder.
+      myokoOciEgress = pkgs.writeShellApplication {
+        name = "oci-egress-status";
+        runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.oci-cli ];
+        text = builtins.readFile ../quickshell/oci-egress-status.sh;
+      };
+
       wifiBoard = pkgs.requireFile {
         name = "bdwlan_qcc2072_1p0_ncm820A.elf";
         sha256 = "960e9e93da708f5e1086ce15d82d3e44d846ec9441eac40e1725467d357965d8";
@@ -618,7 +624,27 @@
         )
       );
 
+      # Only Myoko receives OCI credentials and the topbar's usage helper.
+      # sops installs plaintext in tmpfs, never in the Nix store or the flake.
+      sops.secrets.oci-config = {
+        sopsFile = ../../secrets/hosts/myoko.yaml;
+        owner = "simon";
+        mode = "0400";
+      };
+      sops.secrets.oci-key-fuji = {
+        sopsFile = ../../secrets/hosts/myoko.yaml;
+        owner = "simon";
+        mode = "0400";
+      };
+      sops.secrets.oci-key-yari = {
+        sopsFile = ../../secrets/hosts/myoko.yaml;
+        owner = "simon";
+        mode = "0400";
+      };
+      systemd.user.services.quickshell.environment.OCI_EGRESS_ENABLED = "1";
+
       environment.systemPackages = [
+        myokoOciEgress
         myoko-power-sync
         myoko-power-logger
         myoko-card-reader-power

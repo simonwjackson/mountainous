@@ -770,6 +770,7 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call bluetooth reveal"))
     hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call wifi reveal"))
     hl.bind("S", hl.dsp.exec_cmd("qs -c mountainous ipc call sound reveal"))
+    hl.bind("C", hl.dsp.exec_cmd("qs -c mountainous ipc call oci reveal"))
     hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
 end)
 

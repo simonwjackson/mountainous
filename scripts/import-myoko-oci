@@ -1,0 +1,59 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 sops
+"""Encrypt local OCI config and profile keys for Myoko without writing plaintext."""
+import configparser
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+repo = Path(__file__).resolve().parent.parent
+source = Path.home() / ".oci/config"
+target = repo / "secrets/hosts/myoko.yaml"
+if target.exists():
+    sys.exit(f"Refusing to overwrite {target}; remove it explicitly to rotate keys")
+target.parent.mkdir(parents=True, exist_ok=True)
+
+config = configparser.RawConfigParser()
+config.read(source)
+if not config.sections():
+    sys.exit("No OCI profiles found")
+
+entries = {}
+replacements = {}
+for profile in config.sections():
+    if not re.fullmatch(r"[a-zA-Z0-9_-]+", profile):
+        sys.exit("OCI profile name contains unsupported characters")
+    key_path = Path(config.get(profile, "key_file")).expanduser()
+    if not key_path.is_file():
+        sys.exit(f"Key for {profile} is not a readable file")
+    name = f"oci-key-{profile.lower()}"
+    if name in entries:
+        sys.exit("Duplicate OCI profile name")
+    entries[name] = key_path.read_text()
+    replacements[profile] = f"/run/secrets/{name}"
+
+profile = None
+lines = []
+for line in source.read_text().splitlines(keepends=True):
+    header = re.match(r"\s*\[([^]]+)\]\s*$", line)
+    if header:
+        profile = header.group(1)
+    if profile in replacements and re.match(r"\s*key_file\s*=", line):
+        line = f"key_file={replacements[profile]}\n"
+    lines.append(line)
+entries["oci-config"] = "".join(lines)
+
+command = [
+    "sops", "--config", str(repo / ".sops.yaml"),
+    "--filename-override", "secrets/hosts/myoko.yaml",
+    "--input-type", "json", "--output-type", "yaml",
+    "--encrypt", "--output", str(target), "/dev/stdin",
+]
+result = subprocess.run(command, input=json.dumps(entries), text=True, cwd=repo, check=False)
+if result.returncode:
+    target.unlink(missing_ok=True)
+    sys.exit(result.returncode)
+print(f"Encrypted {len(replacements)} OCI profiles for Myoko in {target}")

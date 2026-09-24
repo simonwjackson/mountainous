@@ -1,0 +1,37 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 bash coreutils gawk
+"""Exercise the OCI status helper with a controlled OCI CLI process."""
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+script = Path(__file__).resolve().parent.parent / "modules/quickshell/oci-egress-status.sh"
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    bin_dir = root / "bin"
+    bin_dir.mkdir()
+    cli = bin_dir / "oci"
+    cli.write_text("#!/usr/bin/env bash\n[[ \"$*\" == *'Outbound Data Transfer Zone 1'* ]] || exit 4\n"
+                   "[[ \"$*\" == *'--profile fuji'* || \"$*\" == *'--profile yari'* ]] || exit 5\n"
+                   "if [[ \"${OCI_TEST_OUTPUT:-}\" == error ]]; then exit 3; fi\n"
+                   "printf '%s\\n' \"${OCI_TEST_OUTPUT:-5120}\"\n")
+    cli.chmod(0o755)
+    config = root / "config"
+    env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}", OCI_CONFIG=str(config))
+
+    def run(value):
+        return subprocess.run(["bash", str(script)], env=dict(env, OCI_TEST_OUTPUT=value),
+                              text=True, capture_output=True, check=True).stdout.strip()
+
+    assert run("5120") == "unavailable"
+    config.write_text("[fuji]\ntenancy=private-fuji\nkey_file=/run/secrets/oci-key-fuji\n"
+                      "[yari]\ntenancy=private-yari\nkey_file=/run/secrets/oci-key-yari\n")
+    result = run("5120").splitlines()
+    assert len(result) == 2
+    assert result[0].startswith("fuji\t50.0\t5120.0\t")
+    assert result[1].startswith("yari\t50.0\t5120.0\t")
+    assert "private-" not in "\n".join(result)
+    assert run("null").splitlines()[0].startswith("fuji\t0.0\t0.0\t")
+    assert run("error").splitlines() == ["fuji\t--\t--\t--", "yari\t--\t--\t--"]
+print("OCI egress helper: unavailable, two profiles, null, error OK")

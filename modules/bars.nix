@@ -67,5 +67,7 @@
         ./quickshell/WifiPanel.qml;
       hjem.users.simon.files.".config/quickshell/mountainous/SoundPanel.qml".source =
         ./quickshell/SoundPanel.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/OciEgress.qml".source =
+        ./quickshell/OciEgress.qml;
     };
 }

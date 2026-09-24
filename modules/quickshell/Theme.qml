@@ -64,6 +64,7 @@ Singleton {
     readonly property color borderMuted: dark ? "#2e2e2e" : "#c0c0c0"
     readonly property color accent: dark ? "#6a9fb5" : "#3d7a94"
     readonly property color danger: dark ? "#d27d7d" : "#9f3333"
+    readonly property color warning: dark ? "#d5a66f" : "#925b24"
 
     // Text hierarchy
     readonly property color textPrimary: dark ? "#e0e0e0" : "#1a1a1a"

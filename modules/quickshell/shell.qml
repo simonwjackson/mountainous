@@ -17,6 +17,7 @@ ShellRoot {
     property var bluetoothScreen: null
     property var wifiScreen: null
     property var soundScreen: null
+    property var ociScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
@@ -37,6 +38,14 @@ ShellRoot {
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = root.soundScreen === screen ? null : screen;
+    }
+
+    function toggleOci(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = null;
+        root.ociScreen = root.ociScreen === screen ? null : screen;
     }
 
     function primaryScreen() {
@@ -111,6 +120,12 @@ ShellRoot {
             root.wifiScreen = null;
             root.soundScreen = root.primaryScreen();
         }
+    }
+
+    IpcHandler {
+        target: "oci"
+        function reveal(): void { root.toggleOci(root.primaryScreen()); }
+        function hide(): void { root.ociScreen = null; }
     }
 
     IpcHandler {
@@ -283,6 +298,13 @@ ShellRoot {
                 onCloseRequested: root.soundScreen = null
             }
 
+            OciEgress {
+                id: ociEgress
+                screen: modelData
+                shown: root.ociScreen === modelData
+                onCloseRequested: root.ociScreen = null
+            }
+
             anchors { top: true; left: true; right: true }
             implicitHeight: 26
             color: Theme.bgBase
@@ -392,7 +414,9 @@ ShellRoot {
             Text {
                 anchors.centerIn: parent
                 text: root.topbarAccessVisible
-                    ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  Esc cancel"
+                    ? (ociEgress.enabled
+                        ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  C Cloud  ·  Esc cancel"
+                        : "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  Esc cancel")
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
@@ -547,6 +571,31 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: root.toggleSound(modelData)
+                    }
+                }
+
+                Rectangle {
+                    id: ociControl
+                    visible: ociEgress.enabled
+                    Layout.preferredWidth: topBar.width >= 900 ? 130 : 48
+                    Layout.preferredHeight: 26
+                    radius: Theme.radiusSmall
+                    color: ociArea.containsMouse ? Theme.bgSelected : "transparent"
+                    Text {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        text: topBar.width >= 900 ? ociEgress.label : "OCI"
+                        color: ociEgress.statusColor
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+                    MouseArea {
+                        id: ociArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleOci(modelData)
                     }
                 }
 
