@@ -4,8 +4,10 @@
 set -euo pipefail
 
 system=${1:-/run/current-system}
+lua=${2:-/home/simon/.config/hypr/hyprland.lua}
 power="$system/sw/bin/myoko-power-sync"
 [ -x "$power" ] || { echo "MYOKO_POWER_SYNC_MISSING $power" >&2; exit 1; }
+[ -r "$lua" ] || { echo "MYOKO_HYPRLAND_CONFIG_MISSING $lua" >&2; exit 1; }
 
 # Both mains and battery must select the mode that survived Myoko's
 # September 24 eDP wake test. A 60 Hz DPMS resume left the panel black.
@@ -16,6 +18,14 @@ count=$(grep -Fc 'target_mode="2880x1800@120"' "$power" || true)
 }
 if grep -Fq 'target_mode="2880x1800@60"' "$power"; then
   echo MYOKO_DISPLAY_POLICY_STILL_USES_60Hz >&2
+  exit 1
+fi
+
+# An AC boot still started Hyprland at the shared 60 Hz default. Set the
+# Myoko initial mode too, not only the later power-source transition script.
+if ! grep -Fq 'mode     = "2880x1800@120"' "$lua" ||
+   grep -Fq 'mode     = "2880x1800@60"' "$lua"; then
+  echo MYOKO_INITIAL_DISPLAY_MODE_NOT_120Hz >&2
   exit 1
 fi
 

@@ -605,6 +605,19 @@
       systemd.user.services.wireplumber.environment.ALSA_CONFIG_UCM2 =
         "${myokoAudioUcm}/share/alsa/ucm2";
 
+      # The shared desktop starts at 60 Hz. On 2026-09-24 an AC session
+      # remained at that mode, even though power-sync's AC target was 120 Hz.
+      # Set Myoko's initial mode directly so login does not depend on a later
+      # power-source event or the asynchronous session startup hook.
+      hjem.users.simon.files.".config/hypr/hyprland.lua".source = lib.mkForce (
+        pkgs.writeText "myoko-hyprland.lua" (
+          builtins.replaceStrings
+            ["mode     = \"2880x1800@60\""]
+            ["mode     = \"2880x1800@120\""]
+            (builtins.readFile ../hyprland/hyprland.lua)
+        )
+      );
+
       environment.systemPackages = [
         myoko-power-sync
         myoko-power-logger
