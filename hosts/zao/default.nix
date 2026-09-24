@@ -34,9 +34,9 @@
     # Cloud enrollment and OAuth callbacks must return to the browser's
     # tailnet address, not to the loopback-only backend on Zao.
     auth.publicBaseUrl = "https://paperclip.hummingbird-lake.ts.net";
-    # The core preset already installs Pi from github:lukasl-dev/pi.nix.
-    # Put that exact package on the service PATH for Paperclip's local agents.
-    extraPackages = [config.programs.pi.coding-agent.package];
+    # CLIProxyAPI needs Pi 0.87.1; keep Paperclip's Pi independent of the
+    # host-wide version and its GROQ credential wrapper.
+    extraPackages = [inputs.pi-paperclip.packages.${pkgs.stdenv.hostPlatform.system}.coding-agent];
     telemetry.enable = false;
   };
 

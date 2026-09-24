@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -91,7 +92,7 @@
         && get ["services" "paperclip" "auth" "publicBaseUrl"] null == "https://paperclip.hummingbird-lake.ts.net"
         && !(enabled ["services" "paperclip" "openFirewall"])
         && enabled ["mountainous" "features" "pi" "enable"]
-        && builtins.elem config.programs.pi.coding-agent.package.outPath
+        && builtins.elem inputs.pi-paperclip.packages.${pkgs.stdenv.hostPlatform.system}.coding-agent.outPath
           (map (package: package.outPath) (get ["services" "paperclip" "extraPackages"] []))
         && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "hostname"] null == "paperclip"
         && enabled ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "interactiveLogin"]
