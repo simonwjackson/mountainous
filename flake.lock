@@ -1328,18 +1328,14 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1786444367,
-        "narHash": "sha256-vnlHM2yLLhA0gH/P/4J+ZDpEov/QCipzSUwvnsXhnlA=",
-        "owner": "Tr0sT",
-        "repo": "paperclip",
-        "rev": "3d8ee3e626c896f6884ab584fd8849c9a965897c",
-        "type": "github"
+        "lastModified": 1790287692,
+        "narHash": "sha256-Zkc9SINF76Oqreya+xEaJ9bhD1e/Lt8h6VDsPZjHrM0=",
+        "path": "/home/simonwjackson/code/sandbox/paperclip",
+        "type": "path"
       },
       "original": {
-        "owner": "Tr0sT",
-        "ref": "feat/nixos-native-install",
-        "repo": "paperclip",
-        "type": "github"
+        "path": "/home/simonwjackson/code/sandbox/paperclip",
+        "type": "path"
       }
     },
     "pi": {

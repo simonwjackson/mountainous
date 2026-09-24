@@ -75,9 +75,9 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Pending upstream Nix support (paperclipai/paperclip#10883).
-    # Develop fixes in ~/code/sandbox/paperclip and override this input locally.
-    paperclip.url = "github:Tr0sT/paperclip/feat/nixos-native-install";
+    # Until paperclipai/paperclip#10883 lands, Zao uses the locally maintained
+    # flake. This checkout must exist on every host evaluating this flake.
+    paperclip.url = "path:/home/simonwjackson/code/sandbox/paperclip";
     # Zao consumes the isolated Linux host profile without changing the Korri
     # revision used by Aka and Sobo.
     korri-input-host = {
