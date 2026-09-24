@@ -138,6 +138,7 @@
       authKeyFile = config.age.secrets.tailscale-authkey.path;
       services.paperclip = {
         hostname = "paperclip";
+        interactiveLogin = true; # The shared auth key is no longer valid for new nodes.
         host = "127.0.0.1";
         port = 3110;
       };

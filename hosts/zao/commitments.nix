@@ -90,6 +90,7 @@
         && !(enabled ["services" "paperclip" "auth" "enable"])
         && !(enabled ["services" "paperclip" "openFirewall"])
         && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "hostname"] null == "paperclip"
+        && enabled ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "interactiveLogin"]
         && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "port"] null == get ["services" "paperclip" "port"] null;
       message = "Zao Paperclip must stay on loopback behind its tailnet-only tsnet proxy.";
     };
