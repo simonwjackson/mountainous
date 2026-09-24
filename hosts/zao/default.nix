@@ -1,9 +1,11 @@
 {
   config,
+  inputs,
   pkgs,
   ...
 }: {
   imports = [
+    inputs.paperclip.nixosModules.paperclip
     ./commitments.nix
     ./disko.nix
     ./hardware.nix
@@ -20,6 +22,17 @@
   programs.nix-ld.enable = true;
   virtualisation.podman.enable = true;
   environment.sessionVariables.ASPIRE_CONTAINER_RUNTIME = "podman";
+
+  # The tsnet node is the only remote entry point. Everyone allowed by the
+  # tailnet ACL has full local_trusted access; no separate Paperclip login.
+  services.paperclip = {
+    enable = true;
+    package = inputs.paperclip.packages.${pkgs.stdenv.hostPlatform.system}.paperclip;
+    host = "127.0.0.1";
+    port = 3110;
+    allowedHostnames = ["paperclip" "paperclip.hummingbird-lake.ts.net"];
+    telemetry.enable = false;
+  };
 
   # ── Memory pressure ──────────────────────────────────────────────
   # Zao ships with 31 GiB RAM and 0 swap. On 2026-06-01 a single `nix`
@@ -123,6 +136,11 @@
       enable = true;
       package = pkgs.tsnet-proxy;
       authKeyFile = config.age.secrets.tailscale-authkey.path;
+      services.paperclip = {
+        hostname = "paperclip";
+        host = "127.0.0.1";
+        port = 3110;
+      };
     };
 
     # ── Services ─────────────────────────────────────────────────────

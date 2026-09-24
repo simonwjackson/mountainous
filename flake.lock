@@ -446,6 +446,24 @@
         "type": "github"
       }
     },
+    "flake-utils_8": {
+      "inputs": {
+        "systems": "systems_10"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flexget-webui": {
       "flake": false,
       "locked": {
@@ -1234,6 +1252,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_6": {
+      "locked": {
+        "lastModified": 1785301185,
+        "narHash": "sha256-eoS3KQTO0aPWXZvIaRbRAzSSHW3l5wdMFXtT1ISfoKA=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9bc02893134c733dd85de46ee4fb2fac696b5529",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nmd": {
       "flake": false,
       "locked": {
@@ -1288,13 +1322,33 @@
         "type": "gitlab"
       }
     },
+    "paperclip": {
+      "inputs": {
+        "flake-utils": "flake-utils_8",
+        "nixpkgs": "nixpkgs_6"
+      },
+      "locked": {
+        "lastModified": 1786444367,
+        "narHash": "sha256-vnlHM2yLLhA0gH/P/4J+ZDpEov/QCipzSUwvnsXhnlA=",
+        "owner": "Tr0sT",
+        "repo": "paperclip",
+        "rev": "3d8ee3e626c896f6884ab584fd8849c9a965897c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Tr0sT",
+        "ref": "feat/nixos-native-install",
+        "repo": "paperclip",
+        "type": "github"
+      }
+    },
     "pi": {
       "inputs": {
         "bun2nix": "bun2nix_2",
         "nixpkgs": [
           "nixpkgs"
         ],
-        "systems": "systems_10"
+        "systems": "systems_11"
       },
       "locked": {
         "lastModified": 1781079628,
@@ -1367,6 +1421,7 @@
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-droid": "nixpkgs-droid",
         "nixpkgs-rpcs3-v0-0-41": "nixpkgs-rpcs3-v0-0-41",
+        "paperclip": "paperclip",
         "pi": "pi",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tsnsrv": "tsnsrv",
@@ -1468,6 +1523,21 @@
       }
     },
     "systems_10": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_11": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

@@ -83,6 +83,17 @@
       message = "Zao must retain tsnet-proxy, its Tailscale secret, and trusted tailnet access.";
     };
 
+    paperclip-tailnet = {
+      assertion =
+        enabled ["services" "paperclip" "enable"]
+        && get ["services" "paperclip" "host"] null == "127.0.0.1"
+        && !(enabled ["services" "paperclip" "auth" "enable"])
+        && !(enabled ["services" "paperclip" "openFirewall"])
+        && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "hostname"] null == "paperclip"
+        && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "port"] null == get ["services" "paperclip" "port"] null;
+      message = "Zao Paperclip must stay on loopback behind its tailnet-only tsnet proxy.";
+    };
+
     eval-memory-safety = {
       assertion =
         enabled ["zramSwap" "enable"]
