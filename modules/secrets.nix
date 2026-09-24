@@ -62,6 +62,21 @@
           # The option forbids setting owner or group: the accounts that would
           # own the file do not exist yet at the point it is written.
           user-password.neededForUsers = true;
+
+          # OCI usage uses the same profiles on every fleet machine. Keep the
+          # shared credentials in fleet.yaml; sops decrypts into tmpfs.
+          oci-config = {
+            owner = "simon";
+            mode = "0400";
+          };
+          oci-key-fuji = {
+            owner = "simon";
+            mode = "0400";
+          };
+          oci-key-yari = {
+            owner = "simon";
+            mode = "0400";
+          };
         };
       };
 

@@ -1,0 +1,42 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p nix jq coreutils
+# The fleet shares OCI secrets. Desktop hosts expose the usage control.
+set -euo pipefail
+
+fleet_source=''
+for host in hiyori myoko tate; do
+  names=$(nix eval --json ".#nixosConfigurations.${host}.config.sops.secrets" \
+    --apply builtins.attrNames --option substituters https://cache.nixos.org/)
+  for name in oci-config oci-key-fuji oci-key-yari; do
+    if ! jq -e --arg name "$name" 'index($name) != null' <<<"$names" >/dev/null; then
+      printf 'OCI_SECRET_MISSING host=%s name=%s\n' "$host" "$name" >&2
+      exit 1
+    fi
+    source=$(nix eval --raw ".#nixosConfigurations.${host}.config.sops.secrets.${name}.sopsFile" \
+      --option substituters https://cache.nixos.org/)
+    if [[ "$source" != *-fleet.yaml ]]; then
+      printf 'OCI_SECRET_NOT_FLEET host=%s name=%s\n' "$host" "$name" >&2
+      exit 1
+    fi
+    if [ -n "$fleet_source" ] && [ "$source" != "$fleet_source" ]; then
+      printf 'OCI_SECRET_SOURCE_MISMATCH host=%s name=%s\n' "$host" "$name" >&2
+      exit 1
+    fi
+    fleet_source=$source
+  done
+done
+for host in hiyori myoko; do
+  enabled=$(nix eval --raw ".#nixosConfigurations.${host}.config.systemd.user.services.quickshell.environment.OCI_EGRESS_ENABLED" \
+    --option substituters https://cache.nixos.org/)
+  if [ "$enabled" != 1 ]; then
+    printf 'OCI_CONTROL_DISABLED host=%s\n' "$host" >&2
+    exit 1
+  fi
+done
+for name in oci-config oci-key-fuji oci-key-yari; do
+  grep -q "^${name}: ENC\[" secrets/fleet.yaml || {
+    printf 'OCI_FLEET_CIPHERTEXT_MISSING name=%s\n' "$name" >&2
+    exit 1
+  }
+done
+printf 'OCI_FLEET_TEST_PASSED\n'

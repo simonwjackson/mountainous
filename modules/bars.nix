@@ -6,8 +6,15 @@
 {
   nixos.modules.desktop =
     { config, lib, pkgs, ... }:
+    let
+      ociEgress = pkgs.writeShellApplication {
+        name = "oci-egress-status";
+        runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.oci-cli ];
+        text = builtins.readFile ./quickshell/oci-egress-status.sh;
+      };
+    in
     {
-      environment.systemPackages = [ pkgs.quickshell ];
+      environment.systemPackages = [ pkgs.quickshell ociEgress ];
 
       # UPower is required for accurate battery percentage reporting.
       services.upower.enable = true;
@@ -42,6 +49,7 @@
           # Pin the platform plugin so Qt never guesses xcb before WAYLAND_DISPLAY
           # reaches the unit.
           QT_QPA_PLATFORM = "wayland";
+          OCI_EGRESS_ENABLED = "1";
         };
 
         # Ensure user profile binaries (web-app, qs, hypr-scale) resolve on PATH.
