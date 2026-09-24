@@ -190,7 +190,9 @@
           target_mode="2880x1800@120"
         else
           current_state="battery"
-          target_mode="2880x1800@60"
+          # The 60 Hz DPMS wake failed eDP link training twice on 2026-09-24.
+          # Keep the tested 120 Hz mode until the link-training fault is fixed.
+          target_mode="2880x1800@120"
         fi
 
         if [ "$force" -eq 0 ] && [ "$current_state" = "$prev_state" ]; then
@@ -623,7 +625,8 @@
         # autosuspend delay after the earlier USB and SCSI add events.
         ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd*", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="0329", RUN+="${myoko-card-reader-power}/bin/myoko-card-reader-power /sys%p"
 
-        # Apply battery vs AC power profiles and display refresh rates only on AC/mains/USB status changes
+        # Apply battery vs AC power profiles on AC/mains/USB status changes.
+        # Both states currently use 120 Hz to avoid the observed 60 Hz wake failure.
         ACTION=="change", SUBSYSTEM=="power_supply", KERNEL!="qcom-battmgr-bat", ENV{POWER_SUPPLY_ONLINE}!="", RUN+="${myoko-power-sync}/bin/myoko-power-sync"
       '';
 

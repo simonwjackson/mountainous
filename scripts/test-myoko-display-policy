@@ -1,0 +1,22 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils gnugrep
+# shellcheck shell=bash
+set -euo pipefail
+
+system=${1:-/run/current-system}
+power="$system/sw/bin/myoko-power-sync"
+[ -x "$power" ] || { echo "MYOKO_POWER_SYNC_MISSING $power" >&2; exit 1; }
+
+# Both mains and battery must select the mode that survived Myoko's
+# September 24 eDP wake test. A 60 Hz DPMS resume left the panel black.
+count=$(grep -Fc 'target_mode="2880x1800@120"' "$power" || true)
+[ "$count" -eq 2 ] || {
+  echo "MYOKO_DISPLAY_POLICY_WRONG expected_two_120Hz_modes found=$count" >&2
+  exit 1
+}
+if grep -Fq 'target_mode="2880x1800@60"' "$power"; then
+  echo MYOKO_DISPLAY_POLICY_STILL_USES_60Hz >&2
+  exit 1
+fi
+
+echo MYOKO_DISPLAY_POLICY_OK

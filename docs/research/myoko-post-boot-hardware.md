@@ -183,6 +183,14 @@ The internal `usb@a400000` controller remains disabled. It hosts the Realtek SD 
 
 The kernel advertises `deep`, and the complete `pm_test` ladder passed in that mode: `freezer`, `devices`, `platform`, `processors`, and `core`. A real direct deep transition did not complete. The kernel logged `PM: suspend entry (deep)`, offlined CPUs 1 through 17, and then returned `-95` (`EOPNOTSUPP`) from the platform entry. `/sys/power/suspend_stats` recorded one failure with `last_failed_errno=-95`. The PSCI boot log also reports `[Firmware Bug]: failed to set PC mode: -3`. Keep `s2idle` as the default until the platform firmware or kernel gains a working final deep-suspend entry.
 
+## OLED wake failure on 2026-09-24
+
+During a battery session at 2880x1800@60, Myoko stayed reachable over SSH while the screen was black. Hyprland reported `dpmsStatus: 1`; DRM reported eDP connected and on; `dp_aux_backlight` reported actual brightness 410/2047. There was no current-boot suspend event. At 10:54:50 MDT, immediately after `oled-idle` attempted to resume, the kernel logged `msm_dp_ctrl_link_train_1_2` and `msm_dp_ctrl_setup_main_link` failures with `ret=-110`. A bounded DPMS off/on retry at 60 Hz logged the same link-training failure at 11:00:54 and did not recover the panel. The kernel also warned `phy_power_on was called before phy_init` during these transitions.
+
+At 11:02, switching the active panel to 2880x1800@120 and requesting DPMS on produced no new link-training timeout. The user confirmed the desktop was visible. A controlled DPMS off/on cycle at 120 Hz at 11:05 produced no link-training timeout; the user again confirmed the picture returned. A 10-minute temporary stop of `oled-idle.service` kept the screen available for diagnosis; a user timer restores that service automatically. The repeated PHY warning at 120 Hz means that warning alone does not prove the cause.
+
+The battery power policy previously selected 60 Hz. It now selects 120 Hz on both battery and external power as a reversible workaround. This costs battery power. One successful 120 Hz wake does not establish that 120 Hz always trains: earlier boot failures happened at that rate too. The remaining fault is in the eDP enable/retrain path, but the exact PHY or controller defect is not established. Keep OLED idle protection and the previous boot generation. Investigate the PHY warning and link-training error before changing the kernel or declaring a permanent driver fix.
+
 ## Brightness command
 
 The live Hyprland bindings referenced `brightnessctl`, but Myoko did not have that command. It was installed only by the Galaxy Book3 hardware layer. The shared Hyprland package list now includes it, where its callers live.
