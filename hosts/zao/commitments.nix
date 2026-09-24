@@ -88,6 +88,7 @@
         enabled ["services" "paperclip" "enable"]
         && get ["services" "paperclip" "host"] null == "127.0.0.1"
         && !(enabled ["services" "paperclip" "auth" "enable"])
+        && get ["services" "paperclip" "auth" "publicBaseUrl"] null == "https://paperclip.hummingbird-lake.ts.net"
         && !(enabled ["services" "paperclip" "openFirewall"])
         && enabled ["mountainous" "features" "pi" "enable"]
         && builtins.elem config.programs.pi.coding-agent.package.outPath

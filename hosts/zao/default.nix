@@ -31,6 +31,9 @@
     host = "127.0.0.1";
     port = 3110;
     allowedHostnames = ["paperclip" "paperclip.hummingbird-lake.ts.net"];
+    # Cloud enrollment and OAuth callbacks must return to the browser's
+    # tailnet address, not to the loopback-only backend on Zao.
+    auth.publicBaseUrl = "https://paperclip.hummingbird-lake.ts.net";
     # The core preset already installs Pi from github:lukasl-dev/pi.nix.
     # Put that exact package on the service PATH for Paperclip's local agents.
     extraPackages = [config.programs.pi.coding-agent.package];
