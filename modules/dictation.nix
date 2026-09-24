@@ -64,43 +64,46 @@
         };
       };
 
-      config = mkIf cfg.enable {
-        assertions = [
-          {
-            assertion = cfg.backendOrder != [ ];
-            message = "mountainous.features.dictation.backendOrder must contain at least one backend";
-          }
-          {
-            assertion = cfg.backendOrder == lib.unique cfg.backendOrder;
-            message = "mountainous.features.dictation.backendOrder must not contain duplicates";
-          }
-        ];
+      # shell.qml constructs Dictation on every desktop. Its QML file must
+      # exist even if a host later disables the backend feature.
+      config = lib.mkMerge [
+        {
+          hjem.users.simon.files.".config/quickshell/mountainous/Dictation.qml".source =
+            ./quickshell/Dictation.qml;
 
-        sops.secrets.groq-api-key = {
-          owner = "simon";
-          mode = "0400";
-        };
-
-        systemd.user.services.quickshell = {
-          environment = {
-            DICTATION_BACKEND_ORDER = lib.concatStringsSep "," cfg.backendOrder;
-            DICTATION_ZAO_URL = cfg.zaoUrl;
-            DICTATION_GROQ_URL = cfg.groqUrl;
-            DICTATION_GROQ_KEY_FILE = config.sops.secrets.groq-api-key.path;
-          };
-          path = [
-            pkgs.coreutils
-            pkgs.pipewire
-            dictation-submit
+          mountainous.features.dictation.enable = lib.mkDefault true;
+        }
+        (mkIf cfg.enable {
+          assertions = [
+            {
+              assertion = cfg.backendOrder != [ ];
+              message = "mountainous.features.dictation.backendOrder must contain at least one backend";
+            }
+            {
+              assertion = cfg.backendOrder == lib.unique cfg.backendOrder;
+              message = "mountainous.features.dictation.backendOrder must not contain duplicates";
+            }
           ];
-        };
 
-        hjem.users.simon.files.".config/quickshell/mountainous/Dictation.qml".source =
-          ./quickshell/Dictation.qml;
-      };
+          sops.secrets.groq-api-key = {
+            owner = "simon";
+            mode = "0400";
+          };
+
+          systemd.user.services.quickshell = {
+            environment = {
+              DICTATION_BACKEND_ORDER = lib.concatStringsSep "," cfg.backendOrder;
+              DICTATION_ZAO_URL = cfg.zaoUrl;
+              DICTATION_GROQ_URL = cfg.groqUrl;
+              DICTATION_GROQ_KEY_FILE = config.sops.secrets.groq-api-key.path;
+            };
+            path = [
+              pkgs.coreutils
+              pkgs.pipewire
+              dictation-submit
+            ];
+          };
+        })
+      ];
     };
-
-  # The feature is available to every desktop layer but enabled only on the
-  # machine selected for the first implementation and manual verification.
-  nixos.hosts.myoko.module.mountainous.features.dictation.enable = true;
 }
