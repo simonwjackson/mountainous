@@ -612,9 +612,9 @@
       hjem.users.simon.files.".config/hypr/hyprland.lua".source = lib.mkForce (
         pkgs.writeText "myoko-hyprland.lua" (
           builtins.replaceStrings
-            ["mode     = \"2880x1800@60\""]
-            ["mode     = \"2880x1800@120\""]
-            (builtins.readFile ../hyprland/hyprland.lua)
+          ["mode     = \"2880x1800@60\""]
+          ["mode     = \"2880x1800@120\""]
+          (builtins.readFile ../hyprland/hyprland.lua)
         )
       );
 
