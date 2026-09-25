@@ -36,15 +36,12 @@
         ];
       };
 
-      # Kernel parameters carried over from the working asana config.
-      # fastboot skips a mode reset the panel does not need, psr=2 and fbc
-      # matter for battery on an OLED panel, and the video= line pins the
-      # native mode so the console is not stuck at a fallback resolution.
+      # Keep the panel power-saving options from the earlier configuration.
+      # Kernel 6.18.52 ignores i915.fastboot and rejects the forced 60 Hz
+      # video mode on this panel. Let the panel report its supported modes.
       boot.kernelParams = [
-        "i915.fastboot=1"
         "i915.enable_fbc=1"
         "i915.enable_psr=2"
-        "video=eDP-1:2880x1800@60"
       ];
 
       boot.initrd.kernelModules = [ "i915" ]; # early KMS, no ugly mode flip

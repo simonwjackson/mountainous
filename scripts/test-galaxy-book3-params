@@ -1,0 +1,17 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p nix jq
+# Both Samsung configurations must keep power-saving options without the rejected boot options.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+for host in hiyori myoko; do
+  nix eval --json ".#nixosConfigurations.${host}.config.boot.kernelParams" \
+    | jq -e '
+        index("i915.enable_fbc=1") != null and
+        index("i915.enable_psr=2") != null and
+        (map(select(startswith("i915.fastboot=") or startswith("video=eDP-1:"))) | length) == 0
+      ' >/dev/null || {
+        printf 'SAMSUNG_KERNEL_PARAMS_INVALID host=%s\n' "$host" >&2
+        exit 1
+      }
+done
+printf 'SAMSUNG_KERNEL_PARAMS_OK\n'

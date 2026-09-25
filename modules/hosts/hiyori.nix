@@ -5,9 +5,8 @@
 # there after a reboot. The host machine's internal disk is never touched.
 #
 # It carries the galaxy-book3 layer because that is the machine it is used on.
-# That layer pins a panel mode -- video=eDP-1:2880x1800@60 -- so this stick is
-# portable in the sense that it boots elsewhere, not in the sense that it is
-# tuned for elsewhere.
+# This stick can boot elsewhere, but its graphics and input are tuned for the
+# Samsung hardware.
 #
 # Everything above the disk is shared with summit. If the two ever disagree
 # about the desktop, the difference is a bug in a layer, not in this file.
