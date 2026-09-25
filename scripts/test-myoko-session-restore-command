@@ -14,12 +14,15 @@ state = relaunch.__globals__
 state["proc_cmdline"] = lambda _pid: [
     "/nix/store/browser/bin/chromium --app=https://example.test/ --user-data-dir=/tmp/profile"
 ]
-command = relaunch({"pid": 123, "class": "chrome-example-Default"})
+command = relaunch({"pid": 123, "class": "chrome-example.test__-Default"})
 assert shlex.split(command) == [
+    "/run/current-system/sw/bin/web-app", "https://example.test/"
+], "Chromium app windows must use Myoko's installed web-app launcher"
+assert shlex.split(relaunch({"pid": 123, "class": "chromium-browser"})) == [
     "/nix/store/browser/bin/chromium",
     "--app=https://example.test/",
     "--user-data-dir=/tmp/profile",
-], "Single-field browser cmdline must keep its flags as separate arguments"
+], "Other Chromium windows must preserve their original arguments"
 state["proc_cmdline"] = lambda _pid: ["/nix/store/zed/bin/zed-editor", "--foreground"]
 assert shlex.split(relaunch({"pid": 456, "class": "dev.zed.Zed"})) == [
     "/nix/store/zed/bin/zed-editor", "--foreground"
