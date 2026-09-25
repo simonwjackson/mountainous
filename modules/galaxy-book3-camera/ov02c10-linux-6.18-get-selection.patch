@@ -1,0 +1,10 @@
+diff --git a/drivers/media/i2c/ov02c10.c b/drivers/media/i2c/ov02c10.c
+--- a/drivers/media/i2c/ov02c10.c
++++ b/drivers/media/i2c/ov02c10.c
+@@ -811,6 +811,5 @@
+ };
+ 
+ static int ov02c10_get_selection(struct v4l2_subdev *sd,
+-				 const struct v4l2_subdev_client_info *ci,
+ 				 struct v4l2_subdev_state *sd_state,
+ 				 struct v4l2_subdev_selection *sel)

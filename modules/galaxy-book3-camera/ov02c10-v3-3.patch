@@ -1,0 +1,63 @@
+diff --git a/drivers/media/i2c/ov02c10.c b/drivers/media/i2c/ov02c10.c
+index cdccbdef3..0e5010303 100644
+--- a/drivers/media/i2c/ov02c10.c
++++ b/drivers/media/i2c/ov02c10.c
+@@ -89,12 +89,6 @@ struct ov02c10_mode {
+ };
+ 
+ static const struct reg_sequence sensor_1928x1092_30fps_setting[] = {
+-	{0x0301, 0x08},
+-	{0x0303, 0x06},
+-	{0x0304, 0x01},
+-	{0x0305, 0xe0},
+-	{0x0313, 0x40},
+-	{0x031c, 0x4f},
+ 	{0x3020, 0x97},
+ 	{0x3022, 0x01},
+ 	{0x3026, 0xb4},
+@@ -303,10 +297,6 @@ static const struct reg_sequence sensor_1928x1092_30fps_1lane_setting[] = {
+ 	{0x394e, 0x0b},
+ 	{0x4800, 0x24},
+ 	{0x5000, 0xf5},
+-	/* plls */
+-	{0x0303, 0x05},
+-	{0x0305, 0x90},
+-	{0x0316, 0x90},
+ 	{0x3016, 0x12},
+ };
+ 
+@@ -330,11 +320,17 @@ static const struct reg_sequence sensor_1928x1092_30fps_2lane_setting[] = {
+ 	{0x4d0d, 0x00},
+ 	{0x5000, 0xfd},
+ 	{0x481f, 0x30},
+-	/* plls */
++	{0x3016, 0x32},
++};
++
++static const struct reg_sequence sensor_pll_19_2mhz_setting[] = {
++	{0x0301, 0x08},
+ 	{0x0303, 0x05},
++	{0x0304, 0x01},
+ 	{0x0305, 0x90},
++	{0x0313, 0x40},
+ 	{0x0316, 0x90},
+-	{0x3016, 0x32},
++	{0x031c, 0x4f},
+ };
+ 
+ static const char * const ov02c10_test_pattern_menu[] = {
+@@ -601,6 +597,14 @@ static int ov02c10_enable_streams(struct v4l2_subdev *sd,
+ 	if (ret)
+ 		return ret;
+ 
++	ret = regmap_multi_reg_write(ov02c10->regmap,
++				     sensor_pll_19_2mhz_setting,
++				     ARRAY_SIZE(sensor_pll_19_2mhz_setting));
++	if (ret) {
++		dev_err(ov02c10->dev, "failed to write PLL settings\n");
++		goto out;
++	}
++
+ 	reg_sequence = mode->reg_sequence;
+ 	sequence_length = mode->sequence_length;
+ 	ret = regmap_multi_reg_write(ov02c10->regmap,

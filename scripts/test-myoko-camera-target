@@ -1,0 +1,19 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils gnugrep systemd
+# Run on booted Samsung Myoko. This is a sensor-binding gate, not a frame-capture test.
+set -euo pipefail
+[ "$(hostname)" = myoko ] || { echo 'wrong host' >&2; exit 2; }
+log=$(journalctl -b -k --no-pager -o cat)
+if grep -Fq 'ov02c10 i2c-OVTI02C1:00: error -EINVAL: external clock 26000000 is not supported' <<<"$log"; then
+  echo 'CAMERA_SENSOR_FAIL: ov02c10 rejected 26 MHz'
+  exit 1
+fi
+if [ ! -e /sys/bus/i2c/drivers/ov02c10/i2c-OVTI02C1:00 ]; then
+  echo 'CAMERA_SENSOR_FAIL: ov02c10 did not bind OVTI02C1:00'
+  exit 1
+fi
+if ! compgen -G '/dev/v4l-subdev*' >/dev/null; then
+  echo 'CAMERA_SENSOR_FAIL: no sensor subdevices'
+  exit 1
+fi
+echo 'CAMERA_SENSOR_BOUND: frame capture still required'

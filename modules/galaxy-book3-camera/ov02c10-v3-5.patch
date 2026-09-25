@@ -1,0 +1,143 @@
+diff --git a/drivers/media/i2c/ov02c10.c b/drivers/media/i2c/ov02c10.c
+index 0e5010303..c7a9f5da1 100644
+--- a/drivers/media/i2c/ov02c10.c
++++ b/drivers/media/i2c/ov02c10.c
+@@ -16,7 +16,9 @@
+ #include <media/v4l2-fwnode.h>
+ 
+ #define OV02C10_LINK_FREQ_400MHZ	400000000ULL
+-#define OV02C10_MCLK			19200000
++#define OV02C10_LINK_FREQ_399MHZ	399479167ULL
++#define OV02C10_MCLK_19_2MHZ		19200000
++#define OV02C10_MCLK_26MHZ		26000000
+ #define OV02C10_RGB_DEPTH		10
+ 
+ #define OV02C10_NATIVE_WIDTH		1928
+@@ -333,6 +335,22 @@ static const struct reg_sequence sensor_pll_19_2mhz_setting[] = {
+ 	{0x031c, 0x4f},
+ };
+ 
++/*
++ * With the other PLL registers as for 19.2 MHz, the link frequency is
++ * mclk * M / 19.2 MHz, M being the OP (0x0304/0x0305) and VT (0x0315/0x0316)
++ * PLL multiplier.  400 MHz would need M = 295.38 at 26 MHz; M = 295 = 0x0127
++ * gives 399.479167 MHz.
++ */
++static const struct reg_sequence sensor_pll_26mhz_setting[] = {
++	{0x0301, 0x08},
++	{0x0303, 0x05},
++	{0x0304, 0x01},
++	{0x0305, 0x27},
++	{0x0313, 0x40},
++	{0x0316, 0x27},
++	{0x031c, 0x4f},
++};
++
+ static const char * const ov02c10_test_pattern_menu[] = {
+ 	"Disabled",
+ 	"Color Bar",
+@@ -343,6 +361,32 @@ static const char * const ov02c10_test_pattern_menu[] = {
+ 
+ static const s64 link_freq_menu_items[] = {
+ 	OV02C10_LINK_FREQ_400MHZ,
++	OV02C10_LINK_FREQ_399MHZ,
++};
++
++struct ov02c10_clk_config {
++	/* External clock rate, Hz */
++	u32 mclk;
++	/* Index into link_freq_menu_items[] */
++	u32 link_freq_index;
++	/* PLL register settings for this clock rate */
++	const struct reg_sequence *pll_settings;
++	int pll_settings_length;
++};
++
++static const struct ov02c10_clk_config ov02c10_clk_configs[] = {
++	{
++		.mclk = OV02C10_MCLK_19_2MHZ,
++		.link_freq_index = 0,
++		.pll_settings = sensor_pll_19_2mhz_setting,
++		.pll_settings_length = ARRAY_SIZE(sensor_pll_19_2mhz_setting),
++	},
++	{
++		.mclk = OV02C10_MCLK_26MHZ,
++		.link_freq_index = 1,
++		.pll_settings = sensor_pll_26mhz_setting,
++		.pll_settings_length = ARRAY_SIZE(sensor_pll_26mhz_setting),
++	},
+ };
+ 
+ static const struct ov02c10_mode supported_modes[] = {
+@@ -389,6 +433,8 @@ struct ov02c10 {
+ 	struct gpio_desc *reset;
+ 	struct regulator_bulk_data supplies[ARRAY_SIZE(ov02c10_supply_names)];
+ 
++	const struct ov02c10_clk_config *clk_config;
++
+ 	/* MIPI lane info */
+ 	u32 link_freq_index;
+ 	u8 mipi_lanes;
+@@ -503,7 +549,8 @@ static int ov02c10_init_controls(struct ov02c10 *ov02c10)
+ 	ov02c10->link_freq = v4l2_ctrl_new_int_menu(ctrl_hdlr,
+ 						    &ov02c10_ctrl_ops,
+ 						    V4L2_CID_LINK_FREQ,
+-						    ov02c10->link_freq_index, 0,
++						    ARRAY_SIZE(link_freq_menu_items) - 1,
++						    ov02c10->link_freq_index,
+ 						    link_freq_menu_items);
+ 	if (ov02c10->link_freq)
+ 		ov02c10->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+@@ -598,8 +645,8 @@ static int ov02c10_enable_streams(struct v4l2_subdev *sd,
+ 		return ret;
+ 
+ 	ret = regmap_multi_reg_write(ov02c10->regmap,
+-				     sensor_pll_19_2mhz_setting,
+-				     ARRAY_SIZE(sensor_pll_19_2mhz_setting));
++				     ov02c10->clk_config->pll_settings,
++				     ov02c10->clk_config->pll_settings_length);
+ 	if (ret) {
+ 		dev_err(ov02c10->dev, "failed to write PLL settings\n");
+ 		goto out;
+@@ -878,8 +925,13 @@ static int ov02c10_check_hwcfg(struct ov02c10 *ov02c10)
+ 	if (ret)
+ 		goto check_hwcfg_error;
+ 
+-	/* v4l2_link_freq_to_bitmap() guarantees at least 1 bit is set */
+-	ov02c10->link_freq_index = ffs(link_freq_bitmap) - 1;
++	ov02c10->link_freq_index = ov02c10->clk_config->link_freq_index;
++	if (!(link_freq_bitmap & BIT(ov02c10->link_freq_index))) {
++		ret = dev_err_probe(dev, -EINVAL,
++				    "link frequency %lld Hz is not supported\n",
++				    link_freq_menu_items[ov02c10->link_freq_index]);
++		goto check_hwcfg_error;
++	}
+ 
+ 	if (bus_cfg.bus.mipi_csi2.num_data_lanes != 1 &&
+ 	    bus_cfg.bus.mipi_csi2.num_data_lanes != 2) {
+@@ -916,6 +968,7 @@ static int ov02c10_probe(struct i2c_client *client)
+ {
+ 	struct ov02c10 *ov02c10;
+ 	unsigned long freq;
++	unsigned int i;
+ 	int ret;
+ 
+ 	ov02c10 = devm_kzalloc(&client->dev, sizeof(*ov02c10), GFP_KERNEL);
+@@ -930,9 +983,15 @@ static int ov02c10_probe(struct i2c_client *client)
+ 				     "failed to get imaging clock\n");
+ 
+ 	freq = clk_get_rate(ov02c10->img_clk);
+-	if (freq != OV02C10_MCLK)
++	for (i = 0; i < ARRAY_SIZE(ov02c10_clk_configs); i++) {
++		if (freq == ov02c10_clk_configs[i].mclk) {
++			ov02c10->clk_config = &ov02c10_clk_configs[i];
++			break;
++		}
++	}
++	if (!ov02c10->clk_config)
+ 		return dev_err_probe(ov02c10->dev, -EINVAL,
+-				     "external clock %lu is not supported",
++				     "external clock %lu is not supported\n",
+ 				     freq);
+ 
+ 	v4l2_i2c_subdev_init(&ov02c10->sd, client, &ov02c10_subdev_ops);

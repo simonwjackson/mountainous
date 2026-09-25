@@ -1,0 +1,14 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash nix jq coreutils gnugrep
+set -euo pipefail
+cd "$(dirname "$0")/.."
+myoko=$(nix eval --json '.#nixosConfigurations.myoko.config.boot.kernelPatches')
+hiyori=$(nix eval --json '.#nixosConfigurations.hiyori.config.boot.kernelPatches')
+printf '%s' "$myoko" | jq -e '
+  length == 6 and
+  [.[].name] == ["ov02c10-26mhz-v3-1", "ov02c10-26mhz-v3-2", "ov02c10-26mhz-v3-3", "ov02c10-26mhz-v3-4", "ov02c10-26mhz-v3-5", "ov02c10-linux-6.18-get-selection"] and
+  all(.[0:5][].patch; test("/galaxy-book3-camera/ov02c10-v3-[1-5]\\.patch$")) and
+  (.[5].patch | endswith("/galaxy-book3-camera/ov02c10-linux-6.18-get-selection.patch"))
+' >/dev/null
+printf '%s' "$hiyori" | jq -e 'all(.[].name; startswith("ov02c10-26mhz-v3-") | not)' >/dev/null
+echo 'MYOKO_CAMERA_PATCH_SCOPE_OK'

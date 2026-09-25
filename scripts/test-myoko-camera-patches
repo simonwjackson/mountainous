@@ -1,0 +1,26 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils gnutar xz gnupatch nix findutils
+# Check the complete upstream series against the locked Myoko kernel source.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+src=$(nix eval --raw '.#nixosConfigurations.myoko.config.boot.kernelPackages.kernel.src')
+[ -f "$src" ] || { echo "Fetch kernel source first: nix build --no-link .#nixosConfigurations.myoko.config.boot.kernelPackages.kernel.src" >&2; exit 2; }
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+tar -xJf "$src" -C "$work" --wildcards 'linux-*/drivers/media/i2c/ov02c10.c' 'linux-*/drivers/media/pci/intel/ipu-bridge.c'
+base=$(find "$work" -maxdepth 1 -type d -name 'linux-*' -print -quit)
+[ -n "$base" ] || exit 2
+for part in 1 2 3 4 5; do
+  patch -d "$base" -p1 --batch --forward < "modules/galaxy-book3-camera/ov02c10-v3-${part}.patch"
+done
+patch -d "$base" -p1 --batch --forward < modules/galaxy-book3-camera/ov02c10-linux-6.18-get-selection.patch
+# The original 6.18 bridge calls this sensor OVTI02C1 with only 400 MHz.
+# The patch must also add the rate the 26 MHz driver advertises.
+grep -Fq 'IPU_SENSOR_CONFIG("OVTI02C1", 2, 400000000, 399479167)' "$base/drivers/media/pci/intel/ipu-bridge.c"
+grep -Fq '#define OV02C10_MCLK_26MHZ' "$base/drivers/media/i2c/ov02c10.c"
+if grep -Fq 'const struct v4l2_subdev_client_info *ci' "$base/drivers/media/i2c/ov02c10.c"; then
+  echo '6.18 callback still has unsupported client_info argument' >&2
+  exit 1
+fi
+grep -Fq '.get_selection = ov02c10_get_selection' "$base/drivers/media/i2c/ov02c10.c"
+echo 'MYOKO_CAMERA_PATCHES_APPLY_OK'
