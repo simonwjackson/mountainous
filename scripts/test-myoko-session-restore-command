@@ -45,4 +45,22 @@ with tempfile.TemporaryDirectory() as directory:
     assert script["save"]() == 0
     assert json.loads(snapshot.read_text(encoding="utf-8")) == original
 
-print("MYOKO_CHROMIUM_LAUNCHERS_AND_EMPTY_SNAPSHOT_OK")
+    # Chromium can give its PWA and browser windows the same process ID.
+    # Reopen each class once, but do not duplicate windows of the same class.
+    clients = [
+        {"mapped": True, "pid": 999, "class": name,
+         "workspace": {"id": index, "name": str(index)},
+         "at": [0, 0], "size": [640, 480]}
+        for index, name in enumerate(
+            ["chromium-browser", "chrome-example.test__-Default", "chromium-browser"], 1
+        )
+    ]
+    state["hyprctl_json"] = lambda _command: clients
+    state["relaunch_command"] = lambda client: "true"
+    assert script["save"]() == 3
+    written = json.loads(snapshot.read_text(encoding="utf-8"))["windows"]
+    assert [window["spawn"] for window in written] == [True, True, False], (
+        "Browser and PWA with a shared PID each need one launch"
+    )
+
+print("MYOKO_CHROMIUM_LAUNCHERS_AND_SHARED_PID_OK")
