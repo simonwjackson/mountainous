@@ -1,0 +1,172 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3
+"""Check the patched restore script's matching and placement.
+
+The script under test is the built Myoko copy of hypr-session-restore. The
+test loads it, injects a fake Hyprland, and asserts that every saved window
+ends on its saved workspace position. It never prints titles or commands.
+"""
+import json
+import re
+import runpy
+import sys
+import tempfile
+from pathlib import Path
+
+script = runpy.run_path(sys.argv[1], run_name="session_restore_placement")
+
+# --- pure helpers ------------------------------------------------------------
+
+assert script["_target_ranks"]([
+    {"workspace": {"id": 1}},
+    {"workspace": {"id": 3}},
+    {"workspace": {"id": 5}},
+    {"workspace": {"id": -98, "name": "special:term"}},
+]) == {1: 1, 3: 2, 5: 3}, "Saved workspace ids must map to strip positions"
+
+assert script["_target_workspace"]({"workspace": {"id": 4, "name": "4"}}, {4: 2}) == "2"
+assert script["_target_workspace"](
+    {"workspace": {"id": -98, "name": "special:term"}}, {}
+) == "special:term"
+
+windows = [
+    {"class": "dev.zed.Zed", "title": "one", "workspace": {"id": 1, "name": "1"}},
+    {"class": "dev.zed.Zed", "title": "two", "workspace": {"id": 2, "name": "2"}},
+    {"class": "chromium-browser", "title": "alpha", "workspace": {"id": 4, "name": "4"}},
+    {"class": "chromium-browser", "title": "beta", "workspace": {"id": 5, "name": "5"}},
+]
+clients = {
+    "0x1": {"class": "dev.zed.Zed", "title": "two"},
+    "0x2": {"class": "dev.zed.Zed", "title": "one"},
+    "0x3": {"class": "chromium-browser", "title": "blank"},
+}
+pairs, missing, unmatched = script["match_windows"](windows, clients)
+assert sorted(pairs) == [(0, "0x2"), (1, "0x1"), (2, "0x3")], "Match by class and title first"
+assert missing == [3], "A saved window with no live client is reported missing"
+assert unmatched == [], "Every live client is used"
+
+actions = script["placement_actions"](
+    [{"class": "x", "workspace": {"id": 3, "name": "3"}, "floating": True,
+      "at": [10, 20], "size": [640, 480], "pinned": True, "fullscreen": 1}],
+    [(0, "0xabc")],
+    {3: 1},
+)
+assert any("workspace = '1'" in a for a in actions), "Normal workspace uses its strip position"
+assert any("hl.dsp.window.float(" in a for a in actions)
+assert any("x = 10, y = 20" in a for a in actions)
+assert any("hl.dsp.window.pin(" in a for a in actions)
+assert any("mode = 'maximized'" in a for a in actions), "Fullscreen bit 1 is maximized"
+
+fullscreen_actions = script["placement_actions"](
+    [{"class": "x", "workspace": {"id": 1, "name": "1"}, "fullscreen": 2}],
+    [(0, "0xabc")],
+    {1: 1},
+)
+assert any("mode = 'fullscreen'" in a for a in fullscreen_actions), "Fullscreen bit 2 is fullscreen"
+
+# --- restore end to end ------------------------------------------------------
+
+saved = {
+    "windows": [
+        {"class": "dev.zed.Zed", "title": "z1", "workspace": {"id": 1, "name": "1"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": True, "cmd": "zed-editor"},
+        {"class": "dev.zed.Zed", "title": "z2", "workspace": {"id": 2, "name": "2"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": False, "cmd": "zed-editor"},
+        {"class": "chrome-example-Default", "title": "p1", "workspace": {"id": 3, "name": "3"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": True, "cmd": "web-app https://example"},
+        {"class": "chromium-browser", "title": "c1", "workspace": {"id": 4, "name": "4"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": True, "cmd": "chromium"},
+        {"class": "chromium-browser", "title": "c2", "workspace": {"id": 5, "name": "5"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": True, "cmd": "chromium"},
+        {"class": "term", "title": "t1", "workspace": {"id": -98, "name": "special:term"},
+         "at": [0, 0], "size": [100, 100], "floating": False, "pinned": False,
+         "fullscreen": 0, "spawn": True, "cmd": "ghostty"},
+    ]
+}
+# Each launch lands on workspace 1 and ignores its rule, as Zed and Chromium
+# do. The second Zed window arrives from the app itself, not from a launch.
+launched = [
+    ("0x1", "dev.zed.Zed", "z1"),
+    ("0x2", "chrome-example-Default", "p1"),
+    ("0x3", "chromium-browser", "c1"),
+    ("0x4", "chromium-browser", "c2"),
+    ("0x5", "term", "t1"),
+]
+native = [("0x6", "dev.zed.Zed", "z2")]
+
+state = {"clients": {}, "pending": list(launched), "native": list(native), "launched": 0}
+
+
+def make(address, cls, title):
+    return {
+        "address": address, "class": cls, "title": title, "pid": 1,
+        "workspace": {"id": 1, "name": "1"},
+        "at": [0, 0], "size": [100, 100],
+        "floating": False, "pinned": False, "fullscreen": 0,
+    }
+
+
+def fake_clients():
+    if state["launched"] and state["native"]:
+        for address, cls, title in state["native"]:
+            state["clients"][address] = make(address, cls, title)
+        state["native"] = []
+    return dict(state["clients"])
+
+
+def fake_dispatch(lua):
+    if "hl.dsp.exec_cmd(" in lua:
+        state["launched"] += 1
+        if state["pending"]:
+            address, cls, title = state["pending"].pop(0)
+            state["clients"][address] = make(address, cls, title)
+        return
+    match = re.search(r"workspace = '([^']*)', follow = false, window = 'address:([^']+)'", lua)
+    if match:
+        target, address = match.group(1), match.group(2)
+        client = state["clients"].get(address)
+        if client is None:
+            return
+        if target.startswith("special"):
+            client["workspace"] = {"id": -1, "name": target}
+        else:
+            client["workspace"] = {"id": int(target), "name": target}
+
+
+class FakeTime:
+    def __init__(self):
+        self.now = 0.0
+
+    def time(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+
+live = script["restore"].__globals__
+live["current_clients"] = fake_clients
+live["dispatch"] = fake_dispatch
+live["time"] = FakeTime()
+live["DISABLE_FLAG"] = "/nonexistent/hypr-session-restore-disabled"
+
+with tempfile.TemporaryDirectory() as directory:
+    session = Path(directory) / "session.json"
+    session.write_text(json.dumps(saved), encoding="utf-8")
+    live["SESSION_FILE"] = str(session)
+    script["restore"]()
+
+placed = {
+    client["title"]: client["workspace"].get("name")
+    for client in state["clients"].values()
+}
+assert placed == {
+    "z1": "1", "z2": "2", "p1": "3", "c1": "4", "c2": "5", "t1": "special:term",
+}, f"Every saved window must return to its workspace, got {placed}"
+
+print("MYOKO_RESTORE_PLACEMENT_OK")
