@@ -68,7 +68,8 @@ def exercise(source, output, label, key, modifier, prior_gap_ms, hold_ms, expect
     presses = [code for code, value in read_keys(output, 0.18) if value == 1]
     got = modifier in presses
     other = [K.KEY.get(code, str(code)) for code in presses if code != K.KEY_F24]
-    passed = got == expect
+    space_is_tap = key != K.KEY_SPACE or (K.KEY_SPACE in presses) == (not expect)
+    passed = got == expect and space_is_tap
     print(f'{"PASS" if passed else "FAIL"} {label}: modifier={got}, emitted={other}', flush=True)
     return passed
 
@@ -102,9 +103,9 @@ def main():
                 ('C Shift after 30ms prior key, held 250ms', K.KEY_C, K.KEY_LEFTSHIFT, 30, 250, True),
                 ('M Shift after 30ms prior key', K.KEY_M, K.KEY_RIGHTSHIFT, 30, 45, True),
                 ('C Shift after 150ms prior key', K.KEY_C, K.KEY_LEFTSHIFT, 150, 45, True),
-                ('Space GUI after 30ms prior key, held 175ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 175, True),
+                ('ordinary Space after 30ms prior key, held 175ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 175, False),
                 ('medium Space still types a space', K.KEY_SPACE, K.KEY_LEFTMETA, None, 110, False),
-                ('Space GUI after 30ms prior key, held 275ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 275, True),
+                ('ordinary Space after 30ms prior key, held 250ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 250, False),
                 ('Space GUI after 30ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 30, 450, True),
                 ('Space GUI after 320ms prior key, held 450ms', K.KEY_SPACE, K.KEY_LEFTMETA, 320, 450, True),
                 ('quick Space still types a space', K.KEY_SPACE, K.KEY_LEFTMETA, None, 80, False),
