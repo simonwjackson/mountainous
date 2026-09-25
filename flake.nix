@@ -11,6 +11,11 @@
 
     import-tree.url = "github:denful/import-tree";
 
+    hypr-session-restore = {
+      url = "github:UpayanChatterjee/hypr-session-restore";
+      flake = false;
+    };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

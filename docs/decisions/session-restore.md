@@ -1,0 +1,9 @@
+# Myoko window session restore
+
+Myoko uses [hypr-session-restore](https://github.com/UpayanChatterjee/hypr-session-restore), pinned as a non-flake input. Its user service starts with `hyprland-session.target`, restores the last snapshot at graphical login, and saves every 60 seconds after a 90-second startup delay. The service also saves when it stops. Other hosts do not run it.
+
+`modules/myoko-session-restore.nix` adapts the pinned script to Hyprland's Lua dispatch syntax and requires `hyprctl --instance 0`. It adds Ghostty's working-directory option, sets the snapshot directory to mode 0700 and the file to mode 0600, and does not overwrite a good snapshot with an empty one. This last change protects against shutdown racing with the save daemon. To suppress the next restore, create `~/.local/state/hypr-session-restore/disabled`. Delete the snapshot to forget the saved windows.
+
+This feature relaunches processes and puts their windows on saved workspaces. It does not restore unsaved edits, terminal scrollback, Chromium tabs, or Zed buffers; each application controls its own document and tab recovery. Tiled layout depends on Myoko's capacity and compaction rules, so exact positions are not promised. Multiple windows from one process and special workspaces are best effort. The snapshot includes process launch commands, which can contain sensitive arguments; do not publish the JSON file.
+
+Before the first reboot, `scripts/test-myoko-session-restore-target` saved five real Myoko windows and checked the private snapshot permissions. Calling `restore` while those five windows were still open did not duplicate them. The Hyprland Lua launch dispatcher also accepted the script's `hl.dsp.exec_cmd` form. A full restore after a login is still unverified. Do not use the saved snapshot as a substitute for saving work in applications.
