@@ -28,25 +28,21 @@ feature.
 
 ### D1. The client lives on `cairn`
 
-Build the client in the `cairn` worktree and target Myoko.
+Build the client in the `cairn` worktree for its Quickshell desktop hosts.
 
 The `cairn` tree holds the Quickshell desktop. The request asks for Quickshell.
 The `unified` branch holds the older ironbar desktop, and ironbar cannot show
 status for this tree.
 
 Correction, recorded 2026-09-20: an earlier version of this decision said the
-whole feature lives on `cairn`. That is wrong. `cairn` defines `hiyori`,
-`myoko`, and `tate` only. Zao is defined on `unified`. The server work cannot
+whole feature lives on `cairn`. That is wrong. `cairn` defines `hiyori`
+and `tate` only. Zao is defined on `unified`. The server work cannot
 land in `cairn`.
 
 ### D2. Zao runs Whisper
 
 Zao is the speech-to-text machine. Zao is `x86_64-linux` and it has an NVIDIA
 GPU, so it can run Whisper with useful speed.
-
-Myoko cannot. Myoko is a Snapdragon aarch64 laptop. It has no CUDA support, and
-Linux cannot use its NPU today. Whisper on the Myoko CPU is slow and it costs
-battery.
 
 Cost of this decision: dictation needs the network and it needs Zao to be
 awake. A take fails when Zao is unreachable.
@@ -114,13 +110,6 @@ also shows the state and the backend.
 
 Meta and I hide the top bar and the dock together. The overlay stays visible in
 that state, so the user always sees that a take is live.
-
-### D8. Test on Myoko, after the audio work lands
-
-Do not test on Hiyori. Wait for the Myoko microphone.
-
-Cost of this decision: no end-to-end test can run until the Myoko audio bring-up
-lands. The Zao backend can still be built and measured on its own.
 
 ### D9. The model is large-v3-turbo at half precision
 
@@ -255,7 +244,7 @@ trigger an action in that program.
 
 The Zao whisper service and its tsnet-proxy entry land on `unified`, because
 `unified` defines Zao. The Quickshell client lands on `cairn`, because `cairn`
-defines Myoko and holds the shell.
+defines Hiyori and holds the shell.
 
 Cost of this decision: the feature has two commits in two trees and two deploy
 steps. No single commit holds the whole feature.
@@ -427,8 +416,8 @@ These facts come from the pinned nixpkgs revision `b1b87598`.
   window.
 - A 10 second take is about 320 kB at 16 kHz mono. The upload is not the slow
   part on the tailnet.
-- `cairn` defines the hosts `hiyori`, `myoko`, and `tate`. `unified` defines
-  `aka`, `aso`, `fuji`, `ibuki`, `kita`, `myoko`, `rakku`, `sobo`, `usu`,
+- `cairn` defines the hosts `hiyori` and `tate`. `unified` defines
+  `aka`, `aso`, `fuji`, `ibuki`, `kita`, `rakku`, `sobo`, `usu`,
   `yari`, `yuki`, and `zao`.
 - `cairn` uses sops-nix. `unified` uses agenix.
 - Wayland has no query for "the focused surface has a text cursor". The nearest
@@ -452,17 +441,6 @@ These facts come from the pinned nixpkgs revision `b1b87598`.
 
 The interview continues. The backend design, the upload method, the recorder,
 the take length limits, and the transport are not settled.
-
-## Known blocker
-
-Myoko has no working microphone. The last probe found no card in
-`/proc/asound/cards`. Another session works on the audio bring-up. Until that
-work lands, a take cannot be recorded on Myoko.
-
-Update, 2026-09-20: `modules/hosts/myoko.nix` now carries `qcadsp8480.mbn`,
-`adsp_dtbs.elf`, and a `myoko-audioreach-topology` derivation built from the
-pinned `audioreach-topology` flake input. The audio work has progressed. Check
-the live state of `/proc/asound/cards` before you plan around this blocker.
 
 ## Known risks
 

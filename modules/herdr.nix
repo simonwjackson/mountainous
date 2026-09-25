@@ -30,7 +30,7 @@
 # platform. The static-pie reasoning above was checked on the x86_64 asset;
 # the aarch64 asset is assumed to be built the same way by the same release
 # job, which is an assumption, not a measurement. If herdr fails to run on
-# myoko, `patchelf --print-interpreter` on the installed file is the check.
+# an aarch64 host, `patchelf --print-interpreter` on the installed file is the check.
 { inputs, ... }:
 {
   nixos.modules.desktop =

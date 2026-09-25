@@ -26,21 +26,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # linux-firmware has only the Glymur reference topology. Pin the upstream
-    # AudioReach sources that add the UX3607OA's S32_LE microphone graph.
-    audioreach-topology = {
-      url = "github:linux-msm/audioreach-topology/993a17dcb672357998a463a73f120064d6c74f4f";
-      flake = false;
-    };
-
     # herdr is not in nixpkgs. These are the upstream release binaries, taken
     # as inputs rather than fetchurl so `nix flake update` can move them and
     # flake.lock records what shipped. file+https keeps Nix from trying to
     # unpack a bare executable as an archive.
     #
     # One input per architecture, each named after the asset it holds. A single
-    # `herdr-bin` read fine while every host was x86_64. myoko is aarch64, and
-    # at that point the name no longer said which machine it was for.
+    # One input per architecture keeps the release asset explicit.
     # modules/herdr.nix picks between them on the host platform.
     herdr-bin-x86_64 = {
       url = "file+https://github.com/herdrdev/herdr/releases/download/v0.9.0/herdr-linux-x86_64";

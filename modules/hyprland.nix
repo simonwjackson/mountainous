@@ -292,9 +292,6 @@
           for _ in {1..100}; do
             if [[ "$(systemctl --user show-environment)" == *HYPRLAND_INSTANCE_SIGNATURE=* ]]; then
               systemctl --user start hyprland-session.target
-              if command -v myoko-power-sync >/dev/null 2>&1; then
-                myoko-power-sync --force || true
-              fi
               exit 0
             fi
             sleep 0.1
@@ -412,23 +409,6 @@
       mountainous-screenshot
       zed-editor
       zed-wrapper
-
-      # The Zenbook A16 keyboard has one illumination key (Fn+F4) that emits
-      # KEY_KBDILLUMTOGGLE. The firmware's own breathing mode is off, so the
-      # key steps through the LED's four levels here instead. The script exits
-      # early when the machine has no asus::kbd_backlight.
-      (pkgs.writeShellScriptBin "kbd-backlight-cycle" ''
-        set -eu
-        led=/sys/class/leds/asus::kbd_backlight/brightness
-        [ -r "$led" ] || exit 0
-        case "$(cat "$led")" in
-          0) next=1 ;;
-          1) next=2 ;;
-          2) next=3 ;;
-          *) next=0 ;;
-        esac
-        exec ${pkgs.brightnessctl}/bin/brightnessctl --device='asus::kbd_backlight' set "$next"
-      '')
     ];
 
     # brightnessctl ships 90-brightnessctl.rules, which hands the panel
@@ -437,14 +417,6 @@
     # so without this the Hyprland brightness bindings run as simon and fail
     # with "Operation not permitted".
     services.udev.packages = [pkgs.brightnessctl];
-
-    # brightnessctl's own rule puts keyboard backlights in the input group,
-    # which would mean adding simon to input and with it the right to read
-    # every keypress. The keyboard LED goes to video instead, the same group
-    # the panel backlight already uses.
-    services.udev.extraRules = ''
-      ACTION=="add", SUBSYSTEM=="leds", KERNEL=="asus::kbd_backlight", RUN+="${pkgs.coreutils}/bin/chgrp video /sys/class/leds/%k/brightness", RUN+="${pkgs.coreutils}/bin/chmod g+w /sys/class/leds/%k/brightness"
-    '';
 
     environment.sessionVariables = {
       NIXOS_OZONE_WL = "1";

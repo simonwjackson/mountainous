@@ -1,1 +1,0 @@
-obj-m += hid-asus.o

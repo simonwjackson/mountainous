@@ -3,7 +3,7 @@
 # Every host using the desktop shell must install its unconditional QML types.
 set -euo pipefail
 
-for host in hiyori myoko; do
+for host in hiyori; do
   files=$(nix eval --json ".#nixosConfigurations.${host}.config.hjem.users.simon.files" \
     --apply builtins.attrNames --option substituters https://cache.nixos.org/)
   for component in Dictation OmniBar CdpBrowser OciEgress; do

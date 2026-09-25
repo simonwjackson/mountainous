@@ -4,7 +4,7 @@
 set -euo pipefail
 
 fleet_source=''
-for host in hiyori myoko tate; do
+for host in hiyori tate; do
   names=$(nix eval --json ".#nixosConfigurations.${host}.config.sops.secrets" \
     --apply builtins.attrNames --option substituters https://cache.nixos.org/)
   for name in oci-config oci-key-fuji oci-key-yari; do
@@ -25,7 +25,7 @@ for host in hiyori myoko tate; do
     fleet_source=$source
   done
 done
-for host in hiyori myoko; do
+for host in hiyori; do
   enabled=$(nix eval --raw ".#nixosConfigurations.${host}.config.systemd.user.services.quickshell.environment.OCI_EGRESS_ENABLED" \
     --option substituters https://cache.nixos.org/)
   if [ "$enabled" != 1 ]; then

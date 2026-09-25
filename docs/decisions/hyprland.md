@@ -28,13 +28,3 @@ Hyprland imports environment variables on startup but does not activate `graphic
 `start-mountainous` waits for `HYPRLAND_INSTANCE_SIGNATURE` to appear in the user systemd manager and starts `hyprland-session.target`, which binds to `graphical-session.target` and brings up user services (Quickshell).
 On exit, `start-mountainous` stops `graphical-session.target` to cleanly tear down session services.
 
-## Trackpad Ergonomics and Palm Rejection
-The Zenbook A16 has a 149x97mm glass clickpad without physical pressure or touch-size sensors. Libinput cannot distinguish palms from fingertips by contact area or pressure, and its edge exclusion zones are capped at 8mm.
-
-Accidental palm interference while typing is resolved through:
-- `tap_to_click = false`: Software tap clicks are disabled; only physical mechanical clicks on the pad actuate clicks.
-- `tap_and_drag = false`: Prevents accidental drag gestures from resting hands.
-- `clickfinger_behavior = true`: Button presses anywhere map to LMB (1 finger), RMB (2 fingers), or MMB (3 fingers). Disables bottom corner software button zones.
-- `disable_while_typing = true`: Paired with the Kanata virtual keyboard to suppress motion during typing bursts.
-- Libinput quirk `ModelTouchpadPhantomClicks=1`: Disregards chassis flex click events when no touch is registered.
-

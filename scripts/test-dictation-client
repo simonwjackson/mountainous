@@ -335,7 +335,7 @@ def test_nix_namespace_and_helper_source() -> None:
     source = MODULE.read_text()
     assert "cfg = config.mountainous.features.dictation;" in source
     assert "options.mountainous.features.dictation" in source
-    assert "nixos.hosts.myoko.module.mountainous.features.dictation.enable = true;" in source
+    assert "mountainous.features.dictation.enable = lib.mkDefault true;" in source
     assert "text = builtins.readFile ./dictation-submit.sh;" in source
     assert "https://dictate/v1/audio/transcriptions" not in source
 

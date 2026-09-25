@@ -109,22 +109,9 @@ hl.config({
         close_special_on_empty  = true,
 
         -- A key press must be able to wake a panel that DPMS turned off.
-        -- The default is false, and on 2026-09-20 that left Myoko dark after
-        -- SUPER+SHIFT+O with no way back from the keyboard.
         key_press_enables_dpms  = true,
         mouse_move_enables_dpms = true,
     },
-})
-
--- Zenbook A16 internal trackpad: explicitly require mechanical clicks
--- and enable disable-while-typing to prevent palm interference.
-hl.device({
-    name                 = "hid-over-i2c-2808:0219-touchpad",
-    natural_scroll       = true,
-    disable_while_typing = true,
-    tap_to_click         = false,
-    tap_and_drag         = false,
-    clickfinger_behavior = true,
 })
 
 hl.curve("quick", { type = "bezier", points = { {0.15, 0}, {0.1, 1} } })
@@ -728,12 +715,6 @@ hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("mountainous-screenshot window"))
 --------------------------------------------------------------------
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --class=backlight set +10%"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%-"), { locked = true, repeating = true })
-hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set +1"), { locked = true, repeating = true })
-hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd("brightnessctl --device='asus::kbd_backlight' set 1-"), { locked = true, repeating = true })
--- The Zenbook A16 has one keyboard-illumination key, Fn+F4. It emits
--- KEY_KBDILLUMTOGGLE, which xkb maps to XF86KbdLightOnOff, so the key steps
--- through the four levels instead of raising or lowering one.
-hl.bind("XF86KbdLightOnOff",    hl.dsp.exec_cmd("kbd-backlight-cycle"), { locked = true })
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
@@ -775,10 +756,7 @@ hl.define_submap("topbar-access", "reset", function()
 end)
 
 -- O toggles the panels. Moved off SHIFT+P, which the omni bar's window
--- list now owns. A toggle rather than "off" so the same key that darkens
--- the screen also lights it, and so a second press retrains an eDP link
--- that failed at boot (msm_dp_ctrl link training ret=-110, seen in 3 of 7
--- boots on Myoko).
+-- list now owns. A toggle lets the same key darken and wake the screen.
 hl.bind(mod .. " + SHIFT + O", function()
     local any_on = false
     for _, m in ipairs(hl.get_monitors()) do

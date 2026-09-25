@@ -1,22 +1,5 @@
 {
   "nodes": {
-    "audioreach-topology": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1789713539,
-        "narHash": "sha256-L2qem2uUvV/AgQRZCl/LOmAdaWyc13pDTlNjEXDtgVc=",
-        "owner": "linux-msm",
-        "repo": "audioreach-topology",
-        "rev": "993a17dcb672357998a463a73f120064d6c74f4f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "linux-msm",
-        "repo": "audioreach-topology",
-        "rev": "993a17dcb672357998a463a73f120064d6c74f4f",
-        "type": "github"
-      }
-    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -134,7 +117,6 @@
     },
     "root": {
       "inputs": {
-        "audioreach-topology": "audioreach-topology",
         "disko": "disko",
         "flake-parts": "flake-parts",
         "herdr-bin-aarch64": "herdr-bin-aarch64",

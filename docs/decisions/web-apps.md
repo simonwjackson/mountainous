@@ -18,7 +18,7 @@ installed through Chromium shows a title bar and the declared web apps do not.
 | `chromium --app=<url>` (`web-app`) | generic app window | none |
 | `chromium --app-id=<id>` (Chromium Install button) | installed web app | Chromium client-side title bar, origin text, menu, minimise, maximise, close |
 
-Measured on Myoko against Chromium 153, both under Hyprland 0.56.2:
+Measured against Chromium 153 under Hyprland 0.56.2:
 
 - `--app=https://example.com` rendered with no frame. Content filled the window.
 - `--app-id=<id>` rendered a title bar showing the origin
