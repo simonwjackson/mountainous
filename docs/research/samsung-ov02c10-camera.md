@@ -1,5 +1,12 @@
 # Samsung 960QFG camera trial
 
+The 6.18.52 camera trial below is historical. Myoko now selects
+`linuxPackages_latest` from the locked nixpkgs revision. The 6.18-only
+patch series is kept for reference but is not applied to that kernel.
+Camera capture on the new kernel is unverified until the patches are
+ported or equivalent support is confirmed upstream. Hiyori's recovery
+USB keeps the default kernel.
+
 The installed Myoko is the Galaxy Book3 Pro 360 NP960QFG-KA1US. On its original Linux 6.18.52 kernel, `ov02c10` failed probe with `external clock 26000000 is not supported`. Its ACPI sensor ID is `OVTI02C1:00`, and its IPU6 PCI device is `8086:a75d`.
 
 Myoko alone carries Felipe Calliari's [September 23, 2026 v3 series](https://ratatoskr.run/linux-media/2026/09/17632924). Patches 1–5 are retained as diff-only files under `modules/galaxy-book3-camera/`, in upstream order. They adjust the OV02C10 PLL for a 26 MHz input, advertise a 399479167 Hz link frequency in the IPU bridge, and implement crop selection. Upstream's cover letter reports frame-capture testing on a Galaxy Book3 Ultra, not this 960QFG. The sixth local patch removes the `v4l2_subdev_client_info` argument from `get_selection` because the 6.18.52 callback ABI does not have it. The first full build failed with that incompatible pointer type. The second build passed. `scripts/test-myoko-camera-patches` checks that all six patches apply to the locked kernel source.

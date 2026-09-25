@@ -1,14 +1,13 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p bash nix jq coreutils gnugrep
+# The 6.18 camera patch series is not safe to apply to the latest kernel.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-myoko=$(nix eval --json '.#nixosConfigurations.myoko.config.boot.kernelPatches')
-hiyori=$(nix eval --json '.#nixosConfigurations.hiyori.config.boot.kernelPatches')
-printf '%s' "$myoko" | jq -e '
-  length == 6 and
-  [.[].name] == ["ov02c10-26mhz-v3-1", "ov02c10-26mhz-v3-2", "ov02c10-26mhz-v3-3", "ov02c10-26mhz-v3-4", "ov02c10-26mhz-v3-5", "ov02c10-linux-6.18-get-selection"] and
-  all(.[0:5][].patch; test("/galaxy-book3-camera/ov02c10-v3-[1-5]\\.patch$")) and
-  (.[5].patch | endswith("/galaxy-book3-camera/ov02c10-linux-6.18-get-selection.patch"))
-' >/dev/null
-printf '%s' "$hiyori" | jq -e 'all(.[].name; startswith("ov02c10-26mhz-v3-") | not)' >/dev/null
-echo 'MYOKO_CAMERA_PATCH_SCOPE_OK'
+myoko=$(nix eval --raw '.#nixosConfigurations.myoko.config.boot.kernelPackages.kernel.version')
+latest=$(nix eval --raw '.#nixosConfigurations.myoko.pkgs.linuxPackages_latest.kernel.version')
+hiyori=$(nix eval --raw '.#nixosConfigurations.hiyori.config.boot.kernelPackages.kernel.version')
+myoko_patches=$(nix eval --json '.#nixosConfigurations.myoko.config.boot.kernelPatches')
+[ "$myoko" = "$latest" ] || { echo "Myoko uses $myoko, latest is $latest" >&2; exit 1; }
+[ "$myoko" != "$hiyori" ] || { echo 'Hiyori recovery kernel was also changed' >&2; exit 1; }
+printf '%s' "$myoko_patches" | jq -e 'all(.[].name; startswith("ov02c10-") | not)' >/dev/null
+echo "MYOKO_LATEST_KERNEL_CAMERA_PATCH_SCOPE_OK myoko=$myoko hiyori=$hiyori"
