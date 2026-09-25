@@ -91,13 +91,15 @@
         && !(enabled ["services" "paperclip" "auth" "enable"])
         && get ["services" "paperclip" "auth" "publicBaseUrl"] null == "https://paperclip.hummingbird-lake.ts.net"
         && !(enabled ["services" "paperclip" "openFirewall"])
+        && get ["services" "paperclip" "environmentFiles"] []
+          == ["/var/lib/paperclip/instances/default/secrets/agent-jwt.env"]
         && enabled ["mountainous" "features" "pi" "enable"]
         && builtins.elem inputs.pi-paperclip.packages.${pkgs.stdenv.hostPlatform.system}.coding-agent.outPath
           (map (package: package.outPath) (get ["services" "paperclip" "extraPackages"] []))
         && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "hostname"] null == "paperclip"
         && enabled ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "interactiveLogin"]
         && get ["mountainous" "features" "tsnet-proxy" "services" "paperclip" "port"] null == get ["services" "paperclip" "port"] null;
-      message = "Zao Paperclip must stay on loopback behind its tailnet-only tsnet proxy.";
+      message = "Zao Paperclip must stay on loopback behind its tailnet-only tsnet proxy and load its agent JWT secret.";
     };
 
     eval-memory-safety = {

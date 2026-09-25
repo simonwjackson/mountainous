@@ -37,8 +37,13 @@
     # CLIProxyAPI needs Pi 0.87.1; keep Paperclip's Pi independent of the
     # host-wide version and its GROQ credential wrapper.
     extraPackages = [inputs.pi-paperclip.packages.${pkgs.stdenv.hostPlatform.system}.coding-agent];
+    # Keep the agent JWT signing secret in mutable service state, not the Nix store.
+    environmentFiles = ["/var/lib/paperclip/instances/default/secrets/agent-jwt.env"];
     telemetry.enable = false;
   };
+  # This instance never issued legacy agent JWTs, so do not accept tokens
+  # signed with the raw master secret across company or instance boundaries.
+  systemd.services.paperclip.environment.PAPERCLIP_AGENT_JWT_DISABLE_LEGACY_FALLBACK = "true";
 
   # ── Memory pressure ──────────────────────────────────────────────
   # Zao ships with 31 GiB RAM and 0 swap. On 2026-06-01 a single `nix`

@@ -1452,8 +1452,8 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1790289653,
-        "narHash": "sha256-KYpmBFJ5/T8z5aGbYSiqO5cPdVtqj/2aUm93gTpZhSw=",
+        "lastModified": 1790296759,
+        "narHash": "sha256-v0P4Ij0TcYDDH6Ho22K9Pqs6wVYo3RTnirHeLtC+COU=",
         "path": "/home/simonwjackson/code/sandbox/paperclip",
         "type": "path"
       },
