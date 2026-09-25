@@ -19,6 +19,7 @@
           pkgs.curl
           pkgs.jq
           pkgs.coreutils
+          pkgs.gnused
           config.services.tailscale.package
         ];
         text = ''
@@ -34,20 +35,10 @@
 
           state=$(backend)
           name=$(myname)
-
-          # Already correct. This is the ordinary case on every boot after the
-          # first, and it makes no API call at all.
-          if [ "$state" = "Running" ] && [ "$name" = "$want" ]; then
-            echo "already on the tailnet as $want"
-            exit 0
-          fi
-
-          # Registered, but under a name the control plane renamed. The suffix
-          # cannot be edited away, so the node has to go and come back.
-          if [ "$state" = "Running" ] && [ -n "$name" ] && [ "$name" != "$want" ]; then
-            echo "registered as '$name', wanted '$want' -- logging out to retake the name" >&2
-            tailscale logout || true
-          fi
+          # A local Running state can outlive its control-plane registration.
+          # Keep the public node key before logging out so deduplication never
+          # removes this machine's valid node during early boot.
+          own_key=$(tailscale status --json 2>/dev/null | jq -r '.Self.PublicKey // ""')
 
           # From here on the network is required. Every failure below exits
           # non-zero so systemd tries again later; none of them registers the
@@ -79,16 +70,37 @@
             exit 1
           fi
 
-          # Match the wanted name and any -N the control plane appended, so
-          # ghosts from earlier reinstalls are swept up too.
-          #
-          # This assumes no machine is deliberately named <something>-<digits>.
-          # Nothing stops you doing that; it would delete the wrong node.
+          # A matching name is not proof that a node is stale. On cold boot,
+          # tailscaled can still report NoState while its own valid node is
+          # already listed by the API. Never delete it or guess without a key.
           stale=$(printf '%s' "$devices" | jq -r --arg h "$want" '
             .devices[]
             | select(((.name | split(".")[0]) | sub("-[0-9]+$"; "")) == $h)
             | .id')
+          own_present=$(printf '%s' "$devices" | jq -r --arg h "$want" --arg key "$own_key" '
+            [ .devices[]
+              | select(.name | split(".")[0] == $h)
+              | select(.nodeKey == $key and $key != "") ] | length')
 
+          if [ "$state" = "Running" ] && [ "$name" = "$want" ] && [ "$own_present" = 1 ]; then
+            echo "already on the tailnet as $want"
+            exit 0
+          fi
+
+          if [ -n "$stale" ] && { [ -z "$own_key" ] || [ "$own_present" = 1 ]; }; then
+            echo "cannot prove that the existing $want node is stale; will retry without deleting it" >&2
+            exit 1
+          fi
+
+          # A missing API entry with a local Running state needs a fresh login.
+          # The same applies if the control plane gave this node a suffix.
+          if [ "$state" = "Running" ]; then
+            echo "local registration is not the verified $want node; logging out" >&2
+            tailscale logout || true
+          fi
+
+          # Only delete nodes with a different public key from this machine.
+          # This assumes no machine is deliberately named <hostname>-<digits>.
           for id in $stale; do
             if curl --silent --show-error --fail --max-time 30 \
               --request DELETE \
@@ -119,10 +131,22 @@
           fi
 
           echo "$want is free; registering"
-          tailscale up \
+          # tailscale up refuses to run if an existing non-default --ssh value
+          # is omitted. It also prints the full auth key in that error. Keep
+          # the preference and redact every line before systemd sees it.
+          ssh_enabled=$(tailscale debug prefs | jq -r '.RunSSH // false')
+          up_log=$(mktemp)
+          trap 'rm -f "$up_log"' EXIT
+          if tailscale up \
             --auth-key="$client_secret?ephemeral=false&preauthorized=true" \
             --advertise-tags="$TS_TAGS" \
-            --hostname="$want"
+            --hostname="$want" \
+            --ssh="$ssh_enabled" >"$up_log" 2>&1; then
+            sed -E 's/tskey-client-[^[:space:]]+/<REDACTED>/g' "$up_log"
+          else
+            sed -E 's/tskey-client-[^[:space:]]+/<REDACTED>/g' "$up_log" >&2
+            exit 1
+          fi
 
           # Verify the outcome instead of trusting the exit code. tailscale up
           # can succeed and still leave the node named hiyori-1.

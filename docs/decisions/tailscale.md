@@ -29,3 +29,9 @@ Two faults:
 2. `tailscaled` writes `tailscaled.state` immediately on start, before registration. The gate condition was unsound.
 
 The replacement: one unit ordered after `tailscaled` that queries backend status (`tailscale status --json`), retries until success, and verifies the hostname is free before calling `tailscale up`.
+
+## Cold-boot identity guard
+
+On 2026-09-25, Myoko booted with a valid control-plane node while local `tailscaled` still reported `NoState`. The join unit treated every `myoko` API entry as stale, deleted its own node, then failed `tailscale up` because it omitted Myoko's saved `--ssh` preference. The failed command printed the OAuth secret into the journal. Each 30-second retry failed the same way.
+
+The join unit now checks the API before treating local `Running` as proof of registration. It compares the local public node key with the API's `nodeKey` before deleting a device. If the local key is not yet available, or if the API entry matches it, the unit retries without deleting anything. This can block automatic recovery of a genuinely stale name until the local identity is available; preserving a live device is more important than automatically reclaiming a name during early boot. The registration command preserves the saved `--ssh` preference and redacts any auth key from its output. A secret exposed in an earlier journal still requires rotation.

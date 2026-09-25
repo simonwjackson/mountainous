@@ -1,0 +1,77 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash jq coreutils gnugrep
+# Exercise the built join program with configurable CLI behavior. No live API calls.
+set -euo pipefail
+join=${1:?Pass the built tailscale-join/bin/tailscale-join path}
+test -x "$join"
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+export TS_HOSTNAME=myoko TS_TAGS=tag:mountainous
+export TS_CLIENT_ID_FILE="$tmp/id" TS_CLIENT_SECRET_FILE="$tmp/secret"
+printf '%s' 'client-fixture' > "$TS_CLIENT_ID_FILE"
+printf '%s' 'tskey-client-fixture' > "$TS_CLIENT_SECRET_FILE"
+export TEST_STATE="$tmp/state" TEST_DEVICES="$tmp/devices" TEST_CALLS="$tmp/calls" TEST_FAIL_UP=0
+
+tailscale() {
+  case "$1 ${2-}" in
+    'status --json')
+      if [ "$(cat "$TEST_STATE")" = Running ]; then
+        jq -n '{BackendState:"Running",Self:{DNSName:"myoko.example.ts.net.",PublicKey:"nodekey:mine"}}'
+      else
+        jq -n '{BackendState:"NoState"}'
+      fi
+      ;;
+    'debug prefs') printf '%s\n' '{"RunSSH":true}' ;;
+    'logout '*) printf 'logout\n' >> "$TEST_CALLS"; printf 'NoState' > "$TEST_STATE" ;;
+    'up '*)
+      printf 'up\n' >> "$TEST_CALLS"
+      case " $* " in *' --ssh=true '*) ;; *) echo 'lost --ssh preference' >&2; return 7 ;; esac
+      if [ "$TEST_FAIL_UP" = 1 ]; then
+        printf 'Error: auth key %s\n' "$(cat "$TS_CLIENT_SECRET_FILE")" >&2
+        return 8
+      fi
+      printf 'Running' > "$TEST_STATE"
+      ;;
+    *) echo "Unexpected tailscale action: $1 $2" >&2; return 9 ;;
+  esac
+}
+curl() {
+  case " $* " in
+    *'/oauth/token'*) printf '%s\n' '{"access_token":"fixture-token"}' ;;
+    *' --request DELETE '*) printf 'DELETE\n' >> "$TEST_CALLS"; return 10 ;;
+    *'/devices'*) cat "$TEST_DEVICES" ;;
+    *) echo 'Unexpected API request' >&2; return 11 ;;
+  esac
+}
+export -f tailscale curl
+
+# On cold boot, NoState cannot prove that an existing name is stale.
+printf 'NoState' > "$TEST_STATE"
+printf '%s\n' '{"devices":[{"name":"myoko.example.ts.net","nodeKey":"nodekey:mine","id":"123"}]}' > "$TEST_DEVICES"
+: > "$TEST_CALLS"
+if "$join" > "$tmp/out" 2>&1; then echo 'Cold boot deleted a live node' >&2; exit 1; fi
+grep -q 'cannot prove that the existing myoko node is stale' "$tmp/out"
+test ! -s "$TEST_CALLS"
+
+# An online local identity must also be present in the control plane.
+printf 'Running' > "$TEST_STATE"
+: > "$TEST_CALLS"
+"$join" > "$tmp/out" 2>&1
+grep -q 'already on the tailnet as myoko' "$tmp/out"
+test ! -s "$TEST_CALLS"
+
+# If the control-plane entry vanished, log out and rejoin with the saved SSH setting.
+printf '%s\n' '{"devices":[]}' > "$TEST_DEVICES"
+: > "$TEST_CALLS"
+"$join" > "$tmp/out" 2>&1
+grep -q 'joined as myoko' "$tmp/out"
+test "$(grep -c '^logout$' "$TEST_CALLS")" = 1
+test "$(grep -c '^up$' "$TEST_CALLS")" = 1
+
+# Failed registration must not emit an OAuth secret into systemd's journal.
+printf 'NoState' > "$TEST_STATE"
+export TEST_FAIL_UP=1
+if "$join" > "$tmp/out" 2>&1; then echo 'Expected registration failure' >&2; exit 1; fi
+grep -q '<REDACTED>' "$tmp/out"
+if grep -q 'tskey-client-' "$tmp/out"; then echo 'OAuth secret leaked' >&2; exit 1; fi
+printf 'TAILSCALE_JOIN_TESTS_PASSED\n'
