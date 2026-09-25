@@ -110,11 +110,11 @@ def _target_ranks(windows):
     The Lua strip renumbers occupied workspaces to 1..N, so the saved numeric
     id is not stable across a restart. The position is.
     """
-    ids = sorted(
+    ids = sorted({
         (w.get("workspace") or {}).get("id", 0)
         for w in windows
         if (w.get("workspace") or {}).get("id", 0) > 0
-    )
+    })
     return {ws_id: index + 1 for index, ws_id in enumerate(ids)}
 
 
@@ -207,17 +207,13 @@ def _settled(windows, pairs, ranks):
     return True
 
 
-def _wait_for_windows(windows, baseline):
-    """Wait for the saved windows to appear, then for the count to hold still."""
-    wanted = len(windows)
-    deadline = time.time() + RESTORE_MATCH_TIMEOUT
+def _wait_until_stable(baseline, deadline):
+    """Wait until the new-window count stops growing, or the deadline passes."""
     last = -1
     quiet = 0
     while time.time() < deadline:
         time.sleep(1)
         count = len(_new_clients(current_clients(), baseline))
-        if count >= wanted:
-            return
         if count == last:
             quiet += 1
             if quiet >= RESTORE_SETTLE_SECONDS:
@@ -253,14 +249,23 @@ def restore():
             dispatch(f"hl.dsp.exec_cmd({lua_long_str(win['cmd'])}, {exec_rules(win)})")
             time.sleep(SPAWN_STAGGER)
 
-    _wait_for_windows(windows, baseline)
-
-    pairs, missing, _unmatched = match_windows(windows, _new_clients(current_clients(), baseline))
-    for _round in range(RESTORE_PLACE_ROUNDS):
-        for action in placement_actions(windows, pairs, ranks):
-            dispatch(action)
-        time.sleep(RESTORE_PLACE_SETTLE)
-        if _settled(windows, pairs, ranks):
+    # Slow single-instance apps (Zed) open their extra windows well after the
+    # launch. Re-match and re-place until every saved window is present, so a
+    # window that appears after the first placement still reaches its page.
+    deadline = time.time() + RESTORE_MATCH_TIMEOUT
+    missing = []
+    while True:
+        _wait_until_stable(baseline, deadline)
+        pairs, missing, _unmatched = match_windows(
+            windows, _new_clients(current_clients(), baseline)
+        )
+        for _round in range(RESTORE_PLACE_ROUNDS):
+            for action in placement_actions(windows, pairs, ranks):
+                dispatch(action)
+            time.sleep(RESTORE_PLACE_SETTLE)
+            if _settled(windows, pairs, ranks):
+                break
+        if not missing or time.time() >= deadline:
             break
 
     if missing:
