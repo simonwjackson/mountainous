@@ -18,6 +18,7 @@
 keys:
   - &master age1zlz3fwumguttvgv6qpkrtm5q7ehx2whxlez7endyvzx82wssrdwsg63685
   - &hiyori age1eec4gj5lck03lz88z4xclul9853w0jlzfc3maz63rv7uaa2kp59qg4ywk5
+  - &myoko  age1shhjq0w8cl2fp0thxnq3elm7utag3e4f8fnvpymvmx5jwpyk9q2sy7ml0u
   - &tate   age10cjse77wdjzdgygfh0k28g960psu2qysx8czdl0v4h9sv66huuzqrjkuy6
 
 creation_rules:
@@ -28,6 +29,7 @@ creation_rules:
           - *master
 
           - *hiyori
+          - *myoko
           - *tate
 
   # Per-host. A machine reads only its own file.
@@ -37,6 +39,13 @@ creation_rules:
           - *master
 
           - *hiyori
+
+  - path_regex: secrets/hosts/myoko\.yaml$
+    key_groups:
+      - age:
+          - *master
+
+          - *myoko
 
   - path_regex: secrets/hosts/tate\.yaml$
     key_groups:

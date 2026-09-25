@@ -26,6 +26,16 @@
       imports = [ inputs.disko.nixosModules.disko ];
 
       options.mountainous.disk = {
+        name = mkOption {
+          type = types.strMatching "[a-z0-9-]+";
+          default = "main";
+          description = ''
+            Disk namespace for partition labels and the LUKS mapper. Use a
+            distinct name when two mountainous disks may be plugged into the
+            same machine, so neither filesystem path can select the wrong one.
+          '';
+        };
+
         device = mkOption {
           type = types.str;
           description = ''
@@ -83,7 +93,7 @@
         };
       };
 
-      config.disko.devices.disk.main = {
+      config.disko.devices.disk.${cfg.name} = {
         inherit (cfg) device;
         type = "disk";
         content = {
@@ -170,7 +180,8 @@
                   if cfg.encrypt then
                     {
                       type = "luks";
-                      name = "mountainous-root";
+                      name =
+                        if cfg.name == "main" then "mountainous-root" else "mountainous-${cfg.name}-root";
 
                       # Prompt while formatting rather than reading a file, so
                       # the passphrase never exists on disk anywhere.

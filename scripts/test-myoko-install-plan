@@ -1,0 +1,62 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p coreutils jq sops ssh-to-age openssh
+# Check the Samsung host's selected disk, boot path and encrypted layout.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+host='.#nixosConfigurations.myoko.config'
+expected='/dev/disk/by-id/nvme-WDSN740-SDDPNQD-1T00-1004_22501B805583'
+actual=$(nix eval --raw "$host.mountainous.disk.device")
+[ "$actual" = "$expected" ] || { echo "wrong disk: $actual" >&2; exit 1; }
+[ "$(nix eval --raw "$host.mountainous.disk.name")" = myoko ]
+[ "$(nix eval --json "$host.mountainous.disk.encrypt")" = true ]
+[ "$(nix eval --json "$host.mountainous.disk.biosBoot")" = false ]
+[ "$(nix eval --json "$host.boot.loader.systemd-boot.enable")" = true ]
+[ "$(nix eval --json "$host.boot.loader.efi.canTouchEfiVariables")" = true ]
+
+nix eval --json "$host.disko.devices.disk.myoko" --apply '
+  d: {
+    device = d.device;
+    table = d.content.type;
+    partitionNames = builtins.attrNames d.content.partitions;
+    esp = {
+      size = d.content.partitions.ESP.size;
+      format = d.content.partitions.ESP.content.format;
+      mountpoint = d.content.partitions.ESP.content.mountpoint;
+    };
+    root = {
+      size = d.content.partitions.root.size;
+      type = d.content.partitions.root.content.type;
+      name = d.content.partitions.root.content.name;
+      askPassword = d.content.partitions.root.content.askPassword;
+      filesystem = d.content.partitions.root.content.content.type;
+      subvolumes = builtins.attrNames d.content.partitions.root.content.content.subvolumes;
+    };
+  }
+' | jq -e --arg disk "$expected" '
+  .device == $disk and .table == "gpt" and
+  .partitionNames == ["ESP", "root"] and
+  .esp == {"size":"1G", "format":"vfat", "mountpoint":"/boot"} and
+  .root.size == "100%" and .root.type == "luks" and
+  .root.name == "mountainous-myoko-root" and .root.askPassword == true and
+  .root.filesystem == "btrfs" and
+  .root.subvolumes == ["/@", "/@home", "/@nix"]
+' >/dev/null
+
+nix eval --json "$host.fileSystems" --apply 'fs: builtins.mapAttrs (_: v: v.device) fs' \
+  | jq -e '."/" == "/dev/mapper/mountainous-myoko-root" and
+           ."/boot" == "/dev/disk/by-partlabel/disk-myoko-ESP"' >/dev/null
+nix eval --json '.#nixosConfigurations.hiyori.config.fileSystems' \
+  --apply 'fs: builtins.mapAttrs (_: v: v.device) fs' \
+  | jq -e '."/" == "/dev/mapper/mountainous-root" and
+           ."/boot" == "/dev/disk/by-partlabel/disk-main-ESP"' >/dev/null
+
+# A new Samsung identity must decrypt fleet secrets without borrowing ASUS's key.
+keystore="${MOUNTAINOUS_KEYSTORE:-$HOME/.local/share/mountainous/hostkeys-samsung}"
+key="$keystore/myoko/ssh_host_ed25519_key"
+[ -r "$key" ] || { echo "missing Samsung host key at $key" >&2; exit 1; }
+[ "$(ssh-keygen -y -f "$key")" != "$(ssh-keygen -y -f "$HOME/.local/share/mountainous/hostkeys/myoko/ssh_host_ed25519_key")" ]
+identity=$(ssh-to-age -private-key -i "$key")
+SOPS_AGE_KEY="$identity" sops --decrypt --output /dev/null secrets/fleet.yaml
+bash -n scripts/install
+echo 'Myoko Samsung install plan and new host key: OK'

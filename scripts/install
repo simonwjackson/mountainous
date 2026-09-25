@@ -19,7 +19,7 @@
 # between boots and a wrong letter erases the wrong drive.
 set -euo pipefail
 
-KEYSTORE="$HOME/.local/share/mountainous/hostkeys"
+KEYSTORE="${MOUNTAINOUS_KEYSTORE:-$HOME/.local/share/mountainous/hostkeys}"
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -45,6 +45,16 @@ echo
 echo "=== confirm the disk before touching it ==="
 [ -b "$DISK" ] || die "$DISK is not a block device"
 REAL=$(readlink -f "$DISK")
+# Use the evaluated layout, not a hard-coded disko disk name. A different
+# namespace keeps an internal install distinct from an attached Hiyori USB.
+LAYOUT=$(nix eval --json ".#nixosConfigurations.$HOST.config.disko.devices.disk" \
+  --apply 'd: builtins.mapAttrs (_: v: v.device) d')
+[ "$(echo "$LAYOUT" | jq 'length')" -eq 1 ] || die "$HOST must select exactly one install disk"
+NAME=$(echo "$LAYOUT" | jq -r 'keys[0]')
+EXPECTED=$(echo "$LAYOUT" | jq -r --arg name "$NAME" '.[$name]')
+[ -b "$EXPECTED" ] || die "configured disk $EXPECTED is not a block device on this machine"
+[ "$REAL" = "$(readlink -f "$EXPECTED")" ] || die "disk argument $DISK differs from $HOST's configured disk $EXPECTED"
+echo "  layout: $NAME   configured: $EXPECTED"
 lsblk -dno NAME,SIZE,MODEL,SERIAL "$REAL" | sed 's/^/  /'
 case "$DISK" in
   /dev/disk/by-id/*) ;;
@@ -124,7 +134,7 @@ fi
 set -x
 nix run "github:nix-community/disko/$DISKO_REV#disko-install" -- \
   --flake ".#$HOST" \
-  --disk main "$REAL" \
+  --disk "$NAME" "$REAL" \
   --extra-files "$EXTRA/etc/ssh/ssh_host_ed25519_key" /etc/ssh/ssh_host_ed25519_key \
   --extra-files "$EXTRA/etc/ssh/ssh_host_ed25519_key.pub" /etc/ssh/ssh_host_ed25519_key.pub
 set +x
