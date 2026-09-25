@@ -1,0 +1,39 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3
+"""Check the pinned restore script's browser launcher and empty-save safety."""
+import json
+import runpy
+import shlex
+import sys
+import tempfile
+from pathlib import Path
+
+script = runpy.run_path(sys.argv[1], run_name="session_restore_test")
+relaunch = script["relaunch_command"]
+state = relaunch.__globals__
+state["proc_cmdline"] = lambda _pid: [
+    "/nix/store/browser/bin/chromium --app=https://example.test/ --user-data-dir=/tmp/profile"
+]
+command = relaunch({"pid": 123, "class": "chrome-example-Default"})
+assert shlex.split(command) == [
+    "/nix/store/browser/bin/chromium",
+    "--app=https://example.test/",
+    "--user-data-dir=/tmp/profile",
+], "Single-field browser cmdline must keep its flags as separate arguments"
+state["proc_cmdline"] = lambda _pid: ["/nix/store/zed/bin/zed-editor", "--foreground"]
+assert shlex.split(relaunch({"pid": 456, "class": "dev.zed.Zed"})) == [
+    "/nix/store/zed/bin/zed-editor", "--foreground"
+]
+
+with tempfile.TemporaryDirectory() as directory:
+    snapshot = Path(directory) / "session.json"
+    original = {"windows": [{"cmd": "browser --app=https://example.test/"}]}
+    snapshot.write_text(json.dumps(original), encoding="utf-8")
+    state["STATE_DIR"] = directory
+    state["SESSION_FILE"] = str(snapshot)
+    state["hyprctl_json"] = lambda _command: []
+    assert script["save"].__globals__["hyprctl_json"]("clients") == []
+    assert script["save"]() == 0
+    assert json.loads(snapshot.read_text(encoding="utf-8")) == original
+
+print("MYOKO_PWA_CMDLINE_AND_EMPTY_SNAPSHOT_OK")
