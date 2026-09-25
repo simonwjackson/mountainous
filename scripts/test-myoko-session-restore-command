@@ -23,6 +23,12 @@ assert shlex.split(relaunch({"pid": 123, "class": "chromium-browser"})) == [
     "--app=https://example.test/",
     "--user-data-dir=/tmp/profile",
 ], "Other Chromium windows must preserve their original arguments"
+state["proc_cmdline"] = lambda _pid: [
+    "/nix/store/abc-chromium-unwrapped-153/libexec/chromium/chromium --ozone-platform-hint=auto"
+]
+assert shlex.split(relaunch({"pid": 123, "class": "chromium-browser"})) == [
+    "/run/current-system/sw/bin/chromium", "--ozone-platform-hint=auto"
+], "Regular Chromium windows must use the installed wrapper, not the unwrapped binary"
 state["proc_cmdline"] = lambda _pid: ["/nix/store/zed/bin/zed-editor", "--foreground"]
 assert shlex.split(relaunch({"pid": 456, "class": "dev.zed.Zed"})) == [
     "/nix/store/zed/bin/zed-editor", "--foreground"
@@ -39,4 +45,4 @@ with tempfile.TemporaryDirectory() as directory:
     assert script["save"]() == 0
     assert json.loads(snapshot.read_text(encoding="utf-8")) == original
 
-print("MYOKO_PWA_CMDLINE_AND_EMPTY_SNAPSHOT_OK")
+print("MYOKO_CHROMIUM_LAUNCHERS_AND_EMPTY_SNAPSHOT_OK")

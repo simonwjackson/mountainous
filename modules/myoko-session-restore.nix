@@ -7,7 +7,7 @@
     let
       # Pin upstream through flake.lock. Patch its CLI calls for Myoko's Lua
       # Hyprland instance, preserve the last non-empty snapshot, and use
-      # Myoko's own web-app launcher for Chromium app windows.
+      # Myoko's own web-app and Chromium launchers instead of their internal binaries.
       script = pkgs.runCommand "myoko-hypr-session-restore" { } ''
         install -Dm755 ${inputs.hypr-session-restore}/hypr-session-restore $out/libexec/hypr-session-restore
         substituteInPlace $out/libexec/hypr-session-restore \
@@ -19,7 +19,7 @@
           --replace-fail '    "Alacritty": ("alacritty", "--working-directory", "-e"),' "$(printf '%s\n' '    "Alacritty": ("alacritty", "--working-directory", "-e"),' '    "com.mitchellh.ghostty": ("ghostty", "--working-directory=", "-e"),')" \
           --replace-fail '            cmd = [binary, cwd_flag, cwd]' '            cmd = [binary, cwd_flag + cwd] if cwd_flag.endswith("=") else [binary, cwd_flag, cwd]' \
           --replace-fail '        return shlex.join([binary, cwd_flag, cwd])' "$(printf '%s\n' '        cmd = [binary, cwd_flag + cwd] if cwd_flag.endswith("=") else [binary, cwd_flag, cwd]' '        return shlex.join(cmd)')" \
-          --replace-fail '    return shlex.join(argv)' "$(printf '%s\n' '    if len(argv) == 1 and " " in argv[0]:' '        argv = shlex.split(argv[0])' '    for arg in argv:' '        if cls.startswith("chrome-") and arg.startswith("--app="):' '            app_url = arg.removeprefix("--app=")' '            parsed = urlsplit(app_url)' '            if parsed.scheme in ("https", "http") and parsed.hostname and cls == f"chrome-{parsed.hostname}__-Default":' '                return shlex.join(["/run/current-system/sw/bin/web-app", app_url])' '    return shlex.join(argv)')"
+          --replace-fail '    return shlex.join(argv)' "$(printf '%s\n' '    if len(argv) == 1 and " " in argv[0]:' '        argv = shlex.split(argv[0])' '    for arg in argv:' '        if cls.startswith("chrome-") and arg.startswith("--app="):' '            app_url = arg.removeprefix("--app=")' '            parsed = urlsplit(app_url)' '            if parsed.scheme in ("https", "http") and parsed.hostname and cls == f"chrome-{parsed.hostname}__-Default":' '                return shlex.join(["/run/current-system/sw/bin/web-app", app_url])' '    if cls == "chromium-browser" and "chromium-unwrapped-" in argv[0] and argv[0].endswith("/libexec/chromium/chromium"):' '        argv[0] = "/run/current-system/sw/bin/chromium"' '    return shlex.join(argv)')"
         ${pkgs.python3}/bin/python3 -m py_compile $out/libexec/hypr-session-restore
       '';
       restore = pkgs.writeShellApplication {
