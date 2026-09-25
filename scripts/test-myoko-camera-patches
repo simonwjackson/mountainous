@@ -7,19 +7,25 @@ src=$(nix eval --raw '.#nixosConfigurations.myoko.config.boot.kernelPackages.ker
 [ -f "$src" ] || { echo "Fetch kernel source first: nix build --no-link .#nixosConfigurations.myoko.config.boot.kernelPackages.kernel.src" >&2; exit 2; }
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-tar -xJf "$src" -C "$work" --wildcards 'linux-*/drivers/media/i2c/ov02c10.c' 'linux-*/drivers/media/pci/intel/ipu-bridge.c'
+tar -xJf "$src" -C "$work" --wildcards 'linux-*/drivers/media/i2c/ov02c10.c' 'linux-*/drivers/media/pci/intel/ipu-bridge.c' 'linux-*/include/media/v4l2-subdev.h'
 base=$(find "$work" -maxdepth 1 -type d -name 'linux-*' -print -quit)
 [ -n "$base" ] || exit 2
 for part in 1 2 3 4 5; do
   patch -d "$base" -p1 --batch --forward < "modules/galaxy-book3-camera/ov02c10-v3-${part}.patch"
 done
-patch -d "$base" -p1 --batch --forward < modules/galaxy-book3-camera/ov02c10-linux-6.18-get-selection.patch
-# The original 6.18 bridge calls this sensor OVTI02C1 with only 400 MHz.
-# The patch must also add the rate the 26 MHz driver advertises.
+patch -d "$base" -p1 --batch --forward < modules/galaxy-book3-camera/ov02c10-get-selection-no-client-info.patch
+# The locked bridge lists this sensor with only 400 MHz. The series must add
+# the rate the 26 MHz driver advertises.
 grep -Fq 'IPU_SENSOR_CONFIG("OVTI02C1", 2, 400000000, 399479167)' "$base/drivers/media/pci/intel/ipu-bridge.c"
 grep -Fq '#define OV02C10_MCLK_26MHZ' "$base/drivers/media/i2c/ov02c10.c"
+# The local patch must match the kernel's own get_selection signature.
+kernel_sig=$(grep -A3 'int (\*get_selection)(struct v4l2_subdev \*sd,' "$base/include/media/v4l2-subdev.h" || true)
+if grep -q 'v4l2_subdev_client_info' <<<"$kernel_sig"; then
+  echo 'kernel get_selection takes client_info; the local patch is obsolete' >&2
+  exit 1
+fi
 if grep -Fq 'const struct v4l2_subdev_client_info *ci' "$base/drivers/media/i2c/ov02c10.c"; then
-  echo '6.18 callback still has unsupported client_info argument' >&2
+  echo 'driver get_selection still has an unsupported client_info argument' >&2
   exit 1
 fi
 grep -Fq '.get_selection = ov02c10_get_selection' "$base/drivers/media/i2c/ov02c10.c"

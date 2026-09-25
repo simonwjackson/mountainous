@@ -13,10 +13,25 @@
 
     module = { pkgs, ... }: {
       # Track the newest kernel in the locked nixpkgs revision on Myoko.
-      # Keep Hiyori's recovery USB on the default kernel. The OV02C10
-      # 26 MHz camera patches were for 6.18 and need a separate port to
-      # this kernel; do not apply the old ABI patch to a new kernel.
+      # Keep Hiyori's recovery USB on the default kernel.
       boot.kernelPackages = pkgs.linuxPackages_latest;
+
+      # Felipe Calliari's 2026-09-23 v3 series for Samsung's 26 MHz OV02C10.
+      # https://ratatoskr.run/linux-media/2026/09/17632924
+      # Myoko only. Hiyori's recovery USB keeps its unpatched kernel.
+      boot.kernelPatches =
+        (map (part: {
+          name = "ov02c10-26mhz-v3-${toString part}";
+          patch = ../galaxy-book3-camera/ov02c10-v3-${toString part}.patch;
+        }) [ 1 2 3 4 5 ])
+        ++ [
+          # The v3 series was written against 7.3-rc1, where get_selection
+          # takes a client_info argument. The locked kernel does not have it.
+          {
+            name = "ov02c10-get-selection-no-client-info";
+            patch = ../galaxy-book3-camera/ov02c10-get-selection-no-client-info.patch;
+          }
+        ];
 
       # Verified on the Samsung: WDSN740-SDDPNQD-1T00-1004,
       # serial 22501B805583, 1024209543168 bytes, /dev/nvme0n1.
