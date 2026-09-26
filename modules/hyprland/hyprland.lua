@@ -227,6 +227,17 @@ hl.bind(mod .. " + 1", set_capacity(1))
 hl.bind(mod .. " + 2", set_capacity(2))
 hl.bind(mod .. " + 3", set_capacity(3))
 
+-- A config reload starts a fresh Lua state and loses the table above. A
+-- page already holding N tiled windows has room for N, so rebuild that
+-- much from the pages themselves; otherwise the next window to open
+-- would split them. At first load there are no pages yet.
+for _, ws in ipairs(hl.get_workspaces()) do
+    if ws.id > 0 then
+        local n = #tiled_windows(ws)
+        if n > cap_of(ws.id) then capacity[ws.id] = n end
+    end
+end
+
 -- A new window over the cap goes straight to the next page. Moving a
 -- window raises no open event, so this cannot cascade: if the next
 -- page is also full, the window simply stays there.
@@ -296,11 +307,14 @@ hl.on("window.destroy", leave_if_empty)
 -- renamed to i every smaller page already holds 1..i-1, and every
 -- page not yet renamed holds occ[j] > occ[i] >= i. Target i is free.
 local compacting = false
+-- Session restore holds the strip while it places windows on their saved
+-- pages, so a page is not renumbered under the next window aimed at it.
+local strip_held = false
 
 compact = function()
     -- hl.dispatch runs synchronously and change_id raises workspace
     -- events, so without this guard compact() re-enters itself.
-    if compacting then return end
+    if compacting or strip_held then return end
     compacting = true
 
     local occ = {}
@@ -315,6 +329,10 @@ compact = function()
     for i, id in ipairs(occ) do
         if id ~= i then
             hl.dispatch(hl.dsp.workspace.change_id({ workspace = id, id = i }))
+            -- Capacity belongs to the page, so it follows the new id. Any
+            -- value already at i is stale: page i did not exist.
+            capacity[i] = capacity[id]
+            capacity[id] = nil
         end
     end
 
@@ -772,3 +790,22 @@ hl.bind(mod .. " + SHIFT + O", function()
     hl.dispatch(hl.dsp.dpms({ action = any_on and "off" or "on" }))
 end)
 hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
+
+--------------------------------------------------------------------
+-- Session restore, on hosts that install it. modules/session-restore.nix
+-- puts session-restore.lua next to this file; other hosts skip this.
+-- It shares the strip's capacity table and may hold compaction.
+--------------------------------------------------------------------
+if package.searchpath("session-restore", package.path) then
+    local ok, err = pcall(function()
+        require("session-restore").attach({
+            capacity = capacity,
+            default_capacity = DEFAULT_CAPACITY,
+            hold = function(on) strip_held = on end,
+            compact = function() compact() end,
+        })
+    end)
+    if not ok then
+        hl.notification.create({ text = "Session restore did not load: " .. tostring(err), timeout = 8000 })
+    end
+end

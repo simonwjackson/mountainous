@@ -1,11 +1,119 @@
-# Myoko window session restore
+# Session restore
 
-Myoko uses [hypr-session-restore](https://github.com/UpayanChatterjee/hypr-session-restore), pinned as a non-flake input. Its user service starts with `hyprland-session.target`, restores the last snapshot at graphical login, and saves every 60 seconds after a 90-second startup delay. The service also saves when it stops. Other hosts do not run it.
+Myoko saves its desktop and reopens it at the next login: the same windows,
+on the same pages of the strip, with the same capacity per page. The code
+runs inside Hyprland's own Lua runtime. `modules/session-restore.nix`
+installs `session-restore.lua` and `session-plan.lua` next to
+`hyprland.lua`, and `hyprland.lua` attaches the module when it finds it.
+Hosts that do not import the module load no session code.
 
-`modules/myoko-session-restore.nix` adapts the pinned script through `modules/myoko-session-restore-patch.py`. The patcher rewrites the CLI calls for Myoko's Hyprland Lua instance, adds Ghostty's working-directory option, sets the snapshot directory to mode 0700 and the file to mode 0600, and does not overwrite a good snapshot with an empty one. This last change protects against shutdown racing with the save daemon. It splits Chromium's one-field process command into executable and flags. For Chromium app windows whose class matches the `--app=` URL, it saves `/run/current-system/sw/bin/web-app <url>` instead of replaying Chromium's internal process command. This is Myoko's existing launcher in `modules/web-apps.nix`; it gives Forgerie the correct app window class. Regular Chromium windows also need `/run/current-system/sw/bin/chromium`, not Chromium's unwrapped process binary. The wrapper sets its sandbox and library environment. The saver counts launch attempts by process ID and window class, not process ID alone, because Chromium app and browser windows can share a process. To suppress the next restore, create `~/.local/state/hypr-session-restore/disabled`. Delete the snapshot to forget the saved windows.
+It restores windows, not their contents. Unsaved edits, terminal
+scrollback, browser tabs and editor buffers belong to each application.
 
-The patcher also replaces upstream's best-effort sweep with deterministic placement. Upstream launched every saved window and moved only the clients it happened to see, matching by class and preferring the saved numeric workspace. That failed on Myoko for three reasons. Single-instance apps (Zed, Chromium) ignore the per-launch workspace rule, so their extra windows arrive on the wrong workspace. Upstream's 20-second sweep ended before slow apps appeared. And the Lua strip renumbers occupied workspaces to 1..N, so a saved numeric id is not stable across a restart. The replacement saves each normal workspace as its strip position, waits for the saved windows to appear, matches saved windows to live clients by class and title first and then by class, and moves each matched client to its saved position in ascending order. It then re-matches and re-places until every saved window is present, because a slow single-instance app can open its extra window after the first placement; without that loop the late window keeps the strip-end workspace the compositor gave it. It reports any saved window that never reappeared. The service sets `TimeoutStartSec = 300` so the longer restore cannot be killed mid-flight.
+## Why it lives in the compositor
 
-This feature relaunches processes and puts their windows on saved workspaces. It does not restore unsaved edits, terminal scrollback, Chromium tabs, or Zed buffers; each application controls its own document and tab recovery. Zed reopens its extra window by itself, so placement can move it. Chromium did not reopen its second browser window in the generation-12 trial, so that window stays missing until Chromium's own session restore is enabled; placement cannot invent it. Tiled layout depends on Myoko's capacity and compaction rules. The strip renumbers occupied workspaces to 1..N, so the restore saves positions, not raw ids, and places each window on its position. Multiple windows on one workspace assume that workspace's capacity, which the compositor does not persist across a restart. The snapshot includes process launch commands, which can contain sensitive arguments; do not publish the JSON file.
+The first version patched a third-party Python script (hypr-session-restore)
+and ran it as a user service. Four reboot trials on Myoko showed the limits
+of that shape. Launch rules applied to the first window of a launch only, so
+a single-instance application's second window landed wherever it opened.
+Placement ran once after a fixed wait, so Zed, which waits for SSH before it
+opens a window, arrived after placement ended. The strip renumbers pages, so
+saved page numbers moved underneath the windows aimed at them. And the page
+capacity lived only in `hyprland.lua`, where the service could not see it.
 
-Before the first reboot, `scripts/test-myoko-session-restore-target` saved five real Myoko windows and checked the private snapshot permissions. Calling `restore` while those five windows were still open did not duplicate them. The Hyprland Lua launch dispatcher also accepted the script's `hl.dsp.exec_cmd` form. On the first generation-8 boot, Tailscale joined successfully, but only four of five saved windows returned: the Forgerie PWA failed to launch because its single-field command line was quoted as one executable. The five-window snapshot was preserved at `~/.local/state/hypr-session-restore/session.pre-gen8-20260925.json` before autosave could replace it. `scripts/test-myoko-session-restore-command` reproduces the bad launcher with the old script and passes with the tokenization fix. On the generation-9 one-time boot, Linux 7.2.7 and the original Tailscale identity returned, but the PWA was still missing. A second regular Chromium window was open at inspection, but the user opened it manually; it is not evidence of a restore failure mode. The five-window snapshot from before that boot is kept at `~/.local/state/hypr-session-restore/session.pre-gen9-20260925.json`. Launching the same URL through Myoko's `web-app` binary reopened the PWA with the correct class in the live session. On the generation-10 one-time boot, Linux 7.2.7 and the original Tailscale identity returned. The Forgerie PWA was present with its correct class at the first GUI check, without an agent launching it. The user manually opened regular Chromium after it failed to return, so only four of five windows restored automatically. The browser's saved command pointed at the unwrapped Chromium binary. A headless trial on Myoko using the saved binary exited with signal 4; the installed Chromium wrapper exited with status 0 and produced a page. The PWA and manually opened Chromium workspaces were swapped against the preboot snapshot; exact placement remains unverified. The corrected browser launch after login has not yet been tested. A later live snapshot had two regular Chromium windows and a Forgerie PWA; one browser and the PWA shared a process ID. The old process-only deduplication marked the PWA not to spawn. `scripts/test-myoko-session-restore-command` now checks one launch per class for a shared process ID. On generation 12, a live save recorded six windows: two regular Chromium windows and the PWA. Both browser commands used the installed Chromium wrapper, and the PWA was marked to launch. On the generation-12 one-time boot, Linux 7.2.7, the original Tailscale node, LAN SSH, and tailnet SSH worked. Six windows were saved before reboot. After login, one regular Chromium window was missing and both Zed windows were on workspace 1 instead of workspaces 1 and 2. Forgerie was on workspace 2 instead of 3, and the remaining Chromium window was on workspace 3 instead of 4 or 5. A first check showed two Forgerie windows, but a later check showed one; the final five-window state still failed both class counts and workspace placement. `scripts/test-myoko-session-restore-placement` loads the built script, injects a fake Hyprland, and asserts that every saved window ends on its saved workspace position, including two windows on one workspace and a single-instance app whose second window arrives after the first placement. It also covers workspace-position mapping, class-and-title matching, missing windows, and floating, pinned, and fullscreen windows. `scripts/test-myoko-session-restore-command` checks the launcher rewrites and the shared-process spawn rule. Neither test replaces a real login restore. The placement fix is deployed on Myoko as generation 13. On its one-time boot, Linux 7.2.7, the original Tailscale node, LAN SSH, and tailnet SSH worked, and all five saved windows opened. Four landed on their exact saved workspace. The fifth, the second Zed window, landed on workspace 4 because Zed opened it after the first placement pass, and the strip-position map shifted the later positions because two windows shared a saved workspace id and the map did not deduplicate. The late-window re-match loop and the deduplicated position map fix both; they await a login trial. The private six-window snapshot from before the generation-12 trial is `~/.local/state/hypr-session-restore/session.pre-gen12-20260925.json`. Generation 6 remains the EFI default. Do not use the saved snapshot as a substitute for saving work in applications.
+Hyprland 0.56's source (commit `efb50993`) and a live spike showed that its
+Lua runtime can read and write files, that a named window rule applies to
+every matching window until it is disabled, and that `window.open_early`
+fires after rules choose a workspace and before the layout inserts the
+window. Those three facts make the restore event-driven and let it share
+state with the strip code.
+
+## How it works
+
+Saving. Every 10 seconds the module captures the desktop: each window's
+class, title, page, floating geometry, pin and fullscreen state, the page
+capacities, and a launch command read from `/proc/<pid>/cmdline`. It writes
+`$XDG_STATE_HOME/mountainous/session/snapshot.lua` only when two captures
+in a row agree. At a reboot, logind sends SIGTERM to Hyprland and its
+applications together. Windows close one by one, and that state never
+holds still for 10 seconds, so a shutdown cannot overwrite the last good
+snapshot. An empty desktop never replaces a saved one. Hyprland emits
+`hyprland.shutdown` only for the exit dispatcher, not on SIGTERM
+(`Compositor.cpp:92`), so the shutdown handler is a bonus for Super+Shift+E,
+not the save path. A change made less than 10 to 20 seconds before a reboot
+can be lost.
+
+Launch commands. A Chromium app window relaunches as `web-app <url>`; its
+process command is Chromium's internal binary. A browser window relaunches
+through the installed `chromium` wrapper; the unwrapped binary exits with
+signal 4 on Myoko. Zed relaunches as `zeditor`, and Zed reopens its own
+windows. Any other `/nix/store` path becomes its installed name when one
+exists, so the snapshot survives garbage collection. One launch is saved per
+process and class: a single-instance application opens its other windows
+itself, and a Chromium app window can share a process with a browser window.
+
+Restoring. Two seconds after `hyprland.start`, once Hyprland has published
+its environment to systemd and D-Bus, the module reads the snapshot. A
+desktop that already has a window is left alone. It restores each page's
+capacity, holds the strip's compaction, and registers one disabled window
+rule per saved window: the saved page, `silent`, and the saved floating
+geometry. For each class only the next slot's rule is enabled. When a
+window of that class opens, `window.open_early` claims the slot and enables
+the next rule. So Zed's second window, which no launch carries, still opens
+on its own page, and nothing flashes onto the current page first.
+
+Five seconds after the last saved window opens, titles have settled. The
+module pairs saved and restored windows of each class by exact title, then
+by arrival order, moves any window that landed on the wrong page, and swaps
+windows within a page into their saved order. Then it disables the rules,
+releases compaction, and resumes saving. If a window never opens, the
+restore ends after 5 minutes, reports the missing classes in a notification,
+and the strip closes the gap.
+
+## Changes to the strip in `hyprland.lua`
+
+These fix defects that restore exposed, and they apply to every host.
+
+- Capacity follows a page when compaction renumbers it. Before, capacity
+  stayed with the old id, so a two-window page could split after an earlier
+  page closed.
+- A config reload rebuilds capacity from the pages: a page holding N tiled
+  windows keeps room for N. Before, a reload reset every page to one, and the
+  next window to open split full pages.
+- Compaction can be held. Only the session module holds it, while it places
+  windows.
+
+## Limits
+
+- Identity is a guess. Wayland gives a window no id that survives a
+  restart. Two windows of one class with the same title can swap places.
+- Chromium without its own session restore reopens one browser window per
+  process, so a second browser window can stay missing. The notification
+  reports it.
+- Terminals reopen in their launch directory. Lua cannot read a process's
+  working directory, and the overlay runs herdr, which keeps its own
+  sessions.
+- Master orientation and split ratio (Super+Shift+G, Super+G) are not saved.
+- Floating positions assume one monitor at 0,0.
+- A config reload during a restore ends that restore. Saving stays paused
+  until its deadline, recorded in `$XDG_RUNTIME_DIR`, so a half-restored
+  desktop is not saved over the snapshot.
+- Handlers run under Hyprland's 50 ms watchdog. An error shows as a
+  notification; the module releases compaction on every error path.
+- The module depends on Hyprland 0.56's Lua API, which is new and can
+  change between releases.
+
+## Tests
+
+`scripts/test-hyprland-session` runs the real `hyprland.lua` and both
+modules against `scripts/lib/hypr-model.lua`, a model of the Lua API:
+rules, workspaces, focus, timers and events. It covers launch commands,
+capture, the two-capture rule, shutdown, a full restore with late and
+reversed arrivals and a page destroyed mid-restore, one class across pages,
+a missing window, a populated desktop, capacity after compaction and after
+a reload, and a host without the module. Each of seven deliberate breakages
+of the code fails the suite. The model is not Hyprland; only a reboot proves
+the real behavior.
+
+The snapshot from the old service, `~/.local/state/hypr-session-restore/`,
+is no longer read.

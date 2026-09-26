@@ -1,0 +1,12 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils lua5_5
+# Runs hyprland.lua and the session-restore modules against a model of
+# Hyprland's Lua API. Needs no compositor and touches no real state.
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/state/mountainous/session" "$tmp/run"
+cd "$tmp"
+HOME="$tmp" USER=test XDG_STATE_HOME="$tmp/state" XDG_RUNTIME_DIR="$tmp/run" \
+  MOUNTAINOUS_ROOT="$root" lua "$root/scripts/test-hyprland-session.lua"

@@ -84,22 +84,6 @@
         "type": "github"
       }
     },
-    "hypr-session-restore": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1781213213,
-        "narHash": "sha256-2CQivm+knWyh+Umv3EEQcs3pFXAwfdlKbdFE/ABqiio=",
-        "owner": "UpayanChatterjee",
-        "repo": "hypr-session-restore",
-        "rev": "d281be7fb5153e1a656d95263b349b93a7301aa7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "UpayanChatterjee",
-        "repo": "hypr-session-restore",
-        "type": "github"
-      }
-    },
     "import-tree": {
       "locked": {
         "lastModified": 1788467110,
@@ -138,7 +122,6 @@
         "herdr-bin-aarch64": "herdr-bin-aarch64",
         "herdr-bin-x86_64": "herdr-bin-x86_64",
         "hjem": "hjem",
-        "hypr-session-restore": "hypr-session-restore",
         "import-tree": "import-tree",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix"

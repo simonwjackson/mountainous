@@ -8,7 +8,7 @@
       "desktop"
       "disk"
       "galaxy-book3"
-      "myoko-session-restore"
+      "session-restore"
     ];
 
     module = { pkgs, ... }: {
