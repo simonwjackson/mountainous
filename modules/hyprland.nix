@@ -191,21 +191,14 @@
       '';
     };
 
-    # Kamoi Meta+G toggles the horizontal split between even and golden
-    # ratios. `layoutmsg mfact` sets the focused workspace's ratio, which is
-    # not the master:mfact option, so the state cannot be read back.
+    # Kamoi Meta+G toggles the focused page between even and golden splits.
+    # The logic is Lua so it can read the page's own ratio; the omni bar
+    # calls this command, and the keybind does too.
     hypr-split = pkgs.writeShellApplication {
       name = "hypr-split";
       runtimeInputs = [hyprPkg];
       text = ''
-        state="''${XDG_RUNTIME_DIR:-/tmp}/hypr-split-golden"
-        if [ -e "$state" ]; then
-          rm -f "$state"
-          hyprctl dispatch 'hl.dsp.layout("mfact exact 0.5")'
-        else
-          touch "$state"
-          hyprctl dispatch 'hl.dsp.layout("mfact exact 0.61803")'
-        fi
+        hyprctl eval "$(< ${./hyprland/hypr-split.lua})"
       '';
     };
 

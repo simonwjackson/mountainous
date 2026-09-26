@@ -48,6 +48,7 @@ function Model.new()
         end
         return rule
     end
+    hl.config = function(t) m.config = t end
     hl.bind = function(keys, handler) m.binds[keys] = handler end
     hl.define_submap = function(_, _, fn) if fn then fn() end end
     hl.exec_cmd = function(cmd) m.launches[#m.launches + 1] = cmd end
@@ -89,12 +90,26 @@ function Model:emit(name, ...)
     end
 end
 
+-- The master layout on a 1920-wide page. The first tiled window is master;
+-- the ratio sets its width and the side sets where it sits. Hyprland keeps
+-- the side per page and the ratio on the master node, which for a page
+-- comes to the same thing here.
 function Model:layout(ws)
-    local tiled = 0
+    local master = self.config and self.config.master or {}
+    local ratio = ws.mfact or master.mfact or 0.5
+    local side = ws.side or master.orientation or "left"
+    local tiled = {}
     for _, w in ipairs(ws.list) do
-        if not w.floating then
-            tiled = tiled + 1
-            w.at = tiled == 1 and { x = 0, y = 0 } or { x = 960, y = (tiled - 2) * 100 }
+        if w.floating then w.layout = nil else tiled[#tiled + 1] = w end
+    end
+    for i, w in ipairs(tiled) do
+        w.layout = { name = "master", is_master = i == 1, perc_master = ratio, perc_size = 1 }
+        if #tiled == 1 then
+            w.at = { x = 0, y = 0 }
+        elseif i == 1 then
+            w.at = { x = side == "left" and 0 or math.floor(1920 * (1 - ratio)), y = 0 }
+        else
+            w.at = { x = side == "left" and math.floor(1920 * ratio) or 0, y = (i - 2) * 100 }
         end
     end
     ws.windows = #ws.list
@@ -183,7 +198,14 @@ function Model:dispatch(d)
     self.dispatched[#self.dispatched + 1] = d.kind
     local a = d.args or {}
     if d.kind == "focus" then
-        if a.window then self.focus = self:find(a.window) end
+        if a.window then
+            self.focus = self:find(a.window)
+            -- Focusing a window shows its page.
+            if self.focus and not self.focus.workspace.special then
+                self.active = self.focus.workspace
+                self:collect()
+            end
+        end
         if a.workspace then self.active = self:workspace(a.workspace) self:collect() end
     elseif d.kind == "window.move" and a.workspace then
         local w = a.window and self:find(a.window) or self.focus
@@ -198,6 +220,19 @@ function Model:dispatch(d)
         x.workspace, y.workspace = wy, wx
         self:layout(wx)
         self:layout(wy)
+    elseif d.kind == "layout" then
+        -- Layout messages act on the focused window's page.
+        local ws = self.focus and self.focus.workspace
+        if ws then
+            local default = self.config and self.config.master and self.config.master.orientation or "left"
+            local ratio = d.args:match("^mfact exact ([%d%.]+)$")
+            local side = d.args:match("^orientation(%a+)$")
+            if ratio then ws.mfact = tonumber(ratio)
+            elseif d.args == "orientationcycle left right" then
+                ws.side = (ws.side or default) == "left" and "right" or "left"
+            elseif side then ws.side = side end
+            self:layout(ws)
+        end
     elseif d.kind == "workspace.change_id" then
         local ws = self:workspace(a.workspace)
         ws.id, ws.name = a.id, tostring(a.id)

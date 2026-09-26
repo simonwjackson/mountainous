@@ -51,15 +51,24 @@ function M.launch_command(class, argv, exists)
     return table.concat(out, " ")
 end
 
+-- Hyprland reports the ratio as a float; five places is what Super+G sets,
+-- and it keeps two captures of an unchanged page equal.
+local function round5(x) return math.floor(x * 100000 + 0.5) / 100000 end
+
 -- windows: { class, title, pid, special_name|nil, ws_id, floating, pinned,
---            fullscreen, at = {x, y}, size = {x, y}, command }
+--            fullscreen, at = {x, y}, size = {x, y}, command,
+--            master = is this the page's master window, ratio = its split }
 -- Returns the snapshot, or nil when there is nothing worth keeping.
 function M.capture(windows, capacity, default_capacity)
-    local ids, count = {}, {}
+    local ids, count, tiled = {}, {}, {}
     for _, w in ipairs(windows) do
         if not w.special_name then
             ids[w.ws_id] = true
-            if not w.floating then count[w.ws_id] = (count[w.ws_id] or 0) + 1 end
+            if not w.floating then
+                count[w.ws_id] = (count[w.ws_id] or 0) + 1
+                tiled[w.ws_id] = tiled[w.ws_id] or {}
+                table.insert(tiled[w.ws_id], w)
+            end
         end
     end
     local sorted = {}
@@ -71,6 +80,22 @@ function M.capture(windows, capacity, default_capacity)
         -- A page that holds N tiled windows has room for at least N, even
         -- when the in-memory capacity was lost to a config reload.
         pages[page] = { capacity = math.max(capacity[id] or default_capacity, count[id] or 0) }
+        -- A split exists only with two tiled windows. Hyprland does not
+        -- report the page's master side, so read it off the master window:
+        -- with anything to its left, the master sits on the right.
+        local list = tiled[id] or {}
+        if #list >= 2 then
+            for _, m in ipairs(list) do
+                if m.master and m.ratio then
+                    local side = "left"
+                    for _, other in ipairs(list) do
+                        if other ~= m and other.at[1] < m.at[1] then side = "right" end
+                    end
+                    pages[page].side, pages[page].ratio = side, round5(m.ratio)
+                    break
+                end
+            end
+        end
     end
 
     local out, spawned = {}, {}
@@ -151,6 +176,19 @@ end
 
 function M.target(w)
     return w.special or tostring(w.page)
+end
+
+-- The layout messages that give a page its saved split and side, or an
+-- empty list when the page already starts that way.
+function M.layout_messages(page, defaults)
+    local out = {}
+    if page.side and page.side ~= defaults.side then
+        out[#out + 1] = "orientation" .. page.side
+    end
+    if page.ratio and math.abs(page.ratio - defaults.ratio) > 0.0005 then
+        out[#out + 1] = string.format("mfact exact %.5f", page.ratio)
+    end
+    return out
 end
 
 -- Saved windows grouped by class, in saved order.

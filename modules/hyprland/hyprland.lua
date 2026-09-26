@@ -23,6 +23,11 @@ hl.env("NIXOS_OZONE_WL", "1")
 --------------------------------------------------------------------
 -- LOOK AND FEEL
 --------------------------------------------------------------------
+-- The master layout's starting split and side. Session restore compares a
+-- saved page against these to decide whether the page needs changing.
+local MASTER_RATIO = 0.5
+local MASTER_SIDE  = "left"
+
 hl.config({
     xwayland = {
         -- Prevent compositor bilinear scaling of any remaining X11 apps at
@@ -78,9 +83,9 @@ hl.config({
 
     master = {
         -- Even split by default; Meta+G toggles to golden.
-        mfact       = 0.5,
+        mfact       = MASTER_RATIO,
         -- Kamoi's master sits on one side; Meta+Shift+G mirrors it.
-        orientation = "left",
+        orientation = MASTER_SIDE,
         -- A new window joins the stack rather than displacing master.
         new_status  = "slave",
     },
@@ -801,6 +806,7 @@ if package.searchpath("session-restore", package.path) then
         require("session-restore").attach({
             capacity = capacity,
             default_capacity = DEFAULT_CAPACITY,
+            layout_defaults = { side = MASTER_SIDE, ratio = MASTER_RATIO },
             hold = function(on) strip_held = on end,
             compact = function() compact() end,
         })

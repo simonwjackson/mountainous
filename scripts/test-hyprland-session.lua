@@ -82,6 +82,32 @@ check(captured.windows[1].spawn and not captured.windows[2].spawn, "one launch p
 check(plan.decode("return " .. plan.serialize(captured)).windows[2].title == "u", "serialize and decode round-trip")
 check(plan.decode("os.exit(1)") == nil and plan.decode("return 1") == nil, "decode rejects anything but a snapshot")
 check(plan.capture({}, {}, 1) == nil, "an empty desktop captures nothing")
+local right = plan.capture({
+    { class = "s", title = "s", pid = 1, ws_id = 1, at = { 0, 0 }, size = { 1, 1 }, master = false },
+    { class = "m", title = "m", pid = 2, ws_id = 1, at = { 733, 0 }, size = { 1, 1 }, master = true, ratio = 0.6180300116539 },
+    { class = "o", title = "o", pid = 3, ws_id = 2, at = { 0, 0 }, size = { 1, 1 }, master = true, ratio = 0.5 },
+}, {}, 1)
+check(right.pages[1].side == "right" and right.pages[1].ratio == 0.61803, "a page records its master side and rounded split")
+check(right.pages[2].side == nil and right.pages[2].ratio == nil, "a one-window page has no split to record")
+local defaults = { side = "left", ratio = 0.5 }
+check(#plan.layout_messages({ side = "left", ratio = 0.5 }, defaults) == 0, "a default page needs no messages")
+same(plan.layout_messages({ side = "right", ratio = 0.61803 }, defaults),
+    { "orientationright", "mfact exact 0.61803" }, "a changed page gets its side and split")
+
+-- ------------------------------------------------------ Super+G, per page
+local sp = boot(false)
+local a1 = sp:map("a", "a1"); sp:press("SUPER + 2"); sp:map("a", "a2")
+sp.hl.dispatch(sp.hl.dsp.focus({ workspace = 2 }))
+local b1 = sp:map("b", "b1"); sp:press("SUPER + 2"); sp:map("b", "b2")
+local function super_g(w)
+    sp.hl.dispatch(sp.hl.dsp.focus({ window = "address:" .. w.address }))
+    dofile(HYPR .. "hypr-split.lua")
+end
+super_g(a1)
+super_g(b1)
+check(sp:workspace(1).mfact == 0.61803 and sp:workspace(2).mfact == 0.61803, "Super+G turns each even page golden")
+super_g(b1)
+check(sp:workspace(2).mfact == 0.5 and sp:workspace(1).mfact == 0.61803, "Super+G toggles only the focused page")
 
 -- ---------------------------------------------------------- host without it
 local plain = boot(false)
@@ -130,6 +156,7 @@ check(file() == nil, "one capture is not enough to write")
 s:advance(10000)
 local saved = assert(plan.decode(file() or ""), "two equal captures write the snapshot")
 check(saved.pages[1].capacity == 2 and #saved.pages == 3, "pages and capacity are saved")
+check(saved.pages[1].side == "left" and saved.pages[1].ratio == 0.5, "the two-window page saves its split")
 local by = {}
 for _, w in ipairs(saved.windows) do by[w.title] = w end
 check(by.one.command == "zeditor" and by.one.spawn and not by.two.spawn, "Zed launches once")
@@ -210,6 +237,35 @@ local landed = {}
 for _, w in ipairs(x.windows) do landed[#landed + 1] = w.first_workspace end
 same(landed, { "1", "2" }, "each window of one class opens on its own page")
 same(x:where(), { one = "1", two = "2" }, "titles put reversed windows back on their pages")
+write_snapshot(plan.decode(good))
+
+-- ------------------------------------------ a mirrored, golden page
+write_snapshot({ version = 1,
+    pages = { { capacity = 1 }, { capacity = 2, side = "right", ratio = 0.61803 } },
+    windows = {
+        { class = "x", title = "a", page = 1, floating = false, pinned = false, fullscreen = 0,
+          at = { 0, 0 }, size = { 800, 600 }, command = "x-app", spawn = true },
+        zed("two", 2, true), zed("one", 2, false),
+    } })
+local y = boot(true)
+y.after = function(self)
+    for i = #self.launches, 1, -1 do
+        local c = table.remove(self.launches, i)
+        if c == "x-app" then self:map("x", "a")
+        elseif c == "zeditor" then self:map("dev.zed.Zed", "two"); self:map("dev.zed.Zed", "one") end
+    end
+end
+local y_start = y.active
+y:advance(20000)
+same(y:where(), { a = "1", two = "2", one = "2" }, "the mirrored page's windows return")
+local page2 = y:workspace(2)
+check(page2.side == "right" and page2.mfact == 0.61803, "the page gets its saved side and split")
+check(page2.list[1].title == "one", "the saved master is master again")
+check(y.active == y_start, "you are returned to the page you started on")
+y:advance(30000)
+local again = plan.decode(file() or "")
+check(again and again.pages[2].side == "right" and again.pages[2].ratio == 0.61803,
+    "the restored page saves the same side and split")
 write_snapshot(plan.decode(good))
 
 -- ------------------------------------------------------------- a gap

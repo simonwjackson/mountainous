@@ -32,7 +32,11 @@ state with the strip code.
 
 Saving. Every 10 seconds the module captures the desktop: each window's
 class, title, page, floating geometry, pin and fullscreen state, the page
-capacities, and a launch command read from `/proc/<pid>/cmdline`. It writes
+capacities, each multi-window page's split ratio and master side, and a
+launch command read from `/proc/<pid>/cmdline`. Hyprland reports the ratio
+on the master window (`layout.perc_master`), rounded to five places. It
+does not report the side, so the module reads it off the master window's
+position: with a window to its left, the master sits on the right. It writes
 `$XDG_STATE_HOME/mountainous/session/snapshot.lua` only when two captures
 in a row agree. At a reboot, logind sends SIGTERM to Hyprland and its
 applications together. Windows close one by one, and that state never
@@ -64,8 +68,15 @@ on its own page, and nothing flashes onto the current page first.
 
 Five seconds after the last saved window opens, titles have settled. The
 module pairs saved and restored windows of each class by exact title, then
-by arrival order, moves any window that landed on the wrong page, and swaps
-windows within a page into their saved order. Then it disables the rules,
+by arrival order, and moves any window that landed on the wrong page. Then
+it sets each page's split and side. Hyprland applies both to the focused
+page only (`MasterAlgorithm.cpp:551`), so the module focuses one window on
+each page that differs from the config's starting split and side, sends
+`orientationright` and `mfact exact <ratio>`, and returns to the page you
+were on. This happens inside one compositor callback, so the page change
+may show as a brief flash. Only then does it swap windows within a page
+into their saved order: which window is master decides where each window
+sits, and the order is read from those positions. Then it disables the rules,
 releases compaction, and resumes saving. If a window never opens, the
 restore ends after 5 minutes, reports the missing classes in a notification,
 and the strip closes the gap.
@@ -82,6 +93,11 @@ These fix defects that restore exposed, and they apply to every host.
   next window to open split full pages.
 - Compaction can be held. Only the session module holds it, while it places
   windows.
+- Super+G reads the focused page's ratio and toggles that page between
+  even and golden. It used to keep one flag file for the whole desktop, so
+  after one page went golden the key did nothing visible on the next page.
+  The logic is `hyprland/hypr-split.lua`, which the `hypr-split` command
+  runs with `hyprctl eval` for the keybind and the omni bar.
 
 ## Limits
 
@@ -93,7 +109,8 @@ These fix defects that restore exposed, and they apply to every host.
 - Terminals reopen in their launch directory. Lua cannot read a process's
   working directory, and the overlay runs herdr, which keeps its own
   sessions.
-- Master orientation and split ratio (Super+Shift+G, Super+G) are not saved.
+- Only one master window per page is saved. Extra masters added with
+  Super+A are restored as stack windows.
 - Floating positions assume one monitor at 0,0.
 - A config reload during a restore ends that restore. Saving stays paused
   until its deadline, recorded in `$XDG_RUNTIME_DIR`, so a half-restored
@@ -111,7 +128,8 @@ rules, workspaces, focus, timers and events. It covers launch commands,
 capture, the two-capture rule, shutdown, a full restore with late and
 reversed arrivals and a page destroyed mid-restore, one class across pages,
 a missing window, a populated desktop, capacity after compaction and after
-a reload, and a host without the module. Each of seven deliberate breakages
+a reload, a mirrored golden page with its master restored, Super+G on two
+pages, and a host without the module. Each of twelve deliberate breakages
 of the code fails the suite. The model is not Hyprland; only a reboot proves
 the real behavior.
 

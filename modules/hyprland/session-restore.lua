@@ -77,7 +77,12 @@ function M.attach(strip)
         for _, w in ipairs(hl.get_windows()) do
             local ws = w.workspace
             if w.mapped and ws and (w.class or "") ~= "" and not plan.EXCLUDED[w.class] then
+                -- Only tiled windows have a layout; it names the master and
+                -- carries the page's split.
+                local layout = (not w.floating) and w.layout or nil
                 out[#out + 1] = {
+                    master = layout and layout.is_master or false,
+                    ratio = layout and layout.perc_master or nil,
                     address = w.address, class = w.class, title = w.title, pid = w.pid,
                     special_name = ws.special and ws.name or nil, ws_id = ws.id,
                     floating = w.floating, pinned = w.pinned, fullscreen = w.fullscreen,
@@ -189,6 +194,33 @@ function M.attach(strip)
         release()
     end
 
+    -- Split and master side are set on the focused page, so this focuses
+    -- one window on each page that needs a change, then returns to the page
+    -- you were on. It runs before ordering: which window is master decides
+    -- where each window sits, and the order is read from those positions.
+    local function apply_layouts()
+        local active = hl.get_active_workspace()
+        local back = active and not active.special and active.id or nil
+        local hopped = false
+        for page, p in ipairs(R.snap.pages) do
+            local messages = plan.layout_messages(p, strip.layout_defaults)
+            local anchor = nil
+            for si, w in ipairs(R.snap.windows) do
+                if w.page == page and not w.floating and R.address_of[si] then
+                    anchor = R.address_of[si]
+                    break
+                end
+            end
+            if #messages > 0 and anchor then
+                hl.dispatch(hl.dsp.focus({ window = "address:" .. anchor }))
+                for _, message in ipairs(messages) do hl.dispatch(hl.dsp.layout(message)) end
+                hopped = true
+            end
+        end
+        if hopped and back then hl.dispatch(hl.dsp.focus({ workspace = back })) end
+        hl.timer(guarded(order_pages), { timeout = ORDER_DELAY_MS, type = "oneshot" })
+    end
+
     local function finish()
         if R == nil or R.finishing then return end
         R.finishing = true
@@ -223,7 +255,7 @@ function M.attach(strip)
             table.sort(missing)
             notify(#missing .. " window(s) did not reopen: " .. table.concat(missing, ", "))
         end
-        hl.timer(guarded(order_pages), { timeout = ORDER_DELAY_MS, type = "oneshot" })
+        hl.timer(guarded(apply_layouts), { timeout = ORDER_DELAY_MS, type = "oneshot" })
     end
 
     local function on_open(w)
