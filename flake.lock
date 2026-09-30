@@ -160,11 +160,11 @@
         "sunshine-nixpkgs": "sunshine-nixpkgs"
       },
       "locked": {
-        "lastModified": 1790750514,
-        "narHash": "sha256-QhtMD6rP9vE6kY5jqmfNnrNqPqIgfEzXAWjWNZVxQJU=",
+        "lastModified": 1790789415,
+        "narHash": "sha256-UQ24pLF8C5N37/OWKglHtOwT4BhDujrYBiqVEVihDRA=",
         "ref": "work/nixpkgs-sway-112",
-        "rev": "25653cd7f59258b957c0dbb133928108b3bfbc03",
-        "revCount": 1232,
+        "rev": "b704f9a1285f4b5e49b9bb4db8fb57fcbc5d69ae",
+        "revCount": 1233,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
