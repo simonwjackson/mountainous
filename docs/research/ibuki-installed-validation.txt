@@ -1,0 +1,312 @@
+Ibuki installed-system validation, 2026-09-29.
+Machine IDs and the tailnet domain are omitted. Trailing spaces are removed.
+GPU tests run as Simon against the installed drivers on kernel 6.18.53.
+
+===== First internal SSD boot =====
+Verified new Ibuki SSH host key at 192.168.1.174
+active
+active
+active
+active
+
+===== Installed host =====
+ Static hostname: ibuki
+       Icon name: computer-desktop
+         Chassis: desktop 🖥️
+Operating System: NixOS 26.11 (Zokor)
+     CPE OS Name: cpe:/o:nixos:nixos:26.11
+          Kernel: Linux 6.18.53
+    Architecture: x86-64
+ Hardware Vendor: Intel_R_ Client Systems
+  Hardware Model: NUC8i3BEK
+ Hardware Serial: G6BE0100075M
+    Hardware SKU: BOXNUC8i3BEK
+Hardware Version: J72748-306
+Firmware Version: BECFL357.86A.0085.2020.1007.1917
+   Firmware Date: Wed 2020-10-07
+    Firmware Age: 5y 11month 3w 2d
+Running system: /nix/store/6pnspqpd3v1al7nghyxyz1w2yrsyjh4q-nixos-system-ibuki-26.11.20260923.4975466
+256 SHA256:NTYp6RljPrX9L9yZPFtRhK4TGKxzGE48LxaHLSJ/i9M root@ibuki (ED25519)
+
+===== Root and boot filesystems =====
+TARGET                                    SOURCE                 FSTYPE     OPTIONS
+/                                         /dev/sda2[/@]          btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=256,subvol=/@
+/nix                                      /dev/sda2[/@nix]       btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=258,subvol=/@nix
+/home                                     /dev/sda2[/@home]      btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=257,subvol=/@home
+/boot                                     /dev/sda1              vfat       rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro
+NAME     SIZE TYPE FSTYPE      PARTLABEL       MOUNTPOINTS MODEL                 SERIAL
+sda    223.6G disk                                         KINGSTON SUV500M8240G 50026B7683B6CE9D
+|-sda1     1G part vfat        disk-ibuki-ESP  /boot
+`-sda2 222.6G part btrfs       disk-ibuki-root /home
+                                               /nix/store
+                                               /nix
+                                               /
+sdb    465.8G disk                                         USB 3.2.2 FD          070836E05B03CC22
+|-sdb1     1M part             disk-main-bios
+|-sdb2     1G part vfat        disk-main-ESP
+`-sdb3 464.8G part crypto_LUKS disk-main-root
+
+===== Accounts and services =====
+uid=1000(simon) gid=100(users) groups=100(users),1(wheel),26(video),57(networkmanager),303(render)
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+running
+
+===== Tailscale identity =====
+{
+  "state": "Running",
+  "hostname": "ibuki",
+  "addresses": [
+    "100.96.31.114",
+    "fd7a:115c:a1e0::e638:1f73"
+  ]
+}
+lo               UNKNOWN        127.0.0.1/8
+enp108s0u1       UP             192.168.1.174/24
+tailscale0       UNKNOWN        100.96.31.114/32
+
+===== Idle resource sample =====
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       627Mi       6.9Gi        37Mi       372Mi       7.0Gi
+Swap:             0B          0B          0B
+--procs-- -----------------------memory---------------------- ---swap-- -----io---- -system-- ----------cpu----------
+   r    b         swpd         free         buff        cache   si   so    bi    bo   in   cs  us  sy  id  wa  st  gu
+   1    0            0      7242932         2052       379284    0    0   703    96  661    1   1   1  97   0   0   0
+   0    0            0      7242760         2052       379596    0    0     0     0  178  145   0   0 100   0   0   0
+   0    0            0      7242760         2052       379596    0    0     0     0  172  202   0   0 100   0   0   0
+   0    0            0      7242760         2052       379596    0    0     0     0   97  105   0   0 100   0   0   0
+   0    0            0      7242760         2052       379596    0    0     0     0   95  117   0   0 100   0   0   0
+   0    0            0      7242760         2052       379596    0    0     0     0   89  100   0   0 100   0   0   0
+/proc/pressure/cpu:some avg10=0.00 avg60=0.05 avg300=0.23 total=1750498
+/proc/pressure/cpu:full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+/proc/pressure/memory:some avg10=0.00 avg60=0.00 avg300=0.00 total=266
+/proc/pressure/memory:full avg10=0.00 avg60=0.00 avg300=0.00 total=266
+/proc/pressure/io:some avg10=0.00 avg60=0.00 avg300=0.03 total=389002
+/proc/pressure/io:full avg10=0.00 avg60=0.00 avg300=0.00 total=200885
+
+Installed Ibuki, exact system closure, unencrypted SSD, secrets, SSH, Tailscale, drivers, and zero failed system units: OK
+
+===== Second internal SSD boot, no BootNext override; USB not detected afterward =====
+active
+active
+active
+active
+
+===== Installed host =====
+ Static hostname: ibuki
+       Icon name: computer-desktop
+         Chassis: desktop 🖥️
+Operating System: NixOS 26.11 (Zokor)
+     CPE OS Name: cpe:/o:nixos:nixos:26.11
+          Kernel: Linux 6.18.53
+    Architecture: x86-64
+ Hardware Vendor: Intel_R_ Client Systems
+  Hardware Model: NUC8i3BEK
+ Hardware Serial: G6BE0100075M
+    Hardware SKU: BOXNUC8i3BEK
+Hardware Version: J72748-306
+Firmware Version: BECFL357.86A.0085.2020.1007.1917
+   Firmware Date: Wed 2020-10-07
+    Firmware Age: 5y 11month 3w 2d
+Running system: /nix/store/6pnspqpd3v1al7nghyxyz1w2yrsyjh4q-nixos-system-ibuki-26.11.20260923.4975466
+256 SHA256:NTYp6RljPrX9L9yZPFtRhK4TGKxzGE48LxaHLSJ/i9M root@ibuki (ED25519)
+
+===== Root and boot filesystems =====
+TARGET                                    SOURCE                 FSTYPE     OPTIONS
+/                                         /dev/sda2[/@]          btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=256,subvol=/@
+/nix                                      /dev/sda2[/@nix]       btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=258,subvol=/@nix
+/home                                     /dev/sda2[/@home]      btrfs      rw,noatime,compress=zstd:1,ssd,discard=async,space_cache=v2,subvolid=257,subvol=/@home
+/boot                                     /dev/sda1              vfat       rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro
+NAME     SIZE TYPE FSTYPE PARTLABEL       MOUNTPOINTS MODEL                 SERIAL
+sda    223.6G disk                                    KINGSTON SUV500M8240G 50026B7683B6CE9D
+|-sda1     1G part vfat   disk-ibuki-ESP  /boot
+`-sda2 222.6G part btrfs  disk-ibuki-root /home
+                                          /nix/store
+                                          /nix
+                                          /
+
+===== Accounts and services =====
+uid=1000(simon) gid=100(users) groups=100(users),1(wheel),26(video),57(networkmanager),303(render)
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+running
+
+===== Tailscale identity =====
+{
+  "state": "Running",
+  "hostname": "ibuki",
+  "addresses": [
+    "100.96.31.114",
+    "fd7a:115c:a1e0::e638:1f73"
+  ]
+}
+lo               UNKNOWN        127.0.0.1/8
+enp108s0u1       UP             192.168.1.174/24
+tailscale0       UNKNOWN        100.96.31.114/32
+
+===== Idle resource sample =====
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       637Mi       6.9Gi        37Mi       363Mi       7.0Gi
+Swap:             0B          0B          0B
+--procs-- -----------------------memory---------------------- ---swap-- -----io---- -system-- ----------cpu----------
+   r    b         swpd         free         buff        cache   si   so    bi    bo   in   cs  us  sy  id  wa  st  gu
+   1    0            0      7242164         2048       369720    0    0  5086    66 4024   11   5   9  86   1   0   0
+   0    0            0      7242044         2048       370236    0    0     0     0  421  296   1   0  99   0   0   0
+   0    0            0      7242044         2048       370236    0    0     0     0  140  210   0   0  99   0   0   0
+   0    0            0      7242044         2048       370240    0    0     0     0  326  626   1   0  99   0   0   0
+   0    0            0      7242044         2048       370240    0    0     0     0  171  230   0   0 100   0   0   0
+   0    0            0      7241804         2048       371100    0    0    96  6640  365  612   0   1  99   0   0   0
+/proc/pressure/cpu:some avg10=0.80 avg60=1.45 avg300=0.44 total=1570448
+/proc/pressure/cpu:full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+/proc/pressure/memory:some avg10=0.00 avg60=0.00 avg300=0.00 total=0
+/proc/pressure/memory:full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+/proc/pressure/io:some avg10=0.14 avg60=0.26 avg300=0.07 total=337413
+/proc/pressure/io:full avg10=0.07 avg60=0.14 avg300=0.04 total=200473
+
+Installed Ibuki, exact system closure, unencrypted SSD, secrets, SSH, Tailscale, drivers, and zero failed system units: OK
+
+===== GPU validation after second boot =====
+User=simon render=/dev/dri/by-path/pci-0000:00:02.0-render
+
+===== GPU frequency limits, MHz =====
+gt_RP0_freq_mhz=1050
+gt_RP1_freq_mhz=300
+gt_RPn_freq_mhz=300
+gt_act_freq_mhz=300
+gt_boost_freq_mhz=1050
+gt_cur_freq_mhz=300
+gt_max_freq_mhz=1050
+gt_min_freq_mhz=300
+rps_RP0_freq_mhz=1050
+rps_RP1_freq_mhz=300
+rps_RPn_freq_mhz=300
+rps_act_freq_mhz=300
+rps_boost_freq_mhz=1050
+rps_cur_freq_mhz=300
+rps_max_freq_mhz=1050
+rps_min_freq_mhz=300
+
+===== Intel Vulkan device =====
+'DISPLAY' environment variable not set... skipping surface info
+==========
+VULKANINFO
+==========
+
+Vulkan Instance Version: 1.4.357
+
+
+Instance Extensions: count = 26
+-------------------------------
+VK_EXT_acquire_drm_display             : extension revision 1
+VK_EXT_acquire_xlib_display            : extension revision 1
+VK_EXT_debug_report                    : extension revision 10
+VK_EXT_debug_utils                     : extension revision 2
+VK_EXT_direct_mode_display             : extension revision 1
+VK_EXT_display_surface_counter         : extension revision 1
+VK_EXT_headless_surface                : extension revision 1
+VK_EXT_layer_settings                  : extension revision 2
+VK_EXT_surface_maintenance1            : extension revision 1
+VK_EXT_swapchain_colorspace            : extension revision 5
+VK_KHR_device_group_creation           : extension revision 1
+VK_KHR_display                         : extension revision 23
+VK_KHR_external_fence_capabilities     : extension revision 1
+VK_KHR_external_memory_capabilities    : extension revision 1
+VK_KHR_external_semaphore_capabilities : extension revision 1
+VK_KHR_get_display_properties2         : extension revision 1
+VK_KHR_get_physical_device_properties2 : extension revision 2
+VK_KHR_get_surface_capabilities2       : extension revision 1
+VK_KHR_portability_enumeration         : extension revision 1
+VK_KHR_surface                         : extension revision 25
+VK_KHR_surface_maintenance1            : extension revision 1
+VK_KHR_surface_protected_capabilities  : extension revision 1
+VK_KHR_wayland_surface                 : extension revision 6
+VK_KHR_xcb_surface                     : extension revision 6
+VK_KHR_xlib_surface                    : extension revision 6
+VK_LUNARG_direct_driver_loading        : extension revision 1
+
+Instance Layers: count = 6
+--------------------------
+VK_LAYER_INTEL_nullhw           INTEL NULL HW                                                1.1.73   version 1
+VK_LAYER_MESA_anti_lag          Open-source implementation of the VK_AMD_anti_lag extension. 1.4.303  version 1
+VK_LAYER_MESA_device_select     Linux device selection layer                                 1.4.303  version 1
+VK_LAYER_MESA_overlay           Mesa Overlay layer                                           1.4.303  version 1
+VK_LAYER_MESA_screenshot        Mesa Screenshot layer                                        1.4.303  version 1
+VK_LAYER_MESA_vram_report_limit Limit reported VRAM                                          1.4.303  version 1
+
+Devices:
+========
+GPU0:
+	apiVersion         = 1.4.354
+	driverVersion      = 26.2.3
+	vendorID           = 0x8086
+	deviceID           = 0x3ea5
+	deviceType         = PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+	deviceName         = Intel(R) Iris(R) Plus Graphics 655 (CFL GT3)
+	driverID           = DRIVER_ID_INTEL_OPEN_SOURCE_MESA
+	driverName         = Intel open-source Mesa driver
+	driverInfo         = Mesa 26.2.3
+	conformanceVersion = 1.4.0.0
+	deviceUUID         = 8680a53e-0100-0000-0002-000000000000
+	driverUUID         = bcb86bfd-5818-185a-48f4-f8333adb806b
+
+===== Intel VA-API profiles =====
+libva info: VA-API version 1.24.0
+libva info: User environment variable requested driver 'iHD'
+libva info: Trying to open /run/opengl-driver/lib/dri/iHD_drv_video.so
+libva info: Found init function __vaDriverInit_1_24
+libva info: va_openDriver() returns 0
+Trying display: drm
+vainfo: VA-API version: 1.24 (libva 2.24.0)
+vainfo: Driver version: Intel iHD driver for Intel(R) Gen Graphics - 26.2.4 ()
+vainfo: Supported profile and entrypoints
+      VAProfileNone                   :	VAEntrypointVideoProc
+      VAProfileNone                   :	VAEntrypointStats
+      VAProfileMPEG2Simple            :	VAEntrypointVLD
+      VAProfileMPEG2Simple            :	VAEntrypointEncSlice
+      VAProfileMPEG2Main              :	VAEntrypointVLD
+      VAProfileMPEG2Main              :	VAEntrypointEncSlice
+      VAProfileH264Main               :	VAEntrypointVLD
+      VAProfileH264Main               :	VAEntrypointEncSlice
+      VAProfileH264Main               :	VAEntrypointFEI
+      VAProfileH264Main               :	VAEntrypointEncSliceLP
+      VAProfileH264High               :	VAEntrypointVLD
+      VAProfileH264High               :	VAEntrypointEncSlice
+      VAProfileH264High               :	VAEntrypointFEI
+      VAProfileH264High               :	VAEntrypointEncSliceLP
+      VAProfileVC1Simple              :	VAEntrypointVLD
+      VAProfileVC1Main                :	VAEntrypointVLD
+      VAProfileVC1Advanced            :	VAEntrypointVLD
+      VAProfileJPEGBaseline           :	VAEntrypointVLD
+      VAProfileJPEGBaseline           :	VAEntrypointEncPicture
+      VAProfileH264ConstrainedBaseline:	VAEntrypointVLD
+      VAProfileH264ConstrainedBaseline:	VAEntrypointEncSlice
+      VAProfileH264ConstrainedBaseline:	VAEntrypointFEI
+      VAProfileH264ConstrainedBaseline:	VAEntrypointEncSliceLP
+      VAProfileVP8Version0_3          :	VAEntrypointVLD
+      VAProfileVP8Version0_3          :	VAEntrypointEncSlice
+      VAProfileHEVCMain               :	VAEntrypointVLD
+      VAProfileHEVCMain               :	VAEntrypointEncSlice
+      VAProfileHEVCMain               :	VAEntrypointFEI
+      VAProfileHEVCMain10             :	VAEntrypointVLD
+      VAProfileHEVCMain10             :	VAEntrypointEncSlice
+      VAProfileVP9Profile0            :	VAEntrypointVLD
+      VAProfileVP9Profile2            :	VAEntrypointVLD
+
+===== Actual h264 hardware decode =====
+[out#0/null @ 0x5db081f72980]   Output stream #0:0 (video): 12 frames encoded; 12 packets muxed (5088 bytes);
+[out#0/null @ 0x5db081f72980] video:5KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+[in#0/matroska,webm @ 0x5db081f6ef00]   Input stream #0:0 (video): 12 packets read (23996 bytes); 12 frames decoded; 0 decode errors;
+
+===== Actual hevc10 hardware decode =====
+[out#0/null @ 0x62be47eb3740]   Output stream #0:0 (video): 12 frames encoded; 12 packets muxed (5088 bytes);
+[out#0/null @ 0x62be47eb3740] video:5KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+[in#0/matroska,webm @ 0x62be47eaaf00]   Input stream #0:0 (video): 12 packets read (13089 bytes); 12 frames decoded; 0 decode errors;
+
+===== Actual vp9 hardware decode =====
+[out#0/null @ 0x5be2f29b3b80]   Output stream #0:0 (video): 12 frames encoded; 12 packets muxed (5088 bytes);
+[out#0/null @ 0x5be2f29b3b80] video:5KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+[in#0/matroska,webm @ 0x5be2f2984f00]   Input stream #0:0 (video): 12 packets read (16767 bytes); 12 frames decoded; 0 decode errors;
+
+Iris Plus 655 ANV Vulkan and actual H.264, HEVC 10-bit, VP9 VA-API decode: OK

@@ -2,6 +2,8 @@
 
 Collected on 2026-09-29 through the Hiyori recovery USB. The target is an Intel NUC8i3BEK, not the Samsung machine described by Hiyori's hardware layer.
 
+Ibuki was installed on the internal SSD later that day. The profile below records the earlier recovery-system scan. See the installation result for installed-system checks.
+
 The first sample used `simon@hiyori`. The deeper scan used verified root SSH access. Passwordless sudo for Simon is unavailable, but root SSH works. No disk was formatted, mounted for inspection, or repaired. No configuration changed. Diagnostic packages were fetched into the recovery system's Nix store. No stress test, storage benchmark, or SMART self-test ran.
 
 ## Evidence
@@ -43,14 +45,14 @@ Detected hardware and loaded drivers do not prove Wi-Fi association, Bluetooth p
 
 ## Storage and boot
 
-The recovery system runs NixOS 26.11 with kernel 6.18.52. It boots through UEFI with Secure Boot disabled. Systemd does not report a measured UKI or measured OS.
+At scan time, the recovery system ran NixOS 26.11 with kernel 6.18.52. It booted through UEFI with Secure Boot disabled. Systemd did not report a measured UKI or measured OS.
 
-| Disk | Current purpose | Current layout |
+| Disk | Purpose at scan time | Layout at scan time |
 |---|---|---|
 | `/dev/sda` | Internal Kingston SSD, no mounted partitions | 1 GiB FAT ESP, 1 GiB ext4 boot, 221.6 GiB Btrfs root |
 | `/dev/sdb` | PNY 500 GB Hiyori recovery USB | BIOS partition, FAT ESP, LUKS2 root containing Btrfs |
 
-The internal SSD already holds a partitioned installation. Being unmounted does not mean it is empty. Its data was not inspected.
+At scan time, the internal SSD held a partitioned installation. Being unmounted did not mean it was empty. Its data was not inspected before installation erased it.
 
 The exact internal SSD identity is:
 
@@ -66,7 +68,7 @@ The recovery USB identity is:
 
 The USB connects through `uas` at 10 Gbit/s. The Ethernet adapter uses a separate Thunderbolt USB controller and connects at USB 5 Gbit/s. USB link rates are not storage or network throughput measurements.
 
-The current USB LUKS enrollment has one password slot and no TPM slot. The requested Ibuki configuration will use an unencrypted root. That does not remove encryption from the existing recovery USB.
+The USB LUKS enrollment has one password slot and no TPM slot. Ibuki uses an unencrypted root on the internal SSD. The recovery USB keeps its encryption.
 
 ### Internal SSD health
 
@@ -78,7 +80,7 @@ SMART could not identify the PNY USB bridge automatically. USB media health rema
 
 ### Existing partition-label collision
 
-Both drives use the `disk-main-*` namespace. At scan time, `/dev/disk/by-partlabel/disk-main-ESP` pointed to the internal SSD, while `disk-main-root` pointed to the USB. Earlier boot logs show an initial LUKS superblock failure on `disk-main-root`, followed by a successful unlock.
+At scan time, both drives used the `disk-main-*` namespace. At scan time, `/dev/disk/by-partlabel/disk-main-ESP` pointed to the internal SSD, while `disk-main-root` pointed to the USB. Earlier boot logs show an initial LUKS superblock failure on `disk-main-root`, followed by a successful unlock.
 
 The duplicate labels are verified. Their role in the failed unlock is inferred, not proven. Ibuki needs its own `ibuki` disk namespace so its installed system cannot select the recovery USB by an ambiguous label.
 
@@ -88,11 +90,11 @@ The first sample showed 7.6 GiB usable RAM, 1.3 GiB used, and 6.4 GiB available.
 
 The deeper scan collected ten seconds of `vmstat`, five live intervals of `iostat`, and six seconds of per-CPU `mpstat`. These were sequential observations, not a controlled benchmark. Package fetching before the sample affected the recovery system's caches and resource use.
 
-I/O wait remains abnormal. The six-second per-CPU sample averaged 25.85% aggregate I/O wait. CPU 2 reported 98.16% I/O wait, while total user and system execution averaged 0.42% and 1.04% respectively. I/O pressure reported `some avg10=91.91` and `full avg10=88.99`.
+I/O wait was abnormal in that recovery sample. The six-second per-CPU sample averaged 25.85% aggregate I/O wait. CPU 2 reported 98.16% I/O wait, while total user and system execution averaged 0.42% and 1.04% respectively. I/O pressure reported `some avg10=91.91` and `full avg10=88.99`.
 
 The disk sample does not show saturation. Several live intervals recorded no block I/O. One interval wrote 352 KiB through the USB with 0.12 ms average write latency and 0.10% utilization. No thread in the captured thread list had state D.
 
-The pressure counters and block activity do not establish a faulty or slow USB drive. The cause remains unresolved. A fresh internal installation needs a new idle sample before performance claims are made.
+The pressure counters and block activity do not establish a faulty or slow USB drive. The cause remains unresolved. The installed SSD sample below did not reproduce this behavior.
 
 ## Firmware and security observations
 
@@ -144,7 +146,7 @@ nix build .#nixosConfigurations.ibuki.config.system.build.toplevel
 
 The test evaluates the real NixOS configuration. It checks the exact SSD identity, unique labels, unencrypted Btrfs layout, empty LUKS device list, UEFI boot, no GUI, microcode, thermal service, and unchanged Hiyori encryption. It also checks both graphics architectures, Intel media drivers, render access, diagnostic tools, early `i915`, and the absence of a forced GuC parameter.
 
-The initial test failed because Ibuki did not exist. After adding the host, the test passed and the complete NixOS system built. The built system uses kernel 6.18.53. These checks do not prove that Ibuki boots on the NUC. No install, activation, or reboot was attempted.
+The initial test failed because Ibuki did not exist. After adding the host, the test passed and the complete NixOS system built. The built system uses kernel 6.18.53. These initial build checks did not prove that Ibuki boots on the NUC. Installation and boot checks followed later that day.
 
 ## Graphics and client validation
 
@@ -167,9 +169,9 @@ Probe output is in `docs/research/ibuki-gpu-validation.txt`, with trailing space
 
 The decoding test requires VA-API hardware frames and downloads them with FFmpeg's `hwdownload` filter. Software decoding cannot pass that filter. Each generated clip has twelve 160x96 frames. This verifies actual hardware decoding, not 4K throughput or playback quality.
 
-Vulkan enumeration is not a game-rendering benchmark. No FPS, game launch, 32-bit game runtime, presentation, HDR output, tone mapping, audio synchronization, or Jellyfin player was tested. Ibuki's installed boot is still unverified. The full NixOS build, flake evaluation, install-plan test, ShellCheck, and Nix formatting passed.
+Vulkan enumeration is not a game-rendering benchmark. No FPS, game launch, 32-bit game runtime, presentation, HDR output, tone mapping, audio synchronization, or Jellyfin player was tested. The full NixOS build, flake evaluation, install-plan test, ShellCheck, and Nix formatting passed. The installation result below adds actual SSD boot checks.
 
-After installation, run this from a repository checkout on Ibuki. FFmpeg is a temporary test dependency, not a permanently installed player:
+To repeat the GPU check, run this from a repository checkout on Ibuki. FFmpeg is a temporary test dependency, not a permanently installed player:
 
 ```sh
 nix shell --inputs-from . nixpkgs#ffmpeg --command bash scripts/test-ibuki-gpu-target
@@ -195,18 +197,58 @@ Sources checked:
 - [NixOS graphics module at the locked revision](https://github.com/NixOS/nixpkgs/blob/4975466d324710c576dc11ad614684e6bd8cad8e/nixos/modules/hardware/graphics.nix).
 - [Jellyfin Intel hardware notes](https://jellyfin.org/docs/general/post-install/transcoding/hardware-acceleration/intel/). This describes server acceleration; only its hardware-generation limits are used here.
 
-## Installation boundary
+## Installation result
 
-CAUTION: installing Ibuki erases the internal SSD's existing partitions and data. The recovery USB is not an install target. Installation needs separate approval and a backup decision.
+Installed and verified on 2026-09-29, after the user approved erasing the internal SSD. Installation used the running Hiyori recovery system. No kexec was needed. The generated disko script selected only the verified Kingston by-id path. The NixOS closure and new host key went into the SSD mounted at `/mnt`. Native `nixos-install` installed systemd-boot.
 
-Before installation, create a separate Ibuki SSH host identity with `./scripts/host-key ibuki`. Add its printed age recipient to `.sops.yaml`, then run `./scripts/secrets --rekey`. Verify that the new key decrypts `secrets/fleet.yaml` without printing its contents. Do not reuse Hiyori's host key. This identity and recipient setup was not performed as part of creating the configuration.
+The installed source is `cairn` commit `ee9c4982`. The running system matches this exact closure:
 
-The base layer still uses SOPS for fleet credentials. That encrypts the credential file in Git, not Ibuki's disk. Unencrypted storage exposes the SSH private key and other retained credentials to anyone with physical access.
-
-After identity provisioning and explicit disk-erasure approval, the repository's remote installer command is:
-
-```sh
-./scripts/install-remote ibuki root@hiyori
+```text
+/nix/store/6pnspqpd3v1al7nghyxyz1w2yrsyjh4q-nixos-system-ibuki-26.11.20260923.4975466
 ```
 
-Do not use `nixos-rebuild switch` to activate this configuration on the currently booted Hiyori USB. The Ibuki filesystem labels do not exist until the internal disk is installed. After installation, boot the internal SSD and collect new failed-unit, mount, network, and I/O-pressure checks.
+Ibuki has a separate SSH host key. Its age recipient was added to the fleet rule. Cryptographic checks verified decryption with Ibuki, Hiyori, Tate, Myoko, and the master key. The decrypted payload did not change. Installation and boot both generated the required credential files without printing their contents.
+
+```text
+SSH Ed25519: SHA256:NTYp6RljPrX9L9yZPFtRhK4TGKxzGE48LxaHLSJ/i9M
+Age recipient: age139z7cqp2vf8x8vgzcdax3v7adf5xgkv8757tznlkkv7v57cj430svkm0sp
+```
+
+| Installed-system check | Verified result |
+|---|---|
+| Hardware | NUC8i3BEK, serial `G6BE0100075M` |
+| Kernel | `6.18.53` |
+| Root | Kingston SSD, `/dev/sda2[/@]`, unencrypted Btrfs, `disk-ibuki-root` |
+| Boot | Internal FAT ESP, `/dev/sda1`, `disk-ibuki-ESP` |
+| Firmware entry | `0003`, ESP UUID `78965bcb-0ed8-4bac-83dc-00c9f62fefa6`; still first in BootOrder after the second boot |
+| Recovery USB | Partition table and EFI loader hash unchanged; no USB partitions mounted after boot |
+| SSH | Key-verified access as root and Simon; `simon@ibuki` resolves and works |
+| Network | USB Ethernet, `192.168.1.174` |
+| Tailscale | Registered as `ibuki`, `100.96.31.114` |
+| Credentials | OAuth and user-password files exist with mode `0400` and root ownership |
+| Services | OpenSSH, NetworkManager, Tailscale, and thermald active; zero failed system units |
+| Graphics | 64-bit and 32-bit Iris, ANV, and iHD driver files available; Simon has render access |
+| GPU execution | Intel ANV Vulkan enumeration and H.264, HEVC 10-bit, VP9 VA-API decoding passed as Simon |
+| Desktop and Korri | Disabled; no Steam, Jellyfin server, or player configured |
+
+The first idle sample showed 627 MiB RAM used and 7.0 GiB available. Five live `vmstat` intervals showed 100% idle CPU and 0% I/O wait. CPU, memory, and I/O pressure all had `avg10=0.00`. This short sample does not explain the earlier recovery-system anomaly or prove sustained performance.
+
+A second SSD boot succeeded without a BootNext override. The verification process took 418 seconds before completion. Systemd measured 49.948 seconds from firmware startup through userspace. The recovery USB was no longer detected after that boot. The cause of the extra delay and USB absence is unknown. This does not prove normal SSD boot priority with the USB connected.
+
+Installed-system and GPU outputs from both boots are in `docs/research/ibuki-installed-validation.txt`. Machine IDs and the tailnet domain are omitted. GPU clips remain small synthetic tests, not game or 4K playback benchmarks.
+
+Connect with:
+
+```sh
+ssh -F /dev/null simon@ibuki
+```
+
+## Reinstallation boundary
+
+CAUTION: running the disk installer again erases the installed SSD and its data. The recovery USB is not an install target. Reinstallation needs separate approval and a backup decision. Use normal NixOS rebuilds for updates.
+
+Keep Ibuki's host identity at `~/.local/share/mountainous/hostkeys/ibuki/`. Do not reuse Hiyori's host key. A replacement identity needs a new fleet recipient and decryption checks before installation.
+
+The base layer uses SOPS for fleet credentials. SOPS encrypts the credential file in Git, not Ibuki's disk. Unencrypted storage exposes the SSH private key and retained credentials to anyone with physical access. No SSD backup ran before the approved installation.
+
+Do not activate the Ibuki configuration on the Hiyori recovery USB with `nixos-rebuild switch`. Its filesystem labels refer to the internal SSD.
