@@ -64,6 +64,8 @@
 
       networking.networkmanager.enable = true;
 
-      system.stateVersion = "25.05";
+      # A default, so a product that fixes its own state version (Korri does)
+      # decides it on the hosts that run that product.
+      system.stateVersion = lib.mkDefault "25.05";
     };
 }

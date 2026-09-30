@@ -26,6 +26,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Korri keeps its own nixpkgs. Its product patches packages for exact
+    # upstream versions, and its binary cache holds builds from that pin, so
+    # a host that runs Korri is built from korri's nixpkgs, not ours.
+    korri.url = "github:korri-os/korri";
+
     # herdr is not in nixpkgs. These are the upstream release binaries, taken
     # as inputs rather than fetchurl so `nix flake update` can move them and
     # flake.lock records what shipped. file+https keeps Nix from trying to

@@ -33,6 +33,16 @@ in
               default = "x86_64-linux";
             };
 
+            nixpkgs = mkOption {
+              type = types.unspecified;
+              default = inputs.nixpkgs;
+              defaultText = lib.literalExpression "inputs.nixpkgs";
+              description = ''
+                The nixpkgs this host is built from. A host that runs a product
+                pinned to its own nixpkgs, such as Korri, takes that pin here.
+              '';
+            };
+
             layers = mkOption {
               type = types.listOf types.str;
               default = [ "base" ];
@@ -55,7 +65,7 @@ in
 
     flake.nixosConfigurations = lib.mapAttrs (
       hostName: host:
-      inputs.nixpkgs.lib.nixosSystem {
+      host.nixpkgs.lib.nixosSystem {
         specialArgs = { inherit inputs; };
         modules = [
           {
