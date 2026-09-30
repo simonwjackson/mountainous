@@ -6,8 +6,8 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 expected='/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D'
-# Ibuki runs the Korri product, so it must build from Korri's nixpkgs pin.
-korri_nixpkgs=$(jq -r '.nodes[.nodes[.nodes.root.inputs.korri].inputs.nixpkgs].locked.rev' flake.lock)
+# With Korri disabled, Ibuki uses the repository's normal nixpkgs pin.
+nixpkgs=$(jq -r '.nodes[.nodes.root.inputs.nixpkgs].locked.rev' flake.lock)
 nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
   c: {
     hostname = c.networking.hostName;
@@ -69,19 +69,16 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
       suspend = c.systemd.targets.suspend.enable;
       hibernate = c.systemd.targets.hibernate.enable;
     };
+    nixpkgs = c.system.nixos.revision;
     korri = {
-      product = c.services.korriProduct.installed;
-      nixpkgs = c.system.nixos.revision;
-      stateVersion = c.system.stateVersion;
-      sshFirewall = c.services.openssh.openFirewall;
-      rootInitialPassword = c.users.users.root.initialHashedPassword;
-      compositor = {
-        inherit (c.services.korriLinuxHost.compositor) backend drmDevice renderDevice outputName mode;
-        localInput = c.services.korriLinuxHost.compositor.localInput.enable;
-      };
+      productModule = c.services ? korriProduct;
+      hostModule = c.services ? korriLinuxHost;
+      account = c.users.users ? korri;
+      services = builtins.filter (name: builtins.match ".*[Kk]orri.*" name != null)
+        (builtins.attrNames c.systemd.services);
     };
   }
-' | jq -e --arg disk "$expected" --arg korriNixpkgs "$korri_nixpkgs" '
+' | jq -e --arg disk "$expected" --arg nixpkgs "$nixpkgs" '
   .hostname == "ibuki" and .platform == "x86_64-linux" and
   .disk.device == $disk and .disk.name == "ibuki" and
   .disk.encrypt == false and .disk.biosBoot == false and
@@ -118,16 +115,8 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
     "greetd":false, "xserver":false, "hyprland":false, "steam":false, "jellyfin":false,
     "sleep":false, "suspend":false, "hibernate":false
   } and
-  .korri == {
-    "product":true, "nixpkgs":$korriNixpkgs, "stateVersion":"25.11",
-    "sshFirewall":true, "rootInitialPassword":null,
-    "compositor":{
-      "backend":"drm",
-      "drmDevice":"/dev/dri/by-path/pci-0000:00:02.0-card",
-      "renderDevice":"/dev/dri/by-path/pci-0000:00:02.0-render",
-      "outputName":"DP-1", "mode":"3840x2160@60Hz", "localInput":true
-    }
-  }
+  .nixpkgs == $nixpkgs and
+  .korri == {"productModule":false, "hostModule":false, "account":false, "services":[]}
 ' >/dev/null
 
 # The portable recovery host keeps its encrypted disk and separate identity.
@@ -146,4 +135,4 @@ nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
   }
 ' >/dev/null
 
-printf 'Ibuki SSD, unencrypted UEFI layout, GPU/video drivers, Korri on DP-1 with no desktop, and unchanged Hiyori: OK\n'
+printf 'Ibuki SSD, GPU/video drivers, Korri disabled, no GUI, and unchanged Hiyori: OK\n'
