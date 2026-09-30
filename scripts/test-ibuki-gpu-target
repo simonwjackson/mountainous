@@ -1,0 +1,81 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils findutils gnugrep libva-utils vulkan-tools ffmpeg
+# shellcheck shell=bash
+# Exercise the NUC GPU without a GUI, changing only temporary files.
+# Optional argument: a candidate graphics-drivers store path, before install.
+set -euo pipefail
+export LC_ALL=C
+
+graphics=${1:-/run/opengl-driver}
+render=/dev/dri/by-path/pci-0000:00:02.0-render
+[ -c "$render" ] || { printf 'Intel render device is missing\n' >&2; exit 1; }
+node=$(basename "$(readlink -f "$render")")
+[ "$(head -n 1 "/sys/class/drm/$node/device/vendor")" = 0x8086 ]
+[ "$(head -n 1 "/sys/class/drm/$node/device/device")" = 0x3ea5 ]
+[ "$(basename "$(readlink -f "/sys/class/drm/$node/device/driver")")" = i915 ]
+
+scratch=$(mktemp -d /tmp/ibuki-gpu-test.XXXXXXXX)
+trap 'rm -rf -- "$scratch"' EXIT
+# runuser can inherit root's unreadable working directory.
+cd "$scratch"
+printf 'User=%s render=%s\n' "$(id -un)" "$render"
+unset DISPLAY WAYLAND_DISPLAY
+export XDG_RUNTIME_DIR="$scratch/runtime"
+mkdir -m 700 "$XDG_RUNTIME_DIR"
+export LIBVA_DRIVER_NAME=iHD
+export LIBVA_DRIVERS_PATH="$graphics/lib/dri"
+export VK_DRIVER_FILES
+VK_DRIVER_FILES=$(find "$graphics/share/vulkan/icd.d" -maxdepth 1 -name 'intel_icd*.json' -print -quit)
+[ -n "$VK_DRIVER_FILES" ] || { printf 'Intel ANV Vulkan ICD is missing\n' >&2; exit 1; }
+
+printf '\n===== GPU frequency limits, MHz =====\n'
+for card in /sys/class/drm/"$node"/device/drm/card[0-9]*; do
+  for attribute in "$card"/gt_*_freq_mhz "$card"/gt/gt*/rps_*_freq_mhz; do
+    [ -r "$attribute" ] || continue
+    printf '%s=%s\n' "$(basename "$attribute")" "$(head -n 1 "$attribute")"
+  done
+done
+
+printf '\n===== Intel Vulkan device =====\n'
+vulkaninfo --summary > "$scratch/vulkan.txt" 2>&1 || {
+  head -n 120 "$scratch/vulkan.txt" >&2
+  exit 1
+}
+head -n 120 "$scratch/vulkan.txt"
+grep -Eq 'deviceName.*Iris.*655' "$scratch/vulkan.txt"
+grep -q PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU "$scratch/vulkan.txt"
+grep -q DRIVER_ID_INTEL_OPEN_SOURCE_MESA "$scratch/vulkan.txt"
+
+printf '\n===== Intel VA-API profiles =====\n'
+vainfo --display drm --device "$render" > "$scratch/vainfo.txt" 2>&1 || {
+  head -n 120 "$scratch/vainfo.txt" >&2
+  exit 1
+}
+head -n 120 "$scratch/vainfo.txt"
+grep -q 'Intel iHD driver' "$scratch/vainfo.txt"
+for profile in H264High HEVCMain HEVCMain10 VP9Profile0 VP9Profile2; do
+  grep -Eq "VAProfile${profile}[[:space:]]*:[[:space:]]*VAEntrypointVLD" "$scratch/vainfo.txt"
+done
+
+# Twelve synthetic frames per codec. Successful hwdownload requires decoded
+# VA-API hardware frames; a software-decoder fallback cannot pass this filter.
+for codec in h264 hevc10 vp9; do
+  case "$codec" in
+    h264) encoder=(-c:v libx264 -preset ultrafast -pix_fmt yuv420p); download=nv12 ;;
+    hevc10) encoder=(-c:v libx265 -preset ultrafast -pix_fmt yuv420p10le -x265-params pools=none:frame-threads=1:log-level=error); download=p010le ;;
+    vp9) encoder=(-c:v libvpx-vp9 -deadline realtime -cpu-used 8 -pix_fmt yuv420p); download=nv12 ;;
+  esac
+  printf '\n===== Actual %s hardware decode =====\n' "$codec"
+  ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=160x96:rate=12 \
+    -frames:v 12 -threads 1 "${encoder[@]}" -an "$scratch/$codec.mkv"
+  ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device "$render" \
+    -hwaccel_output_format vaapi -i "$scratch/$codec.mkv" \
+    -vf "hwdownload,format=$download" -an -f null - > "$scratch/decode-$codec.txt" 2>&1 || {
+    head -n 120 "$scratch/decode-$codec.txt" >&2
+    exit 1
+  }
+  grep -E 'Format vaapi|frames decoded|frames encoded|video:' "$scratch/decode-$codec.txt"
+  grep -q '12 frames decoded' "$scratch/decode-$codec.txt"
+done
+
+printf '\nIris Plus 655 ANV Vulkan and actual H.264, HEVC 10-bit, VP9 VA-API decode: OK\n'

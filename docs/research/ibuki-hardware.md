@@ -104,9 +104,9 @@ No encryption is the user's explicit choice. Its cost is that anyone with physic
 
 ## Host configuration
 
-The user selected an SSH-only host on the internal Kingston SSD, with no disk encryption. The configuration lives in `modules/hosts/ibuki.nix` and adds `nixosConfigurations.ibuki` to the existing flake. It imports the shared `base`, `disk`, and `server` layers. No separate nested flake is needed.
+The user selected an unencrypted internal install with no GUI yet. The intended workload is light gaming and a Jellyfin client. The configuration lives in `modules/hosts/ibuki.nix` and adds `nixosConfigurations.ibuki` to the existing flake. It imports the shared `base`, `disk`, and `server` layers. No separate nested flake is needed.
 
-The host enables Intel microcode updates and `thermald`. The shared base provides firmware and AHCI support. PCI and USB drivers probe automatically. No Samsung laptop layer or desktop layer is imported.
+The host enables Intel microcode updates and `thermald`. The shared base provides firmware and AHCI support. PCI and USB drivers probe automatically. No Samsung laptop layer or desktop layer is imported. Graphics libraries are enabled separately, so a later GUI and player can use the GPU.
 
 | Setting | Ibuki configuration |
 |---|---|
@@ -120,7 +120,12 @@ The host enables Intel microcode updates and `thermald`. The shared base provide
 | Subvolumes | `/@`, `/@home`, `/@nix` |
 | Mount options | `compress=zstd:1`, `noatime` |
 | Remote access | Key-only OpenSSH and shared Tailscale setup |
-| Desktop | None |
+| Desktop | None; the user will configure it later |
+| Graphics | Mesa Iris OpenGL and Intel ANV Vulkan, 64-bit and 32-bit |
+| Video acceleration | Intel `iHD` VA-API driver, 64-bit and 32-bit |
+| Early graphics | `i915` in the initrd |
+| Render access | Simon belongs to `render` as well as the shared `video` group |
+| Diagnostic tools | `vainfo`, `vulkaninfo`, `intel_gpu_top` |
 | Sleep, suspend, hibernate | Disabled by the server layer |
 | Bluetooth | Disabled by the server layer |
 
@@ -137,9 +142,58 @@ Run the install-plan test and build the system without accessing the target disk
 nix build .#nixosConfigurations.ibuki.config.system.build.toplevel
 ```
 
-The test evaluates the real NixOS configuration. It checks the exact SSD identity, unique labels, unencrypted Btrfs layout, empty LUKS device list, UEFI boot, headless services, microcode, thermal service, and unchanged Hiyori encryption.
+The test evaluates the real NixOS configuration. It checks the exact SSD identity, unique labels, unencrypted Btrfs layout, empty LUKS device list, UEFI boot, no GUI, microcode, thermal service, and unchanged Hiyori encryption. It also checks both graphics architectures, Intel media drivers, render access, diagnostic tools, early `i915`, and the absence of a forced GuC parameter.
 
 The initial test failed because Ibuki did not exist. After adding the host, the test passed and the complete NixOS system built. The built system uses kernel 6.18.53. These checks do not prove that Ibuki boots on the NUC. No install, activation, or reboot was attempted.
+
+## Graphics and client validation
+
+The live GPU test used the candidate Ibuki graphics libraries on the NUC while it still ran Hiyori's recovery kernel 6.18.52. It ran as `simon`, without a GUI, against the Intel PCI render node. It did not replace Hiyori's `/run/opengl-driver`, change device permissions, or activate the Ibuki system. Copying the libraries added store paths to the recovery USB.
+
+Probe output is in `docs/research/ibuki-gpu-validation.txt`, with trailing spaces removed. The reusable test is `scripts/test-ibuki-gpu-target`.
+
+| Check | Verified result |
+|---|---|
+| Hardware identity | Intel `8086:3ea5`, kernel `i915` |
+| Vulkan device | Iris Plus Graphics 655, Mesa 26.2.3, Intel ANV, device API 1.4.354 |
+| Software renderer exclusion | Test selects the Intel ANV ICD, not lavapipe |
+| Video driver | Intel iHD 26.2.4, VA-API 1.24 |
+| H.264 8-bit decode | Twelve synthetic frames decoded through VA-API, zero decode errors |
+| HEVC 10-bit decode | Twelve synthetic frames decoded through VA-API, zero decode errors |
+| VP9 8-bit decode | Twelve synthetic frames decoded through VA-API, zero decode errors |
+| VP9 10-bit capability | Driver exposes `VAProfileVP9Profile2` decode; no 10-bit VP9 clip was tested |
+| GPU clock ceiling | Allowed maximum and boost are 1050 MHz, equal to hardware RP0 |
+| Built graphics libraries | Iris, ANV, and iHD are ELF64 in the normal driver directory and ELF32 in the 32-bit directory |
+
+The decoding test requires VA-API hardware frames and downloads them with FFmpeg's `hwdownload` filter. Software decoding cannot pass that filter. Each generated clip has twelve 160x96 frames. This verifies actual hardware decoding, not 4K throughput or playback quality.
+
+Vulkan enumeration is not a game-rendering benchmark. No FPS, game launch, 32-bit game runtime, presentation, HDR output, tone mapping, audio synchronization, or Jellyfin player was tested. Ibuki's installed boot is still unverified. The full NixOS build, flake evaluation, install-plan test, ShellCheck, and Nix formatting passed.
+
+After installation, run this from a repository checkout on Ibuki. FFmpeg is a temporary test dependency, not a permanently installed player:
+
+```sh
+nix shell --inputs-from . nixpkgs#ffmpeg --command bash scripts/test-ibuki-gpu-target
+```
+
+### Driver and performance choices
+
+Use Mesa for OpenGL and Vulkan, and `intel-media-driver` for video decoding. The selected Intel driver supports Coffee Lake. There is no global driver override, so future applications keep normal device selection. The probe narrows the driver selection only for its own process.
+
+Do not add `vpl-gpu-rt`, legacy `i965`, or OpenCL solely for client playback. The current OneVPL GPU runtime targets newer Intel generations. Client decoding through VA-API does not require it. Jellyfin server transcoding settings do not configure a Jellyfin client. The later player must select hardware decoding and support the video's codecs.
+
+This GPU does not provide AV1 hardware decoding. AV1 needs software decoding or server transcoding to a supported codec. H.264 10-bit is also absent from the driver's decode profiles. HEVC 10-bit decoding does not by itself prove HDR display output works.
+
+Keep automatic CPU and GPU frequency control and `thermald`. Do not force an always-on performance governor, raise the GPU minimum clock, disable security mitigations, or add `i915.enable_guc=3`. Those changes are not measured improvements here and can increase heat, fan noise, or compatibility risk. GuC/HuC low-power encoding setup is not needed for this client-decoding workload.
+
+The hardware change I recommend first is a second compatible 8 GiB DDR4 SO-DIMM. The current scan shows one empty channel and one 8 GiB module at 2400 MT/s. A matching second module provides 16 GiB and dual-channel system RAM. More memory bandwidth can help integrated-GPU games, but no FPS improvement was measured. This costs another module and a physical installation. The NUC's two CPU cores and graphics hardware remain performance limits.
+
+The shared server layer still disables Bluetooth. Wireless controllers need that policy changed later. No Steam, Jellyfin server, display manager, or desktop was added.
+
+Sources checked:
+
+- [Intel media-driver supported platforms and codecs](https://github.com/intel/media-driver).
+- [NixOS graphics module at the locked revision](https://github.com/NixOS/nixpkgs/blob/4975466d324710c576dc11ad614684e6bd8cad8e/nixos/modules/hardware/graphics.nix).
+- [Jellyfin Intel hardware notes](https://jellyfin.org/docs/general/post-install/transcoding/hardware-acceleration/intel/). This describes server acceleration; only its hardware-generation limits are used here.
 
 ## Installation boundary
 

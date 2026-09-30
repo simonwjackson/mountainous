@@ -35,6 +35,17 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
       grub = c.boot.loader.grub.enable;
       writeEfi = c.boot.loader.efi.canTouchEfiVariables;
       modules = c.boot.initrd.availableKernelModules;
+      earlyModules = c.boot.initrd.kernelModules;
+      parameters = c.boot.kernelParams;
+    };
+    graphics = {
+      inherit (c.hardware.graphics) enable enable32Bit;
+      driver = c.hardware.graphics.package.pname;
+      driver32 = c.hardware.graphics.package32.pname;
+      media = map (p: p.pname) c.hardware.graphics.extraPackages;
+      media32 = map (p: p.pname) c.hardware.graphics.extraPackages32;
+      userGroups = c.users.users.simon.extraGroups;
+      packages = map (p: p.pname or p.name) c.environment.systemPackages;
     };
     hardware = {
       firmware = c.hardware.enableRedistributableFirmware;
@@ -50,6 +61,8 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
       greetd = c.services.greetd.enable;
       xserver = c.services.xserver.enable;
       hyprland = c.programs.hyprland.enable;
+      steam = c.programs.steam.enable;
+      jellyfin = c.services.jellyfin.enable;
       sleep = c.systemd.targets.sleep.enable;
       suspend = c.systemd.targets.suspend.enable;
       hibernate = c.systemd.targets.hibernate.enable;
@@ -76,10 +89,20 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
   .boot.systemdBoot == true and .boot.grub == false and .boot.writeEfi == true and
   (.boot.modules | index("ahci")) != null and
   (.boot.modules | index("sd_mod")) != null and
+  (.boot.earlyModules | index("i915")) != null and
+  (.boot.parameters | map(select(startswith("i915.enable_guc="))) | length) == 0 and
+  .graphics.enable == true and .graphics.enable32Bit == true and
+  .graphics.driver == "mesa" and .graphics.driver32 == "mesa" and
+  .graphics.media == ["intel-media-driver"] and
+  .graphics.media32 == ["intel-media-driver"] and
+  (.graphics.userGroups | index("render")) != null and
+  (.graphics.packages | index("libva-utils")) != null and
+  (.graphics.packages | index("vulkan-tools")) != null and
+  (.graphics.packages | index("intel-gpu-tools")) != null and
   .hardware == {"firmware":true, "microcode":true, "thermald":true, "bluetooth":false} and
   .services == {
     "ssh":true, "passwordAuth":false, "networkmanager":true, "tailscale":true,
-    "greetd":false, "xserver":false, "hyprland":false,
+    "greetd":false, "xserver":false, "hyprland":false, "steam":false, "jellyfin":false,
     "sleep":false, "suspend":false, "hibernate":false
   }
 ' >/dev/null
@@ -100,4 +123,4 @@ nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
   }
 ' >/dev/null
 
-printf 'Ibuki internal SSD, unencrypted UEFI layout, headless services, and unchanged Hiyori: OK\n'
+printf 'Ibuki SSD, unencrypted UEFI layout, GPU/video drivers, no GUI, and unchanged Hiyori: OK\n'
