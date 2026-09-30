@@ -1,0 +1,103 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash jq coreutils
+# shellcheck shell=bash
+# Evaluate the real host configuration without accessing or formatting disks.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+expected='/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D'
+nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
+  c: {
+    hostname = c.networking.hostName;
+    platform = c.nixpkgs.hostPlatform.system;
+    disk = c.mountainous.disk;
+    layout = builtins.mapAttrs (_: d: {
+      inherit (d) device;
+      table = d.content.type;
+      partitions = builtins.attrNames d.content.partitions;
+      esp = {
+        size = d.content.partitions.ESP.size;
+        format = d.content.partitions.ESP.content.format;
+        mountpoint = d.content.partitions.ESP.content.mountpoint;
+      };
+      root = {
+        size = d.content.partitions.root.size;
+        type = d.content.partitions.root.content.type;
+        subvolumes = builtins.attrNames d.content.partitions.root.content.subvolumes;
+      };
+    }) c.disko.devices.disk;
+    filesystems = builtins.mapAttrs (_: f: {
+      inherit (f) device fsType options;
+    }) c.fileSystems;
+    luks = c.boot.initrd.luks.devices;
+    boot = {
+      systemdBoot = c.boot.loader.systemd-boot.enable;
+      grub = c.boot.loader.grub.enable;
+      writeEfi = c.boot.loader.efi.canTouchEfiVariables;
+      modules = c.boot.initrd.availableKernelModules;
+    };
+    hardware = {
+      firmware = c.hardware.enableRedistributableFirmware;
+      microcode = c.hardware.cpu.intel.updateMicrocode;
+      thermald = c.services.thermald.enable;
+      bluetooth = c.hardware.bluetooth.enable;
+    };
+    services = {
+      ssh = c.services.openssh.enable;
+      passwordAuth = c.services.openssh.settings.PasswordAuthentication;
+      networkmanager = c.networking.networkmanager.enable;
+      tailscale = c.services.tailscale.enable;
+      greetd = c.services.greetd.enable;
+      xserver = c.services.xserver.enable;
+      hyprland = c.programs.hyprland.enable;
+      sleep = c.systemd.targets.sleep.enable;
+      suspend = c.systemd.targets.suspend.enable;
+      hibernate = c.systemd.targets.hibernate.enable;
+    };
+  }
+' | jq -e --arg disk "$expected" '
+  .hostname == "ibuki" and .platform == "x86_64-linux" and
+  .disk.device == $disk and .disk.name == "ibuki" and
+  .disk.encrypt == false and .disk.biosBoot == false and
+  (.layout | keys) == ["ibuki"] and
+  .layout.ibuki.device == $disk and
+  .layout.ibuki.table == "gpt" and
+  .layout.ibuki.partitions == ["ESP", "root"] and
+  .layout.ibuki.esp == {"size":"1G", "format":"vfat", "mountpoint":"/boot"} and
+  .layout.ibuki.root == {"size":"100%", "type":"btrfs", "subvolumes":["/@", "/@home", "/@nix"]} and
+  .filesystems."/".device == "/dev/disk/by-partlabel/disk-ibuki-root" and
+  .filesystems."/".fsType == "btrfs" and
+  (.filesystems."/".options | index("compress=zstd:1")) != null and
+  .filesystems."/home".device == .filesystems."/".device and
+  .filesystems."/nix".device == .filesystems."/".device and
+  .filesystems."/boot".device == "/dev/disk/by-partlabel/disk-ibuki-ESP" and
+  .filesystems."/boot".fsType == "vfat" and
+  .luks == {} and
+  .boot.systemdBoot == true and .boot.grub == false and .boot.writeEfi == true and
+  (.boot.modules | index("ahci")) != null and
+  (.boot.modules | index("sd_mod")) != null and
+  .hardware == {"firmware":true, "microcode":true, "thermald":true, "bluetooth":false} and
+  .services == {
+    "ssh":true, "passwordAuth":false, "networkmanager":true, "tailscale":true,
+    "greetd":false, "xserver":false, "hyprland":false,
+    "sleep":false, "suspend":false, "hibernate":false
+  }
+' >/dev/null
+
+# The portable recovery host keeps its encrypted disk and separate identity.
+nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
+  c: {
+    hostname = c.networking.hostName;
+    encrypted = c.mountainous.disk.encrypt;
+    root = c.fileSystems."/".device;
+    esp = c.fileSystems."/boot".device;
+  }
+' | jq -e '
+  . == {
+    "hostname":"hiyori", "encrypted":true,
+    "root":"/dev/mapper/mountainous-root",
+    "esp":"/dev/disk/by-partlabel/disk-main-ESP"
+  }
+' >/dev/null
+
+printf 'Ibuki internal SSD, unencrypted UEFI layout, headless services, and unchanged Hiyori: OK\n'
