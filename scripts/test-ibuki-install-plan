@@ -39,6 +39,7 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
       modules = c.boot.initrd.availableKernelModules;
       earlyModules = c.boot.initrd.kernelModules;
       parameters = c.boot.kernelParams;
+      kernelSeries = builtins.substring 0 3 c.boot.kernelPackages.kernel.version;
     };
     graphics = {
       inherit (c.hardware.graphics) enable enable32Bit;
@@ -75,6 +76,8 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
       stateVersion = c.system.stateVersion;
       sshFirewall = c.services.openssh.openFirewall;
       rootInitialPassword = c.users.users.root.initialHashedPassword;
+      surface = c.services.korri.webSurfaceHost.surfaceId;
+      kioskUrl = c.systemd.services.korri-chromium-kiosk.environment.KORRI_WEB_SURFACE_URL;
       compositor = {
         inherit (c.services.korriLinuxHost.compositor) backend drmDevice renderDevice outputName mode;
         localInput = c.services.korriLinuxHost.compositor.localInput.enable;
@@ -103,6 +106,7 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
   (.boot.modules | index("ahci")) != null and
   (.boot.modules | index("sd_mod")) != null and
   (.boot.earlyModules | index("i915")) != null and
+  .boot.kernelSeries == "7.2" and
   (.boot.parameters | map(select(startswith("i915.enable_guc="))) | length) == 0 and
   .graphics.enable == true and .graphics.enable32Bit == true and
   .graphics.driver == "mesa" and .graphics.driver32 == "mesa" and
@@ -121,6 +125,7 @@ nix eval --json '.#nixosConfigurations.ibuki.config' --apply '
   .korri == {
     "product":true, "nixpkgs":$korriNixpkgs, "stateVersion":"25.11",
     "sshFirewall":true, "rootInitialPassword":null,
+    "surface":"pico", "kioskUrl":"http://127.0.0.1:8099/?surface=pico",
     "compositor":{
       "backend":"drm",
       "drmDevice":"/dev/dri/by-path/pci-0000:00:02.0-card",
@@ -146,4 +151,4 @@ nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
   }
 ' >/dev/null
 
-printf 'Ibuki SSD, unencrypted UEFI layout, GPU/video drivers, Korri on DP-1 with no desktop, and unchanged Hiyori: OK\n'
+printf 'Ibuki SSD, unencrypted UEFI layout, GPU/video drivers, Korri pico on DP-1 with no desktop, and unchanged Hiyori: OK\n'
