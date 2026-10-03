@@ -158,16 +158,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1791067105,
-        "narHash": "sha256-QVagQd0WB7bCeAVCZxDaLIhwsi+baiKKTIB5AslugUI=",
-        "ref": "work/ibuki-latest",
-        "rev": "fe983da5e54600f22c4aed8e74cb04256ca8125f",
-        "revCount": 1331,
+        "lastModified": 1791068480,
+        "narHash": "sha256-d5yNZbGplSVAq6oJTkQK7THG3v4tBPXOGG3ovlC3WPQ=",
+        "ref": "work/nixpkgs-sway-112",
+        "rev": "b9d5c43fd126212a7ce2906b91c71c1074bce62e",
+        "revCount": 1335,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       },
       "original": {
-        "ref": "work/ibuki-latest",
+        "ref": "work/nixpkgs-sway-112",
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       }
