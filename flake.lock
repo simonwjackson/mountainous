@@ -879,11 +879,11 @@
         "proseql": "proseql_3"
       },
       "locked": {
-        "lastModified": 1791342821,
-        "narHash": "sha256-VahMQFuq+Ef0i1u4t/u6ToCYb2bJZvZV0p9VozrBjb4=",
+        "lastModified": 1791350973,
+        "narHash": "sha256-6ZXqlTCKHKg9TqQiocrREbOYAr6cDXQDbVhOBZtSsR4=",
         "ref": "main",
-        "rev": "c48b8411ceaa51137daf8df44a7bd5bfdbf15ad5",
-        "revCount": 2,
+        "rev": "fe93103085a8ae6c7dc6d0ff68959d8a93f528b0",
+        "revCount": 3,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/meetings"
       },
@@ -1568,11 +1568,11 @@
     "proseql_3": {
       "flake": false,
       "locked": {
-        "lastModified": 1791342043,
-        "narHash": "sha256-lqh2XoCWd5r0TrSoNObVGrRIesTfqkUhTawSXhuo7qI=",
+        "lastModified": 1791349930,
+        "narHash": "sha256-aI6aS85RtAtAPJfOmQEMbsJNgqpCGWM7DMsrxTPOrPM=",
         "ref": "main",
-        "rev": "272efff08b541e2ac9c15f2ef81cdb25f77d697d",
-        "revCount": 1317,
+        "rev": "5f83bdb238d21415c484e98c79d4500dd23bbc3b",
+        "revCount": 1318,
         "type": "git",
         "url": "file:///home/simonwjackson/code/github/simonwjackson/proseql"
       },
