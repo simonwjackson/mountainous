@@ -111,7 +111,7 @@
     # Meeting transcript store served on Zao. Local repository until it has
     # a remote; update with `nix flake update meetings`.
     meetings = {
-      url = "git+file:///home/simonwjackson/code/github/simonwjackson/meetings?ref=main";
+      url = "git+file:///home/simonwjackson/code/sandbox/meetings?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     # ROCKNIX-on-SM8550 NixOS guest. Owns the device schema (rocknix.sm8550),

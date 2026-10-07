@@ -885,12 +885,12 @@
         "rev": "c48b8411ceaa51137daf8df44a7bd5bfdbf15ad5",
         "revCount": 2,
         "type": "git",
-        "url": "file:///home/simonwjackson/code/github/simonwjackson/meetings"
+        "url": "file:///home/simonwjackson/code/sandbox/meetings"
       },
       "original": {
         "ref": "main",
         "type": "git",
-        "url": "file:///home/simonwjackson/code/github/simonwjackson/meetings"
+        "url": "file:///home/simonwjackson/code/sandbox/meetings"
       }
     },
     "nix-formatter-pack": {
