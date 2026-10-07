@@ -879,11 +879,11 @@
         "proseql": "proseql_3"
       },
       "locked": {
-        "lastModified": 1791350973,
-        "narHash": "sha256-6ZXqlTCKHKg9TqQiocrREbOYAr6cDXQDbVhOBZtSsR4=",
+        "lastModified": 1791388141,
+        "narHash": "sha256-n81oR99n0ZSIMNvUrMJkLOohI5Akz3RCRKuY39QQ1eM=",
         "ref": "main",
-        "rev": "fe93103085a8ae6c7dc6d0ff68959d8a93f528b0",
-        "revCount": 3,
+        "rev": "2ea9fbc349ab48da166644188197cab8f7435767",
+        "revCount": 4,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/meetings"
       },
