@@ -41,6 +41,9 @@
 
       # Like Hiyori: passphrase at every boot; only the root is encrypted.
       mountainous.disk.encrypt = true;
+
+      # Send downloaded meeting transcripts (.vtt) to the store on Zao.
+      mountainous.features.meetings-upload.enable = true;
     };
   };
 }
