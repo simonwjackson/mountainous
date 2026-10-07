@@ -1,0 +1,114 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 bash coreutils curl
+"""Test the meetings upload script against a local HTTP server.
+
+The server is a real HTTP server. Its answer for each upload is set by the
+file name, so each case controls the outcome it needs.
+"""
+
+from __future__ import annotations
+
+import http.server
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import threading
+import urllib.parse
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "modules" / "meetings-upload.sh"
+
+# File name -> HTTP status the server answers with.
+ANSWERS = {
+    "2026-10-06 Incentive Standup.vtt": 201,
+    "Incentive Standup (7).vtt": 200,
+    "notes.vtt": 422,
+    "2026-10-07 Call with Liz Neiley.vtt": 500,
+}
+received: list[tuple[str, bytes]] = []
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):  # noqa: N802 - http.server API
+        url = urllib.parse.urlsplit(self.path)
+        name = urllib.parse.parse_qs(url.query)["name"][0]
+        body = self.rfile.read(int(self.headers["Content-Length"]))
+        received.append((name, body))
+        status = ANSWERS[name]
+        payload = b'{"status":"test"}'
+        self.send_response(status)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def log_message(self, *args):
+        pass
+
+
+def run(downloads: Path, url: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["bash", "-euo", "pipefail", str(SCRIPT)],
+        env={**os.environ, "MEETINGS_URL": url, "MEETINGS_DOWNLOADS": str(downloads)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def check(condition: bool, message: str) -> None:
+    if not condition:
+        print(f"FAIL: {message}")
+        sys.exit(1)
+    print(f"ok: {message}")
+
+
+def main() -> None:
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{server.server_address[1]}"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        downloads = Path(tmp)
+        for name in ANSWERS:
+            (downloads / name).write_text(f"WEBVTT\n\n{name}\n")
+        (downloads / "talk.mp4").write_text("not a transcript")
+        (downloads / "2026-10-07 Standup.vtt.crdownload").write_text("partial")
+
+        result = run(downloads, url)
+        names = sorted(p.name for p in downloads.iterdir())
+
+        check(result.returncode == 1, "a 500 makes the run fail so the timer retries")
+        check(
+            sorted(name for name, _ in received) == sorted(ANSWERS),
+            "only finished .vtt files are sent, with their names",
+        )
+        check(
+            all(body == f"WEBVTT\n\n{name}\n".encode() for name, body in received),
+            "each body is the file content, unchanged",
+        )
+        check("2026-10-06 Incentive Standup.vtt" not in names, "201 created deletes the file")
+        check("Incentive Standup (7).vtt" not in names, "200 duplicate deletes the file")
+        check("notes.vtt.rejected" in names and "notes.vtt" not in names, "422 renames the file to .rejected")
+        check("2026-10-07 Call with Liz Neiley.vtt" in names, "500 keeps the file")
+        check("talk.mp4" in names and "2026-10-07 Standup.vtt.crdownload" in names, "other files are untouched")
+
+        received.clear()
+        result = run(downloads, url)
+        check(
+            [name for name, _ in received] == ["2026-10-07 Call with Liz Neiley.vtt"],
+            "the next run retries only the kept file",
+        )
+
+        server.shutdown()
+        result = run(downloads, url)
+        check(result.returncode == 1, "an unreachable server fails the run")
+        check("2026-10-07 Call with Liz Neiley.vtt" in {p.name for p in downloads.iterdir()}, "an unreachable server keeps the file")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        result = run(Path(tmp), url)
+        check(result.returncode == 0, "an empty downloads folder succeeds")
+
+
+main()
