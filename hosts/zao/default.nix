@@ -162,12 +162,6 @@
       proxy.enable = true;
     };
 
-    # Myoko uploads downloaded meeting transcripts to https://meetings.
-    features.meetings-backend = {
-      enable = true;
-      proxy.enable = true;
-    };
-
     features.jellyfin = {
       enable = true;
       # Opened to the LAN so the LG webOS TV (no Tailscale client) can reach Jellyfin directly.

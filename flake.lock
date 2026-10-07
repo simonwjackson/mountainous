@@ -871,28 +871,6 @@
         "type": "github"
       }
     },
-    "meetings": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "proseql": "proseql_3"
-      },
-      "locked": {
-        "lastModified": 1791388141,
-        "narHash": "sha256-n81oR99n0ZSIMNvUrMJkLOohI5Akz3RCRKuY39QQ1eM=",
-        "ref": "main",
-        "rev": "2ea9fbc349ab48da166644188197cab8f7435767",
-        "revCount": 4,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/meetings"
-      },
-      "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/meetings"
-      }
-    },
     "nix-formatter-pack": {
       "inputs": {
         "nixpkgs": [
@@ -1565,23 +1543,6 @@
         "type": "github"
       }
     },
-    "proseql_3": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791349930,
-        "narHash": "sha256-aI6aS85RtAtAPJfOmQEMbsJNgqpCGWM7DMsrxTPOrPM=",
-        "ref": "main",
-        "rev": "5f83bdb238d21415c484e98c79d4500dd23bbc3b",
-        "revCount": 1318,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/github/simonwjackson/proseql"
-      },
-      "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/github/simonwjackson/proseql"
-      }
-    },
     "root": {
       "inputs": {
         "agenix": "agenix",
@@ -1597,7 +1558,6 @@
         "korri": "korri",
         "korri-cache": "korri-cache",
         "korri-input-host": "korri-input-host",
-        "meetings": "meetings",
         "nix-on-droid": "nix-on-droid",
         "nix-on-rocks-guest": "nix-on-rocks-guest",
         "nixos-anywhere": "nixos-anywhere",
