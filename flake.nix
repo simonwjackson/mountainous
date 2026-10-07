@@ -108,6 +108,12 @@
       url = "github:lukasl-dev/pi.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Meeting transcript store served on Zao. Local repository until it has
+    # a remote; update with `nix flake update meetings`.
+    meetings = {
+      url = "git+file:///home/simonwjackson/code/github/simonwjackson/meetings?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # ROCKNIX-on-SM8550 NixOS guest. Owns the device schema (rocknix.sm8550),
     # the main-space profile, and the Odin 2 Portal device profile. We compose
     # those modules into nixosConfigurations.sobo below and expose the rootfs
