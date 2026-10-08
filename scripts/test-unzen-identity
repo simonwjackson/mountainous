@@ -1,0 +1,154 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 python3Packages.pyyaml sops ssh-to-age openssh
+# Nix-shell requires a second shebang for interpreter/package options.
+# ruff: noqa: EXE005
+"""Verify Unzen enrollment without printing private keys or decrypted values."""
+
+import argparse
+import hashlib
+import json
+import os
+import stat
+import subprocess
+import tempfile
+from pathlib import Path
+
+import yaml
+
+REPO = Path(__file__).resolve().parent.parent
+FLEET = REPO / "secrets/fleet.yaml"
+RULES = REPO / ".sops.yaml"
+
+
+def yaml_file(path):
+    return yaml.safe_load(path.read_text())
+
+
+def field_digest(document):
+    fields = {key: value for key, value in document.items() if key != "sops"}
+    return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()
+
+
+def state():
+    fleet = yaml_file(FLEET)
+    rules = yaml_file(RULES)
+    fleet_rules = [
+        rule
+        for rule in rules["creation_rules"]
+        if rule["path_regex"] == r"secrets/fleet\.yaml$"
+    ]
+    if len(fleet_rules) != 1:
+        raise RuntimeError("Expected one fleet creation rule")
+    return {
+        "field_digest": field_digest(fleet),
+        "recipients": sorted(item["recipient"] for item in fleet["sops"]["age"]),
+        "rule_recipients": sorted(fleet_rules[0]["key_groups"][0]["age"]),
+        "other_rules": [
+            rule for rule in rules["creation_rules"] if rule not in fleet_rules
+        ],
+        "other_files": {
+            str(path.relative_to(REPO)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted((REPO / "secrets").rglob("*.yaml"))
+            if path != FLEET
+        },
+    }
+
+
+def command(args, env=None):
+    result = subprocess.run(
+        args, capture_output=True, text=True, env=env, timeout=60, check=False
+    )
+    if result.returncode:
+        # Do not relay crypto-tool output: it can contain sensitive material.
+        raise RuntimeError(f"{Path(args[0]).name} failed; output withheld")
+    return result.stdout.strip()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--snapshot", type=Path, help="Save encrypted-state digests before enrollment"
+    )
+    mode.add_argument(
+        "--baseline", type=Path, help="Verify preservation against a saved snapshot"
+    )
+    args = parser.parse_args()
+    current = state()
+    if args.snapshot:
+        with args.snapshot.open("x") as output:
+            output.write(json.dumps(current, indent=2) + "\n")
+        print(
+            "Encrypted-state baseline saved; no plaintext or private key was recorded"
+        )
+        return
+
+    keystore = Path(
+        os.environ.get(
+            "MOUNTAINOUS_KEYSTORE",
+            str(Path.home() / ".local/share/mountainous/hostkeys"),
+        )
+    )
+    key = keystore / "unzen/ssh_host_ed25519_key"
+    public = key.with_suffix(".pub")
+    if stat.S_IMODE(key.stat().st_mode) != 0o600:
+        raise RuntimeError("Unzen private key must have mode 0600")
+    if key.resolve().is_relative_to(REPO):
+        raise RuntimeError("Unzen private key must remain outside the repository")
+    if (
+        command(["ssh-keygen", "-y", "-f", str(key)]).split()[:2]
+        != public.read_text().split()[:2]
+    ):
+        raise RuntimeError("Unzen private/public key pair does not match")
+    recipient = command(["ssh-to-age", "-i", str(public)])
+    if not recipient.startswith("age1"):
+        raise RuntimeError("Unzen public key is not an age recipient")
+    if (
+        recipient not in current["recipients"]
+        or recipient not in current["rule_recipients"]
+    ):
+        raise RuntimeError(
+            "Unzen is missing from the encrypted fleet or its creation rule"
+        )
+    if current["recipients"] != current["rule_recipients"]:
+        raise RuntimeError("Encrypted fleet recipients differ from the creation rule")
+    if args.baseline:
+        before = json.loads(args.baseline.read_text())
+        if current["field_digest"] != before["field_digest"]:
+            raise RuntimeError("Encrypted secret fields changed")
+        if current["recipients"] != sorted(before["recipients"] + [recipient]):
+            raise RuntimeError("Enrollment changed recipients other than adding Unzen")
+        if current["rule_recipients"] != sorted(
+            before["rule_recipients"] + [recipient]
+        ):
+            raise RuntimeError(
+                "Enrollment changed creation-rule recipients other than adding Unzen"
+            )
+        if (
+            current["other_rules"] != before["other_rules"]
+            or current["other_files"] != before["other_files"]
+        ):
+            raise RuntimeError("Enrollment changed unrelated rules or secret files")
+
+    identity = command(["ssh-to-age", "-private-key", "-i", str(key)])
+    if not identity.startswith("AGE-SECRET-KEY-"):
+        raise RuntimeError("Unzen private key did not convert to an age identity")
+    # Empty HOME and a minimal environment prevent operator/SSH/cloud key
+    # discovery from masking a broken Unzen identity. No keys go into HOME.
+    with tempfile.TemporaryDirectory(prefix="unzen-identity-test-") as home:
+        env = {
+            "PATH": os.environ["PATH"],
+            "HOME": home,
+            "XDG_CONFIG_HOME": home,
+            "GNUPGHOME": home,
+            "SOPS_AGE_KEY": identity,
+            "SOPS_AGE_KEY_FILE": "/dev/null",
+        }
+        command(["sops", "--decrypt", "--output", "/dev/null", str(FLEET)], env=env)
+    print("Unzen key pair, fleet enrollment, and secret decryption: OK")
+    if args.baseline:
+        print("Existing recipients, encrypted fields, unrelated rules/files: preserved")
+
+
+if __name__ == "__main__":
+    main()

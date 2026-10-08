@@ -21,6 +21,7 @@ keys:
   - &myoko  age1shhjq0w8cl2fp0thxnq3elm7utag3e4f8fnvpymvmx5jwpyk9q2sy7ml0u
   - &tate   age10cjse77wdjzdgygfh0k28g960psu2qysx8czdl0v4h9sv66huuzqrjkuy6
   - &ibuki  age139z7cqp2vf8x8vgzcdax3v7adf5xgkv8757tznlkkv7v57cj430svkm0sp
+  - &unzen  age1keuga3fh4s42sm9ze4kcwmqe8mkt4tyw9jzgdtur2e24ntszqc5s8c98jz
 
 creation_rules:
   # Fleet-wide. Every machine needs these, so every machine can read them.
@@ -33,6 +34,7 @@ creation_rules:
           - *myoko
           - *tate
           - *ibuki
+          - *unzen
 
   # Per-host. A machine reads only its own file.
   - path_regex: secrets/hosts/hiyori\.yaml$

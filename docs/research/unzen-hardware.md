@@ -243,8 +243,7 @@ The install-plan test evaluates the real host. It checks both stable disk IDs,
 partition sizes, shared UUID mounts, two-copy format arguments, separate failure
 domains, no encryption, mirrored GRUB EFI paths and kernel copies, `nofail` ESP
 mounts, safe degraded mount policy, monthly scrub, and the headless upstream 95 W
-policy.
-It also verifies unchanged Hiyori recovery mounts and its disabled power
+policy. It also verifies unchanged Hiyori recovery mounts and its disabled power
 service. Full-system evaluation must now succeed, rather than fail for a missing
 root. The test never executes the formatter or starts the power service.
 
@@ -266,8 +265,8 @@ retained marker data, one offline member, and successful degraded writes. It
 then resumes the untouched healthy pair and verifies that no degraded-test
 marker leaked into it. Finally, it adds a third virtual disk, verifies increased
 capacity and retained data, and changes data/metadata replica policies to three
-online. That last
-readback verifies policy acceptance, not completion of three-copy reconciliation.
+online. That last readback verifies policy acceptance, not completion of
+three-copy reconciliation.
 The VM uses the upstream test library's shared 9p Nix store; it does not test a
 physical Nix-store write workload, the real MSR service, actual motherboard
 firmware failover, or recovery after both drives fail.
@@ -279,6 +278,35 @@ has not been tested. Do not treat the VM result as proof of hardware behavior.
 
 The full system, format program, and mount program built successfully with
 bcachefs 1.39.6 for Linux 6.18.53. Nix formatting, ShellCheck, and Git whitespace
-checks passed. Hardware installation, fleet identity enrollment, live power
-service verification, closed-case/card-installed cooling, and physical boot
-failover remain separate work.
+checks passed. Hardware installation, live power service verification,
+closed-case/card-installed cooling, and physical boot failover remain separate
+work.
+
+### Host identity enrollment
+
+The operator approved a separate Unzen identity and fleet-secret access. Its
+ed25519 key lives outside Git at
+`~/.local/share/mountainous/hostkeys/unzen/ssh_host_ed25519_key`. The key has mode
+`0600`; its directory has mode `0700`. The SSH fingerprint is
+`SHA256:VP6I/dDbuKVFEPdYz4rCIDphMFT/Bzf+Dh1Vs9bQPD4`.
+
+`.sops.yaml` and `secrets/fleet.yaml` now include Unzen's public age recipient.
+All five previous recipients remain. `scripts/test-unzen-identity` verified the
+key pair and decrypted the actual encrypted fleet file to `/dev/null` using
+only Unzen's identity, with an empty HOME and no operator credential environment.
+The operator's master identity also passed a separate decryption check.
+A pre-enrollment baseline also verified unchanged encrypted secret fields,
+unchanged unrelated creation rules, and byte-identical unrelated secret files.
+No secret values or private key contents were printed or committed.
+
+Keep a secure backup of the local keystore. The existing install helper stages
+this key at `/etc/ssh/ssh_host_ed25519_key` with mode `0600` through
+`--extra-files`, before first activation. The key has not been sent to the
+physical machine.
+
+Physical installation has not run. It still needs fresh device-identity checks,
+backup/erasure approval, and a verified bcachefs-capable installer. Actual
+firmware boot order and UEFI fallback discovery also need physical validation.
+The current `scripts/install-remote` disables SSH host-key checking. Verify and
+preserve SSH peer trust before sending the new private host key; do not treat
+that helper's unchecked connection as a trusted enrollment channel.
