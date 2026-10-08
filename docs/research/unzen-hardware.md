@@ -156,7 +156,8 @@ systemd-boot. GRUB copies kernels and initrds to both FAT32 ESPs, so it does not
 need to read bcachefs. Each ESP gets `EFI/BOOT/BOOTX64.EFI` through
 `efiInstallAsRemovable=true`; `canTouchEfiVariables=false` avoids NVRAM writes
 and lets firmware use the standard fallback path on either device. Actual
-firmware boot order and discovery still need physical validation.
+first UEFI boot is verified below. Automatic firmware fallback with a physical
+drive absent still needs validation.
 
 Both ESP mounts use `nofail`. OS/data mounts use `degraded=yes`, which permits
 reduced redundancy without enabling the separate `degraded=very` data-loss
@@ -175,7 +176,7 @@ degraded writes from the two tests are never recombined.
 
 The recovery system and RAM installer lack `/sys/firmware/efi`. Installation
 succeeded using GRUB's removable EFI path without NVRAM writes. Actual firmware
-selection and first NVMe boot still require physical validation. No firmware
+selection and first NVMe boot succeeded with both drives present. No firmware
 settings or boot mode were changed remotely.
 
 Initial installation is complete. Do not rerun Disko against this pool. Later
@@ -307,7 +308,7 @@ physical machine.
 
 Physical installation completed after fresh device checks, operator erasure
 approval, and validation of the bcachefs-capable installer. Actual firmware boot
-order and UEFI fallback discovery still need physical validation.
+fallback with either physical drive absent still needs validation.
 `scripts/install-remote` now uses the pinned `nixos-anywhere-verified` package.
 Its initial SSH options enforce `StrictHostKeyChecking=yes` and `-F /dev/null`.
 Upstream initially sets checking to `no`; later `--ssh-option` flags cannot
@@ -344,8 +345,7 @@ bcachefs filesystem after kexec. It also runs the actual patched installer
 against an untrusted peer and requires host-key rejection before fact gathering.
 The temporary bootstrap controller runs only the `kexec` phase. Formatting and
 installation follow only after a fresh inventory and driver check in RAM.
-The installation phase completed on 2026-10-08. Firmware boot validation remains
-pending.
+The installation phase and first UEFI boot completed on 2026-10-08.
 
 The actual RAM bootstrap ran only `--phases kexec`. Kexec loaded the image and
 printed "machine will boot into nixos in 6s", but verified SSH did not return at
@@ -378,5 +378,31 @@ Public reports are archived under `docs/hardware/unzen-install-2026-10-08/`.
 The installed system profile is
 `/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466`.
 
-First firmware boot, live SOPS/Tailscale services, and the actual MSR 95 W
-policy remain unverified until the machine boots from NVMe.
+### Verified first NVMe boot
+
+The operator removed the recovery USB and approved reboot. Unzen reached
+`192.168.1.114` with its enrolled SSH host key. `/sys/firmware/efi` exists,
+confirming physical UEFI boot. Linux 6.18.53 runs the exact installed system
+profile above. All four bcachefs mounts and both FAT32 ESP mounts are active.
+
+`undervolt.service` completed successfully with exit status zero. The live RAPL
+package reports both long-term and short-term limits as `95000000` micro-watts,
+with the original `27983872` and `2440` microsecond windows and zone enabled.
+The inactive/dead service state is normal for this completed oneshot. No fixed
+clock, voltage offset, or temperature-target override was added.
+
+The decrypted fleet files exist and are nonempty without reading their values.
+The actual `tailscale-join.service` completed with exit status zero;
+`tailscaled.service` is running. Unzen joined unattended at `100.120.204.5`.
+The scrub timer is active and waiting. `systemctl --failed` reports no units.
+The live pool still has two online members, zero lost bytes for either onboard
+domain, and no separation violation. The recheck reports 6837993472 stored bytes.
+
+`first-boot-verification.json` records this live evidence. The initial probe
+also queried nonexistent upstream join/claim unit names; the corrected report
+checks this repository's real `tailscale-join.service`.
+
+Physical boot with either NVMe absent remains untested. The VM tests cover that
+case, but do not prove this motherboard's firmware failover. Closed-case,
+card-installed thermal validation and external failure alerts also remain
+separate work. Do not rerun Disko to add future drives.

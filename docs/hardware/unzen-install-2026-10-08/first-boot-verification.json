@@ -1,0 +1,83 @@
+{
+  "hostname": "unzen",
+  "kernel": "6.18.53",
+  "uefi": true,
+  "system": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+  "mounts": {
+    "/": "/dev/nvme0n1p2:/dev/nvme1n1p2[/subvolumes/root] bcachefs rw,noatime,degraded=yes",
+    "/home": "/dev/nvme0n1p2:/dev/nvme1n1p2[/subvolumes/home] bcachefs rw,noatime,degraded=yes",
+    "/nix": "/dev/nvme0n1p2:/dev/nvme1n1p2[/subvolumes/nix] bcachefs rw,noatime,degraded=yes",
+    "/srv": "/dev/nvme0n1p2:/dev/nvme1n1p2[/subvolumes/data] bcachefs rw,noatime,degraded=yes",
+    "/boot": "/dev/nvme0n1p1 vfat rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro",
+    "/boot-secondary": "/dev/nvme1n1p1 vfat rw,relatime,fmask=0077,dmask=0077,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro"
+  },
+  "units": {
+    "undervolt.service": "LoadState=loaded\nActiveState=inactive\nSubState=dead\nResult=success\nExecMainStartTimestamp=Thu 2026-10-08 14:26:19 UTC\nExecMainStatus=0",
+    "tailscaled.service": "LoadState=loaded\nActiveState=active\nSubState=running\nResult=success\nExecMainStartTimestamp=Thu 2026-10-08 14:26:25 UTC\nExecMainStatus=0",
+    "tailscale-join.service": "LoadState=loaded\nActiveState=inactive\nSubState=dead\nResult=success\nExecMainStartTimestamp=Thu 2026-10-08 14:26:25 UTC\nExecMainStatus=0",
+    "bcachefs-scrub-root.timer": "LoadState=loaded\nActiveState=active\nSubState=waiting\nResult=success"
+  },
+  "power": {
+    "package_name": "package-0",
+    "0": {
+      "name": "long_term",
+      "power_limit_uw": "95000000",
+      "time_window_us": "27983872"
+    },
+    "1": {
+      "name": "short_term",
+      "power_limit_uw": "95000000",
+      "time_window_us": "2440"
+    },
+    "enabled": "1"
+  },
+  "secrets": {
+    "tailscale-oauth-id": {
+      "exists": true,
+      "nonempty": true
+    },
+    "tailscale-oauth-secret": {
+      "exists": true,
+      "nonempty": true
+    },
+    "oci-config": {
+      "exists": true,
+      "nonempty": true
+    },
+    "oci-key-fuji": {
+      "exists": true,
+      "nonempty": true
+    },
+    "oci-key-yari": {
+      "exists": true,
+      "nonempty": true
+    }
+  },
+  "failed_units": "",
+  "failure_domains": {
+    "data_bytes": 6837993472,
+    "devices": 2,
+    "domains": [
+      {
+        "degraded_bytes": 6837993472,
+        "devices": 1,
+        "domain": "onboard.kioxia",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      },
+      {
+        "degraded_bytes": 6837993472,
+        "devices": 1,
+        "domain": "onboard.sn770",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      }
+    ],
+    "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+    "offline_devices": 0,
+    "separation_violated": false
+  },
+  "tailscale_ipv4": "100.120.204.5",
+  "ssh_fingerprint": "256 SHA256:VP6I/dDbuKVFEPdYz4rCIDphMFT/Bzf+Dh1Vs9bQPD4 root@unzen (ED25519)",
+  "verified_address": "192.168.1.114"
+}
