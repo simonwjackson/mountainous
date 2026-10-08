@@ -1,0 +1,66 @@
+{
+  "median_seconds": {
+    "zao": 38.805492710002,
+    "unzen": 41.323855900000126
+  },
+  "unzen_relative_build_speed": 0.9390578847217856,
+  "unzen_extra_build_time_percent": 6.489708064830291,
+  "workload": "Three clean bcachefs 6.18.53-1.39.6 module builds, each host's full logical-core parallelism, Unzen 95 W and Zao unchanged power policy",
+  "zao": {
+    "times": [
+      39.471167617011815,
+      38.805492710002,
+      37.18354012799682
+    ],
+    "cpu_peaks_c": [
+      100.0,
+      100.0,
+      100.0
+    ],
+    "throttle_counter_increases": {
+      "/sys/devices/system/cpu/cpu11/thermal_throttle/core_throttle_count": 17519,
+      "/sys/devices/system/cpu/cpu11/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu9/thermal_throttle/core_throttle_count": 714,
+      "/sys/devices/system/cpu/cpu9/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu7/thermal_throttle/core_throttle_count": 149,
+      "/sys/devices/system/cpu/cpu7/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu5/thermal_throttle/core_throttle_count": 20935,
+      "/sys/devices/system/cpu/cpu5/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu3/thermal_throttle/core_throttle_count": 17519,
+      "/sys/devices/system/cpu/cpu3/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu14/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu1/thermal_throttle/core_throttle_count": 714,
+      "/sys/devices/system/cpu/cpu1/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu12/thermal_throttle/core_throttle_count": 6,
+      "/sys/devices/system/cpu/cpu12/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu10/thermal_throttle/core_throttle_count": 11,
+      "/sys/devices/system/cpu/cpu10/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu8/thermal_throttle/core_throttle_count": 12,
+      "/sys/devices/system/cpu/cpu8/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu6/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu4/thermal_throttle/core_throttle_count": 6,
+      "/sys/devices/system/cpu/cpu4/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu15/thermal_throttle/core_throttle_count": 149,
+      "/sys/devices/system/cpu/cpu15/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu2/thermal_throttle/core_throttle_count": 11,
+      "/sys/devices/system/cpu/cpu2/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu13/thermal_throttle/core_throttle_count": 20935,
+      "/sys/devices/system/cpu/cpu13/thermal_throttle/package_throttle_count": 29634,
+      "/sys/devices/system/cpu/cpu0/thermal_throttle/core_throttle_count": 12,
+      "/sys/devices/system/cpu/cpu0/thermal_throttle/package_throttle_count": 29634
+    }
+  },
+  "unzen": {
+    "times": [
+      40.90472510000018,
+      41.323855900000126,
+      41.33334618200024
+    ],
+    "cpu_peaks_c": [
+      73.0,
+      79.0,
+      84.0
+    ],
+    "throttle_counter_increases": {}
+  }
+}
