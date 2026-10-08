@@ -1,0 +1,391 @@
+{
+  "hostname": "nixos-installer",
+  "kernel": "6.18.53",
+  "uid": 0,
+  "uefi": false,
+  "board": "Z390 Phantom Gaming-ITX/ac",
+  "bios": "P4.40",
+  "system": "/nix/store/askqvmfrjgs39hdf8jnr6isxian6a72p-nixos-system-nixos-installer-kexec-26.11.20260923.4975466",
+  "booted_modules": "/nix/store/jid7kfxszixfjcqgrs76dwfs66zyv15p-linux-6.18.53-modules",
+  "bcachefs_loaded": true,
+  "devices": {
+    "kioxia": "/dev/nvme0n1",
+    "sn770": "/dev/nvme1n1",
+    "recovery": "/dev/sda"
+  },
+  "lsblk": {
+    "blockdevices": [
+      {
+        "name": "loop0",
+        "path": "/dev/loop0",
+        "type": "loop",
+        "size": 438362112,
+        "model": null,
+        "serial": null,
+        "fstype": "squashfs",
+        "mountpoints": [
+          "/nix/.ro-store"
+        ],
+        "uuid": null
+      },
+      {
+        "name": "loop1",
+        "path": "/dev/loop1",
+        "type": "loop",
+        "size": 36864,
+        "model": null,
+        "serial": null,
+        "fstype": "erofs",
+        "mountpoints": [
+          "/run/nixos-etc-metadata"
+        ],
+        "uuid": null
+      },
+      {
+        "name": "sda",
+        "path": "/dev/sda",
+        "type": "disk",
+        "size": 500107862016,
+        "model": "USB 3.2.2 FD",
+        "serial": "070836E05B03CC22",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "sda1",
+            "path": "/dev/sda1",
+            "type": "part",
+            "size": 1048576,
+            "model": null,
+            "serial": null,
+            "fstype": null,
+            "mountpoints": [],
+            "uuid": null
+          },
+          {
+            "name": "sda2",
+            "path": "/dev/sda2",
+            "type": "part",
+            "size": 1073741824,
+            "model": null,
+            "serial": null,
+            "fstype": "vfat",
+            "mountpoints": [],
+            "uuid": "12CE-A600"
+          },
+          {
+            "name": "sda3",
+            "path": "/dev/sda3",
+            "type": "part",
+            "size": 499031998464,
+            "model": null,
+            "serial": null,
+            "fstype": "crypto_LUKS",
+            "mountpoints": [],
+            "uuid": "774f8781-132a-4d62-92cb-6c730ec97faa"
+          }
+        ]
+      },
+      {
+        "name": "nvme1n1",
+        "path": "/dev/nvme1n1",
+        "type": "disk",
+        "size": 1000204886016,
+        "model": "WD_BLACK SN770 1TB",
+        "serial": "22135C800678",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "nvme1n1p1",
+            "path": "/dev/nvme1n1p1",
+            "type": "part",
+            "size": 1000203091968,
+            "model": null,
+            "serial": null,
+            "fstype": "f2fs",
+            "mountpoints": [],
+            "uuid": "fc925c63-b9e7-4a03-9aeb-21ad6f478422"
+          }
+        ]
+      },
+      {
+        "name": "nvme0n1",
+        "path": "/dev/nvme0n1",
+        "type": "disk",
+        "size": 1024209543168,
+        "model": "KXG60ZNV1T02 NVMe KIOXIA 1024GB",
+        "serial": "81UFC0UWF8T3",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "nvme0n1p1",
+            "path": "/dev/nvme0n1p1",
+            "type": "part",
+            "size": 576716800,
+            "model": null,
+            "serial": null,
+            "fstype": "vfat",
+            "mountpoints": [],
+            "uuid": "4547-7C66"
+          },
+          {
+            "name": "nvme0n1p2",
+            "path": "/dev/nvme0n1p2",
+            "type": "part",
+            "size": 1023631425536,
+            "model": null,
+            "serial": null,
+            "fstype": "btrfs",
+            "mountpoints": [],
+            "uuid": "4022e60b-4841-412e-8f40-72269563291f"
+          }
+        ]
+      }
+    ]
+  },
+  "mounts": {
+    "filesystems": [
+      {
+        "target": "/",
+        "source": "tmpfs",
+        "fstype": "tmpfs",
+        "children": [
+          {
+            "target": "/dev",
+            "source": "devtmpfs",
+            "fstype": "devtmpfs",
+            "children": [
+              {
+                "target": "/dev/hugepages",
+                "source": "hugetlbfs",
+                "fstype": "hugetlbfs"
+              },
+              {
+                "target": "/dev/mqueue",
+                "source": "mqueue",
+                "fstype": "mqueue"
+              },
+              {
+                "target": "/dev/pts",
+                "source": "devpts",
+                "fstype": "devpts"
+              },
+              {
+                "target": "/dev/shm",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              }
+            ]
+          },
+          {
+            "target": "/proc",
+            "source": "proc",
+            "fstype": "proc"
+          },
+          {
+            "target": "/sys",
+            "source": "sysfs",
+            "fstype": "sysfs",
+            "children": [
+              {
+                "target": "/sys/kernel/security",
+                "source": "securityfs",
+                "fstype": "securityfs"
+              },
+              {
+                "target": "/sys/fs/cgroup",
+                "source": "cgroup2",
+                "fstype": "cgroup2"
+              },
+              {
+                "target": "/sys/fs/pstore",
+                "source": "none",
+                "fstype": "pstore"
+              },
+              {
+                "target": "/sys/fs/bpf",
+                "source": "bpf",
+                "fstype": "bpf"
+              },
+              {
+                "target": "/sys/kernel/debug",
+                "source": "debugfs",
+                "fstype": "debugfs"
+              },
+              {
+                "target": "/sys/kernel/tracing",
+                "source": "tracefs",
+                "fstype": "tracefs"
+              },
+              {
+                "target": "/sys/kernel/config",
+                "source": "configfs",
+                "fstype": "configfs"
+              },
+              {
+                "target": "/sys/fs/fuse/connections",
+                "source": "fusectl",
+                "fstype": "fusectl"
+              }
+            ]
+          },
+          {
+            "target": "/nix/.rw-store",
+            "source": "tmpfs",
+            "fstype": "tmpfs"
+          },
+          {
+            "target": "/run",
+            "source": "tmpfs",
+            "fstype": "tmpfs",
+            "children": [
+              {
+                "target": "/run/credentials/systemd-journald.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/keys",
+                "source": "ramfs",
+                "fstype": "ramfs"
+              },
+              {
+                "target": "/run/wrappers",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/credentials/systemd-resolved.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/credentials/systemd-networkd.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/credentials/serial-getty@ttyS0.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/nixos-etc-metadata",
+                "source": "/dev/loop1",
+                "fstype": "erofs"
+              },
+              {
+                "target": "/run/credentials/getty@tty1.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/user/0",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              }
+            ]
+          },
+          {
+            "target": "/nix/.ro-store",
+            "source": "/dev/loop0",
+            "fstype": "squashfs"
+          },
+          {
+            "target": "/nix/store",
+            "source": "overlay",
+            "fstype": "overlay",
+            "children": [
+              {
+                "target": "/nix/store",
+                "source": "overlay",
+                "fstype": "overlay"
+              }
+            ]
+          },
+          {
+            "target": "/etc",
+            "source": "overlay",
+            "fstype": "overlay"
+          }
+        ]
+      }
+    ]
+  },
+  "addresses": [
+    {
+      "ifindex": 1,
+      "ifname": "lo",
+      "flags": [
+        "LOOPBACK",
+        "UP",
+        "LOWER_UP"
+      ],
+      "mtu": 65536,
+      "qdisc": "noqueue",
+      "operstate": "UNKNOWN",
+      "group": "default",
+      "txqlen": 1000,
+      "addr_info": [
+        {
+          "family": "inet",
+          "local": "127.0.0.1",
+          "prefixlen": 8,
+          "scope": "host",
+          "label": "lo",
+          "valid_life_time": 4294967295,
+          "preferred_life_time": 4294967295
+        }
+      ]
+    },
+    {
+      "ifindex": 2,
+      "ifname": "eno1",
+      "flags": [
+        "BROADCAST",
+        "MULTICAST",
+        "UP",
+        "LOWER_UP"
+      ],
+      "mtu": 1500,
+      "qdisc": "fq_codel",
+      "operstate": "UP",
+      "group": "default",
+      "txqlen": 1000,
+      "altnames": [
+        "enp0s31f6",
+        "enx7085c2c3ff09"
+      ],
+      "addr_info": [
+        {
+          "family": "inet",
+          "local": "192.168.1.115",
+          "prefixlen": 24,
+          "metric": 1024,
+          "broadcast": "192.168.1.255",
+          "scope": "global",
+          "dynamic": true,
+          "label": "eno1",
+          "valid_life_time": 41313,
+          "preferred_life_time": 41313
+        }
+      ]
+    }
+  ],
+  "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN6PZlpH4t+PXDhdXg5JNhbnJ9tdNmcb0U7AnbKVLF47 root@ridge",
+  "tools": {
+    "nix": "/run/current-system/sw/bin/nix",
+    "nix-shell": "/run/current-system/sw/bin/nix-shell",
+    "nixos-install": "/run/current-system/sw/bin/nixos-install",
+    "modprobe": "/run/current-system/sw/bin/modprobe",
+    "bcachefs": "/run/current-system/sw/bin/bcachefs",
+    "nvme": null
+  },
+  "bcachefs_version": "1.39.6",
+  "installer_guard": "verified; no formatting performed"
+}

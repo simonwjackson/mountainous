@@ -102,7 +102,8 @@ currently installed devices and leaves the USB recovery drive unchanged:
 
 The operator selected an unencrypted pool after the automatic-unlock
 investigation. TPM availability no longer blocks preparing the storage layout.
-No formatting, partition change, or installation has run.
+This was the initial preparation boundary. Physical formatting and installation
+completed on 2026-10-08 after operator approval; see verification below.
 
 Bcachefs supports adding devices at runtime, including devices of different
 sizes. The pinned 1.39.6 user manual describes `bcachefs device add` against a
@@ -172,14 +173,14 @@ the failed drive before bootloader updates. The recovery USB remains unchanged.
 Missing-drive tests use independent snapshots of a shut-down healthy pair;
 degraded writes from the two tests are never recombined.
 
-The recovery system currently lacks `/sys/firmware/efi`. Before physical
-installation, confirm the UEFI boot path and the approved installation method.
-No boot-mode change, NVRAM write, or remote installation has run.
+The recovery system and RAM installer lack `/sys/firmware/efi`. Installation
+succeeded using GRUB's removable EFI path without NVRAM writes. Actual firmware
+selection and first NVMe boot still require physical validation. No firmware
+settings or boot mode were changed remotely.
 
-Do not run `scripts/install-remote` yet. Unzen still needs its own enrolled host
-key, final target checks, and explicit approval to erase the two named NVMe
-drives. Later expansion uses `bcachefs device add`, not Disko formatting. M.2
-hardware changes need a shutdown on this machine.
+Initial installation is complete. Do not rerun Disko against this pool. Later
+expansion uses `bcachefs device add`, not Disko formatting. M.2 hardware changes
+need a shutdown on this machine.
 
 Source: [pinned failure-domain allocation documentation](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/alloc/disk_groups.c#L3-L58)
 and [replica options](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/opts.h#L161-L170).
@@ -304,9 +305,9 @@ this key at `/etc/ssh/ssh_host_ed25519_key` with mode `0600` through
 `--extra-files`, before first activation. The key has not been sent to the
 physical machine.
 
-Physical installation has not run. It still needs fresh device-identity checks,
-backup/erasure approval, and a verified bcachefs-capable installer. Actual
-firmware boot order and UEFI fallback discovery also need physical validation.
+Physical installation completed after fresh device checks, operator erasure
+approval, and validation of the bcachefs-capable installer. Actual firmware boot
+order and UEFI fallback discovery still need physical validation.
 `scripts/install-remote` now uses the pinned `nixos-anywhere-verified` package.
 Its initial SSH options enforce `StrictHostKeyChecking=yes` and `-F /dev/null`.
 Upstream initially sets checking to `no`; later `--ssh-option` flags cannot
@@ -343,11 +344,39 @@ bcachefs filesystem after kexec. It also runs the actual patched installer
 against an untrusted peer and requires host-key rejection before fact gathering.
 The temporary bootstrap controller runs only the `kexec` phase. Formatting and
 installation follow only after a fresh inventory and driver check in RAM.
-Physical installation and firmware boot validation remain pending.
+The installation phase completed on 2026-10-08. Firmware boot validation remains
+pending.
 
 The actual RAM bootstrap ran only `--phases kexec`. Kexec loaded the image and
 printed "machine will boot into nixos in 6s", but verified SSH did not return at
 `192.168.1.114`. Retries ended with "No route to host". The local waiting process
 was stopped. No Disko or installation phase ran, and neither NVMe was formatted.
-Local console evidence is needed to distinguish boot failure from a changed
-network address. VM success did not establish this machine's kexec behavior.
+The operator reported `192.168.1.115`. Authenticated SSH confirmed that the RAM
+boot succeeded and DHCP changed the address. The paused attempt was a stale
+address check, not a verified kernel boot failure.
+
+### Installed-system verification
+
+Fresh RAM guards confirmed Linux 6.18.53, loaded bcachefs support, tools 1.39.6,
+both exact unmounted NVMe serials, and the preserved trusted SSH identity.
+The approved `disko,install` phases then completed successfully without reboot.
+
+A separate live verifier checked bcachefs at `/mnt`, `/mnt/home`, `/mnt/nix`, and
+`/mnt/srv`; FAT32 at `/mnt/boot` and `/mnt/boot-secondary`; and two populated ESPs.
+Each ESP contains a 159744-byte fallback EFI loader, GRUB configuration, and two
+kernel/initrd files. Both data and metadata policies read back `2`.
+
+The failure-domain report contains two devices, zero offline devices, and
+5944639488 stored bytes. Neither onboard domain reports lost bytes, and
+`separation_violated=false`. This verifies present separation for stored data,
+not off-machine backup protection. The planted SSH identity matches the enrolled
+Unzen fingerprint and has mode `0600`, owned by root.
+
+Recovery USB partition sizes, filesystem types, and UUIDs match the original
+inventory. Its partition layout and boot installation were not replaced.
+Public reports are archived under `docs/hardware/unzen-install-2026-10-08/`.
+The installed system profile is
+`/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466`.
+
+First firmware boot, live SOPS/Tailscale services, and the actual MSR 95 W
+policy remain unverified until the machine boots from NVMe.

@@ -1,0 +1,50 @@
+{
+  "mounts": {
+    "/mnt": "bcachefs",
+    "/mnt/home": "bcachefs",
+    "/mnt/nix": "bcachefs",
+    "/mnt/srv": "bcachefs",
+    "/mnt/boot": "vfat",
+    "/mnt/boot-secondary": "vfat"
+  },
+  "boot_payloads": {
+    "/mnt/boot": {
+      "efi_bytes": 159744,
+      "kernel_files": 2
+    },
+    "/mnt/boot-secondary": {
+      "efi_bytes": 159744,
+      "kernel_files": 2
+    }
+  },
+  "replicas": {
+    "data_replicas": "2",
+    "metadata_replicas": "2"
+  },
+  "ssh_fingerprint": "256 SHA256:VP6I/dDbuKVFEPdYz4rCIDphMFT/Bzf+Dh1Vs9bQPD4 root@unzen (ED25519)",
+  "failure_domains": {
+    "data_bytes": 5944639488,
+    "devices": 2,
+    "domains": [
+      {
+        "degraded_bytes": 5944639488,
+        "devices": 1,
+        "domain": "onboard.kioxia",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      },
+      {
+        "degraded_bytes": 5944639488,
+        "devices": 1,
+        "domain": "onboard.sn770",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      }
+    ],
+    "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+    "offline_devices": 0,
+    "separation_violated": false
+  },
+  "recovery_usb": "partition sizes, filesystem types, and UUIDs unchanged",
+  "system_profile": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466"
+}

@@ -1,0 +1,400 @@
+{
+  "hostname": "hiyori",
+  "kernel": "6.18.52",
+  "uid": 0,
+  "uefi": false,
+  "board": "Z390 Phantom Gaming-ITX/ac",
+  "bios": "P4.40",
+  "system": "/nix/store/h3xp1j09irl0kqx7apnwymj8ddpqnsik-nixos-system-hiyori-26.11.20260916.b1b8759",
+  "booted_modules": "/nix/store/lic9g7m1n48ggww0f9jrz2f90jkjh09p-linux-6.18.52-modules",
+  "bcachefs_loaded": false,
+  "devices": {
+    "kioxia": "/dev/nvme0n1",
+    "sn770": "/dev/nvme1n1",
+    "recovery": "/dev/sda"
+  },
+  "lsblk": {
+    "blockdevices": [
+      {
+        "name": "sda",
+        "path": "/dev/sda",
+        "type": "disk",
+        "size": 500107862016,
+        "model": "USB 3.2.2 FD",
+        "serial": "070836E05B03CC22",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "sda1",
+            "path": "/dev/sda1",
+            "type": "part",
+            "size": 1048576,
+            "model": null,
+            "serial": null,
+            "fstype": null,
+            "mountpoints": [],
+            "uuid": null
+          },
+          {
+            "name": "sda2",
+            "path": "/dev/sda2",
+            "type": "part",
+            "size": 1073741824,
+            "model": null,
+            "serial": null,
+            "fstype": "vfat",
+            "mountpoints": [
+              "/boot"
+            ],
+            "uuid": "12CE-A600"
+          },
+          {
+            "name": "sda3",
+            "path": "/dev/sda3",
+            "type": "part",
+            "size": 499031998464,
+            "model": null,
+            "serial": null,
+            "fstype": "crypto_LUKS",
+            "mountpoints": [],
+            "uuid": "774f8781-132a-4d62-92cb-6c730ec97faa",
+            "children": [
+              {
+                "name": "mountainous-root",
+                "path": "/dev/mapper/mountainous-root",
+                "type": "crypt",
+                "size": 499015221248,
+                "model": null,
+                "serial": null,
+                "fstype": "btrfs",
+                "mountpoints": [
+                  "/home",
+                  "/nix/store",
+                  "/nix",
+                  "/"
+                ],
+                "uuid": "3fe7639b-d4dd-44e6-a193-32291b1b7c30"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "nvme0n1",
+        "path": "/dev/nvme0n1",
+        "type": "disk",
+        "size": 1024209543168,
+        "model": "KXG60ZNV1T02 NVMe KIOXIA 1024GB",
+        "serial": "81UFC0UWF8T3",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "nvme0n1p1",
+            "path": "/dev/nvme0n1p1",
+            "type": "part",
+            "size": 576716800,
+            "model": null,
+            "serial": null,
+            "fstype": "vfat",
+            "mountpoints": [],
+            "uuid": "4547-7C66"
+          },
+          {
+            "name": "nvme0n1p2",
+            "path": "/dev/nvme0n1p2",
+            "type": "part",
+            "size": 1023631425536,
+            "model": null,
+            "serial": null,
+            "fstype": "btrfs",
+            "mountpoints": [],
+            "uuid": "4022e60b-4841-412e-8f40-72269563291f"
+          }
+        ]
+      },
+      {
+        "name": "nvme1n1",
+        "path": "/dev/nvme1n1",
+        "type": "disk",
+        "size": 1000204886016,
+        "model": "WD_BLACK SN770 1TB",
+        "serial": "22135C800678",
+        "fstype": null,
+        "mountpoints": [],
+        "uuid": null,
+        "children": [
+          {
+            "name": "nvme1n1p1",
+            "path": "/dev/nvme1n1p1",
+            "type": "part",
+            "size": 1000203091968,
+            "model": null,
+            "serial": null,
+            "fstype": "f2fs",
+            "mountpoints": [],
+            "uuid": "fc925c63-b9e7-4a03-9aeb-21ad6f478422"
+          }
+        ]
+      }
+    ]
+  },
+  "mounts": {
+    "filesystems": [
+      {
+        "target": "/",
+        "source": "/dev/mapper/mountainous-root[/@]",
+        "fstype": "btrfs",
+        "children": [
+          {
+            "target": "/home",
+            "source": "/dev/mapper/mountainous-root[/@home]",
+            "fstype": "btrfs"
+          },
+          {
+            "target": "/dev",
+            "source": "devtmpfs",
+            "fstype": "devtmpfs",
+            "children": [
+              {
+                "target": "/dev/pts",
+                "source": "devpts",
+                "fstype": "devpts"
+              },
+              {
+                "target": "/dev/shm",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/dev/hugepages",
+                "source": "hugetlbfs",
+                "fstype": "hugetlbfs"
+              },
+              {
+                "target": "/dev/mqueue",
+                "source": "mqueue",
+                "fstype": "mqueue"
+              }
+            ]
+          },
+          {
+            "target": "/proc",
+            "source": "proc",
+            "fstype": "proc"
+          },
+          {
+            "target": "/sys",
+            "source": "sysfs",
+            "fstype": "sysfs",
+            "children": [
+              {
+                "target": "/sys/kernel/security",
+                "source": "securityfs",
+                "fstype": "securityfs"
+              },
+              {
+                "target": "/sys/fs/cgroup",
+                "source": "cgroup2",
+                "fstype": "cgroup2"
+              },
+              {
+                "target": "/sys/fs/pstore",
+                "source": "none",
+                "fstype": "pstore"
+              },
+              {
+                "target": "/sys/fs/bpf",
+                "source": "bpf",
+                "fstype": "bpf"
+              },
+              {
+                "target": "/sys/kernel/debug",
+                "source": "debugfs",
+                "fstype": "debugfs"
+              },
+              {
+                "target": "/sys/kernel/tracing",
+                "source": "tracefs",
+                "fstype": "tracefs"
+              },
+              {
+                "target": "/sys/fs/fuse/connections",
+                "source": "fusectl",
+                "fstype": "fusectl"
+              },
+              {
+                "target": "/sys/kernel/config",
+                "source": "configfs",
+                "fstype": "configfs"
+              }
+            ]
+          },
+          {
+            "target": "/tmp",
+            "source": "tmpfs",
+            "fstype": "tmpfs"
+          },
+          {
+            "target": "/boot",
+            "source": "/dev/sda2",
+            "fstype": "vfat"
+          },
+          {
+            "target": "/run",
+            "source": "tmpfs",
+            "fstype": "tmpfs",
+            "children": [
+              {
+                "target": "/run/credentials/systemd-journald.service",
+                "source": "none",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/keys",
+                "source": "ramfs",
+                "fstype": "ramfs"
+              },
+              {
+                "target": "/run/secrets-for-users.d",
+                "source": "none",
+                "fstype": "ramfs"
+              },
+              {
+                "target": "/run/wrappers",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/secrets.d",
+                "source": "none",
+                "fstype": "ramfs"
+              },
+              {
+                "target": "/run/user/0",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              },
+              {
+                "target": "/run/user/998",
+                "source": "tmpfs",
+                "fstype": "tmpfs"
+              }
+            ]
+          },
+          {
+            "target": "/nix",
+            "source": "/dev/mapper/mountainous-root[/@nix]",
+            "fstype": "btrfs",
+            "children": [
+              {
+                "target": "/nix/store",
+                "source": "/dev/mapper/mountainous-root[/@nix/store]",
+                "fstype": "btrfs"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "addresses": [
+    {
+      "ifindex": 1,
+      "ifname": "lo",
+      "flags": [
+        "LOOPBACK",
+        "UP",
+        "LOWER_UP"
+      ],
+      "mtu": 65536,
+      "qdisc": "noqueue",
+      "operstate": "UNKNOWN",
+      "group": "default",
+      "txqlen": 1000,
+      "addr_info": [
+        {
+          "family": "inet",
+          "local": "127.0.0.1",
+          "prefixlen": 8,
+          "scope": "host",
+          "label": "lo",
+          "valid_life_time": 4294967295,
+          "preferred_life_time": 4294967295
+        }
+      ]
+    },
+    {
+      "ifindex": 2,
+      "ifname": "eno1",
+      "flags": [
+        "BROADCAST",
+        "MULTICAST",
+        "UP",
+        "LOWER_UP"
+      ],
+      "mtu": 1500,
+      "qdisc": "fq_codel",
+      "operstate": "UP",
+      "group": "default",
+      "txqlen": 1000,
+      "altnames": [
+        "enp0s31f6",
+        "enx7085c2c3ff09"
+      ],
+      "addr_info": [
+        {
+          "family": "inet",
+          "local": "192.168.1.114",
+          "prefixlen": 24,
+          "broadcast": "192.168.1.255",
+          "scope": "global",
+          "dynamic": true,
+          "noprefixroute": true,
+          "label": "eno1",
+          "valid_life_time": 38801,
+          "preferred_life_time": 38801
+        }
+      ]
+    },
+    {
+      "ifindex": 3,
+      "ifname": "tailscale0",
+      "flags": [
+        "POINTOPOINT",
+        "MULTICAST",
+        "NOARP",
+        "UP",
+        "LOWER_UP"
+      ],
+      "mtu": 1280,
+      "qdisc": "fq_codel",
+      "operstate": "UNKNOWN",
+      "group": "default",
+      "txqlen": 500,
+      "addr_info": [
+        {
+          "family": "inet",
+          "local": "100.84.190.3",
+          "prefixlen": 32,
+          "scope": "global",
+          "label": "tailscale0",
+          "valid_life_time": 4294967295,
+          "preferred_life_time": 4294967295
+        }
+      ]
+    }
+  ],
+  "ssh_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN6PZlpH4t+PXDhdXg5JNhbnJ9tdNmcb0U7AnbKVLF47 root@ridge",
+  "tools": {
+    "nix": "/run/current-system/sw/bin/nix",
+    "nix-shell": "/run/current-system/sw/bin/nix-shell",
+    "nixos-install": "/run/current-system/sw/bin/nixos-install",
+    "modprobe": "/run/current-system/sw/bin/modprobe",
+    "bcachefs": null,
+    "nvme": null
+  }
+}
