@@ -1,5 +1,5 @@
 # Intel i7-9700K / ASRock Z390 Phantom Gaming-ITX/ac headless server.
-# Storage is deliberately incomplete until all drives can be identified.
+# Storage is deliberately incomplete until an initial install layout is approved.
 {
   nixos.hosts.unzen = {
     system = "x86_64-linux";

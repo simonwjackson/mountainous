@@ -59,8 +59,10 @@ does not apply the cap to the running recovery system.
 
 ## Storage is deliberately deferred
 
-Missing drives do not prevent this scaffold or its configuration tests. They do
-prevent a complete inventory and validation of the final multi-device pool.
+Missing future drives do not prevent scaffolding or installation onto the
+available drives. We need an approved initial root and boot layout, not every
+future pool member. The final pool cannot be fully validated until its intended
+drives are present.
 
 `boot.supportedFilesystems = [ "bcachefs" ];` enables the standard NixOS
 bcachefs tools and kernel-module integration. No mount, pool, disk device,
@@ -71,12 +73,27 @@ This is not an installable system yet. The root filesystem and boot partition
 are unset, so a full NixOS system build fails its missing-root-filesystem check.
 Do not run the installation scripts against this scaffold.
 
-Before installation, connect the intended drives and collect their stable
-`/dev/disk/by-id/` paths, capacities, current filesystems, and data that must be
-preserved. Then decide whether bcachefs holds root, a data pool, or both, and
-choose redundancy and any device tiers. Pool creation erases the selected
-storage and needs a separate approved installation plan. Do not add degraded
-mount options merely to accommodate drives absent during planning.
+Before installation, identify the drives used for the initial install. Collect
+their stable `/dev/disk/by-id/` paths, capacities, current filesystems, and data
+that must be preserved. Then decide whether bcachefs holds root, a data pool, or
+both, and choose initial redundancy and encryption. Pool creation erases the
+selected storage and needs a separate approved installation plan.
+
+Bcachefs supports adding devices at runtime, including devices of different
+sizes. The pinned 1.39.6 user manual describes `bcachefs device add` against a
+mounted filesystem and later adjustment of device labels, targets, and replica
+counts. The add command formats the new member. It does not preserve existing
+data on that member or require reformatting the existing pool.
+
+Additional capacity does not automatically add replicas. A single-device pool
+has no protection against that device failing. Choose replication explicitly
+when enough devices are available, and keep backups. Adding a pool member also
+does not create an EFI boot partition on that member or make boot redundant.
+Do not use degraded mount options as a substitute for an initial storage plan.
+
+Source: [bcachefs-tools 1.39.6 device management manual](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/doc/bcachefs.5.rst.tmpl#L70-L120).
+The new-member formatting behavior is in
+[`src/commands/device.rs`](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/src/commands/device.rs).
 
 Unzen also needs its own SSH host identity enrolled in the fleet secret
 recipients before an unattended first boot. The scaffold does not generate keys
