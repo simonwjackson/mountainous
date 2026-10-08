@@ -73,11 +73,22 @@ This is not an installable system yet. The root filesystem and boot partition
 are unset, so a full NixOS system build fails its missing-root-filesystem check.
 Do not run the installation scripts against this scaffold.
 
-Before installation, identify the drives used for the initial install. Collect
-their stable `/dev/disk/by-id/` paths, capacities, current filesystems, and data
-that must be preserved. Then decide whether bcachefs holds root, a data pool, or
-both, and choose initial redundancy and encryption. Pool creation erases the
-selected storage and needs a separate approved installation plan.
+The operator chose one bcachefs filesystem for NixOS and data, with only the
+firmware boot partition outside it. Disko's pinned native bcachefs types support
+multi-device filesystems and mounted subvolumes, including root, home, and nix.
+This support was checked in the upstream example and test source; Unzen's
+complete layout and boot behavior have not been tested yet.
+
+The operator said the disks will be wiped. The initial plan uses these two
+currently installed devices and leaves the USB recovery drive unchanged:
+
+| Initial device | Existing filesystems |
+|---|---|
+| `/dev/disk/by-id/nvme-KXG60ZNV1T02_NVMe_KIOXIA_1024GB_81UFC0UWF8T3` | FAT and btrfs |
+| `/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800678` | f2fs |
+
+No formatting, partition change, or installation has run. Automatic encrypted
+boot is under investigation before the final layout is prepared.
 
 Bcachefs supports adding devices at runtime, including devices of different
 sizes. The pinned 1.39.6 user manual describes `bcachefs device add` against a
@@ -94,6 +105,68 @@ Do not use degraded mount options as a substitute for an initial storage plan.
 Source: [bcachefs-tools 1.39.6 device management manual](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/doc/bcachefs.5.rst.tmpl#L70-L120).
 The new-member formatting behavior is in
 [`src/commands/device.rs`](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/src/commands/device.rs).
+
+### Future devices and redundancy
+
+The operator's photo shows a Samsung 970 EVO Plus 1 TB, a WD_BLACK SN770 1 TB,
+and a Sabrent Rocket 2230 512 GB on a four-socket PCIe card. These are planned
+additions, not enumerated device identities. Record their actual serials and
+stable paths when connected. Do not add absent devices to the initial Disko
+format plan or assume the pictured SN770 is distinct from the installed one
+without checking its serial. The operator confirmed bifurcation works.
+
+The recommendation is `data_replicas=2` and `metadata_replicas=2`, with erasure
+coding off for the initial two-device root pool. Those settings are not applied
+by the current scaffold. Copies live on different eligible devices, not fixed
+mirror pairs. Two fully populated copies protect against losing one device;
+replica health must be checked after faults, policy changes, and expansion.
+With the two roughly 1 TB initial SSDs, usable capacity is roughly 1 TB before
+filesystem and boot overhead.
+
+The three card-mounted drives share a failure point. The pinned 1.39.6 code
+supports a `failure_domain` device option that can group them together.
+Replication placement across domains is a preference, not a hard requirement:
+if other domains fill, copies can land in the same domain. The
+`bcachefs fs failure-domains` report checks what losing each domain would cost.
+Changing a domain does not itself rewrite existing data. Ordinary device copies
+do not imply protection against losing the whole card. Keep capacity headroom,
+check placement, and keep off-machine backups. EFI boot redundancy also needs
+separate configuration and a boot-failure test.
+
+Source: [pinned failure-domain allocation documentation](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/alloc/disk_groups.c#L3-L58)
+and [replica options](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/opts.h#L161-L170).
+
+### Automatic encrypted boot investigation
+
+The operator selected investigation of automatic encrypted boot, not an
+unencrypted format or a passphrase-only final design.
+
+The pinned NixOS modules support native encrypted bcachefs with Clevis in the
+initrd. `boot.initrd.clevis.devices.<device>.secretFile` supplies a sealed JWE
+secret; the bcachefs module decrypts it and unlocks the filesystem. Clevis
+supports TPM2 and network Tang policies, with interactive fallback. The
+passphrase must not be embedded in plaintext in the Nix store or boot files.
+
+A read-only live probe found no `/sys/class/tpm` device, no `/dev/tpm*` node,
+and no visible TPM ACPI table. Kernel logs explicitly report `No TPM chip
+found`. The current recovery system also booted without `/sys/firmware/efi`.
+This proves no usable TPM is exposed now, not that the board lacks TPM support.
+The board manual documents `Intel(R) Platform Trust Technology` under Security
+and `Security Device Support` under Trusted Computing. Their firmware settings
+have not been read. Intel PTT being disabled is an inference, not a verified
+cause. No driver, firmware setting, TPM state, or encryption key was changed.
+
+The local-TPM path needs firmware and kernel visibility checked before sealing
+and testing a key. Tang is a supported alternative but adds early-boot network
+and server availability dependencies. TPM presence alone does not establish a
+secure boot policy. Protecting a removed disk differs from protecting a stolen
+whole machine or a changed boot image. The design needs an explicit measured
+boot policy, an offline recovery passphrase, and tested recovery after firmware
+or boot changes. No working unattended unlock has been demonstrated on Unzen.
+
+Relevant pinned sources: `nixos/modules/system/boot/clevis.nix`, its
+`clevis.md`, and `nixos/modules/tasks/filesystems/bcachefs.nix` in the nixpkgs
+input. Temporary read-only probe: `/home/simon/unzen-tpm-readonly.py`.
 
 Unzen also needs its own SSH host identity enrolled in the fleet secret
 recipients before an unattended first boot. The scaffold does not generate keys
