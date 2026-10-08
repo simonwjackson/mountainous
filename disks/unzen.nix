@@ -1,5 +1,6 @@
 # Initial install only. These two whole NVMe drives will be erased by Disko.
 # The recovery USB and future card-mounted SSDs are deliberately absent.
+{ lib, ... }:
 let
   member = device: label: bootMount: {
     inherit device;
@@ -15,7 +16,11 @@ let
             type = "filesystem";
             format = "vfat";
             mountpoint = bootMount;
-            mountOptions = [ "umask=0077" ];
+            # An absent ESP must not block boot from the surviving drive.
+            mountOptions = [
+              "umask=0077"
+              "nofail"
+            ];
           };
         };
         pool = {
@@ -33,12 +38,38 @@ let
   };
   subvolume = mountpoint: {
     inherit mountpoint;
-    mountOptions = [ "noatime" ];
+    # Permit reduced redundancy, not the data-loss override degraded=very.
+    mountOptions = [
+      "noatime"
+      "degraded=yes"
+    ];
   };
 in
 {
-  # Boot files consume fixed ESP space; cap retained boot generations.
-  boot.loader.systemd-boot.configurationLimit = 5;
+  boot.loader = {
+    systemd-boot.enable = false;
+    # Each ESP gets EFI/BOOT/BOOTX64.EFI, without depending on an NVRAM entry.
+    efi.canTouchEfiVariables = false;
+    grub = {
+      enable = true;
+      efiSupport = true;
+      efiInstallAsRemovable = true;
+      # GRUB reads only FAT32 boot files, never the bcachefs root/store.
+      copyKernels = true;
+      configurationLimit = 5;
+      devices = lib.mkForce [ ];
+      mirroredBoots = [
+        {
+          path = "/boot";
+          devices = [ "nodev" ];
+        }
+        {
+          path = "/boot-secondary";
+          devices = [ "nodev" ];
+        }
+      ];
+    };
+  };
   services.bcachefs.autoScrub = {
     enable = true;
     fileSystems = [ "/" ];
@@ -50,9 +81,9 @@ in
       unzen-kioxia =
         member "/dev/disk/by-id/nvme-KXG60ZNV1T02_NVMe_KIOXIA_1024GB_81UFC0UWF8T3" "onboard.kioxia"
           "/boot";
-      # Reserve an ESP now so a second boot copy does not need repartitioning.
-      # It is formatted but not mounted or populated by systemd-boot.
-      unzen-sn770 = member "/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800678" "onboard.sn770" null;
+      unzen-sn770 =
+        member "/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800678" "onboard.sn770"
+          "/boot-secondary";
     };
     bcachefs_filesystems.unzen = {
       type = "bcachefs_filesystem";

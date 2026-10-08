@@ -1,14 +1,23 @@
 # Exercise the real initial layout on disposable virtual disks, never hardware.
 { pkgs, diskoLib }:
+let
+  layout = import ../disks/unzen.nix { inherit (pkgs) lib; };
+in
 diskoLib.testLib.makeDiskoTest {
   inherit pkgs;
   name = "unzen-storage";
-  disko-config = ../disks/unzen.nix;
+  disko-config = { inherit (layout) disko; };
+  # The upstream harness remaps disk paths and replaces its top-level boot
+  # attrset. Pass the real boot policy separately so it is not discarded.
+  extraSystemConfig = { inherit (layout) boot services; };
   extraInstallerConfig.boot.supportedFilesystems = [ "bcachefs" ];
+  # The installed VM boots the installer's images, not its own state directory.
+  postDisko = "installed_disk_source = machine";
   extraTestScript = ''
     import json
     import pathlib
     import subprocess
+    import types
 
     machine.wait_for_unit("multi-user.target")
     for mountpoint in ["/", "/home", "/nix", "/srv"]:
@@ -29,8 +38,11 @@ diskoLib.testLib.makeDiskoTest {
     for option in ["data_replicas", "metadata_replicas"]:
         assert machine.succeed(f"cat {fs}/options/{option}").strip() == "2"
     machine.succeed("test -f /boot/EFI/BOOT/BOOTX64.EFI")
-    machine.succeed("blkid -s TYPE -o value /dev/vdb1 | grep -Fx vfat")
-    machine.fail("mountpoint /boot-secondary")
+    machine.succeed("mountpoint /boot-secondary")
+    machine.succeed("test -f /boot-secondary/EFI/BOOT/BOOTX64.EFI")
+    for bootpath in ["/boot", "/boot-secondary"]:
+        machine.succeed(f"test -s {bootpath}/grub/grub.cfg")
+        machine.succeed(f"find {bootpath}/kernels -type f | grep .")
     machine.succeed("bcachefs fs usage /")
     machine.succeed("bcachefs fs failure-domains /")
     machine.succeed("printf 'shared-pool-marker' > /srv/unzen-test-marker")
@@ -39,6 +51,52 @@ diskoLib.testLib.makeDiskoTest {
     assert exposure["devices"] == 2 and exposure["offline_devices"] == 0, exposure
     assert exposure["data_bytes"] > 0 and not exposure["separation_violated"], exposure
     machine.wait_for_unit("bcachefs-scrub-root.timer")
+
+    # Shut down before cloning. Each fault case starts from its own consistent
+    # snapshot, so degraded writes never create a split-brain test fixture.
+    healthy = machine
+    healthy.shutdown()
+    all_disks = disks
+
+    def disks(oldmachine, num_disks):
+        if not hasattr(oldmachine, "survivor"):
+            return all_disks(oldmachine, num_disks)
+        index = oldmachine.survivor
+        return [
+            "-drive",
+            f"file={oldmachine.state_dir}/empty{index}.qcow2,id=survivor,if=none,werror=report",
+            "-device", "virtio-blk-pci,drive=survivor",
+        ]
+
+    for survivor, bootpath in [(0, "/boot"), (1, "/boot-secondary")]:
+        snapshot = pathlib.Path(healthy.state_dir) / f"fault-{survivor}"
+        snapshot.mkdir()
+        filename = f"empty{survivor}.qcow2"
+        subprocess.check_call([
+            "${pkgs.qemu_test}/bin/qemu-img", "convert", "-O", "qcow2",
+            str(pathlib.Path(installed_disk_source.state_dir) / filename), str(snapshot / filename),
+        ])
+        fixture = types.SimpleNamespace(state_dir=snapshot, survivor=survivor)
+        failed = create_test_machine(oldmachine=fixture, name=f"survivor-{survivor}")
+        failed.start()
+        failed.wait_for_unit("multi-user.target")
+        for mountpoint in ["/", "/home", "/nix", "/srv", bootpath]:
+            failed.succeed(f"mountpoint {mountpoint}")
+        failed.succeed(f"test -s {bootpath}/grub/grub.cfg")
+        assert failed.succeed("cat /srv/unzen-test-marker") == "shared-pool-marker"
+        degraded = json.loads(failed.succeed("bcachefs fs failure-domains --json /"))
+        assert degraded["devices"] == 2 and degraded["offline_devices"] == 1, degraded
+        failed.succeed("printf 'degraded-write' > /srv/degraded-test-marker")
+        failed.succeed("sync")
+        assert failed.succeed("cat /srv/degraded-test-marker") == "degraded-write"
+        failed.shutdown()
+
+    # Resume the untouched healthy pair before testing online expansion.
+    machine = create_test_machine(oldmachine=installed_disk_source, name="expanded-machine")
+    machine.start()
+    machine.wait_for_unit("multi-user.target")
+    machine.fail("test -e /srv/degraded-test-marker")
+    assert machine.succeed("cat /srv/unzen-test-marker") == "shared-pool-marker"
 
     # Add a third, independent virtual device after the two-member pool boots.
     # This tests expansion without re-running Disko or changing the OS layout.

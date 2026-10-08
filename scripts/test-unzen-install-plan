@@ -38,7 +38,12 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
       luks = builtins.attrNames c.boot.initrd.luks.devices;
       swap = c.swapDevices;
       systemdBoot = c.boot.loader.systemd-boot.enable;
-      bootGenerations = c.boot.loader.systemd-boot.configurationLimit;
+      bootGenerations = c.boot.loader.grub.configurationLimit;
+      grub = {
+        inherit (c.boot.loader.grub) enable efiSupport efiInstallAsRemovable copyKernels devices;
+        mirroredBoots = map (b: { inherit (b) path devices; }) c.boot.loader.grub.mirroredBoots;
+        canTouchEfiVariables = c.boot.loader.efi.canTouchEfiVariables;
+      };
       scrub = {
         inherit (c.services.bcachefs.autoScrub) enable fileSystems interval;
       };
@@ -87,7 +92,7 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
   . as $config |
   (.power.command | split(" ")) as $args |
   .hostname == "unzen" and .platform == "x86_64-linux" and
-  (.filesystems | keys) == ["/", "/boot", "/home", "/nix", "/srv"] and
+  (.filesystems | keys) == ["/", "/boot", "/boot-secondary", "/home", "/nix", "/srv"] and
   (.storage.disks | keys) == ["unzen-kioxia", "unzen-sn770"] and
   .storage.disks."unzen-kioxia".device ==
     "/dev/disk/by-id/nvme-KXG60ZNV1T02_NVMe_KIOXIA_1024GB_81UFC0UWF8T3" and
@@ -96,7 +101,7 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
   .storage.disks."unzen-kioxia".esp ==
     {"size":"1G", "type":"EF00", "format":"vfat", "mountpoint":"/boot"} and
   .storage.disks."unzen-sn770".esp ==
-    {"size":"1G", "type":"EF00", "format":"vfat", "mountpoint":null} and
+    {"size":"1G", "type":"EF00", "format":"vfat", "mountpoint":"/boot-secondary"} and
   ([.storage.disks[].table] | all(. == "gpt")) and
   ([.storage.disks[].member] | all(
     .size == "100%" and .type == "bcachefs" and .filesystem == "unzen" and
@@ -106,21 +111,34 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
   .storage.pool.passwordFile == null and
   .storage.pool.extraFormatArgs == ["--data_replicas=2", "--metadata_replicas=2"] and
   .storage.pool.subvolumes == {
-    "subvolumes/root":{"mountpoint":"/", "mountOptions":["noatime"]},
-    "subvolumes/home":{"mountpoint":"/home", "mountOptions":["noatime"]},
-    "subvolumes/nix":{"mountpoint":"/nix", "mountOptions":["noatime"]},
-    "subvolumes/data":{"mountpoint":"/srv", "mountOptions":["noatime"]}
+    "subvolumes/root":{"mountpoint":"/", "mountOptions":["noatime","degraded=yes"]},
+    "subvolumes/home":{"mountpoint":"/home", "mountOptions":["noatime","degraded=yes"]},
+    "subvolumes/nix":{"mountpoint":"/nix", "mountOptions":["noatime","degraded=yes"]},
+    "subvolumes/data":{"mountpoint":"/srv", "mountOptions":["noatime","degraded=yes"]}
   } and
   .storage.clevis == false and .storage.luks == [] and .storage.swap == [] and
-  .storage.systemdBoot == true and .storage.bootGenerations == 5 and
+  .storage.systemdBoot == false and .storage.bootGenerations == 5 and
+  .storage.grub == {
+    "enable":true,"efiSupport":true,"efiInstallAsRemovable":true,"copyKernels":true,
+    "devices":[],"canTouchEfiVariables":false,
+    "mirroredBoots":[
+      {"path":"/boot","devices":["nodev"]},
+      {"path":"/boot-secondary","devices":["nodev"]}
+    ]
+  } and
   .storage.scrub == {"enable":true,"fileSystems":["/"],"interval":"monthly"} and
   .filesystems."/boot".device == "/dev/disk/by-partlabel/disk-unzen-kioxia-ESP" and
-  .filesystems."/boot".fsType == "vfat" and
+  .filesystems."/boot-secondary".device == "/dev/disk/by-partlabel/disk-unzen-sn770-ESP" and
+  (["/boot","/boot-secondary"] | all(. as $path |
+    $config.filesystems[$path].fsType == "vfat" and
+    ($config.filesystems[$path].options | index("nofail")) != null
+  )) and
   (["/", "/home", "/nix", "/srv"] | all(. as $path |
     $config.filesystems[$path].device == "/dev/disk/by-uuid/" + $config.storage.pool.uuid and
     $config.filesystems[$path].fsType == "bcachefs" and
     $config.filesystems[$path].neededForBoot == true and
-    ($config.filesystems[$path].options | index("noatime")) != null
+    ($config.filesystems[$path].options | index("noatime")) != null and
+    ($config.filesystems[$path].options | index("degraded=yes")) != null
   )) and
   .bcachefs.enabled == true and .bcachefs.tools == "bcachefs-tools" and
   (.bcachefs.module | contains("bcachefs")) and
@@ -166,4 +184,4 @@ nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
 # Evaluate all assertions and the boot/initrd derivation without activating it.
 nix eval --raw '.#nixosConfigurations.unzen.config.system.build.toplevel.drvPath' >/dev/null
 
-printf 'Unzen two-NVMe unencrypted shared pool, two data/metadata copies, headless 95 W policy, and unchanged Hiyori: OK\n'
+printf 'Unzen shared unencrypted pool, two copies, mirrored EFI, degraded failover, headless 95 W policy, and unchanged Hiyori: OK\n'

@@ -71,15 +71,15 @@ bcachefs module supplies the driver and tools.
 
 | Drive | Partition | Format and use |
 |---|---|---|
-| Kioxia | 1 GiB ESP | FAT32, mounted at `/boot`; systemd-boot uses this ESP. |
+| Kioxia | 1 GiB ESP | FAT32, mounted at `/boot`; GRUB, kernel, and initrd boot copies. |
 | Kioxia | All remaining capacity | Member of the shared bcachefs filesystem. |
-| SN770 | 1 GiB ESP | FAT32, reserved but not mounted or populated with a bootloader. |
+| SN770 | 1 GiB ESP | FAT32, mounted at `/boot-secondary`; independent GRUB, kernel, and initrd copies. |
 | SN770 | All remaining capacity | Member of the same bcachefs filesystem. |
 
 The filesystem UUID is Disko's deterministic UUID for `unzen`:
 `e5f61013-d6f5-260d-9883-4dda26b2c293`. Mounted subvolumes hold `/`, `/home`,
 `/nix`, and `/srv`. All four mounts refer to that UUID. No OS/data subvolume has
-a fixed size. Five retained systemd-boot generations bound ESP usage. Monthly
+a fixed size. Five retained GRUB generations bound ESP usage. Monthly
 scrub runs once for the shared filesystem through the standard NixOS service.
 
 The full NixOS system, generated format program, and mount program now build.
@@ -149,12 +149,28 @@ check placement, and keep off-machine backups.
 
 ### Boot and installation boundaries
 
-The initial configuration retains the fleet's standard systemd-boot loader on
-the Kioxia ESP. The SN770 ESP is reserved for a future boot copy; it is not boot
-redundancy yet. Losing the Kioxia can prevent ordinary boot even if the SN770
-retains all bcachefs data. The recovery USB remains unchanged. Automatic boot
-failover needs a separate boot policy and a missing-drive test. Default degraded
-mount behavior is unchanged, so unattended degraded boot is not promised.
+The operator selected mirrored EFI boot. The configuration uses standard NixOS
+`boot.loader.grub.mirroredBoots` for `/boot` and `/boot-secondary` and disables
+systemd-boot. GRUB copies kernels and initrds to both FAT32 ESPs, so it does not
+need to read bcachefs. Each ESP gets `EFI/BOOT/BOOTX64.EFI` through
+`efiInstallAsRemovable=true`; `canTouchEfiVariables=false` avoids NVRAM writes
+and lets firmware use the standard fallback path on either device. Actual
+firmware boot order and discovery still need physical validation.
+
+Both ESP mounts use `nofail`. OS/data mounts use `degraded=yes`, which permits
+reduced redundancy without enabling the separate `degraded=very` data-loss
+override. The pinned driver sets only `BCH_FORCE_IF_DEGRADED` for `yes`, not
+`BCH_FORCE_IF_LOST`. The built-in missing-device wait is 30 seconds. Boot from
+one drive leaves only one copy available, and new writes can lack redundancy
+until repair. Replace failed devices promptly and check actual replica health.
+No external failure-alert delivery is configured.
+
+Mirror updates assume both ESPs are present and mounted. Do not rebuild or
+install bootloaders against an absent ESP: an unmounted boot directory is then
+part of the root filesystem, not the intended FAT32 target. Restore or replace
+the failed drive before bootloader updates. The recovery USB remains unchanged.
+Missing-drive tests use independent snapshots of a shut-down healthy pair;
+degraded writes from the two tests are never recombined.
 
 The recovery system currently lacks `/sys/firmware/efi`. Before physical
 installation, confirm the UEFI boot path and the approved installation method.
@@ -225,23 +241,36 @@ nix build --no-link .#nixosConfigurations.unzen.config.system.build.toplevel
 
 The install-plan test evaluates the real host. It checks both stable disk IDs,
 partition sizes, shared UUID mounts, two-copy format arguments, separate failure
-domains, no encryption, monthly scrub, and the headless upstream 95 W policy.
+domains, no encryption, mirrored GRUB EFI paths and kernel copies, `nofail` ESP
+mounts, safe degraded mount policy, monthly scrub, and the headless upstream 95 W
+policy.
 It also verifies unchanged Hiyori recovery mounts and its disabled power
 service. Full-system evaluation must now succeed, rather than fail for a missing
 root. The test never executes the formatter or starts the power service.
 
 The VM test imports the same `disks/unzen.nix` through Disko's upstream test
 library. It formats disposable virtual disks, checks idempotent format/mount,
-installs an EFI loader, and cold-boots the bcachefs root without a passphrase.
-It checks the four subvolume mounts, two member labels and failure domains,
-two-copy policy readbacks, and the scrub timer. The failure-domain JSON report
-must show no offline member, nonzero stored data, and no separation violation.
-The test then adds a third virtual disk, verifies increased capacity and retained
-data, and changes data/metadata replica policies to three online. That last
+installs EFI loaders on both drives, and cold-boots the bcachefs root without a
+passphrase. The harness replaces its top-level boot attrset while remapping
+disks, so the test passes the actual layout's boot policy separately through
+`extraSystemConfig`. It does not silently test the harness's default bootloader.
+It checks all four subvolume mounts, both ESP boot payloads, two member labels
+and failure domains, two-copy policy readbacks, and the scrub timer. The healthy
+failure-domain JSON report must show no offline member, nonzero stored data,
+and no separation violation.
+
+From a shut-down healthy pair, the test independently clones the Kioxia and
+SN770 images. Each clone cold-boots with the other drive physically absent from
+QEMU. The test checks `multi-user.target`, OS/data mounts, the surviving ESP,
+retained marker data, one offline member, and successful degraded writes. It
+then resumes the untouched healthy pair and verifies that no degraded-test
+marker leaked into it. Finally, it adds a third virtual disk, verifies increased
+capacity and retained data, and changes data/metadata replica policies to three
+online. That last
 readback verifies policy acceptance, not completion of three-copy reconciliation.
 The VM uses the upstream test library's shared 9p Nix store; it does not test a
-physical Nix-store write workload, the real MSR service, or boot with a missing
-member.
+physical Nix-store write workload, the real MSR service, actual motherboard
+firmware failover, or recovery after both drives fail.
 
 During the VM addition, udev's redundant `device online` attempts logged EBUSY
 against the already mounted new member. The explicit add returned success;
@@ -251,5 +280,5 @@ has not been tested. Do not treat the VM result as proof of hardware behavior.
 The full system, format program, and mount program built successfully with
 bcachefs 1.39.6 for Linux 6.18.53. Nix formatting, ShellCheck, and Git whitespace
 checks passed. Hardware installation, fleet identity enrollment, live power
-service verification, closed-case/card-installed cooling, and boot-failure tests
-remain separate work.
+service verification, closed-case/card-installed cooling, and physical boot
+failover remain separate work.
