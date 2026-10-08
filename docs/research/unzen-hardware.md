@@ -79,6 +79,12 @@ multi-device filesystems and mounted subvolumes, including root, home, and nix.
 This support was checked in the upstream example and test source; Unzen's
 complete layout and boot behavior have not been tested yet.
 
+The OS and data subvolumes will share free capacity without a fixed-size OS
+partition. The earlier 128 GiB OS example described a separate-pool alternative,
+not this selected layout. Only the EFI boot partition needs a separate fixed
+allocation. Shared capacity avoids stranded free space, but data and snapshots
+can fill the pool and block OS writes. Monitor free space and bound retention.
+
 The operator said the disks will be wiped. The initial plan uses these two
 currently installed devices and leaves the USB recovery drive unchanged:
 
@@ -87,8 +93,9 @@ currently installed devices and leaves the USB recovery drive unchanged:
 | `/dev/disk/by-id/nvme-KXG60ZNV1T02_NVMe_KIOXIA_1024GB_81UFC0UWF8T3` | FAT and btrfs |
 | `/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800678` | f2fs |
 
-No formatting, partition change, or installation has run. Automatic encrypted
-boot is under investigation before the final layout is prepared.
+The operator selected an unencrypted pool after the automatic-unlock
+investigation. TPM availability no longer blocks preparing the storage layout.
+No formatting, partition change, or installation has run.
 
 Bcachefs supports adding devices at runtime, including devices of different
 sizes. The pinned 1.39.6 user manual describes `bcachefs device add` against a
@@ -136,10 +143,17 @@ separate configuration and a boot-failure test.
 Source: [pinned failure-domain allocation documentation](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/alloc/disk_groups.c#L3-L58)
 and [replica options](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/opts.h#L161-L170).
 
-### Automatic encrypted boot investigation
+### Encryption decision and previous TPM investigation
 
-The operator selected investigation of automatic encrypted boot, not an
-unencrypted format or a passphrase-only final design.
+The operator explicitly accepted unencrypted storage for Unzen. Do not add
+native filesystem encryption, LUKS, Clevis, or a TPM unlocking requirement to
+the initial layout. This permits unattended boot without an unlock secret.
+Physical access to the disks exposes file contents and stored SSH host keys;
+those keys also permit decryption of the host's enrolled fleet secrets.
+Unencrypted storage does not remove the fleet identity-enrollment requirement.
+
+The operator previously requested investigation of automatic encrypted boot.
+The findings below are retained as evidence, not pending installation work.
 
 The pinned NixOS modules support native encrypted bcachefs with Clevis in the
 initrd. `boot.initrd.clevis.devices.<device>.secretFile` supplies a sealed JWE
@@ -156,13 +170,15 @@ and `Security Device Support` under Trusted Computing. Their firmware settings
 have not been read. Intel PTT being disabled is an inference, not a verified
 cause. No driver, firmware setting, TPM state, or encryption key was changed.
 
-The local-TPM path needs firmware and kernel visibility checked before sealing
-and testing a key. Tang is a supported alternative but adds early-boot network
-and server availability dependencies. TPM presence alone does not establish a
-secure boot policy. Protecting a removed disk differs from protecting a stolen
-whole machine or a changed boot image. The design needs an explicit measured
-boot policy, an offline recovery passphrase, and tested recovery after firmware
-or boot changes. No working unattended unlock has been demonstrated on Unzen.
+If encryption is revisited, the local-TPM path needs firmware and kernel
+visibility checked before sealing and testing a key. Tang is a supported
+alternative but adds early-boot network and server availability dependencies.
+TPM presence alone does not establish a secure boot policy. Protecting a removed
+disk differs from protecting a stolen whole machine or a changed boot image.
+An encrypted-boot design needs an explicit measured boot policy, an offline
+recovery passphrase, and tested recovery after firmware or boot changes.
+No working unattended unlock has been demonstrated on Unzen. No TPM enrollment
+or firmware change is planned for the selected unencrypted layout.
 
 Relevant pinned sources: `nixos/modules/system/boot/clevis.nix`, its
 `clevis.md`, and `nixos/modules/tasks/filesystems/bcachefs.nix` in the nixpkgs
