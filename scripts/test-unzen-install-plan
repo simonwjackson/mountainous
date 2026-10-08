@@ -1,7 +1,7 @@
 #!/usr/bin/env nix-shell
 #!nix-shell -i bash -p bash jq coreutils
 # shellcheck shell=bash
-# Evaluate the real scaffold. Do not start the power service or access disks.
+# Evaluate the real install plan. Never run Disko or the power service here.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -11,8 +11,38 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
   c: {
     hostname = c.networking.hostName;
     platform = c.nixpkgs.hostPlatform.system;
-    filesystems = builtins.attrNames c.fileSystems;
-    hasDiskLayout = c ? disko;
+    filesystems = builtins.mapAttrs (_: fs: {
+      inherit (fs) device fsType options neededForBoot;
+    }) c.fileSystems;
+    storage = {
+      disks = builtins.mapAttrs (_: d: {
+        inherit (d) device;
+        table = d.content.type;
+        esp = {
+          inherit (d.content.partitions.ESP) size type;
+          inherit (d.content.partitions.ESP.content) format mountpoint;
+        };
+        member = {
+          inherit (d.content.partitions.pool) size;
+          inherit (d.content.partitions.pool.content) type filesystem label extraFormatArgs;
+        };
+      }) c.disko.devices.disk;
+      pool = {
+        inherit (c.disko.devices.bcachefs_filesystems.unzen)
+          type uuid passwordFile extraFormatArgs;
+        subvolumes = builtins.mapAttrs (_: s: {
+          inherit (s) mountpoint mountOptions;
+        }) c.disko.devices.bcachefs_filesystems.unzen.subvolumes;
+      };
+      clevis = c.boot.initrd.clevis.enable;
+      luks = builtins.attrNames c.boot.initrd.luks.devices;
+      swap = c.swapDevices;
+      systemdBoot = c.boot.loader.systemd-boot.enable;
+      bootGenerations = c.boot.loader.systemd-boot.configurationLimit;
+      scrub = {
+        inherit (c.services.bcachefs.autoScrub) enable fileSystems interval;
+      };
+    };
     bcachefs = {
       enabled = c.boot.supportedFilesystems.bcachefs;
       tools = c.boot.bcachefs.package.pname;
@@ -54,9 +84,44 @@ nix eval --json '.#nixosConfigurations.unzen.config' --apply '
     };
   }
 ' | jq -e '
+  . as $config |
   (.power.command | split(" ")) as $args |
   .hostname == "unzen" and .platform == "x86_64-linux" and
-  .filesystems == [] and .hasDiskLayout == false and
+  (.filesystems | keys) == ["/", "/boot", "/home", "/nix", "/srv"] and
+  (.storage.disks | keys) == ["unzen-kioxia", "unzen-sn770"] and
+  .storage.disks."unzen-kioxia".device ==
+    "/dev/disk/by-id/nvme-KXG60ZNV1T02_NVMe_KIOXIA_1024GB_81UFC0UWF8T3" and
+  .storage.disks."unzen-sn770".device ==
+    "/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800678" and
+  .storage.disks."unzen-kioxia".esp ==
+    {"size":"1G", "type":"EF00", "format":"vfat", "mountpoint":"/boot"} and
+  .storage.disks."unzen-sn770".esp ==
+    {"size":"1G", "type":"EF00", "format":"vfat", "mountpoint":null} and
+  ([.storage.disks[].table] | all(. == "gpt")) and
+  ([.storage.disks[].member] | all(
+    .size == "100%" and .type == "bcachefs" and .filesystem == "unzen" and
+    .extraFormatArgs == ["--failure_domain=" + .label]
+  )) and
+  .storage.pool.type == "bcachefs_filesystem" and
+  .storage.pool.passwordFile == null and
+  .storage.pool.extraFormatArgs == ["--data_replicas=2", "--metadata_replicas=2"] and
+  .storage.pool.subvolumes == {
+    "subvolumes/root":{"mountpoint":"/", "mountOptions":["noatime"]},
+    "subvolumes/home":{"mountpoint":"/home", "mountOptions":["noatime"]},
+    "subvolumes/nix":{"mountpoint":"/nix", "mountOptions":["noatime"]},
+    "subvolumes/data":{"mountpoint":"/srv", "mountOptions":["noatime"]}
+  } and
+  .storage.clevis == false and .storage.luks == [] and .storage.swap == [] and
+  .storage.systemdBoot == true and .storage.bootGenerations == 5 and
+  .storage.scrub == {"enable":true,"fileSystems":["/"],"interval":"monthly"} and
+  .filesystems."/boot".device == "/dev/disk/by-partlabel/disk-unzen-kioxia-ESP" and
+  .filesystems."/boot".fsType == "vfat" and
+  (["/", "/home", "/nix", "/srv"] | all(. as $path |
+    $config.filesystems[$path].device == "/dev/disk/by-uuid/" + $config.storage.pool.uuid and
+    $config.filesystems[$path].fsType == "bcachefs" and
+    $config.filesystems[$path].neededForBoot == true and
+    ($config.filesystems[$path].options | index("noatime")) != null
+  )) and
   .bcachefs.enabled == true and .bcachefs.tools == "bcachefs-tools" and
   (.bcachefs.module | contains("bcachefs")) and
   .bcachefs.moduleIncluded == true and .bcachefs.filesystemToolsIncluded == true and
@@ -98,17 +163,7 @@ nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
   }
 ' >/dev/null
 
-# A missing storage plan must block a full system build, not guess a root disk.
-error=$(mktemp)
-trap 'rm -f "$error"' EXIT
-if nix eval --raw '.#nixosConfigurations.unzen.config.system.build.toplevel.drvPath' > /dev/null 2> "$error"; then
-  echo 'Unzen unexpectedly builds without an approved root filesystem' >&2
-  exit 1
-fi
-if ! grep -Fq 'does not specify your root file system' "$error"; then
-  cat "$error" >&2
-  echo 'Unzen failed for an unexpected reason' >&2
-  exit 1
-fi
+# Evaluate all assertions and the boot/initrd derivation without activating it.
+nix eval --raw '.#nixosConfigurations.unzen.config.system.build.toplevel.drvPath' >/dev/null
 
-printf 'Unzen headless scaffold, bcachefs driver/tools, 95 W PL1/PL2, no voltage changes or disk layout, blocked installation, and unchanged Hiyori: OK\n'
+printf 'Unzen two-NVMe unencrypted shared pool, two data/metadata copies, headless 95 W policy, and unchanged Hiyori: OK\n'

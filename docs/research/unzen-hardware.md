@@ -1,8 +1,10 @@
-# Unzen scaffold
+# Unzen configuration
 
 Unzen is a headless server on the `cairn` branch. Its host declaration is
-`modules/hosts/unzen.nix`. The operator selected bcachefs and reported that
-some drives are not connected yet.
+`modules/hosts/unzen.nix`, and its initial Disko layout is `disks/unzen.nix`.
+The operator selected an unencrypted bcachefs pool shared by NixOS and data.
+Some future drives are not connected yet. This configuration is prepared and
+tested on virtual disks; it is not installed on the physical machine.
 
 ## Hardware and measured power policy
 
@@ -57,27 +59,32 @@ the successful temporary comparison used the Linux RAPL sysfs interface.
 The temporary comparison restored the original limits. Adding this host file
 does not apply the cap to the running recovery system.
 
-## Storage is deliberately deferred
+## Initial storage configuration
 
-Missing future drives do not prevent scaffolding or installation onto the
-available drives. We need an approved initial root and boot layout, not every
-future pool member. The final pool cannot be fully validated until its intended
-drives are present.
+Missing future drives do not prevent installing onto the approved initial
+drives. The final pool cannot be fully validated until its intended drives are
+present. The current layout contains only the two installed NVMe devices.
 
-`boot.supportedFilesystems = [ "bcachefs" ];` enables the standard NixOS
-bcachefs tools and kernel-module integration. No mount, pool, disk device,
-replica count, encryption choice, or formatting command is configured.
-The shared `disk` layer is not imported because it formats btrfs.
+The host imports Disko's upstream module and `disks/unzen.nix` directly. It does
+not import the shared `disk` layer, which formats btrfs. The standard NixOS
+bcachefs module supplies the driver and tools.
 
-This is not an installable system yet. The root filesystem and boot partition
-are unset, so a full NixOS system build fails its missing-root-filesystem check.
-Do not run the installation scripts against this scaffold.
+| Drive | Partition | Format and use |
+|---|---|---|
+| Kioxia | 1 GiB ESP | FAT32, mounted at `/boot`; systemd-boot uses this ESP. |
+| Kioxia | All remaining capacity | Member of the shared bcachefs filesystem. |
+| SN770 | 1 GiB ESP | FAT32, reserved but not mounted or populated with a bootloader. |
+| SN770 | All remaining capacity | Member of the same bcachefs filesystem. |
 
-The operator chose one bcachefs filesystem for NixOS and data, with only the
-firmware boot partition outside it. Disko's pinned native bcachefs types support
-multi-device filesystems and mounted subvolumes, including root, home, and nix.
-This support was checked in the upstream example and test source; Unzen's
-complete layout and boot behavior have not been tested yet.
+The filesystem UUID is Disko's deterministic UUID for `unzen`:
+`e5f61013-d6f5-260d-9883-4dda26b2c293`. Mounted subvolumes hold `/`, `/home`,
+`/nix`, and `/srv`. All four mounts refer to that UUID. No OS/data subvolume has
+a fixed size. Five retained systemd-boot generations bound ESP usage. Monthly
+scrub runs once for the shared filesystem through the standard NixOS service.
+
+The full NixOS system, generated format program, and mount program now build.
+Those builds do not format hardware or apply the 95 W power service. The
+installation needs separate approval and identity enrollment before execution.
 
 The OS and data subvolumes will share free capacity without a fixed-size OS
 partition. The earlier 128 GiB OS example described a separate-pool alternative,
@@ -122,11 +129,12 @@ stable paths when connected. Do not add absent devices to the initial Disko
 format plan or assume the pictured SN770 is distinct from the installed one
 without checking its serial. The operator confirmed bifurcation works.
 
-The recommendation is `data_replicas=2` and `metadata_replicas=2`, with erasure
-coding off for the initial two-device root pool. Those settings are not applied
-by the current scaffold. Copies live on different eligible devices, not fixed
-mirror pairs. Two fully populated copies protect against losing one device;
-replica health must be checked after faults, policy changes, and expansion.
+The initial format sets `data_replicas=2` and `metadata_replicas=2`. Erasure
+coding stays off. The two members have separate failure domains,
+`onboard.kioxia` and `onboard.sn770`. No settings have been applied to the live
+NVMe drives. Copies live on different eligible devices, not fixed mirror pairs.
+Two fully populated copies protect against losing one device; replica health
+must be checked after faults, policy changes, and expansion.
 With the two roughly 1 TB initial SSDs, usable capacity is roughly 1 TB before
 filesystem and boot overhead.
 
@@ -137,8 +145,25 @@ if other domains fill, copies can land in the same domain. The
 `bcachefs fs failure-domains` report checks what losing each domain would cost.
 Changing a domain does not itself rewrite existing data. Ordinary device copies
 do not imply protection against losing the whole card. Keep capacity headroom,
-check placement, and keep off-machine backups. EFI boot redundancy also needs
-separate configuration and a boot-failure test.
+check placement, and keep off-machine backups.
+
+### Boot and installation boundaries
+
+The initial configuration retains the fleet's standard systemd-boot loader on
+the Kioxia ESP. The SN770 ESP is reserved for a future boot copy; it is not boot
+redundancy yet. Losing the Kioxia can prevent ordinary boot even if the SN770
+retains all bcachefs data. The recovery USB remains unchanged. Automatic boot
+failover needs a separate boot policy and a missing-drive test. Default degraded
+mount behavior is unchanged, so unattended degraded boot is not promised.
+
+The recovery system currently lacks `/sys/firmware/efi`. Before physical
+installation, confirm the UEFI boot path and the approved installation method.
+No boot-mode change, NVRAM write, or remote installation has run.
+
+Do not run `scripts/install-remote` yet. Unzen still needs its own enrolled host
+key, final target checks, and explicit approval to erase the two named NVMe
+drives. Later expansion uses `bcachefs device add`, not Disko formatting. M.2
+hardware changes need a shutdown on this machine.
 
 Source: [pinned failure-domain allocation documentation](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/alloc/disk_groups.c#L3-L58)
 and [replica options](https://github.com/koverstreet/bcachefs-tools/blob/v1.39.6/fs/opts.h#L161-L170).
@@ -190,16 +215,41 @@ or change encrypted secrets.
 
 ## Checks
 
-Run `./scripts/test-unzen-scaffold` from the `cairn` worktree. It evaluates the
-real host, checks the upstream 95 W command and unset voltage/temperature
-options, checks bcachefs module and tool inclusion, and verifies that no storage
-layout or desktop was added. It also checks that Hiyori keeps its existing
-recovery mounts and has no power-limit service enabled.
+From the `cairn` worktree, run:
 
-The test passed, including the expected missing-root-filesystem build refusal.
-The bcachefs 1.39.6 module for Linux 6.18.53 was realized from the Nix binary
-cache. The generated upstream service unit built and its `ExecStart` contains
-only the two power-limit arguments. Nix formatting and ShellCheck passed.
+```sh
+./scripts/test-unzen-install-plan
+nix build --no-link -L .#checks.x86_64-linux.unzen-storage
+nix build --no-link .#nixosConfigurations.unzen.config.system.build.toplevel
+```
 
-The test does not access disk block devices or start the power service.
-Live verification, pool checks, installation, and deployment remain deferred.
+The install-plan test evaluates the real host. It checks both stable disk IDs,
+partition sizes, shared UUID mounts, two-copy format arguments, separate failure
+domains, no encryption, monthly scrub, and the headless upstream 95 W policy.
+It also verifies unchanged Hiyori recovery mounts and its disabled power
+service. Full-system evaluation must now succeed, rather than fail for a missing
+root. The test never executes the formatter or starts the power service.
+
+The VM test imports the same `disks/unzen.nix` through Disko's upstream test
+library. It formats disposable virtual disks, checks idempotent format/mount,
+installs an EFI loader, and cold-boots the bcachefs root without a passphrase.
+It checks the four subvolume mounts, two member labels and failure domains,
+two-copy policy readbacks, and the scrub timer. The failure-domain JSON report
+must show no offline member, nonzero stored data, and no separation violation.
+The test then adds a third virtual disk, verifies increased capacity and retained
+data, and changes data/metadata replica policies to three online. That last
+readback verifies policy acceptance, not completion of three-copy reconciliation.
+The VM uses the upstream test library's shared 9p Nix store; it does not test a
+physical Nix-store write workload, the real MSR service, or boot with a missing
+member.
+
+During the VM addition, udev's redundant `device online` attempts logged EBUSY
+against the already mounted new member. The explicit add returned success;
+member count, capacity, and existing-data assertions passed. Physical expansion
+has not been tested. Do not treat the VM result as proof of hardware behavior.
+
+The full system, format program, and mount program built successfully with
+bcachefs 1.39.6 for Linux 6.18.53. Nix formatting, ShellCheck, and Git whitespace
+checks passed. Hardware installation, fleet identity enrollment, live power
+service verification, closed-case/card-installed cooling, and boot-failure tests
+remain separate work.
