@@ -1,0 +1,676 @@
+{
+  "hostname": "unzen",
+  "kernel": "6.18.53",
+  "nix_version": "nix (Nix) 2.34.8",
+  "cpu": "{\n   \"lscpu\": [\n      {\n         \"field\": \"Architecture:\",\n         \"data\": \"x86_64\"\n      },{\n         \"field\": \"CPU op-mode(s):\",\n         \"data\": \"32-bit, 64-bit\"\n      },{\n         \"field\": \"Address sizes:\",\n         \"data\": \"39 bits physical, 48 bits virtual\"\n      },{\n         \"field\": \"Byte Order:\",\n         \"data\": \"Little Endian\"\n      },{\n         \"field\": \"CPU(s):\",\n         \"data\": \"8\"\n      },{\n         \"field\": \"On-line CPU(s) list:\",\n         \"data\": \"0-7\"\n      },{\n         \"field\": \"Vendor ID:\",\n         \"data\": \"GenuineIntel\"\n      },{\n         \"field\": \"Model name:\",\n         \"data\": \"Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz\"\n      },{\n         \"field\": \"CPU family:\",\n         \"data\": \"6\"\n      },{\n         \"field\": \"Model:\",\n         \"data\": \"158\"\n      },{\n         \"field\": \"Thread(s) per core:\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"Core(s) per socket:\",\n         \"data\": \"8\"\n      },{\n         \"field\": \"Socket(s):\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"Stepping:\",\n         \"data\": \"13\"\n      },{\n         \"field\": \"Microcode version:\",\n         \"data\": \"0x104\"\n      },{\n         \"field\": \"CPU(s) scaling MHz:\",\n         \"data\": \"94%\"\n      },{\n         \"field\": \"CPU max MHz:\",\n         \"data\": \"4900.0000\"\n      },{\n         \"field\": \"CPU min MHz:\",\n         \"data\": \"800.0000\"\n      },{\n         \"field\": \"BogoMIPS:\",\n         \"data\": \"7200.00\"\n      },{\n         \"field\": \"Flags:\",\n         \"data\": \"fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust sgx bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp vnmi sgx_lc md_clear flush_l1d arch_capabilities\"\n      },{\n         \"field\": \"Virtualization:\",\n         \"data\": \"VT-x\"\n      },{\n         \"field\": \"L1d cache:\",\n         \"data\": \"256 KiB (8 instances)\"\n      },{\n         \"field\": \"L1i cache:\",\n         \"data\": \"256 KiB (8 instances)\"\n      },{\n         \"field\": \"L2 cache:\",\n         \"data\": \"2 MiB (8 instances)\"\n      },{\n         \"field\": \"L3 cache:\",\n         \"data\": \"12 MiB (1 instance)\"\n      },{\n         \"field\": \"NUMA node(s):\",\n         \"data\": \"1\"\n      },{\n         \"field\": \"NUMA node0 CPU(s):\",\n         \"data\": \"0-7\"\n      },{\n         \"field\": \"Vulnerability Gather data sampling:\",\n         \"data\": \"Mitigation; Microcode (locked)\"\n      },{\n         \"field\": \"Vulnerability Ghostwrite:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Indirect target selection:\",\n         \"data\": \"Mitigation; Aligned branch/return thunks\"\n      },{\n         \"field\": \"Vulnerability Itlb multihit:\",\n         \"data\": \"KVM: Mitigation: Split huge pages\"\n      },{\n         \"field\": \"Vulnerability L1tf:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Mds:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Meltdown:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Mmio stale data:\",\n         \"data\": \"Mitigation; Clear CPU buffers; SMT disabled\"\n      },{\n         \"field\": \"Vulnerability Old microcode:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Reg file data sampling:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Retbleed:\",\n         \"data\": \"Mitigation; Enhanced IBRS\"\n      },{\n         \"field\": \"Vulnerability Spec rstack overflow:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Spec store bypass:\",\n         \"data\": \"Mitigation; Speculative Store Bypass disabled via prctl\"\n      },{\n         \"field\": \"Vulnerability Spectre v1:\",\n         \"data\": \"Mitigation; usercopy/swapgs barriers and __user pointer sanitization\"\n      },{\n         \"field\": \"Vulnerability Spectre v2:\",\n         \"data\": \"Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop\"\n      },{\n         \"field\": \"Vulnerability Srbds:\",\n         \"data\": \"Mitigation; Microcode\"\n      },{\n         \"field\": \"Vulnerability Tsa:\",\n         \"data\": \"Not affected\"\n      },{\n         \"field\": \"Vulnerability Tsx async abort:\",\n         \"data\": \"Mitigation; TSX disabled\"\n      },{\n         \"field\": \"Vulnerability Vmscape:\",\n         \"data\": \"Mitigation; IBPB before exit to userspace\"\n      }\n   ]\n}\n",
+  "logical_build_cores": 8,
+  "derivation": "/nix/store/98klz3frilgg1k4d1i2xxar32dqdjxky-bcachefs-6.18.53-1.39.6.drv",
+  "derivation_sha256": "f58f9cb51e872a5beb8d08498440d383f727f8bee674acf9020410b2c001e84f",
+  "command": [
+    "nix",
+    "build",
+    "--no-link",
+    "--rebuild",
+    "--offline",
+    "--builders",
+    "",
+    "--max-jobs",
+    "1",
+    "--cores",
+    "8",
+    "--timeout",
+    "900",
+    "-L",
+    "/nix/store/98klz3frilgg1k4d1i2xxar32dqdjxky-bcachefs-6.18.53-1.39.6.drv^out"
+  ],
+  "started_utc": "2026-10-08T15:07:27Z",
+  "runs": [
+    {
+      "wall_seconds": 41.24421535900001,
+      "background_busy_fraction": 0.0012499999999999734,
+      "cpu_peak_c": 75.0,
+      "samples": [
+        {
+          "cpu_c": 34.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 0.00893099799986885
+        },
+        {
+          "cpu_c": 39.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 1.013875834999908
+        },
+        {
+          "cpu_c": 56.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 2.0227235269999255
+        },
+        {
+          "cpu_c": 58.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 3.027055448000283
+        },
+        {
+          "cpu_c": 60.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 4.0321394610000425
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 5.037567548999959
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 6.044093290000092
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 7.051573416999872
+        },
+        {
+          "cpu_c": 67.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 8.058634723000068
+        },
+        {
+          "cpu_c": 66.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 9.064696629000082
+        },
+        {
+          "cpu_c": 65.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 10.069605808000233
+        },
+        {
+          "cpu_c": 66.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 11.074537838000197
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 12.080733139000131
+        },
+        {
+          "cpu_c": 65.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 13.08677506999993
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 14.091478353000184
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 54.85,
+          "elapsed_s": 15.098053026999878
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 16.103691217000232
+        },
+        {
+          "cpu_c": 69.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 17.111952142000064
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 18.116751708000265
+        },
+        {
+          "cpu_c": 67.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 19.12376868599995
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 20.129151790999913
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 21.13674980099995
+        },
+        {
+          "cpu_c": 69.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 22.141777874000127
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 23.14775184700011
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 24.15379231099996
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 25.163751637000132
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 26.168701066000267
+        },
+        {
+          "cpu_c": 67.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 27.173627042000135
+        },
+        {
+          "cpu_c": 61.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 28.17861207299984
+        },
+        {
+          "cpu_c": 65.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 29.183568078000008
+        },
+        {
+          "cpu_c": 66.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 30.18859529700012
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 31.19276442799992
+        },
+        {
+          "cpu_c": 65.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 32.197587122000186
+        },
+        {
+          "cpu_c": 64.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 33.20233047700003
+        },
+        {
+          "cpu_c": 59.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 34.20740956000009
+        },
+        {
+          "cpu_c": 67.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 35.212355318999926
+        },
+        {
+          "cpu_c": 61.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 36.21725483099999
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 37.22568285299985
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 38.23350545299991
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 39.23914523600024
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 40.24391205100028
+        }
+      ]
+    },
+    {
+      "wall_seconds": 41.25053170000001,
+      "background_busy_fraction": 0.001250781738586615,
+      "cpu_peak_c": 78.0,
+      "samples": [
+        {
+          "cpu_c": 42.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 0.009267603999887797
+        },
+        {
+          "cpu_c": 45.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 1.0149175500000638
+        },
+        {
+          "cpu_c": 62.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 2.0223289299997305
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 3.027780526999777
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 4.035486385999775
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 5.040964234000057
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 6.046672646999923
+        },
+        {
+          "cpu_c": 73.0,
+          "ssd_composite_c": 53.85,
+          "elapsed_s": 7.052989239999988
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 8.059659924999778
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 9.065258505999736
+        },
+        {
+          "cpu_c": 73.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 10.070936516000074
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 11.07987508799988
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 12.08490655300011
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 13.090942728999835
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 14.096892983000089
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 15.105241748000026
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 16.11069100199984
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 17.115496317999714
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 18.121914139999717
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 19.126913518000038
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 20.134850752999682
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 21.142624604000048
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 22.14916200300013
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 23.15401794799982
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 24.162337750999995
+        },
+        {
+          "cpu_c": 77.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 25.168951266000022
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 26.17412511900011
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 27.178890343999683
+        },
+        {
+          "cpu_c": 66.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 28.183609339999748
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 29.189102748000096
+        },
+        {
+          "cpu_c": 67.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 30.194375547999698
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 31.199670890000107
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 32.20486707700002
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 33.20987112700004
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 34.21515109799975
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 35.220311152999784
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 36.22549850799987
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 37.23063878899984
+        },
+        {
+          "cpu_c": 73.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 38.237625578999996
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 39.24586621199978
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 40.25025178199985
+        }
+      ]
+    },
+    {
+      "wall_seconds": 42.25762709199989,
+      "background_busy_fraction": 0.0006257822277847547,
+      "cpu_peak_c": 84.0,
+      "samples": [
+        {
+          "cpu_c": 44.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 0.008770406999701663
+        },
+        {
+          "cpu_c": 45.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 1.0183863809998002
+        },
+        {
+          "cpu_c": 63.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 2.0233269029999974
+        },
+        {
+          "cpu_c": 69.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 3.0307736789995943
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 4.035021102999963
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 5.041497410999909
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 6.0467476310000166
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 7.05530736899982
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 8.061837976999868
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 9.066872549999971
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 10.074152001999664
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 11.079561671999727
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 12.08500439799991
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 13.09292842099967
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 14.099356462999822
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 15.104774403999727
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 16.110671827999795
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 17.115746462999596
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 18.12401833399963
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 19.130537846999687
+        },
+        {
+          "cpu_c": 77.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 20.137731884000004
+        },
+        {
+          "cpu_c": 77.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 21.14293435699983
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 22.153149998999652
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 23.159296600999824
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 24.16477398899997
+        },
+        {
+          "cpu_c": 79.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 25.169770333999622
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 26.17408906999981
+        },
+        {
+          "cpu_c": 78.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 27.178285167000013
+        },
+        {
+          "cpu_c": 64.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 28.18328673399992
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 29.188357624999753
+        },
+        {
+          "cpu_c": 75.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 30.19344369099963
+        },
+        {
+          "cpu_c": 69.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 31.198373079999783
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 32.203358699999626
+        },
+        {
+          "cpu_c": 72.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 33.20841505699991
+        },
+        {
+          "cpu_c": 70.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 34.21286987399981
+        },
+        {
+          "cpu_c": 71.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 35.21763401199996
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 36.22236223799973
+        },
+        {
+          "cpu_c": 68.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 37.2273959969998
+        },
+        {
+          "cpu_c": 74.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 38.23551237799984
+        },
+        {
+          "cpu_c": 76.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 39.24495804299977
+        },
+        {
+          "cpu_c": 77.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 40.25245212499976
+        },
+        {
+          "cpu_c": 84.0,
+          "ssd_composite_c": 52.85,
+          "elapsed_s": 41.25727295899969
+        }
+      ]
+    }
+  ],
+  "completed": true,
+  "initial_temperatures": {
+    "cpu_c": 40.0,
+    "ssd_composite_c": 54.85
+  },
+  "median_wall_seconds": 41.25053170000001
+}

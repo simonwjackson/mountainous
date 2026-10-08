@@ -1,0 +1,22 @@
+{
+  "derivation": "/nix/store/98klz3frilgg1k4d1i2xxar32dqdjxky-bcachefs-6.18.53-1.39.6.drv",
+  "input_outputs": [
+    "/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev",
+    "/nix/store/kndnrzw57nlwwwl6kskn75x1cgmrcrhv-pahole-1.31",
+    "/nix/store/8sjgd7q3mdks1rb7rbcv0sallhvrhai5-gcc-15.3.0",
+    "/nix/store/k365fh6q93fcfb7rz5hgc4gk1m5dm0ig-setup-module-compression",
+    "/nix/store/yf16anm07g3b8khg74ni8s37l6b5hzp5-rust-lib-src",
+    "/nix/store/riwxq80wy52dmydcfc53kpr8n5x9fqxf-rust-bindgen-unwrapped-0.72.1",
+    "/nix/store/agijn59r6fl0ddwqklnpm8vzj4v2zdjs-uname",
+    "/nix/store/mgh4xfc7gcpbfakcvwsbcfp8lmlx5dnk-bcachefs-tools-1.39.6-dkms",
+    "/nix/store/7qwr21jikh0qgadd04jcm3zyw02qvr5a-elfutils-0.195-dev",
+    "/nix/store/sqg55j6303c9x9jgjvf8rpi3q79x9ngv-zstd-1.5.7-dev",
+    "/nix/store/w03i01kiakf4wz7jbp1l59c0bhb3pjca-perl-5.42.3",
+    "/nix/store/31gnwsgag5qa14hfblqi5hyn71pyx7py-binutils-2.46",
+    "/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0",
+    "/nix/store/dp0zdsysxsli2xncj4prvhsik08qn697-stdenv-linux",
+    "/nix/store/svx59425zxp552p2b8gm11qj5r09b56i-bash-5.3p15",
+    "/nix/store/xvp6nfxayb07si2jaggqwvx3iykw89g2-rustc-1.98.1",
+    "/nix/store/0fdc105g1896ganr8916rsjxhvr9qv5b-binutils-wrapper-2.46"
+  ]
+}
