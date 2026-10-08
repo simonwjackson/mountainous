@@ -1,0 +1,114 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash jq coreutils
+# shellcheck shell=bash
+# Evaluate the real scaffold. Do not start the power service or access disks.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# Nix attribute interpolation is intentional inside the single-quoted expression.
+# shellcheck disable=SC2016
+nix eval --json '.#nixosConfigurations.unzen.config' --apply '
+  c: {
+    hostname = c.networking.hostName;
+    platform = c.nixpkgs.hostPlatform.system;
+    filesystems = builtins.attrNames c.fileSystems;
+    hasDiskLayout = c ? disko;
+    bcachefs = {
+      enabled = c.boot.supportedFilesystems.bcachefs;
+      tools = c.boot.bcachefs.package.pname;
+      module = c.boot.bcachefs.modulePackage.name;
+      moduleIncluded = builtins.elem c.boot.bcachefs.modulePackage c.boot.extraModulePackages;
+      filesystemToolsIncluded = builtins.elem c.boot.bcachefs.package c.system.fsPackages;
+    };
+    hardware = {
+      microcode = c.hardware.cpu.intel.updateMicrocode;
+      msr = c.hardware.cpu.x86.msr.enable;
+    };
+    power = {
+      enable = c.services.undervolt.enable;
+      p1 = c.services.undervolt.p1;
+      p2 = c.services.undervolt.p2;
+      offsets = map (name: c.services.undervolt.${name}) [
+        "coreOffset" "gpuOffset" "uncoreOffset" "analogioOffset"
+      ];
+      temperatureTargets = map (name: c.services.undervolt.${name}) [
+        "temp" "tempAc" "tempBat"
+      ];
+      turbo = c.services.undervolt.turbo;
+      useTimer = c.services.undervolt.useTimer;
+      command = c.systemd.services.undervolt.serviceConfig.ExecStart;
+      wantedBy = c.systemd.services.undervolt.wantedBy;
+      resumeCommand = c.systemd.services.undervolt-sleep.serviceConfig.ExecStop;
+    };
+    services = {
+      ssh = c.services.openssh.enable;
+      passwordAuth = c.services.openssh.settings.PasswordAuthentication;
+      networkmanager = c.networking.networkmanager.enable;
+      tailscale = c.services.tailscale.enable;
+      greetd = c.services.greetd.enable;
+      xserver = c.services.xserver.enable;
+      hyprland = c.programs.hyprland.enable;
+      sleep = c.systemd.targets.sleep.enable;
+      suspend = c.systemd.targets.suspend.enable;
+      hibernate = c.systemd.targets.hibernate.enable;
+    };
+  }
+' | jq -e '
+  (.power.command | split(" ")) as $args |
+  .hostname == "unzen" and .platform == "x86_64-linux" and
+  .filesystems == [] and .hasDiskLayout == false and
+  .bcachefs.enabled == true and .bcachefs.tools == "bcachefs-tools" and
+  (.bcachefs.module | contains("bcachefs")) and
+  .bcachefs.moduleIncluded == true and .bcachefs.filesystemToolsIncluded == true and
+  .hardware == {"microcode":true,"msr":true} and
+  .power.enable == true and
+  .power.p1 == {"limit":95,"window":28} and
+  .power.p2 == {"limit":95,"window":0.00244} and
+  .power.offsets == [null,null,null,null] and
+  .power.temperatureTargets == [null,null,null] and
+  .power.turbo == null and .power.useTimer == false and
+  ($args | length) == 7 and ($args[0] | endswith("/bin/undervolt")) and
+  $args[1] == "--power-limit-long" and ($args[2] | tonumber) == 95 and
+  ($args[3] | tonumber) == 28 and
+  $args[4] == "--power-limit-short" and ($args[5] | tonumber) == 95 and
+  ($args[6] | tonumber) == 0.00244 and
+  .power.wantedBy == ["multi-user.target"] and
+  .power.resumeCommand == .power.command and
+  .services == {
+    "ssh":true, "passwordAuth":false, "networkmanager":true, "tailscale":true,
+    "greetd":false, "xserver":false, "hyprland":false,
+    "sleep":false, "suspend":false, "hibernate":false
+  }
+' >/dev/null
+
+# Other fleet hosts must not acquire this host-specific power policy.
+nix eval --json '.#nixosConfigurations.hiyori.config' --apply '
+  c: {
+    power = c.services.undervolt.enable;
+    hostname = c.networking.hostName;
+    root = c.fileSystems."/".device;
+    esp = c.fileSystems."/boot".device;
+  }
+' | jq -e '
+  . == {
+    "power":false,
+    "hostname":"hiyori",
+    "root":"/dev/mapper/mountainous-root",
+    "esp":"/dev/disk/by-partlabel/disk-main-ESP"
+  }
+' >/dev/null
+
+# A missing storage plan must block a full system build, not guess a root disk.
+error=$(mktemp)
+trap 'rm -f "$error"' EXIT
+if nix eval --raw '.#nixosConfigurations.unzen.config.system.build.toplevel.drvPath' > /dev/null 2> "$error"; then
+  echo 'Unzen unexpectedly builds without an approved root filesystem' >&2
+  exit 1
+fi
+if ! grep -Fq 'does not specify your root file system' "$error"; then
+  cat "$error" >&2
+  echo 'Unzen failed for an unexpected reason' >&2
+  exit 1
+fi
+
+printf 'Unzen headless scaffold, bcachefs driver/tools, 95 W PL1/PL2, no voltage changes or disk layout, blocked installation, and unchanged Hiyori: OK\n'
