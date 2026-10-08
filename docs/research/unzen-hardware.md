@@ -344,3 +344,10 @@ against an untrusted peer and requires host-key rejection before fact gathering.
 The temporary bootstrap controller runs only the `kexec` phase. Formatting and
 installation follow only after a fresh inventory and driver check in RAM.
 Physical installation and firmware boot validation remain pending.
+
+The actual RAM bootstrap ran only `--phases kexec`. Kexec loaded the image and
+printed "machine will boot into nixos in 6s", but verified SSH did not return at
+`192.168.1.114`. Retries ended with "No route to host". The local waiting process
+was stopped. No Disko or installation phase ran, and neither NVMe was formatted.
+Local console evidence is needed to distinguish boot failure from a changed
+network address. VM success did not establish this machine's kexec behavior.
