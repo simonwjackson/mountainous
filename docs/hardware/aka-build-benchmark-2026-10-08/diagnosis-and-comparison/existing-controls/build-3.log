@@ -1,0 +1,181 @@
+checking outputs of '/nix/store/98klz3frilgg1k4d1i2xxar32dqdjxky-bcachefs-6.18.53-1.39.6.drv'...
+bcachefs> structuredAttrs is enabled
+bcachefs> Running phase: unamePreHook
+bcachefs> Running phase: unpackPhase
+bcachefs> unpacking source archive /nix/store/mgh4xfc7gcpbfakcvwsbcfp8lmlx5dnk-bcachefs-tools-1.39.6-dkms
+bcachefs> source root is bcachefs-tools-1.39.6-dkms
+bcachefs> Running phase: patchPhase
+bcachefs> Running phase: updateAutotoolsGnuConfigScriptsPhase
+bcachefs> Running phase: configurePhase
+bcachefs> no configure script, doing nothing
+bcachefs> Running phase: buildPhase
+bcachefs> build flags: -j12 SHELL=/nix/store/svx59425zxp552p2b8gm11qj5r09b56i-bash-5.3p15/bin/bash CC=/nix/store/8sjgd7q3mdks1rb7rbcv0sallhvrhai5-gcc-15.3.0/bin/gcc LD=/nix/store/31gnwsgag5qa14hfblqi5hyn71pyx7py-binutils-2.46/bin/ld AR=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/ar NM=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/nm STRIP=/nix/store/31gnwsgag5qa14hfblqi5hyn71pyx7py-binutils-2.46/bin/strip OBJCOPY=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/objcopy OBJDUMP=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/objdump READELF=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/readelf HOSTCC=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/cc HOSTCXX=/nix/store/z4c6k0mrlkwl3s4w9ysxc8vq1wylm3ms-gcc-wrapper-15.3.0/bin/c++ HOSTAR=/nix/store/0fdc105g1896ganr8916rsjxhvr9qv5b-binutils-wrapper-2.46/bin/ar HOSTLD=/nix/store/0fdc105g1896ganr8916rsjxhvr9qv5b-binutils-wrapper-2.46/bin/ld ARCH=x86_64 CROSS_COMPILE= KBUILD_OUTPUT=/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build KDIR=/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build INSTALL_MOD_PATH=/nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6 RUST_LIB_SRC=/nix/store/yf16anm07g3b8khg74ni8s37l6b5hzp5-rust-lib-src
+bcachefs> make -C /nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build M=$PWD modules
+bcachefs> make[1]: Entering directory '/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build'
+bcachefs> make[2]: Entering directory '/build/bcachefs-tools-1.39.6-dkms'
+bcachefs> bcachefs: no prebuilt module — building locally (no modinfo to verify the module)
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/accounting.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/background.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/backpointers.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/buckets.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/check.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/check_data.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/discard.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/disk_groups.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/foreground.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/lru.o
+bcachefs>   CC [M]  src/fs/bcachefs/alloc/replicas.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/bkey.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/bkey_methods.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/bset.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/cache.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/check.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/commit.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/init.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/interior.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/iter.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/journal_overlay.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/key_cache.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/locking.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/node_scan.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/read.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/sort.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/update.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/write.o
+bcachefs>   CC [M]  src/fs/bcachefs/btree/write_buffer.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/checksum.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/compress.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/copygc.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/ec/create.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/ec/init.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/ec/io.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/ec/trigger.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/extents.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/extents_sb.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/extent_update.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/io_misc.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/keylist.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/migrate.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/move.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/nocow_locking.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/read.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/reconcile/check.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/reconcile/trigger.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/reconcile/work.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/reflink.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/update.o
+bcachefs>   CC [M]  src/fs/bcachefs/data/write.o
+bcachefs>   CC [M]  src/fs/bcachefs/debug/debug.o
+bcachefs>   CC [M]  src/fs/bcachefs/debug/sysfs.o
+bcachefs>   CC [M]  src/fs/bcachefs/debug/trace.o
+bcachefs>   CC [M]  src/fs/bcachefs/errcode.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/acl.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/check.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/check_dir_structure.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/check_extents.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/check_nlinks.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/inode.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/inode_opts.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/logged_ops.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/namei.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/quota.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/str_hash.o
+bcachefs>   CC [M]  src/fs/bcachefs/fs/xattr.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/chardev.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/dev.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/damage.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/error.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/fs.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/progress.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/recovery.o
+bcachefs>   CC [M]  src/fs/bcachefs/init/passes.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/init.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/journal.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/read.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/reclaim.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/sb.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/seq_blacklist.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/validate.o
+bcachefs>   CC [M]  src/fs/bcachefs/journal/write.o
+bcachefs>   CC [M]  src/fs/bcachefs/opts.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/clean.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/counters.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/downgrade.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/errors.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/io.o
+bcachefs>   CC [M]  src/fs/bcachefs/sb/members.o
+bcachefs>   CC [M]  src/fs/bcachefs/snapshots/check_snapshots.o
+bcachefs>   CC [M]  src/fs/bcachefs/snapshots/delete.o
+bcachefs>   CC [M]  src/fs/bcachefs/snapshots/snapshot.o
+bcachefs>   CC [M]  src/fs/bcachefs/snapshots/subvolume.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/clock.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/darray.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/enumerated_ref.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/eytzinger.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/fast_list.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/locking.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/mean_and_variance.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/printbuf.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/rcu_pending.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/siphash.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/six.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/time_stats.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/thread_with_file.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/two_state_shared_lock.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/util.o
+bcachefs>   CC [M]  src/fs/bcachefs/util/varint.o
+bcachefs>   CC [M]  src/fs/bcachefs/vendor/bio_iov_iter.o
+bcachefs>   CC [M]  src/fs/bcachefs/vendor/closure.o
+bcachefs>   CC [M]  src/fs/bcachefs/vendor/min_heap.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/fiemap.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/fs.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/ioctl.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/io.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/buffered.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/direct.o
+bcachefs>   CC [M]  src/fs/bcachefs/vfs/pagecache.o
+bcachefs>   CC [M]  src/fs/bcachefs/debug/async_objs.o
+bcachefs>   CC [M]  src/fs/bcachefs/module-version.o
+bcachefs>   RUSTC P  src/fs/bcachefs/libpaste.so
+bcachefs>   RUSTC P  src/fs/bcachefs/libtypeinfo_macros.so
+bcachefs>   RUSTC L  src/fs/bcachefs/bitfield.o
+bcachefs> warning: missing documentation for a function
+bcachefs>   --> src/fs/bcachefs/typeinfo-macros/src/lib.rs:39:1
+bcachefs>    |
+bcachefs> 39 | pub fn derive_type_info(input: TokenStream) -> TokenStream {
+bcachefs>    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bcachefs>    |
+bcachefs>    = note: requested on the command line with `-W missing-docs`
+bcachefs> 
+bcachefs>   RUSTC L  src/fs/bcachefs/bitflags.o
+bcachefs>   RUSTC L  src/fs/bcachefs/uuid.o
+bcachefs> warning: 1 warning emitted
+bcachefs> 
+bcachefs>   HOSTRUSTC src/fs/bcachefs/codegen
+bcachefs>   CC [M]  src/fs/bcachefs/fs/dirent.o
+bcachefs>   CODEGEN src/fs/bcachefs/rust
+bcachefs>   RUSTC [M] src/fs/bcachefs/mod.o
+bcachefs>   CC [M]  src/fs/bcachefs/rust/extern.o
+bcachefs>   LD [M]  src/fs/bcachefs/bcachefs.o
+bcachefs>   MODPOST Module.symvers
+bcachefs>   CC [M]  src/fs/bcachefs/bcachefs.mod.o
+bcachefs>   CC [M]  .module-common.o
+bcachefs>   LD [M]  src/fs/bcachefs/bcachefs.ko
+bcachefs>   BTF [M] src/fs/bcachefs/bcachefs.ko
+bcachefs> Skipping BTF generation for src/fs/bcachefs/bcachefs.ko due to unavailability of vmlinux
+bcachefs> make[2]: Leaving directory '/build/bcachefs-tools-1.39.6-dkms'
+bcachefs> make[1]: Leaving directory '/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build'
+bcachefs> Running phase: installPhase
+bcachefs> make: Entering directory '/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build'
+bcachefs> make[1]: Entering directory '/build/bcachefs-tools-1.39.6-dkms'
+bcachefs>   INSTALL /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6/lib/modules/6.18.53/updates/src/fs/bcachefs/bcachefs.ko
+bcachefs>   XZ      /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6/lib/modules/6.18.53/updates/src/fs/bcachefs/bcachefs.ko.xz
+bcachefs>   DEPMOD  /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6/lib/modules/6.18.53
+bcachefs> Warning: modules_install: missing 'System.map' file. Skipping depmod.
+bcachefs> make[1]: Leaving directory '/build/bcachefs-tools-1.39.6-dkms'
+bcachefs> make: Leaving directory '/nix/store/qj2fy1563ibwhbg8jp32wf5dnaps6v7q-linux-6.18.53-dev/lib/modules/6.18.53/build'
+bcachefs> Running phase: fixupPhase
+bcachefs> shrinking RPATHs of ELF executables and libraries in /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6
+bcachefs> checking for references to /build/ in /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6...
+bcachefs> patching script interpreter paths in /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6
+bcachefs> stripping (with command strip and flags -S -p) in /nix/store/gnsdbdn3v70f5yfyxbvwjhml1vbnx5qa-bcachefs-6.18.53-1.39.6/lib

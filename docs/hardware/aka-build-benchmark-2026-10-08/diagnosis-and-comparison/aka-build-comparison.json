@@ -1,0 +1,31 @@
+{
+  "aka_median_seconds": 27.886289491783828,
+  "aka_run_seconds": [
+    27.885735045187175,
+    27.886289491783828,
+    27.931582069024444
+  ],
+  "aka_cpu_peaks_c": [
+    96.0,
+    96.0,
+    95.875
+  ],
+  "comparisons": {
+    "zao": {
+      "baseline_median_seconds": 38.805492710002,
+      "aka_relative_build_speed": 1.3915617106906715,
+      "aka_build_time_change_percent": -28.138292946873932
+    },
+    "unzen": {
+      "baseline_median_seconds": 41.323855900000126,
+      "aka_relative_build_speed": 1.4818700032564542,
+      "aka_build_time_change_percent": -32.51769738219481
+    }
+  },
+  "aka_raw_cpu_sensor_peaks_c": [
+    97.75,
+    98.375,
+    97.125
+  ],
+  "aka_cpu_alarm_available": false
+}
