@@ -1,5 +1,6 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -i bash -p coreutils openssh jq
+# shellcheck shell=bash
 # Install a host onto a remote machine that is already running some Linux.
 #
 #   ./scripts/install-remote tate root@192.168.1.189
@@ -75,21 +76,34 @@ find "$EXTRA" -type f -printf '  %M %P\n'
 
 echo
 echo "=== installing ==="
-echo "  the target kexecs into a NixOS installer, then reboots"
-echo "  if it has a USB boot device plugged in, remove it when this finishes"
+echo "  phases: ${MOUNTAINOUS_INSTALL_PHASES:-kexec,disko,install,reboot}"
+echo "  remove a recovery USB only after installation is verified and before booting the new OS"
 echo
-set -x
-nix run github:nix-community/nixos-anywhere -- \
+# Trust is fail-closed in the pinned tool. Keep the verified current host key
+# across kexec; do not disable checking before sending the new private key.
+INSTALL_ARGS=(--phases "${MOUNTAINOUS_INSTALL_PHASES:-kexec,disko,install,reboot}")
+if [ -n "${MOUNTAINOUS_INSTALL_KEXEC:-}" ]; then
+  INSTALL_ARGS+=(--kexec "$MOUNTAINOUS_INSTALL_KEXEC")
+fi
+if [ -n "${MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS:-}" ]; then
+  INSTALL_ARGS+=(--ssh-option "HostKeyAlias=$MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS")
+fi
+if [ -n "${MOUNTAINOUS_INSTALL_SSH_KEY:-}" ]; then
+  INSTALL_ARGS+=(-i "$MOUNTAINOUS_INSTALL_SSH_KEY")
+fi
+nix run .#nixos-anywhere-verified -- \
   --flake ".#$HOST" \
   --target-host "$TARGET" \
   --build-on local \
-  --ssh-option UserKnownHostsFile=/dev/null \
-  --ssh-option StrictHostKeyChecking=no \
-  --extra-files "$EXTRA"
-set +x
+  --extra-files "$EXTRA" \
+  "${INSTALL_ARGS[@]}"
 
 echo
 echo "=== done ==="
-echo "  The machine holds its host key already, so on first boot it should"
-echo "  decrypt its secrets and join the tailnet without anyone logging in."
-echo "  Watch for it to appear as: $HOST"
+case ",${MOUNTAINOUS_INSTALL_PHASES:-kexec,disko,install,reboot}," in
+  *,install,*)
+    echo "  The installed system holds its host key for fleet-secret decryption."
+    echo "  Verify the installation before booting it. Watch for: $HOST"
+    ;;
+  *) echo "  Only the requested preparation phases ran; no installed host identity is promised." ;;
+esac

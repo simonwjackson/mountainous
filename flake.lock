@@ -172,6 +172,38 @@
         "url": "file:///home/simonwjackson/code/sandbox/korri"
       }
     },
+    "nixos-anywhere-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791357754,
+        "narHash": "sha256-Ux5asuuHjDEq7Z12g99g6Nt4Vu4WByPHASMUGTDjAU0=",
+        "owner": "nix-community",
+        "repo": "nixos-anywhere",
+        "rev": "b6be7b277b468d55082584441cbef1fed8530eb3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixos-anywhere",
+        "type": "github"
+      }
+    },
+    "nixos-images-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791456080,
+        "narHash": "sha256-VDnm81L/1YLrPklNacGCNwpPhHi5Tya1XbfdnCB/Zd0=",
+        "owner": "nix-community",
+        "repo": "nixos-images",
+        "rev": "50939ddf1a0339f289a9dbd810bdfd4e4fba6df4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixos-images",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1790185690,
@@ -230,6 +262,8 @@
         "hjem": "hjem",
         "import-tree": "import-tree",
         "korri": "korri",
+        "nixos-anywhere-src": "nixos-anywhere-src",
+        "nixos-images-src": "nixos-images-src",
         "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix"
       }

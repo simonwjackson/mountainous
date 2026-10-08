@@ -16,6 +16,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Source-only inputs keep installer modules/tools pinned to this flake.
+    nixos-images-src = {
+      url = "github:nix-community/nixos-images";
+      flake = false;
+    };
+    nixos-anywhere-src = {
+      url = "github:nix-community/nixos-anywhere";
+      flake = false;
+    };
+
     hjem = {
       url = "github:feel-co/hjem";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -55,7 +65,5 @@
     };
   };
 
-  outputs =
-    inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }

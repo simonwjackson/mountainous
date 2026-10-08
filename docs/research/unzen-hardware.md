@@ -307,6 +307,40 @@ physical machine.
 Physical installation has not run. It still needs fresh device-identity checks,
 backup/erasure approval, and a verified bcachefs-capable installer. Actual
 firmware boot order and UEFI fallback discovery also need physical validation.
-The current `scripts/install-remote` disables SSH host-key checking. Verify and
-preserve SSH peer trust before sending the new private host key; do not treat
-that helper's unchecked connection as a trusted enrollment channel.
+`scripts/install-remote` now uses the pinned `nixos-anywhere-verified` package.
+Its initial SSH options enforce `StrictHostKeyChecking=yes` and `-F /dev/null`.
+Upstream initially sets checking to `no`; later `--ssh-option` flags cannot
+replace that value because OpenSSH uses the first value. The package replaces
+those defaults and removes the unchecked known-hosts file. Unknown peers fail
+before installation credentials are sent.
+
+### Physical installation preparation
+
+The operator said "Yes, go" after the assistant named both NVMe serials, final
+erasure approval, and the need for local firmware access. Preparation still
+checks the live target before formatting. Backup readiness is the operator's
+assurance, not a machine-verified result.
+
+A fresh authenticated root SSH probe found Hiyori at `192.168.1.114`, with both
+approved NVMe serials present and unmounted. The recovery USB still supplies
+`/boot` and the encrypted btrfs root. The current kernel is Linux 6.18.52,
+with no loaded bcachefs driver or bcachefs command. Root SSH uses the operator's
+existing RSA key without sudo authentication. The host's ed25519 fingerprint
+matches the existing trusted Hiyori entry:
+`SHA256:b5Ag0D2vWG2QiNJ72SbVYmKfnpY10atO9A9wCPqTHgc`.
+
+`modules/unzen-installer.nix` builds a RAM-only kexec installer with the fleet's
+kernel family, matching bcachefs module/tools, and Python for live guards. It
+uses pinned upstream `nixos-images` modules, not the default downloaded image.
+No fleet secret or Unzen private key is embedded in the image. The upstream
+kexec runner preserves the current SSH host keys and authorized keys. Connect
+through the verified LAN address with `HostKeyAlias=hiyori`; do not depend on
+Tailscale remaining active in the RAM installer.
+
+`tests/unzen-installer.nix` exercises the actual tarball in a disposable VM.
+It checks preserved SSH peer trust and creates, mounts, writes, and unmounts a
+bcachefs filesystem after kexec. It also runs the actual patched installer
+against an untrusted peer and requires host-key rejection before fact gathering.
+The temporary bootstrap controller runs only the `kexec` phase. Formatting and
+installation follow only after a fresh inventory and driver check in RAM.
+Physical installation and firmware boot validation remain pending.
