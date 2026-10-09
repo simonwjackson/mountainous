@@ -401,6 +401,31 @@
       assert lib.assertMsg (failed == {}) "Zao has unsatisfied host commitments: ${failedNames}";
         nixpkgs.legacyPackages.x86_64-linux.writeText "zao-commitments.json" (builtins.toJSON commitments);
 
+    checks.x86_64-linux.zao-syncthing-disabled = let
+      zao = self.nixosConfigurations.zao.config;
+      syncLib = import ./features/syncthing/lib.nix {inherit lib;};
+      sync = syncLib.mkSyncConfig {
+        hostsRoot = ./hosts;
+        devicesRoot = ./devices;
+        hostname = "zao";
+        shares = zao.mountainous.features.syncthing.shares;
+      };
+    in
+      assert lib.assertMsg (!zao.mountainous.features.syncthing.enable) "Zao must disable the Syncthing feature";
+      assert lib.assertMsg (!zao.services.syncthing.enable) "Zao must not run Syncthing";
+      assert lib.assertMsg (zao.services.syncthing.settings.folders == {}) "Zao must not configure Syncthing folders";
+      assert lib.assertMsg (!(zao.systemd.services ? syncthing) && !(zao.systemd.services ? syncthing-init)) "Zao must not install Syncthing units";
+      assert lib.assertMsg (!(builtins.elem "zao" (sync.hostsByShare.pi-config or []))) "Other hosts must not discover Zao as a Pi sync peer";
+      assert lib.assertMsg zao.mountainous.features.pi.enable "Disabling Syncthing must preserve Zao's Pi feature";
+        nixpkgs.legacyPackages.x86_64-linux.writeText "zao-syncthing-disabled.json" (builtins.toJSON {
+          featureDisabled = true;
+          serviceDisabled = true;
+          foldersRemoved = true;
+          unitsRemoved = true;
+          peerDiscoveryRemoved = true;
+          piPreserved = true;
+        });
+
     checks.x86_64-linux.zao-korri-consumer = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       zao = self.nixosConfigurations.zao.config;

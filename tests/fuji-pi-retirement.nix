@@ -13,10 +13,11 @@ in
   assert fuji.home-manager.users.simonwjackson.programs.lazygit.settings.customCommands == [];
   assert (fuji.home-manager.users.simonwjackson.programs.lazygit.settings.keybinding.files.commitChanges or "c") == "c";
   assert zao.mountainous.features.pi.enable;
-  assert zao.services.syncthing.settings.folders ? pi-config;
+  assert !zao.services.syncthing.enable;
   assert builtins.any (command: command.key == "c") zao.home-manager.users.simonwjackson.programs.lazygit.settings.customCommands; {
     fujiPiDisabled = true;
     fujiPiSyncRemoved = true;
     otherFujiFoldersPreserved = true;
     zaoPiPreserved = true;
+    zaoSyncthingDisabled = true;
   }
