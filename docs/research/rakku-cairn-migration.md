@@ -145,28 +145,51 @@ Habitat still fails with `invalid key: API key does not exist`. A transient
 `active` service status is not proof the proxy serves HTTP; its DNS name does
 not resolve. Its original secret was preserved unchanged, not silently replaced.
 
-## Current status: awaiting physical boot recovery
+## Boot recovery and current status
 
-**The migration is not complete.** The one-shot candidate
+The first one-shot candidate
 `/nix/store/875sh489svkxz6lq2hxn96xxp4h92x3g-nixos-system-rakku-26.05.20251215.1306659`
 passed live checks but did not return on the LAN or tailnet after reboot. A fresh
 port-22 scan of all 253 other LAN addresses found no host matching Rakku's key.
-The default boot entry was set to the original system before the one-shot trial;
-finalize has not run. Ask the operator to power-cycle the machine once to try
-that old fallback, or supply the console error. Do not reset either radio.
+The default boot entry was set to the original system before the one-shot trial.
+Finalize had not run at that point. The operator was asked to power-cycle once;
+neither radio was reset.
 
 Inspection of both actual initrds showed that the candidate omitted `usb_storage`,
 which the original hardware module included. This omission is fixed, and a new
 regression assertion fails without it. It is not yet proven to be the cause of
 the failed boot. The corrected system is built locally at
 `/nix/store/73i4bcrdxm225yvcvxv6kkdm1sj3g9lx-nixos-system-rakku-26.05.20251215.1306659`
-and linked from `/tmp/rakku-cairn-recovery-system`. It has **not** been deployed.
+and linked from `/tmp/rakku-cairn-recovery-system`.
 Sixteen Python tests, the Nix host contract, Ruff and formatting pass.
 
-After physical recovery, verify the actual booted generation and HA inventory
-before making another change. Then identify the SSD transport, read boot errors,
-and test the corrected image with the same backup and one-shot fallback gates.
-The external reboot watcher was stopped while awaiting operator input.
+The operator power-cycled Rakku. It returned at `192.168.1.178` and had actually
+booted the Cairn `875sh...` candidate. All 57 device IDs, 633 entity registrations,
+187 previously available entities, loaded integrations, radio identities, SOPS
+secret bytes and persistence checks passed after the physical boot. `lsblk`
+verified that the SSD uses SATA. The omitted USB-storage driver is therefore
+not evidence of a missing driver for the root disk. The previous boot journal
+ends during filesystem unmounting; the cause of the failed software restart is
+not proven. This working Cairn generation was finalized as the default.
+
+The boot-driver-only `73i4...` follow-up has identical `etc`, `sw`, kernel and
+kernel-module paths. It was copied to Rakku, activated, and passed the full
+connection inventory without restarting HA. Its first two staging attempts
+reported the known Habitat authentication failure and reverted only the system
+selection, without restoring or changing HA state. The subsequent attempt passed.
+Generation 42 was prepared as a one-shot boot, retaining the verified Cairn
+generation 41 as default/fallback.
+
+**Final image cold-boot verification is still incomplete.** A second software
+reboot again left Rakku unreachable. Another complete LAN SSH scan found neither
+its SSH identity nor its known NIC MAC, and the tailnet ping timed out. The
+external watcher was stopped. The operator has been asked to power-cycle once
+more. Do not issue further software reboots during this migration.
+
+After recovery, verify `/run/booted-system`, then run inventory and host checks
+against `73i4...`. If they pass, finalize that image and collect the private
+receipts. Leave the machine running. Investigating unreliable software restart
+is a separate follow-up, not a reason to reset devices or radio controllers.
 
 Temporary orchestration on Zao is in `/tmp/rakku-final-prepare.sh` and
 `/tmp/rakku-acceptance-watch.py`. The latter accepts `--candidate` and `--booted`;
