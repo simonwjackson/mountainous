@@ -23,6 +23,30 @@
         "type": "github"
       }
     },
+    "avahi-package-recipe": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-KfhAWVB+OUzxcLeAdK9Ug8Alux+krJ4ZyXnfYpkW9KM=",
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/av/avahi/package.nix"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/av/avahi/package.nix"
+      }
+    },
+    "avahi-timeout-fix": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-RVzJwiZFYqmyX/+0i6ZlknrGrJIllN2jVqfGEc703xg=",
+        "type": "file",
+        "url": "https://github.com/avahi/avahi/commit/b3ad387c74f20368f6dcf60f97d20a3bf8ba9782.patch"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/avahi/avahi/commit/b3ad387c74f20368f6dcf60f97d20a3bf8ba9782.patch"
+      }
+    },
     "bun2nix": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -1546,6 +1570,8 @@
     "root": {
       "inputs": {
         "agenix": "agenix",
+        "avahi-package-recipe": "avahi-package-recipe",
+        "avahi-timeout-fix": "avahi-timeout-fix",
         "cascade": "cascade",
         "disko": "disko",
         "dnshack": "dnshack",

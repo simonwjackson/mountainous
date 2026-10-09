@@ -6,6 +6,7 @@
 }: {
   imports = [
     inputs.paperclip.nixosModules.paperclip
+    ./avahi.nix
     ./commitments.nix
     ./disko.nix
     ./hardware.nix

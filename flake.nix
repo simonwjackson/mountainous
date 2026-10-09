@@ -8,6 +8,16 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-droid.url = "github:NixOS/nixpkgs/nixos-24.05";
+    # Update Zao's Avahi recipe without moving the shared Nixpkgs pin.
+    avahi-package-recipe = {
+      url = "file+https://raw.githubusercontent.com/NixOS/nixpkgs/master/pkgs/by-name/av/avahi/package.nix";
+      flake = false;
+    };
+    # PR 366 is merged upstream but is not in the Avahi 0.8 release or Nixpkgs.
+    avahi-timeout-fix = {
+      url = "file+https://github.com/avahi/avahi/commit/b3ad387c74f20368f6dcf60f97d20a3bf8ba9782.patch";
+      flake = false;
+    };
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs-droid";
@@ -392,6 +402,31 @@
         pkgs.runCommand "gogcli-platforms" {nativeBuildInputs = [x86];} ''
           gog --version > "$out"
         '';
+
+    checks.x86_64-linux.zao-avahi-package = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      avahi = self.nixosConfigurations.zao.config.services.avahi.package;
+      securityFixes = ["CVE-2025-68276" "CVE-2025-68468" "CVE-2025-68471" "CVE-2026-24401" "CVE-2026-34933"];
+      hasPatch = name: lib.any (patch: lib.hasSuffix "-${name}.patch" (toString patch)) avahi.patches;
+      yari = self.nixosConfigurations.yari;
+    in
+      assert lib.assertMsg (avahi.version == "0.8") "Zao must retain the stable Avahi release";
+      assert lib.assertMsg (avahi.doCheck && builtins.elem "--enable-tests" avahi.configureFlags) "Zao must run Avahi's upstream test suite";
+      assert lib.assertMsg (lib.all hasPatch securityFixes) "Zao Avahi must include the current Nixpkgs security backports";
+      assert lib.assertMsg (lib.any (patch: toString patch == inputs.avahi-timeout-fix.outPath) avahi.patches) "Zao Avahi must include PR 366";
+      assert lib.assertMsg (avahi.outPath != pkgs.avahi.outPath) "Zao must run the patched Avahi package";
+      assert lib.assertMsg (yari.config.services.avahi.package.outPath == yari.pkgs.avahi.outPath) "The Zao override must not change Yari's Avahi";
+        pkgs.writeText "zao-avahi-package.json" (builtins.toJSON {
+          inherit securityFixes;
+          timeoutCleanupFixed = true;
+          upstreamTestsEnabled = true;
+          otherHostPreserved = true;
+        });
+
+    checks.x86_64-linux.zao-avahi-timeout-cleanup = import ./tests/avahi-timeout-cleanup.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      avahi = self.nixosConfigurations.zao.config.services.avahi.package;
+    };
 
     checks.x86_64-linux.zao-commitments = let
       commitments = self.nixosConfigurations.zao.config.mountainous.hosts.zao.commitments;
