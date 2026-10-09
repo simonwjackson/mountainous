@@ -22,6 +22,7 @@ keys:
   - &tate   age10cjse77wdjzdgygfh0k28g960psu2qysx8czdl0v4h9sv66huuzqrjkuy6
   - &ibuki  age139z7cqp2vf8x8vgzcdax3v7adf5xgkv8757tznlkkv7v57cj430svkm0sp
   - &unzen  age1keuga3fh4s42sm9ze4kcwmqe8mkt4tyw9jzgdtur2e24ntszqc5s8c98jz
+  - &rakku  age15t6g4dck4vpkfg80303wy8fvl3ptczd7ehgd3ppqrcgv2fszkv4q50s2a4
 
 creation_rules:
   # Fleet-wide. Every machine needs these, so every machine can read them.
@@ -35,8 +36,15 @@ creation_rules:
           - *tate
           - *ibuki
           - *unzen
+          - *rakku
 
   # Per-host. A machine reads only its own file.
+  - path_regex: secrets/hosts/rakku\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *rakku
+
   - path_regex: secrets/hosts/hiyori\.yaml$
     key_groups:
       - age:

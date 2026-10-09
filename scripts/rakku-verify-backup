@@ -1,0 +1,129 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 age
+"""Decrypt and restore-check a Rakku archive in a private, isolated directory.
+
+Never starts HA or accesses a radio. Restores regular files only, rejects path
+traversal, verifies archived ownership/modes and every file digest, then checks
+both SQLite databases. Symlinks are not followed or restored. No secret values
+are printed. Plaintext is removed when the check exits.
+"""
+
+import argparse
+from contextlib import closing
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import sqlite3
+import subprocess
+import tarfile
+import tempfile
+
+
+def verify_stream(stream, directory):
+    manifest = None
+    restored = {}
+    with tarfile.open(fileobj=stream, mode="r|gz") as archive:
+        for member in archive:
+            name = PurePosixPath(member.name)
+            if name.is_absolute() or ".." in name.parts:
+                raise RuntimeError("Unsafe archive path")
+            if not member.isfile():
+                continue
+            if member.name in restored:
+                raise RuntimeError("Duplicate archive member")
+            destination = directory / name
+            destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            source = archive.extractfile(member)
+            checksum = hashlib.sha256()
+            with destination.open("xb") as output:
+                while block := source.read(1024 * 1024):
+                    checksum.update(block)
+                    output.write(block)
+            # Verify archived metadata without assigning live service ownership.
+            restored[member.name] = {
+                "sha256": checksum.hexdigest(),
+                "size": member.size,
+                "uid": member.uid,
+                "gid": member.gid,
+                "mode": member.mode,
+            }
+            if member.name == "manifest.json":
+                manifest = json.loads(destination.read_text())
+    if manifest is None:
+        raise RuntimeError("Archive has no manifest")
+    for path, expected in manifest["files"].items():
+        if restored.get(path) != expected:
+            raise RuntimeError("Restored bytes or metadata differ: " + path)
+    if set(restored) - {"manifest.json"} != set(manifest["files"]):
+        raise RuntimeError("Archive contains unmanifested files")
+    root = directory / "permafrost/var/lib/hass"
+    for name in ("home-assistant_v2.db", "zigbee.db"):
+        with closing(sqlite3.connect(f"file:{root / name}?mode=ro", uri=True)) as db:
+            if list(db.execute("PRAGMA integrity_check")) != [("ok",)]:
+                raise RuntimeError("Restored database failed integrity check: " + name)
+    required = (
+        "core.uuid",
+        "core.config_entries",
+        "core.device_registry",
+        "core.entity_registry",
+        "auth",
+    )
+    for name in required:
+        json.loads((root / ".storage" / name).read_text())
+    nvm = directory / "extra/zwave-controller.nvm"
+    radio = manifest["zwave_nvm"]
+    unsupported = (
+        radio.get("status") == "unsupported"
+        and radio.get("reason") == "ZW0209: Unknown NVM size - cannot backup"
+    )
+    if (
+        not unsupported
+        and hashlib.sha256(nvm.read_bytes()).hexdigest() != radio["sha256"]
+    ):
+        raise RuntimeError("Controller NVM backup checksum differs")
+    if not (directory / "extra/secrets/zwave-js-secrets").is_file():
+        raise RuntimeError("Z-Wave security keys missing")
+    return {
+        "id": manifest["id"],
+        "files_verified": len(manifest["files"]),
+        "databases": "integrity_check OK",
+        "controller_backup_bytes": nvm.stat().st_size if not unsupported else 0,
+        "controller_backup_status": "unsupported ZW0209" if unsupported else "verified",
+        "system": manifest["system"],
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("archive", type=Path)
+    parser.add_argument(
+        "--identity", type=Path, default=Path.home() / ".ssh/id_ed25519"
+    )
+    parser.add_argument("--receipt", type=Path, required=True)
+    args = parser.parse_args()
+    os.umask(0o077)
+    # /run/user is tmpfs: restored plaintext must not persist on the workstation.
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    with tempfile.TemporaryDirectory(prefix="rakku-restore-", dir=runtime) as directory:
+        process = subprocess.Popen(
+            ["age", "--decrypt", "--identity", str(args.identity), str(args.archive)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            result = verify_stream(process.stdout, Path(directory))
+            if process.wait(timeout=30) != 0:
+                raise RuntimeError("Archive decryption failed")
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                process.wait(timeout=10)
+    with args.archive.open("rb") as archive:
+        result["archive_sha256"] = hashlib.file_digest(archive, "sha256").hexdigest()
+    args.receipt.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

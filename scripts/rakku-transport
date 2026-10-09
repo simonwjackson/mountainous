@@ -1,0 +1,122 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 openssh age nix
+"""Migration transport pinned to Rakku's existing RSA host identity.
+
+All access uses the preserved simonwjackson account and ignores SSH config.
+fetch-backup encrypts the SSH stream directly, without local plaintext files.
+"""
+
+import argparse
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--host", default="192.168.1.178")
+    parser.add_argument(
+        "action",
+        choices=["ssh", "put", "get", "push-system", "pull-system", "fetch-backup"],
+    )
+    parser.add_argument("arguments", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    os.umask(0o077)
+    kind, key, *_ = (ROOT / "secrets/hosts/rakku-rsa.pub").read_text().split()
+    host = "simonwjackson@" + args.host
+    with tempfile.TemporaryDirectory(prefix="rakku-trust-") as directory:
+        known = Path(directory) / "known_hosts"
+        known.write_text(f"rakku {kind} {key}\n")
+        options = [
+            "-F",
+            "/dev/null",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=8",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            f"UserKnownHostsFile={known}",
+            "-o",
+            "GlobalKnownHostsFile=/dev/null",
+            "-o",
+            "HostKeyAlias=rakku",
+            "-o",
+            "HostKeyAlgorithms=rsa-sha2-512,rsa-sha2-256",
+            "-o",
+            "ServerAliveInterval=15",
+            "-o",
+            "ServerAliveCountMax=4",
+        ]
+        if args.action == "ssh":
+            command = ["ssh", *options, host, shlex.join(args.arguments)]
+        elif args.action == "put":
+            source, destination = args.arguments
+            command = ["scp", *options, source, f"{host}:{destination}"]
+        elif args.action == "get":
+            source, destination = args.arguments
+            command = ["scp", *options, f"{host}:{source}", destination]
+        elif args.action in ("push-system", "pull-system"):
+            direction = "--to" if args.action == "push-system" else "--from"
+            env = dict(os.environ, NIX_SSHOPTS=shlex.join(options))
+            # The old host does not grant the SSH user trusted Nix writes.
+            # Its existing passwordless sudo permits a root store import;
+            # this does not change global signature policy or trusted-users.
+            store = "ssh://" + host
+            if args.action == "push-system":
+                store += "?remote-program=sudo%20-n%20nix-store"
+            raise SystemExit(
+                subprocess.call(
+                    [
+                        "nix",
+                        "copy",
+                        "--no-check-sigs",
+                        direction,
+                        store,
+                        *args.arguments,
+                    ],
+                    env=env,
+                )
+            )
+        else:
+            backup_id, destination = args.arguments
+            if not backup_id.replace("-", "").isalnum():
+                raise RuntimeError("Invalid backup id")
+            path = Path(destination)
+            if path.exists():
+                raise RuntimeError("Refuse to overwrite an existing encrypted backup")
+            temporary = path.with_suffix(path.suffix + ".partial")
+            archive = f"/nix/var/rakku-migration/{backup_id}/state.tar.gz"
+            remote = ["sudo", "-n", "dd", f"if={archive}", "status=none"]
+            with temporary.open("xb") as output:
+                sender = subprocess.Popen(
+                    ["ssh", *options, host, shlex.join(remote)], stdout=subprocess.PIPE
+                )
+                encryptor = subprocess.Popen(
+                    [
+                        "age",
+                        "--recipients-file",
+                        str(Path.home() / ".ssh/id_ed25519.pub"),
+                    ],
+                    stdin=sender.stdout,
+                    stdout=output,
+                )
+                sender.stdout.close()
+                encrypted = encryptor.wait()
+                sent = sender.wait()
+            if sent or encrypted:
+                temporary.unlink()
+                raise RuntimeError("SSH transfer or encryption failed")
+            temporary.rename(path)
+            print("Encrypted backup saved:", path)
+            return
+        raise SystemExit(subprocess.call(command))
+
+
+if __name__ == "__main__":
+    main()

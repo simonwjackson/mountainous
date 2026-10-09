@@ -1,0 +1,243 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 coreutils systemd btrfs-progs nix
+"""Guarded in-place activation and rollback for Rakku. No disk formatting.
+
+The test action arms a 15-minute local rollback before activation. Accept only
+after external connection checks pass. A rollback preserves failed state before
+restoring the stopped application's old files and old system generation.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import shlex
+import socket
+import subprocess
+import time
+
+PYTHON = "/nix/store/3lll9y925zz9393sa59h653xik66srjb-python3-3.13.9/bin/python3"
+UNITS = ["home-assistant", "zwave-js", "tsnet-proxy-habitat"]
+
+
+def run(args, timeout=180):
+    return subprocess.run(args, check=True, timeout=timeout)
+
+
+def stop():
+    run(["systemctl", "stop", *UNITS])
+
+
+def restore_directory(source, destination, quarantine):
+    if not source.is_dir() or not destination.is_dir():
+        raise RuntimeError("Restore source or destination missing")
+    quarantine.mkdir(parents=True, exist_ok=False)
+    # Never remove the live bind mount. Move its contents aside, then copy the
+    # original files with numeric ownership and permissions preserved by cp.
+    for child in destination.iterdir():
+        shutil.move(str(child), str(quarantine / child.name))
+    run(["cp", "-a", str(source) + "/.", str(destination) + "/"])
+
+
+def link_identity(live, persistent):
+    if not persistent.is_file():
+        raise RuntimeError("Persistent identity is missing")
+    if live.is_symlink() and live.resolve() == persistent.resolve():
+        return
+    if live.exists() and live.read_bytes() != persistent.read_bytes():
+        raise RuntimeError("Refuse to replace a different SSH identity")
+    temporary = live.with_name(live.name + ".migration-link")
+    temporary.symlink_to(persistent)
+    temporary.replace(live)
+
+
+def boot_entry(system, directory=Path("/boot/loader/entries")):
+    expected = "init=" + str(system) + "/init"
+    for entry in sorted(directory.glob("nixos-generation-*.conf"), reverse=True):
+        for line in entry.read_text().splitlines():
+            if line.startswith("options ") and expected in shlex.split(line):
+                return entry.name
+    raise RuntimeError("No boot entry for " + str(system))
+
+
+def rollback(root, manifest):
+    stop()
+    failed = root / ("failed-state-" + str(int(time.time())))
+    failed.mkdir()
+    restore_directory(
+        root / "permafrost/var/lib/hass", Path("/var/lib/hass"), failed / "hass"
+    )
+    restore_directory(
+        root / "extra/zwave-cache",
+        Path("/var/cache/private/zwave-js"),
+        failed / "zwave-cache",
+    )
+    old = manifest["system"]
+    run(["nix-env", "--profile", "/nix/var/nix/profiles/system", "--set", old])
+    run([old + "/bin/switch-to-configuration", "switch"], timeout=300)
+    run(["systemctl", "start", "zwave-js", "home-assistant", "tsnet-proxy-habitat"])
+    (root / "rolled-back").write_text(str(int(time.time())) + "\n")
+    print("Rolled back application files and system; failed state retained at", failed)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "action", choices=["test", "accept", "finalize", "rollback", "identity"]
+    )
+    parser.add_argument("--backup", type=Path, required=True)
+    parser.add_argument("--candidate", type=Path)
+    args = parser.parse_args()
+    os.umask(0o077)
+    os.environ["PATH"] = (
+        "/run/current-system/sw/bin:/run/wrappers/bin:" + os.environ.get("PATH", "")
+    )
+    if os.geteuid() != 0 or socket.gethostname() != "rakku":
+        raise RuntimeError("Run only as root on Rakku")
+    root = args.backup.resolve()
+    if root.parent != Path("/nix/var/rakku-migration"):
+        raise RuntimeError("Unexpected backup directory")
+    manifest = json.loads((root / "manifest.json").read_text())
+    if args.action == "rollback":
+        rollback(root, manifest)
+        return
+    if args.action in ("test", "identity"):
+        for name in ("ssh_host_ed25519_key", "ssh_host_ed25519_key.pub"):
+            link_identity(
+                Path("/etc/ssh") / name, Path("/tundra/permafrost/etc/ssh") / name
+            )
+    if args.action == "identity":
+        print("Persistent identity links verified")
+        return
+    candidate = args.candidate.resolve()
+    if (
+        candidate.parent != Path("/nix/store")
+        or not (candidate / "bin/switch-to-configuration").is_file()
+    ):
+        raise RuntimeError("Candidate is not a built system")
+    if args.action == "finalize":
+        trial = json.loads((root / "boot-trial.json").read_text())
+        if Path("/run/booted-system").resolve() != candidate or trial[
+            "candidate"
+        ] != str(candidate):
+            raise RuntimeError("Candidate has not passed a real boot")
+        run(["bootctl", "set-default", trial["candidate_entry"]])
+        (root / "accepted").write_text(str(candidate) + "\n")
+        print("Verified candidate is now the default boot entry")
+        return
+    if args.action == "accept":
+        if Path("/run/current-system").resolve() != candidate:
+            raise RuntimeError("Candidate is not active")
+        if not (root / "test-activated").is_file():
+            raise RuntimeError("No test activation receipt")
+        run(
+            [
+                "nix-env",
+                "--profile",
+                "/nix/var/nix/profiles/system",
+                "--set",
+                str(candidate),
+            ]
+        )
+        run([str(candidate / "bin/switch-to-configuration"), "boot"], timeout=300)
+        # Keep the old generation as the fallback until the real reboot passes.
+        # A failed candidate followed by a power cycle returns to the old entry.
+        old_entry = boot_entry(manifest["system"])
+        candidate_entry = boot_entry(candidate)
+        run(["bootctl", "set-default", old_entry])
+        run(["bootctl", "set-oneshot", candidate_entry])
+        (root / "boot-trial.json").write_text(
+            json.dumps(
+                {
+                    "candidate": str(candidate),
+                    "candidate_entry": candidate_entry,
+                    "fallback_entry": old_entry,
+                }
+            )
+            + "\n"
+        )
+        run(["systemctl", "stop", "rakku-cairn-rollback.timer"])
+        print("One-shot candidate boot prepared; old generation remains the fallback")
+        return
+    if Path("/run/current-system").resolve() != Path(manifest["system"]):
+        raise RuntimeError("The original system must be active before a test")
+    if (root / "test-activated").exists():
+        raise RuntimeError("This backup was already used for test activation")
+    expected_disks = {
+        "disk-main-root": "7fd52d50-19e9-49a5-8a8d-fd50412b9c84",
+        "disk-main-ESP": "5746-FCD7",
+        "disk-main-swap": "bbd248b9-a955-4c36-875d-fd425d02f3e7",
+    }
+    for label, expected in expected_disks.items():
+        observed = subprocess.check_output(
+            ["blkid", "-s", "UUID", "-o", "value", "/dev/disk/by-partlabel/" + label],
+            text=True,
+        ).strip()
+        if observed != expected:
+            raise RuntimeError("Storage identity changed: " + label)
+    receipt = json.loads((root / "offhost-restore-receipt.json").read_text())
+    if (
+        receipt["id"] != manifest["id"]
+        or receipt["system"] != manifest["system"]
+        or receipt["files_verified"] != len(manifest["files"])
+    ):
+        raise RuntimeError("Off-host restore receipt does not match this backup")
+    # Verify staged secrets before stopping anything. Never show their values.
+    key = Path("/etc/ssh/ssh_host_ed25519_key")
+    if not key.is_file() or key.stat().st_mode & 0o077:
+        raise RuntimeError("Persistent SOPS identity is not staged securely")
+    current_key_hash = hashlib.sha256(
+        Path("/run/agenix/zwave-js-secrets").read_bytes()
+    ).hexdigest()
+    if (
+        current_key_hash
+        != manifest["files"]["extra/secrets/zwave-js-secrets"]["sha256"]
+    ):
+        raise RuntimeError("Live Z-Wave security keys changed since backup")
+    script = root / "switch-target.py"
+    shutil.copyfile(__file__, script)
+    script.chmod(0o700)
+    run(
+        [
+            "systemd-run",
+            "--unit=rakku-cairn-rollback",
+            "--on-active=15m",
+            "--timer-property=AccuracySec=1s",
+            PYTHON,
+            str(script),
+            "rollback",
+            "--backup",
+            str(root),
+        ]
+    )
+    try:
+        stop()
+        parent = Path("/tundra/permafrost/var/cache/private")
+        parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        parent.chmod(0o700)
+        cache = parent / "zwave-js"
+        if cache.exists():
+            if not (root / "rolled-back").exists() or os.path.samefile(
+                cache, "/var/cache/private/zwave-js"
+            ):
+                raise RuntimeError(
+                    "Persistent cache is in use or has no rollback provenance"
+                )
+            shutil.move(
+                str(cache), str(root / ("superseded-cache-" + str(int(time.time()))))
+            )
+        run(["cp", "-a", "/var/cache/private/zwave-js", str(cache)])
+        run([str(candidate / "bin/switch-to-configuration"), "test"], timeout=300)
+        run(["systemctl", "start", "zwave-js", "home-assistant", "tsnet-proxy-habitat"])
+        (root / "test-activated").write_text(str(candidate) + "\n")
+        print("Test activation complete; automatic rollback remains armed")
+    except BaseException:
+        run(["systemctl", "stop", "rakku-cairn-rollback.timer"])
+        rollback(root, manifest)
+        raise
+
+
+if __name__ == "__main__":
+    main()

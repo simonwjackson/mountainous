@@ -1,0 +1,219 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 btrfs-progs gnutar gzip coreutils systemd
+"""Take a consistent Rakku migration backup, then restart the old services.
+
+Run as root on Rakku. This causes a short home automation outage. It never
+formats storage, restores a controller, changes pairing or deploys a system.
+The root-only archive must be encrypted and restore-tested off-host before
+activation. Private data is never printed. Refuses to overwrite a backup.
+"""
+
+import argparse
+import base64
+from contextlib import closing
+import hashlib
+import json
+import os
+from pathlib import Path
+import shlex
+import shutil
+import socket
+import sqlite3
+import subprocess
+import sys
+import time
+
+
+def run(args, timeout=180):
+    return subprocess.run(
+        args, check=True, capture_output=True, text=True, timeout=timeout
+    ).stdout.strip()
+
+
+def nvm_backup(destination):
+    # Use dependencies already installed for HA. No target-side builds.
+    for item in shlex.split(
+        run(["systemctl", "show", "home-assistant", "-p", "Environment", "--value"])
+    ):
+        if item.startswith("PYTHONPATH="):
+            sys.path.extend(item.split("=", 1)[1].split(":"))
+    from websockets.sync.client import connect
+
+    with connect("ws://127.0.0.1:3000", open_timeout=10) as socket:
+        version = json.loads(socket.recv(timeout=10))
+        socket.send(
+            json.dumps(
+                {
+                    "command": "controller.backup_nvm_raw",
+                    "messageId": "migration-nvm-backup",
+                }
+            )
+        )
+        deadline = time.monotonic() + 240
+        while time.monotonic() < deadline:
+            response = json.loads(
+                socket.recv(timeout=max(1, deadline - time.monotonic()))
+            )
+            if response.get("messageId") != "migration-nvm-backup":
+                continue
+            if not response.get("success"):
+                # The deployed HubZ SDK 6.51.6 cannot report its NVM size.
+                # This specific unsupported operation is recorded, not retried
+                # with firmware changes. Every other controller error aborts.
+                if response.get(
+                    "zwaveErrorCode"
+                ) == 209 and "Unknown NVM size" in response.get(
+                    "zwaveErrorMessage", ""
+                ):
+                    return {
+                        "status": "unsupported",
+                        "home_id": version["homeId"],
+                        "reason": "ZW0209: Unknown NVM size - cannot backup",
+                    }
+                raise RuntimeError(
+                    "Controller NVM backup failed: "
+                    + str(response.get("errorCode", "unknown"))
+                )
+            data = base64.b64decode(response["result"]["nvmData"], validate=True)
+            if len(data) < 1024:
+                raise RuntimeError("Controller NVM backup is unexpectedly small")
+            destination.write_bytes(data)
+            return {
+                "home_id": version["homeId"],
+                "size": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+        raise RuntimeError("Controller NVM backup timed out")
+
+
+def sqlite_integrity(path):
+    with closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as db:
+        result = [row[0] for row in db.execute("PRAGMA integrity_check")]
+    if result != ["ok"]:
+        raise RuntimeError(f"Database integrity check failed: {path.name}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--id", required=True)
+    args = parser.parse_args()
+    os.environ["PATH"] = (
+        "/run/current-system/sw/bin:/run/wrappers/bin:" + os.environ.get("PATH", "")
+    )
+    if os.geteuid() != 0 or socket.gethostname() != "rakku":
+        raise RuntimeError("Run only as root on Rakku")
+    if not args.id.replace("-", "").isalnum():
+        raise RuntimeError("Invalid backup id")
+    os.umask(0o077)
+    root = Path("/nix/var/rakku-migration") / args.id
+    root.mkdir(parents=True, exist_ok=False)
+    manifest = {
+        "schema": 1,
+        "id": args.id,
+        "system": str(Path("/run/current-system").resolve()),
+        "created_at": int(time.time()),
+    }
+    extra = root / "extra"
+    extra.mkdir()
+    services = ["home-assistant", "zwave-js", "tsnet-proxy-habitat"]
+    # The proxy is already retrying; preserve its enabled state as well.
+    restart = [
+        unit
+        for unit in services
+        if run(["systemctl", "show", unit, "-p", "ActiveState", "--value"])
+        in ("active", "activating")
+    ]
+    try:
+        run(["systemctl", "stop", "home-assistant"])
+        manifest["zwave_nvm"] = nvm_backup(extra / "zwave-controller.nvm")
+        run(["systemctl", "stop", "zwave-js", "tsnet-proxy-habitat"])
+        for unit in services:
+            if run(["systemctl", "show", unit, "-p", "ActiveState", "--value"]) not in (
+                "inactive",
+                "failed",
+            ):
+                raise RuntimeError(f"{unit} did not stop")
+        for name in ["home-assistant_v2.db", "zigbee.db"]:
+            sqlite_integrity(Path("/var/lib/hass") / name)
+        run(["sync"])
+        run(
+            [
+                "btrfs",
+                "subvolume",
+                "snapshot",
+                "-r",
+                "/tundra/permafrost",
+                str(root / "permafrost"),
+            ]
+        )
+        shutil.copytree(
+            "/var/cache/private/zwave-js", extra / "zwave-cache", symlinks=True
+        )
+        shutil.copytree("/boot", extra / "boot", symlinks=True)
+        (extra / "secrets").mkdir()
+        for name in ["zwave-js-secrets", "tailscale-ephemeral"]:
+            shutil.copyfile(Path("/run/agenix") / name, extra / "secrets" / name)
+        shutil.copyfile(
+            "/var/lib/hass/configuration.yaml", extra / "configuration.yaml"
+        )
+        # Generated symlink targets are retained by the old system closure.
+        run(
+            [
+                "nix-store",
+                "--add-root",
+                str(root / "old-system"),
+                "--indirect",
+                "--realise",
+                manifest["system"],
+            ]
+        )
+        manifest["files"] = {}
+        for base in [root / "permafrost", extra]:
+            for path in sorted(base.rglob("*")):
+                if path.is_file() and not path.is_symlink():
+                    with path.open("rb") as source:
+                        checksum = hashlib.file_digest(source, "sha256").hexdigest()
+                    manifest["files"][str(path.relative_to(root))] = {
+                        "sha256": checksum,
+                        "size": path.stat().st_size,
+                        "uid": path.stat().st_uid,
+                        "gid": path.stat().st_gid,
+                        "mode": path.stat().st_mode & 0o7777,
+                    }
+        (root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        run(
+            [
+                "tar",
+                "--numeric-owner",
+                "--acls",
+                "--xattrs",
+                "-czpf",
+                str(root / "state.tar.gz"),
+                "-C",
+                str(root),
+                "manifest.json",
+                "permafrost",
+                "extra",
+            ],
+            timeout=240,
+        )
+        print(
+            json.dumps(
+                {
+                    "backup": str(root),
+                    "archive_bytes": (root / "state.tar.gz").stat().st_size,
+                    "files": len(manifest["files"]),
+                    "databases": "integrity_check OK",
+                    "zwave_nvm": manifest["zwave_nvm"],
+                },
+                indent=2,
+            )
+        )
+    finally:
+        # Original generation is still active; always leave it serving the home.
+        for unit in reversed(restart):
+            run(["systemctl", "start", unit])
+
+
+if __name__ == "__main__":
+    main()

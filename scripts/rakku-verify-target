@@ -1,0 +1,107 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 coreutils systemd util-linux
+"""Verify the deployed host, secret identity and real persistence mounts.
+
+Run as root on Rakku after the connection inventory passes. Add --booted after
+reboot to require the kernel's booted-system reference to match the candidate.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import pwd
+import socket
+import subprocess
+
+
+def command(args):
+    return subprocess.check_output(args, text=True, timeout=20).strip()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", type=Path, required=True)
+    parser.add_argument("--backup", type=Path, required=True)
+    parser.add_argument("--booted", action="store_true")
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    os.umask(0o077)
+    os.environ["PATH"] = (
+        "/run/current-system/sw/bin:/run/wrappers/bin:" + os.environ.get("PATH", "")
+    )
+    assert os.geteuid() == 0 and socket.gethostname() == "rakku"
+    candidate = args.candidate.resolve()
+    assert Path("/run/current-system").resolve() == candidate
+    if args.booted:
+        assert Path("/run/booted-system").resolve() == candidate
+    manifest = json.loads((args.backup / "manifest.json").read_text())
+    assert pwd.getpwnam("simonwjackson").pw_uid == 1000
+    assert pwd.getpwnam("simon").pw_uid == 1001
+    assert Path("/var/lib/hass").stat().st_uid == 286
+    assert Path("/var/lib/hass").stat().st_gid == 286
+    mounts = {}
+    for relative in [
+        "var/lib/hass",
+        "var/lib/tailscale",
+        "var/lib/tsnet-proxy-habitat",
+        "home/simonwjackson",
+        "home/simon",
+        "var/cache/private/zwave-js",
+    ]:
+        live = Path("/") / relative
+        persistent = Path("/tundra/permafrost") / relative
+        assert os.path.samefile(live, persistent), relative + " is not persistent"
+        mounts[str(live)] = command(["findmnt", "-n", "-o", "SOURCE", "-T", str(live)])
+    key = Path("/etc/ssh/ssh_host_ed25519_key")
+    assert os.path.samefile(key, "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key")
+    assert key.stat().st_uid == 0 and key.stat().st_mode & 0o777 == 0o600
+    for name in ["zwave-js-secrets", "tailscale-ephemeral"]:
+        observed = hashlib.sha256(
+            (Path("/run/secrets") / name).read_bytes()
+        ).hexdigest()
+        assert observed == manifest["files"]["extra/secrets/" + name]["sha256"], (
+            "Migrated secret differs: " + name
+        )
+    for interface in ["00", "01"]:
+        assert Path(
+            "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if"
+            + interface
+            + "-port0"
+        ).exists()
+    services = {}
+    for unit in [
+        "home-assistant",
+        "zwave-js",
+        "airconnect",
+        "tinyproxy",
+        "sshd",
+        "tailscaled",
+    ]:
+        services[unit] = command(["systemctl", "is-active", unit])
+        assert services[unit] == "active"
+    tailnet = json.loads(command(["tailscale", "status", "--json"]))
+    assert tailnet["BackendState"] == "Running"
+    assert tailnet["Self"]["DNSName"].split(".")[0] == "rakku"
+    # Habitat was already failing before the port. Record, do not hide it.
+    services["tsnet-proxy-habitat"] = command(
+        ["systemctl", "show", "tsnet-proxy-habitat", "-p", "ActiveState", "--value"]
+    )
+    result = {
+        "candidate": str(candidate),
+        "booted": args.booted,
+        "mounts": mounts,
+        "services": services,
+        "tailnet_name": tailnet["Self"]["DNSName"],
+        "tailnet_ips": tailnet["TailscaleIPs"],
+        "secret_values": "unchanged",
+        "user_ids": "preserved",
+        "usb_controllers": "both present",
+    }
+    args.output.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

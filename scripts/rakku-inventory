@@ -1,0 +1,305 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3
+"""Read Rakku's HA connection baseline without printing credentials or state values.
+
+Run as root on Rakku using its existing Python. An existing active user's
+refresh-token signing key authenticates read-only localhost requests. The
+short-lived access token stays in memory; the auth store is never modified.
+"""
+
+import argparse
+import base64
+from contextlib import closing
+from collections import Counter
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import shlex
+import sqlite3
+import subprocess
+import sys
+import time
+import urllib.request
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def read_data(root, name):
+    return json.loads((root / ".storage" / name).read_text())["data"]
+
+
+def token(root):
+    auth = read_data(root, "auth")
+    active = {u["id"] for u in auth["users"] if u.get("is_active")}
+    refresh = next(t for t in auth["refresh_tokens"] if t["user_id"] in active)
+    now = int(time.time())
+
+    def encode(value):
+        return base64.urlsafe_b64encode(
+            json.dumps(value, separators=(",", ":")).encode()
+        ).rstrip(b"=")
+
+    message = (
+        encode({"alg": "HS256", "typ": "JWT"})
+        + b"."
+        + encode({"iss": refresh["id"], "iat": now, "exp": now + 120})
+    )
+    signature = hmac.digest(refresh["jwt_key"].encode(), message, "sha256")
+    return (message + b"." + base64.urlsafe_b64encode(signature).rstrip(b"=")).decode()
+
+
+def api(path, access):
+    request = urllib.request.Request(
+        "http://127.0.0.1:8123/api/" + path,
+        headers={"Authorization": "Bearer " + access},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def websocket_queries(access):
+    environment = subprocess.check_output(
+        ["systemctl", "show", "home-assistant", "-p", "Environment", "--value"],
+        text=True,
+    )
+    for entry in shlex.split(environment):
+        if entry.startswith("PYTHONPATH="):
+            sys.path.extend(entry.split("=", 1)[1].split(":"))
+    from websockets.sync.client import connect
+
+    results = {}
+    with connect("ws://127.0.0.1:8123/api/websocket", open_timeout=10) as socket:
+        assert json.loads(socket.recv())["type"] == "auth_required"
+        socket.send(json.dumps({"type": "auth", "access_token": access}))
+        assert json.loads(socket.recv())["type"] == "auth_ok"
+        for index, command in enumerate(
+            ["config_entries/get", "zha/devices", "zha/backups/list"], 1
+        ):
+            socket.send(json.dumps({"id": index, "type": command}))
+            response = json.loads(socket.recv(timeout=30))
+            if not response.get("success"):
+                results[command] = {
+                    "error": response.get("error", {}).get("code", "unknown")
+                }
+            elif command == "config_entries/get":
+                results[command] = sorted(
+                    [
+                        {
+                            key: row.get(key)
+                            for key in ("entry_id", "domain", "state", "disabled_by")
+                        }
+                        for row in response["result"]
+                    ],
+                    key=lambda row: row["entry_id"],
+                )
+            elif command == "zha/devices":
+                results[command] = sorted(
+                    [
+                        {
+                            key: row.get(key)
+                            for key in (
+                                "ieee",
+                                "nwk",
+                                "available",
+                                "manufacturer",
+                                "model",
+                            )
+                        }
+                        for row in response["result"]
+                    ],
+                    key=lambda row: str(row["ieee"]),
+                )
+            else:
+                # Backups contain network keys. Record only their count and digest.
+                results[command] = {
+                    "digest": digest(response["result"]),
+                    "count": len(response["result"]),
+                }
+    with connect("ws://127.0.0.1:3000", open_timeout=10) as socket:
+        version = json.loads(socket.recv(timeout=10))
+        socket.send(
+            json.dumps({"command": "start_listening", "messageId": "inventory"})
+        )
+        response = json.loads(socket.recv(timeout=30))
+        if not response.get("success"):
+            raise RuntimeError("Cannot read the Z-Wave controller state")
+        results["zwave/controller"] = {
+            "home_id": version["homeId"],
+            "server_version": version["serverVersion"],
+            "driver_version": version["driverVersion"],
+            "node_ids": sorted(
+                n["nodeId"] for n in response["result"]["state"]["nodes"]
+            ),
+        }
+    return results
+
+
+def inventory(root):
+    devices = read_data(root, "core.device_registry")["devices"]
+    entities = read_data(root, "core.entity_registry")["entities"]
+    entries = read_data(root, "core.config_entries")["entries"]
+    access = token(root)
+    states = api("states", access)
+    result = {
+        "schema": 1,
+        "captured_at": int(time.time()),
+        "ha_version": api("config", access)["version"],
+        "device_ids": sorted(d["id"] for d in devices),
+        "entities": sorted(
+            [
+                {
+                    "entity_id": e["entity_id"],
+                    "unique_id": e.get("unique_id"),
+                    "device_id": e.get("device_id"),
+                    "platform": e.get("platform"),
+                }
+                for e in entities
+            ],
+            key=lambda row: row["entity_id"],
+        ),
+        "integration_ids": sorted(
+            [
+                {
+                    "entry_id": e["entry_id"],
+                    "domain": e["domain"],
+                    "unique_id": e.get("unique_id"),
+                }
+                for e in entries
+            ],
+            key=lambda row: row["entry_id"],
+        ),
+        "integration_credentials_digest": digest(
+            [
+                {key: e.get(key) for key in ("entry_id", "data", "options")}
+                for e in sorted(entries, key=lambda e: e["entry_id"])
+            ]
+        ),
+        "availability": {
+            s["entity_id"]: s["state"] not in ("unavailable", "unknown") for s in states
+        },
+        "unknown_entities": sorted(
+            s["entity_id"] for s in states if s["state"] == "unknown"
+        ),
+        "unavailable_entities": sorted(
+            s["entity_id"] for s in states if s["state"] == "unavailable"
+        ),
+        "websocket": websocket_queries(access),
+    }
+    # URI read-only mode, no schema changes or checkpoint of the live database.
+    with closing(sqlite3.connect(f"file:{root / 'zigbee.db'}?mode=ro", uri=True)) as db:
+        tables = [
+            row[0]
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            )
+        ]
+        result["zigbee_tables"] = tables
+        result["zigbee_backup_rows"] = {
+            name: db.execute(
+                'SELECT count(*) FROM "' + name.replace('"', '""') + '"'
+            ).fetchone()[0]
+            for name in tables
+            if "backup" in name
+        }
+        backup = json.loads(
+            db.execute(
+                "SELECT backup_json FROM network_backups_v14 ORDER BY id DESC LIMIT 1"
+            ).fetchone()[0]
+        )
+        network = backup["network_info"]
+        result["zigbee_identity"] = {
+            "coordinator_ieee": backup["node_info"]["ieee"],
+            "pan_id": network["pan_id"],
+            "extended_pan_id": network["extended_pan_id"],
+            "channel": network["channel"],
+            "network_key_digest": digest(network["network_key"]["key"]),
+            "trust_center_key_digest": digest(network["tc_link_key"]["key"]),
+        }
+    return result
+
+
+def compare(before, after):
+    failures = []
+    for key in ("ha_version", "device_ids", "entities", "integration_ids"):
+        if before[key] != after[key]:
+            failures.append(key + " changed")
+    if "zigbee_identity" in before and before["zigbee_identity"] != after.get(
+        "zigbee_identity"
+    ):
+        failures.append("Zigbee coordinator/network identity changed")
+    if "zwave/controller" in before["websocket"] and before["websocket"][
+        "zwave/controller"
+    ] != after["websocket"].get("zwave/controller"):
+        failures.append("Z-Wave controller identity, nodes or runtime changed")
+    lost = [
+        entity
+        for entity, available in before["availability"].items()
+        if available and not after["availability"].get(entity, False)
+    ]
+    if lost:
+        failures.append(
+            "Previously available entities lost: " + ", ".join(sorted(lost))
+        )
+    old_loaded = {
+        e["entry_id"]
+        for e in before["websocket"]["config_entries/get"]
+        if e["state"] == "loaded"
+    }
+    new_loaded = {
+        e["entry_id"]
+        for e in after["websocket"]["config_entries/get"]
+        if e["state"] == "loaded"
+    }
+    if old_loaded - new_loaded:
+        failures.append(
+            "Previously loaded integrations lost: "
+            + ", ".join(sorted(old_loaded - new_loaded))
+        )
+    return failures
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--root", type=Path, default=Path("/var/lib/hass"))
+    args = parser.parse_args()
+    os.umask(0o077)
+    result = inventory(args.root)
+    args.output.write_text(json.dumps(result, indent=2) + "\n")
+    print(
+        json.dumps(
+            {
+                "ha_version": result["ha_version"],
+                "devices": len(result["device_ids"]),
+                "entities": len(result["entities"]),
+                "available": sum(result["availability"].values()),
+                "integrations": dict(
+                    sorted(
+                        Counter(
+                            e["domain"] + ":" + e["state"]
+                            for e in result["websocket"]["config_entries/get"]
+                        ).items()
+                    )
+                ),
+                "zigbee_backups": result["zigbee_backup_rows"],
+            },
+            indent=2,
+        )
+    )
+    if args.baseline:
+        failures = compare(json.loads(args.baseline.read_text()), result)
+        if failures:
+            print("\n".join(failures))
+            raise SystemExit(1)
+        print(
+            "PASS: application version, device/entity identities, loaded integrations and baseline availability preserved"
+        )
+
+
+if __name__ == "__main__":
+    main()

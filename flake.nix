@@ -4,6 +4,22 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Rakku's first Cairn deployment preserves its running HA 2025.12.3 and
+    # Z-Wave JS 3.4.0 environment. Upgrade only as a separate, backed-up change.
+    nixpkgs-rakku.url = "github:NixOS/nixpkgs/1306659b587dc277866c7b69eb97e5f07864d8c4";
+    airconnect-src = {
+      url = "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip";
+      flake = false;
+    };
+    impermanence-rakku = {
+      url = "github:nix-community/impermanence/4b3e914cdf97a5b536a889e939fb2fd2b043a170";
+      flake = false;
+    };
+    gomod2nix-rakku = {
+      url = "github:nix-community/gomod2nix/02e63a239d6eabd595db56852535992c898eba72";
+      inputs.nixpkgs.follows = "nixpkgs-rakku";
+    };
+
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";

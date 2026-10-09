@@ -1,5 +1,18 @@
 {
   "nodes": {
+    "airconnect-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1760650460,
+        "narHash": "sha256-/RiymBhYNxj3jEiq5hguMGe6j55LcnFxwnmsuMQ/wHg=",
+        "type": "tarball",
+        "url": "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1785284101,
@@ -73,6 +86,46 @@
         "type": "github"
       }
     },
+    "flake-utils_2": {
+      "inputs": {
+        "systems": "systems_2"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "gomod2nix-rakku": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs-rakku"
+        ]
+      },
+      "locked": {
+        "lastModified": 1763982521,
+        "narHash": "sha256-ur4QIAHwgFc0vXiaxn5No/FuZicxBr2p0gmT54xZkUQ=",
+        "owner": "nix-community",
+        "repo": "gomod2nix",
+        "rev": "02e63a239d6eabd595db56852535992c898eba72",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "gomod2nix",
+        "rev": "02e63a239d6eabd595db56852535992c898eba72",
+        "type": "github"
+      }
+    },
     "herdr-bin-aarch64": {
       "flake": false,
       "locked": {
@@ -117,6 +170,23 @@
         "type": "github"
       }
     },
+    "impermanence-rakku": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1737831083,
+        "narHash": "sha256-LJggUHbpyeDvNagTUrdhe/pRVp4pnS6wVKALS782gRI=",
+        "owner": "nix-community",
+        "repo": "impermanence",
+        "rev": "4b3e914cdf97a5b536a889e939fb2fd2b043a170",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "impermanence",
+        "rev": "4b3e914cdf97a5b536a889e939fb2fd2b043a170",
+        "type": "github"
+      }
+    },
     "import-tree": {
       "locked": {
         "lastModified": 1788467110,
@@ -151,7 +221,7 @@
     "korri": {
       "inputs": {
         "crane": "crane",
-        "flake-utils": "flake-utils",
+        "flake-utils": "flake-utils_2",
         "inputplumber-nixpkgs": "inputplumber-nixpkgs",
         "nixpkgs": "nixpkgs",
         "proseql": "proseql",
@@ -220,6 +290,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-rakku": {
+      "locked": {
+        "lastModified": 1765779637,
+        "narHash": "sha256-KJ2wa/BLSrTqDjbfyNx70ov/HdgNBCBBSQP3BIzKnv4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1306659b587dc277866c7b69eb97e5f07864d8c4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1306659b587dc277866c7b69eb97e5f07864d8c4",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1790185690,
@@ -255,16 +341,20 @@
     },
     "root": {
       "inputs": {
+        "airconnect-src": "airconnect-src",
         "disko": "disko",
         "flake-parts": "flake-parts",
+        "gomod2nix-rakku": "gomod2nix-rakku",
         "herdr-bin-aarch64": "herdr-bin-aarch64",
         "herdr-bin-x86_64": "herdr-bin-x86_64",
         "hjem": "hjem",
+        "impermanence-rakku": "impermanence-rakku",
         "import-tree": "import-tree",
         "korri": "korri",
         "nixos-anywhere-src": "nixos-anywhere-src",
         "nixos-images-src": "nixos-images-src",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-rakku": "nixpkgs-rakku",
         "sops-nix": "sops-nix"
       }
     },
@@ -310,6 +400,21 @@
       }
     },
     "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_2": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
