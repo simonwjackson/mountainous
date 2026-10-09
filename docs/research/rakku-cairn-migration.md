@@ -180,16 +180,43 @@ selection, without restoring or changing HA state. The subsequent attempt passed
 Generation 42 was prepared as a one-shot boot, retaining the verified Cairn
 generation 41 as default/fallback.
 
-**Final image cold-boot verification is still incomplete.** A second software
-reboot again left Rakku unreachable. Another complete LAN SSH scan found neither
-its SSH identity nor its known NIC MAC, and the tailnet ping timed out. The
-external watcher was stopped. The operator has been asked to power-cycle once
-more. Do not issue further software reboots during this migration.
+A second software reboot again left Rakku unreachable. Another complete LAN
+SSH scan found neither its SSH identity nor its known NIC MAC, and the tailnet
+ping timed out. The operator power-cycled it again. Rakku returned at
+`192.168.1.178` and `/run/booted-system` verified the final `73i4...` image.
+The cold-boot host checks passed, including persistent state, both USB
+interfaces, user IDs, SOPS secrets and tailnet membership. Private receipt copies
+also verify unchanged HA integration credential digests and both radio identities.
 
-After recovery, verify `/run/booted-system`, then run inventory and host checks
-against `73i4...`. If they pass, finalize that image and collect the private
-receipts. Leave the machine running. Investigating unreliable software restart
+The final availability gate passed after 232 seconds, including
+`update.aka_firmware`. Generation 42 was finalized as the default. Direct reads
+of `/run/current-system`, `/run/booted-system`, and the EFI LoaderEntryDefault
+variable verified the selected deployment. The machine was left running.
+
+### Final acceptance
+
+| Check | Result |
+| --- | --- |
+| Running and booted system | `73i4bcrdxm225yvcvxv6kkdm1sj3g9lx-nixos-system-rakku-26.05.20251215.1306659`. |
+| EFI default | `nixos-generation-42.conf`; working generation 41 retained. |
+| Device registrations | All 57 IDs unchanged. |
+| Entity registrations | All 633 identities unchanged. |
+| Availability | All 187 previously available entities recovered. |
+| Integration credentials | The pre-cutover and final credential digests match. |
+| Radio identity | Zigbee coordinator/PAN/key fingerprints and Z-Wave home/node IDs match. |
+| Runtime | Home Assistant 2025.12.3 and Z-Wave server 3.4.0 remain pinned. |
+| Verification | 16 Python tests, Nix host contract, real backup restoration, Ruff and formatting pass. |
+
+Receipts `final-image-post-reboot.json`, `host-final-image-post-reboot.json`,
+`boot-trial.json`, `accepted`, and `final-accepted.json` are retained on Rakku and
+copied to the private evidence directory on Zao. No device was reset or re-paired.
+
+**Remaining high-priority limitation:** both attempted software reboots left the
+machine unreachable until the operator power-cycled it. The cause is unproven.
+Do not issue another remote reboot without a recovery plan. Investigating this
 is a separate follow-up, not a reason to reset devices or radio controllers.
+The pre-existing Habitat credential failure and offline HA integrations remain;
+this migration preserved their state rather than silently reconfiguring them.
 
 Temporary orchestration on Zao is in `/tmp/rakku-final-prepare.sh` and
 `/tmp/rakku-acceptance-watch.py`. The latter accepts `--candidate` and `--booted`;
