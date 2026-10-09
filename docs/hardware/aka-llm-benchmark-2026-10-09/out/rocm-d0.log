@@ -1,0 +1,5 @@
+ggml_cuda_init: found 2 ROCm devices (Total VRAM: 36114 MiB):
+  Device 0: AMD Radeon RX 7900 XT, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 20464 MiB
+  Device 1: AMD Ryzen 5 7600X 6-Core Processor, gfx1036 (0x1036), VMM: no, Wave Size: 32, VRAM: 15650 MiB
+load_backend: loaded ROCm backend from /nix/store/0d2d5g6ra64qr178qsmz18sqwav5inw3-llama-cpp-0.4.1/bin/libggml-hip.so
+load_backend: loaded CPU backend from /nix/store/0d2d5g6ra64qr178qsmz18sqwav5inw3-llama-cpp-0.4.1/bin/libggml-cpu-zen4.so
