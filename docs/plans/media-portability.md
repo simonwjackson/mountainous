@@ -35,7 +35,7 @@ Private diagnostic logs remain outside Git. Do not include credentials, private 
 | Staging | Use the downloader host's local disk. Expose completed files to authorized remote ARR hosts through managed file access. A stable HTTP endpoint alone does not expose those files. |
 | Library | Keep application-visible library paths stable across placements. Long-term media remains on Zao. Preserve required local library roots when the mover prunes empty title folders. |
 | Runtime release | Preserve the deployed application release for the first move where a compatible target build is available. Do not combine relocation with an unreviewed database-schema upgrade. |
-| VPN runtime | Treat the tunnel as a host runtime requirement. Do not blindly clone one WireGuard client identity onto two active hosts. Prepare compatible target credentials without disrupting applications that remain on the source. |
+| VPN runtime | Reuse the operator's VPN access across eligible hosts. Unlimited-system entitlement is not a placement limit. Verify concurrent use of the existing configuration before requiring separate profiles. Preserve the source tunnel for applications that remain there. |
 | Credentials | Give the target only the credentials it needs. Encrypt transfers containing credentials. Never print credentials or put them in visible command arguments. |
 | Ownership | Preserve or deliberately map file ownership and group access. Do not assume dynamically assigned service IDs match across hosts. |
 | Rollback | Retain protected recovery state. If the target writes state, recover its newest compatible state instead of restarting an obsolete source snapshot. |
@@ -59,7 +59,7 @@ Unzen does not use Rakku's disk/persistence layout. Do not copy hardware-specifi
 4. Add local staging and cross-host access.
    Create required roots with deliberate ownership. Generate completed-file access and library mounts from placement. Require working storage before applications start. Do not expose partial work or secret state unnecessarily.
 5. Add and test downloader VPN isolation.
-   Preserve the source VPN routing requirements. Yari currently shares one WireGuard namespace/profile across its downloader and indexer applications. Verify provider support and target-specific tunnel credentials before splitting them across hosts. Do not stop the source namespace while other applications still use it. Test loss of the tunnel and blocking of ordinary internet routes. Keep storage and control connections working without allowing downloader internet traffic outside the tunnel.
+   Preserve the source VPN routing requirements. Yari currently shares one WireGuard namespace/profile across its downloader and indexer applications. The operator confirms VPN access across unlimited systems. Test simultaneous reuse of the existing configuration before splitting services; do not require separate profiles by default. Do not stop the source namespace while other applications still use it. Test loss of the tunnel and blocking of ordinary internet routes. Keep storage and control connections working without allowing downloader internet traffic outside the tunnel.
 6. Prepare gated Unzen configuration.
    Build target packages and units with application startup closed. Verify credentials, storage, ownership, and rollback prerequisites without using active service identity state on both hosts.
 7. Prepare the controlled move tool.
@@ -76,7 +76,7 @@ No live service is enabled merely because its configuration evaluates or builds.
 | Enrollment recovery | Expired or absent registration can recover with valid OAuth credentials. Revoked credentials fail without disclosure or unrelated device deletion. |
 | State transfer | Application records, client identities, categories, queue/work state, bytes, and access permissions match the approved source snapshot. |
 | VPN failure | Download traffic cannot escape through the ordinary host route when the tunnel fails. |
-| Split VPN placement | Moving one application does not break the source host's remaining tunnel users or run two hosts with an incompatible shared WireGuard client identity. |
+| Split VPN placement | The chosen configuration works concurrently on the intended hosts without disrupting source applications. Reuse the existing profile when supported; require a separate profile only if concurrency checks establish that need. |
 | Storage failure | An absent required mount prevents startup or import rather than silently writing into an empty mountpoint directory. |
 | Empty-directory cleanup | Empty title folders can be removed, but media and library roots remain. Nonempty files survive. |
 | Failed target startup | The source can resume from compatible current state without two active owners. |
@@ -96,6 +96,8 @@ No live service is enabled merely because its configuration evaluates or builds.
 Keep download-pause state during initial recovery. Normal processing, representative imports, and recovery of old completed files require explicit approval. No step authorizes speculative deletion.
 
 ## Costs and remaining risks
+
+The operator confirms VPN entitlement across unlimited systems. Concurrent reuse of the exact same WireGuard configuration is not yet verified. [WireGuard's endpoint tracking](https://www.wireguard.com/#built-in-roaming) uses a peer's most recent authenticated endpoint, so entitlement alone does not establish identical-profile concurrency against one server. This is a validation item, not a blanket requirement for new accounts or profiles. No VPN credentials have been changed.
 
 Local staging consumes disk on the chosen downloader host. Downloader moves transfer work files and take bandwidth and time. The handoff pauses the moved service; it does not provide automatic failover or zero downtime.
 
