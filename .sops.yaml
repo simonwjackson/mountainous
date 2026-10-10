@@ -65,3 +65,10 @@ creation_rules:
           - *master
 
           - *tate
+
+  # Registration credentials belong to UNZEN, not to the fleet secret file.
+  - path_regex: secrets/hosts/unzen-github-actions\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *unzen

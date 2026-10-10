@@ -1,6 +1,6 @@
 # UNZEN GitHub Actions rollout plan
 
-Status: proposed. The operator selected planning, not implementation or deployment.
+Status: Forgerie pilot implementation approved by the operator after the planning stage. The disabled-by-default feature and tests are prepared. Activation still needs a dedicated GitHub App and verified restricted workflow access.
 
 ## Outcome
 
@@ -8,7 +8,7 @@ Run trusted Linux CI jobs from more than 30 operator-owned repositories on UNZEN
 
 The proposed starting point is the upstream `services.github-runners` NixOS module, not a VM or a new runner-management dependency. Native services have less isolation than VMs. This plan does not approve running arbitrary fork PR code on the home server.
 
-No system, workflow, credential, storage, or runner changes are authorized by this document.
+The operator subsequently approved implementing the optional Forgerie pilot. That approval does not permit untrusted PR execution, a broad PAT fallback, destructive installation or enabling the remaining repositories.
 
 ## Checked starting point
 
@@ -20,7 +20,7 @@ No system, workflow, credential, storage, or runner changes are authorized by th
 | Native module | The inspected pinned nixpkgs module supports labels, GitHub App authentication, ephemeral registrations, multiple registrations, disk-backed `workDir`, and service overrides. It disables the runner's self-update mechanism. |
 | Secret handling | `modules/secrets.nix` uses SOPS with host SSH identities. CI credentials must be separate from existing fleet credentials. |
 | Other host work | The current, uncommitted `modules/hosts/unzen.nix` enables the CLIProxyAPI updater feature. Its proposed service calls the host Nix daemon. This is repository evidence, not a claim that the service is already deployed. |
-| Example workflow | Forgerie's CI currently runs Linux and Windows jobs, uses Node 24, and includes package-install tests. It is a possible pilot, not the selected pilot. |
+| Example workflow | Forgerie's CI currently runs Linux and Windows jobs, uses Node 24, and includes package-install tests. The operator selected Forgerie as the optional manual Linux pilot. |
 
 See [storage and cache research](../research/unzen-github-actions-storage.md) for sources and inspection limits.
 
@@ -131,6 +131,6 @@ These are proposed paths, not files created by this planning task:
 
 ## Pending decisions
 
-The first implementation gate needs the repository/owner inventory and pilot selection. Credentials, admission control for personal repositories, host-daemon policy, retention, and deployment approval remain open. A public/private network-cache provider is not an initial prerequisite.
+Forgerie is the selected pilot. It is public, and the current CLI credential returns HTTP 403 for organization runner groups. Registration requires a dedicated runner-only GitHub App and verified exact-workflow group restrictions. The initial implementation preinstalls Node 24 through the NixOS closure and denies job access to the host Nix daemon, so it does not change daemon-wide build policy. Broader repository inventory, admission, Nix-source-build resource policy and output retention remain future gates. See [pilot implementation](unzen-github-actions-pilot.md).
 
 This plan is not deployment evidence. No CI speed, sustainable worker count, or cache hit rate has been measured.
