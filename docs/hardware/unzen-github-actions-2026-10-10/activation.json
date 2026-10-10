@@ -1,0 +1,497 @@
+{
+  "source_revision": "cb233f3375718e9fd1f948ac40b04d94e8521456",
+  "activation": {
+    "before": "/nix/store/2q2g23yy7h89maclnzaiz540xw67qg2p-nixos-system-unzen-26.11.20260923.4975466",
+    "candidate": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+    "booted": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+    "kernel": "/nix/store/wad13pnpsva4i1y5ibqiprkl04jkv8ag-linux-6.18.53/bzImage",
+    "changed_units": [
+      "dbus-broker.service.d/overrides.conf",
+      "github-actions.slice",
+      "github-runner-forgerie.service",
+      "multi-user.target.wants/github-runner-forgerie.service",
+      "polkit.service.d/overrides.conf",
+      "sysinit-reactivation.target.requires/systemd-tmpfiles-resetup.service",
+      "systemd-tmpfiles-resetup.service"
+    ],
+    "services_before": {
+      "automatic-timezoned-geoclue-agent.service": {
+        "ActiveState": "active",
+        "InvocationID": "e7c0949314c44d788fb549650c48adce",
+        "MainPID": "1165"
+      },
+      "automatic-timezoned.service": {
+        "ActiveState": "active",
+        "InvocationID": "3502bed7b9ee42a69dfc2b495c9032cc",
+        "MainPID": "1549"
+      },
+      "dbus-broker.service": {
+        "ActiveState": "active",
+        "InvocationID": "d040f67c42504d7e9a6deec25f8759df",
+        "MainPID": "749"
+      },
+      "geoclue.service": {
+        "ActiveState": "active",
+        "InvocationID": "48de6d895306410db10a65c12b366518",
+        "MainPID": "1125"
+      },
+      "getty@tty1.service": {
+        "ActiveState": "active",
+        "InvocationID": "9b0c5b43a799405aafeed45c2c75d0b4",
+        "MainPID": "191484"
+      },
+      "ModemManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "9910973e0ab94d828e487f2ed4eac273",
+        "MainPID": "194194"
+      },
+      "NetworkManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "daa5290a21564d57b3b4ea2c858511da",
+        "MainPID": "883"
+      },
+      "nix-daemon.service": {
+        "ActiveState": "active",
+        "InvocationID": "8a03922610984b419b812b9dd90c4f74",
+        "MainPID": "1900"
+      },
+      "nscd.service": {
+        "ActiveState": "active",
+        "InvocationID": "b7ef149979a54908a025ae49164bc3cd",
+        "MainPID": "166925"
+      },
+      "polkit.service": {
+        "ActiveState": "active",
+        "InvocationID": "bdd2c07c3b8c4e938356cff9213ce65b",
+        "MainPID": "193668"
+      },
+      "sshd.service": {
+        "ActiveState": "active",
+        "InvocationID": "a5f7df115a9f40268bbf67fc91c3033b",
+        "MainPID": "963"
+      },
+      "systemd-journald.service": {
+        "ActiveState": "active",
+        "InvocationID": "e6b4ad9c4b2c4cbf9982ce7b24a9c74f",
+        "MainPID": "455"
+      },
+      "systemd-logind.service": {
+        "ActiveState": "active",
+        "InvocationID": "b05b899bdbb844e0b7736f612a1e25b0",
+        "MainPID": "790"
+      },
+      "systemd-oomd.service": {
+        "ActiveState": "active",
+        "InvocationID": "60e3595892a04be7b2a58c4a1e84ecce",
+        "MainPID": "457"
+      },
+      "systemd-timesyncd.service": {
+        "ActiveState": "active",
+        "InvocationID": "8b39ae1c735042a1a435d3f84bb970e2",
+        "MainPID": "492"
+      },
+      "systemd-udevd.service": {
+        "ActiveState": "active",
+        "InvocationID": "0a18e35259914545ba6299d7891b5b55",
+        "MainPID": "497"
+      },
+      "tailscaled.service": {
+        "ActiveState": "active",
+        "InvocationID": "65b498f5209e41aa9cc6e9f8d57b9a54",
+        "MainPID": "1126"
+      },
+      "user@0.service": {
+        "ActiveState": "active",
+        "InvocationID": "7955a9abcd454351904761581442a3fb",
+        "MainPID": "194239"
+      },
+      "wpa_supplicant.service": {
+        "ActiveState": "active",
+        "InvocationID": "2f5bcb2c48e9402d9b56437bd27b5bb0",
+        "MainPID": "889"
+      }
+    },
+    "polkit_dependents": [
+      "ModemManager.service"
+    ],
+    "inspected_at": 1791651196,
+    "status": "accepted",
+    "services_after": {
+      "automatic-timezoned-geoclue-agent.service": {
+        "ActiveState": "active",
+        "InvocationID": "e7c0949314c44d788fb549650c48adce",
+        "MainPID": "1165"
+      },
+      "automatic-timezoned.service": {
+        "ActiveState": "active",
+        "InvocationID": "3502bed7b9ee42a69dfc2b495c9032cc",
+        "MainPID": "1549"
+      },
+      "dbus-broker.service": {
+        "ActiveState": "active",
+        "InvocationID": "d040f67c42504d7e9a6deec25f8759df",
+        "MainPID": "749"
+      },
+      "geoclue.service": {
+        "ActiveState": "active",
+        "InvocationID": "48de6d895306410db10a65c12b366518",
+        "MainPID": "1125"
+      },
+      "getty@tty1.service": {
+        "ActiveState": "active",
+        "InvocationID": "9b0c5b43a799405aafeed45c2c75d0b4",
+        "MainPID": "191484"
+      },
+      "ModemManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "5da6d2b773dc4d859b2c25b2c24de56a",
+        "MainPID": "194765"
+      },
+      "NetworkManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "daa5290a21564d57b3b4ea2c858511da",
+        "MainPID": "883"
+      },
+      "nix-daemon.service": {
+        "ActiveState": "active",
+        "InvocationID": "8a03922610984b419b812b9dd90c4f74",
+        "MainPID": "1900"
+      },
+      "nscd.service": {
+        "ActiveState": "active",
+        "InvocationID": "b7ef149979a54908a025ae49164bc3cd",
+        "MainPID": "166925"
+      },
+      "polkit.service": {
+        "ActiveState": "active",
+        "InvocationID": "4031d5147f0b41ada67e1c7dec61ee58",
+        "MainPID": "194569"
+      },
+      "sshd.service": {
+        "ActiveState": "active",
+        "InvocationID": "a5f7df115a9f40268bbf67fc91c3033b",
+        "MainPID": "963"
+      },
+      "systemd-journald.service": {
+        "ActiveState": "active",
+        "InvocationID": "e6b4ad9c4b2c4cbf9982ce7b24a9c74f",
+        "MainPID": "455"
+      },
+      "systemd-logind.service": {
+        "ActiveState": "active",
+        "InvocationID": "b05b899bdbb844e0b7736f612a1e25b0",
+        "MainPID": "790"
+      },
+      "systemd-oomd.service": {
+        "ActiveState": "active",
+        "InvocationID": "60e3595892a04be7b2a58c4a1e84ecce",
+        "MainPID": "457"
+      },
+      "systemd-timesyncd.service": {
+        "ActiveState": "active",
+        "InvocationID": "8b39ae1c735042a1a435d3f84bb970e2",
+        "MainPID": "492"
+      },
+      "systemd-udevd.service": {
+        "ActiveState": "active",
+        "InvocationID": "0a18e35259914545ba6299d7891b5b55",
+        "MainPID": "497"
+      },
+      "tailscaled.service": {
+        "ActiveState": "active",
+        "InvocationID": "65b498f5209e41aa9cc6e9f8d57b9a54",
+        "MainPID": "1126"
+      },
+      "user@0.service": {
+        "ActiveState": "active",
+        "InvocationID": "7955a9abcd454351904761581442a3fb",
+        "MainPID": "194239"
+      },
+      "wpa_supplicant.service": {
+        "ActiveState": "active",
+        "InvocationID": "2f5bcb2c48e9402d9b56437bd27b5bb0",
+        "MainPID": "889"
+      }
+    },
+    "verified_at": 1791651202,
+    "acceptance_services_before": {
+      "automatic-timezoned-geoclue-agent.service": {
+        "ActiveState": "active",
+        "InvocationID": "e7c0949314c44d788fb549650c48adce",
+        "MainPID": "1165"
+      },
+      "automatic-timezoned.service": {
+        "ActiveState": "active",
+        "InvocationID": "3502bed7b9ee42a69dfc2b495c9032cc",
+        "MainPID": "1549"
+      },
+      "dbus-broker.service": {
+        "ActiveState": "active",
+        "InvocationID": "d040f67c42504d7e9a6deec25f8759df",
+        "MainPID": "749"
+      },
+      "geoclue.service": {
+        "ActiveState": "active",
+        "InvocationID": "48de6d895306410db10a65c12b366518",
+        "MainPID": "1125"
+      },
+      "getty@tty1.service": {
+        "ActiveState": "active",
+        "InvocationID": "9b0c5b43a799405aafeed45c2c75d0b4",
+        "MainPID": "191484"
+      },
+      "ModemManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "5da6d2b773dc4d859b2c25b2c24de56a",
+        "MainPID": "194765"
+      },
+      "NetworkManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "daa5290a21564d57b3b4ea2c858511da",
+        "MainPID": "883"
+      },
+      "nix-daemon.service": {
+        "ActiveState": "active",
+        "InvocationID": "8a03922610984b419b812b9dd90c4f74",
+        "MainPID": "1900"
+      },
+      "nscd.service": {
+        "ActiveState": "active",
+        "InvocationID": "b7ef149979a54908a025ae49164bc3cd",
+        "MainPID": "166925"
+      },
+      "polkit.service": {
+        "ActiveState": "active",
+        "InvocationID": "4031d5147f0b41ada67e1c7dec61ee58",
+        "MainPID": "194569"
+      },
+      "sshd.service": {
+        "ActiveState": "active",
+        "InvocationID": "a5f7df115a9f40268bbf67fc91c3033b",
+        "MainPID": "963"
+      },
+      "systemd-journald.service": {
+        "ActiveState": "active",
+        "InvocationID": "e6b4ad9c4b2c4cbf9982ce7b24a9c74f",
+        "MainPID": "455"
+      },
+      "systemd-logind.service": {
+        "ActiveState": "active",
+        "InvocationID": "b05b899bdbb844e0b7736f612a1e25b0",
+        "MainPID": "790"
+      },
+      "systemd-oomd.service": {
+        "ActiveState": "active",
+        "InvocationID": "60e3595892a04be7b2a58c4a1e84ecce",
+        "MainPID": "457"
+      },
+      "systemd-timesyncd.service": {
+        "ActiveState": "active",
+        "InvocationID": "8b39ae1c735042a1a435d3f84bb970e2",
+        "MainPID": "492"
+      },
+      "systemd-udevd.service": {
+        "ActiveState": "active",
+        "InvocationID": "0a18e35259914545ba6299d7891b5b55",
+        "MainPID": "497"
+      },
+      "tailscaled.service": {
+        "ActiveState": "active",
+        "InvocationID": "65b498f5209e41aa9cc6e9f8d57b9a54",
+        "MainPID": "1126"
+      },
+      "user@0.service": {
+        "ActiveState": "active",
+        "InvocationID": "b902455494ec400dacfd1ea7339b975b",
+        "MainPID": "194856"
+      },
+      "wpa_supplicant.service": {
+        "ActiveState": "active",
+        "InvocationID": "2f5bcb2c48e9402d9b56437bd27b5bb0",
+        "MainPID": "889"
+      }
+    },
+    "acceptance_services_after": {
+      "automatic-timezoned-geoclue-agent.service": {
+        "ActiveState": "active",
+        "InvocationID": "e7c0949314c44d788fb549650c48adce",
+        "MainPID": "1165"
+      },
+      "automatic-timezoned.service": {
+        "ActiveState": "active",
+        "InvocationID": "3502bed7b9ee42a69dfc2b495c9032cc",
+        "MainPID": "1549"
+      },
+      "dbus-broker.service": {
+        "ActiveState": "active",
+        "InvocationID": "d040f67c42504d7e9a6deec25f8759df",
+        "MainPID": "749"
+      },
+      "geoclue.service": {
+        "ActiveState": "active",
+        "InvocationID": "48de6d895306410db10a65c12b366518",
+        "MainPID": "1125"
+      },
+      "getty@tty1.service": {
+        "ActiveState": "active",
+        "InvocationID": "9b0c5b43a799405aafeed45c2c75d0b4",
+        "MainPID": "191484"
+      },
+      "ModemManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "5da6d2b773dc4d859b2c25b2c24de56a",
+        "MainPID": "194765"
+      },
+      "NetworkManager.service": {
+        "ActiveState": "active",
+        "InvocationID": "daa5290a21564d57b3b4ea2c858511da",
+        "MainPID": "883"
+      },
+      "nix-daemon.service": {
+        "ActiveState": "active",
+        "InvocationID": "8a03922610984b419b812b9dd90c4f74",
+        "MainPID": "1900"
+      },
+      "nscd.service": {
+        "ActiveState": "active",
+        "InvocationID": "b7ef149979a54908a025ae49164bc3cd",
+        "MainPID": "166925"
+      },
+      "polkit.service": {
+        "ActiveState": "active",
+        "InvocationID": "4031d5147f0b41ada67e1c7dec61ee58",
+        "MainPID": "194569"
+      },
+      "sshd.service": {
+        "ActiveState": "active",
+        "InvocationID": "a5f7df115a9f40268bbf67fc91c3033b",
+        "MainPID": "963"
+      },
+      "systemd-journald.service": {
+        "ActiveState": "active",
+        "InvocationID": "e6b4ad9c4b2c4cbf9982ce7b24a9c74f",
+        "MainPID": "455"
+      },
+      "systemd-logind.service": {
+        "ActiveState": "active",
+        "InvocationID": "b05b899bdbb844e0b7736f612a1e25b0",
+        "MainPID": "790"
+      },
+      "systemd-oomd.service": {
+        "ActiveState": "active",
+        "InvocationID": "60e3595892a04be7b2a58c4a1e84ecce",
+        "MainPID": "457"
+      },
+      "systemd-timesyncd.service": {
+        "ActiveState": "active",
+        "InvocationID": "8b39ae1c735042a1a435d3f84bb970e2",
+        "MainPID": "492"
+      },
+      "systemd-udevd.service": {
+        "ActiveState": "active",
+        "InvocationID": "0a18e35259914545ba6299d7891b5b55",
+        "MainPID": "497"
+      },
+      "tailscaled.service": {
+        "ActiveState": "active",
+        "InvocationID": "65b498f5209e41aa9cc6e9f8d57b9a54",
+        "MainPID": "1126"
+      },
+      "user@0.service": {
+        "ActiveState": "active",
+        "InvocationID": "b902455494ec400dacfd1ea7339b975b",
+        "MainPID": "194856"
+      },
+      "wpa_supplicant.service": {
+        "ActiveState": "active",
+        "InvocationID": "2f5bcb2c48e9402d9b56437bd27b5bb0",
+        "MainPID": "889"
+      }
+    },
+    "accepted_at": 1791651352
+  },
+  "runtime": {
+    "hostname": "unzen",
+    "current": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+    "default": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+    "booted": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+    "runner": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "InvocationID": "838eb91cb0ea4695bdca5d1a1f2ee54c",
+      "MainPID": "194747",
+      "ControlGroup": "/github.slice/github-actions.slice/github-runner-forgerie.service",
+      "IPAddressDeny": "169.254.0.0/16 192.168.0.0/16 fc00::/7 100.64.0.0/10 fe80::/10 10.0.0.0/8 172.16.0.0/12",
+      "User": "github-runner-forgerie",
+      "Group": "github-runner-forgerie"
+    },
+    "slice": {
+      "ActiveState": "active",
+      "ControlGroup": "/github.slice/github-actions.slice",
+      "CPUQuotaPerSecUSec": "4s",
+      "MemoryHigh": "12884901888",
+      "MemoryMax": "17179869184",
+      "TasksMax": "2048"
+    },
+    "actual_cgroup_bounds": {
+      "cpu.max": "400000 100000",
+      "memory.high": "12884901888",
+      "memory.max": "17179869184",
+      "pids.max": "2048"
+    },
+    "app_key": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0o400"
+    },
+    "package_power_limits_uw": {
+      "constraint_0_power_limit_uw": 95000000,
+      "constraint_1_power_limit_uw": 95000000
+    },
+    "directories": {
+      "/srv/github-actions": {
+        "uid": 0,
+        "gid": 990,
+        "mode": "0o750"
+      },
+      "/srv/github-actions/work": {
+        "uid": 0,
+        "gid": 990,
+        "mode": "0o750"
+      },
+      "/srv/github-actions/tmp": {
+        "uid": 0,
+        "gid": 990,
+        "mode": "0o750"
+      },
+      "/srv/github-actions/work/forgerie": {
+        "uid": 993,
+        "gid": 990,
+        "mode": "0o700"
+      },
+      "/srv/github-actions/tmp/forgerie": {
+        "uid": 993,
+        "gid": 990,
+        "mode": "0o700"
+      }
+    },
+    "failed_units": []
+  },
+  "initial_runner": {
+    "id": 10,
+    "name": "unzen-forgerie",
+    "os": "unknown",
+    "status": "online",
+    "busy": false,
+    "version": "2.337.0",
+    "labels": [
+      {
+        "id": 0,
+        "name": "unzen-forgerie",
+        "type": "custom"
+      }
+    ]
+  },
+  "group_id": 3,
+  "lifecycle_acceptance": "pending"
+}

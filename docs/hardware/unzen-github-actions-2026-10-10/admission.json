@@ -1,0 +1,264 @@
+{
+  "runner_name": "unzen-admission-disposable-vm",
+  "group_id": 3,
+  "negative_runs": [
+    38065018631,
+    38065123150
+  ],
+  "started_at": "2026-10-10T16:08:43Z",
+  "runner": {
+    "id": 8,
+    "name": "unzen-admission-disposable-vm",
+    "os": "unknown",
+    "status": "online",
+    "busy": false,
+    "version": "2.337.0",
+    "labels": [
+      {
+        "id": 0,
+        "name": "unzen-forgerie",
+        "type": "custom"
+      }
+    ]
+  },
+  "negative_idle_window_seconds": 62,
+  "negative_before_positive": [
+    {
+      "run_id": 38065018631,
+      "url": "https://github.com/forgerie/forgerie/actions/runs/38065018631",
+      "status": "queued",
+      "conclusion": null,
+      "run_attempt": 3,
+      "event": "workflow_dispatch",
+      "head_sha": "43946a7032276eed15fe2ec0769828c16872a6a4",
+      "head_branch": "test/unzen-admission-20261010",
+      "jobs": [
+        {
+          "id": 114255014630,
+          "name": "admission",
+          "status": "queued",
+          "conclusion": null,
+          "runner_id": null,
+          "runner_name": null,
+          "runner_group_id": null,
+          "runner_group_name": null,
+          "labels": [
+            "unzen-forgerie"
+          ],
+          "steps": []
+        }
+      ]
+    },
+    {
+      "run_id": 38065123150,
+      "url": "https://github.com/forgerie/forgerie/actions/runs/38065123150",
+      "status": "queued",
+      "conclusion": null,
+      "run_attempt": 3,
+      "event": "pull_request",
+      "head_sha": "9ec52fe6910dff5655a89de3db0c69cdae99062e",
+      "head_branch": "test/unzen-fork-admission-20261010",
+      "jobs": [
+        {
+          "id": 114255017110,
+          "name": "admission",
+          "status": "queued",
+          "conclusion": null,
+          "runner_id": null,
+          "runner_name": null,
+          "runner_group_id": null,
+          "runner_group_name": null,
+          "labels": [
+            "unzen-forgerie"
+          ],
+          "steps": []
+        }
+      ]
+    }
+  ],
+  "variable_temporarily_enabled": true,
+  "positive_run": 38066539907,
+  "positive_assignment": {
+    "run_id": 38066539907,
+    "url": "https://github.com/forgerie/forgerie/actions/runs/38066539907",
+    "status": "in_progress",
+    "conclusion": null,
+    "run_attempt": 1,
+    "event": "workflow_dispatch",
+    "head_sha": "f71220c00afb72b5e631fb820d9f9cfee54eb288",
+    "head_branch": "main",
+    "jobs": [
+      {
+        "id": 114255226122,
+        "name": "Optional native NixOS verification",
+        "status": "in_progress",
+        "conclusion": null,
+        "runner_id": 8,
+        "runner_name": "unzen-admission-disposable-vm",
+        "runner_group_id": 3,
+        "runner_group_name": "unzen-forgerie-manual",
+        "labels": [
+          "unzen-forgerie"
+        ],
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-10T16:09:58Z",
+            "completed_at": "2026-10-10T16:10:00Z"
+          },
+          {
+            "name": "Checkout the dispatched main revision",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-10T16:10:00Z",
+            "completed_at": "2026-10-10T16:10:02Z"
+          },
+          {
+            "name": "Check the native toolchain and disk-backed temporary files",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-10T16:10:02Z",
+            "completed_at": "2026-10-10T16:10:02Z"
+          },
+          {
+            "name": "Install server and browser dependencies",
+            "status": "in_progress",
+            "conclusion": null,
+            "number": 4,
+            "started_at": "2026-10-10T16:10:02Z",
+            "completed_at": null
+          },
+          {
+            "name": "Verify static checks",
+            "status": "pending",
+            "conclusion": null,
+            "number": 5,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Run tests and measure coverage",
+            "status": "pending",
+            "conclusion": null,
+            "number": 6,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Verify the browser app",
+            "status": "pending",
+            "conclusion": null,
+            "number": 7,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Build",
+            "status": "pending",
+            "conclusion": null,
+            "number": 8,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Smoke test npm 12 global package install",
+            "status": "pending",
+            "conclusion": null,
+            "number": 9,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Check npm package contents",
+            "status": "pending",
+            "conclusion": null,
+            "number": 10,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Upload coverage and native environment report",
+            "status": "pending",
+            "conclusion": null,
+            "number": 11,
+            "started_at": null,
+            "completed_at": null
+          },
+          {
+            "name": "Post Checkout the dispatched main revision",
+            "status": "pending",
+            "conclusion": null,
+            "number": 22,
+            "started_at": null,
+            "completed_at": null
+          }
+        ]
+      }
+    ]
+  },
+  "variable_restored_false": true,
+  "negative_after_positive": [
+    {
+      "run_id": 38065018631,
+      "url": "https://github.com/forgerie/forgerie/actions/runs/38065018631",
+      "status": "queued",
+      "conclusion": null,
+      "run_attempt": 3,
+      "event": "workflow_dispatch",
+      "head_sha": "43946a7032276eed15fe2ec0769828c16872a6a4",
+      "head_branch": "test/unzen-admission-20261010",
+      "jobs": [
+        {
+          "id": 114255014630,
+          "name": "admission",
+          "status": "queued",
+          "conclusion": null,
+          "runner_id": 0,
+          "runner_name": "",
+          "runner_group_id": 0,
+          "runner_group_name": "",
+          "labels": [
+            "unzen-forgerie"
+          ],
+          "steps": []
+        }
+      ]
+    },
+    {
+      "run_id": 38065123150,
+      "url": "https://github.com/forgerie/forgerie/actions/runs/38065123150",
+      "status": "queued",
+      "conclusion": null,
+      "run_attempt": 3,
+      "event": "pull_request",
+      "head_sha": "9ec52fe6910dff5655a89de3db0c69cdae99062e",
+      "head_branch": "test/unzen-fork-admission-20261010",
+      "jobs": [
+        {
+          "id": 114255017110,
+          "name": "admission",
+          "status": "queued",
+          "conclusion": null,
+          "runner_id": 0,
+          "runner_name": "",
+          "runner_group_id": 0,
+          "runner_group_name": "",
+          "labels": [
+            "unzen-forgerie"
+          ],
+          "steps": []
+        }
+      ]
+    }
+  ],
+  "status": "live-admission-passed",
+  "finished_at": "2026-10-10T16:10:27Z",
+  "vm_registration_removed": true,
+  "cleanup_errors": [],
+  "cleanup_completed": true
+}

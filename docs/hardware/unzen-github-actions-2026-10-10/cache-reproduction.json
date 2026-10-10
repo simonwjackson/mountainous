@@ -1,0 +1,43 @@
+{
+  "scope": "actual scanners bundled from the isolated fix worktree; disposable physical bcachefs files only",
+  "before": {
+    "distinctExactInodes": [
+      "4035225266124021343",
+      "4035225266124021344"
+    ],
+    "numericInodesAlias": true,
+    "replacement": {
+      "expected": "session-0004",
+      "actual": "session-0000",
+      "passed": false
+    },
+    "durableName": {
+      "expected": "durable name",
+      "actual": {
+        "kind": "unknown"
+      },
+      "passed": false
+    }
+  },
+  "after": {
+    "distinctExactInodes": [
+      "7493989779944619028",
+      "7493989779944619029"
+    ],
+    "numericInodesAlias": true,
+    "replacement": {
+      "expected": "session-0004",
+      "actual": "session-0004",
+      "passed": true
+    },
+    "durableName": {
+      "expected": "durable name",
+      "actual": {
+        "kind": "named",
+        "name": "durable name"
+      },
+      "passed": true
+    }
+  },
+  "patch_status": "verification in progress; not landed"
+}
