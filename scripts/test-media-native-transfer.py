@@ -104,6 +104,36 @@ class NativeTransfer(unittest.TestCase):
             self.assertEqual((mapped / 'var/lib/private/prowlarr/config.xml').stat().st_uid, 65534)
             self.assertEqual((mapped / 'var/lib/tsnet-proxy-sonarr/tailscaled.state').stat().st_uid, 395)
 
+            # Rollback must return newer target writes, not the frozen original.
+            mapped_proxy = mapped / 'var/lib/tsnet-proxy-sonarr/tailscaled.state'
+            mapped_proxy.write_bytes(b'newest target identity fixture')
+            mapped_work.write_bytes(data + b'newest target partial bytes')
+            latest = state.capture_scope(mapped, roots)
+            rollback = base / 'rollback'
+            rollback.mkdir(mode=0o700)
+            subprocess.run(['rsync', '-aHAXS', '--numeric-ids', '--usermap=395:995',
+                            '--groupmap=390:993,391:992', str(mapped) + '/', str(rollback) + '/'],
+                           check=True, capture_output=True)
+            with self.assertRaises(state.StateError):
+                state.verify(latest, state.capture_scope(rollback, roots),
+                             uid_map={395: 995}, gid_map={390: 993, 391: 992})
+            state.map_scope_acls(rollback, roots, latest, {395: 995}, {390: 993, 391: 992})
+            actual = state.capture_scope(rollback, roots)
+            state.verify(latest, actual, uid_map={395: 995}, gid_map={390: 993, 391: 992})
+            with self.assertRaises(state.StateError):
+                state.verify(expected, actual)
+            self.assertEqual((rollback / 'var/lib/tsnet-proxy-sonarr/tailscaled.state').read_bytes(),
+                             b'newest target identity fixture')
+            self.assertEqual((rollback / 'srv/basin/downloads/.partial').read_bytes(),
+                             data + b'newest target partial bytes')
+            self.assertEqual((rollback / 'var/lib/tsnet-proxy-sonarr/tailscaled.state').stat().st_uid, 995)
+            self.assertEqual((rollback / 'var/lib/tsnet-proxy-sonarr/tailscaled.state').stat().st_gid, 992)
+            self.assertEqual((rollback / 'var/lib/private/prowlarr/config.xml').stat().st_uid, 65534)
+            self.assertEqual((rollback / 'srv/basin/downloads/.partial').stat().st_ino,
+                             (rollback / 'srv/basin/media/imported').stat().st_ino)
+            self.assertEqual(os.readlink(rollback / 'var/lib/prowlarr'), '/var/lib/private/prowlarr')
+            self.assertEqual((rollback / 'var/lib/sonarr').stat().st_uid, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
