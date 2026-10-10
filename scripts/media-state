@@ -99,6 +99,62 @@ def capture(root):
     return {"format": 2, "entries": records}
 
 
+def capture_scope(base, roots):
+    """Capture explicit disjoint roots, including cross-root hard links.
+
+    Keys are relative to base. Symlink roots are records, never traversed.
+    Each physical root rejects nested filesystems and unreadable directories.
+    """
+    base = Path(base).absolute()
+    paths = [base / Path(root) for root in roots]
+    if not paths or len(set(paths)) != len(paths):
+        raise StateError("scope must contain unique roots")
+    for path in paths:
+        if not path.is_relative_to(base) or ".." in path.parts:
+            raise StateError("scope escapes its base")
+        if path == base or any(path != other and path.is_relative_to(other) for other in paths):
+            raise StateError("scope roots overlap")
+        parent = path.parent
+        while parent != base:
+            if parent.is_symlink():
+                raise StateError("scope parent is a symlink")
+            parent = parent.parent
+    records, links = {}, {}
+
+    def add(path, device):
+        info = path.lstat()
+        if not stat.S_ISLNK(info.st_mode) and info.st_dev != device:
+            raise StateError("nested filesystem is outside the transfer scope")
+        name = str(path.relative_to(base))
+        records[name] = describe(path)
+        if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
+            group = links.setdefault((info.st_dev, info.st_ino), {"count": info.st_nlink, "paths": []})
+            group["paths"].append(name)
+
+    def unreadable(_error):
+        raise StateError("state directory could not be read completely")
+
+    for root in sorted(paths):
+        device = root.lstat().st_dev
+        add(root, device)
+        if root.is_symlink() or not root.is_dir():
+            continue
+        for directory, directories, files in os.walk(root, followlinks=False, onerror=unreadable):
+            parent = Path(directory)
+            before = identity(parent.lstat())
+            for name in sorted(directories + files):
+                add(parent / name, device)
+            if identity(parent.lstat()) != before:
+                raise StateError("directory changed during capture")
+    for group in links.values():
+        if group["count"] != len(group["paths"]):
+            raise StateError("hard link reaches outside the captured scope")
+        first = min(group["paths"])
+        for path in group["paths"]:
+            records[path]["hardlink_group"] = first
+    return {"format": 2, "entries": records}
+
+
 def mappings(values):
     result = {}
     for value in values:

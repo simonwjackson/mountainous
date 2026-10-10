@@ -44,6 +44,49 @@ class StateTransfer(unittest.TestCase):
     def test_complete_state_copy_matches(self):
         state.verify(self.expected, state.capture(self.target))
 
+    def test_disjoint_scope_preserves_cross_root_hardlinks(self):
+        (self.source / "linked-settings").hardlink_to(self.source / "settings.json")
+        roots = ["source/settings.json", "source/linked-settings"]
+        expected = state.capture_scope(self.base, roots)
+        self.assertEqual(expected["entries"][roots[0]]["hardlink_group"],
+                         expected["entries"][roots[1]]["hardlink_group"])
+        state.verify(expected, state.capture_scope(self.base, roots))
+
+    def test_scope_preserves_private_state_symlink_without_following_it(self):
+        (self.base / "private").mkdir()
+        shutil.copytree(self.source, self.base / "private/app", symlinks=True)
+        (self.base / "app").symlink_to("private/app")
+        manifest = state.capture_scope(self.base, ["app", "private/app"])
+        self.assertEqual(manifest["entries"]["app"]["link"], "private/app")
+        self.assertIn("private/app/settings.json", manifest["entries"])
+        self.assertNotIn("app/settings.json", manifest["entries"])
+
+    def test_scope_rejects_overlapping_roots(self):
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, ["source", "source/partial"])
+
+    def test_scope_rejects_parent_symlink(self):
+        (self.base / "alias").symlink_to("source")
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, ["alias/partial"])
+
+    def test_scope_rejects_escape(self):
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, ["../outside"])
+
+    def test_scope_rejects_external_hardlink(self):
+        (self.base / "outside").hardlink_to(self.source / "settings.json")
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, ["source"])
+
+    def test_scope_rejects_duplicate_roots(self):
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, ["source", "source"])
+
+    def test_scope_rejects_empty_scope(self):
+        with self.assertRaises(state.StateError):
+            state.capture_scope(self.base, [])
+
     def test_database_records_survive(self):
         state.verify(self.expected, state.capture(self.target))
         with closing(sqlite3.connect(self.target / "application.db")) as connection:

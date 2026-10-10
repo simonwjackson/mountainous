@@ -1,5 +1,9 @@
 # Filesystem metadata tests need Linux ACL/xattr support, not Nix's syscall filter.
-{ pkgs, nzbget }:
+{
+  pkgs,
+  nzbget,
+  transmission,
+}:
 let
   fixtures = pkgs.runCommand "media-state-test-programs" { } ''
     mkdir -p "$out/scripts" "$out/modules"
@@ -8,8 +12,11 @@ let
     cp ${../scripts/test-media-state.py} "$out/scripts/test-media-state.py"
     cp ${../scripts/test-media-state-ready.py} "$out/scripts/test-media-state-ready.py"
     cp ${../scripts/test-media-nzbget-hold.py} "$out/scripts/test-media-nzbget-hold.py"
+    cp ${../scripts/test-media-transmission-hold.py} "$out/scripts/test-media-transmission-hold.py"
     cp ${../modules/media-state-ready.py} "$out/modules/media-state-ready.py"
     cp ${../modules/media-nzbget-launch.py} "$out/modules/media-nzbget-launch.py"
+    cp ${../modules/media-library-cleanup.py} "$out/modules/media-library-cleanup.py"
+    cp ${../scripts/test-media-library-cleanup.py} "$out/scripts/test-media-library-cleanup.py"
   '';
 in
 pkgs.testers.runNixOSTest {
@@ -31,5 +38,9 @@ pkgs.testers.runNixOSTest {
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-state-ready.py")
     with subtest("pinned NZBGet starts with native processing holds"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbget-hold.py ${nzbget}/bin/nzbget")
+    with subtest("empty title cleanup preserves library roots and files"):
+        machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-library-cleanup.py")
+    with subtest("pinned Transmission holds saved running torrents and ignores watch files"):
+        machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-transmission-hold.py ${transmission}/bin/transmission-daemon")
   '';
 }

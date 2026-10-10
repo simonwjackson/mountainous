@@ -58,6 +58,7 @@
         media-state = import ../tests/media-state.nix {
           inherit pkgs;
           nzbget = media.nzbget;
+          transmission = media.transmission_4;
         };
         media-runtime = import ../tests/media-runtime.nix { inherit pkgs inputs; };
       };
