@@ -6,6 +6,12 @@ Use controlled moves, not automatic failover. Each move preserves service addres
 
 Keep staging on the downloader's current host. Other applications receive managed access to its completed files. A downloader move includes its work files. Long-term media remains on Zao for this port.
 
+## Client-side mapped access to the media library
+
+The operator selected a client-side mapped view for existing Zao media. Keep the stored ownership and the export policy on Zao unchanged. Translate legacy ownership only in the view that Sonarr and Radarr use. Do not disable filesystem permission checks or assign the unrelated `systemd-coredump` group to these services.
+
+The cost is an additional filesystem layer on each host with Sonarr or Radarr. Required mounts must stop their consumers on failure. The view does not replace transfer, identity, processing-hold, or rollback admission for a controlled move.
+
 ## Trade-offs
 
 | Chosen policy | Rejected alternative | Cost |

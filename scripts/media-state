@@ -1,0 +1,170 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3
+"""Capture and verify complete directory state without revealing its contents.
+
+Run capture with writers stopped. Manifests contain private filenames and hashes;
+keep them outside Git. This tool never copies, deletes, or repairs application data.
+"""
+import argparse
+import struct
+import hashlib
+import json
+import os
+from pathlib import Path
+import stat
+import sys
+
+
+class StateError(Exception):
+    pass
+
+
+def identity(info):
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns,
+            info.st_uid, info.st_gid, info.st_mode, info.st_nlink)
+
+
+def extended_attributes(path):
+    result = {}
+    for name in sorted(os.listxattr(path, follow_symlinks=False)):
+        value = os.getxattr(path, name, follow_symlinks=False)
+        if name in ("system.posix_acl_access", "system.posix_acl_default"):
+            if len(value) < 4 or (len(value) - 4) % 8 or struct.unpack("<I", value[:4])[0] != 2:
+                raise StateError("unsupported access-control metadata")
+            result[name] = {"kind": "posix-acl", "entries": [list(entry)
+                for entry in struct.iter_unpack("<HHI", value[4:])]}
+        else:
+            result[name] = {"kind": "hash", "sha256": hashlib.sha256(value).hexdigest()}
+    return result
+
+
+def describe(path):
+    before = path.lstat()
+    record = {"uid": before.st_uid, "gid": before.st_gid,
+              "mode": stat.S_IMODE(before.st_mode), "mtime_ns": before.st_mtime_ns,
+              "xattrs": extended_attributes(path)}
+    if stat.S_ISLNK(before.st_mode):
+        record.update(kind="symlink", link=os.readlink(path))
+    elif stat.S_ISDIR(before.st_mode):
+        record["kind"] = "directory"
+    elif stat.S_ISREG(before.st_mode):
+        digest = hashlib.sha256()
+        # O_NOFOLLOW prevents a replaced file from becoming a read outside the root.
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(descriptor, "rb") as stream:
+            if identity(os.fstat(stream.fileno())) != identity(before):
+                raise StateError("state changed during capture")
+            for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+                digest.update(block)
+            if identity(os.fstat(stream.fileno())) != identity(before):
+                raise StateError("state changed during capture")
+        record.update(kind="file", size=before.st_size, sha256=digest.hexdigest())
+    else:
+        raise StateError("unsupported filesystem object")
+    if identity(path.lstat()) != identity(before):
+        raise StateError("state changed during capture")
+    return record
+
+
+def capture(root):
+    root = Path(root).absolute()
+    if root.is_symlink() or not root.is_dir():
+        raise StateError("root must be an existing physical directory")
+    device = root.stat().st_dev
+    records = {".": describe(root)}
+    links = {}
+    def unreadable(_error):
+        raise StateError("state directory could not be read completely")
+    for directory, directories, files in os.walk(root, followlinks=False, onerror=unreadable):
+        parent = Path(directory)
+        before = identity(parent.lstat())
+        for name in sorted(directories + files):
+            path = parent / name
+            if not path.is_symlink() and path.lstat().st_dev != device:
+                raise StateError("nested filesystem is outside the transfer scope")
+            relative = str(path.relative_to(root))
+            records[relative] = describe(path)
+            info = path.lstat()
+            if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
+                group = links.setdefault((info.st_dev, info.st_ino), {"count": info.st_nlink, "paths": []})
+                group["paths"].append(relative)
+        if identity(parent.lstat()) != before:
+            raise StateError("directory changed during capture")
+    for group in links.values():
+        if group["count"] != len(group["paths"]):
+            raise StateError("hard link reaches outside the captured root")
+        first = min(group["paths"])
+        for path in group["paths"]:
+            records[path]["hardlink_group"] = first
+    return {"format": 2, "entries": records}
+
+
+def mappings(values):
+    result = {}
+    for value in values:
+        source, destination = value.split(":", 1)
+        result[int(source)] = int(destination)
+    return result
+
+
+def verify(expected, actual, uid_map=None, gid_map=None):
+    if expected.get("format") != 2 or actual.get("format") != 2:
+        raise StateError("unsupported manifest format")
+    left, right = expected["entries"], actual["entries"]
+    if set(left) != set(right):
+        raise StateError("file/directory set mismatch")
+    for name, original in left.items():
+        mapped = json.loads(json.dumps(original))
+        mapped["uid"] = (uid_map or {}).get(mapped["uid"], mapped["uid"])
+        mapped["gid"] = (gid_map or {}).get(mapped["gid"], mapped["gid"])
+        for attribute in mapped["xattrs"].values():
+            if attribute["kind"] == "posix-acl":
+                for entry in attribute["entries"]:
+                    if entry[0] == 2:  # ACL_USER: named user, not file owner.
+                        entry[2] = (uid_map or {}).get(entry[2], entry[2])
+                    elif entry[0] == 8:  # ACL_GROUP: named group, not file group.
+                        entry[2] = (gid_map or {}).get(entry[2], entry[2])
+        if mapped != right[name]:
+            # Filenames, hashes and credentials stay in the private manifest.
+            raise StateError("content, ownership, permission, timestamp, xattr, ACL or link mismatch")
+
+
+def save(manifest, destination):
+    destination = Path(destination)
+    descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, "w") as stream:
+        json.dump(manifest, stream, sort_keys=True)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("capture", "verify"))
+    parser.add_argument("root")
+    parser.add_argument("manifest")
+    parser.add_argument("--uid-map", action="append", default=[])
+    parser.add_argument("--gid-map", action="append", default=[])
+    args = parser.parse_args()
+    actual = capture(args.root)
+    if args.action == "capture":
+        if Path(args.manifest).resolve().is_relative_to(Path(args.root).resolve()):
+            raise StateError("manifest must be outside captured state")
+        save(actual, args.manifest)
+    else:
+        with Path(args.manifest).open() as stream:
+            expected = json.load(stream)
+        verify(expected, actual, mappings(args.uid_map), mappings(args.gid_map))
+    files = [entry for entry in actual["entries"].values() if entry["kind"] == "file"]
+    print("PASS: " + args.action + "; files=" + str(len(files)) +
+          "; bytes=" + str(sum(entry["size"] for entry in files)))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (StateError, OSError, ValueError, KeyError) as error:
+        message = str(error) if isinstance(error, StateError) else type(error).__name__
+        print("REFUSED: " + message, file=sys.stderr)
+        sys.exit(1)

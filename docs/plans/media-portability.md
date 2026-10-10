@@ -2,7 +2,9 @@
 
 ## Status and scope
 
-The operator approved [controlled moves and local staging](../decisions/media-portability.md). This plan is not an implemented or deployed media stack. Live cutover and application-data transfer remain separate approval gates.
+The operator approved [controlled moves and local staging](../decisions/media-portability.md). The operator also approved `migrate-preserving-state`: implementation, tests, deployment, source service stops, protected application/work-file transfers, and paused target startup verification. Downtime is acceptable. Expired service enrollment can be repaired without deleting unrelated identities.
+
+Implementation is in progress. Production has not been changed. Preserve Yari's original files for rollback. Stop and ask before a reset, incompatible application upgrade, credential replacement, or expanded scope.
 
 The initial application scope is Sonarr, Radarr, Prowlarr, NZBGet, and Transmission. Runtime requirements include service identities, protected credentials, completed-file access, downloader VPN isolation, and library staging/movement. Jellyfin and long-term media remain on Zao. Messaging and Syncthing remain excluded.
 
@@ -22,6 +24,8 @@ Do not reinstall or format either host. Do not run Disko or fresh-install deploy
 | NZBGet reports downloads paused and no visible completion history. | Moving the service does not recreate missing historical records or authorize recovery imports. |
 | Recent recorded imports predate proxy-node expiry. | Sonarr last recorded an import on August 18 and Radarr on August 1. The first cause and date of stalled imports remain unknown. |
 
+Read-only inventories confirmed Yari's media GID is `993`. Unzen already assigns `993` to `systemd-coredump`. The target contract selects GID `390`, which the live inventory and current NixOS reserved-ID table do not assign. The move must map media ownership from `993` to `390`, not change the unrelated group. Recheck the target before activation.
+
 Private diagnostic logs remain outside Git. Do not include credentials, private identity state, or full unredacted API/settings dumps in evidence files.
 
 ## Portability contract
@@ -39,6 +43,32 @@ Private diagnostic logs remain outside Git. Do not include credentials, private 
 | Credentials | Give the target only the credentials it needs. Encrypt transfers containing credentials. Never print credentials or put them in visible command arguments. |
 | Ownership | Preserve or deliberately map file ownership and group access. Do not assume dynamically assigned service IDs match across hosts. |
 | Rollback | Retain protected recovery state. If the target writes state, recover its newest compatible state instead of restarting an obsolete source snapshot. |
+
+## Implementation checkpoint
+
+The application packages preserve all five deployed releases. State capture, existing-state startup validation, placement-generated storage, a separate OAuth media proxy, and disposable NFS/WireGuard fixtures are implemented. Production remains unchanged.
+
+Paused verification uses native Transmission startup pause and disables its watch directory. ARR target copies disable download clients, indexer searches/RSS, and completed-download handling. Prowlarr target copies also disable application sync so it cannot re-enable ARR indexers. Protected receipts retain the exact original flags. Client credentials and application users remain unchanged.
+
+NZBGet uses native startup pause tasks and disables scan/feed scheduling during verification. Before stopping the source, admission must recheck that post-processing jobs and force-priority groups are both zero. The corrected read-only probe found two groups, no post-processing jobs, no force-priority groups, and about 115 MB remaining. It reads NZBGet 26's `MaxPriority`; the earlier `Priority` fallback incorrectly treated an absent field as zero. Missing or invalid priority metadata now fails closed. The native-binary fixture saves and reloads an individually unpaused group, then verifies global holds, unchanged queue identity/size, zero downloads, and preserved partial bytes. This is not permission to resume or import either production group.
+
+NZBGet's effective setup includes options supplied by its source unit, not only its configuration file. Preserve the effective staging paths, server settings, and cache/unpack options. Map architecture-dependent WebDir, UnrarCmd, and SevenZipCmd to the corresponding pinned target packages. Do not copy ARM executable paths into an x86 runtime.
+
+The VM adapter consumes the same placement-to-mount contract as real hosts. Its sparse disks satisfy mergerfs's real 10 GB reserve. Bind and mergerfs mounts follow directory setup and network readiness, rather than blocking `local-fs.target`. Tests must reject systemd boot-ordering cycles, not merely pass after systemd discards a dependency job.
+
+Manifest format 2 verifies nanosecond modification times, extended-attribute hashes, named POSIX ACL IDs, and hardlink relationships in addition to bytes, modes, symlinks, and owner mappings. A hardlink outside the captured scope stops capture. The normal-user state VM passes 21 metadata tests, 13 existing-state/ARR-hold tests, and three NZBGet tests. Filesystem tests run in a VM because the Nix build sandbox rejects xattr/ACL writes.
+
+Normal-user storage tests exposed two permission failures that root-only tests missed. Squashing every producer-side NFS caller to root changes the owner of new files, so mergerfs rejects timestamp preservation. The new producer export preserves numeric identities with `no_root_squash`; approved client hosts must use the same application UIDs and media GID. This retains root trust for those hosts, but stops granting every ordinary caller root identity. FUSE permission checks remain enabled.
+
+The operator selected a client-side mapped view. Keep Zao's stored ownership and export policy unchanged. Bindfs displays each library entry under the Sonarr or Radarr UID and maps GID 993 to target GID 390. New files created directly through the view use stored UID 0. Existing stored UIDs remain unchanged. Each application uses its own view through its existing pooled library path. Keep `default_permissions`, `chown-deny`, and `chgrp-deny` enabled.
+
+The runtime VM passes creation, exact timestamp preservation, and rename under the Sonarr and Radarr accounts in existing Zao directories. New pooled imports correctly go to staging. Direct creation through the mapped view retains stored UID 0 and GID 993 in the Zao fixture. An existing owner-only file retains its bytes, mode, and stored ownership after a pooled read. Explicit ownership changes fail. The live read-only inventory found stored UIDs 0, 274, 275, and 991. A UID-0-only mapping failed exact timestamp operations on the UID-991 fixture. The revised view passes timestamp-preserving writes and rename for UID-991 files under both application accounts without changing stored ownership or modes.
+
+Stopping the TV view stops a consumer with Sonarr's production dependencies, stops storage readiness, and unmounts the pooled TV path. Restoring readiness permits another import test. These are filesystem and dependency tests, not actual application imports or proof of live Zao access. A network outage can block a hard NFS mount without stopping its systemd unit. Do not treat the mount-stop test as proof that every network failure stops an application.
+
+Both runtime and state checks pass. Runtime evidence is `/nix/store/11hs0ys2s37d5xm398i6gg3fxc93qqnl-vm-test-run-portable-media-runtime`. State evidence is `/nix/store/140pcl5crfhijf35b4z7rf1d1chxwsy1-vm-test-run-media-state-preservation`. The target contract also passes with mapped views and unchanged production enablement. Live read-only evidence reports 72 directories and 664 files. All use GID 993. Directories use mode 2775 and files use mode 664. The active export table reports `rw,all_squash,anonuid=0,anongid=993`, consistent with the fixture. The kernel export cache alone contained no entries and did not establish the export policy. No Zao ownership or export configuration changed. Actual target access to the live library still requires admission before activation.
+
+The extended, startup-gated Unzen system builds with the mapped views, but has not been activated. Identity recovery, transfer orchestration, live Zao access, current-compatible rollback, and final startup admission still need verification. Do not activate production on the strength of package or partial VM checks alone.
 
 ## Existing pattern to reuse
 
@@ -82,10 +112,10 @@ No live service is enabled merely because its configuration evaluates or builds.
 | Failed target startup | The source can resume from compatible current state without two active owners. |
 | Media processing | After separate approval, a representative import and library handoff succeed. RPC health alone is not proof that media processing works. |
 
-## Approved-cutover procedure, not yet authorized
+## Authorized cutover procedure
 
 1. Prepare and verify the target with startup gated closed.
-2. Obtain approval for the service cutover and the exact state/work-file transfer scope.
+2. Record the exact state/work-file transfer scope within the approved five-application move. Ask only if preservation requires a reset, incompatible upgrade, or expanded scope.
 3. Pause work and stop all source application writers and its proxy.
 4. Capture protected consistent state and transfer required work files.
 5. Verify transferred bytes, ownership, storage paths, and runtime compatibility.

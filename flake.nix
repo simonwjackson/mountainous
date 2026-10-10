@@ -4,6 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Preserve Yari's deployed media releases during its ARM -> x86 move.
+    # Application/database upgrades are separate from relocation.
+    nixpkgs-media = {
+      url = "github:NixOS/nixpkgs/c06b4ae3d6599a672a6210b7021d699c351eebda";
+      flake = false;
+    };
+
     # Rakku's first Cairn deployment preserves its running HA 2025.12.3 and
     # Z-Wave JS 3.4.0 environment. Upgrade only as a separate, backed-up change.
     nixpkgs-rakku.url = "github:NixOS/nixpkgs/1306659b587dc277866c7b69eb97e5f07864d8c4";

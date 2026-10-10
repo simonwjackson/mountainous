@@ -1,0 +1,200 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3
+"""Read-only migration inventory. Never emit config contents or credentials."""
+from contextlib import closing
+import json
+import base64
+import os
+from pathlib import Path
+import pwd
+import re
+import sqlite3
+import grp
+import subprocess
+import sys
+import urllib.request
+import xml.etree.ElementTree as ET
+
+SERVICES = ("sonarr", "radarr", "prowlarr", "nzbget", "transmission")
+PROXIES = tuple("tsnet-proxy-" + name for name in SERVICES)
+ROOTS = tuple("/var/lib/" + name for name in SERVICES + PROXIES) + ( "/srv/basin/downloads", "/srv/basin/media",
+    "/srv/range/media/movies", "/srv/range/media/tv", "/net/mountainous/zao/media",
+)
+
+
+def queue_safety(groups):
+    priorities = [group["MaxPriority"] for group in groups]
+    if any(type(priority) is not int for priority in priorities):
+        raise ValueError("unrecognized queue priority metadata")
+    return {"groups": len(groups),
+            "force_priority_groups": sum(priority >= 900 for priority in priorities)}
+
+
+def run(*args, allow_missing=False):
+    result = subprocess.run(args, text=True, capture_output=True, timeout=45)
+    if result.returncode and not (allow_missing and "LoadState=not-found" in result.stdout):
+        raise RuntimeError("command failed: " + args[0])
+    return result.stdout
+
+
+def unit(name):
+    properties = ("LoadState", "ActiveState", "SubState", "User", "Group", "MainPID",
+                  "WorkingDirectory", "StateDirectory", "NetworkNamespacePath", "Environment")
+    raw = run("systemctl", "show", name + ".service", *("--property=" + p for p in properties),
+              allow_missing=True)
+    data = dict(line.split("=", 1) for line in raw.splitlines() if "=" in line)
+    environment = data.pop("Environment", "")
+    data["non_secret_environment"] = {
+        match.group(1): match.group(2).strip('"')
+        for match in re.finditer(r'(?:^|\s)(HOME|XDG_CONFIG_HOME|XDG_STATE_HOME|TS_STATE_DIR|VPN_NS_CONFIG)=([^\s]+)', environment)
+    }
+    pid = data.get("MainPID", "0")
+    if pid != "0":
+        try:
+            executable = str(Path("/proc", pid, "exe").resolve())
+            data["executable"] = executable
+            command = Path("/proc", pid, "cmdline").read_bytes().split(b"\0")
+            # Store paths identify the runtime without exposing command arguments.
+            data["runtime_store_names"] = sorted(set(
+                re.findall(r'/nix/store/[a-z0-9]{32}-([^/\s\x00]+)',
+                           b" ".join(command).decode(errors="replace"))
+            ))
+        except OSError:
+            data["process_inventory"] = "unavailable"
+    return data
+
+
+def filesystem(path):
+    p = Path(path)
+    result = {"exists": p.exists(), "symlink": p.is_symlink()}
+    if not p.exists():
+        return result
+    stat = p.stat()
+    result.update(uid=stat.st_uid, gid=stat.st_gid, mode=oct(stat.st_mode & 0o7777),
+                  resolved=str(p.resolve()))
+    result["mount"] = json.loads(run("findmnt", "--json", "--target", path,
+                                     "--output", "TARGET,SOURCE,FSTYPE,OPTIONS"))["filesystems"]
+    if path.startswith("/var/lib/") or path in ("/srv/basin/downloads", "/srv/basin/media"):
+        count = size = 0
+        errors = []
+        def onerror(error):
+            errors.append(type(error).__name__)
+        for directory, _, names in os.walk(path, onerror=onerror, followlinks=False):
+            for name in names:
+                try:
+                    file = Path(directory, name)
+                    if file.is_file() and not file.is_symlink():
+                        count += 1
+                        size += file.stat().st_size
+                except OSError as error:
+                    errors.append(type(error).__name__)
+        result.update(files=count, bytes=size, scan_errors=errors)
+        if path.startswith("/var/lib/tsnet-proxy-"):
+            result["identity_state_paths"] = [str(p) for p in Path(path).rglob("tailscaled.state")]
+    return result
+
+
+def database(path):
+    result = {"path": str(path), "bytes": path.stat().st_size}
+    try:
+        with closing(sqlite3.connect("file:" + str(path) + "?mode=ro", uri=True)) as connection:
+            connection.execute("PRAGMA query_only=ON")
+            tables = [row[0] for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+            result["counts"] = {name: connection.execute(
+                'SELECT count(*) FROM "' + name.replace('"', '""') + '"').fetchone()[0]
+                for name in tables}
+            if "RootFolders" in tables:
+                result["root_paths"] = [r[0] for r in connection.execute("SELECT Path FROM RootFolders")]
+            result["column_shapes"] = {
+                table: [row[1] for row in connection.execute('PRAGMA table_info("' + table + '")')]
+                for table in ("Config", "DownloadClients", "Indexers", "Applications", "ScheduledTasks") if table in tables
+            }
+            if "Config" in tables:
+                result["config_keys"] = [row[0] for row in connection.execute("SELECT Key FROM Config")]
+            result["connection_shapes"] = {}
+            for table in ("DownloadClients", "Indexers", "Applications"):
+                if table not in tables:
+                    continue
+                shapes = []
+                for implementation, raw in connection.execute('SELECT Implementation, Settings FROM "' + table + '"'):
+                    settings = json.loads(raw)
+                    shapes.append({"implementation": implementation, "setting_keys": sorted(settings)})
+                result["connection_shapes"][table] = shapes
+    except sqlite3.Error as error:
+        result["error"] = type(error).__name__
+    return result
+
+
+def application(name):
+    directory = Path("/var/lib", name)
+    result = {"databases": [], "config_locations": []}
+    if not directory.exists():
+        return result
+    for pattern in ("*.db", ".config/*/*.db"):
+        result["databases"].extend(database(p) for p in directory.glob(pattern))
+    for pattern in ("config.xml", ".config/*/config.xml", "nzbget.conf", ".config/transmission-daemon/settings.json"):
+        result["config_locations"].extend(str(p) for p in directory.glob(pattern))
+    if name == "nzbget" and result["config_locations"]:
+        try:
+            settings = dict(tuple(part.strip() for part in line.split("=", 1))
+                            for line in Path(result["config_locations"][0]).read_text().splitlines()
+                            if line.strip() and not line.lstrip().startswith("#") and "=" in line)
+            result["option_keys"] = sorted(settings)
+            authorization = base64.b64encode((settings.get("ControlUsername", "nzbget") + ":" + settings["ControlPassword"]).encode()).decode()
+            def rpc(method):
+                request = urllib.request.Request("http://10.200.200.2:" + settings.get("ControlPort", "6789") + "/jsonrpc",
+                    data=json.dumps({"method": method, "params": [], "id": 1}).encode(),
+                    headers={"Authorization": "Basic " + authorization, "Content-Type": "application/json"})
+                with urllib.request.urlopen(request, timeout=8) as response:
+                    return json.load(response)["result"]
+            public_options = {"MainDir", "DestDir", "InterDir", "NzbDir", "QueueDir", "TempDir", "ScriptDir", "RequiredDir", "ControlIP", "ControlPort", "UMask", "OutputMode", "LogFile", "LockFile", "ArticleCache", "WriteBuffer", "DirectUnpack", "UnrarCmd", "SevenZipCmd", "WebDir", "Server1.Name", "Server1.Host", "Server1.Port", "Server1.Encryption", "Server1.Connections", "Server1.Active"}
+            result["effective_path_options"] = {item["Name"]: item["Value"] for item in rpc("config") if item["Name"] in public_options}
+            status = rpc("status")
+            result["pause_status"] = {key: status.get(key) for key in
+                ("DownloadPaused", "PostPaused", "ScanPaused", "PostJobCount", "UrlCount", "RemainingSizeMB")}
+            groups = rpc("listgroups")
+            result["queue_safety"] = queue_safety(groups)
+        except Exception as error:
+            result["queue_status_error"] = type(error).__name__
+    if name in ("sonarr", "radarr", "prowlarr"):
+        for filename in result["config_locations"]:
+            if filename.endswith("config.xml"):
+                root = ET.parse(filename).getroot()
+                port = root.findtext("Port", {"sonarr": "8989", "radarr": "7878", "prowlarr": "9696"}[name])
+                address = "10.200.200.2" if name == "prowlarr" else "127.0.0.1"
+                request = urllib.request.Request("http://" + address + ":" + port + "/api/" +
+                    ("v1" if name == "prowlarr" else "v3") + "/system/status",
+                    headers={"X-Api-Key": root.findtext("ApiKey", "")})
+                try:
+                    with urllib.request.urlopen(request, timeout=8) as response:
+                        status = json.load(response)
+                    result["release"] = status.get("version")
+                    result["effective_appdata"] = status.get("appData")
+                except Exception as error:
+                    result["status_error"] = type(error).__name__
+    return result
+
+
+def main():
+    os.umask(0o077)
+    facts = {"hostname": run("hostname").strip(),
+             "system": str(Path("/run/current-system").resolve()),
+             "machine": run("uname", "-m").strip(),
+             "units": {name: unit(name) for name in SERVICES + PROXIES + ("vpn-ns",)},
+             "storage": {path: filesystem(path) for path in ROOTS},
+             "applications": {name: application(name) for name in SERVICES},
+             "owners": {name: {"uid": entry.pw_uid, "gid": entry.pw_gid, "home": entry.pw_dir}
+                        for name in SERVICES + ("tsnet-proxy", "simon", "simonwjackson")
+                        for entry in pwd.getpwall() if entry.pw_name == name},
+             "groups": {entry.gr_name: entry.gr_gid for entry in grp.getgrall()},
+             "available_bytes": os.statvfs("/var/lib").f_bavail * os.statvfs("/var/lib").f_frsize}
+    print(json.dumps(facts, indent=2), flush=True)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print("Inventory stopped: " + type(error).__name__, file=sys.stderr)
+        sys.exit(1)

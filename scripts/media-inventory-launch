@@ -1,0 +1,17 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p bash coreutils sudo
+set -euo pipefail
+probe=$1
+[[ "$probe" == /tmp/mountainous-media-inventory-*.py ]] || exit 2
+[[ -f "$probe" && ! -L "$probe" && $(stat -c %u "$probe") == "$(id -u)" ]] || exit 2
+cleanup() {
+  rm -- "$probe" "$0"
+}
+trap cleanup EXIT
+interpreter=/run/current-system/sw/bin/python3
+if [[ ! -x "$interpreter" ]]; then
+  candidates=(/nix/store/*-python3-*/bin/python3)
+  interpreter=${candidates[0]}
+fi
+[[ -x "$interpreter" ]] || exit 3
+sudo -n "$interpreter" "$probe"

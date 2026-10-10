@@ -1,0 +1,42 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 systemd
+"""Hold processing in a stopped ARR target copy without changing client secrets.
+
+The receipt contains original flags, never credentials. Keep it private and
+outside the application directory. This command does not resume processing.
+"""
+import argparse
+import importlib.util
+from pathlib import Path
+import subprocess
+import sys
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("application", choices=("sonarr", "radarr", "prowlarr"))
+    parser.add_argument("directory", type=Path)
+    parser.add_argument("receipt", type=Path)
+    args = parser.parse_args()
+    status = subprocess.run(["systemctl", "show", args.application + ".service",
+                             "--property=ActiveState,MainPID,ControlPID"],
+                            capture_output=True, text=True, check=True)
+    fields = dict(line.split("=", 1) for line in status.stdout.splitlines() if "=" in line)
+    if fields.get("ActiveState") not in ("inactive", "failed") or any(
+            fields.get(key) != "0" for key in ("MainPID", "ControlPID")):
+        raise ValueError("application must be completely stopped")
+    source = Path(__file__).parents[1] / "modules/media-state-ready.py"
+    spec = importlib.util.spec_from_file_location("media_state_ready", source)
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    guard.prepare_arr_pause(args.application, args.directory, args.receipt)
+    guard.validate_arr(args.application, args.directory, require_pause=True)
+    print("PASS: application processing held; original flags saved privately")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        print("REFUSED: unable to hold application processing; state and receipt require inspection", file=sys.stderr)
+        sys.exit(1)

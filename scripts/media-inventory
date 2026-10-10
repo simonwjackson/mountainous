@@ -1,0 +1,64 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 openssh
+"""Inventory enrolled hosts without trusting a new SSH key or displaying secrets."""
+from pathlib import Path
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import uuid
+
+
+def main():
+    if sys.argv[1:] not in (["yari"], ["unzen"]):
+        raise SystemExit("Usage: media-inventory yari|unzen")
+    name = sys.argv[1]
+    host = name + ".hummingbird-lake.ts.net"
+    user = "root" if name == "unzen" else "simonwjackson"
+    os.umask(0o077)
+    with tempfile.TemporaryDirectory(prefix="media-inventory-") as temporary:
+        ssh = ["-F", "/dev/null", "-i", str(Path.home() / ".ssh/id_rsa"),
+               "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
+               "-o", "StrictHostKeyChecking=yes", "-o", "ConnectTimeout=10"]
+        if name == "unzen":
+            public = Path.home() / ".local/share/mountainous/hostkeys/unzen/ssh_host_ed25519_key.pub"
+            actual = subprocess.run(["ssh-keygen", "-lf", str(public)], capture_output=True,
+                                    text=True, check=True).stdout.split()[1]
+            if actual != "SHA256:VP6I/dDbuKVFEPdYz4rCIDphMFT/Bzf+Dh1Vs9bQPD4":
+                raise SystemExit("Refused: Unzen enrollment fingerprint mismatch")
+            known = Path(temporary, "known_hosts")
+            known.write_text(host + " " + " ".join(public.read_text().split()[:2]) + "\n")
+            ssh.extend(["-o", "HostKeyAlgorithms=ssh-ed25519", "-o", "UserKnownHostsFile=" + str(known)])
+        identifier = uuid.uuid4().hex
+        remote_probe = "/tmp/mountainous-media-inventory-" + identifier + ".py"
+        remote_launcher = "/tmp/mountainous-media-inventory-" + identifier + ".sh"
+        for source, destination in (("media-inventory-target", remote_probe),
+                                    ("media-inventory-launch", remote_launcher)):
+            subprocess.run(["scp", "-q"] + ssh + [str(Path(__file__).with_name(source)),
+                            user + "@" + host + ":" + destination], check=True, timeout=40)
+        result = subprocess.run(["ssh"] + ssh + [user + "@" + host,
+                                "/run/current-system/sw/bin/bash", remote_launcher, remote_probe],
+                                text=True, capture_output=True, timeout=150)
+        if result.returncode:
+            category = next((line for line in result.stderr.splitlines()
+                             if line.startswith("Inventory stopped:")), "no diagnostic category")
+            raise SystemExit("Inventory failed on " + name + " (exit " +
+                             str(result.returncode) + "): " + category)
+        facts = json.loads(result.stdout)
+        output = Path("/tmp/media-inventory-" + name + ".json")
+        if output.exists():
+            output = output.with_name("media-inventory-" + name + "-" + identifier + ".json")
+        with output.open("x") as stream:
+            json.dump(facts, stream, indent=2)
+            stream.write("\n")
+        output.chmod(0o600)
+        print("PASS: read-only inventory of " + name + " saved to " + str(output))
+        print("Runtime: " + facts["machine"] + "; available bytes: " + str(facts["available_bytes"]))
+        for app, data in facts["applications"].items():
+            print(app + ": " + str(data.get("release", "see executable inventory")) +
+                  "; databases: " + str(len(data["databases"])))
+
+
+if __name__ == "__main__":
+    main()
