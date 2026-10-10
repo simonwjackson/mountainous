@@ -8,6 +8,34 @@
     { config, pkgs, ... }:
     let
       runner = config.systemd.services.github-runner-forgerie;
+      # Call the shipped runner SDK, not a copied permission algorithm. The
+      # listener requires readable ancestors as well as a writable work dir.
+      directoryCheck =
+        pkgs.runCommand "runner-directory-permissions"
+          {
+            nativeBuildInputs = [ pkgs.dotnetCorePackages.sdk_8_0 ];
+          }
+          ''
+            export DOTNET_CLI_HOME="$TMPDIR/dotnet-home"
+            export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+            export DOTNET_CLI_TELEMETRY_OPTOUT=1
+            mkdir -p "$DOTNET_CLI_HOME" "$out"
+            printf '%s\n' '<configuration><packageSources><clear /></packageSources></configuration>' > NuGet.Config
+            printf '%s\n' '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><NuGetAudit>false</NuGetAudit></PropertyGroup></Project>' > permissions.csproj
+            cp ${pkgs.writeText "runner-directory-permissions.cs" ''
+              using System;
+              using System.IO;
+              using System.Reflection;
+              using System.Runtime.Loader;
+              var library = "${config.services.github-runners.forgerie.package}/lib/github-runner";
+              AssemblyLoadContext.Default.Resolving += (_, name) => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(library, name.Name + ".dll"));
+              var assembly = Assembly.LoadFrom(Path.Combine(library, "Runner.Sdk.dll"));
+              var method = assembly.GetType("GitHub.Runner.Sdk.IOUtil", true).GetMethod("ValidateExecutePermission");
+              try { method.Invoke(null, new object[] { args[0] }); }
+              catch (TargetInvocationException error) { throw error.InnerException; }
+            ''} Program.cs
+            dotnet build --configuration Release --output "$out"
+          '';
       loopback = pkgs.writeText "ci-loopback.py" ''
         import http.server
         import threading
@@ -34,6 +62,7 @@
         set -euo pipefail
         [[ "$(node --version)" == v24.* ]]
         [[ "$(command -v node)" == /nix/store/* ]]
+        ${pkgs.dotnetCorePackages.runtime_8_0}/bin/dotnet ${directoryCheck}/permissions.dll /srv/github-actions/work/forgerie
         [[ "$(findmnt -n -o FSTYPE -T /tmp)" != tmpfs ]]
         [[ "$(findmnt -n -o FSTYPE -T /var/tmp)" != tmpfs ]]
         touch "$TMPDIR/writable" /tmp/job-local
@@ -92,16 +121,19 @@
     machine.succeed("echo invalid-test-token > /var/lib/github-runner/forgerie/.current-token; chmod 0644 /var/lib/github-runner/forgerie/.current-token")
     machine.succeed("ln -s /run/current-system /nix/var/nix/gcroots/ci-retained-test")
     machine.succeed("systemctl start ci-isolation-probe.service")
-    machine.wait_until_succeeds("test -f /srv/github-actions/work/forgerie/probe-ready")
+    machine.wait_until_succeeds("test -f /srv/github-actions/work/forgerie/probe-ready", timeout=20)
     machine.fail("test -e /tmp/job-local")
     machine.succeed("test -f /srv/github-actions/tmp/forgerie/job-local")
+    # Readable ancestors must not let the worker replace a cleanup root.
+    machine.succeed("test $(stat -c %U /srv/github-actions/work) = root")
+    machine.fail("runuser -u github-runner-forgerie -- touch /srv/github-actions/work/replacement")
     assert machine.succeed("systemctl show --property=MemoryMax --value github-actions.slice").strip() == "17179869184"
     assert machine.succeed("systemctl show --property=CPUQuotaPerSecUSec --value github-actions.slice").strip() == "4s"
     machine.succeed("systemctl stop ci-isolation-probe.service")
     machine.fail("pgrep -u github-runner-forgerie")
     machine.succeed("touch /srv/github-actions/tmp/forgerie/stale; rm /srv/github-actions/work/forgerie/probe-ready")
     machine.succeed("systemctl start ci-isolation-probe.service")
-    machine.wait_until_succeeds("test -f /srv/github-actions/work/forgerie/probe-ready")
+    machine.wait_until_succeeds("test -f /srv/github-actions/work/forgerie/probe-ready", timeout=20)
     machine.fail("test -e /srv/github-actions/tmp/forgerie/stale")
     machine.succeed("test -L /nix/var/nix/gcroots/ci-retained-test")
     machine.succeed("systemctl stop ci-isolation-probe.service")

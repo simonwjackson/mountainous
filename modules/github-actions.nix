@@ -75,7 +75,9 @@
         set -euo pipefail
         # The parents stay root-owned. The runner cannot replace a cleanup root
         # with a symlink and make the privileged cleanup traverse another tree.
-        install -d -m 0711 -o root -g root /srv/github-actions /srv/github-actions/work /srv/github-actions/tmp
+        # Runner.Listener enumerates every ancestor before starting. Its group
+        # can read/traverse these parents, but cannot write or replace children.
+        install -d -m 0750 -o root -g ${user} /srv/github-actions /srv/github-actions/work /srv/github-actions/tmp
         install -d -m 0700 -o ${user} -g ${user} ${work} ${scratch}
         find ${scratch} -mindepth 1 -delete
         find /var/log/github-runner/forgerie -type f -mtime +7 -delete
@@ -127,9 +129,9 @@
 
         # Bind-mount sources must exist before systemd starts any ExecStartPre.
         systemd.tmpfiles.rules = [
-          "d /srv/github-actions 0711 root root -"
-          "d /srv/github-actions/work 0711 root root -"
-          "d /srv/github-actions/tmp 0711 root root -"
+          "d /srv/github-actions 0750 root ${user} -"
+          "d /srv/github-actions/work 0750 root ${user} -"
+          "d /srv/github-actions/tmp 0750 root ${user} -"
           "d ${work} 0700 ${user} ${user} -"
           "d ${scratch} 0700 ${user} ${user} -"
         ];

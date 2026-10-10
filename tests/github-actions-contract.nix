@@ -32,6 +32,14 @@ assert policy.ProtectSystem == "strict";
 assert policy.Slice == "github-actions.slice";
 assert slice.CPUQuota == "400%" && slice.MemoryMax == "16G";
 assert slice.MemoryHigh == "12G" && slice.TasksMax == 2048;
+assert builtins.elem "/srv/github-actions/work/forgerie" policy.BindPaths;
+assert builtins.all
+  (parent: builtins.elem "d ${parent} 0750 root ${identity} -" enabled.systemd.tmpfiles.rules)
+  [
+    "/srv/github-actions"
+    "/srv/github-actions/work"
+    "/srv/github-actions/tmp"
+  ];
 assert builtins.elem "${scratch}:/tmp" policy.BindPaths;
 assert builtins.elem "${scratch}:/var/tmp" policy.BindPaths;
 assert builtins.elem "-/nix/var/nix/daemon-socket" policy.InaccessiblePaths;
@@ -53,6 +61,7 @@ assert builtins.any (
   rootAppKeyHidden = true;
   hostNixDaemonHidden = true;
   diskBackedScratch = true;
+  readableNonWritableAncestors = true;
   githubPolicyCheckedBeforeRegistration = true;
   evidence = "Nix evaluation only; not a live GitHub registration or lifecycle test";
 }
