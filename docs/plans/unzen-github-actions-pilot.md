@@ -33,6 +33,7 @@ The VM registration, runtime key and disposable disk were removed. The pilot var
 ## Source
 
 - `modules/github-actions.nix` adds `mountainous.features.github-actions.enable`, disabled by default. It configures exactly one ephemeral runner in group `unzen-forgerie-manual` with label `unzen-forgerie`.
+- `modules/github-actions-ready.py` supplies the root-only, on-demand `/etc/github-actions/ready` command. It requires an active local listener, the matching online GitHub registration and the same admitted group policy. It accepts a busy listener and rejects a stale online row for a stopped listener.
 - `modules/github-actions-preflight.py` authenticates as the dedicated App and requires only `forgerie/forgerie` plus `forgerie/forgerie/.github/workflows/unzen-pilot.yml@refs/heads/main`. API errors and policy changes refuse registration.
 - `tests/github-actions-contract.nix`, `tests/test_github_actions_preflight.py` and `tests/github-actions-isolation.nix` cover evaluation, admission policy and the real unit's runtime restrictions.
 - `modules/hosts/unzen.nix` enables only UNZEN and declares the App ID `5264213`, organization login `forgerie` and a root-owned, mode `0400` SOPS secret. Key rotation restarts only the runner service.
@@ -94,4 +95,14 @@ Each physical dispatch restored `UNZEN_PILOT_ENABLED` to `false`. Failure/retry,
 
 The first offline exercise stopped idle listener `13` successfully. GitHub still reported it online. Upstream unregister deliberately refused an online registration, and immediate startup failed with `A runner exists with the same name`. The unit has `Restart=on-success`, so it stayed failed. The queued main job was cancelled and the pilot variable disabled. After the heartbeat expired, explicit CI-unit startup removed the offline row and restored a fresh listener. No Forgerie service was touched. Evidence is [lifecycle-attempt-1.json](../hardware/unzen-github-actions-2026-10-10/lifecycle-attempt-1.json).
 
-Production lifecycle acceptance therefore requires startup recovery, another offline/active-cancellation exercise and a reboot. Read-only boot inspection verified GRUB's default entry points at the accepted system and that loaded/default kernel and initrd paths match. Do not expand registrations or move required checks before remaining acceptance passes.
+The permanent configuration now uses `Restart=always`, a 30-second restart delay and a 180-second startup timeout. Disabling the restart-count cutoff permits recovery after an extended GitHub outage. Explicit `systemctl stop` still stops the service. Every new attempt executes the admission guard; no online registration is forcibly replaced. The 30-second delay also applies after successful ephemeral jobs, adding 20 seconds to the old configured delay.
+
+The root-only readiness command returns JSON and a nonzero exit after its bounded deadline if the service cannot accept jobs. It compares the local registration ID and listener process with GitHub rather than trusting service state or an old online row. It does not repair credentials or denied admission. It is an on-demand command, not a new manager or background polling service:
+
+```bash
+sudo /etc/github-actions/ready --timeout 180
+```
+
+All three clean-source Nix checks passed. The VM proved automatic recovery after a controlled startup error, no restart after explicit stop, and continued refusal of invalid credentials. Eight readiness tests cover stopped listeners, stale registrations, missing/extra runners and an online busy listener. Deployment of this hardening is pending.
+
+Production lifecycle acceptance still requires another physical offline/active-cancellation exercise and a reboot. Read-only boot inspection verified GRUB's default entry points at the accepted system and that loaded/default kernel and initrd paths match. Do not expand registrations or move required checks before remaining acceptance passes.

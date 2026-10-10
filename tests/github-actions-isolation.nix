@@ -93,6 +93,25 @@
       virtualisation.memorySize = 2048;
       virtualisation.cores = 2;
 
+      systemd.services.ci-startup-recovery = {
+        environment = builtins.removeAttrs runner.environment [ "PATH" ];
+        inherit (runner) path unitConfig;
+        serviceConfig = runner.serviceConfig // {
+          ExecStartPre = [
+            (builtins.head runner.serviceConfig.ExecStartPre)
+            (pkgs.writeShellScript "ci-startup-gate" ''
+              test -f /run/ci-startup-allowed
+            '')
+          ];
+          ExecStart = pkgs.writeShellScript "ci-recovered-listener" ''
+            touch /srv/github-actions/work/forgerie/startup-recovered
+            exec sleep infinity
+          '';
+          ExecStopPost = [ ];
+          TimeoutStopSec = "5s";
+        };
+      };
+
       systemd.services.ci-isolation-probe = {
         environment = builtins.removeAttrs runner.environment [ "PATH" ];
         inherit (runner) path;
@@ -113,12 +132,28 @@
   testScript = ''
     start_all()
     machine.wait_for_unit("multi-user.target")
-    machine.wait_until_succeeds("systemctl is-failed github-runner-forgerie.service")
-    machine.succeed("journalctl -u github-runner-forgerie.service | grep -F 'Runner registration refused'")
+    machine.wait_until_succeeds("journalctl -u github-runner-forgerie.service | grep -F 'Runner registration refused'")
+    machine.wait_until_succeeds("test $(systemctl show --value -p NRestarts github-runner-forgerie.service) -ge 1", timeout=60)
+    machine.fail("systemctl is-active github-runner-forgerie.service")
+    machine.fail("/etc/github-actions/ready --timeout 2")
+    machine.fail("pgrep -u github-runner-forgerie -f Runner.Listener")
+    machine.succeed("systemctl stop github-runner-forgerie.service")
+    # The authentication boundary normally creates this namespace source.
+    # Invalid, world-readable data also proves that the namespace hides it.
+    machine.succeed("echo invalid-test-token > /var/lib/github-runner/forgerie/.current-token; chmod 0644 /var/lib/github-runner/forgerie/.current-token")
+    # A transient startup error recovers through the production restart policy.
+    machine.fail("systemctl start ci-startup-recovery.service")
+    machine.wait_until_succeeds("test $(systemctl show --value -p NRestarts ci-startup-recovery.service) -ge 1", timeout=60)
+    machine.succeed("touch /run/ci-startup-allowed")
+    machine.wait_for_unit("ci-startup-recovery.service", timeout=60)
+    machine.succeed("test -f /srv/github-actions/work/forgerie/startup-recovered")
+    machine.succeed("systemctl stop ci-startup-recovery.service")
+    machine.succeed("sleep 35")
+    machine.fail("systemctl is-active ci-startup-recovery.service")
+    machine.fail("pgrep -u github-runner-forgerie")
     machine.succeed("nix --extra-experimental-features nix-command store ping --store daemon")
     # World-readable test data proves namespace hiding, not only Unix modes.
     machine.succeed("chmod 0644 /run/secrets/github-actions-forgerie-app-key")
-    machine.succeed("echo invalid-test-token > /var/lib/github-runner/forgerie/.current-token; chmod 0644 /var/lib/github-runner/forgerie/.current-token")
     machine.succeed("ln -s /run/current-system /nix/var/nix/gcroots/ci-retained-test")
     machine.succeed("systemctl start ci-isolation-probe.service")
     machine.wait_until_succeeds("test -f /srv/github-actions/work/forgerie/probe-ready", timeout=20)

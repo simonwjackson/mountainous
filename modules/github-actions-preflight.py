@@ -78,7 +78,7 @@ def verify_group(token):
             if group.get("name") == GROUP:
                 repositories = request_json(f"/orgs/{ORG}/actions/runner-groups/{group['id']}/repositories?per_page=100", token)
                 validate_policy(group, repositories)
-                return
+                return group
         if len(groups) < 100:
             raise ValueError("Required restricted runner group does not exist: " + GROUP)
         page += 1

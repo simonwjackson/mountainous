@@ -48,7 +48,10 @@ assert builtins.elem "100.64.0.0/10" policy.IPAddressDeny;
 assert lib.hasInfix "github-actions-prepare" (builtins.elemAt policy.ExecStartPre 0);
 assert lib.hasInfix "github-actions-preflight.py" (builtins.elemAt policy.ExecStartPre 1);
 assert lib.hasInfix "unconfigure-github-app" (builtins.elemAt policy.ExecStartPre 2);
-assert policy.Restart == "on-success";
+assert policy.Restart == "always";
+assert policy.RestartSec == "30s" && policy.TimeoutStartSec == "180s";
+assert service.unitConfig.StartLimitIntervalSec == 0;
+assert enabled.environment.etc."github-actions/ready".mode == "0700";
 assert builtins.any (
   package: lib.getName package == "nodejs" && lib.hasPrefix "24." package.version
 ) runner.extraPackages;
@@ -63,5 +66,9 @@ assert builtins.any (
   diskBackedScratch = true;
   readableNonWritableAncestors = true;
   githubPolicyCheckedBeforeRegistration = true;
+  startupFailureRetries = true;
+  retryDelaySeconds = 30;
+  startupTimeoutSeconds = 180;
+  onDemandReadiness = true;
   evidence = "Nix evaluation only; not a live GitHub registration or lifecycle test";
 }

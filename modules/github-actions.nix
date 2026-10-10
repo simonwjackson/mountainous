@@ -48,9 +48,11 @@
               pkgs.openssl
             ];
             GITHUB_ACTIONS_PREFLIGHT_SOURCE = ./github-actions-preflight.py;
+            GITHUB_ACTIONS_READY_SOURCE = ./github-actions-ready.py;
           }
           ''
             python3 ${../tests/test_github_actions_preflight.py} > "$out" 2>&1
+            python3 ${../tests/test_github_actions_ready.py} >> "$out" 2>&1
           '';
     };
 
@@ -136,6 +138,20 @@
           "d ${scratch} 0700 ${user} ${user} -"
         ];
 
+        # A fixed retry delay bounds traffic without exhausting recovery during
+        # a GitHub outage. Explicit systemctl stop still stops the service.
+        systemd.services.github-runner-forgerie.unitConfig.StartLimitIntervalSec = lib.mkDefault 0;
+        # On-demand status, not another manager or a background polling service.
+        environment.etc."github-actions/ready" = {
+          mode = "0700";
+          source = pkgs.writeShellScript "github-actions-ready" ''
+            export PATH=${lib.makeBinPath [ pkgs.openssl pkgs.systemd ]}
+            exec ${pkgs.python3}/bin/python3 ${./github-actions-ready.py} \
+              --policy-script ${./github-actions-preflight.py} \
+              --app-id ${toString appId} --private-key ${lib.escapeShellArg key} "$@"
+          '';
+        };
+
         systemd.slices.github-actions.sliceConfig = {
           CPUQuota = lib.mkDefault "400%";
           MemoryHigh = lib.mkDefault "12G";
@@ -172,7 +188,11 @@
           serviceOverrides = {
             Slice = "github-actions.slice";
             Nice = lib.mkDefault 10;
-            RestartSec = lib.mkDefault "10s";
+            # Upstream's on-success policy cannot recover an ExecStartPre
+            # registration failure while an old GitHub heartbeat stays online.
+            Restart = lib.mkForce "always";
+            RestartSec = lib.mkDefault "30s";
+            TimeoutStartSec = lib.mkDefault "180s";
             TimeoutStopSec = lib.mkDefault "60s";
             # Replace PrivateTmp's host-tmpfs backing with private disk binds.
             # Both /tmp and /var/tmp stay job-local even if a program ignores TMPDIR.
