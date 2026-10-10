@@ -1,0 +1,91 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 openssh nix
+"""Use pinned SSH peers for the CLIProxyAPI migration; never disable checking."""
+
+import argparse
+import os
+from pathlib import Path
+import shlex
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+PEERS = {
+    "rakku": ("192.168.1.178", "simonwjackson", "rakku-rsa.pub"),
+    "unzen": ("100.120.204.5", "root", "unzen.pub"),
+}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("target", choices=PEERS)
+    parser.add_argument("action", choices=["ssh", "put", "get", "copy-to", "copy-from"])
+    parser.add_argument("arguments", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    host, user, filename = PEERS[args.target]
+    public = ROOT / "secrets/hosts" / filename
+    if filename == "unzen.pub" and not public.exists():
+        # This enrolled identity already existed before the migration.
+        private = (
+            Path.home() / ".local/share/mountainous/hostkeys/unzen/ssh_host_ed25519_key"
+        )
+        key = subprocess.check_output(
+            ["ssh-keygen", "-y", "-f", str(private)], text=True
+        )
+        public.write_text(key)
+        subprocess.run(["git", "-C", str(ROOT), "add", str(public)], check=True)
+    kind, key, *_ = public.read_text().split()
+    with tempfile.TemporaryDirectory(prefix="cliproxy-peer-") as directory:
+        known = Path(directory) / "known_hosts"
+        known.write_text(f"{args.target} {kind} {key}\n")
+        options = [
+            "-F",
+            "/dev/null",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=10",
+            "-o",
+            "StrictHostKeyChecking=yes",
+            "-o",
+            f"UserKnownHostsFile={known}",
+            "-o",
+            "GlobalKnownHostsFile=/dev/null",
+            "-o",
+            f"HostKeyAlias={args.target}",
+            "-o",
+            "ServerAliveInterval=15",
+            "-o",
+            "ServerAliveCountMax=4",
+        ]
+        if kind == "ssh-rsa":
+            options += ["-o", "HostKeyAlgorithms=rsa-sha2-512,rsa-sha2-256"]
+        peer = f"{user}@{host}"
+        if args.action == "ssh":
+            command = ["ssh", *options, peer, shlex.join(args.arguments)]
+        elif args.action in ("put", "get"):
+            source, destination = args.arguments
+            if args.action == "put":
+                destination = f"{peer}:{destination}"
+            else:
+                source = f"{peer}:{source}"
+            command = ["scp", *options, source, destination]
+        else:
+            store = "ssh://" + peer
+            if args.action == "copy-to" and user != "root":
+                store += "?remote-program=sudo%20-n%20nix-store"
+            env = dict(os.environ, NIX_SSHOPTS=shlex.join(options))
+            command = [
+                "nix",
+                "copy",
+                "--no-check-sigs",
+                "--to" if args.action == "copy-to" else "--from",
+                store,
+                *args.arguments,
+            ]
+            raise SystemExit(subprocess.call(command, env=env))
+        raise SystemExit(subprocess.call(command))
+
+
+if __name__ == "__main__":
+    main()

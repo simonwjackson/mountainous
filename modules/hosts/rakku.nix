@@ -12,6 +12,7 @@ in
       "server"
       "home-automation"
       "home-network-services"
+      "cliproxyapi"
     ];
     module =
       { config, lib, ... }:
@@ -27,6 +28,11 @@ in
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
         hjem.cli.package = inputs.hjem.packages.x86_64-linux.hjem;
+        mountainous.features.cliproxyapi = {
+          enable = true;
+          deployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIGFCc1rafaJq+i2sfHq2RiZdxGMfk/HeNHwKBzGyS7Q cliproxyapi-updater@unzen";
+          signingPublicKey = "cliproxyapi-unzen:KgVn63py+E3v950Hko/PdGkqfeSHZjIl0h01bPWac04=";
+        };
         # Preserve every driver from the original hardware.nix, including USB
         # storage. The general base layer does not carry usb_storage.
         boot.initrd.availableKernelModules = [

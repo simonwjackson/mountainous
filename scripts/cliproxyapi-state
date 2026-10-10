@@ -1,0 +1,306 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 python3Packages.pyyaml age systemd
+"""Private state transfer for the approved single-writer CLIProxyAPI migration.
+
+Never prints file names, configuration values, credentials or archive contents.
+The transport/coordinator must stop the other host before import or recovery.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import pwd
+import shutil
+import socket
+import subprocess
+import tarfile
+import tempfile
+import time
+import yaml
+
+DIRS = (
+    ".cli-proxy-api",
+    ".config/cliproxyapi",
+    ".config/cliproxyapi-tsnet",
+    ".local/state/cliproxyapi-quota-router",
+)
+UNITS = (
+    "cliproxyapi-quota-router.timer",
+    "cliproxyapi-tsnet.service",
+    "cliproxyapi-quota-router.service",
+    "cliproxyapi.service",
+)
+TARGET = Path("/var/lib/cliproxyapi")
+PRIVATE = Path("/nix/var/cliproxyapi-migration")
+
+
+def run(command, **kwargs):
+    return subprocess.run(command, check=True, **kwargs)
+
+
+def systemctl(*args, user=False):
+    return run(
+        ["systemctl", *(["--user"] if user else []), *args], stdout=subprocess.DEVNULL
+    )
+
+
+def stopped(user=False):
+    for unit in UNITS:
+        raw = subprocess.check_output(
+            [
+                "systemctl",
+                *(["--user"] if user else []),
+                "show",
+                unit,
+                "-p",
+                "MainPID",
+                "--value",
+            ],
+            text=True,
+        ).strip()
+        assert raw in ("", "0"), "A state writer is still running"
+
+
+def manifest(home):
+    rows = {}
+    for relative in DIRS:
+        directory = home / relative
+        assert directory.is_dir(), "An expected state directory is absent"
+        for path in sorted(directory.rglob("*")):
+            if path.is_file():
+                identity = hashlib.sha256(
+                    str(path.relative_to(home)).encode()
+                ).hexdigest()
+                rows[identity] = {
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "bytes": path.stat().st_size,
+                }
+    return rows
+
+
+def extract(archive, destination):
+    with tarfile.open(archive, "r:gz") as handle:
+        for member in handle.getmembers():
+            name = Path(member.name)
+            assert not name.is_absolute() and ".." not in name.parts
+            assert any(
+                member.name == relative or member.name.startswith(relative + "/")
+                for relative in DIRS
+            )
+            assert member.isfile() or member.isdir(), "Unexpected state archive member"
+        handle.extractall(destination, filter="data")
+
+
+def export_state(home, output):
+    output.mkdir(mode=0o700, parents=True, exist_ok=True)
+    rows = manifest(home)
+    archive = output / "state.tar.gz"
+    with tarfile.open(archive, "w:gz", dereference=True) as handle:
+        for relative in DIRS:
+            handle.add(home / relative, arcname=relative)
+    with tempfile.TemporaryDirectory(
+        prefix="cliproxy-restore-", dir=output
+    ) as temporary:
+        extract(archive, temporary)
+        assert manifest(Path(temporary)) == rows, "State archive restore test failed"
+    metadata = {
+        "format": 1,
+        "created_at": int(time.time()),
+        "source_home": str(home),
+        "files": rows,
+        "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+    }
+    (output / "manifest.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    os.chmod(archive, 0o600)
+    print(
+        json.dumps(
+            {
+                "state_files": len(rows),
+                "archive_restore_test_passed": True,
+                "archive_sha256": metadata["archive_sha256"],
+            }
+        )
+    )
+
+
+def rebase(value, old, new):
+    if isinstance(value, dict):
+        return {key: rebase(item, old, new) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rebase(item, old, new) for item in value]
+    if isinstance(value, str) and (value == old or value.startswith(old + "/")):
+        return new + value[len(old) :]
+    return value
+
+
+def import_state(home, packet, source_home, owner):
+    metadata = json.loads((packet / "manifest.json").read_text())
+    archive = packet / "state.tar.gz"
+    assert (
+        hashlib.sha256(archive.read_bytes()).hexdigest() == metadata["archive_sha256"]
+    )
+    with tempfile.TemporaryDirectory(
+        prefix="cliproxy-import-", dir=packet
+    ) as temporary:
+        staging = Path(temporary)
+        extract(archive, staging)
+        assert manifest(staging) == metadata["files"], (
+            "Transferred state differs from the sealed source"
+        )
+        for relative in DIRS:
+            destination = home / relative
+            assert not destination.is_symlink()
+            if destination.exists():
+                shutil.rmtree(destination)
+            destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            shutil.copytree(staging / relative, destination)
+    assert manifest(home) == metadata["files"], (
+        "Imported credential/identity/ledger bytes changed before startup"
+    )
+    config = home / ".config/cliproxyapi/config.yaml"
+    parsed = yaml.safe_load(config.read_text())
+    rebased = rebase(parsed, source_home, str(home))
+    if rebased != parsed:
+        config.write_text(yaml.safe_dump(rebased, sort_keys=False))
+    for path in (home / ".config/cliproxyapi").rglob("*"):
+        if path.is_file() and path.suffix in (".env",):
+            text = path.read_text()
+            updated = text.replace(source_home + "/", str(home) + "/")
+            if updated != text:
+                path.write_text(updated)
+    account = pwd.getpwnam(owner)
+    os.chown(home, account.pw_uid, account.pw_gid)
+    for relative in DIRS:
+        directory = home / relative
+        for path in (directory, *directory.rglob("*")):
+            os.chown(path, account.pw_uid, account.pw_gid, follow_symlinks=False)
+        parent = directory.parent
+        while parent != home:
+            os.chown(parent, account.pw_uid, account.pw_gid, follow_symlinks=False)
+            parent = parent.parent
+    print(
+        json.dumps(
+            {
+                "imported_files": len(metadata["files"]),
+                "all_state_bytes_verified_before_path_rebase": True,
+                "owner": owner,
+            }
+        )
+    )
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "action",
+        choices=(
+            "source-stop",
+            "source-export",
+            "source-resume",
+            "source-retire",
+            "target-import",
+            "target-export",
+            "target-stop",
+            "target-ready",
+            "source-recover",
+        ),
+    )
+    parser.add_argument("--packet", type=Path)
+    parser.add_argument("--home", type=Path, default=Path("/home/simonwjackson"))
+    parser.add_argument("--baseline", type=Path)
+    args = parser.parse_args()
+    target = args.action.startswith("target-")
+    assert socket.gethostname() == ("rakku" if target else "zao")
+    if target:
+        assert os.getuid() == 0
+        PRIVATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if args.action == "source-stop":
+        systemctl("stop", *UNITS, user=True)
+        stopped(user=True)
+        print("SOURCE WRITERS STOPPED")
+    elif args.action == "source-export":
+        stopped(user=True)
+        export_state(args.home, args.packet)
+    elif args.action == "source-resume":
+        systemctl("unmask", *UNITS, user=True)
+        systemctl(
+            "start", "cliproxyapi.service", "cliproxyapi-tsnet.service", user=True
+        )
+        systemctl("start", "cliproxyapi-quota-router.service", user=True)
+        systemctl("start", "cliproxyapi-quota-router.timer", user=True)
+        print("SOURCE SERVICES RESUMED")
+    elif args.action == "source-retire":
+        stopped(user=True)
+        systemctl("disable", *UNITS, user=True)
+        # Unit files owned by this user must be moved before systemctl can mask them.
+        retired = args.packet / "retired-units"
+        retired.mkdir(mode=0o700, exist_ok=True)
+        for unit in UNITS:
+            path = args.home / ".config/systemd/user" / unit
+            if path.exists() and not path.is_symlink():
+                shutil.move(path, retired / unit)
+        systemctl("mask", *UNITS, user=True)
+        for relative in DIRS:
+            shutil.rmtree(args.home / relative)
+        (args.packet / "source-retired.json").write_text(
+            json.dumps(
+                {
+                    "time": int(time.time()),
+                    "active_plaintext_state_removed": True,
+                    "units_masked": list(UNITS),
+                }
+            )
+            + "\n"
+        )
+        print("SOURCE UNITS DISABLED AND MASKED; ACTIVE PLAINTEXT STATE REMOVED")
+    elif args.action == "target-stop":
+        systemctl("stop", *UNITS)
+        stopped()
+        (TARGET / ".migration-ready").unlink(missing_ok=True)
+        print("TARGET WRITERS STOPPED AND GATE CLOSED")
+    elif args.action == "target-import":
+        stopped()
+        assert not (TARGET / ".migration-ready").exists()
+        import_state(TARGET, args.packet, "/home/simonwjackson", "cliproxyapi")
+        if args.baseline:
+            destination = TARGET / ".migration-baseline.json"
+            shutil.copyfile(args.baseline, destination)
+            account = pwd.getpwnam("cliproxyapi")
+            os.chown(destination, account.pw_uid, account.pw_gid)
+    elif args.action == "target-ready":
+        stopped()
+        assert (TARGET / ".migration-baseline.json").exists()
+        assert (TARGET / ".cli-proxy-api").is_dir()
+        ready = TARGET / ".migration-ready"
+        ready.write_text(
+            json.dumps({"time": int(time.time()), "source_writers_stopped": True})
+            + "\n"
+        )
+        account = pwd.getpwnam("cliproxyapi")
+        os.chown(ready, account.pw_uid, account.pw_gid)
+        print("TARGET STATE GATE OPENED; APPLICATION NOT YET STARTED")
+    elif args.action == "target-export":
+        stopped()
+        export_state(TARGET, args.packet)
+    elif args.action == "source-recover":
+        stopped(user=True)
+        import_state(args.home, args.packet, "/var/lib/cliproxyapi", "simonwjackson")
+        retired = args.packet / "retired-units"
+        systemctl("unmask", *UNITS, user=True)
+        if retired.exists():
+            for path in retired.iterdir():
+                shutil.copyfile(path, args.home / ".config/systemd/user" / path.name)
+        systemctl("daemon-reload", user=True)
+        print("LATEST TARGET STATE RESTORED ON SOURCE; SERVICES STILL STOPPED")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        raise SystemExit(
+            "Private state transfer failed; no exception body was printed"
+        ) from None

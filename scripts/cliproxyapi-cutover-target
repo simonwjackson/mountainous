@@ -1,0 +1,156 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3
+"""Root-side cutover operations. No secrets are printed."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import pwd
+import shutil
+import subprocess
+
+PYTHON = "/nix/store/3lll9y925zz9393sa59h653xik66srjb-python3-3.13.9/bin/python3"
+STATE_PYTHON = (
+    "/nix/store/8zl970g4bwvn95n7w7qfdaiqnhym0cnp-python3-3.14.7-env/bin/python3"
+)
+ROOT = Path("/nix/var/cliproxyapi-migration")
+PACKET = ROOT / "cutover-state"
+HA = Path("/nix/var/rakku-migration/pre-cairn-20261009-v2")
+HOME = Path("/var/lib/cliproxyapi")
+ALLOWED = {"state.tar.gz", "manifest.json", "baseline.json"}
+
+
+def run(command, **kwargs):
+    return subprocess.run([str(part) for part in command], check=True, **kwargs)
+
+
+def main():
+    os.umask(0o077)
+    assert os.getuid() == 0
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "action",
+        choices=[
+            "make-packet",
+            "install-packet",
+            "state",
+            "retain-encrypted-backup",
+            "ha-before",
+            "ha-after",
+            "acceptance",
+            "stage-recovery",
+            "remove-plaintext-packet",
+            "repair-profile-alias",
+        ],
+    )
+    parser.add_argument("argument", nargs="?")
+    args = parser.parse_args()
+    ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if args.action == "make-packet":
+        PACKET.mkdir(mode=0o700, exist_ok=True)
+    elif args.action == "install-packet":
+        assert args.argument in ALLOWED
+        shutil.move("/tmp/cliproxy-" + args.argument, PACKET / args.argument)
+        os.chmod(PACKET / args.argument, 0o600)
+    elif args.action == "repair-profile-alias":
+        run(
+            [
+                "systemd-tmpfiles",
+                "--create",
+                "--prefix=/var/lib/cliproxyapi/.nix-profile",
+            ]
+        )
+        alias = HOME / ".nix-profile"
+        assert alias.is_symlink() and alias.readlink() == Path(
+            "/nix/var/nix/profiles/per-user/cliproxyapi/application"
+        )
+        assert (alias / "lib/cliproxyapi/plugins/antigravity-quota.so").exists()
+        print("HOME PROFILE ALIAS AND NATIVE PLUGIN PATH VERIFIED")
+    elif args.action == "state":
+        assert args.argument in (
+            "target-import",
+            "target-export",
+            "target-stop",
+            "target-ready",
+        )
+        command = [
+            STATE_PYTHON,
+            "/tmp/cliproxyapi-state.py",
+            args.argument,
+            "--packet",
+            PACKET,
+        ]
+        if args.argument == "target-import":
+            command += ["--baseline", PACKET / "baseline.json"]
+        run(command)
+    elif args.action == "retain-encrypted-backup":
+        shutil.move(
+            "/tmp/pre-rakku-cutover.tar.gz.age", ROOT / "pre-rakku-cutover.tar.gz.age"
+        )
+        print("ENCRYPTED OFF-SOURCE BACKUP RETAINED ON RAKKU")
+    elif args.action == "ha-before":
+        run([PYTHON, HA / "inventory.py", "--output", ROOT / "ha-before.json"])
+        print("FRESH READ-ONLY HOME ASSISTANT BASELINE CAPTURED")
+    elif args.action == "ha-after":
+        run(
+            [
+                PYTHON,
+                HA / "inventory.py",
+                "--baseline",
+                ROOT / "ha-before.json",
+                "--output",
+                ROOT / "ha-after.json",
+            ]
+        )
+        print("HOME ASSISTANT FRESH-BASELINE ACCEPTANCE PASSED")
+    elif args.action == "acceptance":
+        accepted = json.loads((HOME / ".accepted-profile.json").read_text())
+        assert accepted.get("accepted_at") and accepted.get("profile") == str(
+            Path("/nix/var/nix/profiles/per-user/cliproxyapi/application").resolve()
+        ), "Application activation did not record the installed profile"
+        run(
+            [
+                "sudo",
+                "-u",
+                "cliproxyapi",
+                str(HOME / ".nix-profile/bin/cliproxy-runtime-check"),
+                "--home",
+                HOME,
+                "--baseline",
+                HOME / ".migration-baseline.json",
+                "--output",
+                HOME / ".migration-accepted.json",
+                "--timeout",
+                "30",
+            ]
+        )
+        after = json.loads((HOME / ".migration-accepted.json").read_text())
+        assert len(after["accounts"]) == 7
+        assert after.get("tailnet_routing_verified")
+        print(
+            json.dumps(
+                {
+                    "oauth_accounts": len(after["accounts"]),
+                    "models": len(after["model_ids"]),
+                    "quota_age_seconds": after.get("quota_age_seconds"),
+                    "endpoint": "https://cliproxyapi.hummingbird-lake.ts.net",
+                    "paid_inference_requests": 0,
+                    "reset_requests": 0,
+                }
+            )
+        )
+    elif args.action == "stage-recovery":
+        assert args.argument in ("state.tar.gz", "manifest.json")
+        destination = Path("/tmp/cliproxy-recovery-" + args.argument)
+        shutil.copyfile(PACKET / args.argument, destination)
+        account = pwd.getpwnam("simonwjackson")
+        os.chown(destination, account.pw_uid, account.pw_gid)
+        os.chmod(destination, 0o600)
+    else:
+        (PACKET / "state.tar.gz").unlink(missing_ok=True)
+        print("TARGET TRANSFER PLAINTEXT REMOVED; ENCRYPTED BACKUP RETAINED")
+
+
+if __name__ == "__main__":
+    main()

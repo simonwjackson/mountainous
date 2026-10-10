@@ -25,6 +25,7 @@
         inputs.disko.nixosModules.disko
         ../../disks/unzen.nix
       ];
+      mountainous.features.cliproxyapi-updater.enable = true;
       hardware.cpu.intel.updateMicrocode = true;
       boot.supportedFilesystems = [ "bcachefs" ];
 

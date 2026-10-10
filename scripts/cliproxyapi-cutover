@@ -1,0 +1,239 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 python3Packages.pyyaml age openssh nix
+"""Autonomous, single-writer cutover with latest-state source recovery.
+
+Run on Zao as the operator. Keep this process independent of the proxy connection.
+No provider credentials ever go to Unzen. Receipts and encrypted backups stay
+outside Git. A failure stops Rakku before collecting and restoring newer state.
+"""
+
+import argparse
+import importlib.util
+import hashlib
+import json
+import os
+from pathlib import Path
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+HERE = Path(__file__).resolve().parent
+HOME = Path("/home/simonwjackson")
+EVIDENCE = HOME / ".local/share/mountainous/migrations/cliproxyapi-rakku"
+PACKET = EVIDENCE / "cutover-state"
+TARGET_PACKET = "/nix/var/cliproxyapi-migration/cutover-state"
+PYTHON = "/nix/store/3lll9y925zz9393sa59h653xik66srjb-python3-3.13.9/bin/python3"
+APP = Path("/home/simonwjackson/code/sandbox/cliproxyapi-nix/.worktree/rakku-deploy")
+RECIPIENT = APP / "deploy/backup-recipient.pub"
+IDENTITY = HOME / ".ssh/id_ed25519"
+
+
+def run(command, **kwargs):
+    return subprocess.run([str(value) for value in command], check=True, **kwargs)
+
+
+def transport(peer, *args, **kwargs):
+    return run([sys.executable, HERE / "cliproxyapi-transport", peer, *args], **kwargs)
+
+
+def target(*args):
+    return transport(
+        "rakku", "ssh", "sudo", "-n", PYTHON, "/tmp/cliproxy-cutover-target.py", *args
+    )
+
+
+def state_source(action):
+    return run([sys.executable, HERE / "cliproxyapi-state", action, "--packet", PACKET])
+
+
+def state_target(action):
+    return target("state", action)
+
+
+def record(phase, **fields):
+    value = {"phase": phase, "time": int(time.time()), **fields}
+    (EVIDENCE / "cutover-status.json").write_text(json.dumps(value, indent=2) + "\n")
+    with (EVIDENCE / "cutover-events.jsonl").open("a") as handle:
+        handle.write(json.dumps(value) + "\n")
+    print(json.dumps(value), flush=True)
+
+
+def crypto_test():
+    with tempfile.TemporaryDirectory(prefix="age-selftest-", dir=EVIDENCE) as temporary:
+        root = Path(temporary)
+        original = root / "original"
+        original.write_bytes(b"CLIProxyAPI private backup restore self-test\n")
+        run(
+            [
+                "age",
+                "--encrypt",
+                "--recipients-file",
+                RECIPIENT,
+                "--output",
+                root / "encrypted",
+                original,
+            ]
+        )
+        run(
+            [
+                "age",
+                "--decrypt",
+                "--identity",
+                IDENTITY,
+                "--output",
+                root / "restored",
+                root / "encrypted",
+            ],
+            stdin=subprocess.DEVNULL,
+        )
+        assert original.read_bytes() == (root / "restored").read_bytes()
+
+
+def seal_and_test():
+    encrypted = EVIDENCE / "pre-rakku-cutover.tar.gz.age"
+    encrypted.unlink(missing_ok=True)
+    run(
+        [
+            "age",
+            "--encrypt",
+            "--recipients-file",
+            RECIPIENT,
+            "--output",
+            encrypted,
+            PACKET / "state.tar.gz",
+        ]
+    )
+    with tempfile.TemporaryDirectory(
+        prefix="encrypted-restore-", dir=EVIDENCE
+    ) as temporary:
+        restored = Path(temporary) / "state.tar.gz"
+        run(
+            [
+                "age",
+                "--decrypt",
+                "--identity",
+                IDENTITY,
+                "--output",
+                restored,
+                encrypted,
+            ],
+            stdin=subprocess.DEVNULL,
+        )
+        assert restored.read_bytes() == (PACKET / "state.tar.gz").read_bytes()
+    record(
+        "encrypted-state-backup-restore-tested",
+        state_files=len(json.loads((PACKET / "manifest.json").read_text())["files"]),
+    )
+    transport("rakku", "put", encrypted, "/tmp/pre-rakku-cutover.tar.gz.age")
+    target("retain-encrypted-backup")
+
+
+def transfer_packet():
+    target("make-packet")
+    for name in ("state.tar.gz", "manifest.json", "baseline.json"):
+        transport("rakku", "put", PACKET / name, "/tmp/cliproxy-" + name)
+        target("install-packet", name)
+
+
+def recover(started_target):
+    record("recovering-source")
+    # If stopping cannot be confirmed, never start the source identity.
+    state_target("target-stop")
+    if started_target:
+        state_target("target-export")
+        for name in ("state.tar.gz", "manifest.json"):
+            target("stage-recovery", name)
+            transport("rakku", "get", "/tmp/cliproxy-recovery-" + name, PACKET / name)
+        state_source("source-recover")
+    state_source("source-resume")
+    record("source-restored-target-stopped", latest_target_state_used=started_target)
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--preflight-only", action="store_true")
+    args = parser.parse_args()
+    assert socket.gethostname() == "zao" and os.getuid() == 1000
+    EVIDENCE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    PACKET.mkdir(mode=0o700, exist_ok=True)
+    crypto_test()
+    record("backup-key-restore-test-passed")
+    module = importlib.util.spec_from_file_location(
+        "migration_runtime", APP / "scripts/runtime_check.py"
+    )
+    checker = importlib.util.module_from_spec(module)
+    module.loader.exec_module(checker)
+    before = checker.snapshot(HOME)
+    (PACKET / "baseline.json").write_text(json.dumps(before, indent=2) + "\n")
+    # Confirm restricted sudo works before stopping anything on Zao.
+    transport("unzen", "ssh", PYTHON, "/tmp/cliproxy-unzen-stage.py", "test-control")
+    target("ha-before")
+    record(
+        "preflight-passed",
+        oauth_accounts=len(before["accounts"]),
+        models=len(before["model_ids"]),
+        recently_observed_providers=sorted(before["quota_observed_at"]),
+        paid_inference_requests=0,
+        reset_requests=0,
+    )
+    if args.preflight_only:
+        return
+    source_stopped = False
+    started_target = False
+    try:
+        record("stopping-source-writers")
+        state_source("source-stop")
+        source_stopped = True
+        # Re-read the final ledger/config/account identities after writers exit.
+        final = dict(before)
+        ledger = HOME / ".local/state/cliproxyapi-quota-router/reset-requests.json"
+        final["reset_ledger_digest"] = (
+            hashlib.sha256(ledger.read_bytes()).hexdigest() if ledger.exists() else None
+        )
+        (PACKET / "baseline.json").write_text(json.dumps(final, indent=2) + "\n")
+        state_source("source-export")
+        seal_and_test()
+        transfer_packet()
+        state_target("target-import")
+        record("state-copied-and-byte-verified-before-startup")
+        state_target("target-ready")
+        started_target = True
+        record("deploying-current-application-from-unzen")
+        transport(
+            "unzen",
+            "ssh",
+            PYTHON,
+            "/tmp/cliproxy-unzen-stage.py",
+            "deploy-current",
+            timeout=1800,
+        )
+        target("acceptance")
+        target("ha-after")
+        record(
+            "target-accepted-source-stopped",
+            endpoint="https://cliproxyapi.hummingbird-lake.ts.net",
+            paid_inference_requests=0,
+            reset_requests=0,
+        )
+        state_source("source-retire")
+        (PACKET / "state.tar.gz").unlink()
+        target("remove-plaintext-packet")
+        record(
+            "migration-complete-source-retired",
+            endpoint="https://cliproxyapi.hummingbird-lake.ts.net",
+            paid_inference_requests=0,
+            reset_requests=0,
+        )
+    except Exception:
+        if source_stopped:
+            recover(started_target)
+        else:
+            record("preflight-failed-source-unchanged")
+        raise
+
+
+if __name__ == "__main__":
+    main()

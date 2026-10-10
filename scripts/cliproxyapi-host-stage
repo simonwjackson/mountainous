@@ -1,0 +1,156 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 nix systemd
+"""Activate only the checked host configuration, without any reboot."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import socket
+import subprocess
+import time
+
+ROOT = Path("/nix/var/cliproxyapi-migration")
+OLD = {
+    "rakku": "/nix/store/73i4bcrdxm225yvcvxv6kkdm1sj3g9lx-nixos-system-rakku-26.05.20251215.1306659",
+    "unzen": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+}
+
+
+def value(command):
+    return subprocess.check_output(command, text=True).strip()
+
+
+def unit_state(name):
+    raw = value(["systemctl", "show", name, "-p", "ActiveState,MainPID,InvocationID"])
+    return dict(line.split("=", 1) for line in raw.splitlines())
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=["test", "accept"])
+    parser.add_argument("candidate", type=Path)
+    args = parser.parse_args()
+    host = socket.gethostname()
+    assert host in OLD and os.getuid() == 0
+    current = Path("/run/current-system").resolve()
+    candidate = args.candidate.resolve()
+    assert (
+        str(candidate).startswith("/nix/store/")
+        and ("nixos-system-" + host + "-") in candidate.name
+    )
+    assert (candidate / "kernel").resolve() == (Path(OLD[host]) / "kernel").resolve(), (
+        "Kernel change is not part of this migration"
+    )
+    ROOT.mkdir(mode=0o700, exist_ok=True)
+    receipt_path = ROOT / (host + "-host-test.json")
+    if args.action == "test":
+        assert str(current) == OLD[host], "Unexpected source system"
+        before = {}
+        if host == "rakku":
+            for name in ["home-assistant.service", "zwave-js.service"]:
+                old = (current / "etc/systemd/system" / name).read_bytes()
+                new = (candidate / "etc/systemd/system" / name).read_bytes()
+                assert old == new, "An automation unit changed"
+                before[name] = unit_state(name)
+            assert not Path("/var/lib/cliproxyapi/.migration-ready").exists()
+        subprocess.run(
+            [
+                "nix-store",
+                "--add-root",
+                "/nix/var/nix/gcroots/cliproxyapi-host-before-" + host,
+                "--realise",
+                str(current),
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+        receipt = {
+            "before": str(current),
+            "candidate": str(candidate),
+            "booted": str(Path("/run/booted-system").resolve()),
+            "services_before": before,
+            "started_at": int(time.time()),
+        }
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
+        try:
+            subprocess.run(
+                [str(candidate / "bin/switch-to-configuration"), "test"],
+                check=True,
+                timeout=180,
+            )
+            assert Path("/run/current-system").resolve() == candidate
+            for name, previous in before.items():
+                after = unit_state(name)
+                assert after == previous, (
+                    "An automation process changed during host staging"
+                )
+            if host == "rakku":
+                for name in ["cliproxyapi.service", "cliproxyapi-tsnet.service"]:
+                    assert unit_state(name)["MainPID"] == "0", (
+                        "Target started before the state cutover"
+                    )
+            receipt["status"] = "host-test-passed-without-reboot"
+            receipt["finished_at"] = int(time.time())
+            receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
+            print(
+                json.dumps(
+                    {
+                        "host": host,
+                        "current_system": str(candidate),
+                        "automation_processes_unchanged": host == "rakku",
+                        "reboot_requested": False,
+                        "target_application_started": False,
+                    },
+                    indent=2,
+                )
+            )
+        except Exception:
+            subprocess.run(
+                [str(current / "bin/switch-to-configuration"), "test"],
+                check=True,
+                timeout=180,
+            )
+            raise
+    else:
+        previous = json.loads(receipt_path.read_text())
+        assert previous["status"] == "host-test-passed-without-reboot"
+        assert str(candidate) == previous["candidate"] and current == candidate
+        if host == "rakku":
+            assert Path("/var/lib/cliproxyapi/.accepted-profile.json").exists(), (
+                "Application acceptance must precede permanent host activation"
+            )
+        subprocess.run(
+            [
+                "nix-env",
+                "--profile",
+                "/nix/var/nix/profiles/system",
+                "--set",
+                str(candidate),
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [str(candidate / "bin/switch-to-configuration"), "switch"],
+            check=True,
+            timeout=180,
+        )
+        assert Path("/run/current-system").resolve() == candidate
+        print(
+            json.dumps(
+                {
+                    "host": host,
+                    "default_system": str(
+                        Path("/nix/var/nix/profiles/system").resolve()
+                    ),
+                    "booted_system": str(Path("/run/booted-system").resolve()),
+                    "reboot_requested": False,
+                },
+                indent=2,
+            )
+        )
+
+
+if __name__ == "__main__":
+    main()
