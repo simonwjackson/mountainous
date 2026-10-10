@@ -1,20 +1,20 @@
 # Forgerie native runner implementation
 
-UNZEN runs the reviewed native runner configuration. Full physical cold and warm pilots passed after the bcachefs identity fix. Lifecycle acceptance remains open: a stopped listener's stale GitHub heartbeat prevented immediate registration, and the unit did not retry its failed startup.
+UNZEN runs the accepted native runner configuration. Full cold/warm workflows, server-enforced admission, automatic startup recovery, explicit stop, active cancellation, cleanup and reboot acceptance passed. The pilot remains manual, limited to one repository and one job; hosted and required checks are unchanged.
 
 ## Verified configuration
 
 | Item | Evidence |
 | --- | --- |
 | Repository | GitHub API identifies `forgerie/forgerie` as public, with default branch `main`. |
-| UNZEN registration | Physical runner `unzen-forgerie`, initially ID `10`, was online and idle in group `3` before the first main pilot. |
+| UNZEN registration | Physical runner `unzen-forgerie`, ID `20` after accepted reboot, is online and idle in group `3`. Registration IDs change after ephemeral jobs and restarts. |
 | Dedicated App | `forgerie-unzen-runner`, ID `5264213`, authenticated with only `organization_self_hosted_runners: write`. The operator's OAuth scopes and existing Forgerie App are unchanged. |
 | Live group policy | Group `unzen-forgerie-manual`, ID `3`, selects only Forgerie and the exact main workflow. GitHub accepted the policy and production preflight passed its read-back. An online runner accepted main while changed-ref and fork controls remained unassigned. |
 | Encrypted key | `secrets/hosts/unzen-github-actions.yaml` has exactly operator and UNZEN recipients. Both identities decrypted it and matched the protected source key in memory. |
 | Feature defaults | `github-actions-contract` proves disabled configurations create no runner unit or CI account. |
 | Admission guard | Python policy tests reject changed refs, PR refs, extra workflows, other repositories and absent restrictions. |
 | Actual unit policy | The VM checks disk scratch, hidden credentials and host daemon, Node 24, loopback HTTP, slice limits, stopping and cleanup. It also calls the shipped runner SDK's directory-permission validator and refuses parent-directory writes. |
-| GitHub lifecycle | Full cold retry and warm repeat passed on main `09e3ef5e2ab8cf369a346915a6469a099a6cb616`. Both artifacts and post-job cleanup passed. A failed offline test was cancelled and the listener restored; active cancellation and reboot acceptance remain open. |
+| GitHub lifecycle | Full cold retry and warm repeat passed on main `09e3ef5e2ab8cf369a346915a6469a099a6cb616`. Both artifacts and cleanup passed. Offline queueing, terminal active cancellation, fresh registration and reboot acceptance also passed. |
 
 The committed isolation VM uses invalid credentials. Its probe replaces GitHub authentication and job dispatch, but calls the real runner SDK's workspace validator. It is not a successful Actions job. A separate disposable live-admission VM uses the App at runtime, without putting its key in a derivation or Nix store path.
 
@@ -81,7 +81,7 @@ Downloaded artifacts confirm Nix Node `v24.20.0`, bcachefs scratch and an inacce
 
 The upstream ephemeral runner cleans its complete workspace on each registration. Since `HOME` is that workspace, npm cache is also cleared. A warm repeat tests persistent Nix-store/toolchain reuse, not retained npm downloads.
 
-## Remaining acceptance
+## Lifecycle acceptance and operating constraints
 
 The dedicated runner-only App is installed on `forgerie`. Its organization runner-management permission can manage organization runners; selected repository installation does not narrow that organization permission. The existing App and operator token remain unchanged.
 
@@ -93,7 +93,7 @@ Future deployment must also use reviewed committed source, not the shared workin
 
 Each physical dispatch restored `UNZEN_PILOT_ENABLED` to `false`. Failure/retry, complete cold/warm runs, artifact download, persistent toolchain and post-job cleanup now passed.
 
-The first offline exercise stopped idle listener `13` successfully. GitHub still reported it online. Upstream unregister deliberately refused an online registration, and immediate startup failed with `A runner exists with the same name`. The unit has `Restart=on-success`, so it stayed failed. The queued main job was cancelled and the pilot variable disabled. After the heartbeat expired, explicit CI-unit startup removed the offline row and restored a fresh listener. No Forgerie service was touched. Evidence is [lifecycle-attempt-1.json](../hardware/unzen-github-actions-2026-10-10/lifecycle-attempt-1.json).
+The first offline exercise stopped idle listener `13` successfully. GitHub still reported it online. Upstream unregister deliberately refused an online registration, and immediate startup failed with `A runner exists with the same name`. The original unit had `Restart=on-success`, so it stayed failed. The queued main job was cancelled and the pilot variable disabled. After the heartbeat expired, explicit CI-unit startup removed the offline row and restored a fresh listener. No Forgerie service was touched. Evidence is [lifecycle-attempt-1.json](../hardware/unzen-github-actions-2026-10-10/lifecycle-attempt-1.json).
 
 The permanent configuration now uses `Restart=always`, a 30-second restart delay and a 180-second startup timeout. Disabling the restart-count cutoff permits recovery after an extended GitHub outage. Explicit `systemctl stop` still stops the service. Every new attempt executes the admission guard; no online registration is forcibly replaced. The 30-second delay also applies after successful ephemeral jobs, adding 20 seconds to the old configured delay.
 
@@ -105,6 +105,10 @@ sudo /etc/github-actions/ready --timeout 180
 
 All three clean-source Nix checks passed. The VM proved automatic recovery after a controlled startup error, no restart after explicit stop, and continued refusal of invalid credentials. Eleven readiness tests cover stopped listeners, stale registrations, missing/extra runners, an online busy listener, the actual file encoding and bounded CLI failure.
 
-The first physical hardening test proved automatic startup recovery after one failed registration attempt. The listener recovered without replacing an online row. However, the readiness command rejected the SDK's UTF-8 byte-order mark in `.runner`. The guarded test restored the accepted system and default profile. Physical health passed after rollback. A real-file regression reproduced the same JSON error before the decoder fix. The CLI now accepts the SDK encoding and retains its last error when its deadline expires. Deployment of this correction is pending.
+The first physical hardening test proved automatic startup recovery after one failed registration attempt. The listener recovered without replacing an online row. However, the readiness command rejected the SDK's UTF-8 byte-order mark in `.runner`. The guarded test restored the accepted system and default profile. Physical health passed after rollback. A real-file regression reproduced the same JSON error before the decoder fix. The CLI now accepts the SDK encoding and retains its last error when its deadline expires. Corrected source `00694b56ccb333778bd0a6307b9e4d2e5af1c0a5` passed the guarded physical test and default-profile acceptance. The accepted system is `/nix/store/vh51z1nq1jsmhx113v7y22dwfl38gvjy-nixos-system-unzen-26.11.20260923.4975466`. Only the runner unit and its existing enablement link changed; unrelated service processes stayed unchanged.
 
-Production lifecycle acceptance still requires another physical offline/active-cancellation exercise and a reboot. Read-only boot inspection verified GRUB's default entry points at the accepted system and that loaded/default kernel and initrd paths match. Do not expand registrations or move required checks before remaining acceptance passes.
+[Physical cancellation run 38082420232](https://github.com/forgerie/forgerie/actions/runs/38082420232) stayed unassigned for 67.6 seconds after GitHub marked the stopped listener offline. Explicit stop stayed stopped. A fresh listener, ID `18`, then accepted the reviewed main job. Its native toolchain and disk checks passed. Cancellation during `Run tests and measure coverage` became terminal with conclusion `cancelled`; listener `19` replaced it. Workspace, npm cache and scratch cleanup passed. The pilot variable returned to `false` and cleanup reported no errors.
+
+The authorized reboot passed. GRUB's default entry and actual staged kernel/initrd hashes matched the accepted system before reboot. The boot ID changed; booted, current and default system paths now match. The new boot recovered one failed startup automatically and registered online/idle listener `20`. Physical cgroup bounds, both 95 W limits, root-only key and cleanup remained correct. UNZEN had zero failed units. Both earlier systems remain GC-rooted for rollback. ZAO application services were not changed.
+
+Public final evidence is [lifecycle-accepted.json](../hardware/unzen-github-actions-2026-10-10/lifecycle-accepted.json). Earlier failed attempts remain recorded. This completes the one-repository native pilot; it does not authorize repository expansion, untrusted jobs or changes to required checks.

@@ -1,0 +1,98 @@
+{
+  "status": "native-pilot-lifecycle-accepted",
+  "source_revision": "00694b56ccb333778bd0a6307b9e4d2e5af1c0a5",
+  "system": "/nix/store/vh51z1nq1jsmhx113v7y22dwfl38gvjy-nixos-system-unzen-26.11.20260923.4975466",
+  "activation": {
+    "changed_units": [
+      "github-runner-forgerie.service",
+      "multi-user.target.wants/github-runner-forgerie.service"
+    ],
+    "unrelated_service_processes_preserved": true,
+    "default_accepted_at": 1791662659,
+    "readiness": {
+      "ready": true,
+      "unit": "github-runner-forgerie.service",
+      "runner_id": 17,
+      "busy": false,
+      "group_id": 3,
+      "startup_restarts": "0"
+    },
+    "restart": "always",
+    "restart_delay_seconds": 30,
+    "startup_timeout_seconds": 180,
+    "restart_count_cutoff_disabled": true,
+    "feature_checks_passed": [
+      "github-actions-contract",
+      "github-actions-preflight",
+      "github-actions-isolation"
+    ],
+    "readiness_tests_passed": 11
+  },
+  "offline_and_active_cancellation": {
+    "reviewed_main": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+    "run_id": 38082420232,
+    "url": "https://github.com/forgerie/forgerie/actions/runs/38082420232",
+    "conclusion": "cancelled",
+    "unassigned_offline_interval_seconds": 67.6,
+    "stopped_listener_id": 17,
+    "resumed_listener_id": 18,
+    "post_cancel_listener_id": 19,
+    "before_cancel_native_check_passed": true,
+    "cancelled_during": "Run tests and measure coverage",
+    "cleanup_errors": [],
+    "pilot_enabled_after_cleanup": "false"
+  },
+  "reboot": {
+    "before_boot_id": "2434487b-525b-496b-a6e5-f190a34a06ef",
+    "after_boot_id": "55bcc800-46c3-4b9b-adf2-dccaba49cc6f",
+    "booted_current_default_match": true,
+    "verified_at": 1791663059,
+    "readiness": {
+      "ready": true,
+      "unit": "github-runner-forgerie.service",
+      "runner_id": 20,
+      "busy": false,
+      "group_id": 3,
+      "startup_restarts": "1"
+    },
+    "rollback_roots": {
+      "github-actions-before-unzen": "/nix/store/2q2g23yy7h89maclnzaiz540xw67qg2p-nixos-system-unzen-26.11.20260923.4975466",
+      "github-actions-before-lifecycle": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466"
+    },
+    "staged_boot_file_sha256": {
+      "kernel": "05b7dffb75e69a626a6413a42e68b3d77503fefc0260e498d76d09769738ddc1",
+      "initrd": "4dcf72606e70b0ef719d863e8267a455e1cddece51603f18e7fc4e111cb592b3"
+    }
+  },
+  "post_reboot_health": {
+    "pilot_enabled": "false",
+    "final_runner_id": 20,
+    "final_runner_online_and_idle": true,
+    "actual_cgroup_bounds": {
+      "cpu.max": "400000 100000",
+      "memory.high": "12884901888",
+      "memory.max": "17179869184",
+      "pids.max": "2048"
+    },
+    "package_power_limits_uw": {
+      "constraint_0_power_limit_uw": 95000000,
+      "constraint_1_power_limit_uw": 95000000
+    },
+    "app_key": {
+      "uid": 0,
+      "gid": 0,
+      "mode": "0o400"
+    },
+    "failed_units": [],
+    "checkout_and_npm_cache_absent": true,
+    "scratch_contains_only_listener_diagnostic_sockets": true
+  },
+  "scope": {
+    "repository": "forgerie/forgerie",
+    "workflow": "forgerie/forgerie/.github/workflows/unzen-pilot.yml@refs/heads/main",
+    "concurrent_jobs": 1,
+    "hosted_required_checks_changed": false,
+    "repositories_expanded": false,
+    "zao_application_services_changed": false
+  }
+}
