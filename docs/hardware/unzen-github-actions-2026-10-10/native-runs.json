@@ -1,0 +1,507 @@
+{
+  "reviewed_main": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+  "runs": {
+    "cold-retry": {
+      "run": {
+        "run_id": 38073728513,
+        "url": "https://github.com/forgerie/forgerie/actions/runs/38073728513",
+        "status": "completed",
+        "conclusion": "success",
+        "run_attempt": 1,
+        "head_sha": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+        "head_branch": "main",
+        "event": "workflow_dispatch",
+        "jobs": [
+          {
+            "id": 114276247752,
+            "name": "Optional native NixOS verification",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-10T17:55:52Z",
+            "completed_at": "2026-10-10T18:04:13Z",
+            "runner_id": 11,
+            "runner_name": "unzen-forgerie",
+            "runner_group_id": 3,
+            "runner_group_name": "unzen-forgerie-manual",
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1,
+                "started_at": "2026-10-10T17:55:52Z",
+                "completed_at": "2026-10-10T17:55:54Z"
+              },
+              {
+                "name": "Checkout the dispatched main revision",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2,
+                "started_at": "2026-10-10T17:55:54Z",
+                "completed_at": "2026-10-10T17:55:55Z"
+              },
+              {
+                "name": "Check the native toolchain and disk-backed temporary files",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3,
+                "started_at": "2026-10-10T17:55:55Z",
+                "completed_at": "2026-10-10T17:55:55Z"
+              },
+              {
+                "name": "Install server and browser dependencies",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4,
+                "started_at": "2026-10-10T17:55:55Z",
+                "completed_at": "2026-10-10T17:56:09Z"
+              },
+              {
+                "name": "Verify static checks",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5,
+                "started_at": "2026-10-10T17:56:09Z",
+                "completed_at": "2026-10-10T17:56:47Z"
+              },
+              {
+                "name": "Run tests and measure coverage",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6,
+                "started_at": "2026-10-10T17:56:47Z",
+                "completed_at": "2026-10-10T18:00:03Z"
+              },
+              {
+                "name": "Verify the browser app",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7,
+                "started_at": "2026-10-10T18:00:03Z",
+                "completed_at": "2026-10-10T18:01:24Z"
+              },
+              {
+                "name": "Build",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8,
+                "started_at": "2026-10-10T18:01:24Z",
+                "completed_at": "2026-10-10T18:01:58Z"
+              },
+              {
+                "name": "Smoke test npm 12 global package install",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9,
+                "started_at": "2026-10-10T18:01:58Z",
+                "completed_at": "2026-10-10T18:03:02Z"
+              },
+              {
+                "name": "Check npm package contents",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10,
+                "started_at": "2026-10-10T18:03:02Z",
+                "completed_at": "2026-10-10T18:04:09Z"
+              },
+              {
+                "name": "Upload coverage and native environment report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11,
+                "started_at": "2026-10-10T18:04:09Z",
+                "completed_at": "2026-10-10T18:04:11Z"
+              },
+              {
+                "name": "Post Checkout the dispatched main revision",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 22,
+                "started_at": "2026-10-10T18:04:11Z",
+                "completed_at": "2026-10-10T18:04:11Z"
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 23,
+                "started_at": "2026-10-10T18:04:11Z",
+                "completed_at": "2026-10-10T18:04:11Z"
+              }
+            ]
+          }
+        ],
+        "artifacts": [
+          {
+            "id": 11677792750,
+            "node_id": "MDg6QXJ0aWZhY3QxMTY3Nzc5Mjc1MA==",
+            "name": "unzen-pilot-38073728513-1",
+            "size_in_bytes": 2924768,
+            "url": "https://api.github.com/repos/forgerie/forgerie/actions/artifacts/11677792750",
+            "archive_download_url": "https://api.github.com/repos/forgerie/forgerie/actions/artifacts/11677792750/zip",
+            "expired": false,
+            "digest": "sha256:cf803967f934396f91c3c0baa77963e234216c27e5120ecb3f724b43b47c2c18",
+            "created_at": "2026-10-10T18:04:11Z",
+            "updated_at": "2026-10-10T18:04:11Z",
+            "expires_at": "2026-10-17T18:04:09Z",
+            "workflow_run": {
+              "id": 38073728513,
+              "repository_id": 1412527681,
+              "head_repository_id": 1412527681,
+              "head_branch": "main",
+              "head_sha": "09e3ef5e2ab8cf369a346915a6469a099a6cb616"
+            }
+          }
+        ]
+      },
+      "native_environment": {
+        "hostname": "unzen",
+        "platform": "linux",
+        "nodeVersion": "v24.20.0",
+        "nodePath": "/nix/store/z5piarlh57mjwr4c9w318ay97sxr6c9m-nodejs-slim-24.20.0/bin/node",
+        "temporaryDirectory": "/srv/github-actions/tmp/forgerie",
+        "tempFilesystem": "bcachefs",
+        "hostDaemonAccessible": false,
+        "checkedAt": "2026-10-10T17:55:55.835Z"
+      },
+      "post_job_health": {
+        "hostname": "unzen",
+        "current": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+        "default": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+        "booted": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+        "runner": {
+          "ActiveState": "active",
+          "SubState": "running",
+          "InvocationID": "38f14a8b72d04de7aa9227f7309c19c5",
+          "MainPID": "212204",
+          "ControlGroup": "/github.slice/github-actions.slice/github-runner-forgerie.service",
+          "IPAddressDeny": "169.254.0.0/16 192.168.0.0/16 fc00::/7 100.64.0.0/10 fe80::/10 10.0.0.0/8 172.16.0.0/12",
+          "User": "github-runner-forgerie",
+          "Group": "github-runner-forgerie"
+        },
+        "slice": {
+          "ActiveState": "active",
+          "ControlGroup": "/github.slice/github-actions.slice",
+          "CPUQuotaPerSecUSec": "4s",
+          "MemoryHigh": "12884901888",
+          "MemoryMax": "17179869184",
+          "TasksMax": "2048"
+        },
+        "actual_cgroup_bounds": {
+          "cpu.max": "400000 100000",
+          "memory.high": "12884901888",
+          "memory.max": "17179869184",
+          "pids.max": "2048"
+        },
+        "app_key": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o400"
+        },
+        "package_power_limits_uw": {
+          "constraint_0_power_limit_uw": 95000000,
+          "constraint_1_power_limit_uw": 95000000
+        },
+        "directories": {
+          "/srv/github-actions": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/work": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/tmp": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/work/forgerie": {
+            "uid": 993,
+            "gid": 990,
+            "mode": "0o700"
+          },
+          "/srv/github-actions/tmp/forgerie": {
+            "uid": 993,
+            "gid": 990,
+            "mode": "0o700"
+          }
+        },
+        "failed_units": [],
+        "scratch_entries": [
+          "clr-debug-pipe-212204-18589954-in",
+          "clr-debug-pipe-212204-18589954-out",
+          "dotnet-diagnostic-212204-18589954-socket"
+        ],
+        "work_entries": [
+          ".credentials",
+          ".credentials_rsaparams",
+          ".runner",
+          "_diag"
+        ]
+      }
+    },
+    "warm": {
+      "run": {
+        "run_id": 38074407834,
+        "url": "https://github.com/forgerie/forgerie/actions/runs/38074407834",
+        "status": "completed",
+        "conclusion": "success",
+        "run_attempt": 1,
+        "head_sha": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+        "head_branch": "main",
+        "event": "workflow_dispatch",
+        "jobs": [
+          {
+            "id": 114278249479,
+            "name": "Optional native NixOS verification",
+            "status": "completed",
+            "conclusion": "success",
+            "started_at": "2026-10-10T18:05:59Z",
+            "completed_at": "2026-10-10T18:14:16Z",
+            "runner_id": 12,
+            "runner_name": "unzen-forgerie",
+            "runner_group_id": 3,
+            "runner_group_name": "unzen-forgerie-manual",
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1,
+                "started_at": "2026-10-10T18:06:00Z",
+                "completed_at": "2026-10-10T18:06:02Z"
+              },
+              {
+                "name": "Checkout the dispatched main revision",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2,
+                "started_at": "2026-10-10T18:06:02Z",
+                "completed_at": "2026-10-10T18:06:03Z"
+              },
+              {
+                "name": "Check the native toolchain and disk-backed temporary files",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3,
+                "started_at": "2026-10-10T18:06:03Z",
+                "completed_at": "2026-10-10T18:06:03Z"
+              },
+              {
+                "name": "Install server and browser dependencies",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4,
+                "started_at": "2026-10-10T18:06:03Z",
+                "completed_at": "2026-10-10T18:06:17Z"
+              },
+              {
+                "name": "Verify static checks",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5,
+                "started_at": "2026-10-10T18:06:17Z",
+                "completed_at": "2026-10-10T18:06:55Z"
+              },
+              {
+                "name": "Run tests and measure coverage",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6,
+                "started_at": "2026-10-10T18:06:55Z",
+                "completed_at": "2026-10-10T18:10:07Z"
+              },
+              {
+                "name": "Verify the browser app",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7,
+                "started_at": "2026-10-10T18:10:07Z",
+                "completed_at": "2026-10-10T18:11:28Z"
+              },
+              {
+                "name": "Build",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8,
+                "started_at": "2026-10-10T18:11:28Z",
+                "completed_at": "2026-10-10T18:12:01Z"
+              },
+              {
+                "name": "Smoke test npm 12 global package install",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9,
+                "started_at": "2026-10-10T18:12:01Z",
+                "completed_at": "2026-10-10T18:13:04Z"
+              },
+              {
+                "name": "Check npm package contents",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10,
+                "started_at": "2026-10-10T18:13:04Z",
+                "completed_at": "2026-10-10T18:14:11Z"
+              },
+              {
+                "name": "Upload coverage and native environment report",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11,
+                "started_at": "2026-10-10T18:14:11Z",
+                "completed_at": "2026-10-10T18:14:14Z"
+              },
+              {
+                "name": "Post Checkout the dispatched main revision",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 22,
+                "started_at": "2026-10-10T18:14:14Z",
+                "completed_at": "2026-10-10T18:14:14Z"
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 23,
+                "started_at": "2026-10-10T18:14:14Z",
+                "completed_at": "2026-10-10T18:14:14Z"
+              }
+            ]
+          }
+        ],
+        "artifacts": [
+          {
+            "id": 11678363020,
+            "node_id": "MDg6QXJ0aWZhY3QxMTY3ODM2MzAyMA==",
+            "name": "unzen-pilot-38074407834-1",
+            "size_in_bytes": 2925095,
+            "url": "https://api.github.com/repos/forgerie/forgerie/actions/artifacts/11678363020",
+            "archive_download_url": "https://api.github.com/repos/forgerie/forgerie/actions/artifacts/11678363020/zip",
+            "expired": false,
+            "digest": "sha256:5b46e1d91b13b092372b80ddfbc6f1047399b6519007e593a628dedf03369b2c",
+            "created_at": "2026-10-10T18:14:14Z",
+            "updated_at": "2026-10-10T18:14:14Z",
+            "expires_at": "2026-10-17T18:14:12Z",
+            "workflow_run": {
+              "id": 38074407834,
+              "repository_id": 1412527681,
+              "head_repository_id": 1412527681,
+              "head_branch": "main",
+              "head_sha": "09e3ef5e2ab8cf369a346915a6469a099a6cb616"
+            }
+          }
+        ]
+      },
+      "native_environment": {
+        "hostname": "unzen",
+        "platform": "linux",
+        "nodeVersion": "v24.20.0",
+        "nodePath": "/nix/store/z5piarlh57mjwr4c9w318ay97sxr6c9m-nodejs-slim-24.20.0/bin/node",
+        "temporaryDirectory": "/srv/github-actions/tmp/forgerie",
+        "tempFilesystem": "bcachefs",
+        "hostDaemonAccessible": false,
+        "checkedAt": "2026-10-10T18:06:03.525Z"
+      },
+      "post_job_health": {
+        "hostname": "unzen",
+        "current": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+        "default": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+        "booted": "/nix/store/qzkicsbniwy975qv95jhr9kirwv7k5yx-nixos-system-unzen-26.11.20260923.4975466",
+        "runner": {
+          "ActiveState": "active",
+          "SubState": "running",
+          "InvocationID": "76273385b113424791f8fcb9ff3a64a3",
+          "MainPID": "221044",
+          "ControlGroup": "/github.slice/github-actions.slice/github-runner-forgerie.service",
+          "IPAddressDeny": "169.254.0.0/16 192.168.0.0/16 fc00::/7 100.64.0.0/10 fe80::/10 10.0.0.0/8 172.16.0.0/12",
+          "User": "github-runner-forgerie",
+          "Group": "github-runner-forgerie"
+        },
+        "slice": {
+          "ActiveState": "active",
+          "ControlGroup": "/github.slice/github-actions.slice",
+          "CPUQuotaPerSecUSec": "4s",
+          "MemoryHigh": "12884901888",
+          "MemoryMax": "17179869184",
+          "TasksMax": "2048"
+        },
+        "actual_cgroup_bounds": {
+          "cpu.max": "400000 100000",
+          "memory.high": "12884901888",
+          "memory.max": "17179869184",
+          "pids.max": "2048"
+        },
+        "app_key": {
+          "uid": 0,
+          "gid": 0,
+          "mode": "0o400"
+        },
+        "package_power_limits_uw": {
+          "constraint_0_power_limit_uw": 95000000,
+          "constraint_1_power_limit_uw": 95000000
+        },
+        "directories": {
+          "/srv/github-actions": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/work": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/tmp": {
+            "uid": 0,
+            "gid": 990,
+            "mode": "0o750"
+          },
+          "/srv/github-actions/work/forgerie": {
+            "uid": 993,
+            "gid": 990,
+            "mode": "0o700"
+          },
+          "/srv/github-actions/tmp/forgerie": {
+            "uid": 993,
+            "gid": 990,
+            "mode": "0o700"
+          }
+        },
+        "failed_units": [],
+        "scratch_entries": [
+          "clr-debug-pipe-221044-18650257-in",
+          "clr-debug-pipe-221044-18650257-out",
+          "dotnet-diagnostic-221044-18650257-socket"
+        ],
+        "work_entries": [
+          ".credentials",
+          ".credentials_rsaparams",
+          ".runner",
+          "_diag"
+        ]
+      }
+    }
+  },
+  "hosted_fix_checks": {
+    "pr": 32,
+    "head_sha": "9a6803108e25e0e8865912f1d21005ae001b20da",
+    "checks": [
+      {
+        "id": 114274555437,
+        "name": "Verify and package (ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "details_url": "https://github.com/forgerie/forgerie/actions/runs/38073156156/job/114274555437"
+      }
+    ],
+    "checked_at": "2026-10-10T17:54:42Z"
+  },
+  "remaining_acceptance": [
+    "offline/cancellation after lifecycle hardening",
+    "reboot"
+  ]
+}

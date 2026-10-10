@@ -39,5 +39,37 @@
       "passed": true
     }
   },
-  "patch_status": "verification in progress; not landed"
+  "patch_status": "merged PR #32 after complete local and hosted verification",
+  "after_migration_review": {
+    "distinctExactInodes": [
+      "5188146770730851641",
+      "5188146770730851642"
+    ],
+    "numericInodesAlias": true,
+    "replacement": {
+      "expected": "session-0004",
+      "actual": "session-0004",
+      "passed": true
+    },
+    "durableName": {
+      "expected": "durable name",
+      "actual": {
+        "kind": "named",
+        "name": "durable name"
+      },
+      "passed": true
+    }
+  },
+  "reviewed_main": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+  "local_verification": {
+    "server_passed": 1819,
+    "server_skipped": 3,
+    "browser_passed": 1350,
+    "browser_skipped": 1,
+    "focused_passed": 116,
+    "coverage_thresholds_changed": false,
+    "build": "passed",
+    "installed_package_smoke": "passed",
+    "delegated_agent_smoke": "not exercised"
+  }
 }

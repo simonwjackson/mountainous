@@ -1,0 +1,94 @@
+{
+  "attempt": {
+    "reviewed_main": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+    "initial_runner": {
+      "id": 13,
+      "name": "unzen-forgerie",
+      "os": "unknown",
+      "status": "online",
+      "busy": false,
+      "version": "2.337.0",
+      "labels": [
+        {
+          "id": 0,
+          "name": "unzen-forgerie",
+          "type": "custom"
+        }
+      ]
+    },
+    "status": "failed",
+    "stop": {
+      "hostname": "unzen",
+      "action": "stop",
+      "unit": "github-runner-forgerie.service",
+      "before": {
+        "ActiveState": "active",
+        "SubState": "running",
+        "InvocationID": "76273385b113424791f8fcb9ff3a64a3",
+        "MainPID": "221044",
+        "User": "github-runner-forgerie",
+        "Group": "github-runner-forgerie"
+      },
+      "after": {
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": "76273385b113424791f8fcb9ff3a64a3",
+        "MainPID": "0",
+        "User": "github-runner-forgerie",
+        "Group": "github-runner-forgerie"
+      }
+    },
+    "run_id": 38075012579,
+    "error_type": "AssertionError",
+    "pilot_enabled": "false"
+  },
+  "recovery": {
+    "status": "restored",
+    "cancelled_attempt": {
+      "run_id": 38075012579,
+      "url": "https://github.com/forgerie/forgerie/actions/runs/38075012579",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "run_attempt": 1,
+      "head_sha": "09e3ef5e2ab8cf369a346915a6469a099a6cb616",
+      "head_branch": "main",
+      "event": "workflow_dispatch",
+      "jobs": [
+        {
+          "id": 114280066027,
+          "name": "Optional native NixOS verification",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "started_at": "2026-10-10T18:15:02Z",
+          "completed_at": "2026-10-10T18:15:14Z",
+          "runner_id": 0,
+          "runner_name": "",
+          "runner_group_id": 0,
+          "runner_group_name": "",
+          "steps": []
+        }
+      ]
+    },
+    "expired_registration": {
+      "total_count": 0,
+      "runners": []
+    },
+    "fresh_runner": {
+      "id": 14,
+      "name": "unzen-forgerie",
+      "os": "unknown",
+      "status": "online",
+      "busy": false,
+      "version": "2.337.0",
+      "labels": [
+        {
+          "id": 0,
+          "name": "unzen-forgerie",
+          "type": "custom"
+        }
+      ]
+    }
+  },
+  "finding": "GitHub retained the stopped listener as online. Upstream unregister refused an online row; immediate registration failed on duplicate name. Restart=on-success did not retry the failed startup. Waiting for offline status and starting the CI unit restored a fresh listener.",
+  "pilot_enabled_after_recovery": "false"
+}

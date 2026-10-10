@@ -1,6 +1,6 @@
 # Forgerie native runner implementation
 
-UNZEN runs the reviewed native runner configuration. Registration and physical resource checks passed. The first complete pilot found two application cache failures on bcachefs; cold/warm and lifecycle acceptance remain open.
+UNZEN runs the reviewed native runner configuration. Full physical cold and warm pilots passed after the bcachefs identity fix. Lifecycle acceptance remains open: a stopped listener's stale GitHub heartbeat prevented immediate registration, and the unit did not retry its failed startup.
 
 ## Verified configuration
 
@@ -14,7 +14,7 @@ UNZEN runs the reviewed native runner configuration. Registration and physical r
 | Feature defaults | `github-actions-contract` proves disabled configurations create no runner unit or CI account. |
 | Admission guard | Python policy tests reject changed refs, PR refs, extra workflows, other repositories and absent restrictions. |
 | Actual unit policy | The VM checks disk scratch, hidden credentials and host daemon, Node 24, loopback HTTP, slice limits, stopping and cleanup. It also calls the shipped runner SDK's directory-permission validator and refuses parent-directory writes. |
-| GitHub lifecycle | The first physical main job uploaded its native environment artifact and completed with an application test failure. Successful full runs, cancellation, reboot and warm-run acceptance remain open. |
+| GitHub lifecycle | Full cold retry and warm repeat passed on main `09e3ef5e2ab8cf369a346915a6469a099a6cb616`. Both artifacts and post-job cleanup passed. A failed offline test was cancelled and the listener restored; active cancellation and reboot acceptance remain open. |
 
 The committed isolation VM uses invalid credentials. Its probe replaces GitHub authentication and job dispatch, but calls the real runner SDK's workspace validator. It is not a successful Actions job. A separate disposable live-admission VM uses the App at runtime, without putting its key in a derivation or Nix store path.
 
@@ -69,7 +69,14 @@ Public receipts are [admission.json](../hardware/unzen-github-actions-2026-10-10
 
 [Physical pilot 38069917257](https://github.com/forgerie/forgerie/actions/runs/38069917257) ran main `f71220c00afb72b5e631fb820d9f9cfee54eb288` on runner `10`. Checkout, native checks, npm installation, static checks and artifact upload passed. Server tests reported 1809 passed, two failed and three skipped. Browser verification, build and package smoke tests were skipped after that failure. The artifact verifies Node `v24.20.0` from the Nix store, bcachefs temporary files and inaccessible host daemon.
 
-A bounded probe using the real scanners on disposable physical bcachefs files reproduced both failures. Distinct 64-bit inodes collapse to the same JavaScript Number, and the numeric durable index rejects unsafe identities on reload. [Forgerie #31](https://github.com/forgerie/forgerie/issues/31) tracks the fix. Do not weaken assertions or isolation to pass the pilot.
+A bounded probe using the real scanners on disposable physical bcachefs files reproduced both failures. Distinct 64-bit inodes collapse to the same JavaScript Number, and the numeric durable index rejects unsafe identities on reload. [Forgerie PR #32](https://github.com/forgerie/forgerie/pull/32) fixed [#31](https://github.com/forgerie/forgerie/issues/31) without weakening assertions, deadlines, isolation or coverage. It merged after complete local and hosted verification; its tree matches reviewed main `09e3ef5e2ab8cf369a346915a6469a099a6cb616`.
+
+| Physical run | Outcome |
+| --- | --- |
+| [Cold retry 38073728513](https://github.com/forgerie/forgerie/actions/runs/38073728513) | Every stage passed, including server coverage, browser verification, build, installed-package smoke and artifact upload. |
+| [Warm repeat 38074407834](https://github.com/forgerie/forgerie/actions/runs/38074407834) | The same complete workflow passed on the same main revision. |
+
+Downloaded artifacts confirm Nix Node `v24.20.0`, bcachefs scratch and an inaccessible host daemon. Both post-job checks found no checkout or npm cache, unchanged cgroup and power bounds, root-only key and zero failed units. Scratch retained only the fresh listener's .NET diagnostic sockets. Public evidence is [native-runs.json](../hardware/unzen-github-actions-2026-10-10/native-runs.json); red/green scanner and verification evidence is [cache-reproduction.json](../hardware/unzen-github-actions-2026-10-10/cache-reproduction.json).
 
 The upstream ephemeral runner cleans its complete workspace on each registration. Since `HOME` is that workspace, npm cache is also cleared. A warm repeat tests persistent Nix-store/toolchain reuse, not retained npm downloads.
 
@@ -83,4 +90,8 @@ The exact selected-repository/workflow group passed read-back and live admission
 
 Future deployment must also use reviewed committed source, not the shared working tree's concurrent edits. Compare against the running system, preserve the kernel and other service commands, and retain rollback. Use verified SSH and non-destructive NixOS activation. Never run `nix run .#deploy`.
 
-The first physical dispatch restored `UNZEN_PILOT_ENABLED` to `false` after failure. Fix #31, review the resulting main revision, and run the pilot twice. Complete cancellation, retry, reboot, offline, artifact and store-reuse checks. Do not expand registrations or move required checks before these pass.
+Each physical dispatch restored `UNZEN_PILOT_ENABLED` to `false`. Failure/retry, complete cold/warm runs, artifact download, persistent toolchain and post-job cleanup now passed.
+
+The first offline exercise stopped idle listener `13` successfully. GitHub still reported it online. Upstream unregister deliberately refused an online registration, and immediate startup failed with `A runner exists with the same name`. The unit has `Restart=on-success`, so it stayed failed. The queued main job was cancelled and the pilot variable disabled. After the heartbeat expired, explicit CI-unit startup removed the offline row and restored a fresh listener. No Forgerie service was touched. Evidence is [lifecycle-attempt-1.json](../hardware/unzen-github-actions-2026-10-10/lifecycle-attempt-1.json).
+
+Production lifecycle acceptance therefore requires startup recovery, another offline/active-cancellation exercise and a reboot. Read-only boot inspection verified GRUB's default entry points at the accepted system and that loaded/default kernel and initrd paths match. Do not expand registrations or move required checks before remaining acceptance passes.
