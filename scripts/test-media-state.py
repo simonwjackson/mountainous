@@ -142,6 +142,33 @@ class StateTransfer(unittest.TestCase):
             state.verify(expected, actual)
         state.verify(expected, actual, uid_map={uid: uid + 1}, gid_map={gid: gid + 1})
 
+    def test_explicit_mapping_updates_named_default_acl_and_is_idempotent(self):
+        uid, gid = os.getuid() + 10, os.getgid() + 10
+        entries = [(1, 7, 0xffffffff), (2, 4, uid), (4, 5, 0xffffffff),
+                   (8, 4, gid), (16, 5, 0xffffffff), (32, 0, 0xffffffff)]
+        value = struct.pack("<I", 2) + b"".join(struct.pack("<HHI", *entry) for entry in entries)
+        for base in (self.source, self.target):
+            os.setxattr(base / "partial", "system.posix_acl_default", value)
+        expected = state.capture_scope(self.source, ["partial"])
+        for _ in range(2):
+            state.map_scope_acls(self.target, ["partial"], expected,
+                                 {uid: uid + 1}, {gid: gid + 1})
+        state.verify(expected, state.capture_scope(self.target, ["partial"]),
+                     {uid: uid + 1}, {gid: gid + 1})
+
+    def test_unexpected_acl_mapping_is_rejected_before_changes(self):
+        uid, gid = os.getuid() + 10, os.getgid() + 10
+        def acl(user):
+            entries = [(1, 7, 0xffffffff), (2, 4, user), (4, 5, 0xffffffff),
+                       (8, 4, gid), (16, 5, 0xffffffff), (32, 0, 0xffffffff)]
+            return struct.pack("<I", 2) + b"".join(struct.pack("<HHI", *entry) for entry in entries)
+        os.setxattr(self.source / "partial", "system.posix_acl_default", acl(uid))
+        os.setxattr(self.target / "partial", "system.posix_acl_default", acl(uid + 20))
+        expected = state.capture_scope(self.source, ["partial"])
+        with self.assertRaises(state.StateError):
+            state.map_scope_acls(self.target, ["partial"], expected, {uid: uid + 1})
+        self.assertEqual(os.getxattr(self.target / "partial", "system.posix_acl_default"), acl(uid + 20))
+
     def test_hardlink_relationships_are_verified_not_only_contents(self):
         (self.source / "linked-settings").hardlink_to(self.source / "settings.json")
         (self.target / "linked-settings").hardlink_to(self.target / "settings.json")

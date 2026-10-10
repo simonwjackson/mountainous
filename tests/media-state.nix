@@ -10,6 +10,7 @@ let
     cp ${../scripts/media-state} "$out/scripts/media-state"
     cp ${../scripts/media-inventory-target} "$out/scripts/media-inventory-target"
     cp ${../scripts/test-media-state.py} "$out/scripts/test-media-state.py"
+    cp ${../scripts/test-media-native-transfer.py} "$out/scripts/test-media-native-transfer.py"
     cp ${../scripts/test-media-state-ready.py} "$out/scripts/test-media-state-ready.py"
     cp ${../scripts/test-media-nzbget-hold.py} "$out/scripts/test-media-nzbget-hold.py"
     cp ${../scripts/test-media-transmission-hold.py} "$out/scripts/test-media-transmission-hold.py"
@@ -27,13 +28,19 @@ pkgs.testers.runNixOSTest {
       isNormalUser = true;
       uid = 1000;
     };
-    environment.systemPackages = [ pkgs.python3 ];
+    environment.systemPackages = [
+      pkgs.python3
+      pkgs.gnutar
+      pkgs.rsync
+    ];
   };
   testScript = ''
     machine.start()
     machine.wait_for_unit("multi-user.target")
     with subtest("metadata preservation runs as a normal file owner"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-state.py")
+    with subtest("native tar and rsync preserve the numeric ownership and ACL contract"):
+        machine.succeed("python3 ${fixtures}/scripts/test-media-native-transfer.py")
     with subtest("existing-state and ARR processing holds"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-state-ready.py")
     with subtest("pinned NZBGet starts with native processing holds"):

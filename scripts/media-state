@@ -170,19 +170,58 @@ def verify(expected, actual, uid_map=None, gid_map=None):
     if set(left) != set(right):
         raise StateError("file/directory set mismatch")
     for name, original in left.items():
-        mapped = json.loads(json.dumps(original))
-        mapped["uid"] = (uid_map or {}).get(mapped["uid"], mapped["uid"])
-        mapped["gid"] = (gid_map or {}).get(mapped["gid"], mapped["gid"])
-        for attribute in mapped["xattrs"].values():
-            if attribute["kind"] == "posix-acl":
-                for entry in attribute["entries"]:
-                    if entry[0] == 2:  # ACL_USER: named user, not file owner.
-                        entry[2] = (uid_map or {}).get(entry[2], entry[2])
-                    elif entry[0] == 8:  # ACL_GROUP: named group, not file group.
-                        entry[2] = (gid_map or {}).get(entry[2], entry[2])
-        if mapped != right[name]:
+        if mapped_record(original, uid_map, gid_map) != right[name]:
             # Filenames, hashes and credentials stay in the private manifest.
             raise StateError("content, ownership, permission, timestamp, xattr, ACL or link mismatch")
+
+
+def mapped_record(original, uid_map=None, gid_map=None):
+    mapped = json.loads(json.dumps(original))
+    mapped["uid"] = (uid_map or {}).get(mapped["uid"], mapped["uid"])
+    mapped["gid"] = (gid_map or {}).get(mapped["gid"], mapped["gid"])
+    for attribute in mapped["xattrs"].values():
+        if attribute["kind"] == "posix-acl":
+            for entry in attribute["entries"]:
+                if entry[0] == 2:
+                    entry[2] = (uid_map or {}).get(entry[2], entry[2])
+                elif entry[0] == 8:
+                    entry[2] = (gid_map or {}).get(entry[2], entry[2])
+    return mapped
+
+
+def map_scope_acls(base, roots, expected, uid_map=None, gid_map=None):
+    """Complete explicit named-ACL mapping in a private, stopped staging tree.
+
+    Native rsync can leave numeric ACL entries unmapped. Admit every other
+    field before changing ACLs. Accept only the source or requested ACL IDs.
+    """
+    actual = capture_scope(base, roots)
+    if expected.get("format") != 2 or set(expected["entries"]) != set(actual["entries"]):
+        raise StateError("mapped scope does not match the source")
+    changes = []
+    for name, original in expected["entries"].items():
+        wanted = mapped_record(original, uid_map, gid_map)
+        received = json.loads(json.dumps(actual["entries"][name]))
+        for key, attribute in wanted["xattrs"].items():
+            if attribute["kind"] != "posix-acl":
+                continue
+            current = received["xattrs"].get(key)
+            if current not in (original["xattrs"][key], attribute):
+                raise StateError("unexpected named access-control metadata")
+            if current != attribute:
+                changes.append((name, key, attribute["entries"]))
+            received["xattrs"][key] = attribute
+        if wanted != received:
+            raise StateError("mapped scope differs outside named ACL identities")
+    for name, key, entries in changes:
+        path = Path(base) / name
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        try:
+            value = struct.pack("<I", 2) + b"".join(struct.pack("<HHI", *entry) for entry in entries)
+            os.setxattr(descriptor, key, value)
+        finally:
+            os.close(descriptor)
+    verify(expected, capture_scope(base, roots), uid_map, gid_map)
 
 
 def save(manifest, destination):
