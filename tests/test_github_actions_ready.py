@@ -2,7 +2,11 @@
 #! nix-shell -i python3 -p python3
 """Readiness must describe the actual local listener, not a stale GitHub row."""
 import importlib.util
+import json
 import os
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -17,6 +21,52 @@ class ReadinessTests(unittest.TestCase):
         self.service = {"ActiveState": "active", "MainPID": "123"}
         self.registration = {"agentName": "unzen-forgerie", "agentId": 14}
         self.remote = {"total_count": 1, "runners": [{"id": 14, "name": "unzen-forgerie", "status": "online", "busy": False}]}
+
+    def test_actual_registration_file_with_or_without_utf8_bom(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            command = root / "listener-properties.py"
+            command.write_text('#!/usr/bin/env nix-shell\n#! nix-shell -i python3 -p python3\nprint("ActiveState=active\\nMainPID=123\\nNRestarts=0")\n')
+            registration = root / ".runner"
+            content = b'{"agentName":"unzen-forgerie","agentId":14}'
+            for prefix in [b"", b"\xef\xbb\xbf"]:
+                with self.subTest(prefix=prefix):
+                    registration.write_bytes(prefix + content)
+                    service, value = ready.listener_state(registration, (sys.executable, str(command)))
+                    self.assertEqual(service["MainPID"], "123")
+                    self.assertEqual(ready.validate_registration(service, value, self.remote)["id"], 14)
+
+    def invoke_cli(self, active):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            properties = root / "listener-properties.py"
+            state = "active" if active else "inactive"
+            properties.write_text(f'#!/usr/bin/env nix-shell\n#! nix-shell -i python3 -p python3\nprint("ActiveState={state}\\nMainPID=123\\nNRestarts=1")\n')
+            registration = root / ".runner"
+            registration.write_bytes(b'\xef\xbb\xbf{"agentName":"unzen-forgerie","agentId":14}')
+            policy = root / "policy.py"
+            policy.write_text('import json\nORG = "forgerie"\ndef installation_token(*args): return "fixture-access"\ndef verify_group(access): return {"id": 3}\ndef request_json(*args): return json.loads(' + repr(json.dumps(self.remote)) + ')\n')
+            harness = root / "ready-cli.py"
+            harness.write_text(
+                '#!/usr/bin/env nix-shell\n#! nix-shell -i python3 -p python3\n'
+                'import functools, importlib.util, sys\nfrom pathlib import Path\n'
+                f'spec = importlib.util.spec_from_file_location("ready", {str(source)!r})\n'
+                'ready = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(ready)\n'
+                f'ready.listener_state = functools.partial(ready.listener_state, Path({str(registration)!r}), (sys.executable, {str(properties)!r}))\n'
+                'sys.exit(ready.main())\n'
+            )
+            return subprocess.run([sys.executable, str(harness), "--policy-script", str(policy), "--app-id", "1", "--private-key", "unused", "--timeout", "1"], capture_output=True, text=True, timeout=10)
+
+    def test_cli_accepts_actual_bom_registration(self):
+        result = self.invoke_cli(True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["runner_id"], 14)
+
+    def test_cli_deadline_preserves_last_readiness_failure(self):
+        result = self.invoke_cli(False)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("no active listener", json.loads(result.stderr)["reason"])
 
     def test_online_exact_registration_is_ready(self):
         self.assertEqual(ready.validate_registration(self.service, self.registration, self.remote)["id"], 14)

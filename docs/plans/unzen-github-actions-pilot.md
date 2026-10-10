@@ -103,6 +103,8 @@ The root-only readiness command returns JSON and a nonzero exit after its bounde
 sudo /etc/github-actions/ready --timeout 180
 ```
 
-All three clean-source Nix checks passed. The VM proved automatic recovery after a controlled startup error, no restart after explicit stop, and continued refusal of invalid credentials. Eight readiness tests cover stopped listeners, stale registrations, missing/extra runners and an online busy listener. Deployment of this hardening is pending.
+All three clean-source Nix checks passed. The VM proved automatic recovery after a controlled startup error, no restart after explicit stop, and continued refusal of invalid credentials. Eleven readiness tests cover stopped listeners, stale registrations, missing/extra runners, an online busy listener, the actual file encoding and bounded CLI failure.
+
+The first physical hardening test proved automatic startup recovery after one failed registration attempt. The listener recovered without replacing an online row. However, the readiness command rejected the SDK's UTF-8 byte-order mark in `.runner`. The guarded test restored the accepted system and default profile. Physical health passed after rollback. A real-file regression reproduced the same JSON error before the decoder fix. The CLI now accepts the SDK encoding and retains its last error when its deadline expires. Deployment of this correction is pending.
 
 Production lifecycle acceptance still requires another physical offline/active-cancellation exercise and a reboot. Read-only boot inspection verified GRUB's default entry points at the accepted system and that loaded/default kernel and initrd paths match. Do not expand registrations or move required checks before remaining acceptance passes.

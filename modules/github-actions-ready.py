@@ -36,15 +36,15 @@ def validate_registration(service, registration, remote):
     return runner
 
 
-def listener_state():
+def listener_state(registration_path=REGISTRATION, command=("systemctl",)):
     result = subprocess.run(
-        ["systemctl", "show", UNIT, "-p", "ActiveState,MainPID,NRestarts"],
+        [*command, "show", UNIT, "-p", "ActiveState,MainPID,NRestarts"],
         capture_output=True, text=True, check=True, timeout=10,
     )
     service = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
     if service.get("ActiveState") != "active":
         raise ValueError("Runner service has no active listener; startup errors remain in the journal")
-    return service, json.loads(REGISTRATION.read_text())
+    return service, json.loads(registration_path.read_text(encoding="utf-8-sig"))
 
 
 def main():
@@ -90,8 +90,7 @@ def main():
         if remaining > 0:
             try:
                 time.sleep(min(5, remaining))
-            except TimeoutError as error:
-                reason = str(error)
+            except TimeoutError:
                 break
     signal.alarm(0)
     print(json.dumps({"ready": False, "unit": UNIT, "reason": reason}), file=sys.stderr)

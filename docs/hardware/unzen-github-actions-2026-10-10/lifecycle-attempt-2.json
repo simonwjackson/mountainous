@@ -1,0 +1,40 @@
+{
+  "status": "hardening-test-rolled-back",
+  "reviewed_source": "70f70b02dbdc1c7bef02a843e5d1754b703c40e3",
+  "candidate": "/nix/store/0xf5cicwz3hpap3xy9baq67kf2qpxlhm-nixos-system-unzen-26.11.20260923.4975466",
+  "restored_current_and_default": "/nix/store/13vv0nisbl20ia16bgj0cy97adwn7qgv-nixos-system-unzen-26.11.20260923.4975466",
+  "startup_recovery": {
+    "initial_failure": "A runner exists with the same name",
+    "automatic_restart_count": 1,
+    "outcome": "Listener recovered after the old registration became offline",
+    "online_registration_forcibly_replaced": false
+  },
+  "readiness_failure": {
+    "local_registration": "/var/lib/github-runner/forgerie/.runner",
+    "error": "Unexpected UTF-8 BOM (decode using utf-8-sig)",
+    "effect": "Ready listener was rejected until the guard deadline; automatic system rollback followed"
+  },
+  "correction_verification": {
+    "real_file_regression": "Failed with the same BOM error before correction; passed after correction",
+    "readiness_tests_passed": 11,
+    "physical_standalone_readiness": {
+      "ready": true,
+      "runner_id": 16,
+      "busy": false,
+      "group_id": 3
+    },
+    "corrected_system_activated": false
+  },
+  "post_rollback_health": {
+    "passed": true,
+    "failed_units": [],
+    "cpu_equivalents": 4,
+    "memory_high_bytes": 12884901888,
+    "memory_max_bytes": 17179869184,
+    "pids_max": 2048,
+    "package_power_limits_watts": [95, 95],
+    "app_key_mode": "0400"
+  },
+  "zao_application_services_changed": false,
+  "reboot_performed": false
+}
