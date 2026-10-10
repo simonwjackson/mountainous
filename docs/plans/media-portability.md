@@ -4,7 +4,7 @@
 
 The operator approved [controlled moves and local staging](../decisions/media-portability.md). The operator also approved `migrate-preserving-state`: implementation, tests, deployment, source service stops, protected application/work-file transfers, and paused target startup verification. Downtime is acceptable. Expired service enrollment can be repaired without deleting unrelated identities.
 
-Implementation is in progress. Unzen runs the startup-gated media system through temporary `switch-to-configuration test` activation. All application and proxy ready markers remain absent. No source ownership handoff or production-state transfer has occurred. Preserve Yari's original files for rollback. Stop and ask before a reset, incompatible application upgrade, credential replacement, or expanded scope.
+Implementation is in progress. Unzen runs the startup-gated media system through temporary `switch-to-configuration test` activation. All target application and proxy ready markers remain absent. Yari's five applications, five proxies, and VPN are now stopped. Persistent source startup gates prevent another owner. The stopped capture and protected work-file prefetch are in progress; target ownership has not started. Preserve Yari's original files for rollback. Stop and ask before a reset, incompatible application upgrade, credential replacement, or expanded scope.
 
 The initial application scope is Sonarr, Radarr, Prowlarr, NZBGet, and Transmission. Runtime requirements include service identities, protected credentials, completed-file access, downloader VPN isolation, and library staging/movement. Jellyfin and long-term media remain on Zao. Messaging and Syncthing remain excluded.
 
@@ -46,7 +46,7 @@ Private diagnostic logs remain outside Git. Do not include credentials, private 
 
 ## Implementation checkpoint
 
-The application packages preserve all five deployed releases. State capture, existing-state startup validation, placement-generated storage, a separate OAuth media proxy, and disposable NFS/WireGuard fixtures are implemented. Target units are activated with startup gates closed; Yari remains the service owner.
+The application packages preserve all five deployed releases. State capture, existing-state startup validation, placement-generated storage, a separate OAuth media proxy, and disposable NFS/WireGuard fixtures are implemented. Target units are activated with startup gates closed. Source owners are stopped and gated; target ownership remains closed during capture and transfer.
 
 Paused verification uses native Transmission startup pause and disables its watch directory. ARR target copies disable download clients, indexer searches/RSS, and completed-download handling. Prowlarr target copies also disable application sync so it cannot re-enable ARR indexers. Protected receipts retain the exact original flags. Client credentials and application users remain unchanged.
 
@@ -74,9 +74,15 @@ Actual source ARR copies also passed held native startup on Unzen. A private net
 
 A fresh read-only transfer-scope probe found 716 staging files containing 142,216,699,883 bytes. It found no hardlinked files in the selected scope. The only symlink is the expected `/var/lib/prowlarr` link to `/var/lib/private/prowlarr`. The physical private directory must accompany that link. No process outside NZBGet, Transmission, and Prowlarr occupied the source VPN namespace during that probe. This does not replace the stopped-writer check.
 
-Existing OAuth credentials passed read-only admission for five unique authorized service registrations. The protected target receipt is `/var/lib/media-migration/deployment/identity-before-bcd0c0ab9baa4ee6a81c41637ef65584.json`. No enrollment or device deletion occurred. The source-native repaired proxy runtime also passed AArch64 ELF validation, static-interpreter admission, and harmless help execution on Yari. Its protected path is `/var/lib/media-migration/rollback-runtime/tsnet-proxy`, with SHA-256 `c4c8da856ca38dff2fbba182e944accd753e48f7e9c424db47588da6a1a97d5e`. This proves native execution, not rollback identity recovery.
+Existing OAuth credentials passed read-only admission for five unique authorized service registrations. The protected target receipt is `/var/lib/media-migration/deployment/identity-before-bcd0c0ab9baa4ee6a81c41637ef65584.json`. No enrollment or device deletion occurred. The source-native repaired proxy runtime also passed AArch64 ELF validation, static-interpreter admission, and harmless help execution on Yari. Its protected path is `/var/lib/media-migration/rollback-runtime/tsnet-proxy`, with SHA-256 `c4c8da856ca38dff2fbba182e944accd753e48f7e9c424db47588da6a1a97d5e`. The executable-only deployment at `/opt/media-migration/rollback-runtime/tsnet-proxy` also passes help execution as source UID 995 and GID 992 with no supplementary groups. Initial private directory modes blocked that user. Explicit mode 0755 on the newly created code directories fixes access; credential directories retain mode 0700. This proves native execution, not rollback identity recovery.
 
-Identity recovery, transfer orchestration, current-compatible rollback, and final production-unit startup admission still need verification. Do not activate production on the strength of package or partial VM checks alone.
+Read-only source control admission verified the original ARM system, eleven owner units, and exactly three VPN processes belonging only to the moved services. A controlled-move dry run also verified target inactivity, absent ready markers, capacity reserve, operator identity, queue safety, and native source commands. A redundant NZBGet username override is removed only when the saved configuration supplies the exact same value. Other credential overrides fail closed.
+
+The approved stop phase now has all eleven source owners inactive with zero main/control PIDs. `/var/lib/media-migration/retired` closes persistent source drop-ins under `/etc/systemd/system.control/`. Source media mover units and timers are also stopped and gated. The read-only owner checkpoint is `/tmp/media-live-move-checkpoint-4e41fe28e92a4c57b579d331eada90df.json`. Both hosts had zero active media owners at that checkpoint. Source files remain intact. The native stopped capture is still running.
+
+Work-file prefetch uses two pinned, encrypted SSH connections and a private target tree under `/var/lib/media-migration/prestage/`. It does not start a service identity, mutate production application paths, or establish a consistent snapshot. Final admission must reconcile the stopped source scope and verify every byte and metadata field before startup.
+
+Identity recovery, complete transfer admission, current-compatible rollback, and final production-unit startup admission still need verification. Do not activate production on the strength of package or partial VM checks alone.
 
 ## Existing pattern to reuse
 
