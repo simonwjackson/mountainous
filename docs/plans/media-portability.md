@@ -4,7 +4,9 @@
 
 The operator approved [controlled moves and local staging](../decisions/media-portability.md). The operator also approved `migrate-preserving-state`: implementation, tests, deployment, source service stops, protected application/work-file transfers, and paused target startup verification. Downtime is acceptable. Expired service enrollment can be repaired without deleting unrelated identities.
 
-The controlled move is in progress. All five target applications and original stable HTTPS endpoints are restored and held. Current-compatible source rollback admission passes. Unzen's active and normal system profiles now point to the admitted held system. Boot deployment is blocked because GRUB cannot write `/boot/grub`. Read-only inspection reports the mounted boot/root NVMe device at 0 B with I/O errors. No boot repair, disk reset, formatting, or reboot occurred. Do not treat the normal profile update as completed boot deployment.
+The controlled move now passes held deployment on Unzen. All five applications and original stable HTTPS endpoints pass native admission. Current-compatible source rollback admission passes. Unzen's active system, normal profile, and generated GRUB entry use the admitted held system. After operator storage recovery, the original boot mount and boot deployment pass.
+
+Full SHA-256 admission passes for all 716 staging files and 142,216,699,883 bytes. Downloads, imports, scanning, post-processing, and Prowlarr sync remain held. No processing resumption or additional reboot occurred. Successful boot installation does not prove a subsequent boot.
 
 Yari's five applications, five proxies, and VPN remain stopped. Persistent source startup gates prevent another owner. Current-compatible rollback admission now passes for all 13 state and staging roots. The original native ARM applications and saved identities also pass on private copies of the newest captured target state. These tests do not execute a live source rollback. Source production files and units remain unchanged.
 
@@ -251,7 +253,7 @@ Protected receipts below `/var/lib/media-migration` include:
 
 Target restoration uses its current production state. It does not replay original publication. Saved readiness bytes and metadata come from the newest capture.
 
-## Restored held runtime and boot deployment blocker
+## Earlier restored runtime and boot deployment failure
 
 Actual ARR restoration passes original versions, users, keys, connections, and selected counts. All 30 schedules remain held. Both actual downloader queues pass retained-state and native-pause admission. Repeated actual VPN restart recovery restores Prowlarr, NZBGet, and Transmission automatically. All five actual stable HTTPS endpoints then pass again without identity or credential replacement. Source retirement remains closed.
 
@@ -271,4 +273,35 @@ Protected receipts below `/var/lib/media-migration` include:
 - Boot read-only inspection: `boot-read-only-diagnostic/10da0da7a8bd4e1eb312602420ff7ee6/admission.json`.
 - Read-only FAT/firmware inspection: `boot-read-only-diagnostic/c4ffd8870ffb4317b2381cb14a08a4e1/admission.json`.
 
-Source original files, newest protected recovery state, and source retirement gates remain retained. Processing remains held. Boot/controller recovery requires a separate decision because the unavailable device also contains root filesystem data. Stable endpoint success does not resolve this boot or storage risk.
+At this checkpoint, source original files, protected recovery state, and source retirement gates remained retained. Processing remained held. Boot deployment remained incomplete because the unavailable device also contained root filesystem data. Stable endpoint success did not resolve that boot or storage risk.
+
+## Held completion after operator storage recovery
+
+The operator reported storage recovery and requested continued deployment. The same boot ID remained active. The NVMe controller reported `live`, and its disk reported 953.9 GiB rather than 0 B. The original declared `/boot` mount was inactive. No controller reset, formatting, filesystem repair, or reboot occurred during this continuation.
+
+A read-only FAT scan counted 363 boot files and returned status 1. Its dirty flag remained set after the earlier I/O failure. The primary boot sector differed from its backup only at byte 65, the dirty flag. Both boot signatures passed, and no file-chain or cluster error appeared. These observations do not establish structural corruption or prove permanent hardware recovery.
+
+Retained a protected 1 GiB image of the original ESP before mounting it. Started only the original declared `boot.mount`. The restored VFAT mount exposed its existing GRUB files. Previous failure evidence and all original recovery copies remain retained.
+
+The exact admitted system passed `switch-to-configuration switch`, including bootloader installation. Actual primary and secondary GRUB configuration files refer to its `init`. The active system and normal profile retain the same admitted system. The SSH, Tailscale, and runner baseline services remain active. The system GC root remains present. The boot ID remains unchanged, so a later boot is not part of this admission.
+
+Full post-recovery SHA-256 admission read every retained staging file. All 716 files and 142,216,699,883 bytes matched the newest captured target scope. Numeric owners, groups, and modes also matched. No file changed, and the admission wrote no staging data or metadata.
+
+After durable deployment, an actual VPN restart restored Prowlarr, NZBGet, and Transmission without manual application start commands. All five native APIs passed with the original releases, accounts, keys, connections, counts, and queues. All 30 scheduler rows remained held, with no queued or started ARR command during 65 seconds after readiness. The target retained all five original proxy owners throughout this test.
+
+After that restart, all five original stable HTTPS endpoints passed again. Original registrations, owners, keys, tags, and addresses remained unchanged. The VPN handshake, tunnel-only default routes, and actual consumer namespaces passed. Sonarr read 636 TV files, and Radarr read 28 movie files through the mapped views. Neither service wrote library data. Zao ownership and export policy remain unchanged.
+
+The source fence still admits 11 stopped owners and 11 persistent startup gates. Source production files and sealed recovery artifacts remain retained. Processing resumption requires separate approval. Target library-mover integration, historical download recovery, and notification repairs remain separate work. The earlier NVMe failure's cause and permanent hardware health remain unproven. No additional reboot is authorized.
+
+Protected receipts below `/var/lib/media-migration` include:
+
+- Recovered controller and read-only FAT scan: `resumed-deployment-preflight/91f31f7515694ba8b920bdf7c9b8c05e/admission.json`.
+- Original ESP image and declared mount: `recovered-boot-preservation/a8dc0994c2d54c3c9989df0c0bc1b243/admission.json`.
+- Successful normal-profile and boot deployment: `deployment/durable-held-resumed-94d6acec18c44bce882df18c592dc5c7/admission.json`.
+- Actual primary and secondary boot entries and retained recovery: `final-boot-baseline-retention/4f6dddd9cfe64ee1b0fb1e7d7df04030/admission.json`.
+- Full staging SHA-256 admission: `post-recovery-staging-admission/511945c87a954ae9a3d4e6992eb6afb5/admission.json`.
+- Post-deployment VPN restart recovery: `final-durable-vpn-consumer-recovery/2abc8fd622e04517b4ac7fea1ac7d17c/admission.json`.
+- Final stable HTTPS endpoints and identity owners: `final-durable-stable-endpoints/9b4d8386f80541f380a47efb5ac3f114/admission.json`.
+- Final VPN and mapped library reads: `final-held-runtime/f7189002f6824043ab5ef4b984644794/admission.json`.
+
+The 20 state-readiness regression tests pass after deployment. Credentials and raw application diagnostics remain protected. No source cleanup or live source rollback occurred.
