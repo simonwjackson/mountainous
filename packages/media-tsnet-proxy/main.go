@@ -13,14 +13,17 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
+	"tailscale.com/envknob"
 	"tailscale.com/tsnet"
+	"tailscale.com/types/key"
 )
 
-// Enrollment never deletes a device. Saved machine state owns the identity.
+// Enrollment never deletes a device. Saved node state owns the identity.
 // Errors deliberately omit server bodies, credentials and authentication URLs.
 func enrollmentKey(ctx context.Context, client *http.Client, api, id, secret string, tags []string) (string, error) {
 	if id == "" || secret == "" || len(tags) == 0 {
@@ -87,6 +90,77 @@ func credential(path string) (string, error) {
 	return strings.TrimSpace(string(value)), nil
 }
 
+type identityAuthConfig struct {
+	StateDir, LegacyKey, OAuthIDFile, OAuthSecretFile string
+	Tags                                              []string
+	ForceLogin                                        bool
+}
+
+func savedIdentity(directory string) (bool, error) {
+	if directory == "" {
+		return false, nil
+	}
+	path := filepath.Join(directory, "tailscaled.state")
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil || !info.Mode().IsRegular() || info.Size() > 1<<20 {
+		return false, errors.New("saved identity state unavailable")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) > 1<<20 {
+		return false, errors.New("saved identity state unavailable")
+	}
+	var state map[string][]byte
+	if json.Unmarshal(data, &state) != nil || len(state["_current-profile"]) == 0 {
+		return false, errors.New("saved identity profile unavailable")
+	}
+	profileKey := string(state["_current-profile"])
+	if !strings.HasPrefix(profileKey, "profile-") {
+		profileKey = "profile-" + profileKey
+	}
+	// ipn.Prefs names Persist "Config" in its on-disk JSON format.
+	var profile struct {
+		Config *struct {
+			NodeID         string
+			PrivateNodeKey key.NodePrivate
+		}
+	}
+	if json.Unmarshal(state[profileKey], &profile) != nil || profile.Config == nil ||
+		profile.Config.NodeID == "" || profile.Config.PrivateNodeKey.IsZero() {
+		return false, errors.New("saved identity node state unavailable")
+	}
+	return true, nil
+}
+
+func authenticationKey(ctx context.Context, client *http.Client, api string, config identityAuthConfig) (string, error) {
+	saved, err := savedIdentity(config.StateDir)
+	if err != nil {
+		return "", err
+	}
+	if saved {
+		if config.ForceLogin {
+			return "", errors.New("forced login forbidden for a saved identity")
+		}
+		// An auth key can change the owner of an expired node and create a duplicate.
+		// Recover expiry on the original registration instead of enrolling again.
+		return "", nil
+	}
+	if config.OAuthIDFile == "" {
+		return config.LegacyKey, nil
+	}
+	id, err := credential(config.OAuthIDFile)
+	if err != nil {
+		return "", errors.New("OAuth ID unavailable")
+	}
+	secret, err := credential(config.OAuthSecretFile)
+	if err != nil {
+		return "", errors.New("OAuth secret unavailable")
+	}
+	return enrollmentKey(ctx, client, api, id, secret, config.Tags)
+}
+
 func proxyHandler(backend *url.URL) http.Handler {
 	proxy := httputil.NewSingleHostReverseProxy(backend)
 	director := proxy.Director
@@ -134,20 +208,14 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if *oauthID != "" {
-		id, err := credential(*oauthID)
-		if err != nil {
-			log.Fatal("OAuth ID unavailable")
-		}
-		secret, err := credential(*oauthSecret)
-		if err != nil {
-			log.Fatal("OAuth secret unavailable")
-		}
-		*authKey, err = enrollmentKey(ctx, &http.Client{Timeout: 30 * time.Second},
-			"https://api.tailscale.com/api/v2", id, secret, strings.Split(*tags, ","))
-		if err != nil {
-			log.Fatal(err)
-		}
+	*authKey, err = authenticationKey(ctx, &http.Client{Timeout: 30 * time.Second},
+		"https://api.tailscale.com/api/v2", identityAuthConfig{
+			StateDir: *state, LegacyKey: *authKey, OAuthIDFile: *oauthID,
+			OAuthSecretFile: *oauthSecret, Tags: strings.Split(*tags, ","),
+			ForceLogin: envknob.Bool("TSNET_FORCE_LOGIN"),
+		})
+	if err != nil {
+		log.Fatal(err)
 	}
 	srv := &tsnet.Server{
 		Hostname: *hostname, Dir: *state, AuthKey: *authKey,

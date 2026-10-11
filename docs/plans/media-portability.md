@@ -139,7 +139,7 @@ No live service is enabled merely because its configuration evaluates or builds.
 | --- | --- |
 | Split placement | ARR on one host can reach a downloader and its completed files on another host. Client configuration does not require manual reset. |
 | Identity move | The existing service endpoint reaches the target after a controlled handoff. The source cannot run the same identity concurrently. |
-| Enrollment recovery | Expired or absent registration can recover with valid OAuth credentials. Revoked credentials fail without disclosure or unrelated device deletion. |
+| Identity recovery | Recover an expired original registration with its saved node keys and an authorized expiry update. New identities use OAuth enrollment only when no saved identity exists. Corrupt saved state fails closed. No credential disclosure or unrelated device deletion occurs. |
 | State transfer | Application records, client identities, categories, queue/work state, bytes, and access permissions match the approved source snapshot. |
 | VPN failure | Download traffic cannot escape through the ordinary host route when the tunnel fails. |
 | Split VPN placement | The chosen configuration works concurrently on the intended hosts without disrupting source applications. Reuse the existing profile when supported; require a separate profile only if concurrency checks establish that need. |
@@ -170,3 +170,13 @@ Local staging consumes disk on the chosen downloader host. Downloader moves tran
 Remote ARR access depends on the network and correct filesystem permissions. Tagged identity enrollment prevents routine node-key expiry, not credential revocation or network failure. Mutable application-state schemas can limit rollback even when executable profiles roll back successfully.
 
 The current missing completion history and paused downloads are separate recovery work. A portable deployment does not establish that every archive is complete, every old download is importable, or every pending file is disposable.
+
+## Verified checkpoint after the 2026-10-11 reboot
+
+Unzen booted its previous normal profile. All 14 persistent reboot gates survived. The six saved admission receipts were unchanged, and both protected recovery trees were present. Reapplied the admitted temporary configuration with `test` only. The normal boot profile remains unchanged, and every media owner remains stopped.
+
+Native OpenSSL derivation proved that all five original saved node keys and machine keys still match the original registrations. The tagged enrollment test changed their owner and created duplicates. Do not use those duplicates as recovery state.
+
+Disabled expiry on the five verified original registrations through the existing OAuth authorization. Node IDs, keys, owners, tags, and addresses were unchanged. A private copy of the original `tv` identity then served at `100.115.156.31` as source UID/GID `995:992`, without an enrollment credential. The probe stopped, and no production source state changed.
+
+Target publication, native target identity admission, actual application startup, live VPN admission, durable activation, and current-compatible production rollback remain unfinished. Downloads, imports, scanning, post-processing, and Prowlarr sync remain held. The protected checkpoint and control-plane change receipts remain under `/var/lib/media-migration`.

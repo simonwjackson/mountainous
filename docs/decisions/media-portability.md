@@ -20,6 +20,16 @@ The cost is an additional filesystem layer on each host with Sonarr or Radarr. R
 | Local staging keeps downloading and unpacking on the downloader host's disk. | Shared staging avoids copying work files when compute moves. | Downloader moves consume transfer time and bandwidth. Remote ARR access needs managed storage access. |
 | Stable service endpoints work across host placement. | Local-only application connections assume co-location. | Cross-host network failures can interrupt imports. |
 
-Service identities need OAuth-backed tagged enrollment with routine node-key expiry disabled. Cairn's existing host registration provides a pattern, not an implemented replacement for the legacy service proxies. OAuth credentials remain revocable.
+New service identities use OAuth-backed tagged enrollment with routine node-key expiry disabled. A controlled move retains the existing node ID, keys, owner, and addresses. Do not enroll a saved identity again. OAuth credentials remain revocable.
+
+## Saved identities take precedence over enrollment
+
+The five original media registrations were user-owned and had expired keys. A native recovery test with a tagged OAuth auth key created five duplicate registrations. It retained each machine key but changed the node ID, node key, owner, and address. Retaining a machine key alone does not prove identity recovery.
+
+Read the saved node state before reading enrollment credentials. Tailscale stores this state in the `Config` field of the current profile. With valid saved node state, supply no auth key. Reject corrupt, incomplete, or symlinked saved state before contacting the enrollment API. Reject forced login for a saved identity.
+
+Recover an expired original registration with a verified, narrowly scoped expiry update. Do not replace its keys, retag it, delete it, or use a duplicate. Native admission must prove the original stable address before production startup.
+
+The cost is that existing service identities retain their original owner. The runtime cannot repair expiry without an authorized control-plane action. Disabling expiry also removes periodic reauthentication for those five keys. A later ownership change needs separate approval and identity-preservation admission.
 
 Approval of this design does not authorize live cutover, bulk data transfer, credential replacement, download resumption, forced imports, or deletion of existing state or media. See the [implementation and acceptance plan](../plans/media-portability.md).
