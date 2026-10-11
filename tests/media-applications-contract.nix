@@ -1,42 +1,12 @@
-# Evaluate the real Unzen config extended with the gated application layer.
+# The declared Unzen placement preserves releases and requires held startup gates.
 let
   flake = builtins.getFlake (toString ../.);
-  inputs = flake.inputs // {
-    self = flake;
-  };
-  module =
-    (import ../modules/media-applications.nix { inherit inputs; }).nixos.modules.media-applications;
-  runtime = (import ../modules/media-runtime.nix { }).nixos.modules.media-runtime;
-  identities =
-    (import ../modules/media-identities.nix { inherit inputs; }).nixos.modules.media-identities;
-  target =
-    (flake.nixosConfigurations.unzen.extendModules {
-      modules = [
-        module
-        runtime
-        identities
-        {
-          mountainous.features = {
-            media-applications = {
-              enable = true;
-              mediaGid = 390;
-            };
-            media-runtime.enable = true;
-            media-identities.enable = true;
-          };
-        }
-      ];
-    }).config;
+  target = flake.nixosConfigurations.unzen.config;
   split =
     (flake.nixosConfigurations.unzen.extendModules {
       modules = [
-        module
         {
-          mountainous.features.media-applications = {
-            enable = true;
-            mediaGid = 390;
-            placement.sonarr = "other-host";
-          };
+          mountainous.features.media-applications.placement.sonarr = "other-host";
         }
       ];
     }).config;
@@ -86,7 +56,17 @@ assert
   target.fileSystems."/srv/range/media/tv".device == "/srv/basin/media/tv:/srv/media-library-view/tv";
 assert !split.services.sonarr.enable;
 assert split.services.radarr.enable;
-assert !flake.nixosConfigurations.unzen.config.services.sonarr.enable;
+assert builtins.all (name: target.services.${name}.enable) apps;
+assert target.mountainous.features.media-applications.processing == "held";
+assert builtins.all (
+  name:
+  target.systemd.services."tsnet-proxy-${name}".unitConfig.ConditionPathExists
+  == "/var/lib/media-migration/ready/${name}"
+) apps;
+assert builtins.elem "/var/lib/media-migration/ready/vpn"
+  target.systemd.services.media-vpn.unitConfig.ConditionPathExists;
+assert builtins.elem "--paused" target.services.transmission.extraFlags;
+assert builtins.elem "--no-watch-dir" target.services.transmission.extraFlags;
 {
   status = "pass";
   targetDerivation = target.system.build.toplevel.drvPath;
@@ -94,7 +74,8 @@ assert !flake.nixosConfigurations.unzen.config.services.sonarr.enable;
   requiresExistingState = true;
   transmissionSettingsAreNotRegenerated = true;
   independentPlacementEvaluates = true;
-  productionStillDisabled = true;
+  productionStartupGated = true;
+  productionProcessingHeld = true;
   clientMappedLibraryEvaluates = true;
   storedLibraryOwnershipChangesDenied = true;
 }

@@ -18,6 +18,10 @@
     layers = [
       "base"
       "server"
+      "media-applications"
+      "media-runtime"
+      "media-identities"
+      "media-placement-unzen"
     ];
 
     module =
