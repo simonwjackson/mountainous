@@ -4,9 +4,9 @@
 
 The operator approved [controlled moves and local staging](../decisions/media-portability.md). The operator also approved `migrate-preserving-state`: implementation, tests, deployment, source service stops, protected application/work-file transfers, and paused target startup verification. Downtime is acceptable. Expired service enrollment can be repaired without deleting unrelated identities.
 
-The controlled move is in progress. Unzen runs the startup-gated media system through temporary `switch-to-configuration test` activation. All target application and proxy ready markers remain absent.
+The controlled move is in progress. All five target applications and original stable HTTPS endpoints are restored and held. Current-compatible source rollback admission passes. Unzen's active and normal system profiles now point to the admitted held system. Boot deployment is blocked because GRUB cannot write `/boot/grub`. Read-only inspection reports the mounted boot/root NVMe device at 0 B with I/O errors. No boot repair, disk reset, formatting, or reboot occurred. Do not treat the normal profile update as completed boot deployment.
 
-Yari's five applications, five proxies, and VPN remain stopped. Persistent source startup gates prevent another owner. The complete stopped transfer passes original-scope and ownership-map admission. The private candidate also passes native ARR scheduler-hold admission. Production publication and target ownership remain unfinished.
+Yari's five applications, five proxies, and VPN remain stopped. Persistent source startup gates prevent another owner. Current-compatible rollback admission now passes for all 13 state and staging roots. The original native ARM applications and saved identities also pass on private copies of the newest captured target state. These tests do not execute a live source rollback. Source production files and units remain unchanged.
 
 Preserve Yari's original files for rollback. Stop and ask before a reset, incompatible application upgrade, credential replacement, or expanded scope.
 
@@ -229,4 +229,46 @@ Incorporated all five admitted native target identity states. Each retained the 
 
 Opened only the five proxy gates after another source-owner fence check. All five actual stable DNS names and original addresses passed native HTTPS API admission. Accounts, API keys, connections, pinned releases, queues, and selected record counts remained unchanged. Original identity owners, keys, tags, addresses, and registrations remained unchanged. No registration was added or removed. Both downloaders remained paused. All 30 scheduled rows remained held, with no queued or started ARR commands during a further 65 seconds. Protected receipt: `/var/lib/media-migration/live-endpoint-handoff/fdf82fc41e404d5ebabb8089badbd73f/admission.json`.
 
-The target applications and stable endpoints now run held. Source retirement gates remain closed. The target normal profile remains unchanged. Durable normal-profile activation and complete current-compatible rollback remain unfinished. Downloads, imports, scanning, post-processing, and sync remain held.
+These endpoints passed before the current rollback capture. The capture deliberately stopped and fenced target application and proxy owners. Historical endpoint receipts do not establish current running state. The normal profile remains unchanged until restoration and durable activation pass. Downloads, imports, scanning, post-processing, and sync remain held.
+
+## Current-compatible source rollback admission
+
+Captured the newest stopped target state after actual endpoint admission. Full contents and metadata passed for all 13 approved roots. A protected backup retains the 12 service-state roots. Full actual source staging hashes and metadata then passed comparison against the newest inverse-mapped target scope. No files, bytes, ownership, modes, ACLs, or links differed. Seven directory modification times differed. A protected overlay records those times without changing original source staging.
+
+The complete inverse-mapped source scope passed with the newest service state and staging overlay. Original native ARM applications passed on private working copies. All selected users, keys, connections, counts, queues, and partial-byte totals remained unchanged. All 30 schedules remained held. The applications had no public network route. Original source prestarts did not run. Private namespace parents require mode 0755 so service UIDs can reach read-only staging. NZBGet also requires its declared source-unit options and a private writable queue copy. Missing options and inaccessible private parents caused earlier proof failures. The corrected proof retained the same queue contract.
+
+All five newest saved identity states also passed native ARM HTTPS admission as UID/GID 995:992. Target identity owners remained stopped during the probes. Original registrations, owners, addresses, and keys remained unchanged. All probes stopped. No enrollment credentials were delivered. This proves private identity recovery, not live source rollback.
+
+Sealed source startup artifacts pass native systemd syntax verification. They exclude legacy application bootstrap prestarts and the library ownership normalizer. They retain source numeric identities, native processing holds, existing-state checks, and the admitted saved-identity proxy. The source interpreter has a GC root. The existing source units and retirement gates remain unchanged. Live rollback requires stopping and fencing target owners first, publishing the newest admitted source state and staging overlay, then applying these sealed artifacts. Never restart stale original source state or invoke legacy prestarts blindly.
+
+Protected receipts below `/var/lib/media-migration` include:
+
+- Target capture: `current-compatible-rollback-capture/142b8ac4d1a243dca54dd747556602ae/admission.json`.
+- Full current source scope: `current-compatible-source-rollback/ebc8041d9255444d8bd471892722fff7/full-state-admission.json`.
+- Native ARM applications: `current-native-source-app-admission/7edfa9fa5633445cae1ce5ff511e8b3f/admission.json`.
+- Native ARM identities: `current-source-native-identities-b6f7bd8e39e548a79d0058cb8c077ac3/admission.json`.
+- Sealed source startup: `current-compatible-source-rollback/ebc8041d9255444d8bd471892722fff7/safe-startup-admission.json`.
+
+Target restoration uses its current production state. It does not replay original publication. Saved readiness bytes and metadata come from the newest capture.
+
+## Restored held runtime and boot deployment blocker
+
+Actual ARR restoration passes original versions, users, keys, connections, and selected counts. All 30 schedules remain held. Both actual downloader queues pass retained-state and native-pause admission. Repeated actual VPN restart recovery restores Prowlarr, NZBGet, and Transmission automatically. All five actual stable HTTPS endpoints then pass again without identity or credential replacement. Source retirement remains closed.
+
+The current flake evaluates to the exact admitted active system: `/nix/store/z3h24xzx6y002383as684cikyibrlcmj-nixos-system-unzen-26.11.20260923.4975466`. Installed that system as the normal profile. Removed only the exact temporary target reboot marker and its remaining undefined legacy-unit gate. Persistent application/VPN readiness and declared processing holds remain. The bootloader stage of `switch-to-configuration switch` failed before complete deployment. Its exact signal is `mkdir /boot/grub: Input/output error`. All ten target application and proxy units remain active.
+
+Read-only inspection identifies `/boot` as VFAT on `/dev/nvme2n1p1`. GRUB, EFI, and loader directories are not accessible through this mount. `fsck.fat -n` also reports I/O failure. The current firmware boot entry references that partition. `lsblk` reports the parent `nvme2n1` at 0 B. Its second partition belongs to the mounted bcachefs root filesystem. Kernel logs report failed FAT directory reads. The cause of the NVMe loss and the root filesystem's current redundancy are not established. Do not repair FAT or reset a controller on this evidence alone. Do not reboot Unzen.
+
+Final read-only runtime admission still passes the native VPN handshake, tunnel-only IPv4 default routes, and actual consumer namespace membership. Sonarr UID 274 and Radarr UID 275, both using GID 390, read all 636 TV and 28 movie files through the actual mapped views. No library or staging writes occurred. Zao ownership and export policy remain unchanged.
+
+Protected receipts below `/var/lib/media-migration` include:
+
+- Restored ARR: `live-held-arr/7c8c6f510e3040fdaf57411371c1812e/admission.json`.
+- Repeated namespace recovery: `live-vpn-consumer-recovery/44ab46b1e4db470b8eba7ff4a01ebd4f/admission.json`.
+- Restored actual endpoints: `live-endpoint-handoff/92fe883064ca4bab894596c28338b5b5/admission.json`.
+- Partial profile deployment logs: `deployment/durable-held-current-2d6792467f6f4a4984ddad0f5310dfce/`.
+- Final VPN/library reads: `final-held-runtime/e6c8c78439934c8aa9e88a1045b0209d/admission.json`.
+- Boot read-only inspection: `boot-read-only-diagnostic/10da0da7a8bd4e1eb312602420ff7ee6/admission.json`.
+- Read-only FAT/firmware inspection: `boot-read-only-diagnostic/c4ffd8870ffb4317b2381cb14a08a4e1/admission.json`.
+
+Source original files, newest protected recovery state, and source retirement gates remain retained. Processing remains held. Boot/controller recovery requires a separate decision because the unavailable device also contains root filesystem data. Stable endpoint success does not resolve this boot or storage risk.
