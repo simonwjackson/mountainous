@@ -10,6 +10,14 @@ let
         }
       ];
     }).config;
+  remoteDownloader =
+    (flake.nixosConfigurations.unzen.extendModules {
+      modules = [
+        {
+          mountainous.features.media-applications.placement.nzbget = "other-downloader-host";
+        }
+      ];
+    }).config;
   apps = [
     "sonarr"
     "radarr"
@@ -58,6 +66,16 @@ assert !split.services.sonarr.enable;
 assert split.services.radarr.enable;
 assert builtins.all (name: target.services.${name}.enable) apps;
 assert target.mountainous.features.media-applications.processing == "held";
+assert
+  !builtins.elem "srv-basin-downloads-usenet-completed.mount" target.systemd.services.media-storage-ready.bindsTo;
+assert
+  !builtins.elem "srv-basin-downloads-torrents-completed.mount" target.systemd.services.media-storage-ready.bindsTo;
+assert builtins.elem "/srv/basin/downloads/usenet/completed"
+  target.systemd.services.media-storage-ready.unitConfig.RequiresMountsFor;
+assert builtins.elem "srv-basin-downloads-usenet-completed.mount"
+  remoteDownloader.systemd.services.media-storage-ready.bindsTo;
+assert builtins.elem "net-mountainous-zao-media.mount"
+  target.systemd.services.media-storage-ready.bindsTo;
 assert builtins.all (
   name:
   target.systemd.services."tsnet-proxy-${name}".unitConfig.ConditionPathExists
@@ -74,6 +92,8 @@ assert builtins.elem "--no-watch-dir" target.services.transmission.extraFlags;
   requiresExistingState = true;
   transmissionSettingsAreNotRegenerated = true;
   independentPlacementEvaluates = true;
+  localStagingUsesFilesystemDependencies = true;
+  remoteStagingRetainsMountLossFence = true;
   productionStartupGated = true;
   productionProcessingHeld = true;
   clientMappedLibraryEvaluates = true;

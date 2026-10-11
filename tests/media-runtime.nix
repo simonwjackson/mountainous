@@ -22,7 +22,7 @@ let
       virtualisation.fileSystems = import ../lib/media-storage-layout.nix {
         inherit lib;
         host = config.networking.hostName;
-        placement = assignments;
+        placement = config.mountainous.features.media-applications.placement;
         inherit (config.mountainous.features.media-runtime)
           libraryHost
           libraryServer
@@ -54,6 +54,7 @@ let
           "torrents.hummingbird-lake.ts.net"
         ];
         "192.168.1.3" = [ "zao.hummingbird-lake.ts.net" ];
+        "192.168.1.4" = [ "zcolocated.hummingbird-lake.ts.net" ];
       };
       virtualisation.memorySize = 1024;
       # Sparse test disks must satisfy the real mergerfs 10G reserve.
@@ -92,6 +93,22 @@ pkgs.testers.runNixOSTest {
           };
         };
       };
+    zcolocated =
+      { config, lib, ... }:
+      {
+        imports = [ common ];
+        mountainous.features.media-applications.placement = lib.mkForce (
+          lib.genAttrs (builtins.attrNames assignments) (_: "zcolocated")
+        );
+        mountainous.features.media-runtime.libraryHost = "zcolocated";
+        systemd.services.media-local-staging-consumer-fixture = {
+          inherit (config.systemd.services.radarr) requires after bindsTo;
+          serviceConfig = {
+            User = "radarr";
+            ExecStart = "${pkgs.coreutils}/bin/sleep infinity";
+          };
+        };
+      };
     zao =
       { ... }:
       {
@@ -118,7 +135,7 @@ pkgs.testers.runNixOSTest {
     import shlex
     start_all()
     with subtest("boot has no ordering cycles or discarded dependency jobs"):
-        for machine in (arr, unzen, zao):
+        for machine in (arr, unzen, zao, zcolocated):
             machine.wait_for_unit("multi-user.target")
             machine.fail("journalctl -b --no-pager | grep -E 'Found ordering cycle|deleted to break ordering cycle'")
     zao.wait_for_unit("nfs-server.service")
@@ -165,6 +182,24 @@ pkgs.testers.runNixOSTest {
         assert zao.succeed("sha256sum /srv/fixture-library/tv/existing-show/season/old-episode") == original
         zao.succeed("test -f /srv/fixture-library/tv/long-term-library-write")
         unzen.succeed("test -f /srv/basin/media/tv/remote-library-write")
+
+    with subtest("colocated ARR uses ordinary local staging and real library mount fences"):
+        zcolocated.succeed("touch /srv/basin/downloads/usenet/completed/local-finished")
+        zcolocated.succeed("systemctl start media-storage-ready.service media-local-staging-consumer-fixture.service")
+        zcolocated.wait_for_unit("media-local-staging-consumer-fixture.service")
+        zcolocated.fail("mountpoint -q /srv/basin/downloads/usenet/completed")
+        zcolocated.fail("mountpoint -q /srv/basin/downloads/torrents/completed")
+        zcolocated.succeed("runuser -u radarr -- test -r /srv/basin/downloads/usenet/completed/local-finished")
+        dependencies = zcolocated.succeed("systemctl show media-storage-ready.service -p BindsTo --value").split()
+        assert "srv-basin-downloads-usenet-completed.mount" not in dependencies
+        assert "srv-basin-downloads-torrents-completed.mount" not in dependencies
+        assert "net-mountainous-zao-media.mount" in dependencies
+        view_unit = zcolocated.succeed("systemd-escape --path --suffix=mount /srv/media-library-view/movies").strip()
+        zcolocated.succeed("systemctl stop " + shlex.quote(view_unit))
+        zcolocated.wait_until_fails("systemctl is-active --quiet media-local-staging-consumer-fixture.service")
+        zcolocated.fail("systemctl is-active --quiet media-storage-ready.service")
+        zcolocated.succeed("systemctl start media-storage-ready.service media-local-staging-consumer-fixture.service")
+        zcolocated.wait_for_unit("media-local-staging-consumer-fixture.service")
 
     with subtest("mixed existing library owners permit timestamp-preserving pooled writes without relabeling"):
         zao.succeed("install -d -o 991 -g media -m 2775 /srv/fixture-library/tv/legacy-writer-owned/season")

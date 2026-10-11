@@ -198,7 +198,11 @@
             media-storage-ready = {
               after = [ "local-fs.target" ];
               unitConfig.RequiresMountsFor = mandatory;
-              bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") mandatory;
+              # Local staging is an ordinary directory. RequiresMountsFor
+              # follows its backing filesystem; only managed mounts have units.
+              bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") (
+                lib.filter (directory: !(lib.elem directory (map completed localDownloads))) mandatory
+              );
               serviceConfig = {
                 Type = "oneshot";
                 RemainAfterExit = true;
