@@ -1,0 +1,109 @@
+{
+  "checked_at": "2026-10-11T14:12:54.429948+00:00",
+  "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+  "boot_id": "f2acd2c8-fbbb-4287-9419-1a4d37ef94f9",
+  "replication_policy": {
+    "data_replicas": "2",
+    "metadata_replicas": "2"
+  },
+  "failure_domains": {
+    "data_bytes": 1203411386368,
+    "devices": 4,
+    "domains": [
+      {
+        "degraded_bytes": 282622017536,
+        "devices": 1,
+        "domain": "onboard.kioxia",
+        "lost_bytes": 0,
+        "offline_devices": 1
+      },
+      {
+        "degraded_bytes": 1203411386368,
+        "devices": 1,
+        "domain": "onboard.sn770",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      },
+      {
+        "degraded_bytes": 920789368832,
+        "devices": 2,
+        "domain": "pcie-card",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      }
+    ],
+    "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+    "offline_devices": 1,
+    "separation_violated": false
+  },
+  "reconcile_status": "Scan pending:     0\n                  data  metadata  \n  replicas:          0         0  \n  checksum:          0         0  \n  erasure_code:      0         0  \n  compression:       0         0  \n  target:            0         0  \n  high_priority:     0         0  \n  pending:           0         0  \n  stripes:           0         0  \n\n\nwaiting:\nio wait duration:      7.45G\nio wait remaining:     7.44G\nduration waited:       3 m\n\nReconcile thread backtrace:\n  [<0>] bch2_kthread_io_clock_wait_once+0xb1/0xe0 [bcachefs]\n  [<0>] do_reconcile+0xf5f/0xfd0 [bcachefs]\n  [<0>] bch2_reconcile_thread+0xfc/0x130 [bcachefs]\n  [<0>] kthread+0xfb/0x250\n  [<0>] ret_from_fork+0x22d/0x260\n  [<0>] ret_from_fork_asm+0x1a/0x30\n\n",
+  "usage": "Filesystem: e5f61013-d6f5-260d-9883-4dda26b2c293\nSize:             3224179520512  \nUsed:             1203463902208  \nOnline reserved:        6242304  \n\n\n       undegraded           -1x  \n2x:  920789368832  282622017536  \n\nreserved:  22732800  \n\n\nDevice label                Device     State            Size          Used  Use%  \ncard.sabrent (device 3):    nvme0n1    rw       508106371072       1753088    0%  \ncard.samsung (device 2):    nvme1n1    rw       992387002368  460392931328   46%  \nonboard.kioxia (device 0):  dev-0      offline             -             -     -  \nonboard.sn770 (device 1):   nvme3n1p2  rw       991320600576  601705693184   60%  \n\n",
+  "smart": {
+    "/dev/nvme0n1": {
+      "critical_warning": 0,
+      "media_errors": 0,
+      "temperature_celsius": 35,
+      "sensor_temperatures_celsius": {}
+    },
+    "/dev/nvme1n1": {
+      "critical_warning": 0,
+      "media_errors": 0,
+      "temperature_celsius": 54,
+      "sensor_temperatures_celsius": {
+        "temperature_sensor_1": 54,
+        "temperature_sensor_2": 69
+      }
+    },
+    "/dev/nvme3n1": {
+      "critical_warning": 0,
+      "media_errors": 0,
+      "temperature_celsius": 52,
+      "sensor_temperatures_celsius": {
+        "temperature_sensor_1": 73,
+        "temperature_sensor_2": 49
+      }
+    }
+  },
+  "persisted_options": {
+    "/dev/nvme0n1": [
+      "External UUID:                             e5f61013-d6f5-260d-9883-4dda26b2c293",
+      "Device index:                              3",
+      "Label:                                     (none)",
+      "Devices:                                   4",
+      "metadata_replicas:                       2",
+      "data_replicas:                           2",
+      "Label:                                   onboard.kioxia",
+      "Failure domain:                          onboard.kioxia",
+      "Durability:                              1",
+      "Label:                                   onboard.sn770",
+      "Failure domain:                          onboard.sn770",
+      "Durability:                              1",
+      "Label:                                   card.samsung",
+      "Failure domain:                          pcie-card",
+      "Durability:                              1",
+      "Label:                                   card.sabrent",
+      "Failure domain:                          pcie-card",
+      "Durability:                              1"
+    ],
+    "/dev/nvme1n1": [
+      "External UUID:                             e5f61013-d6f5-260d-9883-4dda26b2c293",
+      "Device index:                              2",
+      "Label:                                     (none)",
+      "Devices:                                   4",
+      "metadata_replicas:                       2",
+      "data_replicas:                           2",
+      "Label:                                   onboard.kioxia",
+      "Failure domain:                          onboard.kioxia",
+      "Durability:                              1",
+      "Label:                                   onboard.sn770",
+      "Failure domain:                          onboard.sn770",
+      "Durability:                              1",
+      "Label:                                   card.samsung",
+      "Failure domain:                          pcie-card",
+      "Durability:                              1",
+      "Label:                                   card.sabrent",
+      "Failure domain:                          pcie-card",
+      "Durability:                              1"
+    ]
+  }
+}

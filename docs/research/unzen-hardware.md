@@ -3,8 +3,12 @@
 Unzen is a headless server on the `cairn` branch. Its host declaration is
 `modules/hosts/unzen.nix`, and its initial Disko layout is `disks/unzen.nix`.
 The operator selected an unencrypted bcachefs pool shared by NixOS and data.
-Some future drives are not connected yet. This configuration is prepared and
-tested on virtual disks; it is not installed on the physical machine.
+Physical installation completed on 2026-10-08. Online expansion added Samsung
+and Sabrent on 2026-10-11 after an independently verified camera backup. The
+pool now has three online members and an offline Kioxia. Both replica settings
+remain `2`. Live reconciliation and failure-domain admission passed. See the
+[expansion receipt and remaining limits](../hardware/unzen-pool-expansion-2026-10-11/README.md).
+Disko remains the initial two-drive install plan, not an expansion command.
 
 ## Hardware and measured power policy
 

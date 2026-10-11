@@ -1,0 +1,318 @@
+{
+  "status": "VERIFIED_EXPANSION",
+  "started_at": "2026-10-11T14:09:28.807095+00:00",
+  "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+  "boot_id": "f2acd2c8-fbbb-4287-9419-1a4d37ef94f9",
+  "approval": "User selected erase_and_add for Sabrent 470207171EA300001068 and Samsung S4P4NF0M317686M.",
+  "original_members": [
+    {
+      "member": "dev-0",
+      "uuid": "008d9355-e201-4a45-90cc-0535cbe0e2e0",
+      "label": "onboard.kioxia",
+      "failure_domain": "onboard.kioxia",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": null,
+      "online": false
+    },
+    {
+      "member": "dev-1",
+      "uuid": "10c894c1-52cb-411f-9e2e-1e20a11ad840",
+      "label": "onboard.sn770",
+      "failure_domain": "onboard.sn770",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": "/sys/devices/pci0000:00/0000:00:1d.0/0000:3e:00.0/nvme/nvme3/nvme3n1/nvme3n1p2",
+      "online": true
+    }
+  ],
+  "offhost_backup": {
+    "status": "VERIFIED",
+    "source": "unzen:/srv/backups/unzen-camera-20261011T053958Z",
+    "physical_destination": "/srv/shores/towada/00/backups/unzen-camera-20261011T053958Z",
+    "lake_destination": "/srv/lakes/towada/backups/unzen-camera-20261011T053958Z",
+    "destination_mount": {
+      "target": "/srv/shores/towada/00",
+      "source": "/dev/sdd1",
+      "fstype": "xfs",
+      "uuid": "06cf0ea0-0d61-464b-8437-d1ddacc315c7",
+      "options": "rw,noatime,lazytime,inode64,allocsize=1024k,logbufs=8,logbsize=32k,noquota"
+    },
+    "sources": [
+      {
+        "name": "sabrent-camera-full",
+        "files": 7692,
+        "bytes": 79543871353,
+        "status": "VERIFIED",
+        "manifest_sha256": "43820154ee1dfdef7852b5abfb127e5c7451030c7fb49772b86a6b3399504bfa"
+      },
+      {
+        "name": "samsung-images",
+        "files": 3008,
+        "bytes": 640299547,
+        "status": "VERIFIED",
+        "manifest_sha256": "394cab9ed6af2fdc6c9ec54cffab08439ad9050eecf4b5ad03d72540b17abe6c"
+      }
+    ],
+    "formatting_performed": false,
+    "original_receipt_sha256": "76bb98522d420936760ced0f9f72153372afafe7224d426848aa2e88eb7ba716",
+    "files": 10700,
+    "bytes": 80184170900,
+    "completed_at": "2026-10-11T06:35:56.192469+00:00",
+    "verification": "Each destination file SHA-256 matches the accepted original-source manifests; inventory and total sizes also match."
+  },
+  "steps": [
+    {
+      "serial": "S4P4NF0M317686M",
+      "label": "card.samsung",
+      "status": "EXISTING_MEMBER_VERIFIED_NOT_REFORMATTED",
+      "member": {
+        "member": "dev-2",
+        "uuid": "2ea4c401-e068-457e-bf71-cae4bbc19f2f",
+        "label": "card.samsung",
+        "failure_domain": "pcie-card",
+        "state": "[rw] ro evacuating spare",
+        "durability": "1",
+        "block": "/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/nvme/nvme1/nvme1n1",
+        "online": true
+      },
+      "smart_after": {
+        "critical_warning": 0,
+        "temperature": 330,
+        "avail_spare": 100,
+        "spare_thresh": 10,
+        "percent_used": 1,
+        "endurance_grp_critical_warning_summary": 0,
+        "data_units_read": 61621142,
+        "data_units_written": 62202807,
+        "host_read_commands": 282601699,
+        "host_write_commands": 2209359887,
+        "controller_busy_time": 2237,
+        "power_cycles": 1015,
+        "power_on_hours": 5802,
+        "unsafe_shutdowns": 360,
+        "media_errors": 0,
+        "num_err_log_entries": 3494,
+        "warning_temp_time": 0,
+        "critical_comp_time": 546,
+        "temperature_sensor_1": 330,
+        "temperature_sensor_2": 353,
+        "thm_temp1_trans_count": 0,
+        "thm_temp2_trans_count": 0,
+        "thm_temp1_total_time": 0,
+        "thm_temp2_total_time": 0
+      },
+      "exposure_after": {
+        "data_bytes": 1203407257600,
+        "devices": 3,
+        "domains": [
+          {
+            "degraded_bytes": 282622017536,
+            "devices": 1,
+            "domain": "onboard.kioxia",
+            "lost_bytes": 0,
+            "offline_devices": 1
+          },
+          {
+            "degraded_bytes": 1203407257600,
+            "devices": 1,
+            "domain": "onboard.sn770",
+            "lost_bytes": 0,
+            "offline_devices": 0
+          },
+          {
+            "degraded_bytes": 920785240064,
+            "devices": 1,
+            "domain": "pcie-card",
+            "lost_bytes": 0,
+            "offline_devices": 0
+          }
+        ],
+        "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+        "offline_devices": 1,
+        "separation_violated": false
+      }
+    },
+    {
+      "serial": "470207171EA300001068",
+      "stable_path": "/dev/disk/by-id/nvme-Sabrent_470207171EA300001068",
+      "label": "card.sabrent",
+      "status": "ADDED_AND_VERIFIED",
+      "smart_before": {
+        "critical_warning": 0,
+        "temperature": 305,
+        "avail_spare": 100,
+        "spare_thresh": 5,
+        "percent_used": 4,
+        "endurance_grp_critical_warning_summary": 0,
+        "data_units_read": 6522656,
+        "data_units_written": 11101387,
+        "host_read_commands": 64103526,
+        "host_write_commands": 472734055,
+        "controller_busy_time": 913,
+        "power_cycles": 114,
+        "power_on_hours": 54256,
+        "unsafe_shutdowns": 67,
+        "media_errors": 0,
+        "num_err_log_entries": 93,
+        "warning_temp_time": 0,
+        "critical_comp_time": 0,
+        "thm_temp1_trans_count": 0,
+        "thm_temp2_trans_count": 0,
+        "thm_temp1_total_time": 0,
+        "thm_temp2_total_time": 0
+      },
+      "member": {
+        "member": "dev-3",
+        "uuid": "3dc3420d-4be2-410a-ad45-1d99f061265e",
+        "label": "card.sabrent",
+        "failure_domain": "pcie-card",
+        "state": "[rw] ro evacuating spare",
+        "durability": "1",
+        "block": "/sys/devices/pci0000:00/0000:00:01.2/0000:03:00.0/nvme/nvme0/nvme0n1",
+        "online": true
+      },
+      "smart_after": {
+        "critical_warning": 0,
+        "temperature": 304,
+        "avail_spare": 100,
+        "spare_thresh": 5,
+        "percent_used": 4,
+        "endurance_grp_critical_warning_summary": 0,
+        "data_units_read": 6522665,
+        "data_units_written": 11101388,
+        "host_read_commands": 64103756,
+        "host_write_commands": 472734094,
+        "controller_busy_time": 913,
+        "power_cycles": 114,
+        "power_on_hours": 54256,
+        "unsafe_shutdowns": 67,
+        "media_errors": 0,
+        "num_err_log_entries": 93,
+        "warning_temp_time": 0,
+        "critical_comp_time": 0,
+        "thm_temp1_trans_count": 0,
+        "thm_temp2_trans_count": 0,
+        "thm_temp1_total_time": 0,
+        "thm_temp2_total_time": 0
+      },
+      "exposure_after": {
+        "data_bytes": 1203408314368,
+        "devices": 4,
+        "domains": [
+          {
+            "degraded_bytes": 282622017536,
+            "devices": 1,
+            "domain": "onboard.kioxia",
+            "lost_bytes": 0,
+            "offline_devices": 1
+          },
+          {
+            "degraded_bytes": 1203407790080,
+            "devices": 1,
+            "domain": "onboard.sn770",
+            "lost_bytes": 0,
+            "offline_devices": 0
+          },
+          {
+            "degraded_bytes": 920785772544,
+            "devices": 2,
+            "domain": "pcie-card",
+            "lost_bytes": 524288,
+            "offline_devices": 0
+          }
+        ],
+        "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+        "offline_devices": 1,
+        "separation_violated": true
+      },
+      "added_at": "2026-10-11T14:09:29.459859+00:00"
+    }
+  ],
+  "replication_policy": {
+    "data_replicas": 2,
+    "metadata_replicas": 2
+  },
+  "failure_domain": "pcie-card",
+  "bootloader_changes": false,
+  "reboot_performed": false,
+  "resumed_from": "/var/lib/storage-expansion/unzen-20261011T140051Z/receipt.json",
+  "members": [
+    {
+      "member": "dev-0",
+      "uuid": "008d9355-e201-4a45-90cc-0535cbe0e2e0",
+      "label": "onboard.kioxia",
+      "failure_domain": "onboard.kioxia",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": null,
+      "online": false
+    },
+    {
+      "member": "dev-1",
+      "uuid": "10c894c1-52cb-411f-9e2e-1e20a11ad840",
+      "label": "onboard.sn770",
+      "failure_domain": "onboard.sn770",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": "/sys/devices/pci0000:00/0000:00:1d.0/0000:3e:00.0/nvme/nvme3/nvme3n1/nvme3n1p2",
+      "online": true
+    },
+    {
+      "member": "dev-2",
+      "uuid": "2ea4c401-e068-457e-bf71-cae4bbc19f2f",
+      "label": "card.samsung",
+      "failure_domain": "pcie-card",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": "/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/nvme/nvme1/nvme1n1",
+      "online": true
+    },
+    {
+      "member": "dev-3",
+      "uuid": "3dc3420d-4be2-410a-ad45-1d99f061265e",
+      "label": "card.sabrent",
+      "failure_domain": "pcie-card",
+      "state": "[rw] ro evacuating spare",
+      "durability": "1",
+      "block": "/sys/devices/pci0000:00/0000:00:01.2/0000:03:00.0/nvme/nvme0/nvme0n1",
+      "online": true
+    }
+  ],
+  "marker_sha256": "7a2181f4663d0171664c0224c4ff4f3626763327eda88a4da99d5f794f4fd201",
+  "latest_exposure": {
+    "data_bytes": 1203411722240,
+    "devices": 4,
+    "domains": [
+      {
+        "degraded_bytes": 282622017536,
+        "devices": 1,
+        "domain": "onboard.kioxia",
+        "lost_bytes": 0,
+        "offline_devices": 1
+      },
+      {
+        "degraded_bytes": 1203411722240,
+        "devices": 1,
+        "domain": "onboard.sn770",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      },
+      {
+        "degraded_bytes": 920789704704,
+        "devices": 2,
+        "domain": "pcie-card",
+        "lost_bytes": 0,
+        "offline_devices": 0
+      }
+    ],
+    "filesystem": "e5f61013-d6f5-260d-9883-4dda26b2c293",
+    "offline_devices": 1,
+    "separation_violated": false
+  },
+  "checked_at": "2026-10-11T14:09:59.623742+00:00",
+  "completed_at": "2026-10-11T14:09:59.631627+00:00",
+  "usage": "Filesystem: e5f61013-d6f5-260d-9883-4dda26b2c293\nSize:             3224179520512  \nUsed:             1203463131648  \nOnline reserved:        5029888  \n\n\n       undegraded           -1x  \n2x:  920789704704  282622017536  \n\nreserved:  22794240  \n\n\nDevice label                Device     State            Size          Used  Use%  \ncard.sabrent (device 3):    nvme0n1    rw       508106371072        696320    0%  \ncard.samsung (device 2):    nvme1n1    rw       992387002368  460394156032   46%  \nonboard.kioxia (device 0):  dev-0      offline             -             -     -  \nonboard.sn770 (device 1):   nvme3n1p2  rw       991320600576  601705861120   60%  \n\n",
+  "capacity": "Filesystem                                                                                                                             1B-blocks          Used     Available Use% Mounted on\n/dev/nvme3n1p2:/dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_1TB_S4P4NF0M317686M:/dev/disk/by-id/nvme-Sabrent_470207171EA300001068 3224179519488 1203463131136 1989628440576  38% /srv\n",
+  "unresolved": "Kioxia is still offline; do not rebuild the bootloader against its unavailable ESP."
+}

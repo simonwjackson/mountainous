@@ -89,6 +89,45 @@ diskoLib.testLib.makeDiskoTest {
         failed.succeed("printf 'degraded-write' > /srv/degraded-test-marker")
         failed.succeed("sync")
         assert failed.succeed("cat /srv/degraded-test-marker") == "degraded-write"
+
+        # Restore replicas by expanding the mounted degraded pool. The absent
+        # original stays absent, just as on Unzen during its Kioxia fault.
+        replacement = snapshot / "replacement.qcow2"
+        subprocess.check_call([
+            "${pkgs.qemu_test}/bin/qemu-img", "create", "-f", "qcow2",
+            str(replacement), "4G",
+        ])
+        response = failed.send_monitor_command(
+            f"drive_add 0 file={replacement},id=replacement,if=none,format=qcow2"
+        )
+        assert "Error" not in response, response
+        response = failed.send_monitor_command(
+            "device_add virtio-blk-pci,drive=replacement,id=replacement-device"
+        )
+        assert "Error" not in response, response
+        failed.wait_for_file("/dev/vdb")
+        failed.succeed(
+            "bcachefs device add --label=card.replacement "
+            "--failure_domain=pcie-card --durability=1 / /dev/vdb"
+        )
+        # In 1.39.6, device add accepts failure_domain but does not apply it
+        # to the mounted member. Set it through sysfs and verify the value.
+        failed.succeed(
+            f"${pkgs.python3}/bin/python3 ${./unzen-card-domain.py} {fs} card.replacement"
+        )
+        expanded = json.loads(failed.succeed("bcachefs fs failure-domains --json /"))
+        assert expanded["devices"] == 3 and expanded["offline_devices"] == 1, expanded
+        for option in ["data_replicas", "metadata_replicas"]:
+            assert failed.succeed(f"cat {fs}/options/{option}").strip() == "2"
+        assert failed.succeed("cat /srv/unzen-test-marker") == "shared-pool-marker"
+        assert failed.succeed("cat /srv/degraded-test-marker") == "degraded-write"
+        failed.succeed("sync")
+        # Membership is immediate; reconciliation runs separately. Require
+        # surviving every single failure domain before declaring recovery.
+        failed.wait_until_succeeds(
+            "${pkgs.python3}/bin/python3 ${./unzen-replica-health.py} /",
+            timeout=300,
+        )
         failed.shutdown()
 
     # Resume the untouched healthy pair before testing online expansion.
@@ -116,6 +155,9 @@ diskoLib.testLib.makeDiskoTest {
     before = int(machine.succeed("df -B1 --output=size /srv | tail -n 1").strip())
     machine.succeed(
         "bcachefs device add --label=card.test --failure_domain=pcie-card / /dev/vdc"
+    )
+    machine.succeed(
+        f"${pkgs.python3}/bin/python3 ${./unzen-card-domain.py} {fs} card.test"
     )
     members = machine.succeed(f"find {fs} -maxdepth 1 -name 'dev-*' -type d").split()
     assert len(members) == 3, members
