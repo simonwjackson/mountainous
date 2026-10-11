@@ -66,6 +66,12 @@ assert !split.services.sonarr.enable;
 assert split.services.radarr.enable;
 assert builtins.all (name: target.services.${name}.enable) apps;
 assert target.mountainous.features.media-applications.processing == "held";
+assert builtins.all (app: builtins.elem "${app}.service" target.systemd.services.media-vpn.wants) [
+  "prowlarr"
+  "nzbget"
+  "transmission"
+];
+assert !builtins.elem "nzbget.service" remoteDownloader.systemd.services.media-vpn.wants;
 assert
   !builtins.elem "srv-basin-downloads-usenet-completed.mount" target.systemd.services.media-storage-ready.bindsTo;
 assert
@@ -94,6 +100,7 @@ assert builtins.elem "--no-watch-dir" target.services.transmission.extraFlags;
   independentPlacementEvaluates = true;
   localStagingUsesFilesystemDependencies = true;
   remoteStagingRetainsMountLossFence = true;
+  namespaceRecoveryUsesOnlyLocalConsumers = true;
   productionStartupGated = true;
   productionProcessingHeld = true;
   clientMappedLibraryEvaluates = true;

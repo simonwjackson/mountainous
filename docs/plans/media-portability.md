@@ -209,4 +209,24 @@ The repaired system passed temporary activation. The normal profile remained unc
 
 Actual NZBGet and Transmission also passed native RPC admission inside the VPN namespace. NZBGet retained two groups, held download, post-processing, and scanning, and had no force priority or active post/URL jobs. Every retained Transmission torrent was stopped. Both queues stayed unchanged during a further 10 seconds. Credentials and staging settings remained unchanged. Protected receipt: `/var/lib/media-migration/live-held-downloaders/29204e18be814e759e47348e33766e1c/admission.json`.
 
-All five applications now run held. All five proxies remain closed. Production endpoint handoff, durable normal-profile activation, and complete current-compatible rollback remain unfinished. Downloads, imports, scanning, and sync remain held.
+These separate startup checks did not prove that all five applications stayed active together. A later VPN restart stopped Prowlarr through its namespace dependency. Four applications remained active and held. Native identity incorporation refused before any production identity write because Prowlarr was inactive.
+
+## Actual namespace recovery on 2026-10-11
+
+The namespace service now wants only its local Prowlarr, NZBGet, and Transmission consumers. Their existing state, readiness, processing, and namespace conditions remain unchanged. This restarts admitted services on the same placement. It does not choose another placement or permit two owners. The cost is that a VPN restart also attempts to start each local consumer. Closed readiness gates still refuse startup.
+
+Contract tests rejected the missing consumer dependencies before the repair. The four-host runtime VM passed closed-gate refusal, real tunnel startup, namespace-bound consumer stops, and automatic consumer restart. Its sleeping Prowlarr fixture tests dependency behavior, not application state. Existing state checks remain covered by the preservation VM. The first recovery VM attempt correctly refused the fixture because its required state files were absent. The corrected fixture retained those file conditions.
+
+Checked all 461 declared unit paths against the preceding admitted system. Only the contents of `media-vpn.service` and its existing startup link changed. The only added unit dependencies were its three local consumers. Test activation kept all application and proxy gates closed, retained the admitted VPN, and left the normal profile unchanged. Protected receipt: `/var/lib/media-migration/deployment/vpn-recovery-held-test-7771d4e5889748c78b3b6d4ec897b3d1.json`.
+
+Repeated actual held application startup. A controlled restart of the actual VPN then restored all three namespace consumers without a separate application start command. All five native APIs passed. Original versions, users, API keys, connections, and selected counts remained unchanged. Both downloader queues remained held. Retained torrent counts and partial-byte totals stayed unchanged. All 30 scheduler rows remained held, with no queued or started ARR commands during 65 seconds after readiness. Protected receipt: `/var/lib/media-migration/live-vpn-consumer-recovery/e95de582825146369f3a40a6907fc3fa/admission.json`.
+
+All five applications remained held after that admission. Proxy gates remained closed until separate identity-state and endpoint admission.
+
+## Actual stable endpoint handoff on 2026-10-11
+
+Incorporated all five admitted native target identity states. Each retained the original node ID, node key, and machine key. Protected copies retain the preceding production files and the native private probe files. The helper admitted all five identities and recovery copies before any production write. Protected receipt: `/var/lib/media-migration/identity-handoff/76f2959afea4456e8009cf007964ae8a/admission.json`.
+
+Opened only the five proxy gates after another source-owner fence check. All five actual stable DNS names and original addresses passed native HTTPS API admission. Accounts, API keys, connections, pinned releases, queues, and selected record counts remained unchanged. Original identity owners, keys, tags, addresses, and registrations remained unchanged. No registration was added or removed. Both downloaders remained paused. All 30 scheduled rows remained held, with no queued or started ARR commands during a further 65 seconds. Protected receipt: `/var/lib/media-migration/live-endpoint-handoff/fdf82fc41e404d5ebabb8089badbd73f/admission.json`.
+
+The target applications and stable endpoints now run held. Source retirement gates remain closed. The target normal profile remains unchanged. Durable normal-profile activation and complete current-compatible rollback remain unfinished. Downloads, imports, scanning, post-processing, and sync remain held.

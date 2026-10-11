@@ -231,7 +231,9 @@
             media-vpn = lib.mkIf hasVpn {
               description = "Preserved WireGuard downloader namespace";
               wantedBy = [ "multi-user.target" ];
-              wants = [ "network-online.target" ];
+              # Re-establish admitted local consumers after a tunnel restart.
+              # Their existing state/processing/readiness gates still apply.
+              wants = [ "network-online.target" ] ++ map (name: "${name}.service") (lib.filter local vpnApps);
               after = [ "network-online.target" ];
               before = map (name: "${name}.service") (lib.filter local vpnApps);
               unitConfig.ConditionPathExists = [

@@ -71,9 +71,15 @@ pkgs.testers.runNixOSTest {
   name = "portable-media-runtime";
   nodes = {
     unzen =
-      { ... }:
+      { lib, ... }:
       {
         imports = [ common ];
+        # Keep Prowlarr's real namespace/readiness dependencies, but use a
+        # sleeping fixture instead of constructing application state here.
+        systemd.services.prowlarr = {
+          preStart = lib.mkForce "";
+          serviceConfig.ExecStart = lib.mkForce "${pkgs.coreutils}/bin/sleep infinity";
+        };
         systemd.services.media-vpn.environment = {
           VPN_NS_CHECK_URL = "http://10.99.0.1:8080/exit";
           VPN_NS_HEALTH_URL = "http://10.99.0.1:8080/exit";
@@ -253,6 +259,21 @@ pkgs.testers.runNixOSTest {
         unzen.succeed("systemctl start media-vpn.service")
         unzen.succeed("ip netns exec vpn curl --fail --max-time 5 http://10.99.0.1:8080/exit")
         unzen.succeed("ip netns exec vpn ip route show default | grep 'dev wg-vpn'")
+        unzen.fail("systemctl is-active --quiet prowlarr.service")
+        # Satisfy the retained file-presence conditions for the sleeping fixture.
+        # The real state validator remains covered by the preservation VM.
+        unzen.succeed("install -d /var/lib/prowlarr")
+        unzen.succeed("printf fixture > /var/lib/prowlarr/prowlarr.db")
+        unzen.succeed("printf fixture > /var/lib/prowlarr/config.xml")
+        unzen.succeed("touch /var/lib/media-migration/ready/prowlarr")
+        unzen.succeed("systemctl restart media-vpn.service")
+        unzen.wait_for_unit("prowlarr.service")
+        original_pid = unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip()
+        unzen.succeed("systemctl stop media-vpn.service")
+        unzen.wait_until_fails("systemctl is-active --quiet prowlarr.service")
+        unzen.succeed("systemctl start media-vpn.service")
+        unzen.wait_for_unit("prowlarr.service")
+        assert unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip() != original_pid
         unzen.succeed("ip netns exec vpn ip link del wg-vpn")
         unzen.fail("ip netns exec vpn curl --fail --max-time 3 http://10.99.0.1:8080/exit")
         unzen.fail("ip netns exec vpn ip route show default | grep veth")
