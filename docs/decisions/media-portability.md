@@ -26,10 +26,18 @@ New service identities use OAuth-backed tagged enrollment with routine node-key 
 
 The five original media registrations were user-owned and had expired keys. A native recovery test with a tagged OAuth auth key created five duplicate registrations. It retained each machine key but changed the node ID, node key, owner, and address. Retaining a machine key alone does not prove identity recovery.
 
-Read the saved node state before reading enrollment credentials. Tailscale stores this state in the `Config` field of the current profile. With valid saved node state, supply no auth key. Reject corrupt, incomplete, or symlinked saved state before contacting the enrollment API. Reject forced login for a saved identity.
+Read the saved node state before reading enrollment credentials. Tailscale stores this state in the `Config` field of the current profile. With valid saved node state, supply no auth key. Reject corrupt, incomplete, or symlinked saved state before contacting the enrollment API. Reject forced login and inherited `TS_AUTHKEY` for a saved identity. The pinned tsnet library otherwise reads `TS_AUTHKEY` after the runtime supplies an empty auth key.
 
 Recover an expired original registration with a verified, narrowly scoped expiry update. Do not replace its keys, retag it, delete it, or use a duplicate. Native admission must prove the original stable address before production startup.
 
 The cost is that existing service identities retain their original owner. The runtime cannot repair expiry without an authorized control-plane action. Disabling expiry also removes periodic reauthentication for those five keys. A later ownership change needs separate approval and identity-preservation admission.
+
+## Scheduler holds preserve original task state
+
+Pinned ARR releases replace task intervals during startup. They retain existing `ScheduledTasks.LastExecution` values. Disabling clients and indexers alone does not stop scheduled scans, list imports, or cleanup.
+
+A controlled move holds all existing task timestamps at `2099-01-01 00:00:00` before startup. Protected receipts retain each original row. Startup rejects missing scheduler state, queued or active ARR commands, and task timestamps outside this hold. It also refuses startup from 2098 until the operator renews the hold. No command payload is removed or replaced.
+
+The cost is suspension of scheduled backups, health checks, and update checks. The hold does not prevent an authorized user from starting a manual command. Processing resumption requires separate approval and restoration of the retained original flags and task timestamps.
 
 Approval of this design does not authorize live cutover, bulk data transfer, credential replacement, download resumption, forced imports, or deletion of existing state or media. See the [implementation and acceptance plan](../plans/media-portability.md).

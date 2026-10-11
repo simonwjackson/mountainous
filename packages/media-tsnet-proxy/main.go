@@ -140,6 +140,10 @@ func authenticationKey(ctx context.Context, client *http.Client, api string, con
 		return "", err
 	}
 	if saved {
+		// tsnet falls back to TS_AUTHKEY when Server.AuthKey is empty.
+		if os.Getenv("TS_AUTHKEY") != "" {
+			return "", errors.New("inherited authentication key forbidden for a saved identity")
+		}
 		if config.ForceLogin {
 			return "", errors.New("forced login forbidden for a saved identity")
 		}

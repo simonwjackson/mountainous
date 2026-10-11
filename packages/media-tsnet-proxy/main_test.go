@@ -55,6 +55,21 @@ func TestSavedNodeIdentityDoesNotEnrollOrReadOAuthCredentials(t *testing.T) {
 	}
 }
 
+func TestSavedIdentityRejectsInheritedAuthenticationKey(t *testing.T) {
+	directory := t.TempDir()
+	writeSavedIdentity(t, directory)
+	t.Setenv("TS_AUTHKEY", "fixture-inherited-auth-key")
+	value, err := authenticationKey(context.Background(), http.DefaultClient, "https://must-not-be-contacted.invalid", identityAuthConfig{
+		StateDir: directory, OAuthIDFile: "unavailable-fixture-id", OAuthSecretFile: "unavailable-fixture-secret",
+	})
+	if err == nil || value != "" || !strings.Contains(err.Error(), "inherited authentication key") {
+		t.Fatal("saved identity allowed tsnet environment authentication fallback")
+	}
+	if strings.Contains(err.Error(), "fixture-inherited-auth-key") {
+		t.Fatal("inherited authentication key disclosed in diagnostics")
+	}
+}
+
 func TestInvalidExistingStateCannotTriggerEnrollment(t *testing.T) {
 	fixtures := map[string][]byte{
 		"malformed":      []byte(`not json`),
