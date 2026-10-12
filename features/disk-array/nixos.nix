@@ -154,7 +154,6 @@
     blocksize 256
     hashsize 16
     autosave 1000
-    nocrawl
 
     ${concatStringsSep "\n" (map (p: "exclude ${p}") sr.excludes)}
 
