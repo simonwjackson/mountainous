@@ -85,6 +85,24 @@ with two monitors.
   apply to `/dev/uinput` and `/dev/uhid` only after a reboot or
   `udevadm trigger --action=change` on both. Until then Sunshine logs
   `virtualhid-not-available`.
+- Open in 2026-10-12: attach and detach seem to crash GPU clients on the
+  laptop. Ghostty crashed at 11:50:14 in GTK's `linux_dmabuf_done` during
+  the first attach and detach test. The Forgerie web app's Chromium crashed
+  at 13:16:18 (`IntentionallyCrashBrowserForUnusableGpuProcess`) during the
+  second. Hyprland 0.56.2 resends the dmabuf format table and feedback to
+  every surface when any monitor is added or removed
+  (`protocols/LinuxDMABUF.cpp`, `monitorAdded` and `monitorRemoved` call
+  `resetFormatTable`). A headless output is never scanned out, so these
+  resends are not needed for it. Not yet reproduced under control.
+- Open in 2026-10-12: attaching can take a laptop page. Hyprland remembers
+  which workspace id a monitor name last showed
+  (`rememberWorkspaceForMonitor`) and moves that id onto the monitor when the
+  name returns (`output/Monitor.cpp:367`). The strip renumbers pages, so the
+  remembered id can belong to a laptop page by then. In the second test,
+  page 4 (a browser window) moved to the tablet.
+- Sunshine logged `zwlr_screencopy_manager_v1#5: error -1: invalid output`
+  when the output was removed while no client streamed. That error ends its
+  Wayland connection. Whether Sunshine then restarted is not yet checked.
 - One start on 2026-10-12 died with "Address already in use" on port
   47990 while nothing held the port. It did not happen again in five
   restarts. The service now restarts after any exit.
