@@ -23,6 +23,7 @@ keys:
   - &ibuki  age139z7cqp2vf8x8vgzcdax3v7adf5xgkv8757tznlkkv7v57cj430svkm0sp
   - &unzen  age1keuga3fh4s42sm9ze4kcwmqe8mkt4tyw9jzgdtur2e24ntszqc5s8c98jz
   - &rakku  age15t6g4dck4vpkfg80303wy8fvl3ptczd7ehgd3ppqrcgv2fszkv4q50s2a4
+  - &yari   age17cd96z69ajdlp0rhn8n2lkn4q7d297lnt3q9u6uanayn3l7r09jsmrgxrd
 
 creation_rules:
   # Fleet-wide. Every machine needs these, so every machine can read them.
@@ -37,6 +38,7 @@ creation_rules:
           - *ibuki
           - *unzen
           - *rakku
+          - *yari
 
   # Per-host. A machine reads only its own file.
   - path_regex: secrets/hosts/rakku\.yaml$
