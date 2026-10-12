@@ -4,7 +4,7 @@
 # boots and joins a network, every later step happens over SSH from a
 # workstation, including partitioning and hardware detection.
 #
-# Build:  nix build .#installer
+# Build:  nix build .#installer-iso
 # Write:  sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress oflag=sync
 {
   config,
@@ -95,6 +95,6 @@
   perSystem =
     { system, ... }:
     lib.mkIf (system == "x86_64-linux") {
-      packages.installer = config.flake.nixosConfigurations.installer.config.system.build.isoImage;
+      packages.installer-iso = config.flake.nixosConfigurations.installer.config.system.build.isoImage;
     };
 }

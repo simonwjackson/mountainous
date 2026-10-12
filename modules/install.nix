@@ -11,8 +11,12 @@
 #   - nixos-anywhere is the fail-closed `nixos-anywhere-verified` build
 #   - host evaluation uses the flake source the app was built from, so the
 #     system installed is the system `nix run` evaluated
+#
+# Everything here is shell and builds for every system the flake supports, so
+# the install can run from an x86_64 or an aarch64 workstation.
 {
   self,
+  inputs,
   lib,
   ...
 }:
@@ -20,11 +24,22 @@
   perSystem =
     {
       pkgs,
-      system,
       self',
       ...
     }:
     let
+      nixos-anywhere-verified = pkgs.nixos-anywhere.overrideAttrs (old: {
+        src = inputs.nixos-anywhere-src;
+        version = "git-${builtins.substring 0 7 inputs.nixos-anywhere-src.rev}";
+        # OpenSSH takes the first value, so later --ssh-option flags cannot
+        # override upstream's initial insecure defaults. Remove them here.
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace src/nixos-anywhere.sh \
+            --replace-fail '"-o" "UserKnownHostsFile=/dev/null" "-o" "StrictHostKeyChecking=no"' \
+                           '"-F" "/dev/null" "-o" "StrictHostKeyChecking=yes"'
+        '';
+      });
+
       install = pkgs.writeShellApplication {
         name = "mountainous-install";
         runtimeInputs = with pkgs; [
@@ -44,8 +59,8 @@
         '';
       };
     in
-    # nixos-anywhere-verified is built only for x86_64-linux (unzen-installer.nix).
-    lib.mkIf (system == "x86_64-linux") {
+    {
+      packages.nixos-anywhere-verified = nixos-anywhere-verified;
       packages.install = install;
       apps.install = {
         type = "app";
