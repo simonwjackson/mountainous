@@ -22,7 +22,8 @@
         "transmission"
       ];
       present = name: cfg.placement.${name} == config.networking.hostName;
-      held = cfg.processing == "held";
+      held = cfg.processing != "enabled";
+      importsOnly = cfg.processing == "imports-only";
       nzbPaths = {
         MainDir = "/srv/basin/downloads/usenet";
         DestDir = "/srv/basin/downloads/usenet/completed";
@@ -39,6 +40,10 @@
         ArticleCache = "500";
         WriteBuffer = "1024";
         DirectUnpack = "yes";
+        # Retained ARR client categories. The small saved config only contains
+        # secrets; native defaults must not erase the public integration contract.
+        "Category1.Name" = "Movies";
+        "Category2.Name" = "Series";
         "Server1.Name" = "newsdemon";
         "Server1.Host" = "news.newsdemon.com";
         "Server1.Port" = "563";
@@ -83,10 +88,17 @@
         processing = lib.mkOption {
           type = lib.types.enum [
             "held"
+            "imports-only"
+            "arr-enabled"
             "enabled"
           ];
           default = "held";
-          description = "Verification starts held. Enabling processing requires separate operator approval.";
+          description = "Verification starts held. Imports-only holds automatic imports, removal, indexers, schedules and downloaders. Arr-enabled restores ARR processing while downloader launches and mover timers stay held. Enabled restores normal processing after approved acceptance.";
+        };
+        processingReceipts = lib.mkOption {
+          type = lib.types.str;
+          default = "/var/lib/media-migration/processing-original-safe";
+          description = "Protected original processing receipts used to admit imports-only startup.";
         };
         mediaGid = lib.mkOption {
           type = lib.types.ints.positive;
@@ -150,10 +162,37 @@
             };
             preStart = lib.mkBefore ''
               ${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} ${
-                lib.optionalString (held && databases ? ${name}) "--hold"
+                lib.optionalString (
+                  databases ? ${name} && (cfg.processing == "held" || (importsOnly && name == "prowlarr"))
+                ) "--hold"
               }
             '';
-            serviceConfig.UMask = lib.mkForce "0002";
+            serviceConfig = {
+              UMask = lib.mkForce "0002";
+              # Receipts remain root-only. Only this read-only admission runs
+              # as root; the application keeps its existing service user.
+              ExecStartPre = lib.mkBefore (
+                lib.optional
+                  (
+                    importsOnly
+                    && builtins.elem name [
+                      "sonarr"
+                      "radarr"
+                    ]
+                  )
+                  "+${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} --imports-only ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
+                ++
+                  lib.optional
+                    (
+                      databases ? ${name}
+                      && builtins.elem cfg.processing [
+                        "arr-enabled"
+                        "enabled"
+                      ]
+                    )
+                    "+${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} --enabled ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
+              );
+            };
           }))
           {
             nzbget = lib.mkIf (present "nzbget") {
@@ -164,7 +203,9 @@
               preStart = lib.mkForce ''
                 ${pkgs.python3}/bin/python3 ${./media-state-ready.py} nzbget
               '';
-              serviceConfig.ExecStart = lib.mkForce "${pkgs.python3}/bin/python3 ${./media-nzbget-launch.py} ${media.nzbget}/bin/nzbget ${cfg.processing} /var/lib/nzbget/nzbget.conf ${nzbFlags}";
+              serviceConfig.ExecStart = lib.mkForce "${pkgs.python3}/bin/python3 ${./media-nzbget-launch.py} ${media.nzbget}/bin/nzbget ${
+                if held then "held" else "enabled"
+              } /var/lib/nzbget/nzbget.conf ${nzbFlags}";
               serviceConfig.ExecStop = lib.mkForce "${media.nzbget}/bin/nzbget --quit --configfile /var/lib/nzbget/nzbget.conf";
             };
             transmission = lib.mkIf (present "transmission") {

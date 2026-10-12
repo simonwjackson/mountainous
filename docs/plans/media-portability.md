@@ -2,11 +2,60 @@
 
 ## Status and scope
 
+**Complete. Normal processing runs on Unzen.** This status supersedes the historical entries below. The five services run on Unzen at their original HTTPS addresses. Jellyfin and the media library stay on Zao. Yari's original owners stay stopped and fenced.
+
+The active and normal system is `/nix/store/am65yn8i3068v79nwrldfkb5dm2pbayl-nixos-system-unzen-26.11.20260923.4975466`. The declared Unzen placement now defaults to `enabled` processing. Primary and secondary GRUB entries refer to this system. The boot ID did not change. No reboot occurred.
+
+The operator accepted the loss of one original TV episode in ask `b836723a-3413-4c41-abbb-482df9b4be08`. Its replacement and the service state at that time have verified protected copies. This does not authorize other media loss. See [the processing incident](media-processing-incident.md).
+
+### Representative workflow
+
+| Step | Result | Protected evidence |
+| --- | --- | --- |
+| Native grab | One approved single missing-episode release, no override | `representative-native-sonarr-grab/d982df0bf650468d8c2e08cb617f46d1/admission.json` |
+| Download | Group 764 downloaded 72,230,010 bytes, `SUCCESS/PAR`, eight completed files | `representative-native-grab-download/d9c71c646d584a899955ca83196e8fa6/` |
+| Import | Native copy import created file 1549 with zero rejections. No existing file record changed. The completed video stays in place. | `representative-single-native-import/331a5d98132e41b0886d76aebdff159e/admission.json` |
+| Notification | Yari's retained relay logged a Sonarr notification with HTTP 200 | Yari `production-relay-notification-signal/ed9390b572934dc58a2832b2da682205/` |
+| Library handoff | The packaged mover waited for the real 60-minute age. SHA-256 and nanosecond mtime match. Authenticated refresh accepted. | `representative-production-library-handoff/cc6e1bbd4b2a476693fc04b75aef24d8/admission.json` |
+| Jellyfin | The episode is visible with an indexed video stream | Same directory, `jellyfin-visibility-admission.json` |
+| Zao file | A direct read verifies content, mtime, and stored `0:993:0664` | Local Zao proof under `/tmp/media-native-production-direct-proof-53a84c84805d49e48722a93dc3725416/` |
+
+### Staged resumption
+
+| Stage | Result | Protected evidence |
+| --- | --- | --- |
+| ARR processing | Fresh stopped state copied and verified. Original schedules, indexers, Prowlarr sync, clients, import handling, and removal flags restored before start. Downloaders and mover timers stayed held. | `deployment/original-arr-processing-4e8ff5096c534065b97a4e8a970348c1/admission.json` |
+| VPN recovery | An actual VPN restart recovered Prowlarr, NZBGet, and Transmission inside the namespace. Tunnel-only route and HTTPS egress pass. | `arr-stage-vpn-consumer-recovery/bcc10a9c79d145298177efb0c3f327f1/admission.json` |
+| Normal processing | Downloads, post-processing, scanning, Transmission launch, and mover timers resumed | `deployment/normal-processing-b9b93ee8a17848b2937543d53976e86a/admission.json` |
+| Endpoints and identities | All five authenticated HTTPS endpoints return the pinned releases. Identity node IDs, keys, addresses, tags, and registrations are unchanged. | `final-normal-stable-endpoints/7e32ca60fdd24a1ea4b290115df012cc/admission.json` |
+| Boot entries and recovery copies | GRUB entries, critical services, recovery copies, and GC root pass | `final-boot-baseline-retention/28bcd2bc015f4388b53e50c0ed80e842/admission.json` |
+| Yari | 11 original owners stopped with persistent gates. Operator UID/GID `1000:100` and the messaging relay remain. | Read-only source check |
+
+The local process tracker lost the normal-processing job after it stopped all owners and copied state. Owners stayed stopped behind the transition gates. The continuation re-verified current stopped state before it switched systems.
+
+The previous startup validator opened live SQLite databases as root. It created four empty WAL/SHM side files in the Radarr and Prowlarr state and updated two existing SHM caches. Database and WAL contents did not change. The side files were preserved and given the database owners. Startup validation now reads a private copy and does not touch source files. Evidence: `deployment/normal-processing-b9b93ee8a17848b2937543d53976e86a/validator-sidecar-preservation-2807dc96b6894eac83389a043087200c/admission.json`.
+
+### Known gaps
+
+- No reboot test. Boot installation does not prove a subsequent boot.
+- Permanent NVMe health and the earlier fault cause remain unproven.
+- Concurrent use of one WireGuard profile on two hosts remains unverified.
+- No native ARR regression grabs a release while old completed and failed groups exist.
+- The cause of the first Prowlarr-to-ARR TLS failure is unknown. The repeat test passed.
+
+The full NZBGet history retains duplicate markers for groups 762 and 763 after native cleanup. Their full completed/failed history metadata remains in protected JSON records. Earlier statements that these IDs disappeared from all native history were based on `history(false)`, which excludes duplicate markers.
+
+Owned regressions pass: 42 service-state tests, 16 mover tests, and the real NFS/VPN/mover/HTTP-refresh runtime VM. ARR-only and normal system contracts/builds pass. Native Prowlarr-to-ARR application tests pass with HTTP 200 for both retained HTTPS targets after an initial TLS failure. Existing reverse-reference keys match both service keys. No settings changed. Protected passing receipt: `retained-prowlarr-application-tests/1a84b4e89992476ab511bab5cf53d2f0/admission.json`. The initial TLS failure cause is not proven.
+
+The operator approved repairing only the two ARR references with Prowlarr's existing key in ask `1c837bd2-d30e-483f-a292-6716c561b148`. Both references were repaired and passed native tests. No service API key changed or rotated. That authorization does not authorize ignoring the processing incident or replacing original file bytes with different bytes.
+
 The operator approved [controlled moves and local staging](../decisions/media-portability.md). The operator also approved `migrate-preserving-state`: implementation, tests, deployment, source service stops, protected application/work-file transfers, and paused target startup verification. Downtime is acceptable. Expired service enrollment can be repaired without deleting unrelated identities.
 
-The controlled move now passes held deployment on Unzen. All five applications and original stable HTTPS endpoints pass native admission. Current-compatible source rollback admission passes. Unzen's active system, normal profile, and generated GRUB entry use the admitted held system. After operator storage recovery, the original boot mount and boot deployment pass.
+The operator subsequently selected `finish-and-staged-resumption` in `finish-media-processing`, ask ID `6b3d885b-7be1-4207-9b8a-bcf2dcae69d4`. This authorizes library-mover integration, notification repairs, a representative production download/import, and staged normal processing after acceptance. It does not authorize a reboot, reset, upgrade, credential replacement, source cleanup, or messaging relocation.
 
-Full SHA-256 admission passes for all 716 staging files and 142,216,699,883 bytes. Downloads, imports, scanning, post-processing, and Prowlarr sync remain held. No processing resumption or additional reboot occurred. Successful boot installation does not prove a subsequent boot.
+The controlled move passes durable deployment on Unzen. All five applications and original stable HTTPS endpoints passed native admission. Current-compatible source rollback admission passes. After operator storage recovery, the original boot mount and held boot deployment passed.
+
+The pre-resumption SHA-256 baseline passes for all 716 staging files and 142,216,699,883 bytes. All eight retained ARR client and notification tests pass. Actual mapped publication, Jellyfin video visibility, and a direct read of the stored Zao file pass. No reboot occurred. Successful boot installation does not prove a subsequent boot.
 
 Yari's five applications, five proxies, and VPN remain stopped. Persistent source startup gates prevent another owner. Current-compatible rollback admission now passes for all 13 state and staging roots. The original native ARM applications and saved identities also pass on private copies of the newest captured target state. These tests do not execute a live source rollback. Source production files and units remain unchanged.
 
@@ -15,6 +64,36 @@ Preserve Yari's original files for rollback. Stop and ask before a reset, incomp
 The initial application scope is Sonarr, Radarr, Prowlarr, NZBGet, and Transmission. Runtime requirements include service identities, protected credentials, completed-file access, downloader VPN isolation, and library staging/movement. Jellyfin and long-term media remain on Zao. Messaging and Syncthing remain excluded.
 
 Do not reinstall or format either host. Do not run Disko or fresh-install deployment workflows. Preserve Yari's operator account, SSH identities, disks, and unrelated application state. Do not create a chargeable Oracle boot-volume backup.
+
+## Staged acceptance evidence
+
+The packaged mover also passes a real VM refresh failure and retry test. HTTP 503 leaves the published file and protected pending-refresh receipt intact. A later successful refresh removes the receipt without another import. Physical import roots remain present. The mover and restoration unit regressions pass again.
+
+The first two controlled searches returned HTTP 200 and zero releases. The helper omitted the search limit. The pinned [Prowlarr SearchResource](https://github.com/Prowlarr/Prowlarr/blob/v2.3.0.5236/src/Prowlarr.Api.V1/Search/SearchResource.cs) leaves its integer limit at zero. An explicit limit of 100 returned 25 releases for the same series. A bounded search across three retained monitored series then found one aired missing episode with an available release. Native Sonarr parsing identifies exactly one episode with no existing file. No download, import, or replacement started. The original indexer hold returned after each search. The settings comparison excludes only native-discovered `capabilities`. Every other field and credential stays unchanged.
+
+Historical: the first imports-only system was `/nix/store/0vk5fpickca0nbk8x2b23qvi56vk9q5k-nixos-system-unzen-26.11.20260923.4975466`. It enabled automatic completed-download handling, which caused the processing incident. The deployment captured and verified stopped current service state before changing processing fields. Startup admission checks protected original receipts, original clients, held indexers, task identities, and held schedules. Only the read-only receipt check runs as root. Application users stay unchanged. The 32 restoration and startup-admission tests pass. The production Nix contract and actual startup pass. The safe replacement holds automatic imports and removal. Normal processing has since superseded both.
+
+Native Sonarr search has a separate authentication blocker. Both ARR indexers retain a Prowlarr key reference that already differed from Prowlarr's key in the stopped source. Current credentials remain identical to that source. Native Sonarr validation returns HTTP 401. A native test with Prowlarr's existing key returns HTTP 200 for both Sonarr and Radarr without saving ARR settings. Repair would change one credential-reference value per ARR indexer. It does not require a new key or key rotation. The operator approved this repair in ask `1c837bd2-d30e-483f-a292-6716c561b148`. Evidence: `approved-existing-key-reference-repair/c0c6389eea364e4a9c897f51441eb201/admission.json`. Original references remain in protected stopped copies.
+
+
+| Admission | Verified result and limit |
+| --- | --- |
+| Original processing receipts | Protected stopped-source receipts retain 11 Sonarr, 11 Radarr, and 8 Prowlarr task rows, original flags, and absent Config rows. Safe receipts in `processing-original-safe/` add exact original removal flags. Normal restoration passed. |
+| Fresh checkpoint before imports-only | `pre-resumption-checkpoint/ec439950e72644bf9b3e7971559839d3/admission.json` admits all 13 roots and an exact current service-state copy. |
+| Durable imports-only deployment | `deployment/imports-only-a99272e12e0b49f59deb49b0bb2472e2/admission.json` admits matching active and normal profiles, ten active owners, restored ARR clients, and retained automatic holds. No replay or reboot occurred. |
+| Explicit-limit retained search | `representative-manual-indexer-stage/2d0cdad7689c4bec917dd32959b5f39d/` retains 25 native releases and restored holds. |
+| Available missing-episode release | `representative-bounded-missing-release-search/bc90276e24ac4a2789e691850d9f241d/admission.json` admits one native-parsed aired monitored missing episode without replacement or download. |
+| Existing-key binding tests | `existing-prowlarr-key-binding-test/c88278203b6c4c0eb619b3478fb37966/admission.json` admits HTTP 200 from both native ARR tests. No ARR credential-reference changes were saved. |
+| Original credential provenance | `retained-arr-indexer-credential-provenance/5d46327e39be4983bb1e2bd9eaa12db3/admission.json` admits the original configuration and both original databases by SHA-256. Both obsolete references predate the move. All current credential values match the source. |
+| Latest owned regressions | The 42 state-readiness tests, 16 mover tests, and runtime VM pass. `git diff --check` and Nix formatting pass. |
+| Fresh stopped state before held integration deployment | `pre-resumption-checkpoint/c2b4384ab2714908ba66a7cff55c8e81/admission.json` admits all 13 roots and a verified current service-state copy. No original publication was replayed. |
+| Durable held integration deployment | Active and normal profiles use `/nix/store/vhq2lw2yaybzzk6zh2n8njgm4lwp5bxq-nixos-system-unzen-26.11.20260923.4975466`. All ten target application/proxy owners run. The boot ID remains unchanged. |
+| Retained client and notification tests | `staged-integration-tests/e99ab1b382fb48829c9cfa977f9d2472/admission.json` admits all eight native tests. NZBGet categories remain `Series` and `Movies`. Only webhook hosts changed; messaging remains on Yari. |
+| Actual library handoff | `mapped-library-admission/be9cbf09dd8449fdab968a42b136598c/admission.json` admits the actual packaged service, mapped publication, full content and nanosecond timestamps, physical-root preservation, and retained authenticated refresh. Jellyfin indexed the valid video. A direct read on Zao admits stored `0:993:0664` metadata. Only the owned disposable fixture was released afterward. |
+| First retained production group | Group 763 downloaded additional data but ended `FAILURE/PAR`. Its 100 failed articles existed before this test and remained 100 afterward. Native repair reports insufficient recovery data. Its failed history, files, and protected copies remain. No forced import occurred. |
+| Successful retained production download | `representative-production-download/b1d9a4d1c72a4db4b7e36b2ac3054989/admission.json` admits group 762, 30,378,752 additional downloaded bytes, `SUCCESS/UNPACK`, and 11 completed files. Native processing later consumed this group during the processing incident. |
+
+Evidence paths without a leading slash are under Unzen's protected `/var/lib/media-migration/`. Raw diagnostics and tokens remain outside Git. Original Yari files, protected captures, and service identities remain retained.
 
 ## Verified baseline on 2026-10-10
 
@@ -291,7 +370,7 @@ After durable deployment, an actual VPN restart restored Prowlarr, NZBGet, and T
 
 After that restart, all five original stable HTTPS endpoints passed again. Original registrations, owners, keys, tags, and addresses remained unchanged. The VPN handshake, tunnel-only default routes, and actual consumer namespaces passed. Sonarr read 636 TV files, and Radarr read 28 movie files through the mapped views. Neither service wrote library data. Zao ownership and export policy remain unchanged.
 
-The source fence still admits 11 stopped owners and 11 persistent startup gates. Source production files and sealed recovery artifacts remain retained. Processing resumption requires separate approval. Target library-mover integration, historical download recovery, and notification repairs remain separate work. The earlier NVMe failure's cause and permanent hardware health remain unproven. No additional reboot is authorized.
+The source fence still admits 11 stopped owners and 11 persistent startup gates. Source production files and sealed recovery artifacts remain retained. At held completion, processing resumption required separate approval. The operator subsequently approved mover integration, notification repairs, and staged resumption. Historical download recovery remains outside automatic resumption. The earlier NVMe failure's cause and permanent hardware health remain unproven. No additional reboot is authorized.
 
 Protected receipts below `/var/lib/media-migration` include:
 

@@ -1,4 +1,4 @@
-# Durable held placement. Keep this profile after the three runtime layers.
+# Admitted production placement. Keep this profile after the three runtime layers.
 { ... }:
 {
   nixos.modules.media-placement-unzen =
@@ -8,7 +8,7 @@
         media-applications = {
           enable = true;
           mediaGid = 390;
-          processing = lib.mkDefault "held";
+          processing = lib.mkDefault "enabled";
           placement = lib.mkDefault {
             sonarr = "unzen";
             radarr = "unzen";
@@ -17,7 +17,10 @@
             transmission = "unzen";
           };
         };
-        media-runtime.enable = true;
+        media-runtime = {
+          enable = true;
+          libraryMover.enable = true;
+        };
         media-identities.enable = true;
       };
     };

@@ -10,7 +10,7 @@ Keep staging on the downloader's current host. Other applications receive manage
 
 The operator selected a client-side mapped view for existing Zao media. Keep the stored ownership and the export policy on Zao unchanged. Translate legacy ownership only in the view that Sonarr and Radarr use. Do not disable filesystem permission checks or assign the unrelated `systemd-coredump` group to these services.
 
-The cost is an additional filesystem layer on each host with Sonarr or Radarr. Required mounts must stop their consumers on failure. The view does not replace transfer, identity, processing-hold, or rollback admission for a controlled move.
+The cost is an additional filesystem layer on each host with Sonarr, Radarr, or the library mover. Required mounts must stop their consumers on failure. The view does not replace transfer, identity, processing-hold, or rollback admission for a controlled move.
 
 ## Trade-offs
 
@@ -40,4 +40,14 @@ A controlled move holds all existing task timestamps at `2099-01-01 00:00:00` be
 
 The cost is suspension of scheduled backups, health checks, and update checks. The hold does not prevent an authorized user from starting a manual command. Processing resumption requires separate approval and restoration of the retained original flags and task timestamps.
 
-Approval of this design does not authorize live cutover, bulk data transfer, credential replacement, download resumption, forced imports, or deletion of existing state or media. See the [implementation and acceptance plan](../plans/media-portability.md).
+Approval of this design alone does not authorize live cutover, bulk transfer, credential replacement, download resumption, forced imports, or deletion of existing state or media. The operator subsequently approved the controlled move and held deployment. See the [implementation and acceptance plan](../plans/media-portability.md).
+
+## Verified library handoff and staged resumption
+
+The operator selected `finish-and-staged-resumption` in `finish-media-processing`, ask ID `6b3d885b-7be1-4207-9b8a-bcf2dcae69d4`. This approval covers the library mover, notification repairs, one representative production workflow, and staged normal processing after acceptance. It excludes a reboot, application reset, upgrade, credential replacement, original-source cleanup, and messaging relocation.
+
+The library mover publishes verified aged imports through the mapped view. Atomic no-replace publication refuses different destination content. Existing destination metadata remains unchanged. Physical import roots and completed-download hardlinks remain. A protected receipt retains pending Jellyfin refresh work until the existing authenticated connection accepts it.
+
+The cost is one file copy and repeated SHA-256 reads before source release. Retained completed-download hardlinks can prevent this handoff from increasing free space. The mover does not reconstruct missing download history or repair missing archive data. A processing rollback needs a fresh current-state capture after processing advances.
+
+Messaging stays on Yari. Only the retained ARR webhook host changes from loopback to the existing Yari relay. Its path, query, notification identity, and credentials remain unchanged.

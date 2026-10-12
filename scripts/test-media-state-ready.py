@@ -70,6 +70,9 @@ class ExistingStateRequired(unittest.TestCase):
                            + ','.join('"' + column + '" INTEGER' for column in columns) + ')')
                 db.execute('INSERT INTO "' + table + '" VALUES (' + ','.join('?' for _ in range(len(columns) + 2)) + ')',
                            [1, '{"password":"fixture-private-credential"}'] + [1] * len(columns))
+            if name != 'prowlarr':
+                db.execute('ALTER TABLE DownloadClients ADD COLUMN RemoveCompletedDownloads INTEGER DEFAULT 1')
+                db.execute('ALTER TABLE DownloadClients ADD COLUMN RemoveFailedDownloads INTEGER DEFAULT 1')
 
     def test_live_processing_is_rejected_by_hold_gate(self):
         self.seed_processing()
@@ -222,6 +225,218 @@ class ExistingStateRequired(unittest.TestCase):
         with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
             db.execute("UPDATE ScheduledTasks SET LastExecution='2099-01-01T00:00:00Z'")
         guard.validate_arr("sonarr", self.root, require_pause=True)
+
+    def held_receipt(self, name="sonarr", completed=True):
+        self.seed_processing(name=name, completed=completed)
+        receipt = Path(self.temporary.name + "-restore.json")
+        self.addCleanup(lambda: receipt.unlink(missing_ok=True))
+        guard.prepare_arr_pause(name, self.root, receipt)
+        return receipt
+
+    def test_approved_restoration_preserves_credentials_history_and_original_times(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause("sonarr", self.root, receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db:
+            self.assertEqual(db.execute("SELECT Enable,Settings FROM DownloadClients").fetchone(),
+                             (1, '{"password":"fixture-private-credential"}'))
+            self.assertEqual(db.execute("SELECT LastExecution FROM ScheduledTasks ORDER BY Id").fetchall(),
+                             [("2026-08-18 10:00:00",), ("2026-08-17 10:00:00",)])
+            self.assertEqual(db.execute("SELECT Status,Body FROM Commands").fetchall(), [(6, "fixture-command-body")])
+        guard.validate_arr("sonarr", self.root)
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, require_pause=True)
+        self.assertTrue(receipt.exists())
+
+    def test_read_admission_does_not_create_or_change_source_wal_sidecars(self):
+        receipt = self.held_receipt()
+        database = self.root / 'sonarr.db'
+        with closing(sqlite3.connect(database)) as db:
+            db.execute('PRAGMA journal_mode=WAL')
+        before = {path.name: (path.read_bytes(), path.stat().st_mode, path.stat().st_uid, path.stat().st_gid, path.stat().st_mtime_ns) for path in self.root.iterdir() if path.is_file()}
+        guard.validate_arr('sonarr', self.root, require_pause=True)
+        after = {path.name: (path.read_bytes(), path.stat().st_mode, path.stat().st_uid, path.stat().st_gid, path.stat().st_mtime_ns) for path in self.root.iterdir() if path.is_file()}
+        self.assertEqual(after, before)
+
+    def test_private_read_admission_includes_committed_live_wal(self):
+        self.held_receipt()
+        database = self.root / 'sonarr.db'
+        with closing(sqlite3.connect(database)) as db, db:
+            db.execute('PRAGMA journal_mode=WAL')
+            db.execute("INSERT INTO Commands (Id,Status,Body) VALUES (2,6,'committed-wal-command')")
+            db.commit()
+            before = {path.name: (path.read_bytes(), path.stat().st_mtime_ns) for path in self.root.iterdir() if path.is_file()}
+            with guard.arr_read_connection(database) as snapshot:
+                self.assertEqual(snapshot.execute('SELECT Body FROM Commands WHERE Id=2').fetchone(), ('committed-wal-command',))
+            guard.validate_arr('sonarr', self.root, require_pause=True)
+            after = {path.name: (path.read_bytes(), path.stat().st_mtime_ns) for path in self.root.iterdir() if path.is_file()}
+            self.assertEqual(after, before)
+
+    def test_enabled_startup_admits_original_flags_and_native_execution_progress(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause('sonarr', self.root, receipt)
+        guard.validate_arr('sonarr', self.root, enabled_receipt=receipt)
+        with closing(sqlite3.connect(self.root / 'sonarr.db')) as db, db:
+            db.execute("UPDATE ScheduledTasks SET LastExecution='2026-10-08 12:00:00'")
+        guard.validate_arr('sonarr', self.root, enabled_receipt=receipt)
+
+    def test_enabled_startup_rejects_unrestored_flags_and_missing_receipt(self):
+        receipt = self.held_receipt()
+        with self.assertRaises(ValueError):
+            guard.validate_arr('sonarr', self.root, enabled_receipt=receipt)
+        guard.restore_arr_pause('sonarr', self.root, receipt)
+        with closing(sqlite3.connect(self.root / 'sonarr.db')) as db, db:
+            db.execute('UPDATE DownloadClients SET RemoveFailedDownloads=0')
+        with self.assertRaises(ValueError):
+            guard.validate_arr('sonarr', self.root, enabled_receipt=receipt)
+        with self.assertRaises(ValueError):
+            guard.validate_arr('sonarr', self.root, imports_receipt=receipt, enabled_receipt=receipt)
+
+    def test_enabled_startup_rejects_scheduler_hold_with_original_flags(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause('sonarr', self.root, receipt)
+        with closing(sqlite3.connect(self.root / 'sonarr.db')) as db, db:
+            db.execute('UPDATE ScheduledTasks SET LastExecution=?', (guard.SCHEDULE_HOLD_UNTIL,))
+        with self.assertRaises(ValueError):
+            guard.validate_arr('sonarr', self.root, enabled_receipt=receipt)
+
+    def test_enabled_prowlarr_startup_restores_original_sync_flags(self):
+        receipt = self.held_receipt(name='prowlarr')
+        guard.restore_arr_pause('prowlarr', self.root, receipt)
+        guard.validate_arr('prowlarr', self.root, enabled_receipt=receipt)
+
+    def test_original_default_import_handling_is_restored_without_new_configuration(self):
+        receipt = self.held_receipt(name="radarr", completed=False)
+        guard.restore_arr_pause("radarr", self.root, receipt)
+        with closing(sqlite3.connect(self.root / "radarr.db")) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM Config WHERE Key='enablecompleteddownloadhandling'").fetchone()[0], 0)
+
+    def test_imports_only_restoration_keeps_schedules_and_indexers_held(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause("sonarr", self.root, receipt, mode="imports-only")
+        guard.validate_arr("sonarr", self.root, imports_receipt=receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db:
+            guard.validate_scheduled_pause(db)
+            self.assertEqual(db.execute("SELECT Enable FROM DownloadClients").fetchone()[0], 1)
+            self.assertEqual(db.execute("SELECT EnableRss FROM Indexers").fetchone()[0], 0)
+
+    def test_imports_only_startup_requires_original_clients_and_held_indexers(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause("sonarr", self.root, receipt, mode="imports-only")
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("UPDATE Indexers SET EnableInteractiveSearch=1")
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, imports_receipt=receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("UPDATE Indexers SET EnableInteractiveSearch=0")
+            db.execute("UPDATE DownloadClients SET Enable=0")
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, imports_receipt=receipt)
+
+    def test_imports_only_startup_rejects_running_schedules_and_import_changes(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause("sonarr", self.root, receipt, mode="imports-only")
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("UPDATE ScheduledTasks SET LastExecution='2026-01-01 00:00:00'")
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, imports_receipt=receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("UPDATE ScheduledTasks SET LastExecution=?", (guard.SCHEDULE_HOLD_UNTIL,))
+            db.execute("UPDATE Config SET Value='True' WHERE Key='enablecompleteddownloadhandling'")
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, imports_receipt=receipt)
+
+    def test_imports_only_startup_preserves_absent_config_and_requires_protected_receipt(self):
+        receipt = self.held_receipt(name="radarr", completed=False)
+        guard.restore_arr_pause("radarr", self.root, receipt, mode="imports-only")
+        guard.validate_arr("radarr", self.root, imports_receipt=receipt)
+        receipt.chmod(0o644)
+        with self.assertRaises(ValueError):
+            guard.validate_arr("radarr", self.root, imports_receipt=receipt)
+
+    def test_imports_only_holds_automatic_import_and_removal_flags(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause('sonarr', self.root, receipt, mode='imports-only')
+        with closing(sqlite3.connect(self.root / 'sonarr.db')) as db:
+            self.assertEqual(db.execute('SELECT Enable,RemoveCompletedDownloads,RemoveFailedDownloads FROM DownloadClients').fetchall(), [(1, 0, 0)])
+            self.assertEqual(db.execute("SELECT Value FROM Config WHERE Key='enablecompleteddownloadhandling'").fetchall(), [('False',)])
+            self.assertEqual(db.execute('SELECT Status,Body FROM Commands').fetchall(), [(6, 'fixture-command-body')])
+        guard.validate_arr('sonarr', self.root, imports_receipt=receipt)
+        guard.restore_arr_pause('sonarr', self.root, receipt)
+        with closing(sqlite3.connect(self.root / 'sonarr.db')) as db:
+            self.assertEqual(db.execute('SELECT Enable,RemoveCompletedDownloads,RemoveFailedDownloads FROM DownloadClients').fetchall(), [(1, 1, 1)])
+            self.assertEqual(db.execute("SELECT Value FROM Config WHERE Key='enablecompleteddownloadhandling'").fetchall(), [('True',)])
+
+    def test_imports_only_fails_closed_when_native_cleanup_is_reenabled(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause('sonarr', self.root, receipt, mode='imports-only')
+        for column in ('RemoveCompletedDownloads', 'RemoveFailedDownloads'):
+            with closing(sqlite3.connect(self.root / 'sonarr.db')) as db, db:
+                db.execute('UPDATE DownloadClients SET ' + column + '=1')
+            with self.assertRaises(ValueError):
+                guard.validate_arr('sonarr', self.root, imports_receipt=receipt)
+            with closing(sqlite3.connect(self.root / 'sonarr.db')) as db, db:
+                db.execute('UPDATE DownloadClients SET ' + column + '=0')
+
+    def test_imports_only_requires_original_removal_receipt_before_any_updates(self):
+        receipt = self.held_receipt()
+        original = json.loads(receipt.read_text())
+        del original['download_removal_flags']
+        receipt.write_text(json.dumps(original))
+        with self.assertRaises(ValueError):
+            guard.restore_arr_pause('sonarr', self.root, receipt, mode='imports-only')
+        guard.validate_arr('sonarr', self.root, require_pause=True)
+
+    def test_imports_only_holds_absent_config_then_restores_original_absence(self):
+        receipt = self.held_receipt(name='radarr', completed=False)
+        guard.restore_arr_pause('radarr', self.root, receipt, mode='imports-only')
+        with closing(sqlite3.connect(self.root / 'radarr.db')) as db:
+            self.assertEqual(db.execute("SELECT Value FROM Config WHERE Key='enablecompleteddownloadhandling'").fetchall(), [('False',)])
+        guard.restore_arr_pause('radarr', self.root, receipt)
+        with closing(sqlite3.connect(self.root / 'radarr.db')) as db:
+            self.assertEqual(db.execute("SELECT Value FROM Config WHERE Key='enablecompleteddownloadhandling'").fetchall(), [])
+
+    def test_imports_only_startup_rejects_conflicting_holds(self):
+        receipt = self.held_receipt()
+        with self.assertRaises(ValueError):
+            guard.validate_arr("sonarr", self.root, require_pause=True, imports_receipt=receipt)
+
+    def test_prowlarr_cannot_use_imports_only_startup(self):
+        receipt = self.held_receipt(name="prowlarr")
+        with self.assertRaises(ValueError):
+            guard.validate_arr("prowlarr", self.root, imports_receipt=receipt)
+
+    def test_imports_only_stage_can_finish_with_original_schedules_and_flags(self):
+        receipt = self.held_receipt()
+        guard.restore_arr_pause("sonarr", self.root, receipt, mode="imports-only")
+        guard.restore_arr_pause("sonarr", self.root, receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db:
+            self.assertEqual(db.execute("SELECT EnableRss FROM Indexers").fetchone()[0], 1)
+            self.assertEqual(db.execute("SELECT LastExecution FROM ScheduledTasks WHERE Id=1").fetchone()[0], "2026-08-18 10:00:00")
+
+    def test_restoration_rejects_unprotected_receipt_without_writing_flags(self):
+        receipt = self.held_receipt()
+        receipt.chmod(0o644)
+        with self.assertRaises(ValueError):
+            guard.restore_arr_pause("sonarr", self.root, receipt)
+        guard.validate_arr("sonarr", self.root, require_pause=True)
+
+    def test_restoration_rejects_changed_task_identity_before_writing_flags(self):
+        receipt = self.held_receipt()
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("UPDATE ScheduledTasks SET TypeName='unexpected task' WHERE Id=1")
+        with self.assertRaises(ValueError):
+            guard.restore_arr_pause("sonarr", self.root, receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db:
+            self.assertEqual(db.execute("SELECT Enable FROM DownloadClients").fetchone()[0], 0)
+
+    def test_restoration_rejects_changed_client_set_before_writing_anything(self):
+        receipt = self.held_receipt()
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db, db:
+            db.execute("INSERT INTO DownloadClients (Id,Settings,Enable) VALUES (2,'retained new client',0)")
+        with self.assertRaises(ValueError):
+            guard.restore_arr_pause("sonarr", self.root, receipt)
+        with closing(sqlite3.connect(self.root / "sonarr.db")) as db:
+            self.assertEqual(db.execute("SELECT Enable FROM DownloadClients ORDER BY Id").fetchall(), [(0,), (0,)])
 
     def test_missing_api_identity_is_rejected(self):
         (self.root / "config.xml").write_text("<Config/>")

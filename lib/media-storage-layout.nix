@@ -18,6 +18,7 @@ let
     "radarr"
   ];
   isLibraryHost = libraryHost == host;
+  hasLibraryAccess = hasArr || isLibraryHost;
   downloaders = [
     "nzbget"
     "transmission"
@@ -92,7 +93,7 @@ lib.foldl' lib.recursiveUpdate { } [
       options = nfsOptions;
     };
   })
-  (lib.optionalAttrs hasArr (
+  (lib.optionalAttrs hasLibraryAccess (
     lib.genAttrs
       (map (part: "${libraryView}/${part}") [
         "movies"
@@ -123,12 +124,14 @@ lib.foldl' lib.recursiveUpdate { } [
         }
       )
   ))
-  (lib.optionalAttrs hasArr {
+  (lib.optionalAttrs hasLibraryAccess {
     "/net/mountainous/zao/media" = {
       device = "${fqdn libraryServer}:/";
       fsType = "nfs";
       options = nfsOptions;
     };
+  })
+  (lib.optionalAttrs hasArr {
     "/srv/range/media/movies" = {
       device = "${mediaRoot}/movies:${libraryView}/movies";
       fsType = "fuse.mergerfs";

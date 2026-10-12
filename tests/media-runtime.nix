@@ -74,6 +74,10 @@ pkgs.testers.runNixOSTest {
       { lib, ... }:
       {
         imports = [ common ];
+        mountainous.features.media-runtime.libraryMover = {
+          enable = true;
+          minAgeMinutes = 0;
+        };
         # Keep Prowlarr's real namespace/readiness dependencies, but use a
         # sleeping fixture instead of constructing application state here.
         systemd.services.prowlarr = {
@@ -106,7 +110,13 @@ pkgs.testers.runNixOSTest {
         mountainous.features.media-applications.placement = lib.mkForce (
           lib.genAttrs (builtins.attrNames assignments) (_: "zcolocated")
         );
-        mountainous.features.media-runtime.libraryHost = "zcolocated";
+        mountainous.features.media-runtime = {
+          libraryHost = "zcolocated";
+          libraryMover = {
+            enable = true;
+            minAgeMinutes = 0;
+          };
+        };
         systemd.services.media-local-staging-consumer-fixture = {
           inherit (config.systemd.services.radarr) requires after bindsTo;
           serviceConfig = {
@@ -218,6 +228,48 @@ pkgs.testers.runNixOSTest {
         arr.succeed("runuser -u radarr -- python3 ${./media-storage-probe.py} /srv/range/media/movies/legacy-writer-owned/existing-movie")
         zao.succeed("test $(stat -c %u:%g:%a /srv/fixture-library/movies/legacy-writer-owned/existing-movie) = 991:993:664")
         zao.succeed("test $(stat -c %u:%g:%a /srv/fixture-library/movies/legacy-writer-owned) = 991:993:2775")
+
+    with subtest("actual mover publishes through mapped NFS on library hosts with and without local ARR"):
+        import json
+        zao.succeed("systemd-run --unit=library-refresh-fixture python3 ${./media-library-refresh-server.py} /run/library-refresh-received /run/library-refresh-response-status")
+        zao.wait_for_unit("library-refresh-fixture.service")
+        for machine in (unzen, zcolocated):
+            machine.succeed("install -d -m 700 /var/lib/media-migration/credentials")
+            settings = json.dumps({"url": "http://192.168.1.3:8097", "api_key": "fixture-only-token"})
+            machine.succeed("printf %s " + shlex.quote(settings) + " > /var/lib/media-migration/credentials/library-refresh.json")
+            machine.succeed("chmod 600 /var/lib/media-migration/credentials/library-refresh.json")
+            machine.succeed("systemctl start media-storage-ready.service")
+            machine.succeed("systemctl start media-library-mover@nightly.service")
+            machine.fail("test -e /var/lib/media-migration/ready/library-mover")
+            title = "mover-" + machine.name
+            machine.succeed("install -d -o 274 -g media -m 2775 /srv/basin/media/tv/" + title)
+            machine.succeed("install -o 274 -g media -m 664 ${pkgs.writeText "verified-mover-fixture" "verified-media-bytes"} /srv/basin/media/tv/" + title + "/episode.mkv")
+            machine.succeed("touch /var/lib/media-migration/ready/library-mover")
+            result, output = machine.execute("systemctl start media-library-mover@nightly.service")
+            if result:
+                print(machine.succeed("journalctl --no-pager -u media-library-mover@nightly.service"))
+                raise Exception("Actual mapped-library handoff failed: " + output)
+            machine.fail("test -e /srv/basin/media/tv/" + title + "/episode.mkv")
+            zao.succeed("cmp ${pkgs.writeText "verified-mover-fixture" "verified-media-bytes"} /srv/fixture-library/tv/" + title + "/episode.mkv")
+            zao.succeed("test $(stat -c %u:%g:%a /srv/fixture-library/tv/" + title + "/episode.mkv) = 0:993:664")
+            machine.succeed("test -d /srv/basin/media/tv && test -d /srv/basin/media/movies")
+            machine.fail("systemctl is-active --quiet media-library-mover-nightly.timer")
+        assert int(zao.succeed("cat /run/library-refresh-received").strip()) == 2
+
+    with subtest("actual refresh failure keeps a durable receipt and retry succeeds without another import"):
+        zao.succeed("echo 503 > /run/library-refresh-response-status")
+        unzen.succeed("install -d -o 274 -g media -m 2775 /srv/basin/media/tv/refresh-retry")
+        unzen.succeed("install -o 274 -g media -m 664 ${pkgs.writeText "verified-mover-fixture" "verified-media-bytes"} /srv/basin/media/tv/refresh-retry/episode.mkv")
+        unzen.fail("systemctl start media-library-mover@nightly.service")
+        unzen.fail("test -e /srv/basin/media/tv/refresh-retry/episode.mkv")
+        zao.succeed("cmp ${pkgs.writeText "verified-mover-fixture" "verified-media-bytes"} /srv/fixture-library/tv/refresh-retry/episode.mkv")
+        unzen.succeed("test $(stat -c %u:%g:%a /var/lib/media-migration/library-handoff/refresh-pending) = 0:0:600")
+        unzen.succeed("test -d /srv/basin/media/tv && test -d /srv/basin/media/movies")
+        zao.succeed("echo 204 > /run/library-refresh-response-status")
+        unzen.succeed("systemctl start media-library-mover@nightly.service")
+        unzen.fail("test -e /var/lib/media-migration/library-handoff/refresh-pending")
+        zao.succeed("test $(cat /run/library-refresh-received) = 3")
+        unzen.succeed("test -d /srv/basin/media/tv && test -d /srv/basin/media/movies")
 
     with subtest("mapped view loss stops a consumer with the production ARR dependencies"):
         arr.succeed("systemctl start media-library-consumer-fixture.service")
