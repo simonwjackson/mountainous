@@ -71,6 +71,14 @@ boots unable to decrypt anything."
 echo "  $AGE"
 echo "  present in .sops.yaml"
 
+SSH_OPTS=(-F /dev/null -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
+if [ -n "${MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS:-}" ]; then
+  SSH_OPTS+=(-o "HostKeyAlias=$MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS")
+fi
+if [ -n "${MOUNTAINOUS_INSTALL_SSH_KEY:-}" ]; then
+  SSH_OPTS+=(-i "$MOUNTAINOUS_INSTALL_SSH_KEY")
+fi
+
 echo
 echo "=== staging the files to plant ==="
 # --extra-files copies the CONTENTS of a directory to the root of the new
@@ -78,9 +86,36 @@ echo "=== staging the files to plant ==="
 # survive: the copy preserves them.
 EXTRA=$(mktemp -d)
 trap 'rm -rf "$EXTRA"' EXIT
-install -d -m 0755 "$EXTRA/etc/ssh"
-install -m 0600 "$KEY" "$EXTRA/etc/ssh/ssh_host_ed25519_key"
-install -m 0644 "$KEY.pub" "$EXTRA/etc/ssh/ssh_host_ed25519_key.pub"
+
+# Plant the key where the host reads it. A permafrost host reads it from
+# /permafrost, which no tmpfs root wipes; other hosts read /etc/ssh.
+KEY_PATH=$(nix eval --raw ".#nixosConfigurations.$HOST.config.sops.age.sshKeyPaths" --apply builtins.head)
+install -d -m 0755 "$EXTRA$(dirname "$KEY_PATH")"
+install -m 0600 "$KEY" "$EXTRA$KEY_PATH"
+install -m 0644 "$KEY.pub" "$EXTRA$KEY_PATH.pub"
+
+# A reinstall keeps the machine's Tailscale identity. Without it the new
+# system would need a fresh login while its old node is still listed, which
+# tailscale-join refuses to resolve. Carry it only when the target already
+# runs this host, so a live USB or another OS never donates its identity.
+# MOUNTAINOUS_INSTALL_KEEP_TAILSCALE=0 skips this; =1 makes it required.
+KEEP_TS="${MOUNTAINOUS_INSTALL_KEEP_TAILSCALE:-auto}"
+if [ "$KEEP_TS" != 0 ]; then
+  REMOTE_HOST=$(ssh "${SSH_OPTS[@]}" "$TARGET" hostname 2>/dev/null || true)
+  if [ "$REMOTE_HOST" = "$HOST" ]; then
+    install -d -m 0700 "$EXTRA/var/lib/tailscale"
+    ssh "${SSH_OPTS[@]}" "$TARGET" cat /var/lib/tailscale/tailscaled.state \
+      > "$EXTRA/var/lib/tailscale/tailscaled.state" 2>/dev/null || true
+    chmod 0600 "$EXTRA/var/lib/tailscale/tailscaled.state"
+    if ! jq -e '._machinekey' "$EXTRA/var/lib/tailscale/tailscaled.state" >/dev/null 2>&1; then
+      rm -rf "$EXTRA/var/lib"
+      [ "$KEEP_TS" != 1 ] || die "could not read a valid Tailscale state from $TARGET"
+      echo "  no Tailscale state on $TARGET; the new system will log in fresh"
+    fi
+  elif [ "$KEEP_TS" = 1 ]; then
+    die "$TARGET reports hostname '$REMOTE_HOST', not '$HOST'; refusing to carry its Tailscale state"
+  fi
+fi
 find "$EXTRA" -type f -printf '  %M %P\n'
 
 echo
@@ -91,15 +126,26 @@ echo
 # Trust is fail-closed in the pinned tool. Keep the verified current host key
 # across kexec; do not disable checking before sending the new private key.
 INSTALL_ARGS=(--phases "${MOUNTAINOUS_INSTALL_PHASES:-kexec,disko,install,reboot}")
+# The fleet's RAM installer for the host's architecture. It carries the
+# target's Tailscale state through kexec (modules/kexec-installer.nix), so a
+# host reachable only over Tailscale stays reachable.
 if [ -n "${MOUNTAINOUS_INSTALL_KEXEC:-}" ]; then
-  INSTALL_ARGS+=(--kexec "$MOUNTAINOUS_INSTALL_KEXEC")
+  KEXEC="$MOUNTAINOUS_INSTALL_KEXEC"
+else
+  SYSTEM=$(nix eval --raw ".#nixosConfigurations.$HOST.config.nixpkgs.hostPlatform.system")
+  KEXEC_DIR=$(nix build --no-link --print-out-paths ".#packages.$SYSTEM.kexec-installer")
+  KEXEC=$(find "$KEXEC_DIR" -name '*.tar.gz' | head -n1)
+  [ -n "$KEXEC" ] || die "no kexec tarball in $KEXEC_DIR"
 fi
+echo "  kexec:  $KEXEC"
+INSTALL_ARGS+=(--kexec "$KEXEC")
 if [ -n "${MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS:-}" ]; then
   INSTALL_ARGS+=(--ssh-option "HostKeyAlias=$MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS")
 fi
 if [ -n "${MOUNTAINOUS_INSTALL_SSH_KEY:-}" ]; then
   INSTALL_ARGS+=(-i "$MOUNTAINOUS_INSTALL_SSH_KEY")
 fi
+
 if [ -n "${MOUNTAINOUS_NIXOS_ANYWHERE:-}" ]; then
   NIXOS_ANYWHERE=("$MOUNTAINOUS_NIXOS_ANYWHERE")
 else

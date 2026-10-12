@@ -1,10 +1,16 @@
-# Oracle Cloud Ampere A1 VM (aarch64), ported in place from the unified branch.
-# Media and messaging moved off this host. Do not run Disko or an installer
-# here: the partitions below already hold the root filesystem.
+# Oracle Cloud Ampere A1 VM (aarch64): a dedicated Forgerie host.
+#
+# The disk layout is the permafrost layer (modules/permafrost.nix), applied by
+# a fresh install with `nix run .#install`. Until that install, Yari still
+# runs on its old XFS root: do not switch that system to this config, because
+# its filesystems do not exist there. See docs/plans/yari-forgerie-host.md.
 {
   nixos.hosts.yari = {
     system = "aarch64-linux";
-    layers = [ "server" ];
+    layers = [
+      "server"
+      "permafrost"
+    ];
     module =
       { lib, modulesPath, ... }:
       {
@@ -15,19 +21,15 @@
         boot.initrd.availableKernelModules = [
           "virtio_scsi"
           "virtio_pci"
-          "xfs"
         ];
 
-        # The existing partitions, by the labels the original Disko layout
-        # wrote. Declared directly so no Disko module can format anything.
-        fileSystems."/" = {
-          device = "/dev/disk/by-partlabel/disk-boot-root";
-          fsType = "xfs";
-        };
-        fileSystems."/boot" = {
-          device = "/dev/disk/by-partlabel/disk-boot-ESP";
-          fsType = "vfat";
-        };
+        # The Oracle boot volume. The id is the volume's WWN, which stays the
+        # same in the RAM installer and the installed system.
+        mountainous.permafrost.device = "/dev/disk/by-id/scsi-3600746698fac4cdbbc994001bebb9e91";
+
+        # 23 GiB of RAM and no disk swap. Without swap, one memory spike lets
+        # the OOM killer stop forgerie-sessiond and every session in it.
+        zramSwap.enable = true;
 
         # Keep the DHCP client that already holds the VCN lease.
         networking.networkmanager.enable = lib.mkForce false;
@@ -35,8 +37,6 @@
         services.automatic-timezoned.enable = lib.mkForce false;
         time.timeZone = "UTC";
 
-        # simon takes the old account's UID so files such as Fuji's backup
-        # mirror stay owned by the operator. The old home stays on disk.
         users.users.simon.uid = 1000;
 
         system.stateVersion = "24.11";

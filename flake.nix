@@ -42,6 +42,13 @@
 
     import-tree.url = "github:denful/import-tree";
 
+    # The permafrost layer imports only nixos.nix, so none of this flake's own
+    # inputs (home-manager, nixpkgs) are needed.
+    impermanence = {
+      url = "github:nix-community/impermanence";
+      flake = false;
+    };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
