@@ -2,6 +2,8 @@
 #
 # Kamoi's two bars: top bar (title, clock, battery, wifi) and bottom dock
 # (all windows, all workspaces, click=activate, middle-click=close, drag-to-move).
+# Each screen gets its own pair, and each pair shows only that screen's
+# windows. See quickshell/lanes.js.
 # Meta+I toggles both for immersive browsing.
 {
   nixos.modules.desktop =
@@ -65,6 +67,9 @@
 
       hjem.users.simon.files.".config/quickshell/mountainous/shell.qml".source =
         ./quickshell/shell.qml;
+      # Per-screen lanes for the docks, top bars and omni bar.
+      hjem.users.simon.files.".config/quickshell/mountainous/lanes.js".source =
+        ./quickshell/lanes.js;
       hjem.users.simon.files.".config/quickshell/mountainous/Theme.qml".source =
         ./quickshell/Theme.qml;
       hjem.users.simon.files.".config/quickshell/mountainous/TogglePill.qml".source =

@@ -3,6 +3,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
+import "lanes.js" as Lanes
 
 Scope {
     id: root
@@ -73,6 +74,10 @@ Scope {
     // focused first". focusHistoryID is 0 for the focused window, 1 for
     // the one before it, so dropping 0 and sorting ascending makes
     // Enter on an untouched field return to the last window.
+    //
+    // Every screen's windows, grouped by screen, the focused screen
+    // first. The docks keep each screen to its own lane; this list is
+    // where a window on the other screen stays reachable.
     readonly property var windowRows: {
         const out = [];
         const all = [...Hyprland.toplevels.values];
@@ -86,12 +91,13 @@ Scope {
                 label: t.title && t.title !== "" ? t.title : "(untitled)",
                 detail: "page " + t.workspace.id,
                 order: h,
+                screen: Lanes.screenOf(t),
                 toplevel: t,
                 entry: null
             });
         }
-        out.sort(function (a, b) { return a.order - b.order; });
-        return out;
+        const here = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
+        return Lanes.groupRows(out, here);
     }
 
     readonly property var appRows: {
@@ -342,52 +348,80 @@ Scope {
                         currentIndex: 0
                         keyNavigationWraps: true
 
-                        delegate: Rectangle {
+                        delegate: Item {
+                            id: rowItem
                             required property var modelData
                             required property int index
                             width: list.width
-                            height: 26
-                            color: index === list.currentIndex ? Theme.bgSelected : "transparent"
-                            radius: Theme.radiusSmall
+                            height: heading.visible ? 26 + heading.height : 26
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: { list.currentIndex = index; root.run(modelData); }
+                            // The first window of each screen's group
+                            // names the screen. Only drawn when windows
+                            // sit on more than one screen.
+                            readonly property bool startsGroup: Lanes.startsGroup(root.rows, index)
+
+                            Text {
+                                id: heading
+                                visible: rowItem.startsGroup
+                                x: 8
+                                height: 20
+                                verticalAlignment: Text.AlignBottom
+                                bottomPadding: 3
+                                text: Lanes.screenLabel(rowItem.modelData.screen || "")
+                                color: Theme.textHint
+                                font.pixelSize: 10
+                                font.family: Theme.fontFamily
+                                font.capitalization: Font.AllUppercase
+                                font.letterSpacing: 0.8
                             }
 
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 8
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                height: 26
+                                color: index === list.currentIndex ? Theme.bgSelected : "transparent"
+                                radius: Theme.radiusSmall
 
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 20
-                                    text: modelData.kind === "window" ? "\u25a0"
-                                        : modelData.kind === "app" ? "\u25cf"
-                                        : modelData.kind === "nav" ? "\u2192" : "\u203a"
-                                    color: Theme.textDim
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: { list.currentIndex = index; root.run(modelData); }
                                 }
 
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 150
-                                    elide: Text.ElideRight
-                                    text: modelData.label
-                                    color: Theme.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: Theme.fontFamily
-                                }
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 8
+                                    anchors.rightMargin: 8
+                                    spacing: 8
 
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.detail || ""
-                                    color: Theme.textDetail
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 20
+                                        text: modelData.kind === "window" ? "\u25a0"
+                                            : modelData.kind === "app" ? "\u25cf"
+                                            : modelData.kind === "nav" ? "\u2192" : "\u203a"
+                                        color: Theme.textDim
+                                        font.pixelSize: 11
+                                        font.family: Theme.fontFamily
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 150
+                                        elide: Text.ElideRight
+                                        text: modelData.label
+                                        color: Theme.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: Theme.fontFamily
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.detail || ""
+                                        color: Theme.textDetail
+                                        font.pixelSize: 11
+                                        font.family: Theme.fontFamily
+                                    }
                                 }
                             }
                         }

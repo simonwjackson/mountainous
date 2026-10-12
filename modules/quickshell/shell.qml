@@ -7,6 +7,7 @@ import Quickshell.Widgets
 import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
+import "lanes.js" as Lanes
 
 ShellRoot {
     id: root
@@ -173,23 +174,20 @@ ShellRoot {
         }
     }
 
-    // Every window on every workspace, ordered along the strip.
+    // One screen's windows, ordered along its pages. Each screen is its
+    // own lane: its dock lists every page on that screen, and none of
+    // the other screen's. See lanes.js.
     //
-    // Not just the focused workspace: the dock is how you see the
-    // whole session at once, so a window two pages away is reachable
-    // in one click rather than by walking the strip to find it.
-    // Special workspaces are excluded; they are not part of the strip.
-    readonly property var allWindows: {
-        const list = [...Hyprland.toplevels.values].filter(function (t) {
-            return t.workspace && t.workspace.id > 0;
-        });
-        list.sort(function (a, b) { return a.workspace.id - b.workspace.id; });
-        return list;
+    // Every page, not just the one showing: the dock is how you see the
+    // screen's whole session at once, so a window two pages away is
+    // reachable in one click rather than by walking the strip to find it.
+    function windowsOn(screen) {
+        return Lanes.windowsOn(Hyprland.toplevels.values, screen ? screen.name : "");
     }
 
     // Which page a window is on, or -1 while it is between pages.
     //
-    // allWindows filters on t.workspace before building the list, but
+    // windowsOn filters on t.workspace before building the list, but
     // that only makes the list safe at the moment it is built. Each
     // delegate binding re-runs when the property changes, and Hyprland
     // nulls workspace while it moves or closes a window, so the filter
@@ -200,10 +198,10 @@ ShellRoot {
     //                                'id' of null
     //   WARN scene: @shell.qml[272]: same
     //
-    // -1 is safe as the unknown value because allWindows keeps only
+    // -1 is safe as the unknown value because windowsOn keeps only
     // ids above zero; special workspaces are already excluded.
     function pageOf(toplevel) {
-        return (toplevel && toplevel.workspace) ? toplevel.workspace.id : -1;
+        return Lanes.pageOf(toplevel);
     }
 
     // Hyprland addresses a window as address:0x... in a dispatcher.
@@ -228,11 +226,15 @@ ShellRoot {
     //   window.swap does not. It acts on the focused window, so the
     //   dragged window has to be focused first, in the same batch to
     //   keep the two steps from racing.
-    function dropOnto(fromIndex, toIndex) {
+    //
+    // Both indices are into one dock's list, so a drag never leaves its
+    // screen. Each dock is a separate surface, and a pointer drag cannot
+    // cross from one surface to another.
+    function dropOnto(windows, fromIndex, toIndex) {
         if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
 
-        const from = root.allWindows[fromIndex];
-        const to   = root.allWindows[toIndex];
+        const from = windows[fromIndex];
+        const to   = windows[toIndex];
         const a = root.addressOf(from);
         const b = root.addressOf(to);
         if (a === "" || b === "") return;
@@ -276,6 +278,24 @@ ShellRoot {
             required property var modelData
             screen: modelData
             visible: root.chromeVisible
+
+            // The window that last had focus on this screen. The title
+            // below falls back to it once focus moves to another screen,
+            // so this bar keeps naming what this screen shows.
+            property var lastFocused: null
+
+            Connections {
+                target: Hyprland
+
+                function onActiveToplevelChanged() {
+                    const t = Hyprland.activeToplevel;
+                    if (t && Lanes.screenOf(t) === topBar.modelData.name) topBar.lastFocused = t;
+                }
+            }
+
+            readonly property var frontWindow: Lanes.frontWindow(
+                Hyprland.toplevels.values, modelData.name,
+                Hyprland.activeToplevel, lastFocused)
 
             BluetoothPanel {
                 id: bluetoothPanel
@@ -326,7 +346,7 @@ ShellRoot {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !dictation.barVisible
                     elide: Text.ElideRight
-                    text: Hyprland.activeToplevel ? Hyprland.activeToplevel.title : ""
+                    text: topBar.frontWindow ? topBar.frontWindow.title : ""
                     color: Theme.textPage
                     font.pixelSize: 11
                     font.family: Theme.fontFamily
@@ -626,9 +646,14 @@ ShellRoot {
         model: Quickshell.screens
 
         PanelWindow {
+            id: dockWindow
+
             required property var modelData
             screen: modelData
             visible: root.chromeVisible
+
+            // This screen's windows only. See root.windowsOn.
+            readonly property var lane: root.windowsOn(modelData)
 
             anchors { bottom: true; left: true; right: true }
             implicitHeight: 44
@@ -644,7 +669,7 @@ ShellRoot {
                 implicitHeight: 38
                 radius: Theme.radiusMedium
                 color: Theme.bgPanel
-                visible: root.allWindows.length > 0
+                visible: dockWindow.lane.length > 0
 
                 // -1 means no drag is in progress. Holding both ends
                 // here rather than in each icon keeps one owner for the
@@ -666,7 +691,7 @@ ShellRoot {
                     spacing: 6
 
                     Repeater {
-                        model: ScriptModel { values: root.allWindows }
+                        model: ScriptModel { values: dockWindow.lane }
 
                         delegate: Rectangle {
                             required property var modelData
@@ -683,7 +708,7 @@ ShellRoot {
                             readonly property bool startsWorkspace: {
                                 if (index === 0) return false;
                                 const here = root.pageOf(modelData);
-                                const prev = root.pageOf(root.allWindows[index - 1]);
+                                const prev = root.pageOf(dockWindow.lane[index - 1]);
                                 // While either window is between pages,
                                 // draw nothing rather than a separator
                                 // that moves again a moment later.
@@ -712,19 +737,17 @@ ShellRoot {
                                 width: 30
                                 height: 30
                                 radius: Theme.radiusSmall
-                                // The focused window is marked. Windows
-                                // on other pages are dimmed rather than
-                                // hidden, so the whole session reads at
-                                // a glance.
+                                // The focused window is marked, on
+                                // whichever screen has focus. Windows on
+                                // pages this screen is not showing are
+                                // dimmed rather than hidden, so the
+                                // screen's whole session reads at a
+                                // glance. "Showing" is per screen: focus
+                                // on the other screen does not dim this
+                                // one. A window between pages is not
+                                // shown anywhere, so it stays dimmed.
                                 color: modelData.activated ? Theme.bgActive : "transparent"
-                                opacity: {
-                                    const page = root.pageOf(modelData);
-                                    // A window between pages is not on
-                                    // the focused one as far as anybody
-                                    // can tell, so it stays dimmed.
-                                    if (page < 0 || !Hyprland.focusedWorkspace) return 0.45;
-                                    return page === Hyprland.focusedWorkspace.id ? 1.0 : 0.45;
-                                }
+                                opacity: Lanes.isShown(modelData) ? 1.0 : 0.45
 
                                 // A toplevel has no wayland handle until
                                 // Hyprland reports its address, so appId
@@ -819,7 +842,7 @@ ShellRoot {
 
                                     onReleased: function (mouse) {
                                         if (!grip.dragging) return;
-                                        root.dropOnto(index, grip.targetAt(mouse.x, mouse.y));
+                                        root.dropOnto(dockWindow.lane, index, grip.targetAt(mouse.x, mouse.y));
                                         dock.dragIndex = -1;
                                         dock.dropIndex = -1;
                                     }

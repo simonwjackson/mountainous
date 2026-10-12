@@ -1,0 +1,74 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash nodejs
+# shellcheck shell=bash
+# Run modules/quickshell/lanes.js against plain objects shaped like
+# Quickshell 0.3.1's Hyprland toplevels: a laptop panel and the tablet.
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+LANES="$root/modules/quickshell/lanes.js" node - <<'EOF'
+const fs = require("fs");
+const vm = require("vm");
+// QML's ".pragma library" line is not JavaScript; drop it.
+const source = fs.readFileSync(process.env.LANES, "utf8").replace(/^\.pragma library\s*$/m, "");
+const L = {};
+vm.runInNewContext(source + "\nObject.assign(L, { pageOf, screenOf, isShown, windowsOn, frontWindow, screenLabel, groupRows, startsGroup });", { L });
+
+let passed = 0;
+function check(cond, message) { if (!cond) throw new Error(message); passed++; }
+function same(a, b, message) { check(JSON.stringify(a) === JSON.stringify(b), `${message}: got ${JSON.stringify(a)}, want ${JSON.stringify(b)}`); }
+
+const laptop = { name: "eDP-1" }, tablet = { name: "SUNSHINE" };
+function page(id, monitor, active) { return { id, monitor, active }; }
+const p1 = page(1, laptop, false), p2 = page(2, laptop, true);
+const p3 = page(3, tablet, true), p4 = page(4, tablet, false);
+const term = page(-98, laptop, false);
+function win(title, workspace) { return { title, workspace }; }
+const a = win("a", p2), b = win("b", p1), c = win("c", p3), d = win("d", p4), e = win("e", p3);
+const overlay = win("herdr", term), moving = win("moving", null), orphan = win("orphan", page(5, null, false));
+const all = [a, b, c, d, e, overlay, moving, orphan];
+const titles = (list) => list.map((t) => t.title);
+
+// ------------------------------------------------------------ docks
+same(titles(L.windowsOn(all, "eDP-1")), ["b", "a"], "the laptop dock holds the laptop's pages, in page order");
+same(titles(L.windowsOn(all, "SUNSHINE")), ["c", "e", "d"], "the tablet dock holds the tablet's pages");
+check(L.windowsOn(all, "DP-3").length === 0, "a screen with no pages has an empty dock");
+check(!L.windowsOn(all, "eDP-1").includes(overlay), "the terminal overlay is on no strip");
+check(!L.windowsOn(all, "eDP-1").includes(moving) && !L.windowsOn(all, "SUNSHINE").includes(moving),
+    "a window between pages is in no dock until it lands");
+check(!L.windowsOn(all, "").includes(orphan), "a page with no monitor belongs to no screen, not to a screen named ''");
+
+// ------------------------------------------------------- highlight
+check(L.isShown(a) && !L.isShown(b), "the laptop's showing page is bright, its others dim");
+check(L.isShown(c) && !L.isShown(d), "the tablet's showing page stays bright while focus is on the laptop");
+check(!L.isShown(moving) && !L.isShown(null), "an unknown window is dim");
+
+// ------------------------------------------------------- top bars
+check(L.frontWindow(all, "eDP-1", a, null) === a, "the focused window names its own screen's bar");
+check(L.frontWindow(all, "SUNSHINE", a, null) === c, "the other bar names the first window on its showing page");
+check(L.frontWindow(all, "SUNSHINE", a, e) === e, "the other bar keeps the window last focused there");
+check(L.frontWindow(all, "SUNSHINE", a, d) === c, "a remembered window on a hidden page is not named");
+const closed = win("closed", p3);
+check(L.frontWindow(all, "SUNSHINE", a, closed) === c, "a remembered window that closed is not named");
+check(L.frontWindow([b], "eDP-1", null, null) === null, "a screen showing an empty page names nothing");
+
+// ------------------------------------------------------- omni bar
+same(["eDP-1", "SUNSHINE", "DP-3", ""].map(L.screenLabel), ["laptop", "tablet", "DP-3", "elsewhere"], "screens have names people use");
+const rows = [
+    { kind: "window", title: "t2", screen: "SUNSHINE", order: 2 },
+    { kind: "window", title: "l3", screen: "eDP-1", order: 3 },
+    { kind: "window", title: "t1", screen: "SUNSHINE", order: 1 },
+    { kind: "window", title: "l4", screen: "eDP-1", order: 4 },
+];
+same(titles(L.groupRows(rows, "eDP-1")), ["l3", "l4", "t1", "t2"], "the focused screen's windows come first");
+same(titles(L.groupRows(rows, "SUNSHINE")), ["t1", "t2", "l3", "l4"], "focus on the tablet puts its windows first");
+same(titles(rows), ["t2", "l3", "t1", "l4"], "grouping does not reorder the caller's list");
+const grouped = L.groupRows(rows, "eDP-1");
+same(grouped.map((_, i) => L.startsGroup(grouped, i)), [true, false, true, false], "each screen's group gets a heading");
+const one = [{ kind: "window", screen: "eDP-1", order: 1 }, { kind: "window", screen: "eDP-1", order: 2 }];
+same(one.map((_, i) => L.startsGroup(one, i)), [false, false], "one screen needs no headings");
+const typed = [{ kind: "app" }, { kind: "cmd" }].concat(grouped);
+same(typed.map((_, i) => L.startsGroup(typed, i)), [false, false, true, false, true, false],
+    "windows listed after apps and commands still get their headings");
+
+console.log(`QUICKSHELL_LANES_TESTS_OK ${passed} checks`);
+EOF
