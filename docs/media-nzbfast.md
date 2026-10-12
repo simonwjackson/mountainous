@@ -38,6 +38,16 @@ upstream module synchronize bind/output/port. Malformed settings stop startup.
 While held, a non-empty `schedule` or a non-null `pause_until_unix` also stops
 startup without writing settings. The operator must explicitly remove those
 standing rules before retrying; the service does not silently delete them.
+Policy refusals name the field and the repair commands without printing values.
+Malformed state keeps the generic refusal message.
+
+NZBFAST permits at most five starts in 60 seconds. With upstream's five-second
+restart delay, a permanent preStart refusal stops after about 25 seconds with
+`start-limit-hit`. Five starts leave room for an initial launch, a daemon
+restart, and short VPN recovery sequences. The VM proves two consecutive VPN
+restarts recover active, held NZBFAST after valid state and `reset-failed`.
+More rapid tunnel flaps can hit the same limit; after fixing the cause, run
+`systemctl reset-failed nzbfast` and `systemctl start nzbfast`.
 Upstream creates the output root as 2770; a non-recursive tmpfiles `z` rule sets
 2775/root/media without changing payload ownership. Category directories use
 ordinary `d` rules with 2775/root/media. `.spool` is under the state directory;

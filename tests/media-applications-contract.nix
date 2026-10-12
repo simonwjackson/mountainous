@@ -132,6 +132,10 @@ assert
   == 1;
 assert fast.unitConfig.ConditionPathExists == "/var/lib/media-migration/ready/nzbfast";
 assert fast.unitConfig.ConditionFileNotEmpty == [ "/var/lib/nzbfast/config.json" ];
+assert fast.unitConfig.StartLimitIntervalSec == 60;
+assert fast.unitConfig.StartLimitBurst == 5;
+assert fast.serviceConfig.Restart == "on-failure";
+assert fast.serviceConfig.RestartSec == 5;
 assert fast.serviceConfig.NetworkNamespacePath == "/run/netns/vpn";
 assert builtins.elem "-/run/nscd" fast.serviceConfig.InaccessiblePaths;
 assert builtins.match ".*media-vpn-nss-modules" fast.environment.LD_LIBRARY_PATH != null;

@@ -46,18 +46,27 @@ class SettingsTests(unittest.TestCase):
 
     def test_schedules_and_timed_pauses_refuse_held_start_without_writes(self):
         resume = [{"days": "all", "time": "00:00", "action": "resume"}]
-        policies = [{"schedule": resume}, {"schedule": json.dumps(resume)},
-                    {"schedule": "malformed"}, {"schedule": False},
-                    {"pause_until_unix": 1}, {"pause_until_unix": 4102444800}]
+        generic = "Refused NZBFAST settings preparation: private state invalid"
+        schedule_message = 'Refused held NZBFAST start: saved "schedule" is not empty; clear it in settings.json or the NZBFAST scheduler, then run systemctl reset-failed nzbfast and systemctl start nzbfast'
+        deadline_message = 'Refused held NZBFAST start: saved "pause_until_unix" is set; clear it in settings.json, then run systemctl reset-failed nzbfast and systemctl start nzbfast'
+        policies = [({"schedule": resume}, schedule_message), ({"schedule": json.dumps(resume)}, schedule_message),
+                    ({"schedule": "malformed-fixture-secret"}, generic), ({"schedule": False}, generic),
+                    ({"pause_until_unix": 1}, deadline_message), ({"pause_until_unix": 4102444800}, deadline_message),
+                    ({"apikey": 42}, generic)]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "settings.json"
-            for policy in policies:
-                before = json.dumps({"apikey": "fixture-key", "port": 1234, **policy})
+            for policy, message in policies:
+                before = json.dumps({"apikey": "fixture-key", "port": 1234, "credential": "fixture-secret", **policy})
                 path.write_text(before)
                 result = subprocess.run([sys.executable, settings.__file__, directory, "held"], capture_output=True, text=True)
                 self.assertNotEqual(result.returncode, 0, policy)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(result.stderr, message + "\n")
+                for secret in ("fixture-key", "fixture-secret", "malformed-fixture-secret"):
+                    self.assertNotIn(secret, result.stdout + result.stderr)
                 self.assertEqual(path.read_text(), before)
                 self.assertEqual(sorted(p.name for p in Path(directory).iterdir()), ["settings.json"])
+            path.write_text(json.dumps({"apikey": "fixture-key", "port": 1234, "pause_until_unix": 1}))
             settings.prepare(directory, False)
             data = json.loads(path.read_text())
             self.assertNotIn("pause_until_unix", data)

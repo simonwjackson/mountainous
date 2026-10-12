@@ -240,6 +240,12 @@
               serviceConfig.ExecStop = lib.mkForce "${media.nzbget}/bin/nzbget --quit --configfile /var/lib/nzbget/nzbget.conf";
             };
             nzbfast = lib.mkIf (present "nzbfast") {
+              # Bound permanent preStart refusals (~25s with RestartSec=5).
+              # Five starts also leave room for short VPN recovery sequences.
+              unitConfig = {
+                StartLimitIntervalSec = 60;
+                StartLimitBurst = 5;
+              };
               environment.NZBFAST_NO_ENRICH = "1";
               # Validation (mkBefore/500) precedes settings (600), then upstream
               # rewrites bind/out_dir/port (1000). .spool is in writable stateDir.

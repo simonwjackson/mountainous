@@ -343,12 +343,25 @@ pkgs.testers.runNixOSTest {
             # Use the pinned daemon's real service path. Saved scheduler text
             # replays after restore_pause; raw lists must fail closed as well.
             resume_schedule = [{"days": "all", "time": "00:00", "action": "resume"}]
-            for policy in ({"schedule": json.dumps(resume_schedule)}, {"schedule": resume_schedule}, {"pause_until_unix": 1}, {"pause_until_unix": 4102444800}):
+            for index, policy in enumerate(({"schedule": json.dumps(resume_schedule)}, {"schedule": resume_schedule}, {"pause_until_unix": 1}, {"pause_until_unix": 4102444800})):
                 held_settings = json.dumps({"apikey": "fixture-schedule-key", "paused": True, "offline": True, **policy})
                 unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("umask 077; printf %s " + shlex.quote(held_settings) + " > /var/lib/nzbfast/settings.json"))
                 unzen.succeed("systemctl reset-failed nzbfast.service")
                 unzen.fail("systemctl start nzbfast.service")
-                unzen.succeed("systemctl stop nzbfast.service")
+                if index == 0:
+                    # Do not stop the refusal by hand. Its automatic retries
+                    # must reach the limit, then stay failed for another 30s.
+                    unzen.wait_until_succeeds("test $(systemctl show nzbfast.service -p Result --value) = start-limit-hit", timeout=40)
+                    unzen.succeed("test $(systemctl show nzbfast.service -p ActiveState --value) = failed")
+                    retries = unzen.succeed("systemctl show nzbfast.service -p NRestarts --value")
+                    refused = unzen.succeed("journalctl -u nzbfast.service --no-pager -o cat | grep -c 'Refused held NZBFAST start'")
+                    assert 1 <= int(refused) <= 5, refused
+                    unzen.succeed("sleep 30")
+                    unzen.succeed("test $(systemctl show nzbfast.service -p Result --value) = start-limit-hit && test $(systemctl show nzbfast.service -p ActiveState --value) = failed")
+                    assert unzen.succeed("systemctl show nzbfast.service -p NRestarts --value") == retries
+                    assert unzen.succeed("journalctl -u nzbfast.service --no-pager -o cat | grep -c 'Refused held NZBFAST start'") == refused
+                else:
+                    unzen.succeed("systemctl stop nzbfast.service")
                 unzen.fail("systemctl is-active --quiet nzbfast.service")
                 assert unzen.succeed("cat /var/lib/nzbfast/settings.json") == held_settings
                 unzen.fail("test -d /var/lib/nzbfast/.spool")
@@ -394,7 +407,14 @@ pkgs.testers.runNixOSTest {
         unzen.succeed("printf fixture > /var/lib/prowlarr/prowlarr.db")
         unzen.succeed("printf fixture > /var/lib/prowlarr/config.xml")
         unzen.succeed("touch /var/lib/media-migration/ready/prowlarr")
-        unzen.succeed("systemctl restart media-vpn.service")
+        # Valid state after reset-failed must recover through two consecutive
+        # tunnel restarts without clearing the start counter again.
+        for _ in range(2):
+            unzen.succeed("systemctl restart media-vpn.service")
+            unzen.wait_for_unit("nzbfast.service")
+            unzen.wait_until_succeeds("curl --fail --silent http://10.200.200.2:6790/api?mode=version >/dev/null")
+            recovered = fast_queue()
+            assert recovered["paused"] and recovered["offline"], recovered
         unzen.wait_for_unit("prowlarr.service")
         original_pid = unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip()
         unzen.succeed("systemctl stop media-vpn.service")

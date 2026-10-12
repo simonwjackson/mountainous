@@ -9,6 +9,18 @@ import sys
 import tempfile
 
 
+POLICY_MESSAGES = {
+    "schedule": 'Refused held NZBFAST start: saved "schedule" is not empty; clear it in settings.json or the NZBFAST scheduler, then run systemctl reset-failed nzbfast and systemctl start nzbfast',
+    "pause_until_unix": 'Refused held NZBFAST start: saved "pause_until_unix" is set; clear it in settings.json, then run systemctl reset-failed nzbfast and systemctl start nzbfast',
+}
+
+
+class HeldPolicyRefusal(ValueError):
+    def __init__(self, field):
+        self.field = field
+        super().__init__("held startup policy conflict")
+
+
 def prepare(directory, held):
     directory = Path(directory)
     path = directory / "settings.json"
@@ -22,12 +34,14 @@ def prepare(directory, held):
         if schedule is not None:
             if isinstance(schedule, str):
                 schedule = json.loads(schedule) if schedule else []
-            if not isinstance(schedule, list) or schedule:
-                raise ValueError("held startup requires an empty schedule")
+            if not isinstance(schedule, list):
+                raise ValueError("schedule must be a list")
+            if schedule:
+                raise HeldPolicyRefusal("schedule")
         # daemon_shutdown.rs:876-887 resumes an expired saved timer or arms
         # a future auto-resume. Admission must not silently erase that intent.
         if settings.get("pause_until_unix") is not None:
-            raise ValueError("held startup refuses a saved auto-resume deadline")
+            raise HeldPolicyRefusal("pause_until_unix")
     # bootstrap.rs:673 treats pre-seeded settings as an existing install and
     # skips first_run_apikey. Mint privately before the first service start.
     apikey = settings.get("apikey")
@@ -67,6 +81,10 @@ def prepare(directory, held):
 if __name__ == "__main__":
     try:
         prepare(sys.argv[1], {"held": True, "enabled": False}[sys.argv[2]])
+    except HeldPolicyRefusal as refusal:
+        # Print only fixed policy text, never an exception or stored value.
+        print(POLICY_MESSAGES[refusal.field], file=sys.stderr)
+        sys.exit(1)
     except Exception:
         print("Refused NZBFAST settings preparation: private state invalid", file=sys.stderr)
         sys.exit(1)
