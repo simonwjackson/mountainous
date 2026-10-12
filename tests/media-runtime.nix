@@ -3,7 +3,7 @@
 let
   applications =
     (import ../modules/media-applications.nix { inherit inputs; }).nixos.modules.media-applications;
-  runtime = (import ../modules/media-runtime.nix { }).nixos.modules.media-runtime;
+  runtime = (import ../modules/media-runtime.nix { inherit inputs; }).nixos.modules.media-runtime;
   assignments = {
     sonarr = "arr";
     radarr = "arr";
@@ -326,6 +326,15 @@ pkgs.testers.runNixOSTest {
         unzen.succeed("systemctl start media-vpn.service")
         unzen.wait_for_unit("prowlarr.service")
         assert unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip() != original_pid
+        # The host name-service cache resolves names outside the tunnel. A
+        # VPN consumer must not reach it, yet must still resolve users.
+        pid = unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip()
+        unzen.succeed("test -S /run/nscd/socket")
+        unzen.fail("nsenter -t " + pid + " -m test -S /run/nscd/socket")
+        nss = unzen.succeed("tr '\\0' '\\n' < /proc/" + pid + "/environ | sed -n 's/^LD_LIBRARY_PATH=//p'").strip()
+        unzen.succeed("test -e " + nss + "/libnss_systemd.so.2")
+        unzen.succeed("nsenter -t " + pid + " -m -n env LD_LIBRARY_PATH=" + nss + " getent passwd root")
+        unzen.succeed("nsenter -t " + pid + " -m -n env LD_LIBRARY_PATH=" + nss + " getent hosts usenet.hummingbird-lake.ts.net")
         unzen.succeed("ip netns exec vpn ip link del wg-vpn")
         unzen.fail("ip netns exec vpn curl --fail --max-time 3 http://10.99.0.1:8080/exit")
         unzen.fail("ip netns exec vpn ip route show default | grep veth")

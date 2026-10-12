@@ -1,5 +1,5 @@
 # Placement-driven data access and a host-owned VPN. No live credentials in Nix.
-{ ... }:
+{ inputs, ... }:
 {
   nixos.modules.media-runtime =
     {
@@ -28,6 +28,20 @@
         "radarr"
       ];
       hasVpn = lib.any local vpnApps;
+      # The host's name-service cache (nscd) runs outside the VPN namespace.
+      # A namespaced process that can reach its socket has every hostname
+      # resolved by the host, over the host's network: a DNS leak. VPN
+      # consumers therefore cannot see the socket, and glibc loads the NSS
+      # modules it would otherwise reach through nscd from this directory.
+      # They come from the same nixpkgs pin, and glibc, as the applications.
+      vpnNssModules = pkgs.runCommand "media-vpn-nss-modules" { } ''
+        mkdir -p "$out"
+        for module in ${
+          (import inputs.nixpkgs-media { system = pkgs.stdenv.hostPlatform.system; }).systemd
+        }/lib/libnss_*.so.2; do
+          ln -s "$module" "$out/"
+        done
+      '';
       hasArr = lib.any local arr;
       isLibraryHost = cfg.libraryHost == host;
       hasLibraryAccess = hasArr || isLibraryHost;
@@ -353,7 +367,9 @@
                 "/etc/netns/vpn/resolv.conf:/etc/resolv.conf"
                 "/etc/netns/vpn/hosts:/etc/hosts"
               ];
+              InaccessiblePaths = [ "-/run/nscd" ];
             };
+            environment.LD_LIBRARY_PATH = "${vpnNssModules}";
           }))
           (lib.genAttrs (lib.filter local arr) (_: {
             requires = [ "media-storage-ready.service" ];

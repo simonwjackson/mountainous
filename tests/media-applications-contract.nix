@@ -185,6 +185,20 @@ assert builtins.all (
 ) apps;
 assert builtins.elem "/var/lib/media-migration/ready/vpn"
   target.systemd.services.media-vpn.unitConfig.ConditionPathExists;
+assert builtins.all
+  (
+    name:
+    builtins.elem "-/run/nscd" declared.systemd.services.${name}.serviceConfig.InaccessiblePaths
+    && declared.systemd.services.${name}.serviceConfig.NetworkNamespacePath == "/run/netns/vpn"
+    &&
+      builtins.match ".*media-vpn-nss-modules"
+        declared.systemd.services.${name}.environment.LD_LIBRARY_PATH != null
+  )
+  [
+    "prowlarr"
+    "nzbget"
+    "transmission"
+  ];
 assert builtins.elem "--paused" target.services.transmission.extraFlags;
 assert builtins.elem "--no-watch-dir" target.services.transmission.extraFlags;
 assert target.mountainous.features.media-runtime.libraryMover.enable;
@@ -221,4 +235,5 @@ assert
   importsOnlyKeepsDownloadersIndexersAndMoverTimersHeld = true;
   arrEnabledKeepsDownloaderLaunchesAndMoverTimersHeld = true;
   normalProcessingStartupAndTimersAdmitted = true;
+  vpnConsumersCannotResolveThroughHostNscd = true;
 }
