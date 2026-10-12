@@ -101,7 +101,7 @@ The agent runs every step. The operator's part stays as it is today.
 1. Copy Yari's SSH host keys and `/var/lib/tailscale` to a mode 0700 folder on Zao.
 2. Recreate the Oracle serial console connection from Zao with the OCI CLI. It needs the Oracle API key on Zao and `HostKeyAlgorithms=+ssh-rsa` (see `docs/plans/media-portability.md`).
 3. Run the persistence VM test in the flake checks. It must pass before the install.
-4. Install with `nix run .#deploy -- yari root@yari.hummingbird-lake.ts.net`. The app wraps `scripts/install-remote` (`modules/deploy.nix`). It runs the pinned `nixos-anywhere-verified` with `--build-on local` and plants the host key with `--extra-files`. Extend it so the staged tree mirrors the impermanent layout: the keys go under permafrost and the Tailscale state goes into `@tailscale`.
+4. Install with `nix run .#install -- yari root@yari.hummingbird-lake.ts.net`. The app wraps `scripts/install-remote` (`modules/install.nix`). It runs the pinned `nixos-anywhere-verified` with `--build-on local` and plants the host key with `--extra-files`. Extend it so the staged tree mirrors the impermanent layout: the keys go under permafrost and the Tailscale state goes into `@tailscale`.
 5. Reboot twice. After each boot, verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units.
 6. Delete the copy of the keys and Tailscale state from Zao.
 7. Copy live Forgerie sessions from Zao. Leave `archived-sessions/` and `migration-2026-10-06/` on Zao until the operator decides.
@@ -120,7 +120,7 @@ If step 5 fails, connect through the serial console and select the earlier boot 
 ## Open decisions
 
 1. **How the root is wiped.** A tmpfs root uses RAM and needs no initrd code. A btrfs `@root` subvolume rolled back to an empty snapshot at boot uses no RAM but needs new initrd code. Recommendation: tmpfs with a size cap, because it has the fewest moving parts.
-2. **Installer gaps for Yari.** The installer is `nix run .#deploy`, which wraps `scripts/install-remote`. It kexecs any reachable Linux into a RAM installer, then runs disko and the install. Three gaps remain for Yari:
+2. **Installer gaps for Yari.** The installer is `nix run .#install`, which wraps `scripts/install-remote`. It kexecs any reachable Linux into a RAM installer, then runs disko and the install. Three gaps remain for Yari:
    - The keystore has no `yari` folder (`~/.local/share/mountainous/hostkeys/yari`). Copy Yari's current ed25519 key there first. Its age form is already in `.sops.yaml`.
    - The script stages only `/etc/ssh/ssh_host_ed25519_key` at the root. It must stage under permafrost and add the Tailscale state.
    - No fleet aarch64 kexec image exists. `unzen-installer` is x86_64 only. Without `MOUNTAINOUS_INSTALL_KEXEC`, nixos-anywhere downloads the upstream aarch64 image. Kexec on this Oracle shape is not tested. The closure builds on Zao through the aarch64 builder on Fuji (`/etc/nix/machines`).

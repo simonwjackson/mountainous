@@ -116,7 +116,7 @@ GitHub Actions' archive cache is repository-scoped. A shared Nix binary cache is
 - Monitor offline runners, registration failures, queued-job age, job failures, memory pressure, scratch usage, and pool free space. The monitoring task must have an owner and an alert destination before required checks depend on UNZEN.
 - For planned maintenance, stop admitting work, drain or explicitly cancel active jobs, then update the reviewed host configuration. Verify the runner and existing services afterward.
 - Roll back workflow routing to hosted Linux jobs first, stop or disable CI services, and restore changed host-wide daemon settings if needed. Preserve diagnostic logs and approved store outputs. Revoke compromised credentials and remove stale GitHub registrations.
-- Never use `nix run .#deploy` for this rollout: the repository identifies it as a destructive fresh-install command. Use reviewed NixOS rebuild/activation procedures with verified SSH identity instead.
+- Never use `nix run .#install` for this rollout: the repository identifies it as a destructive fresh-install command. Use reviewed NixOS rebuild/activation procedures with verified SSH identity instead.
 
 ## Future implementation files
 

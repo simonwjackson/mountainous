@@ -89,7 +89,7 @@ The protected source key lives outside Git, mode `0400`. The matching browser at
 
 The exact selected-repository/workflow group passed read-back and live admission. The initial zero-runner probes were inconclusive. The later online-runner test supplied both negative controls and a working main positive control. Keep the registration preflight enabled so future policy changes fail closed.
 
-Future deployment must also use reviewed committed source, not the shared working tree's concurrent edits. Compare against the running system, preserve the kernel and other service commands, and retain rollback. Use verified SSH and non-destructive NixOS activation. Never run `nix run .#deploy`.
+Future deployment must also use reviewed committed source, not the shared working tree's concurrent edits. Compare against the running system, preserve the kernel and other service commands, and retain rollback. Use verified SSH and non-destructive NixOS activation. Never run `nix run .#install`.
 
 Each physical dispatch restored `UNZEN_PILOT_ENABLED` to `false`. Failure/retry, complete cold/warm runs, artifact download, persistent toolchain and post-job cleanup now passed.
 

@@ -3,9 +3,9 @@
 # shellcheck shell=bash
 # Install a host onto a remote machine that is already running some Linux.
 #
-#   nix run .#deploy -- tate root@192.168.1.189
+#   nix run .#install -- tate root@192.168.1.189
 #
-# `nix run .#deploy` is the supported entry point (modules/deploy.nix). It
+# `nix run .#install` is the supported entry point (modules/install.nix). It
 # runs this script with pinned tools and the pinned nixos-anywhere. Running
 # the script directly still works, but takes its tools from NIX_PATH.
 #
