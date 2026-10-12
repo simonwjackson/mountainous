@@ -79,6 +79,16 @@ with two monitors.
 4. In Moonlight settings, set the resolution to the tablet's native one and
    60 fps. Start "Second screen".
 
+## Known issues
+
+- First deploy: the udev rules that let Sunshine create input devices
+  apply to `/dev/uinput` and `/dev/uhid` only after a reboot or
+  `udevadm trigger --action=change` on both. Until then Sunshine logs
+  `virtualhid-not-available`.
+- One start on 2026-10-12 died with "Address already in use" on port
+  47990 while nothing held the port. It did not happen again in five
+  restarts. The service now restarts after any exit.
+
 ## When Tailscale is too slow
 
 The fallback is a direct Wi-Fi link. Open the same ports on that interface

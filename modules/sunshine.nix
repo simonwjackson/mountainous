@@ -128,6 +128,13 @@
             # "-" keeps a failed cleanup from blocking Sunshine itself.
             ExecStartPre = "-${run "detach"}";
             ExecStopPost = "-${run "detach"}";
+            # Sunshine exits 0 even after a fatal error, so on-failure never
+            # retries it. Seen on Myoko on 2026-10-12: one start died with
+            # "Couldn't start Configuration HTTPS server on port [47990]:
+            # Address already in use" while nothing held the port; the next
+            # start worked. The module's start limit (5 in 500 s) still
+            # applies.
+            Restart = lib.mkForce "always";
           };
         };
 
