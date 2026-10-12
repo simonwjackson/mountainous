@@ -351,8 +351,25 @@
   # --- Collect across all pools ---
   poolNames = builtins.attrNames cfg.pools;
   poolList = mapAttrsToList (name: pool: {inherit name pool;}) cfg.pools;
+
+  # Array disks hold data that outlives any one host. A disko layout
+  # formats every disk it lists, so an array disk must never appear in one.
+  arrayDevices = concatMap (p: map (disk: disk.device) p.pool.disks) poolList;
+  diskoDevices =
+    if config ? disko
+    then mapAttrsToList (_: disk: disk.device) (config.disko.devices.disk or {})
+    else [];
+  diskoArrayOverlap = builtins.filter (dev: builtins.elem dev arrayDevices) diskoDevices;
+  anySnapraid = builtins.any (p: p.pool.snapraid.enable) poolList;
 in {
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = diskoArrayOverlap == [];
+        message = "disk-array: disko would format array disk(s): ${concatStringsSep ", " diskoArrayOverlap}. Remove them from the disko layout.";
+      }
+    ];
+
     environment.systemPackages = with pkgs;
       [
         mergerfs
@@ -364,6 +381,9 @@ in {
         "d /srv/shores 0755 root root - -"
         "d /srv/lakes 0755 root root - -"
       ]
+      # SnapRAID keeps one content file in /var/lib/snapraid and refuses
+      # to run when that folder is missing.
+      ++ optional anySnapraid "d /var/lib/snapraid 0755 root root - -"
       ++ concatMap (p: poolTmpfiles p.name p.pool) poolList;
 
     fileSystems = mkMerge (
