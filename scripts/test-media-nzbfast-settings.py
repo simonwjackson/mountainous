@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
 
 
 def load(name):
@@ -42,15 +44,38 @@ class SettingsTests(unittest.TestCase):
             self.assertNotIn("offline", enabled)
             self.assertEqual(enabled["apikey"], data["apikey"])
 
-    def test_old_timed_pause_cannot_release_hold_and_other_settings_survive(self):
+    def test_schedules_and_timed_pauses_refuse_held_start_without_writes(self):
+        resume = [{"days": "all", "time": "00:00", "action": "resume"}]
+        policies = [{"schedule": resume}, {"schedule": json.dumps(resume)},
+                    {"schedule": "malformed"}, {"schedule": False},
+                    {"pause_until_unix": 1}, {"pause_until_unix": 4102444800}]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "settings.json"
-            path.write_text(json.dumps({"apikey": "fixture-key", "port": 1234, "pause_until_unix": 1, "paused_by_offline": True}))
-            settings.prepare(directory, True)
+            for policy in policies:
+                before = json.dumps({"apikey": "fixture-key", "port": 1234, **policy})
+                path.write_text(before)
+                result = subprocess.run([sys.executable, settings.__file__, directory, "held"], capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0, policy)
+                self.assertEqual(path.read_text(), before)
+                self.assertEqual(sorted(p.name for p in Path(directory).iterdir()), ["settings.json"])
+            settings.prepare(directory, False)
             data = json.loads(path.read_text())
             self.assertNotIn("pause_until_unix", data)
-            self.assertNotIn("paused_by_offline", data)
             self.assertEqual(data["port"], 1234)
+
+    def test_empty_schedules_are_preserved_while_held_and_enabled_keeps_schedule(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.json"
+            for empty in (None, "", [], "[]", "  []  "):
+                path.write_text(json.dumps({"apikey": "fixture-key", "schedule": empty}))
+                settings.prepare(directory, True)
+                data = json.loads(path.read_text())
+                self.assertEqual(data["schedule"], empty)
+                self.assertTrue(data["paused"] and data["offline"])
+            schedule = json.dumps([{"days": "all", "time": "00:00", "action": "resume"}])
+            path.write_text(json.dumps({"apikey": "fixture-key", "schedule": schedule}))
+            settings.prepare(directory, False)
+            self.assertEqual(json.loads(path.read_text())["schedule"], schedule)
 
     def test_invalid_or_established_keyless_state_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:

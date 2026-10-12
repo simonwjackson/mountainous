@@ -20,6 +20,8 @@ let
     cp ${../scripts/media-nzbfast-provision.py} "$out/scripts/media-nzbfast-provision.py"
     cp ${../scripts/test-media-nzbfast-provision.py} "$out/scripts/test-media-nzbfast-provision.py"
     cp ${../scripts/test-media-nzbfast-settings.py} "$out/scripts/test-media-nzbfast-settings.py"
+    cp ${../scripts/media-vpn-leak-audit.py} "$out/scripts/media-vpn-leak-audit.py"
+    cp ${../scripts/test-media-vpn-leak-audit.py} "$out/scripts/test-media-vpn-leak-audit.py"
     cp ${../modules/media-library-cleanup.py} "$out/modules/media-library-cleanup.py"
     cp ${../scripts/test-media-library-cleanup.py} "$out/scripts/test-media-library-cleanup.py"
   '';
@@ -50,6 +52,8 @@ pkgs.testers.runNixOSTest {
     with subtest("NZBFAST provisioning and service-owned settings are private and idempotent"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbfast-provision.py")
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbfast-settings.py")
+    with subtest("VPN audit selects declared services without skipping expected inactive units"):
+        machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-vpn-leak-audit.py")
     with subtest("pinned NZBGet starts with native processing holds"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbget-hold.py ${nzbget}/bin/nzbget")
     with subtest("empty title cleanup preserves library roots and files"):

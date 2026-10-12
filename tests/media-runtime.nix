@@ -340,6 +340,20 @@ pkgs.testers.runNixOSTest {
             unzen.succeed("systemctl stop nzbfast.service")
             unzen.fail("test -e /var/lib/nzbfast/settings.json")
             unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("printf %s " + shlex.quote(original_config) + " > /var/lib/nzbfast/config.json"))
+            # Use the pinned daemon's real service path. Saved scheduler text
+            # replays after restore_pause; raw lists must fail closed as well.
+            resume_schedule = [{"days": "all", "time": "00:00", "action": "resume"}]
+            for policy in ({"schedule": json.dumps(resume_schedule)}, {"schedule": resume_schedule}, {"pause_until_unix": 1}, {"pause_until_unix": 4102444800}):
+                held_settings = json.dumps({"apikey": "fixture-schedule-key", "paused": True, "offline": True, **policy})
+                unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("umask 077; printf %s " + shlex.quote(held_settings) + " > /var/lib/nzbfast/settings.json"))
+                unzen.succeed("systemctl reset-failed nzbfast.service")
+                unzen.fail("systemctl start nzbfast.service")
+                unzen.succeed("systemctl stop nzbfast.service")
+                unzen.fail("systemctl is-active --quiet nzbfast.service")
+                assert unzen.succeed("cat /var/lib/nzbfast/settings.json") == held_settings
+                unzen.fail("test -d /var/lib/nzbfast/.spool")
+            empty_settings = json.dumps({"apikey": "fixture-schedule-key", "schedule": "[]"})
+            unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("printf %s " + shlex.quote(empty_settings) + " > /var/lib/nzbfast/settings.json"))
             unzen.succeed("systemctl reset-failed nzbfast.service")
             unzen.succeed("systemctl start nzbfast.service")
             unzen.wait_for_unit("nzbfast.service")
@@ -350,6 +364,9 @@ pkgs.testers.runNixOSTest {
                 return json.loads(unzen.succeed("curl --fail --silent 'http://10.200.200.2:6790/api?mode=queue&output=json&apikey=" + key + "'"))["queue"]
             queue = fast_queue()
             assert queue["paused"] and queue["offline"], queue
+            assert json.loads(unzen.succeed("cat /var/lib/nzbfast/settings.json"))["schedule"] == "[]"
+            audit_selection = json.loads(unzen.succeed("python3 ${../scripts/media-vpn-leak-audit.py} --list-services"))
+            assert audit_selection == {"vpnUnits": ["nzbfast.service", "nzbget.service", "transmission.service", "prowlarr.service"], "dnsUnits": ["nzbfast.service", "nzbget.service"]}
             live_config = json.loads(unzen.succeed("curl --fail --silent 'http://10.200.200.2:6790/api?mode=get_config&output=json&apikey=" + key + "'"))["config"]
             live = live_config["nzbfast"]
             for forced_off in ("auto_rename", "spot_enabled", "index_enabled", "identity_lookup", "update_checks", "delete_to_trash"):

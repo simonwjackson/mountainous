@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read-only audit: does every downloader byte and DNS query leave through wg-vpn? Runs as root on Unzen."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,28 @@ import sqlite3
 import subprocess
 import time
 import uuid
+import sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--config', type=Path, default=Path('/etc/media-vpn-leak-audit.json'))
+parser.add_argument('--list-services', action='store_true', help='show declared expectations without running a host audit')
+args = parser.parse_args()
+try:
+    # Nix derives this list from the same mode/placement predicate that attaches
+    # units to the VPN. Inactive expected units remain failures, not exclusions.
+    vpn_units = json.loads(args.config.read_text())['vpnUnits']
+    allowed = {'prowlarr.service', 'nzbget.service', 'nzbfast.service', 'transmission.service'}
+    if (not isinstance(vpn_units, list) or not vpn_units
+            or any(not isinstance(unit, str) or unit not in allowed for unit in vpn_units)
+            or len(vpn_units) != len(set(vpn_units))):
+        raise ValueError('invalid expected services')
+except (OSError, ValueError, TypeError, KeyError):
+    raise SystemExit('Refused: missing or invalid declared audit services') from None
+dns_units = [unit for unit in vpn_units if unit in ('nzbget.service', 'nzbfast.service')]
+if args.list_services:
+    print(json.dumps({'vpnUnits': vpn_units, 'dnsUnits': dns_units}))
+    sys.exit(0)
+
 if os.getuid() != 0 or socket.gethostname() != 'unzen':
     raise SystemExit('Refused: incorrect host')
 results = []
@@ -21,14 +44,17 @@ def run(*cmd, ns=False):
 
 vpn_ino = os.stat('/run/netns/vpn').st_ino
 host_ino = os.stat('/proc/1/ns/net').st_ino
-vpn_units = ['prowlarr.service', 'nzbget.service', 'nzbfast.service', 'transmission.service']
 # 1. Every process of the downloader-side services, including children, is in the VPN namespace.
 for unit in vpn_units:
     cgroup = run('systemctl', 'show', unit, '-p', 'ControlGroup', '--value')
-    if not cgroup or not cgroup.startswith('/'):
+    if not cgroup or cgroup == '/' or not cgroup.startswith('/'):
         check(f'{unit}: active cgroup exists', False)
         continue
-    procs = Path('/sys/fs/cgroup' + cgroup + '/cgroup.procs').read_text().split()
+    processes = Path('/sys/fs/cgroup' + cgroup + '/cgroup.procs')
+    if not processes.is_file():
+        check(f'{unit}: active cgroup exists', False)
+        continue
+    procs = processes.read_text().split()
     sub = [p for d in Path('/sys/fs/cgroup' + cgroup).rglob('cgroup.procs') for p in d.read_text().split()]
     pids = sorted(set(procs + sub))
     outside = [p for p in pids if os.stat(f'/proc/{p}/ns/net').st_ino != vpn_ino]
@@ -87,7 +113,7 @@ for line in ss.splitlines():
 check(f'all {count} live remote connections route via wg-vpn (tailnet/veth excepted)', not bad, '; '.join(bad[:5]))
 
 # 5. DNS: resolve a unique name inside an actual service's own namespaces while watching the host for port-53 traffic.
-for unit in ['nzbget.service', 'nzbfast.service']:
+for unit in dns_units:
     pid = run('systemctl', 'show', unit, '-p', 'MainPID', '--value')
     if not pid.isdigit() or pid == '0':
         check(f'{unit}: running for DNS audit', False)
@@ -131,3 +157,4 @@ for unit in vpn_units:
 for name, ok, detail in results:
     print(('PASS ' if ok else 'FAIL ') + name + ('' if ok or not detail else '  -> ' + detail[:400]))
 print(f'\n{sum(ok for _, ok, _ in results)}/{len(results)} checks passed')
+sys.exit(0 if all(ok for _, ok, _ in results) else 1)

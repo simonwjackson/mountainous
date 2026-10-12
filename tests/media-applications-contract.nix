@@ -105,6 +105,25 @@ assert nzbfastOnly.services.nzbfast.enable && !nzbfastOnly.services.nzbget.enabl
 assert !(nzbfastOnly.systemd.services ? nzbget);
 assert !builtins.elem "nzbget.service" nzbfastOnly.systemd.services.media-vpn.wants;
 assert !(declared.systemd.services ? tsnet-proxy-nzbfast);
+assert
+  (builtins.fromJSON nzbgetOnly.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
+    "nzbget.service"
+    "transmission.service"
+    "prowlarr.service"
+  ];
+assert
+  (builtins.fromJSON declared.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
+    "nzbfast.service"
+    "nzbget.service"
+    "transmission.service"
+    "prowlarr.service"
+  ];
+assert
+  (builtins.fromJSON nzbfastOnly.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
+    "nzbfast.service"
+    "transmission.service"
+    "prowlarr.service"
+  ];
 assert declared.services.nzbfast.package.version == "1.7.1";
 assert declared.users.users.nzbfast.uid == 391;
 assert declared.users.users.nzbfast.group == "media";

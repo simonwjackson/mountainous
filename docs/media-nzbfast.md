@@ -35,6 +35,9 @@ unheld launch just to obtain a key. No credential enters the Nix store.
 
 `preStart` validates servers, atomically applies service policy, then lets the
 upstream module synchronize bind/output/port. Malformed settings stop startup.
+While held, a non-empty `schedule` or a non-null `pause_until_unix` also stops
+startup without writing settings. The operator must explicitly remove those
+standing rules before retrying; the service does not silently delete them.
 Upstream creates the output root as 2770; a non-recursive tmpfiles `z` rule sets
 2775/root/media without changing payload ownership. Category directories use
 ordinary `d` rules with 2775/root/media. `.spool` is under the state directory;
@@ -59,7 +62,9 @@ Paths below are relative to the NZBFAST source, not this repository.
 | `cat_meta` | relative dirs `Series` / `Movies` | `crates/nzbfast-daemon/src/settings.rs:364`; `settings_restore.rs:198-203` |
 | `out_umask` | octal string `"002"` | `crates/nzbfast-daemon/src/settings.rs:449-457`; `bootstrap.rs:1263-1270` |
 | `paused`, `offline` | true when held; removed when released | `crates/nzbfast-daemon/src/daemon_shutdown.rs:842-870` |
-| `pause_until_unix`, `paused_by_offline` | removed to avoid an old timed pause | `crates/nzbfast-daemon/src/daemon_shutdown.rs:861-870` |
+| `schedule` | refuse non-empty schedules while held; preserve empty schedules | `crates/nzbfast-tasks/src/tasks.rs:76-108` |
+| `pause_until_unix` | refuse non-null deadlines while held; remove when releasing | `crates/nzbfast-daemon/src/daemon_shutdown.rs:860-887` |
+| `paused_by_offline` | remove old pause ownership bookkeeping | `crates/nzbfast-daemon/src/daemon_shutdown.rs:851-855` |
 | `apikey` | private random key only on fresh state | `crates/nzbfast-daemon/src/settings.rs:1191-1197`; `bootstrap.rs:616-725` |
 | `bind`, `port`, `out_dir` | upstream module owns these | `crates/nzbfast-daemon/src/settings.rs:306-323` |
 
@@ -72,6 +77,43 @@ replacing them (`settings_restore.rs:686-693`). The trial's two ARR names and
 relative destinations are present, but the API also lists native categories.
 The SAB queue exposes `paused` and `offline` in
 `crates/nzbfast-api/src/sabcompat.rs:1428-1435`.
+
+## Startup hold review
+
+The pinned source restores pause state before spawning tasks
+(`crates/nzbfast/src/serve/startup.rs:63-65,484`). The schedule replays after
+that restore and can resume a paused queue. Its accepted actions are only
+pause, resume, speedlimit, server enable/disable, and quota reset; it has no
+online action (`crates/nzbfast-daemon/src/sched.rs:138-171`). All non-empty
+schedules are refused while held, including JSON strings and raw arrays.
+
+Another unsafe saved startup path is `pause_until_unix`: an expired deadline
+starts resumed, and a future deadline arms the worker that later clears pause
+(`crates/nzbfast-daemon/src/daemon_shutdown.rs:876-887,668-672`). Held admission
+now refuses either without writes. The VM covers both deadlines and the resume
+schedule, then starts the real pinned daemon with an empty schedule and checks
+`paused=true, offline=true` through its API.
+
+I found no further saved startup path that clears global pause/offline in this
+pin. The other production writers are authenticated resume/online API actions
+(`crates/nzbfast-api/src/api/queue.rs:144,1795-1798`; `sabcompat.rs:2894`) and
+slow-storage recovery. Slow-storage recovery stands down while offline
+(`crates/nzbfast-daemon/src/slowstore.rs:917-929`). RSS and watch folders enqueue
+jobs, but do not clear the global flags
+(`crates/nzbfast-tasks/src/tasks.rs:1370-1385`; `tasks/watchfolder.rs:638-654`;
+`crates/nzbfast-daemon/src/daemon_enqueue.rs:395-398`). They therefore need no
+additional pause admission rule. Configured RSS feeds can still poll HTTP
+sources; the startup hold is not a prohibition on every background HTTP task.
+
+## VPN leak audit selection
+
+`media-runtime` writes `/etc/media-vpn-leak-audit.json` from the same active
+mode/placement predicate that attaches services to the namespace. Run
+`scripts/media-vpn-leak-audit.py --list-services` to read its expectations
+without running a host audit. Rollback to `usenet = "nzbget"` removes NZBFAST
+from membership, DNS, and BindsTo checks. An expected inactive service remains
+a failure. Missing or invalid declarations refuse the audit. Any failed audit
+check now gives a non-zero exit status.
 
 ## Limits
 

@@ -212,6 +212,9 @@
         boot.kernel.sysctl."net.ipv4.ip_forward" = lib.mkIf hasVpn 1;
         networking.firewall.trustedInterfaces = lib.optional hasVpn "veth-vpn-host";
         networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 2049 ];
+        environment.etc."media-vpn-leak-audit.json".text = builtins.toJSON {
+          vpnUnits = map (name: "${name}.service") (lib.filter active vpnApps);
+        };
         environment.systemPackages = [
           pkgs.nfs-utils
           pkgs.mergerfs
