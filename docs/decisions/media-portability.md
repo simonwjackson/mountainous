@@ -50,4 +50,6 @@ The library mover publishes verified aged imports through the mapped view. Atomi
 
 The cost is one file copy and repeated SHA-256 reads before source release. Retained completed-download hardlinks can prevent this handoff from increasing free space. The mover does not reconstruct missing download history or repair missing archive data. A processing rollback needs a fresh current-state capture after processing advances.
 
-Messaging stays on Yari. Only the retained ARR webhook host changes from loopback to the existing Yari relay. Its path, query, notification identity, and credentials remain unchanged.
+Messaging stayed on Yari during the move. Only the retained ARR webhook host changed from loopback to the existing Yari relay.
+
+On 2026-10-12 the operator retired messaging and deleted its data. The ARR webhook notifications to the relay were removed. The Jellyfin notifications remain. Yari is now a bare server host on `cairn`.

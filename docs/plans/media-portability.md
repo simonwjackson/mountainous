@@ -37,11 +37,31 @@ The previous startup validator opened live SQLite databases as root. It created 
 
 ### Known gaps
 
-- No reboot test. Boot installation does not prove a subsequent boot.
+- No Unzen reboot test. Boot installation does not prove a subsequent boot. The original 1 GiB ESP image stays in `recovered-boot-preservation/` until a reboot passes.
 - Permanent NVMe health and the earlier fault cause remain unproven.
-- Concurrent use of one WireGuard profile on two hosts remains unverified.
 - No native ARR regression grabs a release while old completed and failed groups exist.
 - The cause of the first Prowlarr-to-ARR TLS failure is unknown. The repeat test passed.
+
+The WireGuard profile now runs only on Unzen, so concurrent use on two hosts is no longer a risk.
+
+### VPN DNS leak fix
+
+The VPN consumers (Prowlarr, NZBGet, Transmission) could reach the host's nscd socket at `/run/nscd/socket`. glibc sent every hostname lookup to the host cache, and the host resolved it over Unzen's normal network. Download traffic still used `wg-vpn`. A packet capture proved the leak: a unique lookup inside NZBGet appeared on Unzen's own interfaces and never on `wg-vpn`. Yari used the same design, so it probably leaked too. That was not tested.
+
+The VPN consumers now cannot see `/run/nscd`. They load NSS modules from the media nixpkgs pin through `LD_LIBRARY_PATH`. The contract test and the runtime VM cover this. Commit `63e1004d` deployed it to Unzen without a reboot.
+
+`scripts/media-vpn-leak-audit.py` runs as root on Unzen and checks 29 conditions. They cover namespace membership of every service process, routes for public, private, and IPv6 destinations, live connections, the exit IP, WireGuard handshake age, DNS by packet capture, indexer redirects, and unit binding. After the fix, all 29 pass.
+
+### Cleanup after acceptance (2026-10-12)
+
+The operator approved deleting the rollback copies and retiring Yari's media and messaging roles.
+
+- **Unzen:** `/var/lib/media-migration` keeps only what services read (`credentials/`, `ready/`, `processing-original-safe/`, `library-handoff/`), the ESP image, and `final-backup-2026-10-12/`. That backup is the last verified stopped copy of all service state and the NZBGet queue. Every other evidence path named in this document was deleted, about 383 GB. Two system generations remain.
+- **Unzen alerts:** Sonarr and Radarr no longer have a webhook to the retired Yari relay. Their Jellyfin notifications remain.
+- **Yari:** the media rollback copy, migration tools, Matrix, the Signal and WhatsApp bridges, the old Jellyfin, Jellyswarrm, Syncthing, NFS and fail2ban state, and old generations were deleted, about 165 GB. The stale `matrix` tailnet device was removed. The previous home folder is archived on Zao in `~/archives/yari-2026-10-12/` (`yari-code.tar.zst`, `yari-home-personal.tar.zst`). Checksums and file counts were verified.
+- **Yari host:** `modules/hosts/yari.nix` declares Yari as a bare `server` host on `cairn`. It uses the existing partitions, DHCP, and `simon` at UID 1000. It passed two reboots with SSH, Tailscale, secrets, and console passwords verified. Its Tailscale address changed from `100.90.129.5` to `100.65.213.32`. The name `yari.hummingbird-lake.ts.net` is unchanged. The operator confirmed that the public address does not expose SSH.
+- **Backups:** Fuji's `borg-offsite-sync` is paused by a drop-in, `/etc/systemd/system.control/borg-offsite-sync.service.d/90-paused.conf`, while backups are redesigned. Its targets, Aka and Yari, were failing anyway. Fuji's local Borg jobs and cloud sync still run. Yari keeps Fuji's mirror at `/var/lib/borg-mirror`.
+- **Recovery access:** an Oracle serial console connection reached Yari's login prompt during the switch. It was deleted afterward. Recreating one needs the Oracle API key on Zao and `HostKeyAlgorithms=+ssh-rsa`.
 
 The full NZBGet history retains duplicate markers for groups 762 and 763 after native cleanup. Their full completed/failed history metadata remains in protected JSON records. Earlier statements that these IDs disappeared from all native history were based on `history(false)`, which excludes duplicate markers.
 
@@ -57,13 +77,11 @@ The controlled move passes durable deployment on Unzen. All five applications an
 
 The pre-resumption SHA-256 baseline passes for all 716 staging files and 142,216,699,883 bytes. All eight retained ARR client and notification tests pass. Actual mapped publication, Jellyfin video visibility, and a direct read of the stored Zao file pass. No reboot occurred. Successful boot installation does not prove a subsequent boot.
 
-Yari's five applications, five proxies, and VPN remain stopped. Persistent source startup gates prevent another owner. Current-compatible rollback admission now passes for all 13 state and staging roots. The original native ARM applications and saved identities also pass on private copies of the newest captured target state. These tests do not execute a live source rollback. Source production files and units remain unchanged.
+Historical: Yari's applications, proxies, and VPN were stopped and fenced, and current-compatible rollback admission passed for all 13 roots. After acceptance, the operator approved deleting the Yari rollback copy. Rollback to Yari is no longer possible.
 
-Preserve Yari's original files for rollback. Stop and ask before a reset, incompatible application upgrade, credential replacement, or expanded scope.
+The initial application scope is Sonarr, Radarr, Prowlarr, NZBGet, and Transmission. Runtime requirements include service identities, protected credentials, completed-file access, downloader VPN isolation, and library staging/movement. Jellyfin and long-term media remain on Zao. Messaging was later retired, not moved.
 
-The initial application scope is Sonarr, Radarr, Prowlarr, NZBGet, and Transmission. Runtime requirements include service identities, protected credentials, completed-file access, downloader VPN isolation, and library staging/movement. Jellyfin and long-term media remain on Zao. Messaging and Syncthing remain excluded.
-
-Do not reinstall or format either host. Do not run Disko or fresh-install deployment workflows. Preserve Yari's operator account, SSH identities, disks, and unrelated application state. Do not create a chargeable Oracle boot-volume backup.
+Do not reinstall or format either host. Do not run Disko or fresh-install deployment workflows. Do not create a chargeable Oracle boot-volume backup.
 
 ## Staged acceptance evidence
 

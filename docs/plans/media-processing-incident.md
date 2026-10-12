@@ -24,7 +24,9 @@ These checks do not prove that no external backup exists. The original file byte
 
 ## Preservation and evidence
 
-During the incident, all Unzen owners and the mover had persistent `95-unexpected-native-cleanup-hold.conf` gates under `/etc/systemd/system.control/`. Later admitted transitions removed those gates. The marker file `/var/lib/media-migration/unexpected-native-cleanup-hold` remains as a record. No current gate reads it.
+During the incident, all Unzen owners and the mover had persistent `95-unexpected-native-cleanup-hold.conf` gates under `/etc/systemd/system.control/`. Later admitted transitions removed those gates.
+
+The operator approved deleting the migration evidence on 2026-10-12. The marker file and every Unzen evidence path in the table below were deleted, and so were the local `/tmp` proof copies. This document is now the record. The replacement file stays in the media library.
 
 Protected Unzen evidence is under `/var/lib/media-migration/`:
 
@@ -49,4 +51,4 @@ The native grab receipt's claim that groups 762 and 763 remained in live history
 - Enabled startup admits the original flags and lets native task timestamps advance. It refuses a leftover scheduler hold.
 - The 42 real SQLite service-state tests cover held imports and removal, exact restoration, enabled startup, and side-effect-free reads. The runtime VM covers NFS, ownership, mount gates, VPN, and refresh failure and retry.
 - No native ARR regression grabs a release while old completed and failed groups exist.
-- Keep the replacement file and all protected copies. Do not restore an old database or queue over current state.
+- Keep the replacement file. Do not restore an old database or queue over current state. The only stopped copy left is `final-backup-2026-10-12/` on Unzen.
