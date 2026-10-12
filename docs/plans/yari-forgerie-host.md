@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Proposed. No code or device change yet.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
+**Phase 1 (code) and phase 2 (preparation) are done, except the kexec rehearsal on Yari. Yari still runs its old XFS system.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
 
 This plan replaces Yari's XFS root with btrfs, wipes the system root at every boot, and keeps state in one persistent area called permafrost. The reinstall wipes Yari's only disk. The operator's part of the install must not grow.
 
@@ -44,9 +44,11 @@ bcachefs would match Unzen. Its background recompression gains only about 10 GB 
 
 Cost: copy-on-write fragments files with many small random writes. The per-session SQLite files are that workload.
 
-### nocow for Forgerie SQLite state
+### nocow for Forgerie SQLite state (deferred to phase 5)
 
-Each session keeps `state.sqlite` under `.durable/` folders in `~/.local/share/forgerie/agent/sessions/`. Each commit waits on fsync, which already takes about 1 ms on this volume. Set nocow on the `.durable` folders before data arrives, so new files inherit it.
+Each session keeps `state.sqlite` under `.durable/` folders in `~/.local/share/forgerie/agent/sessions/`. Each commit waits on fsync, which already takes about 1 ms on this volume.
+
+Forgerie creates the `.durable` folders inside each project folder at run time. A nocow flag on a parent folder would also stop compression of the transcripts, which are most of the data. So nocow is set when Forgerie is declared on Yari, by Forgerie or by a unit that knows its paths.
 
 Cost: those files, about 6.6 GB today, lose btrfs checksums and compression.
 
@@ -64,12 +66,13 @@ A lost Tailscale state is a lockout. The rejoin path is not a safety net (see [K
 
 1. `/var/lib/tailscale` is its own btrfs subvolume, mounted directly. It is not a symlink or bind mount into the wiped root.
 2. `tailscaled` gets `RequiresMountsFor=/var/lib/tailscale`. If the mount fails, Tailscale does not start and cannot create a new identity over the old one.
-3. The SSH host keys live in permafrost, which mounts in the initrd. sops derives its age key from `/etc/ssh/ssh_host_ed25519_key` (`modules/secrets.nix:40`), so the keys must exist before sops runs.
-4. Yari's current Tailscale state is copied into the new subvolume before first boot. Yari keeps its node key and its address `100.65.213.32`. `tailscale-join` then sees a running, verified node and exits without a new login.
+3. sshd and sops read the host key at `/permafrost/etc/ssh/ssh_host_ed25519_key` directly. `/permafrost` mounts in the initrd, so the key exists before sops runs. No bind mount has to be set up first.
+4. The kexec installer (`modules/kexec-installer.nix`) copies the running machine's `tailscaled.state` into RAM. The installer comes back on the tailnet as `yari`, with the same address and SSH host key, so the install stays reachable.
+5. `nix run .#install` copies the same state into `@tailscale` when the target already reports hostname `yari`. Yari keeps its node key and its address `100.65.213.32`. `tailscale-join` then sees a running, verified node and exits without a new login.
 
 ### Swap and memory
 
-Add zram swap. Yari has no swap today. Without it, a memory spike can make the out-of-memory killer stop `forgerie-sessiond` and every session in it. Cap the size of the wiped root if it lives in RAM, so a runaway write fails instead of pushing out sessions.
+zram swap is on. Yari has no swap today. Without it, a memory spike can make the out-of-memory killer stop `forgerie-sessiond` and every session in it. The tmpfs root is capped at 4G, so a runaway write fails instead of pushing out sessions. `/tmp` is a separate tmpfs from the base layer.
 
 ## Layout
 
@@ -77,55 +80,55 @@ Add zram swap. Yari has no swap today. Without it, a memory spike can make the o
 sda1  ESP, vfat, 1 GB, /boot
 sda2  btrfs, compress=zstd:1, noatime
   @nix        /nix
-  @home       /home                (Forgerie state, .durable folders nocow)
+  @home       /home                (Forgerie state)
   @permafrost /permafrost          (neededForBoot)
-  @tailscale  /var/lib/tailscale   (neededForBoot)
-  @snapshots  /.snapshots
-/   wiped at every boot (see open decision 1)
+  @tailscale  /var/lib/tailscale   (tailscaled requires this mount)
+/   tmpfs, size=4G, wiped at every boot
 ```
 
-Permafrost holds at least:
+There is no `@snapshots` subvolume yet. Nothing uses it. Add it with the backup design.
+
+Permafrost holds:
 
 | Path | Why it must persist |
 | --- | --- |
-| `/etc/ssh/ssh_host_*` | SSH identity and the sops age key |
+| `/permafrost/etc/ssh/ssh_host_ed25519_key` | SSH identity and the sops age key, read in place |
 | `/etc/machine-id` | Journal and systemd identity |
 | `/var/lib/nixos` | Stable UID and GID allocation |
-| `/var/log/journal` | Logs across reboots, needed to debug a failed boot |
-| `/var/lib/systemd` | Timers, random seed, and other systemd state |
+| `/var/log` | Logs across reboots, needed to debug a failed boot |
+| `/var/lib/systemd/timers`, `/var/lib/systemd/coredump` | Timer catch-up and crash dumps |
 
 ## Install procedure
 
-The agent runs every step. The operator's part stays as it is today.
+The agent runs every step. The operator approves step 4.
 
-1. Copy Yari's SSH host keys and `/var/lib/tailscale` to a mode 0700 folder on Zao.
-2. Recreate the Oracle serial console connection from Zao with the OCI CLI. It needs the Oracle API key on Zao and `HostKeyAlgorithms=+ssh-rsa` (see `docs/plans/media-portability.md`).
-3. Run the persistence VM test in the flake checks. It must pass before the install.
-4. Install with `nix run .#install -- yari root@yari.hummingbird-lake.ts.net`. The app wraps `scripts/install-remote` (`modules/install.nix`). It runs the pinned `nixos-anywhere-verified` with `--build-on local` and plants the host key with `--extra-files`. Extend it so the staged tree mirrors the impermanent layout: the keys go under permafrost and the Tailscale state goes into `@tailscale`.
-5. Reboot twice. After each boot, verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units.
-6. Delete the copy of the keys and Tailscale state from Zao.
-7. Copy live Forgerie sessions from Zao. Leave `archived-sessions/` and `migration-2026-10-06/` on Zao until the operator decides.
+| Step | Status |
+| --- | --- |
+| 1. Copy Yari's ed25519 host key to `~/.local/share/mountainous/hostkeys/yari/` | Done. Its age form matches `.sops.yaml`. |
+| 2. Recreate the Oracle serial console from Zao with the OCI CLI | Done. It reached `yari login:`. Connect with `~/.local/share/mountainous/oci-console/connect`. |
+| 3. Rehearse kexec only: `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Pending. The installer must come back on Tailscale as `yari` with the same host key. A reboot returns Yari to the XFS system. |
+| 4. Install: `nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Needs operator approval. Destroys the disk. |
+| 5. Reboot twice. Verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units. | Pending |
+| 6. Declare Forgerie on Yari and copy live sessions from Zao | Pending (phase 5) |
 
-If step 5 fails, connect through the serial console and select the earlier boot entry or fix in place. There is no rollback to the XFS system after step 4.
+If the installer in step 3 does not come back, reset the instance with `oci compute instance action --action RESET --profile yari`. Yari then boots its old system from disk. If step 5 fails, connect through the serial console and select the earlier boot entry or fix in place. There is no rollback to the XFS system after step 4.
 
 ## Verification
 
 | Check | How |
 | --- | --- |
-| Persistence wiring | NixOS VM test: write Tailscale state and a file in each persisted path, reboot, verify the node key and files are unchanged, verify a file written elsewhere in `/` is gone |
-| Mount guard | Same VM test: with `@tailscale` unmountable, `tailscaled` must not start |
+| Persistence wiring | `checks.x86_64-linux.permafrost` (passes): installs the real layout, reboots, and verifies the Tailscale machine key, SSH host key, machine-id, `/home` and the journal survive, while files in `/etc`, `/var/lib` and `/root` are gone |
+| Mount guard | Same test: with `@tailscale` unmounted, starting `tailscaled` mounts it first and keeps the same key |
+| Installer keeps identity | `checks.x86_64-linux.kexec-installer` (passes): kexecs a VM into the installer and verifies the same Tailscale machine key and SSH host key |
 | Real boot | Two reboots on Yari, checks from step 5 |
 | Forgerie | UI loads through `forgerie-tsnet`, several sessions run at once, a session survives a reboot |
 
 ## Open decisions
 
-1. **How the root is wiped.** A tmpfs root uses RAM and needs no initrd code. A btrfs `@root` subvolume rolled back to an empty snapshot at boot uses no RAM but needs new initrd code. Recommendation: tmpfs with a size cap, because it has the fewest moving parts.
-2. **Installer gaps for Yari.** The installer is `nix run .#install`, which wraps `scripts/install-remote`. It kexecs any reachable Linux into a RAM installer, then runs disko and the install. Three gaps remain for Yari:
-   - The keystore has no `yari` folder (`~/.local/share/mountainous/hostkeys/yari`). Copy Yari's current ed25519 key there first. Its age form is already in `.sops.yaml`.
-   - The script stages only `/etc/ssh/ssh_host_ed25519_key` at the root. It must stage under permafrost and add the Tailscale state.
-   - No fleet aarch64 kexec image exists. `unzen-installer` is x86_64 only. Without `MOUNTAINOUS_INSTALL_KEXEC`, nixos-anywhere downloads the upstream aarch64 image. Kexec on this Oracle shape is not tested. The closure builds on Zao through the aarch64 builder on Fuji (`/etc/nix/machines`).
-3. **Where Forgerie history lives.** Live sessions only (about 58 GB compressed) or the full 220 GB (about 96 GB compressed).
-4. **Where agent work runs.** Forgerie runs session tool commands on the host. If checkouts move to Yari, agents will run git, nix, and tests on 4 cores. This conflicts with "no compilers on Yari".
+1. **Where Forgerie history lives.** Live sessions only (about 58 GB compressed) or the full 220 GB (about 96 GB compressed).
+2. **Where agent work runs.** Forgerie runs session tool commands on the host. If checkouts move to Yari, agents will run git, nix, and tests on 4 cores. This conflicts with "no compilers on Yari".
+
+Settled: the root is a tmpfs with a size cap. The installer is `nix run .#install` with the fleet kexec installer.
 
 ## Known risks
 
