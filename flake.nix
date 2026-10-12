@@ -27,6 +27,14 @@
       inputs.nixpkgs.follows = "nixpkgs-rakku";
     };
 
+    # Sunshine tracks its newest release apart from the system pin, so a
+    # Sunshine security fix does not wait on a whole-fleet nixpkgs bump.
+    # `nix flake update nixpkgs-sunshine` moves it. See modules/sunshine.nix.
+    nixpkgs-sunshine = {
+      url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake = false;
+    };
+
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";

@@ -13,9 +13,12 @@ end
 
 function Model.new()
     local m = setmetatable({ now = 0, seq = 0, handlers = {}, timers = {}, rules = {}, rule_by_name = {},
-        binds = {}, launches = {}, notes = {}, dispatched = {}, ws = {}, windows = {} }, Model)
-    m.monitor = { width = 2880, height = 1800, scale = 1.5 }
-    m.active = m:workspace(1)
+        binds = {}, launches = {}, notes = {}, dispatched = {}, ws = {}, windows = {},
+        monitor_rules = {}, devices = {} }, Model)
+    -- The panel. Each monitor shows one page; m.active is the focused one.
+    m.monitor = { name = "eDP-1", width = 2880, height = 1800, scale = 1.5 }
+    m.monitors = { m.monitor }
+    m:show(m:workspace(1))
     local hl = setmetatable({}, { __index = function() return function() end end })
     hl.dsp = node(m, "")
     hl.notification = { create = function(o) m.notes[#m.notes + 1] = o.text end }
@@ -66,22 +69,83 @@ function Model.new()
     end
     hl.get_active_workspace = function() return m.active end
     hl.get_active_window = function() return m.focus end
-    hl.get_monitors = function() return { m.monitor } end
+    hl.get_monitors = function() return { table.unpack(m.monitors) } end
+    hl.monitor = function(rule) m.monitor_rules[rule.output] = rule end
+    hl.device = function(rule) m.devices[rule.name] = rule end
     hl.is_key_down = function() return false end
     m.hl = hl
     return m
 end
 
-function Model:workspace(key)
+-- A new page opens on the focused monitor, as Hyprland's does.
+function Model:workspace(key, monitor)
     for _, ws in pairs(self.ws) do
         if ws.name == tostring(key) then return ws end
     end
     local special = type(key) == "string" and key:match("^special:") ~= nil
     local id = special and -98 or tonumber(key)
-    local ws = { id = id, name = tostring(key), special = special, list = {}, windows = 0 }
+    monitor = monitor or (self.active and self.active.monitor) or self.monitor
+    local ws = { id = id, name = tostring(key), special = special, list = {}, windows = 0, monitor = monitor }
     function ws.get_windows(self_) return { table.unpack(self_.list) } end
     self.ws[ws] = ws
     return ws
+end
+
+-- Focus a page: its monitor shows it, and it becomes the active page.
+function Model:show(ws)
+    if not ws.special then ws.monitor.shown = ws end
+    self.active = ws
+end
+
+-- A page is kept while it holds a window or a monitor shows it.
+function Model:shown(ws)
+    for _, mon in ipairs(self.monitors) do
+        if mon.shown == ws then return true end
+    end
+    return ws == self.active
+end
+
+-- Attach a monitor. Hyprland gives it a new empty page with the lowest
+-- free id (output/Monitor.cpp setupDefaultWS), and focus stays put.
+function Model:add_monitor(name)
+    local mon = { name = name, width = 2960, height = 1848, scale = 1.6 }
+    self.monitors[#self.monitors + 1] = mon
+    local used = {}
+    for _, ws in pairs(self.ws) do used[ws.id] = true end
+    local id = 1
+    while used[id] do id = id + 1 end
+    mon.shown = self:workspace(id, mon)
+    return mon
+end
+
+-- Detach a monitor. Hyprland moves every page it had to the first
+-- remaining monitor (CMonitor::onDisconnect) and then collects empties.
+function Model:remove_monitor(name)
+    for i, mon in ipairs(self.monitors) do
+        if mon.name == name then
+            table.remove(self.monitors, i)
+            local backup = self.monitors[1]
+            for _, ws in pairs(self.ws) do
+                if ws.monitor == mon then ws.monitor = backup end
+            end
+            if self.active.monitor == backup or self.active.monitor == mon then
+                self:show(backup.shown)
+            end
+            self:collect()
+            return
+        end
+    end
+end
+
+-- Page names on one monitor, in id order.
+function Model:pages(name)
+    local out = {}
+    for _, ws in pairs(self.ws) do
+        if not ws.special and ws.monitor.name == name then out[#out + 1] = ws end
+    end
+    table.sort(out, function(a, b) return a.id < b.id end)
+    for i, ws in ipairs(out) do out[i] = ws.name end
+    return out
 end
 
 function Model:emit(name, ...)
@@ -117,7 +181,7 @@ end
 
 function Model:collect()
     for _, ws in pairs(self.ws) do
-        if ws.windows == 0 and ws ~= self.active then
+        if ws.windows == 0 and not self:shown(ws) then
             self.ws[ws] = nil
             self:emit("workspace.removed", ws)
         end
@@ -150,12 +214,12 @@ function Model:map(class, title, pid)
     self.seq = self.seq + 1
     local w = { address = string.format("0x%x", self.seq), class = class, title = title, pid = pid or self.seq,
         mapped = true, floating = false, pinned = false, fullscreen = 0,
-        at = { x = 0, y = 0 }, size = { x = 800, y = 600 }, monitor = self.monitor }
+        at = { x = 0, y = 0 }, size = { x = 800, y = 600 }, monitor = self.active.monitor }
     local target = self.active
     for _, rule in ipairs(self.rules) do
         if rule.enabled and rule_matches(rule.class, class) then
             for _, e in ipairs(rule.effects) do
-                if e[1] == "workspace" then target = self:workspace(e[2]:gsub(" silent$", ""))
+                if e[1] == "workspace" then target = self:workspace((e[2]:gsub(" silent$", "")))
                 elseif e[1] == "float" then w.floating = e[2]
                 elseif e[1] == "pin" then w.pinned = e[2]
                 elseif e[1] == "move" then w.at = { x = e[2][1], y = e[2][2] } end
@@ -202,11 +266,11 @@ function Model:dispatch(d)
             self.focus = self:find(a.window)
             -- Focusing a window shows its page.
             if self.focus and not self.focus.workspace.special then
-                self.active = self.focus.workspace
+                self:show(self.focus.workspace)
                 self:collect()
             end
         end
-        if a.workspace then self.active = self:workspace(a.workspace) self:collect() end
+        if a.workspace then self:show(self:workspace(a.workspace)) self:collect() end
     elseif d.kind == "window.move" and a.workspace then
         local w = a.window and self:find(a.window) or self.focus
         if w then self:place(w, self:workspace(a.workspace)) self:collect() end

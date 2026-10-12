@@ -187,12 +187,23 @@ local function tiled_windows(ws)
 end
 
 -- The first id past the end of the strip.
+--
+-- Every page counts, empty or not. With a second monitor attached (see
+-- second-screen.lua), that monitor always shows a page, and it may be
+-- empty. An id past only the occupied pages could be that page, and the
+-- overflow window would land on the other screen.
 local function end_of_strip()
     local maxid = 0
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.windows > 0 and w.id > maxid then maxid = w.id end
+        if w.id > 0 and w.id > maxid then maxid = w.id end
     end
     return maxid + 1
+end
+
+-- Each monitor walks its own pages. Hyprland keeps one set of ids for all
+-- monitors, so the pages of one monitor are the ids it holds, in order.
+local function same_monitor(a, b)
+    return a.monitor ~= nil and b.monitor ~= nil and a.monitor.name == b.monitor.name
 end
 
 -- Move everything past the cap off the page, newest first, so the
@@ -255,8 +266,8 @@ end)
 -- you on it.
 --
 -- Hyprland destroys an empty workspace only when you walk away from
--- it, so the focused one is the single empty workspace that can
--- exist. Measured on this machine:
+-- it, so on one monitor the focused one is the single empty workspace
+-- that can exist. Measured on this machine:
 --
 --   after closing everything   known=[3] occupied=[] EMPTY=[3]
 --   after visiting ws 7        known=[7] occupied=[] EMPTY=[7]
@@ -265,10 +276,15 @@ end)
 -- Kamoi's strip has no dead pages: a page exists while it holds
 -- something. Stepping away on the last close gives the same result,
 -- because Hyprland then collects the workspace itself.
-local function nearest_occupied(from)
+--
+-- Only pages on the same monitor qualify. Closing the last window on one
+-- screen must not pull focus, and the pointer, onto the other screen; that
+-- screen keeps its empty page instead, as a lone screen keeps its last one.
+local function nearest_occupied(here)
     local best = nil
+    local from = here.id
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id ~= from and w.windows > 0 then
+        if w.id > 0 and w.id ~= from and w.windows > 0 and same_monitor(w, here) then
             if best == nil then
                 best = w.id
             else
@@ -287,7 +303,7 @@ local function leave_if_empty()
     local ws = hl.get_active_workspace()
     if ws == nil or ws.special then return end
     if ws.windows > 0 then return end
-    local target = nearest_occupied(ws.id)
+    local target = nearest_occupied(ws)
     -- No target means this was the last window anywhere. Stay put:
     -- an empty desktop is a real state, not a page to flee.
     if target ~= nil then
@@ -307,10 +323,19 @@ hl.on("window.destroy", leave_if_empty)
 -- and collecting pages walked this machine up to 21..23 in one
 -- session of testing.
 --
--- Renaming in ascending order cannot collide. For a sorted list of
--- distinct positive ids, occ[i] >= i always, so by the time occ[i] is
--- renamed to i every smaller page already holds 1..i-1, and every
--- page not yet renamed holds occ[j] > occ[i] >= i. Target i is free.
+-- An empty page that still exists keeps its id, and the occupied pages
+-- number around it. One monitor has at most one such page, the focused
+-- one, which Hyprland collects as soon as you leave it. A second monitor
+-- shows a page of its own, which can be empty for as long as that
+-- monitor is attached. Renaming an occupied page onto either id would
+-- collide with a page that exists.
+--
+-- Renaming in ascending order cannot collide. Let t[i] be the i-th
+-- positive id that no empty page holds. occ is a sorted list of distinct
+-- ids that no empty page holds either, so occ[i] >= t[i]. By the time
+-- occ[i] is renamed to t[i], every smaller occupied page holds a t[j]
+-- below t[i], and every page not yet renamed holds occ[j] > occ[i] >=
+-- t[i]. Target t[i] is free.
 local compacting = false
 -- Session restore holds the strip while it places windows on their saved
 -- pages, so a page is not renumbered under the next window aimed at it.
@@ -322,21 +347,23 @@ compact = function()
     if compacting or strip_held then return end
     compacting = true
 
-    local occ = {}
+    local occ, held = {}, {}
     for _, w in ipairs(hl.get_workspaces()) do
-        -- Only pages that hold something. A focused-but-empty page is
-        -- about to be collected, and special workspaces are not part
-        -- of the strip at all.
-        if w.id > 0 and w.windows > 0 then occ[#occ + 1] = w.id end
+        -- Special workspaces are not part of the strip at all.
+        if w.id > 0 then
+            if w.windows > 0 then occ[#occ + 1] = w.id else held[w.id] = true end
+        end
     end
     table.sort(occ)
 
-    for i, id in ipairs(occ) do
-        if id ~= i then
-            hl.dispatch(hl.dsp.workspace.change_id({ workspace = id, id = i }))
+    local target = 0
+    for _, id in ipairs(occ) do
+        repeat target = target + 1 until not held[target]
+        if id ~= target then
+            hl.dispatch(hl.dsp.workspace.change_id({ workspace = id, id = target }))
             -- Capacity belongs to the page, so it follows the new id. Any
-            -- value already at i is stale: page i did not exist.
-            capacity[i] = capacity[id]
+            -- value already at target is stale: that page did not exist.
+            capacity[target] = capacity[id]
             capacity[id] = nil
         end
     end
@@ -393,20 +420,23 @@ local function find_window_by(wins, comparator)
     return best
 end
 
-local function prev_occupied_workspace(from_id)
+-- Both stay on the current monitor. Hyprland's own directional focus
+-- already crosses to the next monitor; these only take over when it found
+-- no window, and then they walk this monitor's pages.
+local function prev_occupied_workspace(here)
     local best = nil
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id < from_id and w.windows > 0 then
+        if w.id > 0 and w.id < here.id and w.windows > 0 and same_monitor(w, here) then
             if best == nil or w.id > best.id then best = w end
         end
     end
     return best
 end
 
-local function next_occupied_workspace(from_id)
+local function next_occupied_workspace(here)
     local best = nil
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id > from_id and w.windows > 0 then
+        if w.id > 0 and w.id > here.id and w.windows > 0 and same_monitor(w, here) then
             if best == nil or w.id < best.id then best = w end
         end
     end
@@ -430,7 +460,7 @@ local function move_focus(dir)
     local select_target_window = nil
 
     if dir == "left" then
-        target_ws = prev_occupied_workspace(ws.id)
+        target_ws = prev_occupied_workspace(ws)
         select_target_window = function(wins)
             return find_window_by(wins, function(a, b)
                 if a.at.x ~= b.at.x then return a.at.x > b.at.x end
@@ -438,7 +468,7 @@ local function move_focus(dir)
             end)
         end
     elseif dir == "right" then
-        target_ws = next_occupied_workspace(ws.id)
+        target_ws = next_occupied_workspace(ws)
         select_target_window = function(wins)
             return find_window_by(wins, function(a, b)
                 if a.at.x ~= b.at.x then return a.at.x < b.at.x end
@@ -446,7 +476,7 @@ local function move_focus(dir)
             end)
         end
     elseif dir == "up" then
-        target_ws = prev_occupied_workspace(ws.id)
+        target_ws = prev_occupied_workspace(ws)
         select_target_window = function(wins)
             return find_window_by(wins, function(a, b)
                 if a.at.y ~= b.at.y then return a.at.y > b.at.y end
@@ -454,7 +484,7 @@ local function move_focus(dir)
             end)
         end
     elseif dir == "down" then
-        target_ws = next_occupied_workspace(ws.id)
+        target_ws = next_occupied_workspace(ws)
         select_target_window = function(wins)
             return find_window_by(wins, function(a, b)
                 if a.at.y ~= b.at.y then return a.at.y < b.at.y end
@@ -491,11 +521,14 @@ hl.bind(mod .. " + Tab", hl.dsp.focus({ last = true }))
 hl.bind(mod .. " + bracketleft",  hl.dsp.layout("cycleprev"))
 hl.bind(mod .. " + bracketright", hl.dsp.layout("cyclenext"))
 
--- The workspace strip.
-hl.bind(mod .. " + Page_Down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mod .. " + Page_Up",   hl.dsp.focus({ workspace = "e-1" }))
-hl.bind(mod .. " + CTRL + Page_Down", hl.dsp.window.move({ workspace = "e+1" }))
-hl.bind(mod .. " + CTRL + Page_Up",   hl.dsp.window.move({ workspace = "e-1" }))
+-- The workspace strip. "m" walks the open pages of the focused monitor;
+-- "e" would walk every monitor's pages and jump screens on the way
+-- (helpers/MiscFunctions.cpp, onAllMonitors = in[0] == 'e'). With one
+-- monitor the two are the same.
+hl.bind(mod .. " + Page_Down", hl.dsp.focus({ workspace = "m+1" }))
+hl.bind(mod .. " + Page_Up",   hl.dsp.focus({ workspace = "m-1" }))
+hl.bind(mod .. " + CTRL + Page_Down", hl.dsp.window.move({ workspace = "m+1" }))
+hl.bind(mod .. " + CTRL + Page_Up",   hl.dsp.window.move({ workspace = "m-1" }))
 
 -- Kamoi reaches the workspace strip with a three-finger swipe, and
 -- gives Meta+scroll to the interface scale instead. Meta+scroll is
@@ -801,6 +834,17 @@ hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
 -- puts session-restore.lua next to this file; other hosts skip this.
 -- It shares the strip's capacity table and may hold compaction.
 --------------------------------------------------------------------
+--------------------------------------------------------------------
+-- A Moonlight client as a second monitor, on hosts that run Sunshine.
+-- modules/sunshine.nix installs second-screen.lua; other hosts skip this.
+--------------------------------------------------------------------
+if package.searchpath("second-screen", package.path) then
+    local ok, err = pcall(function() require("second-screen").attach() end)
+    if not ok then
+        hl.notification.create({ text = "Second screen did not load: " .. tostring(err), timeout = 8000 })
+    end
+end
+
 if package.searchpath("session-restore", package.path) then
     local ok, err = pcall(function()
         require("session-restore").attach({

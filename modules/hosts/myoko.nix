@@ -44,6 +44,9 @@
 
       # Send downloaded meeting transcripts (.vtt) to the store on Zao.
       mountainous.features.meetings-upload.enable = true;
+
+      # The Android tablet as a second screen below the panel, over Tailscale.
+      mountainous.features.sunshine.enable = true;
     };
   };
 }

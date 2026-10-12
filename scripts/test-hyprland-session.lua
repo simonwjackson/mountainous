@@ -290,4 +290,57 @@ p:map("x", "already open")
 p:advance(5000)
 check(#p.launches == 0, "a populated desktop is left alone")
 
+-- ------------------------------------------- a second monitor below
+-- The tablet attaches as SUNSHINE (modules/second-screen.py). Each screen
+-- walks its own pages, and pages are numbered across both.
+local s = boot(true)
+s:map("a", "a1")
+s.hl.dispatch(s.hl.dsp.focus({ workspace = 2 })); s:map("b", "b1")
+s.hl.dispatch(s.hl.dsp.focus({ workspace = 1 }))
+local tablet = s:add_monitor("SUNSHINE")
+same(s:pages("SUNSHINE"), { "3" }, "the tablet starts on one empty page")
+check(s.active.monitor.name == "eDP-1", "attaching the tablet leaves focus on the laptop")
+s:map("a", "a2")
+check(s:where().a2 == "4" and s:workspace(4).monitor.name == "eDP-1",
+    "overflow skips the tablet's empty page and stays on the laptop")
+
+s.hl.dispatch(s.hl.dsp.focus({ workspace = 3 })); local t1 = s:map("t", "t1")
+check(t1.workspace.monitor == tablet, "a window opened on the tablet stays there")
+s:close(t1)
+check(s.active.name == "3" and s.active.monitor == tablet,
+    "closing the tablet's last window keeps focus on the tablet")
+
+s:close(s.windows[2]) -- b1, page 2
+same(s:pages("eDP-1"), { "1", "2" }, "the laptop's pages close the gap")
+same(s:pages("SUNSHINE"), { "3" }, "the tablet's empty page keeps its id")
+local renamed_onto_held = false
+for _, ws in pairs(s.ws) do
+    if ws.id == 3 and ws.monitor ~= tablet then renamed_onto_held = true end
+end
+check(not renamed_onto_held, "no laptop page was renamed onto the tablet's page")
+
+s:map("t", "t2")
+s:remove_monitor("SUNSHINE")
+same(s:pages("eDP-1"), { "1", "2", "3" }, "detaching folds the tablet's pages onto the laptop")
+check(s:where().t2 == "3" and s.windows[#s.windows].workspace.monitor.name == "eDP-1",
+    "the tablet's window is on the laptop, on the last page")
+
+-- A reload drops rules made by eval. The module re-applies the client's
+-- rule from the runtime file, so the monitor stays under the panel.
+local STATE_RULE = assert(os.getenv("XDG_RUNTIME_DIR")) .. "/mountainous-second-screen.lua"
+local r2 = boot(true)
+check(r2.monitor_rules.SUNSHINE == nil, "no client, no rule")
+check(r2.devices["libvirtualhid-touchscreen"].output == "SUNSHINE"
+    and r2.devices["libvirtualhid-pen-tablet"].output == "SUNSHINE", "touch and pen map to the tablet")
+local f = assert(io.open(STATE_RULE, "wb"))
+f:write('return { output = "SUNSHINE", mode = "2960x1848@60", position = "35x1200", scale = "1.600000" }\n')
+f:close()
+r2:reset_config()
+dofile(HYPR .. "hyprland.lua")
+check(r2.monitor_rules.SUNSHINE ~= nil and r2.monitor_rules.SUNSHINE.position == "35x1200",
+    "a reload re-applies the client's monitor rule")
+check(require("second-screen").apply(), "apply reports the rule it applied")
+os.remove(STATE_RULE)
+check(not require("second-screen").apply(), "apply does nothing once the client has gone")
+
 print(string.format("HYPRLAND_SESSION_TESTS_OK %d checks", passed))
