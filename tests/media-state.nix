@@ -16,6 +16,10 @@ let
     cp ${../scripts/test-media-transmission-hold.py} "$out/scripts/test-media-transmission-hold.py"
     cp ${../modules/media-state-ready.py} "$out/modules/media-state-ready.py"
     cp ${../modules/media-nzbget-launch.py} "$out/modules/media-nzbget-launch.py"
+    cp ${../modules/media-nzbfast-settings.py} "$out/modules/media-nzbfast-settings.py"
+    cp ${../scripts/media-nzbfast-provision.py} "$out/scripts/media-nzbfast-provision.py"
+    cp ${../scripts/test-media-nzbfast-provision.py} "$out/scripts/test-media-nzbfast-provision.py"
+    cp ${../scripts/test-media-nzbfast-settings.py} "$out/scripts/test-media-nzbfast-settings.py"
     cp ${../modules/media-library-cleanup.py} "$out/modules/media-library-cleanup.py"
     cp ${../scripts/test-media-library-cleanup.py} "$out/scripts/test-media-library-cleanup.py"
   '';
@@ -43,6 +47,9 @@ pkgs.testers.runNixOSTest {
         machine.succeed("python3 ${fixtures}/scripts/test-media-native-transfer.py")
     with subtest("existing-state and ARR processing holds"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-state-ready.py")
+    with subtest("NZBFAST provisioning and service-owned settings are private and idempotent"):
+        machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbfast-provision.py")
+        machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbfast-settings.py")
     with subtest("pinned NZBGet starts with native processing holds"):
         machine.succeed("runuser -u fixture -- python3 ${fixtures}/scripts/test-media-nzbget-hold.py ${nzbget}/bin/nzbget")
     with subtest("empty title cleanup preserves library roots and files"):

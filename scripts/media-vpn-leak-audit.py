@@ -21,9 +21,13 @@ def run(*cmd, ns=False):
 
 vpn_ino = os.stat('/run/netns/vpn').st_ino
 host_ino = os.stat('/proc/1/ns/net').st_ino
-# 1. Every process of the three downloader-side services, including children, is in the VPN namespace.
-for unit in ['prowlarr.service', 'nzbget.service', 'transmission.service']:
+vpn_units = ['prowlarr.service', 'nzbget.service', 'nzbfast.service', 'transmission.service']
+# 1. Every process of the downloader-side services, including children, is in the VPN namespace.
+for unit in vpn_units:
     cgroup = run('systemctl', 'show', unit, '-p', 'ControlGroup', '--value')
+    if not cgroup or not cgroup.startswith('/'):
+        check(f'{unit}: active cgroup exists', False)
+        continue
     procs = Path('/sys/fs/cgroup' + cgroup + '/cgroup.procs').read_text().split()
     sub = [p for d in Path('/sys/fs/cgroup' + cgroup).rglob('cgroup.procs') for p in d.read_text().split()]
     pids = sorted(set(procs + sub))
@@ -83,22 +87,31 @@ for line in ss.splitlines():
 check(f'all {count} live remote connections route via wg-vpn (tailnet/veth excepted)', not bad, '; '.join(bad[:5]))
 
 # 5. DNS: resolve a unique name inside an actual service's own namespaces while watching the host for port-53 traffic.
-pid = run('systemctl', 'show', 'nzbget.service', '-p', 'MainPID', '--value')
-resolv = run('nsenter', '-t', pid, '-m', 'cat', '/etc/resolv.conf')
-dns_ip = (re.findall(r'nameserver\s+(\S+)', resolv) or [''])[0]
-check(f'service resolv.conf points at VPN DNS {dns_ip}, routed via wg-vpn', dns_ip and 'dev wg-vpn' in run('ip', 'route', 'get', dns_ip, ns=True), resolv)
-nscd = run('nsenter', '-t', pid, '-m', 'sh', '-c', 'ls -l /run/nscd/socket 2>&1')
-name = f'vpn-leak-{uuid.uuid4().hex[:12]}.example.com'
-capture = subprocess.Popen(['timeout', '12', 'tcpdump', '-i', 'any', '-nn', '-l', '-A', 'port 53'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-time.sleep(2)
-lookup = subprocess.run(['nsenter', '-t', pid, '-n', '-m', 'getent', 'ahosts', name], capture_output=True, text=True)
-host_saw = name.split('.')[0] in capture.communicate()[0]
-check('a lookup inside nzbget is NOT seen as DNS on Unzen\'s own interfaces', not host_saw, f'nscd socket visible in service: {nscd!r}')
-ns_capture = subprocess.Popen(['timeout', '12', 'ip', 'netns', 'exec', 'vpn', 'tcpdump', '-i', 'wg-vpn', '-nn', '-l', '-A', 'port 53'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-time.sleep(2)
-name2 = f'vpn-leak-{uuid.uuid4().hex[:12]}.example.com'
-subprocess.run(['nsenter', '-t', pid, '-n', '-m', 'getent', 'ahosts', name2], capture_output=True, text=True)
-check('the same kind of lookup IS seen going out wg-vpn', name2.split('.')[0] in ns_capture.communicate()[0])
+for unit in ['nzbget.service', 'nzbfast.service']:
+    pid = run('systemctl', 'show', unit, '-p', 'MainPID', '--value')
+    if not pid.isdigit() or pid == '0':
+        check(f'{unit}: running for DNS audit', False)
+        continue
+    resolv = run('nsenter', '-t', pid, '-m', 'cat', '/etc/resolv.conf')
+    dns_ip = (re.findall(r'nameserver\s+(\S+)', resolv) or [''])[0]
+    check(f'{unit}: resolv.conf uses VPN DNS routed via wg-vpn', dns_ip and 'dev wg-vpn' in run('ip', 'route', 'get', dns_ip, ns=True), resolv)
+    socket_check = subprocess.run(['nsenter', '-t', pid, '-m', 'test', '-S', '/run/nscd/socket'])
+    check(f'{unit}: host nscd socket is hidden', socket_check.returncode != 0)
+    environment = Path(f'/proc/{pid}/environ').read_bytes().decode().split('\0')
+    nss = next((item for item in environment if item.startswith('LD_LIBRARY_PATH=')), 'LD_LIBRARY_PATH=')
+    check(f'{unit}: VPN NSS modules are configured', nss != 'LD_LIBRARY_PATH=')
+    lookup = ['nsenter', '-t', pid, '-n', '-m', 'env', nss, 'getent', 'ahosts']
+    name = f'vpn-leak-{uuid.uuid4().hex[:12]}.example.com'
+    capture = subprocess.Popen(['timeout', '12', 'tcpdump', '-i', 'any', '-nn', '-l', '-A', 'port 53'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    time.sleep(2)
+    subprocess.run(lookup + [name], capture_output=True, text=True)
+    host_saw = name.split('.')[0] in capture.communicate()[0]
+    check(f'{unit}: DNS lookup is NOT seen on host interfaces', not host_saw)
+    ns_capture = subprocess.Popen(['timeout', '12', 'ip', 'netns', 'exec', 'vpn', 'tcpdump', '-i', 'wg-vpn', '-nn', '-l', '-A', 'port 53'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    time.sleep(2)
+    name2 = f'vpn-leak-{uuid.uuid4().hex[:12]}.example.com'
+    subprocess.run(lookup + [name2], capture_output=True, text=True)
+    check(f'{unit}: DNS lookup IS seen going out wg-vpn', name2.split('.')[0] in ns_capture.communicate()[0])
 
 # 6. Indexer redirect would make Sonarr/Radarr fetch NZBs directly from the indexer, outside the VPN.
 with sqlite3.connect('file:/var/lib/prowlarr/prowlarr.db?mode=ro', uri=True) as db:
@@ -111,7 +124,7 @@ for app, path in [('sonarr', '/var/lib/sonarr/.config/NzbDrone/sonarr.db'), ('ra
     check(f'{app}: every indexer points at Prowlarr, not an indexer directly', urls and all('indexers.hummingbird-lake.ts.net' in u or '10.200.200.2' in u for u in urls), str([re.sub(r'/api.*', '', u) for u in urls]))
 
 # 7. Kill switch by design: unit binding.
-for unit in ['prowlarr.service', 'nzbget.service', 'transmission.service']:
+for unit in vpn_units:
     props = run('systemctl', 'show', unit, '-p', 'BindsTo', '-p', 'NetworkNamespacePath')
     check(f'{unit} BindsTo media-vpn and is pinned to /run/netns/vpn', 'media-vpn.service' in props and '/run/netns/vpn' in props, props)
 

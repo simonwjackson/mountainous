@@ -14,7 +14,8 @@
         prowlarr = "2.3.0.5236";
         nzbget = "26.0";
         transmission = "4.1.1";
-      };
+      }
+      // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 { nzbfast = "1.7.1"; };
       runtime = {
         inherit (media)
           sonarr
@@ -23,6 +24,9 @@
           nzbget
           ;
         transmission = media.transmission_4;
+      }
+      // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+        nzbfast = inputs.nix-extras.packages.${pkgs.stdenv.hostPlatform.system}.nzbfast;
       };
       matches = builtins.all (name: runtime.${name}.version == releases.${name}) (
         builtins.attrNames releases

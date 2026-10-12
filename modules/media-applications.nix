@@ -1,4 +1,4 @@
-# Application state is transferred before activation. Never seed fresh settings.
+# Existing application state is gated; NZBFAST is a separate held trial.
 { inputs, ... }:
 {
   nixos.modules.media-applications =
@@ -19,9 +19,14 @@
         "radarr"
         "prowlarr"
         "nzbget"
+        "nzbfast"
         "transmission"
       ];
-      present = name: cfg.placement.${name} == config.networking.hostName;
+      present =
+        name:
+        cfg.placement.${name} == config.networking.hostName
+        && (name != "nzbget" || cfg.usenet != "nzbfast")
+        && (name != "nzbfast" || cfg.usenet != "nzbget");
       held = cfg.processing != "enabled";
       importsOnly = cfg.processing == "imports-only";
       nzbPaths = {
@@ -61,6 +66,7 @@
         radarr = "/var/lib/radarr/.config/Radarr/config.xml";
         prowlarr = "/var/lib/prowlarr/config.xml";
         nzbget = "/var/lib/nzbget/nzbget.conf";
+        nzbfast = "/var/lib/nzbfast/config.json";
         transmission = "/var/lib/transmission/.config/transmission-daemon/settings.json";
       };
       databases = {
@@ -70,7 +76,22 @@
       };
     in
     {
+      imports = [ inputs.nix-extras.nixosModules.nzbfast ];
       options.mountainous.features.media-applications = {
+        usenet = lib.mkOption {
+          type = lib.types.enum [
+            "nzbget"
+            "both"
+            "nzbfast"
+          ];
+          default = "nzbget";
+          description = "Usenet services to run; disabling a service does not remove its state.";
+        };
+        nzbfast.held = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Keep NZBFAST paused and offline even when global processing is enabled.";
+        };
         enable = lib.mkEnableOption "state-preserving portable media applications";
         placement = lib.mkOption {
           type = lib.types.submodule {
@@ -109,7 +130,7 @@
         assertions = [
           {
             assertion = lib.all (name: cfg.placement ? ${name}) apps;
-            message = "Media placement must explicitly assign all five applications.";
+            message = "Media placement must assign every application.";
           }
         ];
         users.groups.media.gid = cfg.mediaGid;
@@ -134,6 +155,16 @@
             enable = present "nzbget";
             package = media.nzbget;
             group = "media";
+          };
+          nzbfast = {
+            enable = present "nzbfast";
+            user = "nzbfast";
+            group = "media";
+            stateDir = "/var/lib/nzbfast";
+            downloadDir = "/srv/basin/downloads/usenet/nzbfast";
+            listenAddress = "0.0.0.0";
+            port = 6790;
+            openFirewall = false;
           };
           transmission = {
             enable = present "transmission";
@@ -207,6 +238,16 @@
                 if held then "held" else "enabled"
               } /var/lib/nzbget/nzbget.conf ${nzbFlags}";
               serviceConfig.ExecStop = lib.mkForce "${media.nzbget}/bin/nzbget --quit --configfile /var/lib/nzbget/nzbget.conf";
+            };
+            nzbfast = lib.mkIf (present "nzbfast") {
+              environment.NZBFAST_NO_ENRICH = "1";
+              # Validation (mkBefore/500) precedes settings (600), then upstream
+              # rewrites bind/out_dir/port (1000). .spool is in writable stateDir.
+              preStart = lib.mkOrder 600 ''
+                ${pkgs.python3}/bin/python3 ${./media-nzbfast-settings.py} /var/lib/nzbfast ${
+                  if held || cfg.nzbfast.held then "held" else "enabled"
+                }
+              '';
             };
             transmission = lib.mkIf (present "transmission") {
               # Current upstream regenerates settings.json. Keep the complete

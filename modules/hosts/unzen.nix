@@ -46,6 +46,10 @@
           login = "forgerie";
           privateKeyFile = config.sops.secrets.github-actions-forgerie-app-key.path;
         };
+        nix.settings = {
+          extra-substituters = [ "https://github.com/simonwjackson/nix-extras/releases/download/cache/" ];
+          extra-trusted-public-keys = [ "nix-extras-ci-1:+Vcq7i6dPWOsOZjQwOduCEZOZZJznS/XfOcNUhFmg3Q=" ];
+        };
         hardware.cpu.intel.updateMicrocode = true;
         boot.supportedFilesystems = [ "bcachefs" ];
 

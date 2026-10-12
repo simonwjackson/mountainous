@@ -351,6 +351,17 @@ def validate_arr(name, directory, require_pause=False, imports_receipt=None, ena
             validate_arr_enabled(name, connection, original)
 
 
+def validate_nzbfast(path):
+    settings = json.loads(Path(path).read_text())
+    servers = settings.get("servers")
+    if not isinstance(servers, list) or not any(
+        isinstance(server, dict) and server.get("enabled", True) is True
+        and isinstance(server.get("host"), str) and server["host"].strip()
+        for server in servers
+    ):
+        raise ValueError("missing enabled server")
+
+
 def main():
     name = sys.argv[1]
     if name in ARR:
@@ -362,6 +373,8 @@ def main():
         settings = json.loads(Path("/var/lib/transmission/.config/transmission-daemon/settings.json").read_text())
         if not settings.get("download-dir", settings.get("download_dir")):
             raise ValueError("missing download directory")
+    elif name == "nzbfast":
+        validate_nzbfast(Path("/var/lib/nzbfast/config.json"))
     elif name == "nzbget":
         path = Path("/var/lib/nzbget/nzbget.conf")
         settings = dict(tuple(part.strip() for part in line.split("=", 1))

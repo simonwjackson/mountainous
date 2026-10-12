@@ -13,12 +13,19 @@
       cfg = config.mountainous.features.media-runtime;
       placement = config.mountainous.features.media-applications.placement;
       host = config.networking.hostName;
+      applications = config.mountainous.features.media-applications;
       local = name: placement.${name} == host;
+      active =
+        name:
+        local name
+        && (name != "nzbget" || applications.usenet != "nzbfast")
+        && (name != "nzbfast" || applications.usenet != "nzbget");
       downloaders = [
         "nzbget"
         "transmission"
       ];
       vpnApps = [
+        "nzbfast"
         "nzbget"
         "transmission"
         "prowlarr"
@@ -27,7 +34,7 @@
         "sonarr"
         "radarr"
       ];
-      hasVpn = lib.any local vpnApps;
+      hasVpn = lib.any active vpnApps;
       # The host's name-service cache (nscd) runs outside the VPN namespace.
       # A namespaced process that can reach its socket has every hostname
       # resolved by the host, over the host's network: a DNS leak. VPN
@@ -139,7 +146,11 @@
               ]
           )
         )
-      ) downloaders;
+      ) downloaders
+      ++ lib.optionals (active "nzbfast") [
+        "/srv/basin/downloads/usenet/nzbfast/Series"
+        "/srv/basin/downloads/usenet/nzbfast/Movies"
+      ];
     in
     {
       options.mountainous.features.media-runtime = {
@@ -208,6 +219,9 @@
         ];
         systemd.tmpfiles.rules =
           map (directory: "d ${directory} 2775 root media -") rootDirectories
+          # Upstream creates this root with d/2770. z adjusts only the root,
+          # not existing payload ownership, and avoids duplicate d rules.
+          ++ lib.optional (active "nzbfast") "z /srv/basin/downloads/usenet/nzbfast 2775 root media -"
           ++ map (part: "d ${accessRoot}/${part} 2775 root media -") (
             exportedLibrary ++ map share localDownloads
           )
@@ -328,9 +342,9 @@
               wantedBy = [ "multi-user.target" ];
               # Re-establish admitted local consumers after a tunnel restart.
               # Their existing state/processing/readiness gates still apply.
-              wants = [ "network-online.target" ] ++ map (name: "${name}.service") (lib.filter local vpnApps);
+              wants = [ "network-online.target" ] ++ map (name: "${name}.service") (lib.filter active vpnApps);
               after = [ "network-online.target" ];
-              before = map (name: "${name}.service") (lib.filter local vpnApps);
+              before = map (name: "${name}.service") (lib.filter active vpnApps);
               unitConfig.ConditionPathExists = [
                 "/var/lib/media-migration/ready/vpn"
                 cfg.vpnConfigFile
@@ -357,7 +371,7 @@
               };
             };
           }
-          (lib.genAttrs (lib.filter local vpnApps) (_: {
+          (lib.genAttrs (lib.filter active vpnApps) (_: {
             after = [ "media-vpn.service" ];
             bindsTo = [ "media-vpn.service" ];
             requires = [ "media-vpn.service" ];

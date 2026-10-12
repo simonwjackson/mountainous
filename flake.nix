@@ -1,8 +1,16 @@
 {
   description = "mountainous";
 
+  nixConfig = {
+    extra-substituters = "https://github.com/simonwjackson/nix-extras/releases/download/cache/";
+    extra-trusted-public-keys = "nix-extras-ci-1:+Vcq7i6dPWOsOZjQwOduCEZOZZJznS/XfOcNUhFmg3Q=";
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # Keep its package pin: following ours would change the signed cache path.
+    nix-extras.url = "github:simonwjackson/nix-extras";
 
     # Preserve Yari's deployed media releases during its ARM -> x86 move.
     # Application/database upgrades are separate from relocation.

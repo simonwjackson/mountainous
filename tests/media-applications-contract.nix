@@ -56,6 +56,33 @@ let
     (flake.nixosConfigurations.unzen.extendModules {
       modules = [ { mountainous.features.media-applications.processing = "enabled"; } ];
     }).config;
+  usenetConfig =
+    usenet: held:
+    (flake.nixosConfigurations.unzen.extendModules {
+      modules = [
+        ({ lib, ... }: {
+          mountainous.features.media-applications = {
+            usenet = lib.mkForce usenet;
+            nzbfast.held = lib.mkForce held;
+          };
+        })
+      ];
+    }).config;
+  nzbgetOnly = usenetConfig "nzbget" true;
+  nzbfastOnly = usenetConfig "nzbfast" true;
+  releasedFast = usenetConfig "both" false;
+  globallyHeldFast =
+    (flake.nixosConfigurations.unzen.extendModules {
+      modules = [
+        ({ lib, ... }: {
+          mountainous.features.media-applications = {
+            processing = lib.mkForce "held";
+            nzbfast.held = lib.mkForce false;
+          };
+        })
+      ];
+    }).config;
+  fast = declared.systemd.services.nzbfast;
   apps = [
     "sonarr"
     "radarr"
@@ -71,6 +98,56 @@ let
     transmission = "4.1.1";
   };
 in
+assert nzbgetOnly.services.nzbget.enable && !nzbgetOnly.services.nzbfast.enable;
+assert !(nzbgetOnly.systemd.services ? nzbfast);
+assert declared.services.nzbget.enable && declared.services.nzbfast.enable;
+assert nzbfastOnly.services.nzbfast.enable && !nzbfastOnly.services.nzbget.enable;
+assert !(nzbfastOnly.systemd.services ? nzbget);
+assert !builtins.elem "nzbget.service" nzbfastOnly.systemd.services.media-vpn.wants;
+assert !(declared.systemd.services ? tsnet-proxy-nzbfast);
+assert declared.services.nzbfast.package.version == "1.7.1";
+assert declared.users.users.nzbfast.uid == 391;
+assert declared.users.users.nzbfast.group == "media";
+assert
+  builtins.length (builtins.filter (user: user.uid == 391) (builtins.attrValues declared.users.users))
+  == 1;
+assert fast.unitConfig.ConditionPathExists == "/var/lib/media-migration/ready/nzbfast";
+assert fast.unitConfig.ConditionFileNotEmpty == [ "/var/lib/nzbfast/config.json" ];
+assert fast.serviceConfig.NetworkNamespacePath == "/run/netns/vpn";
+assert builtins.elem "-/run/nscd" fast.serviceConfig.InaccessiblePaths;
+assert builtins.match ".*media-vpn-nss-modules" fast.environment.LD_LIBRARY_PATH != null;
+assert builtins.elem "media-vpn.service" fast.bindsTo;
+assert builtins.elem "media-vpn.service" fast.requires;
+assert builtins.elem "media-vpn.service" fast.after;
+assert builtins.elem "nzbfast.service" declared.systemd.services.media-vpn.wants;
+assert builtins.elem "/etc/netns/vpn/resolv.conf:/etc/resolv.conf"
+  fast.serviceConfig.BindReadOnlyPaths;
+assert fast.serviceConfig.UMask == "0002";
+assert fast.environment.NZBFAST_NO_ENRICH == "1";
+assert declared.services.nzbfast.port == 6790;
+assert declared.services.nzbfast.listenAddress == "0.0.0.0";
+assert !declared.services.nzbfast.openFirewall;
+assert
+  builtins.match ".*media-state-ready.py nzbfast.*media-nzbfast-settings.py /var/lib/nzbfast held.*jq.*" fast.preStart
+  != null;
+assert
+  builtins.match ".*media-nzbfast-settings.py /var/lib/nzbfast enabled.*" releasedFast.systemd.services.nzbfast.preStart
+  != null;
+assert
+  builtins.match ".*media-nzbfast-settings.py /var/lib/nzbfast held.*" globallyHeldFast.systemd.services.nzbfast.preStart
+  != null;
+assert
+  builtins.match ".*password.*" (
+    builtins.toJSON {
+      inherit (fast)
+        preStart
+        environment
+        serviceConfig
+        unitConfig
+        ;
+      service = declared.services.nzbfast;
+    }
+  ) == null;
 assert builtins.all (name: target.services.${name}.package.version == versions.${name}) apps;
 assert builtins.all (
   name:

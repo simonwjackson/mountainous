@@ -4,11 +4,14 @@ let
   applications =
     (import ../modules/media-applications.nix { inherit inputs; }).nixos.modules.media-applications;
   runtime = (import ../modules/media-runtime.nix { inherit inputs; }).nixos.modules.media-runtime;
+  identities =
+    (import ../modules/media-identities.nix { inherit inputs; }).nixos.modules.media-identities;
   assignments = {
     sonarr = "arr";
     radarr = "arr";
     prowlarr = "unzen";
     nzbget = "unzen";
+    nzbfast = "unzen";
     transmission = "unzen";
   };
   common =
@@ -17,6 +20,7 @@ let
       imports = [
         applications
         runtime
+        identities
       ];
       # QEMU replaces normal host filesystems. Give its adapter the same layout.
       virtualisation.fileSystems = import ../lib/media-storage-layout.nix {
@@ -39,6 +43,7 @@ let
       mountainous.features.media-applications = {
         enable = true;
         mediaGid = 390;
+        usenet = "both";
         placement = assignments;
       };
       mountainous.features.media-runtime.enable = true;
@@ -159,7 +164,7 @@ pkgs.testers.runNixOSTest {
     arr.wait_for_unit("multi-user.target")
 
     with subtest("missing state cannot start a setup wizard"):
-        for machine, services in ((unzen, ["nzbget", "transmission", "prowlarr"]), (arr, ["sonarr", "radarr"])):
+        for machine, services in ((unzen, ["nzbget", "nzbfast", "transmission", "prowlarr"]), (arr, ["sonarr", "radarr"])):
             for service in services:
                 machine.succeed("systemctl start " + service + ".service")
                 machine.fail("systemctl is-active --quiet " + service + ".service")
@@ -311,6 +316,60 @@ pkgs.testers.runNixOSTest {
         unzen.succeed("systemctl start media-vpn.service")
         unzen.succeed("ip netns exec vpn curl --fail --max-time 5 http://10.99.0.1:8080/exit")
         unzen.succeed("ip netns exec vpn ip route show default | grep 'dev wg-vpn'")
+        with subtest("NZBFAST requires both gates, validates servers and starts held in the real VPN sandbox"):
+            import json
+            unzen.succeed("touch /var/lib/media-migration/ready/nzbfast")
+            unzen.succeed("systemctl start nzbfast.service")
+            unzen.fail("systemctl is-active --quiet nzbfast.service")
+            # Exercise the actual provisioning CLI with fixture-only credentials.
+            source = "Server1.Host=news.example.invalid\nServer1.Username=fixture-user\nServer1.Password=fixture-password\n"
+            unzen.succeed("printf %s " + shlex.quote(source) + " > /run/nzbget-fixture.conf")
+            checked = unzen.succeed("python3 ${../scripts/media-nzbfast-provision.py} --source /run/nzbget-fixture.conf --check")
+            provisioned = unzen.succeed("python3 ${../scripts/media-nzbfast-provision.py} --source /run/nzbget-fixture.conf")
+            for output in (checked, provisioned):
+                assert all(secret not in output for secret in ("news.example.invalid", "fixture-user", "fixture-password")), output
+            unzen.fail("python3 ${../scripts/media-nzbfast-provision.py} --source /run/nzbget-fixture.conf")
+            unzen.succeed("test $(stat -c %a:%U:%G /var/lib/nzbfast/config.json) = 600:nzbfast:media")
+            unzen.succeed("rm /var/lib/media-migration/ready/nzbfast")
+            unzen.succeed("systemctl start nzbfast.service")
+            unzen.fail("systemctl is-active --quiet nzbfast.service")
+            unzen.succeed("touch /var/lib/media-migration/ready/nzbfast")
+            original_config = unzen.succeed("cat /var/lib/nzbfast/config.json")
+            unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("printf %s " + shlex.quote(json.dumps({"servers": []})) + " > /var/lib/nzbfast/config.json"))
+            unzen.fail("systemctl start nzbfast.service")
+            unzen.succeed("systemctl stop nzbfast.service")
+            unzen.fail("test -e /var/lib/nzbfast/settings.json")
+            unzen.succeed("runuser -u nzbfast -- sh -c " + shlex.quote("printf %s " + shlex.quote(original_config) + " > /var/lib/nzbfast/config.json"))
+            unzen.succeed("systemctl reset-failed nzbfast.service")
+            unzen.succeed("systemctl start nzbfast.service")
+            unzen.wait_for_unit("nzbfast.service")
+            unzen.succeed("test $(id -u nzbfast) = 391")
+            unzen.wait_until_succeeds("curl --fail --silent http://10.200.200.2:6790/api?mode=version >/dev/null")
+            key = json.loads(unzen.succeed("cat /var/lib/nzbfast/settings.json"))["apikey"]
+            def fast_queue():
+                return json.loads(unzen.succeed("curl --fail --silent 'http://10.200.200.2:6790/api?mode=queue&output=json&apikey=" + key + "'"))["queue"]
+            queue = fast_queue()
+            assert queue["paused"] and queue["offline"], queue
+            live_config = json.loads(unzen.succeed("curl --fail --silent 'http://10.200.200.2:6790/api?mode=get_config&output=json&apikey=" + key + "'"))["config"]
+            live = live_config["nzbfast"]
+            for forced_off in ("auto_rename", "spot_enabled", "index_enabled", "identity_lookup", "update_checks", "delete_to_trash"):
+                assert live[forced_off] is False, (forced_off, live[forced_off])
+            assert live["out_umask"] == "002", live["out_umask"]
+            categories = {category["name"]: category["dir"] for category in live_config["categories"]}
+            assert categories["Series"] == "Series" and categories["Movies"] == "Movies", categories
+            before = json.loads(unzen.succeed("cat /var/lib/nzbfast/settings.json"))
+            unzen.succeed("systemctl restart nzbfast.service")
+            unzen.wait_for_unit("nzbfast.service")
+            unzen.wait_until_succeeds("curl --fail --silent http://10.200.200.2:6790/api?mode=version >/dev/null")
+            after = json.loads(unzen.succeed("cat /var/lib/nzbfast/settings.json"))
+            assert before == after, (before, after)
+            assert fast_queue()["paused"] and fast_queue()["offline"]
+            unzen.succeed("test -d /var/lib/nzbfast/.spool")
+            unzen.succeed("test $(stat -c %a:%U:%G /srv/basin/downloads/usenet/nzbfast) = 2775:root:media")
+            unzen.succeed("runuser -u nzbget -- touch /srv/basin/downloads/usenet/nzbfast/Series/group-writable")
+            pid_fast = unzen.succeed("systemctl show nzbfast.service -p MainPID --value").strip()
+            unzen.fail("nsenter -t " + pid_fast + " -m test -S /run/nscd/socket")
+            assert unzen.succeed("stat -Lc %i /proc/" + pid_fast + "/ns/net").strip() == unzen.succeed("stat -Lc %i /run/netns/vpn").strip()
         unzen.fail("systemctl is-active --quiet prowlarr.service")
         # Satisfy the retained file-presence conditions for the sleeping fixture.
         # The real state validator remains covered by the preservation VM.
@@ -323,8 +382,10 @@ pkgs.testers.runNixOSTest {
         original_pid = unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip()
         unzen.succeed("systemctl stop media-vpn.service")
         unzen.wait_until_fails("systemctl is-active --quiet prowlarr.service")
+        unzen.wait_until_fails("systemctl is-active --quiet nzbfast.service")
         unzen.succeed("systemctl start media-vpn.service")
         unzen.wait_for_unit("prowlarr.service")
+        unzen.wait_for_unit("nzbfast.service")
         assert unzen.succeed("systemctl show prowlarr.service -p MainPID --value").strip() != original_pid
         # The host name-service cache resolves names outside the tunnel. A
         # VPN consumer must not reach it, yet must still resolve users.
