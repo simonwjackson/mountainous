@@ -1,9 +1,13 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p coreutils openssh jq
+#! nix-shell -i bash -p coreutils openssh jq ssh-to-age gnused gnugrep
 # shellcheck shell=bash
 # Install a host onto a remote machine that is already running some Linux.
 #
-#   ./scripts/install-remote tate root@192.168.1.189
+#   nix run .#deploy -- tate root@192.168.1.189
+#
+# `nix run .#deploy` is the supported entry point (modules/deploy.nix). It
+# runs this script with pinned tools and the pinned nixos-anywhere. Running
+# the script directly still works, but takes its tools from NIX_PATH.
 #
 # The remote does not have to be NixOS. nixos-anywhere kexecs into a NixOS
 # installer first, so anything with SSH and a working network will do.
@@ -22,13 +26,16 @@
 set -euo pipefail
 
 KEYSTORE="${MOUNTAINOUS_KEYSTORE:-$HOME/.local/share/mountainous/hostkeys}"
-REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# The flake app sets these: the flake source it was built from, its own name
+# for the usage line, and the exact nixos-anywhere it pinned.
+REPO="${MOUNTAINOUS_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PROG="${MOUNTAINOUS_PROG:-$0}"
 
 die() { echo "error: $*" >&2; exit 1; }
 
 HOST="${1:-}"
 TARGET="${2:-}"
-[ -n "$HOST" ] && [ -n "$TARGET" ] || die "usage: $0 <host> <user@address>
+[ -n "$HOST" ] && [ -n "$TARGET" ] || die "usage: $PROG <host> <user@address>
 
   host     a name under modules/hosts/, e.g. tate
   target   ssh destination, e.g. root@192.168.1.189
@@ -55,7 +62,9 @@ echo
 echo "=== host key ==="
 KEY="$KEYSTORE/$HOST/ssh_host_ed25519_key"
 [ -s "$KEY" ] || die "no host key at $KEY. Run ./scripts/host-key $HOST first."
-AGE=$(./scripts/host-key "$HOST" 2>/dev/null)
+# Run through bash, not the nix-shell shebang, so host-key uses the tools
+# already on PATH instead of an unpinned <nixpkgs>.
+AGE=$(bash ./scripts/host-key "$HOST" 2>/dev/null)
 grep -q "$AGE" .sops.yaml || die "that age key is not in .sops.yaml.
 Add it and run ./scripts/secrets --rekey before installing, or this machine
 boots unable to decrypt anything."
@@ -91,7 +100,12 @@ fi
 if [ -n "${MOUNTAINOUS_INSTALL_SSH_KEY:-}" ]; then
   INSTALL_ARGS+=(-i "$MOUNTAINOUS_INSTALL_SSH_KEY")
 fi
-nix run .#nixos-anywhere-verified -- \
+if [ -n "${MOUNTAINOUS_NIXOS_ANYWHERE:-}" ]; then
+  NIXOS_ANYWHERE=("$MOUNTAINOUS_NIXOS_ANYWHERE")
+else
+  NIXOS_ANYWHERE=(nix run .#nixos-anywhere-verified --)
+fi
+"${NIXOS_ANYWHERE[@]}" \
   --flake ".#$HOST" \
   --target-host "$TARGET" \
   --build-on local \
