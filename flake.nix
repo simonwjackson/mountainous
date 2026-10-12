@@ -286,6 +286,7 @@
         modules =
           [
             disko.nixosModules.default
+            ./hosts/disko-stable-names.nix
             agenix.nixosModules.default
             home-manager.nixosModules.home-manager
           ]

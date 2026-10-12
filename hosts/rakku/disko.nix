@@ -3,7 +3,7 @@
     disk = {
       main = {
         type = "disk";
-        device = "/dev/sda";
+        device = "/dev/disk/by-id/ata-Hoodisk_SSD_L8MLCCC21232269";
         content = {
           type = "gpt";
           partitions = {
