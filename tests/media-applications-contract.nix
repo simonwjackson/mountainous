@@ -2,8 +2,19 @@
 let
   flake = builtins.getFlake (toString ../.);
   declared = flake.nixosConfigurations.unzen.config;
+  trialHost = flake.nixosConfigurations.unzen.extendModules {
+    modules = [
+      ({ lib, ... }: {
+        mountainous.features.media-applications = {
+          usenet = lib.mkForce "both";
+          nzbfast.held = lib.mkForce true;
+        };
+      })
+    ];
+  };
+  trial = trialHost.config;
   target =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [
         (
           { lib, ... }:
@@ -14,7 +25,7 @@ let
       ];
     }).config;
   split =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [
         {
           mountainous.features.media-applications.placement.sonarr = "other-host";
@@ -22,7 +33,7 @@ let
       ];
     }).config;
   remoteDownloader =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [
         {
           mountainous.features.media-applications.placement.nzbget = "other-downloader-host";
@@ -30,7 +41,7 @@ let
       ];
     }).config;
   remoteArr =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [
         {
           mountainous.features.media-applications.placement = {
@@ -41,7 +52,7 @@ let
       ];
     }).config;
   importsOnly =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [
         {
           mountainous.features.media-applications.processing = "imports-only";
@@ -49,11 +60,11 @@ let
       ];
     }).config;
   arrEnabled =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [ { mountainous.features.media-applications.processing = "arr-enabled"; } ];
     }).config;
   normal =
-    (flake.nixosConfigurations.unzen.extendModules {
+    (trialHost.extendModules {
       modules = [ { mountainous.features.media-applications.processing = "enabled"; } ];
     }).config;
   usenetConfig =
@@ -100,7 +111,14 @@ let
 in
 assert nzbgetOnly.services.nzbget.enable && !nzbgetOnly.services.nzbfast.enable;
 assert !(nzbgetOnly.systemd.services ? nzbfast);
-assert declared.services.nzbget.enable && declared.services.nzbfast.enable;
+assert trial.services.nzbget.enable && trial.services.nzbfast.enable;
+assert declared.mountainous.features.media-applications.usenet == "nzbfast";
+assert !declared.mountainous.features.media-applications.nzbfast.held;
+assert declared.services.nzbfast.enable && !declared.services.nzbget.enable;
+assert !(declared.systemd.services ? nzbget);
+# The dashboard is not authentication-gated by default. Do not publish it.
+assert !(declared.systemd.services ? tsnet-proxy-nzbget);
+assert !(declared.systemd.units ? "tsnet-proxy-nzbget.service");
 assert nzbfastOnly.services.nzbfast.enable && !nzbfastOnly.services.nzbget.enable;
 assert !(nzbfastOnly.systemd.services ? nzbget);
 assert !builtins.elem "nzbget.service" nzbfastOnly.systemd.services.media-vpn.wants;
@@ -112,7 +130,7 @@ assert
     "prowlarr.service"
   ];
 assert
-  (builtins.fromJSON declared.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
+  (builtins.fromJSON trial.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
     "nzbfast.service"
     "nzbget.service"
     "transmission.service"
@@ -120,6 +138,12 @@ assert
   ];
 assert
   (builtins.fromJSON nzbfastOnly.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
+    "nzbfast.service"
+    "transmission.service"
+    "prowlarr.service"
+  ];
+assert
+  (builtins.fromJSON declared.environment.etc."media-vpn-leak-audit.json".text).vpnUnits == [
     "nzbfast.service"
     "transmission.service"
     "prowlarr.service"
@@ -151,7 +175,7 @@ assert declared.services.nzbfast.port == 6790;
 assert declared.services.nzbfast.listenAddress == "0.0.0.0";
 assert !declared.services.nzbfast.openFirewall;
 assert
-  builtins.match ".*media-state-ready.py nzbfast.*media-nzbfast-settings.py /var/lib/nzbfast held.*jq.*" fast.preStart
+  builtins.match ".*media-state-ready.py nzbfast.*media-nzbfast-settings.py /var/lib/nzbfast enabled.*jq.*" fast.preStart
   != null;
 assert
   builtins.match ".*media-nzbfast-settings.py /var/lib/nzbfast enabled.*" releasedFast.systemd.services.nzbfast.preStart
@@ -288,11 +312,11 @@ assert builtins.elem "/var/lib/media-migration/ready/vpn"
 assert builtins.all
   (
     name:
-    builtins.elem "-/run/nscd" declared.systemd.services.${name}.serviceConfig.InaccessiblePaths
-    && declared.systemd.services.${name}.serviceConfig.NetworkNamespacePath == "/run/netns/vpn"
+    builtins.elem "-/run/nscd" trial.systemd.services.${name}.serviceConfig.InaccessiblePaths
+    && trial.systemd.services.${name}.serviceConfig.NetworkNamespacePath == "/run/netns/vpn"
     &&
-      builtins.match ".*media-vpn-nss-modules"
-        declared.systemd.services.${name}.environment.LD_LIBRARY_PATH != null
+      builtins.match ".*media-vpn-nss-modules" trial.systemd.services.${name}.environment.LD_LIBRARY_PATH
+      != null
   )
   [
     "prowlarr"
@@ -316,6 +340,8 @@ assert
   != null;
 {
   status = "pass";
+  nzbfastCutoverEnabled = true;
+  openDashboardIsNotPublished = true;
   targetDerivation = declared.system.build.toplevel.drvPath;
   preservesApplicationReleases = true;
   requiresExistingState = true;

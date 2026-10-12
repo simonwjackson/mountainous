@@ -8,8 +8,8 @@
         media-applications = {
           enable = true;
           mediaGid = 390;
-          usenet = "both";
-          nzbfast.held = true;
+          usenet = "nzbfast";
+          nzbfast.held = false;
           processing = lib.mkDefault "enabled";
           placement = lib.mkDefault {
             sonarr = "unzen";

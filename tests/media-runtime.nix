@@ -372,6 +372,11 @@ pkgs.testers.runNixOSTest {
             unzen.wait_for_unit("nzbfast.service")
             unzen.succeed("test $(id -u nzbfast) = 391")
             unzen.wait_until_succeeds("curl --fail --silent http://10.200.200.2:6790/api?mode=version >/dev/null")
+            # A protected API does not imply a protected dashboard. The
+            # public shell means cutover must not repoint the usenet proxy.
+            for route, status in (("/", "200"), ("/index.html", "200"), ("/login", "302"), ("/api?mode=queue&output=json", "403")):
+                actual = unzen.succeed("curl --silent --show-error --output /dev/null --write-out '%{http_code}' " + shlex.quote("http://10.200.200.2:6790" + route))
+                assert actual == status, (route, actual)
             key = json.loads(unzen.succeed("cat /var/lib/nzbfast/settings.json"))["apikey"]
             def fast_queue():
                 return json.loads(unzen.succeed("curl --fail --silent 'http://10.200.200.2:6790/api?mode=queue&output=json&apikey=" + key + "'"))["queue"]

@@ -18,6 +18,9 @@
         "nzbget"
         "transmission"
       ];
+      # NZBFAST's dashboard is public unless optional login is configured.
+      # Keep the usenet identity off in nzbfast mode, not redirected to it.
+      # See docs/media-nzbfast.md for the pinned route/authentication evidence.
       here = lib.filter (
         name:
         placement.${name} == config.networking.hostName
@@ -65,7 +68,7 @@
       config = lib.mkMerge [
         (lib.mkIf config.services.nzbfast.enable {
           # 391 is free in the host and nixpkgs static UID registry; media is 390.
-          # No new tsnet identity: the existing usenet identity stays on NZBGet.
+          # Preserve the NZBGet usenet identity for single-switch rollback.
           users.users.nzbfast.uid = 391;
         })
         (lib.mkIf cfg.enable {
