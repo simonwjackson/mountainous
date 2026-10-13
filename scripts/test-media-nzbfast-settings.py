@@ -32,8 +32,7 @@ class SettingsTests(unittest.TestCase):
             self.assertTrue(data["paused"] and data["offline"])
             self.assertEqual(len(data["apikey"]), 64)
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-            self.assertEqual(data["cat_meta"], {"Series": {"dir": "Series", "nzb_name": True},
-                                                "Movies": {"dir": "Movies", "nzb_name": True}})
+            self.assertEqual(data["cat_meta"], {"Series": {"dir": "Series"}, "Movies": {"dir": "Movies"}})
             for key in ("auto_rename", "spot_enabled", "index_enabled", "identity_lookup", "update_checks", "delete_to_trash"):
                 self.assertIs(data[key], False)
             self.assertEqual(data["out_umask"], "002")
