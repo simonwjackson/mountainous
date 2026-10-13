@@ -10,15 +10,20 @@
   libraryOwnerUid,
   libraryMediaGid,
   libraryUsers,
+  libraryConsumer ? null,
 }:
 let
   local = name: placement.${name} == host;
-  hasArr = lib.any local [
-    "sonarr"
-    "radarr"
-  ];
+  hasLibraryConsumer =
+    if libraryConsumer != null then
+      libraryConsumer
+    else
+      lib.any local [
+        "sonarr"
+        "radarr"
+      ];
   isLibraryHost = libraryHost == host;
-  hasLibraryAccess = hasArr || isLibraryHost;
+  hasLibraryAccess = hasLibraryConsumer || isLibraryHost;
   downloaders = [
     "nzbget"
     "transmission"
@@ -84,9 +89,9 @@ lib.foldl' lib.recursiveUpdate { } [
         fsType = "nfs";
         options = nfsOptions;
       }
-    ) (lib.filter (name: !local name && hasArr) downloaders)
+    ) (lib.filter (name: !local name && hasLibraryConsumer) downloaders)
   ))
-  (lib.optionalAttrs (hasArr && !isLibraryHost) {
+  (lib.optionalAttrs (hasLibraryConsumer && !isLibraryHost) {
     ${mediaRoot} = {
       device = "${fqdn libraryHost}:/";
       fsType = "nfs";
@@ -131,7 +136,7 @@ lib.foldl' lib.recursiveUpdate { } [
       options = nfsOptions;
     };
   })
-  (lib.optionalAttrs hasArr {
+  (lib.optionalAttrs hasLibraryConsumer {
     "/srv/range/media/movies" = {
       device = "${mediaRoot}/movies:${libraryView}/movies";
       fsType = "fuse.mergerfs";

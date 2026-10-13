@@ -10,10 +10,12 @@
     }:
     let
       cfg = config.mountainous.features.media-identities;
+      applications = config.mountainous.features.media-applications;
       placement = config.mountainous.features.media-applications.placement;
       apps = [
         "sonarr"
         "radarr"
+        "scryer"
         "prowlarr"
         "nzbget"
         "transmission"
@@ -24,6 +26,14 @@
       here = lib.filter (
         name:
         placement.${name} == config.networking.hostName
+        && (
+          !(builtins.elem name [
+            "sonarr"
+            "radarr"
+          ])
+          || applications.library != "scryer"
+        )
+        && (name != "scryer" || (applications.library != "arr" && applications.scryerTailnet))
         && (name != "nzbget" || config.mountainous.features.media-applications.usenet != "nzbfast")
       ) apps;
       vpnApps = [
@@ -33,6 +43,7 @@
         "prowlarr"
       ];
       names = {
+        scryer = "library";
         sonarr = "tv";
         radarr = "movies";
         prowlarr = "indexers";
@@ -40,6 +51,7 @@
         transmission = "torrents";
       };
       ports = {
+        scryer = 8080;
         sonarr = 8989;
         radarr = 7878;
         prowlarr = 9696;
@@ -66,6 +78,7 @@
         };
       };
       config = lib.mkMerge [
+        (lib.mkIf config.services.scryer.enable { users.users.scryer.uid = 392; })
         (lib.mkIf config.services.nzbfast.enable {
           # 391 is free in the host and nixpkgs static UID registry; media is 390.
           # Preserve the NZBGet usenet identity for single-switch rollback.
@@ -107,9 +120,12 @@
                   "network-online.target"
                   "${name}.service"
                 ];
+                requires = lib.optional (name == "scryer") "scryer.service";
                 unitConfig = {
                   ConditionPathExists = "/var/lib/media-migration/ready/${name}";
-                  ConditionFileNotEmpty = "${state}/tailscaled.state";
+                  # ARR identities must already exist. The library identity is
+                  # new: the explicit opt-in permits its first OAuth enrollment.
+                  ConditionFileNotEmpty = lib.mkIf (name != "scryer") "${state}/tailscaled.state";
                 };
                 serviceConfig = {
                   User = "media-proxy";

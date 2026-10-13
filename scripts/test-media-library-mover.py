@@ -48,6 +48,18 @@ class LibraryHandoffTests(unittest.TestCase):
             for part in ['tv', 'movies']:
                 self.assertTrue((root / part).is_dir())
 
+    @unittest.skipUnless(os.geteuid() == 0, 'numeric ownership requires root (covered in Scryer VM)')
+    def test_scryer_owned_media_is_published_without_remapping_destination(self):
+        os.chown(self.item, 392, 390)
+        self.item.chmod(0o664)
+        payload = self.item.read_bytes()
+        result = self.run_handoff()
+        target = self.destination / 'tv/title/season/episode.mkv'
+        self.assertEqual(target.read_bytes(), payload)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o664)
+        self.assertFalse(self.item.exists())
+        self.assertEqual(result['moved_files'], 1)
+
     def test_identical_destination_retains_existing_ownership_and_metadata(self):
         target = self.destination / 'tv/title/season/episode.mkv'
         target.parent.mkdir(parents=True)

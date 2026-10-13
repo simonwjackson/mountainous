@@ -18,6 +18,14 @@
       active =
         name:
         local name
+        && (
+          !(builtins.elem name [
+            "sonarr"
+            "radarr"
+          ])
+          || applications.library != "scryer"
+        )
+        && (name != "scryer" || applications.library != "arr")
         && (name != "nzbget" || applications.usenet != "nzbfast")
         && (name != "nzbfast" || applications.usenet != "nzbget");
       downloaders = [
@@ -49,9 +57,10 @@
           ln -s "$module" "$out/"
         done
       '';
-      hasArr = lib.any local arr;
+      libraryConsumers = arr ++ lib.optional (applications.library != "arr") "scryer";
+      hasLibraryConsumer = lib.any active libraryConsumers;
       isLibraryHost = cfg.libraryHost == host;
-      hasLibraryAccess = hasArr || isLibraryHost;
+      hasLibraryAccess = hasLibraryConsumer || isLibraryHost;
       libraryCode = pkgs.runCommand "media-library-runtime" { } ''
         mkdir -p "$out/lib"
         cp ${./media-library-mover.py} "$out/lib/media-library-mover.py"
@@ -68,7 +77,9 @@
         name: "/srv/basin/downloads/${if name == "nzbget" then "usenet" else "torrents"}/completed";
       share = name: ".downloads/${if name == "nzbget" then "usenet" else "torrents"}";
       fqdn = name: "${name}.${cfg.tailDomain}";
-      clients = lib.unique (map fqdn ([ cfg.libraryServer ] ++ map (name: placement.${name}) arr));
+      clients = lib.unique (
+        map fqdn ([ cfg.libraryServer ] ++ map (name: placement.${name}) libraryConsumers)
+      );
       exportClients = lib.concatMapStringsSep " " (
         client:
         # Squashing every caller to root breaks FUSE owner checks after creation.
@@ -94,19 +105,19 @@
         ];
         text = builtins.readFile ./media-vpn.sh;
       };
-      remoteDownloads = lib.filter (name: !local name && hasArr) downloaders;
+      remoteDownloads = lib.filter (name: !local name && hasLibraryConsumer) downloaders;
       localDownloads = lib.filter local downloaders;
       exportedLibrary = lib.optionals isLibraryHost [
         "movies"
         "tv"
       ];
       mandatory =
-        lib.optionals hasArr [
+        lib.optionals hasLibraryConsumer [
           "/srv/range/media/movies"
           "/srv/range/media/tv"
         ]
         ++ lib.optionals hasLibraryAccess libraryMounts
-        ++ map completed (lib.optionals hasArr downloaders);
+        ++ map completed (lib.optionals hasLibraryConsumer downloaders);
       rootDirectories = [
         accessRoot
         "${accessRoot}/.downloads"
@@ -212,9 +223,15 @@
         boot.kernel.sysctl."net.ipv4.ip_forward" = lib.mkIf hasVpn 1;
         networking.firewall.trustedInterfaces = lib.optional hasVpn "veth-vpn-host";
         networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 2049 ];
-        environment.etc."media-vpn-leak-audit.json".text = builtins.toJSON {
-          vpnUnits = map (name: "${name}.service") (lib.filter active vpnApps);
-        };
+        environment.etc."media-vpn-leak-audit.json".text = builtins.toJSON (
+          {
+            vpnUnits = map (name: "${name}.service") (lib.filter active vpnApps);
+          }
+          // lib.optionalAttrs (applications.library != "arr") {
+            hostUnits = map (name: "${name}.service") (lib.filter active libraryConsumers);
+            scryer = active "scryer";
+          }
+        );
         environment.systemPackages = [
           pkgs.nfs-utils
           pkgs.mergerfs
@@ -237,6 +254,7 @@
         };
         fileSystems = import ../lib/media-storage-layout.nix {
           inherit lib host placement;
+          libraryConsumer = hasLibraryConsumer;
           inherit (cfg)
             libraryHost
             libraryServer
@@ -303,7 +321,7 @@
                   '')
                   (
                     lib.optionals hasLibraryAccess libraryMounts
-                    ++ lib.optionals hasArr [
+                    ++ lib.optionals hasLibraryConsumer [
                       "/srv/range/media/movies"
                       "/srv/range/media/tv"
                     ]
@@ -388,7 +406,7 @@
             };
             environment.LD_LIBRARY_PATH = "${vpnNssModules}";
           }))
-          (lib.genAttrs (lib.filter local arr) (_: {
+          (lib.genAttrs (lib.filter active libraryConsumers) (_: {
             requires = [ "media-storage-ready.service" ];
             after = [ "media-storage-ready.service" ];
             bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") [

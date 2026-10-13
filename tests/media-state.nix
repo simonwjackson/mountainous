@@ -15,6 +15,7 @@ let
     cp ${../scripts/test-media-nzbget-hold.py} "$out/scripts/test-media-nzbget-hold.py"
     cp ${../scripts/test-media-transmission-hold.py} "$out/scripts/test-media-transmission-hold.py"
     cp ${../modules/media-state-ready.py} "$out/modules/media-state-ready.py"
+    cp ${../modules/media-arr-state-ready.py} "$out/modules/media-arr-state-ready.py"
     cp ${../modules/media-nzbget-launch.py} "$out/modules/media-nzbget-launch.py"
     cp ${../modules/media-nzbfast-settings.py} "$out/modules/media-nzbfast-settings.py"
     cp ${../scripts/media-nzbfast-provision.py} "$out/scripts/media-nzbfast-provision.py"

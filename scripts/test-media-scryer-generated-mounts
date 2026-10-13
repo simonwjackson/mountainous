@@ -1,0 +1,37 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 nix
+"""Compare real systemd-generated rollback mount units with Cairn 32f1b351."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+repository = json.dumps(str(Path(__file__).resolve().parents[1]))
+expression = ('let flake = builtins.getFlake ' + repository + '; baseline = '
+              '(builtins.getFlake ("git+file://" + ' + repository
+              + ' + "?rev=32f1b351a3ef644628fa13d45a1903f5acafc637")).nixosConfigurations.unzen.config; '
+              'rollback = flake.nixosConfigurations.unzen.config; in { '
+              'baseline = baseline.environment.etc.fstab.text; '
+              'rollback = rollback.environment.etc.fstab.text; '
+              'generator = toString rollback.systemd.package + "/lib/systemd/system-generators/systemd-fstab-generator"; }')
+result = subprocess.run(['nix', 'eval', '--impure', '--json', '--expr', expression],
+                        capture_output=True, text=True, check=True, timeout=120)
+settings = json.loads(result.stdout)
+units = ['srv-media\\x2dlibrary\\x2dview-tv.mount', 'srv-media\\x2dlibrary\\x2dview-movies.mount',
+         'srv-range-media-tv.mount', 'srv-range-media-movies.mount']
+with tempfile.TemporaryDirectory(prefix='scryer-mount-contract-') as temporary:
+    root = Path(temporary)
+    fstab = root / 'fstab'
+    rendered = {}
+    for mode in ('baseline', 'rollback'):
+        fstab.write_text(settings[mode])
+        directories = [root / mode / part for part in ('normal', 'early', 'late')]
+        for directory in directories:
+            directory.mkdir(parents=True)
+        environment = os.environ | {'SYSTEMD_FSTAB': str(fstab), 'SYSTEMD_IN_INITRD': '0'}
+        subprocess.run([settings['generator']] + [str(d) for d in directories],
+                       env=environment, capture_output=True, check=True, timeout=30)
+        rendered[mode] = {unit: (directories[0] / unit).read_bytes() for unit in units}
+    assert rendered['baseline'] == rendered['rollback']
+print('PASS: all four real systemd-generated bindfs/mergerfs rollback units are byte-identical')

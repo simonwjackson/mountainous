@@ -1,0 +1,10 @@
+{
+  "source": [
+    {"key":"tvdb:123", "monitored":true, "quality_profile":"HD-1080p", "seasons":{"0":false,"1":true}, "episodes":{"0:1":false,"1:1":true,"1:2":false}, "paths":["/srv/range/media/tv/Example/Season 1/one.mkv"]},
+    {"key":"tmdb:456", "monitored":false, "quality_profile":"Any", "seasons":{}, "episodes":{}, "paths":["/srv/range/media/movies/Example/movie.mkv"]}
+  ],
+  "target": [
+    {"key":"tvdb:123", "monitored":true, "quality_profile":"HD-1080p", "seasons":{"0":false,"1":true}, "episodes":{"0:1":false,"1:1":true,"1:2":false}, "paths":["/srv/range/media/tv/Example/Season 1/one.mkv"]},
+    {"key":"tmdb:456", "monitored":false, "quality_profile":"Any", "seasons":{}, "episodes":{}, "paths":["/srv/range/media/movies/Example/movie.mkv"]}
+  ]
+}

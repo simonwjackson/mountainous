@@ -19,7 +19,12 @@ args = parser.parse_args()
 try:
     # Nix derives this list from the same mode/placement predicate that attaches
     # units to the VPN. Inactive expected units remain failures, not exclusions.
-    vpn_units = json.loads(args.config.read_text())['vpnUnits']
+    declared = json.loads(args.config.read_text())
+    vpn_units = declared['vpnUnits']
+    host_units = declared.get('hostUnits', ['sonarr.service', 'radarr.service'])
+    if (not isinstance(host_units, list) or len(host_units) != len(set(host_units))
+            or any(unit not in {'sonarr.service', 'radarr.service', 'scryer.service'} for unit in host_units)):
+        raise ValueError('invalid host services')
     allowed = {'prowlarr.service', 'nzbget.service', 'nzbfast.service', 'transmission.service'}
     if (not isinstance(vpn_units, list) or not vpn_units
             or any(not isinstance(unit, str) or unit not in allowed for unit in vpn_units)
@@ -60,9 +65,20 @@ for unit in vpn_units:
     outside = [p for p in pids if os.stat(f'/proc/{p}/ns/net').st_ino != vpn_ino]
     check(f'{unit}: all {len(pids)} process(es) in the vpn namespace', pids and not outside, f'outside={outside}')
 # Sonarr/Radarr are by design outside; record it.
-for unit in ['sonarr.service', 'radarr.service']:
+for unit in host_units:
     pid = run('systemctl', 'show', unit, '-p', 'MainPID', '--value')
-    check(f'{unit}: runs in host namespace (by design, does not download)', os.stat(f'/proc/{pid}/ns/net').st_ino == host_ino)
+    check(f'{unit}: runs in host namespace (by design, does not download)',
+          pid.isdigit() and pid != '0' and os.stat(f'/proc/{pid}/ns/net').st_ino == host_ino)
+if declared.get('scryer', False):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('scryer_audit', Path(__file__).with_name('media-scryer-indexer-audit.py'))
+    scryer_audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(scryer_audit)
+    status, detail = scryer_audit.audit()
+    if status == 'SKIP':
+        print(status + ' ' + detail)
+    else:
+        check(detail, status == 'PASS')
 
 # 2. Namespace interfaces and routes.
 links = json.loads(run('ip', '-j', 'link', ns=True))
@@ -145,6 +161,8 @@ with sqlite3.connect('file:/var/lib/prowlarr/prowlarr.db?mode=ro', uri=True) as 
 redirect = [f'{i}:{impl}' for i, impl, s in rows if s.get('redirect')]
 check('no Prowlarr indexer uses redirect (NZB downloads proxied through the VPN)', not redirect, str(redirect))
 for app, path in [('sonarr', '/var/lib/sonarr/.config/NzbDrone/sonarr.db'), ('radarr', '/var/lib/radarr/.config/Radarr/radarr.db')]:
+    if app + '.service' not in host_units:
+        continue
     with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
         urls = [json.loads(s).get('baseUrl', '') for (s,) in db.execute('SELECT Settings FROM Indexers')]
     check(f'{app}: every indexer points at Prowlarr, not an indexer directly', urls and all('indexers.hummingbird-lake.ts.net' in u or '10.200.200.2' in u for u in urls), str([re.sub(r'/api.*', '', u) for u in urls]))

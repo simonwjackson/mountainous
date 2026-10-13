@@ -8,10 +8,12 @@
         media-applications = {
           enable = true;
           mediaGid = 390;
+          library = "arr";
           usenet = "nzbfast";
           nzbfast.held = false;
           processing = lib.mkDefault "enabled";
           placement = lib.mkDefault {
+            scryer = "unzen";
             sonarr = "unzen";
             radarr = "unzen";
             prowlarr = "unzen";

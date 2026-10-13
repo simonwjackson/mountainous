@@ -1,4 +1,4 @@
-# Existing application state is gated; NZBFAST is a separate held trial.
+# Existing state is gated; downloader and library selectors preserve rollback.
 { inputs, ... }:
 {
   nixos.modules.media-applications =
@@ -9,6 +9,18 @@
       ...
     }:
     let
+      scryerState =
+        pkgs.runCommand "media-scryer-state-ready" { } ''
+          mkdir -p "$out"
+          cp ${./media-state-ready.py} "$out/media-state-ready.py"
+          cp ${./media-arr-state-ready.py} "$out/media-arr-state-ready.py"
+        ''
+        + "/media-state-ready.py";
+      arrStateScript = builtins.path {
+        path = ./media-arr-state-ready.py;
+        name = "media-state-ready.py";
+      };
+      stateScript = name: if name == "scryer" then scryerState else arrStateScript;
       cfg = config.mountainous.features.media-applications;
       media = import inputs.nixpkgs-media {
         system = pkgs.stdenv.hostPlatform.system;
@@ -17,6 +29,7 @@
       apps = [
         "sonarr"
         "radarr"
+        "scryer"
         "prowlarr"
         "nzbget"
         "nzbfast"
@@ -25,6 +38,14 @@
       present =
         name:
         cfg.placement.${name} == config.networking.hostName
+        && (
+          !(builtins.elem name [
+            "sonarr"
+            "radarr"
+          ])
+          || cfg.library != "scryer"
+        )
+        && (name != "scryer" || cfg.library != "arr")
         && (name != "nzbget" || cfg.usenet != "nzbfast")
         && (name != "nzbfast" || cfg.usenet != "nzbget");
       held = cfg.processing != "enabled";
@@ -62,6 +83,7 @@
         lib.mapAttrsToList (name: value: "--option ${lib.escapeShellArg "${name}=${value}"}") nzbPaths
       );
       configs = {
+        scryer = "/var/lib/media-migration/credentials/scryer-admin-password";
         sonarr = "/var/lib/sonarr/.config/NzbDrone/config.xml";
         radarr = "/var/lib/radarr/.config/Radarr/config.xml";
         prowlarr = "/var/lib/prowlarr/config.xml";
@@ -76,8 +98,25 @@
       };
     in
     {
-      imports = [ inputs.nix-extras.nixosModules.nzbfast ];
+      imports = [
+        inputs.nix-extras.nixosModules.nzbfast
+        inputs.nix-extras.nixosModules.scryer
+      ];
       options.mountainous.features.media-applications = {
+        library = lib.mkOption {
+          type = lib.types.enum [
+            "arr"
+            "both"
+            "scryer"
+          ];
+          default = "arr";
+          description = "Library managers to run; disabled state and saved identities remain untouched.";
+        };
+        scryerTailnet = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Publish the authenticated Scryer UI under the library identity.";
+        };
         usenet = lib.mkOption {
           type = lib.types.enum [
             "nzbget"
@@ -135,6 +174,39 @@
         ];
         users.groups.media.gid = cfg.mediaGid;
         services = {
+          scryer = {
+            enable = present "scryer";
+            package = inputs.nix-extras.packages.${pkgs.stdenv.hostPlatform.system}.scryer;
+            user = "scryer";
+            group = "media";
+            umask = "0002";
+            stateDir = "/var/lib/scryer";
+            listenAddress = "127.0.0.1";
+            port = 8080;
+            adminPasswordFile = "/var/lib/media-migration/credentials/scryer-admin-password";
+            adminUsername = "admin";
+            environment.SCRYER_AUTH_ENABLED = "true";
+            waitForReady = true;
+            readOnlyPaths = lib.optionals (cfg.library == "both") [
+              "/srv/range/media/tv"
+              "/srv/range/media/movies"
+              "/srv/basin/media"
+              "/srv/media-library-view"
+              "/net/mountainous/zao/media"
+            ];
+            writablePaths = lib.optionals (cfg.library == "scryer") [
+              "/srv/range/media/tv"
+              "/srv/range/media/movies"
+              "/srv/basin/media/tv"
+              "/srv/basin/media/movies"
+              "/srv/media-library-view/tv"
+              "/srv/media-library-view/movies"
+              "/net/mountainous/zao/media/tv"
+              "/net/mountainous/zao/media/movies"
+              "/srv/basin/downloads/usenet/nzbfast"
+              "/srv/basin/downloads/torrents/completed"
+            ];
+          };
           sonarr = {
             enable = present "sonarr";
             package = media.sonarr;
@@ -192,7 +264,7 @@
               ConditionFileNotEmpty = [ configs.${name} ] ++ lib.optional (databases ? ${name}) databases.${name};
             };
             preStart = lib.mkBefore ''
-              ${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} ${
+              ${pkgs.python3}/bin/python3 ${stateScript name} ${name} ${
                 lib.optionalString (
                   databases ? ${name} && (cfg.processing == "held" || (importsOnly && name == "prowlarr"))
                 ) "--hold"
@@ -211,7 +283,7 @@
                       "radarr"
                     ]
                   )
-                  "+${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} --imports-only ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
+                  "+${pkgs.python3}/bin/python3 ${stateScript name} ${name} --imports-only ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
                 ++
                   lib.optional
                     (
@@ -221,7 +293,7 @@
                         "enabled"
                       ]
                     )
-                    "+${pkgs.python3}/bin/python3 ${./media-state-ready.py} ${name} --enabled ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
+                    "+${pkgs.python3}/bin/python3 ${stateScript name} ${name} --enabled ${lib.escapeShellArg "${cfg.processingReceipts}/${name}.json"}"
               );
             };
           }))
@@ -232,7 +304,7 @@
                 media.p7zip
               ];
               preStart = lib.mkForce ''
-                ${pkgs.python3}/bin/python3 ${./media-state-ready.py} nzbget
+                ${pkgs.python3}/bin/python3 ${arrStateScript} nzbget
               '';
               serviceConfig.ExecStart = lib.mkForce "${pkgs.python3}/bin/python3 ${./media-nzbget-launch.py} ${media.nzbget}/bin/nzbget ${
                 if held then "held" else "enabled"
@@ -263,7 +335,7 @@
               # Current upstream regenerates settings.json. Keep the complete
               # transferred file, including credentials and non-Nix UI settings.
               serviceConfig.ExecStartPre = lib.mkForce [
-                "${pkgs.python3}/bin/python3 ${./media-state-ready.py} transmission"
+                "${pkgs.python3}/bin/python3 ${arrStateScript} transmission"
               ];
               serviceConfig.BindPaths = lib.mkAfter [ "/srv/basin/downloads/torrents" ];
             };

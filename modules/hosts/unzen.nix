@@ -19,6 +19,7 @@
       "base"
       "server"
       "media-applications"
+      "media-scryer"
       "media-runtime"
       "media-identities"
       "media-placement-unzen"

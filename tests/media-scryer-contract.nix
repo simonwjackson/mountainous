@@ -1,0 +1,143 @@
+# nix eval --impure --expr 'import ./tests/media-scryer-contract.nix {}'
+{
+  flake ? builtins.getFlake (toString ../.),
+}:
+let
+  host = flake.nixosConfigurations.unzen;
+  configFor =
+    library: tailnet:
+    (host.extendModules {
+      modules = [
+        ({ lib, ... }: {
+          mountainous.features.media-applications = {
+            library = lib.mkForce library;
+            scryerTailnet = tailnet;
+          };
+        })
+      ];
+    }).config;
+  arr = configFor "arr" false;
+  both = configFor "both" false;
+  scryer = configFor "scryer" false;
+  bothTailnet = configFor "both" true;
+  scryerTailnet = configFor "scryer" true;
+  arrTailnet = configFor "arr" true;
+  units = config: config.systemd.units;
+  lib = flake.inputs.nixpkgs.lib;
+  libraryPaths = [
+    "/srv/range/media/tv"
+    "/srv/range/media/movies"
+    "/srv/basin/media"
+    "/srv/media-library-view"
+    "/net/mountainous/zao/media"
+  ];
+  bindfs =
+    config:
+    map (path: config.fileSystems.${path}) [
+      "/srv/media-library-view/tv"
+      "/srv/media-library-view/movies"
+    ];
+  scryerContract =
+    config:
+    let
+      service = config.systemd.services.scryer;
+    in
+    config.users.users.scryer.uid == 392
+    && config.users.users.scryer.group == "media"
+    && service.serviceConfig.UMask == "0002"
+    && config.services.scryer.port == 8080
+    && config.services.scryer.listenAddress == "127.0.0.1"
+    && service.environment.SCRYER_AUTH_ENABLED == "true"
+    && config.services.scryer.waitForReady
+    && service.unitConfig.ConditionPathExists == "/var/lib/media-migration/ready/scryer"
+    &&
+      service.unitConfig.ConditionFileNotEmpty
+      == [ "/var/lib/media-migration/credentials/scryer-admin-password" ]
+    && builtins.elem "admin-password:/var/lib/media-migration/credentials/scryer-admin-password" service.serviceConfig.LoadCredential
+    && !lib.hasInfix "SCRYER_ADMIN_PASSWORD=" (units config)."scryer.service".text
+    && !(service.serviceConfig ? NetworkNamespacePath)
+    && builtins.elem "media-storage-ready.service" service.requires
+    && builtins.elem "media-storage-ready.service" service.after
+    && builtins.all (mount: builtins.elem mount service.bindsTo) [
+      "net-mountainous-zao-media.mount"
+      "srv-media\\x2dlibrary\\x2dview-tv.mount"
+      "srv-media\\x2dlibrary\\x2dview-movies.mount"
+      "srv-range-media-tv.mount"
+      "srv-range-media-movies.mount"
+    ];
+  comparisons = {
+    arrHasOnlyArr =
+      (units arr) ? "sonarr.service"
+      && (units arr) ? "radarr.service"
+      && !((units arr) ? "scryer.service");
+    bothHasAll =
+      (units both) ? "sonarr.service"
+      && (units both) ? "radarr.service"
+      && (units both) ? "scryer.service";
+    scryerHasOnlyScryer =
+      !((units scryer) ? "sonarr.service")
+      && !((units scryer) ? "radarr.service")
+      && (units scryer) ? "scryer.service";
+    arrUnitsUnchangedInBoth =
+      builtins.all (name: (units arr).${name}.text == (units both).${name}.text)
+        [
+          "sonarr.service"
+          "radarr.service"
+          "tsnet-proxy-sonarr.service"
+          "tsnet-proxy-radarr.service"
+        ];
+    bothLibraryReadOnly =
+      both.services.scryer.readOnlyPaths == libraryPaths
+      && both.services.scryer.writablePaths == [ ]
+      && both.systemd.services.scryer.serviceConfig.ReadWritePaths == [ "/var/lib/scryer" ];
+    scryerImportWrites =
+      builtins.all (path: builtins.elem path scryer.systemd.services.scryer.serviceConfig.ReadWritePaths)
+        [
+          "/srv/range/media/tv"
+          "/srv/range/media/movies"
+          "/srv/basin/media/tv"
+          "/srv/basin/media/movies"
+          "/srv/basin/downloads/usenet/nzbfast"
+          "/srv/basin/downloads/torrents/completed"
+        ];
+    leastDownloaderAccess =
+      !builtins.elem "/srv/basin/downloads" scryer.services.scryer.writablePaths
+      && !builtins.elem "/srv/basin/downloads/torrents/incomplete" scryer.services.scryer.writablePaths;
+    serviceIdentityAndGates = scryerContract both && scryerContract scryer;
+    signedScryerCacheIdentity =
+      scryer.services.scryer.package.version == "0.21.15"
+      &&
+        scryer.services.scryer.package.outPath
+        == "/nix/store/qv7hd6qb5fp48m2j1rlcp1xhz6zy6gnj-scryer-0.21.15";
+    bindfsUnchanged = bindfs arr == bindfs both && bindfs arr == bindfs scryer;
+    libraryMountsRetained =
+      arr.fileSystems."/srv/range/media/tv" == scryer.fileSystems."/srv/range/media/tv"
+      && arr.fileSystems."/net/mountainous/zao/media" == scryer.fileSystems."/net/mountainous/zao/media";
+    noLibraryProxyByDefault =
+      !((units both) ? "tsnet-proxy-scryer.service")
+      && !((units scryer) ? "tsnet-proxy-scryer.service")
+      && !((units arrTailnet) ? "tsnet-proxy-scryer.service");
+    explicitLibraryProxy =
+      lib.hasInfix "-hostname library" (units bothTailnet)."tsnet-proxy-scryer.service".text
+      &&
+        lib.hasInfix "-backend http://127.0.0.1:8080"
+          (units scryerTailnet)."tsnet-proxy-scryer.service".text;
+    scryerHasNoArrProxies =
+      !((units scryerTailnet) ? "tsnet-proxy-sonarr.service")
+      && !((units scryerTailnet) ? "tsnet-proxy-radarr.service");
+    modeAwareAudit =
+      (builtins.fromJSON scryer.environment.etc."media-vpn-leak-audit.json".text).hostUnits
+      == [ "scryer.service" ]
+      &&
+        (builtins.fromJSON both.environment.etc."media-vpn-leak-audit.json".text).hostUnits == [
+          "sonarr.service"
+          "radarr.service"
+          "scryer.service"
+        ];
+  };
+in
+assert builtins.all (value: value) (builtins.attrValues comparisons);
+{
+  status = "pass";
+  inherit comparisons;
+}

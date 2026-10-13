@@ -278,17 +278,19 @@
         "reskate-client": "reskate-client",
         "scryer-newznab-bundle": "scryer-newznab-bundle",
         "scryer-newznab-wasm": "scryer-newznab-wasm",
+        "scryer-plugin-jellyfin": "scryer-plugin-jellyfin",
+        "scryer-plugin-transmission": "scryer-plugin-transmission",
         "scryer-src": "scryer-src",
         "scryer-torznab-bundle": "scryer-torznab-bundle",
         "scryer-torznab-wasm": "scryer-torznab-wasm",
         "scryer-trust-root": "scryer-trust-root"
       },
       "locked": {
-        "lastModified": 1791814459,
-        "narHash": "sha256-yAvLIdLJ9DQmnqt5HallXYFREvc9uTyxTf8uwaJBc68=",
+        "lastModified": 1791874323,
+        "narHash": "sha256-MDppA1wWZFNdFBcisNIeLw/wM9x45xaq48nlk4+5ziM=",
         "owner": "simonwjackson",
         "repo": "nix-extras",
-        "rev": "0bb5e95de71271fa27796ab5ffa033c2de6e44fc",
+        "rev": "d3a171d42d0dbd6934c510e85d20b54ce0d4772d",
         "type": "github"
       },
       "original": {
@@ -541,19 +543,43 @@
         "url": "https://cdn.scryer.media/scryer/plugins-v3/newznab/v2.2.3/plugin-v3.5cbd81043744cd0a9342e9d4cc6730b67390575adcc8b782f13a9e2f86be2e17.wasm.zst"
       }
     },
+    "scryer-plugin-jellyfin": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-/Uzx/Z9zynUJIaJqmXMMfIeeny5daD+JLXxOxEKe0Mg=",
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer-plugins/releases/download/plugins-v3/jellyfin/v1.1.1/plugin-v3.wasm.zst"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer-plugins/releases/download/plugins-v3/jellyfin/v1.1.1/plugin-v3.wasm.zst"
+      }
+    },
+    "scryer-plugin-transmission": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-s/OnEMqs0S/6EC3XARQBVGb6bt7jpwNPEZ+aWu4Azik=",
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer-plugins/releases/download/plugins-v3/transmission/v2.0.2/plugin-v3.wasm.zst"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer-plugins/releases/download/plugins-v3/transmission/v2.0.2/plugin-v3.wasm.zst"
+      }
+    },
     "scryer-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1791231908,
-        "narHash": "sha256-DWgFygVl+dvguzqlexmri4MUBRB66FgC3FEUwVSIecY=",
+        "lastModified": 1791851239,
+        "narHash": "sha256-paYjVjbQdutEPgE30c8pZlTBgaOgH4VcUmzSoMe3jAE=",
         "owner": "scryer-media",
         "repo": "scryer",
-        "rev": "5c45aefee120cf4570d76ea91af5bc2c64620acc",
+        "rev": "bb56c3f7c546c4f3c6e9d12c587be66b3a0eaa7f",
         "type": "github"
       },
       "original": {
         "owner": "scryer-media",
-        "ref": "scryer-v0.21.14",
+        "ref": "scryer-v0.21.15",
         "repo": "scryer",
         "type": "github"
       }
