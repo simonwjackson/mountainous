@@ -67,7 +67,12 @@ Do not put a password or API key in Nix, a command argument, or an environment v
    Bootstrap creation is durable before the command opens the gate.
    The command saves a non-expiring `mountainous` API key in root-only `scryer.json`.
    Repeated runs reuse a valid key.
-8. Confirm renaming is disabled in the source naming configuration before importing.
+8. Provisioning sets an explicit facet `folderChmod="755"`, and clears
+   `chownGroup` with an empty input, while `setPermissionsLinux=false` stays held.
+   The finalizer skips folder-mode auto-apply when that facet already has an
+   explicit value. The empty source group is filtered out. It therefore creates
+   no library permission override, and the strict held guard remains unchanged.
+   Confirm renaming is disabled in the source naming configuration before importing.
    Scryer's finalizer can auto-apply source naming and permissions. The command
    fails if finalization changes its protected settings; it does not silently repair them.
 9. Run `media-scryer-import`. It validates both local ARR connections, warms them,
@@ -110,8 +115,17 @@ Do not put a password or API key in Nix, a command argument, or an environment v
     Only after all cutover checks pass, explicitly restore upgrades with
     `media-scryer-provision --upgrades match-source --source-archive /var/lib/media-migration/arr-archive-YYYYMMDD`.
     Omit `--source-archive` to read the live Sonarr/Radarr qualityprofile APIs instead.
-    Add `--acquisition on` only when acquisition is also approved. A profile name
-    with conflicting source `upgradeAllowed` values is refused, not guessed.
+    Add `--acquisition on` only when acquisition is also approved. The command first
+    disables acquisition, reads and validates the requested source policy, then
+    applies and verifies all settings/profiles while acquisition stays off.
+    It enables acquisition only after those checks and plugin/setup work succeed.
+    It then restarts `scryer.service`, waits for `/health/ready`, logs in again,
+    verifies persisted enablement and checks the new invocation's journal for
+    `background acquisition poller started`. The poller otherwise exits at a held
+    start and a settings mutation alone does not start it.
+    A conflicting source `upgradeAllowed` value is refused with acquisition off.
+    Post-enable failures attempt to disable acquisition and restart held; if the
+    API is unreachable, the command fails and the operator must restore held state.
 
 All three scopes (MOVIE, SERIES, ANIME) use `HARDLINK_OR_COPY` and renaming off.
 MOVIE uses `/srv/range/media/movies`; SERIES uses `/srv/range/media/tv`.
@@ -246,3 +260,23 @@ mutations instead of writing setting keys or editing Scryer's database.
   idempotently and compares filesystem snapshots. This is a fixture, not a live
   Unzen parity result. The VM also tests three password-interruption windows,
   explicit upgrade matching, late writable mounts and library-mount restart.
+
+
+### Round 2 source citations
+
+The chosen permission fix is **preempt auto-apply**, not weakening the guard.
+`updateMediaSettings.folderChmod` persists an explicit facet setting
+(`crates/scryer-application/src/settings/runtime/media.rs:1107–1135`). Finalize
+checks explicit library, facet and global values
+(`settings/runtime/library.rs:1030–1064`) and skips folder chmod when one exists
+(`library.rs:1315–1341`). Its consensus builder ignores the source's empty
+`chownGroup` (`crates/scryer-interface-import/src/lib.rs:895–917`), and the typed
+empty group input clears the facet value (`settings/runtime/media.rs:1138–1166`).
+The VM now finalizes real warmups against GET-only source fixtures reporting
+`setPermissionsLinux=false`, `chmodFolder="755"`, `chownGroup=""`, and verifies
+that held admission and absent library permission overrides remain unchanged.
+
+The acquisition poller is spawned once at startup (`crates/scryer/src/main.rs:2170–2173`)
+and returns immediately when disabled (`crates/scryer-application/src/acquisition/workflow/task_runner.rs:5517–5519`).
+Its startup log is `background acquisition poller started` (`task_runner.rs:5522`).
+Provisioning verifies that message only in the restarted service's invocation.

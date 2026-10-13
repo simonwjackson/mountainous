@@ -142,6 +142,14 @@ def held_fixture():
 
 
 class HeldImportTests(unittest.TestCase):
+    def test_source_folder_mode_755_is_preempted_by_an_explicit_disabled_permission_setting(self):
+        source = {'setPermissionsLinux': False, 'chmodFolder': '755', 'chownGroup': ''}
+        for scope in provision.common.SCOPES:
+            settings = provision.media_settings_input(scope)
+            self.assertIs(settings['setPermissionsLinux'], False)
+            self.assertEqual(settings['folderChmod'], source['chmodFolder'])
+            self.assertEqual(settings['chownGroup'], source['chownGroup'])
+
     def test_held_settings_pass(self):
         provision.common.validate_held_import(held_fixture())
 

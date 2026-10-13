@@ -129,6 +129,8 @@ pkgs.testers.runNixOSTest {
         machine.succeed("systemctl restart scryer.service")
         machine.wait_for_unit("scryer.service")
         machine.succeed("python3 ${moverFixtures}/media-scryer-api-probe.py")
+    with subtest("source chmodFolder 755 is skipped without enabling permission changes"):
+        both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py permission-finalize", timeout=120)
     with subtest("catalog-only metadata adds fill all 43 IDs without directories or download jobs"):
         both.succeed("media-library-snapshot create /root/catalog-before.json")
         both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py catalog-only", timeout=240)
@@ -140,6 +142,18 @@ pkgs.testers.runNixOSTest {
         both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py verify-match-source")
         both.succeed("media-scryer-provision")
         both.succeed("python3 ${moverFixtures}/media-scryer-api-probe.py")
+    with subtest("source policy failures keep acquisition off and enablement restarts a held-start poller"):
+        both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py source-profiles-conflict")
+        both.fail("media-scryer-provision --acquisition on --upgrades match-source --source-archive /var/lib/media-migration/review-archive")
+        both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py verify-acquisition-off")
+        # The preceding explicit restart boots with acquisition disabled, so
+        # only the provision command's final restart can create the poller.
+        both.succeed("systemctl restart scryer.service")
+        before = both.succeed("systemctl show -p InvocationID --value scryer.service")
+        both.succeed("media-scryer-provision --acquisition on", timeout=240)
+        assert both.succeed("systemctl show -p InvocationID --value scryer.service") != before
+        both.succeed("python3 ${moverFixtures}/media-scryer-review-probe.py verify-acquisition-on")
+        both.succeed("media-scryer-provision; systemctl restart scryer.service")
     with subtest("the packaged snapshot command preserves dot files and permits new entries"):
         both.succeed("printf fixture > /srv/range/media/tv/.snapshot-fixture; media-library-snapshot create /root/before.json")
         both.succeed("touch /srv/range/media/tv/new-fixture; media-library-snapshot create /root/after.json")

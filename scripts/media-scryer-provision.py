@@ -10,6 +10,7 @@ import secrets
 import stat
 import subprocess
 import sys
+import time
 
 spec = importlib.util.spec_from_file_location('common', Path(__file__).with_name('media-scryer-common.py'))
 common = importlib.util.module_from_spec(spec)
@@ -84,22 +85,39 @@ def profiles(client, upgrade_policy=None):
                 raise ValueError('profile verification failed')
 
 
-def apply_settings(client, acquisition):
+def set_acquisition(client, enabled):
+    selection = ('enabled sameTierMinDelta pollIntervalSeconds walkIntervalSeconds '
+                 'longTailBackfillMaxScopesPerCycle longTailReconvergeDays')
+    value = client.graphql('query{acquisitionSettings{' + selection + '}}')['acquisitionSettings']
+    value['enabled'] = enabled
+    client.mutate('updateAcquisitionSettings', 'UpdateAcquisitionSettingsInput', value, 'enabled')
+    if client.graphql('query{acquisitionSettings{enabled}}')['acquisitionSettings']['enabled'] is not enabled:
+        raise ValueError('acquisition verification failed')
+
+
+def media_settings_input(scope):
+    # An explicit facet value prevents finalize from creating a library override.
+    # Empty source chownGroup is filtered by finalize; keep permission writes off.
+    return {'scope': scope, 'renameEnabled': False, 'importMode': 'HARDLINK_OR_COPY',
+            'libraryPath': common.SCOPES[scope], 'setPermissionsLinux': False,
+            'folderChmod': '755', 'chownGroup': '', 'nfoWriteOnImport': False,
+            **({'plexmatchWriteOnImport': False} if scope != 'MOVIE' else {})}
+
+
+def apply_settings(client):
     for scope, path in common.SCOPES.items():
         print('Applying media settings: ' + scope)
         client.mutate('updateMediaSettings', 'UpdateMediaSettingsInput',
-                      {'scope': scope, 'renameEnabled': False, 'importMode': 'HARDLINK_OR_COPY',
-                       'libraryPath': path, 'setPermissionsLinux': False, 'nfoWriteOnImport': False,
-                       **({'plexmatchWriteOnImport': False} if scope != 'MOVIE' else {})}, 'renameEnabled importMode libraryPath')
+                      media_settings_input(scope), 'renameEnabled importMode libraryPath')
+        permissions = client.graphql('query{mediaSettings(scope:' + scope
+                                     + '){setPermissionsLinux folderChmod chownGroup}}')['mediaSettings']
+        if permissions != {'setPermissionsLinux': False, 'folderChmod': '755', 'chownGroup': None}:
+            raise ValueError('permission settings verification failed')
     print('Applying recycle-bin settings')
     client.mutate('updateRecycleBinSettings', 'UpdateRecycleBinSettingsInput',
                   {'enabled': False}, 'enabled')
     print('Applying acquisition settings')
-    selection = ('enabled sameTierMinDelta pollIntervalSeconds walkIntervalSeconds '
-                 'longTailBackfillMaxScopesPerCycle longTailReconvergeDays')
-    value = client.graphql('query{acquisitionSettings{' + selection + '}}')['acquisitionSettings']
-    value['enabled'] = acquisition
-    client.mutate('updateAcquisitionSettings', 'UpdateAcquisitionSettingsInput', value, 'enabled')
+    set_acquisition(client, False)
     print('Applying subtitle settings')
     selection = ('enabled languages{code hearingImpaired forced} autoDownloadOnImport '
                  'minimumScoreSeries minimumScoreMovie searchIntervalHours includeAiTranslated '
@@ -116,7 +134,7 @@ def apply_settings(client, acquisition):
         if actual[scope] != {'renameEnabled': False, 'importMode': 'HARDLINK_OR_COPY', 'libraryPath': path}:
             raise ValueError('media settings verification failed')
     actual = client.graphql('query{acquisitionSettings{enabled} subtitleSettings{enabled autoDownloadOnImport syncEnabled} pluginAutoUpdateSettings{enabled}}')
-    if actual != {'acquisitionSettings': {'enabled': acquisition},
+    if actual != {'acquisitionSettings': {'enabled': False},
                   'subtitleSettings': {'enabled': False, 'autoDownloadOnImport': False, 'syncEnabled': False},
                   'pluginAutoUpdateSettings': {'enabled': False}}:
         raise ValueError('settings verification failed')
@@ -205,6 +223,39 @@ def authenticate():
     return common.Scryer(key)
 
 
+def enable_acquisition_and_restart(client):
+    set_acquisition(client, True)
+    subprocess.run(['systemctl', 'restart', 'scryer.service'], capture_output=True,
+                   check=True, timeout=200)
+    deadline = time.monotonic() + 180
+    while time.monotonic() < deadline:
+        try:
+            if common.request('http://127.0.0.1:8080/health/ready').get('ready') is True:
+                break
+        except Exception:
+            pass
+        time.sleep(1)
+    else:
+        raise ValueError('Scryer readiness timeout')
+    # A saved API key must not substitute for the required post-restart login.
+    session = password_login(common.Scryer())
+    if session.graphql('query{acquisitionSettings{enabled}}')['acquisitionSettings']['enabled'] is not True:
+        raise ValueError('acquisition not enabled after restart')
+    invocation = subprocess.run(['systemctl', 'show', 'scryer.service', '-p', 'InvocationID', '--value'],
+                                capture_output=True, text=True, check=True).stdout.strip()
+    if not invocation:
+        raise ValueError('missing service invocation')
+    while time.monotonic() < deadline:
+        journal = subprocess.run(['journalctl', '-u', 'scryer.service',
+                                  '_SYSTEMD_INVOCATION_ID=' + invocation, '--no-pager', '-o', 'cat'],
+                                 capture_output=True, text=True, check=True).stdout
+        if 'background acquisition poller started' in journal:
+            print('Acquisition enabled; fresh service poller verified')
+            return
+        time.sleep(1)
+    raise ValueError('acquisition poller startup not observed')
+
+
 def main():
     parser = common.ArgumentParser(description=__doc__)
     parser.add_argument('--open-gate', action='store_true')
@@ -224,29 +275,45 @@ def main():
         return
     client = authenticate()
     print('Protected API identity prepared')
-    apply_settings(client, args.acquisition == 'on')
-    print('Pre-import settings verified')
-    policy = None
-    if args.upgrades == 'match-source':
-        sources = [json.loads(common.protected_read(args.source_archive / (name + '-qualityprofile.json')))
-                   if args.source_archive else common.Arr(name).get('qualityprofile') for name in common.ARR]
-        policy = source_upgrade_policy(sources)
-    elif args.source_archive:
-        raise ValueError('archive requires match-source')
-    profiles(client, policy)
-    if args.upgrades == 'off' and args.acquisition == 'off':
-        client.require_held_import()
-    print('Quality profiles verified')
-    if args.plugins:
-        for plugin in ('transmission', 'jellyfin'):
-            source = Path(os.environ['MEDIA_SCRYER_PLUGIN_' + plugin.upper()])
-            wasm = subprocess.run(['zstd', '-d', '-c', str(source)], capture_output=True, check=True).stdout
-            client.mutate('installUploadedPlugin', 'ManualPluginUploadInput',
-                          {'fileName': plugin + '.wasm', 'wasmBase64': base64.b64encode(wasm).decode(),
-                           'acknowledgeRisk': True}, 'id name version')
-    if not client.graphql('mutation{completeSetup{completed}}')['completeSetup']['completed']:
-        raise ValueError('setup incomplete')
-    print('Scryer settings and six quality profiles verified; credentials remain protected')
+    enabling = False
+    try:
+        # Disarm first, even if a requested source policy later proves invalid.
+        set_acquisition(client, False)
+        policy = None
+        if args.upgrades == 'match-source':
+            sources = [json.loads(common.protected_read(args.source_archive / (name + '-qualityprofile.json')))
+                       if args.source_archive else common.Arr(name).get('qualityprofile') for name in common.ARR]
+            policy = source_upgrade_policy(sources)
+        elif args.source_archive:
+            raise ValueError('archive requires match-source')
+        apply_settings(client)
+        print('Pre-import settings verified')
+        profiles(client, policy)
+        if args.upgrades == 'off':
+            client.require_held_import()
+        print('Quality profiles verified')
+        if args.plugins:
+            for plugin in ('transmission', 'jellyfin'):
+                source = Path(os.environ['MEDIA_SCRYER_PLUGIN_' + plugin.upper()])
+                wasm = subprocess.run(['zstd', '-d', '-c', str(source)], capture_output=True, check=True).stdout
+                client.mutate('installUploadedPlugin', 'ManualPluginUploadInput',
+                              {'fileName': plugin + '.wasm', 'wasmBase64': base64.b64encode(wasm).decode(),
+                               'acknowledgeRisk': True}, 'id name version')
+        if not client.graphql('mutation{completeSetup{completed}}')['completeSetup']['completed']:
+            raise ValueError('setup incomplete')
+        # Enabling is the final mutation, after every other step has passed.
+        if args.acquisition == 'on':
+            enabling = True
+            enable_acquisition_and_restart(client)
+    except Exception:
+        # A failed verification must not leave a reachable service acquiring.
+        # API unavailability is reported as failure; never edit its DB to recover.
+        set_acquisition(client, False)
+        if enabling:
+            subprocess.run(['systemctl', 'restart', 'scryer.service'], capture_output=True,
+                           check=True, timeout=200)
+        raise
+    print('Scryer settings and quality profiles verified; credentials remain protected')
 
 
 if __name__ == '__main__':
