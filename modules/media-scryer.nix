@@ -37,7 +37,8 @@ let
           runtimeInputs = [
             pkgs.python3
             pkgs.zstd
-          ] ++ pkgs.lib.optionals (name == "media-vpn-leak-audit") [
+          ]
+          ++ pkgs.lib.optionals (name == "media-vpn-leak-audit") [
             pkgs.wireguard-tools
             pkgs.tcpdump
             pkgs.iproute2
@@ -75,32 +76,44 @@ in
             environment.systemPackages = [ (tools pkgs) ];
           };
     };
-  perSystem = { pkgs, lib, ... }: {
-    packages = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
-      media-scryer-tools = tools pkgs;
-      unzen-media-both =
-        (inputs.self.nixosConfigurations.unzen.extendModules {
-          modules = [
-            ({ lib, ... }: { mountainous.features.media-applications.library = lib.mkForce "both"; })
-          ];
-        }).config.system.build.toplevel;
-      unzen-media-scryer =
-        (inputs.self.nixosConfigurations.unzen.extendModules {
-          modules = [
-            ({ lib, ... }: { mountainous.features.media-applications.library = lib.mkForce "scryer"; })
-          ];
-        }).config.system.build.toplevel;
+  perSystem =
+    { pkgs, lib, ... }:
+    {
+      packages = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+        media-scryer-tools = tools pkgs;
+        unzen-media-both =
+          (inputs.self.nixosConfigurations.unzen.extendModules {
+            modules = [
+              (
+                { lib, ... }:
+                {
+                  mountainous.features.media-applications.library = lib.mkForce "both";
+                }
+              )
+            ];
+          }).config.system.build.toplevel;
+        unzen-media-scryer =
+          (inputs.self.nixosConfigurations.unzen.extendModules {
+            modules = [
+              (
+                { lib, ... }:
+                {
+                  mountainous.features.media-applications.library = lib.mkForce "scryer";
+                }
+              )
+            ];
+          }).config.system.build.toplevel;
+      };
+      checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+        media-scryer-contract =
+          let
+            result = import ../tests/media-scryer-contract.nix { flake = inputs.self; };
+          in
+          pkgs.runCommand "media-scryer-contract" { } ''
+            printf '%s\\n' '${builtins.toJSON result}' > "$out"
+          '';
+        media-scryer-unit = import ../tests/media-scryer-unit.nix { inherit pkgs; };
+        media-scryer = import ../tests/media-scryer.nix { inherit pkgs inputs; };
+      };
     };
-    checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
-      media-scryer-contract =
-        let
-          result = import ../tests/media-scryer-contract.nix { flake = inputs.self; };
-        in
-        pkgs.runCommand "media-scryer-contract" { } ''
-          printf '%s\\n' '${builtins.toJSON result}' > "$out"
-        '';
-      media-scryer-unit = import ../tests/media-scryer-unit.nix { inherit pkgs; };
-      media-scryer = import ../tests/media-scryer.nix { inherit pkgs inputs; };
-    };
-  };
 }
