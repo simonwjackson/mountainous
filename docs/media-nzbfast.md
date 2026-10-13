@@ -56,6 +56,31 @@ to compare NZBGet ExecStart/unitConfig and the complete generated proxy unit
 text with Cairn `02f89d053ac484302562e3b81e7880f721c5134e`. Both rollback modes
 must match. The comparison requires that revision in the local Git history.
 
+The Nix switch is not the whole rollback. Sonarr and Radarr start only when
+their download-client rows match the protected receipts in
+`/var/lib/media-migration/processing-original-safe/<app>.json`. Restore the
+receipts backed up in `/var/lib/media-migration/nzbfast-cutover-20261013/`
+together with the client rows they record. Re-enable the NZBGet client and
+disable the NZBFAST client. A receipt without matching rows, or rows without a
+matching receipt, makes `media-state-ready.py --enabled` refuse startup.
+
+## Cutover record (2026-10-13)
+
+The first cutover, on 2026-10-12, failed. A repaired encrypted RAR5 release
+could not be re-extracted, because native unpack declined it and `unrar` was
+not on PATH. The unit now carries `unrar` (`a79340c6`).
+
+The second cutover deployed `awyzdz94…` at 01:35 UTC. Sonarr and Radarr each
+got an enabled SABnzbd client `NZBFAST (usenet)` at `10.200.200.2:6790`, with
+priority 10. Their NZBGet clients were disabled and kept. The receipts were
+updated to admit the new rows, and both apps passed a real restart.
+
+The acceptance download was `It's Always Sunny` S18E08 (1.6 GB, Kitsune
+release, not RAR-packed). It survived a media-vpn tunnel restart at 02:44 UTC:
+NZBFAST resumed 1,307 MB from its journal. Sonarr imported it at 03:07 UTC to
+`/srv/range/media/tv/` and removed the source. The `unrar` path has not yet
+been exercised by a packed release.
+
 ## First start for a new held trial (not the admitted Unzen state)
 
 First select `usenet = "both"` and `nzbfast.held = true` for that trial.
