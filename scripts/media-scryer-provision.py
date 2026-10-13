@@ -104,6 +104,33 @@ def media_settings_input(scope):
             **({'plexmatchWriteOnImport': False} if scope != 'MOVIE' else {})}
 
 
+# New imports only. Sonarr and Radarr kept renaming off but named every import
+# after its release (SceneName), so an obfuscated post never reached the library
+# as a hash. Scryer with renaming off keeps the downloaded filename
+# (scryer-application/src/import/workflow/paths.rs:518), and hash names stop
+# Jellyfin parsing SxxEyy. These mirror the formats configured in Sonarr
+# ({Series Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full})
+# and Radarr ({Movie Title} ({Release Year}) {Quality Full}). Existing files are
+# never renamed: that needs an explicit rename plan (library/rename.rs:300-530).
+RENAME_TEMPLATES = {
+    'SERIES': '{title} - S{season:2}E{episode:2}{?episode_title: - {episode_title}} {quality}.{ext}',
+    'ANIME': '{title} - S{season_order:2}E{episode:2}{?episode_title: - {episode_title}} {quality}.{ext}',
+    'MOVIE': '{title} ({year}) {quality}.{ext}',
+}
+
+
+def apply_rename_templates(client):
+    for scope, template in RENAME_TEMPLATES.items():
+        client.mutate('updateMediaSettings', 'UpdateMediaSettingsInput',
+                      {'scope': scope, 'renameEnabled': True, 'renameTemplate': template}, 'renameEnabled')
+        saved = client.graphql('query{mediaSettings(scope:' + scope + '){renameEnabled renameTemplate}}')['mediaSettings']
+        if saved != {'renameEnabled': True, 'renameTemplate': template}:
+            raise ValueError('rename template verification failed')
+    recycle = client.graphql('query{recycleBinSettings{enabled}}')['recycleBinSettings']['enabled']
+    if recycle is not False:
+        raise ValueError('recycle bin must stay off')
+
+
 def apply_settings(client):
     for scope, path in common.SCOPES.items():
         print('Applying media settings: ' + scope)
@@ -263,6 +290,7 @@ def main():
     parser.add_argument('--upgrades', choices=['off', 'match-source'], default='off')
     parser.add_argument('--source-archive', type=Path)
     parser.add_argument('--acquisition', choices=['off', 'on'], default='off')
+    parser.add_argument('--rename', choices=['off', 'templates'], default='off')
     args = parser.parse_args()
     common.root_only()
     bootstrap(args.open_gate)
@@ -292,6 +320,10 @@ def main():
         if args.upgrades == 'off':
             client.require_held_import()
         print('Quality profiles verified')
+        if args.rename == 'templates':
+            # After every held check: renaming is a post-cutover setting.
+            apply_rename_templates(client)
+            print('New-import rename templates verified; existing files are not renamed')
         if args.plugins:
             for plugin in ('transmission', 'jellyfin'):
                 source = Path(os.environ['MEDIA_SCRYER_PLUGIN_' + plugin.upper()])

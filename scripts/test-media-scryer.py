@@ -26,6 +26,38 @@ provision = load('provision', HERE / 'media-scryer-provision.py')
 state = load('state', HERE.parent / 'modules/media-state-ready.py')
 
 
+class RenameTemplateTests(unittest.TestCase):
+    class Client:
+        def __init__(self, recycle=False, drop=None):
+            self.saved, self.recycle, self.drop = {}, recycle, drop
+
+        def mutate(self, field, input_type, value, selection):
+            assert field == 'updateMediaSettings'
+            if value['scope'] != self.drop:
+                self.saved[value['scope']] = {'renameEnabled': value['renameEnabled'],
+                                              'renameTemplate': value['renameTemplate']}
+            return {}
+
+        def graphql(self, query, variables=None):
+            if 'recycleBinSettings' in query:
+                return {'recycleBinSettings': {'enabled': self.recycle}}
+            scope = query.split('scope:')[1].split(')')[0]
+            return {'mediaSettings': self.saved.get(scope, {'renameEnabled': False, 'renameTemplate': ''})}
+
+    def test_templates_cover_every_scope_and_verify(self):
+        client = self.Client()
+        provision.apply_rename_templates(client)
+        self.assertEqual(set(client.saved), {'SERIES', 'ANIME', 'MOVIE'})
+        self.assertIn('S{season:2}E{episode:2}', client.saved['SERIES']['renameTemplate'])
+        self.assertTrue(client.saved['MOVIE']['renameTemplate'].startswith('{title} ({year})'))
+
+    def test_unsaved_scope_or_recycle_bin_refuses(self):
+        with self.assertRaises(ValueError):
+            provision.apply_rename_templates(self.Client(drop='ANIME'))
+        with self.assertRaises(ValueError):
+            provision.apply_rename_templates(self.Client(recycle=True))
+
+
 class SnapshotTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
