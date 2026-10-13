@@ -221,7 +221,10 @@ def verify_config(row, inputs):
     actual = {field['key']: field['value'] for field in row['config']}
     for field in inputs:
         key = field['key']
-        if 'secretValue' in field:
+        if field.get('clearSecret'):
+            if key in row['storedSecretKeys'] or actual.get(key, {}).get('stored') is True:
+                raise ValueError('secret absence verification failed')
+        elif 'secretValue' in field:
             if key not in row['storedSecretKeys'] or actual.get(key, {}).get('stored') is not True:
                 raise ValueError('secret presence verification failed')
         else:
@@ -341,6 +344,12 @@ def connect(client, steps, source):
         usenet_config = provider_values({'host': '10.200.200.2', 'port': '6790', 'use_ssl': False,
                                          'api_key': data['key']})
         torrent_config = provider_values(data['config'])
+        if 'username' not in data['config']:
+            # Upstream keeps omitted secrets on update and in stored-ID tests
+            # (scryer-interface/src/mutation/config.rs:153-158,724-730), so an
+            # unauthenticated source must clear them explicitly.
+            torrent_config += [{'key': 'username', 'clearSecret': True},
+                               {'key': 'password', 'clearSecret': True}]
         usenet = upsert(client, 'downloadClientConfigs', CLIENT_FIELDS, 'DownloadClientConfig',
                         {'name': 'NZBFAST (usenet)', 'clientType': 'sabnzbd', 'isEnabled': True,
                          'config': usenet_config}, 'clientType')

@@ -25,6 +25,7 @@ class RecordingGraphQL:
     def __init__(self, corrupt=False, acquisition=False):
         self.corrupt, self.acquisition = corrupt, acquisition
         self.calls = []
+        self.previous_config = {}
         self.tables = {name: [] for name in ('indexers', 'downloadClientConfigs', 'notificationChannels', 'notificationSubscriptions')}
         names = connect.SCALAR_OVERRIDES + tuple(connect.ROUTE_OVERRIDES)
         self.tables['libraries'] = [{'id': scope, 'facet': scope, 'roots': [{'path': root}],
@@ -82,12 +83,18 @@ class RecordingGraphQL:
             row.update(data)
             data = row
         if 'config' in data:
-            # Upstream masks these keys whatever slot they arrive in.
+            # Upstream masks these keys whatever slot they arrive in, keeps an
+            # omitted stored secret on update, and drops one sent as clearSecret.
             masked = {'username', 'password', 'api_key'}
-            data['config'] = [{'key': v['key'], 'value': {'stored': True} if v['key'] in masked else
-                               {'value': next(v[key] for key in ('stringValue', 'boolValue', 'intValue', 'secretValue') if key in v)}}
-                              for v in value['config']]
-            data['storedSecretKeys'] = [v['key'] for v in value['config'] if v['key'] in masked]
+            kept = [] if field.startswith('create') else [
+                c for c in self.previous_config.get(data['id'], [])
+                if c['key'] in masked and c['key'] not in {v['key'] for v in value['config']}]
+            data['config'] = kept + [
+                {'key': v['key'], 'value': {'stored': True} if v['key'] in masked else
+                 {'value': next(v[key] for key in ('stringValue', 'boolValue', 'intValue', 'secretValue') if key in v)}}
+                for v in value['config'] if not v.get('clearSecret')]
+            data['storedSecretKeys'] = [c['key'] for c in data['config'] if c['key'] in masked]
+            self.previous_config[data['id']] = copy.deepcopy(data['config'])
         if table == 'notificationChannels':
             data['blockedReason'] = None
         if table == 'indexers':
@@ -208,6 +215,18 @@ class ConnectionTests(unittest.TestCase):
         connect.connect(client, ['clients'], self.source)
         row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
         self.assertEqual({c['key'] for c in row['config']}, {'host', 'port', 'use_ssl', 'url_base'})
+
+    def test_existing_authenticated_client_has_credentials_cleared(self):
+        client = RecordingGraphQL()
+        connect.connect(client, ['clients'], self.source)  # authenticated fixture
+        row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
+        self.assertEqual(set(row['storedSecretKeys']), {'username', 'password'})
+        self._rewrite('DownloadClients', dict(self.transmission, username='', password=''))
+        connect.connect(client, ['clients'], self.source)
+        row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
+        self.assertEqual(row['storedSecretKeys'], [])
+        test = [c for c in client.calls if c[0] == 'mutate' and c[1] == 'testDownloadClientConnection'][-1]
+        self.assertEqual({v['key'] for v in test[2]['config'] if v.get('clearSecret')}, {'username', 'password'})
 
     def test_half_set_credentials_refuse(self):
         self._rewrite('DownloadClients', dict(self.transmission, password=''))
