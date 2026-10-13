@@ -8,6 +8,8 @@ let
         { lib, ... }:
         {
           mountainous.features.media-applications = {
+            # The ARR contract: Unzen itself now runs library = "scryer".
+            library = lib.mkForce "arr";
             usenet = lib.mkForce "both";
             nzbfast.held = lib.mkForce true;
           };

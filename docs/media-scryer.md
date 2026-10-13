@@ -174,6 +174,80 @@ ARR download-client/indexer settings, schedules, users and authentication,
 processing receipts, original database state and saved tsnet identities stay
 with ARR. Scryer's list exclusions are not an ARR blocklist migration.
 
+## Cutover record (2026-10-13)
+
+Unzen runs `library = "scryer"`. Sonarr and Radarr are not started; their
+state, databases, gate markers, receipts and saved tsnet identities are kept.
+Retire them no earlier than **2026-10-27** (14 days).
+
+Package: upstream's signed release binary (nix-extras `packages.scryer`). A
+source build cannot enroll with SMG: upstream embeds the registration secret at
+compile time from its CI secrets, so SMG answers 401 and titles never hydrate.
+
+Trial (`both`): import of 18 series and 25 movies, parity 0 mismatches across
+203 seasons, 3,066 episodes and 646 files; no pre-existing library entry changed
+and no entry owned by UID 392. The importer's metadata wait first spun to its
+deadline because Scryer reports season 0 as a `SPECIALS` collection.
+
+Rollback rehearsal on the host: scryer -> arr -> scryer. In `arr`, Sonarr and
+Radarr passed their startup checks against the existing receipts, their APIs
+and tailnet proxies served, and the library was unchanged.
+
+Connections (`media-scryer-connect`): Prowlarr (2 indexers, all via
+`10.200.200.2:9696`), NZBFAST first (`Series`/`Movies`, remove completed and
+failed), Jellyfin as a media-server connection (server path -> local path),
+subscribed to import, upgrade and rename.
+
+Acceptance downloads (acquisition still off, searched explicitly): South Park
+S29E01 and Toy Story 3 each downloaded through NZBFAST, imported by copy
+(different mount from the download dir) under the right root, and notified
+Jellyfin. Then acquisition on, upgrades matched to source (all 12 source
+profiles have `upgradeAllowed=false`), restart kept 52 titles and 659 files,
+leak audit 29/29.
+
+### Behaviour that differs from Sonarr/Radarr
+
+- **New imports are renamed with templates** (`--rename templates`), matching
+  the formats Sonarr and Radarr had configured: `South Park - S29E01 - South
+  American Biker Gangs 1080p.mkv`, `Toy Story 3 (2010) 2160p.mkv`. Sonarr and
+  Radarr had renaming off but named each import after its release (SceneName),
+  so an obfuscated post never landed as a hash. Scryer with renaming off keeps
+  the downloaded filename (`import/workflow/paths.rs:518`); the first test
+  imports landed as `cUak0Lqf….mkv`. Existing files are never renamed: that
+  needs an explicit rename plan. Scryer keeps each file's scene name and group.
+  NZBFAST's `nzb_name` was rejected: it renames the largest file even when it
+  is correctly named, which can mislabel an episode.
+- **Transmission is configured but disabled.** The transmission 2.0.2 plugin
+  types `rpc-version` as a string; Transmission 4.1.1 sends an integer (19), so
+  every call fails (scryer-plugins issue #100). No torrent indexer exists, so
+  nothing reached Transmission under Sonarr either. Set
+  `TRANSMISSION_ENABLED = True` in `scripts/media-scryer-connect.py` and rerun
+  `media-scryer-connect --clients` once a fixed plugin ships.
+- **Scryer lists 52 titles, not 43.** Its scan found 9 movie folders Radarr did
+  not track, including the two exclusions. All 9 are unmonitored; unmonitored
+  titles trigger no search, rename, delete or upgrade.
+- **Re-grabbing a deleted import** of a release Scryer already imported does
+  nothing through a normal search (upstream issue #291). Use
+  `queueBestRelease` for that episode or movie.
+- History (3,898) and blocklist (144) are archived, not loaded:
+  `/var/lib/media-migration/arr-archive-20261013/`.
+
+### Known tooling limit
+
+`media-library-snapshot compare` flags parent-directory mtime/size changes that
+mergerfs reports when a new file lands on the basin branch. On cutover it
+flagged `tv`, `movies` and `tv/South.Park` (mtime, and size 784 -> 4096) with no
+file changed, moved or missing. Read the field-level diff before treating such
+a report as a data-safety failure.
+
+### Backups
+
+- `/var/lib/media-migration/scryer-pre-20261013/`: consistent Sonarr, Radarr and
+  Prowlarr DB copies and receipts, taken before the trial.
+- `/var/lib/media-migration/scryer-failed-trial-1/`: the source-built trial's
+  Scryer state (no metadata), kept, not used.
+- Each app's own backup command ran on 2026-10-13.
+
 ## Rollback
 
 Set **only** `library = "arr"` and use the approved normal rebuild procedure.
