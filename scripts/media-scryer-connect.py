@@ -29,8 +29,19 @@ CHANNEL_FIELDS = 'id name channelType isEnabled blockedReason ' + VALUE_FIELDS
 SUB_FIELDS = 'id channelId targetKind targetId eventType scope scopeId isEnabled'
 INDEXER_ROUTE = 'indexerId enabled categories priority'
 CLIENT_ROUTE = 'clientId enabled category recentQueuePriority olderQueuePriority removeCompleted removeFailed seedingProfileId'
-LIBRARY_FIELDS = ('id facet roots{path} settings{indexerRoutingOverride{' + INDEXER_ROUTE
-                  + '} downloadClientRoutingOverride{' + CLIENT_ROUTE + '}}')
+# updateLibrary REPLACES library settings: an omitted field deletes that
+# library-scoped override (scryer-application/src/settings/runtime/library.rs:
+# 1775-1807). searchLanguages is the one exception (kept when omitted, :1498).
+# Every override is therefore read and written back unchanged.
+SCALAR_OVERRIDES = ('requiredAudioLanguages', 'metadataLanguage', 'useSeasonFolders', 'qualityProfileId',
+                    'requestQualityProfileIds', 'scoringPersona', 'fillerPolicy', 'recapPolicy',
+                    'monitorSpecials', 'interSeasonMovies', 'monitorFillerMovies', 'nfoWriteOnImport',
+                    'plexmatchWriteOnImport', 'importMode', 'setPermissionsLinux', 'fileChmod',
+                    'folderChmod', 'chownGroup')
+ROUTE_OVERRIDES = {'indexerRouting': INDEXER_ROUTE, 'downloadClientRouting': CLIENT_ROUTE}
+LIBRARY_FIELDS = ('id facet roots{path} settings{'
+                  + ' '.join(name + 'Override' for name in SCALAR_OVERRIDES)
+                  + ''.join(f' {name}Override{{{fields}}}' for name, fields in ROUTE_OVERRIDES.items()) + '}')
 
 
 def text(value, empty=False):
@@ -64,19 +75,53 @@ def connection_values(settings):
     return {'host': host, 'port': str(port), 'use_ssl': ssl, 'url_base': base}
 
 
+def _stable_private_copy(path, directory):
+    """Copy DB, WAL and journal bytes without opening the live database in SQLite.
+
+    Opening the source, even read-only, can create a live -shm sidecar. Copy the
+    files, then refuse unless none changed during the copy.
+    """
+    source = Path(path)
+    names = [source.name, source.name + '-wal', source.name + '-journal']
+
+    def state():
+        result = {}
+        for name in names:
+            try:
+                info = (source.parent / name).lstat()
+            except FileNotFoundError:
+                result[name] = None
+                continue
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError('invalid source database')
+            result[name] = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+        return result
+
+    for _ in range(10):
+        before = state()
+        if before[source.name] is None:
+            raise ValueError('invalid source database')
+        for name in names:
+            target = Path(directory) / name
+            if target.exists():
+                target.unlink()
+            if before[name] is not None:
+                fd = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+                with open(source.parent / name, 'rb') as reader, os.fdopen(fd, 'wb') as writer:
+                    writer.write(reader.read())
+        if state() == before:
+            return Path(directory) / source.name
+    raise ValueError('source database kept changing')
+
+
 def read_sonarr_settings(path, table, implementation, name=None):
-    """Online backup includes WAL; no queries or writes run on the live database."""
-    if table not in ('DownloadClients', 'Notifications') or not stat.S_ISREG(Path(path).lstat().st_mode):
+    """Read a private, stability-checked byte copy; SQLite never opens the live files."""
+    if table not in ('DownloadClients', 'Notifications'):
         raise ValueError('invalid source database')
     with tempfile.TemporaryDirectory(prefix='.media-sonarr-') as directory:
-        private = Path(directory) / 'sonarr.db'
-        fd = os.open(private, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        os.close(fd)
-        uri = 'file:' + urllib.parse.quote(str(Path(path).resolve())) + '?mode=ro'
-        with closing(sqlite3.connect(uri, uri=True, timeout=10)) as source, closing(sqlite3.connect(private)) as target:
-            source.backup(target)
-        readonly = 'file:' + urllib.parse.quote(str(private)) + '?mode=ro&immutable=1'
-        with closing(sqlite3.connect(readonly, uri=True)) as db:
+        private = _stable_private_copy(path, directory)
+        uri = 'file:' + urllib.parse.quote(str(private)) + '?mode=ro'
+        with closing(sqlite3.connect(uri, uri=True)) as db:
             rows = db.execute('SELECT Name, Settings FROM ' + table + ' WHERE Implementation=?', (implementation,)).fetchall()
         rows = [row for row in rows if name is None or row[0] == name]
         if len(rows) != 1:
@@ -145,10 +190,17 @@ class LocalSources:
         return {'settings': settings, 'folders': folders}
 
 
+def is_secret_key(key):
+    """Upstream's masking rule (scryer-interface-media/src/mappers/configuration.rs:997-1006)."""
+    key = key.strip().lower()
+    return (any(word in key for word in ('password', 'secret', 'token', 'api_key'))
+            or key in ('username', 'user_name', 'apikey'))
+
+
 def provider_values(values, secrets=()):
     result = []
     for key, value in values.items():
-        slot = 'secretValue' if key in secrets else ('boolValue' if type(value) is bool else 'stringValue')
+        slot = 'secretValue' if key in secrets or is_secret_key(key) else ('boolValue' if type(value) is bool else 'stringValue')
         result.append({'key': key, slot: value})
     return result
 
@@ -203,8 +255,18 @@ def libraries(client):
 
 
 def library_routes(client, library, key, entries):
-    client.mutate('updateLibrary', 'UpdateLibraryInput', {'libraryId': library['id'], 'settings': {key: entries}}, 'id')
+    if key not in ROUTE_OVERRIDES:
+        raise ValueError('invalid routing key')
+    # Read fresh: an earlier step may have written other overrides.
+    current = next(row for row in libraries(client) if row['id'] == library['id'])['settings']
+    settings = {name: current[name + 'Override'] for name in SCALAR_OVERRIDES + tuple(ROUTE_OVERRIDES)
+                if current.get(name + 'Override') is not None}
+    settings[key] = entries
+    client.mutate('updateLibrary', 'UpdateLibraryInput', {'libraryId': library['id'], 'settings': settings}, 'id')
     saved = next(row for row in libraries(client) if row['id'] == library['id'])
+    for name in SCALAR_OVERRIDES + tuple(ROUTE_OVERRIDES):
+        if name != key and saved['settings'].get(name + 'Override') != current.get(name + 'Override'):
+            raise ValueError('library override changed unexpectedly')
     route = saved['settings'][key + 'Override']
     if not isinstance(route, list) or len(route) != len(entries):
         raise ValueError('library routing verification failed')
@@ -269,16 +331,21 @@ def connect(client, steps, source):
         print('Prowlarr sync and library-scoped TV/movie categories verified; acquisition remains off')
     if 'clients' in plans:
         data = plans['clients']
+        usenet_config = provider_values({'host': '10.200.200.2', 'port': '6790', 'use_ssl': False,
+                                         'api_key': data['key']})
+        torrent_config = provider_values(data['config'])
         usenet = upsert(client, 'downloadClientConfigs', CLIENT_FIELDS, 'DownloadClientConfig',
                         {'name': 'NZBFAST (usenet)', 'clientType': 'sabnzbd', 'isEnabled': True,
-                         'config': provider_values({'host': '10.200.200.2', 'port': '6790', 'use_ssl': False,
-                                                    'api_key': data['key']}, ('api_key',))}, 'clientType')
+                         'config': usenet_config}, 'clientType')
         torrent = upsert(client, 'downloadClientConfigs', CLIENT_FIELDS, 'DownloadClientConfig',
                          {'name': 'Transmission (torrent)', 'clientType': 'transmission', 'isEnabled': True,
-                          'config': provider_values(data['config'], ('password',))}, 'clientType')
-        for identity, kind in [(usenet, 'sabnzbd'), (torrent, 'transmission')]:
+                          'config': torrent_config}, 'clientType')
+        # A stored-ID test merges only omitted secrets, not the saved host/port/URL
+        # (scryer-interface/src/mutation/config.rs:165-181), so send the full
+        # configuration through GraphQL variables.
+        for identity, kind, config in [(usenet, 'sabnzbd', usenet_config), (torrent, 'transmission', torrent_config)]:
             result = client.mutate('testDownloadClientConnection', 'TestDownloadClientConnectionInput',
-                                   {'id': identity, 'clientType': kind, 'config': []}, 'status')
+                                   {'id': identity, 'clientType': kind, 'config': config}, 'status')
             if result['status'] != 'ok':
                 raise ValueError('download-client connection test failed')
         for library in libs:

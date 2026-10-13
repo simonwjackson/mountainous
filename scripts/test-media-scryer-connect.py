@@ -26,8 +26,13 @@ class RecordingGraphQL:
         self.corrupt, self.acquisition = corrupt, acquisition
         self.calls = []
         self.tables = {name: [] for name in ('indexers', 'downloadClientConfigs', 'notificationChannels', 'notificationSubscriptions')}
-        self.tables['libraries'] = [{'id': scope, 'facet': scope, 'roots': [{'path': root}], 'settings': {}}
+        names = connect.SCALAR_OVERRIDES + tuple(connect.ROUTE_OVERRIDES)
+        self.tables['libraries'] = [{'id': scope, 'facet': scope, 'roots': [{'path': root}],
+                                     'settings': {name + 'Override': None for name in names}}
                                     for scope, root in connect.common.SCOPES.items()]
+        # An override set by the import (dominant quality profile) must survive.
+        for row in self.tables['libraries']:
+            row['settings']['qualityProfileIdOverride'] = 'profile-' + row['facet']
 
     def graphql(self, query, variables=None):
         self.calls.append(('graphql', query, copy.deepcopy(variables)))
@@ -58,9 +63,10 @@ class RecordingGraphQL:
             self.tables['downloadClientConfigs'].sort(key=lambda row: value['ids'].index(row['id']))
             return {'ids': value['ids']}
         if field == 'updateLibrary':
+            # Upstream replaces: an omitted field deletes that override.
             row = next(row for row in self.tables['libraries'] if row['id'] == value['libraryId'])
-            for key, data in value['settings'].items():
-                row['settings'][key + 'Override'] = copy.deepcopy(data)
+            for name in connect.SCALAR_OVERRIDES + tuple(connect.ROUTE_OVERRIDES):
+                row['settings'][name + 'Override'] = copy.deepcopy(value['settings'].get(name))
             return copy.deepcopy(row)
         table = next(table for token, table in [('IndexerConfig', 'indexers'), ('DownloadClientConfig', 'downloadClientConfigs'),
                                                 ('NotificationChannel', 'notificationChannels'), ('NotificationSubscription', 'notificationSubscriptions')]
@@ -76,10 +82,12 @@ class RecordingGraphQL:
             row.update(data)
             data = row
         if 'config' in data:
-            data['config'] = [{'key': v['key'], 'value': {'stored': True} if 'secretValue' in v else
-                               {'value': next(v[key] for key in ('stringValue', 'boolValue', 'intValue') if key in v)}}
+            # Upstream masks these keys whatever slot they arrive in.
+            masked = {'username', 'password', 'api_key'}
+            data['config'] = [{'key': v['key'], 'value': {'stored': True} if v['key'] in masked else
+                               {'value': next(v[key] for key in ('stringValue', 'boolValue', 'intValue', 'secretValue') if key in v)}}
                               for v in value['config']]
-            data['storedSecretKeys'] = [v['key'] for v in value['config'] if 'secretValue' in v]
+            data['storedSecretKeys'] = [v['key'] for v in value['config'] if v['key'] in masked]
         if table == 'notificationChannels':
             data['blockedReason'] = None
         if table == 'indexers':
@@ -87,7 +95,9 @@ class RecordingGraphQL:
         return copy.deepcopy(data)
 
     def assert_saved_test(self, value):
-        assert value['id'] and value['config'] == []
+        # A stored-ID test must carry the full connection, not only secrets.
+        keys = {v['key'] for v in value['config']}
+        assert value['id'] and {'host', 'port'} <= keys, keys
 
 
 class FixtureSources:
@@ -142,6 +152,50 @@ class ConnectionTests(unittest.TestCase):
             self.assertTrue(all(r['removeCompleted'] and r['removeFailed'] for r in routes))
         self.assertEqual(sum(call[1] == 'testDownloadClientConnection' for call in client.calls), 4)
         self.assertFalse(client.acquisition)
+
+    def test_routing_updates_preserve_every_other_library_override(self):
+        client = RecordingGraphQL()
+        connect.connect(client, ['indexers'], self.source)
+        connect.connect(client, ['clients'], self.source)
+        for library in client.tables['libraries']:
+            settings = library['settings']
+            self.assertEqual(settings['qualityProfileIdOverride'], 'profile-' + library['facet'])
+            self.assertIsNotNone(settings['downloadClientRoutingOverride'])
+            if library['facet'] in ('SERIES', 'MOVIE'):
+                self.assertTrue(settings['indexerRoutingOverride'], library['facet'])
+
+    def test_transmission_username_is_sent_as_secret_and_verified_present(self):
+        client = RecordingGraphQL()
+        connect.connect(client, ['clients'], self.source)
+        row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
+        self.assertIn('username', row['storedSecretKeys'])
+        sent = next(c for c in client.calls if c[0] == 'mutate' and c[1] == 'createDownloadClientConfig'
+                    and c[2]['name'] == 'Transmission (torrent)')
+        slots = {v['key']: v for v in sent[2]['config']}
+        self.assertIn('secretValue', slots['username'])
+
+    def test_reader_never_creates_source_sidecars(self):
+        # A WAL-mode source without -shm: opening it in SQLite would create one.
+        staging = Path(self.directory.name) / 'staging'
+        staging.mkdir()
+        live = staging / 'sonarr.db'
+        with contextlib.closing(sqlite3.connect(self.path)) as db, contextlib.closing(sqlite3.connect(live)) as copy_db:
+            db.backup(copy_db)
+        writer = sqlite3.connect(live)
+        writer.execute('PRAGMA journal_mode=WAL')
+        writer.execute('PRAGMA wal_autocheckpoint=0')
+        writer.execute('UPDATE DownloadClients SET Settings=?', (json.dumps(dict(self.transmission, port=9292)),))
+        writer.commit()
+        source = Path(self.directory.name) / 'source'
+        source.mkdir()
+        for name in ('sonarr.db', 'sonarr.db-wal'):
+            (source / name).write_bytes((staging / name).read_bytes())
+        writer.close()
+        before = sorted(p.name for p in source.iterdir())
+        self.assertEqual(before, ['sonarr.db', 'sonarr.db-wal'])
+        settings = connect.read_sonarr_settings(source / 'sonarr.db', 'DownloadClients', 'Transmission')
+        self.assertEqual(settings['port'], 9292)
+        self.assertEqual(sorted(p.name for p in source.iterdir()), before)
 
     def test_read_back_mismatch_refuses(self):
         with self.assertRaises(ValueError):
