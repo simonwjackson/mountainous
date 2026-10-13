@@ -4,12 +4,15 @@ let
   declared = flake.nixosConfigurations.unzen.config;
   trialHost = flake.nixosConfigurations.unzen.extendModules {
     modules = [
-      ({ lib, ... }: {
-        mountainous.features.media-applications = {
-          usenet = lib.mkForce "both";
-          nzbfast.held = lib.mkForce true;
-        };
-      })
+      (
+        { lib, ... }:
+        {
+          mountainous.features.media-applications = {
+            usenet = lib.mkForce "both";
+            nzbfast.held = lib.mkForce true;
+          };
+        }
+      )
     ];
   };
   trial = trialHost.config;
@@ -71,12 +74,15 @@ let
     usenet: held:
     (flake.nixosConfigurations.unzen.extendModules {
       modules = [
-        ({ lib, ... }: {
-          mountainous.features.media-applications = {
-            usenet = lib.mkForce usenet;
-            nzbfast.held = lib.mkForce held;
-          };
-        })
+        (
+          { lib, ... }:
+          {
+            mountainous.features.media-applications = {
+              usenet = lib.mkForce usenet;
+              nzbfast.held = lib.mkForce held;
+            };
+          }
+        )
       ];
     }).config;
   nzbgetOnly = usenetConfig "nzbget" true;
@@ -85,12 +91,15 @@ let
   globallyHeldFast =
     (flake.nixosConfigurations.unzen.extendModules {
       modules = [
-        ({ lib, ... }: {
-          mountainous.features.media-applications = {
-            processing = lib.mkForce "held";
-            nzbfast.held = lib.mkForce false;
-          };
-        })
+        (
+          { lib, ... }:
+          {
+            mountainous.features.media-applications = {
+              processing = lib.mkForce "held";
+              nzbfast.held = lib.mkForce false;
+            };
+          }
+        )
       ];
     }).config;
   fast = declared.systemd.services.nzbfast;
@@ -171,6 +180,8 @@ assert builtins.elem "/etc/netns/vpn/resolv.conf:/etc/resolv.conf"
   fast.serviceConfig.BindReadOnlyPaths;
 assert fast.serviceConfig.UMask == "0002";
 assert fast.environment.NZBFAST_NO_ENRICH == "1";
+# Native extraction falls back to unrar on PATH (repaired encrypted RAR5).
+assert builtins.match ".*-unrar-[^:]*/bin.*" fast.environment.PATH != null;
 assert declared.services.nzbfast.port == 6790;
 assert declared.services.nzbfast.listenAddress == "0.0.0.0";
 assert !declared.services.nzbfast.openFirewall;

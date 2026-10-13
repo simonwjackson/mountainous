@@ -247,6 +247,10 @@
                 StartLimitBurst = 5;
               };
               environment.NZBFAST_NO_ENRICH = "1";
+              # NZBFAST falls back to unrar from PATH when native extraction
+              # declines an archive (rarfix.rs:180, tools.rs:30-40), e.g.
+              # re-extracting repaired encrypted RAR5 volumes.
+              path = [ media.unrar ];
               # Validation (mkBefore/500) precedes settings (600), then upstream
               # rewrites bind/out_dir/port (1000). .spool is in writable stateDir.
               preStart = lib.mkOrder 600 ''
