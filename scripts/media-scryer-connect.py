@@ -69,7 +69,8 @@ def connection_values(settings):
     if not 1 <= port <= 65535:
         raise ValueError('invalid source port')
     ssl = source_value(settings, 'useSsl', bool)
-    base = source_value(settings, 'urlBase', empty=True)
+    # Sonarr's MediaBrowser notification has no urlBase field at all.
+    base = source_value(settings, 'urlBase', empty=True) if 'urlBase' in settings else ''
     if base and (not base.startswith('/') or any(c in base for c in ('?', '#', '=>'))):
         raise ValueError('invalid source URL base')
     return {'host': host, 'port': str(port), 'use_ssl': ssl, 'url_base': base}
@@ -295,11 +296,17 @@ def connect(client, steps, source):
                     raise ValueError('missing source categories')
         elif step == 'clients':
             values = connection_values(data['transmission'])
-            values.update(username=source_value(data['transmission'], 'username'),
-                          password=source_value(data['transmission'], 'password'))
+            # Unzen's Transmission is reached over the tailnet without auth, so
+            # both may be empty. Send only credentials that exist.
+            username = source_value(data['transmission'], 'username', empty=True)
+            password = source_value(data['transmission'], 'password', empty=True)
+            if bool(username) != bool(password):
+                raise ValueError('incomplete source credentials')
             # A masked password must never replace the database's real value.
-            if values['password'] and set(values['password']) == {'*'}:
+            if password and set(password) == {'*'}:
                 raise ValueError('masked source password')
+            if username:
+                values.update(username=username, password=password)
             data['config'] = values
             text(data['key'])
         elif step == 'jellyfin':

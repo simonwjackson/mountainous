@@ -197,6 +197,33 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(settings['port'], 9292)
         self.assertEqual(sorted(p.name for p in source.iterdir()), before)
 
+    def _rewrite(self, table, settings):
+        with contextlib.closing(sqlite3.connect(self.path)) as db, db:
+            db.execute(f'UPDATE {table} SET Settings=?', (json.dumps(settings),))
+
+    def test_unauthenticated_transmission_sends_no_credentials(self):
+        # Unzen's real row: username and password are empty strings.
+        self._rewrite('DownloadClients', dict(self.transmission, username='', password=''))
+        client = RecordingGraphQL()
+        connect.connect(client, ['clients'], self.source)
+        row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
+        self.assertEqual({c['key'] for c in row['config']}, {'host', 'port', 'use_ssl', 'url_base'})
+
+    def test_half_set_credentials_refuse(self):
+        self._rewrite('DownloadClients', dict(self.transmission, password=''))
+        with self.assertRaises(ValueError):
+            connect.connect(RecordingGraphQL(), ['clients'], self.source)
+
+    def test_jellyfin_notification_without_url_base(self):
+        # Unzen's real MediaBrowser row has no urlBase key.
+        settings = {k: v for k, v in self.jellyfin.items() if k != 'urlBase'}
+        self._rewrite('Notifications', settings)
+        client = RecordingGraphQL()
+        connect.connect(client, ['jellyfin'], self.source)
+        [channel] = client.tables['notificationChannels']
+        base = next(c['value']['value'] for c in channel['config'] if c['key'] == 'base_url')
+        self.assertEqual(base, 'http://jellyfin.test:8096')
+
     def test_read_back_mismatch_refuses(self):
         with self.assertRaises(ValueError):
             connect.connect(RecordingGraphQL(corrupt=True), ['clients'], self.source)
