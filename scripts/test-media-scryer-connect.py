@@ -265,8 +265,15 @@ class ConnectionTests(unittest.TestCase):
         connect.connect(client, ['jellyfin'], self.source)
         [server] = client.tables['mediaServerConnections']
         self.assertEqual(server['baseUrl'], 'http://jellyfin.test:8096')
+        # Stored as Jellyfin (source) -> local (destination).
         self.assertEqual(sorted((m['sourcePath'], m['destinationPath']) for m in server['pathMappings']),
-                         [('/srv/range/media/movies', '/media/movies'), ('/srv/range/media/tv', '/media/tv')])
+                         [('/media/movies', '/srv/range/media/movies'), ('/media/tv', '/srv/range/media/tv')])
+        # Upstream's notification rendering (notifications.rs:904-909) must then
+        # translate a local import path to Jellyfin's path.
+        rendered = [(m['destinationPath'], m['sourcePath']) for m in server['pathMappings']]
+        local = '/srv/range/media/tv/Show/S01E01.mkv'
+        prefix, remote = next((l, r) for l, r in rendered if local.startswith(l + '/'))
+        self.assertEqual(remote + local[len(prefix):], '/media/tv/Show/S01E01.mkv')
 
     def test_read_back_mismatch_refuses(self):
         with self.assertRaises(ValueError):

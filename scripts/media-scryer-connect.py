@@ -395,7 +395,10 @@ def connect(client, steps, source):
         # refuses media-server providers as channels
         # (scryer-application/src/notifications/notifications.rs:222).
         config = plans['jellyfin']['config']
-        mappings = [{'sourcePath': local, 'destinationPath': remote}
+        # Media-server mappings run Jellyfin path (source) -> local path
+        # (destination); notifications render them reversed as local => remote
+        # (scryer-application/src/notifications/notifications.rs:904-909).
+        mappings = [{'sourcePath': remote, 'destinationPath': local}
                     for local, remote in (line.split(' => ') for line in config['path_mappings'].splitlines())]
         value = {'provider': 'JELLYFIN', 'displayName': 'Jellyfin Library Update', 'baseUrl': config['base_url'],
                  'enabled': True, 'loginEnabled': False, 'linkingEnabled': False, 'autoAddEnabled': False,
