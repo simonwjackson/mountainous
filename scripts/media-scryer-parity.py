@@ -81,7 +81,9 @@ def target_catalog(client):
                 continue
             seasons, episodes = {}, {}
             for collection in title['collections']:
-                if collection['collectionType'] == 'SEASON':
+                # Scryer stores season 0 as SPECIALS, not SEASON
+                # (crates/scryer-domain/src/lib.rs:1690-1696).
+                if collection['collectionType'] in ('SEASON', 'SPECIALS'):
                     seasons[str(int(collection['collectionIndex']))] = collection['monitored']
                 for episode in collection['episodes']:
                     if episode['seasonNumber'] is not None and episode['episodeNumber'] is not None:

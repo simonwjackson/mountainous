@@ -118,6 +118,25 @@ class ParityTests(unittest.TestCase):
         target.append(target[0])
         self.assertTrue(self.check(target)[1])
 
+    def test_specials_collection_is_season_zero(self):
+        # Scryer reports season 0 as collectionType SPECIALS. Missing it made
+        # the import's metadata wait spin until its deadline on Unzen.
+        class Client:
+            def graphql(self, query, variables=None):
+                return {'titles': {'hasMore': False, 'items': [{
+                    'id': 't1', 'facet': 'SERIES', 'monitored': True, 'qualityTier': 'Any',
+                    'externalIds': [{'source': 'tvdb', 'value': '75897'}], 'mediaFiles': [],
+                    'collections': [
+                        {'collectionType': 'SPECIALS', 'collectionIndex': '0', 'monitored': False,
+                         'episodes': [{'seasonNumber': 0, 'episodeNumber': 1, 'monitored': False}]},
+                        {'collectionType': 'SEASON', 'collectionIndex': '1', 'monitored': True,
+                         'episodes': [{'seasonNumber': 1, 'episodeNumber': 1, 'monitored': True}]},
+                        {'collectionType': 'ARC', 'collectionIndex': '7', 'monitored': True,
+                         'episodes': []}]}]}}
+        [title] = parity.target_catalog(Client())
+        self.assertEqual(title['seasons'], {'0': False, '1': True})
+        self.assertEqual(title['episodes'], {'0:1': False, '1:1': True})
+
 
 def held_fixture():
     result = {'recycle': {'enabled': False}, 'acquisitionSettings': {'enabled': False},
