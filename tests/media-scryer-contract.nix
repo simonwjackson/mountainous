@@ -130,11 +130,13 @@ let
           scryer
         ];
     serviceIdentityAndGates = scryerContract both && scryerContract scryer;
-    signedScryerCacheIdentity =
+    # The signed upstream release binary (nix-extras pkgs/scryer/release.nix):
+    # only it can enroll with SMG; a source build gets 401 and never hydrates.
+    signedScryerReleaseIdentity =
       scryer.services.scryer.package.version == "0.21.15"
       &&
         scryer.services.scryer.package.outPath
-        == "/nix/store/qv7hd6qb5fp48m2j1rlcp1xhz6zy6gnj-scryer-0.21.15";
+        == "/nix/store/k9d6hb7dn2lys8bpjq6q7a20p8iv0lav-scryer-0.21.15";
     bindfsUnchanged = bindfs arr == bindfs both && bindfs arr == bindfs scryer;
     libraryMountsRetained =
       arr.fileSystems."/srv/range/media/tv" == scryer.fileSystems."/srv/range/media/tv"

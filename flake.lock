@@ -273,24 +273,27 @@
     "nix-extras": {
       "inputs": {
         "cache-publisher": "cache-publisher",
-        "nixpkgs": "nixpkgs-extras",
+        "nixpkgs": "nixpkgs_2",
         "nzbfast-src": "nzbfast-src",
         "reskate-client": "reskate-client",
         "scryer-newznab-bundle": "scryer-newznab-bundle",
         "scryer-newznab-wasm": "scryer-newznab-wasm",
         "scryer-plugin-jellyfin": "scryer-plugin-jellyfin",
         "scryer-plugin-transmission": "scryer-plugin-transmission",
+        "scryer-release-checksums": "scryer-release-checksums",
+        "scryer-release-checksums-bundle": "scryer-release-checksums-bundle",
+        "scryer-release-tarball": "scryer-release-tarball",
         "scryer-src": "scryer-src",
         "scryer-torznab-bundle": "scryer-torznab-bundle",
         "scryer-torznab-wasm": "scryer-torznab-wasm",
         "scryer-trust-root": "scryer-trust-root"
       },
       "locked": {
-        "lastModified": 1791874323,
-        "narHash": "sha256-MDppA1wWZFNdFBcisNIeLw/wM9x45xaq48nlk4+5ziM=",
+        "lastModified": 1791914876,
+        "narHash": "sha256-jkbLk6/OIWR/E7/BRNgYUh2x5TSZUiRePUfS2YB6dM8=",
         "owner": "simonwjackson",
         "repo": "nix-extras",
-        "rev": "d3a171d42d0dbd6934c510e85d20b54ce0d4772d",
+        "rev": "a6de528f22e6094d1c710a2fcaae31ba484fed5a",
         "type": "github"
       },
       "original": {
@@ -338,22 +341,6 @@
         "owner": "NixOS",
         "repo": "nixpkgs",
         "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-extras": {
-      "locked": {
-        "lastModified": 1791594108,
-        "narHash": "sha256-XK4KceonkwD8LuMAt/vNrz982mXJM5jeHAxMwsUXXAQ=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "6510408d147d8c5e6d76043e899e9251756f6a75",
         "type": "github"
       },
       "original": {
@@ -414,6 +401,22 @@
       }
     },
     "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1791594108,
+        "narHash": "sha256-XK4KceonkwD8LuMAt/vNrz982mXJM5jeHAxMwsUXXAQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6510408d147d8c5e6d76043e899e9251756f6a75",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1790185690,
         "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
@@ -491,7 +494,7 @@
         "nix-extras": "nix-extras",
         "nixos-anywhere-src": "nixos-anywhere-src",
         "nixos-images-src": "nixos-images-src",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "nixpkgs-media": "nixpkgs-media",
         "nixpkgs-rakku": "nixpkgs-rakku",
         "nixpkgs-sunshine": "nixpkgs-sunshine",
@@ -565,6 +568,42 @@
       "original": {
         "type": "file",
         "url": "https://github.com/scryer-media/scryer-plugins/releases/download/plugins-v3/transmission/v2.0.2/plugin-v3.wasm.zst"
+      }
+    },
+    "scryer-release-checksums": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-ZUD2+ONLIQAUEkUJNHkNP6cE8/Mn13f1t/alMe1ldI4=",
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-checksums.txt"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-checksums.txt"
+      }
+    },
+    "scryer-release-checksums-bundle": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-iw5NYUXtdnghua1m74z7keS0nnGN9r5rWypNHmoutq4=",
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-checksums.txt.cosign-v3.sigstore.json"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-checksums.txt.cosign-v3.sigstore.json"
+      }
+    },
+    "scryer-release-tarball": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-z5v03nDwY7Xn/bXIelIde3rQdaRfkAEqiixLJWNmQwE=",
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-linux-x86_64-portable.tar.gz"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/scryer-media/scryer/releases/download/scryer-v0.21.15/scryer-linux-x86_64-portable.tar.gz"
       }
     },
     "scryer-src": {
