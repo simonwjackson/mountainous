@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Phase 1 (code) and phase 2 (preparation) are done, except the kexec rehearsal on Yari. Yari still runs its old XFS system.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
+**Phase 1 (code) and phase 2 (preparation, including the kexec rehearsal) are done. Yari still runs its old XFS system. The install (step 4) waits for operator approval.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
 
 This plan replaces Yari's XFS root with btrfs, wipes the system root at every boot, and keeps state in one persistent area called permafrost. The reinstall wipes Yari's only disk. The operator's part of the install must not grow.
 
@@ -106,7 +106,7 @@ The agent runs every step. The operator approves step 4.
 | --- | --- |
 | 1. Copy Yari's ed25519 host key to `~/.local/share/mountainous/hostkeys/yari/` | Done. Its age form matches `.sops.yaml`. |
 | 2. Recreate the Oracle serial console from Zao with the OCI CLI | Done. It reached `yari login:`. Connect with `~/.local/share/mountainous/oci-console/connect`. |
-| 3. Rehearse kexec only: `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Pending. The installer must come back on Tailscale as `yari` with the same host key. A reboot returns Yari to the XFS system. |
+| 3. Rehearse kexec only: `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Done 2026-10-12. The installer came back on Tailscale as `yari` with the same node key, address and SSH host key, and left the disk unmounted. A reboot returned Yari to XFS with no failed units. |
 | 4. Install: `nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Needs operator approval. Destroys the disk. |
 | 5. Reboot twice. Verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units. | Pending |
 | 6. Declare Forgerie on Yari and copy live sessions from Zao | Pending (phase 5) |
