@@ -8,7 +8,7 @@
         media-applications = {
           enable = true;
           mediaGid = 390;
-          library = "both";
+          library = "scryer";
           usenet = "nzbfast";
           nzbfast.held = false;
           processing = lib.mkDefault "enabled";
