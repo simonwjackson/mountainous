@@ -26,7 +26,8 @@ class RecordingGraphQL:
         self.corrupt, self.acquisition = corrupt, acquisition
         self.calls = []
         self.previous_config = {}
-        self.tables = {name: [] for name in ('indexers', 'downloadClientConfigs', 'notificationChannels', 'notificationSubscriptions')}
+        self.tables = {name: [] for name in ('indexers', 'downloadClientConfigs', 'notificationChannels',
+                                             'notificationSubscriptions', 'mediaServerConnections')}
         names = connect.SCALAR_OVERRIDES + tuple(connect.ROUTE_OVERRIDES)
         self.tables['libraries'] = [{'id': scope, 'facet': scope, 'roots': [{'path': root}],
                                      'settings': {name + 'Override': None for name in names}}
@@ -60,6 +61,18 @@ class RecordingGraphQL:
         if field == 'testDownloadClientConnection':
             self.assert_saved_test(value)
             return {'status': 'ok'}
+        if field == 'testMediaServerConnection':
+            assert any(r['id'] == value['id'] for r in self.tables['mediaServerConnections'])
+            return {'status': 'ok'}
+        if field in ('createMediaServerConnection', 'updateMediaServerConnection'):
+            data = {k: v for k, v in copy.deepcopy(value).items() if k != 'apiKey'}
+            data['apiKeyPresent'] = bool(value.get('apiKey'))
+            if field.startswith('create'):
+                data['id'] = 'server' + str(len(self.tables['mediaServerConnections']))
+                self.tables['mediaServerConnections'].append(data)
+            else:
+                next(r for r in self.tables['mediaServerConnections'] if r['id'] == data['id']).update(data)
+            return {'id': data['id']}
         if field == 'reorderDownloadClientConfigs':
             self.tables['downloadClientConfigs'].sort(key=lambda row: value['ids'].index(row['id']))
             return {'ids': value['ids']}
@@ -76,7 +89,9 @@ class RecordingGraphQL:
         if field.startswith('create'):
             data['id'] = table + str(len(self.tables[table]))
             if table == 'notificationSubscriptions':
-                data.update(targetKind='plugin_channel', targetId=data['channelId'], scopeId=None)
+                data.setdefault('targetKind', 'plugin_channel')
+                data.setdefault('targetId', data.get('channelId'))
+                data['scopeId'] = None
             self.tables[table].append(data)
         else:
             row = next(row for row in self.tables[table] if row['id'] == data['id'])
@@ -149,15 +164,23 @@ class ConnectionTests(unittest.TestCase):
         self.assertNotIn(SECRET, output.getvalue())
         self.assertEqual(len(client.tables['indexers']), 2)
         self.assertEqual(len(client.tables['downloadClientConfigs']), 2)
-        self.assertEqual(len(client.tables['notificationChannels']), 1)
+        self.assertEqual(len(client.tables['notificationChannels']), 0)
+        self.assertEqual(len(client.tables['mediaServerConnections']), 1)
         self.assertEqual(len(client.tables['notificationSubscriptions']), 3)
+        self.assertTrue(all(s['targetKind'] == 'media_server_connection'
+                            for s in client.tables['notificationSubscriptions']))
+        [server] = client.tables['mediaServerConnections']
+        self.assertFalse(server['loginEnabled'] or server['linkingEnabled'] or server['autoAddEnabled'])
+        torrent = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
+        self.assertFalse(torrent['isEnabled'])
         clients = client.tables['downloadClientConfigs']
         self.assertEqual([row['name'] for row in clients], ['NZBFAST (usenet)', 'Transmission (torrent)'])
         for library in client.tables['libraries']:
             routes = library['settings']['downloadClientRoutingOverride']
             self.assertEqual([r['category'] for r in routes], ['Movies', 'movies-radarr'] if library['facet'] == 'MOVIE' else ['Series', 'tv-sonarr'])
             self.assertTrue(all(r['removeCompleted'] and r['removeFailed'] for r in routes))
-        self.assertEqual(sum(call[1] == 'testDownloadClientConnection' for call in client.calls), 4)
+        # Only NZBFAST is tested; Transmission stays disabled (scryer-plugins#100).
+        self.assertEqual(sum(call[1] == 'testDownloadClientConnection' for call in client.calls), 2)
         self.assertFalse(client.acquisition)
 
     def test_routing_updates_preserve_every_other_library_override(self):
@@ -225,8 +248,9 @@ class ConnectionTests(unittest.TestCase):
         connect.connect(client, ['clients'], self.source)
         row = next(r for r in client.tables['downloadClientConfigs'] if r['name'] == 'Transmission (torrent)')
         self.assertEqual(row['storedSecretKeys'], [])
-        test = [c for c in client.calls if c[0] == 'mutate' and c[1] == 'testDownloadClientConnection'][-1]
-        self.assertEqual({v['key'] for v in test[2]['config'] if v.get('clearSecret')}, {'username', 'password'})
+        update = [c for c in client.calls if c[0] == 'mutate' and c[1] == 'updateDownloadClientConfig'
+                  and c[2]['name'] == 'Transmission (torrent)'][-1]
+        self.assertEqual({v['key'] for v in update[2]['config'] if v.get('clearSecret')}, {'username', 'password'})
 
     def test_half_set_credentials_refuse(self):
         self._rewrite('DownloadClients', dict(self.transmission, password=''))
@@ -239,9 +263,10 @@ class ConnectionTests(unittest.TestCase):
         self._rewrite('Notifications', settings)
         client = RecordingGraphQL()
         connect.connect(client, ['jellyfin'], self.source)
-        [channel] = client.tables['notificationChannels']
-        base = next(c['value']['value'] for c in channel['config'] if c['key'] == 'base_url')
-        self.assertEqual(base, 'http://jellyfin.test:8096')
+        [server] = client.tables['mediaServerConnections']
+        self.assertEqual(server['baseUrl'], 'http://jellyfin.test:8096')
+        self.assertEqual(sorted((m['sourcePath'], m['destinationPath']) for m in server['pathMappings']),
+                         [('/srv/range/media/movies', '/media/movies'), ('/srv/range/media/tv', '/media/tv')])
 
     def test_read_back_mismatch_refuses(self):
         with self.assertRaises(ValueError):

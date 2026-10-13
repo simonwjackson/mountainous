@@ -26,6 +26,9 @@ VALUE_FIELDS = ('config{key value{__typename ... on StringConfigValuePayload{val
 INDEXER_FIELDS = 'id name providerType baseUrl isEnabled managedParentConfigId hasApiKey ' + VALUE_FIELDS
 CLIENT_FIELDS = 'id name clientType isEnabled ' + VALUE_FIELDS
 CHANNEL_FIELDS = 'id name channelType isEnabled blockedReason ' + VALUE_FIELDS
+SERVER_FIELDS = ('id provider displayName baseUrl enabled loginEnabled linkingEnabled autoAddEnabled apiKeyPresent '
+                 'pathMappings{sourcePath destinationPath}')
+TRANSMISSION_ENABLED = False
 SUB_FIELDS = 'id channelId targetKind targetId eventType scope scopeId isEnabled'
 INDEXER_ROUTE = 'indexerId enabled categories priority'
 CLIENT_ROUTE = 'clientId enabled category recentQueuePriority olderQueuePriority removeCompleted removeFailed seedingProfileId'
@@ -353,58 +356,92 @@ def connect(client, steps, source):
         usenet = upsert(client, 'downloadClientConfigs', CLIENT_FIELDS, 'DownloadClientConfig',
                         {'name': 'NZBFAST (usenet)', 'clientType': 'sabnzbd', 'isEnabled': True,
                          'config': usenet_config}, 'clientType')
+        # Kept configured but DISABLED: the transmission 2.0.2 plugin types
+        # session-get's rpc-version as a string, but Transmission 4.x sends an
+        # integer (19 on Unzen), so every call fails (scryer-plugins issue #100,
+        # open). No torrent indexer exists, so nothing reaches it today.
         torrent = upsert(client, 'downloadClientConfigs', CLIENT_FIELDS, 'DownloadClientConfig',
-                         {'name': 'Transmission (torrent)', 'clientType': 'transmission', 'isEnabled': True,
-                          'config': torrent_config}, 'clientType')
+                         {'name': 'Transmission (torrent)', 'clientType': 'transmission',
+                          'isEnabled': TRANSMISSION_ENABLED, 'config': torrent_config}, 'clientType')
         # A stored-ID test merges only omitted secrets, not the saved host/port/URL
         # (scryer-interface/src/mutation/config.rs:165-181), so send the full
         # configuration through GraphQL variables.
-        for identity, kind, config in [(usenet, 'sabnzbd', usenet_config), (torrent, 'transmission', torrent_config)]:
+        tests = [(usenet, 'sabnzbd', usenet_config)]
+        if TRANSMISSION_ENABLED:
+            tests.append((torrent, 'transmission', torrent_config))
+        for identity, kind, config in tests:
             result = client.mutate('testDownloadClientConnection', 'TestDownloadClientConnectionInput',
                                    {'id': identity, 'clientType': kind, 'config': config}, 'status')
             if result['status'] != 'ok':
                 raise ValueError('download-client connection test failed')
         for library in libs:
             movie = library['facet'] == 'MOVIE'
-            entries = [{'clientId': identity, 'enabled': True, 'category': category,
+            entries = [{'clientId': identity, 'enabled': enabled, 'category': category,
                         'removeCompleted': True, 'removeFailed': True}
-                       for identity, category in [(usenet, 'Movies' if movie else 'Series'),
-                                                  (torrent, 'movies-radarr' if movie else 'tv-sonarr')]]
+                       for identity, enabled, category in [
+                           (usenet, True, 'Movies' if movie else 'Series'),
+                           (torrent, TRANSMISSION_ENABLED, 'movies-radarr' if movie else 'tv-sonarr')]]
             library_routes(client, library, 'downloadClientRouting', entries)
         ordered = [usenet, torrent] + [row['id'] for row in rows(client, 'downloadClientConfigs', CLIENT_FIELDS)
                                       if row['id'] not in (usenet, torrent)]
         client.mutate('reorderDownloadClientConfigs', 'ReorderDownloadClientConfigsInput', {'ids': ordered}, 'ids')
         if [row['id'] for row in rows(client, 'downloadClientConfigs', CLIENT_FIELDS)] != ordered:
             raise ValueError('client order verification failed')
-        print('NZBFAST and Transmission connections, categories, removal policy and order verified')
+        print('NZBFAST connection test, categories, removal policy and order verified')
+        if not TRANSMISSION_ENABLED:
+            print('Transmission configured but disabled: plugin 2.0.2 cannot read Transmission 4.x (scryer-plugins#100)')
     if 'jellyfin' in plans:
-        channel = upsert(client, 'notificationChannels', CHANNEL_FIELDS, 'NotificationChannel',
-                         {'name': 'Jellyfin Library Update', 'channelType': 'jellyfin', 'isEnabled': True,
-                          'config': provider_values(plans['jellyfin']['config'], ('api_key',))}, 'channelType')
-        saved = named(rows(client, 'notificationChannels', CHANNEL_FIELDS), 'Jellyfin Library Update')
-        if saved['blockedReason'] is not None:
-            raise ValueError('notification plugin blocked')
+        # Jellyfin is a media-server connection, not a plugin channel: upstream
+        # refuses media-server providers as channels
+        # (scryer-application/src/notifications/notifications.rs:222).
+        config = plans['jellyfin']['config']
+        mappings = [{'sourcePath': local, 'destinationPath': remote}
+                    for local, remote in (line.split(' => ') for line in config['path_mappings'].splitlines())]
+        value = {'provider': 'JELLYFIN', 'displayName': 'Jellyfin Library Update', 'baseUrl': config['base_url'],
+                 'enabled': True, 'loginEnabled': False, 'linkingEnabled': False, 'autoAddEnabled': False,
+                 'apiKey': config['api_key'], 'pathMappings': mappings}
+        existing = [row for row in rows(client, 'mediaServerConnections', SERVER_FIELDS)
+                    if row['displayName'] == value['displayName']]
+        if len(existing) > 1:
+            raise ValueError('ambiguous media-server connection')
+        if existing:
+            if existing[0]['provider'] != 'JELLYFIN':
+                raise ValueError('connection provider mismatch')
+            client.mutate('updateMediaServerConnection', 'UpdateMediaServerConnectionInput',
+                          dict(value, id=existing[0]['id']), 'id')
+        else:
+            client.mutate('createMediaServerConnection', 'CreateMediaServerConnectionInput', value, 'id')
+        [saved] = [row for row in rows(client, 'mediaServerConnections', SERVER_FIELDS)
+                   if row['displayName'] == value['displayName']]
+        if (saved['provider'] != 'JELLYFIN' or saved['baseUrl'].rstrip('/') != value['baseUrl'].rstrip('/')
+                or saved['enabled'] is not True or saved['loginEnabled'] or saved['linkingEnabled']
+                or saved['autoAddEnabled'] or saved['apiKeyPresent'] is not True
+                or sorted((m['sourcePath'], m['destinationPath']) for m in saved['pathMappings'])
+                != sorted((m['sourcePath'], m['destinationPath']) for m in mappings)):
+            raise ValueError('media-server connection read-back verification failed')
+        server = saved['id']
+        result = client.mutate('testMediaServerConnection', 'TestMediaServerConnectionInput', {'id': server}, 'status')
+        if result['status'] != 'ok':
+            raise ValueError('media-server connection test failed')
+        target = 'media_server_connection'
         for event in ('import_complete', 'upgrade', 'rename'):
-            existing = [row for row in rows(client, 'notificationSubscriptions', SUB_FIELDS)
-                        if row['targetKind'] == 'plugin_channel' and row['targetId'] == channel
+            def matching():
+                return [row for row in rows(client, 'notificationSubscriptions', SUB_FIELDS)
+                        if row['targetKind'] == target and row['targetId'] == server
                         and row['eventType'] == event and row['scope'] == 'global' and row['scopeId'] is None]
+            existing = matching()
             if len(existing) > 1:
                 raise ValueError('ambiguous notification subscription')
-            value = {'eventType': event, 'scope': 'global', 'isEnabled': True}
+            sub = {'eventType': event, 'scope': 'global', 'isEnabled': True}
             if existing:
-                value['id'] = existing[0]['id']
-                client.mutate('updateNotificationSubscription', 'UpdateNotificationSubscriptionInput', value, 'id')
+                sub['id'] = existing[0]['id']
+                client.mutate('updateNotificationSubscription', 'UpdateNotificationSubscriptionInput', sub, 'id')
             else:
-                value['channelId'] = channel
-                client.mutate('createNotificationSubscription', 'CreateNotificationSubscriptionInput', value, 'id')
-            verified = [row for row in rows(client, 'notificationSubscriptions', SUB_FIELDS)
-                        if row['targetKind'] == 'plugin_channel' and row['targetId'] == channel
-                        and row['eventType'] == event and row['scope'] == 'global' and row['scopeId'] is None]
-            if len(verified) != 1 or verified[0]['isEnabled'] is not True or verified[0]['channelId'] != channel:
+                sub.update(targetKind=target, targetId=server)
+                client.mutate('createNotificationSubscription', 'CreateNotificationSubscriptionInput', sub, 'id')
+            verified = matching()
+            if len(verified) != 1 or verified[0]['isEnabled'] is not True:
                 raise ValueError('notification subscription verification failed')
-        result = client.graphql('mutation($id:ID!){testNotificationChannel(id:$id){status}}', {'id': channel})['testNotificationChannel']
-        if result['status'] != 'ok':
-            raise ValueError('notification test failed')
         print('Jellyfin mapping verified: SERIES/ANIME use the TV prefix; MOVIE uses the movie prefix')
         print('Jellyfin import/download completion, upgrade and rename subscriptions and test verified')
     require_off(client)
