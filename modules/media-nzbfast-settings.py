@@ -58,7 +58,13 @@ def prepare(directory, held):
             settings["apikey"] = secrets.token_hex(32)
     settings.update({"auto_rename": False, "spot_enabled": False, "index_enabled": False,
         "identity_lookup": False, "update_checks": False, "delete_to_trash": False,
-        "categories": "Series, Movies", "cat_meta": {"Series": {"dir": "Series"}, "Movies": {"dir": "Movies"}},
+        # nzb_name: the main payload file takes the job (release) name. With
+        # renaming off, Sonarr/Radarr named imports after the release (their
+        # SceneName), so an obfuscated post never reached the library as a hash.
+        # Scryer keeps the downloaded filename instead, so name it here.
+        # nzbfast-daemon/src/daemon_cats.rs (CatMeta.nzb_name); naming.rs.
+        "categories": "Series, Movies", "cat_meta": {"Series": {"dir": "Series", "nzb_name": True},
+                                                   "Movies": {"dir": "Movies", "nzb_name": True}},
         "out_umask": "002"})
     # Held admission already rejected any deadline. Enabled startup removes
     # old pause bookkeeping when explicitly releasing the service hold.
