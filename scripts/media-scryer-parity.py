@@ -84,7 +84,13 @@ def target_catalog(client):
                 # Scryer stores season 0 as SPECIALS, not SEASON
                 # (crates/scryer-domain/src/lib.rs:1690-1696).
                 if collection['collectionType'] in ('SEASON', 'SPECIALS'):
-                    seasons[str(int(collection['collectionIndex']))] = collection['monitored']
+                    season = str(int(collection['collectionIndex']))
+                    if collection['collectionType'] == 'SPECIALS' and season != '0':
+                        raise ValueError('specials collection is not season 0')
+                    if season in seasons:
+                        # Fail closed: never let one collection's flag hide another's.
+                        raise ValueError('duplicate target season')
+                    seasons[season] = collection['monitored']
                 for episode in collection['episodes']:
                     if episode['seasonNumber'] is not None and episode['episodeNumber'] is not None:
                         key = f"{int(episode['seasonNumber'])}:{int(episode['episodeNumber'])}"

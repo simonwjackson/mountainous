@@ -137,6 +137,33 @@ class ParityTests(unittest.TestCase):
         self.assertEqual(title['seasons'], {'0': False, '1': True})
         self.assertEqual(title['episodes'], {'0:1': False, '1:1': True})
 
+    def _catalog(self, collections):
+        class Client:
+            def graphql(self, query, variables=None):
+                return {'titles': {'hasMore': False, 'items': [{
+                    'id': 't1', 'facet': 'SERIES', 'monitored': True, 'qualityTier': 'Any',
+                    'externalIds': [{'source': 'tvdb', 'value': '75897'}], 'mediaFiles': [],
+                    'collections': collections}]}}
+        return parity.target_catalog(Client())
+
+    def test_nonzero_specials_index_fails(self):
+        with self.assertRaises(ValueError):
+            self._catalog([{'collectionType': 'SPECIALS', 'collectionIndex': '3',
+                            'monitored': False, 'episodes': []}])
+
+    def test_season_zero_and_specials_collision_fails_even_when_flags_agree(self):
+        for flags in ((False, True), (False, False)):
+            with self.assertRaises(ValueError):
+                self._catalog([
+                    {'collectionType': 'SEASON', 'collectionIndex': '0', 'monitored': flags[0], 'episodes': []},
+                    {'collectionType': 'SPECIALS', 'collectionIndex': '0', 'monitored': flags[1], 'episodes': []}])
+
+    def test_duplicate_season_index_fails(self):
+        with self.assertRaises(ValueError):
+            self._catalog([
+                {'collectionType': 'SEASON', 'collectionIndex': '2', 'monitored': True, 'episodes': []},
+                {'collectionType': 'SEASON', 'collectionIndex': '02', 'monitored': True, 'episodes': []}])
+
 
 def held_fixture():
     result = {'recycle': {'enabled': False}, 'acquisitionSettings': {'enabled': False},
