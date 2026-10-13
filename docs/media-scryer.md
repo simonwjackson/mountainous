@@ -176,9 +176,26 @@ with ARR. Scryer's list exclusions are not an ARR blocklist migration.
 
 ## Cutover record (2026-10-13)
 
-Unzen runs `library = "scryer"`. Sonarr and Radarr are not started; their
-state, databases, gate markers, receipts and saved tsnet identities are kept.
-Retire them no earlier than **2026-10-27** (14 days).
+Unzen runs `library = "scryer"`. Sonarr and Radarr were **retired on
+2026-10-13** at the operator's request, ahead of the planned 14-day hold.
+
+### Retirement (2026-10-13)
+
+- Prowlarr's Sonarr and Radarr applications were deleted through its API, and
+  only `flags.Applications` in its protected receipt was re-admitted, so its
+  startup check still passes. Pre-change backup:
+  `/var/lib/media-migration/arr-retire-20261013T230456Z/`.
+- `/var/lib/{sonarr,radarr,tsnet-proxy-sonarr,tsnet-proxy-radarr}`, the
+  `ready/{sonarr,radarr}` markers and the `{sonarr,radarr}.json` receipts were
+  archived to `/var/lib/media-migration/arr-retired-20261013T230456Z.tar.zst`
+  (root 0600, 78 MB, verified with `tar --compare`), then removed.
+- The tailnet devices `tv` and `movies` are now offline for good. Remove them in
+  the Tailscale admin console; this was not done from the host.
+- The bindfs mapping still uses the numeric UIDs 274/275 for the TV and movie
+  views. Those users no longer exist; the mapping is unchanged and works.
+- The `arr` and `both` modes remain in the code and still evaluate, but they
+  can no longer start Sonarr or Radarr on Unzen: their state and gate markers
+  are gone, so the gates refuse.
 
 Package: upstream's signed release binary (nix-extras `packages.scryer`). A
 source build cannot enroll with SMG: upstream embeds the registration secret at
@@ -249,6 +266,12 @@ a report as a data-safety failure.
 - Each app's own backup command ran on 2026-10-13.
 
 ## Rollback
+
+**After the 2026-10-13 retirement, rollback first needs the archive restored:**
+`tar --zstd -xpf /var/lib/media-migration/arr-retired-20261013T230456Z.tar.zst -C /`,
+then re-add Prowlarr's Sonarr and Radarr applications (or restore Prowlarr's
+database and receipt from `arr-retire-20261013T230456Z/` while it is stopped).
+Anything Scryer imported since then is not in Sonarr's or Radarr's database.
 
 Set **only** `library = "arr"` and use the approved normal rebuild procedure.
 Sonarr/Radarr and their saved proxies return with their existing gates and receipts.
