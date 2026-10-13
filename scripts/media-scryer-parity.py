@@ -58,7 +58,9 @@ def source_catalog():
                 paths = [f['path'] for f in api.get('episodefile', seriesId=title['id'])]
             elif title.get('hasFile'):
                 paths = [f['path'] for f in api.get('moviefile', movieId=title['id'])]
-            catalog.append({'key': key, 'monitored': title['monitored'], 'seasons': seasons,
+            catalog.append({'key': key, 'name': title['title'],
+                            'root': title['rootFolderPath'], 'year': title.get('year'),
+                            'monitored': title['monitored'], 'seasons': seasons,
                             'episodes': episodes, 'paths': paths,
                             'quality_profile': profiles[title['qualityProfileId']]})
     return catalog

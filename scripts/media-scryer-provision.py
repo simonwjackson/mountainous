@@ -22,9 +22,29 @@ PROFILE_TIERS = {
 }
 
 
-def profiles(client):
-    current = client.graphql('query{qualityProfileSettings{profiles{id name} globalProfileId globalScoringPersona}}')['qualityProfileSettings']
+CRITERIA_FIELDS = ('qualityTiers archivalQuality allowUnknownQuality sourceAllowlist sourceBlocklist '
+    'videoCodecAllowlist videoCodecBlocklist audioCodecAllowlist audioCodecBlocklist '
+    'dolbyVisionAllowed detectedHdrAllowed preferRemux allowBdDisk allowUpgrades cutoffTier '
+    'minScoreToGrab cutoffScore scoringOverrides{allowX265Non4K blockDvWithoutFallback '
+    'preferCompactEncodes preferLosslessAudio blockUpscaled}')
+
+
+def source_upgrade_policy(source_profiles):
+    policy = {}
+    for profiles in source_profiles:
+        for profile in profiles:
+            name, allowed = profile['name'], profile['upgradeAllowed']
+            if not isinstance(allowed, bool) or (name in policy and policy[name] != allowed):
+                raise ValueError('source upgrade policy ambiguous')
+            policy[name] = allowed
+    return policy
+
+
+def profiles(client, upgrade_policy=None):
+    print('Reading quality profile criteria')
+    current = client.graphql('query{qualityProfileSettings{profiles{id name criteria{' + CRITERIA_FIELDS + '}} globalProfileId globalScoringPersona}}')['qualityProfileSettings']
     existing = {p['name']: p['id'] for p in current['profiles']}
+    upgrade_policy = upgrade_policy or {}
     wanted = []
     for index, (name, tiers) in enumerate(PROFILE_TIERS.items()):
         criteria = {'qualityTiers': tiers, 'archivalQuality': tiers[0],
@@ -32,27 +52,36 @@ def profiles(client):
                     'sourceBlocklist': [], 'videoCodecAllowlist': [], 'videoCodecBlocklist': [],
                     'audioCodecAllowlist': [], 'audioCodecBlocklist': [],
                     'dolbyVisionAllowed': True, 'detectedHdrAllowed': True, 'preferRemux': False,
-                    'allowBdDisk': False, 'allowUpgrades': True, 'scoringOverrides': {},
+                    'allowBdDisk': False, 'allowUpgrades': upgrade_policy.get(name, False), 'scoringOverrides': {},
                     'cutoffTier': tiers[0]}
         wanted.append({'id': existing.get(name, f'mountainous-{index}'), 'name': name,
                        'criteria': criteria})
+    # Existing unrelated or built-in profiles must also stay held. Preserve
+    # their other criteria and selections; names shared by source apps must agree.
+    wanted_ids = {profile['id'] for profile in wanted}
+    for profile in current['profiles']:
+        if profile['id'] not in wanted_ids:
+            profile['criteria']['allowUpgrades'] = upgrade_policy.get(profile['name'], False)
+            wanted.append(profile)
+    print('Applying quality profile upgrade policy')
     client.mutate('saveQualityProfileSettings', 'SaveQualityProfileSettingsInput',
                   {'profiles': wanted, 'globalProfileId': current['globalProfileId'],
                    'globalScoringPersona': current['globalScoringPersona'],
                    'categorySelections': [], 'categoryPersonaSelections': [],
                    'replaceExisting': False}, 'profiles{id name}')
-    criteria_fields = ('qualityTiers archivalQuality allowUnknownQuality sourceAllowlist sourceBlocklist '
-                       'videoCodecAllowlist videoCodecBlocklist audioCodecAllowlist audioCodecBlocklist '
-                       'dolbyVisionAllowed detectedHdrAllowed preferRemux allowBdDisk allowUpgrades cutoffTier')
+    criteria_fields = CRITERIA_FIELDS
     actual = client.graphql('query{qualityProfileSettings{profiles{id name criteria{' + criteria_fields
                             + '}}}}')['qualityProfileSettings']['profiles']
+    print('Verifying quality profile criteria')
     by_id = {p['id']: p for p in actual}
     for expected in wanted:
         found = by_id[expected['id']]
-        if found['name'] != expected['name'] or any(
-                found['criteria'][key] != expected['criteria'][key]
-                for key in expected['criteria'] if key != 'scoringOverrides'):
+        if found['name'] != expected['name']:
             raise ValueError('profile verification failed')
+        for key in expected['criteria']:
+            if key != 'scoringOverrides' and found['criteria'][key] != expected['criteria'][key]:
+                print('Profile criterion verification failed: ' + key, file=sys.stderr)
+                raise ValueError('profile verification failed')
 
 
 def apply_settings(client, acquisition):
@@ -60,7 +89,8 @@ def apply_settings(client, acquisition):
         print('Applying media settings: ' + scope)
         client.mutate('updateMediaSettings', 'UpdateMediaSettingsInput',
                       {'scope': scope, 'renameEnabled': False, 'importMode': 'HARDLINK_OR_COPY',
-                       'libraryPath': path}, 'renameEnabled importMode libraryPath')
+                       'libraryPath': path, 'setPermissionsLinux': False, 'nfoWriteOnImport': False,
+                       **({'plexmatchWriteOnImport': False} if scope != 'MOVIE' else {})}, 'renameEnabled importMode libraryPath')
     print('Applying recycle-bin settings')
     client.mutate('updateRecycleBinSettings', 'UpdateRecycleBinSettingsInput',
                   {'enabled': False}, 'enabled')
@@ -97,10 +127,14 @@ def bootstrap(open_gate):
     info = common.CREDENTIALS.lstat()
     if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != 0o700:
         raise ValueError('invalid credentials directory')
+    common.fsync_directory(common.CREDENTIALS.parent)
     if not common.PASSWORD.exists():
         fd = os.open(common.PASSWORD, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, 'w') as stream:
             stream.write(secrets.token_urlsafe(48) + '\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+        common.fsync_directory(common.PASSWORD.parent)
     if not common.protected_read(common.PASSWORD).strip():
         raise ValueError('empty password')
     if open_gate:
@@ -109,48 +143,61 @@ def bootstrap(open_gate):
         info = gate.lstat()
         if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or stat.S_IMODE(info.st_mode) != 0o700:
             raise ValueError('invalid gate directory')
+        common.fsync_directory(gate.parent)
         fd = os.open(gate / 'scryer', os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        os.fsync(fd)
         os.close(fd)
+        common.fsync_directory(gate)
+
+
+def password_login(client):
+    pending = common.PASSWORD.with_name('scryer-admin-password.pending')
+    password = common.protected_read(common.PASSWORD).strip()
+    replacement = common.protected_read(pending).strip() if pending.exists() else None
+    accepted = []
+    for candidate in dict.fromkeys([password] + ([replacement] if replacement is not None else [])):
+        try:
+            result = client.mutate('login', 'LoginInput', {'username': 'admin', 'password': candidate},
+                                   'token passwordChangeRequired')
+            accepted.append((candidate, result))
+        except Exception:
+            continue
+    if not accepted:
+        raise ValueError('password recovery refused')
+    password, login = accepted[-1]
+    client.key = login['token']
+    if login['passwordChangeRequired']:
+        if replacement is None:
+            replacement = secrets.token_urlsafe(48)
+        # File AND containing directory are durable before the server call,
+        # including a pending file created by an older command version.
+        common.protected_write(pending, replacement + '\n')
+        changed = client.mutate('completeRequiredPasswordChange', 'CompleteRequiredPasswordChangeInput',
+                                {'password': replacement}, 'token passwordChangeRequired')
+        if not changed['token'] or changed['passwordChangeRequired']:
+            raise ValueError('required password change incomplete')
+        client.key = changed['token']
+        password = replacement
+    # Also cleans a pending file left after local publication, or before a
+    # mutation that never ran. The successful server login is authoritative.
+    if pending.exists():
+        common.protected_write(common.PASSWORD, password + '\n')
+        common.protected_unlink(pending)
+    return client
 
 
 def authenticate():
+    # Recover a pending password even when a saved API key is still valid.
+    pending = common.PASSWORD.with_name('scryer-admin-password.pending')
+    login_client = password_login(common.Scryer()) if pending.exists() else None
     if common.IDENTITY.exists():
         client = common.Scryer.saved()
         try:
-            client.require_safe()
+            client.graphql('query{recycleBinSettings{enabled}}')
             return client
         except Exception:
-            # A valid key with unsafe settings must still be reused.
-            try:
-                client.graphql('query{recycleBinSettings{enabled}}')
-                return client
-            except Exception:
-                pass
-    client = common.Scryer()
-    pending = common.PASSWORD.with_name('scryer-admin-password.pending')
-    try:
-        login = client.mutate('login', 'LoginInput',
-            {'username': 'admin', 'password': common.protected_read(common.PASSWORD).strip()},
-            'token passwordChangeRequired')
-    except Exception:
-        # Recover a completed server change interrupted before local publication.
-        replacement = common.protected_read(pending).strip()
-        login = client.mutate('login', 'LoginInput',
-            {'username': 'admin', 'password': replacement}, 'token passwordChangeRequired')
-        common.protected_write(common.PASSWORD, replacement + '\n')
-        pending.unlink()
-    client.key = login['token']
-    if login['passwordChangeRequired']:
-        if not pending.exists():
-            common.protected_write(pending, secrets.token_urlsafe(48) + '\n')
-        replacement = common.protected_read(pending).strip()
-        result = client.mutate('completeRequiredPasswordChange', 'CompleteRequiredPasswordChangeInput',
-                              {'password': replacement}, 'token passwordChangeRequired')
-        if not result['token'] or result['passwordChangeRequired']:
-            raise ValueError('required password change incomplete')
-        client.key = result['token']
-        common.protected_write(common.PASSWORD, replacement + '\n')
-        pending.unlink()
+            pass
+    client = login_client or password_login(common.Scryer())
     key = client.mutate('createMyApiKey', 'CreateMyApiKeyInput',
                         {'label': 'mountainous', 'expiry': 'NEVER'}, 'apiKey')['apiKey']
     common.protected_write(common.IDENTITY, json.dumps(
@@ -162,6 +209,8 @@ def main():
     parser = common.ArgumentParser(description=__doc__)
     parser.add_argument('--open-gate', action='store_true')
     parser.add_argument('--plugins', action='store_true')
+    parser.add_argument('--upgrades', choices=['off', 'match-source'], default='off')
+    parser.add_argument('--source-archive', type=Path)
     parser.add_argument('--acquisition', choices=['off', 'on'], default='off')
     args = parser.parse_args()
     common.root_only()
@@ -177,7 +226,16 @@ def main():
     print('Protected API identity prepared')
     apply_settings(client, args.acquisition == 'on')
     print('Pre-import settings verified')
-    profiles(client)
+    policy = None
+    if args.upgrades == 'match-source':
+        sources = [json.loads(common.protected_read(args.source_archive / (name + '-qualityprofile.json')))
+                   if args.source_archive else common.Arr(name).get('qualityprofile') for name in common.ARR]
+        policy = source_upgrade_policy(sources)
+    elif args.source_archive:
+        raise ValueError('archive requires match-source')
+    profiles(client, policy)
+    if args.upgrades == 'off' and args.acquisition == 'off':
+        client.require_held_import()
     print('Quality profiles verified')
     if args.plugins:
         for plugin in ('transmission', 'jellyfin'):

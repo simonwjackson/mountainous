@@ -19,7 +19,7 @@ result = common.Scryer().mutate('login', 'LoginInput',
 assert result['token'] and result['passwordChangeRequired'] is False
 assert not common.PASSWORD.with_name('scryer-admin-password.pending').exists()
 client = common.Scryer.saved()
-client.require_safe()
+client.require_held_import()
 plugins = client.graphql('query{plugins{id isInstalled installedVersion}}')['plugins']
 for plugin, version in [('transmission', '2.0.2'), ('jellyfin', '1.1.1')]:
     assert any(p['id'] == plugin and p['isInstalled'] and p['installedVersion'] == version

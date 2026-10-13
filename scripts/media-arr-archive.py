@@ -22,6 +22,8 @@ def main():
         for resource in ('history', 'blocklist'):
             common.protected_write(args.outdir / f'{name}-{resource}.json',
                                    json.dumps(source.pages(resource), indent=2) + '\n')
+        common.protected_write(args.outdir / f'{name}-qualityprofile.json',
+                               json.dumps(source.get('qualityprofile'), indent=2) + '\n')
         if name == 'radarr':
             common.protected_write(args.outdir / 'radarr-exclusions.json',
                                    json.dumps(source.get('exclusions'), indent=2) + '\n')

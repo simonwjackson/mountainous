@@ -298,6 +298,13 @@
             };
           }))
           {
+            scryer = lib.mkIf (present "scryer") {
+              serviceConfig = {
+                # A later host bind mount otherwise bypasses ReadOnlyPaths.
+                MountFlags = lib.mkIf (cfg.library == "both") "private";
+                InaccessiblePaths = [ "/srv/media-access" ];
+              };
+            };
             nzbget = lib.mkIf (present "nzbget") {
               path = lib.mkForce [
                 media.unrar

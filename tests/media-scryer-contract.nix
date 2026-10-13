@@ -103,6 +103,32 @@ let
     leastDownloaderAccess =
       !builtins.elem "/srv/basin/downloads" scryer.services.scryer.writablePaths
       && !builtins.elem "/srv/basin/downloads/torrents/incomplete" scryer.services.scryer.writablePaths;
+    privateTrialNamespace = both.systemd.services.scryer.serviceConfig.MountFlags == "private";
+    exportTreeAlwaysHidden =
+      builtins.all
+        (
+          config:
+          builtins.elem "/srv/media-access" config.systemd.services.scryer.serviceConfig.InaccessiblePaths
+        )
+        [
+          both
+          scryer
+        ];
+    mountRestartPropagates =
+      builtins.all
+        (
+          config:
+          builtins.all (
+            mount:
+            builtins.elem mount config.systemd.services.scryer.requires
+            && builtins.elem mount config.systemd.services.scryer.after
+            && builtins.elem mount config.systemd.services.scryer.partOf
+          ) config.systemd.services.scryer.bindsTo
+        )
+        [
+          both
+          scryer
+        ];
     serviceIdentityAndGates = scryerContract both && scryerContract scryer;
     signedScryerCacheIdentity =
       scryer.services.scryer.package.version == "0.21.15"

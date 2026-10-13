@@ -41,6 +41,19 @@ def protected_read(path):
         os.close(fd)
 
 
+def fsync_directory(path):
+    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def protected_unlink(path):
+    Path(path).unlink()
+    fsync_directory(Path(path).parent)
+
+
 def protected_write(path, value):
     path = Path(path)
     if path.exists() or path.is_symlink():
@@ -52,6 +65,7 @@ def protected_write(path, value):
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, path)
+        fsync_directory(path.parent)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
@@ -105,11 +119,65 @@ class Scryer:
         result.update(self.graphql('query{acquisitionSettings{enabled} subtitleSettings{enabled autoDownloadOnImport syncEnabled} pluginAutoUpdateSettings{enabled}}'))
         return result
 
+    def held_settings(self):
+        settings = self.safe_settings()
+        for scope in SCOPES:
+            settings[scope].update(self.graphql('query{mediaSettings(scope:' + scope
+                + '){rootFolders{path} setPermissionsLinux nfoWriteOnImport plexmatchWriteOnImport}}')['mediaSettings'])
+        settings.update(self.graphql('query{qualityProfileSettings{profiles{id name criteria{allowUpgrades}}} '
+            'libraries{id facet roots{path} settings{importMode importModeOverride setPermissionsLinux '
+            'setPermissionsLinuxOverride fileChmodOverride folderChmodOverride chownGroupOverride '
+            'nfoWriteOnImport nfoWriteOnImportOverride plexmatchWriteOnImport plexmatchWriteOnImportOverride '
+            'qualityProfileId qualityProfileIdOverride requestQualityProfileIds}}}'))
+        return settings
+
+    def require_held_import(self):
+        settings = self.held_settings()
+        validate_held_import(settings)
+        return settings
+
     def require_safe(self):
         settings = self.safe_settings()
         if settings['recycle']['enabled'] or any(settings[s]['renameEnabled'] for s in SCOPES):
             raise ValueError('unsafe import settings')
         return settings
+
+
+def validate_held_import(settings):
+    """Fail closed on effective scope/library settings and every stored profile."""
+    if (settings['recycle']['enabled'] is not False
+            or settings['acquisitionSettings']['enabled'] is not False
+            or settings['pluginAutoUpdateSettings']['enabled'] is not False
+            or any(settings['subtitleSettings'][field] is not False
+                   for field in ('enabled', 'autoDownloadOnImport', 'syncEnabled'))):
+        raise ValueError('unheld import workers')
+    for scope, path in SCOPES.items():
+        media = settings[scope]
+        if (media['renameEnabled'] is not False or media['importMode'] != 'HARDLINK_OR_COPY'
+                or media['libraryPath'] != path or media['rootFolders'] != [{'path': path}]
+                or media['setPermissionsLinux'] is not False or media['nfoWriteOnImport'] is not False
+                or media['plexmatchWriteOnImport'] not in (None, False)):
+            raise ValueError('unheld media settings')
+    profiles = settings['qualityProfileSettings']['profiles']
+    profile_ids = {p['id'] for p in profiles}
+    if not profiles or any(p['criteria']['allowUpgrades'] is not False for p in profiles):
+        raise ValueError('upgrades are not held')
+    libraries = settings['libraries']
+    if {library['facet'] for library in libraries} != set(SCOPES):
+        raise ValueError('missing library scope')
+    for library in libraries:
+        value = library['settings']
+        if (library['roots'] != [{'path': SCOPES[library['facet']]}]
+                or value['importMode'] != 'HARDLINK_OR_COPY'
+                or value['importModeOverride'] not in (None, 'HARDLINK_OR_COPY')
+                or any(value[field] not in (None, False) for field in (
+                    'setPermissionsLinux', 'setPermissionsLinuxOverride', 'nfoWriteOnImport',
+                    'nfoWriteOnImportOverride', 'plexmatchWriteOnImport', 'plexmatchWriteOnImportOverride'))
+                or any(value[field] is not None for field in ('fileChmodOverride', 'folderChmodOverride', 'chownGroupOverride'))
+                or value['qualityProfileId'] not in profile_ids
+                or (value['qualityProfileIdOverride'] is not None and value['qualityProfileIdOverride'] not in profile_ids)
+                or not set(value['requestQualityProfileIds']).issubset(profile_ids)):
+            raise ValueError('unheld library override')
 
 
 class Arr:

@@ -27,6 +27,13 @@ Prowlarr and the downloaders stay in their existing VPN namespace.
 The bindfs force-user values remain 274 (tv) and 275 (movies).
 The `@993/@390` mapping does not change in any mode.
 Library mounts and `media-storage-ready` gate Scryer as they gate Sonarr.
+In `both`, `MountFlags=private` blocks late host mounts from entering Scryer's
+namespace. `/srv/media-access` is inaccessible in `both` and `scryer`.
+Scryer requires all five library mounts and starts after them. `BindsTo` stops it
+on mount loss; `PartOf` propagates an explicit mount restart to Scryer. The restart
+creates a new namespace after the mount, rather than retaining a dead FUSE view.
+A separate stop/start is not a systemd restart transaction: explicitly start Scryer
+after restoring a mount that the operator stopped separately.
 
 ## Provisioning order
 
@@ -34,7 +41,7 @@ Commands carry Python and plugins in the system closure. They need root, not nix
 They print fixed errors rather than API bodies or credentials.
 Do not put a password or API key in Nix, a command argument, or an environment variable.
 
-1. Keep acquisition off. Freeze the source catalog and library during acceptance.
+1. Keep acquisition and upgrades off through the end of all cutover checks. Freeze the source catalog and library during acceptance.
    Use the approved holds for ARR processing, downloader imports and mover timers
    during the snapshot window. `both` deliberately does not change these services.
    Take application-state backups through the existing media state procedure.
@@ -53,7 +60,11 @@ Do not put a password or API key in Nix, a command argument, or an environment v
 7. Run `media-scryer-provision --plugins` after readiness.
    First login replaces Scryer's temporary bootstrap password through
    `completeRequiredPasswordChange`. It stores the replacement in the same protected
-   password file. A protected pending file permits recovery if publication is interrupted.
+   password file. The command fsyncs each secret file and its parent directory.
+   It publishes `.pending` durably before changing the server password, publishes
+   the replacement durably before removing `.pending`, and fsyncs the removal.
+   Recovery tries both stored passwords, even if the saved API key remains valid.
+   Bootstrap creation is durable before the command opens the gate.
    The command saves a non-expiring `mountainous` API key in root-only `scryer.json`.
    Repeated runs reuse a valid key.
 8. Confirm renaming is disabled in the source naming configuration before importing.
@@ -63,8 +74,19 @@ Do not put a password or API key in Nix, a command argument, or an environment v
    polls, previews, and finalizes same-path SERIES/MOVIE root mappings.
    **Finalization alone does not populate the catalog.** The command follows the
    upstream wizard with hinted `scanLibrary` calls, then polls those scans.
-   It never calls `executeExternalImport`. It checks renaming and the recycle bin
-   before finalization, after finalization, after scanning and after overrides.
+   Before scans apply monitoring, it creates every missing TMDb/TVDb title through
+   metadata-only `addTitle`, with the source monitored flag, library root and
+   quality profile. This covers titles with no files, not just scanned folders.
+   It waits for source seasons/episodes to exist before monitoring consumes its
+   snapshot. Metadata hydration needs SMG; a timeout refuses acceptance.
+   It never calls `executeExternalImport` or `addTitleAndQueueDownload`, and supplies
+   no source hint or search-on-add flag. `addTitle` stores a catalog row, schedules
+   metadata hydration and creates no library directories. Acquisition remains off.
+   The held-import guard runs before and after finalize, metadata adds and scans.
+   It checks expected roots, `HARDLINK_OR_COPY`, renaming/recycle off, acquisition
+   off, subtitle download/sync off, plugin auto-update off and **every** quality
+   profile's upgrades off. Effective library settings and overrides must not enable
+   move imports, NFO/Plex writes, chmod/chown or upgrades. Extra roots are refused.
    It adds the two named Radarr exclusions and applies title-level profile overrides.
 10. Run `media-scryer-parity`. Every source title ID, monitoring flag (title, season,
     episode), source file path and effective quality-profile name must match.
@@ -76,7 +98,7 @@ Do not put a password or API key in Nix, a command argument, or an environment v
     Only the associated parent-directory size/mtime change is tolerated for these
     two allowed changes. All other metadata changes and missing entries fail.
     A `.scryer-recycle` with any content fails even if that content is new.
-12. Run `media-vpn-leak-audit`. It checks the expected services for the mode.
+12. Run `media-scryer-indexer-audit` and `media-vpn-leak-audit`. It checks the expected services for the mode.
     Every Scryer indexer must point to `10.200.200.2:9696`, `indexers`, or
     `indexers.hummingbird-lake.ts.net`. URL host/port matching is strict.
     A missing protected Scryer identity produces an explicit SKIP, not proof of safety.
@@ -84,7 +106,12 @@ Do not put a password or API key in Nix, a command argument, or an environment v
     Configure Prowlarr/download-client connections and remove-completed routing through
     Scryer's authenticated settings. Client connections are **not** copied by this importer.
     Verify routing and the leak audit before `media-scryer-provision --acquisition on`.
-    The normal provision command switches acquisition back off.
+    The normal provision command switches acquisition and upgrades back off.
+    Only after all cutover checks pass, explicitly restore upgrades with
+    `media-scryer-provision --upgrades match-source --source-archive /var/lib/media-migration/arr-archive-YYYYMMDD`.
+    Omit `--source-archive` to read the live Sonarr/Radarr qualityprofile APIs instead.
+    Add `--acquisition on` only when acquisition is also approved. A profile name
+    with conflicting source `upgradeAllowed` values is refused, not guessed.
 
 All three scopes (MOVIE, SERIES, ANIME) use `HARDLINK_OR_COPY` and renaming off.
 MOVIE uses `/srv/range/media/movies`; SERIES uses `/srv/range/media/tv`.
@@ -93,6 +120,11 @@ with the same root (`crates/scryer-application/src/library/library.rs:487–540`
 Provisioning records that nested path; it does not create or move an anime directory.
 The ARR import maps all Sonarr roots to SERIES as requested.
 The recycle bin, subtitles (including auto-download and sync), and plugin auto-update are off.
+The NZBFAST basin completion path and the mergerfs destination are different
+mounts. `HARDLINK_OR_COPY` can therefore fall back to copy (including EXDEV).
+Scryer has read/write access to the completion root and all library tv/movie
+branches in writer mode. It can publish and verify the copy before remove-completed;
+it does not need the incoming or incomplete download trees.
 The downloaded plugins are Transmission 2.0.2 and Jellyfin 1.1.1.
 
 ## Quality mapping limits
@@ -106,14 +138,21 @@ The downloaded plugins are Transmission 2.0.2 and Jellyfin 1.1.1.
 | Ultra-HD | 2160P |
 | HD - 720p/1080p | 1080P, 720P |
 
-The first tier is archival/cutoff. Upgrades are allowed. Existing unrelated profiles
-and selections remain stored. These tier mappings cannot reproduce ARR's separate
+The first tier is archival/cutoff. Upgrades are **off by default**, including
+unrelated and built-in profiles. Their other criteria and selections remain stored.
+`--upgrades match-source` maps each matching source profile's `upgradeAllowed` to
+Scryer's profile-scoped `criteria.allowUpgrades` and verifies it by reading it back.
+Unmatched Scryer profiles remain off. There is no independent library upgrade flag:
+its effective profile controls this policy.
+With the recycle bin off, an approved upgrade permanently deletes the replaced
+file after verification, exactly as Sonarr does today. It does not preserve the
+old file for rollback. Source: `crates/scryer-application/src/import/upgrade.rs:1668–1671`. These tier mappings cannot reproduce ARR's separate
 DVD, WEB, Blu-ray, remux and custom-format ordering. Matching a profile name is a
 parity gate, not proof that future release selection is identical.
 
 ## Archived, not migrated
 
-Sonarr and Radarr history and blocklists (all pages), and Radarr exclusions, are
+Sonarr and Radarr history and blocklists (all pages), their qualityprofiles, and Radarr exclusions, are
 archived as GET-only exports. Their history/blocklist records are not inserted
 into Scryer. The importer adds TMDb 863 (*Toy Story 2*) and 502356
 (*The Super Mario Bros. Movie*) as ALL_LISTS exclusions.
@@ -179,3 +218,31 @@ Setting keys were checked in `crates/scryer-application/src/settings/keys.rs`:
 and the movie/series/anime path keys. `ImportModeValue::HardlinkOrCopy` is encoded
 `HARDLINK_OR_COPY` (`types/schema_values.rs:1384`). The commands use typed settings
 mutations instead of writing setting keys or editing Scryer's database.
+
+
+### Review fixes: source contract and verification
+
+- `allowUpgrades` is on `QualityProfileCriteriaInput/Payload`, not a media or
+  library flag: `crates/scryer-interface-media-types/src/types/settings.rs:706–748,1423–1462`.
+  `saveQualityProfileSettings` persists it (`settings/mutation.rs:1692`).
+- Library overrides are exposed as `libraries.settings` and `librarySettings`:
+  `crates/scryer-interface-media/src/complex.rs:101`;
+  `crates/scryer-interface-query/src/lib.rs:1446`;
+  `crates/scryer-interface-media-types/src/types/library.rs:34–125`.
+  Rename/recycle/acquisition/subtitle/plugin enablement have no library override
+  in that model. Import mode, NFO/Plex writes, permission settings and profile
+  references do. The guard checks both effective values and those overrides.
+- Metadata-only `addTitle(input:AddTitleInput)` returns `title`, `downloadJobId`
+  and `reusedQueuedDownload`: `crates/scryer-interface/src/mutation/titles.rs:321–378`.
+  It sets no download job; `new_title_for_library` sets `folder_path: None`, and
+  creation writes only catalog/options/events: `crates/scryer-application/src/catalog/workflow/hydration.rs:428–561`.
+  `finish_add_title_with_outcome` wakes metadata hydration, not a search
+  (`catalog/workflow/titles.rs:954–986`). Background acquisition checks its
+  enablement (`acquisition/workflow/task_runner.rs:5517`). Source series/episode
+  coverage is awaited because monitoring only updates existing rows
+  (`catalog/workflow/monitoring.rs:498–615`).
+- The VM review fixture has 25 movies and 18 series. It starts with 34 records,
+  adds the missing six movies/three series, verifies parity for all 43, repeats
+  idempotently and compares filesystem snapshots. This is a fixture, not a live
+  Unzen parity result. The VM also tests three password-interruption windows,
+  explicit upgrade matching, late writable mounts and library-mount restart.

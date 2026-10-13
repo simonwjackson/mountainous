@@ -52,6 +52,59 @@ def scan_imported_libraries(client, mappings, monitor_session, deadline):
             raise ValueError('library scan timeout')
 
 
+def add_missing_source_titles(client, source):
+    """Metadata only: addTitle, never addTitleAndQueueDownload or source hints."""
+    client.require_held_import()
+    target = {t['key']: t for t in parity.target_catalog(client)}
+    libraries = client.graphql('query{libraries{id facet roots{id path}}}')['libraries']
+    profiles = client.graphql('query{qualityProfileSettings{profiles{id name}}}')['qualityProfileSettings']['profiles']
+    profile_ids = {}
+    for profile in profiles:
+        profile_ids.setdefault(profile['name'], []).append(profile['id'])
+    added = 0
+    for original in source:
+        if original['key'] in target:
+            continue
+        provider, identity = original['key'].split(':', 1)
+        facet = 'MOVIE' if provider == 'tmdb' else 'SERIES'
+        if provider not in ('tmdb', 'tvdb') or int(identity) <= 0 or original['root'] != common.SCOPES[facet]:
+            raise ValueError('unsupported source identity or root')
+        roots = [(library['id'], root['id']) for library in libraries if library['facet'] == facet
+                 for root in library['roots'] if root['path'] == original['root']]
+        ids = profile_ids.get(original['quality_profile'], [])
+        if len(roots) != 1 or len(ids) != 1:
+            raise ValueError('source library or profile missing or ambiguous')
+        library, root = roots[0]
+        result = client.mutate('addTitle', 'AddTitleInput',
+            {'name': original['name'], 'facet': facet, 'libraryId': library,
+             'monitored': original['monitored'], 'tags': [], 'year': original.get('year'),
+             'externalIds': [{'source': provider, 'value': identity}],
+             'options': {'rootFolderId': root, 'qualityProfileId': ids[0]}},
+            'title{id monitored rootFolderId externalIds{source value}} downloadJobId reusedQueuedDownload')
+        title = result['title']
+        if (result['downloadJobId'] is not None or result['reusedQueuedDownload']
+                or title['monitored'] != original['monitored'] or title['rootFolderId'] != root
+                or not any(i['source'] == provider and i['value'] == identity for i in title['externalIds'])):
+            raise ValueError('metadata-only title add verification failed')
+        target[original['key']] = title
+        added += 1
+    client.require_held_import()
+    return added
+
+
+def await_source_metadata(client, source, deadline):
+    # Monitoring snapshots only update existing seasons/episodes. Wait for the
+    # addTitle hydration worker before the scan consumes those snapshots.
+    while time.monotonic() < deadline:
+        target = {t['key']: t for t in parity.target_catalog(client)}
+        if all(t['key'] in target and set(t['seasons']).issubset(target[t['key']]['seasons'])
+               and set(t['episodes']).issubset(target[t['key']]['episodes']) for t in source):
+            return
+        client.require_held_import()
+        time.sleep(2)
+    raise ValueError('source metadata coverage incomplete')
+
+
 def quality_overrides(client):
     profiles = client.graphql('query{qualityProfileSettings{profiles{id name}}}')['qualityProfileSettings']['profiles']
     by_name = {}
@@ -84,7 +137,7 @@ def main():
         raise ValueError('invalid timeout')
     common.root_only()
     client = common.Scryer.saved()
-    client.require_safe()
+    client.require_held_import()
     sessions = []
     for name in common.ARR:
         connection = common.Arr(name).connection()
@@ -122,16 +175,20 @@ def main():
                          'libraryId': matches[0]['id']})
     if {m['facet'] for m in mappings} != {'SERIES', 'MOVIE'}:
         raise ValueError('preview roots incomplete')
-    before = client.require_safe()
+    before = client.require_held_import()
     finalized = client.mutate('finalizeExternalImport', 'FinalizeExternalImportInput',
                               {'sourceWarmupSessionIds': sessions, 'mappings': mappings},
                               'finalizeSessionId monitorWarmupSessionId')
     poll(client, finalized['finalizeSessionId'], deadline)
-    after = client.require_safe()
+    after = client.require_held_import()
     if before != after:
         raise ValueError('import changed protected settings')
+    source = parity.source_catalog()
+    print('Metadata-only titles added=' + str(add_missing_source_titles(client, source)))
+    await_source_metadata(client, source, deadline)
+    client.require_held_import()
     scan_imported_libraries(client, mappings, finalized['monitorWarmupSessionId'], deadline)
-    if client.require_safe() != before:
+    if client.require_held_import() != before:
         raise ValueError('scan changed protected settings')
     for tmdb, title, year in [(863, 'Toy Story 2', 1999),
                               (502356, 'The Super Mario Bros. Movie', 2023)]:
@@ -139,7 +196,7 @@ def main():
                       {'kind': 'MOVIE', 'externalIds': [{'source': 'tmdb', 'value': str(tmdb)}],
                        'displayTitle': title, 'year': year, 'scope': 'ALL_LISTS'}, 'id')
     quality_overrides(client)
-    if client.require_safe() != before:
+    if client.require_held_import() != before:
         raise ValueError('protected settings changed')
     print('Catalog finalization completed; run media-scryer-parity before cutover')
 

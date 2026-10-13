@@ -19,6 +19,7 @@ let
         "media-scryer-provision"
         "media-scryer-import"
         "media-scryer-parity"
+        "media-scryer-indexer-audit"
         "media-library-snapshot"
         "media-arr-archive"
         "media-vpn-leak-audit"

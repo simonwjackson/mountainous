@@ -22,6 +22,7 @@ HERE = Path(__file__).parent
 snapshot = load('snapshot', HERE / 'media-library-snapshot.py')
 parity = load('parity', HERE / 'media-scryer-parity.py')
 audit = load('audit', HERE / 'media-scryer-indexer-audit.py')
+provision = load('provision', HERE / 'media-scryer-provision.py')
 state = load('state', HERE.parent / 'modules/media-state-ready.py')
 
 
@@ -118,11 +119,90 @@ class ParityTests(unittest.TestCase):
         self.assertTrue(self.check(target)[1])
 
 
+def held_fixture():
+    result = {'recycle': {'enabled': False}, 'acquisitionSettings': {'enabled': False},
+              'pluginAutoUpdateSettings': {'enabled': False},
+              'subtitleSettings': {'enabled': False, 'autoDownloadOnImport': False, 'syncEnabled': False},
+              'qualityProfileSettings': {'profiles': [{'id': 'held', 'name': 'Any',
+                                                       'criteria': {'allowUpgrades': False}}]},
+              'libraries': []}
+    for scope, root in provision.common.SCOPES.items():
+        result[scope] = {'renameEnabled': False, 'importMode': 'HARDLINK_OR_COPY',
+                         'libraryPath': root, 'rootFolders': [{'path': root}],
+                         'setPermissionsLinux': False, 'nfoWriteOnImport': False,
+                         'plexmatchWriteOnImport': False}
+        result['libraries'].append({'id': scope, 'facet': scope, 'roots': [{'path': root}], 'settings': {
+            'importMode': 'HARDLINK_OR_COPY', 'importModeOverride': None,
+            'setPermissionsLinux': False, 'setPermissionsLinuxOverride': None,
+            'fileChmodOverride': None, 'folderChmodOverride': None, 'chownGroupOverride': None,
+            'nfoWriteOnImport': False, 'nfoWriteOnImportOverride': None,
+            'plexmatchWriteOnImport': False, 'plexmatchWriteOnImportOverride': None,
+            'qualityProfileId': 'held', 'qualityProfileIdOverride': None, 'requestQualityProfileIds': []}})
+    return result
+
+
+class HeldImportTests(unittest.TestCase):
+    def test_held_settings_pass(self):
+        provision.common.validate_held_import(held_fixture())
+
+    def test_every_global_worker_and_upgrade_is_a_gate(self):
+        for path in [('recycle', 'enabled'), ('acquisitionSettings', 'enabled'),
+                     ('pluginAutoUpdateSettings', 'enabled'), ('subtitleSettings', 'enabled'),
+                     ('subtitleSettings', 'autoDownloadOnImport'), ('subtitleSettings', 'syncEnabled')]:
+            value = held_fixture()
+            value[path[0]][path[1]] = True
+            with self.assertRaises(ValueError, msg=str(path)):
+                provision.common.validate_held_import(value)
+        value = held_fixture()
+        value['qualityProfileSettings']['profiles'][0]['criteria']['allowUpgrades'] = True
+        with self.assertRaises(ValueError):
+            provision.common.validate_held_import(value)
+
+    def test_each_scope_root_import_and_permission_is_a_gate(self):
+        for scope in provision.common.SCOPES:
+            for field, unsafe in [('renameEnabled', True), ('importMode', 'MOVE'),
+                                  ('libraryPath', '/unexpected'), ('rootFolders', [{'path': '/unexpected'}]),
+                                  ('setPermissionsLinux', True), ('nfoWriteOnImport', True),
+                                  ('plexmatchWriteOnImport', True)]:
+                value = held_fixture()
+                value[scope][field] = unsafe
+                with self.assertRaises(ValueError, msg=scope + ':' + field):
+                    provision.common.validate_held_import(value)
+
+    def test_library_effective_values_and_overrides_are_a_gate(self):
+        for field, unsafe in [('importMode', 'MOVE'), ('importModeOverride', 'MOVE'),
+                              ('setPermissionsLinux', True), ('setPermissionsLinuxOverride', True),
+                              ('nfoWriteOnImport', True), ('nfoWriteOnImportOverride', True),
+                              ('plexmatchWriteOnImport', True), ('plexmatchWriteOnImportOverride', True),
+                              ('fileChmodOverride', '0777'), ('folderChmodOverride', '0777'),
+                              ('chownGroupOverride', 'root'), ('qualityProfileId', 'missing'),
+                              ('qualityProfileIdOverride', 'missing'), ('requestQualityProfileIds', ['missing'])]:
+            value = held_fixture()
+            value['libraries'][0]['settings'][field] = unsafe
+            with self.assertRaises(ValueError, msg=field):
+                provision.common.validate_held_import(value)
+
+    def test_additional_library_roots_fail(self):
+        value = held_fixture()
+        value['libraries'][0]['roots'].append({'path': '/another'})
+        with self.assertRaises(ValueError):
+            provision.common.validate_held_import(value)
+
+    def test_source_upgrade_flags_are_mapped_exactly_and_conflicts_fail(self):
+        self.assertEqual(provision.source_upgrade_policy([
+            [{'name': 'Any', 'upgradeAllowed': False}], [{'name': 'HD-1080p', 'upgradeAllowed': True}]]),
+            {'Any': False, 'HD-1080p': True})
+        for invalid in ([[{'name': 'Any', 'upgradeAllowed': 'true'}]],
+                        [[{'name': 'Any', 'upgradeAllowed': True}], [{'name': 'Any', 'upgradeAllowed': False}]]):
+            with self.assertRaises(ValueError):
+                provision.source_upgrade_policy(invalid)
+
+
 class AdmissionTests(unittest.TestCase):
     def test_cli_argument_errors_never_echo_input(self):
         value = 'never-print-this-fixture-value'
         for command in ('media-scryer-provision', 'media-scryer-import', 'media-scryer-parity',
-                        'media-arr-archive', 'media-library-snapshot'):
+                        'media-arr-archive', 'media-library-snapshot', 'media-scryer-indexer-audit'):
             result = subprocess.run([sys.executable, str(HERE / (command + '.py')),
                                      '--invalid-credential-token=' + value],
                                     capture_output=True, text=True)

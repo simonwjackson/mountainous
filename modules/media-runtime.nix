@@ -71,6 +71,13 @@
         "/srv/media-library-view/movies"
         "/srv/media-library-view/tv"
       ];
+      libraryConsumerMountUnits = map (directory: "${utils.escapeSystemdPath directory}.mount") [
+        "/net/mountainous/zao/media"
+        "/srv/media-library-view/movies"
+        "/srv/media-library-view/tv"
+        "/srv/range/media/movies"
+        "/srv/range/media/tv"
+      ];
       mediaRoot = "/srv/basin/media";
       accessRoot = "/srv/media-access";
       completed =
@@ -406,16 +413,19 @@
             };
             environment.LD_LIBRARY_PATH = "${vpnNssModules}";
           }))
-          (lib.genAttrs (lib.filter active libraryConsumers) (_: {
-            requires = [ "media-storage-ready.service" ];
-            after = [ "media-storage-ready.service" ];
-            bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") [
-              "/net/mountainous/zao/media"
-              "/srv/media-library-view/movies"
-              "/srv/media-library-view/tv"
-              "/srv/range/media/movies"
-              "/srv/range/media/tv"
-            ];
+          (lib.genAttrs (lib.filter active libraryConsumers) (name: {
+            requires = [
+              "media-storage-ready.service"
+            ]
+            ++ lib.optionals (name == "scryer") libraryConsumerMountUnits;
+            after = [
+              "media-storage-ready.service"
+            ]
+            ++ lib.optionals (name == "scryer") libraryConsumerMountUnits;
+            bindsTo = libraryConsumerMountUnits;
+            # BindsTo stops on loss but does not restart on recovery. PartOf
+            # propagates an explicit mount restart and recreates the namespace.
+            partOf = lib.optionals (name == "scryer") libraryConsumerMountUnits;
           }))
         ];
       };

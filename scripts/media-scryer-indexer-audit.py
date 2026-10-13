@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import urllib.parse
+import sys
 
 spec = importlib.util.spec_from_file_location('common', Path(__file__).with_name('media-scryer-common.py'))
 common = importlib.util.module_from_spec(spec)
@@ -30,3 +31,20 @@ def audit():
         return ('PASS' if ok else 'FAIL'), f'Scryer indexers: {len(rows)} configurations checked against Prowlarr allowlist'
     except Exception:
         return 'FAIL', 'Scryer indexers: protected API read failed'
+
+
+def main():
+    if len(sys.argv) != 1:
+        raise ValueError('invalid arguments')
+    common.root_only()
+    status, detail = audit()
+    print(status + ' ' + detail)
+    return int(status == 'FAIL')
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except Exception:
+        print('Refused: Scryer indexer audit failed', file=sys.stderr)
+        sys.exit(1)
