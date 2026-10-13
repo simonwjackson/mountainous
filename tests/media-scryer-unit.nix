@@ -12,6 +12,10 @@ pkgs.runCommand "media-scryer-unit" { nativeBuildInputs = [ pkgs.python3 ]; } ''
   cp ${../scripts/fixtures/media-scryer-parity.json} fixture/scripts/fixtures/media-scryer-parity.json
   cp ${../modules/media-state-ready.py} fixture/modules/media-state-ready.py
   cp ${../modules/media-arr-state-ready.py} fixture/modules/media-arr-state-ready.py
+  cp ${../scripts/media-scryer-connect.py} fixture/scripts/media-scryer-connect.py
+  cp ${../scripts/test-media-scryer-connect.py} fixture/scripts/test-media-scryer-connect.py
+  export PYTHONDONTWRITEBYTECODE=1
+  python3 fixture/scripts/test-media-scryer-connect.py
   python3 fixture/scripts/test-media-scryer.py
   touch "$out"
 ''

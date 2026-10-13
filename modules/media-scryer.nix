@@ -7,6 +7,7 @@ let
       source = pkgs.runCommand "media-scryer-command-sources" { } ''
         mkdir -p "$out"
         cp ${../scripts/media-scryer-common.py} "$out/media-scryer-common.py"
+        cp ${../scripts/media-scryer-connect.py} "$out/media-scryer-connect.py"
         cp ${../scripts/media-scryer-provision.py} "$out/media-scryer-provision.py"
         cp ${../scripts/media-scryer-import.py} "$out/media-scryer-import.py"
         cp ${../scripts/media-scryer-parity.py} "$out/media-scryer-parity.py"
@@ -16,6 +17,7 @@ let
         cp ${../scripts/media-vpn-leak-audit.py} "$out/media-vpn-leak-audit.py"
       '';
       commands = [
+        "media-scryer-connect"
         "media-scryer-provision"
         "media-scryer-import"
         "media-scryer-parity"
@@ -35,6 +37,15 @@ let
           runtimeInputs = [
             pkgs.python3
             pkgs.zstd
+          ] ++ pkgs.lib.optionals (name == "media-vpn-leak-audit") [
+            pkgs.wireguard-tools
+            pkgs.tcpdump
+            pkgs.iproute2
+            pkgs.util-linux
+            pkgs.glibc.getent
+            pkgs.curl
+            pkgs.procps
+            pkgs.systemd
           ];
           text =
             pkgs.lib.optionalString (name == "media-scryer-provision") ''
