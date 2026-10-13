@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Phase 1 (code) and phase 2 (preparation, including the kexec rehearsal) are done. Yari still runs its old XFS system. The install (step 4) waits for operator approval.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
+**Installed 2026-10-12. Yari runs the permafrost system. Phase 5 (Forgerie) remains.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
 
 This plan replaces Yari's XFS root with btrfs, wipes the system root at every boot, and keeps state in one persistent area called permafrost. The reinstall wipes Yari's only disk. The operator's part of the install must not grow.
 
@@ -107,8 +107,8 @@ The agent runs every step. The operator approves step 4.
 | 1. Copy Yari's ed25519 host key to `~/.local/share/mountainous/hostkeys/yari/` | Done. Its age form matches `.sops.yaml`. |
 | 2. Recreate the Oracle serial console from Zao with the OCI CLI | Done. It reached `yari login:`. Connect with `~/.local/share/mountainous/oci-console/connect`. |
 | 3. Rehearse kexec only: `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Done 2026-10-12. The installer came back on Tailscale as `yari` with the same node key, address and SSH host key, and left the disk unmounted. A reboot returned Yari to XFS with no failed units. |
-| 4. Install: `nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Needs operator approval. Destroys the disk. |
-| 5. Reboot twice. Verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units. | Pending |
+| 4. Install: `nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Done 2026-10-12. The first attempt hung inside `kexec -e` before disko ran (see Known risks). An OCI reset brought back the old system, and the second attempt completed. |
+| 5. Reboot twice. Verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units. | Done. Both boots: tmpfs root, same Tailscale node key and `100.65.213.32`, same host key, sops secrets present, zero failed units, zram on. Files in `/etc` and `/root` were gone after reboot; `/home` kept its file. |
 | 6. Declare Forgerie on Yari and copy live sessions from Zao | Pending (phase 5) |
 
 If the installer in step 3 does not come back, reset the instance with `oci compute instance action --action RESET --profile yari`. Yari then boots its old system from disk. If step 5 fails, connect through the serial console and select the earlier boot entry or fix in place. There is no rollback to the XFS system after step 4.
@@ -131,6 +131,8 @@ If the installer in step 3 does not come back, reset the instance with `oci comp
 Settled: the root is a tmpfs with a size cap. The installer is `nix run .#install` with the fleet kexec installer.
 
 ## Known risks
+
+- **`kexec -e` can hang on this VM.** On the first install attempt the old system hit an XFS log write I/O error about 9 seconds after `kexec -e` started, and the kexec task blocked. The disk was not yet touched. An OCI reset (`oci compute instance action --action RESET --profile yari`) recovered the old system with a clean XFS log replay, and a retry worked. It looks like a race between device shutdown during kexec and in-flight writes. It is not fixed.
 
 - **The rejoin path cannot recover lost state (all hosts).** If a host loses its Tailscale state while its old node is still listed, `tailscale-join` has no node key to prove the old node is stale. It refuses to delete the old node (`modules/tailscale.nix:92`) and retries forever. This is read from the code and not tested.
 - **The VM test cannot prove Oracle boot.** Only the serial console covers a first boot that fails on real hardware.
