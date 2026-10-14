@@ -307,3 +307,7 @@ per update, without a VM boot. ARM timing has not been measured. The separate
 negative check also verifies that the exact install-check command exits 1;
 it runs during flake validation, not the updater's candidate build. API/CLI contract changes
 can require test maintenance; failures leave affected installed profiles intact.
+
+The app-profile branch was rebased onto Cairn `2575be68` on 2026-10-14.
+It includes `eb008c68` and `5f0c2c55`; Cairn's Rakku secret is unchanged.
+The deleted `packages/tsnet-proxy` remains deleted. No fleet deployment was made.
