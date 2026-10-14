@@ -16,7 +16,6 @@
   nixos.hosts.unzen = {
     system = "x86_64-linux";
     layers = [
-      "base"
       "server"
       "media-applications"
       "media-scryer"
@@ -51,7 +50,6 @@
           extra-substituters = [ "https://github.com/simonwjackson/nix-extras/releases/download/cache/" ];
           extra-trusted-public-keys = [ "nix-extras-ci-1:+Vcq7i6dPWOsOZjQwOduCEZOZZJznS/XfOcNUhFmg3Q=" ];
         };
-        hardware.cpu.intel.updateMicrocode = true;
         boot.supportedFilesystems = [ "bcachefs" ];
 
         # Do not import the shared btrfs disk layer. All OS/data subvolumes

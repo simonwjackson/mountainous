@@ -8,25 +8,16 @@
     # modules/korri.nix: the Korri product needs Korri's own nixpkgs.
     nixpkgs = inputs.korri.inputs.nixpkgs;
     layers = [
-      "base"
       "disk"
       "server"
       "korri"
     ];
 
     module = { pkgs, ... }: {
-      mountainous.disk = {
-        device = "/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D";
-        # The SSD and recovery USB currently share disk-main-* labels.
-        # A distinct namespace keeps the installed system off the USB.
-        name = "ibuki";
-        encrypt = false;
-        biosBoot = false;
-      };
+      mountainous.disk.device = "/dev/disk/by-id/ata-KINGSTON_SUV500M8240G_50026B7683B6CE9D";
 
       # Storage and network drivers probe automatically. The shared base
-      # already supplies AHCI, sd_mod, USB support, and firmware.
-      hardware.cpu.intel.updateMicrocode = true;
+      # already supplies AHCI, sd_mod, USB support, firmware and microcode.
       services.thermald.enable = true;
 
       # GPU libraries do not require a desktop. Mesa supplies Iris OpenGL

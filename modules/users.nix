@@ -18,7 +18,7 @@ let
 in
 {
   nixos.modules.base =
-    { config, ... }:
+    { config, lib, ... }:
     {
       imports = [ inputs.hjem.nixosModules.default ];
 
@@ -43,6 +43,9 @@ in
 
       users.users.simon = {
         isNormalUser = true;
+        # Fixed, so files copied between machines keep their owner. Rakku keeps
+        # 1001 because its old account already holds 1000.
+        uid = lib.mkDefault 1000;
         description = "simon";
         extraGroups = [
           "wheel"

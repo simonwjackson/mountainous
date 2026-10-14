@@ -50,8 +50,6 @@ in
         networking.networkmanager.enable = lib.mkForce false;
         networking.useDHCP = true;
         networking.wireless.enable = lib.mkForce false;
-        services.automatic-timezoned.enable = lib.mkForce false;
-        time.timeZone = "UTC";
 
         # The old host had no firewall. Preserve home discovery/event callbacks
         # on the existing LAN NIC during the port; do not trust the spare NICs.

@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-**Installed 2026-10-12. Yari runs the permafrost system. Phase 5 (Forgerie) remains.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. It runs no other services and no builds.
+**Installed 2026-10-12. Yari runs the permafrost system. Phase 5 (Forgerie) remains.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. Since 2026-10-13 it is also the fleet's second aarch64 builder (the `builder` layer). Its nix-daemon runs at idle CPU and I/O priority, so builds use only what Forgerie leaves free.
 
 This plan replaces Yari's XFS root with btrfs, wipes the system root at every boot, and keeps state in one persistent area called permafrost. The reinstall wipes Yari's only disk. The operator's part of the install must not grow.
 

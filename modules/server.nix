@@ -21,6 +21,12 @@
 
       boot.kernelParams = [ "consoleblank=300" ];
 
+      # A server does not move. Automatic timezones gave three servers in one
+      # house three zones (Denver, New York and none, seen 2026-10-13). Logs in
+      # UTC line up across machines.
+      services.automatic-timezoned.enable = false;
+      time.timeZone = lib.mkDefault "UTC";
+
       # Headless servers do not need Bluetooth.
       hardware.bluetooth.enable = lib.mkForce false;
 

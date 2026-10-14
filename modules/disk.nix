@@ -28,11 +28,13 @@
       options.mountainous.disk = {
         name = mkOption {
           type = types.strMatching "[a-z0-9-]+";
-          default = "main";
+          default = config.networking.hostName;
+          defaultText = lib.literalExpression "config.networking.hostName";
           description = ''
-            Disk namespace for partition labels and the LUKS mapper. Use a
-            distinct name when two mountainous disks may be plugged into the
-            same machine, so neither filesystem path can select the wrong one.
+            Disk namespace for partition labels and the LUKS mapper. It defaults
+            to the host name, so two mountainous disks plugged into the same
+            machine never share a label and neither filesystem path can select
+            the wrong one. Hosts installed before this default name "main".
           '';
         };
 
@@ -180,8 +182,7 @@
                   if cfg.encrypt then
                     {
                       type = "luks";
-                      name =
-                        if cfg.name == "main" then "mountainous-root" else "mountainous-${cfg.name}-root";
+                      name = if cfg.name == "main" then "mountainous-root" else "mountainous-${cfg.name}-root";
 
                       # Prompt while formatting rather than reading a file, so
                       # the passphrase never exists on disk anywhere.

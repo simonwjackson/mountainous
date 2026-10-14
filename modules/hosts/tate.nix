@@ -7,7 +7,6 @@
   nixos.hosts.tate = {
     system = "x86_64-linux";
     layers = [
-      "base"
       "disk"
       "gemini-lake"
       "server"
@@ -16,6 +15,9 @@
 
     module = {
       mountainous.disk.device = "/dev/disk/by-id/mmc-CGND3R_0x96f945e3";
+      # Installed before the disk name defaulted to the host name. Its
+      # partition labels say "main"; a new name would not find them.
+      mountainous.disk.name = "main";
       # Include a 1M EF02 BIOS boot partition alongside the 1G ESP so
       # GRUB can boot under both legacy CSM and UEFI modes.
       mountainous.disk.biosBoot = true;

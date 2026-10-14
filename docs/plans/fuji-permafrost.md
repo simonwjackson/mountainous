@@ -30,9 +30,9 @@ Read on Fuji, Yari or Zao on 2026-10-13.
 
 ## Decisions
 
-### Same layer as Yari
+### Same layers as Yari
 
-Fuji uses `layers = [ "server" "permafrost" ]`. Builds run in `/nix/var/nix/builds`, which is on the `@nix` subvolume, so the 4G tmpfs root does not limit build size. The `fuji-host` check fails if `build-dir` is ever set.
+Fuji uses `layers = [ "server" "permafrost" "oracle-vm" "builder" ]`, as Yari does. Its host file adds only the boot volume and the signing key. Builds run in `/nix/var/nix/builds`, which is on the `@nix` subvolume, so the 4G tmpfs root does not limit build size. The `fuji-host` check fails if `build-dir` is ever set.
 
 ### User `simon`, not `simonwjackson`
 
@@ -48,7 +48,7 @@ Port 22 is open only on `tailscale0`, as on old Fuji. The kexec installer carrie
 
 ### The builder key is forced to the daemon
 
-Zao's builder key may run `nix-daemon --stdio` and nothing else (`restrict,command=...`). Old Fuji gave that key a full shell in a wheel account. Cost: Zao must use `ssh-ng://`; the older `ssh://` protocol runs `nix-store --serve` and is refused.
+The `builder` layer lets Zao's builder key run `nix-daemon --stdio` and nothing else (`restrict,command=...`). Old Fuji gave that key a full shell in a wheel account. Cost: Zao must use `ssh-ng://`; the older `ssh://` protocol runs `nix-store --serve` and is refused.
 
 ## Before the install
 

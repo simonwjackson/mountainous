@@ -14,7 +14,6 @@
   nixos.hosts.hiyori = {
     system = "x86_64-linux";
     layers = [
-      "base"
       "desktop"
       "disk"
       "portable"
@@ -26,6 +25,9 @@
       # The installed system never reads this; it finds its filesystems
       # through /dev/disk/by-partlabel/.
       mountainous.disk.device = "/dev/sdi";
+      # Installed before the disk name defaulted to the host name. Its
+      # partition labels say "main"; a new name would not find them.
+      mountainous.disk.name = "main";
 
       # A stick should boot machines with no UEFI at all.
       mountainous.disk.biosBoot = true;

@@ -25,7 +25,6 @@
       # The same package also carries iwlwifi and SOF audio firmware, so this
       # one line fixes graphics, wifi and sound together.
       hardware.enableRedistributableFirmware = true;
-      hardware.cpu.intel.updateMicrocode = true;
 
       hardware.graphics = {
         enable = true;

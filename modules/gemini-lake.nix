@@ -19,7 +19,6 @@
     }:
     {
       hardware.enableRedistributableFirmware = true;
-      hardware.cpu.intel.updateMicrocode = true;
 
       # The internal eMMC storage sits behind an SDHCI controller (0000:00:1e.0 [8086:31d0]).
       # The baseline initrd in base.nix omits sdhci_pci and mmc_block, without which
