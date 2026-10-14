@@ -1,9 +1,9 @@
-# Tailscale Auto-Join and Identity Preservation
+# Tailscale auto-join and identity preservation
 
 ## Purpose
 Join fresh machines under their hostname. Preserve saved node identities and addresses across boots and reinstalls that carry `tailscaled.state`. Do not reclaim a name automatically.
 
-## Credential Choice
+## Credential choice
 An OAuth client secret, not an auth key. Auth keys cannot outlive 90 days ("You cannot generate long-lived auth keys, because they expire after 90 days"), which is useless for a machine that spends three months in a drawer. An OAuth secret does not expire, and nodes it registers are tag-owned, so their keys do not expire either.
 
 Two parameters are required:
@@ -12,14 +12,14 @@ Two parameters are required:
 
 The OAuth client also needs read access to devices (`devices:core`) for the name-collision check. The join program does not use device-write access.
 
-## Name Collisions
+## Name collisions
 Tailscale identifies a node by the key in `tailscaled.state`, not by its hostname. Reinstall without that state and the control plane sees a second device requesting a name that is taken, handing out `<hostname>-1`. There is no built-in deduplication (open issue: `tailscale/tailscale#4371`).
 
 Per Tailscale docs: "If the conflicting machine's name is later changed, this machine will still maintain the `<hostname>-1` machine name."
 
 A matching name, missing API entry, or different local public key does **not** prove that a device is stale. The join program never deletes devices and never calls `tailscale logout`. An operator must review a collision and decide how to recover it. Restore the original state when available to preserve the original identity. Deleting a device or joining without its state can lose its address. This policy deliberately gives up unattended recovery from lost state.
 
-## Why One Retrying Unit
+## Why one retrying unit
 The legacy pattern was a `claim-name` unit ordered before `tailscaled`, gated on `ConditionPathExists=!/var/lib/tailscale/tailscaled.state`.
 
 On a real first boot:
@@ -72,6 +72,8 @@ nix build --no-link -L .#checks.x86_64-linux.tailscale-join
 
 Exit 0: eight test groups passed, ending with `TAILSCALE_JOIN_TESTS_PASSED`. Coverage includes changing startup snapshots, retry with the restored identity, valid identity without API access, ambiguous identities, collisions, invalid API responses and saved preferences, a local identity appearing during API access, fresh OAuth joins with inherited preferences, secret redaction, and unexpected assigned names.
 
-`nix flake check --option builders '' --max-jobs 1` passed on x86_64, including host evaluation for Fuji. Remote builders were disabled. `nixfmt --check modules/tailscale.nix`, `shellcheck scripts/test-tailscale-join`, and `git diff --check` passed. The x86_64 runner cannot execute Fuji's aarch64 CLI dependencies; deployment and on-device verification remain separate steps. No fleet changes or live control-plane writes were part of this regression run.
+`nix flake check --option builders '' --max-jobs 1` passed on x86_64, including host evaluation for Fuji. Remote builders were disabled. `nixfmt --check modules/tailscale.nix`, `shellcheck scripts/test-tailscale-join`, and `git diff --check` passed. The x86_64 runner cannot execute Fuji's aarch64 CLI dependencies. The parent then built `checks.aarch64-linux.tailscale-join` on Fuji; all eight groups passed against its generated command. No live control-plane calls occurred in these regression tests.
+
+The parent deployed code commit `28611d96` to Fuji and verified two real reboots against the pinned system output. The new node ID and key survived both reboots. The original IPv4 was restored to that existing device through the supported IP-assignment API, without deleting any device. See `docs/plans/fuji-permafrost.md` for store path, boot IDs, timing, data verification, and builder evidence.
 
 `nix flake check --all-systems --no-build` fails on the existing `checks.aarch64-linux.media-runtime`: the pinned nix-extras input has no aarch64 `nzbfast` package. The same failure was reproduced at unchanged base commit `2575be68`. The new `checks.aarch64-linux.tailscale-join.drvPath` evaluates successfully.

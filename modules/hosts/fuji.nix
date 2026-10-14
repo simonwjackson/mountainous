@@ -14,7 +14,7 @@
         let
           c = self.nixosConfigurations.fuji.config;
         in
-        # Builds are signed with the key Korri and Zao already trust.
+        # Preserve the legacy signing key; consumer trust is a separate policy.
         assert c.nix.settings.secret-key-files == [ c.sops.secrets.nix-signing-key.path ];
         assert lib.hasPrefix "/run/" c.sops.secrets.nix-signing-key.path;
         # The nix-daemon builds under /nix/var/nix/builds, on disk. A build in
