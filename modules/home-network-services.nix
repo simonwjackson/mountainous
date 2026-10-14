@@ -19,19 +19,11 @@
           runHook postInstall
         '';
       };
-      proxy =
-        inputs.gomod2nix-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system}.buildGoApplication
-          {
-            pname = "tsnet-proxy";
-            version = "1.0.0";
-            src = ../packages/tsnet-proxy;
-            modules = ../packages/tsnet-proxy/gomod2nix.toml;
-            ldflags = [
-              "-s"
-              "-w"
-            ];
-            doCheck = false;
-          };
+      proxy = import ../packages/tsnet-proxy.nix {
+        inherit (inputs.gomod2nix-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system})
+          buildGoApplication
+          ;
+      };
     in
     {
       users.users.tsnet-proxy = {

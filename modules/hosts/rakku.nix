@@ -13,6 +13,7 @@ in
       "home-automation"
       "home-network-services"
       "cliproxyapi"
+      "decision-gateway"
     ];
     module =
       { config, lib, ... }:
