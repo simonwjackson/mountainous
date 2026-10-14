@@ -75,16 +75,23 @@ in
             };
           }
           {
-            # Needs an OpenAI API key with API billing. A ChatGPT sign-in
-            # token does not work on /v1/decisions.
-            model_name = "luna";
+            # Upstage Solar Decide speaks the same System One API as Jev, so
+            # LiteLLM's typesafe provider calls it at Upstage's address:
+            # https://api.upstage.ai/v1/systemone. LiteLLM has no price for
+            # it; Upstage lists $0.10 per 1M input tokens and free output.
+            model_name = "solar";
             litellm_params = {
-              model = "openai/gpt-6-luna";
-              api_key = "os.environ/OPENAI_API_KEY";
+              model = "typesafe/solar-decide";
+              api_base = "https://api.upstage.ai";
+              api_key = "os.environ/UPSTAGE_API_KEY";
+            };
+            model_info = {
+              input_cost_per_token = 1.0e-7;
+              output_cost_per_token = 0;
             };
           }
           {
-            # "fast" asks Jev first, then Luna. Confidence scales differ by
+            # "fast" asks Jev first, then Solar. Confidence scales differ by
             # model, so callers read the response "model" field.
             model_name = "fast";
             litellm_params = {
@@ -93,14 +100,14 @@ in
             };
           }
         ];
-        router_settings.fallbacks = [ { fast = [ "luna" ]; } ];
+        router_settings.fallbacks = [ { fast = [ "solar" ]; } ];
         general_settings.master_key = "os.environ/LITELLM_MASTER_KEY";
       };
       configFile = (pkgs.formats.yaml { }).generate "litellm.yaml" settings;
     in
     {
       # litellm-env is a dotenv block: LITELLM_MASTER_KEY, and optionally
-      # TYPESAFE_API_KEY and OPENAI_API_KEY. One block lets a provider key be
+      # TYPESAFE_API_KEY and UPSTAGE_API_KEY. One block lets a provider key be
       # absent without failing activation.
       sops.secrets.litellm-env = {
         sopsFile = ../secrets/hosts/${config.networking.hostName}.yaml;
