@@ -13,6 +13,7 @@ in
       "home-automation"
       "home-network-services"
       "cliproxyapi"
+      "tailnet-names"
       "decision-gateway"
     ];
     module =
@@ -95,17 +96,9 @@ in
           }
         ];
 
-        sops.secrets = {
-          zwave-js-secrets = {
-            sopsFile = ../../secrets/hosts/rakku.yaml;
-            mode = "0400";
-          };
-          tailscale-ephemeral = {
-            sopsFile = ../../secrets/hosts/rakku.yaml;
-            owner = "tsnet-proxy";
-            group = "tsnet-proxy";
-            mode = "0400";
-          };
+        sops.secrets.zwave-js-secrets = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
         };
 
         assertions = [

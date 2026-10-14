@@ -11,12 +11,7 @@
 #
 # No database: the master key is the only API key. Virtual keys, budgets and
 # stored spend logs need Postgres (DATABASE_URL) and are not set up.
-{
-  config,
-  inputs,
-  self,
-  ...
-}:
+{ config, self, ... }:
 let
   hosts = config.nixos.hosts;
 in
@@ -46,7 +41,8 @@ in
             ) "LiteLLM listens beyond loopback"
             ++ want (litellm.ports == [ ]) "LiteLLM publishes a port"
             ++ want (!(lib.elem 4000 c.networking.firewall.allowedTCPPorts)) "port 4000 is open"
-            ++ want c.systemd.services.tsnet-proxy-decide.enable "no tailnet proxy"
+            ++ want (c.mountainous.tailnetNames ? decide) "no tailnet name"
+            ++ want (lib.hasInfix "-oauth-secret-file" c.systemd.services.tsnet-proxy-decide.serviceConfig.ExecStart) "the tailnet name does not join with OAuth"
             ++ want (lib.all (d: lib.elem d persisted) [
               "/var/lib/containers"
               "/var/lib/tsnet-proxy-decide"
@@ -67,12 +63,6 @@ in
     { config, pkgs, ... }:
     let
       port = 4000;
-      state = "/var/lib/tsnet-proxy-decide";
-      proxy = import ../packages/tsnet-proxy.nix {
-        inherit (inputs.gomod2nix-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system})
-          buildGoApplication
-          ;
-      };
       # Provider keys come from the litellm-env secret. A missing key makes
       # only that model fail, with an authentication error from the provider.
       settings = {
@@ -157,63 +147,12 @@ in
           directory = "/var/lib/containers";
           mode = "0700";
         }
-        {
-          directory = state;
-          user = "tsnet-proxy";
-          group = "tsnet-proxy";
-          mode = "0700";
-        }
       ];
 
-      systemd.services.tsnet-proxy-decide = {
+      mountainous.tailnetNames.decide = {
         description = "Decision gateway tailnet proxy";
-        wants = [ "network-online.target" ];
-        after = [
-          "network-online.target"
-          "podman-litellm.service"
-        ];
-        wantedBy = [ "multi-user.target" ];
-        unitConfig.RequiresMountsFor = [ state ];
-        environment = {
-          TS_STATE_DIR = state;
-          HOME = state;
-        };
-        serviceConfig = {
-          User = "tsnet-proxy";
-          Group = "tsnet-proxy";
-          Restart = "always";
-          RestartSec = "10s";
-          StateDirectory = baseNameOf state;
-          StateDirectoryMode = "0700";
-          NoNewPrivileges = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          ProtectHostname = true;
-          ProtectClock = true;
-          ProtectKernelTunables = true;
-          ProtectKernelModules = true;
-          ProtectKernelLogs = true;
-          ProtectControlGroups = true;
-          RestrictAddressFamilies = [
-            "AF_UNIX"
-            "AF_INET"
-            "AF_INET6"
-            "AF_NETLINK"
-          ];
-          RestrictNamespaces = true;
-          LockPersonality = true;
-          MemoryDenyWriteExecute = true;
-          RestrictRealtime = true;
-          RestrictSUIDSGID = true;
-          RemoveIPC = true;
-        };
-        script = ''
-          export TS_AUTHKEY="$(tr -d '\n' < ${config.sops.secrets.tailscale-ephemeral.path})"
-          mkdir -p "$TS_STATE_DIR/.config"
-          exec ${proxy}/bin/tsnet-proxy -hostname decide -backend http://127.0.0.1:${toString port} -port 443
-        '';
+        backend = "http://127.0.0.1:${toString port}";
+        after = [ "podman-litellm.service" ];
       };
     };
 }

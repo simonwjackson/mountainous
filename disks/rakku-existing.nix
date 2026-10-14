@@ -67,12 +67,7 @@ in
         mode = "0700";
       }
       "/var/lib/NetworkManager"
-      {
-        directory = "/var/lib/tsnet-proxy-habitat";
-        user = "tsnet-proxy";
-        group = "tsnet-proxy";
-        mode = "0700";
-      }
+      # modules/tailnet-names.nix persists /var/lib/tsnet-proxy-<name>.
       {
         directory = "/home/simonwjackson";
         user = "simonwjackson";

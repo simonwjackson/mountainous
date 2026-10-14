@@ -2,7 +2,7 @@
 { inputs, ... }:
 {
   nixos.modules.home-network-services =
-    { config, pkgs, ... }:
+    { pkgs, ... }:
     let
       airconnect = pkgs.stdenv.mkDerivation {
         pname = "airconnect";
@@ -19,67 +19,12 @@
           runHook postInstall
         '';
       };
-      proxy = import ../packages/tsnet-proxy.nix {
-        inherit (inputs.gomod2nix-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system})
-          buildGoApplication
-          ;
-      };
     in
     {
-      users.users.tsnet-proxy = {
-        isSystemUser = true;
-        group = "tsnet-proxy";
-        uid = 991;
-      };
-      users.groups.tsnet-proxy.gid = 989;
-      systemd.services.tsnet-proxy-habitat = {
+      mountainous.tailnetNames.habitat = {
         description = "Home Assistant habitat tailnet proxy";
-        after = [
-          "network.target"
-          "local-fs.target"
-        ];
-        requires = [ "local-fs.target" ];
-        wantedBy = [ "multi-user.target" ];
-        environment = {
-          TS_STATE_DIR = "/var/lib/tsnet-proxy-habitat";
-          HOME = "/var/lib/tsnet-proxy-habitat";
-        };
-        serviceConfig = {
-          User = "tsnet-proxy";
-          Group = "tsnet-proxy";
-          Restart = "always";
-          RestartSec = "10s";
-          StateDirectory = "tsnet-proxy-habitat";
-          StateDirectoryMode = "0700";
-          NoNewPrivileges = true;
-          ProtectSystem = "strict";
-          ProtectHome = true;
-          PrivateTmp = true;
-          PrivateDevices = true;
-          ProtectHostname = true;
-          ProtectClock = true;
-          ProtectKernelTunables = true;
-          ProtectKernelModules = true;
-          ProtectKernelLogs = true;
-          ProtectControlGroups = true;
-          RestrictAddressFamilies = [
-            "AF_UNIX"
-            "AF_INET"
-            "AF_INET6"
-            "AF_NETLINK"
-          ];
-          RestrictNamespaces = true;
-          LockPersonality = true;
-          MemoryDenyWriteExecute = true;
-          RestrictRealtime = true;
-          RestrictSUIDSGID = true;
-          RemoveIPC = true;
-        };
-        script = ''
-          export TS_AUTHKEY="$(cat ${config.sops.secrets.tailscale-ephemeral.path} | tr -d '\n')"
-          mkdir -p "$TS_STATE_DIR/.config"
-          exec ${proxy}/bin/tsnet-proxy -hostname habitat -backend http://localhost:8123 -port 443
-        '';
+        backend = "http://127.0.0.1:8123";
+        after = [ "home-assistant.service" ];
       };
       services.tinyproxy = {
         enable = true;
