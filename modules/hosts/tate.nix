@@ -22,6 +22,11 @@
       # GRUB can boot under both legacy CSM and UEFI modes.
       mountainous.disk.biosBoot = true;
 
+      # A 4-core Celeron on eMMC: never build here. Deploys build elsewhere
+      # and copy the result (nixos-rebuild without --build-host tate).
+      # Store paths still come from the caches.
+      nix.settings.max-jobs = 0;
+
       # The office Brother HL-L2300D moves its USB cable from zao to here.
       # The serial in the URI identifies that one physical unit, so the queue
       # follows the printer rather than the USB port.
