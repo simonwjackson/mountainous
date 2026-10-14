@@ -1,7 +1,33 @@
-# Tailscale on every machine, joined whenever a network first appears, and
-# never under a name with a number stuck on the end (<hostname>-1).
-# See docs/decisions/tailscale.md for OAuth credentials, deduplication, and retry architecture.
+# Join fresh machines when the network appears. Preserve saved identities
+# rather than reclaim names automatically.
+# See docs/decisions/tailscale.md for OAuth credentials and retry architecture.
+{ self, ... }:
 {
+  perSystem =
+    { pkgs, ... }:
+    let
+      # Exercise a real service ExecStart on the check runner's architecture.
+      host = if pkgs.stdenv.hostPlatform.isAarch64 then "fuji" else "myoko";
+      join =
+        self.nixosConfigurations.${host}.config.systemd.services.tailscale-join.serviceConfig.ExecStart;
+    in
+    {
+      checks.tailscale-join =
+        pkgs.runCommand "tailscale-join-tests"
+          {
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.jq
+              pkgs.coreutils
+              pkgs.gnugrep
+            ];
+          }
+          ''
+            bash ${../scripts/test-tailscale-join} ${join}
+            touch $out
+          '';
+    };
+
   nixos.modules.base =
     {
       config,
@@ -25,24 +51,47 @@
         text = ''
           api=https://api.tailscale.com/api/v2
 
-          # The hostname we insist on. Anything else is a failure to be undone.
           want="$TS_HOSTNAME"
 
-          backend() { tailscale status --json 2>/dev/null | jq -r '.BackendState // "NoState"'; }
-          # .DNSName is the full MagicDNS name, so the machine name is its
-          # first label: "hiyori.tail1234.ts.net." -> "hiyori".
-          myname() { tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // ""' | cut -d. -f1; }
+          # Each decision uses one daemon snapshot. NoState/Starting can expose
+          # incomplete or changing keys while a saved identity is restored.
+          read_status() {
+            status=$(tailscale status --json 2>/dev/null) || {
+              echo "cannot read tailscaled status; will retry" >&2
+              return 1
+            }
+            if ! printf '%s' "$status" | jq -e '
+              type == "object" and (.BackendState | type == "string")
+            ' >/dev/null 2>&1; then
+              echo "invalid tailscaled status; will retry" >&2
+              return 1
+            fi
+          }
+          fresh_login() {
+            printf '%s' "$status" | jq -e '
+              .BackendState == "NeedsLogin" and .Self == null
+            ' >/dev/null 2>&1
+          }
 
-          state=$(backend)
-          name=$(myname)
-          # A local Running state can outlive its control-plane registration.
-          # Keep the public node key before logging out so deduplication never
-          # removes this machine's valid node during early boot.
-          own_key=$(tailscale status --json 2>/dev/null | jq -r '.Self.PublicKey // ""')
+          read_status
+          state=$(printf '%s' "$status" | jq -r '.BackendState')
+          if [ "$state" = "Running" ] && printf '%s' "$status" | jq -e --arg h "$want" '
+            (.Self.DNSName | type == "string") and
+            (.Self.DNSName | split(".")[0] == $h) and
+            (.Self.PublicKey | type == "string" and length > 0)
+          ' >/dev/null 2>&1; then
+            # Do not call up or depend on OAuth/API availability for a valid
+            # saved node. Inherited preferences and its address stay intact.
+            echo "already on the tailnet as $want"
+            exit 0
+          fi
+          if ! fresh_login; then
+            echo "tailscaled is not an identity-free NeedsLogin node; preserving state and retrying" >&2
+            exit 1
+          fi
 
-          # From here on the network is required. Every failure below exits
-          # non-zero so systemd tries again later; none of them registers the
-          # machine under a name we did not ask for.
+          # Only a fresh login needs the network and credentials. Failures
+          # retry through systemd; no path deletes devices or logs out.
           client_id=$(cat "$TS_CLIENT_ID_FILE")
           client_secret=$(cat "$TS_CLIENT_SECRET_FILE")
 
@@ -54,7 +103,8 @@
             --retry 3 --retry-delay 2 --retry-connrefused --max-time 30 \
             --data-urlencode "client_id=$client_id" \
             --data-urlencode "client_secret=$client_secret" \
-            "$api/oauth/token" 2>/dev/null | jq -r '.access_token // ""') || true
+            "$api/oauth/token" 2>/dev/null \
+            | jq -er '.access_token | select(type == "string" and length > 0)' 2>/dev/null) || true
 
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "no route to the tailscale API yet; will try again" >&2
@@ -70,99 +120,83 @@
             exit 1
           fi
 
-          # A matching name is not proof that a node is stale. On cold boot,
-          # tailscaled can still report NoState while its own valid node is
-          # already listed by the API. Never delete it or guess without a key.
-          stale=$(printf '%s' "$devices" | jq -r --arg h "$want" '
-            .devices[]
-            | select(((.name | split(".")[0]) | sub("-[0-9]+$"; "")) == $h)
-            | .id')
-          own_present=$(printf '%s' "$devices" | jq -r --arg h "$want" --arg key "$own_key" '
-            [ .devices[]
-              | select(.name | split(".")[0] == $h)
-              | select(.nodeKey == $key and $key != "") ] | length')
-
-          if [ "$state" = "Running" ] && [ "$name" = "$want" ] && [ "$own_present" = 1 ]; then
-            echo "already on the tailnet as $want"
-            exit 0
+          # The API is only a collision guard, never evidence that a device
+          # is stale. Even a different early key cannot justify deleting it.
+          if ! printf '%s' "$devices" | jq -e '
+            (.devices | type == "array") and
+            all(.devices[]; (.name | type == "string" and length > 0))
+          ' >/dev/null 2>&1; then
+            echo "invalid device list; not registering" >&2
+            exit 1
           fi
-
-          if [ -n "$stale" ] && { [ -z "$own_key" ] || [ "$own_present" = 1 ]; }; then
-            echo "cannot prove that the existing $want node is stale; will retry without deleting it" >&2
+          collisions=$(printf '%s' "$devices" | jq -r --arg h "$want" '
+            [ .devices[]
+              | select(((.name | split(".")[0]) | sub("-[0-9]+$"; "")) == $h)
+            ] | length')
+          if [ "$collisions" != 0 ]; then
+            echo "$want is already taken; operator review required, not registering" >&2
             exit 1
           fi
 
-          # A missing API entry with a local Running state needs a fresh login.
-          # The same applies if the control plane gave this node a suffix.
-          if [ "$state" = "Running" ]; then
-            echo "local registration is not the verified $want node; logging out" >&2
-            tailscale logout || true
-          fi
-
-          # Only delete nodes with a different public key from this machine.
-          # This assumes no machine is deliberately named <hostname>-<digits>.
-          for id in $stale; do
-            if curl --silent --show-error --fail --max-time 30 \
-              --request DELETE \
-              --header "Authorization: Bearer $token" \
-              "$api/device/$id" >/dev/null 2>&1; then
-              echo "removed device $id holding $want"
-            else
-              # Refuse rather than register into a known collision.
-              echo "could not remove device $id; not registering" >&2
-              exit 1
-            fi
-          done
-
-          # Confirm the name is actually free before using it. The delete
-          # returning 200 is not the same as the control plane having released
-          # the name, and this is the whole point of the unit.
-          remaining=$(curl --silent --show-error --fail --max-time 30 \
-            --header "Authorization: Bearer $token" \
-            "$api/tailnet/-/devices" 2>/dev/null \
-            | jq -r --arg h "$want" '
-                [ .devices[]
-                  | select(((.name | split(".")[0]) | sub("-[0-9]+$"; "")) == $h)
-                ] | length') || true
-
-          if [ "''${remaining:-1}" != "0" ]; then
-            echo "$want is still taken after the delete; not registering" >&2
+          # API calls take time. Do not up if a saved identity has appeared
+          # since the initial snapshot. The next systemd attempt can use it.
+          read_status
+          if ! fresh_login; then
+            echo "tailscaled changed during the join check; preserving state and retrying" >&2
             exit 1
           fi
 
           echo "$want is free; registering"
-          # tailscale up refuses to run if an existing non-default --ssh value
-          # is omitted. It also prints the full auth key in that error. Keep
-          # the preference and redact every line before systemd sees it.
-          ssh_enabled=$(tailscale debug prefs | jq -r '.RunSSH // false')
+          # up requires existing non-default preferences to be repeated.
+          # Never use --reset: it would discard operator-owned settings.
+          prefs=$(tailscale debug prefs)
+          if ! printf '%s' "$prefs" | jq -e '
+            type == "object" and
+            (.RunSSH == null or (.RunSSH | type == "boolean")) and
+            (.OperatorUser == null or (.OperatorUser | type == "string"))
+          ' >/dev/null 2>&1; then
+            echo "invalid saved preferences; not registering" >&2
+            exit 1
+          fi
+          ssh_enabled=$(printf '%s' "$prefs" | jq -r '.RunSSH // false | tostring')
+          operator=$(printf '%s' "$prefs" | jq -r '.OperatorUser // ""')
+          netfilter=$(printf '%s' "$prefs" | jq -r '.NetfilterMode // 2')
+          case "$netfilter" in
+            0) netfilter=off ;;
+            1) netfilter=nodivert ;;
+            2) netfilter=on ;;
+            *) echo "unknown netfilter preference; not registering" >&2; exit 1 ;;
+          esac
           up_log=$(mktemp)
           trap 'rm -f "$up_log"' EXIT
           if tailscale up \
             --auth-key="$client_secret?ephemeral=false&preauthorized=true" \
             --advertise-tags="$TS_TAGS" \
             --hostname="$want" \
-            --ssh="$ssh_enabled" >"$up_log" 2>&1; then
-            sed -E 's/tskey-client-[^[:space:]]+/<REDACTED>/g' "$up_log"
+            --ssh="$ssh_enabled" \
+            --netfilter-mode="$netfilter" \
+            --operator="$operator" >"$up_log" 2>&1; then
+            sed -E 's/tskey-[^[:space:]]+/<REDACTED>/g' "$up_log"
           else
-            sed -E 's/tskey-client-[^[:space:]]+/<REDACTED>/g' "$up_log" >&2
+            sed -E 's/tskey-[^[:space:]]+/<REDACTED>/g' "$up_log" >&2
             exit 1
           fi
 
-          # Verify the outcome instead of trusting the exit code. tailscale up
-          # can succeed and still leave the node named hiyori-1.
+          # Verify from coherent snapshots, without undoing an identity if
+          # the control plane assigned an unexpected name during a race.
           for _ in $(seq 1 20); do
-            [ "$(backend)" = "Running" ] && break
+            read_status
+            state=$(printf '%s' "$status" | jq -r '.BackendState')
+            [ "$state" = "Running" ] && break
             sleep 1
           done
-
-          got=$(myname)
-          if [ "$(backend)" != "Running" ]; then
-            echo "up finished but the backend is $(backend); will try again" >&2
+          if [ "$state" != "Running" ]; then
+            echo "up finished but the backend is not Running; will retry" >&2
             exit 1
           fi
+          got=$(printf '%s' "$status" | jq -r '.Self.DNSName // "" | split(".")[0]')
           if [ "$got" != "$want" ]; then
-            echo "registered as '$got', not '$want' -- undoing and retrying" >&2
-            tailscale logout || true
+            echo "registered under an unexpected name; preserving identity for operator review" >&2
             exit 1
           fi
 
@@ -204,13 +238,10 @@
           type = types.nullOr types.path;
           default = null;
           description = ''
-            File holding the OAuth client ID. Needs the devices:core scope, to
-            remove whatever is holding this machine's name.
-
-            Required, not optional. Registering without first freeing the name
-            is how a machine ends up called <hostname>-1 for ever, and that
-            cannot be repaired afterwards. With no client ID the machine stays
-            off the tailnet, which is recoverable.
+            File holding the OAuth client ID. Needs read access to devices
+            (devices:core) to check for name collisions before a fresh join.
+            Existing devices are never deleted automatically. A collision
+            needs operator review before this machine can register.
           '';
         };
 
@@ -237,7 +268,7 @@
           }
           {
             assertion = (cfg.oauthSecretFile == null) == (cfg.oauthClientIdFile == null);
-            message = "mountainous.tailscale needs both oauthSecretFile and oauthClientIdFile, or neither. The client ID is what frees this machine's name before it registers; without it a reinstall becomes <hostname>-1 permanently.";
+            message = "mountainous.tailscale needs both oauthSecretFile and oauthClientIdFile, or neither. The client ID checks for name collisions before a fresh registration.";
           }
         ];
 
@@ -275,8 +306,8 @@
 
             # Keep trying. A network may be three minutes away, or behind a
             # captive portal, or ten boots away. Every failure path in the
-            # script leaves the machine unregistered rather than misnamed, so
-            # retrying for ever is safe.
+            # script preserves existing identities. Collisions need operator
+            # review; retrying never deletes a device or logs out.
             Restart = "on-failure";
             RestartSec = "30s";
 
