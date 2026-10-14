@@ -85,9 +85,6 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Until paperclipai/paperclip#10883 lands, Zao uses the locally maintained
-    # flake. This checkout must exist on every host evaluating this flake.
-    paperclip.url = "path:/home/simonwjackson/code/sandbox/paperclip";
     # Zao consumes the isolated Linux host profile without changing the Korri
     # revision used by Aka and Sobo.
     korri-input-host = {
@@ -109,12 +106,6 @@
     # both behind mountainous.features.pi so every host gets the binary
     # without leaking the upstream option path into host files.
     pi = {
-      url = "github:lukasl-dev/pi.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    # Paperclip's CLIProxyAPI extension requires a newer Pi than the host-wide
-    # pin. Keep its runtime separate so this change does not move every host.
-    pi-paperclip = {
       url = "github:lukasl-dev/pi.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };

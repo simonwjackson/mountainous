@@ -5,7 +5,6 @@
   ...
 }: {
   imports = [
-    inputs.paperclip.nixosModules.paperclip
     ./avahi.nix
     ./commitments.nix
     ./disko.nix
@@ -23,28 +22,6 @@
   programs.nix-ld.enable = true;
   virtualisation.podman.enable = true;
   environment.sessionVariables.ASPIRE_CONTAINER_RUNTIME = "podman";
-
-  # The tsnet node is the only remote entry point. Everyone allowed by the
-  # tailnet ACL has full local_trusted access; no separate Paperclip login.
-  services.paperclip = {
-    enable = true;
-    package = inputs.paperclip.packages.${pkgs.stdenv.hostPlatform.system}.paperclip;
-    host = "127.0.0.1";
-    port = 3110;
-    allowedHostnames = ["paperclip" "paperclip.hummingbird-lake.ts.net"];
-    # Cloud enrollment and OAuth callbacks must return to the browser's
-    # tailnet address, not to the loopback-only backend on Zao.
-    auth.publicBaseUrl = "https://paperclip.hummingbird-lake.ts.net";
-    # CLIProxyAPI needs Pi 0.87.1; keep Paperclip's Pi independent of the
-    # host-wide version and its GROQ credential wrapper.
-    extraPackages = [inputs.pi-paperclip.packages.${pkgs.stdenv.hostPlatform.system}.coding-agent];
-    # Keep the agent JWT signing secret in mutable service state, not the Nix store.
-    environmentFiles = ["/var/lib/paperclip/instances/default/secrets/agent-jwt.env"];
-    telemetry.enable = false;
-  };
-  # This instance never issued legacy agent JWTs, so do not accept tokens
-  # signed with the raw master secret across company or instance boundaries.
-  systemd.services.paperclip.environment.PAPERCLIP_AGENT_JWT_DISABLE_LEGACY_FALLBACK = "true";
 
   # ── Memory pressure ──────────────────────────────────────────────
   # Zao ships with 31 GiB RAM and 0 swap. On 2026-06-01 a single `nix`
@@ -148,12 +125,6 @@
       enable = true;
       package = pkgs.tsnet-proxy;
       authKeyFile = config.age.secrets.tailscale-authkey.path;
-      services.paperclip = {
-        hostname = "paperclip";
-        interactiveLogin = true; # The shared auth key is no longer valid for new nodes.
-        host = "127.0.0.1";
-        port = 3110;
-      };
     };
 
     # ── Services ─────────────────────────────────────────────────────
