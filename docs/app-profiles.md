@@ -38,6 +38,8 @@ or malformed global settings throw out of startup rather than fall back to
 The patch anchors only the complete `FileSettingsStorage.withLock`,
 `SettingsManager.loadFromStorage` and `SettingsManager.tryLoadFromStorage`
 methods. It does not hash the module or pin settings declarations/getters.
+These anchors are only an early layout check. A mandatory real-CLI install
+check, described below, is the authoritative behaviour guard.
 Missing, changed or repeated method regions stop the build. Identical embedded
 copies get the same narrow patch; unknown executable layouts fail closed.
 The lock-retry method is not patched or pinned because global reads bypass it.
@@ -252,3 +254,56 @@ Narrow-patch verification passed: `nix flake check` on x86_64, all eight host
 evaluations, 11 patch-drift tests, the real boot/attacker-lock/CLI VM test, and
 `grep -c` with **0 key matches** over 108 pi closure paths / 22,334 files.
 No host was changed or deployed.
+
+## Real-CLI candidate guard (2026-10-14)
+
+The earlier claim that import/layout checks proved the active startup reader
+was wrong. A redirected `AlternateSettingsManager` could preserve the original
+import, pass the patch and direct-class tests, and still run with `{}`.
+
+Every patched Bun package now forces `doInstallCheck = true`. Its install phase
+runs `tests/pi/cli-policy.py` against **its own built `bin/pi`**. The guard starts
+normal offline RPC sessions, not `--version`, and loads an explicit probe
+extension. On `session_start`, the extension uses the public
+`pi.getSettings()` API bound to the live AgentSession. It does not import a
+SettingsManager or read the agent settings file. The driver compares the whole
+effective settings object with the Nix file. A local-only, non-inference test
+provider makes the configured model resolvable without operator credentials.
+
+The four required cases are:
+
+| Agent policy | Required CLI result |
+| --- | --- |
+| Read-only copied file plus pre-made `settings.json.lock` | Exit 0; effective settings equal the Nix file |
+| Empty file | Nonzero exit |
+| Missing file | Nonzero exit |
+| Malformed file | Nonzero exit |
+
+A timeout is a failure, not evidence of refusal. The driver uses private temp
+directories, a clean cwd/home and a credential-free environment. It supplies
+no inference prompt. The VM runs this same guard as simon against the actual
+read-only bind mount and still verifies cycle-free boot ordering.
+
+`checks.pi-cli-negative` copies the real upstream package, adds an unpatched
+`AlternateSettingsManager`, and redirects all startup readers while retaining
+the original import. The patch accepts this reproduction, but the same build
+guard rejects all four cases: the CLI reports `{}` for locked policy and exits
+0 for empty, missing and malformed policy. Three negative tests assert these
+failures. This is a behaviour rejection, not another import heuristic.
+
+A deliberately redirected derivation was also built through Nix: its real
+`installCheckPhase` rejected all four cases and the builder exited 1. The
+candidate was not accepted into a profile.
+
+The generic updater already builds `checks.<system>.app-pi` with the candidate
+input override. That check depends on the wrapper, which depends on this
+checked Bun package. An install-check failure prevents that architecture's
+package and deployment closure from building. No VM or host-system evaluation
+is needed on Unzen. Cached outputs reuse previously checked packages.
+
+Measured on Zao x86_64, the four CLI cases took **1.320–2.587 seconds** across
+package install checks (the last run took 1.320 seconds). Budget about **2–3 seconds per rebuilt architecture**
+per update, without a VM boot. ARM timing has not been measured. The separate
+negative check also verifies that the exact install-check command exits 1;
+it runs during flake validation, not the updater's candidate build. API/CLI contract changes
+can require test maintenance; failures leave affected installed profiles intact.

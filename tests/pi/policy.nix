@@ -4,12 +4,8 @@
   inputs,
   profile,
   agent,
-  runtime,
   verifyBootOrder,
 }:
-let
-  manager = "${agent}/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/settings-manager.js";
-in
 pkgs.testers.runNixOSTest {
   name = "pi-readonly-policy";
   nodes.machine =
@@ -39,17 +35,7 @@ pkgs.testers.runNixOSTest {
     machine.succeed("${verifyBootOrder}")
     machine.succeed("findmnt -rn --mountpoint /var/lib/pi/simon/agent/settings.json -o VFS-OPTIONS | grep -w ro")
     machine.fail("su -s /bin/sh simon -c 'echo changed >> /var/lib/pi/simon/agent/settings.json'")
-    machine.succeed("su -s /bin/sh simon -c '${runtime}/bin/bun ${./settings-policy.mjs} ${manager} /var/lib/pi/simon/agent /var/lib/pi/simon/agent/settings.json'")
+    machine.succeed("su -s /bin/sh simon -c '${pkgs.python3}/bin/python3 ${agent.cliPolicyGuard}/cli-policy.py ${agent}/bin/pi /var/lib/pi/simon/agent/settings.json --agent-dir /var/lib/pi/simon/agent'")
     machine.succeed("test -d /var/lib/pi/simon/agent/settings.json.lock")
-    # The actual CLI must terminate on invalid or missing global policy.
-    machine.succeed("mkdir -p /tmp/pi-broken; echo invalid > /tmp/pi-broken/settings.json")
-    status, _ = machine.execute("PI_OFFLINE=1 PI_CODING_AGENT_DIR=/tmp/pi-broken ${pkgs.coreutils}/bin/timeout 10 ${agent}/bin/pi --version > /tmp/pi-invalid.log 2>&1")
-    machine.log(machine.succeed("cat /tmp/pi-invalid.log"))
-    assert status == 1, status
-    machine.succeed("grep -E 'SyntaxError|JSON' /tmp/pi-invalid.log")
-    machine.succeed("rm /tmp/pi-broken/settings.json")
-    status, _ = machine.execute("PI_OFFLINE=1 PI_CODING_AGENT_DIR=/tmp/pi-broken ${pkgs.coreutils}/bin/timeout 10 ${agent}/bin/pi --version > /tmp/pi-missing.log 2>&1")
-    assert status == 1, status
-    machine.succeed("grep ENOENT /tmp/pi-missing.log")
   '';
 }

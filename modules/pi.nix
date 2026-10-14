@@ -56,6 +56,15 @@ in
             }/lib/node_modules/@earendil-works/pi-coding-agent/dist
           touch $out
         '';
+        # The install check is mandatory on the package itself, including
+        # builds selected by the generic updater's app-pi check.
+        pi-cli-behaviour = self.packages.${system}.app-pi.policyAgent;
+        pi-cli-negative = pkgs.runCommand "pi-cli-negative" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          python3 ${../tests/pi}/test_cli_policy.py ${./pi-settings-policy.py} \
+            ${inputs.pi.packages.${system}.coding-agent-bun} \
+            ${pkgs.writeText "pi-policy.json" (builtins.toJSON settings)}
+          touch $out
+        '';
         pi-policy = import ../tests/pi/policy.nix {
           inherit pkgs inputs;
           verifyBootOrder = import ../tests/pi/boot-order.nix {
@@ -66,7 +75,6 @@ in
           };
           profile = flake.mountainous.appProfiles.pi;
           agent = self.packages.${system}.app-pi.policyAgent;
-          runtime = self.packages.${system}.app-pi.policyRuntime;
         };
       };
     };
@@ -75,7 +83,23 @@ in
       system:
       let
         pkgs = inputs.nixpkgs.legacyPackages.${system};
+        policyFile = pkgs.writeText "pi-policy.json" (builtins.toJSON settings);
+        cliGuard = pkgs.linkFarm "pi-cli-policy" [
+          {
+            name = "cli-policy.py";
+            path = ../tests/pi/cli-policy.py;
+          }
+          {
+            name = "cli-probe.ts";
+            path = ../tests/pi/cli-probe.ts;
+          }
+        ];
         agent = inputs.pi.packages.${system}.coding-agent-bun.overrideAttrs (old: {
+          doInstallCheck = true;
+          nativeInstallCheckInputs = (old.nativeInstallCheckInputs or [ ]) ++ [ pkgs.python3 ];
+          passthru = (old.passthru or { }) // {
+            cliPolicyGuard = cliGuard;
+          };
           nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.python3 ];
           postInstall = (old.postInstall or "") + ''
             python3 ${./pi-settings-policy.py} "$out/lib/node_modules/@earendil-works/pi-coding-agent/dist"
@@ -83,17 +107,12 @@ in
           preInstallCheck = (old.preInstallCheck or "") + ''
             export PI_CODING_AGENT_DIR
             PI_CODING_AGENT_DIR=$(mktemp -d)
-            cp ${pkgs.writeText "pi-policy.json" (builtins.toJSON settings)} "$PI_CODING_AGENT_DIR/settings.json"
+            cp ${policyFile} "$PI_CODING_AGENT_DIR/settings.json"
             chmod 0444 "$PI_CODING_AGENT_DIR/settings.json"
             export PI_OFFLINE=1
           '';
           installCheckPhase = (old.installCheckPhase or "") + ''
-            policyDir=$(mktemp -d)
-            cp ${pkgs.writeText "pi-policy.json" (builtins.toJSON settings)} "$policyDir/settings.json"
-            chmod 0444 "$policyDir/settings.json"
-            bun ${../tests/pi/settings-policy.mjs} \
-              "$out/lib/node_modules/@earendil-works/pi-coding-agent/dist/core/settings-manager.js" \
-              "$policyDir" "$policyDir/settings.json"
+            python3 ${cliGuard}/cli-policy.py "$out/bin/pi" ${policyFile}
           '';
         });
         wrapper = pkgs.writeShellApplication {
