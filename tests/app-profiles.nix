@@ -1,0 +1,40 @@
+{
+  hosts,
+  deploy,
+  unzen,
+  lib,
+}:
+assert builtins.all (
+  name:
+  let
+    c = hosts.${name}.config;
+    mounts = builtins.filter (m: m.where == "/var/lib/pi/simon/agent/settings.json") c.systemd.mounts;
+  in
+  c.mountainous.appProfiles.pi.enable
+  && c.mountainous.appProfiles.pi.profilePath == "/nix/var/nix/profiles/apps/pi"
+  && c.users.users.app-deploy.isSystemUser
+  && !(builtins.elem "wheel" c.users.users.app-deploy.extraGroups)
+  && !(builtins.elem "app-deploy" c.nix.settings.trusted-users)
+  && lib.hasPrefix "/run/" c.sops.secrets.pi-cliproxyapi-api-key.path
+  && c.sops.secrets.pi-cliproxyapi-api-key.owner == "simon"
+  && c.sops.secrets.pi-cliproxyapi-api-key.mode == "0400"
+  && builtins.length mounts == 1
+  && (builtins.head mounts).options == "bind,ro"
+  && (builtins.head mounts).restartTriggers != [ ]
+  && deploy.nodes.${name}.profiles.pi.profilePath == c.mountainous.appProfiles.pi.profilePath
+  && deploy.nodes.${name}.sshUser == "app-deploy"
+  && deploy.nodes.${name}.user == "app-deploy"
+  && deploy.nodes.${name}.magicRollback
+  && deploy.nodes.${name}.autoRollback
+  && builtins.elem "d /var/lib/pi/simon 0755 root root -" c.systemd.tmpfiles.rules
+  && builtins.elem "d /var/lib/pi/simon/agent 0700 simon users -" c.systemd.tmpfiles.rules
+) (builtins.attrNames hosts);
+assert unzen.systemd.timers.app-update-pi.timerConfig.OnCalendar == "*-*-* 00,06,12,18:00:00 UTC";
+assert unzen.systemd.services.app-update-pi.serviceConfig.UMask == "0077";
+assert
+  unzen.systemd.services.app-update-pi.environment.LOCAL_KEY == "/var/lib/app-updater/signing-key";
+assert
+  unzen.systemd.services.app-update-pi.environment.NIX_SSHOPTS == "-F /dev/null -o BatchMode=yes";
+{
+  status = "pass";
+}

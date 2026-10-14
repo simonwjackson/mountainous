@@ -7,6 +7,16 @@
   };
 
   inputs = {
+    pi.url = "github:lukasl-dev/pi.nix";
+    pi-cliproxyapi-provider = {
+      url = "github:router-for-me/pi-cliproxyapi-provider";
+      flake = false;
+    };
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     # Keep its package pin: following ours would change the signed cache path.
