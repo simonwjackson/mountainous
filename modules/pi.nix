@@ -24,6 +24,7 @@ let
     hideThinkingBlock = true;
     steeringMode = "one-at-a-time";
     transport = "sse";
+    defaultTools = [ "+codemode" ];
     enableInstallTelemetry = false;
   };
 in
@@ -146,10 +147,12 @@ in
             export CLIPROXYAPI_BASE_URL=https://cliproxyapi.hummingbird-lake.ts.net
             export CLIPROXYAPI_API_KEY
             CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-cliproxyapi-api-key)
+            export PI_DECIDE_API_KEY
+            PI_DECIDE_API_KEY=$(cat /run/secrets/pi-decide-api-key)
             # Nix owns settings, including telemetry. PI_OFFLINE also suppresses
             # network startup probes; changelog stays collapsed across updates.
             export PI_OFFLINE=1
-            ${agent}/bin/pi -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts "$@"
+            ${agent}/bin/pi -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts -e ${./pi-decide.ts} "$@"
           '';
         };
       in
@@ -175,6 +178,10 @@ in
           lib.mkMerge [
             {
               sops.secrets.pi-cliproxyapi-api-key = {
+                owner = "simon";
+                mode = "0400";
+              };
+              sops.secrets.pi-decide-api-key = {
                 owner = "simon";
                 mode = "0400";
               };

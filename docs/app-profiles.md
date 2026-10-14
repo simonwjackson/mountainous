@@ -311,3 +311,35 @@ can require test maintenance; failures leave affected installed profiles intact.
 The app-profile branch was rebased onto Cairn `2575be68` on 2026-10-14.
 It includes `eb008c68` and `5f0c2c55`; Cairn's Rakku secret is unchanged.
 The deleted `packages/tsnet-proxy` remains deleted. No fleet deployment was made.
+
+## Decision gateway app integration
+
+Pi 1.2.0's shipped `docs/custom-provider.md`, `docs/models.md` and
+`docs/codemode.md`, plus the shipped extension/model registry types and System
+One implementation, define this integration. `pi-decide.ts` registers
+`decide/jev`, `decide/solar` and `decide/fast` as classifier models. It reuses
+`@earendil-works/pi-ai/api/typesafe-system-one`'s `classify`, registered under
+`classifiers["typesafe-system-one"]`; there is no new HTTP client.
+
+Each model has contextWindow 128000 and zero catalog costs. The base URL ends
+in `/v1`, so the built-in adapter posts to `/v1/systemone`. Public pi questions
+use `type: "bool"`; the shipped adapter maps that to wire-level `noul`.
+`defaultTools = [ "+codemode" ]` is the documented modifier form for enabling
+codemode. Extensions can also call `ctx.modelRegistry.classify()` directly.
+
+The wrapper loads the gateway with a second `-e` and reads
+`PI_DECIDE_API_KEY` from `/run/secrets/pi-decide-api-key`, simon-owned 0400.
+The key was copied in memory using `scripts/secrets` from Rakku's
+`litellm-env` `LITELLM_MASTER_KEY`, then encrypted for the fleet recipients.
+No plaintext value was printed, stored in argv or written to a repository file.
+
+**Costs:** all eight fleet hosts receive LiteLLM's master/admin key, including
+permission to spend on both providers. Per-host budgets need database-backed
+virtual keys, which remain out of scope. The key exists in Rakku's dotenv and
+the fleet secret; rotate both together. A future gateway runtime sops template
+could consume one fleet-owned master key while retaining provider credentials
+only on Rakku, but that requires a separate gateway-module change. The gateway
+module was not changed here. Zero catalog prices mean pi reports zero classifier
+cost while LiteLLM charges real usage and reports it in its response header.
+The initial secret/settings hooks need the approved system deployment; later
+extension changes travel only with the application profile.
