@@ -1,0 +1,205 @@
+{
+  "repository": "earendil-works/pi",
+  "path": "packages/coding-agent/src/core/settings-manager.ts",
+  "since": "2026-07-16T21:26:14Z",
+  "until": "2026-10-14T21:26:14Z",
+  "file_commits": 31,
+  "method_commits": {
+    "withLock": 0,
+    "acquireLockSyncWithRetry": 0,
+    "loadFromStorage": 1,
+    "tryLoadFromStorage": 0
+  },
+  "patched_region_commits": 1,
+  "all_read_lock_region_commits": 1,
+  "commits": [
+    {
+      "sha": "cea257439d5666ad6a987c065eb3ab0e230a135d",
+      "date": "2026-10-13T13:41:13Z",
+      "subject": "feat(coding-agent): configure session share destination",
+      "methods": []
+    },
+    {
+      "sha": "7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333",
+      "date": "2026-10-08T08:01:17Z",
+      "subject": "feat(coding-agent): publish configuration schemas (#9880)",
+      "methods": []
+    },
+    {
+      "sha": "18336987add9a3966f338d7c6617e782b58cd91f",
+      "date": "2026-10-06T15:27:55Z",
+      "subject": "fix(coding-agent): apply outputPad to all transcript blocks (#10557)",
+      "methods": []
+    },
+    {
+      "sha": "ddaa0a0341a84b073a087a3d89b9b9e7fbdaf6ba",
+      "date": "2026-10-06T11:51:04Z",
+      "subject": "feat(coding-agent): accept +name/-name entries in --tools",
+      "methods": []
+    },
+    {
+      "sha": "6f1072cc081f06b86a673bd142f03720d17afe15",
+      "date": "2026-10-01T16:27:23Z",
+      "subject": "feat(coding-agent): shrink codemode prompt and guide scripts back from errors",
+      "methods": []
+    },
+    {
+      "sha": "88ff80b986e34d4fbd1fa94a4df65c60ae964516",
+      "date": "2026-10-01T15:26:35Z",
+      "subject": "feat(coding-agent): make fullscreen the default TUI mode",
+      "methods": []
+    },
+    {
+      "sha": "f29ea3deb298280b417892c6229ce478ad8c4d2f",
+      "date": "2026-10-01T12:42:02Z",
+      "subject": "feat(coding-agent): add header-only quietStartup mode",
+      "methods": []
+    },
+    {
+      "sha": "02eed88fd8912e54a804ddebd409e2e4c08ac5ef",
+      "date": "2026-09-29T15:16:15Z",
+      "subject": "feat(ai,coding-agent): add alternative sign in for the openai provider",
+      "methods": []
+    },
+    {
+      "sha": "30a1d1849da2e606f185c51561746b569e9fdd5d",
+      "date": "2026-09-29T12:02:57Z",
+      "subject": "feat(coding-agent): support +name/-name in defaultTools",
+      "methods": []
+    },
+    {
+      "sha": "f1927c2d56bbc8a58f2d6a6a4957f52c77507557",
+      "date": "2026-09-29T07:57:53Z",
+      "subject": "feat(tui,coding-agent): configurable fullscreen wheel scrolling with auto acceleration",
+      "methods": []
+    },
+    {
+      "sha": "8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e",
+      "date": "2026-09-29T07:12:50Z",
+      "subject": "feat(coding-agent): codemode and MCP",
+      "methods": []
+    },
+    {
+      "sha": "c596d09d9cef6fdf0db2dd08f3eec8582b7fe8ba",
+      "date": "2026-09-19T19:18:15Z",
+      "subject": "feat(coding-agent): add prompt cache warming (#9668)",
+      "methods": []
+    },
+    {
+      "sha": "46bde88a1cd752966aa2a357d292e83aff98b132",
+      "date": "2026-09-10T06:37:20Z",
+      "subject": "feat(coding-agent): support per-model compaction token budgets",
+      "methods": []
+    },
+    {
+      "sha": "c37b0e03b5d727c44a5d6b47d6ecf7e7b3d32e7a",
+      "date": "2026-09-09T09:54:56Z",
+      "subject": "fix: cap agent retry backoff",
+      "methods": []
+    },
+    {
+      "sha": "4e69b0c28060f0f02fbe38bfa7c21a2e2eb25057",
+      "date": "2026-09-02T19:39:29Z",
+      "subject": "feat(ai): preserve Anthropic per-turn thinking effort",
+      "methods": []
+    },
+    {
+      "sha": "4e494929998d6bc4fccf75e0a233f727db4b70ee",
+      "date": "2026-08-27T16:07:54Z",
+      "subject": "feat(tui): allow disable copy on fullscreen, ctrl + x copies selection (#8731)",
+      "methods": []
+    },
+    {
+      "sha": "e86823096c5bad39e1ca282ec24bc5eb9bec745b",
+      "date": "2026-08-26T15:40:36Z",
+      "subject": "feat(tui): add terminal capability overrides closes #8665",
+      "methods": []
+    },
+    {
+      "sha": "2ff8ba62238e61642fe80985175774b163f77cfa",
+      "date": "2026-08-19T14:48:29Z",
+      "subject": "fix(coding-agent): keep model and thinking level changes session scoped (#8356)",
+      "methods": []
+    },
+    {
+      "sha": "1355cd36e0b10a3e71c6c78f713b7b36458db27f",
+      "date": "2026-08-19T12:11:02Z",
+      "subject": "fix(coding-agent): normalize UTF-8 BOMs in text inputs",
+      "methods": [
+        "loadFromStorage"
+      ]
+    },
+    {
+      "sha": "1e1a6e27be36aa6e4e607137a648bb342a9a2477",
+      "date": "2026-08-19T11:07:20Z",
+      "subject": "feat(coding-agent): include paths in settings errors",
+      "methods": []
+    },
+    {
+      "sha": "836aee6d38f60428ab6bd2679f93dce43a55dab3",
+      "date": "2026-08-18T11:27:00Z",
+      "subject": "feat(coding-agent): show compaction usage notices",
+      "methods": []
+    },
+    {
+      "sha": "541045ae0e30ac0375fde429f8a8baa057c009db",
+      "date": "2026-08-12T13:42:55Z",
+      "subject": "fix(coding-agent): preserve extension tools with defaults",
+      "methods": []
+    },
+    {
+      "sha": "4d9aa837c2ec6e0ebc7599f7e724c7c19c06441e",
+      "date": "2026-08-12T13:27:01Z",
+      "subject": "feat(coding-agent): add configurable default tools",
+      "methods": []
+    },
+    {
+      "sha": "ac4ac9eaf69f2b01ca3af984a5c48f3b99b84278",
+      "date": "2026-08-07T16:30:28Z",
+      "subject": "feat(coding-agent): configure fullscreen exit output",
+      "methods": []
+    },
+    {
+      "sha": "5446cd7545a07c9b6be00dcfba516b3d82e5a8d1",
+      "date": "2026-08-05T20:56:58Z",
+      "subject": "feat(coding-agent): rename UI mode to TUI mode",
+      "methods": []
+    },
+    {
+      "sha": "66534fbdc7bb09492b40142471bbbb87b4a4d5bc",
+      "date": "2026-08-05T07:43:24Z",
+      "subject": "feat(coding-agent): render Mermaid diagrams (#7624)",
+      "methods": []
+    },
+    {
+      "sha": "97f0ccdd96cc207b6ad3630c56eea4d32dbdcf53",
+      "date": "2026-08-04T11:04:02Z",
+      "subject": "fix(coding-agent): recursively merge nested settings, closes #7572",
+      "methods": []
+    },
+    {
+      "sha": "ebf33c0c2282fb8c027174d3d2b53519d8f564e3",
+      "date": "2026-08-03T10:00:39Z",
+      "subject": "fix(coding-agent): flash fullscreen copy confirmation",
+      "methods": []
+    },
+    {
+      "sha": "6129a353b18310eb06085e2f17f58cf501f725f3",
+      "date": "2026-07-31T15:17:02Z",
+      "subject": "feat(tui): add configurable fullscreen scrollbars",
+      "methods": []
+    },
+    {
+      "sha": "f074efd921848bf5d858154e852d47ea82c60bf2",
+      "date": "2026-07-31T13:33:52Z",
+      "subject": "feat(coding-agent): add ui mode setting",
+      "methods": []
+    },
+    {
+      "sha": "75e6123aba58342d5e464c5b8417effa3dc441d2",
+      "date": "2026-07-22T13:49:01Z",
+      "subject": "fix(coding-agent): speed up external editor launch (#6903)",
+      "methods": []
+    }
+  ]
+}

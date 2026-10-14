@@ -1,27 +1,62 @@
-"""Patch the reviewed, unbundled Bun SettingsManager; fail closed on drift."""
-import hashlib
+"""Patch only immutable-global read methods; unrelated settings may change."""
 from pathlib import Path
 import sys
 
-
-def patch(dist):
-    path = dist / "core/settings-manager.js"
-    source = path.read_text()
-    expected = "4c6c9023a6178588e29545f3bc8d52ceb65ed44b58ce8dd72c9ef38f040e745f"
-    if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
-        raise SystemExit("pi settings policy: upstream SettingsManager changed; review the patch before updating")
-    if 'import { main } from "./main.js";' not in (dist / "cli.js").read_text():
-        raise SystemExit("pi settings policy: CLI is no longer the reviewed unbundled entry point")
-    main = (dist / "main.js").read_text()
-    if ('import { SettingsManager } from "./core/settings-manager.js";' not in main or
-            'const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });' not in main):
-        raise SystemExit("pi settings policy: startup no longer uses the reviewed SettingsManager")
-    definitions = [p.relative_to(dist).as_posix() for p in dist.rglob("*") if p.suffix in {".js", ".mjs", ".cjs"} and "class SettingsManager" in p.read_text()]
-    if definitions != ["core/settings-manager.js"]:
-        raise SystemExit("pi settings policy: unexpected embedded/bundled SettingsManager")
-    replacements = [
-        ('''    withLock(scope, fn) {
-        const path = scope === "global" ? this.globalSettingsPath : this.projectSettingsPath;''', '''    withLock(scope, fn) {
+# Full methods are the anchors, not the whole module. This includes the lock,
+# read, parse and fallback paths, but excludes settings declarations/getters.
+WITH_LOCK = '''    withLock(scope, fn) {
+        const path = scope === "global" ? this.globalSettingsPath : this.projectSettingsPath;
+        const dir = dirname(path);
+        let release;
+        try {
+            // Only create directory and lock if file exists or we need to write
+            const fileExists = existsSync(path);
+            if (fileExists) {
+                release = this.acquireLockSyncWithRetry(path);
+            }
+            const current = fileExists ? readFileSync(path, "utf-8") : undefined;
+            const next = fn(current);
+            if (next !== undefined) {
+                // Only create directory when we actually need to write
+                if (!existsSync(dir)) {
+                    mkdirSync(dir, { recursive: true });
+                }
+                if (!release) {
+                    release = this.acquireLockSyncWithRetry(path);
+                }
+                writeFileSync(path, next, "utf-8");
+            }
+        }
+        finally {
+            if (release) {
+                release();
+            }
+        }
+    }'''
+LOAD = '''    static loadFromStorage(storage, scope, projectTrusted = true) {
+        if (scope === "project" && !projectTrusted) {
+            return {};
+        }
+        let content;
+        storage.withLock(scope, (current) => {
+            content = current;
+            return undefined;
+        });
+        if (!content) {
+            return {};
+        }
+        const settings = JSON.parse(stripBom(content));
+        return SettingsManager.migrateSettings(settings);
+    }'''
+TRY_LOAD = '''    static tryLoadFromStorage(storage, scope, projectTrusted = true) {
+        try {
+            return { settings: SettingsManager.loadFromStorage(storage, scope, projectTrusted), error: null };
+        }
+        catch (error) {
+            return { settings: {}, error: error };
+        }
+    }'''
+GLOBAL_READ = '''    withLock(scope, fn) {
         // Fleet global policy is immutable; a user-owned lock must never hide it.
         if (scope === "global") {
             const current = readFileSync(this.globalSettingsPath, "utf-8");
@@ -29,27 +64,38 @@ def patch(dist):
                 throw new Error("Global pi settings are Nix-owned and read-only");
             }
             return;
-        }
-        const path = scope === "global" ? this.globalSettingsPath : this.projectSettingsPath;'''),
-        ('''        if (!content) {
-            return {};
-        }
-        const settings = JSON.parse(stripBom(content));''', '''        if (!content && scope !== "global") {
-            return {};
-        }
-        const settings = JSON.parse(stripBom(content));'''),
-        ('''        catch (error) {
-            return { settings: {}, error: error };
-        }''', '''        catch (error) {
-            if (scope === "global") throw error;
-            return { settings: {}, error: error };
-        }'''),
-    ]
-    for before, after in replacements:
-        if source.count(before) != 1:
-            raise SystemExit("pi settings policy: patch context changed")
-        source = source.replace(before, after)
-    path.write_text(source)
+        }'''
+REGIONS = {
+    "FileSettingsStorage.withLock": (WITH_LOCK, WITH_LOCK.replace('    withLock(scope, fn) {', GLOBAL_READ, 1)),
+    "SettingsManager.loadFromStorage": (LOAD, LOAD.replace('if (!content)', 'if (!content && scope !== "global")', 1)),
+    "SettingsManager.tryLoadFromStorage": (TRY_LOAD, TRY_LOAD.replace('        catch (error) {', '        catch (error) {\n            if (scope === "global") throw error;', 1)),
+}
+
+
+def patch(dist):
+    canonical = dist / "core/settings-manager.js"
+    candidates = [p for p in dist.rglob("*") if p.suffix in {".js", ".mjs", ".cjs"} and "class SettingsManager" in p.read_text()]
+    if canonical not in candidates:
+        raise SystemExit("pi settings policy: canonical SettingsManager definition missing")
+    # Reject an unknown executable layout, without pinning startup statements.
+    cli, main = (dist / "cli.js").read_text(), (dist / "main.js").read_text()
+    if 'import { main } from "./main.js";' not in cli and "class SettingsManager" not in cli:
+        raise SystemExit("pi settings policy: unknown CLI entry point")
+    if ('import { SettingsManager } from "./core/settings-manager.js";' not in main and
+            "class SettingsManager" not in main and "class SettingsManager" not in cli):
+        raise SystemExit("pi settings policy: startup no longer uses the reviewed SettingsManager")
+    patched = {}
+    for path in candidates:
+        source = path.read_text()
+        # Use the same exact regions for any embedded/bundled copy. A changed,
+        # missing or repeated method fails before any file is modified.
+        for name, (before, after) in REGIONS.items():
+            if source.count(before) != 1:
+                raise SystemExit(f"pi settings policy: {name} patch context changed in {path.name}")
+            source = source.replace(before, after, 1)
+        patched[path] = source
+    for path, source in patched.items():
+        path.write_text(source)
 
 
 if __name__ == "__main__":

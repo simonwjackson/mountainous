@@ -35,11 +35,15 @@ Global reads bypass the user-owned lock entirely. A pre-made
 `settings.json.lock` therefore cannot hide the global policy. Missing, empty
 or malformed global settings throw out of startup rather than fall back to
 `{}`. Global writes are rejected; project settings retain upstream behavior.
-The patch pins the complete module hash, checks the CLI/startup import chain,
-checks for embedded SettingsManagers, and requires unique replacement matches.
-**Cost:** an upstream SettingsManager change stops the affected application
+The patch anchors only the complete `FileSettingsStorage.withLock`,
+`SettingsManager.loadFromStorage` and `SettingsManager.tryLoadFromStorage`
+methods. It does not hash the module or pin settings declarations/getters.
+Missing, changed or repeated method regions stop the build. Identical embedded
+copies get the same narrow patch; unknown executable layouts fail closed.
+The lock-retry method is not patched or pinned because global reads bypass it.
+**Cost:** a change to one of those three methods stops the affected application
 builds on the four-times-a-day schedule until an operator reviews and updates
-the patch. The updater records failure and leaves deployed/accepted releases
+the patch. Unrelated settings additions continue to build. The updater records failure and leaves deployed/accepted releases
 unchanged when no architecture succeeds. The patched runtime needs a local
 rebuild; upstream dependency and Bun-workspace cache paths remain unchanged.
 `What=` and `restartTriggers` change with the settings store path, so the NixOS
@@ -187,17 +191,64 @@ original cycle; diagnostics matter because verify can return zero after
 deleting a cyclic job. The VM tests effective settings through the actual Bun
 SettingsManager as simon with a pre-made lock and a read-only bind mount. It
 also confirms that the actual CLI exits on missing or malformed policy.
-Six patch-drift tests use the real upstream dist tree. The package's install
+Before narrowing, six patch-drift tests used the real upstream dist tree. The package's install
 checks repeat the lock/read/parse regression for every app build.
 
 Pi's update declaration and cache policy now live in `modules/pi.nix`.
 The shared updater takes each app's optional `substituters` and
 `trustedPublicKeys`; it contains no pi-specific declaration or cache.
 
-Review verification passed: `nix flake check` on x86_64, all eight fleet
+Before narrowing, review verification passed: `nix flake check` on x86_64, all eight fleet
 `system.build.toplevel.drvPath` evaluations, the boot/lock/CLI VM test, six
 patch-drift tests and seven updater tests. `nix path-info -r` plus `grep -c`
 found **0 plaintext-key matches** across 108 realized pi closure paths
 (22,334 files counted). The key reached grep only through an anonymous file
 descriptor; it was not printed or placed in argv. ARM remains evaluation-only.
 No deployment or host change was made.
+
+## Narrow-patch maintenance evidence (2026-10-14)
+
+The whole-file hash was too broad and has been removed. GitHub file history
+for `earendil-works/pi`, `packages/coding-agent/src/core/settings-manager.ts`,
+from `2026-07-16T21:26:14Z` through `2026-10-14T21:26:14Z` (90 days):
+
+| Region | Commits that changed the region |
+| --- | ---: |
+| Whole TypeScript file | 31 |
+| `FileSettingsStorage.withLock` | 0 |
+| `FileSettingsStorage.acquireLockSyncWithRetry` (not patched) | 0 |
+| `SettingsManager.loadFromStorage` | 1 |
+| `SettingsManager.tryLoadFromStorage` | 0 |
+| Any of the three patched methods, distinct commits | **1** |
+
+The one relevant commit is
+[`1355cd36e0b10a3e71c6c78f713b7b36458db27f`](https://github.com/earendil-works/pi/commit/1355cd36e0b10a3e71c6c78f713b7b36458db27f),
+2026-08-19: UTF-8 BOM handling changed `JSON.parse(content)` to
+`JSON.parse(stripBom(content))`. The 11 file commits from September 29 through
+October 13 changed none of the patched methods.
+
+The historical code-maintenance rate is **one relevant change per 90 days**,
+not 31 whole-file edits. This is an observed rate, not a future guarantee.
+Compiler or bundle-layout changes can also need review. We compare full source
+methods, including type/comment changes, against each commit's first parent;
+some source changes may leave the generated JavaScript unchanged.
+
+Reproduce the API/raw-source comparison:
+
+```sh
+python3 scripts/pi-policy-history.py \
+  --since 2026-07-16T21:26:14Z --until 2026-10-14T21:26:14Z
+```
+
+The committed `docs/research/pi-settings-history.json` records all 31 commits,
+per-method counts and the window. Eleven patch tests cover unrelated additions
+and startup changes, changed/missing/duplicate read methods, and identical or
+changed embedded copies. The read-only-mount/attacker-lock VM regression stays
+in place. The reviewed upstream path contract has no separate immutable global
+settings-file override: it joins `settings.json` to the same agent directory
+used for writable auth and session data, so a patch is still needed.
+
+Narrow-patch verification passed: `nix flake check` on x86_64, all eight host
+evaluations, 11 patch-drift tests, the real boot/attacker-lock/CLI VM test, and
+`grep -c` with **0 key matches** over 108 pi closure paths / 22,334 files.
+No host was changed or deployed.
