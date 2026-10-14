@@ -134,7 +134,7 @@ any new host hooks.
   Ibuki with the local Korri checkout on Zao. Host files were not changed.
 - The app, profile contract, deploy schema and deploy activation checks passed.
   Seven updater policy/filesystem/subprocess tests passed.
-- A real clean-checkout `app-update --check-only` run resolved pi's latest
+- At commit `b91a4a72`, a real clean-checkout `app-update --check-only` run resolved pi's latest
   revision and built/checked the x86 app and activator. It left the source clean
   and wrote a private receipt. The wrapper returned Bun pi version `1.2.0`;
   an unprovisioned prompt invocation failed before reading the key or calling
@@ -142,9 +142,12 @@ any new host hooks.
 - In an isolated copy, Korri's locked and original URLs were changed to an
   absent `/nonexistent/korri`. `.#deploy` and both app package derivations still
   evaluated with `--no-update-lock-file`. Unzen does not need Korri.
-- Plaintext-key scanning covered tracked files and `nix path-info -r` closures
-  for the realized x86 app, updater and settings. No plaintext key or SSH
-  private-key header was found in tracked files. ARM was evaluated, not built.
+- At commit `b91a4a72`, plaintext-key scanning covered tracked files and
+  189 `nix path-info -r` paths for the realized x86 app and updater (31,463
+  files). No plaintext key or SSH private-key header was found. The settings
+  file was subsequently realized and checked for its declared public policy.
+  A final updater run and key scan including settings remain gated and were
+  not executed. Deploy must rerun that scan. ARM was evaluated, not built.
 - Additional `nix flake check --all-systems --no-build` exposed an existing
   nix-extras Nzbfast module error: `packages.aarch64-linux` is absent. This is
   outside app-profile scope and blocks fleet-wide ARM check evaluation, not
