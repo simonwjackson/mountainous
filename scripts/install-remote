@@ -104,7 +104,11 @@ if [ "$KEEP_TS" != 0 ]; then
   REMOTE_HOST=$(ssh "${SSH_OPTS[@]}" "$TARGET" hostname 2>/dev/null || true)
   if [ "$REMOTE_HOST" = "$HOST" ]; then
     install -d -m 0700 "$EXTRA/var/lib/tailscale"
-    ssh "${SSH_OPTS[@]}" "$TARGET" cat /var/lib/tailscale/tailscaled.state \
+    # The state file is root-only. A non-root target (user@host with
+    # passwordless sudo, as nixos-anywhere also supports) reads it via sudo.
+    READ=(cat)
+    case "$TARGET" in root@*) ;; *@*) READ=(sudo -n cat) ;; esac
+    ssh "${SSH_OPTS[@]}" "$TARGET" "${READ[@]}" /var/lib/tailscale/tailscaled.state \
       > "$EXTRA/var/lib/tailscale/tailscaled.state" 2>/dev/null || true
     chmod 0600 "$EXTRA/var/lib/tailscale/tailscaled.state"
     if ! jq -e '._machinekey' "$EXTRA/var/lib/tailscale/tailscaled.state" >/dev/null 2>&1; then

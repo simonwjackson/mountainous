@@ -21,6 +21,18 @@ pkgs.testers.runNixOSTest {
     system.extraDependencies = [ installer ];
     services.openssh.enable = true;
     services.tailscale.enable = true;
+    # A raw kexec bypasses ExecStop. Require the real shutdown path to stop
+    # a running service before entering the installer kernel.
+    systemd.services.kexec-shutdown-witness = {
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${pkgs.coreutils}/bin/true";
+        StandardOutput = "journal+console";
+        ExecStop = "${pkgs.coreutils}/bin/echo KEXEC_WITNESS_STOPPED";
+      };
+    };
     users.users.root.openssh.authorizedKeys.keyFiles = [
       "${nixos-images-src}/nix/kexec-installer/ssh-keys/id_ed25519.pub"
     ];
@@ -37,6 +49,7 @@ pkgs.testers.runNixOSTest {
 
     start_all()
     machine.wait_for_unit("multi-user.target")
+    machine.wait_for_unit("kexec-shutdown-witness.service")
     # An offline tailscaled makes no machine key until it logs in, so give it
     # a known one, as a real host would already have.
     seeded = base64.b64encode(b"privkey:" + secrets.token_hex(32).encode()).decode()
@@ -66,6 +79,7 @@ pkgs.testers.runNixOSTest {
     machine.succeed("touch /run/old-kernel-marker")
     machine.succeed("tar -xf ${installer}/nixos-kexec-installer-noninteractive-*.tar.gz -C /root")
     machine.succeed("/root/kexec/run")
+    machine.wait_for_console_text("KEXEC_WITNESS_STOPPED", timeout=180)
     machine.wait_for_console_text("nixos-installer", timeout=180)
     retry(lambda _: ssh("test ! -e /run/old-kernel-marker", check=False).returncode == 0,
           timeout=datetime.timedelta(seconds=180))

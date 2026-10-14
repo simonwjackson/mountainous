@@ -52,9 +52,9 @@ The `builder` layer lets Zao's builder key run `nix-daemon --stdio` and nothing 
 
 ## Before the install
 
-1. **Zao's builder entry.** In `unified`, `features/nix-builders/hosts.nix` sends aarch64 work to `simonwjackson@fuji`. Change it to `simon` and deploy Zao, or Zao's aarch64 builds fail after the reinstall.
+1. **Zao's builder entry.** Zao now uses both Fuji and Yari; an eight-job test sent four jobs to each. Keep `simonwjackson@fuji` until the reinstall. At cutover, change Fuji's entry in `unified:features/nix-builders/hosts.nix` to `simon` and deploy Zao. Yari remains available while Fuji is offline.
 2. **Restore set.** The keep set is at `/home/simon/fuji-keep` on Yari and `~/.local/share/mountainous/fuji-keep-2026-10-13` on Zao. Both passed the same checks. Paths inside are under `/home/simonwjackson`; restore them under `/home/simon`.
-3. **Kexec rehearsal.** `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- fuji simonwjackson@fuji` with SSH in, as on Yari. Then confirm Fuji comes back as itself on Tailscale.
+3. **Kexec rehearsal.** The systemd shutdown path reached the RAM installer on 2026-10-14. SSH through `100.69.49.119` verified the same node key, IPs and SSH host key. The ESP and XFS UUIDs were unchanged and XFS was unmounted. Fuji then rebooted to the exact recorded old system in 49 seconds, with no kernel I/O errors. The wrapper itself timed out because the installer changed the node's MagicDNS name. Use the stable IP and `MOUNTAINOUS_INSTALL_HOST_KEY_ALIAS=fuji.hummingbird-lake.ts.net` for subsequent runs, retaining strict host-key checks.
 
 ## Steps
 
@@ -65,12 +65,13 @@ The `builder` layer lets Zao's builder key run `nix-daemon --stdio` and nothing 
 | 3. Port the host: permafrost, builder, signing key, Korri cache, Tailscale-only SSH | Done. `checks.fuji-host` passes, `fuji` evaluates |
 | 3a. Choose services | Done 2026-10-13: builder only |
 | 4. Build Fuji's system | |
-| 5. Before-the-install items 1 to 3 | |
+| 5. Before-the-install items 1 to 3 | Keep set and serial console available; kexec and return verified. Builder login change remains a cutover step. |
 | 6. Install with `nix run .#install -- fuji <target>` | Needs operator approval. Destroys the disk |
 | 7. Reboot twice, verify as on Yari, restore the keep set | |
 
 ## Known risks
 
-- **`kexec -e` hung once on Yari** before disko ran. An OCI reset recovered it. Fuji's instance is in the same tenancy.
+- **Raw kexec hung on both Oracle VMs.** Fuji also hung with an emergency sync/read-only-remount patch. The `systemctl kexec` path passed the VM test and one Fuji rehearsal. This supports using orderly shutdown, but does not establish the kernel-level cause. Fuji uses its own OCI profile and tenancy; its serial console is available through `~/.local/share/mountainous/oci-console/connect-fuji`.
+- **MagicDNS changes in the installer.** Keeping Tailscale state preserved the node key and IP, but the installer advertised `nixos-installer`. Connecting by the old hostname caused the wrapper to time out despite the installer being reachable. Use the IP with the original SSH host-key alias.
 - **Yuki becomes the only Syncthing peer** for the personal folders (with Usu for `research`). Fuji leaves them, and Yari was reinstalled without Syncthing.
 - **`checks.aarch64-linux.media-runtime` fails** with `packages.aarch64-linux.nzbfast` missing. It fails on the commit before this port as well.

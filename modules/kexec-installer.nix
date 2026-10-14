@@ -45,8 +45,19 @@ let
             ];
             boot.kernelModules = [ "bcachefs" ];
 
-            # The upstream run script, plus one step before it packs the
-            # extra initrd: copy the running machine's Tailscale state.
+            # The upstream run script, plus two steps:
+            #   1. before it packs the extra initrd, copy the running machine's
+            #      Tailscale state;
+            #   2. under systemd, jump with `systemctl kexec` instead of a raw
+            #      `kexec -e`. Upstream kexecs 6 s after the script returns,
+            #      with every service still running and every disk mounted. On
+            #      Oracle A1 VMs that hung in 3 of 5 runs (Yari 2026-10-12,
+            #      Fuji 2026-10-14 twice): disk write errors, then kexec blocked
+            #      until an OCI reset. A sync and read-only remount just before
+            #      did not help. systemctl kexec stops services and unmounts
+            #      first, as a normal reboot does. It keeps the loaded
+            #      installer: NixOS's prepare-kexec skips itself when a kernel
+            #      is already loaded. Without systemd, the raw path stays.
             system.build.kexecRun = lib.mkForce (
               pkgs.runCommand "kexec-run" { } ''
                 install -D -m 0755 ${src}/nix/kexec-installer/kexec-run.sh $out
@@ -59,6 +70,17 @@ let
                     "find . | cpio"
                   ]
                 }'
+                substituteInPlace $out --replace-fail ${lib.escapeShellArg "nohup sh -c \"sleep 6 && cd / && '$SCRIPT_DIR/kexec' -e \${kexec_extra_flags}\" &"} ${
+                  lib.escapeShellArg (
+                    lib.concatStringsSep "\n" [
+                      "if [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then"
+                      "  nohup sh -c \"sleep 6 && systemctl kexec\" &"
+                      "else"
+                      "  nohup sh -c \"sleep 6 && cd / && '$SCRIPT_DIR/kexec' -e \${kexec_extra_flags}\" &"
+                      "fi"
+                    ]
+                  )
+                }
                 sed -i \
                   -e 's|@init@|${config.system.build.toplevel}/init|' \
                   -e 's|@kernelParams@|${lib.escapeShellArgs config.boot.kernelParams}|' \
