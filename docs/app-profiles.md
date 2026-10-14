@@ -317,9 +317,13 @@ The deleted `packages/tsnet-proxy` remains deleted. No fleet deployment was made
 Pi 1.2.0's shipped `docs/custom-provider.md`, `docs/models.md` and
 `docs/codemode.md`, plus the shipped extension/model registry types and System
 One implementation, define this integration. `pi-decide.ts` registers
-`decide/jev`, `decide/solar` and `decide/fast` as classifier models. It reuses
-`@earendil-works/pi-ai/api/typesafe-system-one`'s `classify`, registered under
-`classifiers["typesafe-system-one"]`; there is no new HTTP client.
+`decide/jev`, `decide/solar` and `decide/fast` as classifier models. It reuses the TypeSafe provider's built-in `classify` dispatch from
+`@earendil-works/pi-ai/providers/all`, registered under
+`classifiers["typesafe-system-one"]`; there is no new HTTP client. Pi 1.2.0's
+extension loader aliases the pi-ai root to `compat.js`, so an arbitrary
+`pi-ai/api/*` import fails. The explicit `providers/all` alias is supported.
+The shipped `providers/typesafe.js` and `models.js` show that this dispatch calls
+the built-in System One implementation with the supplied model/auth options.
 
 Each model has contextWindow 128000 and zero catalog costs. The base URL ends
 in `/v1`, so the built-in adapter posts to `/v1/systemone`. Public pi questions
@@ -343,3 +347,30 @@ module was not changed here. Zero catalog prices mean pi reports zero classifier
 cost while LiteLLM charges real usage and reports it in its response header.
 The initial secret/settings hooks need the approved system deployment; later
 extension changes travel only with the application profile.
+
+The package's mandatory CLI gate now has **six** cases. With `PI_OFFLINE=1`,
+the real registry lists exactly `decide/fast`, `decide/jev`, `decide/solar` with
+a synthetic key and no decide models without a key. Both cases also assert that
+codemode is active. They keep builtin codemode enabled and disable MCP; clean
+temporary home/cwd/agent directories exclude operator resources. The six-case
+install check took **2.153 seconds** on Zao. It performs no classifier requests.
+
+On 2026-10-14, the endpoint was reachable (HTTP 200). As `simonwjackson`, with a
+private temporary agent directory and the key only in the environment, the
+opt-in live probe made exactly one `classify()` call for Jev and one for Solar,
+both with `PI_OFFLINE=1`. The public `bool` question was verified as wire-level
+`noul` through the built-in adapter's request hook. Results:
+
+| Requested | Wire response model | Approval probability | Reported billed cost |
+| --- | --- | ---: | ---: |
+| `decide/jev` | `jev-1.13.0` | 0.97 | $0.00001302 |
+| `decide/solar` | `solar-decide` | 0.988721 | $0.00004010 |
+
+Both returned HTTP 200 and `stopReason: stop`. The reported total is
+**$0.00005312**. Probabilities are not calibrated across providers and must not
+be compared as interchangeable confidence scores. Pi's normalized result names
+the requested alias (`jev`/`solar`), not the wire model. The opt-in probe observes
+the real response through the documented `fetch` option solely to record the
+wire model and cost header; it does not replace request/auth/protocol handling.
+`tests/pi/live-decide-probe.ts` is never run by builds or unattended updates.
+The public result is recorded in `docs/research/pi-decide-live-20261014.json`.

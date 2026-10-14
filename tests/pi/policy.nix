@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
     machine.succeed("${verifyBootOrder}")
     machine.succeed("findmnt -rn --mountpoint /var/lib/pi/simon/agent/settings.json -o VFS-OPTIONS | grep -w ro")
     machine.fail("su -s /bin/sh simon -c 'echo changed >> /var/lib/pi/simon/agent/settings.json'")
-    machine.succeed("su -s /bin/sh simon -c '${pkgs.python3}/bin/python3 ${agent.cliPolicyGuard}/cli-policy.py ${agent}/bin/pi /var/lib/pi/simon/agent/settings.json --agent-dir /var/lib/pi/simon/agent'")
+    machine.succeed("su -s /bin/sh simon -c '${pkgs.python3}/bin/python3 ${agent.cliPolicyGuard}/cli-policy.py ${agent}/bin/pi /var/lib/pi/simon/agent/settings.json --agent-dir /var/lib/pi/simon/agent --decide-extension ${../../modules/pi-decide.ts}'")
     machine.succeed("test -d /var/lib/pi/simon/agent/settings.json.lock")
   '';
 }

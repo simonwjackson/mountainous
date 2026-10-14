@@ -27,8 +27,13 @@ export default function (pi: ExtensionAPI) {
       maxTokens: 16384,
     }],
   });
-  pi.on("session_start", (_event, ctx) => {
-    writeFileSync(requiredEnv("PI_POLICY_OUTPUT"), JSON.stringify(pi.getSettings()));
+  pi.on("session_start", async (_event, ctx) => {
+    const classifiers = await ctx.modelRegistry.getAvailableOfType("classifier", "decide");
+    writeFileSync(requiredEnv("PI_POLICY_OUTPUT"), JSON.stringify({
+      settings: pi.getSettings(),
+      classifiers: classifiers.map((model) => `${model.provider}/${model.id}`).sort(),
+      tools: pi.getActiveTools(),
+    }));
     ctx.shutdown();
   });
 }

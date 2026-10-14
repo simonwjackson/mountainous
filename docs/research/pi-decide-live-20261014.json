@@ -1,0 +1,35 @@
+{
+  "offline": "1",
+  "results": [
+    {
+      "requested": "decide/jev",
+      "model": "jev",
+      "wireModel": "jev-1.13.0",
+      "wireType": "noul",
+      "status": 200,
+      "stopReason": "stop",
+      "answers": {
+        "approved": {
+          "type": "bool",
+          "probability": 0.97
+        }
+      },
+      "billedCost": 1.3019999999999999e-05
+    },
+    {
+      "requested": "decide/solar",
+      "model": "solar",
+      "wireModel": "solar-decide",
+      "wireType": "noul",
+      "status": 200,
+      "stopReason": "stop",
+      "answers": {
+        "approved": {
+          "type": "bool",
+          "probability": 0.988721
+        }
+      },
+      "billedCost": 4.01e-05
+    }
+  ]
+}

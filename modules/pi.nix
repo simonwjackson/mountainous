@@ -113,7 +113,7 @@ in
             export PI_OFFLINE=1
           '';
           installCheckPhase = (old.installCheckPhase or "") + ''
-            python3 ${cliGuard}/cli-policy.py "$out/bin/pi" ${policyFile}
+            python3 ${cliGuard}/cli-policy.py "$out/bin/pi" ${policyFile} --decide-extension ${./pi-decide.ts}
           '';
         });
         wrapper = pkgs.writeShellApplication {

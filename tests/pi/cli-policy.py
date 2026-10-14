@@ -8,16 +8,19 @@ import tempfile
 import time
 
 
-def check_policy(cli, settings_file, probe, agent_dir=None):
+def check_policy(cli, settings_file, probe, agent_dir=None, decide_extension=None):
     expected = json.loads(settings_file.read_text())
     failures = []
     results = {}
     started = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="pi-cli-policy-") as directory:
         root = Path(directory)
-        for name, content in [("locked", settings_file.read_bytes()),
-                              ("empty", b""), ("missing", None),
-                              ("malformed", b"{malformed")]:
+        cases = [("locked", settings_file.read_bytes()), ("empty", b""),
+                 ("missing", None), ("malformed", b"{malformed")]
+        if decide_extension:
+            cases += [("classifiers-key", settings_file.read_bytes()),
+                      ("classifiers-no-key", settings_file.read_bytes())]
+        for name, content in cases:
             case = root / name
             case.mkdir()
             agent = agent_dir if name == "locked" and agent_dir else case / "agent"
@@ -39,15 +42,34 @@ def check_policy(cli, settings_file, probe, agent_dir=None):
                    "PI_CODING_AGENT_DIR": str(agent),
                    "PI_POLICY_PROVIDER": expected["defaultProvider"],
                    "PI_POLICY_MODEL": expected["defaultModel"], "PI_POLICY_OUTPUT": str(output)}
+            classifier_case = name.startswith("classifiers-")
+            if name == "classifiers-key":
+                env["PI_DECIDE_API_KEY"] = "offline-classifier-test-not-a-secret"
             command = [str(cli), "--offline", "--mode", "rpc", "--no-session",
-                       "--no-extensions", "--no-skills", "--no-prompt-templates",
-                       "--no-themes", "--no-context-files", "--no-tools", "-e", str(probe)]
+                       "--no-skills", "--no-prompt-templates",
+                       "--no-themes", "--no-context-files"]
+            if not classifier_case:
+                command += ["--no-extensions", "--no-tools"]
+            if classifier_case:
+                # Keep builtin codemode enabled; clean temp cwd/home/agent
+                # excludes user extensions, and MCP is explicitly disabled.
+                command += ["--no-mcp", "-e", str(decide_extension)]
+            command += ["-e", str(probe)]
             try:
                 result = subprocess.run(command, input="", text=True, capture_output=True,
                                         cwd=cwd, env=env, timeout=20)
-                effective = json.loads(output.read_text()) if output.exists() else None
-                results[name] = {"exit_code": result.returncode, "effective": effective}
-                if name == "locked":
+                report = json.loads(output.read_text()) if output.exists() else {}
+                effective = report.get("settings")
+                results[name] = {"exit_code": result.returncode, "effective": effective,
+                                 "classifiers": report.get("classifiers"), "tools": report.get("tools"),
+                                 "diagnostic": (result.stderr + result.stdout)[-4000:]}
+                if classifier_case:
+                    want = ["decide/fast", "decide/jev", "decide/solar"] if name == "classifiers-key" else []
+                    if result.returncode != 0 or effective != expected or report.get("classifiers") != want:
+                        failures.append(f"{name}: classifier availability or policy did not match (offline)")
+                    if "codemode" not in report.get("tools", []):
+                        failures.append(f"{name}: codemode is not active")
+                elif name == "locked":
                     if result.returncode != 0 or effective != expected:
                         failures.append(f"locked: CLI exit={result.returncode}, effective settings do not equal the Nix file")
                 elif result.returncode == 0:
@@ -63,13 +85,17 @@ def main():
     parser.add_argument("cli", type=Path)
     parser.add_argument("settings", type=Path)
     parser.add_argument("--agent-dir", type=Path)
+    parser.add_argument("--decide-extension", type=Path)
     args = parser.parse_args()
     result = check_policy(args.cli.resolve(), args.settings.resolve(),
-                          Path(__file__).with_name("cli-probe.ts"), args.agent_dir)
+                          Path(__file__).with_name("cli-probe.ts"), args.agent_dir, args.decide_extension)
     for name, case in result["cases"].items():
-        print(f"CLI policy {name}: exit={case.get('exit_code', 'timeout')}")
+        print(f"CLI policy {name}: exit={case.get('exit_code', 'timeout')}" +
+              (f", available={case['classifiers']}" if name.startswith("classifiers-") else ""))
     for failure in result["failures"]:
         print(f"CLI policy FAIL: {failure}")
+        name = failure.split(":", 1)[0]
+        print(result["cases"][name].get("diagnostic", ""))
     print(f"CLI policy: {len(result['cases'])} cases in {result['seconds']:.3f}s")
     return bool(result["failures"])
 
