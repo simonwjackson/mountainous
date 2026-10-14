@@ -12,12 +12,25 @@ assert builtins.all (
   in
   c.mountainous.appProfiles.pi.enable
   && c.mountainous.appProfiles.pi.profilePath == "/nix/var/nix/profiles/apps/pi"
+  && c.mountainous.appDeployment.enable
+  && c.mountainous.appDeployment.deployPublicKey == unzen.mountainous.appDeployment.deployPublicKey
+  && c.mountainous.appDeployment.signingPublicKey == unzen.mountainous.appDeployment.signingPublicKey
+  && c.mountainous.appDeployment.builderPublicKey == unzen.mountainous.appDeployment.builderPublicKey
+  && builtins.elem "restrict ${c.mountainous.appDeployment.deployPublicKey}" c.users.users.app-deploy.openssh.authorizedKeys.keys
+  && builtins.elem c.mountainous.appDeployment.signingPublicKey c.nix.settings.trusted-public-keys
+  && (
+    name != "fuji"
+    || builtins.elem "restrict,command=\"${c.nix.package}/bin/nix-daemon --stdio\" ${c.mountainous.appDeployment.builderPublicKey}" c.users.users.simon.openssh.authorizedKeys.keys
+  )
   && c.users.users.app-deploy.isSystemUser
   && !(builtins.elem "wheel" c.users.users.app-deploy.extraGroups)
   && !(builtins.elem "app-deploy" c.nix.settings.trusted-users)
   && lib.hasPrefix "/run/" c.sops.secrets.pi-cliproxyapi-api-key.path
   && c.sops.secrets.pi-cliproxyapi-api-key.owner == "simon"
   && c.sops.secrets.pi-cliproxyapi-api-key.mode == "0400"
+  && lib.hasPrefix "/run/" c.sops.secrets.pi-decide-api-key.path
+  && c.sops.secrets.pi-decide-api-key.owner == "simon"
+  && c.sops.secrets.pi-decide-api-key.mode == "0400"
   && builtins.length mounts == 1
   && (builtins.head mounts).options == "bind,ro,nofail"
   && (builtins.head mounts).restartTriggers != [ ]

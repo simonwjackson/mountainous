@@ -84,6 +84,14 @@ in
         };
         config = lib.mkMerge [
           {
+            # Dedicated public halves supplied after Unzen key generation.
+            # Private halves remain in /var/lib/app-updater on Unzen.
+            mountainous.appDeployment = {
+              enable = lib.mkDefault true;
+              deployPublicKey = lib.mkDefault "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGhp/8qnbyKvwLrXEdZ5t3M1A6z/AxB4Q8MB/73GvWL/ app-deploy@unzen";
+              builderPublicKey = lib.mkDefault "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIY+uNvkpK7llyLu/JEv26MmP13DOLDBXL37N8jXhWCw app-builder@unzen";
+              signingPublicKey = lib.mkDefault "app-updater-1:gn1abGFkIEnq2UsjXSenWZjNSv6/m1Wb5/vyLDF1WRo=";
+            };
             assertions = [
               {
                 assertion =
