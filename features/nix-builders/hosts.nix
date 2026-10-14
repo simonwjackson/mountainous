@@ -10,7 +10,8 @@
 {
   fuji = {
     system = "aarch64-linux";
-    sshUser = "simonwjackson";
+    # Reinstalled on cairn: the builder layer accepts Zao as simon via ssh-ng.
+    sshUser = "simon";
     maxJobs = 4;
     speedFactor = 1;
     # This Oracle ARM instance has no /dev/kvm, so it must not be offered work

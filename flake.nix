@@ -550,7 +550,7 @@
     in
       assert lib.assertMsg zao.nix.distributedBuilds
       "Zao must dispatch builds it cannot do itself";
-      assert lib.assertMsg (fuji.system == "aarch64-linux" && fuji.protocol == "ssh-ng")
+      assert lib.assertMsg (fuji.system == "aarch64-linux" && fuji.protocol == "ssh-ng" && fuji.sshUser == "simon")
       "Zao must reach Fuji as an aarch64 builder over ssh-ng";
       assert lib.assertMsg (fuji.publicHostKey == registry.fuji.publicHostKey)
       "A builder must carry its host key, or root's SSH stops to ask about it";
@@ -561,7 +561,9 @@
       assert lib.assertMsg (!(builtins.elem "zao" (map (m: m.hostName) zao.nix.buildMachines)))
       "Zao must not dispatch work to itself";
         pkgs.runCommand "nix-builders" {} ''
-          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simonwjackson@fuji aarch64-linux' \
+          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@fuji aarch64-linux' \
+            ${zao.environment.etc."nix/machines".source}
+          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@yari aarch64-linux' \
             ${zao.environment.etc."nix/machines".source}
           touch "$out"
         '';
