@@ -193,12 +193,12 @@
       };
     };
 
-    # Korri's aarch64 outputs must be built on aarch64 hardware, and Fuji is the
-    # only such machine here. Naming it once means a plain `nix build` reaches it
-    # without --builders, which is how the Odin closure gets built at all.
+    # Korri's aarch64 outputs must be built on aarch64 hardware: Fuji and Yari.
+    # Naming them once means a plain `nix build` reaches them without
+    # --builders, and Nix spreads one build's derivations across both.
     features.nix-builders = {
       enable = true;
-      use = ["fuji"];
+      use = ["fuji" "yari"];
     };
 
     # Zao builds Korri's x86_64 outputs. Reading them from Korri's cache is

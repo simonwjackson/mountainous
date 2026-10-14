@@ -3,3 +3,6 @@
 # `ssh-ed25519 AAAA... root@fuji` line. Public host keys are not secrets;
 # they let the local Nix daemon verify the builder's identity.
 hosts/sobo/default.nix:generic-api-key:98
+
+# Public SSH host key for the yari aarch64 remote builder, same reason as above.
+features/nix-builders/hosts.nix:generic-api-key:31

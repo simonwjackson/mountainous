@@ -19,6 +19,18 @@
     publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU1LZE5aYjZxbmNTSGNBTEZ4dHpBRENEU0V0KzAzVkxoUlFtTlNuK3JIYTIgcm9vdEBmdWppCg==";
   };
 
+  # Yari runs cairn (modules/builder.nix): user simon, and Zao's root key may
+  # only run nix-daemon --stdio, so the protocol must stay ssh-ng. Its daemon
+  # runs at idle priority behind Forgerie, and it has no /dev/kvm either.
+  yari = {
+    system = "aarch64-linux";
+    sshUser = "simon";
+    maxJobs = 4;
+    speedFactor = 1;
+    supportedFeatures = ["big-parallel" "benchmark"];
+    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUl2Y2ZQTUQ4aUF2eHdXQThFcGZrOTVDdnN6anpzUVNEcGV0a2pnZFBaUGggcm9vdEB5YXJpCg==";
+  };
+
   zao = {
     system = "x86_64-linux";
     sshUser = "simonwjackson";
