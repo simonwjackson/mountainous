@@ -13,6 +13,14 @@ let
         input = lib.mkOption { type = lib.types.str; };
         schedule = lib.mkOption { type = lib.types.str; };
         hosts = lib.mkOption { type = lib.types.listOf lib.types.str; };
+        substituters = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+        };
+        trustedPublicKeys = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+        };
       };
     }
   );
@@ -60,15 +68,6 @@ in
         default = { };
       };
       config = lib.mkMerge [
-        {
-          mountainous.appUpdates = lib.mkIf (config.networking.hostName == "unzen") {
-            pi = {
-              input = "pi";
-              schedule = "*-*-* 00,06,12,18:00:00 UTC";
-              hosts = lib.attrNames hosts;
-            };
-          };
-        }
         (lib.mkIf (apps != { }) {
           assertions = lib.mapAttrsToList (name: app: {
             assertion =
@@ -79,7 +78,7 @@ in
           }) apps;
           environment.systemPackages = [ updater ];
           systemd.services = lib.mapAttrs' (
-            name: _:
+            name: app:
             lib.nameValuePair "app-update-${name}" {
               description = "Build and deploy only the ${name} application profile";
               wants = [ "network-online.target" ];
@@ -92,8 +91,8 @@ in
                 NIX_SSHOPTS = "-F /dev/null -o BatchMode=yes";
                 NIX_CONFIG = ''
                   builders-use-substitutes = true
-                  extra-substituters = https://pi.cachix.org https://nix-community.cachix.org
-                  extra-trusted-public-keys = pi.cachix.org-1:lGeoGJaZ5ZDabuRzkcD5EBTNnDM4HJ1vqeOxlWk1Flk= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+                  extra-substituters = ${lib.concatStringsSep " " app.substituters}
+                  extra-trusted-public-keys = ${lib.concatStringsSep " " app.trustedPublicKeys}
                 '';
               };
               serviceConfig = {

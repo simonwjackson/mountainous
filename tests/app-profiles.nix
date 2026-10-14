@@ -19,7 +19,7 @@ assert builtins.all (
   && c.sops.secrets.pi-cliproxyapi-api-key.owner == "simon"
   && c.sops.secrets.pi-cliproxyapi-api-key.mode == "0400"
   && builtins.length mounts == 1
-  && (builtins.head mounts).options == "bind,ro"
+  && (builtins.head mounts).options == "bind,ro,nofail"
   && (builtins.head mounts).restartTriggers != [ ]
   && deploy.nodes.${name}.profiles.pi.profilePath == c.mountainous.appProfiles.pi.profilePath
   && deploy.nodes.${name}.sshUser == "app-deploy"

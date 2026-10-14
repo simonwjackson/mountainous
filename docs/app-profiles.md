@@ -2,9 +2,12 @@
 
 Unzen selects an input revision, checks each architecture and deploys each app
 profile separately. It never calls a system activator, commits to `cairn`, or
-runs flake-wide checks. The shared account `app-deploy` owns only
-`/nix/var/nix/profiles/apps`. It has no sudo rules, wheel membership or Nix
-trusted-user access. Signed closures permit imports through the Nix daemon.
+runs flake-wide checks. The shared account `app-deploy` has an unprivileged
+shell and a writable home. SSH `restrict` disables forwarding, PTY and user rc;
+it does **not** limit shell commands to app deployment. The account owns the
+shared profile directory `/nix/var/nix/profiles/apps`. It has no sudo rules,
+wheel membership or Nix trusted-user access. Host system profiles remain
+root-owned and isolated. Signed closures permit imports through the Nix daemon.
 A stolen deploy key can replace **all app profiles**, not host system profiles.
 A stolen signing key can authorize store content; keep both private on Unzen.
 
@@ -21,9 +24,24 @@ Only `simon` is provisioned to run pi. All users see its profile on PATH, but
 other users get an explicit unprovisioned-directory error. Additional users
 need their own system-owned layout, mount and secret policy.
 
-`/var/lib/pi/simon` is root-owned 0755. Its `agent` child is simon-owned 0700;
-pi needs to create `settings.json.lock` even to read settings. The root systemd
-mount binds the store settings file read-only onto `agent/settings.json`.
+`/var/lib/pi/simon` is root-owned 0755. Its `agent` child is simon-owned 0700
+for auth, sessions and caches. The root systemd mount binds the store settings
+file read-only onto `agent/settings.json`. `nofail` removes its implicit
+`Before=local-fs.target` dependency, so waiting for tmpfiles does not form a
+boot cycle. A failed mount does not block host boot; pi still fails closed.
+
+The fleet Bun package patches its executed, unbundled SettingsManager module.
+Global reads bypass the user-owned lock entirely. A pre-made
+`settings.json.lock` therefore cannot hide the global policy. Missing, empty
+or malformed global settings throw out of startup rather than fall back to
+`{}`. Global writes are rejected; project settings retain upstream behavior.
+The patch pins the complete module hash, checks the CLI/startup import chain,
+checks for embedded SettingsManagers, and requires unique replacement matches.
+**Cost:** an upstream SettingsManager change stops the affected application
+builds on the four-times-a-day schedule until an operator reviews and updates
+the patch. The updater records failure and leaves deployed/accepted releases
+unchanged when no architecture succeeds. The patched runtime needs a local
+rebuild; upstream dependency and Bun-workspace cache paths remain unchanged.
 `What=` and `restartTriggers` change with the settings store path, so the NixOS
 switch restarts that mount rather than only remounting its old source.
 The wrapper refuses to start unless that exact mountpoint has read-only VFS
@@ -156,3 +174,30 @@ any new host hooks.
 No host deployment, switch, install, key generation or state change was done.
 Deployment tests, ARM remote building and actual locked-setting interaction
 remain for Deploy once dedicated keys and the initial host hooks are installed.
+
+## Review corrections (2026-10-14)
+
+The original boot-order and settings-lock claims were wrong. The original
+mount formed a local-fs/tmpfiles cycle, and an existing user-owned lock made
+upstream pi read `{}`. Both failures were reproduced before the fixes.
+
+`checks.pi-policy` now boots the real host mount in a NixOS VM and runs
+`systemd-analyze verify` with systemd 261.2. A negative control recreates the
+original cycle; diagnostics matter because verify can return zero after
+deleting a cyclic job. The VM tests effective settings through the actual Bun
+SettingsManager as simon with a pre-made lock and a read-only bind mount. It
+also confirms that the actual CLI exits on missing or malformed policy.
+Six patch-drift tests use the real upstream dist tree. The package's install
+checks repeat the lock/read/parse regression for every app build.
+
+Pi's update declaration and cache policy now live in `modules/pi.nix`.
+The shared updater takes each app's optional `substituters` and
+`trustedPublicKeys`; it contains no pi-specific declaration or cache.
+
+Review verification passed: `nix flake check` on x86_64, all eight fleet
+`system.build.toplevel.drvPath` evaluations, the boot/lock/CLI VM test, six
+patch-drift tests and seven updater tests. `nix path-info -r` plus `grep -c`
+found **0 plaintext-key matches** across 108 realized pi closure paths
+(22,334 files counted). The key reached grep only through an anonymous file
+descriptor; it was not printed or placed in argv. ARM remains evaluation-only.
+No deployment or host change was made.
