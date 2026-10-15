@@ -32,6 +32,15 @@
         '';
       checks.fleet-sync =
         assert sync;
-        pkgs.runCommand "fleet-sync-contract" { } "touch $out";
+        pkgs.runCommand "fleet-sync-contract"
+          {
+            nativeBuildInputs = [ pkgs.python3 ];
+            passAsFile = [ "startup" ];
+            startup = builtins.toJSON self.nixosConfigurations.tate.config.systemd.services.syncthing.serviceConfig.ExecStartPre;
+          }
+          ''
+            python3 ${../tests/fleet-sync-startup.py} "$startupPath"
+            touch $out
+          '';
     };
 }

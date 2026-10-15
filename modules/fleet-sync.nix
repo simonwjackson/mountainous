@@ -118,7 +118,7 @@ in
       systemd.services.syncthing.serviceConfig.ExecStartPre = lib.mkAfter [
         (lib.escapeShellArgs [
           "${pkgs.python3}/bin/python3"
-          (toString ./fleet-sync-bootstrap.py)
+          "${./fleet-sync-bootstrap.py}"
           (lib.getExe config.services.syncthing.package)
           config.services.syncthing.configDir
           (pkgs.writeText "fleet-sync-bootstrap.json" (
