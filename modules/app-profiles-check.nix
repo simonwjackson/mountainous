@@ -30,6 +30,18 @@
           grep -F 'export PI_OFFLINE=1' ${self.packages.${system}.app-pi}/bin/pi
           touch $out
         '';
+      checks.app-updater-closure =
+        pkgs.runCommand "app-updater-closure"
+          {
+            nativeBuildInputs = [ pkgs.python3 ];
+            passAsFile = [ "startup" ];
+            startup =
+              self.nixosConfigurations.unzen.config.systemd.services.app-update-pi.serviceConfig.ExecStart;
+          }
+          ''
+            python3 ${../tests/app-updater-closure.py} "$startupPath"
+            touch $out
+          '';
       checks.fleet-sync =
         assert sync;
         pkgs.runCommand "fleet-sync-contract"

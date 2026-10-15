@@ -52,7 +52,7 @@ in
           stateDirectory = state;
           inherit apps;
           builder = {
-            knownHosts = toString ../deploy/known_hosts;
+            knownHosts = "${../deploy/known_hosts}";
             alias = "fuji";
             hostName = "fuji.hummingbird-lake.ts.net";
             privateKey = "${state}/ssh/builder_ed25519";
