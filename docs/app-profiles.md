@@ -1,389 +1,125 @@
-# Independent application profiles
+# App profiles and fleet preferences
 
-Unzen selects an input revision, checks each architecture and deploys each app
-profile separately. It never calls a system activator, commits to `cairn`, or
-runs flake-wide checks. The shared account `app-deploy` has an unprivileged
-shell and a writable home. SSH `restrict` disables forwarding, PTY and user rc;
-it does **not** limit shell commands to app deployment. The account owns the
-shared profile directory `/nix/var/nix/profiles/apps`. It has no sudo rules,
-wheel membership or Nix trusted-user access. Host system profiles remain
-root-owned and isolated. Signed closures permit imports through the Nix daemon.
-A stolen deploy key can replace **all app profiles**, not host system profiles.
-A stolen signing key can authorize store content; keep both private on Unzen.
+Pi is an app profile, not a system package. Each host exposes
+`/nix/var/nix/profiles/apps/pi/bin/pi` on PATH. Unzen updates that profile
+at 00:00, 06:00, 12:00 and 18:00 UTC without a system rebuild. The updater
+never changes CLIProxyAPI or the decision gateway.
 
-The host system contains directory, access, PATH, secret and settings hooks.
-It does not contain pi or its extension. Changing those hooks needs an approved
-system rebuild. Changing application inputs does not. There is no CLIProxyAPI
-updater change.
+## Pi runtime
 
-## pi policy
+The profile uses `inputs.pi.packages.<system>.coding-agent-bun` without a
+SettingsManager patch. Pi uses its normal `~/.pi/agent` directory. Auth,
+sessions and installed package files stay local.
 
-The Bun package is `pi.packages.<system>.coding-agent-bun`, with its own
-nixpkgs pin. The extension is an app-closure dependency, passed with `-e`.
-Only `simon` is provisioned to run pi. All users see its profile on PATH, but
-other users get an explicit unprovisioned-directory error. Additional users
-need their own system-owned layout, mount and secret policy.
+The wrapper loads CLIProxyAPI and `pi-decide.ts` with explicit `-e` paths.
+It reads the two API keys from runtime sops files owned by simon, mode 0400.
+It supplies `CLIPROXYAPI_BASE_URL`, `CLIPROXYAPI_API_KEY` and
+`PI_DECIDE_API_KEY`. No key enters the Nix store or a command argument.
+All eight hosts receive the decision gateway master key. This includes admin
+rights and spending authority. Rotate both fleet.yaml and Rakku's gateway
+secret together. No gateway-module change is part of this feature.
 
-`/var/lib/pi/simon` is root-owned 0755. Its `agent` child is simon-owned 0700
-for auth, sessions and caches. The root systemd mount binds the store settings
-file read-only onto `agent/settings.json`. `nofail` removes its implicit
-`Before=local-fs.target` dependency, so waiting for tmpfiles does not form a
-boot cycle. A failed mount does not block host boot; pi still fails closed.
+Each run gets a private mode-0700 TMPDIR. The provider uses a predictable
+import filename, so sharing /tmp would allow another user to supply code.
+Normal exits remove the directory. SIGKILL can leave it behind.
 
-The fleet Bun package patches its executed, unbundled SettingsManager module.
-Global reads bypass the user-owned lock entirely. A pre-made
-`settings.json.lock` therefore cannot hide the global policy. Missing, empty
-or malformed global settings throw out of startup rather than fall back to
-`{}`. Global writes are rejected; project settings retain upstream behavior.
-The patch anchors only the complete `FileSettingsStorage.withLock`,
-`SettingsManager.loadFromStorage` and `SettingsManager.tryLoadFromStorage`
-methods. It does not hash the module or pin settings declarations/getters.
-These anchors are only an early layout check. A mandatory real-CLI install
-check, described below, is the authoritative behaviour guard.
-Missing, changed or repeated method regions stop the build. Identical embedded
-copies get the same narrow patch; unknown executable layouts fail closed.
-The lock-retry method is not patched or pinned because global reads bypass it.
-**Cost:** a change to one of those three methods stops the affected application
-builds on the four-times-a-day schedule until an operator reviews and updates
-the patch. Unrelated settings additions continue to build. The updater records failure and leaves deployed/accepted releases
-unchanged when no architecture succeeds. The patched runtime needs a local
-rebuild; upstream dependency and Bun-workspace cache paths remain unchanged.
-`What=` and `restartTriggers` change with the settings store path, so the NixOS
-switch restarts that mount rather than only remounting its old source.
-The wrapper refuses to start unless that exact mountpoint has read-only VFS
-options. User IDs are resolved by account names; Rakku keeps uid 1001.
+`PI_OFFLINE=1` suppresses pi's startup network checks and missing-package
+auto-installs. Provider model discovery and inference still use the network.
+The wrapper does not set `--provider`, `--model` or `--no-extensions`.
+Local package discovery remains enabled. Missing local packages are skipped.
+Remote-only packages and portable package installation are deferred.
 
-The wrapper creates a fresh mode-0700 TMPDIR inside the private agent tmp
-directory for every invocation. This prevents the extension's predictable
-patched-module filename from executing another user's code. Normal exits
-remove it. SIGKILL can leave temporary directories; remove those when pi is
-not running. The key is read only at runtime from
-`/run/secrets/pi-cliproxyapi-api-key` (simon, 0400). It is encrypted in
-`secrets/fleet.yaml` for the existing fleet recipients. Plaintext did not enter
-an argument, repository file or store derivation.
+## Writable preferences
 
-Telemetry is disabled in settings, and `PI_OFFLINE=1` suppresses startup network
-probes. We deliberately omit `lastChangelogVersion`: it cannot follow an app
-update in a system-built file. **Cost:** pi treats starts as fresh installs and
-may attempt settings bookkeeping; the changelog stays collapsed, not
-acknowledged. There is no install telemetry. Locked writes can fail silently:
-the TUI can claim a changed default, and `pi install` can say “Installed” even
-though settings did not change. Restart pi to see the actual system policy.
+`~/.pi/agent/settings.json` is a symlink to
+`~/.local/share/fleet-sync/pi/settings.json`. Nix creates directories and the
+link, but never writes settings. The tmpfiles `L` rule does not replace an
+existing file. Migrate an existing file explicitly, retaining a backup.
 
-## One-time Deploy preparation (not performed by Build)
+Syncthing shares the whole settings file, including `defaultProvider`,
+`defaultModel`, `enabledModels` and `packages`. Nix does not merge or lock
+any field. Only settings.json is allowed. Auth, sessions, lock files and
+package contents do not sync. There are five versions of incoming changes.
+Simultaneous edits can create conflict copies. Offline hosts sync after they
+reconnect. File changes normally propagate in seconds, not synchronously.
+Existing pi sessions can retain settings in memory. Start a new session to
+use a default changed elsewhere. Project settings and explicit CLI choices
+can override the global default.
 
-1. On Unzen, as root, make `/var/lib/app-updater` and `ssh` mode 0700.
-   Generate dedicated keys, unrelated to the CLIProxyAPI keys:
-   ```sh
-   umask 077
-   install -d -m 0700 /var/lib/app-updater/ssh
-   ssh-keygen -t ed25519 -N '' -f /var/lib/app-updater/ssh/id_ed25519
-   ssh-keygen -t ed25519 -N '' -f /var/lib/app-updater/ssh/builder_ed25519
-   nix key generate-secret --key-name app-updater-1 > /var/lib/app-updater/signing-key
-   nix key convert-secret-to-public < /var/lib/app-updater/signing-key
-   ```
-2. Commit **only** the public keys in a shared base layer:
-   `mountainous.appDeployment.{deployPublicKey,signingPublicKey,builderPublicKey}`.
-   Set `mountainous.appDeployment.enable = true`. Assertions require all three.
-   The Fuji builder key runs only `nix-daemon --stdio`, like Zao's key.
-   The operator supplied the three public keys on 2026-10-14. They are now set
-   in the shared base layer with `enable = true`; no private key was read or
-   generated by this Build stage. This is source configuration only, not a host
-   activation. Deploy must install the reviewed host pieces before access works.
-3. Verify pinned SSH host keys against operator-controlled host identities.
-   Six live ed25519 keys were collected on 2026-10-14. Myoko's scanner connection
-   failed; its pin comes from its existing public install key on Zao. Hiyori
-   timed out and remains a TODO in `deploy/known_hosts`; it fails closed until
-   its verified key is committed. Myoko's unattended Tailscale SSH check remains
-   an access-policy blocker. Neither blocker stops other hosts.
-4. Apply the approved host system changes once. Do not use `nix run .#install`.
-   Confirm the settings mount is read-only and points at the current store file.
-5. Seed an operator-reviewed, fixed source revision on Unzen:
-   ```sh
-   git clone --branch cairn https://github.com/simonwjackson/mountainous.git /var/lib/app-updater/repository
-   git -C /var/lib/app-updater/repository checkout --detach <reviewed-commit>
-   ```
-   GitHub's repository API returned HTTP 200 without credentials on 2026-10-14:
-   this repository is public. No GitHub credential is required. The updater
-   never pulls mountainous or modifies this checkout. **Cost:** shared updater
-   code/extension/system-policy changes require Deploy to replace the reviewed
-   checkout revision. This avoids silently running new orchestration code.
-6. Run `app-update --config <app-updates.json path from ExecStart> --app pi
-   --check-only` using the service environment. This builds ARM on Fuji via
-   `ssh-ng://simon@fuji.hummingbird-lake.ts.net`; the ninth builder field pins its
-   public host key through the local daemon. Private builder key stays in the
-   state directory. **Cost:** first ARM build is large (probe: 463 derivations)
-   and depends on Fuji. An ARM failure does not stop checked x86 deployments.
-7. After verification, create `/var/lib/app-updater/enabled` and start
-   `app-update-pi.service`. The timer is `*-*-* 00,06,12,18:00:00 UTC`.
+Seed the file on one host only. A fresh host waits for that file, and before
+it arrives pi uses its normal model fallback. The wrapper registers both
+providers, so that fallback does not guarantee CLIProxyAPI or a particular
+model. Keep `defaultTools = [ "+codemode" ]` in the shared preferences to use
+classify() through codemode. Nix no longer enforces that choice.
 
-The global flock serializes apps. Dirty checkouts are rejected. Both the
-checked-in and accepted versions/revision dates are downgrade floors. Builds
-use an exact `--override-input` ref and `--no-write-lock-file`; the tracked
-lockfile stays unchanged. Targeted checks run the app's `--version` and check
-the deployment schema. Each activation closure is built before deployment.
-`deploy --checksigs --skip-checks` avoids evaluating host systems or Ibuki's
-Zao-only Korri source. Rollback is scoped to the selected app profile.
+Fuji keeps local pi settings because its builder-only contract forbids
+Syncthing. Zao is not a fleet host and is not a sync peer.
 
-Receipts and command logs under `receipts/` are private (0600 inside 0700).
-Each receipt records per-host status. Any success advances `accepted-pi.json`;
-failures are retried next run even for the same revision. Partial failure exits
-nonzero for systemd reporting. No remote deployment was performed by Build.
+## Declarative trust
 
-## Add a second app
+`modules/fleet-sync.nix` owns the Syncthing configuration. A folder declares
+its hosts and allowed top-level file names under `mountainous.fleetSync`.
+All members must have identities before deployment. There is no manual device
+or folder acceptance.
 
-Add `inputs.tool.url = "github:owner/tool";` in `flake.nix`. In a shared module:
+Run `./scripts/fleet-sync-enroll --all` once to enroll the seven pi peers.
+A rerun keeps existing identities. The script encrypts the cert and key in
+`secrets/hosts/<host>.yaml` and records public IDs in
+`deploy/fleet-sync-devices.json`. Stage new files before Nix evaluation.
+Host files are encrypted to the operator and that host only. No trust comes
+from the GUI. Identity rotation is a separate, explicit operation.
 
-```nix
-{ inputs, lib, ... }: {
-  mountainous.appProfiles.tool.package = system:
-    inputs.tool.packages.${system}.default;
-  nixos.modules.base = { config, ... }: {
-    mountainous.appUpdates.tool = lib.mkIf (config.networking.hostName == "unzen") {
-      input = "tool";
-      schedule = "*-*-* 00,06,12,18:00:00 UTC";
-      hosts = [ "fuji" "hiyori" "ibuki" "myoko" "rakku" "tate" "unzen" "yari" ];
-    };
-  };
-}
-```
+Global/local discovery, relays, NAT traversal, introducers, auto-accept and
+Syncthing auto-upgrades are off. Peers use fixed tailnet DNS addresses on
+TCP 22000. The firewall opens that port only on tailscale0. The GUI and API
+use a private Unix socket. The NixOS module applies devices and folders via
+that socket and removes entries absent from the repo.
 
-The package must expose `version` and `bin/tool --version`. GitHub and git
-inputs are supported. Optional `hostModule` supplies app-specific host hooks.
-No new deploy account, signing key, timer implementation or host-file setting
-is needed. Add and lock new inputs, check, then Deploy the reviewed source and
-any new host hooks.
+## Updater preparation and limits
 
-## Build verification (2026-10-14)
+Unzen's deploy and Fuji-builder SSH keys and signing key live in
+`/var/lib/app-updater`. Only public halves are committed. The app-deploy
+account can write app profiles, not system profiles. The Fuji builder key
+is restricted to `nix-daemon --stdio`. Deploy-rs verifies signatures and
+provides app-scoped rollback.
 
-- `nix flake check` passed on Zao (x86_64); its normal invocation omits ARM.
-- All eight fleet `system.build.toplevel.drvPath` evaluations passed, including
-  Ibuki with the local Korri checkout on Zao. Host files were not changed.
-- The app, profile contract, deploy schema and deploy activation checks passed.
-  Seven updater policy/filesystem/subprocess tests passed.
-- At commit `b91a4a72`, a real clean-checkout `app-update --check-only` run resolved pi's latest
-  revision and built/checked the x86 app and activator. It left the source clean
-  and wrote a private receipt. The wrapper returned Bun pi version `1.2.0`;
-  an unprovisioned prompt invocation failed before reading the key or calling
-  the endpoint. Provider extension version is `1.4.22`.
-- In an isolated copy, Korri's locked and original URLs were changed to an
-  absent `/nonexistent/korri`. `.#deploy` and both app package derivations still
-  evaluated with `--no-update-lock-file`. Unzen does not need Korri.
-- At commit `b91a4a72`, plaintext-key scanning covered tracked files and
-  189 `nix path-info -r` paths for the realized x86 app and updater (31,463
-  files). No plaintext key or SSH private-key header was found. The settings
-  file was subsequently realized and checked for its declared public policy.
-  A final updater run and key scan including settings remain gated and were
-  not executed. Deploy must rerun that scan. ARM was evaluated, not built.
-- Additional `nix flake check --all-systems --no-build` exposed an existing
-  nix-extras Nzbfast module error: `packages.aarch64-linux` is absent. This is
-  outside app-profile scope and blocks fleet-wide ARM check evaluation, not
-  the app packages or generated deployment graph.
+The updater uses a fixed, clean source checkout at
+`/var/lib/app-updater/repository`. It never pulls mountainous or commits a
+new lockfile. It builds candidate input revisions with `--override-input`,
+checks the app version and deploy schema, then records per-host results.
+Failures on one host do not prevent other hosts from updating. Partial
+failure exits nonzero and retries on the next run. Private receipts are
+stored under `/var/lib/app-updater`.
 
-No host deployment, switch, install, key generation or state change was done.
-Deployment tests, ARM remote building and actual locked-setting interaction
-remain for Deploy once dedicated keys and the initial host hooks are installed.
+Create `/var/lib/app-updater/enabled` only after the first signed app deploy
+works. Until then the service's condition keeps the timer from deploying.
+Unzen's boot partition currently has I/O errors. Do not reboot or attempt a
+persistent system switch until that fault is repaired. Hiyori is offline
+and its SSH host pin is still missing. Myoko requires a Tailscale SSH check.
+The first aarch64 app build is not yet complete and needs Fuji.
 
-## Review corrections (2026-10-14)
+## Add another app or sync folder
 
-The original boot-order and settings-lock claims were wrong. The original
-mount formed a local-fs/tmpfiles cycle, and an existing user-owned lock made
-upstream pi read `{}`. Both failures were reproduced before the fixes.
+Add a flake input and set `mountainous.appProfiles.<name>.package` to a
+system-to-package function. Declare `mountainous.appUpdates.<name>` on Unzen
+with its input, schedule and target hosts. An optional hostModule supplies
+runtime hooks. The package must have a version and `bin/<name> --version`.
 
-`checks.pi-policy` now boots the real host mount in a NixOS VM and runs
-`systemd-analyze verify` with systemd 261.2. A negative control recreates the
-original cycle; diagnostics matter because verify can return zero after
-deleting a cyclic job. The VM tests effective settings through the actual Bun
-SettingsManager as simon with a pre-made lock and a read-only bind mount. It
-also confirms that the actual CLI exits on missing or malformed policy.
-Before narrowing, six patch-drift tests used the real upstream dist tree. The package's install
-checks repeat the lock/read/parse regression for every app build.
+A service that needs preference sync declares
+`mountainous.fleetSync.folders.<name> = { hosts = [ ... ]; files = [ ... ]; }`.
+Its data lives under `/home/simon/.local/share/fleet-sync/<name>`. This
+mechanism syncs files for simon. It does not manage service-database migration
+or guarantee a single writer.
 
-Pi's update declaration and cache policy now live in `modules/pi.nix`.
-The shared updater takes each app's optional `substituters` and
-`trustedPublicKeys`; it contains no pi-specific declaration or cache.
+## Focused verification
 
-Before narrowing, review verification passed: `nix flake check` on x86_64, all eight fleet
-`system.build.toplevel.drvPath` evaluations, the boot/lock/CLI VM test, six
-patch-drift tests and seven updater tests. `nix path-info -r` plus `grep -c`
-found **0 plaintext-key matches** across 108 realized pi closure paths
-(22,334 files counted). The key reached grep only through an anonymous file
-descriptor; it was not printed or placed in argv. ARM remains evaluation-only.
-No deployment or host change was made.
+Build `.#checks.x86_64-linux.app-pi`, `.#checks.x86_64-linux.app-profiles`
+and `.#checks.x86_64-linux.fleet-sync`. The latter evaluates trust, network
+and file allow-list policy across all hosts without a VM.
 
-## Narrow-patch maintenance evidence (2026-10-14)
-
-The whole-file hash was too broad and has been removed. GitHub file history
-for `earendil-works/pi`, `packages/coding-agent/src/core/settings-manager.ts`,
-from `2026-07-16T21:26:14Z` through `2026-10-14T21:26:14Z` (90 days):
-
-| Region | Commits that changed the region |
-| --- | ---: |
-| Whole TypeScript file | 31 |
-| `FileSettingsStorage.withLock` | 0 |
-| `FileSettingsStorage.acquireLockSyncWithRetry` (not patched) | 0 |
-| `SettingsManager.loadFromStorage` | 1 |
-| `SettingsManager.tryLoadFromStorage` | 0 |
-| Any of the three patched methods, distinct commits | **1** |
-
-The one relevant commit is
-[`1355cd36e0b10a3e71c6c78f713b7b36458db27f`](https://github.com/earendil-works/pi/commit/1355cd36e0b10a3e71c6c78f713b7b36458db27f),
-2026-08-19: UTF-8 BOM handling changed `JSON.parse(content)` to
-`JSON.parse(stripBom(content))`. The 11 file commits from September 29 through
-October 13 changed none of the patched methods.
-
-The historical code-maintenance rate is **one relevant change per 90 days**,
-not 31 whole-file edits. This is an observed rate, not a future guarantee.
-Compiler or bundle-layout changes can also need review. We compare full source
-methods, including type/comment changes, against each commit's first parent;
-some source changes may leave the generated JavaScript unchanged.
-
-Reproduce the API/raw-source comparison:
-
-```sh
-python3 scripts/pi-policy-history.py \
-  --since 2026-07-16T21:26:14Z --until 2026-10-14T21:26:14Z
-```
-
-The committed `docs/research/pi-settings-history.json` records all 31 commits,
-per-method counts and the window. Eleven patch tests cover unrelated additions
-and startup changes, changed/missing/duplicate read methods, and identical or
-changed embedded copies. The read-only-mount/attacker-lock VM regression stays
-in place. The reviewed upstream path contract has no separate immutable global
-settings-file override: it joins `settings.json` to the same agent directory
-used for writable auth and session data, so a patch is still needed.
-
-Narrow-patch verification passed: `nix flake check` on x86_64, all eight host
-evaluations, 11 patch-drift tests, the real boot/attacker-lock/CLI VM test, and
-`grep -c` with **0 key matches** over 108 pi closure paths / 22,334 files.
-No host was changed or deployed.
-
-## Real-CLI candidate guard (2026-10-14)
-
-The earlier claim that import/layout checks proved the active startup reader
-was wrong. A redirected `AlternateSettingsManager` could preserve the original
-import, pass the patch and direct-class tests, and still run with `{}`.
-
-Every patched Bun package now forces `doInstallCheck = true`. Its install phase
-runs `tests/pi/cli-policy.py` against **its own built `bin/pi`**. The guard starts
-normal offline RPC sessions, not `--version`, and loads an explicit probe
-extension. On `session_start`, the extension uses the public
-`pi.getSettings()` API bound to the live AgentSession. It does not import a
-SettingsManager or read the agent settings file. The driver compares the whole
-effective settings object with the Nix file. A local-only, non-inference test
-provider makes the configured model resolvable without operator credentials.
-
-The four required cases are:
-
-| Agent policy | Required CLI result |
-| --- | --- |
-| Read-only copied file plus pre-made `settings.json.lock` | Exit 0; effective settings equal the Nix file |
-| Empty file | Nonzero exit |
-| Missing file | Nonzero exit |
-| Malformed file | Nonzero exit |
-
-A timeout is a failure, not evidence of refusal. The driver uses private temp
-directories, a clean cwd/home and a credential-free environment. It supplies
-no inference prompt. The VM runs this same guard as simon against the actual
-read-only bind mount and still verifies cycle-free boot ordering.
-
-`checks.pi-cli-negative` copies the real upstream package, adds an unpatched
-`AlternateSettingsManager`, and redirects all startup readers while retaining
-the original import. The patch accepts this reproduction, but the same build
-guard rejects all four cases: the CLI reports `{}` for locked policy and exits
-0 for empty, missing and malformed policy. Three negative tests assert these
-failures. This is a behaviour rejection, not another import heuristic.
-
-A deliberately redirected derivation was also built through Nix: its real
-`installCheckPhase` rejected all four cases and the builder exited 1. The
-candidate was not accepted into a profile.
-
-The generic updater already builds `checks.<system>.app-pi` with the candidate
-input override. That check depends on the wrapper, which depends on this
-checked Bun package. An install-check failure prevents that architecture's
-package and deployment closure from building. No VM or host-system evaluation
-is needed on Unzen. Cached outputs reuse previously checked packages.
-
-Measured on Zao x86_64, the four CLI cases took **1.320–2.587 seconds** across
-package install checks (the last run took 1.320 seconds). Budget about **2–3 seconds per rebuilt architecture**
-per update, without a VM boot. ARM timing has not been measured. The separate
-negative check also verifies that the exact install-check command exits 1;
-it runs during flake validation, not the updater's candidate build. API/CLI contract changes
-can require test maintenance; failures leave affected installed profiles intact.
-
-The app-profile branch was rebased onto Cairn `2575be68` on 2026-10-14.
-It includes `eb008c68` and `5f0c2c55`; Cairn's Rakku secret is unchanged.
-The deleted `packages/tsnet-proxy` remains deleted. No fleet deployment was made.
-
-## Decision gateway app integration
-
-Pi 1.2.0's shipped `docs/custom-provider.md`, `docs/models.md` and
-`docs/codemode.md`, plus the shipped extension/model registry types and System
-One implementation, define this integration. `pi-decide.ts` registers
-`decide/jev`, `decide/solar` and `decide/fast` as classifier models. It reuses the TypeSafe provider's built-in `classify` dispatch from
-`@earendil-works/pi-ai/providers/all`, registered under
-`classifiers["typesafe-system-one"]`; there is no new HTTP client. Pi 1.2.0's
-extension loader aliases the pi-ai root to `compat.js`, so an arbitrary
-`pi-ai/api/*` import fails. The explicit `providers/all` alias is supported.
-The shipped `providers/typesafe.js` and `models.js` show that this dispatch calls
-the built-in System One implementation with the supplied model/auth options.
-
-Each model has contextWindow 128000 and zero catalog costs. The base URL ends
-in `/v1`, so the built-in adapter posts to `/v1/systemone`. Public pi questions
-use `type: "bool"`; the shipped adapter maps that to wire-level `noul`.
-`defaultTools = [ "+codemode" ]` is the documented modifier form for enabling
-codemode. Extensions can also call `ctx.modelRegistry.classify()` directly.
-
-The wrapper loads the gateway with a second `-e` and reads
-`PI_DECIDE_API_KEY` from `/run/secrets/pi-decide-api-key`, simon-owned 0400.
-The key was copied in memory using `scripts/secrets` from Rakku's
-`litellm-env` `LITELLM_MASTER_KEY`, then encrypted for the fleet recipients.
-No plaintext value was printed, stored in argv or written to a repository file.
-
-**Costs:** all eight fleet hosts receive LiteLLM's master/admin key, including
-permission to spend on both providers. Per-host budgets need database-backed
-virtual keys, which remain out of scope. The key exists in Rakku's dotenv and
-the fleet secret; rotate both together. A future gateway runtime sops template
-could consume one fleet-owned master key while retaining provider credentials
-only on Rakku, but that requires a separate gateway-module change. The gateway
-module was not changed here. Zero catalog prices mean pi reports zero classifier
-cost while LiteLLM charges real usage and reports it in its response header.
-The initial secret/settings hooks need the approved system deployment; later
-extension changes travel only with the application profile.
-
-The package's mandatory CLI gate now has **six** cases. With `PI_OFFLINE=1`,
-the real registry lists exactly `decide/fast`, `decide/jev`, `decide/solar` with
-a synthetic key and no decide models without a key. Both cases also assert that
-codemode is active. They keep builtin codemode enabled and disable MCP; clean
-temporary home/cwd/agent directories exclude operator resources. The six-case
-install check took **2.153 seconds** on Zao. It performs no classifier requests.
-
-On 2026-10-14, the endpoint was reachable (HTTP 200). As `simonwjackson`, with a
-private temporary agent directory and the key only in the environment, the
-opt-in live probe made exactly one `classify()` call for Jev and one for Solar,
-both with `PI_OFFLINE=1`. The public `bool` question was verified as wire-level
-`noul` through the built-in adapter's request hook. Results:
-
-| Requested | Wire response model | Approval probability | Reported billed cost |
-| --- | --- | ---: | ---: |
-| `decide/jev` | `jev-1.13.0` | 0.97 | $0.00001302 |
-| `decide/solar` | `solar-decide` | 0.988721 | $0.00004010 |
-
-Both returned HTTP 200 and `stopReason: stop`. The reported total is
-**$0.00005312**. Probabilities are not calibrated across providers and must not
-be compared as interchangeable confidence scores. Pi's normalized result names
-the requested alias (`jev`/`solar`), not the wire model. The opt-in probe observes
-the real response through the documented `fetch` option solely to record the
-wire model and cost header; it does not replace request/auth/protocol handling.
-`tests/pi/live-decide-probe.ts` is never run by builds or unattended updates.
-The public result is recorded in `docs/research/pi-decide-live-20261014.json`.
-
-## Unzen access provisioned in source
-
-The supplied deployment, Fuji-builder and `app-updater-1` signing public keys
-are in the shared base layer. Access is enabled in all eight evaluated host
-configurations. Contract checks require the same public keys on every host,
-`restrict` on the deployment key, signing-key trust, and the forced
-`nix-daemon --stdio` builder command on Fuji. Private keys stay on Unzen; Build
-did not inspect them. Hiyori remains a known-host TODO, and Myoko's unattended
-SSH check remains a blocker. No fleet activation or deployment was performed.
+`tests/fleet-sync-smoke.py --agent <upstream-agent-store-path> --settings <json>`
+runs two local Syncthing processes using the evaluated pi folder/options.
+It tests pi's shipped SettingsManager writing through the link, model and
+scope changes in both directions, and exclusion of auth.json. It does not
+contact the fleet or make inference requests. Full-suite and VM runs are not
+required for this rollout.

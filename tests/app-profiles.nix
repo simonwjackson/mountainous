@@ -8,7 +8,6 @@ assert builtins.all (
   name:
   let
     c = hosts.${name}.config;
-    mounts = builtins.filter (m: m.where == "/var/lib/pi/simon/agent/settings.json") c.systemd.mounts;
   in
   c.mountainous.appProfiles.pi.enable
   && c.mountainous.appProfiles.pi.profilePath == "/nix/var/nix/profiles/apps/pi"
@@ -31,16 +30,14 @@ assert builtins.all (
   && lib.hasPrefix "/run/" c.sops.secrets.pi-decide-api-key.path
   && c.sops.secrets.pi-decide-api-key.owner == "simon"
   && c.sops.secrets.pi-decide-api-key.mode == "0400"
-  && builtins.length mounts == 1
-  && (builtins.head mounts).options == "bind,ro,nofail"
-  && (builtins.head mounts).restartTriggers != [ ]
+  && !(builtins.any (m: m.where == "/var/lib/pi/simon/agent/settings.json") c.systemd.mounts)
   && deploy.nodes.${name}.profiles.pi.profilePath == c.mountainous.appProfiles.pi.profilePath
   && deploy.nodes.${name}.sshUser == "app-deploy"
   && deploy.nodes.${name}.user == "app-deploy"
   && deploy.nodes.${name}.magicRollback
   && deploy.nodes.${name}.autoRollback
-  && builtins.elem "d /var/lib/pi/simon 0755 root root -" c.systemd.tmpfiles.rules
-  && builtins.elem "d /var/lib/pi/simon/agent 0700 simon users -" c.systemd.tmpfiles.rules
+  && builtins.elem "d /home/simon/.pi/agent 0700 simon users -" c.systemd.tmpfiles.rules
+  && builtins.elem "L /home/simon/.pi/agent/settings.json - - - - /home/simon/.local/share/fleet-sync/pi/settings.json" c.systemd.tmpfiles.rules
 ) (builtins.attrNames hosts);
 assert unzen.systemd.timers.app-update-pi.timerConfig.OnCalendar == "*-*-* 00,06,12,18:00:00 UTC";
 assert unzen.systemd.services.app-update-pi.serviceConfig.UMask == "0077";

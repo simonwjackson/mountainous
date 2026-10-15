@@ -1,0 +1,113 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 syncthing sops ssh-to-age
+"""Enroll a host once. Reruns keep its identity and refresh the public table."""
+
+import argparse
+import json
+import os
+import subprocess
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def run(args, **kwargs):
+    return subprocess.run(args, check=True, capture_output=True, **kwargs).stdout
+
+
+def atomic_write(path, data):
+    fd, name = tempfile.mkstemp(dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("host", nargs="?")
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Enroll pi members, excluding builder-only Fuji",
+    )
+    args = parser.parse_args()
+    hosts = sorted(p.stem for p in (ROOT / "modules/hosts").glob("*.nix"))
+    if args.all == bool(args.host) or (args.host and args.host not in hosts):
+        parser.error("pass one known host or --all")
+    selected = [h for h in hosts if h != "fuji"] if args.all else [args.host]
+    key = Path(
+        os.environ.get("MOUNTAINOUS_MASTER_KEY", str(Path.home() / ".ssh/id_ed25519"))
+    )
+    identity = run(["ssh-to-age", "-private-key", "-i", str(key)]).decode().strip()
+    if not identity.startswith("AGE-SECRET-KEY-"):
+        raise SystemExit("The master SSH key must be ed25519")
+    env = dict(os.environ, SOPS_AGE_KEY=identity)
+    table_path = ROOT / "deploy/fleet-sync-devices.json"
+    table = json.loads(table_path.read_text())
+    for host in selected:
+        target = ROOT / "secrets/hosts" / (host + ".yaml")
+        payload = (
+            json.loads(
+                run(
+                    ["sops", "--decrypt", "--output-type", "json", str(target)], env=env
+                )
+            )
+            if target.exists()
+            else {}
+        )
+        cert, secret = payload.get("syncthing-cert"), payload.get("syncthing-key")
+        if bool(cert) != bool(secret):
+            raise SystemExit(f"{host}: incomplete identity. Refusing to replace it")
+        with tempfile.TemporaryDirectory(prefix="fleet-sync-enroll-") as tmp:
+            directory = Path(tmp)
+            if cert:
+                (directory / "cert.pem").write_text(cert)
+                (directory / "key.pem").write_text(secret)
+            else:
+                run(["syncthing", "generate", "--home", tmp])
+                payload["syncthing-cert"] = (directory / "cert.pem").read_text()
+                payload["syncthing-key"] = (directory / "key.pem").read_text()
+            device = run(["syncthing", "device-id", "--home", tmp]).decode().strip()
+            if host in table and table[host] != device:
+                raise SystemExit(
+                    f"{host}: public ID differs. Refusing an implicit rotation"
+                )
+            if not cert:
+                encrypted = run(
+                    [
+                        "sops",
+                        "--encrypt",
+                        "--input-type",
+                        "json",
+                        "--output-type",
+                        "yaml",
+                        "--filename-override",
+                        str(target),
+                        "/dev/stdin",
+                    ],
+                    input=json.dumps(payload).encode(),
+                    env=env,
+                    cwd=ROOT,
+                )
+                atomic_write(target, encrypted)
+            table[host] = device
+            atomic_write(
+                table_path,
+                (json.dumps(table, indent=2, sort_keys=True) + "\n").encode(),
+            )
+            print(f"{host}: {device}", flush=True)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as error:
+        # Never echo command output from operations that handle private keys.
+        raise SystemExit(
+            f"Enrollment command failed with exit {error.returncode}: {error.cmd[0]}"
+        )

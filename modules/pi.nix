@@ -2,31 +2,10 @@
   config,
   inputs,
   lib,
-  self,
   ...
 }:
 let
   flake = config;
-in
-let
-  settings = {
-    defaultProvider = "cliproxyapi";
-    defaultModel = "gpt-5.6-sol";
-    defaultThinkingLevel = "xhigh";
-    quietStartup = true;
-    collapseChangelog = true;
-    theme = "tokyo-night-dark";
-    compaction = {
-      enabled = true;
-      reserveTokens = 16384;
-      keepRecentTokens = 20000;
-    };
-    hideThinkingBlock = true;
-    steeringMode = "one-at-a-time";
-    transport = "sse";
-    defaultTools = [ "+codemode" ];
-    enableInstallTelemetry = false;
-  };
 in
 {
   nixos.modules.base =
@@ -46,176 +25,72 @@ in
         ];
       };
     };
-  perSystem =
-    { pkgs, system, ... }:
-    {
-      checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
-        pi-patch-context = pkgs.runCommand "pi-patch-context" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-          python3 ${../tests/pi/test_policy_patch.py} ${./pi-settings-policy.py} \
-            ${
-              inputs.pi.packages.${system}.coding-agent-bun
-            }/lib/node_modules/@earendil-works/pi-coding-agent/dist
-          touch $out
-        '';
-        # The install check is mandatory on the package itself, including
-        # builds selected by the generic updater's app-pi check.
-        pi-cli-behaviour = self.packages.${system}.app-pi.policyAgent;
-        pi-cli-negative = pkgs.runCommand "pi-cli-negative" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-          python3 ${../tests/pi}/test_cli_policy.py ${./pi-settings-policy.py} \
-            ${inputs.pi.packages.${system}.coding-agent-bun} \
-            ${pkgs.writeText "pi-policy.json" (builtins.toJSON settings)}
-          touch $out
-        '';
-        pi-policy = import ../tests/pi/policy.nix {
-          inherit pkgs inputs;
-          verifyBootOrder = import ../tests/pi/boot-order.nix {
-            inherit pkgs;
-            unitText =
-              self.nixosConfigurations.unzen.config.systemd.units."var-lib-pi-simon-agent-settings.json.mount".text;
-            systemd = self.nixosConfigurations.unzen.config.systemd.package;
-          };
-          profile = flake.mountainous.appProfiles.pi;
-          agent = self.packages.${system}.app-pi.policyAgent;
-        };
-      };
-    };
+
+  # Fuji remains a builder without Syncthing. Its pi settings stay local.
+  mountainous.fleetSync.folders.pi = {
+    hosts = lib.remove "fuji" (lib.attrNames flake.nixos.hosts);
+    files = [ "settings.json" ];
+  };
+
   mountainous.appProfiles.pi = {
     package =
       system:
       let
         pkgs = inputs.nixpkgs.legacyPackages.${system};
-        policyFile = pkgs.writeText "pi-policy.json" (builtins.toJSON settings);
-        cliGuard = pkgs.linkFarm "pi-cli-policy" [
-          {
-            name = "cli-policy.py";
-            path = ../tests/pi/cli-policy.py;
-          }
-          {
-            name = "cli-probe.ts";
-            path = ../tests/pi/cli-probe.ts;
-          }
-        ];
-        agent = inputs.pi.packages.${system}.coding-agent-bun.overrideAttrs (old: {
-          doInstallCheck = true;
-          nativeInstallCheckInputs = (old.nativeInstallCheckInputs or [ ]) ++ [ pkgs.python3 ];
-          passthru = (old.passthru or { }) // {
-            cliPolicyGuard = cliGuard;
-          };
-          nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.python3 ];
-          postInstall = (old.postInstall or "") + ''
-            python3 ${./pi-settings-policy.py} "$out/lib/node_modules/@earendil-works/pi-coding-agent/dist"
-          '';
-          preInstallCheck = (old.preInstallCheck or "") + ''
-            export PI_CODING_AGENT_DIR
-            PI_CODING_AGENT_DIR=$(mktemp -d)
-            cp ${policyFile} "$PI_CODING_AGENT_DIR/settings.json"
-            chmod 0444 "$PI_CODING_AGENT_DIR/settings.json"
-            export PI_OFFLINE=1
-          '';
-          installCheckPhase = (old.installCheckPhase or "") + ''
-            python3 ${cliGuard}/cli-policy.py "$out/bin/pi" ${policyFile} --decide-extension ${./pi-decide.ts}
-          '';
-        });
+        agent = inputs.pi.packages.${system}.coding-agent-bun;
         wrapper = pkgs.writeShellApplication {
           name = "pi";
-          runtimeInputs = [
-            pkgs.coreutils
-            pkgs.util-linux
-          ];
+          runtimeInputs = [ pkgs.coreutils ];
           text = ''
             if [[ "$#" == 1 && ( "$1" == "--version" || "$1" == "--help" ) ]]; then
-              export PI_CODING_AGENT_DIR=${pkgs.writeTextDir "settings.json" (builtins.toJSON settings)}
-              export PI_OFFLINE=1
-              exec ${agent}/bin/pi "$@"
+              PI_OFFLINE=1 exec ${agent}/bin/pi "$@"
             fi
-            user=$(id -un)
-            export PI_CODING_AGENT_DIR="/var/lib/pi/$user/agent"
-            if [[ ! -d "$PI_CODING_AGENT_DIR" || ! -O "$PI_CODING_AGENT_DIR" ]]; then
-              echo "pi: no provisioned agent directory for $user" >&2
-              exit 1
-            fi
-            mount_options=$(findmnt -rn --mountpoint "$PI_CODING_AGENT_DIR/settings.json" -o VFS-OPTIONS || true)
-            if [[ ",$mount_options," != *,ro,* ]]; then
-              echo "pi: settings read-only bind mount is not ready" >&2
-              exit 1
-            fi
-            # A unique directory defeats pre-created files AND malicious symlinks.
+            agent_dir=''${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}
             umask 077
+            mkdir -p "$agent_dir/tmp"
+            # The provider imports a predictable filename. Never share /tmp.
             export TMPDIR
-            TMPDIR=$(mktemp -d "$PI_CODING_AGENT_DIR/tmp/run.XXXXXXXXXX")
+            TMPDIR=$(mktemp -d "$agent_dir/tmp/run.XXXXXXXXXX")
             trap 'rm -rf -- "$TMPDIR"' EXIT
-            export CLIPROXYAPI_BASE_URL=https://cliproxyapi.hummingbird-lake.ts.net
-            export CLIPROXYAPI_API_KEY
-            CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-cliproxyapi-api-key)
-            export PI_DECIDE_API_KEY
-            PI_DECIDE_API_KEY=$(cat /run/secrets/pi-decide-api-key)
-            # Nix owns settings, including telemetry. PI_OFFLINE also suppresses
-            # network startup probes; changelog stays collapsed across updates.
             export PI_OFFLINE=1
-            ${agent}/bin/pi -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts -e ${./pi-decide.ts} "$@"
+            export CLIPROXYAPI_BASE_URL=https://cliproxyapi.hummingbird-lake.ts.net
+            export CLIPROXYAPI_API_KEY PI_DECIDE_API_KEY
+            CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-cliproxyapi-api-key)
+            PI_DECIDE_API_KEY=$(cat /run/secrets/pi-decide-api-key)
+            ${agent}/bin/pi \
+              -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts \
+              -e ${./pi-decide.ts} "$@"
           '';
         };
       in
       wrapper.overrideAttrs (_: {
         version = agent.version;
-        passthru.policyAgent = agent;
-        passthru.policyRuntime = inputs.pi.inputs.nixpkgs.legacyPackages.${system}.bun;
       });
+
     hostModule =
-      {
-        config,
-        lib,
-        pkgs,
-        options,
-        ...
-      }:
+      { config, lib, ... }:
       let
-        enabled = config.mountainous.appProfiles.pi.enable;
-        file = pkgs.writeText "pi-settings.json" (builtins.toJSON settings);
+        home = config.users.users.simon.home;
       in
-      {
-        config = lib.mkIf enabled (
-          lib.mkMerge [
-            {
-              sops.secrets.pi-cliproxyapi-api-key = {
-                owner = "simon";
-                mode = "0400";
-              };
-              sops.secrets.pi-decide-api-key = {
-                owner = "simon";
-                mode = "0400";
-              };
-              systemd.tmpfiles.rules = [
-                "d /var/lib/pi 0755 root root -"
-                "d /var/lib/pi/simon 0755 root root -"
-                "d /var/lib/pi/simon/agent 0700 simon users -"
-                "d /var/lib/pi/simon/agent/tmp 0700 simon users -"
-                "f /var/lib/pi/simon/agent/settings.json 0444 root root -"
-              ];
-              systemd.mounts = [
-                {
-                  what = toString file;
-                  where = "/var/lib/pi/simon/agent/settings.json";
-                  type = "none";
-                  # nofail removes the implicit Before=local-fs.target edge:
-                  # tmpfiles itself starts after local-fs.target.
-                  options = "bind,ro,nofail";
-                  wantedBy = [ "multi-user.target" ];
-                  after = [ "systemd-tmpfiles-setup.service" ];
-                  requires = [ "systemd-tmpfiles-setup.service" ];
-                  # NixOS restarts a changed mount unit when the store source changes.
-                  restartTriggers = [ file ];
-                }
-              ];
-            }
-            (lib.optionalAttrs (options.environment ? persistence) {
-              environment.persistence."${
-                if config.mountainous ? permafrost then "/permafrost" else "/tundra/permafrost"
-              }".directories =
-                [ "/var/lib/pi" ];
-            })
-          ]
-        );
+      lib.mkIf config.mountainous.appProfiles.pi.enable {
+        sops.secrets.pi-cliproxyapi-api-key = {
+          owner = "simon";
+          mode = "0400";
+        };
+        sops.secrets.pi-decide-api-key = {
+          owner = "simon";
+          mode = "0400";
+        };
+        systemd.tmpfiles.rules = [
+          "d ${home}/.pi 0700 simon users -"
+          "d ${home}/.pi/agent 0700 simon users -"
+          "d ${home}/.local 0755 simon users -"
+          "d ${home}/.local/share 0755 simon users -"
+          "d ${home}/.local/share/fleet-sync 0700 simon users -"
+          "d ${home}/.local/share/fleet-sync/pi 0700 simon users -"
+          # Never replace a pre-existing settings file. Migrate it explicitly.
+          "L ${home}/.pi/agent/settings.json - - - - ${home}/.local/share/fleet-sync/pi/settings.json"
+        ];
       };
   };
 }
