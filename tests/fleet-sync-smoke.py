@@ -7,6 +7,7 @@ import http.client
 import json
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 import xml.etree.ElementTree as ET
@@ -56,6 +57,8 @@ def api(peer, method, path, value=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--agent", required=True)
+    parser.add_argument("--syncthing", default="syncthing")
+    parser.add_argument("--runtime", default="node")
     parser.add_argument(
         "--settings", required=True, help="JSON from Tate services.syncthing.settings"
     )
@@ -69,21 +72,22 @@ def main():
             for name in ("a", "b"):
                 base = root / name
                 base.mkdir()
+                bootstrap_settings = base / "bootstrap.json"
+                bootstrap_settings.write_text(json.dumps(settings))
                 subprocess.run(
-                    ["syncthing", "generate", "--home", str(base)],
+                    [
+                        sys.executable,
+                        str(
+                            Path(__file__).parents[1]
+                            / "modules/fleet-sync-bootstrap.py"
+                        ),
+                        args.syncthing,
+                        str(base),
+                        str(bootstrap_settings),
+                    ],
                     check=True,
-                    capture_output=True,
                 )
                 tree = ET.parse(base / "config.xml")
-                options = tree.getroot().find("options")
-                # No network discovery even before the declarative REST update.
-                for flag in (
-                    "globalAnnounceEnabled",
-                    "localAnnounceEnabled",
-                    "relaysEnabled",
-                    "natEnabled",
-                ):
-                    options.find(flag).text = "false"
                 for folder in list(tree.getroot().findall("folder")):
                     tree.getroot().remove(folder)
                 tree.write(base / "config.xml")
@@ -92,12 +96,34 @@ def main():
                     "socket": base / "gui.sock",
                     "key": tree.getroot().findtext("gui/apikey"),
                     "id": subprocess.check_output(
-                        ["syncthing", "device-id", "--home", str(base)], text=True
+                        [args.syncthing, "device-id", "--home", str(base)], text=True
                     ).strip(),
                 }
                 with socket.socket() as listener:
                     listener.bind(("127.0.0.1", 0))
                     peer["port"] = listener.getsockname()[1]
+                bootstrap_settings = base / "bootstrap.json"
+                bootstrap_settings.write_text(
+                    json.dumps(
+                        {
+                            "options": settings["options"]
+                            | {"listenAddresses": [f"tcp://127.0.0.1:{peer['port']}"]}
+                        }
+                    )
+                )
+                subprocess.run(
+                    [
+                        sys.executable,
+                        str(
+                            Path(__file__).parents[1]
+                            / "modules/fleet-sync-bootstrap.py"
+                        ),
+                        args.syncthing,
+                        str(base),
+                        str(bootstrap_settings),
+                    ],
+                    check=True,
+                )
                 folder = base / "pi"
                 folder.mkdir()
                 agent_dir = base / "agent"
@@ -110,7 +136,7 @@ def main():
                 processes.append(
                     subprocess.Popen(
                         [
-                            "syncthing",
+                            args.syncthing,
                             "serve",
                             "--home",
                             str(base),
@@ -124,7 +150,9 @@ def main():
                         stderr=subprocess.STDOUT,
                     )
                 )
-                wait(lambda peer=peer: api(peer, "GET", "system/ping"), "Unix GUI socket")
+                wait(
+                    lambda peer=peer: api(peer, "GET", "system/ping"), "Unix GUI socket"
+                )
             for i, peer in enumerate(peers):
                 other = peers[1 - i]
                 options = settings["options"] | {
@@ -159,7 +187,7 @@ def main():
             def write(peer, model):
                 subprocess.run(
                     [
-                        "node",
+                        args.runtime,
                         str(Path(__file__).parent / "pi/settings-write.mjs"),
                         args.agent,
                         str(peer["agent"]),
@@ -184,6 +212,11 @@ def main():
             wait(lambda: arrived(a, "sync-back"), "B to A settings sync")
             assert not (b["folder"] / "auth.json").exists()
             assert not list(root.rglob("*.sync-conflict-*"))
+            for peer in peers:
+                log = (peer["base"] / "log").read_text()
+                assert "Using discovery mechanism" not in log
+                assert "Relay listener starting" not in log
+                assert "QUIC listener starting" not in log
             print(
                 "PASS: pi writes through symlink; defaults and scope sync both ways; auth.json stays local"
             )

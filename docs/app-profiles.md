@@ -73,7 +73,10 @@ Global/local discovery, relays, NAT traversal, introducers, auto-accept and
 Syncthing auto-upgrades are off. Peers use fixed tailnet DNS addresses on
 TCP 22000. The firewall opens that port only on tailscale0. The GUI and API
 use a private Unix socket. The NixOS module applies devices and folders via
-that socket and removes entries absent from the repo.
+that socket and removes entries absent from the repo. A small ExecStartPre
+step sets the network policy before the daemon starts. Without that step,
+the upstream module permits factory-default discovery and relays until its
+REST update runs. Tate exposed a two-second window during the first switch.
 
 ## Updater preparation and limits
 
@@ -120,6 +123,8 @@ and file allow-list policy across all hosts without a VM.
 `tests/fleet-sync-smoke.py --agent <upstream-agent-store-path> --settings <json>`
 runs two local Syncthing processes using the evaluated pi folder/options.
 It tests pi's shipped SettingsManager writing through the link, model and
-scope changes in both directions, and exclusion of auth.json. It does not
-contact the fleet or make inference requests. Full-suite and VM runs are not
-required for this rollout.
+scope changes in both directions, exclusion of auth.json, and startup logs
+without discovery, relays or QUIC. Use `--syncthing <binary>` and
+`--runtime <bun>` to select the pinned host package and pi runtime. It does
+not contact the fleet or make inference requests. Full-suite and VM runs
+are not required for this rollout.

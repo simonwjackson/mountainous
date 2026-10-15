@@ -28,7 +28,12 @@ in
   };
 
   config.nixos.modules.base =
-    { config, lib, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = flake.mountainous.fleetSync;
       host = config.networking.hostName;
@@ -108,6 +113,21 @@ in
           }) mine;
         };
       };
+      # The upstream module applies settings via REST after startup. Close the
+      # first-start discovery/relay window before launching the daemon.
+      systemd.services.syncthing.serviceConfig.ExecStartPre = lib.mkAfter [
+        (lib.escapeShellArgs [
+          "${pkgs.python3}/bin/python3"
+          (toString ./fleet-sync-bootstrap.py)
+          (lib.getExe config.services.syncthing.package)
+          config.services.syncthing.configDir
+          (pkgs.writeText "fleet-sync-bootstrap.json" (
+            builtins.toJSON {
+              inherit (config.services.syncthing.settings) options;
+            }
+          ))
+        ])
+      ];
       networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22000 ];
     };
 }

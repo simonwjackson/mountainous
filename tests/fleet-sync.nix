@@ -13,6 +13,12 @@ builtins.all (
     && s.overrideFolders
     && !s.openDefaultPorts
     && lib.hasPrefix "unix://" s.guiAddress
+    && lib.hasInfix "syncthing-copy-keys" (
+      builtins.head c.systemd.services.syncthing.serviceConfig.ExecStartPre
+    )
+    && lib.hasInfix "fleet-sync-bootstrap.py" (
+      lib.last c.systemd.services.syncthing.serviceConfig.ExecStartPre
+    )
     && !s.settings.options.globalAnnounceEnabled
     && !s.settings.options.localAnnounceEnabled
     && !s.settings.options.relaysEnabled

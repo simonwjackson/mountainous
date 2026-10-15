@@ -16,7 +16,9 @@
       };
       sync = import ../tests/fleet-sync.nix {
         inherit lib;
-        hosts = lib.genAttrs (lib.attrNames config.nixos.hosts) (name: self.nixosConfigurations.${name}.config);
+        hosts = lib.genAttrs (lib.attrNames config.nixos.hosts) (
+          name: self.nixosConfigurations.${name}.config
+        );
       };
     in
     {
