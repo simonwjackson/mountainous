@@ -285,6 +285,32 @@
           authKeyFile = null;
         };
 
+        # Tailscale's own "online" synchronization point, defined as upstream
+        # ships it (cmd/tailscaled/tailscale-online.target and
+        # tailscale-wait-online.service). nixpkgs installs only
+        # tailscaled.service. network-online.target means the LAN is up, not
+        # that the tailnet is reachable, so tailnet clients order after this.
+        systemd.targets.tailscale-online = {
+          description = "Tailscale is online";
+          requires = [ "tailscale-wait-online.service" ];
+          after = [ "tailscale-wait-online.service" ];
+        };
+        systemd.services.tailscale-wait-online = {
+          description = "Wait for Tailscale to be online";
+          after = [ "tailscaled.service" ];
+          requires = [ "tailscaled.service" ];
+          wantedBy = [ "tailscale-online.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${config.services.tailscale.package}/bin/tailscale wait";
+            RemainAfterExit = true;
+            # Upstream has no limit. Oneshot units wait forever by default,
+            # which would hold every dependent unit, and boot, on a
+            # tailnet that never comes up.
+            TimeoutStartSec = "3min";
+          };
+        };
+
         systemd.services.tailscale-join = mkIf canJoin {
           description = "Join the tailnet, under this machine's own name";
 

@@ -172,7 +172,10 @@ assert fast.unitConfig.StartLimitBurst == 5;
 assert fast.serviceConfig.Restart == "on-failure";
 assert fast.serviceConfig.RestartSec == 5;
 assert fast.serviceConfig.NetworkNamespacePath == "/run/netns/vpn";
-assert builtins.elem "-/run/nscd" fast.serviceConfig.InaccessiblePaths;
+# Fail closed: a missing /run/nscd must stop startup, not skip the hiding.
+assert builtins.elem "/run/nscd" fast.serviceConfig.InaccessiblePaths;
+assert builtins.elem "nscd.service" fast.after;
+assert declared.systemd.services.nscd.serviceConfig.RuntimeDirectoryPreserve == "yes";
 assert builtins.match ".*media-vpn-nss-modules" fast.environment.LD_LIBRARY_PATH != null;
 assert builtins.elem "media-vpn.service" fast.bindsTo;
 assert builtins.elem "media-vpn.service" fast.requires;
@@ -325,7 +328,8 @@ assert builtins.elem "/var/lib/media-migration/ready/vpn"
 assert builtins.all
   (
     name:
-    builtins.elem "-/run/nscd" trial.systemd.services.${name}.serviceConfig.InaccessiblePaths
+    builtins.elem "/run/nscd" trial.systemd.services.${name}.serviceConfig.InaccessiblePaths
+    && builtins.elem "nscd.service" trial.systemd.services.${name}.after
     && trial.systemd.services.${name}.serviceConfig.NetworkNamespacePath == "/run/netns/vpn"
     &&
       builtins.match ".*media-vpn-nss-modules" trial.systemd.services.${name}.environment.LD_LIBRARY_PATH

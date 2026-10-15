@@ -42,6 +42,9 @@ let
     "timeo=50"
     "retrans=2"
     "noatime"
+    # Every NFS peer is reached over the tailnet. Mount after Tailscale is
+    # connected; at shutdown, unmount before tailscaled stops.
+    "x-systemd.requires=tailscale-online.target"
   ];
   # These application mounts follow tmpfiles and remote storage. Treating
   # them as early local mounts creates local-fs/sysinit/network cycles.

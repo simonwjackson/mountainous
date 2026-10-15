@@ -43,6 +43,7 @@
         "radarr"
       ];
       hasVpn = lib.any active vpnApps;
+      nscd = config.services.nscd.enable;
       # The host's name-service cache (nscd) runs outside the VPN namespace.
       # A namespaced process that can reach its socket has every hostname
       # resolved by the host, over the host's network: a DNS leak. VPN
@@ -400,7 +401,9 @@
             };
           }
           (lib.genAttrs (lib.filter active vpnApps) (_: {
-            after = [ "media-vpn.service" ];
+            # nscd creates /run/nscd. A consumer that starts first cannot hide
+            # it, so it resolves names through the host: a DNS leak.
+            after = [ "media-vpn.service" ] ++ lib.optional nscd "nscd.service";
             bindsTo = [ "media-vpn.service" ];
             requires = [ "media-vpn.service" ];
             serviceConfig = {
@@ -409,10 +412,17 @@
                 "/etc/netns/vpn/resolv.conf:/etc/resolv.conf"
                 "/etc/netns/vpn/hosts:/etc/hosts"
               ];
-              InaccessiblePaths = [ "-/run/nscd" ];
+              # Fail closed while nscd runs: a missing directory stops startup.
+              InaccessiblePaths = [ (if nscd then "/run/nscd" else "-/run/nscd") ];
             };
             environment.LD_LIBRARY_PATH = "${vpnNssModules}";
           }))
+          # The hiding mount sits on the directory. Deleting and recreating it,
+          # as nscd does on every stop, detaches that mount in running
+          # consumers and exposes the new socket. Keep the directory.
+          (lib.mkIf (hasVpn && nscd) {
+            nscd.serviceConfig.RuntimeDirectoryPreserve = "yes";
+          })
           (lib.genAttrs (lib.filter active libraryConsumers) (name: {
             requires = [
               "media-storage-ready.service"
