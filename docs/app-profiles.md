@@ -128,3 +128,30 @@ without discovery, relays or QUIC. Use `--syncthing <binary>` and
 `--runtime <bun>` to select the pinned host package and pi runtime. It does
 not contact the fleet or make inference requests. Full-suite and VM runs
 are not required for this rollout.
+
+## Rollout evidence, 2026-10-15
+
+Tate is the only activated host in this rollout. Its system closure is
+`/nix/store/83w13qw1kbph0flk212qm8j16qjpmmwi-nixos-system-tate-26.11.20260923.4975466`.
+Its pi app is `/nix/store/ln71b223zhn6snihmxgrhnqadd1cgsv6-pi`, version 1.2.0.
+The old agent directory and a settings backup were retained. A real prompt,
+without a model/provider flag, returned `pi-tate-ready`.
+
+After the final switch, an explicit Syncthing restart retained Tate's declared
+device ID and settings. Its live API matched all six fixed peers, the pi
+folder, the allow-list and the network options. Both system units reached
+active. Restart logs contained no discovery, relay or QUIC startup.
+
+The focused checks passed. Two local Syncthing 2.1.3 processes and pi's pinned
+Bun 1.4.2 tested the real settings writer and sync in both directions. The
+startup closure check failed on the original missing-script defect and
+passed after retaining the Nix path context. Enrollment reruns left IDs and
+ciphertext unchanged. Existing Rakku secret values were unchanged. No
+plaintext inference API keys were found in tracked files.
+
+`nix flake check --no-build --keep-going` passed for x86_64 evaluation during
+the rollout. The full test suite and VMs were not run. ARM was not built.
+Live sync between fleet hosts is not yet verified because only Tate was
+switched. The remaining six sync hosts still need activation. Unzen's boot
+fault, Myoko's SSH check, Hiyori's offline state and the first ARM app build
+remain separate rollout limits. Rakku was not switched.
