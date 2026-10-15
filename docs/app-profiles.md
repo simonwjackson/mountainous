@@ -131,7 +131,7 @@ are not required for this rollout.
 
 ## Rollout evidence, 2026-10-15
 
-Tate is the only activated host in this rollout. Its system closure is
+The initial activation covered Tate only. Its system closure is
 `/nix/store/83w13qw1kbph0flk212qm8j16qjpmmwi-nixos-system-tate-26.11.20260923.4975466`.
 Its pi app is `/nix/store/ln71b223zhn6snihmxgrhnqadd1cgsv6-pi`, version 1.2.0.
 The old agent directory and a settings backup were retained. A real prompt,
@@ -151,7 +151,41 @@ plaintext inference API keys were found in tracked files.
 
 `nix flake check --no-build --keep-going` passed for x86_64 evaluation during
 the rollout. The full test suite and VMs were not run. ARM was not built.
-Live sync between fleet hosts is not yet verified because only Tate was
-switched. The remaining six sync hosts still need activation. Unzen's boot
-fault, Myoko's SSH check, Hiyori's offline state and the first ARM app build
-remain separate rollout limits. Rakku was not switched.
+At the end of that first stage, live sync between fleet hosts was not yet
+verified because only Tate was switched. Rakku was not switched.
+
+## Unzen activation, 2026-10-15
+
+Unzen runs source `ce7ffecb38d95ad4731632640cfa1043827d30cd` through
+`nixos-rebuild test`. Its runtime closure is
+`/nix/store/vnap0ziix7bhhbidk8lkl55mszksfis1-nixos-system-unzen-26.11.20260923.4975466`.
+The boot profile remains
+`/nix/store/y04lccqhyqhb8bpivnz49wvr17gkr70x-nixos-system-unzen-26.11.20260923.4975466`.
+The boot partition still reports FAT I/O errors. No boot write or reboot was
+performed. This runtime activation does not survive a reboot. Settings,
+Syncthing identities and the app profile remain on persistent storage.
+After repairing `/boot`, persist this exact build as root on Unzen with
+`nixos-rebuild switch --no-reexec --store-path /nix/store/vnap0ziix7bhhbidk8lkl55mszksfis1-nixos-system-unzen-26.11.20260923.4975466`.
+
+Unzen received settings from Tate without a second seed. Two-way file sync
+passed using pi's shipped FileSettingsStorage and a temporary probe field.
+The probe was removed, and both final settings files matched. End-to-end
+measurements, including SSH probes, were 2.23 seconds from Unzen to Tate and
+2.42 seconds from Tate to Unzen. A real pi 1.2.0 prompt used the saved default
+and returned `pi-unzen-ready`. The Syncthing identity, fixed peers and network
+policy survived a restart. Both units reached active. The host reports
+`running` with zero failed units.
+
+A signed deploy-rs app activation on Unzen succeeded through app-deploy,
+with `--checksigs`, automatic rollback and magic rollback. Its updater source
+checkout at `/var/lib/app-updater/repository` is clean and pinned to the
+source above. The updater timer is active, but `/var/lib/app-updater/enabled`
+is absent, so it performs no fleet updates. The first ARM build and the
+remaining host hooks still need completion before opening that gate.
+
+The updater's builder SSH pins had the same missing Nix path-context issue
+as the earlier Syncthing helper. `checks.app-updater-closure` reproduced the
+missing file in a sandbox and passed after the fix. CLIProxyAPI's updater
+and the decision gateway modules were not changed. No full-suite or VM tests
+ran for this activation. Myoko's SSH check and Hiyori's offline state remain
+rollout limits.
