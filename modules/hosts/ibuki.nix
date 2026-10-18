@@ -50,6 +50,11 @@
         mode = "3840x2160@60Hz";
       };
 
+      # simon already holds UID 1000, Korri's default for its runtime
+      # account. Sharing it gives /run/user to simon and stops the portal.
+      # 56774 is the UID korri has had on this host since 2026-09-30.
+      services.korriProduct.runtimeAccount.uid = 56774;
+
       # Korri gives every product device a USB-C gadget (NCM network and ACM
       # console). The NUC has no USB device controller (/sys/class/udc is
       # absent), so the unit could only fail. The facts satisfy the option;

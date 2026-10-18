@@ -95,12 +95,7 @@
     # Korri keeps its own nixpkgs. Its product patches packages for exact
     # upstream versions, and its binary cache holds builds from that pin, so
     # a host that runs Korri is built from korri's nixpkgs, not ours.
-    #
-    # Temporary: the unmerged nixpkgs update branch (Sway 1.12, systemd
-    # 261.2, runtime UID 56774), rebased on Korri main. It exists only in the
-    # Korri checkout on zao, so only zao can evaluate ibuki until it lands on
-    # korri-os/korri main.
-    korri.url = "git+file:///home/simonwjackson/code/sandbox/korri?ref=work/nixpkgs-sway-112";
+    korri.url = "github:korri-os/korri";
 
     # herdr is not in nixpkgs. These are the upstream release binaries, taken
     # as inputs rather than fetchurl so `nix flake update` can move them and

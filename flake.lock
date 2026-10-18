@@ -387,18 +387,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1791068480,
-        "narHash": "sha256-d5yNZbGplSVAq6oJTkQK7THG3v4tBPXOGG3ovlC3WPQ=",
-        "ref": "work/nixpkgs-sway-112",
-        "rev": "b9d5c43fd126212a7ce2906b91c71c1074bce62e",
-        "revCount": 1335,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri"
+        "lastModified": 1792362750,
+        "narHash": "sha256-ES2qEhC4pXO1QT7ApDyFo/jygjNZgez5ikFS4RiKuvw=",
+        "owner": "korri-os",
+        "repo": "korri",
+        "rev": "bae178826abfb982d0b5910b8e389b7753a2fed3",
+        "type": "github"
       },
       "original": {
-        "ref": "work/nixpkgs-sway-112",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/korri"
+        "owner": "korri-os",
+        "repo": "korri",
+        "type": "github"
       }
     },
     "nix-extras": {
