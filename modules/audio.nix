@@ -15,11 +15,12 @@
 #   2800 other USB output (headset, DAC)    2050 headset microphone in the jack
 #   2000 Audioengine 2+ desk speakers       2010 Bluetooth microphone (fixed
 #   1000 built-in speakers                       by WirePlumber, see below)
-#    500 Shure X2u monitor jack             1900 webcam microphone
-#    400 Saramonic BTW receiver             1600 built-in microphones
+#    400 Saramonic BTW receiver             1900 webcam microphone
+#                                           1600 built-in microphones
 #
 # HDMI and DisplayPort outputs do not appear at all. On the Galaxy Book3 the
-# galaxy-book3 layer removes them from the sound card's UCM profile.
+# galaxy-book3 layer removes them from the sound card's UCM profile. The
+# Shure X2u's monitor jack does not appear either; see its rule below.
 #
 # WirePlumber gives every Bluetooth microphone priority 2010 in code
 # (monitors/bluez/create-loopback-node.lua), and no rule can change it. The
@@ -86,12 +87,12 @@ let
           })
 
           # Shure X2u: an XLR microphone adapter. Its output is only a monitor
-          # jack, so it must not take the sound from real speakers.
+          # jack that is never used, so the output node is not created.
           (rule [ { "node.name" = "~alsa_input.usb-Shure_Incorporated_Shure_Digital-.*"; } ] {
             update-props = priority 2200 // { "node.description" = "Shure X2u Microphone"; };
           })
           (rule [ { "node.name" = "~alsa_output.usb-Shure_Incorporated_Shure_Digital-.*"; } ] {
-            update-props = priority 500 // { "node.description" = "Shure X2u Monitor Jack"; };
+            update-props = { "node.disabled" = true; };
           })
         ];
 
