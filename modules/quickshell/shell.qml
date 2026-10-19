@@ -642,7 +642,7 @@ ShellRoot {
                     Text {
                         anchors.centerIn: parent
                         text: brightnessControl.showLevel
-                            ? "BRI " + brightnessPanel.level
+                            ? "BRI " + brightnessPanel.shownLevel
                             : "BRI"
                         color: Theme.textPrimary
                         font.pixelSize: 10

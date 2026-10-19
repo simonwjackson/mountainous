@@ -28,7 +28,26 @@ Scope {
     readonly property int minimum: 5
     readonly property int maximum: 100
 
+    // The stored level, as the level file says. Every screen follows it.
     property int level: -1
+
+    // What the bar and the slider draw. While a drag is held, or while a
+    // value it sent is still on its way to the file, that is the value the
+    // user asked for, not the file: the file lags the pointer, and drawing it
+    // made the fill jump back and forth during a drag.
+    readonly property int shownLevel:
+        (root.dragging || root.sending || settle.running) && root.requested >= 0
+            ? root.requested : root.level
+
+    // The last write lands in the file a moment after its process exits.
+    // Hold the requested value until the file has caught up, so the fill
+    // does not flick back to an older step on release.
+    Timer {
+        id: settle
+        interval: 400
+    }
+    onLevelChanged: if (root.level === root.requested) settle.stop()
+
     property bool panelFollows: false
     property var monitors: []
 
@@ -74,14 +93,36 @@ Scope {
 
     function step(direction) { root.run([direction > 0 ? "up" : "down"]); }
 
-    // Sends only real changes, so a drag spawns one command per percent.
-    property int lastSent: -1
+    // A drag sends its values through one process at a time. A value that
+    // arrives while one is running waits, and only the newest waiting value
+    // is sent next. Separate processes for each step could finish out of
+    // order, so the level could end on a step the pointer had already left.
+    property bool dragging: false
+    property int requested: -1
+    property int pending: -1
+    readonly property bool sending: setter.running || root.pending >= 0
+
+    Process {
+        id: setter
+        onExited: {
+            root.flush();
+            if (!root.sending) settle.restart();
+        }
+    }
+
+    function flush() {
+        if (setter.running || root.pending < 0) return;
+        setter.command = ["mountainous-brightness", "set", String(root.pending)];
+        root.pending = -1;
+        setter.running = true;
+    }
+
     function setLevel(value) {
         const v = Math.max(root.minimum, Math.min(root.maximum, Math.round(value)));
-        if (v === root.lastSent) return;
-        root.lastSent = v;
-        root.level = v;
-        root.run(["set", String(v)]);
+        if (v === root.requested && root.sending) return;
+        root.requested = v;
+        root.pending = v;
+        root.flush();
     }
 
     // The laptop panel is an eDP output. An external screen follows when the
@@ -226,7 +267,7 @@ Scope {
                         Text {
                             Layout.preferredWidth: 38
                             horizontalAlignment: Text.AlignRight
-                            text: root.level >= 0 ? root.level + "%" : "--"
+                            text: root.shownLevel >= 0 ? root.shownLevel + "%" : "--"
                             color: Theme.textPrimary
                             font.pixelSize: 12
                             font.family: Theme.fontFamily
@@ -240,8 +281,8 @@ Scope {
                             radius: 3
                             color: Theme.bgSeparator
 
-                            readonly property real ratio: root.level < 0 ? 0
-                                : (root.level - root.minimum) / (root.maximum - root.minimum)
+                            readonly property real ratio: root.shownLevel < 0 ? 0
+                                : (root.shownLevel - root.minimum) / (root.maximum - root.minimum)
 
                             Rectangle {
                                 width: Math.round(parent.width * Math.min(1, Math.max(0, track.ratio)))
@@ -260,11 +301,15 @@ Scope {
                                     root.setLevel(root.minimum + ratio * (root.maximum - root.minimum));
                                 }
 
-                                onPressed: function (mouse) { setFromX(mouse.x); }
+                                onPressed: function (mouse) {
+                                    root.dragging = true;
+                                    setFromX(mouse.x);
+                                }
                                 onPositionChanged: function (mouse) {
                                     if (pressed) setFromX(mouse.x);
                                 }
-                                onReleased: root.lastSent = -1
+                                onReleased: root.dragging = false
+                                onCanceled: root.dragging = false
                             }
                         }
                     }
