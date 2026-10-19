@@ -8,12 +8,15 @@ let
     library: tailnet:
     (host.extendModules {
       modules = [
-        ({ lib, ... }: {
-          mountainous.features.media-applications = {
-            library = lib.mkForce library;
-            scryerTailnet = tailnet;
-          };
-        })
+        (
+          { lib, ... }:
+          {
+            mountainous.features.media-applications = {
+              library = lib.mkForce library;
+              scryerTailnet = tailnet;
+            };
+          }
+        )
       ];
     }).config;
   arr = configFor "arr" false;
@@ -58,6 +61,8 @@ let
     && !(service.serviceConfig ? NetworkNamespacePath)
     && builtins.elem "media-storage-ready.service" service.requires
     && builtins.elem "media-storage-ready.service" service.after
+    && builtins.elem "media-storage-ready.service" service.bindsTo
+    && (service.serviceConfig.ExecCondition or [ ]) != [ ]
     && builtins.all (mount: builtins.elem mount service.bindsTo) [
       "net-mountainous-zao-media.mount"
       "srv-media\\x2dlibrary\\x2dview-tv.mount"
@@ -114,7 +119,9 @@ let
           both
           scryer
         ];
-    mountRestartPropagates =
+    # Mount loss must stop the consumer, but rebuilding a view must not resume
+    # processing. The real Scryer VM checks the subsequent explicit start.
+    mountLossStopsWithoutAutomaticResume =
       builtins.all
         (
           config:
@@ -122,7 +129,7 @@ let
             mount:
             builtins.elem mount config.systemd.services.scryer.requires
             && builtins.elem mount config.systemd.services.scryer.after
-            && builtins.elem mount config.systemd.services.scryer.partOf
+            && !(builtins.elem mount config.systemd.services.scryer.partOf)
           ) config.systemd.services.scryer.bindsTo
         )
         [
