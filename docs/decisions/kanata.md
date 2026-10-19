@@ -26,3 +26,10 @@ Hardware-level keyboard remapping below the compositor, porting the home-row mod
    - Physical comma (`,`) types `n`.
    - Physical period (`.`) types `b`.
    - Physical slash (`/`) taps apostrophe (`'`) and holds Left Ctrl (`lctl`), preserving the right-hand pinky control modifier.
+
+## Tablet Mode on Convertibles
+Kanata 1.12.0 creates its output device with bus type i8042 (`linux-output-device-bus-type` defaults to `I8042`). libinput's `[Serial Keyboards]` quirk therefore tags the kanata device `AttrKeyboardIntegration=internal`, and suspends it when the tablet-mode switch turns on. Every keyboard types through that one device, so on Myoko a fold to 360 degrees also killed external keyboards (verified 2026-10-18 with `libinput quirks list` on Myoko's `event1`).
+
+The fix has two halves:
+- `/etc/libinput/local-overrides.quirks` sets `ModelTabletModeNoSuspend=1` on the device named `kanata`. The `internal` tag stays, because disable-while-typing pairs only internal keyboards with the touchpad. A `USB` bus type would fix tablet mode but break disable-while-typing, so it is rejected.
+- `kanata-tablet-mode.service` (`modules/kanata-tablet-mode.py`) watches every `SW_TABLET_MODE` switch and writes `1` to the kernel `inhibited` flag of each i8042 keyboard except kanata's. The kernel then drops the built-in keyboard's events before kanata reads them. A udev rule starts the service when a switch appears, because intel-hid can create its switch only at the first fold. `ExecStopPost` writes `0`, so a stopped watcher never leaves the built-in keyboard dead.

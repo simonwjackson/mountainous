@@ -1,7 +1,35 @@
 # Kanata: hardware-level keyboard remapping below the compositor.
 # Ports Corne home-row mods from simonwjackson/zmk-config.
 # See docs/decisions/kanata.md for layer layout, timings, and device regrab architecture.
+let
+  # Kanata's output device copies the i8042 bus type, so libinput calls it
+  # internal. Keep that tag, because disable-while-typing pairs only internal
+  # keyboards with the touchpad, but never suspend the device in tablet mode:
+  # every keyboard, external ones too, types through it.
+  quirks = ''
+    [Kanata virtual keyboard]
+    MatchName=kanata
+    ModelTabletModeNoSuspend=1
+  '';
+in
 {
+  perSystem =
+    { pkgs, ... }:
+    {
+      checks.kanata-tablet-mode = pkgs.runCommand "kanata-tablet-mode" {
+        nativeBuildInputs = [ pkgs.python3 pkgs.libinput.bin ];
+        passAsFile = [ "quirks" ];
+        inherit quirks;
+      } ''
+        mkdir quirks
+        cp ${pkgs.libinput.out}/share/libinput/*.quirks quirks/
+        cp "$quirksPath" quirks/99-kanata.quirks
+        libinput quirks validate --data-dir "$PWD/quirks"
+        python3 ${../tests/test_kanata_tablet_mode.py} ${./kanata-tablet-mode.py}
+        touch $out
+      '';
+    };
+
   nixos.modules.desktop = {
     config,
     lib,
@@ -311,6 +339,28 @@
       };
     };
 
+    environment.etc."libinput/local-overrides.quirks" = lib.mkIf config.services.kanata.enable {
+      text = quirks;
+    };
+
+    # The other half of the tablet-mode fix: the built-in keyboard must still
+    # go quiet when the screen folds back. modules/kanata-tablet-mode.py
+    # inhibits it in the kernel, below kanata's grab. udev starts it again
+    # when a switch appears, because intel-hid may create its tablet-mode
+    # switch only at the first fold. On a host with no tablet-mode switch
+    # the service exits at once. ExecStopPost releases the keyboard, so a
+    # stopped or crashed watcher never leaves it dead.
+    systemd.services.kanata-tablet-mode = lib.mkIf config.services.kanata.enable {
+      description = "Silence the built-in keyboard in tablet mode";
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.python3}/bin/python3 ${./kanata-tablet-mode.py}";
+        ExecStopPost = "${pkgs.python3}/bin/python3 ${./kanata-tablet-mode.py} release";
+        Restart = "on-failure";
+        RestartSec = "2";
+      };
+    };
+
     systemd.services.kanata-all.serviceConfig = lib.mkIf config.services.kanata.enable {
       Restart = "always";
       RestartSec = "1";
@@ -329,6 +379,7 @@
     # to be typing.
     services.udev.extraRules = lib.mkIf config.services.kanata.enable ''
       ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", ATTRS{name}!="kanata", TAG+="systemd", ENV{SYSTEMD_WANTS}+="kanata-regrab.service"
+      ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_SWITCH}=="1", TAG+="systemd", ENV{SYSTEMD_WANTS}+="kanata-tablet-mode.service"
     '';
 
     # try-restart, not restart: during boot the keyboards appear before
