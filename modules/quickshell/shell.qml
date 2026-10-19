@@ -20,9 +20,11 @@ ShellRoot {
     property var soundScreen: null
     property var brightnessScreen: null
     property var ociScreen: null
+    property var storageScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
+        root.storageScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
         root.brightnessScreen = null;
@@ -31,6 +33,7 @@ ShellRoot {
 
     function toggleWifi(screen) {
         root.topbarAccessVisible = false;
+        root.storageScreen = null;
         root.bluetoothScreen = null;
         root.soundScreen = null;
         root.brightnessScreen = null;
@@ -39,6 +42,7 @@ ShellRoot {
 
     function toggleSound(screen) {
         root.topbarAccessVisible = false;
+        root.storageScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.brightnessScreen = null;
@@ -51,6 +55,7 @@ ShellRoot {
         root.wifiScreen = null;
         root.soundScreen = null;
         root.ociScreen = null;
+        root.storageScreen = null;
         root.brightnessScreen = root.brightnessScreen === screen ? null : screen;
     }
 
@@ -60,7 +65,27 @@ ShellRoot {
         root.wifiScreen = null;
         root.soundScreen = null;
         root.brightnessScreen = null;
+        root.storageScreen = null;
         root.ociScreen = root.ociScreen === screen ? null : screen;
+    }
+
+    function toggleStorage(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = null;
+        root.brightnessScreen = null;
+        root.ociScreen = null;
+        root.storageScreen = root.storageScreen === screen ? null : screen;
+    }
+
+    // The keyboard hint lists only the panels this host shows.
+    function topbarAccessHint(cloud, disks) {
+        let keys = ["B Bluetooth", "W Wi-Fi", "S Sound", "L Brightness"];
+        if (cloud) keys.push("C Cloud");
+        if (disks) keys.push("D Disks");
+        keys.push("Esc cancel");
+        return keys.join("  ·  ");
     }
 
     function primaryScreen() {
@@ -151,6 +176,12 @@ ShellRoot {
         target: "oci"
         function reveal(): void { root.toggleOci(root.primaryScreen()); }
         function hide(): void { root.ociScreen = null; }
+    }
+
+    IpcHandler {
+        target: "storage"
+        function reveal(): void { root.toggleStorage(root.primaryScreen()); }
+        function hide(): void { root.storageScreen = null; }
     }
 
     IpcHandler {
@@ -356,6 +387,13 @@ ShellRoot {
                 onCloseRequested: root.ociScreen = null
             }
 
+            StorageHealth {
+                id: storageHealth
+                screen: modelData
+                shown: root.storageScreen === modelData
+                onCloseRequested: root.storageScreen = null
+            }
+
             anchors { top: true; left: true; right: true }
             implicitHeight: 26
             color: Theme.bgBase
@@ -465,9 +503,7 @@ ShellRoot {
             Text {
                 anchors.centerIn: parent
                 text: root.topbarAccessVisible
-                    ? (ociEgress.enabled
-                        ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  L Brightness  ·  C Cloud  ·  Esc cancel"
-                        : "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  L Brightness  ·  Esc cancel")
+                    ? root.topbarAccessHint(ociEgress.enabled, storageHealth.enabled)
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
@@ -683,6 +719,33 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: root.toggleOci(modelData)
+                    }
+                }
+
+                // A readout that opens a panel. Narrow bars keep the count
+                // and colour; the panel holds every finding.
+                Rectangle {
+                    id: storageControl
+                    visible: storageHealth.enabled
+                    Layout.preferredWidth: topBar.width >= 900 ? 104 : 52
+                    Layout.preferredHeight: 26
+                    radius: Theme.radiusSmall
+                    color: storageArea.containsMouse ? Theme.bgSelected : "transparent"
+                    Text {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        text: topBar.width >= 900 ? storageHealth.label : storageHealth.shortLabel
+                        color: storageHealth.statusColor
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+                    MouseArea {
+                        id: storageArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleStorage(modelData)
                     }
                 }
 

@@ -44,8 +44,13 @@
       # The Android tablet as a second screen below the panel, over Tailscale.
       mountainous.features.sunshine.enable = true;
 
+<<<<<<< HEAD
       # OBS's program output as a camera in Chromium video calls.
       mountainous.features.obs.enable = true;
+=======
+      # The operator's daily machine shows the servers' storage health.
+      mountainous.features.storage-health.enable = true;
+>>>>>>> d06d6dbb (feat(bars): show server storage health in the top bar on Myoko)
     };
   };
 }
