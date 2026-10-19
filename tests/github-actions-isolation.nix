@@ -97,6 +97,10 @@
         environment = builtins.removeAttrs runner.environment [ "PATH" ];
         inherit (runner) path unitConfig;
         serviceConfig = runner.serviceConfig // {
+          # Active means the listener reached its startup boundary, not merely
+          # that systemd forked it. Keep the production restart policy.
+          Type = "notify";
+          NotifyAccess = "all";
           ExecStartPre = [
             (builtins.head runner.serviceConfig.ExecStartPre)
             (pkgs.writeShellScript "ci-startup-gate" ''
@@ -105,6 +109,7 @@
           ];
           ExecStart = pkgs.writeShellScript "ci-recovered-listener" ''
             touch /srv/github-actions/work/forgerie/startup-recovered
+            ${pkgs.systemd}/bin/systemd-notify --ready
             exec sleep infinity
           '';
           ExecStopPost = [ ];

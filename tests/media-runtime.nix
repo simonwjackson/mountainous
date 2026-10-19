@@ -47,6 +47,12 @@ let
         placement = assignments;
       };
       mountainous.features.media-runtime.enable = true;
+      # The fixture routes peers on its private VLAN, not Tailscale. The
+      # production mount contract still requires the connectivity target.
+      systemd.targets.tailscale-online = {
+        requires = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+      };
       networking.firewall.enable = false;
       networking.hosts = {
         "192.168.1.1" = [ "arr.hummingbird-lake.ts.net" ];
