@@ -20,6 +20,7 @@ newest level, so a held key does not queue a write per step.
 
 import fcntl
 import glob
+import json
 import os
 import re
 import socket
@@ -36,6 +37,8 @@ RUNTIME = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
 STATE_HOME = os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state"))
 STATE = os.path.join(STATE_HOME, "mountainous", "brightness")
 SOCKET = os.path.join(RUNTIME, "mountainous-brightness.sock")
+# Which screens follow the level, for the top bar. Rewritten at each rescan.
+STATUS = os.path.join(RUNTIME, "mountainous-brightness.json")
 BACKLIGHTS = os.environ.get("MOUNTAINOUS_BACKLIGHTS", "/sys/class/backlight")
 DDCUTIL = os.environ.get("MOUNTAINOUS_DDCUTIL", "ddcutil")
 
@@ -128,17 +131,26 @@ def run(*args):
 
 
 def parse_detect(text):
-    """The I2C bus numbers of the valid displays in `ddcutil detect --terse`."""
-    buses = []
+    """The valid displays in `ddcutil detect --terse`, as bus -> identity.
+
+    `Monitor: YMK:EM160TP-A:` is manufacturer, model and serial.
+    """
+    displays = {}
     for block in re.split(r"\n\s*\n", text):
         lines = block.strip().splitlines()
         if not lines or not lines[0].startswith("Display "):
             continue
+        bus, identity = None, {"manufacturer": "", "model": ""}
         for line in lines:
             match = re.search(r"I2C bus:\s*/dev/i2c-(\d+)", line)
             if match:
-                buses.append(int(match.group(1)))
-    return buses
+                bus = int(match.group(1))
+            match = re.search(r"Monitor:\s*([^:]*):([^:]*):", line)
+            if match:
+                identity = {"manufacturer": match.group(1), "model": match.group(2)}
+        if bus is not None:
+            displays[bus] = identity
+    return displays
 
 
 def parse_maximum(text):
@@ -150,27 +162,42 @@ def parse_maximum(text):
 class Monitors:
     """Keeps every DDC/CI monitor on the stored level."""
 
-    def __init__(self, runner=run, level=read_level):
+    def __init__(self, runner=run, level=read_level, status=STATUS):
         self.runner = runner
         self.level = level
+        self.status = status
         self.wake = threading.Event()
         self.rescan = True
         self.displays = {}  # bus -> maximum
+        self.identities = {}  # bus -> manufacturer and model
         self.sent = {}  # bus -> raw value last written
 
     def detect(self):
         result = self.runner("detect", "--terse")
-        displays = {}
-        for bus in parse_detect(result.stdout):
+        displays, identities = {}, {}
+        for bus, identity in parse_detect(result.stdout).items():
             maximum = parse_maximum(
                 self.runner("--bus", str(bus), "getvcp", "10", "--terse").stdout
             )
             if maximum:
                 displays[bus] = maximum
+                identities[bus] = identity
         self.displays = displays
+        self.identities = identities
         # A new or returning monitor is never assumed to be in sync.
         self.sent = {}
+        self.write_status()
         print(f"monitors on i2c buses: {sorted(displays) or 'none'}", flush=True)
+
+    def write_status(self):
+        status = {
+            "panel": bool(backlights()),
+            "monitors": [self.identities[bus] for bus in sorted(self.identities)],
+        }
+        # In place, not by rename: the top bar watches this path, and a
+        # rename would leave its watch on the old file.
+        with open(self.status, "w") as f:
+            json.dump(status, f)
 
     def sync_once(self):
         if self.rescan:

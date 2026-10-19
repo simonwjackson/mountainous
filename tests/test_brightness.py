@@ -6,6 +6,7 @@ Run: python3 tests/test_brightness.py path/to/brightness.py
 """
 
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -91,16 +92,25 @@ class Brightness(unittest.TestCase):
             self.assertEqual(f.read(), "20")  # clamped to 5%
 
     def test_only_the_answering_display_is_used(self):
-        self.assertEqual(self.m.parse_detect(DETECT), [12])
+        self.assertEqual(
+            self.m.parse_detect(DETECT),
+            {12: {"manufacturer": "YMK", "model": "EM160TP-A"}},
+        )
         self.assertEqual(self.m.parse_maximum("VCP 10 C 2 100\n"), 100)
         self.assertIsNone(self.m.parse_maximum("VCP 10 ERR\n"))
 
     def test_sync_writes_the_level_once_and_rewrites_after_a_rescan(self):
         fake = FakeDdc(maximum=50)
         level = [40]
-        monitors = self.m.Monitors(runner=fake, level=lambda: level[0])
+        status = os.path.join(self.root, "status.json")
+        monitors = self.m.Monitors(runner=fake, level=lambda: level[0], status=status)
         monitors.sync_once()
         self.assertEqual(fake.writes(), [("--bus", "12", "--noverify", "setvcp", "10", "20")])
+        with open(status) as f:
+            self.assertEqual(
+                json.load(f),
+                {"panel": True, "monitors": [{"manufacturer": "YMK", "model": "EM160TP-A"}]},
+            )
         monitors.sync_once()
         self.assertEqual(len(fake.writes()), 1, "an unchanged level is not rewritten")
         level[0] = 60
@@ -112,7 +122,8 @@ class Brightness(unittest.TestCase):
 
     def test_a_failed_write_forces_a_rescan(self):
         fake = FakeDdc(fail=True)
-        monitors = self.m.Monitors(runner=fake, level=lambda: 50)
+        status = os.path.join(self.root, "status.json")
+        monitors = self.m.Monitors(runner=fake, level=lambda: 50, status=status)
         monitors.sync_once()
         self.assertTrue(monitors.rescan)
 

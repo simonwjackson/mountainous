@@ -18,12 +18,14 @@ ShellRoot {
     property var bluetoothScreen: null
     property var wifiScreen: null
     property var soundScreen: null
+    property var brightnessScreen: null
     property var ociScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
         root.wifiScreen = null;
         root.soundScreen = null;
+        root.brightnessScreen = null;
         root.bluetoothScreen = root.bluetoothScreen === screen ? null : screen;
     }
 
@@ -31,6 +33,7 @@ ShellRoot {
         root.topbarAccessVisible = false;
         root.bluetoothScreen = null;
         root.soundScreen = null;
+        root.brightnessScreen = null;
         root.wifiScreen = root.wifiScreen === screen ? null : screen;
     }
 
@@ -38,7 +41,17 @@ ShellRoot {
         root.topbarAccessVisible = false;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
+        root.brightnessScreen = null;
         root.soundScreen = root.soundScreen === screen ? null : screen;
+    }
+
+    function toggleBrightness(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = null;
+        root.ociScreen = null;
+        root.brightnessScreen = root.brightnessScreen === screen ? null : screen;
     }
 
     function toggleOci(screen) {
@@ -46,6 +59,7 @@ ShellRoot {
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
+        root.brightnessScreen = null;
         root.ociScreen = root.ociScreen === screen ? null : screen;
     }
 
@@ -120,6 +134,16 @@ ShellRoot {
             root.bluetoothScreen = null;
             root.wifiScreen = null;
             root.soundScreen = root.primaryScreen();
+        }
+    }
+
+    IpcHandler {
+        target: "brightness"
+        function toggle(): void { root.toggleBrightness(root.primaryScreen()); }
+        function hide(): void { root.brightnessScreen = null; }
+        function reveal(): void {
+            root.brightnessScreen = null;
+            root.toggleBrightness(root.primaryScreen());
         }
     }
 
@@ -318,6 +342,13 @@ ShellRoot {
                 onCloseRequested: root.soundScreen = null
             }
 
+            BrightnessPanel {
+                id: brightnessPanel
+                screen: modelData
+                shown: root.brightnessScreen === modelData
+                onCloseRequested: root.brightnessScreen = null
+            }
+
             OciEgress {
                 id: ociEgress
                 screen: modelData
@@ -435,8 +466,8 @@ ShellRoot {
                 anchors.centerIn: parent
                 text: root.topbarAccessVisible
                     ? (ociEgress.enabled
-                        ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  C Cloud  ·  Esc cancel"
-                        : "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  Esc cancel")
+                        ? "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  L Brightness  ·  C Cloud  ·  Esc cancel"
+                        : "B Bluetooth  ·  W Wi-Fi  ·  S Sound  ·  L Brightness  ·  Esc cancel")
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
@@ -591,6 +622,42 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: root.toggleSound(modelData)
+                    }
+                }
+
+                // Brightness: one level for every screen. Same shape as
+                // volume: the control stays, the number yields first. The
+                // wheel steps it like the keys do.
+                Rectangle {
+                    id: brightnessControl
+
+                    readonly property bool showLevel: topBar.width >= 520
+
+                    Layout.preferredWidth: showLevel ? 50 : 28
+                    Layout.preferredHeight: 26
+                    visible: brightnessPanel.available
+                    color: brightnessArea.containsMouse ? Theme.bgSelected : "transparent"
+                    radius: Theme.radiusSmall
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: brightnessControl.showLevel
+                            ? "BRI " + brightnessPanel.level
+                            : "BRI"
+                        color: Theme.textPrimary
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+
+                    MouseArea {
+                        id: brightnessArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleBrightness(modelData)
+                        onWheel: function (wheel) {
+                            if (wheel.angleDelta.y !== 0)
+                                brightnessPanel.step(wheel.angleDelta.y > 0 ? 1 : -1);
+                        }
                     }
                 }
 
