@@ -393,7 +393,7 @@
       slurp
       wl-clipboard
       playerctl
-      brightnessctl # required by the XF86MonBrightness key bindings
+      brightnessctl # manual backlight control; the keys use mountainous-brightness
       jq
       adwaita-icon-theme # without a cursor theme Hyprland falls back badly
       hypr-scale
@@ -407,8 +407,8 @@
     # brightnessctl ships 90-brightnessctl.rules, which hands the panel
     # backlight to the video group and the keyboard backlight to the input
     # group. NixOS links a package's udev rules only when it is listed here,
-    # so without this the Hyprland brightness bindings run as simon and fail
-    # with "Operation not permitted".
+    # so without this mountainous-brightness, which the Hyprland brightness
+    # bindings run as simon, fails with "Operation not permitted".
     services.udev.packages = [pkgs.brightnessctl];
 
     environment.sessionVariables = {

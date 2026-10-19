@@ -787,8 +787,10 @@ hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("mountainous-screenshot window"))
 --------------------------------------------------------------------
 -- Hardware keys
 --------------------------------------------------------------------
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --class=backlight set +10%"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%-"), { locked = true, repeating = true })
+-- One level for every screen: the panel and each DDC/CI monitor move
+-- together. See modules/brightness.nix.
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("mountainous-brightness up"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("mountainous-brightness down"), { locked = true, repeating = true })
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
