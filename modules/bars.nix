@@ -84,6 +84,8 @@
         ./quickshell/BrightnessPanel.qml;
       hjem.users.simon.files.".config/quickshell/mountainous/OciEgress.qml".source =
         ./quickshell/OciEgress.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/storage-health.js".source =
+        ./quickshell/storage-health.js;
       # Shown only where modules/storage-health.nix is enabled.
       hjem.users.simon.files.".config/quickshell/mountainous/StorageHealth.qml".source =
         ./quickshell/StorageHealth.qml;

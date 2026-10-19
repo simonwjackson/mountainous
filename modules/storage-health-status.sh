@@ -1,29 +1,44 @@
 #!/usr/bin/env bash
-# Runs the storage health probe on each server and prints one
-# "host<TAB>level<TAB>message" line per finding, in the order given.
-# Levels: ok, warn, bad, or unreachable when SSH gives no answer.
-# Usage: storage-health-status PROBE user@host...
+# All-or-nothing transport validation. Never accept green from a failed SSH
+# command, an incomplete probe, or a stale/future sample.
 set -uo pipefail
 probe=$1
 shift
-
+now=${STORAGE_HEALTH_NOW:-$(date +%s)}
+if [ "$#" -eq 0 ]; then
+  printf 'configuration\tunreachable\tno storage hosts configured\t%s\n' "$now"
+  exit 1
+fi
 for target in "$@"; do
   host=${target#*@}
-  # ConnectTimeout covers a dead host; timeout covers one that hangs later.
-  output=$(timeout 25 ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=8 \
+  output=$(timeout 30 ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=8 \
     -o ServerAliveInterval=5 -o ServerAliveCountMax=2 \
-    "$target" bash -s <"$probe" 2>/dev/null)
+    "$target" bash -s -- "$host" <"$probe" 2>/dev/null)
   code=$?
-  printed=0
-  while IFS=$'\t' read -r level message; do
+  valid=1
+  complete=0
+  rows=0
+  timestamp=
+  while IFS=$'\t' read -r level message extra; do
+    if [ "$complete" -ne 0 ] || [ -n "$extra" ] || [ -z "$message" ]; then valid=0; fi
     case "$level" in
-      ok | warn | bad)
-        printf '%s\t%s\t%s\n' "$host" "$level" "$message"
-        printed=1
+      ok | warn | bad) rows=$((rows + 1)) ;;
+      complete)
+        complete=$((complete + 1))
+        timestamp=$message
+        [[ "$timestamp" =~ ^[0-9]{10}$ ]] || valid=0
         ;;
+      *) valid=0 ;;
     esac
   done <<<"$output"
-  if [ "$printed" -eq 0 ]; then
-    printf '%s\tunreachable\tno answer over SSH (exit %s)\n' "$host" "$code"
+  if [ "$code" -ne 0 ] || [ "$valid" -ne 1 ] || [ "$complete" -ne 1 ] || [ "$rows" -eq 0 ]; then
+    printf '%s\tunreachable\tincomplete or failed SSH probe (exit %s)\t%s\n' "$host" "$code" "$now"
+  elif [ "$((now - timestamp))" -gt 120 ] || [ "$((timestamp - now))" -gt 120 ]; then
+    printf '%s\tunreachable\tprobe timestamp stale or clock differs\t%s\n' "$host" "$now"
+  else
+    while IFS=$'\t' read -r level message; do
+      [ "$level" != complete ] || continue
+      printf '%s\t%s\t%s\t%s\n' "$host" "$level" "$message" "$timestamp"
+    done <<<"$output"
   fi
 done

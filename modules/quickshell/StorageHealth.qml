@@ -4,6 +4,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "storage-health.js" as Health
 
 // Storage and service health on the servers, a placeholder until real alert
 // monitoring exists. A helper runs a read-only probe over SSH on each host;
@@ -15,7 +16,10 @@ Scope {
     signal closeRequested
     readonly property bool enabled: Quickshell.env("STORAGE_HEALTH_ENABLED") === "1"
     property var rows: []
-    property string state: "loading"
+    property string sampleState: "loading"
+    property double now: Date.now()
+    readonly property string state: Health.ageState(sampleState, checkedAt.getTime(), now)
+    property var pending: ({output: null, code: null})
     property date checkedAt
     readonly property var issues: rows.filter(function (row) { return row.level !== "ok"; })
     readonly property string worst: {
@@ -26,13 +30,14 @@ Scope {
     readonly property string label: {
         if (state === "loading") return "Disks ...";
         if (state === "error") return "Disks !";
+        if (state === "stale") return "Disks stale";
         if (issues.length === 0) return "Disks ok";
         return "Disks " + issues.length + (issues.length === 1 ? " issue" : " issues");
     }
     readonly property string shortLabel: state === "ready" && issues.length > 0
         ? "DSK " + issues.length : "DSK"
     readonly property color statusColor: {
-        if (state === "error") return Theme.warning;
+        if (state === "error" || state === "stale") return Theme.warning;
         if (state !== "ready") return Theme.textMuted;
         return worst === "bad" ? Theme.danger : worst === "warn" ? Theme.warning : Theme.textMuted;
     }
@@ -43,26 +48,23 @@ Scope {
     }
 
     function refresh() {
-        if (root.enabled && !probe.running) probe.running = true;
+        if (root.enabled && !probe.running) {
+            root.pending = {output: null, code: null};
+            probe.running = true;
+        }
     }
 
-    function accept(value) {
-        const next = [];
-        for (const line of value.trim().split("\n")) {
-            const fields = line.split("\t");
-            if (fields.length !== 3) continue;
-            next.push({host: fields[0], level: fields[1], message: fields[2]});
-        }
-        if (next.length === 0) {
-            root.state = "error";
-            return;
-        }
-        root.rows = next;
-        // ListView sections need model roles, which a JS array lacks.
+    function settle() {
+        // stdout completion and process exit may arrive in either order.
+        if (pending.output === null || pending.code === null) return;
+        const sample = pending.code === 0 ? Health.parse(pending.output, Date.now()) : {state: "error"};
+        root.sampleState = sample.state;
+        if (sample.state === "error") return;
+        root.rows = sample.rows;
         findingsModel.clear();
-        for (const row of next) findingsModel.append(row);
-        root.checkedAt = new Date();
-        root.state = "ready";
+        for (const row of sample.rows) findingsModel.append(row);
+        root.checkedAt = new Date(sample.checkedAt);
+        root.now = Date.now();
     }
 
     ListModel { id: findingsModel }
@@ -77,12 +79,19 @@ Scope {
         onTriggered: root.refresh()
     }
 
+    Timer {
+        interval: 30000
+        running: root.enabled
+        repeat: true
+        onTriggered: root.now = Date.now()
+    }
+
     Process {
         id: probe
         command: ["storage-health-status"]
-        stdout: StdioCollector { onStreamFinished: root.accept(this.text) }
+        stdout: StdioCollector { onStreamFinished: { root.pending.output = this.text; root.settle(); } }
         stderr: StdioCollector { }
-        onExited: function (code) { if (code !== 0) root.state = "error"; }
+        onExited: function (code) { root.pending.code = code; root.settle(); }
     }
 
     LazyLoader {
@@ -156,6 +165,7 @@ Scope {
                             : root.state === "error" && root.rows.length === 0 ? "The check did not run"
                             : root.state === "error" ? "The last check failed. Showing "
                                 + Qt.formatTime(root.checkedAt, "HH:mm")
+                            : root.state === "stale" ? "Stale result from " + Qt.formatDateTime(root.checkedAt, "yyyy-MM-dd HH:mm")
                             : "Checked " + Qt.formatTime(root.checkedAt, "HH:mm")
                                 + ", again every 5 minutes"
                         color: Theme.textSecondary

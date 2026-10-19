@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Offline adapter for the same CLI consumed by StorageHealth.qml. Never SSH.
+set -eu
+now=${STORAGE_HEALTH_NOW:-$(date +%s)}
+case "${STORAGE_HEALTH_PREVIEW:-issues}" in
+  healthy) printf 'unzen\tok\tall checks passed\t%s\n' "$now" ;;
+  stale) printf 'unzen\tok\tall checks passed\t%s\n' "$((now - 601))" ;;
+  error) exit 1 ;;
+  partial) printf 'unzen\tok\tpartial response\n' ;;
+  issues)
+    printf 'zao\twarn\ttowada last batch: copied; protected 12, released 0 files; backlog unknown files / unknown bytes\t%s\n' "$now"
+    printf 'zao\twarn\ttowada automatic source release held; cache can fill\t%s\n' "$now"
+    printf 'unzen\tbad\tmedia views unreadable or not mounted\t%s\n' "$now"
+    printf 'unzen\twarn\tbcachefs scrub: last success 400 h ago\t%s\n' "$now"
+    ;;
+  *) exit 2 ;;
+esac

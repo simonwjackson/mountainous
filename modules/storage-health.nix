@@ -3,8 +3,8 @@
 #
 # Every 5 minutes the bar runs storage-health-status. It sends a read-only
 # probe over SSH to each host, as the user's normal login, and lists what it
-# finds: failed units, unmounted array disks, a stale SnapRAID sync, a full
-# NVMe cache, and bcachefs members that are not read-write or have I/O errors.
+# finds: failed/unknown probes, expected mounts, sync/scrub age, shared-pool
+# pressure, last-batch cache receipts, and bcachefs member health.
 # The servers need no change; the probe uses only unprivileged reads.
 {
   perSystem =
@@ -20,11 +20,14 @@
               pkgs.gnused
               pkgs.gnugrep
               pkgs.coreutils
+              pkgs.jq
+              pkgs.nodejs
             ];
           }
           ''
             python3 ${../tests/test_storage_health.py} \
               ${./storage-health-probe.sh} ${./storage-health-status.sh}
+            node ${../tests/storage-health-model.js} ${./quickshell/storage-health.js}
             touch $out
           '';
     };
