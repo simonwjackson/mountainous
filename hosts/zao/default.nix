@@ -9,6 +9,7 @@
     ./commitments.nix
     ./disko.nix
     ./hardware.nix
+    ./nscd.nix
   ];
 
   networking = {

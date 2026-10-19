@@ -415,6 +415,11 @@
           otherHostPreserved = true;
         });
 
+    checks.x86_64-linux.zao-nscd = import ./tests/zao-nscd.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      config = self.nixosConfigurations.zao.config;
+    };
+
     checks.x86_64-linux.zao-avahi-timeout-cleanup = import ./tests/avahi-timeout-cleanup.nix {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       avahi = self.nixosConfigurations.zao.config.services.avahi.package;
