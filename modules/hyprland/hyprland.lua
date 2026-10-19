@@ -14,6 +14,17 @@ hl.monitor({
     scale    = "1.5",
 })
 
+-- YMK EM160TP-A, the portable 16-inch monitor: the same 2880x1800 across
+-- the same 340x220mm as the panel. It sits above the panel at the panel's
+-- scale, so both are a logical 1920x1200 and line up edge to edge.
+-- Matched by description, because its DP-n name depends on the port.
+hl.monitor({
+    output   = "desc:YMK EM160TP-A 0x00000001",
+    mode     = "preferred",
+    position = "0x-1200",
+    scale    = "1.5",
+})
+
 hl.env("XCURSOR_THEME", "Adwaita")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
