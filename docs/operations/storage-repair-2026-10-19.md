@@ -157,7 +157,9 @@ completion record. Partial/malformed/failed output is unknown, never green.
 Clock differences over two minutes are unknown. The UI marks a retained sample
 stale after ten minutes, including when a refresh hangs. Missing configuration,
 expected mount paths/identities, sysfs data, or successful scrub history remain
-visible failures or unknowns. Sync age is limited to 36 hours; scrub age to 14 days.
+visible failures or unknowns. Sync age is limited to 36 hours. Both deployed scrub timers are monthly, so
+scrub age is limited to 40 days (a 31-day month plus nine days of grace). Journal
+queries cover 60 days, so a normal 31-day interval remains observable.
 
 `df` measures the filesystem shared by cache, root, snapshots, and other data.
 Warnings start at 80%, critical at 90%. These thresholds do not claim cache

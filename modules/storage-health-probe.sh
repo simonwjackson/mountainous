@@ -11,6 +11,9 @@ profile=${1:-unknown}
 profile=${profile%%.*}
 state_root=${STORAGE_HEALTH_STATE:-/var/lib/disk-array}
 run_root=${STORAGE_HEALTH_RUN:-/run}
+# Both deployed scrub timers are monthly. Allow a 31-day month plus nine
+# days of scheduling/maintenance grace; sync remains a separate 36h policy.
+scrub_max_hours=$((40 * 24))
 issues=0
 say() { printf '%s\t%s\n' "$1" "$2"; issues=$((issues + 1)); }
 
@@ -49,13 +52,13 @@ freshness() {
   local unit=$1 label=$2 max_hours=$3 log last age
   # MESSAGE_ID identifies systemd's successful unit completion, independent of
   # translated descriptions. Failed/started jobs cannot refresh this timestamp.
-  if ! log=$(journalctl -u "$unit" MESSAGE_ID=39f53479d3a045ac8e11786248231fbf --since '-30 days' -o short-unix --no-pager 2>/dev/null); then
+  if ! log=$(journalctl -u "$unit" MESSAGE_ID=39f53479d3a045ac8e11786248231fbf --since '-60 days' -o short-unix --no-pager 2>/dev/null); then
     say warn "$label history unreadable"
     return
   fi
   last=$(printf '%s\n' "$log" | awk '/^[0-9]+\.[0-9]+ / {split($1,t,"."); last=t[1]} END {print last}')
   if [[ ! "$last" =~ ^[0-9]+$ ]]; then
-    say bad "$label: no recorded success in 30 days"
+    say bad "$label: no recorded success in 60 days"
     return
   fi
   age=$((now - last))
@@ -88,7 +91,7 @@ for conf in "$etc"/snapraid-*.conf; do
     done
   fi
   freshness "$pool-snapraid-sync.service" "$pool SnapRAID sync" 36
-  freshness "$pool-snapraid-scrub.service" "$pool SnapRAID scrub" 336
+  freshness "$pool-snapraid-scrub.service" "$pool SnapRAID scrub" "$scrub_max_hours"
   cache="$srv/cache/$pool"
   check_mount "$cache"
   if [ -d "$cache" ] && mountpoint -q "$cache"; then
@@ -135,7 +138,7 @@ if [ "$profile" = unzen ]; then
   expected_uuid=e5f61013-d6f5-260d-9883-4dda26b2c293
   grep -Fxq "$expected_uuid" <<<"$mounted" || say bad 'expected Unzen bcachefs filesystem is not mounted'
   [ -d "$bcachefs_root/$expected_uuid" ] || say bad 'expected Unzen bcachefs sysfs probes missing'
-  freshness bcachefs-scrub-root.service 'bcachefs scrub' 336
+  freshness bcachefs-scrub-root.service 'bcachefs scrub' "$scrub_max_hours"
 fi
 filesystems=0
 for fs in "$bcachefs_root"/*/; do

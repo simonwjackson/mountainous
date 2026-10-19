@@ -11,7 +11,7 @@ case "${STORAGE_HEALTH_PREVIEW:-issues}" in
     printf 'zao\twarn\ttowada last batch: copied; protected 12, released 0 files; backlog unknown files / unknown bytes\t%s\n' "$now"
     printf 'zao\twarn\ttowada automatic source release held; cache can fill\t%s\n' "$now"
     printf 'unzen\tbad\tmedia views unreadable or not mounted\t%s\n' "$now"
-    printf 'unzen\twarn\tbcachefs scrub: last success 400 h ago\t%s\n' "$now"
+    printf 'unzen\twarn\tbcachefs scrub: last success 1000 h ago\t%s\n' "$now"
     ;;
   *) exit 2 ;;
 esac

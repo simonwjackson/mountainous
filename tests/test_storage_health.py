@@ -57,6 +57,7 @@ class Fixture:
             "journalctl",
             """
             [[ "$*" == *MESSAGE_ID=39f53479d3a045ac8e11786248231fbf* ]] || exit 2
+            [[ "$*" == *"--since -60 days"* ]] || exit 2
             for t in $HISTORY; do echo "$t.123456 host systemd[1]: Finished fixture."; done
             exit "$HISTORY_EXIT"
         """,
@@ -298,7 +299,7 @@ class Probe(unittest.TestCase):
         self.fx.towada()
         for history, expected in (
             ("", "no recorded success"),
-            (str(NOW - 337 * 3600), "last success 337 h ago"),
+            (str(NOW - 1000 * 3600), "last success 1000 h ago"),
             (str(NOW + 3600), "in the future"),
         ):
             lines = self.fx.probe("zao", HISTORY=history)
@@ -326,6 +327,33 @@ class Probe(unittest.TestCase):
                 "sync: last success" in message
                 for _, message in self.fx.probe("zao", HISTORY=str(NOW - 36 * 3600 - 1))
             )
+        )
+
+    def test_monthly_scrub_accepts_31_day_month_and_40_day_grace(self):
+        self.fx.towada()
+        for days in (31, 40):
+            lines = self.fx.probe("zao", HISTORY=str(NOW - days * 86400))
+            self.assertFalse(any("scrub:" in message for _, message in lines), lines)
+            # The longer scrub grace must never relax the independent sync limit.
+            self.assertTrue(
+                any("sync: last success" in message for _, message in lines), lines
+            )
+        lines = self.fx.probe("zao", HISTORY=str(NOW - 40 * 86400 - 1))
+        self.assertIn(("bad", "towada SnapRAID scrub: last success 960 h ago"), lines)
+
+    def test_monthly_bcachefs_scrub_becomes_overdue_after_40_days(self):
+        self.fx.unzen()
+        self.assertEqual(
+            self.fx.probe("unzen", HISTORY=str(NOW - 31 * 86400)),
+            [("ok", "all checks passed")],
+        )
+        self.assertEqual(
+            self.fx.probe("unzen", HISTORY=str(NOW - 40 * 86400)),
+            [("ok", "all checks passed")],
+        )
+        self.assertIn(
+            ("bad", "bcachefs scrub: last success 960 h ago"),
+            self.fx.probe("unzen", HISTORY=str(NOW - 40 * 86400 - 1)),
         )
 
     def test_bcachefs_missing_members_state_and_counters(self):
