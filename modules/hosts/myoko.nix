@@ -43,6 +43,9 @@
 
       # The Android tablet as a second screen below the panel, over Tailscale.
       mountainous.features.sunshine.enable = true;
+
+      # OBS's program output as a camera in Chromium video calls.
+      mountainous.features.obs.enable = true;
     };
   };
 }
