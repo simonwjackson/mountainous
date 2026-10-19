@@ -420,6 +420,22 @@
       config = self.nixosConfigurations.zao.config;
     };
 
+    checks.x86_64-linux.disk-array-vm = import ./tests/disk-array-vm.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      storagePkgs = self.nixosConfigurations.zao.pkgs;
+    };
+    checks.x86_64-linux.disk-array-mover = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    in
+      pkgs.runCommand "disk-array-mover-tests" {nativeBuildInputs = [pkgs.python3];} ''
+        mkdir -p work/features work/tests
+        cp -r ${./features/disk-array} work/features/disk-array
+        cp ${./tests/test_disk_array_mover.py} work/tests/test_disk_array_mover.py
+        cd work
+        PYTHONPATH=tests python3 -m unittest test_disk_array_mover.PolicyTests
+        touch "$out"
+      '';
+
     checks.x86_64-linux.zao-avahi-timeout-cleanup = import ./tests/avahi-timeout-cleanup.nix {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       avahi = self.nixosConfigurations.zao.config.services.avahi.package;

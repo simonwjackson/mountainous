@@ -2,9 +2,10 @@
   config,
   lib,
   pkgs,
+  utils,
   ...
 }: let
-  inherit (lib) mkIf mkMerge mapAttrsToList concatMap concatStringsSep listToAttrs nameValuePair imap0 flatten optionalAttrs optional;
+  inherit (lib) mkIf mkMerge mapAttrsToList concatMap concatStringsSep listToAttrs nameValuePair imap0 optional;
   cfg = config.mountainous.features.disk-array;
 
   diskMountPath = pool: disk: "${pool.mountBase}/${disk.id}";
@@ -32,7 +33,9 @@
       options =
         [
           "noauto"
-          "x-systemd.automount=false"
+          "nofail"
+          "x-systemd.requires=${name}-storage-admission.service"
+          "x-systemd.after=${name}-storage-admission.service"
           "allow_other"
           "use_ino"
           "cache.files=partial"
@@ -44,64 +47,86 @@
           }"
           "fsname=mergerfs-${name}"
         ]
+        ++ map (unit: "x-systemd.requires=${unit}") (backingUnits pool)
+        ++ map (unit: "x-systemd.after=${unit}") (backingUnits pool)
         ++ pool.mergerfs.extraOptions;
     };
   };
 
-  poolMergerfsService = name: pool: let
-    dataDiskPaths = map (id: "${pool.mountBase}/${id}") pool.mergerfs.dataDisks;
-    waitPaths = dataDiskPaths;
-  in {
-    "${name}-mergerfs-mount" = {
-      description = "Mount ${name} MergerFS (after disks are ready)";
-      wantedBy = ["multi-user.target"];
-      after = ["local-fs.target"];
-      unitConfig.ConditionPathExists = "|${builtins.head dataDiskPaths}";
-      path = with pkgs; [util-linux mount];
+  mountUnit = path: "${utils.escapeSystemdPath path}.mount";
+  backingUnits = pool:
+    map (disk: mountUnit (diskMountPath pool disk)) pool.disks
+    ++ optional pool.cache.enable (mountUnit pool.cache.path);
+  moverConfig = name: pool:
+    pkgs.writeText "${name}-storage.json" (builtins.toJSON {
+      mounts =
+        map (disk: {
+          inherit (disk) id uuid;
+          path = diskMountPath pool disk;
+          device = "${disk.device}-part${disk.partition}";
+          fsType = pool.fsType;
+        })
+        pool.disks
+        ++ optional pool.cache.enable {
+          id = "cache";
+          path = pool.cache.path;
+          inherit (pool.cache) device uuid fsRoot fsType;
+        };
+      data = pool.snapraid.dataDisks;
+      excludes = pool.snapraid.excludes;
+      ageMinutes = pool.cache.mover.olderThan;
+      stateDir = "/var/lib/disk-array/${name}/receipts";
+      statusPath = "/var/lib/disk-array/${name}/status.json";
+      lock = "/run/lock/disk-array-${name}.lock";
+      snapraid = "${pkgs.snapraid}/bin/snapraid";
+      snapraidConfig = "/etc/snapraid-${name}.conf";
+      inherit (pool.snapraid) maxRemoved maxUpdated;
+      evidence =
+        map (disk: {
+          disk = disk.id;
+          path = "snapraid.content";
+          kind = "content";
+        })
+        pool.disks
+        ++ lib.imap0 (i: disk: {
+          inherit disk;
+          path = "snapraid.${toString i}.parity";
+          kind = "parity";
+        })
+        pool.snapraid.parityDisks;
+    });
+  mover = name: pool:
+    pkgs.writeShellApplication {
+      name = "${name}-storage";
+      runtimeInputs = [pkgs.python3 pkgs.util-linux];
+      text = "exec python3 ${./mover.py} --config ${moverConfig name pool} \"$@\"";
+    };
+  command = name: pool: "${lib.getExe (mover name pool)}";
+  poolMergerfsService = name: pool: {
+    "${name}-storage-admission" = {
+      description = "Validate all ${name} backing identities before exposing storage";
+      requires = backingUnits pool ++ ["systemd-tmpfiles-setup.service"];
+      bindsTo = backingUnits pool;
+      after = backingUnits pool ++ ["systemd-tmpfiles-setup.service"];
+      before = [(mountUnit pool.mergedPath)];
+      unitConfig.DefaultDependencies = false;
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "${name}-mergerfs-mount" ''
-          set -euo pipefail
-          DATA_DISKS=(${concatStringsSep " " (map (p: ''"${p}"'') dataDiskPaths)})
-          MERGED_PATH="${pool.mergedPath}"
-          TIMEOUT=120
-          WAITED=0
-
-          echo "Waiting for ${name} data disks to mount..."
-          while [ $WAITED -lt $TIMEOUT ]; do
-            MOUNTED=0
-            for disk in "''${DATA_DISKS[@]}"; do
-              if mountpoint -q "$disk" 2>/dev/null; then
-                ((MOUNTED++)) || true
-              fi
-            done
-            if [ $MOUNTED -eq ''${#DATA_DISKS[@]} ]; then
-              break
-            fi
-            sleep 1
-            ((WAITED++)) || true
-          done
-
-          if [ $WAITED -ge $TIMEOUT ]; then
-            echo "Timeout waiting for ${name} disks. Array may be disconnected — skipping."
-            exit 0
-          fi
-
-          if mountpoint -q "$MERGED_PATH" 2>/dev/null; then
-            echo "MergerFS already mounted at $MERGED_PATH"
-            exit 0
-          fi
-
-          mount "$MERGED_PATH"
-          echo "MergerFS mounted at $MERGED_PATH"
-        '';
-        ExecStop = pkgs.writeShellScript "${name}-mergerfs-umount" ''
-          MERGED_PATH="${pool.mergedPath}"
-          if mountpoint -q "$MERGED_PATH" 2>/dev/null; then
-            umount "$MERGED_PATH" || true
-          fi
-        '';
+        ExecStart = "${command name pool} admit";
+      };
+    };
+    # Retain the public commitment unit, but let the actual .mount own mounting.
+    "${name}-mergerfs-mount" = {
+      description = "${name} mounted and admitted";
+      wantedBy = ["multi-user.target"];
+      requires = [(mountUnit pool.mergedPath)];
+      bindsTo = [(mountUnit pool.mergedPath)];
+      after = [(mountUnit pool.mergedPath)];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${pkgs.coreutils}/bin/true";
       };
     };
   };
@@ -110,18 +135,23 @@
     "${name}-array" = {
       description = "${name} Array Storage Target";
       wantedBy = ["multi-user.target"];
-      after = ["local-fs.target"];
+      requires = ["${name}-storage-admission.service"];
+      bindsTo = backingUnits pool;
+      after = ["${name}-storage-admission.service"];
     };
     "${name}-merged" = {
       description = "${name} Merged View Target";
       wantedBy = ["multi-user.target"];
       after = ["${name}-mergerfs-mount.service"];
       requires = ["${name}-mergerfs-mount.service"];
+      bindsTo = [(mountUnit pool.mergedPath)];
     };
   };
 
   poolTmpfiles = name: pool:
     [
+      "d /var/lib/disk-array/${name} 0755 root root - -"
+      "d /var/lib/disk-array/${name}/receipts 0700 root root - -"
       "d ${pool.mountBase} 0755 root root - -"
       "d ${pool.mergedPath} 0755 root root - -"
     ]
@@ -160,94 +190,23 @@
     nohidden
   '';
 
-  poolSnapraidServices = name: pool: let
-    sr = pool.snapraid;
-    confPath = "/etc/snapraid-${name}.conf";
-  in {
-    "${name}-snapraid-sync" = {
-      description = "SnapRAID Sync for ${name}";
-      after = ["${name}-array.target"];
-      wants = ["${name}-array.target"];
-      unitConfig.ConditionPathExists = map (id: "${pool.mountBase}/${id}") sr.dataDisks;
-      # Without this the script's bare `mountpoint` and `grep` calls are not on
-      # PATH, the mount guard fails with a false "not mounted" error, and the
-      # diff thresholds silently parse as 0.
-      path = with pkgs; [util-linux gnugrep coreutils];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = pkgs.writeShellScript "${name}-snapraid-sync" ''
-          set -euo pipefail
-          MAX_REMOVED=${toString sr.maxRemoved}
-          MAX_UPDATED=${toString sr.maxUpdated}
-
-          for disk in ${concatStringsSep " " (map (id: ''"${pool.mountBase}/${id}"'') sr.dataDisks)}; do
-            if [ ! -d "$disk" ] || ! mountpoint -q "$disk"; then
-              echo "ERROR: Data disk not mounted: $disk"
-              exit 1
-            fi
-          done
-
-          for disk in ${concatStringsSep " " (map (id: ''"${pool.mountBase}/${id}"'') sr.parityDisks)}; do
-            if [ ! -d "$disk" ] || ! mountpoint -q "$disk"; then
-              echo "WARNING: Parity disk not mounted: $disk"
-            fi
-          done
-
-          echo "Running SnapRAID diff..."
-          DIFF_OUTPUT=$(${pkgs.snapraid}/bin/snapraid -c ${confPath} diff 2>&1) || true
-          echo "$DIFF_OUTPUT"
-
-          # A missing or broken grep must abort, never report 0. Reporting 0
-          # would disarm the removed/updated guards below.
-          parse_count() {
-            local label="$1" out status=0
-            out=$(echo "$DIFF_OUTPUT" | grep -oP "^\s*\K\d+(?=\s+$label)" | tail -n 1) || status=$?
-            if [ "$status" -eq 0 ]; then
-              printf '%s\n' "$out"
-            elif [ "$status" -eq 1 ]; then
-              printf '0\n'
-            else
-              printf 'ERROR: cannot parse %s count from snapraid diff (exit %s). Refusing to sync.\n' "$label" "$status" >&2
-              return 1
-            fi
-          }
-
-          REMOVED=$(parse_count removed) || exit 1
-          UPDATED=$(parse_count updated) || exit 1
-
-          if [ "$REMOVED" -gt "$MAX_REMOVED" ]; then
-            echo "ERROR: $REMOVED removed exceeds threshold ($MAX_REMOVED). Aborting."
-            exit 1
-          fi
-          if [ "$UPDATED" -gt "$MAX_UPDATED" ]; then
-            echo "ERROR: $UPDATED updated exceeds threshold ($MAX_UPDATED). Aborting."
-            exit 1
-          fi
-
-          echo "Starting SnapRAID sync..."
-          ${pkgs.snapraid}/bin/snapraid -c ${confPath} sync
-          echo "SnapRAID sync completed."
-        '';
-      };
-    };
-    "${name}-snapraid-scrub" = {
-      description = "SnapRAID Scrub for ${name}";
-      after = ["${name}-array.target" "${name}-snapraid-sync.service"];
-      wants = ["${name}-array.target"];
-      unitConfig.ConditionPathExists = map (id: "${pool.mountBase}/${id}") sr.dataDisks;
+  poolSnapraidServices = name: pool:
+    lib.genAttrs ["${name}-snapraid-sync" "${name}-snapraid-scrub"] (unit: {
+      description = unit;
+      requires = ["${name}-storage-admission.service"];
+      bindsTo = backingUnits pool;
+      after = ["${name}-storage-admission.service"];
       serviceConfig = {
         Type = "oneshot";
         Nice = 19;
         IOSchedulingClass = "idle";
-        ExecStart = pkgs.writeShellScript "${name}-snapraid-scrub" ''
-          set -euo pipefail
-          echo "Starting SnapRAID scrub (8% of data older than 10 days)..."
-          ${pkgs.snapraid}/bin/snapraid -c ${confPath} scrub -p 8 -o 10
-          echo "SnapRAID scrub completed."
-        '';
+        ExecStart = "${command name pool} ${
+          if lib.hasSuffix "-sync" unit
+          then "sync"
+          else "scrub"
+        }";
       };
-    };
-  };
+    });
 
   poolSnapraidTimers = name: pool: let
     sr = pool.snapraid;
@@ -273,56 +232,17 @@
   };
 
   # --- Cache mover helpers ---
-  poolCacheMoverService = name: pool: let
-    cache = pool.cache;
-    dataDiskPaths = map (id: "${pool.mountBase}/${id}") pool.mergerfs.dataDisks;
-  in {
+  poolCacheMoverService = name: pool: {
     "${name}-cache-mover" = {
-      description = "Move aged files from ${name} cache to backing disks";
-      after = ["${name}-mergerfs-mount.service"];
-      wants = ["${name}-merged.target"];
-      # The script calls mountpoint, df, tail, tr, find and mkdir directly.
-      # Without them on PATH it exits 0 with "not mounted" and moves nothing.
-      path = with pkgs; [util-linux coreutils findutils];
+      description = "Copy aged ${name} cache files; retain sources pending explicit protection/release";
+      requires = ["${name}-storage-admission.service"];
+      bindsTo = backingUnits pool;
+      after = ["${name}-storage-admission.service"];
       serviceConfig = {
         Type = "oneshot";
         Nice = 19;
         IOSchedulingClass = "idle";
-        ExecStart = pkgs.writeShellScript "${name}-cache-mover" ''
-          set -euo pipefail
-          CACHE="${cache.path}"
-          MERGED="${pool.mergedPath}"
-          THRESHOLD=${toString cache.mover.threshold}
-          OLDER_THAN=${toString cache.mover.olderThan}
-
-          if ! mountpoint -q "$MERGED" 2>/dev/null; then
-            echo "Merged pool not mounted — skipping."
-            exit 0
-          fi
-
-          # Check cache usage
-          USAGE=$(df --output=pcent "$CACHE" | tail -1 | tr -d ' %')
-          if [ "$USAGE" -lt "$THRESHOLD" ]; then
-            echo "Cache usage ''${USAGE}% < ''${THRESHOLD}% threshold — skipping."
-            exit 0
-          fi
-
-          echo "Cache usage ''${USAGE}% >= ''${THRESHOLD}% — moving files older than ''${OLDER_THAN}m..."
-
-          # Find files older than threshold and move them via the merged view.
-          # rsync through mergerfs with existing-path policy handles placement.
-          find "$CACHE" -mindepth 1 -mmin +"$OLDER_THAN" -type f -print0 | while IFS= read -r -d "" file; do
-            REL="''${file#$CACHE/}"
-            DEST_DIR="$MERGED/$(dirname "$REL")"
-            mkdir -p "$DEST_DIR"
-            ${pkgs.rsync}/bin/rsync -axqHAXWES --preallocate --remove-source-files "$file" "$DEST_DIR/"
-          done
-
-          # Clean empty directories left behind in cache
-          find "$CACHE" -mindepth 1 -type d -empty -delete 2>/dev/null || true
-
-          echo "Cache mover completed."
-        '';
+        ExecStart = "${command name pool} scheduled";
       };
     };
   };
@@ -362,18 +282,25 @@
   anySnapraid = builtins.any (p: p.pool.snapraid.enable) poolList;
 in {
   config = mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = diskoArrayOverlap == [];
-        message = "disk-array: disko would format array disk(s): ${concatStringsSep ", " diskoArrayOverlap}. Remove them from the disko layout.";
-      }
-    ];
+    assertions =
+      (map (p: {
+          assertion = !p.pool.cache.enable || (p.pool.cache.device != "" && p.pool.snapraid.enable && p.pool.snapraid.dataDisks == p.pool.mergerfs.dataDisks);
+          message = "disk-array: a cache requires explicit cache identity and matching protected data branches";
+        })
+        poolList)
+      ++ [
+        {
+          assertion = diskoArrayOverlap == [];
+          message = "disk-array: disko would format array disk(s): ${concatStringsSep ", " diskoArrayOverlap}. Remove them from the disko layout.";
+        }
+      ];
 
     environment.systemPackages = with pkgs;
       [
         mergerfs
       ]
-      ++ optional (builtins.any (p: p.pool.snapraid.enable) poolList) pkgs.snapraid;
+      ++ optional (builtins.any (p: p.pool.snapraid.enable) poolList) pkgs.snapraid
+      ++ map (p: mover p.name p.pool) poolList;
 
     systemd.tmpfiles.rules =
       [
@@ -407,6 +334,14 @@ in {
         )
         poolList)
     );
+
+    # BindsTo belongs to the real mount, not only its historical helper.
+    systemd.units = listToAttrs (map (p:
+      nameValuePair (mountUnit p.pool.mergedPath) {
+        overrideStrategy = "asDropin";
+        text = "[Unit]\nBindsTo=${concatStringsSep " " (backingUnits p.pool ++ ["${p.name}-storage-admission.service"])}\n";
+      })
+    poolList);
 
     systemd.targets = mkMerge (map (p: poolTargets p.name p.pool) poolList);
 

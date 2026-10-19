@@ -19,6 +19,11 @@ in {
             description = "Device path (by-id recommended), without partition suffix.";
             example = "/dev/disk/by-id/usb-TerraMas_TDAS_SERIAL-0:0";
           };
+          uuid = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Expected filesystem UUID, checked in addition to the by-id device.";
+          };
           partition = mkOption {
             type = types.str;
             default = "1";
@@ -140,6 +145,25 @@ in {
         description = "Path to the fast cache directory (should be on NVMe/SSD).";
       };
 
+      device = mkOption {
+        type = types.str;
+        default = "";
+        description = "Expected mounted cache block device (normally /dev/disk/by-uuid/...).";
+      };
+      uuid = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+      };
+      fsType = mkOption {
+        type = types.str;
+        default = "btrfs";
+      };
+      fsRoot = mkOption {
+        type = types.str;
+        default = "/@cache";
+        description = "Expected mountinfo filesystem root, including btrfs subvolume.";
+      };
+
       mover = {
         schedule = mkOption {
           type = types.str;
@@ -150,13 +174,13 @@ in {
         threshold = mkOption {
           type = types.int;
           default = 80;
-          description = "Move files when cache filesystem usage exceeds this percentage.";
+          description = "Legacy shared-filesystem threshold. No longer gates age-based copying or authorizes source release.";
         };
 
         olderThan = mkOption {
           type = types.int;
-          default = 60;
-          description = "Only move files older than this many minutes.";
+          default = 1440;
+          description = "Only stage files whose mtime is at least this many minutes old. Source release is explicit.";
         };
       };
     };

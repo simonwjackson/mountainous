@@ -37,18 +37,19 @@
     "retry=0"
   ];
 
-  mergerfsOptions = mountpoint: [
-    "noauto"
-    "x-systemd.automount=false"
-    "allow_other"
-    "use_ino"
-    "cache.files=partial"
-    "dropcacheonclose=true"
-    "category.create=ff"
-    "moveonenospc=true"
-    "minfreespace=10G"
-    "fsname=mergerfs-${builtins.replaceStrings ["/" "."] ["-" "-"] mountpoint}"
-  ];
+  mergerfsOptions = mountpoint:
+    [
+      "noauto"
+      "allow_other"
+      "use_ino"
+      "cache.files=partial"
+      "dropcacheonclose=true"
+      "category.create=ff"
+      "moveonenospc=true"
+      "minfreespace=10G"
+      "fsname=mergerfs-${builtins.replaceStrings ["/" "."] ["-" "-"] mountpoint}"
+    ]
+    ++ optionals (mediaCfg.storageUnit == null) ["x-systemd.automount=false"];
 
   mergerfsMount = name: mountpoint: branches: {
     fileSystems.${mountpoint} = {
@@ -384,14 +385,16 @@ in {
 
       systemd.tmpfiles.rules =
         [
-          "d ${cfg.localBackingRoot} 2775 root media - -"
-          "d ${localMoviesDir} 2775 root media - -"
-          "d ${localTvDir} 2775 root media - -"
           "d ${mediaCfg.rangeRoot} 0755 root root - -"
           "d ${mediaCfg.rangeRoot}/media 0755 root root - -"
           "d ${mediaCfg.rangeMoviesDir} 2775 root media - -"
           "d ${mediaCfg.rangeTvDir} 2775 root media - -"
           "d /var/lib/media-tiering 0755 root root - -"
+        ]
+        ++ optionals (mediaCfg.storageUnit == null) [
+          "d ${cfg.localBackingRoot} 2775 root media - -"
+          "d ${localMoviesDir} 2775 root media - -"
+          "d ${localTvDir} 2775 root media - -"
         ]
         ++ optionals (cfg.role == "source") [
           "d ${cfg.peerMountRoot} 0755 root root - -"

@@ -13,6 +13,12 @@ in {
   options.mountainous.features.media = {
     enable = mkEnableOption "shared media, usenet, and torrent storage layout";
 
+    storageUnit = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Required mounted storage unit. Delay authoritative directory creation until it is ready.";
+    };
+
     owner = mkOption {
       type = types.str;
       default = "root";

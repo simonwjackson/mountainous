@@ -98,7 +98,7 @@ in {
         };
       };
 
-      systemd.tmpfiles.settings."10-mountainous-media" = listToAttrs (
+      systemd.tmpfiles.settings."10-mountainous-media" = mkIf (cfg.storageUnit == null) (listToAttrs (
         map (path:
           nameValuePair path {
             d = {
@@ -108,7 +108,23 @@ in {
             };
           })
         directories
-      );
+      ));
+
+      systemd.services.media-storage-ready = mkIf (cfg.storageUnit != null) {
+        description = "Create media directories only on admitted storage";
+        requires = [cfg.storageUnit];
+        bindsTo = [cfg.storageUnit];
+        after = [cfg.storageUnit];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script =
+          concatMapStringsSep "\n" (path: ''
+            ${pkgs.coreutils}/bin/install -d -o ${lib.escapeShellArg cfg.owner} -g ${lib.escapeShellArg cfg.group} -m ${lib.escapeShellArg cfg.directoryMode} ${lib.escapeShellArg path}
+          '')
+          directories;
+      };
 
       systemd.services.mountainous-media-normalize-permissions = {
         description = "Normalize ownership and group-write permissions for local managed media paths";

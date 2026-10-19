@@ -10,6 +10,7 @@
     ./disko.nix
     ./hardware.nix
     ./nscd.nix
+    ./storage.nix
   ];
 
   networking = {
@@ -59,32 +60,41 @@
         disks = [
           {
             id = "00";
+            uuid = "06cf0ea0-0d61-464b-8437-d1ddacc315c7";
             device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0";
             mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
           }
           {
             id = "01";
+            uuid = "80f9a4c1-a5a2-416a-bae8-6e6e07e14709";
             device = "/dev/disk/by-id/usb-TerraMas_TDAS_VRJVWS3K-0:0";
             mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
           }
           {
             id = "02";
+            uuid = "91b6cfaf-b822-4360-b999-e527dfa4fda0";
             device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH3KRAG-0:0";
             mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=90"];
           }
           {
             id = "03";
+            uuid = "8f59a043-ed7f-4a9c-82c9-79aab8cab02c";
             device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0";
             mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=90"];
           }
           {
             id = "04";
+            uuid = "855a4903-84c4-4015-9dbe-8ae8c065ee27";
             device = "/dev/disk/by-id/usb-TerraMas_TDAS_WD-CA081PBK-0:0";
             mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
           }
         ];
 
-        cache.enable = true;
+        cache = {
+          enable = true;
+          device = "/dev/disk/by-uuid/b11bc61f-1632-4809-8c94-efbf39614f22";
+          uuid = "b11bc61f-1632-4809-8c94-efbf39614f22";
+        };
 
         mergerfs.dataDisks = ["00" "01" "04"];
 
@@ -109,6 +119,7 @@
     features.media = {
       enable = true;
       root = "/srv/lakes/towada";
+      storageUnit = "srv-lakes-towada.mount";
     };
 
     features.media-tiering = {
