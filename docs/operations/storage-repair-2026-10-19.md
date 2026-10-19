@@ -77,7 +77,12 @@ FUSE abort, process killing to force unmount, or blind restart loop.
    the real read-only checks. Verify ownership mappings and representative
    existing file reads as the intended service users. Do not create media or
    alter ownership to make admission pass.
-7. Only after all checks pass, archive the guard receipt and remove
+7. Drain any queued `OnFailure` job before removing its latch. In this already
+   quiesced window, run `systemctl start media-storage-failed.service` and then
+   `systemctl stop media-storage-ready.service`. The first command waits for the
+   failure handler; the second waits for its readiness stop job. Inspect
+   `systemctl list-jobs` again. Never clear the latch while a failure handler can
+   still recreate it. Only after all checks pass, archive the guard receipt and remove
    `/run/media-storage-blocked`. Start `media-storage-ready.service`. This must
    not start Scryer, Transmission, or mover timers. Clear only the inspected
    failed health/readiness/mover status after saving the failure evidence.

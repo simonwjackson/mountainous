@@ -150,6 +150,9 @@ pkgs.testers.runNixOSTest {
         client.succeed("systemctl start " + shlex.quote(unit))
     client.succeed("media-storage-health")
     client.fail("systemctl start media-storage-ready.service")
+    # A refused admission schedules OnFailure asynchronously. Drain that job
+    # before removing its latch; do not race it or add a timing sleep.
+    client.succeed("systemctl start media-storage-failed.service; systemctl stop media-storage-ready.service")
     client.succeed("rm /run/media-storage-blocked; systemctl start media-storage-ready.service")
     client.succeed("media-storage-health")
     # Rebuilding the views must not resume either application or mover timers.
