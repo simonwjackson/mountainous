@@ -153,6 +153,24 @@ def parse_detect(text):
     return displays
 
 
+# Monitors whose DDC/CI brightness scale is not the scale of their own menu.
+# The value is the DDC/CI number that gives the menu's 100, used as the
+# maximum in place of the one the monitor reports.
+#
+# YMK EM160TP-A (RTK scaler): reports a maximum of 100, but its menu reads
+# 2.4 x the DDC/CI value + 15. Measured on Myoko, 2026-10-19: 5 gave 27,
+# 35 gave 99, 100 gave 255. Its menu runs 0-100, and values above 100 are
+# out of range, so 35 (menu 99) is the top. 36 would be menu 101.
+MAXIMUM_OVERRIDES = {
+    ("YMK", "EM160TP-A"): 35,
+}
+
+
+def maximum_for(identity, reported):
+    key = (identity.get("manufacturer", ""), identity.get("model", ""))
+    return MAXIMUM_OVERRIDES.get(key, reported)
+
+
 def parse_maximum(text):
     """The maximum of `ddcutil getvcp 10 --terse`: `VCP 10 C <cur> <max>`."""
     match = re.search(r"VCP 10 C \d+ (\d+)", text)
@@ -180,7 +198,7 @@ class Monitors:
                 self.runner("--bus", str(bus), "getvcp", "10", "--terse").stdout
             )
             if maximum:
-                displays[bus] = maximum
+                displays[bus] = maximum_for(identity, maximum)
                 identities[bus] = identity
         self.displays = displays
         self.identities = identities

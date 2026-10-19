@@ -99,7 +99,21 @@ class Brightness(unittest.TestCase):
         self.assertEqual(self.m.parse_maximum("VCP 10 C 2 100\n"), 100)
         self.assertIsNone(self.m.parse_maximum("VCP 10 ERR\n"))
 
+    def test_the_ymk_uses_its_menu_scale(self):
+        # Its menu reaches 100 at DDC/CI 35, whatever it reports.
+        fake = FakeDdc(maximum=100)
+        status = os.path.join(self.root, "status.json")
+        monitors = self.m.Monitors(runner=fake, level=lambda: 100, status=status)
+        monitors.sync_once()
+        self.assertEqual(fake.writes()[-1][-1], "35")
+        monitors.sent = {}
+        monitors.level = lambda: 5
+        monitors.sync_once()
+        self.assertEqual(fake.writes()[-1][-1], "2")
+
     def test_sync_writes_the_level_once_and_rewrites_after_a_rescan(self):
+        # A monitor without an override uses the maximum it reports.
+        self.m.MAXIMUM_OVERRIDES.clear()
         fake = FakeDdc(maximum=50)
         level = [40]
         status = os.path.join(self.root, "status.json")
