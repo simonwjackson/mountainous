@@ -14,7 +14,37 @@
 {
   nixos.modules.galaxy-book3 =
     { pkgs, ... }:
+    let
+      # The SOF card's UCM profile, without its three HDMI/DisplayPort outputs.
+      #
+      # Those outputs are the only way the laptop's HDMI port and a monitor on
+      # USB-C play sound, and they are never wanted. They also break jack
+      # detection. UCM puts the speaker and the headphone jack in two profiles,
+      # because they share one PCM. PipeWire calls a profile available while
+      # any of its outputs is, so with a monitor attached the headphone profile
+      # looked available with nothing in the jack, WirePlumber chose it, and the
+      # speakers went silent. Without HDMI, each profile is available exactly
+      # when its jack or speaker is, and WirePlumber switches between them when
+      # the jack changes.
+      #
+      # Only PipeWire and WirePlumber read this copy, through ALSA_CONFIG_UCM2.
+      # The video signal to monitors does not change.
+      ucmWithoutHdmi = pkgs.runCommand "alsa-ucm2-sof-hda-dsp-no-hdmi" { } ''
+        cp -r ${pkgs.alsa-ucm-conf}/share/alsa/ucm2 $out
+        chmod -R u+w $out
+        hifi=$out/Intel/sof-hda-dsp/HiFi.conf
+        line='Include.hdmi.File "/Intel/sof-hda-dsp/Hdmi.conf"'
+        # Fail the build if alsa-ucm-conf moved the HDMI include.
+        grep -qxF "$line" "$hifi"
+        grep -vxF "$line" "$hifi" > hifi.conf
+        cat hifi.conf > "$hifi"
+        ! grep -q Hdmi "$hifi"
+      '';
+    in
     {
+      systemd.user.services.pipewire.environment.ALSA_CONFIG_UCM2 = "${ucmWithoutHdmi}";
+      systemd.user.services.wireplumber.environment.ALSA_CONFIG_UCM2 = "${ucmWithoutHdmi}";
+
       # THE reason niri could not open /dev/dri/card1.
       #
       # Iris Xe does not initialise without its blobs, and the scan recorded
