@@ -154,21 +154,32 @@ def parse_detect(text):
 
 
 # Monitors whose DDC/CI brightness scale is not the scale of their own menu.
-# The value is the DDC/CI number that gives the menu's 100, used as the
-# maximum in place of the one the monitor reports.
+# The value is the DDC/CI range (lowest, highest) that the level's range,
+# MINIMUM to MAXIMUM, maps onto in place of 0 to the reported maximum.
 #
 # YMK EM160TP-A (RTK scaler): reports a maximum of 100, but its menu reads
-# 2.4 x the DDC/CI value + 15. Measured on Myoko, 2026-10-19: 5 gave 27,
-# 35 gave 99, 100 gave 255. Its menu runs 0-100, and values above 100 are
-# out of range, so 35 (menu 99) is the top. 36 would be menu 101.
-MAXIMUM_OVERRIDES = {
-    ("YMK", "EM160TP-A"): 35,
+# 2.4 x the DDC/CI value + 15. Measured on Myoko, 2026-10-19: 0 gave 15,
+# 5 gave 27, 35 gave 99, 100 gave 255, and the menu's own 0 reads back as 0.
+# Its menu runs 0-100 and shows values above 100 as 255, so 35 (menu 99) is
+# the top; 36 would be menu 101. Menu 0-14 has no DDC/CI value at all, so
+# the dim minimum sends 0, menu 15.
+RANGE_OVERRIDES = {
+    ("YMK", "EM160TP-A"): (0, 35),
 }
 
 
-def maximum_for(identity, reported):
+def range_for(identity, reported):
     key = (identity.get("manufacturer", ""), identity.get("model", ""))
-    return MAXIMUM_OVERRIDES.get(key, reported)
+    return RANGE_OVERRIDES.get(key)
+
+
+def raw_value(level, maximum, override):
+    """The DDC/CI value for a level on a monitor."""
+    if override is None:
+        return scaled(level, maximum)
+    low, high = override
+    fraction = (level - MINIMUM) / (MAXIMUM - MINIMUM)
+    return round(low + fraction * (high - low))
 
 
 def parse_maximum(text):
@@ -187,20 +198,23 @@ class Monitors:
         self.wake = threading.Event()
         self.rescan = True
         self.displays = {}  # bus -> maximum
+        self.ranges = {}  # bus -> (lowest, highest) override, if any
         self.identities = {}  # bus -> manufacturer and model
         self.sent = {}  # bus -> raw value last written
 
     def detect(self):
         result = self.runner("detect", "--terse")
-        displays, identities = {}, {}
+        displays, ranges, identities = {}, {}, {}
         for bus, identity in parse_detect(result.stdout).items():
             maximum = parse_maximum(
                 self.runner("--bus", str(bus), "getvcp", "10", "--terse").stdout
             )
             if maximum:
-                displays[bus] = maximum_for(identity, maximum)
+                displays[bus] = maximum
+                ranges[bus] = range_for(identity, maximum)
                 identities[bus] = identity
         self.displays = displays
+        self.ranges = ranges
         self.identities = identities
         # A new or returning monitor is never assumed to be in sync.
         self.sent = {}
@@ -223,7 +237,7 @@ class Monitors:
             self.detect()
         level = self.level()
         for bus, maximum in list(self.displays.items()):
-            value = scaled(level, maximum)
+            value = raw_value(level, maximum, self.ranges.get(bus))
             if self.sent.get(bus) == value:
                 continue
             result = self.runner(
