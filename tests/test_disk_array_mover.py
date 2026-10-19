@@ -2,6 +2,7 @@
 
 import importlib.util
 import os
+import errno
 from pathlib import Path
 import tempfile
 import subprocess
@@ -315,13 +316,70 @@ finally:
 
     def test_existing_directory_permissions_and_xattrs_are_not_rewritten(self):
         name = self.seed()
+        # Reproduce the setgid cache-root inheritance seen in the real XFS VM.
+        os.chmod(self.target, 0o2775)
         (self.target / "media").mkdir(mode=0o700)
         os.setxattr(self.target / "media", "user.existing", b"keep")
-        inode = (self.target / "media").stat().st_ino
+        before = (self.target / "media").stat()
+        attrs = {
+            key: os.getxattr(self.target / "media", key)
+            for key in os.listxattr(self.target / "media")
+        }
         mover.copy_file(self.src, self.dst, name)
-        self.assertEqual((self.target / "media").stat().st_ino, inode)
-        self.assertEqual((self.target / "media").stat().st_mode & 0o7777, 0o700)
-        self.assertEqual(os.getxattr(self.target / "media", "user.existing"), b"keep")
+        after = (self.target / "media").stat()
+        self.assertEqual(
+            (after.st_ino, after.st_uid, after.st_gid, after.st_mode),
+            (before.st_ino, before.st_uid, before.st_gid, before.st_mode),
+        )
+        self.assertEqual(
+            {
+                key: os.getxattr(self.target / "media", key)
+                for key in os.listxattr(self.target / "media")
+            },
+            attrs,
+        )
+
+    def test_removing_already_absent_xattr_preserves_other_metadata(self):
+        name = self.seed("attrs")
+        with self.src.file(name) as fd:
+            os.setxattr(fd, "user.remove", b"gone")
+            mover.remove_xattr_if_present(fd, "user.remove")
+            before = mover.metadata(fd)
+            mover.remove_xattr_if_present(fd, "user.remove")
+            self.assertEqual(mover.metadata(fd), before)
+            self.assertEqual(os.getxattr(fd, "user.test"), b"metadata")
+
+    def test_xattr_removal_propagates_errors_other_than_absence(self):
+        name = self.seed("attrs")
+        code = """
+import errno, os, sys
+sys.path.insert(0, sys.argv[1])
+import mover
+fd = os.open(sys.argv[2], os.O_RDONLY)
+def audit(event, args):
+    if event == "os.removexattr":
+        raise OSError(int(sys.argv[3]), "removal denied")
+sys.addaudithook(audit)
+try:
+    mover.remove_xattr_if_present(fd, "user.test")
+finally:
+    os.close(fd)
+"""
+        for error in (errno.ENOTSUP, errno.EPERM, errno.EIO):
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    code,
+                    str(Path(SPEC.origin).parent),
+                    str(self.source / name),
+                    str(error),
+                ],
+                capture_output=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(f"[Errno {error}] removal denied".encode(), result.stderr)
+            self.assertEqual(os.getxattr(self.source / name, "user.test"), b"metadata")
 
     def test_siblings_preserve_directory_permissions_not_directory_timestamps(self):
         first = self.seed("media/first")

@@ -9,6 +9,7 @@ All opens walk from pinned directory fds with O_NOFOLLOW. No union destination.
 import argparse
 import contextlib
 import ctypes
+import errno
 import fcntl
 import fnmatch
 import hashlib
@@ -139,6 +140,16 @@ def snapshot(fd: int) -> dict:
     }
 
 
+def remove_xattr_if_present(fd: int, key: str) -> None:
+    # XFS lists both system.posix_acl_* and trusted.SGI_ACL_* aliases. Removing
+    # one removes the other too, so a saved enumeration can contain absent keys.
+    try:
+        os.removexattr(fd, key)
+    except OSError as error:
+        if error.errno != errno.ENODATA:
+            raise
+
+
 def metadata(fd: int) -> dict:
     info = os.fstat(fd)
     return {
@@ -240,7 +251,7 @@ def prepare_directories(source: Root, target: Root, path: str) -> None:
                         # the source's exact xattr set, not the target parent's.
                         for key in os.listxattr(fd):
                             if key not in meta["xattrs"]:
-                                os.removexattr(fd, key)
+                                remove_xattr_if_present(fd, key)
                         for key, value in meta["xattrs"].items():
                             os.setxattr(fd, key, bytes.fromhex(value))
                         os.utime(fd, ns=(info.st_atime_ns, info.st_mtime_ns))
@@ -326,7 +337,7 @@ def copy_file(source: Root, target: Root, path: str) -> dict:
                     os.fchmod(out, meta["mode"])
                     for key in os.listxattr(out):
                         if key not in meta["xattrs"]:
-                            os.removexattr(out, key)
+                            remove_xattr_if_present(out, key)
                     for key, value in meta["xattrs"].items():
                         os.setxattr(out, key, bytes.fromhex(value))
                     os.utime(out, ns=(atime, meta["mtime_ns"]))
@@ -773,7 +784,7 @@ class Drain:
                 os.fchmod(quarantine, 0o700)
                 for key in os.listxattr(quarantine):
                     if key.startswith("system.posix_acl_"):
-                        os.removexattr(quarantine, key)
+                        remove_xattr_if_present(quarantine, key)
                 os.fsync(quarantine)
             info = os.fstat(quarantine)
             require(
