@@ -8,6 +8,8 @@ import subprocess
 import sys
 import time
 import json
+import select
+import struct
 import unittest
 
 SPEC = importlib.util.spec_from_file_location(
@@ -180,6 +182,160 @@ finally:
         self.assertEqual((self.target / "media").stat().st_mode & 0o7777, 0o2750)
         self.assertEqual(os.getxattr(self.target / "media", "user.directory"), b"keep")
         self.assertEqual((self.target / name).stat().st_atime_ns, 1_000_000_000)
+
+    def directory_process(self, name, behavior):
+        # Python audit events provide a deterministic subprocess stop/error at
+        # the real metadata syscall boundary, without replacing filesystem I/O.
+        code = """
+import errno, os, signal, stat, sys
+sys.path.insert(0, sys.argv[1])
+import mover
+source, target = mover.Root(sys.argv[2]), mover.Root(sys.argv[3])
+def audit(event, args):
+    if sys.argv[5] == "interrupt" and event == "os.chown":
+        print("before-directory-owner", flush=True)
+        os.kill(os.getpid(), signal.SIGSTOP)
+    if sys.argv[5] == "unsupported" and event == "os.setxattr" and isinstance(args[0], int) and stat.S_ISDIR(os.fstat(args[0]).st_mode):
+        raise OSError(errno.ENOTSUP, "directory xattrs unavailable")
+sys.addaudithook(audit)
+try:
+    mover.copy_file(source, target, sys.argv[4])
+finally:
+    source.close()
+    target.close()
+"""
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                code,
+                str(Path(SPEC.origin).parent),
+                str(self.source),
+                str(self.target),
+                name,
+                behavior,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.addCleanup(lambda: process.poll() is None and process.kill())
+        return process
+
+    def test_interrupted_directory_initialization_is_not_published(self):
+        name = self.seed()
+        os.chmod(self.source / "media", 0o2750)
+        os.setxattr(self.source / "media", "user.directory", b"keep")
+        process = self.directory_process(name, "interrupt")
+        self.assertTrue(select.select([process.stdout], [], [], 10)[0])
+        self.assertEqual(process.stdout.readline().strip(), b"before-directory-owner")
+        _, status = os.waitpid(process.pid, os.WUNTRACED)
+        self.assertTrue(os.WIFSTOPPED(status))
+        process.kill()
+        process.communicate(timeout=10)
+        self.assertFalse((self.target / "media").exists())
+        staging = list(self.target.glob(".cache-mover-dir-*"))
+        self.assertTrue(staging)
+        self.assertTrue(all(path.stat().st_mode & 0o7777 == 0o700 for path in staging))
+        mover.copy_file(self.src, self.dst, name)
+        self.assertEqual((self.target / "media").stat().st_mode & 0o7777, 0o2750)
+        self.assertEqual(os.getxattr(self.target / "media", "user.directory"), b"keep")
+        self.assertEqual((self.target / name).read_bytes(), b"original")
+        self.assertTrue((self.source / name).exists())
+
+    def test_new_directory_does_not_inherit_destination_acl(self):
+        name = self.seed()
+        # Linux POSIX ACL wire format: owner, named user 12345, group, mask, other.
+        acl = struct.pack("<I", 2) + b"".join(
+            struct.pack("<HHI", tag, perm, ident)
+            for tag, perm, ident in [
+                (1, 7, 0xFFFFFFFF),
+                (2, 5, 12345),
+                (4, 5, 0xFFFFFFFF),
+                (16, 5, 0xFFFFFFFF),
+                (32, 0, 0xFFFFFFFF),
+            ]
+        )
+        os.setxattr(self.target, "system.posix_acl_default", acl)
+        self.assertEqual(os.listxattr(self.source / "media"), [])
+        mover.copy_file(self.src, self.dst, name)
+        self.assertEqual(os.listxattr(self.target / "media"), [])
+        self.assertEqual(os.getxattr(self.target, "system.posix_acl_default"), acl)
+        self.assertEqual(
+            (self.target / "media").stat().st_mode & 0o7777,
+            (self.source / "media").stat().st_mode & 0o7777,
+        )
+
+    def test_new_directory_preserves_source_acl_instead_of_parent_acl(self):
+        name = self.seed()
+
+        def acl_for(user):
+            return struct.pack("<I", 2) + b"".join(
+                struct.pack("<HHI", tag, perm, ident)
+                for tag, perm, ident in [
+                    (1, 7, 0xFFFFFFFF),
+                    (2, 5, user),
+                    (4, 5, 0xFFFFFFFF),
+                    (16, 5, 0xFFFFFFFF),
+                    (32, 0, 0xFFFFFFFF),
+                ]
+            )
+
+        for key in ["system.posix_acl_access", "system.posix_acl_default"]:
+            os.setxattr(self.source / "media", key, acl_for(12345))
+        os.setxattr(self.target, "system.posix_acl_default", acl_for(54321))
+        expected = {
+            key: os.getxattr(self.source / "media", key)
+            for key in os.listxattr(self.source / "media")
+        }
+        mover.copy_file(self.src, self.dst, name)
+        self.assertEqual(
+            {
+                key: os.getxattr(self.target / "media", key)
+                for key in os.listxattr(self.target / "media")
+            },
+            expected,
+        )
+        self.assertEqual(
+            (self.target / "media").stat().st_mode,
+            (self.source / "media").stat().st_mode,
+        )
+        self.assertEqual(os.listxattr(self.target / name), ["user.test"])
+
+    def test_unsupported_directory_metadata_fails_before_publication(self):
+        name = self.seed()
+        os.setxattr(self.source / "media", "user.directory", b"keep")
+        process = self.directory_process(name, "unsupported")
+        _, error = process.communicate(timeout=10)
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn(b"directory xattrs unavailable", error)
+        self.assertFalse((self.target / "media").exists())
+        self.assertTrue((self.source / name).exists())
+        mover.copy_file(self.src, self.dst, name)
+        self.assertEqual(os.getxattr(self.target / "media", "user.directory"), b"keep")
+
+    def test_existing_directory_permissions_and_xattrs_are_not_rewritten(self):
+        name = self.seed()
+        (self.target / "media").mkdir(mode=0o700)
+        os.setxattr(self.target / "media", "user.existing", b"keep")
+        inode = (self.target / "media").stat().st_ino
+        mover.copy_file(self.src, self.dst, name)
+        self.assertEqual((self.target / "media").stat().st_ino, inode)
+        self.assertEqual((self.target / "media").stat().st_mode & 0o7777, 0o700)
+        self.assertEqual(os.getxattr(self.target / "media", "user.existing"), b"keep")
+
+    def test_siblings_preserve_directory_permissions_not_directory_timestamps(self):
+        first = self.seed("media/first")
+        second = self.seed("media/second")
+        os.chmod(self.source / "media", 0o2750)
+        os.setxattr(self.source / "media", "user.directory", b"keep")
+        os.utime(self.source / "media", ns=(1_000_000_000, 2_000_000_000))
+        mover.copy_file(self.src, self.dst, first)
+        mover.copy_file(self.src, self.dst, second)
+        self.assertEqual((self.target / "media").stat().st_mode & 0o7777, 0o2750)
+        self.assertEqual(os.getxattr(self.target / "media", "user.directory"), b"keep")
+        self.assertNotEqual((self.target / "media").stat().st_mtime_ns, 2_000_000_000)
+        for name in [first, second]:
+            self.assertEqual((self.target / name).stat().st_mtime_ns, 2_000_000_001)
 
     def test_status_is_public_and_does_not_claim_backlog(self):
         path = self.base / "status.json"

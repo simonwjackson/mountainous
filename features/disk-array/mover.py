@@ -208,34 +208,71 @@ def distinct(source: Root, target: Root) -> None:
     )
 
 
-def prepare_directories(
-    source: Root, target: Root, path: str
-) -> list[tuple[str, int, int]]:
-    created = []
+def prepare_directories(source: Root, target: Root, path: str) -> None:
     components = parts(path)
     for length in range(1, len(components)):
         prefix = "/".join(components[:length])
+        try:
+            with target.parent(prefix + "/unused"):
+                pass
+            # Preserve genuinely pre-existing directories, including their ACLs.
+            continue
+        except FileNotFoundError:
+            pass
         with source.parent(prefix + "/unused") as (src, _):
             info = os.fstat(src)
             meta = metadata(src)
             with target.parent(prefix) as (parent, name):
+                # A private container keeps the entry inaccessible even after
+                # setting its final owner/mode/ACL. Never expose an incomplete
+                # final name: a restart must not mistake it for an existing dir.
+                temporary = ".cache-mover-dir-" + uuid.uuid4().hex
+                os.mkdir(temporary, 0o700, dir_fd=parent)
+                stage = os.open(temporary, DIR, dir_fd=parent)
                 try:
-                    os.mkdir(name, 0o700, dir_fd=parent)
-                except FileExistsError:
-                    continue
-                fd = os.open(name, DIR, dir_fd=parent)
-                try:
-                    os.fchown(fd, meta["uid"], meta["gid"])
-                    os.fchmod(fd, meta["mode"])
-                    for key, value in meta["xattrs"].items():
-                        os.setxattr(fd, key, bytes.fromhex(value))
-                    os.utime(fd, ns=(info.st_atime_ns, info.st_mtime_ns))
-                    os.fsync(fd)
+                    os.fchmod(stage, 0o700)
+                    os.mkdir("entry", 0o700, dir_fd=stage)
+                    fd = os.open("entry", DIR, dir_fd=stage)
+                    try:
+                        os.fchown(fd, meta["uid"], meta["gid"])
+                        os.fchmod(fd, meta["mode"])
+                        # mkdir inherits both default and access ACLs. Preserve
+                        # the source's exact xattr set, not the target parent's.
+                        for key in os.listxattr(fd):
+                            if key not in meta["xattrs"]:
+                                os.removexattr(fd, key)
+                        for key, value in meta["xattrs"].items():
+                            os.setxattr(fd, key, bytes.fromhex(value))
+                        os.utime(fd, ns=(info.st_atime_ns, info.st_mtime_ns))
+                        require(
+                            metadata(fd) == meta,
+                            "directory metadata verification failed",
+                        )
+                        require(
+                            metadata(src) == meta, "source directory metadata changed"
+                        )
+                        os.fsync(fd)
+                        os.fsync(stage)
+                        source.attached()
+                        target.attached()
+                        try:
+                            rename_new(stage, "entry", parent, name)
+                        except FileExistsError:
+                            # A concurrent existing directory is not ours to
+                            # rewrite. Reject symlinks or nested mounts here.
+                            with target.parent(prefix + "/unused"):
+                                pass
+                            continue
+                        os.fsync(parent)
+                        os.fsync(stage)
+                    finally:
+                        os.close(fd)
+                    os.rmdir(temporary, dir_fd=parent)
                     os.fsync(parent)
-                    created.append((prefix, info.st_atime_ns, info.st_mtime_ns))
                 finally:
-                    os.close(fd)
-    return created
+                    os.close(stage)
+                    # Failed/interrupted initialization stays private for
+                    # inspection. A retry creates a fresh initialized entry.
 
 
 def copy_file(source: Root, target: Root, path: str) -> dict:
@@ -245,7 +282,7 @@ def copy_file(source: Root, target: Root, path: str) -> dict:
         meta = metadata(src)
         atime = os.fstat(src).st_atime_ns
         sha = digest(src)
-        created = prepare_directories(source, target, path)
+        prepare_directories(source, target, path)
         with target.parent(path) as (parent, name):
             try:
                 existing = os.open(name, READ, dir_fd=parent)
@@ -310,10 +347,6 @@ def copy_file(source: Root, target: Root, path: str) -> dict:
                     # Never remove an interrupted temporary file automatically:
                     # it may be the only copy after an unrelated operator action.
             require(snapshot(src) == before and metadata(src) == meta, "source changed")
-        for prefix, access, modified in reversed(created):
-            with target.parent(prefix + "/unused") as (fd, _):
-                os.utime(fd, ns=(access, modified))
-                os.fsync(fd)
         with target.file(path) as dest:
             return {
                 "path": path,
