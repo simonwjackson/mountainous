@@ -245,6 +245,16 @@ class Probe(unittest.TestCase):
             )
         )
 
+    def test_malformed_df_never_becomes_a_low_percentage(self):
+        self.fx.towada()
+        for value in ("-5", "garbage40", "10%\n20"):
+            self.assertTrue(
+                any(
+                    "usage unavailable" in message
+                    for _, message in self.fx.probe("zao", PCENT=value)
+                )
+            )
+
     def test_cache_summary_is_last_batch_not_live_backlog(self):
         import json
 
@@ -385,6 +395,11 @@ class Status(unittest.TestCase):
         ):
             with self.subTest(output=output, code=code):
                 self.assertIn("\tunreachable\t", self.run_status(output, code))
+
+    def test_extra_empty_field_is_invalid(self):
+        self.assertIn(
+            "\tunreachable\t", self.run_status(f"ok\tgood\t\ncomplete\t{NOW}\n")
+        )
 
     def test_stale_future_and_invalid_timestamps(self):
         for timestamp in (NOW - 121, NOW + 121, "NaN", "123", "1;exit"):

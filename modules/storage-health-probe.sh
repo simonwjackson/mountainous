@@ -2,6 +2,7 @@
 # Read-only probe. A terminal completion record makes partial SSH output invalid.
 # Root overrides are the deterministic filesystem/command fixture seam.
 set -uo pipefail
+export LC_ALL=C
 etc=${STORAGE_HEALTH_ETC:-/etc}
 srv=${STORAGE_HEALTH_SRV:-/srv}
 bcachefs_root=${STORAGE_HEALTH_BCACHEFS:-/sys/fs/bcachefs}
@@ -91,7 +92,7 @@ for conf in "$etc"/snapraid-*.conf; do
   cache="$srv/cache/$pool"
   check_mount "$cache"
   if [ -d "$cache" ] && mountpoint -q "$cache"; then
-    if usage=$(df --output=pcent "$cache" 2>/dev/null) && [[ "$usage" =~ ([0-9]+)%[[:space:]]*$ ]] && [ "${BASH_REMATCH[1]}" -le 100 ]; then
+    if usage=$(df --output=pcent "$cache" 2>/dev/null) && [[ "$usage" =~ ^[[:space:]]*Use%[[:space:]]+([0-9]+)%[[:space:]]*$ ]] && [ "${BASH_REMATCH[1]}" -le 100 ]; then
       used=${BASH_REMATCH[1]}
       if [ "$used" -ge 90 ]; then say bad "$pool shared cache filesystem ${used}% used"
       elif [ "$used" -ge 80 ]; then say warn "$pool shared cache filesystem ${used}% used"; fi

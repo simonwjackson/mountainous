@@ -19,8 +19,10 @@ for target in "$@"; do
   complete=0
   rows=0
   timestamp=
-  while IFS=$'\t' read -r level message extra; do
-    if [ "$complete" -ne 0 ] || [ -n "$extra" ] || [ -z "$message" ]; then valid=0; fi
+  while IFS= read -r line; do
+    level=${line%%$'\t'*}
+    message=${line#*$'\t'}
+    if [[ "$line" != *$'\t'* || "$message" == *$'\t'* ]] || [ "$complete" -ne 0 ] || [ -z "$message" ]; then valid=0; fi
     case "$level" in
       ok | warn | bad) rows=$((rows + 1)) ;;
       complete)
