@@ -65,6 +65,7 @@
           transmission = media.transmission_4;
         };
         media-runtime = import ../tests/media-runtime.nix { inherit pkgs inputs; };
+        media-storage-health = import ../tests/media-storage-health.nix { inherit pkgs inputs; };
       };
     };
 }

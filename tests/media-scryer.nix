@@ -171,10 +171,12 @@ pkgs.testers.runNixOSTest {
         both.fail("nsenter -t $(systemctl show -p MainPID --value scryer) -m -- runuser -u scryer -- touch /srv/range/media/tv/late/namespace-probe")
         both.fail("nsenter -t $(systemctl show -p MainPID --value scryer) -m -- runuser -u scryer -- touch /srv/media-access/x/export-probe")
         both.succeed("umount /srv/range/media/tv/late; umount /srv/media-access/x")
-    with subtest("library mount restart rebuilds the Scryer namespace after the mount"):
+    with subtest("library mount recovery stays stopped until an explicit consumer start"):
         for machine in (both, scryer):
             before = machine.succeed("systemctl show -p InvocationID --value scryer.service")
             machine.succeed("systemctl restart srv-range-media-tv.mount")
+            machine.fail("systemctl is-active --quiet scryer.service")
+            machine.succeed("systemctl start scryer.service")
             machine.wait_for_unit("scryer.service")
             assert machine.succeed("systemctl show -p InvocationID --value scryer.service") != before
             machine.succeed("nsenter -t $(systemctl show -p MainPID --value scryer) -m -- mountpoint -q /srv/range/media/tv")

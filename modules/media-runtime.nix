@@ -126,6 +126,43 @@
         ]
         ++ lib.optionals hasLibraryAccess libraryMounts
         ++ map completed (lib.optionals hasLibraryConsumer downloaders);
+      healthMounts =
+        lib.optionals hasLibraryAccess libraryMounts
+        ++ lib.optionals hasLibraryConsumer [
+          "/srv/range/media/movies"
+          "/srv/range/media/tv"
+        ]
+        ++ map completed remoteDownloads;
+      storageConsumers = lib.filter active (
+        libraryConsumers
+        ++ [
+          "nzbget"
+          "nzbfast"
+          "transmission"
+        ]
+      );
+      health = pkgs.writeShellScriptBin "media-storage-health" ''
+        exec ${pkgs.python3}/bin/python3 ${./media-storage-health.py} ${lib.escapeShellArgs healthMounts}
+      '';
+      guardedHealth = pkgs.writeShellScript "media-storage-admission" ''
+        test ! -e /run/media-storage-blocked || {
+          echo "Media storage is held after a failed health check; operator recovery required" >&2
+          exit 1
+        }
+        exec ${health}/bin/media-storage-health
+      '';
+      stoppedUnits =
+        map (name: "${name}.service") storageConsumers
+        ++ lib.optionals (isLibraryHost && cfg.libraryMover.enable) [
+          "media-library-mover-nightly.timer"
+          "media-library-mover-low-space.timer"
+          "media-library-mover@nightly.service"
+          "media-library-mover@low-space.service"
+        ]
+        ++ [
+          "media-storage-ready.service"
+          "media-storage-health.timer"
+        ];
       rootDirectories = [
         accessRoot
         "${accessRoot}/.downloads"
@@ -244,7 +281,8 @@
           pkgs.nfs-utils
           pkgs.mergerfs
           pkgs.bindfs
-        ];
+        ]
+        ++ lib.optional (healthMounts != [ ]) health;
         systemd.tmpfiles.rules =
           map (directory: "d ${directory} 2775 root media -") rootDirectories
           # Upstream creates this root with d/2770. z adjusts only the root,
@@ -276,27 +314,38 @@
             tv = config.ids.uids.sonarr;
           };
         };
-        systemd.timers = lib.mkIf (isLibraryHost && cfg.libraryMover.enable) (
-          lib.genAttrs [ "media-library-mover-nightly" "media-library-mover-low-space" ] (name: {
-            wantedBy = lib.optionals (config.mountainous.features.media-applications.processing == "enabled") [
-              "timers.target"
-            ];
-            timerConfig =
-              if name == "media-library-mover-nightly" then
-                {
-                  Unit = "media-library-mover@nightly.service";
-                  OnCalendar = cfg.libraryMover.nightlySchedule;
-                  Persistent = true;
-                }
-              else
-                {
-                  Unit = "media-library-mover@low-space.service";
-                  OnBootSec = "5min";
-                  OnUnitActiveSec = "5min";
-                  RandomizedDelaySec = "30s";
-                };
+        systemd.timers = lib.mkMerge [
+          (lib.mkIf (healthMounts != [ ]) {
+            media-storage-health = {
+              wantedBy = [ "timers.target" ];
+              timerConfig = {
+                OnBootSec = "2min";
+                OnUnitActiveSec = "1min";
+              };
+            };
           })
-        );
+          (lib.mkIf (isLibraryHost && cfg.libraryMover.enable) (
+            lib.genAttrs [ "media-library-mover-nightly" "media-library-mover-low-space" ] (name: {
+              wantedBy = lib.optionals (config.mountainous.features.media-applications.processing == "enabled") [
+                "timers.target"
+              ];
+              timerConfig =
+                if name == "media-library-mover-nightly" then
+                  {
+                    Unit = "media-library-mover@nightly.service";
+                    OnCalendar = cfg.libraryMover.nightlySchedule;
+                    Persistent = true;
+                  }
+                else
+                  {
+                    Unit = "media-library-mover@low-space.service";
+                    OnBootSec = "5min";
+                    OnUnitActiveSec = "5min";
+                    RandomizedDelaySec = "30s";
+                  };
+            })
+          ))
+        ];
         systemd.services = lib.mkMerge [
           {
             nfs-server = lib.mkIf (isLibraryHost || localDownloads != [ ]) {
@@ -316,25 +365,41 @@
               serviceConfig = {
                 Type = "oneshot";
                 RemainAfterExit = true;
+                TimeoutStartSec = "30s";
+                TimeoutStopSec = "5s";
               };
+              script = lib.optionalString (healthMounts != [ ]) "exec ${guardedHealth}";
+              onFailure = lib.optional (healthMounts != [ ]) "media-storage-failed.service";
+            };
+            media-storage-health = lib.mkIf (healthMounts != [ ]) {
+              description = "Read managed media storage branches without changing mounts";
+              # Do not start mounts or consumers from a monitoring tick.
+              unitConfig.ConditionPathExists = "!/run/media-storage-blocked";
+              onFailure = [ "media-storage-failed.service" ];
+              serviceConfig = {
+                Type = "oneshot";
+                ExecCondition = "${pkgs.systemd}/bin/systemctl is-active --quiet media-storage-ready.service";
+                ExecStart = guardedHealth;
+                TimeoutStartSec = "30s";
+                TimeoutStopSec = "5s";
+              };
+            };
+            media-storage-failed = lib.mkIf (healthMounts != [ ]) {
+              description = "Hold media consumers after storage failure; no automatic resume";
               path = [
-                pkgs.util-linux
+                pkgs.systemd
                 pkgs.coreutils
               ];
-              script =
-                lib.concatMapStringsSep "\n"
-                  (directory: ''
-                    mountpoint -q ${lib.escapeShellArg directory}
-                    test -d ${lib.escapeShellArg directory}
-                  '')
-                  (
-                    lib.optionals hasLibraryAccess libraryMounts
-                    ++ lib.optionals hasLibraryConsumer [
-                      "/srv/range/media/movies"
-                      "/srv/range/media/tv"
-                    ]
-                    ++ map completed remoteDownloads
-                  );
+              serviceConfig.Type = "oneshot";
+              script = ''
+                umask 077
+                if test ! -e /run/media-storage-blocked; then
+                  touch /run/media-storage-blocked
+                  systemctl show -p Id -p ActiveState -p SubState ${lib.escapeShellArgs stoppedUnits} > /run/media-storage-failure.units ||
+                    echo "Storage failure state capture incomplete; do not infer which consumers to resume" >&2
+                fi
+                systemctl stop --no-block ${lib.escapeShellArgs stoppedUnits}
+              '';
             };
             "media-library-mover@" = lib.mkIf (isLibraryHost && cfg.libraryMover.enable) {
               description = "Verified local-import handoff to the mapped library (%i)";
@@ -347,6 +412,7 @@
               ];
               serviceConfig = {
                 Type = "oneshot";
+                ExecStartPre = guardedHealth;
                 ExecStart = "${pkgs.python3}/bin/python3 ${libraryCode}/lib/media-library-mover.py ${mediaRoot} /srv/media-library-view --mode %i --min-age-seconds ${
                   toString (cfg.libraryMover.minAgeMinutes * 60)
                 } --min-free-percent ${toString cfg.libraryMover.minFreePercent} --refresh-config ${cfg.libraryMover.refreshConfigFile}";
@@ -423,6 +489,16 @@
           (lib.mkIf (hasVpn && nscd) {
             nscd.serviceConfig.RuntimeDirectoryPreserve = "yes";
           })
+          (lib.mkIf (healthMounts != [ ]) (
+            lib.genAttrs storageConsumers (_: {
+              requires = [ "media-storage-ready.service" ];
+              after = [ "media-storage-ready.service" ];
+              bindsTo = [ "media-storage-ready.service" ];
+              # Transmission deliberately forces its saved-state ExecStartPre;
+              # ExecCondition is independent of that upstream replacement.
+              serviceConfig.ExecCondition = lib.mkBefore [ guardedHealth ];
+            })
+          ))
           (lib.genAttrs (lib.filter active libraryConsumers) (name: {
             requires = [
               "media-storage-ready.service"
@@ -433,9 +509,8 @@
             ]
             ++ lib.optionals (name == "scryer") libraryConsumerMountUnits;
             bindsTo = libraryConsumerMountUnits;
-            # BindsTo stops on loss but does not restart on recovery. PartOf
-            # propagates an explicit mount restart and recreates the namespace.
-            partOf = lib.optionals (name == "scryer") libraryConsumerMountUnits;
+            # Recovery starts only the operator-selected previously active
+            # consumers. A mount restart must not resume processing by itself.
           }))
         ];
       };
