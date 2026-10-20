@@ -152,6 +152,8 @@ in
         description = "Logbook loopback life-data core";
         serviceConfig = common // {
           ExecStart = "${profile}/bin/logbook-server --port 3160 --data-dir ${state}/data --state-dir ${state}/state --inbox-dir ${state}/inbox --gadgetbridge-export ${destination}";
+          # The server's graceful shutdown handler listens for Ctrl-C/SIGINT.
+          KillSignal = "SIGINT";
           # Only the root bridge publishes snapshots. The server is read-only.
           ReadOnlyPaths = [ "${state}/inbox/gadgetbridge" ];
         };

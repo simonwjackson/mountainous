@@ -13,7 +13,8 @@ needs the operator to authorize this new, non-ephemeral Tailscale node through
 the login URL in `journalctl -u logbook-tsnet`. Do not run a second copy of its
 identity. Tailscale HTTPS must be enabled for the tailnet.
 
-Both units copy CLIProxyAPI's sandbox. The core is the only data-directory
+Both units copy CLIProxyAPI's sandbox. The core receives SIGINT on stop,
+matching its graceful shutdown handler. The core is the only data-directory
 writer. The sidecar's write access is limited to its tsnet directory. The
 account is neither wheel nor a Nix trusted user. Unzen's existing app-updater
 public deploy/signing keys are reused. Its private keys remain on Unzen.

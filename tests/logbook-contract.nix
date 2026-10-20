@@ -21,6 +21,7 @@ assert builtins.elem rakku.mountainous.appDeployment.signingPublicKey
   rakku.nix.settings.trusted-public-keys;
 assert builtins.elem state persisted;
 assert core.User == "logbook" && sidecar.User == "logbook";
+assert core.KillSignal == "SIGINT";
 assert core.ProtectHome && sidecar.ProtectHome;
 assert core.ProtectSystem == "strict" && sidecar.ProtectSystem == "strict";
 assert core.NoNewPrivileges && sidecar.NoNewPrivileges;

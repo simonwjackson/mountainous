@@ -2,6 +2,7 @@
 """Exercise the built server and CLI with an empty, temporary data directory."""
 
 import json
+import signal
 import socket
 import subprocess
 import sys
@@ -28,6 +29,8 @@ with tempfile.TemporaryDirectory(prefix="logbook-smoke-") as directory:
             str(root / "state"),
             "--inbox-dir",
             str(root / "inbox"),
+            "--gadgetbridge-export",
+            str(root / "inbox/gadgetbridge/Gadgetbridge.db"),
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
@@ -67,9 +70,9 @@ with tempfile.TemporaryDirectory(prefix="logbook-smoke-") as directory:
             "PASS: built loopback server health, metrics RPC, and CLI status; no tailnet join"
         )
     finally:
-        process.terminate()
+        process.send_signal(signal.SIGINT)
         try:
-            process.wait(timeout=5)
+            assert process.wait(timeout=5) == 0
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
