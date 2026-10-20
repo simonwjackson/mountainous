@@ -45,6 +45,16 @@ assert
 assert unzen.systemd.timers.cliproxyapi-update.timerConfig.OnCalendar == "*-*-* 03:00:00 UTC";
 assert unzen.systemd.services.cliproxyapi-update.serviceConfig.MemoryMax == "8G";
 assert !rakku.system.autoUpgrade.enable;
+# The Gemini image key comes from sops, is readable only by the service user,
+# and is pushed through the management API after the core starts.
+assert rakku.sops.secrets.cliproxyapi-gemini-api-key.owner == "cliproxyapi";
+assert rakku.sops.secrets.cliproxyapi-gemini-api-key.mode == "0400";
+assert
+  rakku.mountainous.features.cliproxyapi.geminiApiKeyFile
+  == rakku.sops.secrets.cliproxyapi-gemini-api-key.path;
+assert rakku.systemd.services.cliproxyapi-gemini-key.serviceConfig.User == "cliproxyapi";
+assert rakku.systemd.services.cliproxyapi-gemini-key.unitConfig.ConditionPathExists == ready;
+assert builtins.elem "cliproxyapi.service" rakku.systemd.services.cliproxyapi-gemini-key.after;
 {
   status = "pass";
   applicationProfile = profile;

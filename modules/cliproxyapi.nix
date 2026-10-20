@@ -1,5 +1,20 @@
 # Host-owned units and storage. Application generations are deployed separately.
+{ self, ... }:
 {
+  perSystem =
+    { pkgs, ... }:
+    {
+      checks.cliproxyapi =
+        let
+          contract = import ../tests/cliproxyapi-contract.nix {
+            rakku = self.nixosConfigurations.rakku.config;
+            unzen = self.nixosConfigurations.unzen.config;
+          };
+        in
+        assert contract.status == "pass";
+        pkgs.runCommand "cliproxyapi-contract" { } "touch $out";
+    };
+
   nixos.modules.cliproxyapi =
     {
       config,
@@ -55,6 +70,55 @@
           "AF_NETLINK"
         ];
       };
+      # The core owns config.yaml and rewrites it through its management API,
+      # so the Gemini key is pushed through that API, not written to the file.
+      # The key serves only the image models listed here, at the default
+      # priority 0. The quota router gives OAuth accounts priority 100, so
+      # Antigravity's free gemini-3.1-flash-image quota is spent first.
+      geminiImageModels = [
+        "gemini-3.1-flash-image"
+        "gemini-3.1-flash-image-preview"
+        "gemini-3.1-flash-lite-image"
+        "gemini-3-pro-image"
+        "gemini-3-pro-image-preview"
+        "gemini-2.5-flash-image"
+      ];
+      geminiKeySync = pkgs.writeShellApplication {
+        name = "cliproxyapi-gemini-key-sync";
+        runtimeInputs = [
+          pkgs.curl
+          pkgs.jq
+          pkgs.coreutils
+        ];
+        text = ''
+          key_file=$1
+          base=http://127.0.0.1:8317/v0/management
+          key=$(tr -d '\r\n' < "$key_file")
+          [ -n "$key" ] || { echo "empty Gemini key file" >&2; exit 1; }
+          desired=$(jq -cn --arg k "$key" --argjson m '${builtins.toJSON geminiImageModels}' \
+            '[{"api-key": $k, models: [$m[] | {name: ., alias: .}]}]')
+          # curl reads the header and body from files so the keys stay out of argv.
+          request() {
+            curl -fsS --max-time 10 \
+              -H @<(printf 'Authorization: Bearer %s\n' "$CLIPROXY_MANAGEMENT_KEY") "$@"
+          }
+          current=""
+          for _ in $(seq 30); do
+            if current=$(request "$base/gemini-api-key"); then break; fi
+            current=""
+            sleep 2
+          done
+          [ -n "$current" ] || { echo "management API not ready" >&2; exit 1; }
+          shape='[.[] | {"api-key": .["api-key"], models: [(.models // [])[] | {name, alias}]}]'
+          if [ "$(jq -cS "(.[\"gemini-api-key\"] // []) | $shape" <<<"$current")" = "$(jq -cS "$shape" <<<"$desired")" ]; then
+            echo "Gemini key already configured"
+            exit 0
+          fi
+          request -X PUT -H 'Content-Type: application/json' --data-binary @- \
+            "$base/gemini-api-key" <<<"$desired" >/dev/null
+          echo "Gemini key configured for ${toString (builtins.length geminiImageModels)} image models"
+        '';
+      };
       unit = {
         inherit environment;
         unitConfig.ConditionPathExists = ready;
@@ -73,6 +137,11 @@
         signingPublicKey = lib.mkOption {
           type = lib.types.str;
           default = "";
+        };
+        geminiApiKeyFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Runtime file with a Gemini API key, pushed to the core for image models.";
         };
       };
       config = lib.mkIf cfg.enable {
@@ -151,6 +220,24 @@
             TimeoutStartSec = 90;
             EnvironmentFile = "${state}/.config/cliproxyapi/quota-router.env";
             ExecStart = "${profile}/bin/cliproxy-quota-router";
+          };
+        };
+        # Runs once per core start. After a key rotation, restart this unit.
+        systemd.services.cliproxyapi-gemini-key = lib.mkIf (cfg.geminiApiKeyFile != null) {
+          description = "Configure the CLIProxyAPI Gemini API key for image models";
+          inherit environment;
+          unitConfig.ConditionPathExists = ready;
+          wantedBy = [ "cliproxyapi.service" ];
+          requires = [ "cliproxyapi.service" ];
+          after = [ "cliproxyapi.service" ];
+          partOf = [ "cliproxyapi.service" ];
+          serviceConfig = common // {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            Restart = "no";
+            TimeoutStartSec = 90;
+            EnvironmentFile = "${state}/.config/cliproxyapi/quota-router.env";
+            ExecStart = "${geminiKeySync}/bin/cliproxyapi-gemini-key-sync ${cfg.geminiApiKeyFile}";
           };
         };
         systemd.timers.cliproxyapi-quota-router = {
