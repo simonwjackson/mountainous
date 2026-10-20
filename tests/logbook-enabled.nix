@@ -1,35 +1,30 @@
-# Exercise the same host module with the optional export bridge enabled.
+# Evaluate the real fleet with the optional folder enabled, never build a host.
 { inputs, lib }:
 let
-  layer =
-    (import ../modules/logbook.nix {
-      inherit inputs lib;
-      self = null;
-      config.mountainous.fleetSync.folders.gadgetbridge.enable = true;
-    }).nixos.modules.logbook;
-  c =
-    (inputs.nixpkgs-rakku.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        layer
-        (inputs.impermanence-rakku + "/nixos.nix")
-        ({ lib, ... }: {
-          options.mountainous.appDeployment = lib.mkOption {
-            type = lib.types.attrs;
-            default.deployPublicKey = "test-public-key";
-          };
-          config = {
-            system.stateVersion = "24.11";
-            users.users.simon = {
-              isNormalUser = true;
-              home = "/home/simon";
-            };
-          };
-        })
-      ];
-    }).config;
+  trial =
+    extra:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [ (inputs.import-tree ../modules) ];
+      mountainous.fleetSync = lib.recursiveUpdate {
+        folders.gadgetbridge.enable = true;
+      } extra;
+    };
+  incomplete = trial { };
+  complete = trial {
+    externalDevices.phone = {
+      deviceId = lib.mkForce "AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA";
+      tailnetName = lib.mkForce "phone.hummingbird-lake.ts.net";
+    };
+  };
+  c = complete.nixosConfigurations.rakku.config;
   bridge = c.systemd.services.logbook-gadgetbridge;
 in
+assert
+  !(builtins.tryEval incomplete.nixosConfigurations.rakku.config.system.build.toplevel.drvPath)
+  .success;
+assert
+  (builtins.tryEval incomplete.nixosConfigurations.tate.config.system.build.toplevel.drvPath).success;
+assert (builtins.tryEval c.system.build.toplevel.drvPath).success;
 assert
   c.systemd.paths.logbook-gadgetbridge.pathConfig.PathChanged
   == "/home/simon/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db";
@@ -44,4 +39,12 @@ assert lib.hasSuffix
   bridge.serviceConfig.ExecStart;
 assert !(bridge.serviceConfig ? ExecStartPost);
 assert c.systemd.services.logbook.serviceConfig.ProtectHome;
+assert
+  c.services.syncthing.settings.devices.phone.addresses
+  == [ "tcp://phone.hummingbird-lake.ts.net:22000" ];
+assert
+  c.services.syncthing.settings.folders.gadgetbridge.ignorePatterns == [
+    "!/Gadgetbridge.db"
+    "*"
+  ];
 true

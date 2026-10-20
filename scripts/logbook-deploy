@@ -1,0 +1,74 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash git nix python3 coreutils util-linux
+# shellcheck shell=bash
+# Run on Unzen after Logbook main changes. --check builds locally without deploy.
+set -euo pipefail
+check=false
+if [[ ${1:-} == --check ]]; then check=true; shift; fi
+if [[ $# != 3 || ! $1 =~ ^[0-9a-f]{40}$ ]]; then
+  echo 'Usage: logbook-deploy [--check] MAIN_SHA LOGBOOK_CHECKOUT PROSEQL_CHECKOUT' >&2
+  exit 2
+fi
+expected=$1
+source=$(realpath "$2")
+proseql=$(realpath "$3")
+root=$(cd "$(dirname "$0")/.." && pwd)
+proseql_sha=$(python3 - "$source/flake.lock" <<'PY'
+import json, sys
+lock = json.load(open(sys.argv[1]))
+node = lock['nodes'][lock['nodes']['root']['inputs']['proseql']]
+assert node['locked']['type'] == 'git'
+print(node['locked']['rev'])
+PY
+)
+check_sources() {
+  if [[ "$(git -C "$source" rev-parse HEAD)" != "$expected" || "$(git -C "$proseql" rev-parse HEAD)" != "$proseql_sha" ]]; then
+    echo 'Source SHA mismatch: check out the requested Logbook SHA and its flake.lock ProseQL SHA.' >&2
+    exit 1
+  fi
+  if [[ -n "$(git -C "$source" status --porcelain)" || -n "$(git -C "$proseql" status --porcelain)" ]]; then
+    echo 'Source checkouts must be clean, including untracked files. Use dedicated clones.' >&2
+    exit 1
+  fi
+}
+check_sources
+if ! "$check"; then
+  read -r machine < /proc/sys/kernel/hostname
+  if [[ "$machine" != unzen ]]; then
+    echo 'Deploy only from Unzen; --check is safe on a local builder.' >&2
+    exit 1
+  fi
+  if [[ "$(git -C "$source" rev-parse refs/heads/main)" != "$expected" ]]; then
+    echo "Deployment SHA must match this checkout's main ref." >&2
+    exit 1
+  fi
+  test -r /var/lib/app-updater/signing-key
+  test -r /var/lib/app-updater/ssh/id_ed25519
+  install -d -m 0700 /var/lib/app-updater/logbook
+  exec 9>/var/lib/app-updater/logbook/deploy.lock
+  flock -n 9 || { echo 'Another Logbook deployment is running.' >&2; exit 1; }
+fi
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+cp "$root/deploy/logbook/flake.nix" "$stage/flake.nix"
+cp "$root/deploy/known_hosts" "$stage/known_hosts"
+# Both inputs come from verified local clones on Unzen, not zao's file:// path.
+nix flake lock "$stage" \
+  --override-input logbook "git+file://$source?rev=$expected" \
+  --override-input logbook/proseql "git+file://$proseql?rev=$proseql_sha"
+check_sources
+nix flake check "$stage" --option builders ''
+check_sources
+app=$(nix build --no-link --print-out-paths "$stage#application" --option builders '')
+python3 "$root/tests/logbook-smoke.py" "$app"
+activation=$(nix build --no-link --print-out-paths \
+  "$stage#deploy.nodes.rakku.profiles.logbook.path" --option builders '')
+check_sources
+if "$check"; then
+  printf 'Checked Logbook %s and ProseQL %s; activation %s; no deployment\n' "$expected" "$proseql_sha" "$activation"
+  exit 0
+fi
+check_sources
+nix store sign --recursive --key-file /var/lib/app-updater/signing-key "$activation"
+check_sources
+nix run "$stage#deployer" -- "$stage#rakku.logbook" --checksigs

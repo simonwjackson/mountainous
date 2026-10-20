@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-def publish(source, destination, uid, gid):
+def publish(source: Path | str, destination: Path | str, uid: int, gid: int) -> None:
     source, destination = Path(source), Path(destination)
     temporary = destination.with_suffix(destination.suffix + ".tmp")
     # The destination directory is root-owned and not writable by Logbook.
@@ -30,13 +30,10 @@ def publish(source, destination, uid, gid):
                 os.fsync(dst.fileno())
             after = os.fstat(src.fileno())
             current = source.stat(follow_symlinks=False)
-            signature = lambda s: (
-                s.st_dev,
-                s.st_ino,
-                s.st_size,
-                s.st_mtime_ns,
-                s.st_ctime_ns,
-            )
+
+            def signature(s: os.stat_result) -> tuple[int, int, int, int, int]:
+                return (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+
             if signature(before) != signature(after) or signature(before) != signature(
                 current
             ):
