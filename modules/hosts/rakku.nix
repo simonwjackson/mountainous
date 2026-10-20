@@ -101,6 +101,12 @@ in
           mode = "0400";
         };
 
+        # Namecheap API key. No service reads it yet.
+        sops.secrets.namecheap-api-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+        };
+
         assertions = [
           {
             assertion = config.system.stateVersion == "24.11";
