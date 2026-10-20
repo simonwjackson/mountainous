@@ -97,7 +97,9 @@ Only Done and the first two non-`default` app actions reach the phone.
 The default action, app icon and raw image never leave the desktop.
 Urgency 0/1/2 maps to ntfy priority 2/3/5. Transient items and exact matches in
 `mountainous.notifications.localOnlyApps` remain local. A replacement that
-becomes local-only retracts its old remote copy.
+becomes local-only retracts its old remote copy. The daemon accepts repeatable
+exact-name flags, not a comma-separated filter; app names containing commas
+must not bypass the local-only boundary.
 
 A versioned, base64url metadata tag carries host, app, residency, sender
 liveness and agent origin. It contains no authentication token. ntfy limits

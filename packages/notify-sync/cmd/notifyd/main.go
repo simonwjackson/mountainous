@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	ns "github.com/simonwjackson/mountainous/notify-sync"
@@ -25,7 +24,8 @@ func run() error {
 	name := flag.String("host", host, "stable host label")
 	state := flag.String("state-dir", ns.StateDirectory(), "state directory")
 	socket := flag.String("socket", filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "notify-sync/ui.sock"), "UI socket")
-	apps := flag.String("local-only-apps", "", "comma separated app names")
+	var apps appNames
+	flag.Var(&apps, "local-only-app", "exact app_name to keep local (repeatable)")
 	flag.Parse()
 	client, err := flags.Client()
 	if err != nil {
@@ -39,9 +39,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	d := ns.NewDaemon(store, client, *name)
-	if *apps != "" {
-		d.LocalOnlyApps = strings.Split(*apps, ",")
-	}
+	d.LocalOnlyApps = apps
 	bus, err := d.AttachBus(ctx, filepath.Join(*state, "images"))
 	if err != nil {
 		return err
@@ -59,3 +57,8 @@ func run() error {
 		return err
 	}
 }
+
+type appNames []string
+
+func (a *appNames) String() string         { return "exact app names" }
+func (a *appNames) Set(value string) error { *a = append(*a, value); return nil }

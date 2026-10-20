@@ -122,9 +122,9 @@ in
               "--token-file ${lib.escapeShellArg config.mountainous.notifications.tokenFile}"
               "--button-token-file ${config.sops.secrets.notify-button-token.path}"
             ]
-            ++
-              lib.optional (config.mountainous.notifications.localOnlyApps != [ ])
-                "--local-only-apps ${lib.escapeShellArg (lib.concatStringsSep "," config.mountainous.notifications.localOnlyApps)}"
+            ++ map (
+              app: "--local-only-app ${lib.escapeShellArg app}"
+            ) config.mountainous.notifications.localOnlyApps
           );
           Restart = "on-failure";
           RestartSec = 2;
