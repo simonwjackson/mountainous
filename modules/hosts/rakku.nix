@@ -15,6 +15,7 @@ in
       "cliproxyapi"
       "tailnet-names"
       "decision-gateway"
+      "notify-server"
     ];
     module =
       { config, lib, ... }:
@@ -30,6 +31,7 @@ in
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
         hjem.cli.package = inputs.hjem.packages.x86_64-linux.hjem;
+        mountainous.features.notify-server.enable = true;
         mountainous.features.cliproxyapi = {
           enable = true;
           deployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIGFCc1rafaJq+i2sfHq2RiZdxGMfk/HeNHwKBzGyS7Q cliproxyapi-updater@unzen";

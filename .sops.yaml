@@ -100,3 +100,35 @@ creation_rules:
       - age:
           - *master
           - *unzen
+
+  # Notification credentials have their own rotation boundary.
+  - path_regex: secrets/notify/server\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *rakku
+
+  - path_regex: secrets/notify/myoko\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *myoko
+
+  - path_regex: secrets/notify/hiyori\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *hiyori
+
+  - path_regex: secrets/notify/fleet\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *hiyori
+          - *myoko
+          - *tate
+          - *ibuki
+          - *unzen
+          - *rakku
+          - *yari
+          - *fuji
