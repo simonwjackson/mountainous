@@ -13,6 +13,7 @@ in
       "home-automation"
       "home-network-services"
       "cliproxyapi"
+      "logbook"
       "tailnet-names"
       "decision-gateway"
       "notify-server"
