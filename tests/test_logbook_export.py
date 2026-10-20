@@ -50,6 +50,11 @@ class ExportTest(unittest.TestCase):
             with self.assertRaises(OSError):
                 bridge.publish(source, target, os.getuid(), os.getgid())
             self.assertEqual(target.read_bytes(), last_good)
+            source.unlink()
+            os.mkfifo(source)
+            with self.assertRaises(ValueError):
+                bridge.publish(source, target, os.getuid(), os.getgid())
+            self.assertEqual(target.read_bytes(), last_good)
 
 
 if __name__ == "__main__":

@@ -193,6 +193,7 @@ in
           ExecStart = "${pkgs.python3}/bin/python3 ${./logbook-export.py} ${source} ${destination}";
           Restart = "on-failure";
           RestartSec = 30;
+          TimeoutStartSec = 120;
           NoNewPrivileges = true;
           ProtectSystem = "strict";
           ReadOnlyPaths = [ "${config.users.users.simon.home}" ];

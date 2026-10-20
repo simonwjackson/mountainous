@@ -15,7 +15,9 @@ def publish(source: Path | str, destination: Path | str, uid: int, gid: int) -> 
     # The destination directory is root-owned and not writable by Logbook.
     temporary.unlink(missing_ok=True)
     try:
-        with os.fdopen(os.open(source, os.O_RDONLY | os.O_NOFOLLOW), "rb") as src:
+        with os.fdopen(
+            os.open(source, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), "rb"
+        ) as src:
             before = os.fstat(src.fileno())
             if not stat.S_ISREG(before.st_mode) or before.st_size == 0:
                 raise ValueError("export must be a non-empty regular SQLite file")
