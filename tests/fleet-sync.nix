@@ -1,4 +1,9 @@
-{ hosts, lib }:
+{
+  hosts,
+  lib,
+  external,
+}:
+assert external.status == "pass";
 builtins.all (
   name:
   let

@@ -59,8 +59,13 @@ Syncthing. Zao is not a fleet host and is not a sync peer.
 
 `modules/fleet-sync.nix` owns the Syncthing configuration. A folder declares
 its hosts and allowed top-level file names under `mountainous.fleetSync`.
-All members must have identities before deployment. There is no manual device
-or folder acceptance.
+All members must have identities before deployment. NixOS members use the
+public ID table. Non-NixOS members use `externalDevices.<name> = { deviceId =
+"..."; tailnetName = "phone.hummingbird-lake.ts.net"; };`. Names must not overlap
+the NixOS hosts or ID table. The full MagicDNS name supplies the peer address;
+external members have no NixOS configuration or fleet-managed private key.
+Do not run `fleet-sync-enroll` for a phone. Copy its existing public device ID.
+There is no manual acceptance on NixOS peers.
 
 Run `./scripts/fleet-sync-enroll --all` once to enroll the seven pi peers.
 A rerun keeps existing identities. The script encrypts the cert and key in
@@ -77,6 +82,36 @@ that socket and removes entries absent from the repo. A small ExecStartPre
 step sets the network policy before the daemon starts. Without that step,
 the upstream module permits factory-default discovery and relays until its
 REST update runs. Tate exposed a two-second window during the first switch.
+
+### Phone-side settings and Gadgetbridge
+
+Keep the phone on Tailscale under a stable MagicDNS name. In its Syncthing app,
+turn **global discovery, local discovery, relays, and NAT traversal off before
+starting sync**. Listen only on TCP 22000, not QUIC or a dynamic/relay listener.
+Add Rakku with the device ID from `deploy/fleet-sync-devices.json` and address
+`tcp://rakku.hummingbird-lake.ts.net:22000`. Remove `dynamic`. Disable introducer
+and auto-accept folders. The phone need not trust any other fleet peer.
+
+Add folder ID `gadgetbridge` on the phone, pointed at its Gadgetbridge export
+directory. Use these ignore patterns there too (in this order):
+
+```text
+!/Gadgetbridge.db
+*
+```
+
+Only the exported SQLite snapshot belongs here, not Gadgetbridge's live database
+or its WAL/SHM files. Publish a complete export, preferably by atomic rename.
+Keep this folder separate from all other phone data. On Rakku it lands at
+`/home/simon/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db`.
+
+The folder defaults off. Fill both `null` placeholders for
+`mountainous.fleetSync.externalDevices.phone` in `modules/logbook.nix`, then set
+`mountainous.fleetSync.folders.gadgetbridge.enable = true` there. An enabled
+folder with an incomplete identity fails Rakku's evaluation with the exact
+fields to fill in. With the folder disabled, neither Rakku nor other hosts
+need a phone identity. No other host joins this folder. See
+[Logbook operations](logbook-rakku.md) for the read-only snapshot bridge.
 
 ## Updater preparation and limits
 
@@ -120,11 +155,14 @@ Build `.#checks.x86_64-linux.app-pi`, `.#checks.x86_64-linux.app-profiles`
 and `.#checks.x86_64-linux.fleet-sync`. The latter evaluates trust, network
 and file allow-list policy across all hosts without a VM.
 
-`tests/fleet-sync-smoke.py --agent <upstream-agent-store-path> --settings <json>`
+`tests/fleet-sync-smoke.py --agent <upstream-agent-store-path> --settings <json> --external-settings <external-json>`
 runs two local Syncthing processes using the evaluated pi folder/options.
 It tests pi's shipped SettingsManager writing through the link, model and
 scope changes in both directions, exclusion of auth.json, and startup logs
-without discovery, relays or QUIC. Use `--syncthing <binary>` and
+without discovery, relays or QUIC. It also publishes and atomically replaces a
+synthetic phone export, and checks that private files stay on the phone.
+`external-json` is the `.settings` output of `tests/fleet-sync-external.nix`
+evaluated with the flake's `inputs` and `lib`. Use `--syncthing <binary>` and
 `--runtime <bun>` to select the pinned host package and pi runtime. It does
 not contact the fleet or make inference requests. Full-suite and VM runs
 are not required for this rollout.

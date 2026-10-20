@@ -1,4 +1,9 @@
-{ config, self, ... }:
+{
+  config,
+  inputs,
+  self,
+  ...
+}:
 {
   perSystem =
     {
@@ -16,6 +21,7 @@
       };
       sync = import ../tests/fleet-sync.nix {
         inherit lib;
+        external = import ../tests/fleet-sync-external.nix { inherit inputs lib; };
         hosts = lib.genAttrs (lib.attrNames config.nixos.hosts) (
           name: self.nixosConfigurations.${name}.config
         );

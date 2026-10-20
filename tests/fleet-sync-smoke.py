@@ -1,6 +1,6 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -i python3 -p python3 syncthing nodejs
-"""Two real Syncthing peers and pi's shipped settings writer. No fleet changes."""
+"""Two real Syncthing peers, including a phone-side export. No fleet changes."""
 
 import argparse
 import http.client
@@ -62,8 +62,18 @@ def main():
     parser.add_argument(
         "--settings", required=True, help="JSON from Tate services.syncthing.settings"
     )
+    parser.add_argument(
+        "--external-settings",
+        required=True,
+        help="JSON settings from tests/fleet-sync-external.nix",
+    )
     args = parser.parse_args()
     settings = json.loads(Path(args.settings).read_text())
+    external = json.loads(Path(args.external_settings).read_text())
+    phone = external["devices"]["phone"]
+    assert phone["addresses"] == ["tcp://phone.hummingbird-lake.ts.net:22000"]
+    assert not phone["introducer"] and not phone["autoAcceptFolders"]
+    assert external["options"] == settings["options"]
     processes, logs = [], []
     with tempfile.TemporaryDirectory(prefix="fleet-sync-smoke-") as tmp:
         root = Path(tmp)
@@ -130,6 +140,8 @@ def main():
                 agent_dir.mkdir()
                 (agent_dir / "settings.json").symlink_to(folder / "settings.json")
                 peer["folder"], peer["agent"] = folder, agent_dir
+                peer["export"] = base / "gadgetbridge"
+                peer["export"].mkdir()
                 peers.append(peer)
                 log = (base / "log").open("w")
                 logs.append(log)
@@ -166,7 +178,7 @@ def main():
                     [
                         {
                             "deviceID": other["id"],
-                            "name": "peer",
+                            "name": "phone" if i == 0 else "rakku",
                             "addresses": [f"tcp://127.0.0.1:{other['port']}"],
                             "introducer": False,
                             "autoAcceptFolders": False,
@@ -180,7 +192,20 @@ def main():
                 folder.update(
                     path=str(peer["folder"]), devices=[{"deviceID": other["id"]}]
                 )
-                api(peer, "PUT", "config/folders", [folder])
+                export = external["folders"]["gadgetbridge"].copy()
+                export_patterns = export.pop("ignorePatterns")
+                for nix_field in ("enable", "label"):
+                    export.pop(nix_field, None)
+                export.update(
+                    path=str(peer["export"]), devices=[{"deviceID": other["id"]}]
+                )
+                api(peer, "PUT", "config/folders", [folder, export])
+                api(
+                    peer,
+                    "POST",
+                    "db/ignores?folder=gadgetbridge",
+                    {"ignore": export_patterns},
+                )
                 api(peer, "POST", "db/ignores?folder=pi", {"ignore": patterns})
             a, b = peers
 
@@ -211,6 +236,25 @@ def main():
             write(b, "sync-back")
             wait(lambda: arrived(a, "sync-back"), "B to A settings sync")
             assert not (b["folder"] / "auth.json").exists()
+            # B models the external phone: only its export may reach Rakku/A.
+            # Atomic replacement is how export tools publish a fresh snapshot.
+            payload = b"synthetic Gadgetbridge export version 1"
+            (b["export"] / "Gadgetbridge.db").write_bytes(payload)
+            (b["export"] / "private.db").write_bytes(b"must stay on phone")
+            wait(
+                lambda: (a["export"] / "Gadgetbridge.db").read_bytes() == payload,
+                "phone export to Rakku",
+            )
+            payload = b"synthetic Gadgetbridge export version 2"
+            temporary = b["export"] / "export.tmp"
+            temporary.write_bytes(payload)
+            temporary.replace(b["export"] / "Gadgetbridge.db")
+            wait(
+                lambda: (a["export"] / "Gadgetbridge.db").read_bytes() == payload,
+                "replaced phone export to Rakku",
+            )
+            assert not (a["export"] / "private.db").exists()
+            assert not (a["export"] / "export.tmp").exists()
             assert not list(root.rglob("*.sync-conflict-*"))
             for peer in peers:
                 log = (peer["base"] / "log").read_text()
@@ -218,7 +262,7 @@ def main():
                 assert "Relay listener starting" not in log
                 assert "QUIC listener starting" not in log
             print(
-                "PASS: pi writes through symlink; defaults and scope sync both ways; auth.json stays local"
+                "PASS: pi writes through symlink; defaults and scope sync both ways; auth.json stays local; phone export syncs, other files stay local"
             )
         finally:
             for process in processes:

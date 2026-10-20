@@ -11,11 +11,34 @@ in
       default = builtins.fromJSON (builtins.readFile ../deploy/fleet-sync-devices.json);
       description = "Host names and public Syncthing device IDs, enrolled with scripts/fleet-sync-enroll.";
     };
+    externalDevices = mkOption {
+      default = { };
+      description = "Non-NixOS peers. Copy their existing Syncthing identity; never enroll them with fleet-sync-enroll.";
+      type = types.attrsOf (
+        types.submodule {
+          options = {
+            deviceId = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Public Syncthing device ID from the external device.";
+            };
+            tailnetName = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Full MagicDNS name, for example phone.hummingbird-lake.ts.net.";
+            };
+          };
+        }
+      );
+    };
     folders = mkOption {
       default = { };
       type = types.attrsOf (
         types.submodule {
           options = {
+            enable = lib.mkEnableOption "this allow-listed sync folder" // {
+              default = true;
+            };
             hosts = mkOption { type = types.listOf types.str; };
             files = mkOption {
               type = types.listOf (types.strMatching "[A-Za-z0-9_.-]+");
@@ -40,9 +63,22 @@ in
       home = config.users.users.simon.home;
       root = "${home}/.local/share/fleet-sync";
       state = "${home}/.local/state/fleet-sync";
-      mine = lib.filterAttrs (_: f: lib.elem host f.hosts) cfg.folders;
+      mine = lib.filterAttrs (_: f: (f.enable or true) && lib.elem host f.hosts) cfg.folders;
       members = lib.unique (lib.concatMap (f: f.hosts) (lib.attrValues mine));
       peers = lib.filter (h: h != host) members;
+      external = cfg.externalDevices;
+      externalMembers = lib.filter (name: external ? ${name}) members;
+      validExternal =
+        name:
+        let
+          device = external.${name};
+        in
+        device.deviceId != null
+        && builtins.match "[A-Z2-7]{7}(-[A-Z2-7]{7}){7}" device.deviceId != null
+        && device.tailnetName != null
+        &&
+          builtins.match "[a-z0-9]([a-z0-9-]*[a-z0-9])?\\.hummingbird-lake\\.ts\\.net" device.tailnetName
+          != null;
       secret = {
         sopsFile = ../secrets/hosts + "/${host}.yaml";
         owner = "simon";
@@ -52,8 +88,18 @@ in
     lib.mkIf (mine != { }) {
       assertions = [
         {
-          assertion = builtins.all (h: cfg.devices ? ${h}) members;
-          message = "fleetSync: enroll every folder member with scripts/fleet-sync-enroll before deployment.";
+          assertion = builtins.all (
+            h: external ? ${h} || (flake.nixos.hosts ? ${h} && cfg.devices ? ${h})
+          ) members;
+          message = "fleetSync: each folder member must be an enrolled NixOS host (scripts/fleet-sync-enroll) or a mountainous.fleetSync.externalDevices entry.";
+        }
+        {
+          assertion = builtins.all (h: !(flake.nixos.hosts ? ${h}) && !(cfg.devices ? ${h})) externalMembers;
+          message = "fleetSync: externalDevices names must not overlap NixOS hosts or enrolled devices.";
+        }
+        {
+          assertion = builtins.all validExternal externalMembers;
+          message = "fleetSync: fill in mountainous.fleetSync.externalDevices.<name>.deviceId (the phone's 8-group Syncthing device ID) and tailnetName (its full <name>.hummingbird-lake.ts.net DNS name). For phone, edit the two null placeholders in modules/logbook.nix before enabling mountainous.fleetSync.folders.gadgetbridge.enable.";
         }
         {
           assertion = builtins.all (f: f.files != [ ]) (lib.attrValues mine);
@@ -93,8 +139,25 @@ in
             autoUpgradeIntervalH = 0;
           };
           devices = lib.genAttrs peers (name: {
-            id = cfg.devices.${name};
-            addresses = [ "tcp://${name}.hummingbird-lake.ts.net:22000" ];
+            # Keep invalid placeholders evaluable so assertions explain the fix.
+            id =
+              if external ? ${name} then
+                (if external.${name}.deviceId == null then "" else external.${name}.deviceId)
+              else
+                cfg.devices.${name} or "";
+            addresses = [
+              "tcp://${
+                if external ? ${name} then
+                  (
+                    if external.${name}.tailnetName == null then
+                      "unconfigured.invalid"
+                    else
+                      external.${name}.tailnetName
+                  )
+                else
+                  "${name}.hummingbird-lake.ts.net"
+              }:22000"
+            ];
             introducer = false;
             autoAcceptFolders = false;
           });
