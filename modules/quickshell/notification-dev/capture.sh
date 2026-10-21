@@ -165,6 +165,26 @@ ipc hide; ctl "scenario stress"; sleep 0.3; ipc reveal; sleep 0.8
 key Down; key Down; key space; shot centre-stress-expanded 0.4
 size 1440x1800; shot half-centre-stress-expanded-after-resize 0.4
 size 2880x1800
+# Stress order: 0 urgent, 1 future clock, 2 long app name, 3 twelve
+# actions, 4 every field past its limit.
+# An open card cuts nothing: the top of the longest item, then Tab to its
+# first action, which scrolls the end of the card (whole image, wrapped
+# labels, Show less) into view.
+ipc hide; ctl "scenario stress"; sleep 0.3; ipc reveal; sleep 0.8
+key Down; key Down; key Down; key Down; key space; shot centre-open-card-top 0.6
+key Tab; shot centre-open-card-end 0.6
+# Every action by keyboard: twelve Tabs reach the twelfth action of the CI
+# item; Enter runs it (see ops.log).
+key Up; for _ in $(seq 12); do key Tab; done; shot centre-action-12-focused 0.6
+key Return; sleep 0.3
+ipc hide
+# A popup with cut text offers "Show all in Notifications", which opens the
+# centre on that item with its card open.
+ctl "scenario empty"; sleep 0.3
+ctl "upsert $(python3 -c 'import json; print(json.dumps({"id": 9001, "seq": "rakku-91bd02-9001", "origin": "remote", "host": "rakku", "app_name": "agent-claude", "app_icon": "", "image": None, "summary": "Long report", "body": "Line of a long report that keeps going. " * 12, "actions": [], "urgency": 1, "resident": False, "local_only": False, "created": 1792540000000, "updated": 1792540000000, "sender_alive": True}))')"
+shot popup-show-all 0.8
+ptr move 1600 139; ptr click; shot popup-show-all-opened-centre 1.2
+ipc hide
 # Hover, then press without releasing, on "Dismiss all".
 ptr move 1819 59; shot centre-hover-dismiss-all 0.3
 ptr down; shot centre-pressed-dismiss-all 0.3
