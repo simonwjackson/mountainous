@@ -75,6 +75,10 @@ func (d *Daemon) Subscribe() (<-chan UIEvent, func(), error) {
 	d.clients[ch] = struct{}{}
 	status := d.status
 	status.Outbox = outbox(s)
+	if s.SourceError != "" {
+		message := s.SourceError
+		status.LastError = &message
+	}
 	ch <- UIEvent{Type: "snapshot", Items: openItems(s), Status: &status}
 	return ch, func() {
 		d.mu.Lock()
@@ -103,6 +107,10 @@ func (d *Daemon) commit(s *state, events []UIEvent, signals []Signal) error {
 	}
 	status := d.status
 	status.Outbox = outbox(s)
+	if s.SourceError != "" {
+		message := s.SourceError
+		status.LastError = &message
+	}
 	d.broadcast(UIEvent{Type: "status", Status: &status})
 	return nil
 }
@@ -395,6 +403,16 @@ func (d *Daemon) HandleBatch(messages []Message) error {
 			} else if !s.Seen[m.ID] {
 				s.Seen[m.ID] = true
 				if m.Event == "message" {
+					candidate := m.Remote(1)
+					if err := validateUIItem(candidate); err != nil {
+						// Retain the replay checkpoint but never allocate an ID,
+						// insert a record, or broadcast an invalid source item.
+						id := SafeName(m.ID)
+						s.SourceError = fmt.Sprintf("rejected remote item %s: ui-socket.v1 schema validation failed", id)
+						slog.Warn("rejected invalid remote notification", "message_id", id, "reason", "ui-socket.v1 schema validation failed")
+						s.Cursors[m.Topic] = m.ID
+						continue
+					}
 					fresh := d.caughtUp && (r == nil || !r.Open)
 					if r == nil {
 						id, err := s.alloc()
@@ -405,7 +423,8 @@ func (d *Daemon) HandleBatch(messages []Message) error {
 						r.Item.ID = id
 						s.Records[id] = r
 					}
-					r.Item = m.Remote(r.Item.ID)
+					candidate.ID = r.Item.ID
+					r.Item = candidate
 					r.Open = true
 					r.Published = true
 					r.PubID = m.ID
@@ -430,7 +449,7 @@ func (d *Daemon) setStatus(server string, err error) {
 	defer d.mu.Unlock()
 	status := Status{Server: server}
 	if err == nil {
-		err = d.Store.deliveryError()
+		err = d.Store.statusError()
 	}
 	if err != nil {
 		s := err.Error()

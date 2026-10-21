@@ -26,11 +26,20 @@ application's item.
 
 The private, mode-0600 socket is `$XDG_RUNTIME_DIR/notify-sync/ui.sock`.
 `schema/ui-socket.v1.json` in the Go package defines section 7 in JSON Schema
-2020-12. notifyd validates client operations against that schema, and socket
-tests validate every emitted event shape. Only upsert carries `fresh`. Subscribe
+2020-12. notifyd validates client operations and every outgoing event against
+that schema at runtime. The socket writes only the fully encoded, validated
+bytes. Only upsert carries `fresh`. Subscribe
 returns a complete snapshot with `items: []` when empty. Subsequent events
 are upserts, removals and status. Slow consumers disconnect and resnapshot.
 Initial replay is not fresh and does not replay historical popups.
+
+Remote items must pass that same schema before ID allocation or storage.
+The daemon drops invalid items, logs their message IDs without notification
+text, and stores a rejection warning in `last_error`. The warning survives
+successful polls and restarts. It checkpoints the rejected event so replay
+cannot keep adding it. Healthy items in the same batch still reach the view.
+`BenchmarkEncodeValidatedSnapshot500` measures the runtime encoder without
+an acceptance threshold. Its fixture has 500 items and 307374 encoded bytes.
 The Quickshell view is separate and never owns the notification D-Bus name.
 
 ## Ordering: the spike's assumption did not hold

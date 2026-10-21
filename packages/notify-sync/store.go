@@ -25,6 +25,7 @@ type record struct {
 	Expires   int64  `json:"expires"`
 }
 type state struct {
+	SourceError     string             `json:"source_error,omitempty"`
 	Session         string             `json:"session"`
 	Nonce           string             `json:"nonce"`
 	Next            uint32             `json:"next"`
@@ -244,10 +245,17 @@ func (s *Store) pendingCount() (int, error) {
 	err = s.db.QueryRow(`SELECT count(*) FROM records WHERE pending<>''`).Scan(&n)
 	return n + len(meta.Controls), err
 }
-func (s *Store) deliveryError() error {
+func (s *Store) statusError() error {
 	var failure string
 	err := s.db.QueryRow(`SELECT json_extract(data,'$.failure') FROM records WHERE coalesce(json_extract(data,'$.failure'),'')<>'' ORDER BY id LIMIT 1`).Scan(&failure)
 	if errors.Is(err, sql.ErrNoRows) {
+		meta, loadErr := s.loadMeta()
+		if loadErr != nil {
+			return loadErr
+		}
+		if meta.SourceError != "" {
+			return errors.New(meta.SourceError)
+		}
 		return nil
 	}
 	if err != nil {

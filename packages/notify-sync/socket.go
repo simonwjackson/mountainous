@@ -3,8 +3,8 @@ package notifysync
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
+	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
@@ -77,7 +77,6 @@ func (d *Daemon) socketClient(ctx context.Context, conn net.Conn) {
 			}
 			cancel = unsub
 			go func() {
-				enc := json.NewEncoder(conn)
 				for {
 					select {
 					case <-ctx.Done():
@@ -88,8 +87,15 @@ func (d *Daemon) socketClient(ctx context.Context, conn net.Conn) {
 							conn.Close()
 							return
 						}
+						data, err := EncodeUIEvent(event)
+						if err != nil {
+							// Do not log the event body or validator values.
+							slog.Error("refusing invalid outgoing notification event", "type", event.Type)
+							conn.Close()
+							return
+						}
 						conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-						if enc.Encode(event) != nil {
+						if _, err = conn.Write(append(data, '\n')); err != nil {
 							conn.Close()
 							return
 						}
