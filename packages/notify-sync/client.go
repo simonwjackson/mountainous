@@ -23,6 +23,10 @@ type HTTPError struct{ Status int }
 
 func (e *HTTPError) Error() string { return fmt.Sprintf("ntfy HTTP %d", e.Status) }
 func permanentDeliveryError(err error) bool {
+	var size *PublishSizeError
+	if errors.As(err, &size) {
+		return true
+	}
 	var h *HTTPError
 	return errors.As(err, &h) && h.Status >= 400 && h.Status < 500 && h.Status != 408 && h.Status != 429
 }
@@ -55,19 +59,11 @@ func ReadToken(path string) (string, error) {
 	}
 	return t, nil
 }
-func (c *Client) request(ctx context.Context, method, path string, body any) (*http.Response, error) {
+func (c *Client) request(ctx context.Context, method, path string, body []byte) (*http.Response, error) {
 	return c.requestUsing(ctx, c.HTTP, method, path, body)
 }
-func (c *Client) requestUsing(ctx context.Context, client *http.Client, method, path string, body any) (*http.Response, error) {
-	var data []byte
-	var err error
-	if body != nil {
-		data, err = json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-	}
-	req, err := http.NewRequestWithContext(ctx, method, c.Base+path, bytes.NewReader(data))
+func (c *Client) requestUsing(ctx context.Context, client *http.Client, method, path string, body []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.Base+path, bytes.NewReader(body))
 	if err != nil {
 		return nil, errors.New("invalid ntfy request")
 	}
@@ -88,7 +84,11 @@ func (c *Client) requestUsing(ctx context.Context, client *http.Client, method, 
 	return r, nil
 }
 func (c *Client) Publish(ctx context.Context, m Message) (Message, error) {
-	r, err := c.request(ctx, "POST", "", m)
+	data, err := encodePublish(m)
+	if err != nil {
+		return Message{}, err
+	}
+	r, err := c.request(ctx, "POST", "", data)
 	if err != nil {
 		return Message{}, err
 	}

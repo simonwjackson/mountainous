@@ -145,10 +145,26 @@ must not bypass the local-only boundary.
 
 A versioned, base64url metadata tag carries host, app, residency, sender
 liveness and agent origin. It contains no authentication token. ntfy limits
-tags to 512 bytes, titles to 1024 bytes and message text to **4095 bytes**. ntfy treats 4096 or more bytes as an
-attachment, and this service disables attachments. The
-remote projection bounds those fields at UTF-8 boundaries; the local item
-retains the complete text. The projection can therefore shorten phone app names.
+tags to 512 bytes, titles to 1024 bytes and decoded message text to 4095
+bytes. At 4096 bytes ntfy takes the attachment path instead.
+
+The encoded JSON request has a separate **8191-byte maximum**. In ntfy 2.28.0,
+[`server/config.go:69`](https://github.com/binwiederhier/ntfy/blob/v2.28.0/server/config.go#L69)
+sets the default message limit to 4096;
+[`server/server.go:2050`](https://github.com/binwiederhier/ntfy/blob/v2.28.0/server/server.go#L2050)
+passes twice that limit to the JSON reader.
+[`util/util.go:402–409`](https://github.com/binwiederhier/ntfy/blob/v2.28.0/util/util.go#L402-L409)
+rejects a peek that reaches 8192 bytes. A real-server boundary test confirms
+HTTP 200 for 8191 bytes and HTTP 413 for 8192 bytes.
+
+The client measures the whole encoded document, not just its decoded text.
+It disables unnecessary HTML escaping for HTTP JSON and searches decoded
+UTF-8 rune boundaries for the longest body prefix that fits both limits.
+It always encodes the complete document; it never slices JSON escapes.
+The local item retains the complete text. If metadata alone leaves no room,
+the daemon parks that delivery with an explicit error and continues others.
+The projection can shorten phone app names. ntfy itself removes NUL bytes
+from text in `model.Message.SanitizeUTF8`; the local item remains intact.
 `Send` supplies explicit agent provenance. Neither a hostname nor an
 `agent-` sequence prefix grants trust. The library marks desktop application
 text `untrusted` in agent listings.
