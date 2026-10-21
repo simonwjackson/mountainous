@@ -56,6 +56,7 @@ in
               ) "${stateOf name} is not persisted 0700 for pi-${name}"
               ++ want (!(service.environment ? ASSISTANT_HOST)) "pi-assistant-${name} sets ASSISTANT_HOST"
               ++ want (lib.elem "household" service.serviceConfig.SupplementaryGroups) "pi-${name} cannot write the notebook"
+              ++ want (lib.any (lib.hasPrefix "d ${service.serviceConfig.WorkingDirectory} ") c.systemd.tmpfiles.rules) "pi-assistant-${name}'s working directory is not created before it starts"
             ) names
             ++ want (
               (persisted.${notebookDir} or { mode = ""; }).mode == "2770"
@@ -289,8 +290,13 @@ in
           }
         ];
 
-        # The deploy script sets this profile; units wait for it.
-        systemd.tmpfiles.rules = [ "d /nix/var/nix/profiles/per-user/pi-assistant 0755 root root -" ];
+        # The deploy script sets this profile; units wait for it. Each unit's
+        # WorkingDirectory is its workspace, which a new, empty home lacks:
+        # systemd changes into it before ExecStartPre can create it.
+        systemd.tmpfiles.rules = [
+          "d /nix/var/nix/profiles/per-user/pi-assistant 0755 root root -"
+        ]
+        ++ lib.mapAttrsToList (name: _: "d ${stateOf name}/workspace 0700 pi-${name} pi-${name} -") instances;
 
         users.groups = {
           household = { };
