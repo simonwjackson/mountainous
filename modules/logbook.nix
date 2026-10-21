@@ -53,6 +53,10 @@ in
       destination = "${state}/inbox/gadgetbridge/Gadgetbridge.db";
       source = "${config.users.users.simon.home}/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db";
       syncEnabled = fleet.folders.gadgetbridge.enable;
+      # Logbook's Oura OAuth app. The client ID is public; the secret is the
+      # host's `oura-api-key` sops secret, rendered into the client file.
+      ouraClient = config.sops.secrets ? oura-api-key;
+      ouraClientFile = config.sops.templates."logbook-oura-client.json".path;
       controller = pkgs.writeShellApplication {
         name = "logbook-service-control";
         runtimeInputs = [ pkgs.systemd ];
@@ -148,14 +152,29 @@ in
         "d ${state}/inbox 0700 logbook logbook -"
         "d ${state}/inbox/gadgetbridge 0750 root logbook -"
       ];
+      sops.templates."logbook-oura-client.json" = lib.mkIf ouraClient {
+        owner = "logbook";
+        mode = "0400";
+        restartUnits = [ "logbook.service" ];
+        content = builtins.toJSON {
+          clientId = "fb234ed4-ab17-4016-bbf5-319dc8cd381b";
+          clientSecret = config.sops.placeholder.oura-api-key;
+          # Oura allows plain http only for the host name localhost.
+          redirectUri = "http://localhost:9876/callback";
+        };
+      };
       systemd.services.logbook = unit // {
         description = "Logbook loopback life-data core";
         serviceConfig = common // {
-          ExecStart = "${profile}/bin/logbook-server --port 3160 --data-dir ${state}/data --state-dir ${state}/state --inbox-dir ${state}/inbox --gadgetbridge-export ${destination}";
+          ExecStart =
+            "${profile}/bin/logbook-server --port 3160 --data-dir ${state}/data --state-dir ${state}/state --inbox-dir ${state}/inbox --gadgetbridge-export ${destination}"
+            + lib.optionalString ouraClient " --oura-client-file ${ouraClientFile}";
           # The server's graceful shutdown handler listens for Ctrl-C/SIGINT.
           KillSignal = "SIGINT";
           # Only the root bridge publishes snapshots. The server is read-only.
-          ReadOnlyPaths = [ "${state}/inbox/gadgetbridge" ];
+          # "-": a missing directory must not stop the core (first activation
+          # can mount persistent state over the tmpfiles-created directory).
+          ReadOnlyPaths = [ "-${state}/inbox/gadgetbridge" ];
         };
       };
       systemd.services.logbook-tsnet = unit // {

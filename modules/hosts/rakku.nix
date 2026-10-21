@@ -165,7 +165,7 @@ in
           ];
         };
 
-        # Oura API key. No service reads it yet.
+        # Oura OAuth client secret for Logbook (modules/logbook.nix renders it).
         sops.secrets.oura-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
