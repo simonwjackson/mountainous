@@ -119,6 +119,16 @@ client.succeed(
     "mount -t nfs -o vers=4.2,actimeo=0 machine:/ /mnt/media; bindfs /mnt/media/tv /mnt/view; test $(cat /mnt/view/identity) = identity; ls /mnt/view; umount /mnt/view; umount /mnt/media"
 )
 
+# Regression, Unzen 2026-10-21: an idle bindfs view over the NFS export went
+# stale once the server's kernel evicted the lake's dentries and FUSE told
+# mergerfs to forget the node. NFS file handles must survive that eviction.
+client.succeed(
+    "mount -t nfs -o vers=4.2,actimeo=0 machine:/ /mnt/media; bindfs /mnt/media/tv /mnt/view; ls /mnt/view"
+)
+machine.succeed("sync; echo 3 > /proc/sys/vm/drop_caches; sleep 1; echo 3 > /proc/sys/vm/drop_caches")
+client.succeed("stat /mnt/view; test $(cat /mnt/view/identity) = identity; ls /mnt/view")
+client.succeed("umount /mnt/view; umount /mnt/media")
+
 # Hidden files and excluded paths cannot be called protected.
 machine.succeed(
     "printf secret > /srv/cache/towada/.secret; printf partial > /srv/cache/towada/file.tmp"

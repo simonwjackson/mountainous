@@ -38,6 +38,11 @@
           "x-systemd.after=${name}-storage-admission.service"
           "allow_other"
           "use_ino"
+          # The lake is exported over NFS. Without noforget, mergerfs drops a
+          # node when the kernel evicts its dentry, and every NFS handle to it
+          # turns stale (Unzen's library views, 2026-10-21). The cost is
+          # memory for each path ever looked up.
+          "noforget"
           "cache.files=partial"
           "dropcacheonclose=true"
           "category.create=${
