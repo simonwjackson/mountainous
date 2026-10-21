@@ -65,6 +65,33 @@ requests per second. Start and reconnect need extra reconciliation requests.
 The server disables asynchronous cache batching; the brief visibility race
 still exists between dispatch and insertion.
 
+### Scheduling proof and loaded-host readiness
+
+The old idle test observed request starts and a previously connected snapshot.
+That did not prove that the latest reconciliation had finished. A controlled
+HTTP test now holds the fourth startup response: the old readiness predicate
+still passes, virtual time advances by 95 seconds, and the request count stays
+unchanged while that response remains blocked. After release, one overdue
+fallback catches up, and the next deadline remains 120 seconds, not 125.
+The fallback did not start late or drift. Its **servicing** could wait behind
+in-flight HTTP work, and the old wall-clock window could mistake that for a
+missing timer. The original failure log alone did not identify which HTTP or
+scheduler delay occurred.
+
+`Clock` now owns fallback deadlines, retry backoff, reconnect waits and expiry
+time. Production uses `WallClock`. External-package tests use a manual clock
+and the public HTTP/UI boundaries. They prove exactly two polls per virtual
+30-second interval, no early polls, bounded retries and the original timer
+phase after delayed I/O. New timer registration marks the end of a scheduling
+cycle; tests do not infer completion from a request counter.
+
+The real 31-second idle-rate observation runs only when
+`NOTIFY_SYNC_MEASURE_IDLE=1`. It has a generous upper bound and no lower bound.
+It never gates `nix flake check`. No gating test sleeps for more than one
+second. Process/IPC deadlines only guard hangs; they do not assert throughput.
+The ntfy fixture polls `/v1/health` with bounded requests for up to 60 seconds,
+checks the healthy response, and reports an early child-process exit.
+
 The stale-clear guard still requires replay to show the latest published
 message ID before a clear can close a local item. Replaying an earlier
 revision disarms that guard until the latest revision appears. notifyd

@@ -22,7 +22,7 @@ through the CLI or MCP tools.
 The view connects to `$XDG_RUNTIME_DIR/notify-sync/ui.sock`. Send one JSON
 object per line: `subscribe`, `dismiss` with `id`, `action` with `id` and `key`,
 or `dismiss_all`. The binding item and event schema is in the approved
-contract and `types.go`. Subscribe returns a complete snapshot, including
+contract and `schema/ui-socket.v1.json`. Subscribe returns a complete snapshot, including
 `items: []` when empty. Slow readers disconnect and must resubscribe. Restart
 snapshots do not create popups. Popup timeouts do not close stored items.
 
@@ -38,6 +38,14 @@ nix build .#notify-sync .#checks.x86_64-linux.notify-sync-vm \
 The Go integration tests launch real ntfy and private D-Bus servers. Tests
 skip those integrations when their executables are missing. The Nix package
 supplies all executables, so none of those integrations skip in its check.
+Gating scheduling tests drive a manual clock; they never wait for a real
+30-second interval. The real idle-rate observation is opt-in and non-gating:
+
+```
+NOTIFY_SYNC_MEASURE_IDLE=1 NTFY_BIN=/path/to/ntfy \
+  go test -count=1 -v -run '^TestMeasureRealIdleRate$' .
+```
+
 Run `gomod2nix --dir packages/notify-sync` after changing Go dependencies.
 
 See `docs/decisions/notifications.md` for ordering, crash and scale limits.
