@@ -8,6 +8,7 @@ import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
 import "lanes.js" as Lanes
+import "notification-model.js" as NotificationModel
 
 ShellRoot {
     id: root
@@ -21,9 +22,11 @@ ShellRoot {
     property var brightnessScreen: null
     property var ociScreen: null
     property var storageScreen: null
+    property var notificationScreen: null
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.storageScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
@@ -33,6 +36,7 @@ ShellRoot {
 
     function toggleWifi(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.storageScreen = null;
         root.bluetoothScreen = null;
         root.soundScreen = null;
@@ -42,6 +46,7 @@ ShellRoot {
 
     function toggleSound(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.storageScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
@@ -51,6 +56,7 @@ ShellRoot {
 
     function toggleBrightness(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
@@ -61,6 +67,7 @@ ShellRoot {
 
     function toggleOci(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
@@ -71,12 +78,36 @@ ShellRoot {
 
     function toggleStorage(screen) {
         root.topbarAccessVisible = false;
+        root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
         root.brightnessScreen = null;
         root.ociScreen = null;
         root.storageScreen = root.storageScreen === screen ? null : screen;
+    }
+
+    function toggleNotifications(screen) {
+        root.topbarAccessVisible = false;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = null;
+        root.brightnessScreen = null;
+        root.ociScreen = null;
+        root.storageScreen = null;
+        root.notificationScreen = root.notificationScreen === screen ? null : screen;
+    }
+
+    // Popups go to the screen with keyboard focus, where the reader is
+    // looking, and to the first screen when Hyprland has not said.
+    function focusedScreen() {
+        const monitor = Hyprland.focusedMonitor;
+        if (monitor) {
+            for (const screen of Quickshell.screens) {
+                if (screen.name === monitor.name) return screen;
+            }
+        }
+        return root.primaryScreen();
     }
 
     // The keyboard hint lists only the panels this host shows.
@@ -99,6 +130,33 @@ ShellRoot {
     // One owner for capture, queueing, backend work, insertion, and the
     // bottom-centre state overlay. The top bar only reads its public state.
     Dictation { id: dictation }
+
+    // The notification socket, and the popups. notifyd owns the D-Bus name;
+    // see modules/notification-view.nix. Each top bar has its own centre.
+    Notifications { id: notifications }
+
+    NotificationPopups {
+        service: notifications
+        screen: root.focusedScreen()
+        suppressed: root.notificationScreen !== null
+        onOpenCentreRequested: root.toggleNotifications(root.focusedScreen())
+    }
+
+    IpcHandler {
+        target: "notifications"
+        function toggle(): void { root.toggleNotifications(root.focusedScreen()); }
+        function hide(): void { root.notificationScreen = null; }
+        function reveal(): void {
+            root.notificationScreen = null;
+            root.toggleNotifications(root.focusedScreen());
+        }
+        function current(): string {
+            return (notifications.online ? "online" : notifications.connecting ? "connecting" : "offline")
+                + " " + notifications.status.server
+                + " " + notifications.count
+                + " " + notifications.popups.length;
+        }
+    }
 
     // Quickshell 0.3.1 registers IPC handlers reliably at the shell root. Keep
     // transport here and forward every event to the dictation state owner.
@@ -392,6 +450,13 @@ ShellRoot {
                 screen: modelData
                 shown: root.storageScreen === modelData
                 onCloseRequested: root.storageScreen = null
+            }
+
+            NotificationCentre {
+                service: notifications
+                screen: modelData
+                shown: root.notificationScreen === modelData
+                onCloseRequested: root.notificationScreen = null
             }
 
             anchors { top: true; left: true; right: true }
@@ -746,6 +811,44 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: root.toggleStorage(modelData)
+                    }
+                }
+
+                // The centre's control, on every desktop. The count is a
+                // readout: narrow bars keep "NTF" and the count. Red means an
+                // urgent item is open; amber means the daemon or the sync
+                // server is out of reach.
+                Rectangle {
+                    id: notificationControl
+                    readonly property bool wide: topBar.width >= 900
+                    Layout.preferredWidth: wide ? notificationLabel.implicitWidth + 16 : 48
+                    Layout.preferredHeight: 26
+                    radius: Theme.radiusSmall
+                    color: root.notificationScreen === modelData ? Theme.bgActive
+                        : notificationArea.containsMouse ? Theme.bgSelected : "transparent"
+                    Text {
+                        id: notificationLabel
+                        anchors.centerIn: parent
+                        width: notificationControl.wide ? implicitWidth : parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        elide: Text.ElideRight
+                        text: NotificationModel.barText(notifications.online, notifications.connecting,
+                            notifications.status, notifications.count, notificationControl.wide)
+                        color: {
+                            if (!notifications.online)
+                                return notifications.connecting ? Theme.textMuted : Theme.warning;
+                            if (notifications.hasCritical) return Theme.danger;
+                            if (notifications.status.server === "unreachable") return Theme.warning;
+                            return notifications.count > 0 ? Theme.textPrimary : Theme.textMuted;
+                        }
+                        font.pixelSize: 10
+                        font.family: Theme.fontFamily
+                    }
+                    MouseArea {
+                        id: notificationArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: root.toggleNotifications(modelData)
                     }
                 }
 
