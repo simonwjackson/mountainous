@@ -249,7 +249,7 @@ in
         };
         laneFallbacks = lib.mkOption {
           type = lib.types.attrsOf (lib.types.listOf lib.types.str);
-          default = { };
+          description = "Fallback models per lane. The core refuses a lanes file that leaves a lane out.";
         };
       };
 
@@ -269,6 +269,19 @@ in
               in
               lib.length (lib.unique ports) == lib.length ports;
             message = "pi-assistant: two instances share a port.";
+          }
+          {
+            assertion =
+              let
+                lanes = [
+                  "background"
+                  "chat"
+                  "creative"
+                  "mechanical"
+                ];
+              in
+              lib.attrNames cfg.lanes == lanes && lib.attrNames cfg.laneFallbacks == lanes;
+            message = "pi-assistant: lanes and laneFallbacks must each name chat, creative, mechanical, and background.";
           }
         ];
 
