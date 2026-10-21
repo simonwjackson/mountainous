@@ -25,7 +25,8 @@ Rectangle {
         return root.quiet ? "transparent" : Theme.bgInput;
     }
     border.width: 1
-    border.color: root.enabled ? Theme.borderMuted : Theme.bgSelected
+    border.color: !root.enabled ? Theme.bgSelected
+        : area.pressed ? Theme.accent : Theme.borderMuted
 
     Text {
         id: label
