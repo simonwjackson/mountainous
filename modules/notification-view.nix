@@ -15,7 +15,7 @@
 # The centre opens from the NTF control in the top bar, or with
 #   qs -c mountainous ipc call notifications toggle
 #
-# modules/quickshell/notification-dev/ holds a fake notifyd and the capture
+# modules/quickshell/notification-dev/ holds a notifyd harness and the capture
 # script for screenshots. Those files are for development and are not
 # installed.
 let
@@ -54,7 +54,7 @@ in
           }
           ''
             python3 ${./quickshell/notification-schema-check.py} \
-              ${schemaFile} ${./quickshell/notification-dev/fake-notifyd.py} corpus.json
+              ${schemaFile} ${./quickshell/notification-dev/notifyd-harness.py} corpus.json
             # The same results in the two most distant zones prove that no
             # readout depends on the machine's zone.
             for zone in UTC Pacific/Kiritimati Etc/GMT+12; do

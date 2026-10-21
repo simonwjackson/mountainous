@@ -6,8 +6,8 @@
 #
 # The session never touches the running desktop: it gets its own
 # XDG_RUNTIME_DIR (so its own Wayland socket, Quickshell IPC and
-# notify-sync/ui.sock), its own XDG_STATE_HOME (the theme file), and a fake
-# notifyd. The real quickshell.service is not stopped, restarted or reached.
+# notify-sync/ui.sock), its own XDG_STATE_HOME (the theme file), and a notifyd
+# harness. The real quickshell.service is not stopped, restarted or reached.
 #
 # The output matches myoko: a 2880x1800 panel at scale 1.5, so Quickshell
 # lays out at 1920x1200. grim saves the panel's 2880x1800 pixels.
@@ -91,10 +91,10 @@ exec 7>"$work/pointer"
 wtype -k F13 -s 86400000 -k F13 &
 pids+=($!)
 
-python3 "$here/fake-notifyd.py" \
+python3 "$here/notifyd-harness.py" \
   --socket "$XDG_RUNTIME_DIR/notify-sync/ui.sock" \
   --control "$work/ctl.sock" --assets "$work/assets" --scenario empty \
-  >"$work/fake.log" 2>&1 &
+  >"$work/harness.log" 2>&1 &
 pids+=($!)
 sleep 0.5
 
@@ -138,7 +138,7 @@ if [ "${2:-}" = hold ]; then
   cat > "$out/session.env" <<EOF
 export XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR XDG_STATE_HOME=$XDG_STATE_HOME
 export WAYLAND_DISPLAY=$WAYLAND_DISPLAY SWAYSOCK=$SWAYSOCK
-export CTL=$work/ctl.sock SHELL_QML=$stage/shell.qml QS_LOG=$work/qs.log FAKE_LOG=$work/fake.log
+export CTL=$work/ctl.sock SHELL_QML=$stage/shell.qml QS_LOG=$work/qs.log HARNESS_LOG=$work/harness.log
 EOF
   echo "session up; source $out/session.env"
   wait
@@ -245,7 +245,7 @@ centre stress       short-centre-stress
 popups many         short-popup-many
 size 2880x1800
 
-# ---- the ops, end to end: each must reach the fake daemon as contract
+# ---- the ops, end to end: each must reach the notifyd harness as contract
 # section 7 spells it.
 centre ideal        ops-before
 key Down; key Down; key 1          # action "reply" on the Signal item
@@ -256,8 +256,8 @@ ptr move 1890 53; ptr click        # the popup's dismiss
 ctl "scenario ideal"; ipc reveal; sleep 0.8
 ptr move 1819 59; ptr click        # Dismiss all
 sleep 0.5; ipc hide
-grep '^op ' "$work/fake.log" | grep -v subscribe | tee "$out/ops.log"
+grep '^op ' "$work/harness.log" | grep -v subscribe | tee "$out/ops.log"
 
 cp "$work/qs.log" "$out/qs.log"
-cp "$work/fake.log" "$out/fake.log"
-echo "logs: $out/qs.log $out/fake.log"
+cp "$work/harness.log" "$out/harness.log"
+echo "logs: $out/qs.log $out/harness.log"

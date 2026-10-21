@@ -46,7 +46,7 @@ assert.deepEqual(model.unsupportedKeyword({properties: {anyOf: {type: "string"}}
     "a property named like a keyword is data");
 
 // The parser agrees with the reference validator on every corpus line:
-// the fake daemon's whole output, and mutations of it.
+// the notifyd harness's whole output, and mutations of it.
 assert.ok(corpus.events.length > 50, "the corpus has the daemon's output in it");
 let validCount = 0, invalidCount = 0;
 for (const entry of corpus.events) {

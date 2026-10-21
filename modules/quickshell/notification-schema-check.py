@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Hold the notification view to the socket schema, with a reference validator.
 
-    notification-schema-check.py SCHEMA FAKE_NOTIFYD CORPUS_OUT
+    notification-schema-check.py SCHEMA NOTIFYD_HARNESS CORPUS_OUT
 
 SCHEMA is packages/notify-sync/schema/ui-socket.v1.json. This script:
 
 1. checks that the schema is valid JSON Schema 2020-12;
-2. validates every event the development daemon (FAKE_NOTIFYD --dump) can
+2. validates every event the development daemon (NOTIFYD_HARNESS --dump) can
    send against $defs/daemonEvent, so the fixtures the screenshots use are
    real protocol;
 3. writes CORPUS_OUT: those lines plus mutations of them, and client
@@ -69,7 +69,7 @@ def item_mutations(item):
 
 
 def main():
-    schema_path, fake, corpus_path = sys.argv[1:4]
+    schema_path, harness, corpus_path = sys.argv[1:4]
     with open(schema_path) as f:
         schema = json.load(f)
     Draft202012Validator.check_schema(schema)
@@ -77,7 +77,7 @@ def main():
     ops = validator_for(schema, "clientOperation")
 
     with tempfile.TemporaryDirectory() as assets:
-        dump = subprocess.run([sys.executable, fake, "--dump", "--assets", assets],
+        dump = subprocess.run([sys.executable, harness, "--dump", "--assets", assets],
                               check=True, capture_output=True, text=True).stdout
     lines = [json.loads(line) for line in dump.splitlines() if line.strip()]
     kinds = {line["type"] for line in lines}
@@ -88,9 +88,9 @@ def main():
         for error in events.iter_errors(value):
             failures.append(f"{value.get('type')}: {error.message} at {list(error.absolute_path)}")
     if failures:
-        sys.exit("fake notifyd output breaks the schema:\n  " + "\n  ".join(failures[:20]))
+        sys.exit("notifyd harness output breaks the schema:\n  " + "\n  ".join(failures[:20]))
 
-    corpus = [label(events, value, "fake notifyd " + value["type"]) for value in lines]
+    corpus = [label(events, value, "notifyd harness " + value["type"]) for value in lines]
 
     upsert = next(v for v in lines if v["type"] == "upsert")
     snapshot = next(v for v in lines if v["type"] == "snapshot" and v["items"])
@@ -147,7 +147,7 @@ def main():
     with open(corpus_path, "w") as f:
         json.dump({"events": corpus, "ops": op_corpus}, f)
     invalid = sum(1 for e in corpus if not e["valid"])
-    print(f"notification-view schema: {len(lines)} fake notifyd events valid; "
+    print(f"notification-view schema: {len(lines)} notifyd harness events valid; "
           f"corpus {len(corpus)} events ({invalid} invalid), {len(op_corpus)} ops")
 
 

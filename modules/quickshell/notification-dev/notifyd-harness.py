@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""A fake notifyd for developing and capturing the Quickshell notification view.
+"""A notifyd harness for developing and capturing the Quickshell notification view.
 
 Development only; nothing installs this. It serves the UI socket protocol of
 the notify-sync contract, section 7, and nothing else: no D-Bus, no ntfy.
 
-    fake-notifyd.py --socket $XDG_RUNTIME_DIR/notify-sync/ui.sock \
-                    --control /tmp/fake-notifyd.ctl --assets /tmp/assets
+    notifyd-harness.py --socket $XDG_RUNTIME_DIR/notify-sync/ui.sock \
+                    --control /tmp/notifyd-harness.ctl --assets /tmp/assets
 
 Send one command per line to the control socket (for example with
-`socat - UNIX-CONNECT:/tmp/fake-notifyd.ctl`):
+`socat - UNIX-CONNECT:/tmp/notifyd-harness.ctl`):
 
     scenario <name>       replace every item and send a snapshot
     popups <name>         send fresh upserts for that popup set
@@ -19,7 +19,7 @@ Send one command per line to the control socket (for example with
     snapshot on|off       off: accept subscribers but send them nothing
 
 Scenarios and popup sets: Fixtures.SCENARIOS and Fixtures.POPUP_SETS.
-`fake-notifyd.py --dump --assets DIR` prints every event it can send.
+`notifyd-harness.py --dump --assets DIR` prints every event it can send.
 
 Each op Quickshell sends is printed on stdout as `op {...}`. Dismiss and
 non-resident actions answer with a remove, as notifyd does.
@@ -127,7 +127,7 @@ class Fixtures:
                         actions=[{"key": "reply", "label": "Reply"}, {"key": "read", "label": "Mark read"}],
                         created=NOW - 6 * MIN),
             self.remote("rakku", app_name="agent-claude", summary="Review ready: notify-sync design",
-                        body="Popups, centre and the fake daemon are on the branch. 2 questions in the report.",
+                        body="Popups, centre and the notifyd harness are on the branch. 2 questions in the report.",
                         actions=[{"key": "approve", "label": "Approve"}, {"key": "changes", "label": "Request changes"}],
                         resident=True, created=NOW - 25 * MIN),
             self.item(app_name="Thunderbird", app_icon=self.assets["icon"], summary="3 new messages",
@@ -430,7 +430,7 @@ async def main():
     if os.path.exists(args.control):
         os.unlink(args.control)
     ctl = await asyncio.start_unix_server(control, path=args.control)
-    print("fake notifyd ready", args.socket, flush=True)
+    print("notifyd harness ready", args.socket, flush=True)
     async with ctl:
         await ctl.serve_forever()
 
