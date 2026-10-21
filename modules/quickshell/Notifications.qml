@@ -2,6 +2,9 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import "notification-model.js" as Model
+// Generated from packages/notify-sync/schema/ui-socket.v1.json; see
+// notification-schema-js.sh.
+import "notification-schema.js" as Schema
 
 // One owner for the notification socket. notifyd owns
 // org.freedesktop.Notifications and does the syncing; this side only draws
@@ -73,7 +76,7 @@ Scope {
     }
 
     function handleLine(line) {
-        const parsed = Model.parseLine(line);
+        const parsed = Model.parseLine(line, Schema.schema);
         if (parsed.kind === "invalid") {
             if (line.trim() !== "") console.warn("notifications: ignored line (" + parsed.reason + ") " + line.slice(0, 120));
             return;

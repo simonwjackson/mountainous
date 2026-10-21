@@ -99,24 +99,34 @@ pids+=($!)
 sleep 0.5
 
 ctl() { printf '%s\n' "$*" | socat - "UNIX-CONNECT:$work/ctl.sock" >/dev/null; }
-ipc() { qs -p "$shell_dir/shell.qml" ipc call notifications "$@" 2>/dev/null || true; }
+ipc() { qs -p "$stage/shell.qml" ipc call notifications "$@" 2>/dev/null || true; }
 shot() { sleep "${2:-0.8}"; grim "$out/$1.png"; echo "$out/$1.png  [$(ipc current)]"; }
 centre() { ipc hide; ctl "scenario $1"; sleep 0.4; ipc reveal; shot "$2"; }
 popups() { ipc hide; ctl "scenario empty"; sleep 0.3; ctl "popups $1"; shot "$2" "${3:-0.8}"; }
 size() { swaymsg -q output HEADLESS-1 resolution "$1" scale 1.5; sleep 1; }
+# The shell as hjem installs it: every file of modules/quickshell, linked,
+# plus notification-schema.js from the one generator and the repo's schema.
+# Hot reload follows the links only as far as Quickshell watches them;
+# restart the session after an edit.
+stage="$work/shell"
+mkdir -p "$stage"
+for f in "$shell_dir"/*; do [ -f "$f" ] && ln -s "$f" "$stage/"; done
+bash "$shell_dir/notification-schema-js.sh" \
+  "$shell_dir/../../packages/notify-sync/schema/ui-socket.v1.json" > "$stage/notification-schema.js"
+
 theme() { printf '%s\n' "$1" > "$XDG_STATE_HOME/mountainous/theme"; }
 theme dark
 
 # Its own session bus too, so the nested shell cannot meet the desktop's
 # D-Bus services.
 QT_QPA_PLATFORM=wayland QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough \
-  dbus-run-session -- qs -p "$shell_dir/shell.qml" >"$work/qs.log" 2>&1 &
+  dbus-run-session -- qs -p "$stage/shell.qml" >"$work/qs.log" 2>&1 &
 pids+=($!)
 for _ in $(seq 50); do
-  qs -p "$shell_dir/shell.qml" ipc show >/dev/null 2>&1 && break
+  qs -p "$stage/shell.qml" ipc show >/dev/null 2>&1 && break
   sleep 0.2
 done
-if ! qs -p "$shell_dir/shell.qml" ipc show >/dev/null 2>&1; then
+if ! qs -p "$stage/shell.qml" ipc show >/dev/null 2>&1; then
   cat "$work/qs.log" >&2
   exit 1
 fi
@@ -128,7 +138,7 @@ if [ "${2:-}" = hold ]; then
   cat > "$out/session.env" <<EOF
 export XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR XDG_STATE_HOME=$XDG_STATE_HOME
 export WAYLAND_DISPLAY=$WAYLAND_DISPLAY SWAYSOCK=$SWAYSOCK
-export CTL=$work/ctl.sock SHELL_QML=$shell_dir/shell.qml QS_LOG=$work/qs.log FAKE_LOG=$work/fake.log
+export CTL=$work/ctl.sock SHELL_QML=$stage/shell.qml QS_LOG=$work/qs.log FAKE_LOG=$work/fake.log
 EOF
   echo "session up; source $out/session.env"
   wait

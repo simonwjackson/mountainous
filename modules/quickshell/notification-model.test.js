@@ -1,5 +1,8 @@
 // Run notification-model.js, the same file QML loads, without a compositor.
-//   node notification-model.test.js notification-model.js
+//   node notification-model.test.js notification-model.js ui-socket.v1.json corpus.json [notification-schema.js]
+// The schema is packages/notify-sync/schema/ui-socket.v1.json. The corpus is
+// written by notification-schema-check.py: lines that the reference
+// validator (python jsonschema) labelled valid or invalid.
 const fs = require("fs");
 const vm = require("vm");
 const assert = require("assert");
@@ -7,6 +10,16 @@ const assert = require("assert");
 // Top-level functions and vars land on the context, as QML exposes them.
 const model = {};
 vm.runInNewContext(fs.readFileSync(process.argv[2], "utf8").replace(/^\.pragma library\s*$/m, ""), model);
+const schema = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
+const corpus = JSON.parse(fs.readFileSync(process.argv[4], "utf8"));
+
+// The generated notification-schema.js, which QML imports, carries exactly
+// the schema file.
+if (process.argv[5]) {
+    const generated = {};
+    vm.runInNewContext(fs.readFileSync(process.argv[5], "utf8").replace(/^\.pragma library\s*$/m, ""), generated);
+    assert.equal(JSON.stringify(generated.schema), JSON.stringify(schema), "notification-schema.js matches the schema");
+}
 
 const now = Date.UTC(2026, 9, 20, 12, 0, 0);
 const item = (over) => Object.assign({
@@ -16,35 +29,58 @@ const item = (over) => Object.assign({
     urgency: 1, resident: false, local_only: false, created: now - 1000, updated: now - 1000,
     sender_alive: true
 }, over);
+const connectedStatus = {server: "connected", outbox: 0, last_error: null};
 const line = (value) => JSON.stringify(value);
 const ev = (value) => {
-    const parsed = model.parseLine(line(value));
-    assert.equal(parsed.kind, "event", line(value));
+    const parsed = model.parseLine(line(value), schema);
+    assert.equal(parsed.kind, "event", line(value) + " " + (parsed.reason || ""));
     return parsed.event;
 };
 const fold = (events) => events.reduce((s, e) => model.applyEvent(s, ev(e)), model.initialState());
 
-// Parsing: malformed lines and items never reach the view.
-for (const bad of ["", "{", "null", "[]", "42", line({type: "nope"}), line({type: "upsert", item: {summary: "no id"}}),
-    line({type: "remove"}), line({type: "upsert", item: item({id: "7"})})]) {
-    assert.equal(model.parseLine(bad).kind, "invalid", bad);
+// The validator implements every keyword the schema uses, and refuses a
+// schema that uses one it does not.
+assert.deepEqual(model.unsupportedKeyword(schema), {kind: "none"});
+assert.deepEqual(model.unsupportedKeyword({$defs: {x: {anyOf: []}}}), {kind: "some", value: "anyOf"});
+assert.deepEqual(model.unsupportedKeyword({properties: {anyOf: {type: "string"}}}), {kind: "none"},
+    "a property named like a keyword is data");
+
+// The parser agrees with the reference validator on every corpus line:
+// the fake daemon's whole output, and mutations of it.
+assert.ok(corpus.events.length > 50, "the corpus has the daemon's output in it");
+let validCount = 0, invalidCount = 0;
+for (const entry of corpus.events) {
+    const parsed = model.parseLine(entry.line, schema);
+    assert.equal(parsed.kind === "event", entry.valid, entry.why + ": " + entry.line.slice(0, 160)
+        + (parsed.kind === "invalid" ? " -> " + parsed.reason : ""));
+    if (entry.valid) validCount += 1; else invalidCount += 1;
 }
-const parsed = ev({type: "upsert", fresh: true, item: {id: 9, urgency: 7, actions: [{key: ""}, {key: "x"}, null]}});
-assert.equal(parsed.item.urgency, 2);
-assert.deepEqual(parsed.item.actions, [{key: "x", label: ""}]);
-assert.equal(parsed.item.sender_alive, true, "missing sender_alive is not a dead sender");
-assert.equal(parsed.item.image, null);
-assert.equal(ev({type: "upsert", item: item({sender_alive: false})}).item.sender_alive, false);
-assert.deepEqual(ev({type: "status", status: {server: "weird", outbox: -3}}).status,
-    {server: "connecting", outbox: 0, last_error: null});
+assert.ok(validCount > 0 && invalidCount > 0);
+for (const entry of corpus.ops) {
+    const verdict = model.validate(schema, "clientOperation", JSON.parse(entry.line));
+    assert.equal(verdict.kind === "valid", entry.valid, entry.why + ": " + entry.line);
+}
+// Lines that are not JSON objects never reach the view.
+for (const bad of ["", "{", "null", "[]", "42", "\"snapshot\""]) {
+    assert.equal(model.parseLine(bad, schema).kind, "invalid", bad);
+}
+// An invalid line says where it failed.
+const missing = model.parseLine(line({type: "upsert", fresh: true, item: Object.assign(item(), {seq: undefined})}), schema);
+assert.equal(missing.kind, "invalid");
+assert.ok(/seq/.test(missing.reason), missing.reason);
+// Every op the view sends is a valid clientOperation.
+for (const op of [model.subscribeOp(), model.dismissOp(12), model.actionOp(12, "re\"ply"), model.dismissAllOp()]) {
+    assert.deepEqual(model.validate(schema, "clientOperation", JSON.parse(op)), {kind: "valid"}, op);
+}
+assert.equal(ev({type: "upsert", fresh: false, item: item({sender_alive: false})}).item.sender_alive, false);
 
 // Folding: snapshot, upsert, fresh, remove, status.
 let state = fold([
-    {type: "snapshot", items: [item({id: 1}), item({id: 2, updated: now})], status: {server: "connected", outbox: 0, last_error: null}},
+    {type: "snapshot", items: [item({id: 1}), item({id: 2, updated: now})], status: connectedStatus},
 ]);
 assert.deepEqual(state.items.map((i) => i.id), [2, 1], "newest first");
 assert.deepEqual(state.popups, [], "a snapshot never pops up");
-state = model.applyEvent(state, ev(({type: "upsert", fresh: true, item: item({id: 3, updated: now - 5000, urgency: 2})})));
+state = model.applyEvent(state, ev({type: "upsert", fresh: true, item: item({id: 3, updated: now - 5000, urgency: 2})}));
 assert.deepEqual(state.items.map((i) => i.id), [3, 2, 1], "critical first");
 assert.deepEqual(state.popups, [3]);
 state = model.applyEvent(state, ev(({type: "upsert", fresh: false, item: item({id: 1, summary: "edited", updated: now + 1})})));
@@ -71,9 +107,9 @@ assert.deepEqual(model.statusBadge({kind: "offline", retryInSeconds: 3}, {server
 const kept = state.items[1];
 state = model.applyEvent(state, ev(({type: "upsert", fresh: false, item: item({id: 3, urgency: 2})})));
 assert.strictEqual(state.items[1], kept, "untouched items keep identity, so delegates and scroll survive");
-state = model.applyEvent(state, ev(({type: "snapshot", items: [], status: {server: "connected", outbox: 0}})));
+state = model.applyEvent(state, ev(({type: "snapshot", items: [], status: connectedStatus})));
 assert.deepEqual(state.items, []);
-const many = fold([{type: "snapshot", items: Array.from({length: 500}, (_, i) => item({id: i + 1, updated: now - i})), status: {}}]);
+const many = fold([{type: "snapshot", items: Array.from({length: 500}, (_, i) => item({id: i + 1, updated: now - i})), status: connectedStatus}]);
 assert.equal(many.items.length, 500);
 assert.equal(many.items[0].id, 1);
 

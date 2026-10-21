@@ -18,8 +18,8 @@ Send one command per line to the control socket (for example with
     up                    listen again
     snapshot on|off       off: accept subscribers but send them nothing
 
-Scenarios: empty, ideal, stress, sender-gone, local-only, unreachable.
-Popup sets: normal, critical, image, remote, sender-gone, many.
+Scenarios and popup sets: Fixtures.SCENARIOS and Fixtures.POPUP_SETS.
+`fake-notifyd.py --dump --assets DIR` prints every event it can send.
 
 Each op Quickshell sends is printed on stdout as `op {...}`. Dismiss and
 non-resident actions answer with a remove, as notifyd does.
@@ -211,6 +211,10 @@ class Fixtures:
                       local_only=True, urgency=0),
         ]
 
+    # Every scenario and popup set, for the capture script and --dump.
+    SCENARIOS = ["empty", "ideal", "stress", "sender-gone", "local-only", "unreachable"]
+    POPUP_SETS = ["normal", "critical", "image", "remote", "sender-gone", "local-only", "many"]
+
     def scenario(self, name):
         if name == "empty":
             return [], status("connected")
@@ -259,11 +263,15 @@ class Daemon:
         self.connections = set()   # every open connection
         self.server = None
         self.send_snapshot = True
+        # --dump collects every event line here instead of sending it.
+        self.sink = None
 
     def snapshot(self):
         return {"type": "snapshot", "items": list(self.items.values()), "status": self.status}
 
     async def broadcast(self, event):
+        if self.sink is not None:
+            self.sink.append(json.dumps(event))
         line = (json.dumps(event) + "\n").encode()
         for writer in list(self.clients):
             try:
@@ -362,13 +370,40 @@ class Daemon:
         return "ok"
 
 
+async def dump(assets):
+    """Print, one per line, every event this daemon can send: each scenario's
+    snapshot, each popup set's upserts, each status, and the removes that
+    dismiss and dismiss_all answer with. checks.notification-view validates
+    this output against the socket schema."""
+    daemon = Daemon("", Fixtures(make_assets(assets)))
+    daemon.sink = []
+    for name in Fixtures.SCENARIOS:
+        await daemon.command("scenario " + name)
+    for name in Fixtures.POPUP_SETS:
+        await daemon.command("popups " + name)
+    await daemon.command("status connecting 0")
+    await daemon.command("status unreachable 7 dial tcp: connect: connection refused")
+    await daemon.command("status connected 0")
+    first = next(iter(daemon.items))
+    await daemon.remove(first, 2)
+    for item_id in list(daemon.items):
+        await daemon.remove(item_id, 2)
+    print("\n".join(daemon.sink))
+
+
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--socket", required=True)
-    parser.add_argument("--control", required=True)
+    parser.add_argument("--socket")
+    parser.add_argument("--control")
     parser.add_argument("--assets", required=True)
     parser.add_argument("--scenario", default="ideal")
+    parser.add_argument("--dump", action="store_true", help="print every event and exit")
     args = parser.parse_args()
+    if args.dump:
+        await dump(args.assets)
+        return
+    if not args.socket or not args.control:
+        parser.error("--socket and --control are required unless --dump")
 
     daemon = Daemon(args.socket, Fixtures(make_assets(args.assets)))
     await daemon.command("scenario " + args.scenario)

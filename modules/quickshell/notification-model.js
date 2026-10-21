@@ -14,85 +14,149 @@ function emptyStatus() {
     return {server: "connecting", outbox: 0, last_error: null};
 }
 
-function str(value) {
-    return typeof value === "string" ? value : "";
+// ---------------------------------------------------------------- schema
+//
+// packages/notify-sync/schema/ui-socket.v1.json is the one definition of the
+// socket's payloads. This is a validator for the JSON Schema 2020-12
+// keywords that file uses, and only those: schemaKeywordsSupported refuses a
+// schema with any other keyword, so a schema change cannot quietly weaken
+// the check here. The caller passes the parsed schema in; QML gets it from
+// the generated notification-schema.js (modules/notification-view.nix).
+
+var SCHEMA_KEYWORDS = ["$schema", "$id", "$ref", "$defs", "title", "description", "oneOf", "type",
+    "enum", "const", "properties", "required", "additionalProperties", "items", "minimum", "maximum",
+    "pattern"];
+
+// some(keyword) for the first keyword the validator does not implement.
+function unsupportedKeyword(schema) {
+    if (Array.isArray(schema)) {
+        for (let i = 0; i < schema.length; i++) {
+            const found = unsupportedKeyword(schema[i]);
+            if (found.kind === "some") return found;
+        }
+        return none();
+    }
+    if (!schema || typeof schema !== "object") return none();
+    for (const key in schema) {
+        if (SCHEMA_KEYWORDS.indexOf(key) < 0) return some(key);
+        // Names under properties and $defs are data, not keywords.
+        const child = schema[key];
+        const children = key === "properties" || key === "$defs"
+            ? Object.keys(child).map(function (k) { return child[k]; })
+            : key === "enum" || key === "const" || key === "required" ? [] : [child];
+        for (let i = 0; i < children.length; i++) {
+            const found = unsupportedKeyword(children[i]);
+            if (found.kind === "some") return found;
+        }
+    }
+    return none();
 }
 
-function num(value, fallback) {
-    return typeof value === "number" && isFinite(value) ? value : fallback;
+function resolveRef(root, ref) {
+    if (ref.indexOf("#/") !== 0) throw new Error("only local $ref is supported: " + ref);
+    return ref.slice(2).split("/").reduce(function (node, part) {
+        if (!node || !(part in node)) throw new Error("unresolved $ref " + ref);
+        return node[part];
+    }, root);
 }
 
-// A daemon item, with every field coerced to the type the view reads. An item
-// without a numeric id cannot be dismissed, so it is dropped as malformed.
-function normaliseItem(raw) {
-    if (!raw || typeof raw !== "object" || typeof raw.id !== "number" || !isFinite(raw.id)) return null;
-    const actions = Array.isArray(raw.actions) ? raw.actions.filter(function (a) {
-        return a && typeof a.key === "string" && a.key !== "";
-    }).map(function (a) {
-        return {key: a.key, label: str(a.label)};
-    }) : [];
-    const urgency = num(raw.urgency, URGENCY_NORMAL);
-    return {
-        id: raw.id,
-        seq: str(raw.seq),
-        origin: raw.origin === "remote" ? "remote" : "local",
-        host: str(raw.host),
-        app_name: str(raw.app_name),
-        app_icon: str(raw.app_icon),
-        image: typeof raw.image === "string" && raw.image !== "" ? raw.image : null,
-        summary: str(raw.summary),
-        body: str(raw.body),
-        actions: actions,
-        urgency: urgency <= URGENCY_LOW ? URGENCY_LOW : urgency >= URGENCY_CRITICAL ? URGENCY_CRITICAL : URGENCY_NORMAL,
-        resident: raw.resident === true,
-        local_only: raw.local_only === true,
-        created: num(raw.created, 0),
-        updated: num(raw.updated, num(raw.created, 0)),
-        // Missing means the daemon did not say the sender is gone.
-        sender_alive: raw.sender_alive !== false
-    };
+function typeOf(value) {
+    if (value === null) return "null";
+    if (Array.isArray(value)) return "array";
+    if (typeof value === "number") return Number.isInteger(value) ? "integer" : "number";
+    return typeof value;
 }
 
-function normaliseStatus(raw) {
-    if (!raw || typeof raw !== "object") return emptyStatus();
-    const server = ["connected", "connecting", "unreachable"].indexOf(raw.server) >= 0
-        ? raw.server : "connecting";
-    return {
-        server: server,
-        outbox: Math.max(0, Math.floor(num(raw.outbox, 0))),
-        last_error: typeof raw.last_error === "string" && raw.last_error !== "" ? raw.last_error : null
-    };
+function jsonEqual(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// The first error as "path: message", or "" when value is valid.
+function firstError(root, schema, value, path) {
+    if (schema.$ref !== undefined) {
+        const error = firstError(root, resolveRef(root, schema.$ref), value, path);
+        if (error !== "") return error;
+    }
+    if (schema.type !== undefined) {
+        const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+        const actual = typeOf(value);
+        const ok = types.some(function (t) { return t === actual || (t === "number" && actual === "integer"); });
+        if (!ok) return path + ": expected " + types.join(" or ") + ", got " + actual;
+    }
+    if (schema.const !== undefined && !jsonEqual(value, schema.const)) {
+        return path + ": expected " + JSON.stringify(schema.const);
+    }
+    if (schema.enum !== undefined && !schema.enum.some(function (e) { return jsonEqual(e, value); })) {
+        return path + ": not one of " + JSON.stringify(schema.enum);
+    }
+    if (typeof value === "number") {
+        if (schema.minimum !== undefined && value < schema.minimum) return path + ": below " + schema.minimum;
+        if (schema.maximum !== undefined && value > schema.maximum) return path + ": above " + schema.maximum;
+    }
+    if (typeof value === "string" && schema.pattern !== undefined && !(new RegExp(schema.pattern)).test(value)) {
+        return path + ": does not match " + schema.pattern;
+    }
+    if (typeOf(value) === "object") {
+        const required = schema.required || [];
+        for (let i = 0; i < required.length; i++) {
+            if (!Object.prototype.hasOwnProperty.call(value, required[i])) return path + ": missing " + required[i];
+        }
+        const properties = schema.properties || {};
+        for (const key in value) {
+            if (Object.prototype.hasOwnProperty.call(properties, key)) {
+                const error = firstError(root, properties[key], value[key], path + "." + key);
+                if (error !== "") return error;
+            } else if (schema.additionalProperties === false) {
+                return path + ": unexpected " + key;
+            } else if (schema.additionalProperties !== undefined && schema.additionalProperties !== true) {
+                const error = firstError(root, schema.additionalProperties, value[key], path + "." + key);
+                if (error !== "") return error;
+            }
+        }
+    }
+    if (typeOf(value) === "array" && schema.items !== undefined) {
+        for (let i = 0; i < value.length; i++) {
+            const error = firstError(root, schema.items, value[i], path + "[" + i + "]");
+            if (error !== "") return error;
+        }
+    }
+    if (schema.oneOf !== undefined) {
+        const errors = [];
+        let matches = 0;
+        for (let i = 0; i < schema.oneOf.length; i++) {
+            const error = firstError(root, schema.oneOf[i], value, path);
+            if (error === "") matches += 1;
+            else errors.push(error);
+        }
+        if (matches !== 1) {
+            return matches === 0 ? path + ": matches no case (" + errors.join("; ") + ")" : path + ": matches " + matches + " cases";
+        }
+    }
+    return "";
+}
+
+// {kind: "valid"} or {kind: "invalid", reason} for value against the
+// schema's $defs[name].
+function validate(schema, name, value) {
+    const error = firstError(schema, resolveRef(schema, "#/$defs/" + name), value, name);
+    return error === "" ? {kind: "valid"} : {kind: "invalid", reason: error};
 }
 
 function eventOf(event) { return {kind: "event", event: event}; }
 function invalid(reason) { return {kind: "invalid", reason: reason}; }
 
 // One socket line to {kind: "event", event} or {kind: "invalid", reason}.
-function parseLine(line) {
+// A line is an event only if the schema's daemonEvent accepts it whole; the
+// view then reads its fields as they are.
+function parseLine(line, schema) {
     let value;
     try {
         value = JSON.parse(line);
     } catch (e) {
         return invalid("not JSON");
     }
-    if (!value || typeof value !== "object" || Array.isArray(value)) return invalid("not an object");
-    if (value.type === "snapshot") {
-        const items = Array.isArray(value.items) ? value.items.map(normaliseItem).filter(Boolean) : [];
-        return eventOf({type: "snapshot", items: items, status: normaliseStatus(value.status)});
-    }
-    if (value.type === "upsert") {
-        const item = normaliseItem(value.item);
-        return item ? eventOf({type: "upsert", item: item, fresh: value.fresh === true}) : invalid("item without an id");
-    }
-    if (value.type === "remove") {
-        return typeof value.id === "number"
-            ? eventOf({type: "remove", id: value.id, reason: num(value.reason, 0)})
-            : invalid("remove without an id");
-    }
-    if (value.type === "status") {
-        return eventOf({type: "status", status: normaliseStatus(value.status)});
-    }
-    return invalid("unknown type");
+    const verdict = validate(schema, "daemonEvent", value);
+    return verdict.kind === "valid" ? eventOf(value) : invalid(verdict.reason);
 }
 
 // Fold one event into {items, status, popups}. popups lists the ids that show
@@ -169,7 +233,11 @@ function itemAt(items, index) {
 // What a popup shows for an id whose item has just gone: a blank card for
 // the moment before the popup list catches up.
 function placeholderItem(id) {
-    return normaliseItem({id: id});
+    return {
+        id: id, seq: "", origin: "local", host: "", app_name: "", app_icon: "", image: null,
+        summary: "", body: "", actions: [], urgency: URGENCY_NORMAL, resident: false,
+        local_only: false, created: 0, updated: 0, sender_alive: true
+    };
 }
 
 function hidePopup(state, id) {
