@@ -151,7 +151,7 @@ ShellRoot {
             root.toggleNotifications(root.focusedScreen());
         }
         function current(): string {
-            return (notifications.online ? "online" : notifications.connecting ? "connecting" : "offline")
+            return notifications.connection.kind
                 + " " + notifications.status.server
                 + " " + notifications.count
                 + " " + notifications.popups.length;
@@ -832,15 +832,14 @@ ShellRoot {
                         width: notificationControl.wide ? implicitWidth : parent.width
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
-                        text: NotificationModel.barText(notifications.online, notifications.connecting,
-                            notifications.status, notifications.count, notificationControl.wide)
-                        color: {
-                            if (!notifications.online)
-                                return notifications.connecting ? Theme.textMuted : Theme.warning;
-                            if (notifications.hasCritical) return Theme.danger;
-                            if (notifications.status.server === "unreachable") return Theme.warning;
-                            return notifications.count > 0 ? Theme.textPrimary : Theme.textMuted;
-                        }
+                        text: NotificationModel.barText(notifications.view, notifications.status,
+                            notifications.count, notificationControl.wide)
+                        color: ({
+                            danger: Theme.danger,
+                            warning: Theme.warning,
+                            primary: Theme.textPrimary,
+                            muted: Theme.textMuted
+                        })[NotificationModel.barTone(notifications.view, notifications.status, notifications.items)]
                         font.pixelSize: 10
                         font.family: Theme.fontFamily
                     }

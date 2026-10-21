@@ -37,9 +37,10 @@ Scope {
 
     onShownChanged: if (root.shown) root.keyboardUsed = false
 
-    readonly property string badge: Model.serverBadge(root.service.status)
-    readonly property string connectingBadge: root.service.online
-        && root.service.status.server === "connecting" ? "Connecting to sync server" : ""
+    // One tagged value decides what the card shows: offline, connecting,
+    // empty or ready (Model.viewState). Each block below selects itself.
+    readonly property var view: root.service.view
+    readonly property var badge: Model.statusBadge(root.view, root.service.status)
 
     LazyLoader {
         active: root.shown
@@ -82,11 +83,11 @@ Scope {
                 id: card
 
                 readonly property var plan: Model.centrePlan(veil.width, veil.height)
-                readonly property bool showList: root.service.online && root.service.count > 0
-                readonly property string badgeText: root.badge !== "" ? root.badge : root.connectingBadge
+                readonly property bool showList: root.view.kind === "ready"
+                readonly property string badgeText: root.badge.kind === "none" ? "" : root.badge.text
                 // The badge joins the title row only while the title and its
                 // count keep their full width there.
-                readonly property bool badgeInline: !plan.badgeOwnRow && badgeText !== ""
+                readonly property bool badgeInline: !plan.badgeOwnRow && root.badge.kind !== "none"
                     && titleText.implicitWidth + inlineBadge.implicitWidth + dismissAllButton.implicitWidth
                         + 30 + 3 * 6 <= content.width
 
@@ -119,7 +120,7 @@ Scope {
                         Text {
                             id: titleText
                             Layout.fillWidth: true
-                            text: root.service.online && root.service.count > 0
+                            text: root.view.kind === "ready"
                                 ? "Notifications  " + root.service.count
                                 : "Notifications"
                             elide: Text.ElideRight
@@ -133,13 +134,13 @@ Scope {
                             id: inlineBadge
                             visible: card.badgeInline
                             text: card.badgeText
-                            warn: root.badge !== ""
+                            warn: root.badge.kind === "local_only"
                         }
 
                         NotificationButton {
                             id: dismissAllButton
                             text: card.plan.dismissAllLabel
-                            enabled: root.service.online && root.service.count > 0
+                            enabled: root.view.kind === "ready"
                             onClicked: root.service.dismissAll()
                         }
 
@@ -167,16 +168,16 @@ Scope {
                     }
 
                     StatusBadge {
-                        visible: !card.badgeInline && text !== ""
+                        visible: !card.badgeInline && root.badge.kind !== "none"
                         Layout.maximumWidth: content.width
                         text: card.badgeText
-                        warn: root.badge !== ""
+                        warn: root.badge.kind === "local_only"
                     }
 
                     // Why the server is out of reach, in the daemon's words.
                     Text {
                         Layout.fillWidth: true
-                        visible: root.badge !== ""
+                        visible: root.badge.kind === "local_only"
                         text: {
                             let value = "New notifications stay on this desktop until the sync server answers.";
                             if (root.service.status.last_error)
@@ -192,54 +193,30 @@ Scope {
                         font.family: Theme.fontFamily
                     }
 
-                    // Daemon down, connecting, or empty: one message block.
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 6
-                        Layout.bottomMargin: 6
-                        visible: !card.showList
-                        spacing: 6
+                    // notifyd is down. The countdown is the backoff in
+                    // Model.socketLost; R or the button skips it.
+                    CentreMessage {
+                        visible: root.view.kind === "offline"
+                        title: "Notifications offline"
+                        warn: true
+                        detail: "notifyd is not answering on " + root.service.socketPath
+                            + ". Notifications will not show until it is back."
+                            + (root.view.kind === "offline" && root.view.retryInSeconds > 0
+                                ? " Trying again in " + root.view.retryInSeconds + " s." : "")
+                        actionText: "Try again now"
+                        onActionClicked: root.service.reconnectNow()
+                    }
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: {
-                                if (root.service.online) return "No notifications";
-                                if (root.service.connecting) return "Connecting to notifyd";
-                                return "Notifications offline";
-                            }
-                            wrapMode: Text.Wrap
-                            color: !root.service.online && !root.service.connecting
-                                ? Theme.warning : Theme.textSecondary
-                            font.pixelSize: 12
-                            font.family: Theme.fontFamily
-                            font.bold: true
-                        }
+                    CentreMessage {
+                        visible: root.view.kind === "connecting"
+                        title: "Connecting to notifyd"
+                        detail: "Waiting for the notification list."
+                    }
 
-                        Text {
-                            Layout.fillWidth: true
-                            text: {
-                                if (root.service.online)
-                                    return "New notifications from this desktop, your other desktops and your agents appear here.";
-                                if (root.service.connecting)
-                                    return "Waiting for the notification list.";
-                                return "notifyd is not answering on " + root.service.socketPath
-                                    + ". Notifications will not show until it is back."
-                                    + (root.service.retryInSeconds > 0
-                                        ? " Trying again in " + root.service.retryInSeconds + " s."
-                                        : "");
-                            }
-                            textFormat: Text.PlainText
-                            wrapMode: Text.Wrap
-                            color: Theme.textMuted
-                            font.pixelSize: 11
-                            font.family: Theme.fontFamily
-                        }
-
-                        NotificationButton {
-                            visible: !root.service.online && !root.service.connecting
-                            text: "Try again now"
-                            onClicked: root.service.reconnectNow()
-                        }
+                    CentreMessage {
+                        visible: root.view.kind === "empty"
+                        title: "No notifications"
+                        detail: "New notifications from this desktop, your other desktops and your agents appear here."
                     }
 
                     ListView {
@@ -257,8 +234,7 @@ Scope {
                         ScrollIndicator.vertical: ScrollIndicator { }
                         model: ScriptModel { values: root.service.items }
 
-                        readonly property var current: currentIndex >= 0 && currentIndex < root.service.items.length
-                            ? root.service.items[currentIndex] : null
+                        readonly property var current: Model.itemAt(root.service.items, currentIndex)
 
                         Component.onCompleted: {
                             forceActiveFocus();
@@ -279,8 +255,9 @@ Scope {
                         }
 
                         function runAction(index) {
-                            const item = list.current;
-                            if (!item || index < 0 || index >= item.actions.length) return;
+                            if (list.current.kind === "none") return;
+                            const item = list.current.value;
+                            if (index < 0 || index >= item.actions.length) return;
                             root.service.invoke(item.id, item.actions[index].key);
                         }
 
@@ -288,7 +265,7 @@ Scope {
                         // focus from the list.
                         Keys.priority: Keys.BeforeItem
                         Keys.onPressed: function (event) {
-                            const item = list.current;
+                            const current = list.current;
                             if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
                                 list.move(-1);
                             } else if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
@@ -296,16 +273,16 @@ Scope {
                             } else if (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace) {
                                 root.keyboardUsed = true;
                                 if (event.modifiers & Qt.ShiftModifier) root.service.dismissAll();
-                                else if (item) root.service.dismiss(item.id);
+                                else if (current.kind === "some") root.service.dismiss(current.value.id);
                             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                 root.keyboardUsed = true;
-                                if (item) {
-                                    const fallback = Model.defaultAction(item);
-                                    list.runAction(fallback ? item.actions.indexOf(fallback) : 0);
+                                if (current.kind === "some") {
+                                    const action = Model.enterAction(current.value);
+                                    if (action.kind === "some") list.runAction(action.value.index);
                                 }
                             } else if (event.key === Qt.Key_Space || event.key === Qt.Key_E) {
                                 root.keyboardUsed = true;
-                                if (item) root.toggleExpanded(item.id);
+                                if (current.kind === "some") root.toggleExpanded(current.value.id);
                             } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) {
                                 root.keyboardUsed = true;
                                 list.runAction(event.key - Qt.Key_1);
@@ -337,7 +314,8 @@ Scope {
                             onBodyClicked: {
                                 list.currentIndex = index;
                                 const fallback = Model.defaultAction(modelData);
-                                if (fallback && modelData.sender_alive) root.service.invoke(modelData.id, fallback.key);
+                                if (fallback.kind === "some" && modelData.sender_alive)
+                                    root.service.invoke(modelData.id, fallback.value.action.key);
                             }
                         }
                     }
@@ -363,9 +341,51 @@ Scope {
             Shortcut {
                 sequence: "R"
                 context: Qt.WindowShortcut
-                enabled: !root.service.online && !root.service.connecting
+                enabled: root.view.kind === "offline"
                 onActivated: root.service.reconnectNow()
             }
+        }
+    }
+
+    // A whole-card message for a view with no list. Shown only for its own
+    // view kind.
+    component CentreMessage: ColumnLayout {
+        id: message
+        property string title: ""
+        property string detail: ""
+        property bool warn: false
+        property string actionText: ""
+        signal actionClicked
+
+        Layout.fillWidth: true
+        Layout.topMargin: 6
+        Layout.bottomMargin: 6
+        spacing: 6
+
+        Text {
+            Layout.fillWidth: true
+            text: message.title
+            wrapMode: Text.Wrap
+            color: message.warn ? Theme.warning : Theme.textSecondary
+            font.pixelSize: 12
+            font.family: Theme.fontFamily
+            font.bold: true
+        }
+
+        Text {
+            Layout.fillWidth: true
+            text: message.detail
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            color: Theme.textMuted
+            font.pixelSize: 11
+            font.family: Theme.fontFamily
+        }
+
+        NotificationButton {
+            visible: message.actionText !== ""
+            text: message.actionText
+            onClicked: message.actionClicked()
         }
     }
 

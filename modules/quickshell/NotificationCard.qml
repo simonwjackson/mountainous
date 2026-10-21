@@ -42,9 +42,10 @@ Rectangle {
 
     readonly property bool critical: item.urgency === 2
     readonly property bool low: item.urgency === 0
-    readonly property string imageUrl: Model.fileUrl(item.image)
+    readonly property var image: Model.fileUrl(item.image)
+    readonly property string imageUrl: image.kind === "some" ? image.value : ""
     property bool imageFailed: false
-    readonly property bool hasImage: imageUrl !== "" && !imageFailed
+    readonly property bool hasImage: image.kind === "some" && !imageFailed
     readonly property var plan: Model.cardPlan(card.width, card.hasImage)
     readonly property string meta: {
         const parts = [];
@@ -56,26 +57,21 @@ Rectangle {
     }
     readonly property string headline: Model.headline(item)
     readonly property string localOnly: Model.localOnlyLabel(item)
-    readonly property bool hasDefault: Model.defaultAction(item) !== null
+    readonly property bool hasDefault: Model.defaultAction(item).kind === "some"
 
-    // Paths and icon names both arrive in app_icon. A missing name falls back
-    // to the app's desktop entry, then to its first letter.
-    readonly property string iconSource: {
-        const path = Model.fileUrl(item.app_icon);
-        if (path !== "") return path;
-        if (item.app_icon !== "") {
-            const named = Quickshell.iconPath(item.app_icon, true);
-            if (named !== "") return named;
-        }
-        if (item.app_name !== "") {
-            const entry = DesktopEntries.heuristicLookup(item.app_name);
-            if (entry && entry.icon) {
-                const fromEntry = Quickshell.iconPath(entry.icon, true);
-                if (fromEntry !== "") return fromEntry;
-            }
-        }
-        return "";
-    }
+    // Paths and icon names both arrive in app_icon; Model.iconChoice sets
+    // the order. Quickshell answers a missing icon with "", which these
+    // lookups turn into none.
+    readonly property var icon: Model.iconChoice(item,
+        function (name) {
+            const url = Quickshell.iconPath(name, true);
+            return url !== "" ? Model.some(url) : Model.none();
+        },
+        function (appName) {
+            const entry = DesktopEntries.heuristicLookup(appName);
+            const url = entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : "";
+            return url !== "" ? Model.some(url) : Model.none();
+        })
 
     onImageUrlChanged: imageFailed = false
 
@@ -134,14 +130,14 @@ Rectangle {
 
                 IconImage {
                     anchors.fill: parent
-                    visible: card.iconSource !== ""
-                    source: card.iconSource
+                    visible: card.icon.kind === "image"
+                    source: card.icon.kind === "image" ? card.icon.url : ""
                     implicitSize: 16
                 }
 
                 Rectangle {
                     anchors.fill: parent
-                    visible: card.iconSource === ""
+                    visible: card.icon.kind === "letter"
                     radius: Theme.radiusSmall
                     color: Theme.bgActive
                     border.width: 1
@@ -149,7 +145,7 @@ Rectangle {
 
                     Text {
                         anchors.centerIn: parent
-                        text: Model.letter(card.item)
+                        text: card.icon.kind === "letter" ? card.icon.letter : ""
                         color: Theme.textSecondary
                         font.pixelSize: 10
                         font.family: Theme.fontFamily

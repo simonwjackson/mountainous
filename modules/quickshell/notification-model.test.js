@@ -4,18 +4,9 @@ const fs = require("fs");
 const vm = require("vm");
 const assert = require("assert");
 
-const names = [
-    "parseLine", "applyEvent", "initialState", "sortItems", "hidePopup", "normaliseItem",
-    "subscribeOp", "dismissOp", "actionOp", "dismissAllOp", "backoffMs", "popupTimeoutMs",
-    "relativeTime", "calendarDay", "appLabel", "originLabel", "localOnlyLabel", "headline", "buttonLabel",
-    "defaultAction", "fileUrl", "barText", "serverBadge", "popupPlan", "fitPopups",
-    "centrePlan", "cardPlan"
-];
+// Top-level functions and vars land on the context, as QML exposes them.
 const model = {};
-vm.runInNewContext(
-    fs.readFileSync(process.argv[2], "utf8").replace(/^\.pragma library\s*$/m, "")
-        + "\nObject.assign(model, {" + names.join(", ") + "});",
-    {model});
+vm.runInNewContext(fs.readFileSync(process.argv[2], "utf8").replace(/^\.pragma library\s*$/m, ""), model);
 
 const now = Date.UTC(2026, 9, 20, 12, 0, 0);
 const item = (over) => Object.assign({
@@ -26,20 +17,25 @@ const item = (over) => Object.assign({
     sender_alive: true
 }, over);
 const line = (value) => JSON.stringify(value);
-const fold = (events) => events.reduce((s, e) => model.applyEvent(s, model.parseLine(line(e))), model.initialState());
+const ev = (value) => {
+    const parsed = model.parseLine(line(value));
+    assert.equal(parsed.kind, "event", line(value));
+    return parsed.event;
+};
+const fold = (events) => events.reduce((s, e) => model.applyEvent(s, ev(e)), model.initialState());
 
 // Parsing: malformed lines and items never reach the view.
 for (const bad of ["", "{", "null", "[]", "42", line({type: "nope"}), line({type: "upsert", item: {summary: "no id"}}),
     line({type: "remove"}), line({type: "upsert", item: item({id: "7"})})]) {
-    assert.equal(model.parseLine(bad), null, bad);
+    assert.equal(model.parseLine(bad).kind, "invalid", bad);
 }
-const parsed = model.parseLine(line({type: "upsert", fresh: true, item: {id: 9, urgency: 7, actions: [{key: ""}, {key: "x"}, null]}}));
+const parsed = ev({type: "upsert", fresh: true, item: {id: 9, urgency: 7, actions: [{key: ""}, {key: "x"}, null]}});
 assert.equal(parsed.item.urgency, 2);
 assert.deepEqual(parsed.item.actions, [{key: "x", label: ""}]);
 assert.equal(parsed.item.sender_alive, true, "missing sender_alive is not a dead sender");
 assert.equal(parsed.item.image, null);
-assert.equal(model.parseLine(line({type: "upsert", item: item({sender_alive: false})})).item.sender_alive, false);
-assert.deepEqual(model.parseLine(line({type: "status", status: {server: "weird", outbox: -3}})).status,
+assert.equal(ev({type: "upsert", item: item({sender_alive: false})}).item.sender_alive, false);
+assert.deepEqual(ev({type: "status", status: {server: "weird", outbox: -3}}).status,
     {server: "connecting", outbox: 0, last_error: null});
 
 // Folding: snapshot, upsert, fresh, remove, status.
@@ -48,30 +44,34 @@ let state = fold([
 ]);
 assert.deepEqual(state.items.map((i) => i.id), [2, 1], "newest first");
 assert.deepEqual(state.popups, [], "a snapshot never pops up");
-state = model.applyEvent(state, model.parseLine(line({type: "upsert", fresh: true, item: item({id: 3, updated: now - 5000, urgency: 2})})));
+state = model.applyEvent(state, ev(({type: "upsert", fresh: true, item: item({id: 3, updated: now - 5000, urgency: 2})})));
 assert.deepEqual(state.items.map((i) => i.id), [3, 2, 1], "critical first");
 assert.deepEqual(state.popups, [3]);
-state = model.applyEvent(state, model.parseLine(line({type: "upsert", fresh: false, item: item({id: 1, summary: "edited", updated: now + 1})})));
+state = model.applyEvent(state, ev(({type: "upsert", fresh: false, item: item({id: 1, summary: "edited", updated: now + 1})})));
 assert.equal(state.items.length, 3, "an upsert replaces by id");
 assert.deepEqual(state.popups, [3], "fresh false does not pop up");
-state = model.applyEvent(state, model.parseLine(line({type: "upsert", fresh: true, item: item({id: 2})})));
-state = model.applyEvent(state, model.parseLine(line({type: "upsert", fresh: true, item: item({id: 3, urgency: 2})})));
+state = model.applyEvent(state, ev(({type: "upsert", fresh: true, item: item({id: 2})})));
+state = model.applyEvent(state, ev(({type: "upsert", fresh: true, item: item({id: 3, urgency: 2})})));
 assert.deepEqual(state.popups, [3, 2], "a fresh repeat moves to the top, once");
 state = model.hidePopup(state, 3);
 assert.deepEqual(state.popups, [2]);
 assert.equal(state.items.length, 3, "a popup timeout keeps the item");
-state = model.applyEvent(state, model.parseLine(line({type: "remove", id: 2, reason: 2})));
+state = model.applyEvent(state, ev(({type: "remove", id: 2, reason: 2})));
 assert.deepEqual(state.items.map((i) => i.id), [3, 1]);
 assert.deepEqual(state.popups, []);
-state = model.applyEvent(state, model.parseLine(line({type: "status", status: {server: "unreachable", outbox: 4, last_error: "dial tcp: refused"}})));
+state = model.applyEvent(state, ev(({type: "status", status: {server: "unreachable", outbox: 4, last_error: "dial tcp: refused"}})));
 assert.equal(state.status.outbox, 4);
-assert.equal(model.serverBadge(state.status), "Local only, 4 queued");
-assert.equal(model.serverBadge({server: "unreachable", outbox: 0}), "Local only");
-assert.equal(model.serverBadge({server: "connected", outbox: 9}), "");
+const ready = {kind: "ready"};
+assert.deepEqual(model.statusBadge(ready, state.status), {kind: "local_only", text: "Local only, 4 queued"});
+assert.deepEqual(model.statusBadge({kind: "empty"}, {server: "unreachable", outbox: 0}), {kind: "local_only", text: "Local only"});
+assert.deepEqual(model.statusBadge(ready, {server: "connecting", outbox: 0}), {kind: "connecting", text: "Connecting to sync server"});
+assert.deepEqual(model.statusBadge(ready, {server: "connected", outbox: 9}), {kind: "none"});
+assert.deepEqual(model.statusBadge({kind: "offline", retryInSeconds: 3}, {server: "unreachable", outbox: 9}), {kind: "none"},
+    "a dead socket's status is not shown");
 const kept = state.items[1];
-state = model.applyEvent(state, model.parseLine(line({type: "upsert", fresh: false, item: item({id: 3, urgency: 2})})));
+state = model.applyEvent(state, ev(({type: "upsert", fresh: false, item: item({id: 3, urgency: 2})})));
 assert.strictEqual(state.items[1], kept, "untouched items keep identity, so delegates and scroll survive");
-state = model.applyEvent(state, model.parseLine(line({type: "snapshot", items: [], status: {server: "connected", outbox: 0}})));
+state = model.applyEvent(state, ev(({type: "snapshot", items: [], status: {server: "connected", outbox: 0}})));
 assert.deepEqual(state.items, []);
 const many = fold([{type: "snapshot", items: Array.from({length: 500}, (_, i) => item({id: i + 1, updated: now - i})), status: {}}]);
 assert.equal(many.items.length, 500);
@@ -85,9 +85,9 @@ assert.equal(model.dismissAllOp(), '{"op":"dismiss_all"}\n');
 assert.deepEqual([0, 1, 2, 3, 4, 5, 9].map(model.backoffMs), [1000, 2000, 4000, 8000, 16000, 30000, 30000]);
 
 // Readouts.
-assert.equal(model.popupTimeoutMs(item({urgency: 2})), 0, "critical does not time out");
-assert.equal(model.popupTimeoutMs(item({urgency: 0})), 4000);
-assert.equal(model.popupTimeoutMs(item({urgency: 1})), 7000);
+assert.deepEqual(model.popupTimeout(item({urgency: 2})), {kind: "never"}, "critical does not time out");
+assert.deepEqual(model.popupTimeout(item({urgency: 0})), {kind: "after", ms: 4000});
+assert.deepEqual(model.popupTimeout(item({urgency: 1})), {kind: "after", ms: 7000});
 assert.equal(model.relativeTime(now - 59999, now, 0), "now");
 assert.equal(model.relativeTime(now - 60000, now, 0), "1 min");
 assert.equal(model.relativeTime(now - 3600000, now, 0), "1 h");
@@ -119,18 +119,118 @@ assert.equal(model.buttonLabel({key: "default", label: ""}), "Open");
 assert.equal(model.buttonLabel({key: "default", label: "Default"}), "Open");
 assert.equal(model.buttonLabel({key: "default", label: "Show tab"}), "Show tab");
 assert.equal(model.buttonLabel({key: "snooze", label: ""}), "snooze");
-assert.equal(model.defaultAction(item()).key, "default");
-assert.equal(model.defaultAction(item({actions: []})), null);
-assert.equal(model.fileUrl("/tmp/a.png"), "file:///tmp/a.png");
-assert.equal(model.fileUrl("file:///tmp/a.png"), "file:///tmp/a.png");
-assert.equal(model.fileUrl("firefox"), "");
+assert.equal(model.defaultAction(item()).kind, "some");
+assert.equal(model.defaultAction(item()).value.action.key, "default");
+assert.equal(model.defaultAction(item()).value.index, 0);
+assert.deepEqual(model.defaultAction(item({actions: [{key: "a", label: "A"}]})), {kind: "none"});
+assert.equal(model.enterAction(item({actions: [{key: "a", label: "A"}, {key: "default", label: ""}]})).value.index, 1,
+    "Enter prefers the default action");
+assert.equal(model.enterAction(item({actions: [{key: "a", label: "A"}]})).value.action.key, "a", "then the first");
+assert.deepEqual(model.enterAction(item({actions: []})), {kind: "none"});
+assert.deepEqual(model.fileUrl("/tmp/a.png"), {kind: "some", value: "file:///tmp/a.png"});
+assert.deepEqual(model.fileUrl("file:///tmp/a.png"), {kind: "some", value: "file:///tmp/a.png"});
+assert.deepEqual(model.fileUrl("firefox"), {kind: "none"});
+assert.deepEqual(model.fileUrl(null), {kind: "none"});
+const found = model.findItem([item({id: 4}), item({id: 5})], 5);
+assert.equal(found.kind, "some");
+assert.equal(found.value.id, 5);
+assert.deepEqual(model.findItem([item({id: 4})], 6), {kind: "none"});
+assert.equal(model.itemAt([item({id: 4})], 0).value.id, 4);
+assert.deepEqual(model.itemAt([item({id: 4})], 1), {kind: "none"});
+assert.deepEqual(model.itemAt([item({id: 4})], -1), {kind: "none"});
+// Icons: a path first, then the theme name, then the desktop entry, then
+// the letter.
+const hit = (url) => () => model.some(url);
+const miss = () => model.none();
+assert.deepEqual(model.iconChoice(item({app_icon: "/i.png"}), miss, miss), {kind: "image", url: "file:///i.png"});
+assert.deepEqual(model.iconChoice(item(), hit("theme"), hit("entry")), {kind: "image", url: "theme"});
+assert.deepEqual(model.iconChoice(item(), miss, hit("entry")), {kind: "image", url: "entry"});
+assert.deepEqual(model.iconChoice(item(), miss, miss), {kind: "letter", letter: "F"});
+assert.deepEqual(model.iconChoice(item({app_icon: "", app_name: ""}), hit("x"), hit("y")), {kind: "letter", letter: "N"});
+
+// The connection: every kind, every input. An input that does not apply
+// leaves the state as it is.
+const T = 1000000;
+const inputs = {
+    socketOpened: (c) => model.socketOpened(c),
+    snapshotReceived: (c) => model.snapshotReceived(c),
+    socketLost: (c) => model.socketLost(c, T),
+    snapshotTimedOut: (c) => model.snapshotTimedOut(c, T),
+    retryDue: (c) => model.retryDue(c),
+    retryNow: (c) => model.retryNow(c),
+};
+const sample = {
+    connecting: {kind: "connecting", attempt: 2},
+    awaiting_snapshot: {kind: "awaiting_snapshot", attempt: 2},
+    connected: {kind: "connected"},
+    offline: {kind: "offline", attempt: 3, retryAt: T + 4000},
+};
+const expected = {
+    connecting: {
+        socketOpened: {kind: "awaiting_snapshot", attempt: 2},
+        socketLost: {kind: "offline", attempt: 3, retryAt: T + 4000},
+    },
+    awaiting_snapshot: {
+        snapshotReceived: {kind: "connected"},
+        socketLost: {kind: "offline", attempt: 3, retryAt: T + 4000},
+        snapshotTimedOut: {kind: "offline", attempt: 3, retryAt: T + 4000},
+        retryNow: {kind: "connecting", attempt: 0},
+    },
+    connected: {
+        snapshotReceived: {kind: "connected"},
+        socketLost: {kind: "offline", attempt: 1, retryAt: T + 1000},
+    },
+    offline: {
+        retryDue: {kind: "connecting", attempt: 3},
+        retryNow: {kind: "connecting", attempt: 0},
+    },
+};
+assert.deepEqual(Object.keys(sample), Array.from(model.CONNECTION_KINDS), "the test covers every kind the model has");
+for (const kind of model.CONNECTION_KINDS) {
+    for (const [name, apply] of Object.entries(inputs)) {
+        const want = (expected[kind] || {})[name];
+        const got = apply(sample[kind]);
+        if (want) assert.deepEqual(got, want, kind + " + " + name);
+        else assert.strictEqual(got, sample[kind], kind + " + " + name + " changes nothing");
+    }
+}
+assert.deepEqual(model.connectionStart(), {kind: "connecting", attempt: 0});
+// The backoff grows through repeated failures and resets on a snapshot.
+let conn = model.connectionStart();
+const delays = [];
+for (let i = 0; i < 7; i++) {
+    conn = model.socketLost(conn, 0);
+    delays.push(conn.retryAt);
+    conn = model.retryDue(conn);
+}
+assert.deepEqual(delays, [1000, 2000, 4000, 8000, 16000, 30000, 30000]);
+conn = model.snapshotReceived(model.socketOpened(conn));
+assert.deepEqual(model.socketLost(conn, 0), {kind: "offline", attempt: 1, retryAt: 1000});
+
+// The view: one tagged value per connection and item count.
+assert.deepEqual(model.viewState({kind: "offline", attempt: 1, retryAt: T + 1500}, [], T), {kind: "offline", retryInSeconds: 2});
+assert.deepEqual(model.viewState({kind: "offline", attempt: 1, retryAt: T - 5}, [], T), {kind: "offline", retryInSeconds: 0});
+assert.deepEqual(model.viewState(sample.connecting, [item()], T), {kind: "connecting"});
+assert.deepEqual(model.viewState(sample.awaiting_snapshot, [item()], T), {kind: "connecting"});
+assert.deepEqual(model.viewState(sample.connected, [], T), {kind: "empty"});
+assert.deepEqual(model.viewState(sample.connected, [item()], T), {kind: "ready"});
+assert.deepEqual(Array.from(model.VIEW_KINDS).sort(),
+    ["connecting", "empty", "offline", "ready"], "every view kind is reachable above");
+
 const up = {server: "connected", outbox: 0};
-assert.equal(model.barText(false, false, up, 3, false), "NTF !");
-assert.equal(model.barText(false, false, up, 3, true), "Notifications offline");
-assert.equal(model.barText(false, true, up, 3, false), "NTF");
-assert.equal(model.barText(true, false, up, 0, false), "NTF");
-assert.equal(model.barText(true, false, up, 12, false), "NTF 12");
-assert.equal(model.barText(true, false, {server: "unreachable", outbox: 2}, 12, true), "Notifications 12, local only");
+const off = {kind: "offline", retryInSeconds: 2};
+assert.equal(model.barText(off, up, 3, false), "NTF !");
+assert.equal(model.barText(off, up, 3, true), "Notifications offline");
+assert.equal(model.barText({kind: "connecting"}, up, 3, false), "NTF");
+assert.equal(model.barText({kind: "empty"}, up, 0, false), "NTF");
+assert.equal(model.barText(ready, up, 12, false), "NTF 12");
+assert.equal(model.barText(ready, {server: "unreachable", outbox: 2}, 12, true), "Notifications 12, local only");
+assert.equal(model.barTone(off, up, [item({urgency: 2})]), "warning", "a dead socket outranks an urgent item");
+assert.equal(model.barTone({kind: "connecting"}, up, []), "muted");
+assert.equal(model.barTone(ready, {server: "unreachable"}, [item({urgency: 2})]), "danger");
+assert.equal(model.barTone(ready, {server: "unreachable"}, [item()]), "warning");
+assert.equal(model.barTone(ready, up, [item()]), "primary");
+assert.equal(model.barTone({kind: "empty"}, up, []), "muted");
 
 // Layout plans: one unit either side of every threshold.
 const cp = (w) => model.cardPlan(w, true);

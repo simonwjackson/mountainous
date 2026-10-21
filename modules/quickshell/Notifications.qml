@@ -17,29 +17,22 @@ Scope {
     readonly property string socketPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp")
         + "/notify-sync/ui.sock"
 
-    // Public state. online means a snapshot came in on the current
-    // connection; before that the items would be stale or empty.
-    property bool online: false
-    property bool connecting: true
+    // Public state. connection is the one tagged socket state (see
+    // Model.CONNECTION_KINDS); view is what to draw for it (Model.VIEW_KINDS).
+    property var connection: Model.connectionStart()
     property var items: []
     property var status: Model.emptyStatus()
     property var popups: []
+    property double now: Date.now()
+    readonly property var view: Model.viewState(root.connection, root.items, root.now)
     readonly property int count: items.length
-    readonly property bool hasCritical: items.some(function (i) { return i.urgency === 2; })
-    readonly property int retryInSeconds: Math.ceil(retryRemaining / 1000)
-
-    property int attempt: 0
-    property int retryRemaining: 0
 
     // A fresh upsert for an item whose popup already shows: its timeout
     // starts again.
     signal popupRefreshed(int id)
 
-    function byId(id) {
-        for (let i = 0; i < root.items.length; i++) {
-            if (root.items[i].id === id) return root.items[i];
-        }
-        return null;
+    function find(id) {
+        return Model.findItem(root.items, id);
     }
 
     function apply(event) {
@@ -50,18 +43,15 @@ Scope {
     }
 
     function handleLine(line) {
-        const event = Model.parseLine(line);
-        if (!event) {
-            if (line.trim() !== "") console.warn("notifications: ignored line " + line.slice(0, 120));
+        const parsed = Model.parseLine(line);
+        if (parsed.kind === "invalid") {
+            if (line.trim() !== "") console.warn("notifications: ignored line (" + parsed.reason + ") " + line.slice(0, 120));
             return;
         }
-        if (event.type === "snapshot") {
-            root.online = true;
-            root.connecting = false;
-            root.attempt = 0;
-        }
+        const event = parsed.event;
+        if (event.type === "snapshot") root.enter(Model.snapshotReceived(root.connection));
         // Updates before the snapshot would be folded onto nothing.
-        if (!root.online) return;
+        if (root.connection.kind !== "connected") return;
         const showing = event.type === "upsert" && event.fresh
             && root.popups.indexOf(event.item.id) >= 0;
         root.apply(event);
@@ -70,10 +60,9 @@ Scope {
 
     function send(line) {
         const sock = root.sock;
-        if (!sock || !sock.connected) return false;
+        if (root.connection.kind !== "connected" || !sock) return;
         sock.write(line);
         sock.flush();
-        return true;
     }
 
     function dismiss(id) {
@@ -89,8 +78,8 @@ Scope {
     // A disabled action never reaches the daemon: once the sender has gone,
     // nobody is listening for it.
     function invoke(id, key) {
-        const item = root.byId(id);
-        if (!item || !item.sender_alive) return;
+        const found = root.find(id);
+        if (found.kind === "none" || !found.value.sender_alive) return;
         root.hidePopup(id);
         root.send(Model.actionOp(id, key));
     }
@@ -104,30 +93,36 @@ Scope {
         root.popups = [];
     }
 
-    function lost() {
-        snapshotWait.stop();
-        root.online = false;
-        root.items = [];
-        root.popups = [];
-        root.status = Model.emptyStatus();
-        root.scheduleRetry();
-    }
-
-    function scheduleRetry() {
-        if (retry.running) return;
-        const delay = Model.backoffMs(root.attempt);
-        root.attempt += 1;
-        root.connecting = false;
-        root.retryRemaining = delay;
-        retry.interval = delay;
-        retry.start();
-        countdown.start();
-    }
-
     function reconnectNow() {
-        if (root.online) return;
-        root.attempt = 0;
-        root.connect();
+        root.enter(Model.retryNow(root.connection));
+    }
+
+    // Every change of connection state goes through here, and here is where
+    // each state's effects start: the transitions themselves are pure.
+    function enter(next) {
+        const previous = root.connection;
+        if (next === previous) return;
+        root.connection = next;
+        root.now = Date.now();
+        if (next.kind === previous.kind && next.kind !== "connecting") return;
+
+        snapshotWait.stop();
+        retry.stop();
+        if (next.kind === "connecting") {
+            root.openSocket();
+        } else if (next.kind === "awaiting_snapshot") {
+            root.sock.write(Model.subscribeOp());
+            root.sock.flush();
+            snapshotWait.start();
+        } else if (next.kind === "offline") {
+            root.closeSocket();
+            const state = Model.initialState();
+            root.items = state.items;
+            root.status = state.status;
+            root.popups = state.popups;
+            retry.interval = Math.max(1, next.retryAt - Date.now());
+            retry.start();
+        }
     }
 
     // Every attempt gets a new Socket. Quickshell 0.3.1's Socket keeps the
@@ -135,23 +130,21 @@ Scope {
     // connected to true again does nothing (src/io/socket.cpp, setConnected).
     property var sock: null
 
-    function connect() {
-        retry.stop();
-        countdown.stop();
-        snapshotWait.stop();
-        root.retryRemaining = 0;
-        root.connecting = true;
-        if (root.sock) {
-            const old = root.sock;
-            root.sock = null;
-            old.destroy();
-        }
+    function closeSocket() {
+        if (!root.sock) return;
+        const old = root.sock;
+        root.sock = null;
+        old.destroy();
+    }
+
+    function openSocket() {
+        root.closeSocket();
         const sock = socketComponent.createObject(root, {path: root.socketPath});
         root.sock = sock;
         sock.connected = true;
     }
 
-    Component.onCompleted: root.connect()
+    Component.onCompleted: root.openSocket()
 
     Component {
         id: socketComponent
@@ -167,21 +160,16 @@ Scope {
 
             onConnectionStateChanged: {
                 if (root.sock !== socket) return;
-                if (socket.connected) {
-                    root.connecting = true;
-                    socket.write(Model.subscribeOp());
-                    socket.flush();
-                    snapshotWait.restart();
-                } else {
-                    root.lost();
-                }
+                root.enter(socket.connected
+                    ? Model.socketOpened(root.connection)
+                    : Model.socketLost(root.connection, Date.now()));
             }
 
             // A missing socket file reports an error and never connects, so
-            // the state change above does not fire. Both paths end in one
-            // retry.
+            // the state change above does not fire.
             onError: function (error) {
-                if (root.sock === socket && !socket.connected) root.lost();
+                if (root.sock === socket && !socket.connected)
+                    root.enter(Model.socketLost(root.connection, Date.now()));
             }
         }
     }
@@ -189,22 +177,21 @@ Scope {
     Timer {
         id: retry
         repeat: false
-        onTriggered: root.connect()
+        onTriggered: root.enter(Model.retryDue(root.connection))
     }
 
-    // A daemon that takes the connection but never sends its snapshot is as
-    // good as down. Drop it and go through the same backoff.
     Timer {
         id: snapshotWait
-        interval: 5000
+        interval: Model.SNAPSHOT_WAIT_MS
         repeat: false
-        onTriggered: if (!root.online) root.lost()
+        onTriggered: root.enter(Model.snapshotTimedOut(root.connection, Date.now()))
     }
 
+    // The offline countdown in the centre.
     Timer {
-        id: countdown
         interval: 1000
         repeat: true
-        onTriggered: root.retryRemaining = Math.max(0, root.retryRemaining - 1000)
+        running: root.connection.kind === "offline"
+        onTriggered: root.now = Date.now()
     }
 }

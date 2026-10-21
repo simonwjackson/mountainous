@@ -46,8 +46,8 @@ Scope {
             margins { top: 6; right: 6 }
             // Above a fullscreen window only while an urgent item shows.
             WlrLayershell.layer: root.service.popups.some(function (id) {
-                const item = root.service.byId(id);
-                return item !== null && item.urgency === 2;
+                const found = root.service.find(id);
+                return found.kind === "some" && found.value.urgency === 2;
             }) ? WlrLayer.Overlay : WlrLayer.Top
             WlrLayershell.namespace: "mountainous-notifications"
             color: "transparent"
@@ -95,7 +95,9 @@ Scope {
 
                         readonly property bool hovered: hover.hovered
 
-                        item: root.service.byId(modelData) || Model.normaliseItem({id: modelData})
+                        readonly property var found: root.service.find(modelData)
+                        item: found.kind === "some" ? found.value : Model.placeholderItem(modelData)
+                        readonly property var timeout: Model.popupTimeout(popup.item)
                         width: win.plan.cardWidth
                         visible: index < win.visibleCount
                         bodyLines: win.plan.bodyLines
@@ -108,7 +110,8 @@ Scope {
                         onActionRequested: function (key) { root.service.invoke(modelData, key); }
                         onBodyClicked: {
                             const fallback = Model.defaultAction(popup.item);
-                            if (fallback && popup.item.sender_alive) root.service.invoke(modelData, fallback.key);
+                            if (fallback.kind === "some" && popup.item.sender_alive)
+                                root.service.invoke(modelData, fallback.value.action.key);
                             else root.service.hidePopup(modelData);
                         }
 
@@ -121,8 +124,8 @@ Scope {
                             id: countdown
                             from: 1
                             to: 0
-                            duration: Math.max(1, Model.popupTimeoutMs(popup.item))
-                            running: Model.popupTimeoutMs(popup.item) > 0 && popup.visible
+                            duration: popup.timeout.kind === "after" ? popup.timeout.ms : 1
+                            running: popup.timeout.kind === "after" && popup.visible
                             paused: running && popup.hovered
                             onFinished: root.service.hidePopup(popup.modelData)
                         }
