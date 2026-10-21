@@ -44,7 +44,7 @@ Rectangle {
         textFormat: Text.PlainText
         text: root.keyHint !== "" ? root.keyHint + "  " + root.text : root.text
         color: root.enabled ? Theme.accent : Theme.textOff
-        font.pixelSize: 11
+        font.pixelSize: NotificationStyle.textBody
         font.family: Theme.fontFamily
     }
 

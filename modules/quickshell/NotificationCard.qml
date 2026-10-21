@@ -130,12 +130,12 @@ Rectangle {
         x: card.plan.padding
         y: card.plan.padding
         width: card.plan.inner
-        spacing: 6
+        spacing: NotificationStyle.gap
 
         // Title row: who sent it, then the readouts, then dismiss.
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: NotificationStyle.gap
 
             Item {
                 Layout.preferredWidth: 16
@@ -160,7 +160,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: card.icon.kind === "letter" ? card.icon.letter : ""
                         color: Theme.textSecondary
-                        font.pixelSize: 10
+                        font.pixelSize: NotificationStyle.textDetail
                         font.family: Theme.fontFamily
                         font.bold: true
                     }
@@ -177,7 +177,7 @@ Rectangle {
                 maximumLineCount: card.expanded ? undefined : 1
                 elide: Text.ElideRight
                 color: Theme.textMuted
-                font.pixelSize: 10
+                font.pixelSize: NotificationStyle.textDetail
                 font.family: Theme.fontFamily
             }
 
@@ -189,7 +189,7 @@ Rectangle {
                 textFormat: Text.PlainText
                 elide: Text.ElideLeft
                 color: card.item.origin === "remote" ? Theme.textSecondary : Theme.textDetail
-                font.pixelSize: 10
+                font.pixelSize: NotificationStyle.textDetail
                 font.family: Theme.fontFamily
             }
 
@@ -205,7 +205,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: "×"
                     color: dismissArea.containsMouse ? Theme.textPrimary : Theme.textMuted
-                    font.pixelSize: 15
+                    font.pixelSize: NotificationStyle.textGlyph
                     font.family: Theme.fontFamily
                 }
 
@@ -231,18 +231,18 @@ Rectangle {
             wrapMode: card.expanded ? Text.Wrap : Text.NoWrap
             elide: card.expanded ? Text.ElideNone : Text.ElideRight
             color: card.item.origin === "remote" ? Theme.textSecondary : Theme.textDetail
-            font.pixelSize: 10
+            font.pixelSize: NotificationStyle.textDetail
             font.family: Theme.fontFamily
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: NotificationStyle.gapWide
 
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignTop
-                spacing: 3
+                spacing: NotificationStyle.gapTight
 
                 Text {
                     id: headlineText
@@ -254,7 +254,7 @@ Rectangle {
                     maximumLineCount: card.expanded ? undefined : 2
                     elide: Text.ElideRight
                     color: card.low ? Theme.textSecondary : Theme.textPrimary
-                    font.pixelSize: 12
+                    font.pixelSize: NotificationStyle.textTitle
                     font.family: Theme.fontFamily
                     font.bold: true
                 }
@@ -271,7 +271,7 @@ Rectangle {
                     maximumLineCount: card.expanded ? undefined : card.bodyLines
                     elide: Text.ElideRight
                     color: Theme.textSecondary
-                    font.pixelSize: 11
+                    font.pixelSize: NotificationStyle.textBody
                     font.family: Theme.fontFamily
                     lineHeight: 1.1
                 }
@@ -281,7 +281,7 @@ Rectangle {
                     visible: card.expandable && (card.expanded || card.cut)
                     text: card.moreText
                     color: moreArea.containsMouse ? Theme.textPrimary : Theme.accent
-                    font.pixelSize: 10
+                    font.pixelSize: NotificationStyle.textDetail
                     font.family: Theme.fontFamily
                     font.underline: moreArea.containsMouse
 
@@ -344,7 +344,7 @@ Rectangle {
         Flow {
             Layout.fillWidth: true
             visible: card.critical || card.localOnly !== ""
-            spacing: 6
+            spacing: NotificationStyle.gap
 
             Rectangle {
                 visible: card.critical
@@ -360,7 +360,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: card.showClock ? "Urgent, stays until dismissed" : "Urgent"
                     color: Theme.danger
-                    font.pixelSize: 10
+                    font.pixelSize: NotificationStyle.textDetail
                     font.family: Theme.fontFamily
                 }
             }
@@ -384,7 +384,7 @@ Rectangle {
                     text: card.localOnly + ", not synced"
                     textFormat: Text.PlainText
                     color: Theme.textMuted
-                    font.pixelSize: 10
+                    font.pixelSize: NotificationStyle.textDetail
                     font.family: Theme.fontFamily
                 }
             }
@@ -396,7 +396,7 @@ Rectangle {
             text: "The app that sent this has closed. Its buttons no longer work."
             wrapMode: Text.Wrap
             color: Theme.warning
-            font.pixelSize: 10
+            font.pixelSize: NotificationStyle.textDetail
             font.family: Theme.fontFamily
         }
 
@@ -405,7 +405,7 @@ Rectangle {
         Flow {
             Layout.fillWidth: true
             visible: card.item.actions.length > 0
-            spacing: 6
+            spacing: NotificationStyle.gap
 
             Repeater {
                 id: actionButtons

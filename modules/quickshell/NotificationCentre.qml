@@ -105,13 +105,13 @@ Scope {
                     id: content
                     anchors.fill: parent
                     anchors.margins: card.plan.padding
-                    spacing: 8
+                    spacing: NotificationStyle.gapSection
 
                     // Title row. The two controls on the right never leave it.
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 30
-                        spacing: 6
+                        spacing: NotificationStyle.gap
 
                         Text {
                             id: titleText
@@ -121,7 +121,7 @@ Scope {
                                 : "Notifications"
                             elide: Text.ElideRight
                             color: Theme.textPrimary
-                            font.pixelSize: 14
+                            font.pixelSize: NotificationStyle.textHeading
                             font.family: Theme.fontFamily
                             font.bold: true
                         }
@@ -150,7 +150,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: "×"
                                 color: Theme.textSecondary
-                                font.pixelSize: 16
+                                font.pixelSize: NotificationStyle.textGlyphLarge
                                 font.family: Theme.fontFamily
                             }
 
@@ -185,7 +185,7 @@ Scope {
                         maximumLineCount: 4
                         elide: Text.ElideRight
                         color: Theme.textDetail
-                        font.pixelSize: 10
+                        font.pixelSize: NotificationStyle.textDetail
                         font.family: Theme.fontFamily
                     }
 
@@ -379,7 +379,7 @@ Scope {
                         text: "↑↓ select  ←→ or Tab action  1–9 run  Enter run  Del dismiss  Space more  PgUp PgDn scroll  Esc close"
                         wrapMode: Text.Wrap
                         color: Theme.textDetail
-                        font.pixelSize: 9
+                        font.pixelSize: NotificationStyle.textHint
                         font.family: Theme.fontFamily
                     }
                 }
@@ -413,14 +413,14 @@ Scope {
         Layout.fillWidth: true
         Layout.topMargin: 6
         Layout.bottomMargin: 6
-        spacing: 6
+        spacing: NotificationStyle.gap
 
         Text {
             Layout.fillWidth: true
             text: message.title
             wrapMode: Text.Wrap
             color: message.warn ? Theme.warning : Theme.textSecondary
-            font.pixelSize: 12
+            font.pixelSize: NotificationStyle.textTitle
             font.family: Theme.fontFamily
             font.bold: true
         }
@@ -431,7 +431,7 @@ Scope {
             textFormat: Text.PlainText
             wrapMode: Text.Wrap
             color: Theme.textMuted
-            font.pixelSize: 11
+            font.pixelSize: NotificationStyle.textBody
             font.family: Theme.fontFamily
         }
 
@@ -464,7 +464,7 @@ Scope {
             wrapMode: Text.Wrap
             text: parent.text
             color: parent.warn ? Theme.warning : Theme.textMuted
-            font.pixelSize: 10
+            font.pixelSize: NotificationStyle.textDetail
             font.family: Theme.fontFamily
         }
     }

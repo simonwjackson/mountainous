@@ -25,6 +25,7 @@ let
     "NotificationCentre.qml"
     "NotificationCard.qml"
     "NotificationButton.qml"
+    "NotificationStyle.qml"
     "notification-model.js"
   ];
 
