@@ -18,6 +18,15 @@ import (
 	"time"
 )
 
+// HTTPError exposes the status code without leaking response bodies or tokens.
+type HTTPError struct{ Status int }
+
+func (e *HTTPError) Error() string { return fmt.Sprintf("ntfy HTTP %d", e.Status) }
+func permanentDeliveryError(err error) bool {
+	var h *HTTPError
+	return errors.As(err, &h) && h.Status >= 400 && h.Status < 500 && h.Status != 408 && h.Status != 429
+}
+
 type Client struct {
 	Base, Public, Token, Button string
 	HTTP                        *http.Client
@@ -71,7 +80,7 @@ func (c *Client) request(ctx context.Context, method, path string, body any) (*h
 	}
 	if r.StatusCode < 200 || r.StatusCode >= 300 {
 		r.Body.Close()
-		return nil, fmt.Errorf("ntfy HTTP %d", r.StatusCode)
+		return nil, &HTTPError{Status: r.StatusCode}
 	}
 	return r, nil
 }

@@ -252,7 +252,7 @@ func Payload(i Item, public, button string) Message {
 	if i.Urgency == 2 {
 		priority = 5
 	}
-	return Message{Topic: Topic, Sequence: i.Seq, Title: clip(i.Summary, 1024), Message: clip(body, 4096), Priority: priority, Tags: []string{"ns1_" + base64.RawURLEncoding.EncodeToString(meta)}, Actions: acts}
+	return Message{Topic: Topic, Sequence: i.Seq, Title: clip(i.Summary, 1024), Message: clip(body, 4095), Priority: priority, Tags: []string{"ns1_" + base64.RawURLEncoding.EncodeToString(meta)}, Actions: acts}
 }
 func nowMillis() int64 { return time.Now().UnixMilli() }
 

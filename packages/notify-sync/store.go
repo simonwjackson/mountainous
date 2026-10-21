@@ -13,6 +13,7 @@ import (
 )
 
 type record struct {
+	Failure   string `json:"failure,omitempty"`
 	Revision  uint64 `json:"revision"`
 	Item      Item   `json:"item"`
 	Sender    string `json:"sender"`
@@ -242,6 +243,17 @@ func (s *Store) pendingCount() (int, error) {
 	var n int
 	err = s.db.QueryRow(`SELECT count(*) FROM records WHERE pending<>''`).Scan(&n)
 	return n + len(meta.Controls), err
+}
+func (s *Store) deliveryError() error {
+	var failure string
+	err := s.db.QueryRow(`SELECT json_extract(data,'$.failure') FROM records WHERE coalesce(json_extract(data,'$.failure'),'')<>'' ORDER BY id LIMIT 1`).Scan(&failure)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return errors.New(failure)
 }
 func (s *state) alloc() (uint32, error) {
 	if s.Next == 0 {

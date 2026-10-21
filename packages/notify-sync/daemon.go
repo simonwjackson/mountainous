@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
@@ -147,6 +148,7 @@ func (d *Daemon) Notify(in NotifyInput) (uint32, error) {
 		r.Item.Actions = []Action{}
 	}
 	r.Revision++
+	r.Failure = ""
 	r.Sender = in.Sender
 	r.Open = true
 	if !local {
@@ -166,6 +168,7 @@ func closeRecord(r *record, reason uint32, propagate bool) ([]UIEvent, []Signal)
 		return nil, nil
 	}
 	r.Open = false
+	r.Failure = ""
 	r.Revision++
 	r.Item.Updated = nowMillis()
 	r.Pending = ""
@@ -401,6 +404,9 @@ func (d *Daemon) setStatus(server string, err error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	status := Status{Server: server}
+	if err == nil {
+		err = d.Store.deliveryError()
+	}
 	if err != nil {
 		s := err.Error()
 		status.LastError = &s
@@ -431,7 +437,10 @@ func (d *Daemon) Flush(ctx context.Context) error {
 		ctl := s.Controls[0]
 		d.mu.Unlock()
 		if err = d.Client.Control(ctx, ctl); err != nil {
-			return err
+			if !permanentDeliveryError(err) {
+				return err
+			}
+			slog.Error("dropping rejected control request", "seq", ctl.Seq, "error", err)
 		}
 		d.mu.Lock()
 		s, err = d.Store.loadMeta()
@@ -473,7 +482,22 @@ func (d *Daemon) Flush(ctx context.Context) error {
 			return errors.New("invalid outbox operation")
 		}
 		if err != nil {
-			return err
+			if !permanentDeliveryError(err) {
+				return err
+			}
+			slog.Error("parking rejected notification delivery", "seq", snapshot.Item.Seq, "operation", snapshot.Pending, "error", err)
+			d.mu.Lock()
+			current, loadErr := d.Store.get(id)
+			if loadErr == nil && current != nil && current.Revision == snapshot.Revision {
+				current.Pending = ""
+				current.Failure = fmt.Sprintf("%s: %s", snapshot.Item.Seq, err)
+				loadErr = d.Store.put(current)
+			}
+			d.mu.Unlock()
+			if loadErr != nil {
+				return loadErr
+			}
+			continue
 		}
 		d.mu.Lock()
 		r, err = d.Store.get(id)
@@ -572,26 +596,31 @@ func (d *Daemon) Prune(cached []Message, now int64) error {
 	return d.Store.save(s)
 }
 func (d *Daemon) SyncOnce(ctx context.Context) error {
-	if err := d.Flush(ctx); err != nil {
-		return err
-	}
+	deliveryErr := d.Flush(ctx)
+	var receiveErr error
 	for _, topic := range []string{Topic, ControlTopic} {
 		cursor, err := d.cursor(topic)
-		if err != nil {
-			return err
+		if err == nil {
+			var messages []Message
+			messages, err = d.Client.Poll(ctx, topic, cursor)
+			if err == nil {
+				err = d.HandleBatch(messages)
+			}
 		}
-		ms, err := d.Client.Poll(ctx, topic, cursor)
-		if err != nil {
-			return err
-		}
-		if err := d.HandleBatch(ms); err != nil {
-			return err
-		}
+		receiveErr = errors.Join(receiveErr, err)
 	}
-	d.mu.Lock()
-	d.caughtUp = true
-	d.mu.Unlock()
-	return nil
+	if receiveErr == nil {
+		d.mu.Lock()
+		d.caughtUp = true
+		d.mu.Unlock()
+	}
+	err := errors.Join(deliveryErr, receiveErr)
+	if err != nil {
+		d.setStatus("unreachable", err)
+	} else {
+		d.setStatus("connected", nil)
+	}
+	return err
 }
 func (d *Daemon) Run(ctx context.Context) error {
 	tick := time.NewTicker(250 * time.Millisecond)
