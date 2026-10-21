@@ -46,7 +46,7 @@ class Fixture:
             HISTORY_EXIT="0",
             PCENT="40",
             DF_EXIT="0",
-            MOUNT_UUID="",
+            BCACHEFS_TARGETS="",
             MOUNT_IDENTITY="b11bc61f-1632-4809-8c94-efbf39614f22",
             EXPECTED_IDENTITY="b11bc61f-1632-4809-8c94-efbf39614f22",
         )
@@ -68,7 +68,7 @@ class Fixture:
             "findmnt",
             """
             case "$*" in
-              *bcachefs*) printf '%s\\n' "$MOUNT_UUID" ;;
+              *bcachefs*) printf '%s\\n' "$BCACHEFS_TARGETS" ;;
               *--fstab*) printf '%s\\n' "$EXPECTED_IDENTITY" ;;
               *) printf '%s\\n' "$MOUNT_IDENTITY" ;;
             esac
@@ -101,7 +101,7 @@ class Fixture:
         return dev
 
     def unzen(self):
-        self.env["MOUNT_UUID"] = UUID
+        self.env["BCACHEFS_TARGETS"] = "/"
         for number, label in enumerate(
             ("onboard.sn770", "card.samsung", "card.sabrent"), 1
         ):
@@ -370,6 +370,17 @@ class Probe(unittest.TestCase):
             self.fx.probe("unzen"),
         )
 
+    def test_multi_device_bcachefs_mount_is_detected_without_findmnt_uuid(self):
+        # Unzen 2026-10-21: findmnt prints no UUID for dev1:dev2:dev3 sources.
+        self.fx.unzen()
+        lines = self.fx.probe("unzen")
+        self.assertNotIn(("bad", "expected Unzen bcachefs filesystem is not mounted"), lines)
+        shutil.rmtree(self.fx.fs / UUID)
+        self.assertIn(
+            ("bad", "expected Unzen bcachefs filesystem is not mounted"),
+            self.fx.probe("unzen"),
+        )
+
     def test_bcachefs_lifetime_counters_and_mounted_detection(self):
         self.fx.member(1, "onboard.sn770", "ro", (14, 118, 175))
         self.assertEqual(
@@ -382,7 +393,7 @@ class Probe(unittest.TestCase):
         shutil.rmtree(self.fx.fs)
         self.assertIn(
             ("bad", "mounted bcachefs has no readable sysfs probes"),
-            self.fx.probe(MOUNT_UUID=UUID),
+            self.fx.probe(BCACHEFS_TARGETS="/"),
         )
 
 

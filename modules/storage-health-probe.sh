@@ -133,11 +133,15 @@ for conf in "$etc"/snapraid-*.conf; do
 
 done
 
-mounted=$(findmnt -rn -t bcachefs -o UUID 2>/dev/null) || mounted=
+# findmnt leaves UUID empty for a multi-device bcachefs source (dev1:dev2:dev3),
+# so detect mounts by target. The kernel publishes /sys/fs/bcachefs/<uuid> only
+# while that filesystem is mounted, which identifies the expected one.
+mounted=$(findmnt -rn -t bcachefs -o TARGET 2>/dev/null) || mounted=
 if [ "$profile" = unzen ]; then
   expected_uuid=e5f61013-d6f5-260d-9883-4dda26b2c293
-  grep -Fxq "$expected_uuid" <<<"$mounted" || say bad 'expected Unzen bcachefs filesystem is not mounted'
-  [ -d "$bcachefs_root/$expected_uuid" ] || say bad 'expected Unzen bcachefs sysfs probes missing'
+  if [ -z "$mounted" ] || [ ! -d "$bcachefs_root/$expected_uuid" ]; then
+    say bad 'expected Unzen bcachefs filesystem is not mounted'
+  fi
   freshness bcachefs-scrub-root.service 'bcachefs scrub' "$scrub_max_hours"
 fi
 filesystems=0
