@@ -99,7 +99,11 @@ in
         builtins.toJSON {
           defaultProvider = "cliproxyapi";
           defaultModel = lib.removePrefix "cliproxyapi/" cfg.lanes.chat;
-          enabledModels = lib.unique (lib.attrValues cfg.lanes);
+          # A fallback that is not enabled resolves to no model, and the
+          # instance refuses to start. Enable every lane model and fallback.
+          enabledModels = lib.unique (
+            lib.attrValues cfg.lanes ++ lib.concatLists (lib.attrValues cfg.laneFallbacks)
+          );
         }
       );
       lanesSeed = pkgs.writeText "pi-assistant-model-lanes.json" (
