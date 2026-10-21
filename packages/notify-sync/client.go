@@ -56,6 +56,9 @@ func ReadToken(path string) (string, error) {
 	return t, nil
 }
 func (c *Client) request(ctx context.Context, method, path string, body any) (*http.Response, error) {
+	return c.requestUsing(ctx, c.HTTP, method, path, body)
+}
+func (c *Client) requestUsing(ctx context.Context, client *http.Client, method, path string, body any) (*http.Response, error) {
 	var data []byte
 	var err error
 	if body != nil {
@@ -74,7 +77,7 @@ func (c *Client) request(ctx context.Context, method, path string, body any) (*h
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	r, err := c.HTTP.Do(req)
+	r, err := client.Do(req)
 	if err != nil {
 		return nil, errors.New("ntfy transport failed")
 	}
@@ -148,6 +151,35 @@ func (c *Client) Poll(ctx context.Context, topic, cursor string) ([]Message, err
 	}
 	return out, scanner.Err()
 }
+
+// Watch treats the live JSON stream only as a wake-up source. Ordered polls
+// remain authoritative; a live event can precede its cache insert.
+func (c *Client) Watch(ctx context.Context, wake func(Message)) error {
+	client := *c.HTTP
+	client.Timeout = 0
+	response, err := c.requestUsing(ctx, &client, "GET", "/"+Topic+","+ControlTopic+"/json?since=none", nil)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	scanner := bufio.NewScanner(response.Body)
+	scanner.Buffer(make([]byte, 4096), 1<<20)
+	for scanner.Scan() {
+		var m Message
+		if err = json.Unmarshal(scanner.Bytes(), &m); err != nil {
+			return err
+		}
+		switch m.Event {
+		case "open", "message", "message_clear", "message_delete":
+			wake(m)
+		}
+	}
+	if err = scanner.Err(); err != nil {
+		return err
+	}
+	return io.EOF
+}
+
 func Fold(messages []Message) map[string]Message {
 	open := map[string]Message{}
 	for _, m := range messages {

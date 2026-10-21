@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"sort"
 	"sync"
-	"time"
 )
 
 type Signal struct {
@@ -29,10 +28,11 @@ type Daemon struct {
 	clients       map[chan UIEvent]struct{}
 	status        Status
 	caughtUp      bool
+	outboxWake    chan struct{}
 }
 
 func NewDaemon(s *Store, c *Client, host string) *Daemon {
-	return &Daemon{Store: s, Client: c, Host: SafeName(host), clients: map[chan UIEvent]struct{}{}, status: Status{Server: "connecting"}}
+	return &Daemon{Store: s, Client: c, Host: SafeName(host), clients: map[chan UIEvent]struct{}{}, status: Status{Server: "connecting"}, outboxWake: make(chan struct{}, 1)}
 }
 func outbox(s *state) int {
 	n := len(s.Controls)
@@ -106,6 +106,22 @@ func (d *Daemon) commit(s *state, events []UIEvent, signals []Signal) error {
 	return nil
 }
 
+func (d *Daemon) commitDelivery(s *state, events []UIEvent, signals []Signal) error {
+	if err := d.commit(s, events, signals); err != nil {
+		return err
+	}
+	if outbox(s) > 0 {
+		d.wakeOutbox()
+	}
+	return nil
+}
+func (d *Daemon) wakeOutbox() {
+	select {
+	case d.outboxWake <- struct{}{}:
+	default:
+	}
+}
+
 type NotifyInput struct {
 	Sender, AppName, AppIcon, Summary, Body string
 	Replaces                                uint32
@@ -160,7 +176,7 @@ func (d *Daemon) Notify(in NotifyInput) (uint32, error) {
 		r.Pending = ""
 	}
 	item := r.Item
-	err = d.commit(s, []UIEvent{{Type: "upsert", Item: &item, Fresh: true}}, nil)
+	err = d.commitDelivery(s, []UIEvent{{Type: "upsert", Item: &item, Fresh: true}}, nil)
 	return item.ID, err
 }
 func closeRecord(r *record, reason uint32, propagate bool) ([]UIEvent, []Signal) {
@@ -193,7 +209,7 @@ func (d *Daemon) Close(id, reason uint32, propagate bool, sender string) error {
 		return nil
 	}
 	es, ss := closeRecord(r, reason, propagate)
-	return d.commit(s, es, ss)
+	return d.commitDelivery(s, es, ss)
 }
 func invoke(s *state, r *record, key string, remoteControl bool) ([]UIEvent, []Signal) {
 	if r == nil || !r.Open || !r.Item.SenderAlive {
@@ -251,7 +267,7 @@ func (d *Daemon) Operation(op UIOperation) error {
 			es, ss = invoke(s, r, op.Key, false)
 		}
 	}
-	return d.commit(s, es, ss)
+	return d.commitDelivery(s, es, ss)
 }
 func (d *Daemon) SenderGone(sender string) error {
 	d.mu.Lock()
@@ -276,7 +292,7 @@ func (d *Daemon) SenderGone(sender string) error {
 			}
 		}
 	}
-	return d.commit(s, es, nil)
+	return d.commitDelivery(s, es, nil)
 }
 
 // Session IDs prevent unique-name reuse after a bus restart from reviving a
@@ -306,7 +322,7 @@ func (d *Daemon) Session(id string) error {
 		}
 	}
 	s.Session = id
-	return d.commit(s, es, nil)
+	return d.commitDelivery(s, es, nil)
 }
 func (d *Daemon) Senders() ([]string, error) {
 	d.mu.Lock()
@@ -352,6 +368,9 @@ func (d *Daemon) HandleBatch(messages []Message) error {
 					r := s.bySeq(ctl.Seq)
 					if r != nil && r.Item.Origin == "local" {
 						newEvents, newSignals := invoke(s, r, ctl.Key, true)
+						if r.Pending != "" && len(newSignals) > 0 {
+							d.wakeOutbox()
+						}
 						es = append(es, newEvents...)
 						ss = append(ss, newSignals...)
 					}
@@ -594,66 +613,4 @@ func (d *Daemon) Prune(cached []Message, now int64) error {
 		}
 	}
 	return d.Store.save(s)
-}
-func (d *Daemon) SyncOnce(ctx context.Context) error {
-	deliveryErr := d.Flush(ctx)
-	var receiveErr error
-	for _, topic := range []string{Topic, ControlTopic} {
-		cursor, err := d.cursor(topic)
-		if err == nil {
-			var messages []Message
-			messages, err = d.Client.Poll(ctx, topic, cursor)
-			if err == nil {
-				err = d.HandleBatch(messages)
-			}
-		}
-		receiveErr = errors.Join(receiveErr, err)
-	}
-	if receiveErr == nil {
-		d.mu.Lock()
-		d.caughtUp = true
-		d.mu.Unlock()
-	}
-	err := errors.Join(deliveryErr, receiveErr)
-	if err != nil {
-		d.setStatus("unreachable", err)
-	} else {
-		d.setStatus("connected", nil)
-	}
-	return err
-}
-func (d *Daemon) Run(ctx context.Context) error {
-	tick := time.NewTicker(250 * time.Millisecond)
-	defer tick.Stop()
-	expiry := time.NewTicker(time.Minute)
-	defer expiry.Stop()
-	for {
-		err := d.SyncOnce(ctx)
-		if ctx.Err() != nil {
-			return nil
-		}
-		if err != nil {
-			d.setStatus("unreachable", err)
-		} else {
-			d.setStatus("connected", nil)
-		}
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-tick.C:
-		case <-expiry.C:
-			ms, err := d.Client.Poll(ctx, Topic, "all")
-			if err == nil {
-				if err = d.ReconcileExpiry(ms, time.Now().Unix()); err != nil {
-					return err
-				}
-				ctls, pollErr := d.Client.Poll(ctx, ControlTopic, "all")
-				if pollErr == nil {
-					if err = d.Prune(append(ms, ctls...), time.Now().Unix()); err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
 }
