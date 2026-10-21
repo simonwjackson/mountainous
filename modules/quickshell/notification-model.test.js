@@ -7,7 +7,7 @@ const assert = require("assert");
 const names = [
     "parseLine", "applyEvent", "initialState", "sortItems", "hidePopup", "normaliseItem",
     "subscribeOp", "dismissOp", "actionOp", "dismissAllOp", "backoffMs", "popupTimeoutMs",
-    "relativeTime", "appLabel", "originLabel", "localOnlyLabel", "headline", "buttonLabel",
+    "relativeTime", "calendarDay", "appLabel", "originLabel", "localOnlyLabel", "headline", "buttonLabel",
     "defaultAction", "fileUrl", "barText", "serverBadge", "popupPlan", "fitPopups",
     "centrePlan", "cardPlan"
 ];
@@ -88,13 +88,24 @@ assert.deepEqual([0, 1, 2, 3, 4, 5, 9].map(model.backoffMs), [1000, 2000, 4000, 
 assert.equal(model.popupTimeoutMs(item({urgency: 2})), 0, "critical does not time out");
 assert.equal(model.popupTimeoutMs(item({urgency: 0})), 4000);
 assert.equal(model.popupTimeoutMs(item({urgency: 1})), 7000);
-assert.equal(model.relativeTime(now - 59999, now), "now");
-assert.equal(model.relativeTime(now - 60000, now), "1 min");
-assert.equal(model.relativeTime(now - 3600000, now), "1 h");
-assert.equal(model.relativeTime(now - 86400000 * 2, now), "Oct 18");
-assert.equal(model.relativeTime(now + 100000, now), "now");
-assert.equal(model.relativeTime(now + 200000, now), "");
-assert.equal(model.relativeTime(0, now), "");
+assert.equal(model.relativeTime(now - 59999, now, 0), "now");
+assert.equal(model.relativeTime(now - 60000, now, 0), "1 min");
+assert.equal(model.relativeTime(now - 3600000, now, 0), "1 h");
+assert.equal(model.relativeTime(now - 86400000 * 2, now, 0), "Oct 18");
+assert.equal(model.relativeTime(now + 100000, now, 0), "now");
+assert.equal(model.relativeTime(now + 200000, now, 0), "");
+assert.equal(model.relativeTime(0, now, 0), "");
+// The day is the reader's, from the offset passed in, at both extremes and
+// on both sides of local midnight. None of this reads the machine's zone.
+const KIRITIMATI = 14 * 60, BAKER = -12 * 60;
+assert.equal(model.calendarDay(Date.UTC(2026, 9, 18, 9, 59, 59, 999), KIRITIMATI), "Oct 18", "23:59:59.999 on the 18th");
+assert.equal(model.calendarDay(Date.UTC(2026, 9, 18, 10, 0, 0, 0), KIRITIMATI), "Oct 19", "00:00 on the 19th");
+assert.equal(model.calendarDay(Date.UTC(2026, 9, 18, 11, 59, 59, 999), BAKER), "Oct 17", "23:59:59.999 on the 17th");
+assert.equal(model.calendarDay(Date.UTC(2026, 9, 18, 12, 0, 0, 0), BAKER), "Oct 18", "00:00 on the 18th");
+assert.equal(model.calendarDay(Date.UTC(2026, 9, 31, 23, 30), 60), "Nov 1", "a month boundary");
+assert.equal(model.calendarDay(Date.UTC(2026, 11, 31, 23, 30), 60), "Jan 1", "a year boundary");
+assert.equal(model.relativeTime(Date.UTC(2026, 9, 18, 10, 0), now, KIRITIMATI), "Oct 19");
+assert.equal(model.relativeTime(Date.UTC(2026, 9, 18, 10, 0), now, BAKER), "Oct 17");
 assert.equal(model.originLabel(item({origin: "remote", host: "hiyori"})), "from hiyori");
 assert.equal(model.originLabel(item({origin: "remote", host: ""})), "from another device");
 assert.equal(model.originLabel(item()), "");

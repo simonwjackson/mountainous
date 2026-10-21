@@ -30,7 +30,11 @@ in
       # The protocol fold and every layout plan, under node, at each threshold.
       checks.notification-view =
         pkgs.runCommand "notification-view" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
-          node ${./quickshell/notification-model.test.js} ${./quickshell/notification-model.js}
+          # The same results in the two most distant zones prove that no
+          # readout depends on the machine's zone.
+          for zone in UTC Pacific/Kiritimati Etc/GMT+12; do
+            TZ=$zone node ${./quickshell/notification-model.test.js} ${./quickshell/notification-model.js}
+          done
           touch $out
         '';
     };

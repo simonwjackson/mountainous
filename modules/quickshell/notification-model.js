@@ -172,17 +172,31 @@ function popupTimeoutMs(item) {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// "now", "4 min", "3 h", "Oct 18". A missing or future time reads "now"
-// within two minutes and is left blank beyond that.
-function relativeTime(ms, now) {
+// The reader's calendar day for an epoch, as "Oct 18". tzOffsetMinutes is
+// the local offset east of UTC (+840 in Kiritimati, -720 at UTC-12). The
+// epoch is shifted by it and then read only with UTC accessors, so the result
+// depends on the arguments and never on the machine's time zone.
+function calendarDay(epochMs, tzOffsetMinutes) {
+    const local = new Date(epochMs + tzOffsetMinutes * 60000);
+    return MONTHS[local.getUTCMonth()] + " " + local.getUTCDate();
+}
+
+// The local offset east of UTC at one moment, for calendarDay. Only the QML
+// caller reads the machine's zone, and only through this.
+function localOffsetMinutes(epochMs) {
+    return -new Date(epochMs).getTimezoneOffset();
+}
+
+// "now", "4 min", "3 h", "Oct 18". A missing time, or one more than two
+// minutes in the future (clock skew between hosts), shows nothing.
+function relativeTime(ms, now, tzOffsetMinutes) {
     if (!ms) return "";
     const delta = now - ms;
     if (delta < -120000) return "";
     if (delta < 60000) return "now";
     if (delta < 3600000) return Math.floor(delta / 60000) + " min";
     if (delta < 86400000) return Math.floor(delta / 3600000) + " h";
-    const d = new Date(ms);
-    return MONTHS[d.getMonth()] + " " + d.getDate();
+    return calendarDay(ms, tzOffsetMinutes);
 }
 
 // The app's display name. Empty names fall back to the host, then a word.

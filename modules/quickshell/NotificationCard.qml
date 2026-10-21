@@ -17,6 +17,9 @@ Rectangle {
 
     required property var item
     property double now: Date.now()
+    // The reader's offset east of UTC at the moment of rendering; see
+    // Model.calendarDay.
+    property int tzOffsetMinutes: Model.localOffsetMinutes(now)
     property int bodyLines: 3
     // The centre lets a long body open in place; popups send the reader there.
     property bool expandable: false
@@ -47,7 +50,7 @@ Rectangle {
         const parts = [];
         const origin = Model.originLabel(item);
         if (origin !== "") parts.push(origin);
-        const when = Model.relativeTime(item.updated, card.now);
+        const when = Model.relativeTime(item.updated, card.now, card.tzOffsetMinutes);
         if (when !== "") parts.push(when);
         return parts.join("  ");
     }
