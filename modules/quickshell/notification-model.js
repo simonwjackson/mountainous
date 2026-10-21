@@ -334,6 +334,27 @@ function enterAction(item) {
     return item.actions.length > 0 ? some({action: item.actions[0], index: 0}) : none();
 }
 
+// The keyboard's place among the selected item's actions:
+// {kind: "none"} or {kind: "action", index}. Arrows and Tab move it and
+// wrap, so every action is reachable, not only the first nine.
+function noActionFocus() {
+    return {kind: "none"};
+}
+
+function moveActionFocus(focus, count, delta) {
+    if (count <= 0) return noActionFocus();
+    if (focus.kind === "none") return {kind: "action", index: delta > 0 ? 0 : count - 1};
+    return {kind: "action", index: ((focus.index + delta) % count + count) % count};
+}
+
+// What Enter runs: the focused action, else enterAction.
+function enterTarget(focus, item) {
+    if (focus.kind === "action" && focus.index < item.actions.length) {
+        return some({action: item.actions[focus.index], index: focus.index});
+    }
+    return enterAction(item);
+}
+
 // A file URL for a path or file URL, as some(url); none for anything else.
 function fileUrl(value) {
     if (typeof value !== "string" || value === "") return none();

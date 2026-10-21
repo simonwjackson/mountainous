@@ -147,6 +147,10 @@ class Fixtures:
         items = [
             self.critical(),
             self.everything_long(),
+            self.item(app_name="CI", summary="Build matrix: 12 jobs failed",
+                      body="Pick a job to re-run. Only the first nine have number keys.",
+                      actions=[{"key": f"rerun-{n}", "label": f"Re-run job {n}"} for n in range(1, 13)],
+                      resident=True, created=NOW - 45_000),
             self.item(app_name="An application with an unreasonably long display name that never stops",
                       summary="A summary that runs well past two lines because some apps put the whole message in the summary instead of the body",
                       body=("Paragraph one of a long body. " * 12) + "\n\n" + ("Second paragraph, still going. " * 10),

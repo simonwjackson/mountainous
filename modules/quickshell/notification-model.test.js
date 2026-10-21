@@ -148,6 +148,23 @@ assert.deepEqual(model.iconChoice(item(), miss, hit("entry")), {kind: "image", u
 assert.deepEqual(model.iconChoice(item(), miss, miss), {kind: "letter", letter: "F"});
 assert.deepEqual(model.iconChoice(item({app_icon: "", app_name: ""}), hit("x"), hit("y")), {kind: "letter", letter: "N"});
 
+// Action focus reaches every action, wraps both ways, and Enter follows it.
+const twelve = item({actions: Array.from({length: 12}, (_, i) => ({key: "k" + i, label: "Action " + i}))});
+let focus = model.noActionFocus();
+const visited = [];
+for (let i = 0; i < 12; i++) {
+    focus = model.moveActionFocus(focus, 12, 1);
+    visited.push(focus.index);
+}
+assert.deepEqual(visited, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+assert.deepEqual(model.moveActionFocus(focus, 12, 1), {kind: "action", index: 0}, "wraps forward");
+assert.deepEqual(model.moveActionFocus(model.noActionFocus(), 12, -1), {kind: "action", index: 11}, "back from none lands on the last");
+assert.deepEqual(model.moveActionFocus({kind: "action", index: 0}, 12, -1), {kind: "action", index: 11}, "wraps back");
+assert.deepEqual(model.moveActionFocus({kind: "action", index: 3}, 0, 1), {kind: "none"}, "no actions, no focus");
+assert.equal(model.enterTarget({kind: "action", index: 11}, twelve).value.action.key, "k11");
+assert.equal(model.enterTarget(model.noActionFocus(), twelve).value.action.key, "k0");
+assert.equal(model.enterTarget({kind: "action", index: 20}, twelve).value.action.key, "k0", "a stale focus falls back");
+
 // The connection: every kind, every input. An input that does not apply
 // leaves the state as it is.
 const T = 1000000;

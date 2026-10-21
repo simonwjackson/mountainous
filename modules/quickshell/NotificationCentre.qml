@@ -24,8 +24,14 @@ Scope {
     signal closeRequested
 
     property bool keyboardUsed: false
+    // Which action on the selected card the keyboard is on. It goes back to
+    // none whenever the selection moves.
+    property var actionFocus: Model.noActionFocus()
 
-    onShownChanged: if (root.shown) root.keyboardUsed = false
+    onShownChanged: if (root.shown) {
+        root.keyboardUsed = false;
+        root.actionFocus = Model.noActionFocus();
+    }
 
     // One tagged value decides what the card shows: offline, connecting,
     // empty or ready (Model.viewState). Each block below selects itself.
@@ -242,6 +248,29 @@ Scope {
                             positionViewAtIndex(index, ListView.Beginning);
                         }
 
+                        // Move among the selected card's actions, and scroll
+                        // the focused button into view: a card with many
+                        // actions can be taller than the list.
+                        function moveAction(delta) {
+                            if (list.current.kind === "none") return;
+                            root.keyboardUsed = true;
+                            root.actionFocus = Model.moveActionFocus(root.actionFocus,
+                                list.current.value.actions.length, delta);
+                            Qt.callLater(list.revealAction);
+                        }
+
+                        function revealAction() {
+                            if (root.actionFocus.kind !== "action") return;
+                            const row = list.itemAtIndex(list.currentIndex);
+                            const button = row ? row.actionButton(root.actionFocus.index) : null;
+                            if (!button) return;
+                            const top = button.mapToItem(list.contentItem, 0, 0).y;
+                            const margin = 8;
+                            if (top - margin < list.contentY) list.contentY = top - margin;
+                            else if (top + button.height + margin > list.contentY + list.height)
+                                list.contentY = top + button.height + margin - list.height;
+                        }
+
                         // An open card can be taller than the list. These
                         // keys move through it a page at a time.
                         function scrollBy(pixels) {
@@ -251,6 +280,7 @@ Scope {
                         }
                         // Hidden while offline, which drops focus. Take it back.
                         onVisibleChanged: if (visible) forceActiveFocus()
+                        onCurrentIndexChanged: root.actionFocus = Model.noActionFocus()
                         onCountChanged: {
                             if (count > 0 && currentIndex < 0) currentIndex = 0;
                             if (currentIndex >= count) currentIndex = count - 1;
@@ -283,10 +313,16 @@ Scope {
                                 root.keyboardUsed = true;
                                 if (event.modifiers & Qt.ShiftModifier) root.service.dismissAll();
                                 else if (current.kind === "some") root.service.dismiss(current.value.id);
+                            } else if (event.key === Qt.Key_Right
+                                       || (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ShiftModifier))) {
+                                list.moveAction(1);
+                            } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backtab
+                                       || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier))) {
+                                list.moveAction(-1);
                             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                                 root.keyboardUsed = true;
                                 if (current.kind === "some") {
-                                    const action = Model.enterAction(current.value);
+                                    const action = Model.enterTarget(root.actionFocus, current.value);
                                     if (action.kind === "some") list.runAction(action.value.index);
                                 }
                             } else if (event.key === Qt.Key_Space || event.key === Qt.Key_E) {
@@ -323,6 +359,7 @@ Scope {
                             lastRow: index === list.count - 1
                             expanded: root.service.expandedIds[modelData.id] === true
                             selected: root.keyboardUsed && list.currentIndex === index
+                            actionFocus: selected ? root.actionFocus : Model.noActionFocus()
 
                             onDismissRequested: root.service.dismiss(modelData.id)
                             onActionRequested: function (key) { root.service.invoke(modelData.id, key); }
@@ -339,7 +376,7 @@ Scope {
                     Text {
                         Layout.fillWidth: true
                         visible: card.plan.showHint && card.showList
-                        text: "↑↓ select  1–9 action  Enter open  Del dismiss  Space more  PgUp PgDn scroll  Esc close"
+                        text: "↑↓ select  ←→ or Tab action  1–9 run  Enter run  Del dismiss  Space more  PgUp PgDn scroll  Esc close"
                         wrapMode: Text.Wrap
                         color: Theme.textDetail
                         font.pixelSize: 9

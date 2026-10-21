@@ -13,6 +13,8 @@ Rectangle {
     // number, so the key is never a guess.
     property string keyHint: ""
     property bool quiet: false
+    // The keyboard's current action in the centre.
+    property bool focused: false
     property real maxWidth: 400
     signal clicked
 
@@ -28,9 +30,9 @@ Rectangle {
         if (area.containsMouse) return Theme.bgSelected;
         return root.quiet ? "transparent" : Theme.bgInput;
     }
-    border.width: 1
-    border.color: !root.enabled ? Theme.bgSelected
-        : area.pressed ? Theme.accent : Theme.borderMuted
+    border.width: root.focused ? 2 : 1
+    border.color: root.focused || (root.enabled && area.pressed) ? Theme.accent
+        : root.enabled ? Theme.borderMuted : Theme.bgSelected
 
     Text {
         id: label

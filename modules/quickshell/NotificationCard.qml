@@ -29,6 +29,13 @@ Rectangle {
     property string moreText: card.expanded ? "Show less" : "Show more"
     // The keyboard's current card in the centre. Drawn as a focus ring.
     property bool selected: false
+    // The keyboard's current action on this card (Model.moveActionFocus).
+    property var actionFocus: Model.noActionFocus()
+
+    // The button for one action, so the centre can scroll it into view.
+    function actionButton(index) {
+        return actionButtons.itemAt(index);
+    }
     // A popup floats over windows and needs its own edge. A centre row sits
     // in the centre's card, so a rule between rows is enough.
     property bool framed: true
@@ -401,6 +408,7 @@ Rectangle {
             spacing: 6
 
             Repeater {
+                id: actionButtons
                 model: card.item.actions
 
                 NotificationButton {
@@ -409,6 +417,7 @@ Rectangle {
                     text: Model.buttonLabel(modelData)
                     keyHint: card.selected && index < 9 ? String(index + 1) : ""
                     maxWidth: card.plan.buttonMaxWidth
+                    focused: card.actionFocus.kind === "action" && card.actionFocus.index === index
                     enabled: card.item.sender_alive
                     onClicked: card.actionRequested(modelData.key)
                 }
