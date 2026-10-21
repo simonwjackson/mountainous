@@ -109,7 +109,6 @@ Rectangle {
     // A click on the body runs the app's default action when it has one.
     MouseArea {
         anchors.fill: parent
-        enabled: card.item.sender_alive || !card.hasDefault
         cursorShape: card.hasDefault && card.item.sender_alive ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: card.bodyClicked()
     }
