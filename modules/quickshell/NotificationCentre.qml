@@ -23,17 +23,7 @@ Scope {
     property bool shown: false
     signal closeRequested
 
-    // Kept on the Scope, so a resize or a new item does not fold a body the
-    // reader opened.
-    property var expandedIds: ({})
     property bool keyboardUsed: false
-
-    function toggleExpanded(id) {
-        const next = Object.assign({}, root.expandedIds);
-        if (next[id]) delete next[id];
-        else next[id] = true;
-        root.expandedIds = next;
-    }
 
     onShownChanged: if (root.shown) root.keyboardUsed = false
 
@@ -239,6 +229,25 @@ Scope {
                         Component.onCompleted: {
                             forceActiveFocus();
                             currentIndex = count > 0 ? 0 : -1;
+                            Qt.callLater(list.takeRequest);
+                        }
+
+                        // A popup's "Show all" lands here, on its open card.
+                        function takeRequest() {
+                            const request = root.service.takeFocusRequest();
+                            if (request.kind === "none") return;
+                            const index = root.service.items.findIndex(function (i) { return i.id === request.value; });
+                            if (index < 0) return;
+                            currentIndex = index;
+                            positionViewAtIndex(index, ListView.Beginning);
+                        }
+
+                        // An open card can be taller than the list. These
+                        // keys move through it a page at a time.
+                        function scrollBy(pixels) {
+                            const top = originY;
+                            const bottom = originY + Math.max(0, contentHeight - height);
+                            contentY = Math.max(top, Math.min(bottom, contentY + pixels));
                         }
                         // Hidden while offline, which drops focus. Take it back.
                         onVisibleChanged: if (visible) forceActiveFocus()
@@ -282,7 +291,15 @@ Scope {
                                 }
                             } else if (event.key === Qt.Key_Space || event.key === Qt.Key_E) {
                                 root.keyboardUsed = true;
-                                if (current.kind === "some") root.toggleExpanded(current.value.id);
+                                if (current.kind === "some") root.service.toggleExpanded(current.value.id);
+                            } else if (event.key === Qt.Key_PageDown) {
+                                list.scrollBy(list.height * 0.9);
+                            } else if (event.key === Qt.Key_PageUp) {
+                                list.scrollBy(-list.height * 0.9);
+                            } else if (event.key === Qt.Key_Home) {
+                                list.contentY = list.originY;
+                            } else if (event.key === Qt.Key_End) {
+                                list.scrollBy(list.contentHeight);
                             } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) {
                                 root.keyboardUsed = true;
                                 list.runAction(event.key - Qt.Key_1);
@@ -302,15 +319,14 @@ Scope {
                             width: list.width
                             now: clock.now
                             bodyLines: card.plan.bodyLines
-                            expandable: true
                             framed: false
                             lastRow: index === list.count - 1
-                            expanded: root.expandedIds[modelData.id] === true
+                            expanded: root.service.expandedIds[modelData.id] === true
                             selected: root.keyboardUsed && list.currentIndex === index
 
                             onDismissRequested: root.service.dismiss(modelData.id)
                             onActionRequested: function (key) { root.service.invoke(modelData.id, key); }
-                            onExpandToggled: root.toggleExpanded(modelData.id)
+                            onExpandToggled: root.service.toggleExpanded(modelData.id)
                             onBodyClicked: {
                                 list.currentIndex = index;
                                 const fallback = Model.defaultAction(modelData);
@@ -323,8 +339,8 @@ Scope {
                     Text {
                         Layout.fillWidth: true
                         visible: card.plan.showHint && card.showList
-                        text: "↑↓ select  1–9 action  Enter open  Del dismiss  Space more  Esc close"
-                        elide: Text.ElideRight
+                        text: "↑↓ select  1–9 action  Enter open  Del dismiss  Space more  PgUp PgDn scroll  Esc close"
+                        wrapMode: Text.Wrap
                         color: Theme.textDetail
                         font.pixelSize: 9
                         font.family: Theme.fontFamily
@@ -394,21 +410,21 @@ Scope {
         property string text: ""
         property bool warn: false
         implicitWidth: badgeText.implicitWidth + 12
-        implicitHeight: 20
+        implicitHeight: Math.max(20, badgeText.contentHeight + 6)
         Layout.preferredWidth: implicitWidth
-        Layout.preferredHeight: 20
+        Layout.preferredHeight: implicitHeight
         radius: Theme.radiusSmall
         color: "transparent"
         border.width: 1
         border.color: warn ? Theme.warning : Theme.bgSeparator
 
+        // Wraps rather than cut, if the card is ever this narrow.
         Text {
             id: badgeText
-            anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 6
-            verticalAlignment: Text.AlignVCenter
-            elide: Text.ElideRight
+            x: 6
+            width: parent.width - 12
+            anchors.verticalCenter: parent.verticalCenter
+            wrapMode: Text.Wrap
             text: parent.text
             color: parent.warn ? Theme.warning : Theme.textMuted
             font.pixelSize: 10

@@ -21,9 +21,12 @@ Rectangle {
     // Model.calendarDay.
     property int tzOffsetMinutes: Model.localOffsetMinutes(now)
     property int bodyLines: 3
-    // The centre lets a long body open in place; popups send the reader there.
-    property bool expandable: false
+    // Cut text is always one step from its full form. In the centre that
+    // step opens the card in place, and an open card cuts nothing. A popup
+    // sends the reader to the centre, with the item open there.
+    property bool expandable: true
     property bool expanded: false
+    property string moreText: card.expanded ? "Show less" : "Show more"
     // The keyboard's current card in the centre. Drawn as a focus ring.
     property bool selected: false
     // A popup floats over windows and needs its own edge. A centre row sits
@@ -46,7 +49,10 @@ Rectangle {
     readonly property string imageUrl: image.kind === "some" ? image.value : ""
     property bool imageFailed: false
     readonly property bool hasImage: image.kind === "some" && !imageFailed
-    readonly property var plan: Model.cardPlan(card.width, card.hasImage)
+    readonly property var plan: Model.cardPlan(card.width, card.hasImage, card.expanded)
+    // True while any text on the card is cut short.
+    readonly property bool cut: appText.truncated || inlineMeta.truncated || metaLine.truncated
+        || headlineText.truncated || bodyText.truncated
     readonly property string meta: {
         const parts = [];
         const origin = Model.originLabel(item);
@@ -160,7 +166,8 @@ Rectangle {
                 text: Model.appLabel(card.item)
                 textFormat: Text.PlainText
                 wrapMode: card.expanded ? Text.Wrap : Text.NoWrap
-                maximumLineCount: card.expanded ? 3 : 1
+                // undefined resets the limit: an open card shows every line.
+                maximumLineCount: card.expanded ? undefined : 1
                 elide: Text.ElideRight
                 color: Theme.textMuted
                 font.pixelSize: 10
@@ -168,6 +175,7 @@ Rectangle {
             }
 
             Text {
+                id: inlineMeta
                 visible: card.plan.metaInline && card.meta !== ""
                 Layout.maximumWidth: card.plan.inner * 0.45
                 text: card.meta
@@ -205,13 +213,16 @@ Rectangle {
             }
         }
 
-        // Host and time on their own line once the title row is too narrow.
+        // Host and time on their own line once the title row is too narrow,
+        // or once the card is open, where the line wraps instead.
         Text {
+            id: metaLine
             Layout.fillWidth: true
             visible: !card.plan.metaInline && card.meta !== ""
             text: card.meta
             textFormat: Text.PlainText
-            elide: Text.ElideRight
+            wrapMode: card.expanded ? Text.Wrap : Text.NoWrap
+            elide: card.expanded ? Text.ElideNone : Text.ElideRight
             color: card.item.origin === "remote" ? Theme.textSecondary : Theme.textDetail
             font.pixelSize: 10
             font.family: Theme.fontFamily
@@ -233,7 +244,7 @@ Rectangle {
                     text: card.headline
                     textFormat: Text.PlainText
                     wrapMode: Text.Wrap
-                    maximumLineCount: card.expanded ? 6 : 2
+                    maximumLineCount: card.expanded ? undefined : 2
                     elide: Text.ElideRight
                     color: card.low ? Theme.textSecondary : Theme.textPrimary
                     font.pixelSize: 12
@@ -250,7 +261,7 @@ Rectangle {
                     text: card.item.body
                     textFormat: Text.PlainText
                     wrapMode: Text.Wrap
-                    maximumLineCount: card.expanded ? 400 : card.bodyLines
+                    maximumLineCount: card.expanded ? undefined : card.bodyLines
                     elide: Text.ElideRight
                     color: Theme.textSecondary
                     font.pixelSize: 11
@@ -260,9 +271,8 @@ Rectangle {
 
                 Text {
                     id: moreLink
-                    visible: card.expandable
-                        && (card.expanded || bodyText.truncated || headlineText.truncated || appText.truncated)
-                    text: card.expanded ? "Show less" : "Show more"
+                    visible: card.expandable && (card.expanded || card.cut)
+                    text: card.moreText
                     color: moreArea.containsMouse ? Theme.textPrimary : Theme.accent
                     font.pixelSize: 10
                     font.family: Theme.fontFamily
@@ -300,20 +310,25 @@ Rectangle {
             }
         }
 
+        // Below the text when the card is narrow, and on an open card, where
+        // it shows the whole picture at its own shape instead of a crop.
         Rectangle {
             visible: card.plan.imageBelow
             Layout.fillWidth: true
-            Layout.preferredHeight: card.plan.imageBelowHeight
+            Layout.preferredHeight: card.expanded && belowImage.implicitWidth > 0
+                ? Math.round(width * belowImage.implicitHeight / belowImage.implicitWidth)
+                : card.plan.imageBelowHeight
             radius: Theme.radiusSmall
             color: Theme.bgInput
             clip: true
 
             Image {
+                id: belowImage
                 anchors.fill: parent
                 source: card.plan.imageBelow ? card.imageUrl : ""
                 asynchronous: true
-                fillMode: Image.PreserveAspectCrop
-                sourceSize.width: 256
+                fillMode: card.expanded ? Image.PreserveAspectFit : Image.PreserveAspectCrop
+                sourceSize.width: 512
                 onStatusChanged: if (status === Image.Error) card.imageFailed = true
             }
         }
@@ -346,19 +361,19 @@ Rectangle {
             Rectangle {
                 visible: card.localOnly !== ""
                 width: Math.min(localText.implicitWidth + 12, content.width)
-                height: 18
+                height: Math.max(18, localText.height + 4)
                 radius: Theme.radiusSmall
                 color: "transparent"
                 border.width: 1
                 border.color: Theme.bgSeparator
 
+                // A host name can be long; the tag wraps rather than cut it.
                 Text {
                     id: localText
-                    anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
+                    x: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 12
+                    wrapMode: Text.Wrap
                     text: card.localOnly + ", not synced"
                     textFormat: Text.PlainText
                     color: Theme.textMuted

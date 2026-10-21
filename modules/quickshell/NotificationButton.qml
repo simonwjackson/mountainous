@@ -2,6 +2,9 @@ import QtQuick
 
 // One notification control: an action, Dismiss all, Retry. The drawn size
 // follows the label; the hit area never drops below 28 px tall.
+//
+// A label never gets cut. Past maxWidth it wraps, and the button grows
+// taller, so an app's long action name is always readable in full.
 Rectangle {
     id: root
 
@@ -14,9 +17,10 @@ Rectangle {
     signal clicked
 
     readonly property bool hovered: area.containsMouse
+    readonly property int padX: 10
 
-    implicitWidth: Math.min(maxWidth, label.implicitWidth + 20)
-    implicitHeight: 26
+    implicitWidth: Math.min(maxWidth, label.implicitWidth + 2 * padX)
+    implicitHeight: Math.max(26, label.contentHeight + 10)
     radius: Theme.radiusSmall
     color: {
         if (!root.enabled) return "transparent";
@@ -30,12 +34,11 @@ Rectangle {
 
     Text {
         id: label
-        anchors.fill: parent
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
-        verticalAlignment: Text.AlignVCenter
-        horizontalAlignment: Text.AlignHCenter
-        elide: Text.ElideRight
+        x: root.padX
+        width: root.width - 2 * root.padX
+        anchors.verticalCenter: parent.verticalCenter
+        horizontalAlignment: lineCount > 1 ? Text.AlignLeft : Text.AlignHCenter
+        wrapMode: Text.Wrap
         textFormat: Text.PlainText
         text: root.keyHint !== "" ? root.keyHint + "  " + root.text : root.text
         color: root.enabled ? Theme.accent : Theme.textOff

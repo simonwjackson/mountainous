@@ -27,9 +27,39 @@ Scope {
     readonly property var view: Model.viewState(root.connection, root.items, root.now)
     readonly property int count: items.length
 
+    // Which cards the reader opened, by id. Held here, not in a centre, so a
+    // popup can open its item in the centre, and a resize or a new item does
+    // not close a card.
+    property var expandedIds: ({})
+    // An item a popup asked the centre to show: some(id) until a centre
+    // takes it.
+    property var focusRequest: Model.none()
+
     // A fresh upsert for an item whose popup already shows: its timeout
     // starts again.
     signal popupRefreshed(int id)
+
+    function toggleExpanded(id) {
+        const next = Object.assign({}, root.expandedIds);
+        if (next[id]) delete next[id];
+        else next[id] = true;
+        root.expandedIds = next;
+    }
+
+    // Open an item's card and ask the next centre to bring it into view.
+    function revealItem(id) {
+        const next = Object.assign({}, root.expandedIds);
+        next[id] = true;
+        root.expandedIds = next;
+        root.focusRequest = Model.some(id);
+        root.hidePopup(id);
+    }
+
+    function takeFocusRequest() {
+        const request = root.focusRequest;
+        root.focusRequest = Model.none();
+        return request;
+    }
 
     function find(id) {
         return Model.findItem(root.items, id);

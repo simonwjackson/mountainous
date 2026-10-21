@@ -146,6 +146,7 @@ class Fixtures:
         long_word = "/tundra/permafrost/home/simon/.local/state/notify-sync/" + "x" * 90 + ".db"
         items = [
             self.critical(),
+            self.everything_long(),
             self.item(app_name="An application with an unreasonably long display name that never stops",
                       summary="A summary that runs well past two lines because some apps put the whole message in the summary instead of the body",
                       body=("Paragraph one of a long body. " * 12) + "\n\n" + ("Second paragraph, still going. " * 10),
@@ -167,6 +168,24 @@ class Fixtures:
             items.append(self.item(app_name="Build", summary=f"Job {n} finished", body=f"exit 0 after {n * 7} s",
                                    created=NOW - n * 11 * MIN))
         return items
+
+    def everything_long(self):
+        """Every field past any line limit, for the open-card view."""
+        host = "build-runner-" + "q" * 70
+        return self.remote(
+            host,
+            seq="build-runner-91bd02-1",
+            app_name=("A display name that keeps going " * 9).strip(),
+            summary=("A summary longer than six lines once wrapped in a 440 px card, " * 8).strip(),
+            body="\n\n".join(f"Paragraph {n} of {60}: " + "the log keeps on going. " * 6 for n in range(1, 61)),
+            image=self.assets["photo"],
+            actions=[
+                {"key": "rerun", "label": "Re-run the failed job on the same runner with debug logging"},
+                {"key": "path", "label": "Open_/tundra/permafrost/home/simon/builds/" + "z" * 60},
+            ],
+            local_only=False,
+            created=NOW - 50_000,
+        )
 
     def sender_gone(self):
         return [

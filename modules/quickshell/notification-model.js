@@ -475,13 +475,14 @@ function centrePlan(width, height) {
 }
 
 // One notification card, from the width it is given. Used by the popups and
-// the centre alike.
-function cardPlan(width, hasImage) {
+// the centre alike. An open card (expanded) keeps host and time on a line of
+// their own, where they can wrap, and shows its image whole below the text.
+function cardPlan(width, hasImage, expanded) {
     const inner = Math.max(0, width - 2 * (width < 260 ? 8 : 10));
     // Host and time are readouts. Below this width they leave the title row
     // for a line of their own, so the dismiss control keeps its place.
-    const metaInline = width >= 300;
-    const imageSide = hasImage && width >= 300;
+    const metaInline = width >= 300 && !expanded;
+    const imageSide = hasImage && width >= 300 && !expanded;
     const imageSize = Math.round(Math.max(40, Math.min(64, width * 0.16)));
     return {
         padding: width < 260 ? 8 : 10,

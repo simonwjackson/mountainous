@@ -233,18 +233,20 @@ assert.equal(model.barTone(ready, up, [item()]), "primary");
 assert.equal(model.barTone({kind: "empty"}, up, []), "muted");
 
 // Layout plans: one unit either side of every threshold.
-const cp = (w) => model.cardPlan(w, true);
+const cp = (w) => model.cardPlan(w, true, false);
 assert.equal(cp(299).metaInline, false);
 assert.equal(cp(300).metaInline, true);
 assert.equal(cp(299).imageBelow, true);
 assert.equal(cp(300).imageSide, true);
-assert.equal(model.cardPlan(300, false).imageSide, false);
+assert.equal(model.cardPlan(300, false, false).imageSide, false);
+assert.equal(model.cardPlan(1000, true, true).metaInline, false, "an open card gives host and time their own line");
+assert.equal(model.cardPlan(1000, true, true).imageBelow, true, "an open card shows the whole image below");
 assert.equal(cp(259).padding, 8);
 assert.equal(cp(260).padding, 10);
 assert.equal(cp(380).imageSize, 61);
 assert.equal(cp(1000).imageSize, 64);
 assert.equal(cp(0).inner, 0);
-assert.ok(cp(120).buttonMaxWidth > 0, "a button always has room for an elided label");
+assert.ok(cp(120).buttonMaxWidth > 0, "a button always has room for its wrapped label");
 
 const c = model.centrePlan;
 assert.equal(c(1920, 1200).cardWidth, 440);

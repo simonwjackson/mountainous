@@ -21,6 +21,16 @@ Scope {
 
     readonly property bool active: !root.suppressed && root.service.popups.length > 0
 
+    // "Show all": the centre opens with this item's card open. Deferred,
+    // because both steps remove the popup that asked, and its handler must
+    // not run on in a destroyed delegate.
+    function openItem(id) {
+        Qt.callLater(function () {
+            root.service.revealItem(id);
+            root.openCentreRequested();
+        });
+    }
+
     // Anything that arrives while the centre is open is already in front of
     // the reader, so it does not pop up again when the centre closes.
     onSuppressedChanged: if (root.suppressed) root.service.hideAllPopups()
@@ -104,9 +114,11 @@ Scope {
                         now: clock.now
                         showClock: true
                         remaining: 1
+                        moreText: "Show all in Notifications"
 
                         onImplicitHeightChanged: Qt.callLater(win.relayout)
                         onDismissRequested: root.service.dismiss(modelData)
+                        onExpandToggled: root.openItem(modelData)
                         onActionRequested: function (key) { root.service.invoke(modelData, key); }
                         onBodyClicked: {
                             const fallback = Model.defaultAction(popup.item);
