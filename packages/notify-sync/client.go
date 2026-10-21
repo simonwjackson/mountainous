@@ -208,7 +208,7 @@ func (c *Client) Send(ctx context.Context, in SendInput) (string, error) {
 			return "", errors.New("invalid action")
 		}
 	}
-	_, err := c.Publish(ctx, Payload(Item{Seq: seq, Host: SafeName(in.Name), AppName: "agent", Summary: in.Summary, Body: in.Body, Actions: in.Actions, Resident: in.Resident, SenderAlive: true, Urgency: 1}, c.Public, c.Button))
+	_, err := c.Publish(ctx, payload(Item{Seq: seq, Host: SafeName(in.Name), AppName: "agent", Summary: in.Summary, Body: in.Body, Actions: in.Actions, Resident: in.Resident, SenderAlive: true, Urgency: 1}, c.Public, c.Button, agentSource))
 	return seq, err
 }
 func (c *Client) Wait(ctx context.Context, seq string) (Control, error) {

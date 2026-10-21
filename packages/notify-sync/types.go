@@ -189,7 +189,7 @@ func (m Message) metadata() metadata {
 			}
 		}
 	}
-	return metadata{Host: "agent", App: "ntfy", Alive: true, Agent: strings.HasPrefix(m.Seq(), "agent-")}
+	return metadata{Host: "unknown", App: "ntfy", Alive: true}
 }
 func (m Message) Remote(id uint32) Item {
 	meta := m.metadata()
@@ -209,8 +209,18 @@ func (m Message) Remote(id uint32) Item {
 	}
 	return Item{ID: id, Seq: m.Seq(), Origin: "remote", Host: meta.Host, AppName: meta.App, Summary: m.Title, Body: m.Message, Actions: acts, Urgency: urgency, Resident: meta.Resident, SenderAlive: meta.Alive, Created: m.Time * 1000, Updated: m.Time * 1000}
 }
-func Payload(i Item, public, button string) Message {
-	metaInfo := metadata{Host: i.Host, App: i.AppName, Resident: i.Resident, Alive: i.SenderAlive, Agent: strings.HasPrefix(i.Seq, "agent-")}
+
+type provenance uint8
+
+const (
+	desktopSource provenance = iota
+	agentSource
+)
+
+// Payload projects desktop content. Only Send supplies agent provenance.
+func Payload(i Item, public, button string) Message { return payload(i, public, button, desktopSource) }
+func payload(i Item, public, button string, source provenance) Message {
+	metaInfo := metadata{Host: i.Host, App: i.AppName, Resident: i.Resident, Alive: i.SenderAlive, Agent: source == agentSource}
 	meta, _ := json.Marshal(metaInfo)
 	// ntfy caps all tags at 512 bytes. Preserve the complete app name locally.
 	for len(base64.RawURLEncoding.EncodeToString(meta))+4 > 512 {

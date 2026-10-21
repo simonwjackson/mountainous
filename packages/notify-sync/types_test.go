@@ -37,3 +37,26 @@ func TestControlValidation(t *testing.T) {
 		t.Fatal("valid control rejected")
 	}
 }
+
+func TestAgentProvenanceDoesNotComeFromHostnameOrSequence(t *testing.T) {
+	base := ntfyServer(t)
+	r := newRig(t, base)
+	r.d.Host = "agent-desktop"
+	id := r.notify(ns.NotifyInput{Summary: "untrusted app text"})
+	r.sync()
+	seq, err := r.c.Send(r.ctx, ns.SendInput{Name: "builder", Summary: "agent text"})
+	r.check(err)
+	// Messages without notify-sync metadata remain untrusted even with an
+	// agent-looking sequence. Only Send supplies explicit agent provenance.
+	_, err = r.c.Publish(r.ctx, ns.Message{Topic: ns.Topic, Sequence: "agent-looks-trusted", Message: "external text"})
+	r.check(err)
+	listed, err := r.c.List(r.ctx)
+	r.check(err)
+	trust := map[string]string{}
+	for _, entry := range listed {
+		trust[entry.Item.Seq] = entry.Trust
+	}
+	if trust[r.item(id).Seq] != "untrusted" || trust["agent-looks-trusted"] != "untrusted" || trust[seq] != "agent" {
+		t.Fatal(trust)
+	}
+}
