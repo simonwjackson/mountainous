@@ -40,6 +40,9 @@ assert
   == "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if00-port0";
 assert c.services.zwave-js.settings.storage.cacheDir == "/var/cache/zwave-js";
 assert c.services.zwave-js.secretsConfigFile == c.sops.secrets.zwave-js-secrets.path;
+assert
+  c.sops.secrets.withings-api-key.sopsFile == ../secrets/hosts/rakku.yaml
+  && c.sops.secrets.withings-api-key.mode == "0400";
 assert c.sops.age.sshKeyPaths == [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
 assert c.services.home-assistant.configDir == "/var/lib/hass";
 assert
