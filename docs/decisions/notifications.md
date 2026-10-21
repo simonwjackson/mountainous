@@ -25,7 +25,9 @@ a closed notification. A different D-Bus sender cannot replace another
 application's item.
 
 The private, mode-0600 socket is `$XDG_RUNTIME_DIR/notify-sync/ui.sock`.
-It implements section 7 of the approved contract without changes. Subscribe
+`schema/ui-socket.v1.json` in the Go package defines section 7 in JSON Schema
+2020-12. notifyd validates client operations against that schema, and socket
+tests validate every emitted event shape. Only upsert carries `fresh`. Subscribe
 returns a complete snapshot with `items: []` when empty. Subsequent events
 are upserts, removals and status. Slow consumers disconnect and resnapshot.
 Initial replay is not fresh and does not replay historical popups.
@@ -37,7 +39,7 @@ The Quickshell view is separate and never owns the notification D-Bus name.
 
 | Path | Finding |
 |---|---|
-| `server/topic.go`, `Publish`, lines 106–127 | Live messages dispatch in separate goroutines, including separate subscriber goroutines. Live insert order is not guaranteed. |
+| `server/topic.go`, `Publish`, lines 106–127 | Live messages dispatch in separate goroutines, including separate subscriber goroutines. Live dispatch does not guarantee insert order. |
 | `server/server.go`, `handleSubscribeHTTP`, lines 1490–1506 | Live subscribers attach before cache replay. Live events can interleave with replay. A response mutex prevents byte corruption, not reordering. |
 | `message/cache_sqlite.go`, `sqliteSelectMessagesSinceIDQuery` | Queries use the SQLite insert ID to select events after a cursor, then order by `time DESC, id DESC`. |
 | `message/cache.go`, `readMessagesCapped` | Reverses that result into oldest-first order. A single-topic replay preserves insert order within the same second, assuming a nondecreasing server clock. |
@@ -46,17 +48,27 @@ The Quickshell view is separate and never owns the notification D-Bus name.
 Source: [ntfy v2.28.0](https://github.com/binwiederhier/ntfy/tree/v2.28.0).
 
 The Go implementation therefore does **not** consume the live stream as an
-ordered log. It polls each topic separately every 250 ms, with an independent
-persisted cursor. This is a deliberate transport change from the spike, not
-a socket API change. Cost: polling traffic and up to 250 ms scheduling delay,
-plus network time. It avoids losing a control event behind a cursor from the
-other topic. The server disables asynchronous cache batching, so an accepted
-publish is visible to the next cache poll.
+ordered log. It maintains a live `since=none` stream only for wake-ups. Each
+ordered cache poll uses its topic's own persisted cursor; a stream event never
+advances either cursor or changes an item. notifyd reconciles on start, stream
+reconnect, outbox changes and live notifications.
+
+ntfy dispatches live events before it inserts them into the cache. notifyd
+tracks signalled event IDs and retries ordered polls with 25–400 ms backoff
+for up to two seconds until the cache shows those IDs. A 30-second fallback
+covers missed wake-ups and longer cache delays. Every second fallback uses a
+full fold for eviction and pruning instead of adding extra requests.
+A real idle test measured **two ordered GETs, zero stream reconnects, in
+31.001 seconds (0.0645 requests/s)**. The steady-state budget is two GETs per
+30 seconds (four per minute), plus one long-lived stream, rather than eight
+requests per second. Start and reconnect need extra reconciliation requests.
+The server disables asynchronous cache batching; the brief visibility race
+still exists between dispatch and insertion.
 
 The stale-clear guard still requires replay to show the latest published
 message ID before a clear can close a local item. Replaying an earlier
-revision disarms that guard until the latest revision appears. Control event
-IDs are de-duplicated. Own clear echoes do not publish a second clear.
+revision disarms that guard until the latest revision appears. notifyd
+de-duplicates control event IDs. Own clear echoes do not publish a second clear.
 
 The stateless hub folds the cache before applying Done. A notification-topic
 query with `since=<control event ID>` detects a later replacement by SQLite
@@ -77,8 +89,11 @@ The desktop stale-clear guard follows the eventual notification-topic order.
 | Non-resident app action | `ActionInvoked`, then reason 2 | Clear |
 | Resident app action | `ActionInvoked` | Remains open |
 
-Remote items have no local D-Bus client. Dismiss clears their sequence;
-action sends a control message to the owner. The hub closes non-resident
+Remote items have no local D-Bus client. They carry the owner's
+`sender_alive` value and `image: null`; they do not claim a local sender or
+copy the owner's PNG path. Dismiss clears their sequence. Action sends a
+control message and leaves the shared item open until the owner acts and,
+for non-resident items, clears it. The hub closes non-resident
 agent items after valid actions, so their other views clear without an agent
 process waiting. `notify wait` returns the first cached action or clear,
 including one that arrived between send and wait. CLI and MCP expose no tool
@@ -89,7 +104,7 @@ Sender liveness tracks the D-Bus unique name and the bus session ID. On
 without app buttons and retains Done. A new session cannot reuse an old
 unique name to revive its buttons. Desktop actions also require a live sender
 and a key present on the item. A phone action has no Wayland activation token;
-no activation token is fabricated.
+notifyd does not make up an activation token.
 
 ## Phone mapping and trust
 
@@ -103,10 +118,13 @@ must not bypass the local-only boundary.
 
 A versioned, base64url metadata tag carries host, app, residency, sender
 liveness and agent origin. It contains no authentication token. ntfy limits
-tags to 512 bytes, titles to 1024 bytes and message text to 4096 bytes. The
+tags to 512 bytes, titles to 1024 bytes and message text to **4095 bytes**. ntfy treats 4096 or more bytes as an
+attachment, and this service disables attachments. The
 remote projection bounds those fields at UTF-8 boundaries; the local item
-retains the complete text. Phone app names can therefore be shortened.
-The library marks desktop application text `untrusted` in agent listings.
+retains the complete text. The projection can therefore shorten phone app names.
+`Send` supplies explicit agent provenance. Neither a hostname nor an
+`agent-` sequence prefix grants trust. The library marks desktop application
+text `untrusted` in agent listings.
 Treat that text as data, never as instructions.
 
 Buttons contain only the token of `button`, which can write `notify-ctl`
@@ -126,7 +144,7 @@ of cache. Cache and auth databases live in `/var/lib/ntfy-sh`, persisted under
 Loopback and `100.64.0.0/10` are request-limit exempt.
 
 `ntfy.hummingbird-lake.ts.net` routes through the existing tsnet proxy to the
-loopback-only hub on port 2587. `/mcp` is bearer-protected. All other paths
+loopback-only hub on port 2587. `/mcp` requires a bearer token. All other paths
 proxy ntfy, including streams and WebSockets. There is no LAN listener or
 firewall opening. The hub holds no database or durable MCP session.
 
@@ -134,7 +152,7 @@ MCP uses the **official Go SDK**,
 `github.com/modelcontextprotocol/go-sdk` v1.0.0. Its
 `StreamableHTTPOptions{Stateless: true, JSONResponse: true}` supports the
 required transport. Endpoint tests call all four tools without session state
-and assert no MCP session ID is issued. Missing or wrong bearer credentials
+and assert the server does not issue an MCP session ID. Missing or wrong bearer credentials
 receive HTTP 401.
 
 The desktop layer starts `notifyd` as a D-Bus user service. Desktop and server
@@ -162,10 +180,9 @@ systemd credentials.
   open/message pair through the production proxy handler on TCP sockets.
   The proxy source and production package are unchanged. This proves HTTP
   forwarding, not a live Tailscale enrollment or phone connection.
-- Encrypted credentials were round-trip decrypted. A real ntfy instance
+- The credential check encrypted and decrypted all four Sops files. A real ntfy instance
   accepted 23 auth/ACL probes, including the phone password. The button could
-  publish only to `notify-ctl`; its read, notify publish and clear attempts
-  were denied.
+  publish only to `notify-ctl`; ntfy denied its read, notify publish and clear attempts.
 - A real CLI run exercised send → JSON list → clear → wait with trailing
   `--timeout`, then verified an empty list.
 
@@ -176,17 +193,20 @@ systemd credentials.
   history. A busy 30-day topic can exceed this limit; larger deployments need
   an upstream paging API or a different durable log. Clock rollback is also
   outside the ordered-poll guarantee. Do not claim arbitrary-scale ordering.
-- Persistence is atomic, but D-Bus delivery cannot be atomic with SQLite.
+- SQLite commits persistence atomically, but cannot include D-Bus delivery in its transaction.
   Checkpoint-before-signal prevents replayed actions. A crash in that narrow
   window can lose a signal. HTTP response loss can also retry an already
   accepted publish or resident control action; ntfy has no idempotency key.
 - The daemon does not block Notify or dismiss on network I/O. A revision
   check preserves updates and queues a clear if dismiss races a publish.
   Offline delivery still depends on the originating daemon returning to run
-  its durable outbox.
-- Cached PNG files are local and mode-0600. Image-file garbage collection is
-  not implemented. Closed database records and control IDs are pruned, but
-  repeated image notifications can consume local disk space.
-- No fleet host was rebuilt or deployed. The parent must remove the existing
+  its durable outbox. A permanent HTTP 4xx parks that item's failed delivery;
+  notifyd logs the rejection and exposes it in status `last_error`. A new
+  replacement retries delivery. Other outbox items and reception continue.
+  HTTP 408 and 429 remain retryable.
+- Cached PNG files are local and mode-0600. notifyd does not yet remove unused PNG
+  files. It prunes closed database records and control IDs, but repeated image
+  notifications can consume local disk space.
+- The build worker did not rebuild or deploy any fleet host. The parent must remove the existing
   phone-test unit before deployment because it uses port 2586. Real Android
   behavior and the live tailnet endpoint need verification after deployment.

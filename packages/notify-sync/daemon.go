@@ -269,6 +269,26 @@ func (d *Daemon) Operation(op UIOperation) error {
 	}
 	return d.commitDelivery(s, es, ss)
 }
+
+// senderLost applies the same projection for unique-name loss and bus restart.
+func senderLost(r *record) *UIEvent {
+	if !r.Item.SenderAlive {
+		return nil
+	}
+	r.Item.SenderAlive = false
+	r.Revision++
+	r.Item.Updated = nowMillis()
+	if !r.Open {
+		return nil
+	}
+	if !r.Item.LocalOnly {
+		r.Pending = "publish"
+		r.PubSeen = false
+	}
+	item := r.Item
+	return &UIEvent{Type: "upsert", Item: &item, Fresh: false}
+}
+
 func (d *Daemon) SenderGone(sender string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -278,17 +298,9 @@ func (d *Daemon) SenderGone(sender string) error {
 	}
 	es := []UIEvent{}
 	for _, r := range s.Records {
-		if r.Sender == sender && r.Item.SenderAlive {
-			r.Item.SenderAlive = false
-			r.Revision++
-			r.Item.Updated = nowMillis()
-			if r.Open {
-				if !r.Item.LocalOnly {
-					r.Pending = "publish"
-					r.PubSeen = false
-				}
-				item := r.Item
-				es = append(es, UIEvent{Type: "upsert", Item: &item, Fresh: false})
+		if r.Sender == sender {
+			if event := senderLost(r); event != nil {
+				es = append(es, *event)
 			}
 		}
 	}
@@ -307,16 +319,9 @@ func (d *Daemon) Session(id string) error {
 	es := []UIEvent{}
 	if s.Session != "" && s.Session != id {
 		for _, r := range s.Records {
-			if r.Item.Origin == "local" && r.Item.SenderAlive {
-				r.Item.SenderAlive = false
-				r.Revision++
-				if r.Open {
-					if !r.Item.LocalOnly {
-						r.Pending = "publish"
-						r.PubSeen = false
-					}
-					item := r.Item
-					es = append(es, UIEvent{Type: "upsert", Item: &item, Fresh: false})
+			if r.Item.Origin == "local" {
+				if event := senderLost(r); event != nil {
+					es = append(es, *event)
 				}
 			}
 		}
