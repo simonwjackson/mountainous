@@ -290,6 +290,29 @@
     };
   };
 
+  # ── Storage alerts ─────────────────────────────────────────────────
+  # Failures reach the phone through the ntfy hub on Rakku. The token belongs
+  # to the publish-only `storage-alerts` user; both host-scoped secrets are
+  # encrypted to Zao and the user key only. Lake and range mounts already
+  # carry drop-ins; the admission and readiness services, plus the 5-minute
+  # check, cover them.
+  mountainous.features.storage-alerts = {
+    enable = true;
+    profile = "zao";
+    notify = pkgs.notify-sync;
+    tokenFile = config.age.secrets.storage-alerts-token.path;
+    buttonTokenFile = config.age.secrets.notify-button-token.path;
+    units =
+      [
+        "towada-snapraid-sync.service"
+        "towada-snapraid-scrub.service"
+        "towada-cache-mover.service"
+        "towada-storage-admission.service"
+        "media-storage-ready.service"
+      ]
+      ++ map (disk: "srv-shores-towada-${disk}.mount") ["00" "01" "02" "03" "04"];
+  };
+
   # ── Secrets ────────────────────────────────────────────────────────
   age.secrets.tailscale-authkey = {
     owner = "tsnet-proxy";

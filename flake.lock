@@ -1312,6 +1312,23 @@
         "type": "gitlab"
       }
     },
+    "notify-sync-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792557238,
+        "narHash": "sha256-s2YQx6eT04w1niHHkK19n/o41nI1L9T8hh+kfvwNGnk=",
+        "owner": "simonwjackson",
+        "repo": "mountainous",
+        "rev": "80f62a102c8ba53b0c0229335e12450f66f3646a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "mountainous",
+        "rev": "80f62a102c8ba53b0c0229335e12450f66f3646a",
+        "type": "github"
+      }
+    },
     "pi": {
       "inputs": {
         "bun2nix": "bun2nix_2",
@@ -1393,6 +1410,7 @@
         "nixpkgs": "nixpkgs_5",
         "nixpkgs-droid": "nixpkgs-droid",
         "nixpkgs-rpcs3-v0-0-41": "nixpkgs-rpcs3-v0-0-41",
+        "notify-sync-src": "notify-sync-src",
         "pi": "pi",
         "taskwarrior-recurrence": "taskwarrior-recurrence",
         "tsnsrv": "tsnsrv",

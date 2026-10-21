@@ -44,6 +44,12 @@
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Cairn source for the notify CLI and storage probe used by Zao's storage
+    # alerts. Pinned to a pushed cairn revision; move it with Zao's port.
+    notify-sync-src = {
+      url = "github:simonwjackson/mountainous/80f62a102c8ba53b0c0229335e12450f66f3646a";
+      flake = false;
+    };
     hyprdynamicmonitors = {
       url = "github:fiffeek/hyprdynamicmonitors";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -414,6 +420,33 @@
           upstreamTestsEnabled = true;
           otherHostPreserved = true;
         });
+
+    checks.x86_64-linux.storage-alert = let
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    in
+      pkgs.runCommand "storage-alert" {nativeBuildInputs = [pkgs.python3 pkgs.bash];} ''
+        python3 ${./tests/test_storage_alert.py} ${./features/storage-alerts/storage-alert.py}
+        touch $out
+      '';
+    checks.x86_64-linux.storage-alert-vm = import ./tests/storage-alert-vm.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      notify = self.packages.x86_64-linux.notify-sync;
+      alertModule = {
+        imports = [./features/storage-alerts];
+        _module.args.inputs = inputs;
+      };
+    };
+    checks.x86_64-linux.zao-storage-alerts = let
+      c = self.nixosConfigurations.zao.config;
+      a = c.mountainous.features.storage-alerts;
+    in
+      assert a.enable;
+      assert a.profile == "zao";
+      assert c.age.secrets.storage-alerts-token.owner == "root";
+      assert builtins.elem "storage-alert-trigger@%n.service" c.systemd.services.towada-snapraid-sync.onFailure;
+      assert builtins.elem "storage-alert-trigger@%n.service" c.systemd.services.towada-cache-mover.onFailure;
+      assert c.systemd.services.storage-alert.requires or [] == [];
+        nixpkgs.legacyPackages.x86_64-linux.writeText "zao-storage-alerts" "ok";
 
     checks.x86_64-linux.zao-nscd = import ./tests/zao-nscd.nix {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
