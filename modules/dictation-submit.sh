@@ -8,7 +8,7 @@ if [ -z "$audio_file" ] || [ ! -s "$audio_file" ]; then
 fi
 
 backend_order="${DICTATION_BACKEND_ORDER:-zao,groq}"
-zao_url="${DICTATION_ZAO_URL:-https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions}"
+zao_url="${DICTATION_ZAO_URL:-https://voice.hummingbird-lake.ts.net/v1/audio/transcriptions}"
 groq_url="${DICTATION_GROQ_URL:-https://api.groq.com/openai/v1/audio/transcriptions}"
 groq_key_file="${DICTATION_GROQ_KEY_FILE:-}"
 zao_fallback_ms="${DICTATION_ZAO_FALLBACK_MS:-3000}"

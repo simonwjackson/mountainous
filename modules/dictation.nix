@@ -53,8 +53,8 @@
 
         zaoUrl = mkOption {
           type = types.str;
-          default = "https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions";
-          description = "Zao's OpenAI-compatible transcription endpoint.";
+          default = "https://voice.hummingbird-lake.ts.net/v1/audio/transcriptions";
+          description = "Zao's voice gateway, the shared OpenAI-compatible transcription endpoint (it forwards to the dictation backend).";
         };
 
         groqUrl = mkOption {

@@ -127,7 +127,7 @@ def test_default_endpoint_and_single_insertion() -> None:
         assert result.returncode == 0, result.stderr
         curl_calls = read_json_lines(log_dir / "curl.jsonl")
         assert len(curl_calls) == 1
-        assert "https://dictate.hummingbird-lake.ts.net/v1/audio/transcriptions" in curl_calls[0]["args"]
+        assert "https://voice.hummingbird-lake.ts.net/v1/audio/transcriptions" in curl_calls[0]["args"]
         copies = read_json_lines(log_dir / "wl-copy.jsonl")
         assert [copy["content"] for copy in copies] == ["Test sentence.", "Test sentence."]
         assert len(read_json_lines(log_dir / "wtype.jsonl")) == 1
