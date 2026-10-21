@@ -66,17 +66,35 @@ type UIEvent struct {
 	Reason uint32  `json:"reason,omitempty"`
 }
 
-// MarshalJSON preserves an empty snapshot as [] rather than omitting items.
+// MarshalJSON emits exactly the fields for each event in ui-socket.v1.json.
 func (e UIEvent) MarshalJSON() ([]byte, error) {
-	type wire UIEvent
-	if e.Type == "snapshot" {
+	switch e.Type {
+	case "snapshot":
 		return json.Marshal(struct {
 			Type   string  `json:"type"`
 			Items  []Item  `json:"items"`
 			Status *Status `json:"status"`
 		}{e.Type, e.Items, e.Status})
+	case "upsert":
+		return json.Marshal(struct {
+			Type  string `json:"type"`
+			Item  *Item  `json:"item"`
+			Fresh bool   `json:"fresh"`
+		}{e.Type, e.Item, e.Fresh})
+	case "remove":
+		return json.Marshal(struct {
+			Type   string `json:"type"`
+			ID     uint32 `json:"id"`
+			Reason uint32 `json:"reason"`
+		}{e.Type, e.ID, e.Reason})
+	case "status":
+		return json.Marshal(struct {
+			Type   string  `json:"type"`
+			Status *Status `json:"status"`
+		}{e.Type, e.Status})
+	default:
+		return nil, errors.New("unknown UI event")
 	}
-	return json.Marshal(wire(e))
 }
 
 type UIOperation struct {
@@ -84,6 +102,29 @@ type UIOperation struct {
 	ID  uint32 `json:"id"`
 	Key string `json:"key"`
 }
+
+func (op UIOperation) MarshalJSON() ([]byte, error) {
+	switch op.Op {
+	case "subscribe", "dismiss_all":
+		return json.Marshal(struct {
+			Op string `json:"op"`
+		}{op.Op})
+	case "dismiss":
+		return json.Marshal(struct {
+			Op string `json:"op"`
+			ID uint32 `json:"id"`
+		}{op.Op, op.ID})
+	case "action":
+		return json.Marshal(struct {
+			Op  string `json:"op"`
+			ID  uint32 `json:"id"`
+			Key string `json:"key"`
+		}{op.Op, op.ID, op.Key})
+	default:
+		return nil, errors.New("unknown UI operation")
+	}
+}
+
 type Control struct {
 	Version int    `json:"v"`
 	Type    string `json:"type"`

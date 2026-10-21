@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mountainous.dev/notify-sync/ui-socket.v1.json",
+  "title": "notify-sync UI socket v1",
+  "description": "One JSON object per line. Client operations and daemon events follow section 7 of the approved notification contract.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/clientOperation"
+    },
+    {
+      "$ref": "#/$defs/daemonEvent"
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "action": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "seq": {
+          "type": "string",
+          "pattern": "^[-_A-Za-z0-9]{1,64}$"
+        },
+        "origin": {
+          "enum": [
+            "local",
+            "remote"
+          ]
+        },
+        "host": {
+          "type": "string"
+        },
+        "app_name": {
+          "type": "string"
+        },
+        "app_icon": {
+          "type": "string"
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "urgency": {
+          "enum": [
+            0,
+            1,
+            2
+          ]
+        },
+        "resident": {
+          "type": "boolean"
+        },
+        "local_only": {
+          "type": "boolean"
+        },
+        "created": {
+          "type": "integer"
+        },
+        "updated": {
+          "type": "integer"
+        },
+        "sender_alive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "seq",
+        "origin",
+        "host",
+        "app_name",
+        "app_icon",
+        "image",
+        "summary",
+        "body",
+        "actions",
+        "urgency",
+        "resident",
+        "local_only",
+        "created",
+        "updated",
+        "sender_alive"
+      ],
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "properties": {
+        "server": {
+          "enum": [
+            "connected",
+            "connecting",
+            "unreachable"
+          ]
+        },
+        "outbox": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "server",
+        "outbox",
+        "last_error"
+      ],
+      "additionalProperties": false
+    },
+    "clientOperation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "subscribe"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "dismiss"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "required": [
+            "op",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "action"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "key": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "id",
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "dismiss_all"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "daemonEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "snapshot"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/item"
+              }
+            },
+            "status": {
+              "$ref": "#/$defs/status"
+            }
+          },
+          "required": [
+            "type",
+            "items",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "upsert"
+            },
+            "item": {
+              "$ref": "#/$defs/item"
+            },
+            "fresh": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "item",
+            "fresh"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "remove"
+            },
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "reason": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "status"
+            },
+            "status": {
+              "$ref": "#/$defs/status"
+            }
+          },
+          "required": [
+            "type",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

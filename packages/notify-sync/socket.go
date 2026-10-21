@@ -63,8 +63,8 @@ func (d *Daemon) socketClient(ctx context.Context, conn net.Conn) {
 	}()
 	// One writer owns the connection. Slow views are disconnected and resnapshot.
 	for scan.Scan() {
-		var op UIOperation
-		if json.Unmarshal(scan.Bytes(), &op) != nil {
+		op, err := DecodeUIOperation(scan.Bytes())
+		if err != nil {
 			return
 		}
 		if op.Op == "subscribe" {
