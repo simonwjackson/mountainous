@@ -212,6 +212,19 @@ centre stress       short-centre-stress
 popups many         short-popup-many
 size 2880x1800
 
+# ---- the ops, end to end: each must reach the fake daemon as contract
+# section 7 spells it.
+centre ideal        ops-before
+key Down; key Down; key 1          # action "reply" on the Signal item
+key Delete                         # dismiss the item now selected
+key Up; key Return                 # Firefox's default action
+ipc hide; ctl "scenario empty"; ctl "popups normal"; sleep 1.5
+ptr move 1890 53; ptr click        # the popup's dismiss
+ctl "scenario ideal"; ipc reveal; sleep 0.8
+ptr move 1819 59; ptr click        # Dismiss all
+sleep 0.5; ipc hide
+grep '^op ' "$work/fake.log" | grep -v subscribe | tee "$out/ops.log"
+
 cp "$work/qs.log" "$out/qs.log"
 cp "$work/fake.log" "$out/fake.log"
 echo "logs: $out/qs.log $out/fake.log"
