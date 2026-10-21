@@ -1,7 +1,8 @@
-package notifysync
+package notifysync_test
 
 import (
 	"encoding/json"
+	ns "github.com/simonwjackson/mountainous/notify-sync"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ func TestBodyBoundaryPublishesThroughNtfy(t *testing.T) {
 	for _, body := range []string{strings.Repeat("x", 4095), strings.Repeat("x", 4096), strings.Repeat("x", 4097), strings.Repeat("界", 1366), strings.Repeat("x", 4094) + "界"} {
 		t.Run(strconv.Itoa(len(body)), func(t *testing.T) {
 			r := newRig(t, base)
-			id := r.notify(NotifyInput{Body: body})
+			id := r.notify(ns.NotifyInput{Body: body})
 			r.sync()
 			found := false
 			for _, e := range socketSnapshot(t, r.d).Items {
@@ -47,7 +48,7 @@ func TestPermanentPublishFailureDoesNotBlockOtherDeliveryOrReception(t *testing.
 	var rejected atomic.Int32
 	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "POST" && (req.URL.Path == "/" || req.URL.Path == "") {
-			var m Message
+			var m ns.Message
 			if err := json.NewDecoder(req.Body).Decode(&m); err != nil {
 				t.Error(err)
 				w.WriteHeader(400)
@@ -67,7 +68,7 @@ func TestPermanentPublishFailureDoesNotBlockOtherDeliveryOrReception(t *testing.
 	}))
 	defer gateway.Close()
 	r := newRig(t, gateway.URL)
-	old := r.notify(NotifyInput{Summary: "clear remotely"})
+	old := r.notify(ns.NotifyInput{Summary: "clear remotely"})
 	r.sync()
 	oldSeq := ""
 	for _, i := range socketSnapshot(t, r.d).Items {
@@ -75,8 +76,8 @@ func TestPermanentPublishFailureDoesNotBlockOtherDeliveryOrReception(t *testing.
 			oldSeq = i.Seq
 		}
 	}
-	r.notify(NotifyInput{Summary: "reject this item"})
-	healthy := r.notify(NotifyInput{Summary: "deliver this item"})
+	r.notify(ns.NotifyInput{Summary: "reject this item"})
+	healthy := r.notify(ns.NotifyInput{Summary: "deliver this item"})
 	r.check(r.c.Clear(r.ctx, oldSeq))
 	r.sync()
 	r.closed(old, 2)

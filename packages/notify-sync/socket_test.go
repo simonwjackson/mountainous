@@ -1,42 +1,58 @@
-package notifysync
+package notifysync_test
 
 import (
 	"context"
 	"encoding/json"
+	ns "github.com/simonwjackson/mountainous/notify-sync"
 	"net"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-// socketSnapshot exercises the public UI connection, not the database.
-func socketSnapshot(t *testing.T, d *Daemon) UIEvent {
+// socketSnapshot reads the same Unix socket snapshot as the desktop view.
+func socketSnapshot(t *testing.T, d *ns.Daemon) ns.UIEvent {
 	t.Helper()
-	events, stop, err := d.Subscribe()
-	if err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	path := filepath.Join(t.TempDir(), "ui.sock")
+	done := make(chan error, 1)
+	go func() { done <- d.ServeSocket(ctx, path) }()
+	defer func() {
+		cancel()
+		if err := <-done; err != nil {
+			t.Error(err)
+		}
+	}()
+	var conn net.Conn
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		var err error
+		conn, err = net.Dial("unix", path)
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if conn == nil {
+		t.Fatal("UI socket did not start")
+	}
+	defer conn.Close()
+	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	if _, err := conn.Write([]byte("{\"op\":\"subscribe\"}\n")); err != nil {
 		t.Fatal(err)
 	}
-	defer stop()
-	e := <-events
-	b, err := json.Marshal(e)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = ValidateSocketMessage(b); err != nil {
-		t.Fatalf("invalid snapshot %s: %v", b, err)
-	}
-	return e
+	return decodeSocketEvent(t, json.NewDecoder(conn))
 }
-func decodeSocketEvent(t *testing.T, decoder *json.Decoder) UIEvent {
+func decodeSocketEvent(t *testing.T, decoder *json.Decoder) ns.UIEvent {
 	t.Helper()
 	var data json.RawMessage
 	if err := decoder.Decode(&data); err != nil {
 		t.Fatal(err)
 	}
-	if err := ValidateSocketMessage(data); err != nil {
+	if err := ns.ValidateSocketMessage(data); err != nil {
 		t.Fatalf("invalid socket event %s: %v", data, err)
 	}
-	var e UIEvent
+	var e ns.UIEvent
 	if err := json.Unmarshal(data, &e); err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +60,7 @@ func decodeSocketEvent(t *testing.T, decoder *json.Decoder) UIEvent {
 }
 func TestSocketSchemaRejectsFieldsOutsideContract(t *testing.T) {
 	for _, raw := range []string{`{"op":"dismiss"}`, `{"op":"subscribe","id":1}`, `{"type":"status","status":{"server":"connected","outbox":0,"last_error":null},"fresh":false}`, `{"op":"action","id":1,"key":"go","extra":1}`} {
-		if ValidateSocketMessage([]byte(raw)) == nil {
+		if ns.ValidateSocketMessage([]byte(raw)) == nil {
 			t.Fatalf("accepted %s", raw)
 		}
 	}
@@ -62,21 +78,21 @@ func TestSocketEventsAndOperationsMatchSharedSchema(t *testing.T) {
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(8 * time.Second))
 	decoder := json.NewDecoder(conn)
-	send := func(op UIOperation) {
+	send := func(op ns.UIOperation) {
 		t.Helper()
 		data, err := json.Marshal(op)
 		r.check(err)
-		r.check(ValidateSocketMessage(data))
-		_, err = DecodeUIOperation(data)
+		r.check(ns.ValidateSocketMessage(data))
+		_, err = ns.DecodeUIOperation(data)
 		r.check(err)
 		_, err = conn.Write(append(data, '\n'))
 		r.check(err)
 	}
-	send(UIOperation{Op: "subscribe"})
+	send(ns.UIOperation{Op: "subscribe"})
 	if e := decodeSocketEvent(t, decoder); e.Type != "snapshot" {
 		t.Fatal(e.Type)
 	}
-	id := r.notify(NotifyInput{Actions: []Action{{"go", "Go"}}, Resident: true})
+	id := r.notify(ns.NotifyInput{Actions: []ns.Action{{"go", "Go"}}, Resident: true})
 	seen := map[string]bool{}
 	readUntil := func(kind string) {
 		t.Helper()
@@ -90,12 +106,12 @@ func TestSocketEventsAndOperationsMatchSharedSchema(t *testing.T) {
 	}
 	readUntil("upsert")
 	readUntil("status")
-	send(UIOperation{Op: "action", ID: id, Key: "go"})
+	send(ns.UIOperation{Op: "action", ID: id, Key: "go"})
 	readUntil("status")
-	send(UIOperation{Op: "dismiss", ID: id})
+	send(ns.UIOperation{Op: "dismiss", ID: id})
 	readUntil("remove")
-	r.notify(NotifyInput{})
+	r.notify(ns.NotifyInput{})
 	readUntil("upsert")
-	send(UIOperation{Op: "dismiss_all"})
+	send(ns.UIOperation{Op: "dismiss_all"})
 	readUntil("remove")
 }

@@ -1,9 +1,10 @@
-package notifysync
+package notifysync_test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	ns "github.com/simonwjackson/mountainous/notify-sync"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +15,8 @@ import (
 
 func TestStatelessMCPAndBearer(t *testing.T) {
 	base := ntfyServer(t)
-	client, _ := NewClient(base, base, "", "")
-	hub := Hub{client}
+	client, _ := ns.NewClient(base, base, "", "")
+	hub := ns.Hub{client}
 	token := strings.Repeat("m", 48)
 	handler, err := hub.Handler(token)
 	if err != nil {

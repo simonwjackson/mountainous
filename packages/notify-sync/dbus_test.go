@@ -1,9 +1,10 @@
-package notifysync
+package notifysync_test
 
 import (
 	"bufio"
 	"context"
 	"encoding/json"
+	ns "github.com/simonwjackson/mountainous/notify-sync"
 	"net"
 	"os"
 	"os/exec"
@@ -75,29 +76,28 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 	_, err = ui.Write([]byte("{\"op\":\"subscribe\"}\n"))
 	r.check(err)
 	decoder := json.NewDecoder(ui)
-	var snapshot UIEvent
-	r.check(decoder.Decode(&snapshot))
+	snapshot := decodeSocketEvent(t, decoder)
 	if snapshot.Type != "snapshot" || snapshot.Items == nil || snapshot.Status == nil {
 		t.Fatalf("socket snapshot %+v", snapshot)
 	}
 	app, err := dbus.ConnectSessionBus()
 	r.check(err)
 	defer app.Close()
-	r.check(app.AddMatchSignal(dbus.WithMatchSender(BusName), dbus.WithMatchInterface(BusName)))
+	r.check(app.AddMatchSignal(dbus.WithMatchSender(ns.BusName), dbus.WithMatchInterface(ns.BusName)))
 	signals := make(chan *dbus.Signal, 32)
 	app.Signal(signals)
-	proxy := app.Object(BusName, BusPath)
+	proxy := app.Object(ns.BusName, ns.BusPath)
 	var caps []string
-	r.check(proxy.Call(BusName+".GetCapabilities", 0).Store(&caps))
+	r.check(proxy.Call(ns.BusName+".GetCapabilities", 0).Store(&caps))
 	var name, vendor, version, spec string
-	r.check(proxy.Call(BusName+".GetServerInformation", 0).Store(&name, &vendor, &version, &spec))
+	r.check(proxy.Call(ns.BusName+".GetServerInformation", 0).Store(&name, &vendor, &version, &spec))
 	if spec != "1.2" || len(caps) < 3 {
 		t.Fatalf("info %s %v", spec, caps)
 	}
 	notify := func(replaces uint32, hints map[string]dbus.Variant) uint32 {
 		t.Helper()
 		var id uint32
-		r.check(proxy.Call(BusName+".Notify", 0, "test-app", replaces, "dialog-information", "test", "body", []string{"go", "Go"}, hints, int32(300)).Store(&id))
+		r.check(proxy.Call(ns.BusName+".Notify", 0, "test-app", replaces, "dialog-information", "test", "body", []string{"go", "Go"}, hints, int32(300)).Store(&id))
 		return id
 	}
 	waitSignal := func(member string, id uint32) *dbus.Signal {
@@ -107,7 +107,7 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 		for {
 			select {
 			case s := <-signals:
-				if s.Name == BusName+"."+member && s.Body[0] == id {
+				if s.Name == ns.BusName+"."+member && s.Body[0] == id {
 					return s
 				}
 			case <-timer.C:
@@ -118,22 +118,17 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 	id := notify(0, map[string]dbus.Variant{})
 	seq := ""
 	eventually(t, func() bool {
-		r.d.mu.Lock()
-		defer r.d.mu.Unlock()
-		s, e := r.d.Store.load()
-		if e != nil {
-			return false
+		for _, item := range socketSnapshot(t, r.d).Items {
+			if item.ID == id {
+				seq = item.Seq
+				ms, e := r.c.Poll(r.ctx, ns.Topic, "all")
+				return e == nil && ns.Fold(ms)[seq].ID != ""
+			}
 		}
-		row := s.Records[id]
-		seq = row.Item.Seq
-		return row.PubSeen
+		return false
 	})
 	time.Sleep(350 * time.Millisecond)
-	r.d.mu.Lock()
-	s, err := r.d.Store.load()
-	r.d.mu.Unlock()
-	r.check(err)
-	if !s.Records[id].Open {
+	if !r.isOpen(id) {
 		t.Fatal("expire_timeout closed centre item")
 	}
 	r.check(r.c.Clear(r.ctx, seq))
@@ -142,12 +137,7 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 		t.Fatalf("reason %v", sig.Body[1])
 	}
 	id2 := notify(0, map[string]dbus.Variant{})
-	eventually(t, func() bool {
-		r.d.mu.Lock()
-		defer r.d.mu.Unlock()
-		s, e := r.d.Store.load()
-		return e == nil && s.Records[id2].PubSeen
-	})
+	eventually(t, func() bool { return len(r.events(id2)) > 0 })
 	r.control(id2, "action", "go")
 	waitSignal("ActionInvoked", id2)
 	sig = waitSignal("NotificationClosed", id2)
@@ -166,14 +156,14 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 	// Liveness uses the actual unique bus sender, not a caller-supplied app name.
 	app.Close()
 	eventually(t, func() bool {
-		r.d.mu.Lock()
-		defer r.d.mu.Unlock()
-		s, e := r.d.Store.load()
-		return e == nil && !s.Records[id3].Item.SenderAlive
+		for _, item := range socketSnapshot(t, r.d).Items {
+			if item.ID == id3 {
+				return !item.SenderAlive
+			}
+		}
+		return false
 	})
 	cancel()
-	r.d.mu.Lock()
-	r.d.mu.Unlock()
 }
 
 func TestRealLibnotifyClients(t *testing.T) {
@@ -220,14 +210,14 @@ func TestRealLibnotifyClients(t *testing.T) {
 			id := uint32(n)
 			var seq string
 			eventually(t, func() bool {
-				r.d.mu.Lock()
-				defer r.d.mu.Unlock()
-				s, e := r.d.Store.load()
-				if e != nil {
-					return false
+				for _, item := range socketSnapshot(t, r.d).Items {
+					if item.ID == id {
+						seq = item.Seq
+						messages, e := r.c.Poll(r.ctx, ns.Topic, "all")
+						return e == nil && ns.Fold(messages)[seq].ID != ""
+					}
 				}
-				seq = s.Records[id].Item.Seq
-				return s.Records[id].PubSeen
+				return false
 			})
 			if action {
 				r.control(id, "action", "archive")
