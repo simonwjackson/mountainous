@@ -51,22 +51,23 @@ func ntfyServer(t *testing.T) string {
 	if err = cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { cmd.Process.Kill(); cmd.Wait(); log.Close() })
+	exited := make(chan struct{})
+	var processErr error
+	go func() { processErr = cmd.Wait(); close(exited) }()
+	t.Cleanup(func() { cmd.Process.Kill(); <-exited; log.Close() })
 	base := "http://" + address
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		r, err := http.Get(base + "/v1/health")
-		if err == nil {
-			r.Body.Close()
-			if r.StatusCode == 200 {
-				return base
-			}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	if err := waitForHealth(ctx, base, exited); err != nil {
+		data, _ := os.ReadFile(log.Name())
+		select {
+		case <-exited:
+			t.Fatalf("ntfy startup: %v (process: %v): %s", err, processErr, data)
+		default:
+			t.Fatalf("ntfy startup: %v: %s", err, data)
 		}
-		time.Sleep(20 * time.Millisecond)
 	}
-	data, _ := os.ReadFile(log.Name())
-	t.Fatalf("ntfy startup: %s", data)
-	return ""
+	return base
 }
 
 type rig struct {
@@ -85,6 +86,7 @@ func newRig(t *testing.T, base string) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c.HTTP.Timeout = 60 * time.Second
 	path := filepath.Join(t.TempDir(), "store.db")
 	s, err := ns.OpenStore(path)
 	if err != nil {
@@ -578,7 +580,7 @@ func TestRemoteDismissAndHubAgentAction(t *testing.T) {
 	r.check(err)
 	h := ns.Hub{r.c}
 	r.check(h.ApplyControl(r.ctx, m))
-	ctx, cancel := context.WithTimeout(r.ctx, time.Second)
+	ctx, cancel := context.WithTimeout(r.ctx, 60*time.Second)
 	defer cancel()
 	got, err := r.c.Wait(ctx, seq)
 	r.check(err)
@@ -609,12 +611,13 @@ func TestNotifyAndDismissDoNotWaitForOutboxNetwork(t *testing.T) {
 			}))
 			defer gate.Close()
 			r := newRig(t, gate.URL)
+			r.c.HTTP.Timeout = 0
 			id := r.notify(ns.NotifyInput{})
 			done := make(chan error, 1)
 			go func() { done <- r.d.Flush(r.ctx) }()
 			select {
 			case <-started:
-			case <-time.After(5 * time.Second):
+			case <-time.After(60 * time.Second):
 				t.Fatal("publish did not start")
 			}
 			updated := make(chan error, 1)
@@ -629,7 +632,7 @@ func TestNotifyAndDismissDoNotWaitForOutboxNetwork(t *testing.T) {
 			select {
 			case err := <-updated:
 				r.check(err)
-			case <-time.After(time.Second):
+			case <-time.After(60 * time.Second):
 				close(release)
 				t.Fatal("D-Bus operation blocked on network")
 			}

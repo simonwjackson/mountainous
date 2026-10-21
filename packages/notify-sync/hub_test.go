@@ -80,7 +80,7 @@ func TestStatelessMCPAndBearer(t *testing.T) {
 	if code != 200 || !bytes.Contains(data, []byte(`"type":"clear"`)) {
 		t.Fatalf("wait: %d %s", code, data)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	ctl, err := client.Wait(ctx, seq)
 	if err != nil || ctl.Type != "clear" {

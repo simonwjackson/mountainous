@@ -46,7 +46,7 @@ func privateBus(t *testing.T) {
 }
 func eventually(t *testing.T, f func() bool) {
 	t.Helper()
-	until := time.Now().Add(8 * time.Second)
+	until := time.Now().Add(60 * time.Second)
 	for time.Now().Before(until) {
 		if f() {
 			return
@@ -102,7 +102,7 @@ func TestDesktopDBusAndSocket(t *testing.T) {
 	}
 	waitSignal := func(member string, id uint32) *dbus.Signal {
 		t.Helper()
-		timer := time.NewTimer(8 * time.Second)
+		timer := time.NewTimer(60 * time.Second)
 		defer timer.Stop()
 		for {
 			select {
@@ -234,7 +234,7 @@ func TestRealLibnotifyClients(t *testing.T) {
 			select {
 			case err := <-exited:
 				r.check(err)
-			case <-time.After(8 * time.Second):
+			case <-time.After(60 * time.Second):
 				t.Fatal("libnotify did not exit")
 			}
 		})

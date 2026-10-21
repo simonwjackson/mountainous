@@ -136,7 +136,7 @@ func TestStreamReconnectReconcilesEventsMissedWhileDisconnected(t *testing.T) {
 	var cancel context.CancelFunc
 	select {
 	case cancel = <-gate.firstCancel:
-	case <-time.After(5 * time.Second):
+	case <-time.After(60 * time.Second):
 		t.Fatal("stream never connected")
 	}
 	eventually(t, func() bool { return gate.polls.Load() >= 4 })

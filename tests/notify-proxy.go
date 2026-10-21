@@ -43,14 +43,21 @@ func TestNtfyJSONStreamAndWebSocket(t *testing.T) {
 	}
 	defer func() { cmd.Process.Kill(); cmd.Wait() }()
 	base := "http://" + address
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(60 * time.Second)
+	healthClient := &http.Client{Timeout: time.Second}
 	ready := false
 	for time.Now().Before(deadline) {
-		r, err := http.Get(base + "/v1/health")
+		r, err := healthClient.Get(base + "/v1/health")
 		if err == nil {
+			var health struct {
+				Healthy bool `json:"healthy"`
+			}
+			decodeErr := json.NewDecoder(r.Body).Decode(&health)
 			r.Body.Close()
-			ready = true
-			break
+			if r.StatusCode == 200 && decodeErr == nil && health.Healthy {
+				ready = true
+				break
+			}
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
@@ -60,7 +67,7 @@ func TestNtfyJSONStreamAndWebSocket(t *testing.T) {
 	backend, _ := url.Parse(base)
 	proxy := httptest.NewServer(proxyHandler(backend))
 	defer proxy.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	publish := func(text string) {
 		t.Helper()

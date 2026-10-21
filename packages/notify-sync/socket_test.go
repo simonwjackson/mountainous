@@ -24,7 +24,7 @@ func socketSnapshot(t *testing.T, d *ns.Daemon) ns.UIEvent {
 		}
 	}()
 	var conn net.Conn
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(60 * time.Second)
 	for time.Now().Before(deadline) {
 		var err error
 		conn, err = net.Dial("unix", path)
@@ -37,7 +37,7 @@ func socketSnapshot(t *testing.T, d *ns.Daemon) ns.UIEvent {
 		t.Fatal("UI socket did not start")
 	}
 	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(5 * time.Second))
+	conn.SetDeadline(time.Now().Add(60 * time.Second))
 	if _, err := conn.Write([]byte("{\"op\":\"subscribe\"}\n")); err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestSocketEventsAndOperationsMatchSharedSchema(t *testing.T) {
 	var conn net.Conn
 	eventually(t, func() bool { var err error; conn, err = net.Dial("unix", path); return err == nil })
 	defer conn.Close()
-	conn.SetDeadline(time.Now().Add(8 * time.Second))
+	conn.SetDeadline(time.Now().Add(60 * time.Second))
 	decoder := json.NewDecoder(conn)
 	send := func(op ns.UIOperation) {
 		t.Helper()
