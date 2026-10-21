@@ -69,7 +69,10 @@
             control=$(${pkgs.coreutils}/bin/readlink -f /run/current-system/sw/bin/logbook-service-control)
             /run/wrappers/bin/sudo "$control" stop
             /run/wrappers/bin/sudo "$control" start
-            ${pkgs.curl}/bin/curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            # The core rebuilds its indexes from all stored data before it listens
+            # (about 45 s on 2026-10-21, growing with history). Wait up to 4 min,
+            # inside activationTimeout.
+            ${pkgs.curl}/bin/curl --fail --silent --show-error --retry 240 --retry-connrefused --retry-delay 1 --retry-max-time 240 \
               http://127.0.0.1:3160/healthz | ${pkgs.jq}/bin/jq -e '.status == "ok"'
             ${pkgs.curl}/bin/curl --fail --silent --show-error http://127.0.0.1:3160/rpc \
               -H 'Content-Type: application/json' \

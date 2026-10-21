@@ -175,7 +175,7 @@ in
           mode = "0400";
         };
 
-        # Withings API key. No service reads it yet.
+        # Withings OAuth client secret for Logbook (modules/logbook.nix renders it).
         sops.secrets.withings-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";

@@ -57,6 +57,11 @@ in
       # host's `oura-api-key` sops secret, rendered into the client file.
       ouraClient = config.sops.secrets ? oura-api-key;
       ouraClientFile = config.sops.templates."logbook-oura-client.json".path;
+      # Logbook's own Withings app (not Coach's: Withings rotates refresh tokens).
+      withingsClient = config.sops.secrets ? withings-api-key;
+      withingsClientFile = config.sops.templates."logbook-withings-client.json".path;
+      # Registered on both vendor apps. The server completes grants here itself.
+      callback = "https://logbook.hummingbird-lake.ts.net/oauth/callback";
       controller = pkgs.writeShellApplication {
         name = "logbook-service-control";
         runtimeInputs = [ pkgs.systemd ];
@@ -159,8 +164,17 @@ in
         content = builtins.toJSON {
           clientId = "fb234ed4-ab17-4016-bbf5-319dc8cd381b";
           clientSecret = config.sops.placeholder.oura-api-key;
-          # Oura allows plain http only for the host name localhost.
-          redirectUri = "http://localhost:9876/callback";
+          redirectUri = callback;
+        };
+      };
+      sops.templates."logbook-withings-client.json" = lib.mkIf withingsClient {
+        owner = "logbook";
+        mode = "0400";
+        restartUnits = [ "logbook.service" ];
+        content = builtins.toJSON {
+          clientId = "1cdf1b07de793c68c55d8a1b007eb0fcd75298d548214e621764d8106e9473af";
+          clientSecret = config.sops.placeholder.withings-api-key;
+          redirectUri = callback;
         };
       };
       systemd.services.logbook = unit // {
@@ -168,7 +182,8 @@ in
         serviceConfig = common // {
           ExecStart =
             "${profile}/bin/logbook-server --port 3160 --data-dir ${state}/data --state-dir ${state}/state --inbox-dir ${state}/inbox --gadgetbridge-export ${destination}"
-            + lib.optionalString ouraClient " --oura-client-file ${ouraClientFile}";
+            + lib.optionalString ouraClient " --oura-client-file ${ouraClientFile}"
+            + lib.optionalString withingsClient " --withings-client-file ${withingsClientFile}";
           # The server's graceful shutdown handler listens for Ctrl-C/SIGINT.
           KillSignal = "SIGINT";
           # Only the root bridge publishes snapshots. The server is read-only.

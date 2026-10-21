@@ -28,6 +28,7 @@ assert core.NoNewPrivileges && sidecar.NoNewPrivileges;
 assert core.CapabilityBoundingSet == "" && sidecar.CapabilityBoundingSet == "";
 assert core.ReadOnlyPaths == [ "-${state}/inbox/gadgetbridge" ];
 assert lib.hasInfix "--oura-client-file /run/secrets/rendered/logbook-oura-client.json" core.ExecStart;
+assert lib.hasInfix "--withings-client-file /run/secrets/rendered/logbook-withings-client.json" core.ExecStart;
 assert lib.hasPrefix "${profile}/bin/logbook-server --port 3160" core.ExecStart;
 assert lib.hasInfix "--gadgetbridge-export ${state}/inbox/gadgetbridge/Gadgetbridge.db"
   core.ExecStart;
