@@ -212,7 +212,7 @@ class Fixtures:
         ]
 
     # Every scenario and popup set, for the capture script and --dump.
-    SCENARIOS = ["empty", "ideal", "stress", "sender-gone", "local-only", "unreachable"]
+    SCENARIOS = ["empty", "ideal", "stress", "sender-gone", "local-only", "unreachable", "delivery-error"]
     POPUP_SETS = ["normal", "critical", "image", "remote", "sender-gone", "local-only", "many"]
 
     def scenario(self, name):
@@ -226,6 +226,11 @@ class Fixtures:
             return self.sender_gone(), status("connected")
         if name == "local-only":
             return self.local_only(), status("connected")
+        if name == "delivery-error":
+            # The server answers but refused one notification for good:
+            # connected, nothing queued, and the reason.
+            return self.ideal()[:3], status(
+                "connected", 0, "ntfy refused myoko-ae370c-188: HTTP 413 request entity too large (limit 4096 bytes)")
         if name == "unreachable":
             return self.ideal()[:3], status("unreachable", 7, "dial tcp 100.101.7.12:443: connect: connection refused")
         raise ValueError(name)

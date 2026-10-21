@@ -461,7 +461,9 @@ function barText(view, status, count, wide) {
     if (view.kind === "connecting") return wide ? "Notifications" : "NTF";
     if (wide) {
         let text = count > 0 ? "Notifications " + count : "Notifications";
-        if (status.server === "unreachable") text += ", local only";
+        const badge = statusBadge(view, status);
+        if (badge.kind === "local_only") text += ", local only";
+        if (badge.kind === "delivery_error") text += ", sync error";
         return text;
     }
     return count > 0 ? "NTF " + count : "NTF";
@@ -469,24 +471,46 @@ function barText(view, status, count, wide) {
 
 // The bar control's colour, as a tone the caller maps to a Theme colour.
 // Red: an urgent item is open. Amber: notifyd or the sync server is out of
-// reach.
+// reach, or the server refused a notification.
 function barTone(view, status, items) {
     if (view.kind === "offline") return "warning";
     if (view.kind === "connecting") return "muted";
     if (items.some(function (i) { return i.urgency === URGENCY_CRITICAL; })) return "danger";
-    if (status.server === "unreachable") return "warning";
+    const badge = statusBadge(view, status);
+    if (badge.kind === "local_only" || badge.kind === "delivery_error") return "warning";
     return items.length > 0 ? "primary" : "muted";
 }
 
-// The centre's status badge: {kind: "local_only", text} while the sync
-// server is out of reach, {kind: "connecting", text} while notifyd is still
-// reaching it, else {kind: "none"}.
+var STATUS_BADGE_KINDS = ["none", "connecting", "local_only", "delivery_error"];
+
+// The centre's sync status, from the daemon's status:
+//   local_only      {text, detail}  the server is out of reach; notifyd
+//                                   holds what it could not send
+//   delivery_error  {text, detail}  the server answers but refused a
+//                                   notification for good (connected with a
+//                                   last_error); nothing will send it again
+//   connecting      {text}          notifyd is still reaching the server
+//   none                            all is well, or the socket is down
+// detail is the full sentence for the centre, with the daemon's error text.
 function statusBadge(view, status) {
     if (view.kind !== "ready" && view.kind !== "empty") return none();
     if (status.server === "unreachable") {
-        return {kind: "local_only", text: status.outbox > 0 ? "Local only, " + status.outbox + " queued" : "Local only"};
+        return {
+            kind: "local_only",
+            text: status.outbox > 0 ? "Local only, " + status.outbox + " queued" : "Local only",
+            detail: "New notifications stay on this desktop until the sync server answers."
+                + (status.last_error !== null ? " Last error: " + status.last_error : "")
+        };
     }
     if (status.server === "connecting") return {kind: "connecting", text: "Connecting to sync server"};
+    if (status.last_error !== null) {
+        return {
+            kind: "delivery_error",
+            text: "Sync error",
+            detail: "The sync server refused a notification, so your other devices did not get it. "
+                + "Server error: " + status.last_error
+        };
+    }
     return none();
 }
 

@@ -130,7 +130,7 @@ Scope {
                             id: inlineBadge
                             visible: card.badgeInline
                             text: card.badgeText
-                            warn: root.badge.kind === "local_only"
+                            warn: root.badge.kind === "local_only" || root.badge.kind === "delivery_error"
                         }
 
                         NotificationButton {
@@ -167,23 +167,17 @@ Scope {
                         visible: !card.badgeInline && root.badge.kind !== "none"
                         Layout.maximumWidth: content.width
                         text: card.badgeText
-                        warn: root.badge.kind === "local_only"
+                        warn: root.badge.kind === "local_only" || root.badge.kind === "delivery_error"
                     }
 
-                    // Why the server is out of reach, in the daemon's words.
+                    // What the badge means, with the daemon's error text in
+                    // full: the server out of reach, or a refused delivery.
                     Text {
                         Layout.fillWidth: true
-                        visible: root.badge.kind === "local_only"
-                        text: {
-                            let value = "New notifications stay on this desktop until the sync server answers.";
-                            if (root.service.status.last_error)
-                                value += " Last error: " + root.service.status.last_error;
-                            return value;
-                        }
+                        visible: root.badge.kind === "local_only" || root.badge.kind === "delivery_error"
+                        text: visible ? root.badge.detail : ""
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
-                        maximumLineCount: 4
-                        elide: Text.ElideRight
                         color: Theme.textDetail
                         font.pixelSize: NotificationStyle.textDetail
                         font.family: Theme.fontFamily

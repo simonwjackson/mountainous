@@ -98,11 +98,30 @@ assert.deepEqual(state.popups, []);
 state = model.applyEvent(state, ev(({type: "status", status: {server: "unreachable", outbox: 4, last_error: "dial tcp: refused"}})));
 assert.equal(state.status.outbox, 4);
 const ready = {kind: "ready"};
-assert.deepEqual(model.statusBadge(ready, state.status), {kind: "local_only", text: "Local only, 4 queued"});
-assert.deepEqual(model.statusBadge({kind: "empty"}, {server: "unreachable", outbox: 0}), {kind: "local_only", text: "Local only"});
-assert.deepEqual(model.statusBadge(ready, {server: "connecting", outbox: 0}), {kind: "connecting", text: "Connecting to sync server"});
-assert.deepEqual(model.statusBadge(ready, {server: "connected", outbox: 9}), {kind: "none"});
-assert.deepEqual(model.statusBadge({kind: "offline", retryInSeconds: 3}, {server: "unreachable", outbox: 9}), {kind: "none"},
+assert.deepEqual(model.statusBadge(ready, state.status), {kind: "local_only", text: "Local only, 4 queued",
+    detail: "New notifications stay on this desktop until the sync server answers. Last error: dial tcp: refused"});
+assert.deepEqual(model.statusBadge({kind: "empty"}, {server: "unreachable", outbox: 0, last_error: null}),
+    {kind: "local_only", text: "Local only", detail: "New notifications stay on this desktop until the sync server answers."});
+assert.deepEqual(model.statusBadge(ready, {server: "connecting", outbox: 0, last_error: null}), {kind: "connecting", text: "Connecting to sync server"});
+assert.deepEqual(model.statusBadge(ready, {server: "connecting", outbox: 0, last_error: "x"}), {kind: "connecting", text: "Connecting to sync server"},
+    "while it reconnects, notifyd is still trying");
+assert.deepEqual(model.statusBadge(ready, {server: "connected", outbox: 9, last_error: null}), {kind: "none"});
+// A permanent refusal: connected, nothing queued, an error. Its own state,
+// never "Local only", never a promise to retry, with the error in full.
+const refused = {server: "connected", outbox: 0, last_error: "HTTP 413: message too large"};
+const deliveryError = model.statusBadge(ready, refused);
+assert.equal(deliveryError.kind, "delivery_error");
+assert.equal(deliveryError.text, "Sync error");
+assert.ok(deliveryError.detail.endsWith("Server error: HTTP 413: message too large"), deliveryError.detail);
+assert.ok(!/local only|retry|again|queued|until/i.test(deliveryError.text + " " + deliveryError.detail), deliveryError.detail);
+assert.equal(model.statusBadge({kind: "empty"}, refused).kind, "delivery_error", "shown with no items too");
+assert.equal(model.barTone(ready, refused, [item()]), "warning");
+assert.equal(model.barTone(ready, refused, [item({urgency: 2})]), "danger", "an urgent item still outranks it");
+assert.equal(model.barText(ready, refused, 3, true), "Notifications 3, sync error");
+assert.equal(model.barText(ready, refused, 3, false), "NTF 3");
+// Every badge kind the model names is produced above.
+assert.deepEqual(Array.from(model.STATUS_BADGE_KINDS).sort(), ["connecting", "delivery_error", "local_only", "none"]);
+assert.deepEqual(model.statusBadge({kind: "offline", retryInSeconds: 3}, {server: "unreachable", outbox: 9, last_error: null}), {kind: "none"},
     "a dead socket's status is not shown");
 const kept = state.items[1];
 state = model.applyEvent(state, ev(({type: "upsert", fresh: false, item: item({id: 3, urgency: 2})})));
@@ -270,18 +289,18 @@ assert.deepEqual(model.viewState(sample.connected, [item()], T), {kind: "ready"}
 assert.deepEqual(Array.from(model.VIEW_KINDS).sort(),
     ["connecting", "empty", "offline", "ready"], "every view kind is reachable above");
 
-const up = {server: "connected", outbox: 0};
+const up = {server: "connected", outbox: 0, last_error: null};
 const off = {kind: "offline", retryInSeconds: 2};
 assert.equal(model.barText(off, up, 3, false), "NTF !");
 assert.equal(model.barText(off, up, 3, true), "Notifications offline");
 assert.equal(model.barText({kind: "connecting"}, up, 3, false), "NTF");
 assert.equal(model.barText({kind: "empty"}, up, 0, false), "NTF");
 assert.equal(model.barText(ready, up, 12, false), "NTF 12");
-assert.equal(model.barText(ready, {server: "unreachable", outbox: 2}, 12, true), "Notifications 12, local only");
+assert.equal(model.barText(ready, {server: "unreachable", outbox: 2, last_error: null}, 12, true), "Notifications 12, local only");
 assert.equal(model.barTone(off, up, [item({urgency: 2})]), "warning", "a dead socket outranks an urgent item");
 assert.equal(model.barTone({kind: "connecting"}, up, []), "muted");
-assert.equal(model.barTone(ready, {server: "unreachable"}, [item({urgency: 2})]), "danger");
-assert.equal(model.barTone(ready, {server: "unreachable"}, [item()]), "warning");
+assert.equal(model.barTone(ready, {server: "unreachable", outbox: 0, last_error: null}, [item({urgency: 2})]), "danger");
+assert.equal(model.barTone(ready, {server: "unreachable", outbox: 0, last_error: null}, [item()]), "warning");
 assert.equal(model.barTone(ready, up, [item()]), "primary");
 assert.equal(model.barTone({kind: "empty"}, up, []), "muted");
 

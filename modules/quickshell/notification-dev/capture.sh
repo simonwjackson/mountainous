@@ -154,6 +154,7 @@ centre stress       centre-stress
 centre sender-gone  centre-sender-gone
 centre local-only   centre-local-only
 centre unreachable  centre-unreachable
+centre delivery-error centre-delivery-error
 ipc hide; ctl "scenario ideal"; ctl "status connecting 0"; sleep 0.3; ipc reveal; shot centre-server-connecting
 
 # Keyboard: the ring and the number keys show only after a key press.
@@ -221,6 +222,7 @@ ipc hide
 theme light; sleep 0.5
 centre ideal        light-centre-ideal
 centre unreachable  light-centre-unreachable
+centre delivery-error light-centre-delivery-error
 popups remote       light-popup-remote 0.3
 ctl "popups critical"; shot light-popup-critical
 ctl down; ipc reveal; shot light-centre-offline 1.5
@@ -234,6 +236,7 @@ popups many         half-popup-many
 size 600x1800    # 400x1200, narrow and tall
 centre stress       narrow-centre-stress
 centre unreachable  narrow-centre-unreachable
+centre delivery-error narrow-centre-delivery-error
 popups remote       narrow-popup-remote
 ctl down; ipc reveal; shot narrow-centre-offline 1.5
 ctl up; key r; sleep 1; ipc hide
