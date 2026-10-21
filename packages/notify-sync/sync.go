@@ -36,9 +36,9 @@ func (d *Daemon) reconcile(ctx context.Context, full bool) ([]Message, error) {
 		d.caughtUp = true
 		d.mu.Unlock()
 		if full {
-			receiveErr = d.ReconcileExpiry(notifications, time.Now().Unix())
+			receiveErr = d.ReconcileExpiry(notifications, d.Clock.Now().Unix())
 			if receiveErr == nil {
-				receiveErr = d.Prune(all, time.Now().Unix())
+				receiveErr = d.Prune(all, d.Clock.Now().Unix())
 			}
 		}
 	}
@@ -54,7 +54,7 @@ func (d *Daemon) reconcile(ctx context.Context, full bool) ([]Message, error) {
 func (d *Daemon) watchLoop(ctx context.Context, wakes chan<- Message) {
 	delay := 250 * time.Millisecond
 	for {
-		start := time.Now()
+		start := d.Clock.Now()
 		err := d.Client.Watch(ctx, func(m Message) {
 			select {
 			case wakes <- m:
@@ -70,14 +70,14 @@ func (d *Daemon) watchLoop(ctx context.Context, wakes chan<- Message) {
 		case <-ctx.Done():
 			return
 		}
-		timer := time.NewTimer(delay)
+		timer := d.Clock.NewTimer(delay)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
 			return
-		case <-timer.C:
+		case <-timer.C():
 		}
-		if time.Since(start) >= 30*time.Second {
+		if d.Clock.Now().Sub(start) >= 30*time.Second {
 			delay = 250 * time.Millisecond
 		} else {
 			delay = min(delay*2, 5*time.Second)
@@ -85,27 +85,25 @@ func (d *Daemon) watchLoop(ctx context.Context, wakes chan<- Message) {
 	}
 }
 
-// Run uses the unordered stream only for wake-ups. Per-topic cache cursors
-// define replay order. A bounded retry covers ntfy dispatch-before-cache races;
-// a 30-second fallback also handles missing or uncached wake-ups.
+// Run uses the unordered stream only for wake-ups. Fallback deadlines stay
+// anchored to Run's start, even when HTTP work delays servicing a deadline.
+// Missed intervals coalesce into one reconciliation, not a burst of requests.
 func (d *Daemon) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	wakes := make(chan Message, 256)
 	done := make(chan struct{})
 	go func() { defer close(done); d.watchLoop(ctx, wakes) }()
 	defer func() { cancel(); <-done }()
-	fallback := time.NewTicker(30 * time.Second)
-	defer fallback.Stop()
-	retry := time.NewTimer(time.Hour)
-	retry.Stop()
-	defer retry.Stop()
+	const fallbackInterval = 30 * time.Second
+	nextFallback := d.Clock.Now().Add(fallbackInterval)
 	pending := map[string]time.Time{}
 	observed := map[string]time.Time{}
 	retryDelay := 25 * time.Millisecond
-	lastFull := time.Now()
+	var retryAt time.Time
+	lastFull := d.Clock.Now()
 	apply := func(full bool) {
 		messages, _ := d.reconcile(ctx, full)
-		now := time.Now()
+		now := d.Clock.Now()
 		if full {
 			lastFull = now
 		}
@@ -123,30 +121,37 @@ func (d *Daemon) Run(ctx context.Context) error {
 				delete(pending, id)
 			}
 		}
-		retry.Stop()
 		if len(pending) > 0 {
-			retry.Reset(retryDelay)
+			retryAt = now.Add(retryDelay)
 			retryDelay = min(retryDelay*2, 400*time.Millisecond)
 		} else {
+			retryAt = time.Time{}
 			retryDelay = 25 * time.Millisecond
 		}
 	}
 	apply(true)
 	for {
+		deadline := nextFallback
+		if !retryAt.IsZero() && retryAt.Before(deadline) {
+			deadline = retryAt
+		}
+		timer := d.Clock.NewTimer(max(0, deadline.Sub(d.Clock.Now())))
 		sync := false
 		full := false
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return nil
 		case <-d.outboxWake:
 			sync = true
-		case <-fallback.C:
+		case <-timer.C():
+			now := d.Clock.Now()
 			sync = true
-			full = time.Since(lastFull) >= 55*time.Second
-		case <-retry.C:
-			sync = true
+			if !now.Before(nextFallback) {
+				full = now.Sub(lastFull) >= 55*time.Second
+				nextFallback = nextFallback.Add((now.Sub(nextFallback)/fallbackInterval + 1) * fallbackInterval)
+			}
 		case m := <-wakes:
-			// Drain a burst before polling. Message bodies never mutate the store.
 			accept := func(m Message) {
 				if m.Event == "open" || m.Event == "reconnect" {
 					sync = true
@@ -154,7 +159,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 				}
 				if m.ID != "" {
 					if _, seen := observed[m.ID]; !seen {
-						pending[m.ID] = time.Now().Add(2 * time.Second)
+						pending[m.ID] = d.Clock.Now().Add(2 * time.Second)
 						sync = true
 					}
 				}
@@ -170,6 +175,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 				}
 			}
 		}
+		timer.Stop()
 		if ctx.Err() != nil {
 			return nil
 		}

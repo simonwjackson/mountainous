@@ -18,6 +18,7 @@ type Signal struct {
 	Sender string
 }
 type Daemon struct {
+	Clock         Clock
 	mu            sync.Mutex
 	flushMu       sync.Mutex
 	Store         *Store
@@ -32,7 +33,7 @@ type Daemon struct {
 }
 
 func NewDaemon(s *Store, c *Client, host string) *Daemon {
-	return &Daemon{Store: s, Client: c, Host: SafeName(host), clients: map[chan UIEvent]struct{}{}, status: Status{Server: "connecting"}, outboxWake: make(chan struct{}, 1)}
+	return &Daemon{Clock: WallClock{}, Store: s, Client: c, Host: SafeName(host), clients: map[chan UIEvent]struct{}{}, status: Status{Server: "connecting"}, outboxWake: make(chan struct{}, 1)}
 }
 func outbox(s *state) int {
 	n := len(s.Controls)
