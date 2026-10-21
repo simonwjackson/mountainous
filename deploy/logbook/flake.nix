@@ -65,8 +65,10 @@
         profiles.logbook = {
           profilePath = "/nix/var/nix/profiles/per-user/logbook/application";
           path = deployPkgs.deploy-rs.lib.activate.custom application ''
-            /run/wrappers/bin/sudo /run/current-system/sw/bin/logbook-service-control stop
-            /run/wrappers/bin/sudo /run/current-system/sw/bin/logbook-service-control start
+            # sudo matches the controller's store path, not the profile symlink.
+            control=$(${pkgs.coreutils}/bin/readlink -f /run/current-system/sw/bin/logbook-service-control)
+            /run/wrappers/bin/sudo "$control" stop
+            /run/wrappers/bin/sudo "$control" start
             ${pkgs.curl}/bin/curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
               http://127.0.0.1:3160/healthz | ${pkgs.jq}/bin/jq -e '.status == "ok"'
             ${pkgs.curl}/bin/curl --fail --silent --show-error http://127.0.0.1:3160/rpc \
