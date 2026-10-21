@@ -17,6 +17,7 @@ in
       "tailnet-names"
       "decision-gateway"
       "notify-server"
+      "pi-assistant"
     ];
     module =
       { config, lib, ... }:
@@ -109,6 +110,59 @@ in
         sops.secrets.zwave-js-secrets = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
+        };
+
+        # Simon's and Laure's assistants, and their shared one, behind
+        # https://assistant.hummingbird-lake.ts.net.
+        mountainous.features.pi-assistant = {
+          people = {
+            simon = {
+              voicePort = 4317;
+              webPort = 4318;
+            };
+            laure = {
+              voicePort = 4327;
+              webPort = 4328;
+            };
+          };
+          tailnet = "hummingbird-lake.ts.net";
+          homePlace = "Denver|39.739|-104.985|America/Denver";
+          cliproxyapiKeyFile = config.sops.secrets.pi-assistant-cliproxyapi-key.path;
+          braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
+          lanes = {
+            chat = "cliproxyapi/claude-opus-5-5";
+            creative = "cliproxyapi/claude-opus-5-5";
+            mechanical = "cliproxyapi/gpt-6.1-sol";
+            background = "cliproxyapi/gemini-3.8-flash-high";
+          };
+          laneFallbacks = {
+            chat = [ "cliproxyapi/gpt-6.1-sol" ];
+            creative = [ "cliproxyapi/gpt-6.1-sol" ];
+            mechanical = [ "cliproxyapi/claude-opus-5-5" ];
+            background = [
+              "cliproxyapi/gpt-6.1-sol"
+              "cliproxyapi/claude-opus-5-5"
+            ];
+          };
+        };
+        # Root reads these; each assistant unit gets a copy as a credential.
+        sops.secrets.pi-assistant-cliproxyapi-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [
+            "pi-assistant-simon.service"
+            "pi-assistant-laure.service"
+            "pi-assistant-household.service"
+          ];
+        };
+        sops.secrets.pi-assistant-brave-api-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [
+            "pi-assistant-simon.service"
+            "pi-assistant-laure.service"
+            "pi-assistant-household.service"
+          ];
         };
 
         # Namecheap API key. No service reads it yet.

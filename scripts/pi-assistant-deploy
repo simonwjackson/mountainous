@@ -1,0 +1,124 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 git gnutar nix
+"""Build the household assistant's application and install it on Rakku.
+
+modules/pi-assistant.nix owns the users, storage, and units. The application
+is one closure under /nix/var/nix/profiles/per-user/pi-assistant/application:
+
+  bin/assistant         the core (assistant/core, its flake package)
+  bin/assistant-tsgo    the tailnet node (assistant/tsgo, its flake package)
+  share/assistant-web   the web app's build (assistant/web)
+
+  scripts/pi-assistant-deploy build      build it here, print its store path
+  scripts/pi-assistant-deploy install    build, copy to Rakku, set the profile
+  scripts/pi-assistant-deploy install --restart   ...and restart the units
+
+Each source is the committed tip of a branch (default main), never a dirty
+tree. The web app builds against the core of the same run.
+"""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+ASSISTANT = Path.home() / "code/sandbox/assistant"
+PROFILE = "/nix/var/nix/profiles/per-user/pi-assistant/application"
+UNITS = [
+    "pi-assistant-simon",
+    "pi-assistant-laure",
+    "pi-assistant-household",
+    "assistant-tsgo",
+]
+
+
+def run(args, **kwargs):
+    print("+", " ".join(str(arg) for arg in args), flush=True)
+    return subprocess.run(args, check=True, **kwargs)
+
+
+def output(args, **kwargs):
+    return run(args, capture_output=True, text=True, **kwargs).stdout.strip()
+
+
+def flake(repo, branch):
+    rev = output(["git", "-C", str(repo), "rev-parse", f"refs/heads/{branch}"])
+    return f"git+file://{repo}?ref=refs/heads/{branch}&rev={rev}", rev
+
+
+def build_package(repo, branch):
+    ref, rev = flake(repo, branch)
+    path = output(["nix", "build", "--no-link", "--print-out-paths", f"{ref}#default"])
+    return path, rev
+
+
+def build_web(core, branch):
+    """vite build of the web app's tip, with the core package at ../core."""
+    repo = ASSISTANT / "web"
+    rev = output(["git", "-C", str(repo), "rev-parse", f"refs/heads/{branch}"])
+    with tempfile.TemporaryDirectory(prefix="pi-assistant-web-") as directory:
+        work = Path(directory)
+        (work / "web").mkdir()
+        archive = subprocess.Popen(["git", "-C", str(repo), "archive", rev], stdout=subprocess.PIPE)
+        run(["tar", "-x", "-C", str(work / "web")], stdin=archive.stdout)
+        if archive.wait() != 0:
+            raise RuntimeError("git archive failed")
+        # package.json names the core as file:../core; its build is all vite needs.
+        shutil.copytree(Path(core) / "lib/pi-assistant-foundation", work / "core", symlinks=True)
+        shell = ["nix", "develop", f"git+file://{repo}?rev={rev}#default", "-c"]
+        run([*shell, "npm", "ci", "--no-audit", "--no-fund"], cwd=work / "web")
+        run([*shell, "npm", "run", "build"], cwd=work / "web")
+        path = output(["nix", "store", "add", "--name", f"assistant-web-{rev[:12]}", str(work / "web/dist")])
+    return path, rev
+
+
+def assemble(core, tsgo, web):
+    nixpkgs = output(
+        ["nix", "eval", "--raw", f"{ROOT}#nixosConfigurations.rakku.pkgs.path"],
+    )
+    expression = f"""
+      let pkgs = import {nixpkgs} {{ system = "x86_64-linux"; }};
+      in pkgs.runCommand "pi-assistant-application" {{ }} ''
+        mkdir -p $out/bin $out/share
+        ln -s ${{builtins.storePath "{core}"}}/bin/assistant $out/bin/assistant
+        ln -s ${{builtins.storePath "{tsgo}"}}/bin/assistant-tsgo $out/bin/assistant-tsgo
+        ln -s ${{builtins.storePath "{web}"}} $out/share/assistant-web
+      ''
+    """
+    return output(["nix", "build", "--impure", "--no-link", "--print-out-paths", "--expr", expression])
+
+
+def build(branches):
+    core, core_rev = build_package(ASSISTANT / "core", branches["core"])
+    tsgo, tsgo_rev = build_package(ASSISTANT / "tsgo", branches["tsgo"])
+    web, web_rev = build_web(core, branches["web"])
+    application = assemble(core, tsgo, web)
+    print(json.dumps({"application": application, "core": core_rev, "web": web_rev, "tsgo": tsgo_rev}, indent=2))
+    return application
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("action", choices=["build", "install"])
+    parser.add_argument("--core", default="main", help="core branch")
+    parser.add_argument("--web", default="main", help="web branch")
+    parser.add_argument("--tsgo", default="main", help="tsgo branch")
+    parser.add_argument("--restart", action="store_true", help="restart the units after install")
+    args = parser.parse_args()
+    application = build({"core": args.core, "web": args.web, "tsgo": args.tsgo})
+    if args.action == "build":
+        return
+    transport = ROOT / "scripts/rakku-transport"
+    run([str(transport), "push-system", application])
+    run([str(transport), "ssh", "sudo", "-n", "nix-env", "--profile", PROFILE, "--set", application])
+    if args.restart:
+        run([str(transport), "ssh", "sudo", "-n", "systemctl", "restart", *UNITS])
+
+
+if __name__ == "__main__":
+    os.umask(0o022)
+    main()
