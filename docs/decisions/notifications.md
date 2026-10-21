@@ -140,7 +140,7 @@ Sender liveness tracks the D-Bus unique name and the bus session ID. On
 without app buttons and retains Done. A new session cannot reuse an old
 unique name to revive its buttons. Desktop actions also require a live sender
 and a key present on the item. A phone action has no Wayland activation token;
-notifyd does not make up an activation token.
+notifyd does not create an activation token.
 
 ## Phone mapping and trust
 
