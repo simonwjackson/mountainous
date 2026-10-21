@@ -152,6 +152,13 @@ becomes local-only retracts its old remote copy. The daemon accepts repeatable
 exact-name flags, not a comma-separated filter; app names containing commas
 must not bypass the local-only boundary.
 
+A notification whose first body line is the hub's host (from `NOTIFY_URL` or
+`NOTIFY_PUBLIC_URL`) also remains local. That is a browser's copy of an ntfy
+message: Chromium puts the page origin on the first body line. On 2026-10-21
+Myoko's Chromium showed the ntfy web app; `notifyd` republished each copy, and
+the topic received 625 messages in about two minutes. The check matches text,
+so it stops working if a browser changes how it shows the origin.
+
 A versioned, base64url metadata tag carries host, app, residency, sender
 liveness and agent origin. It contains no authentication token. ntfy limits
 tags to 512 bytes, titles to 1024 bytes and decoded message text to 4095

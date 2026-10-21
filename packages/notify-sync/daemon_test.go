@@ -521,6 +521,43 @@ func TestRemoteItemsAndLiveness(t *testing.T) {
 	r.sync()
 }
 
+// A browser that shows the ntfy web app raises a desktop notification for each
+// ntfy message, with the page origin as the first body line. Publishing that
+// copy feeds it back to the browser and loops without end.
+func TestBrowserEcho(t *testing.T) {
+	base := ntfyServer(t)
+	origin := strings.TrimPrefix(base, "http://")
+	for name, body := range map[string]string{
+		"text":   origin + "\n\nCopied to clipboard.",
+		"bare":   origin,
+		"nested": origin + "\n\n" + origin + "\n\nFile saved",
+		"spaced": "  " + origin + " \r\n\nCopied",
+	} {
+		t.Run(name, func(t *testing.T) {
+			r := newRig(t, base)
+			id := r.notify(ns.NotifyInput{AppName: "Chromium", Body: body})
+			r.sync()
+			if !r.item(id).LocalOnly || len(r.events(id)) != 0 {
+				t.Fatal("browser echo published")
+			}
+		})
+	}
+	for name, body := range map[string]string{
+		"later":  "See " + origin + "\n\nfor details",
+		"other":  "example.com\n\nhello",
+		"prefix": origin + "0\n\nhello",
+	} {
+		t.Run(name+"-ok", func(t *testing.T) {
+			r := newRig(t, base)
+			id := r.notify(ns.NotifyInput{AppName: "Chromium", Body: body})
+			r.sync()
+			if r.item(id).LocalOnly || len(r.events(id)) != 1 {
+				t.Fatal("ordinary notification not published")
+			}
+		})
+	}
+}
+
 func TestOutboxRetryAndButtonScope(t *testing.T) {
 	base := ntfyServer(t)
 	r := newRig(t, base)

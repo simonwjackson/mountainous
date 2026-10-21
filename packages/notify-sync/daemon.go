@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -162,7 +164,7 @@ func (d *Daemon) Notify(in NotifyInput) (uint32, error) {
 		r = &record{Item: Item{ID: id, Seq: fmt.Sprintf("%s-%s-%d", d.Host, s.Nonce, id), Created: nowMillis()}}
 		s.Records[id] = r
 	}
-	local := in.Transient
+	local := in.Transient || d.hubEcho(in.Body)
 	for _, a := range d.LocalOnlyApps {
 		if a == in.AppName {
 			local = true
@@ -187,6 +189,28 @@ func (d *Daemon) Notify(in NotifyInput) (uint32, error) {
 	item := r.Item
 	err = d.commitDelivery(s, []UIEvent{{Type: "upsert", Item: &item, Fresh: true}}, nil)
 	return item.ID, err
+}
+
+// hubEcho reports whether body is a browser's copy of an ntfy message from
+// this hub. A browser that shows the ntfy web app with notifications allowed
+// raises one desktop notification per message, and Chromium puts the page
+// origin on the first body line. Publishing that copy sends it back to the
+// browser, which shows it again: an endless loop. The copy stays local.
+func (d *Daemon) hubEcho(body string) bool {
+	if d.Client == nil {
+		return false
+	}
+	first, _, _ := strings.Cut(body, "\n")
+	first = strings.TrimSpace(first)
+	if first == "" {
+		return false
+	}
+	for _, raw := range []string{d.Client.Base, d.Client.Public} {
+		if u, err := url.Parse(raw); err == nil && u.Host != "" && strings.EqualFold(first, u.Host) {
+			return true
+		}
+	}
+	return false
 }
 func closeRecord(r *record, reason uint32, propagate bool) ([]UIEvent, []Signal) {
 	if !r.Open {
