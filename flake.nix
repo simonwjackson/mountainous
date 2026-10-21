@@ -29,8 +29,9 @@
       flake = false;
     };
 
-    # Rakku's first Cairn deployment preserves its running HA 2025.12.3 and
-    # Z-Wave JS 3.4.0 environment. Upgrade only as a separate, backed-up change.
+    # Rakku takes only its Home Assistant 2025.12.3 and Z-Wave JS 3.4.0 packages
+    # from this pin. Upgrade them only as a separate, backed-up change.
+    # gomod2nix-rakku and tests/fleet-sync-external.nix also use it.
     nixpkgs-rakku.url = "github:NixOS/nixpkgs/1306659b587dc277866c7b69eb97e5f07864d8c4";
     airconnect-src = {
       url = "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip";

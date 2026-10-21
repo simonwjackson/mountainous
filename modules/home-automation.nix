@@ -1,13 +1,20 @@
 # The existing Home Assistant instance, not a new onboarding configuration.
 # Mutable integrations, auth, registries and Zigbee state stay in /var/lib/hass.
+#
+# The host builds from the fleet nixpkgs. Home Assistant and Z-Wave JS alone
+# come from `nixpkgs-rakku`, so their store paths stay the deployed ones until
+# a separate, backed-up application upgrade moves that pin.
+{ inputs, ... }:
 {
   nixos.modules.home-automation =
     { config, pkgs, ... }:
+    let
+      pinned = inputs.nixpkgs-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+    in
     {
       services.home-assistant = {
         enable = true;
-        openFirewall = true;
-        package = pkgs.home-assistant.override {
+        package = pinned.home-assistant.override {
           extraPackages = ps: [
             ps.grpcio
             ps.google-nest-sdm
@@ -84,7 +91,14 @@
               service_name = "google_translate_say";
             }
           ];
+          # The fleet nixpkgs module no longer writes these two defaults. Keep
+          # the configuration.yaml that HA 2025.12.3 already runs with.
+          lovelace.mode = "storage";
           http = {
+            server_host = [
+              "0.0.0.0"
+              "::"
+            ];
             server_port = 8123;
             trusted_proxies = [
               "::1"
@@ -97,9 +111,14 @@
 
       services.zwave-js = {
         enable = true;
+        package = pinned.zwave-js-server;
         port = 3000;
         secretsConfigFile = config.sops.secrets.zwave-js-secrets.path;
       };
+      # The fleet nixpkgs removed `openFirewall`. Open the same port it did.
+      networking.firewall.allowedTCPPorts = [
+        config.services.home-assistant.config.http.server_port
+      ];
       users.users.hass.extraGroups = [ "dialout" ];
       # Keep the deployed ownership rather than allocate a different service UID.
       users.users.hass.uid = 286;

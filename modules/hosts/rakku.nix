@@ -7,7 +7,6 @@ in
 {
   nixos.hosts.rakku = {
     system = "x86_64-linux";
-    nixpkgs = inputs.nixpkgs-rakku;
     layers = [
       "server"
       "home-automation"
@@ -26,13 +25,18 @@ in
           (inputs.impermanence-rakku + "/nixos.nix")
           ../../disks/rakku-existing.nix
         ];
-        # Cairn's management tools need their own current compilers. Use their
-        # self-contained packages without upgrading the home automation runtime.
-        sops.package = inputs.sops-nix.packages.x86_64-linux.sops-install-secrets;
+        # The pinned impermanence leaves fsType unset on its bind mounts. Rakku's
+        # old nixpkgs defaulted it to "auto"; the fleet nixpkgs has no default.
+        # Keep the deployed fstab entries as they are.
+        fileSystems = lib.listToAttrs (
+          map (entry: {
+            name = entry.dirPath;
+            value.fsType = lib.mkDefault "auto";
+          }) config.environment.persistence."/tundra/permafrost".directories
+        );
         # NeededForUsers decrypts before /etc's persisted file links are set up.
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
-        hjem.cli.package = inputs.hjem.packages.x86_64-linux.hjem;
         mountainous.features.notify-server.enable = true;
         mountainous.features.cliproxyapi = {
           enable = true;
