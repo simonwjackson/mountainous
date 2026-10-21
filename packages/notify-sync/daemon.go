@@ -213,6 +213,9 @@ func invoke(s *state, r *record, key string, remoteControl bool) ([]UIEvent, []S
 			return nil, nil
 		}
 		s.Controls = append(s.Controls, Control{Version: 1, Type: "action", Seq: r.Item.Seq, Key: key})
+		// Only the owner may close after acting. Clearing here would reach the
+		// owner's notification poll before its control poll and suppress the action.
+		return nil, nil
 	}
 	if !r.Item.Resident {
 		es, ss := closeRecord(r, 2, true)

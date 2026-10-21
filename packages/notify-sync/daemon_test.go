@@ -678,3 +678,30 @@ func TestClearOutboxSurvivesOfflineRestart(t *testing.T) {
 	}
 	r.closed(id, 2)
 }
+
+func TestRemoteActionWaitsForTheOwningDaemon(t *testing.T) {
+	base := ntfyServer(t)
+	owner := newRig(t, base)
+	view := newRig(t, base)
+	id := owner.notify(NotifyInput{Summary: "owned app", Actions: []Action{{"go", "Go"}}})
+	owner.sync()
+	view.sync()
+	snapshot := socketSnapshot(t, view.d)
+	if len(snapshot.Items) != 1 || snapshot.Items[0].Origin != "remote" {
+		t.Fatal(snapshot.Items)
+	}
+	ownerSeq := snapshot.Items[0].Seq
+	view.check(view.d.Operation(UIOperation{Op: "action", ID: snapshot.Items[0].ID, Key: "go"}))
+	view.sync()
+	owner.sync()
+	if len(owner.signals) != 2 || owner.signals[0].Member != "ActionInvoked" || owner.signals[0].ID != id || owner.signals[0].Key != "go" || owner.signals[1].Member != "NotificationClosed" || owner.signals[1].Reason != 2 {
+		t.Fatalf("owner signals: %+v", owner.signals)
+	}
+	owner.sync()
+	view.sync()
+	for _, item := range socketSnapshot(t, view.d).Items {
+		if item.Seq == ownerSeq {
+			t.Fatal("owner's close did not remove remote view")
+		}
+	}
+}
