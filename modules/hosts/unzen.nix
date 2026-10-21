@@ -38,7 +38,12 @@
     ];
 
     module =
-      { config, lib, ... }:
+      {
+        config,
+        lib,
+        pkgs,
+        ...
+      }:
       {
         imports = [
           inputs.disko.nixosModules.disko
@@ -64,6 +69,32 @@
           extra-trusted-public-keys = [ "nix-extras-ci-1:+Vcq7i6dPWOsOZjQwOduCEZOZZJznS/XfOcNUhFmg3Q=" ];
         };
         boot.supportedFilesystems = [ "bcachefs" ];
+
+        # Storage failures reach the phone through the ntfy hub on Rakku.
+        # The publish-only token lives in its own file (master + Unzen).
+        sops.secrets.storage-alerts-token = {
+          sopsFile = ../../secrets/notify/storage-unzen.yaml;
+          mode = "0400";
+        };
+        mountainous.features.storage-alerts = {
+          enable = true;
+          profile = "unzen";
+          notify = self.packages.${pkgs.stdenv.hostPlatform.system}.notify-sync;
+          tokenFile = config.sops.secrets.storage-alerts-token.path;
+          buttonTokenFile = config.sops.secrets.notify-button-token.path;
+          units = [
+            "media-storage-ready.service"
+            "media-storage-health.service"
+            "media-storage-failed.service"
+            "media-library-mover@.service"
+            "bcachefs-scrub-root.service"
+            "net-mountainous-zao-media.mount"
+            "srv-media\\x2dlibrary\\x2dview-movies.mount"
+            "srv-media\\x2dlibrary\\x2dview-tv.mount"
+            "srv-range-media-movies.mount"
+            "srv-range-media-tv.mount"
+          ];
+        };
 
         # The KIOXIA (onboard.kioxia) failed repeatedly and left the pool on
         # 2026-10-15. disks/unzen.nix still records the original two-drive
