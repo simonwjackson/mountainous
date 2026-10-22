@@ -110,7 +110,7 @@
     }
   },
   "homeMacs": [
-    "@HOME_MAC@"
+    "14:21:03:fe:01:37"
   ],
   "hostKeys": {
     "aka": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z",
