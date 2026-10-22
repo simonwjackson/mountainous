@@ -59,11 +59,9 @@
 
         hosts = lib.mkOption {
           type = lib.types.listOf lib.types.str;
-          # Zao still runs the unified branch, where the user is simonwjackson.
-          default = [
-            "simonwjackson@zao"
-            "simon@unzen"
-          ];
+          # Zao gave its Towada array to Unzen on 2026-10-22 and has no storage
+          # left to check; probing it only reported "no topology".
+          default = [ "simon@unzen" ];
           description = "SSH targets (user@host) to probe, in display order.";
         };
       };
