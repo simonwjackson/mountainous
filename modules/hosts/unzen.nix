@@ -118,6 +118,8 @@
           fast = {
             path = "/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800672";
             label = "nvme.sn770";
+            # Joined with towada-convert add-fast on 2026-10-22.
+            joined = true;
           };
           # Chosen ahead; towada-convert formats the pool with it.
           uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
@@ -145,6 +147,13 @@
           libraryMediaGid = 390;
         };
         mountainous.features.media-jellyfin.enable = towadaHere;
+        # One LAN interface: the 2.5 GbE Realtek (enp62s0) carries traffic and
+        # the onboard 1 GbE Intel (eno1) takes over if it fails.
+        mountainous.features.lan-bond = {
+          enable = true;
+          primary = "enp62s0";
+          backup = "eno1";
+        };
         mountainous.features.cliproxyapi-updater.enable = true;
         # Live admission proved main-only routing before registering this host.
         mountainous.features.github-actions.enable = true;

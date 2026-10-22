@@ -280,6 +280,10 @@ let
             ExecStart = "${admission}/bin/towada-admission";
             TimeoutStartSec = cfg.admissionTimeout + 30;
           };
+          # The pool mount requires this unit, so restarting it on a config
+          # change would unmount the pool under running consumers. New
+          # admission rules take effect at the next mount instead.
+          restartIfChanged = false;
         };
 
         fileSystems = cfg.mounts;
