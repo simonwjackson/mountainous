@@ -6,7 +6,7 @@ set -euo pipefail
 for host in hiyori; do
   files=$(nix eval --json ".#nixosConfigurations.${host}.config.hjem.users.simon.files" \
     --apply builtins.attrNames --option substituters https://cache.nixos.org/)
-  for component in Dictation OmniBar CdpBrowser OciEgress; do
+  for component in Dictation OmniBar CdpBrowser OciEgress BuilderGate BuilderControl BuilderPanel; do
     if ! jq -e --arg file ".config/quickshell/mountainous/${component}.qml" \
       'index($file) != null' <<<"$files" >/dev/null; then
       printf 'MISSING_QML_COMPONENT host=%s component=%s\n' "$host" "$component" >&2
