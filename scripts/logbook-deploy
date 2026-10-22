@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p bash git nix python3 coreutils util-linux
+#! nix-shell -i bash -p bash git nix jq curl coreutils util-linux
 # shellcheck shell=bash
 # Run on Unzen after Logbook main changes. --check builds locally without deploy.
 set -euo pipefail
@@ -13,14 +13,10 @@ expected=$1
 source=$(realpath "$2")
 proseql=$(realpath "$3")
 root=$(cd "$(dirname "$0")/.." && pwd)
-proseql_sha=$(python3 - "$source/flake.lock" <<'PY'
-import json, sys
-lock = json.load(open(sys.argv[1]))
-node = lock['nodes'][lock['nodes']['root']['inputs']['proseql']]
-assert node['locked']['type'] == 'git'
-print(node['locked']['rev'])
-PY
-)
+proseql_sha=$(jq -er '
+  .nodes[.nodes.root.inputs.proseql].locked
+  | select(.type == "git") | .rev
+' "$source/flake.lock")
 check_sources() {
   if [[ "$(git -C "$source" rev-parse HEAD)" != "$expected" || "$(git -C "$proseql" rev-parse HEAD)" != "$proseql_sha" ]]; then
     echo 'Source SHA mismatch: check out the requested Logbook SHA and its flake.lock ProseQL SHA.' >&2
@@ -60,7 +56,7 @@ check_sources
 nix flake check "$stage" --option builders ''
 check_sources
 app=$(nix build --no-link --print-out-paths "$stage#application" --option builders '')
-python3 "$root/tests/logbook-smoke.py" "$app"
+bash "$root/tests/logbook-smoke.sh" "$app"
 activation=$(nix build --no-link --print-out-paths \
   "$stage#deploy.nodes.rakku.profiles.logbook.path" --option builders '')
 check_sources
