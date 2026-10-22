@@ -13,13 +13,23 @@
         unzen-boot =
           let
             c = self.nixosConfigurations.unzen.config;
+            nfs = self.nixosConfigurations.unzen.extendModules {
+              modules = [ { mountainous.features.towada.enable = lib.mkForce false; } ];
+            };
           in
           # The KIOXIA was removed; only the WD ESP may be a boot target.
           assert c.fileSystems."/boot".device == "/dev/disk/by-partlabel/disk-unzen-sn770-ESP";
           assert !(c.fileSystems ? "/boot-secondary");
           assert map (m: m.path) c.boot.loader.grub.mirroredBoots == [ "/boot" ];
+          # The NFS library mount (used only without the enclosure) waits for
+          # Tailscale; the Towada pool never blocks boot.
           assert builtins.elem "x-systemd.requires=tailscale-online.target"
-            c.fileSystems."/net/mountainous/zao/media".options;
+            nfs.config.fileSystems."/net/mountainous/zao/media".options;
+          assert lib.all (o: builtins.elem o c.fileSystems."/srv/lakes/towada".options) [
+            "noauto"
+            "nofail"
+          ];
+          assert !c.fileSystems."/srv/lakes/towada".neededForBoot;
           assert lib.hasSuffix "/bin/tailscale wait"
             c.systemd.services.tailscale-wait-online.serviceConfig.ExecStart;
           pkgs.runCommand "unzen-boot" { } "touch $out";

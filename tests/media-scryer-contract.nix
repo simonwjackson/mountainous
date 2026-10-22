@@ -3,7 +3,18 @@
   flake ? builtins.getFlake (toString ../.),
 }:
 let
-  host = flake.nixosConfigurations.unzen;
+  # This contract covers the NFS placement modes, so it evaluates Unzen with
+  # the library on Zao. The local Towada layout has its own host check.
+  host = flake.nixosConfigurations.unzen.extendModules {
+    modules = [
+      (
+        { lib, ... }:
+        {
+          mountainous.features.towada.enable = lib.mkForce false;
+        }
+      )
+    ];
+  };
   configFor =
     library: tailnet:
     (host.extendModules {
