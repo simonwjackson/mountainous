@@ -240,8 +240,12 @@ let
         # The storage probe compares the mounted pool with these labels.
         environment.etc."towada/members".text = lib.concatLines memberLabels;
 
-        # autoScrub covers every bcachefs fileSystems entry, this pool included.
-        services.bcachefs.autoScrub.enable = true;
+        # Hosts may list scrub targets explicitly (Unzen lists only /), so add
+        # the pool to that list rather than relying on discovery.
+        services.bcachefs.autoScrub = {
+          enable = true;
+          fileSystems = [ cfg.mountPoint ];
+        };
         # A scrub must never pull the pool in; it runs only while mounted.
         systemd.services."bcachefs-scrub-${utils.escapeSystemdPath cfg.mountPoint}".unitConfig = {
           ConditionPathIsMountPoint = cfg.mountPoint;

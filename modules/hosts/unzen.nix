@@ -35,6 +35,13 @@
             ) null moved.config.environment.systemPackages;
           in
           assert health != null;
+          assert
+            lib.hasInfix "bcachefs scrub" (
+              moved.config.systemd.services."bcachefs-scrub-srv-lakes-towada".script or ""
+            )
+            || moved.config.systemd.services."bcachefs-scrub-srv-lakes-towada".serviceConfig ? ExecStart;
+          assert moved.config.systemd.timers ? "bcachefs-scrub-srv-lakes-towada";
+          assert builtins.elem "/" moved.config.services.bcachefs.autoScrub.fileSystems;
           assert lib.hasInfix " /srv/lakes/towada " (health.text + " ");
           assert !(lib.hasInfix "/srv/lakes/towada/media" health.text);
           pkgs.runCommand "unzen-towada-health" { } "touch $out";
