@@ -11,6 +11,9 @@
 # Everything above the disk is shared with summit. If the two ever disagree
 # about the desktop, the difference is a bug in a layer, not in this file.
 {
+  # A USB stick: it sends builds and never builds itself (see module).
+  fleet.hostKeys.hiyori = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN6PZlpH4t+PXDhdXg5JNhbnJ9tdNmcb0U7AnbKVLF47";
+
   nixos.hosts.hiyori = {
     system = "x86_64-linux";
     layers = [
@@ -41,6 +44,11 @@
       # unattended" -- someone has to type the passphrase. That is the right
       # thing to give up here. A fixed machine keeps it, via TPM2.
       mountainous.disk.encrypt = true;
+
+      # Builds would wear the stick and fill its RAM: every build goes to the
+      # fleet's builders. With none reachable, a build fails; cached paths
+      # still download.
+      nix.settings.max-jobs = 0;
     };
   };
 }

@@ -58,6 +58,21 @@
       };
     };
 
+  # The fleet's main x86 builder: 62 GiB and mostly idle. Builds stay
+  # below 70% of memory and at idle priority behind media and storage.
+  fleet.builders.unzen = {
+    cpus = 8;
+    speedFactor = 4;
+    features = [
+      "big-parallel"
+      "benchmark"
+      "kvm"
+      "nixos-test"
+    ];
+    hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEq/+tNqmJWnfSkPafwIgQP8JWLhmRERvsPuiKzMRTPT";
+  };
+  fleet.hostKeys.unzen = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEq/+tNqmJWnfSkPafwIgQP8JWLhmRERvsPuiKzMRTPT";
+
   nixos.hosts.unzen = {
     system = "x86_64-linux";
     layers = [

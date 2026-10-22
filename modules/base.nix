@@ -41,8 +41,9 @@
       # simply not applied, so this costs nothing to be wrong about.
       hardware.cpu.intel.updateMicrocode = lib.mkDefault pkgs.stdenv.hostPlatform.isx86_64;
 
-      # Compressed swap in RAM. A memory spike slows a machine down instead of
-      # waking the OOM killer, and no host needs a swap partition for it.
+      # Compressed swap in RAM, for memory that is touched once and then left.
+      # It does not stop a lockout on its own: modules/memory-guard.nix keeps
+      # sshd and tailscaled responsive and lets systemd-oomd end the cause.
       zramSwap.enable = lib.mkDefault true;
 
       # BBR instead of cubic. On the lossy Oracle -> home route (about 1.5%

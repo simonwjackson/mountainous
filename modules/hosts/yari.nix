@@ -5,6 +5,14 @@
 # on 2026-10-12 with `nix run .#install`. Change it with `nixos-rebuild`. See
 # docs/plans/yari-forgerie-host.md.
 {
+  # aarch64 builder, at idle priority behind Forgerie. No /dev/kvm.
+  fleet.builders.yari = {
+    system = "aarch64-linux";
+    cpus = 4;
+    hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvcfPMD8iAvxwWA8Epfk95CvszjzsQSDpetkjgdPZPh";
+  };
+  fleet.hostKeys.yari = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvcfPMD8iAvxwWA8Epfk95CvszjzsQSDpetkjgdPZPh";
+
   nixos.hosts.yari = {
     system = "aarch64-linux";
     layers = [

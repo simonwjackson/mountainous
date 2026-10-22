@@ -1,6 +1,18 @@
 # Samsung Galaxy Book3 Pro 360 NP960QFG-KA1US, installed on its internal NVMe.
 # The removable Hiyori USB is a separate host and must not be partitioned here.
 {
+  # Myoko builds for the fleet only at home on mains power, unless Simon
+  # chooses otherwise from the bar (nix-builder-gate). Tailscale SSH owns
+  # port 22 here, so builds use OpenSSH on 2222.
+  fleet.builders.myoko = {
+    cpus = 16;
+    speedFactor = 1;
+    sshPort = 2222;
+    gate = "home";
+    hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDnwTRGEJE12P1y2kEHjZzDIz7Ky+Hr+tSJOAclU7vR9";
+  };
+  fleet.hostKeys.myoko = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDnwTRGEJE12P1y2kEHjZzDIz7Ky+Hr+tSJOAclU7vR9";
+
   nixos.hosts.myoko = {
     system = "x86_64-linux";
     layers = [

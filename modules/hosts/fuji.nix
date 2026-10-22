@@ -27,6 +27,14 @@
         pkgs.runCommand "fuji-host" { } "touch $out";
     };
 
+  # aarch64 builder. No /dev/kvm on Oracle's Ampere VMs.
+  fleet.builders.fuji = {
+    system = "aarch64-linux";
+    cpus = 4;
+    hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2";
+  };
+  fleet.hostKeys.fuji = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2";
+
   nixos.hosts.fuji = {
     system = "aarch64-linux";
     layers = [
