@@ -87,9 +87,13 @@ func (c *manualClock) awaitTimer(t *testing.T, d time.Duration) *manualTimer {
 // schedulingHub serves the real HTTP subscription/poll boundary in memory.
 // It can stage a live event before making that event visible in the cache.
 type schedulingHub struct {
-	mu      sync.Mutex
-	polls   []string
-	cache   map[string][]ns.Message
+	mu     sync.Mutex
+	polls  []string
+	sinces []string
+	cache  map[string][]ns.Message
+	// cut > 0 makes notification replays behave as ntfy does when a user's
+	// daily bandwidth runs out: 200 OK, cut messages, then an error line.
+	cut     int
 	streams map[chan ns.Message]struct{}
 	blockAt int
 	blocked chan struct{}
@@ -124,6 +128,8 @@ func (h *schedulingHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	topic := strings.Split(strings.Trim(r.URL.Path, "/"), "/")[0]
 	h.mu.Lock()
 	h.polls = append(h.polls, topic)
+	h.sinces = append(h.sinces, topic+" "+r.URL.Query().Get("since"))
+	cut := h.cut
 	block := h.blockAt == len(h.polls)
 	h.mu.Unlock()
 	if block {
@@ -144,13 +150,32 @@ func (h *schedulingHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	cutShort := cut > 0 && topic == ns.Topic
+	if cutShort && len(messages) > cut {
+		messages = messages[:cut]
+	}
 	for _, m := range messages {
 		if json.NewEncoder(w).Encode(m) != nil {
 			return
 		}
 	}
+	if cutShort {
+		w.Write([]byte(`{"code":42905,"http":429,"error":"limit reached: daily bandwidth reached","link":"https://ntfy.sh/docs/publish/#limitations"}` + "\n"))
+	}
 }
-func (h *schedulingHub) count() int { h.mu.Lock(); defer h.mu.Unlock(); return len(h.polls) }
+func (h *schedulingHub) fullReplays() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	n := 0
+	for _, s := range h.sinces {
+		if s == ns.Topic+" all" {
+			n++
+		}
+	}
+	return n
+}
+func (h *schedulingHub) setCut(n int) { h.mu.Lock(); defer h.mu.Unlock(); h.cut = n }
+func (h *schedulingHub) count() int   { h.mu.Lock(); defer h.mu.Unlock(); return len(h.polls) }
 func (h *schedulingHub) stage(m ns.Message) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -298,5 +323,76 @@ func TestWakeRetriesExpireWithoutARealTimeSleep(t *testing.T) {
 	}
 	if clock.Advance(time.Second) != 0 {
 		t.Fatal("retry timer remained active")
+	}
+}
+
+// advanceFallbacks moves virtual time across n fallback intervals and waits
+// for each reconciliation to finish.
+func advanceFallbacks(t *testing.T, c *manualClock, n int) {
+	t.Helper()
+	for i := 0; i < n; i++ {
+		c.Advance(ns.FallbackInterval)
+		c.awaitTimer(t, ns.FallbackInterval)
+	}
+}
+
+func TestFullReplayRunsHourlyNotEveryMinute(t *testing.T) {
+	h := newSchedulingHub(t)
+	h.commit(ns.Message{ID: "seed", Sequence: "seed", Topic: ns.Topic, Event: "message", Title: "seed", Message: "body"})
+	_, clock := schedulingDaemon(t, h)
+	awaitStartup(t, h, clock)
+	if got := h.fullReplays(); got != 1 {
+		t.Fatalf("startup made %d full replays, want 1", got)
+	}
+	intervals := int(ns.FullReplayInterval / ns.FallbackInterval)
+	advanceFallbacks(t, clock, intervals-1)
+	if got := h.fullReplays(); got != 1 {
+		t.Fatalf("%d full replays before an hour passed", got)
+	}
+	advanceFallbacks(t, clock, 1)
+	if got := h.fullReplays(); got != 2 {
+		t.Fatalf("no full replay after an hour: %d", got)
+	}
+}
+
+// The 2026-10-22 failure: ntfy cut every replay short after Myoko used up its
+// daily bandwidth. The full replay closed open items as evicted and pruned the
+// seen marks after the cut; the next incremental replay then revived a
+// dismissed item with a fresh popup.
+func TestCutReplayNeitherClosesNorRevivesItems(t *testing.T) {
+	h := newSchedulingHub(t)
+	for _, m := range []ns.Message{
+		{ID: "m-filler", Sequence: "filler", Topic: ns.Topic, Event: "message", Title: "filler", Message: "body"},
+		{ID: "m-dismissed", Sequence: "dismissed", Topic: ns.Topic, Event: "message", Title: "dismissed item", Message: "body"},
+		{ID: "m-clear", Sequence: "dismissed", Topic: ns.Topic, Event: "message_clear"},
+		{ID: "m-open", Sequence: "open", Topic: ns.Topic, Event: "message", Title: "open item", Message: "body"},
+	} {
+		h.commit(m)
+	}
+	r, clock := schedulingDaemon(t, h)
+	awaitStartup(t, h, clock)
+	if hasSummary(t, r.d, "dismissed item") || !hasSummary(t, r.d, "open item") {
+		t.Fatal("startup did not fold the cache")
+	}
+	h.setCut(1)
+	// Across a full replay and the incremental replay after it.
+	advanceFallbacks(t, clock, int(ns.FullReplayInterval/ns.FallbackInterval)+1)
+	if hasSummary(t, r.d, "dismissed item") {
+		t.Fatal("a cut replay revived a dismissed item")
+	}
+	if !hasSummary(t, r.d, "open item") {
+		t.Fatal("a cut replay closed an open item as evicted")
+	}
+	status := socketSnapshot(t, r.d).Status
+	if status.Server != "unreachable" || status.LastError == nil || !strings.Contains(*status.LastError, "daily bandwidth") {
+		t.Fatalf("the cut replay is not reported: %+v", status)
+	}
+	h.setCut(0)
+	advanceFallbacks(t, clock, 1)
+	if hasSummary(t, r.d, "dismissed item") || !hasSummary(t, r.d, "open item") {
+		t.Fatal("recovery changed the items")
+	}
+	if status := socketSnapshot(t, r.d).Status; status.Server != "connected" {
+		t.Fatalf("did not recover: %+v", status)
 	}
 }

@@ -21,6 +21,12 @@ import (
 
 func ntfyServer(t *testing.T) string {
 	t.Helper()
+	return ntfyServerWith(t, "")
+}
+
+// ntfyServerWith starts ntfy with extra lines appended to its config.
+func ntfyServerWith(t *testing.T, extra string) string {
+	t.Helper()
 	bin := os.Getenv("NTFY_BIN")
 	if bin == "" {
 		var err error
@@ -37,7 +43,7 @@ func ntfyServer(t *testing.T) string {
 	l.Close()
 	dir := t.TempDir()
 	config := filepath.Join(dir, "server.yml")
-	text := fmt.Sprintf("listen-http: %s\ncache-file: %s/cache.db\ncache-duration: 720h\ncache-batch-size: 0\ncache-batch-timeout: 0s\nvisitor-request-limit-exempt-hosts: 127.0.0.1\n", address, dir)
+	text := fmt.Sprintf("listen-http: %s\ncache-file: %s/cache.db\ncache-duration: 720h\ncache-batch-size: 0\ncache-batch-timeout: 0s\nvisitor-request-limit-exempt-hosts: 127.0.0.1\n%s", address, dir, extra)
 	if err = os.WriteFile(config, []byte(text), 0600); err != nil {
 		t.Fatal(err)
 	}

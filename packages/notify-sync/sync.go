@@ -85,6 +85,16 @@ func (d *Daemon) watchLoop(ctx context.Context, wakes chan<- Message) {
 	}
 }
 
+// FallbackInterval is the ordered poll that covers missed wake-ups.
+const FallbackInterval = 30 * time.Second
+
+// FullReplayInterval spaces the full cache replays that find evictions and
+// prune. A full replay downloads the whole cache, and ntfy counts replayed
+// bytes against each user's daily bandwidth limit (500 MB by default). One per
+// minute used up that limit with a 2 MB cache, and every later replay was cut
+// short. Eviction is a 30-day event, so an hour of delay costs nothing.
+const FullReplayInterval = time.Hour
+
 // Run uses the unordered stream only for wake-ups. Fallback deadlines stay
 // anchored to Run's start, even when HTTP work delays servicing a deadline.
 // Missed intervals coalesce into one reconciliation, not a burst of requests.
@@ -94,7 +104,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 	done := make(chan struct{})
 	go func() { defer close(done); d.watchLoop(ctx, wakes) }()
 	defer func() { cancel(); <-done }()
-	const fallbackInterval = 30 * time.Second
+	const fallbackInterval = FallbackInterval
 	nextFallback := d.Clock.Now().Add(fallbackInterval)
 	pending := map[string]time.Time{}
 	observed := map[string]time.Time{}
@@ -148,7 +158,8 @@ func (d *Daemon) Run(ctx context.Context) error {
 			now := d.Clock.Now()
 			sync = true
 			if !now.Before(nextFallback) {
-				full = now.Sub(lastFull) >= 55*time.Second
+				// The margin keeps an on-time tick from missing the interval.
+				full = now.Sub(lastFull) >= FullReplayInterval-fallbackInterval/2
 				nextFallback = nextFallback.Add((now.Sub(nextFallback)/fallbackInterval + 1) * fallbackInterval)
 			}
 		case m := <-wakes:

@@ -65,12 +65,42 @@ reconnect, outbox changes and live notifications.
 ntfy dispatches live events before it inserts them into the cache. notifyd
 tracks signalled event IDs and retries ordered polls with 25–400 ms backoff
 for up to two seconds until the cache shows those IDs. A 30-second fallback
-covers missed wake-ups and longer cache delays. Every second fallback uses a
-full fold for eviction and pruning instead of adding extra requests.
-A real idle test measured **two ordered GETs, zero stream reconnects, in
-31.001 seconds (0.0645 requests/s)**. The steady-state budget is two GETs per
-30 seconds (four per minute), plus one long-lived stream, rather than eight
-requests per second. Start and reconnect need extra reconciliation requests.
+covers missed wake-ups and longer cache delays. The fallback at start and one
+fallback per hour use a full fold for eviction and pruning instead of adding
+extra requests. A real idle test measured **two ordered GETs, zero stream
+reconnects, in 31.001 seconds (0.0645 requests/s)**. The steady-state budget
+is two GETs per 30 seconds (four per minute), plus one long-lived stream,
+rather than eight requests per second. Start and reconnect need extra
+reconciliation requests.
+
+### Replay bandwidth
+
+ntfy counts the bytes of every cache replay against the user's daily
+bandwidth limit, `visitor-attachment-daily-bandwidth-limit` (500 MB by
+default). The limit refills continuously, at about 5.8 KB per second. A full
+fold replays the whole cache; incremental polls replay only what is new.
+
+Until 2026-10-22 every second fallback was a full fold, which is 1,440 per day.
+The browser echo loop described below grew the cache to about 2 MB, so Myoko's
+full folds downloaded about 2.9 GB per day. Myoko used up its limit at 01:08
+UTC. After that, ntfy sent `200 OK`, about 175 KB of messages (the refill
+since the last poll) and then its error object,
+`{"code":42905,"http":429,"error":"limit reached: daily bandwidth reached"}`,
+as the last line. `Poll` decoded that line as a message with no event and
+took the cut replay as the whole cache. Each full fold then closed newer items
+as evicted and pruned the seen marks of every message after the cut. The next
+incremental poll started from a cursor inside the cut, met the original
+messages of already dismissed items again, and showed them as fresh popups.
+The dismissed items came back about once a minute.
+
+Two rules prevent that now. `Poll` refuses a replay that contains an ntfy
+error line or any line without an event (`ReplayError`), so a cut replay
+changes no item, cursor or seen mark, and the centre shows the error. A full
+fold runs once an hour (`FullReplayInterval`); a cache eviction is a 30-day
+event, so an hour of delay costs nothing. At one full fold per hour, even a
+10 MB cache uses less than half the default limit. Hourly folds do not protect
+`notify wait`, which still replays the whole cache four times per second while
+it waits.
 The server disables asynchronous cache batching; the brief visibility race
 still exists between dispatch and insertion.
 

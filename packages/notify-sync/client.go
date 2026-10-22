@@ -119,8 +119,22 @@ func (c *Client) Control(ctx context.Context, ctl Control) error {
 	return err
 }
 
+// ReplayError reports that ntfy stopped a cache replay part way through. ntfy
+// has already sent 200 OK and some messages when a per-visitor limit runs out,
+// so it writes its error object as the last line of the stream instead.
+type ReplayError struct {
+	Code, Status int
+	Reason       string
+}
+
+func (e *ReplayError) Error() string {
+	return fmt.Sprintf("ntfy stopped the replay: %s (code %d)", e.Reason, e.Code)
+}
+
 // Poll uses one topic at a time. ntfy's live dispatch and multi-topic replay do
-// not guarantee cache insert order. A truncated poll is never applied.
+// not guarantee cache insert order. A truncated poll is never applied: that
+// includes a replay that ends in an ntfy error line, such as code 42905 when
+// the daily bandwidth limit runs out, and any line that is not an event.
 func (c *Client) Poll(ctx context.Context, topic, cursor string) ([]Message, error) {
 	if topic != Topic && topic != ControlTopic {
 		return nil, errors.New("invalid topic")
@@ -143,11 +157,22 @@ func (c *Client) Poll(ctx context.Context, topic, cursor string) ([]Message, err
 		if len(scanner.Bytes()) == 0 {
 			continue
 		}
-		var m Message
-		if err := json.Unmarshal(scanner.Bytes(), &m); err != nil {
+		var line struct {
+			Message
+			Code   int    `json:"code"`
+			Status int    `json:"http"`
+			Error  string `json:"error"`
+		}
+		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
 			return nil, err
 		}
-		out = append(out, m)
+		if line.Code != 0 || line.Error != "" {
+			return nil, &ReplayError{Code: line.Code, Status: line.Status, Reason: line.Error}
+		}
+		if line.Event == "" {
+			return nil, errors.New("ntfy replay line has no event; refusing incomplete reconciliation")
+		}
+		out = append(out, line.Message)
 	}
 	return out, scanner.Err()
 }
