@@ -72,7 +72,29 @@ in {
 
       # Korri source-machine owns the tailnet DNS/hostname posture for Aka.
       tailscale.acceptDns = false;
+
+      # Aka builds for the fleet while it is otherwise idle: idle CPU and IO
+      # priority, and at most 60% of memory, so a game and the local model
+      # always come first. It sends its own builds to the other builders.
+      nix-builders = {
+        enable = true;
+        serve = true;
+      };
+      # Games run in user@1000's app.slice (korri-compositor, korri-sunshine),
+      # so oomd watches only system.slice here, where the builds run.
+      memory-guard = {
+        enable = true;
+        userSlices = false;
+      };
     };
+  };
+
+  # Compressed swap first; the 64 GiB partition stays for hibernation and
+  # as the last resort (zram has the higher priority).
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
   };
 
   nix.registry.nixpkgs.flake = inputs.nixpkgs;

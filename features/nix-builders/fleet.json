@@ -1,0 +1,127 @@
+{
+  "builders": {
+    "aka": {
+      "cpus": 12,
+      "features": [
+        "big-parallel",
+        "benchmark",
+        "kvm",
+        "nixos-test"
+      ],
+      "gate": "always",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z",
+      "managed": false,
+      "maxJobs": 3,
+      "memoryHigh": "50%",
+      "memoryMax": "60%",
+      "speedFactor": 4,
+      "sshPort": 22,
+      "sshUser": "simonwjackson",
+      "system": "x86_64-linux"
+    },
+    "fuji": {
+      "cpus": 4,
+      "features": [
+        "big-parallel",
+        "benchmark"
+      ],
+      "gate": "always",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2",
+      "managed": true,
+      "maxJobs": 1,
+      "memoryHigh": "60%",
+      "memoryMax": "70%",
+      "speedFactor": 1,
+      "sshPort": 22,
+      "sshUser": "simon",
+      "system": "aarch64-linux"
+    },
+    "myoko": {
+      "cpus": 16,
+      "features": [
+        "big-parallel",
+        "benchmark"
+      ],
+      "gate": "home",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDnwTRGEJE12P1y2kEHjZzDIz7Ky+Hr+tSJOAclU7vR9",
+      "managed": true,
+      "maxJobs": 4,
+      "memoryHigh": "60%",
+      "memoryMax": "70%",
+      "speedFactor": 1,
+      "sshPort": 2222,
+      "sshUser": "simon",
+      "system": "x86_64-linux"
+    },
+    "unzen": {
+      "cpus": 8,
+      "features": [
+        "big-parallel",
+        "benchmark",
+        "kvm",
+        "nixos-test"
+      ],
+      "gate": "always",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEq/+tNqmJWnfSkPafwIgQP8JWLhmRERvsPuiKzMRTPT",
+      "managed": true,
+      "maxJobs": 2,
+      "memoryHigh": "60%",
+      "memoryMax": "70%",
+      "speedFactor": 4,
+      "sshPort": 22,
+      "sshUser": "simon",
+      "system": "x86_64-linux"
+    },
+    "yari": {
+      "cpus": 4,
+      "features": [
+        "big-parallel",
+        "benchmark"
+      ],
+      "gate": "always",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvcfPMD8iAvxwWA8Epfk95CvszjzsQSDpetkjgdPZPh",
+      "managed": true,
+      "maxJobs": 1,
+      "memoryHigh": "60%",
+      "memoryMax": "70%",
+      "speedFactor": 1,
+      "sshPort": 22,
+      "sshUser": "simon",
+      "system": "aarch64-linux"
+    },
+    "zao": {
+      "cpus": 16,
+      "features": [
+        "big-parallel",
+        "benchmark",
+        "kvm",
+        "nixos-test"
+      ],
+      "gate": "always",
+      "hostKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv",
+      "managed": false,
+      "maxJobs": 4,
+      "memoryHigh": "60%",
+      "memoryMax": "70%",
+      "speedFactor": 3,
+      "sshPort": 22,
+      "sshUser": "simonwjackson",
+      "system": "x86_64-linux"
+    }
+  },
+  "homeMacs": [
+    "14:21:03:fe:01:37"
+  ],
+  "hostKeys": {
+    "aka": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z",
+    "fuji": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2",
+    "hiyori": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN6PZlpH4t+PXDhdXg5JNhbnJ9tdNmcb0U7AnbKVLF47",
+    "myoko": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDnwTRGEJE12P1y2kEHjZzDIz7Ky+Hr+tSJOAclU7vR9",
+    "unzen": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEq/+tNqmJWnfSkPafwIgQP8JWLhmRERvsPuiKzMRTPT",
+    "yari": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvcfPMD8iAvxwWA8Epfk95CvszjzsQSDpetkjgdPZPh",
+    "zao": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv"
+  },
+  "legacyClientKeys": [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAW4YRgdrxZjOPks6Jy8q4txJ4LZTVUFhNadApat21AG root@zao for remote builders"
+  ]
+}

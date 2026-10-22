@@ -1,43 +1,10 @@
-# Central registry of Nix build machines.
+# The fleet's build federation registry, read from fleet.json.
 #
-# An entry states what a machine can build, not who may use it. Reachability is a
-# property of a pair of machines — the client's root needs a key the builder
-# accepts — so each host names the builders it can actually reach in
-# mountainous.features.nix-builders.use.
+# cairn owns the registry (modules/build-federation.nix and each host file).
+# fleet.json is its copy for the hosts that still run `unified`, Zao and Aka:
 #
-# Fuji is not yet a client of anything: its root has no SSH client key, so it
-# cannot log in to Zao. Giving it one is a separate change with new key material.
-{
-  fuji = {
-    system = "aarch64-linux";
-    # Reinstalled on cairn: the builder layer accepts Zao as simon via ssh-ng.
-    sshUser = "simon";
-    maxJobs = 4;
-    speedFactor = 1;
-    # This Oracle ARM instance has no /dev/kvm, so it must not be offered work
-    # that needs virtualisation — a nixos-test sent here fails rather than waits.
-    supportedFeatures = ["big-parallel" "benchmark"];
-    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSU1LZE5aYjZxbmNTSGNBTEZ4dHpBRENEU0V0KzAzVkxoUlFtTlNuK3JIYTIgcm9vdEBmdWppCg==";
-  };
-
-  # Yari runs cairn (modules/builder.nix): user simon, and Zao's root key may
-  # only run nix-daemon --stdio, so the protocol must stay ssh-ng. Its daemon
-  # runs at idle priority behind Forgerie, and it has no /dev/kvm either.
-  yari = {
-    system = "aarch64-linux";
-    sshUser = "simon";
-    maxJobs = 4;
-    speedFactor = 1;
-    supportedFeatures = ["big-parallel" "benchmark"];
-    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUl2Y2ZQTUQ4aUF2eHdXQThFcGZrOTVDdnN6anpzUVNEcGV0a2pnZFBaUGggcm9vdEB5YXJpCg==";
-  };
-
-  zao = {
-    system = "x86_64-linux";
-    sshUser = "simonwjackson";
-    maxJobs = 16;
-    speedFactor = 4;
-    supportedFeatures = ["big-parallel" "benchmark" "kvm" "nixos-test"];
-    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUN1VmZOd25EYmZuY2ZKbjBybXhucGJ1STRBdXd3VElOYzg2NGVzU2ptcXYgcm9vdEB6YW8K";
-  };
-}
+#   nix eval --json <cairn>#fleet | jq -S '{builders: (.builders | map_values({system,cpus,maxJobs,speedFactor,features,sshUser,sshPort,hostKey,gate,memoryHigh,memoryMax,managed})), hostKeys, homeMacs, legacyClientKeys}'
+#
+# Replace the file with that output when a builder or host key changes in
+# cairn. Delete this copy when Zao and Aka move to cairn.
+builtins.fromJSON (builtins.readFile ./fleet.json)
