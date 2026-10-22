@@ -183,18 +183,25 @@ def sha256(path):
 
 def cmd_verify(args):
     need("format")
-    lines = Path(args.manifest).read_text().splitlines()
+    # Bytes, split on newline only: filenames may hold any byte except "/" and
+    # NUL, including characters that str.splitlines() treats as line breaks.
+    lines = [line for line in Path(args.manifest).read_bytes().split(b"\n") if line]
     bad, missing = [], []
     for line in lines:
-        digest, rel = line.split("  ", 1)
-        path = Path(POOL) / rel
-        if not path.exists():
+        if line.startswith(b"\\"):
+            # sha256sum escapes names holding a backslash or a newline.
+            digest, rel = line[1:].split(b"  ", 1)
+            rel = rel.replace(b"\\n", b"\n").replace(b"\\\\", b"\\")
+        else:
+            digest, rel = line.split(b"  ", 1)
+        path = os.path.join(os.fsencode(POOL), rel)
+        if not os.path.exists(path):
             missing.append(rel)
-        elif sha256(path) != digest:
+        elif sha256(path) != digest.decode():
             bad.append(rel)
     print(f"checked {len(lines)} files: {len(missing)} missing, {len(bad)} differ")
     for rel in (missing + bad)[:20]:
-        print("  ", rel)
+        print("  ", os.fsdecode(rel))
     if missing or bad:
         sys.exit(1)
     write_receipt("verify", {"manifest": args.manifest, "files": len(lines)})

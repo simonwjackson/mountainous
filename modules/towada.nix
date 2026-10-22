@@ -254,7 +254,22 @@ in
   perSystem =
     { pkgs, lib, ... }:
     {
-      checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
+      checks = {
+        towada-verify =
+          pkgs.runCommand "towada-verify"
+            {
+              nativeBuildInputs = [
+                pkgs.python3
+                pkgs.findutils
+                pkgs.coreutils
+              ];
+            }
+            ''
+              python3 ${../tests/test_towada_verify.py} ${./towada-convert.py}
+              touch $out
+            '';
+      }
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
         towada-vm = import ../tests/towada-vm.nix {
           inherit pkgs;
           towadaModule = towada;
