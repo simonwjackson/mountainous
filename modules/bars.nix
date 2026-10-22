@@ -5,7 +5,24 @@
 # Each screen gets its own pair, and each pair shows only that screen's
 # windows. See quickshell/lanes.js.
 # Meta+I toggles both for immersive browsing.
+#
+# The remote-builder control (BuilderGate.qml, BuilderControl.qml,
+# BuilderPanel.qml) shows only where nix-builder-gate is on PATH; see
+# modules/build-federation.nix. quickshell/builder-dev/ holds a fake gate and
+# a capture script for screenshots. They are for development and are not
+# installed.
 {
+  perSystem =
+    { pkgs, ... }:
+    {
+      # The builder control's words, actions, focus order and layout plans,
+      # run under node from the same file QML loads.
+      checks.builder-gate-view = pkgs.runCommand "builder-gate-view" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+        node ${./quickshell/builder-gate.test.js} ${./quickshell/builder-gate.js}
+        touch $out
+      '';
+    };
+
   nixos.modules.desktop =
     { config, lib, pkgs, ... }:
     let
@@ -89,5 +106,15 @@
       # Shown only where modules/storage-health.nix is enabled.
       hjem.users.simon.files.".config/quickshell/mountainous/StorageHealth.qml".source =
         ./quickshell/StorageHealth.qml;
+      # Shown only where nix-builder-gate is on PATH. The panel uses
+      # NotificationButton.qml, which modules/notification-view.nix installs.
+      hjem.users.simon.files.".config/quickshell/mountainous/builder-gate.js".source =
+        ./quickshell/builder-gate.js;
+      hjem.users.simon.files.".config/quickshell/mountainous/BuilderGate.qml".source =
+        ./quickshell/BuilderGate.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/BuilderControl.qml".source =
+        ./quickshell/BuilderControl.qml;
+      hjem.users.simon.files.".config/quickshell/mountainous/BuilderPanel.qml".source =
+        ./quickshell/BuilderPanel.qml;
     };
 }
