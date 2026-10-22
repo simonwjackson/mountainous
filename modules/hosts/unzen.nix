@@ -71,6 +71,20 @@
           enable = lib.mkDefault false;
           # Chosen ahead; towada-convert formats the pool with it.
           uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
+          # Replaceable data (media, games, firmware, Takeout) keeps one copy.
+          # What cannot be downloaded again keeps two, on different disks.
+          twoCopies = [
+            "photos"
+            "backups"
+            "sdc1_backup.tar.gz"
+            "code"
+            "gaming/profiles"
+            "gaming/profiles-backup-20251219.tar.gz"
+            "books"
+            "comics"
+            "knowledge"
+            "PLEASE-SORT-SOON"
+          ];
           members = towadaMembers;
           legacy = towadaLegacy;
         };

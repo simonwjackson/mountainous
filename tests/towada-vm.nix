@@ -39,6 +39,7 @@ pkgs.testers.runNixOSTest {
       environment.systemPackages = [
         pkgs.xfsprogs
         pkgs.parted
+        pkgs.attr
       ];
       services.udev.extraRules = lib.concatStrings (
         lib.mapAttrsToList (kernel: id: ''
@@ -50,6 +51,10 @@ pkgs.testers.runNixOSTest {
         enable = true;
         uuid = "0b7e9a52-6b1d-4c1e-9f0a-7a0c6b1e0001";
         idPrefix = "fx-";
+        twoCopies = [
+          "photos"
+          "keep.tar"
+        ];
         idSuffix = "";
         members = {
           "02" = "02";
@@ -76,6 +81,7 @@ pkgs.testers.runNixOSTest {
         "mkdir -p /mnt/00/photos/library /mnt/01/media/movies /mnt/01/gaming/games /mnt/04/gaming/games",
         "printf photo > /mnt/00/photos/library/a.jpg",
         "printf movie > /mnt/01/media/movies/m.mkv",
+        "printf archive > /mnt/04/keep.tar",
         "printf winner > /mnt/01/gaming/games/g.rom; printf loser-longer > /mnt/04/gaming/games/g.rom",
         "touch -d '2020-01-01' /mnt/04/gaming/games/g.rom",
         "printf content > /mnt/01/snapraid.content; printf parity > /mnt/02/snapraid.0.parity",
@@ -111,6 +117,21 @@ pkgs.testers.runNixOSTest {
         machine.fail("test -e /srv/lakes/towada/snapraid.content")
         assert machine.succeed("stat -c %g /srv/lakes/towada/photos/library/a.jpg").strip() == "390"
 
+    with subtest("protect keeps the listed paths in two copies and the rest in one"):
+        machine.fail("towada-convert add 00 --confirm wipe-00")
+        machine.succeed("towada-convert protect")
+        def copies(path):
+            # Without a per-file override the pool default applies (1 copy).
+            status, value = machine.execute(
+                f"getfattr --only-values -n bcachefs_effective.data_replicas /srv/lakes/towada/{path}"
+            )
+            return value.strip() if status == 0 else "pool default"
+        assert copies("photos/library/a.jpg") == "2"
+        assert copies("keep.tar") == "2"
+        assert copies("media/movies/m.mkv") == "pool default"
+        machine.succeed("printf new > /srv/lakes/towada/photos/library/new.jpg")
+        assert copies("photos/library/new.jpg") == "2"
+
     with subtest("verify catches a wrong hash, then passes"):
         machine.succeed("sed 's/^./0/' /root/manifest.sha256 > /root/bad.sha256")
         machine.fail("towada-convert verify /root/bad.sha256")
@@ -126,8 +147,8 @@ pkgs.testers.runNixOSTest {
         devices = machine.succeed("ls -d /sys/fs/bcachefs/*/dev-*").split()
         assert len(devices) == 5, devices
         fs = machine.succeed("ls -d /sys/fs/bcachefs/*-*").split()[0]
-        for option in ["data_replicas", "metadata_replicas"]:
-            assert machine.succeed(f"cat {fs}/options/{option}").strip() == "2"
+        assert machine.succeed(f"cat {fs}/options/data_replicas").strip() == "1"
+        assert machine.succeed(f"cat {fs}/options/metadata_replicas").strip() == "2"
         machine.succeed("bcachefs fs usage /srv/lakes/towada")
         labels = sorted(machine.succeed("cat /sys/fs/bcachefs/*-*/dev-*/label").split())
         assert labels == ["towada.00", "towada.01", "towada.02", "towada.03", "towada.04"], labels

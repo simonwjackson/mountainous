@@ -32,7 +32,9 @@ let
             idSuffix
             members
             legacy
-            replicas
+            dataReplicas
+            metadataReplicas
+            twoCopies
             label
             ;
           inherit mountUnit;
@@ -46,6 +48,7 @@ let
         runtimeInputs = [
           pkgs.bcachefs-tools
           pkgs.rsync
+          pkgs.attr
           pkgs.util-linux
           pkgs.coreutils
           pkgs.systemd
@@ -121,10 +124,21 @@ let
           ];
           description = "USB bridges of the enclosure; autosuspend is disabled for them.";
         };
-        replicas = lib.mkOption {
+        dataReplicas = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 1;
+          description = "Default copies of file data, set at format. Replaceable data keeps one.";
+        };
+        metadataReplicas = lib.mkOption {
           type = lib.types.ints.positive;
           default = 2;
-          description = "Copies of every file and of metadata, set when the pool is formatted.";
+          description = "Copies of the filesystem's own metadata, so one lost disk never loses the pool.";
+        };
+        twoCopies = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "photos" ];
+          description = "Pool-relative paths kept in two copies (data_replicas=2); new files inside inherit it.";
         };
         label = lib.mkOption {
           type = lib.types.str;

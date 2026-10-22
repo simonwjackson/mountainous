@@ -5,6 +5,7 @@ to repeat or skip ahead. Nothing here forces an unmount.
 
   format ID...       create the pool on the configured member disks
   copy ID            copy one read-only XFS disk into the pool
+  protect            keep the configured irreplaceable paths in two copies
   verify MANIFEST    check irreplaceable files against a SHA-256 manifest
   add ID             wipe a copied XFS disk and add it to the pool
 
@@ -98,7 +99,8 @@ def cmd_format(args):
         labelled += [f"--label={CONFIG['label']}.{disk}", dev]
     run(
         "bcachefs", "format",
-        f"--replicas={CONFIG['replicas']}",
+        f"--data_replicas={CONFIG['dataReplicas']}",
+        f"--metadata_replicas={CONFIG['metadataReplicas']}",
         f"--fs_label={CONFIG['label']}",
         f"--uuid={CONFIG['uuid']}",
         *labelled,
@@ -146,6 +148,31 @@ def cmd_copy(args):
     write_receipt(f"copy-{disk}", {"disk": disk, "serial": CONFIG["legacy"][disk], "files": files})
 
 
+def effective_replicas(path):
+    return out("getfattr", "--only-values", "-n", "bcachefs_effective.data_replicas", path)
+
+
+def cmd_protect(args):
+    need("format")
+    for disk in CONFIG["legacy"]:
+        need(f"copy-{disk}")
+    paths = [Path(POOL) / rel for rel in CONFIG["twoCopies"]]
+    missing = [str(p) for p in paths if not p.exists()]
+    if missing:
+        sys.exit("refusing: listed paths are absent from the pool: " + " ".join(missing))
+    # Set on a directory, the option reaches every existing child and every
+    # new file; reconcile then writes the second copies in the background.
+    run("bcachefs", "set-file-option", "--data_replicas=2", *map(str, paths))
+    run("bcachefs", "reconcile", "wait", POOL)
+    wrong = []
+    for path in paths:
+        targets = [path] if path.is_file() else [path, *path.rglob("*")]
+        wrong += [str(t) for t in targets if t.is_file() and effective_replicas(t) != "2"]
+    if wrong:
+        sys.exit(f"{len(wrong)} files lack two copies; first: {wrong[0]}")
+    write_receipt("protect", {"paths": CONFIG["twoCopies"]})
+
+
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -179,6 +206,7 @@ def cmd_add(args):
     if serial is None:
         sys.exit(f"refusing: {disk} is not a legacy XFS disk")
     need(f"copy-{disk}")
+    need("protect")
     need("verify")
     if receipt(f"add-{disk}").exists():
         sys.exit(f"refusing: {disk} was already added")
@@ -211,6 +239,7 @@ def main():
     f.add_argument("--confirm", required=True)
     c = sub.add_parser("copy")
     c.add_argument("disk")
+    sub.add_parser("protect")
     v = sub.add_parser("verify")
     v.add_argument("manifest")
     a = sub.add_parser("add")
@@ -219,7 +248,8 @@ def main():
     args = p.parse_args()
     if os.geteuid() != 0:
         sys.exit("run as root")
-    {"format": cmd_format, "copy": cmd_copy, "verify": cmd_verify, "add": cmd_add}[args.cmd](args)
+    {"format": cmd_format, "copy": cmd_copy, "protect": cmd_protect, "verify": cmd_verify,
+     "add": cmd_add}[args.cmd](args)
 
 
 if __name__ == "__main__":
