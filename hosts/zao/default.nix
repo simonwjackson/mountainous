@@ -10,7 +10,6 @@
     ./disko.nix
     ./hardware.nix
     ./nscd.nix
-    ./storage.nix
   ];
 
   networking = {
@@ -49,88 +48,8 @@
     };
     presets.server.enable = true;
 
-    features.disk-array = {
-      enable = true;
-      # NOTE: The original config had 6 disks (iceberg00–05). Only 5 are
-      # physically present as of 2026-04-05. The missing 6th disk was:
-      #   id = "05"; device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGK9H0C-0:0"
-      # It appeared in the old fstab but is not connected. Investigate whether
-      # this disk still exists and should be added back to the lake.
-      pools.towada = {
-        disks = [
-          {
-            id = "00";
-            uuid = "06cf0ea0-0d61-464b-8437-d1ddacc315c7";
-            device = "/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0";
-            mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
-          }
-          {
-            id = "01";
-            uuid = "80f9a4c1-a5a2-416a-bae8-6e6e07e14709";
-            device = "/dev/disk/by-id/usb-TerraMas_TDAS_VRJVWS3K-0:0";
-            mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
-          }
-          {
-            id = "02";
-            uuid = "91b6cfaf-b822-4360-b999-e527dfa4fda0";
-            device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH3KRAG-0:0";
-            mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=90"];
-          }
-          {
-            id = "03";
-            uuid = "8f59a043-ed7f-4a9c-82c9-79aab8cab02c";
-            device = "/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0";
-            mountOptions = ["defaults" "nofail" "noatime" "nodiratime" "lazytime" "logbufs=8" "allocsize=64m" "x-systemd.device-timeout=90"];
-          }
-          {
-            id = "04";
-            uuid = "855a4903-84c4-4015-9dbe-8ae8c065ee27";
-            device = "/dev/disk/by-id/usb-TerraMas_TDAS_WD-CA081PBK-0:0";
-            mountOptions = ["defaults" "nofail" "noatime" "lazytime" "logbufs=8" "allocsize=1m" "x-systemd.device-timeout=90"];
-          }
-        ];
-
-        cache = {
-          enable = true;
-          device = "/dev/disk/by-uuid/b11bc61f-1632-4809-8c94-efbf39614f22";
-          uuid = "b11bc61f-1632-4809-8c94-efbf39614f22";
-        };
-
-        mergerfs.dataDisks = ["00" "01" "04"];
-
-        snapraid = {
-          enable = true;
-          dataDisks = ["00" "01" "04"];
-          parityDisks = ["02" "03"];
-        };
-
-        usb = {
-          disableAutosuspend = true;
-          udevRules = [
-            {
-              vendor = "152d";
-              product = "0578";
-            }
-          ];
-        };
-      };
-    };
-
-    features.media = {
-      enable = true;
-      root = "/srv/lakes/towada";
-      storageUnit = "srv-lakes-towada.mount";
-    };
-
-    features.media-tiering = {
-      enable = true;
-      role = "sink";
-      peerHost = "yari";
-      # localBackingRoot defaults to /srv/lakes/towada/media (inside the
-      # lake mergerfs). Media has been moved from the legacy movies/ and
-      # series/ dirs into media/{movies,tv} on each shore, so no bind
-      # mounts (localSources) are needed.
-    };
+    # Towada, its media library and Jellyfin moved to Unzen (cairn) with the
+    # enclosure. Zao keeps no storage array.
 
     # ── Networking ───────────────────────────────────────────────────
     features.tsnet-proxy = {
@@ -144,36 +63,6 @@
       enable = true;
       audioContext = 1500;
       proxy.enable = true;
-    };
-
-    features.jellyfin = {
-      enable = true;
-      # Opened to the LAN so the LG webOS TV (no Tailscale client) can reach Jellyfin directly.
-      openFirewall = true;
-      bootstrap = {
-        enable = true;
-        admin = {
-          username = "simonwjackson";
-          passwordFile = config.age.secrets.jellyfin-pass.path;
-        };
-        serverName = "zao";
-        remoteAccess = true;
-        libraries = {
-          tv = {
-            name = "TV";
-            path = "/srv/range/media/tv";
-          };
-          movies = {
-            name = "Movies";
-            path = "/srv/range/media/movies";
-          };
-        };
-      };
-      proxy = {
-        enable = true;
-        hostname = "watch";
-        openFirewall = false;
-      };
     };
 
     # Korri's aarch64 outputs must be built on aarch64 hardware: Fuji and Yari.
@@ -290,28 +179,8 @@
     };
   };
 
-  # ── Storage alerts ─────────────────────────────────────────────────
-  # Failures reach the phone through the ntfy hub on Rakku. The token belongs
-  # to the publish-only `storage-alerts` user; both host-scoped secrets are
-  # encrypted to Zao and the user key only. Lake and range mounts already
-  # carry drop-ins; the admission and readiness services, plus the 5-minute
-  # check, cover them.
-  mountainous.features.storage-alerts = {
-    enable = true;
-    profile = "zao";
-    notify = pkgs.notify-sync;
-    tokenFile = config.age.secrets.storage-alerts-token.path;
-    buttonTokenFile = config.age.secrets.notify-button-token.path;
-    units =
-      [
-        "towada-snapraid-sync.service"
-        "towada-snapraid-scrub.service"
-        "towada-cache-mover.service"
-        "towada-storage-admission.service"
-        "media-storage-ready.service"
-      ]
-      ++ map (disk: "srv-shores-towada-${disk}.mount") ["00" "01" "02" "03" "04"];
-  };
+  # Storage probes (Myoko's bar, alerts) read this: Zao expects no array.
+  environment.etc."towada-moved".text = "unzen\n";
 
   # ── Secrets ────────────────────────────────────────────────────────
   age.secrets.tailscale-authkey = {

@@ -436,17 +436,19 @@
         _module.args.inputs = inputs;
       };
     };
-    checks.x86_64-linux.zao-storage-alerts = let
+    # Towada, media and Jellyfin moved to Unzen. Zao must not keep any of them.
+    checks.x86_64-linux.zao-towada-handoff = let
       c = self.nixosConfigurations.zao.config;
-      a = c.mountainous.features.storage-alerts;
     in
-      assert a.enable;
-      assert a.profile == "zao";
-      assert c.age.secrets.storage-alerts-token.owner == "root";
-      assert builtins.elem "storage-alert-trigger@%n.service" c.systemd.services.towada-snapraid-sync.onFailure;
-      assert builtins.elem "storage-alert-trigger@%n.service" c.systemd.services.towada-cache-mover.onFailure;
-      assert c.systemd.services.storage-alert.requires or [] == [];
-        nixpkgs.legacyPackages.x86_64-linux.writeText "zao-storage-alerts" "ok";
+      assert !c.mountainous.features.disk-array.enable;
+      assert !c.mountainous.features.media.enable;
+      assert !c.mountainous.features.media-tiering.enable;
+      assert !c.mountainous.features.jellyfin.enable;
+      assert !c.mountainous.features.storage-alerts.enable;
+      assert !c.services.nfs.server.enable;
+      assert !(c.fileSystems ? "/srv/lakes/towada");
+      assert c.environment.etc."towada-moved".text == "unzen\n";
+        nixpkgs.legacyPackages.x86_64-linux.writeText "zao-towada-handoff" "ok";
 
     checks.x86_64-linux.zao-nscd = import ./tests/zao-nscd.nix {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
@@ -642,15 +644,12 @@
       commitmentNames = builtins.attrNames zao.mountainous.hosts.zao.commitments;
       expectedNames = [
         "eval-memory-safety"
-        "jellyfin-media-server"
-        "media-tiering-sink"
         "shared-office-printer"
         "tailnet-access"
-        "towada-storage"
       ];
       namesFile = pkgs.writeText "zao-runtime-commitment-names" (lib.concatLines commitmentNames);
     in
-      assert lib.assertMsg (commitmentNames == expectedNames) "Zao must retain exactly its six non-Korri commitments";
+      assert lib.assertMsg (commitmentNames == expectedNames) "Zao must retain exactly its three non-Korri commitments";
       assert lib.assertMsg (builtins.elem runtimeVerifier zao.environment.systemPackages) "Zao must install its runtime commitment verifier";
         pkgs.runCommand "zao-runtime-commitments" {} ''
           ${pkgs.bash}/bin/bash -n ${script}
@@ -659,15 +658,12 @@
             ${pkgs.gnugrep}/bin/grep -Fq "$name" ${script}
           done < ${namesFile}
 
-          ${pkgs.gnugrep}/bin/grep -Fq 'fuse.mergerfs' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq 'Office_Printer' ${script}
+          if ${pkgs.gnugrep}/bin/grep -Fq 'towada' ${script}; then
+            echo "Zao runtime commitments must not check the moved Towada array" >&2
+            exit 1
+          fi
           ${pkgs.gnugrep}/bin/grep -Fq 'zramctl' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'expect_mount_device' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_7SGKDA3C-0:0-part1' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq '/dev/disk/by-id/usb-TerraMas_TDAS_VGH13XMG-0:0-part1' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'getfattr --name=user.mergerfs.branches' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'mounted_source="$(findmnt' ${script}
-          ${pkgs.gnugrep}/bin/grep -Fq 'head --lines=1 || true)' ${script}
           ${pkgs.gnugrep}/bin/grep -Fq ' disabled ' ${script}
 
           if ${pkgs.gnugrep}/bin/grep -Eqi 'korri|sunshine|sway|steam|pipewire|wireplumber|seatd|uinput' ${script}; then
@@ -681,92 +677,6 @@
 
           touch "$out"
         '';
-
-    checks.x86_64-linux.zao-media-normalization = let
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      zao = self.nixosConfigurations.zao.config;
-      normalizationUnit = "mountainous-media-normalize-permissions.service";
-      service = zao.systemd.services.mountainous-media-normalize-permissions;
-      timer = zao.systemd.timers.mountainous-media-normalize-permissions;
-      jellyfin = zao.systemd.services.jellyfin;
-      script = service.serviceConfig.ExecStart;
-      nestedMountConfig =
-        (lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            ./features/media/default.nix
-            ({lib, ...}: {
-              options.mountainous.features =
-                lib.genAttrs [
-                  "media-tiering"
-                  "jellyfin"
-                  "radarr"
-                  "sonarr"
-                  "nzbget"
-                  "transmission"
-                ] (_: {
-                  enable = lib.mkOption {
-                    type = lib.types.bool;
-                    default = false;
-                  };
-                });
-
-              config = {
-                mountainous.features.media = {
-                  enable = true;
-                  root = "/srv/library";
-                  mediaRoot = "/srv/library/media-volume/media";
-                };
-                fileSystems."/srv/library/media-volume" = {
-                  device = "none";
-                  fsType = "tmpfs";
-                };
-                system.stateVersion = "26.05";
-              };
-            })
-          ];
-        }).config;
-      nestedMountScript = nestedMountConfig.systemd.services.mountainous-media-normalize-permissions.serviceConfig.ExecStart;
-    in
-      assert lib.assertMsg (!(builtins.elem "multi-user.target" service.wantedBy)) "Zao media normalization must not block multi-user.target";
-      assert lib.assertMsg (builtins.elem "timers.target" timer.wantedBy) "Zao media normalization must retain its timer";
-      assert lib.assertMsg (timer.timerConfig.OnActiveSec == "15min") "Zao media normalization must wait 15 minutes after timer activation";
-      assert lib.assertMsg (timer.timerConfig.OnUnitActiveSec == "6h") "Zao media normalization must retain its six-hour schedule";
-      assert lib.assertMsg (!(builtins.elem normalizationUnit jellyfin.after)) "Jellyfin must not wait for Zao media normalization";
-      assert lib.assertMsg (!(builtins.elem normalizationUnit jellyfin.wants)) "Jellyfin must not start Zao media normalization";
-        pkgs.runCommand "zao-media-normalization" {} ''
-          root_count=$(${pkgs.gnugrep}/bin/grep -Ec '^[[:space:]]*normalize_root[[:space:]]+' ${script})
-          if [ "$root_count" -ne 1 ]; then
-            echo "expected one Zao normalization root, found $root_count" >&2
-            exit 1
-          fi
-          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/lakes/towada$' ${script}
-
-          nested_root_count=$(${pkgs.gnugrep}/bin/grep -Ec '^[[:space:]]*normalize_root[[:space:]]+' ${nestedMountScript})
-          if [ "$nested_root_count" -ne 2 ]; then
-            echo "expected two roots across the nested filesystem boundary, found $nested_root_count" >&2
-            exit 1
-          fi
-          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/library$' ${nestedMountScript}
-          ${pkgs.gnugrep}/bin/grep -Eq '^[[:space:]]*normalize_root[[:space:]]+/srv/library/media-volume/media$' ${nestedMountScript}
-
-          touch "$out"
-        '';
-
-    checks.x86_64-linux.zao-jellyfin-bootstrap = let
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      script = self.nixosConfigurations.zao.config.systemd.services.jellyfin-seed-bootstrap.script;
-      scriptFile = pkgs.writeText "zao-jellyfin-bootstrap.sh" script;
-    in
-      pkgs.runCommand "zao-jellyfin-bootstrap" {} ''
-        ${pkgs.gnused}/bin/sed -n "/<<'PY'$/,/^PY$/p" ${scriptFile} \
-          | ${pkgs.gnused}/bin/sed '1d;$d' > bootstrap.py
-        test -s bootstrap.py
-        ${pkgs.python3}/bin/python -m py_compile bootstrap.py
-        ${pkgs.gnugrep}/bin/grep -Fq 'known_initialized=known_initialized' bootstrap.py
-        ${pkgs.gnugrep}/bin/grep -Fq 'known_initialized=True' bootstrap.py
-        touch "$out"
-      '';
 
     checks.x86_64-linux.zao-esp-mirror = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
@@ -783,45 +693,6 @@
         ${pkgs.gnugrep}/bin/grep -Fq '/bin/umount /boot/efi-backup' ${script}
         touch "$out"
       '';
-
-    checks.x86_64-linux.zao-peer-media = let
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      zao = self.nixosConfigurations.zao.config;
-      yari = self.nixosConfigurations.yari.config;
-      serviceName = "media-tiering-peer-mount";
-      peerRoot = zao.mountainous.features.media-tiering.peerMountRoot;
-      yariPeerRoot = yari.mountainous.features.media-tiering.peerMountRoot;
-      serviceExists = builtins.hasAttr serviceName zao.systemd.services;
-      service = zao.systemd.services.${serviceName};
-      timer = zao.systemd.timers.${serviceName};
-      scriptPath = builtins.head (lib.splitString " " service.serviceConfig.ExecStart);
-      rangeMoviesDir = zao.mountainous.features.media.rangeMoviesDir;
-      rangeTvDir = zao.mountainous.features.media.rangeTvDir;
-      localBackingRoot = zao.mountainous.features.media-tiering.localBackingRoot;
-      zaoTmpfiles = zao.systemd.tmpfiles.rules;
-      yariMountOptions = yari.fileSystems.${yariPeerRoot}.options;
-    in
-      assert lib.assertMsg serviceExists "Zao must use a best-effort peer media mount service";
-      assert lib.assertMsg (!(builtins.hasAttr peerRoot zao.fileSystems)) "Zao peer media must not create a failing systemd mount unit";
-      assert lib.assertMsg (service.wantedBy == []) "Zao peer media mount must stay outside the activation transaction";
-      assert lib.assertMsg (builtins.elem "timers.target" timer.wantedBy) "Zao peer media mount must retain its retry timer";
-      assert lib.assertMsg (timer.timerConfig.OnActiveSec == "30s") "Zao peer media retry must start after activation";
-      assert lib.assertMsg (timer.timerConfig.OnUnitInactiveSec == "5min") "Zao peer media retry must continue every five minutes";
-      assert lib.assertMsg (zao.fileSystems.${rangeMoviesDir}.device == "${localBackingRoot}/movies") "Zao movies must start with its local branch only";
-      assert lib.assertMsg (zao.fileSystems.${rangeTvDir}.device == "${localBackingRoot}/tv") "Zao TV must start with its local branch only";
-      assert lib.assertMsg (lib.all (rule: !(lib.hasInfix peerRoot rule)) zaoTmpfiles) "Zao tmpfiles must not touch the peer mount path";
-      assert lib.assertMsg (builtins.hasAttr yariPeerRoot yari.fileSystems) "Yari must retain its on-demand Zao mount";
-      assert lib.assertMsg (builtins.elem "x-systemd.automount" yariMountOptions) "Yari must retain peer media automounting";
-        pkgs.runCommand "zao-peer-media" {} ''
-          ${pkgs.gnugrep}/bin/grep -Fq 'timeo=10,retrans=1' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'retry=0' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'timeout --signal=TERM --kill-after=2s 10s' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'peer_is_healthy' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'user.mergerfs.branches' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'mount_status=$?' ${scriptPath}
-          ${pkgs.gnugrep}/bin/grep -Fq 'exit 0' ${scriptPath}
-          touch "$out"
-        '';
 
     nixosConfigurations = {
       fuji = mkHost {
