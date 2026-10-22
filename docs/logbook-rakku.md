@@ -35,7 +35,8 @@ The assertions run only for enabled folders on participating hosts. Leaving
 this disabled does not block Rakku's other services or another host's
 evaluation. The phone settings are in [Declarative trust](app-profiles.md).
 
-A root-only path/oneshot bridge watches exactly
+A root-only path/oneshot shell bridge (`modules/logbook-export.sh`, packaged
+with coreutils and sqlite) watches exactly
 `/home/simon/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db`. It copies
 only a non-empty, regular, stable SQLite snapshot. It checks SQLite integrity,
 sets `logbook:logbook 0600`, fsyncs the temporary file, and atomically replaces
@@ -45,6 +46,15 @@ and retry after 30 seconds. The directory is root-owned and not writable by
 Logbook. The core mounts it read-only, and its `--gadgetbridge-export` points
 at that copy. No home ACLs, whole-home mounts, or core restarts are needed.
 The path/oneshot pair is absent when the folder is disabled.
+
+The bridge uses `dd` with `nofollow,nonblock` and 1 MiB buffers, capped at the
+source's observed size. It compares mode, device, inode, size, and nanosecond
+mtime/ctime before and after the copy, then runs SQLite `quick_check` on the
+immutable, read-only temporary copy. The service retains its 120-second timeout.
+The signature checks use the path, not the open descriptor: a regular-file swap
+and swap back within the copy window could go unnoticed. Only the source owner
+can arrange this under the default protected-hardlinks policy; symlinks are
+never followed, and the published bytes must still pass SQLite validation.
 
 This uses one duplicate export (a few MB), but avoids two single-file bind
 mount problems: a 0600 source remains unreadable by another UID, and Syncthing's
@@ -112,12 +122,8 @@ install -d -m 0700 "$release"
 git clone --branch main "$incoming/logbook-main.bundle" "$release/source"
 test "$(git -C "$release/source" rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
 git clone --branch main "$incoming/logbook-proseql.bundle" "$release/proseql"
-PROSEQL_SHA=$(python3 - "$release/source/flake.lock" <<'PY'
-import json, sys
-lock = json.load(open(sys.argv[1]))
-print(lock['nodes'][lock['nodes']['root']['inputs']['proseql']]['locked']['rev'])
-PY
-)
+PROSEQL_SHA=$(nix run nixpkgs#jq -- -er \
+  '.nodes[.nodes.root.inputs.proseql].locked.rev' "$release/source/flake.lock")
 git -C "$release/proseql" checkout --detach "$PROSEQL_SHA"
 git clone --branch cairn "$incoming/logbook-mountainous.bundle" "$release/mountainous"
 "$release/mountainous/scripts/logbook-deploy" --check \
@@ -132,12 +138,16 @@ Use a new release directory for a new SHA. If retrying an existing release,
 inspect it and rerun its two script commands rather than discarding files.
 The ProseQL bundle must include the revision in Logbook's lockfile; if it is
 not reachable from main, create that bundle from a ref that contains it.
+The recipe uses `nix run nixpkgs#jq --`, so Unzen needs no installed `jq`.
 
 The script builds on Unzen with remote builders disabled. It makes an ephemeral
 app-only flake from `deploy/logbook/flake.nix`, copies the authoritative SSH
 pins from `deploy/known_hosts`, and locks both source inputs to their full SHAs.
 It runs deploy-rs schema/activation checks, builds all three binaries, and tests
-a temporary server's health, metrics RPC, and CLI. Before build and publication
+a temporary server with `tests/logbook-smoke.sh` (bash, curl, and jq): exact
+health response, non-empty metrics RPC result, CLI status array, sidecar binary,
+and graceful SIGINT shutdown (with a five-second kill fallback). It does not
+join the tailnet. Before build and publication
 it verifies both source HEADs and clean trees. It signs the entire activation
 closure with `/var/lib/app-updater/signing-key`, then calls deploy-rs with
 `--checksigs`, strict SSH host checking, and the existing deploy key. Only the
