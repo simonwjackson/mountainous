@@ -415,6 +415,15 @@ class Probe(unittest.TestCase):
         self.fx.towada_pool()
         self.assertEqual(self.fx.probe("unzen"), [("ok", "all checks passed")])
 
+    def test_towada_pool_with_nvme_member(self):
+        self.fx.unzen()
+        self.fx.towada_pool()
+        with open(self.fx.etc / "towada" / "members", "a") as members:
+            members.write("nvme.sn770\n")
+        self.assertIn(("bad", "expected towada member nvme.sn770 missing"), self.fx.probe("unzen"))
+        self.fx.member(9, "nvme.sn770", uuid=TOWADA)
+        self.assertEqual(self.fx.probe("unzen"), [("ok", "all checks passed")])
+
     def test_towada_pool_missing_member_unmounted_or_invisible(self):
         self.fx.unzen()
         self.fx.towada_pool()

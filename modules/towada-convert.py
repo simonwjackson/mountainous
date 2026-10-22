@@ -8,6 +8,7 @@ to repeat or skip ahead. Nothing here forces an unmount.
   protect            keep the configured irreplaceable paths in two copies
   verify MANIFEST    check irreplaceable files against a SHA-256 manifest
   add ID             wipe a copied XFS disk and add it to the pool
+  add-fast           wipe the NVMe and add it as the write and read cache
 
 Copy order matters when the same path exists on several disks: copy the
 lowest-precedence disk first so the old mergerfs winner is written last.
@@ -238,6 +239,49 @@ def cmd_add(args):
     write_receipt(f"add-{disk}", {"disk": disk, "serial": serial, "usageBefore": usage_before})
 
 
+def fs_option(name, value=None):
+    path = Path("/sys/fs/bcachefs") / CONFIG["uuid"] / "options" / name
+    if value is not None:
+        print(f"+ {name}={value}", flush=True)
+        path.write_text(value + "\n")
+    return path.read_text().strip()
+
+
+def cmd_add_fast(args):
+    fast = CONFIG.get("fast")
+    if not fast:
+        sys.exit("refusing: no fast member is configured")
+    for disk in CONFIG["legacy"]:
+        need(f"add-{disk}")
+    if receipt("add-fast").exists():
+        sys.exit("refusing: the fast member was already added")
+    dev = fast["path"]
+    name = os.path.basename(dev)
+    if args.confirm != f"wipe-{name}":
+        sys.exit(f"refusing: pass --confirm wipe-{name}")
+    if not mounted(POOL):
+        sys.exit("refusing: the pool is not mounted")
+    if not os.path.exists(dev):
+        sys.exit(f"refusing: missing {dev}")
+    real = os.path.realpath(dev)
+    for line in Path("/proc/mounts").read_text().splitlines():
+        source = line.split()[0]
+        if source.startswith("/dev/") and os.path.realpath(source).startswith(real):
+            sys.exit(f"refusing: {dev} is mounted at {line.split()[1]}")
+    before = out("lsblk", "-no", "NAME,FSTYPE,LABEL,SIZE", dev)
+    for part in sorted(Path("/dev").glob(os.path.basename(real) + "p*")):
+        run("wipefs", "--all", "--quiet", str(part))
+    run("wipefs", "--all", "--quiet", dev)
+    run("bcachefs", "device", "add", f"--label={fast['label']}", POOL, dev)
+    # New writes land on the NVMe; the disks receive them in the background;
+    # reads that miss the NVMe are copied up. Written to the superblock.
+    fs_option("foreground_target", CONFIG["fastGroup"])
+    fs_option("promote_target", CONFIG["fastGroup"])
+    fs_option("background_target", CONFIG["label"])
+    targets = {o: fs_option(o) for o in ("foreground_target", "promote_target", "background_target")}
+    write_receipt("add-fast", {"device": dev, "label": fast["label"], "before": before, "targets": targets})
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -249,6 +293,8 @@ def main():
     sub.add_parser("protect")
     v = sub.add_parser("verify")
     v.add_argument("manifest")
+    af = sub.add_parser("add-fast")
+    af.add_argument("--confirm", required=True)
     a = sub.add_parser("add")
     a.add_argument("disk")
     a.add_argument("--confirm", required=True)
@@ -256,7 +302,7 @@ def main():
     if os.geteuid() != 0:
         sys.exit("run as root")
     {"format": cmd_format, "copy": cmd_copy, "protect": cmd_protect, "verify": cmd_verify,
-     "add": cmd_add}[args.cmd](args)
+     "add": cmd_add, "add-fast": cmd_add_fast}[args.cmd](args)
 
 
 if __name__ == "__main__":

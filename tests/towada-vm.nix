@@ -11,6 +11,7 @@ let
     vdd = "00";
     vde = "01";
     vdf = "04";
+    vdg = "nvme";
   };
 in
 pkgs.testers.runNixOSTest {
@@ -30,6 +31,7 @@ pkgs.testers.runNixOSTest {
         1024
         1024
         1024
+        512
       ];
       virtualisation.memorySize = 2048;
       # The test VM replaces fileSystems with its own set; add the module's.
@@ -51,6 +53,13 @@ pkgs.testers.runNixOSTest {
         enable = true;
         uuid = "0b7e9a52-6b1d-4c1e-9f0a-7a0c6b1e0001";
         idPrefix = "fx-";
+        admissionTimeout = 15;
+        fast = {
+          path = "/dev/disk/by-id/fx-nvme";
+          label = "nvme.0";
+          # The rehearsal runs the stage before the NVMe joins.
+          joined = false;
+        };
         twoCopies = [
           "photos"
           "keep.tar"
@@ -71,7 +80,7 @@ pkgs.testers.runNixOSTest {
     machine.wait_for_unit("multi-user.target")
 
     # Old layout: XFS data disks 00/01/04 and parity disks 02/03.
-    for kernel, disk in ${builtins.toJSON disks}.items():
+    for kernel, disk in {k: v for k, v in ${builtins.toJSON disks}.items() if v != "nvme"}.items():
         machine.succeed(f"parted -s /dev/{kernel} mklabel gpt mkpart data 1MiB 100%")
         machine.succeed(f"udevadm settle; mkfs.xfs -q -f /dev/{kernel}1")
     machine.succeed("udevadm trigger; udevadm settle")
@@ -153,13 +162,41 @@ pkgs.testers.runNixOSTest {
         labels = sorted(machine.succeed("cat /sys/fs/bcachefs/*-*/dev-*/label").split())
         assert labels == ["towada.00", "towada.01", "towada.02", "towada.03", "towada.04"], labels
 
+    with subtest("add-fast puts the NVMe in front and refuses a wrong confirmation"):
+        machine.succeed("parted -s /dev/vdg mklabel gpt mkpart old 1MiB 100%; udevadm settle; mkfs.xfs -q -f /dev/vdg1")
+        machine.fail("towada-convert add-fast --confirm wipe-wrong")
+        machine.succeed("towada-convert add-fast --confirm wipe-fx-nvme")
+        machine.fail("towada-convert add-fast --confirm wipe-fx-nvme")
+        labels = sorted(machine.succeed("cat /sys/fs/bcachefs/*-*/dev-*/label").split())
+        assert "nvme.0" in labels and len(labels) == 6, labels
+        machine.succeed("printf hot > /srv/lakes/towada/media/movies/new.mkv; sync")
+
     with subtest("the systemd mount finds all five members by UUID after the conversion"):
         machine.succeed("systemctl stop srv-lakes-towada.mount")
         machine.fail("mountpoint -q /srv/lakes/towada")
         machine.succeed("systemctl start srv-lakes-towada.mount")
         devices = machine.succeed("ls -d /sys/fs/bcachefs/*-*/dev-*").split()
-        assert len(devices) == 5, devices
+        assert len(devices) == 6, devices
+        fs = machine.succeed("ls -d /sys/fs/bcachefs/*-*").split()[0]
+        targets = {o: machine.succeed(f"cat {fs}/options/{o}").strip()
+                   for o in ["foreground_target", "promote_target", "background_target"]}
+        assert targets == {"foreground_target": "nvme", "promote_target": "nvme",
+                           "background_target": "towada"}, targets
         machine.succeed("test $(cat /srv/lakes/towada/gaming/games/g.rom) = winner")
+        machine.succeed("test $(cat /srv/lakes/towada/media/movies/new.mkv) = hot")
         machine.succeed("bcachefs scrub /srv/lakes/towada")
+
+    with subtest("admission waits for a member that appears late and refuses one that never does"):
+        machine.succeed("systemctl stop srv-lakes-towada.mount towada-admission")
+        machine.succeed("rm /dev/disk/by-id/fx-02")
+        machine.succeed("systemctl start --no-block towada-admission")
+        machine.succeed("sleep 4")
+        assert machine.execute("systemctl is-active towada-admission")[1].strip() == "activating"
+        machine.succeed("udevadm trigger --action=add /dev/vdb; udevadm settle")
+        machine.wait_until_succeeds("systemctl is-active towada-admission", timeout=30)
+        machine.succeed("systemctl start srv-lakes-towada.mount; mountpoint -q /srv/lakes/towada")
+        machine.succeed("systemctl stop srv-lakes-towada.mount towada-admission; rm /dev/disk/by-id/fx-02")
+        machine.fail("systemctl start towada-admission")
+        machine.succeed("journalctl -u towada-admission | grep -q 'missing after 15s'")
   '';
 }

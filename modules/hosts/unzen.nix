@@ -113,6 +113,12 @@
         # The enclosure is attached to Unzen. The library is the local pool.
         mountainous.features.towada = {
           enable = lib.mkDefault true;
+          # The second WD SN770 (added 2026-10-22) takes new writes and caches
+          # hot reads. The SN770 ending 678 holds Unzen's root and ESP.
+          fast = {
+            path = "/dev/disk/by-id/nvme-WD_BLACK_SN770_1TB_22135C800672";
+            label = "nvme.sn770";
+          };
           # Chosen ahead; towada-convert formats the pool with it.
           uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
           # Replaceable data (media, games, firmware, Takeout) keeps one copy.

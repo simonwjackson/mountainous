@@ -19,8 +19,13 @@ let
       cfg = config.mountainous.features.towada;
       byId = serial: "/dev/disk/by-id/${cfg.idPrefix}${serial}${cfg.idSuffix}";
       # Attribute order is by disk id, so the device list is stable.
-      memberPaths = map byId (builtins.attrValues cfg.members);
-      memberLabels = map (id: "${cfg.label}.${id}") (builtins.attrNames cfg.members);
+      # The NVMe counts as a member only once add-fast has joined it.
+      fastJoined = cfg.fast != null && cfg.fast.joined;
+      memberPaths = map byId (builtins.attrValues cfg.members) ++ lib.optional fastJoined cfg.fast.path;
+      memberLabels =
+        map (id: "${cfg.label}.${id}") (builtins.attrNames cfg.members)
+        ++ lib.optional fastJoined cfg.fast.label;
+      fastGroup = if cfg.fast == null then null else builtins.head (lib.splitString "." cfg.fast.label);
       mountUnit = "${utils.escapeSystemdPath cfg.mountPoint}.mount";
       legacyPath = id: "/srv/shores/towada/${id}";
       convertConfig = pkgs.writeText "towada-convert.json" (
@@ -37,7 +42,8 @@ let
             twoCopies
             label
             ;
-          inherit mountUnit;
+          inherit mountUnit fastGroup;
+          inherit (cfg) fast;
           legacyUnits = lib.mapAttrs (id: _: "${utils.escapeSystemdPath (legacyPath id)}.mount") cfg.legacy;
           inherit (cfg.copy) fromGid toGid;
           copyExclude = cfg.copy.exclude;
@@ -63,11 +69,27 @@ let
         runtimeInputs = [
           pkgs.util-linux
           pkgs.coreutils
+          pkgs.systemd
         ];
         text = ''
+          # USB disks can appear seconds after boot reaches this unit. Wait for
+          # every member, up to the limit, before calling one missing.
+          deadline=$(( $(date +%s) + ${toString cfg.admissionTimeout} ))
+          while :; do
+            missing=""
+            for dev in ${lib.escapeShellArgs memberPaths}; do
+              test -b "$dev" || missing="$missing $dev"
+            done
+            [ -z "$missing" ] && break
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "towada members missing after ${toString cfg.admissionTimeout}s:$missing" >&2
+              exit 1
+            fi
+            udevadm settle --timeout=2 2>/dev/null || true
+            sleep 1
+          done
           # Every listed member must be present and carry the pool's UUID.
           for dev in ${lib.escapeShellArgs memberPaths}; do
-            test -b "$dev" || { echo "towada member missing: $dev" >&2; exit 1; }
             type=$(blkid -p -o value -s TYPE "$dev" || true)
             test "$type" = bcachefs || { echo "towada member is not bcachefs ($type): $dev" >&2; exit 1; }
             this=$(blkid -p -o value -s UUID "$dev")
@@ -123,6 +145,35 @@ let
             }
           ];
           description = "USB bridges of the enclosure; autosuspend is disabled for them.";
+        };
+        admissionTimeout = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 90;
+          description = "Seconds admission waits for USB members to appear before refusing.";
+        };
+        fast = lib.mkOption {
+          default = null;
+          description = "An NVMe member that takes new writes and caches hot reads; data moves to the disks in the background.";
+          type = lib.types.nullOr (
+            lib.types.submodule {
+              options = {
+                path = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Stable /dev/disk/by-id path of the whole device.";
+                };
+                label = lib.mkOption {
+                  type = lib.types.str;
+                  default = "nvme.0";
+                  description = "bcachefs label; the part before the dot is the target group.";
+                };
+                joined = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Set once towada-convert add-fast has run; admission and probes then require it.";
+                };
+              };
+            }
+          );
         };
         dataReplicas = lib.mkOption {
           type = lib.types.ints.positive;
@@ -227,6 +278,7 @@ let
             Type = "oneshot";
             RemainAfterExit = true;
             ExecStart = "${admission}/bin/towada-admission";
+            TimeoutStartSec = cfg.admissionTimeout + 30;
           };
         };
 
