@@ -12,6 +12,7 @@ import unittest
 PROBE = STATUS = None
 NOW = 1_760_860_000
 UUID = "e5f61013-d6f5-260d-9883-4dda26b2c293"
+TOWADA = "7a0c6b1e-0000-4000-8000-000000000001"
 
 
 def command(directory, name, body):
@@ -88,8 +89,8 @@ class Fixture:
             + f"parity {roots[4]}/snapraid.parity\n"
         )
 
-    def member(self, number, label, state="rw", errors=(0, 0, 0)):
-        dev = self.fs / UUID / f"dev-{number}"
+    def member(self, number, label, state="rw", errors=(0, 0, 0), uuid=UUID):
+        dev = self.fs / uuid / f"dev-{number}"
         dev.mkdir(parents=True)
         (dev / "label").write_text(label + "\n")
         (dev / "state").write_text(f"[{state}] ro spare\n")
@@ -106,6 +107,13 @@ class Fixture:
             ("onboard.sn770", "card.samsung", "card.sabrent"), 1
         ):
             self.member(number, label)
+
+    def towada_pool(self, ids=("02", "03")):
+        (self.etc / "towada").mkdir(exist_ok=True)
+        (self.etc / "towada" / "members").write_text("".join(f"towada.{i}\n" for i in ids))
+        for number, disk in enumerate(ids):
+            self.member(number, f"towada.{disk}", uuid=TOWADA)
+        self.env["BCACHEFS_TARGETS"] = "/\n/srv/lakes/towada"
 
     def probe(self, profile="unknown", **env):
         result = subprocess.run(
@@ -394,6 +402,39 @@ class Probe(unittest.TestCase):
         self.assertIn(
             ("bad", "mounted bcachefs has no readable sysfs probes"),
             self.fx.probe(BCACHEFS_TARGETS="/"),
+        )
+
+    def test_zao_after_the_move_expects_no_array(self):
+        (self.fx.etc / "towada-moved").write_text("unzen\n")
+        lines = self.fx.probe("zao")
+        self.assertNotIn(("bad", "expected towada SnapRAID configuration missing or unreadable"), lines)
+        self.assertEqual([level for level, _ in lines], ["warn"])
+
+    def test_towada_pool_on_unzen_healthy(self):
+        self.fx.unzen()
+        self.fx.towada_pool()
+        self.assertEqual(self.fx.probe("unzen"), [("ok", "all checks passed")])
+
+    def test_towada_pool_missing_member_unmounted_or_invisible(self):
+        self.fx.unzen()
+        self.fx.towada_pool()
+        shutil.rmtree(self.fx.fs / TOWADA / "dev-1")
+        lines = self.fx.probe("unzen")
+        self.assertIn(("bad", "expected towada member towada.03 missing"), lines)
+        self.assertIn(("bad", "towada member count 1 differs from expected 2"), lines)
+        self.assertIn(
+            ("bad", "towada pool is not mounted"),
+            self.fx.probe("unzen", UNMOUNTED=str(self.fx.srv / "lakes" / "towada")),
+        )
+        shutil.rmtree(self.fx.fs / TOWADA)
+        self.assertIn(("bad", "towada bcachefs members not visible"), self.fx.probe("unzen"))
+
+    def test_towada_scrub_becomes_overdue_after_40_days(self):
+        self.fx.unzen()
+        self.fx.towada_pool()
+        self.assertIn(
+            ("bad", "towada bcachefs scrub: last success 960 h ago"),
+            self.fx.probe("unzen", HISTORY=str(NOW - 40 * 86400 - 1)),
         )
 
 

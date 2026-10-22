@@ -35,6 +35,8 @@
       "media-runtime"
       "media-identities"
       "media-placement-unzen"
+      "media-jellyfin"
+      "towada"
     ];
 
     module =
@@ -44,11 +46,41 @@
         pkgs,
         ...
       }:
+      let
+        towadaHere = config.mountainous.features.towada.enable;
+        # Conversion stage: bcachefs members, and XFS disks still to copy.
+        # 02 and 03 held SnapRAID parity; they seed the pool.
+        towadaMembers = {
+          "02" = "VGH3KRAG";
+          "03" = "VGH13XMG";
+        };
+        towadaLegacy = {
+          "00" = "7SGKDA3C";
+          "01" = "VRJVWS3K";
+          "04" = "WD-CA081PBK";
+        };
+      in
       {
         imports = [
           inputs.disko.nixosModules.disko
           ../../disks/unzen.nix
         ];
+        # Flip to true on move day, in one commit, once the enclosure is
+        # attached. Until then Unzen reads Zao's library over NFS, as before.
+        mountainous.features.towada = {
+          enable = lib.mkDefault false;
+          # Chosen ahead; towada-convert formats the pool with it.
+          uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
+          members = towadaMembers;
+          legacy = towadaLegacy;
+        };
+        mountainous.features.media-runtime = lib.mkIf towadaHere {
+          libraryLocalRoot = "/srv/lakes/towada/media";
+          libraryLocalMountPoint = "/srv/lakes/towada";
+          # The copy stores files with Unzen's media group.
+          libraryMediaGid = 390;
+        };
+        mountainous.features.media-jellyfin.enable = towadaHere;
         mountainous.features.cliproxyapi-updater.enable = true;
         # Live admission proved main-only routing before registering this host.
         mountainous.features.github-actions.enable = true;
@@ -88,7 +120,19 @@
             "media-storage-failed.service"
             "media-library-mover@.service"
             "bcachefs-scrub-root.service"
-            "net-mountainous-zao-media.mount"
+          ]
+          ++ (
+            if towadaHere then
+              [
+                "towada-admission.service"
+                "srv-lakes-towada.mount"
+                "bcachefs-scrub-srv-lakes-towada.service"
+                "jellyfin.service"
+              ]
+            else
+              [ "net-mountainous-zao-media.mount" ]
+          )
+          ++ [
             "srv-media\\x2dlibrary\\x2dview-movies.mount"
             "srv-media\\x2dlibrary\\x2dview-tv.mount"
             "srv-range-media-movies.mount"

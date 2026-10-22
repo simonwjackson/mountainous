@@ -11,6 +11,9 @@
   libraryMediaGid,
   libraryUsers,
   libraryConsumer ? null,
+  # Set when the library lives on this host (the Towada pool on Unzen). The
+  # views then read the local path and no NFS mount to the server exists.
+  libraryLocalRoot ? null,
 }:
 let
   local = name: placement.${name} == host;
@@ -31,6 +34,9 @@ let
   mediaRoot = "/srv/basin/media";
   accessRoot = "/srv/media-access";
   libraryView = "/srv/media-library-view";
+  # The mount point keeps its historical name whatever the server is called.
+  libraryRemote = "/net/mountainous/zao/media";
+  librarySource = if libraryLocalRoot != null then libraryLocalRoot else libraryRemote;
   completed =
     name: "/srv/basin/downloads/${if name == "nzbget" then "usenet" else "torrents"}/completed";
   share = name: ".downloads/${if name == "nzbget" then "usenet" else "torrents"}";
@@ -113,7 +119,7 @@ lib.foldl' lib.recursiveUpdate { } [
           part = baseNameOf directory;
         in
         {
-          device = "/net/mountainous/zao/media/${part}";
+          device = "${librarySource}/${part}";
           fsType = "fuse.bindfs";
           # Translate the view, not stored ownership. Keep permission checks enabled.
           options = [
@@ -121,19 +127,23 @@ lib.foldl' lib.recursiveUpdate { } [
             "default_permissions"
             "force-user=${toString libraryUsers.${part}}"
             "create-for-user=${toString libraryOwnerUid}"
-            "map=@${toString libraryMediaGid}/@${toString mediaGid}"
+          ]
+          ++ lib.optional (
+            libraryMediaGid != mediaGid
+          ) "map=@${toString libraryMediaGid}/@${toString mediaGid}"
+          ++ [
             "chown-deny"
             "chgrp-deny"
             "_netdev"
             "noauto"
             "x-systemd.requires=systemd-tmpfiles-setup.service"
           ];
-          depends = [ "/net/mountainous/zao/media" ];
+          depends = [ librarySource ];
         }
       )
   ))
-  (lib.optionalAttrs hasLibraryAccess {
-    "/net/mountainous/zao/media" = {
+  (lib.optionalAttrs (hasLibraryAccess && libraryLocalRoot == null) {
+    ${libraryRemote} = {
       device = "${fqdn libraryServer}:/";
       fsType = "nfs";
       options = nfsOptions;

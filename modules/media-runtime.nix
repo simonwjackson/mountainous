@@ -67,18 +67,32 @@
         cp ${./media-library-mover.py} "$out/lib/media-library-mover.py"
         cp ${./media-library-cleanup.py} "$out/lib/media-library-cleanup.py"
       '';
+      # The library source: NFS from the library server, or a local pool.
+      librarySource =
+        if cfg.libraryLocalRoot != null then cfg.libraryLocalRoot else "/net/mountainous/zao/media";
       libraryMounts = [
-        "/net/mountainous/zao/media"
+        librarySource
         "/srv/media-library-view/movies"
         "/srv/media-library-view/tv"
       ];
-      libraryConsumerMountUnits = map (directory: "${utils.escapeSystemdPath directory}.mount") [
-        "/net/mountainous/zao/media"
-        "/srv/media-library-view/movies"
-        "/srv/media-library-view/tv"
-        "/srv/range/media/movies"
-        "/srv/range/media/tv"
-      ];
+      # A local library root is a directory inside its pool; its unit is the pool's.
+      mountUnitFor =
+        directory:
+        let
+          mount =
+            if cfg.libraryLocalRoot != null && directory == cfg.libraryLocalRoot then
+              cfg.libraryLocalMountPoint
+            else
+              directory;
+        in
+        "${utils.escapeSystemdPath mount}.mount";
+      libraryConsumerMountUnits = map mountUnitFor (
+        libraryMounts
+        ++ [
+          "/srv/range/media/movies"
+          "/srv/range/media/tv"
+        ]
+      );
       mediaRoot = "/srv/basin/media";
       accessRoot = "/srv/media-access";
       completed =
@@ -171,7 +185,10 @@
         "${mediaRoot}/tv"
         "/srv/range/media/movies"
         "/srv/range/media/tv"
-        "/net/mountainous/zao/media"
+      ]
+      # A local pool owns its own directories; only a remote mount point is made.
+      ++ lib.optional (cfg.libraryLocalRoot == null) librarySource
+      ++ [
         "/srv/media-library-view/movies"
         "/srv/media-library-view/tv"
       ]
@@ -219,6 +236,18 @@
           type = lib.types.str;
           default = "zao";
         };
+        libraryLocalRoot = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "/srv/lakes/towada/media";
+          description = "Read the library from this local path instead of NFS from libraryServer.";
+        };
+        libraryLocalMountPoint = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          example = "/srv/lakes/towada";
+          description = "Mount point of the filesystem that holds libraryLocalRoot.";
+        };
         libraryOwnerUid = lib.mkOption {
           type = lib.types.ints.unsigned;
           default = 0;
@@ -260,6 +289,10 @@
       };
       config = lib.mkIf cfg.enable {
         assertions = [
+          {
+            assertion = (cfg.libraryLocalRoot == null) == (cfg.libraryLocalMountPoint == null);
+            message = "Set libraryLocalRoot and libraryLocalMountPoint together.";
+          }
           {
             assertion = config.mountainous.features.media-applications.enable;
             message = "Media runtime requires the gated media application layer.";
@@ -303,6 +336,7 @@
           libraryConsumer = hasLibraryConsumer;
           inherit (cfg)
             libraryHost
+            libraryLocalRoot
             libraryServer
             tailDomain
             libraryOwnerUid
@@ -359,7 +393,7 @@
               unitConfig.RequiresMountsFor = mandatory;
               # Local staging is an ordinary directory. RequiresMountsFor
               # follows its backing filesystem; only managed mounts have units.
-              bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") (
+              bindsTo = map mountUnitFor (
                 lib.filter (directory: !(lib.elem directory (map completed localDownloads))) mandatory
               );
               serviceConfig = {
@@ -405,7 +439,7 @@
               description = "Verified local-import handoff to the mapped library (%i)";
               requires = [ "media-storage-ready.service" ];
               after = [ "media-storage-ready.service" ];
-              bindsTo = map (directory: "${utils.escapeSystemdPath directory}.mount") libraryMounts;
+              bindsTo = map mountUnitFor libraryMounts;
               unitConfig.ConditionPathExists = [
                 "/var/lib/media-migration/ready/library-mover"
                 cfg.libraryMover.refreshConfigFile

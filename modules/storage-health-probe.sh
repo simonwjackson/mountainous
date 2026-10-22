@@ -70,7 +70,8 @@ freshness() {
 }
 
 pools=0
-[ "$profile" != zao ] || [ -r "$etc/snapraid-towada.conf" ] || say bad 'expected towada SnapRAID configuration missing or unreadable'
+# Zao declares the move with /etc/towada-moved; before that, its array is expected.
+[ "$profile" != zao ] || [ -e "$etc/towada-moved" ] || [ -r "$etc/snapraid-towada.conf" ] || say bad 'expected towada SnapRAID configuration missing or unreadable'
 for conf in "$etc"/snapraid-*.conf; do
   [ -e "$conf" ] || continue
   pools=$((pools + 1))
@@ -144,6 +145,18 @@ if [ "$profile" = unzen ]; then
   fi
   freshness bcachefs-scrub-root.service 'bcachefs scrub' "$scrub_max_hours"
 fi
+# A host with the Towada pool lists its member labels in /etc/towada/members.
+towada_expected=
+if [ -e "$etc/towada/members" ]; then
+  towada_expected=$(sed '/^$/d' "$etc/towada/members" 2>/dev/null | sort -u | tr '\n' ' ') || towada_expected=
+  if [ -z "$towada_expected" ]; then
+    say bad 'towada expected members unreadable'
+  else
+    mountpoint -q "$srv/lakes/towada" || say bad 'towada pool is not mounted'
+    freshness bcachefs-scrub-srv-lakes-towada.service 'towada bcachefs scrub' "$scrub_max_hours"
+  fi
+fi
+towada_seen=0
 filesystems=0
 for fs in "$bcachefs_root"/*/; do
   [ -d "$fs" ] || continue
@@ -167,13 +180,25 @@ for fs in "$bcachefs_root"/*/; do
     elif [ "$errors" -gt 0 ]; then say warn "bcachefs $label: $errors I/O errors since creation"; fi
   done
   [ "$members" -gt 0 ] || say bad 'bcachefs has no readable members'
-  if [ "$profile" = unzen ]; then
+  name=${fs%/}; name=${name##*/}
+  if [ -n "$towada_expected" ] && [[ "$labels" == *" towada."* ]]; then
+    towada_seen=1
+    expected_count=0
+    for label in $towada_expected; do
+      expected_count=$((expected_count + 1))
+      [[ "$labels" == *" $label "* ]] || say bad "expected towada member $label missing"
+    done
+    [ "$members" -eq "$expected_count" ] || say bad "towada member count $members differs from expected $expected_count"
+  elif [ "$profile" = unzen ] && [ "$name" = "$expected_uuid" ]; then
     for label in onboard.sn770 card.samsung card.sabrent; do
       [[ "$labels" == *" $label "* ]] || say bad "expected bcachefs member $label missing"
     done
     [ "$members" -eq 3 ] || say bad 'Unzen bcachefs member count differs from expected three'
+  elif [ "$profile" = unzen ]; then
+    say warn "unexpected bcachefs filesystem $name"
   fi
 done
+if [ -n "$towada_expected" ] && [ "$towada_seen" -eq 0 ]; then say bad 'towada bcachefs members not visible'; fi
 if [ -n "$mounted" ] && [ "$filesystems" -eq 0 ]; then say bad 'mounted bcachefs has no readable sysfs probes'; fi
 if [ "$pools" -eq 0 ] && [ "$filesystems" -eq 0 ]; then say warn 'no storage topology could be checked'; fi
 if [ "$profile" = unzen ]; then

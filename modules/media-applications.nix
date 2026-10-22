@@ -22,6 +22,17 @@
       };
       stateScript = name: if name == "scryer" then scryerState else arrStateScript;
       cfg = config.mountainous.features.media-applications;
+      # Where the stored library is: NFS from Zao, or a local pool.
+      libraryRoot =
+        let
+          localRoot = lib.attrByPath [
+            "mountainous"
+            "features"
+            "media-runtime"
+            "libraryLocalRoot"
+          ] null config;
+        in
+        if localRoot != null then localRoot else "/net/mountainous/zao/media";
       media = import inputs.nixpkgs-media {
         system = pkgs.stdenv.hostPlatform.system;
         config.allowUnfree = true;
@@ -192,7 +203,7 @@
               "/srv/range/media/movies"
               "/srv/basin/media"
               "/srv/media-library-view"
-              "/net/mountainous/zao/media"
+              libraryRoot
             ];
             writablePaths = lib.optionals (cfg.library == "scryer") [
               "/srv/range/media/tv"
@@ -201,8 +212,8 @@
               "/srv/basin/media/movies"
               "/srv/media-library-view/tv"
               "/srv/media-library-view/movies"
-              "/net/mountainous/zao/media/tv"
-              "/net/mountainous/zao/media/movies"
+              "${libraryRoot}/tv"
+              "${libraryRoot}/movies"
               "/srv/basin/downloads/usenet/nzbfast"
               "/srv/basin/downloads/torrents/completed"
             ];
