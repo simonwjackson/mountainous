@@ -136,6 +136,9 @@
             "comics"
             "knowledge"
             "PLEASE-SORT-SOON"
+            "gaming/devices"
+            "sdc_backup.img.gz"
+            ".resession.json"
           ];
           members = towadaMembers;
           legacy = towadaLegacy;
