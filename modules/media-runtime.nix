@@ -140,8 +140,18 @@
         ]
         ++ lib.optionals hasLibraryAccess libraryMounts
         ++ map completed (lib.optionals hasLibraryConsumer downloaders);
+      # The health read needs mount points: a local library root is a folder
+      # inside its pool, so check the pool's mount point instead.
       healthMounts =
-        lib.optionals hasLibraryAccess libraryMounts
+        lib.optionals hasLibraryAccess (
+          map (
+            directory:
+            if cfg.libraryLocalRoot != null && directory == cfg.libraryLocalRoot then
+              cfg.libraryLocalMountPoint
+            else
+              directory
+          ) libraryMounts
+        )
         ++ lib.optionals hasLibraryConsumer [
           "/srv/range/media/movies"
           "/srv/range/media/tv"

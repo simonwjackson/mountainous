@@ -23,6 +23,21 @@
           assert lib.hasSuffix "/bin/tailscale wait"
             c.systemd.services.tailscale-wait-online.serviceConfig.ExecStart;
           pkgs.runCommand "unzen-boot" { } "touch $out";
+        # With the enclosure attached, the media health read must name only
+        # real mount points (a folder inside the pool fails every read).
+        unzen-towada-health =
+          let
+            moved = self.nixosConfigurations.unzen.extendModules {
+              modules = [ { mountainous.features.towada.enable = true; } ];
+            };
+            health = lib.findFirst (
+              p: (p.name or "") == "media-storage-health"
+            ) null moved.config.environment.systemPackages;
+          in
+          assert health != null;
+          assert lib.hasInfix " /srv/lakes/towada " (health.text + " ");
+          assert !(lib.hasInfix "/srv/lakes/towada/media" health.text);
+          pkgs.runCommand "unzen-towada-health" { } "touch $out";
       };
     };
 
