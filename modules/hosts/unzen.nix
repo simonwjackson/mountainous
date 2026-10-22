@@ -80,10 +80,9 @@
           inputs.disko.nixosModules.disko
           ../../disks/unzen.nix
         ];
-        # Flip to true on move day, in one commit, once the enclosure is
-        # attached. Until then Unzen reads Zao's library over NFS, as before.
+        # The enclosure is attached to Unzen. The library is the local pool.
         mountainous.features.towada = {
-          enable = lib.mkDefault false;
+          enable = lib.mkDefault true;
           # Chosen ahead; towada-convert formats the pool with it.
           uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
           # Replaceable data (media, games, firmware, Takeout) keeps one copy.
