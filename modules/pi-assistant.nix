@@ -206,11 +206,24 @@ in
           default = web;
         };
       };
+
+      # Whether an instance acts on GitHub as the operator (modules/github.nix).
+      githubOf = instance: instance.github or false;
     in
     {
       options.mountainous.features.pi-assistant = {
         people = lib.mkOption {
-          type = lib.types.attrsOf (lib.types.submodule { options = portsOption 4317 4318; });
+          type = lib.types.attrsOf (
+            lib.types.submodule {
+              options = portsOption 4317 4318 // {
+                github = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
+                };
+              };
+            }
+          );
           default = { };
           example = {
             simon = {
@@ -357,6 +370,8 @@ in
                 "cliproxyapi.service"
               ];
               environment = environmentOf name instance;
+              # The application brings its own tools; the host adds the signed-in gh.
+              path = lib.optional (githubOf instance) config.mountainous.github.package;
               unitConfig = {
                 ConditionPathExists = "${profile}/bin/assistant";
                 RequiresMountsFor = [
@@ -372,7 +387,12 @@ in
                 LoadCredential = [
                   "cliproxyapi-key:${cfg.cliproxyapiKeyFile}"
                   "brave-api-key:${cfg.braveApiKeyFile}"
-                ];
+                ]
+                ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}";
+                # Scratch clones of repositories: on disk, never persisted,
+                # safe to delete. $CACHE_DIRECTORY points here.
+                CacheDirectory = "pi-assistant-${name}";
+                CacheDirectoryMode = "0700";
                 ExecStartPre = "${prepare name}/bin/pi-assistant-${name}-prepare";
                 ExecStart = "${profile}/bin/assistant serve";
                 # The notebook is 0660 and the household group writes it.

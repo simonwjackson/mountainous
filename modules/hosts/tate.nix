@@ -11,6 +11,7 @@
       "gemini-lake"
       "server"
       "printing"
+      "no-builds"
     ];
 
     module = {

@@ -17,6 +17,7 @@ in
       "decision-gateway"
       "notify-server"
       "pi-assistant"
+      "no-builds"
     ];
     module =
       { config, lib, ... }:
@@ -123,6 +124,8 @@ in
             simon = {
               voicePort = 4317;
               webPort = 4318;
+              # Simon's assistant clones, pushes, and opens pull requests as him.
+              github = true;
             };
             laure = {
               voicePort = 4327;
