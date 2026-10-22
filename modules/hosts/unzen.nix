@@ -63,17 +63,15 @@
       }:
       let
         towadaHere = config.mountainous.features.towada.enable;
-        # Conversion stage: bcachefs members, and XFS disks still to copy.
-        # 02 and 03 held SnapRAID parity; they seed the pool.
+        # Every Towada disk is a bcachefs member; no XFS disk remains.
         towadaMembers = {
-          "02" = "VGH3KRAG";
-          "03" = "VGH13XMG";
-        };
-        towadaLegacy = {
           "00" = "7SGKDA3C";
           "01" = "VRJVWS3K";
+          "02" = "VGH3KRAG";
+          "03" = "VGH13XMG";
           "04" = "WD-CA081PBK";
         };
+        towadaLegacy = { };
       in
       {
         imports = [
