@@ -40,6 +40,15 @@
         && get ["zramSwap" "memoryPercent"] null == 50;
       message = "Zao must retain its zstd zram configuration for Nix evaluation memory pressure.";
     };
+
+    lockout-safety = {
+      assertion =
+        enabled ["mountainous" "features" "memory-guard" "enable"]
+        && enabled ["mountainous" "features" "memory-guard" "userSlices"]
+        && config.systemd.oomd.enableSystemSlice
+        && config.systemd.oomd.enableUserSlices;
+      message = "Zao must keep the memory guard, with systemd-oomd on system.slice and the user slices.";
+    };
   };
 
   runtimeVerifier = pkgs.writeShellApplication {
@@ -122,6 +131,18 @@
         fi
       }
 
+      check_lockout_safety() {
+        if ! oomctl 2>/dev/null | grep --fixed-strings --quiet /system.slice; then
+          add_failure "systemd-oomd does not watch system.slice"
+        fi
+        if ! oomctl 2>/dev/null | grep --fixed-strings --quiet /user.slice; then
+          add_failure "systemd-oomd does not watch the user slices"
+        fi
+        if [ "$(systemctl show sshd.service --property MemoryMin --value)" != 67108864 ]; then
+          add_failure "sshd has no 64M memory reserve"
+        fi
+      }
+
       run_commitment() {
         local name="$1"
         local check_function="$2"
@@ -142,6 +163,7 @@
       run_commitment shared-office-printer check_shared_office_printer
       run_commitment tailnet-access check_tailnet_access
       run_commitment eval-memory-safety check_eval_memory_safety
+      run_commitment lockout-safety check_lockout_safety
 
       printf '\n%d passed, %d failed\n' "$passed" "$failed"
       [ "$failed" -eq 0 ]

@@ -596,31 +596,44 @@
         '';
 
     # A builder matrix is only worth having if it is declared once and correct.
+    # fleet.json is cairn's registry; see features/nix-builders/hosts.nix.
     checks.x86_64-linux.nix-builders = let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       registry = import ./features/nix-builders/hosts.nix;
-      zao = self.nixosConfigurations.zao.config;
-      fuji = builtins.head (builtins.filter (m: m.hostName == "fuji") zao.nix.buildMachines);
-      # Fuji has no /dev/kvm. Claiming otherwise sends it work it cannot run.
-      virtualised = ["kvm" "nixos-test"];
+      check = host: let
+        c = self.nixosConfigurations.${host}.config;
+        names = map (m: m.hostName) c.nix.buildMachines;
+        others = builtins.filter (n: n != host) (builtins.attrNames registry.builders);
+        keys = c.users.users.simonwjackson.openssh.authorizedKeys.keys;
+        fuji = builtins.head (builtins.filter (m: m.hostName == "nix-builder-fuji") c.nix.buildMachines);
+      in
+        assert lib.assertMsg c.nix.distributedBuilds "${host} must send builds to the fleet";
+        assert lib.assertMsg (names == map (n: "nix-builder-${n}") others)
+        "${host} must use every other builder in fleet.json, and never itself";
+        assert lib.assertMsg (fuji.systems == ["aarch64-linux"] && fuji.protocol == "ssh-ng")
+        "${host} must reach Fuji as an aarch64 builder over ssh-ng";
+        assert lib.assertMsg (lib.intersectLists fuji.supportedFeatures ["kvm" "nixos-test"] == [])
+        "Fuji has no /dev/kvm, so it must not advertise virtualisation features";
+        assert lib.assertMsg c.nix.settings.builders-use-substitutes
+        "A builder must fetch dependencies from the caches, not over the lossy link from here";
+        assert lib.assertMsg (c.programs.ssh.knownHosts."nix-builder-unzen".publicKey == registry.builders.unzen.hostKey)
+        "Root's SSH must know each builder's host key, or it stops to ask";
+        assert lib.assertMsg (lib.hasInfix "Port 2222" c.programs.ssh.extraConfig)
+        "Myoko serves builds on 2222; Tailscale SSH owns 22 there";
+        assert lib.assertMsg (keys != [] && lib.all (k: lib.hasPrefix "restrict,command=" k) (lib.filter (k: lib.hasInfix "nix-daemon" k) keys))
+        "Every fleet key on ${host} may run nix-daemon --stdio and nothing else";
+        assert lib.assertMsg (c.nix.daemonCPUSchedPolicy == "idle")
+        "${host} must build for others at idle priority";
+        assert lib.assertMsg (c.systemd.services.nix-daemon.serviceConfig.MemoryMax == registry.builders.${host}.memoryMax)
+        "${host} must cap builds at its registry MemoryMax"; true;
     in
-      assert lib.assertMsg zao.nix.distributedBuilds
-      "Zao must dispatch builds it cannot do itself";
-      assert lib.assertMsg (fuji.system == "aarch64-linux" && fuji.protocol == "ssh-ng" && fuji.sshUser == "simon")
-      "Zao must reach Fuji as an aarch64 builder over ssh-ng";
-      assert lib.assertMsg (fuji.publicHostKey == registry.fuji.publicHostKey)
-      "A builder must carry its host key, or root's SSH stops to ask about it";
-      assert lib.assertMsg (lib.intersectLists registry.fuji.supportedFeatures virtualised == [])
-      "Fuji has no /dev/kvm, so it must not advertise virtualisation features";
-      assert lib.assertMsg zao.nix.settings.builders-use-substitutes
-      "A builder must fetch dependencies from the caches, not over the lossy link from here";
-      assert lib.assertMsg (!(builtins.elem "zao" (map (m: m.hostName) zao.nix.buildMachines)))
-      "Zao must not dispatch work to itself";
+      assert check "zao";
+      assert check "aka";
         pkgs.runCommand "nix-builders" {} ''
-          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@fuji aarch64-linux' \
-            ${zao.environment.etc."nix/machines".source}
-          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@yari aarch64-linux' \
-            ${zao.environment.etc."nix/machines".source}
+          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@nix-builder-unzen x86_64-linux' \
+            ${self.nixosConfigurations.zao.config.environment.etc."nix/machines".source}
+          ${pkgs.gnugrep}/bin/grep -Fq 'ssh-ng://simon@nix-builder-fuji aarch64-linux' \
+            ${self.nixosConfigurations.aka.config.environment.etc."nix/machines".source}
           touch "$out"
         '';
 
@@ -644,12 +657,13 @@
       commitmentNames = builtins.attrNames zao.mountainous.hosts.zao.commitments;
       expectedNames = [
         "eval-memory-safety"
+        "lockout-safety"
         "shared-office-printer"
         "tailnet-access"
       ];
       namesFile = pkgs.writeText "zao-runtime-commitment-names" (lib.concatLines commitmentNames);
     in
-      assert lib.assertMsg (commitmentNames == expectedNames) "Zao must retain exactly its three non-Korri commitments";
+      assert lib.assertMsg (commitmentNames == expectedNames) "Zao must retain exactly its four non-Korri commitments";
       assert lib.assertMsg (builtins.elem runtimeVerifier zao.environment.systemPackages) "Zao must install its runtime commitment verifier";
         pkgs.runCommand "zao-runtime-commitments" {} ''
           ${pkgs.bash}/bin/bash -n ${script}

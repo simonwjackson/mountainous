@@ -34,6 +34,13 @@
   # ratio/throughput tradeoff for Nix eval heaps. memoryPercent=50 caps
   # the compressed device at half of RAM so it cannot starve real
   # workloads.
+  #
+  # Zram alone still locked Zao up: on 2026-10-22 a `nix flake check` held
+  # 14.8 GiB RAM and 9.1 GiB swap until the kernel killed it. The memory
+  # guard (features/memory-guard) keeps sshd and tailscaled responsive and
+  # lets systemd-oomd end the cause. Zao has no disk swap: its btrfs root is
+  # RAID0 across both NVMe drives, and btrfs refuses a swapfile without a
+  # single data profile.
   zramSwap = {
     enable = true;
     algorithm = "zstd";
@@ -66,12 +73,14 @@
     };
 
     # Korri's aarch64 outputs must be built on aarch64 hardware: Fuji and Yari.
-    # Naming them once means a plain `nix build` reaches them without
-    # --builders, and Nix spreads one build's derivations across both.
+    # Zao sends work to every other builder in the fleet registry and builds
+    # for them in turn, last among the x86 machines (speedFactor 3) and at
+    # idle priority behind Forgerie and Korri.
     features.nix-builders = {
       enable = true;
-      use = ["fuji" "yari"];
+      serve = true;
     };
+    features.memory-guard.enable = true;
 
     # Zao builds Korri's x86_64 outputs. Reading them from Korri's cache is
     # cheaper than rebuilding what another peer already built and signed. It
