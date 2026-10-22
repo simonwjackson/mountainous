@@ -23,9 +23,14 @@ ShellRoot {
     property var ociScreen: null
     property var storageScreen: null
     property var notificationScreen: null
+    property var builderScreen: null
+    // True when SUPER+O R opened the builder panel; its focus ring shows
+    // from the start.
+    property bool builderKeyboard: false
 
     function toggleBluetooth(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.storageScreen = null;
         root.wifiScreen = null;
@@ -36,6 +41,7 @@ ShellRoot {
 
     function toggleWifi(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.storageScreen = null;
         root.bluetoothScreen = null;
@@ -46,6 +52,7 @@ ShellRoot {
 
     function toggleSound(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.storageScreen = null;
         root.bluetoothScreen = null;
@@ -56,6 +63,7 @@ ShellRoot {
 
     function toggleBrightness(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
@@ -67,6 +75,7 @@ ShellRoot {
 
     function toggleOci(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
@@ -78,6 +87,7 @@ ShellRoot {
 
     function toggleStorage(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.notificationScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
@@ -89,6 +99,7 @@ ShellRoot {
 
     function toggleNotifications(screen) {
         root.topbarAccessVisible = false;
+        root.builderScreen = null;
         root.bluetoothScreen = null;
         root.wifiScreen = null;
         root.soundScreen = null;
@@ -96,6 +107,21 @@ ShellRoot {
         root.ociScreen = null;
         root.storageScreen = null;
         root.notificationScreen = root.notificationScreen === screen ? null : screen;
+    }
+
+    // The remote-builder panel. The bar's ▾ opens it with the pointer;
+    // SUPER+O then R opens it with the keyboard.
+    function toggleBuilder(screen, byKeyboard) {
+        root.topbarAccessVisible = false;
+        root.notificationScreen = null;
+        root.bluetoothScreen = null;
+        root.wifiScreen = null;
+        root.soundScreen = null;
+        root.brightnessScreen = null;
+        root.ociScreen = null;
+        root.storageScreen = null;
+        root.builderKeyboard = byKeyboard;
+        root.builderScreen = root.builderScreen === screen ? null : screen;
     }
 
     // Popups go to the screen with keyboard focus, where the reader is
@@ -111,10 +137,11 @@ ShellRoot {
     }
 
     // The keyboard hint lists only the panels this host shows.
-    function topbarAccessHint(cloud, disks) {
+    function topbarAccessHint(cloud, disks, builds) {
         let keys = ["B Bluetooth", "W Wi-Fi", "S Sound", "L Brightness"];
         if (cloud) keys.push("C Cloud");
         if (disks) keys.push("D Disks");
+        if (builds) keys.push("R Builds");
         keys.push("Esc cancel");
         return keys.join("  ·  ");
     }
@@ -134,6 +161,10 @@ ShellRoot {
     // The notification socket, and the popups. notifyd owns the D-Bus name;
     // see modules/notification-view.nix. Each top bar has its own centre.
     Notifications { id: notifications }
+
+    // Whether myoko accepts remote builds; see BuilderGate.qml. Hosts
+    // without nix-builder-gate show no control.
+    BuilderGate { id: builderGate }
 
     NotificationPopups {
         service: notifications
@@ -240,6 +271,23 @@ ShellRoot {
         target: "storage"
         function reveal(): void { root.toggleStorage(root.primaryScreen()); }
         function hide(): void { root.storageScreen = null; }
+    }
+
+    IpcHandler {
+        target: "builder"
+        function reveal(): void {
+            if (!builderGate.enabled) return;
+            root.builderScreen = null;
+            root.toggleBuilder(root.focusedScreen(), true);
+        }
+        function hide(): void { root.builderScreen = null; }
+        function current(): string {
+            const s = builderGate.sample;
+            return s.kind + (s.kind === "ready"
+                ? " " + s.value.accepting + " " + s.value.reason + " " + s.value.running : "")
+                + " pending=" + (builderGate.pending || "none")
+                + " panel=" + (root.builderScreen !== null);
+        }
     }
 
     IpcHandler {
@@ -452,6 +500,14 @@ ShellRoot {
                 onCloseRequested: root.storageScreen = null
             }
 
+            BuilderPanel {
+                screen: modelData
+                gate: builderGate
+                shown: root.builderScreen === modelData
+                openedByKeyboard: root.builderKeyboard
+                onCloseRequested: root.builderScreen = null
+            }
+
             NotificationCentre {
                 service: notifications
                 screen: modelData
@@ -479,6 +535,8 @@ ShellRoot {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !dictation.barVisible
+                        && !(root.topbarAccessVisible
+                            && centreText.x < leftStatus.x + Math.min(implicitWidth, width) + 8)
                     elide: Text.ElideRight
                     text: topBar.frontWindow ? topBar.frontWindow.title : ""
                     color: Theme.textPage
@@ -564,11 +622,34 @@ ShellRoot {
                 }
             }
 
-            // Centre: the time, or the active keyboard chord.
+            // Centre: the time, or the active keyboard chord. The time is a
+            // readout, so on a bar too narrow for it and the controls on the
+            // right, it yields rather than draw over them. The chord's hint
+            // lists every key, so it moves left of the controls instead, and
+            // for its three seconds the window title gives it room. On a bar
+            // too narrow even for that, it covers the controls on its own
+            // background until the chord ends.
+            Rectangle {
+                z: 1
+                visible: root.topbarAccessVisible
+                x: centreText.x - 6
+                width: centreText.implicitWidth + 12
+                height: parent.height
+                color: Theme.bgBase
+            }
+
             Text {
-                anchors.centerIn: parent
+                id: centreText
+                z: 2
+                readonly property real centredX: (parent.width - implicitWidth) / 2
+                anchors.verticalCenter: parent.verticalCenter
+                x: root.topbarAccessVisible
+                    ? Math.max(10, Math.min(centredX, rightControls.x - implicitWidth - 12))
+                    : centredX
+                visible: root.topbarAccessVisible
+                    || rightControls.x >= centredX + implicitWidth + 8
                 text: root.topbarAccessVisible
-                    ? root.topbarAccessHint(ociEgress.enabled, storageHealth.enabled)
+                    ? root.topbarAccessHint(ociEgress.enabled, storageHealth.enabled, builderGate.enabled)
                     : root.formatClock(clock.date)
                 color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
                 font.pixelSize: 11
@@ -579,6 +660,7 @@ ShellRoot {
             // readout, so it yields first when the bar is narrow. Battery
             // percentage stays visible.
             RowLayout {
+                id: rightControls
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.rightMargin: 10
@@ -812,6 +894,18 @@ ShellRoot {
                         hoverEnabled: true
                         onClicked: root.toggleStorage(modelData)
                     }
+                }
+
+                // Whether myoko takes remote builds. A click flips the
+                // choice; the ▾ opens the panel. Only where the gate exists.
+                BuilderControl {
+                    visible: builderGate.enabled
+                    gate: builderGate
+                    barWidth: topBar.width
+                    panelOpen: root.builderScreen === modelData
+                    Layout.preferredWidth: implicitWidth
+                    Layout.preferredHeight: 26
+                    onPanelRequested: root.toggleBuilder(modelData, false)
                 }
 
                 // The centre's control, on every desktop. The count is a
