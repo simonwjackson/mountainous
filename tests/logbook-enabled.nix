@@ -33,7 +33,7 @@ assert bridge.serviceConfig.User == "root";
 assert bridge.serviceConfig.Restart == "on-failure";
 assert bridge.serviceConfig.ReadOnlyPaths == [ "/home/simon" ];
 assert bridge.serviceConfig.ReadWritePaths == [ "/var/lib/logbook/inbox/gadgetbridge" ];
-assert lib.hasInfix "logbook-export.py" bridge.serviceConfig.ExecStart;
+assert lib.hasInfix "/bin/logbook-export " bridge.serviceConfig.ExecStart;
 assert lib.hasSuffix
   " /home/simon/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db /var/lib/logbook/inbox/gadgetbridge/Gadgetbridge.db"
   bridge.serviceConfig.ExecStart;

@@ -25,20 +25,29 @@ in
     files = [ "Gadgetbridge.db" ];
   };
 
-  perSystem = { pkgs, ... }: {
-    checks.logbook =
-      assert import ../tests/logbook-enabled.nix { inherit inputs lib; };
-      assert (
-        import ../tests/logbook-contract.nix {
-          rakku = self.nixosConfigurations.rakku.config;
-          inherit lib;
-        }
-      );
-      pkgs.runCommand "logbook-contract" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-        python3 ${../.}/tests/test_logbook_export.py
-        touch $out
-      '';
-  };
+  perSystem =
+    { pkgs, ... }:
+    let
+      bridge = import ../lib/logbook-export.nix { inherit pkgs; };
+    in
+    {
+      checks.logbook =
+        assert import ../tests/logbook-enabled.nix { inherit inputs lib; };
+        assert (
+          import ../tests/logbook-contract.nix {
+            rakku = self.nixosConfigurations.rakku.config;
+            inherit lib;
+          }
+        );
+        pkgs.runCommand "logbook-contract"
+          {
+            nativeBuildInputs = [ pkgs.sqlite ];
+          }
+          ''
+            bash ${../tests/test_logbook_export.sh} ${bridge}/bin/logbook-export
+            touch $out
+          '';
+    };
 
   nixos.modules.logbook =
     {
@@ -53,6 +62,7 @@ in
       destination = "${state}/inbox/gadgetbridge/Gadgetbridge.db";
       source = "${config.users.users.simon.home}/.local/share/fleet-sync/gadgetbridge/Gadgetbridge.db";
       syncEnabled = fleet.folders.gadgetbridge.enable;
+      bridge = import ../lib/logbook-export.nix { inherit pkgs; };
       # Logbook's Oura OAuth app. The client ID is public; the secret is the
       # host's `oura-api-key` sops secret, rendered into the client file.
       ouraClient = config.sops.secrets ? oura-api-key;
@@ -226,7 +236,7 @@ in
           Type = "oneshot";
           User = "root";
           UMask = "0077";
-          ExecStart = "${pkgs.python3}/bin/python3 ${./logbook-export.py} ${source} ${destination}";
+          ExecStart = "${bridge}/bin/logbook-export ${source} ${destination}";
           Restart = "on-failure";
           RestartSec = 30;
           TimeoutStartSec = 120;
