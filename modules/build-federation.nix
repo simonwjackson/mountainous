@@ -280,7 +280,7 @@ in
       zao = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv";
       aka = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z";
     };
-    fleet.homeMacs = [ "@HOME_MAC@" ];
+    fleet.homeMacs = [ "14:21:03:fe:01:37" ];
 
     # One registry for `unified` to copy: nix eval --json .#fleet
     flake.fleet = {
@@ -309,6 +309,30 @@ in
             memoryGuard = config.flake.lib.memoryGuardModule;
           }
         );
+        # The registry itself: a malformed router MAC makes a home gate refuse
+        # everywhere, and a builder without a host key cannot be reached.
+        checks.build-federation-registry =
+          let
+            isMac = m: builtins.match "([0-9a-f]{2}:){5}[0-9a-f]{2}" m != null;
+            homeGates = lib.filterAttrs (_: b: b.gate == "home") fleet.builders;
+            problems =
+              lib.optional (
+                homeGates != { } && (fleet.homeMacs == [ ] || !lib.all isMac fleet.homeMacs)
+              ) "fleet.homeMacs must be lower-case MAC addresses"
+              ++ lib.concatLists (
+                lib.mapAttrsToList (
+                  n: b:
+                  lib.optional (!lib.hasPrefix "ssh-ed25519 " b.hostKey) "${n}: hostKey is not an ed25519 key"
+                  ++ lib.optional (
+                    b.managed && !(fleet.hostKeys ? ${n})
+                  ) "${n}: a builder must also be listed in fleet.hostKeys"
+                ) fleet.builders
+              );
+          in
+          if problems == [ ] then
+            pkgs.runCommand "build-federation-registry" { } "touch $out"
+          else
+            throw "build federation registry:\n  ${lib.concatStringsSep "\n  " problems}";
         checks.nix-builder-gate =
           pkgs.runCommand "nix-builder-gate"
             {
