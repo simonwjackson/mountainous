@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# A fake nix-builder-gate for developing the bar control. Development only;
+# nothing installs this. The real gate is modules/build-federation.nix.
+#
+# It follows the contract the bar is built against:
+#   nix-builder-gate status --json
+#   nix-builder-gate set on|off|default
+#   nix-builder-gate stop
+# and rewrites $NIX_BUILDER_GATE_STATE (the real gate: /run/nix-builder-gate/
+# state.json) after each change, as the real gate does.
+#
+# The world it pretends to see lives in $NIX_BUILDER_GATE_FAKE, a small
+# key=value file. Change it with the fake-only verb:
+#   nix-builder-gate fake location home|away|unknown
+#   nix-builder-gate fake power ac|battery
+#   nix-builder-gate fake running N
+#   nix-builder-gate fake mode ok|fail|badjson|slow|set-fails|set-slow
+#   nix-builder-gate fake reset
+# `fake` also rewrites the state file, so a watch sees it. The real gate does
+# not write on power or running changes; use `fake quiet ...` for that.
+set -euo pipefail
+
+world=${NIX_BUILDER_GATE_FAKE:-${TMPDIR:-/tmp}/nix-builder-gate-fake}
+state=${NIX_BUILDER_GATE_STATE:-${TMPDIR:-/tmp}/nix-builder-gate-state.json}
+
+location=home power=ac choice=none running=0 mode=ok
+# shellcheck disable=SC1090
+[ -f "$world" ] && . "$world"
+
+save() {
+  printf 'location=%s\npower=%s\nchoice=%s\nrunning=%s\nmode=%s\n' \
+    "$location" "$power" "$choice" "$running" "$mode" >"$world.tmp"
+  mv "$world.tmp" "$world"
+}
+
+# The rules Simon chose. Without a network nothing can be accepted. A manual
+# choice wins otherwise. Then: away refuses, battery refuses, home on mains
+# accepts.
+decide() {
+  if [ "$location" = unknown ]; then accepting=false reason=no-network
+  elif [ "$choice" = on ]; then accepting=true reason=choice-on
+  elif [ "$choice" = off ]; then accepting=false reason=choice-off
+  elif [ "$location" = away ]; then accepting=false reason=away
+  elif [ "$power" = battery ]; then accepting=false reason=battery
+  else accepting=true reason=home
+  fi
+}
+
+json() {
+  decide
+  local c=null
+  [ "$choice" = none ] || c="\"$choice\""
+  printf '{"accepting": %s, "reason": "%s", "location": "%s", "power": "%s", "choice": %s, "running": %s}\n' \
+    "$accepting" "$reason" "$location" "$power" "$c" "$running"
+}
+
+publish() {
+  mkdir -p "$(dirname "$state")"
+  json >"$state.tmp"
+  mv "$state.tmp" "$state"
+}
+
+case "${1:-}" in
+  status)
+    [ "${2:-}" = --json ] || { echo "usage: nix-builder-gate status --json" >&2; exit 2; }
+    case "$mode" in
+      fail) echo "nix-builder-gate: cannot read /run/nix-builder-gate/state.json: Permission denied" >&2; exit 1 ;;
+      badjson) printf '{"accepting": true, "reason": "home", "location": \n'; exit 0 ;;
+      slow) sleep 30 ;;
+    esac
+    json
+    ;;
+  set)
+    [ "$mode" = set-fails ] && { echo "nix-builder-gate: set: polkit authorization failed" >&2; exit 1; }
+    if [ "$mode" = set-slow ]; then sleep 4; else sleep 0.3; fi
+    case "${2:-}" in
+      on | off) choice=$2 ;;
+      default) choice=none ;;
+      *) echo "usage: nix-builder-gate set on|off|default" >&2; exit 2 ;;
+    esac
+    save
+    publish
+    ;;
+  stop)
+    [ "$mode" = set-fails ] && { echo "nix-builder-gate: stop: polkit authorization failed" >&2; exit 1; }
+    sleep 0.3
+    running=0
+    save
+    publish
+    ;;
+  fake)
+    quiet=0
+    if [ "${2:-}" = quiet ]; then quiet=1; shift; fi
+    case "${2:-}" in
+      # Another network clears a manual choice, as the real gate does.
+      location) [ "$3" = "$location" ] || choice=none; location=$3 ;;
+      power) power=$3 ;;
+      running) running=$3 ;;
+      mode) mode=$3 ;;
+      choice) choice=$3 ;;
+      reset) location=home power=ac choice=none running=0 mode=ok ;;
+      *) echo "usage: nix-builder-gate fake [quiet] location|power|running|mode|choice|reset VALUE" >&2; exit 2 ;;
+    esac
+    save
+    [ "$quiet" = 1 ] || publish
+    ;;
+  *)
+    echo "usage: nix-builder-gate status --json | set on|off|default | stop" >&2
+    exit 2
+    ;;
+esac

@@ -13,6 +13,7 @@ Commands, one per line, in layout coordinates (logical pixels):
     move X Y     put the pointer at X, Y
     down | up    press or release the left button
     click        down, then up
+    rclick       the right button, down then up
 """
 
 import os
@@ -22,6 +23,7 @@ import sys
 import time
 
 BTN_LEFT = 0x110
+BTN_RIGHT = 0x111
 
 
 class Wire:
@@ -109,8 +111,8 @@ def main():
         wire.send(pointer, 4)
         wire.roundtrip(lambda *a: None)
 
-    def button(state):
-        wire.send(pointer, 2, struct.pack("<III", stamp(), BTN_LEFT, state))
+    def button(state, which=BTN_LEFT):
+        wire.send(pointer, 2, struct.pack("<III", stamp(), which, state))
         frame()
 
     print("pointer ready", flush=True)
@@ -130,6 +132,10 @@ def main():
             button(1)
             time.sleep(0.05)
             button(0)
+        elif words[0] == "rclick":
+            button(1, BTN_RIGHT)
+            time.sleep(0.05)
+            button(0, BTN_RIGHT)
         print("ok", flush=True)
 
 
