@@ -122,15 +122,20 @@ function settings() {
     ];
 }
 
-function top(programList, windowList, commandList, user) {
+// taskbarList: what a bar too narrow for its tray holds (the tray
+// controls, the clock, the battery); empty while the bar has room.
+function top(programList, windowList, commandList, user, taskbarList) {
+    var taskbar = taskbarList && taskbarList.length
+        ? [{ text: "T&askbar", icon: "windows", submenu: taskbarList }] : [];
     return [
         { text: "&Programs", icon: "programs", submenu: programList },
         { text: "&Windows", icon: "windows", submenu: windowList },
         { text: "&Commands", icon: "commands", submenu: commandList },
-        { text: "&Settings", icon: "settings", submenu: settings() },
+        { text: "&Settings", icon: "settings", submenu: settings() }
+    ].concat(taskbar, [
         { separator: true },
         { text: "&Run...", icon: "run", action: "run" },
         { separator: true },
         { text: "&Log Off " + user + "...", icon: "logoff", action: "logoff" }
-    ];
+    ]);
 }

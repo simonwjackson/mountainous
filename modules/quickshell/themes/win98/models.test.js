@@ -116,4 +116,9 @@ assert.deepEqual(top.filter(i => !i.separator).map(i => i.text),
     ['&Programs', '&Windows', '&Commands', '&Settings', '&Run...', '&Log Off simon...']);
 assert.equal(top[3].submenu[0].action, 'picker');
 assert.ok(!JSON.stringify(top).match(/Shut Down|Restart|Stand By/));
+// A bar too narrow for its tray: Start gains a Taskbar cascade, after Settings.
+const narrow = plain(S.top(p, w, c, 'simon', [{ text: 'Sound', action: 'open', control: 'vol' }]));
+assert.equal(narrow[4].text, 'T&askbar');
+assert.equal(narrow[4].submenu[0].control, 'vol');
+assert.equal(plain(S.top(p, w, c, 'simon', [])).length, top.length);
 console.log('WIN98_MODEL_TESTS_PASSED');

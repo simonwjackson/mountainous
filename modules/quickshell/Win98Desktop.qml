@@ -10,6 +10,7 @@ import "oci-model.js" as OciModel
 import "builder-gate.js" as Gate
 import "themes/win98/tray-model.js" as Tray
 import "themes/win98/start-model.js" as StartModel
+import "themes/win98/taskbar-plan.js" as Plan
 
 // One screen's Windows 98 chrome: one bottom taskbar (Start, a band per
 // page with its window buttons, the dictation band, the tray and the
@@ -108,8 +109,39 @@ Scope {
     }
     // Opened from the tray chevron: the window stands where the chevron is.
     function openFromOverflow(id) {
+        if (!id) { desktop.closeMenu(); return; }
         desktop.openMenu(id, false);
-        desktop.anchorId = "more";
+        desktop.anchorId = taskbar.plan.structure === "start" ? "start" : "more";
+    }
+    // What the taskbar has no room for, as menu items: the tray controls,
+    // then (compact) the windows, then the clock and the battery readouts.
+    // The tray chevron shows these; in the last structure Start's Taskbar
+    // cascade does.
+    function overflowItems(withWindows) {
+        const p = taskbar.plan, out = [];
+        const label = function (s) { return String(s).replace(/&/g, "&&"); };
+        for (const id of p.trayOut) {
+            if (id === "bat") continue;
+            out.push({ text: Tray.LABEL[id], icon: desktop.trayIcon(id), action: "open", control: id,
+                shortcut: label(Tray.overflowValue(id, desktop.trayData)) });
+        }
+        if (withWindows && p.taskOut.length) {
+            if (out.length) out.push({ separator: true });
+            for (const i of Plan.overflowWindows(desktop.lane.map(function (t) { return { page: shell.pageOf(t) }; }), p.taskOut)) {
+                const t = desktop.lane[i];
+                out.push({ text: label((t && t.title) || "(untitled)"), icon: desktop.winIcon(t) || "doc",
+                    shortcut: "Page " + shell.pageOf(t), action: "window", window: i });
+            }
+        }
+        if (p.clockOut || p.trayOut.indexOf("bat") >= 0) {
+            if (out.length) out.push({ separator: true });
+            if (p.clockOut) out.push({ text: "Date/Time", icon: "doc", action: "open", control: "clock",
+                shortcut: desktop.clock.time + " " + desktop.clock.ampm });
+            if (p.trayOut.indexOf("bat") >= 0 && desktop.battery.present)
+                out.push({ text: "Battery", icon: Tray.batteryIcon(desktop.batteryRule.indicator), action: "", control: "",
+                    shortcut: Tray.tooltip("bat", desktop.trayData) });
+        }
+        return out;
     }
 
     Connections {
@@ -282,7 +314,8 @@ Scope {
             return { title: t.title, page: shell.pageOf(t), icon: desktop.winIcon(t) || "doc" };
         })),
         StartModel.commands(desktop.commandRows),
-        desktop.userName)
+        desktop.userName,
+        taskbar.plan.structure === "start" ? desktop.overflowItems(false) : [])
 
     function runStart(item) {
         MenuState.close();
@@ -300,8 +333,8 @@ Scope {
         Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch", "hl.dsp.exit()"]);
     }
 
-    // The open menu or window's root item (the MenuHost sets it), for checks.
-    property var openItem: null
+    // The open menu or window's root item, for checks.
+    readonly property var openItem: menuHost.openItem
 
     // For the harness and checks: the taskbar's plan and where things are.
     function taskbarPlan() { return taskbar.plan; }
@@ -311,6 +344,7 @@ Scope {
             const p = taskbar.placeOf(id);
             if (p) out[id] = p;
         }
+        out.tasksArea = taskbar.tasksArea;
         out.barHeight = taskbar.barHeight;
         out.width = taskbar.width;
         out.height = taskbar.height;
@@ -330,6 +364,7 @@ Scope {
     }
 
     Win98MenuHost {
+        id: menuHost
         desktop: desktop
         taskbar: taskbar
         enabled: desktop.active && desktop.shell.chromeVisible

@@ -9,10 +9,21 @@
 //   3. titles      window buttons drop their titles (icons only)
 //   4. startIcon   the Start button drops its label
 // Then windows move into the windows chevron (other pages first, the last
-// page first; the focused window last), then tray icons move into the tray
-// chevron in bar-plan.js's overflow order, dictation last. Window titles
-// and the Start label are readouts; every button is a control and moves
-// into a chevron menu with its real name, never away.
+// page first), then tray icons move into the tray chevron in bar-plan.js's
+// overflow order, dictation last, then the focused window. Then the
+// readouts leave the bar for the tray chevron: the clock, then the battery.
+// Then two last structures:
+//   compact  Start and one chevron, which holds the tray controls, the
+//            windows, the clock and the battery;
+//   start    Start alone; its menu gains a Taskbar cascade with the tray
+//            controls, the clock and the battery (Start > Windows already
+//            lists every window).
+// Window titles and the Start label are readouts; every button is a
+// control and moves into a menu with its real name, never away.
+//
+// The plan fits at every width from MIN_WIDTH (28 u, 37.3 logical px at
+// scale 1.5) up. Below that only Start remains, as wide as the bar allows;
+// everything is still reachable through it.
 
 var START_ICON = 24;
 var BAND = 12;
@@ -25,6 +36,7 @@ var TBTN_ICON = 26;
 var GAP = 3;
 var LABEL_MIN = 46;
 var STEPS = ["clockShort", "dictText", "titles", "startIcon"];
+var MIN_WIDTH = 2 + START_ICON + 2;
 // bar-plan.js overflowOrder, with dictation last.
 var TRAY_OVERFLOW = ["oci", "disk", "builder", "bri", "bt", "wifi", "ntf", "vol", "dict"];
 
@@ -79,18 +91,34 @@ function plan(W, input) {
         if (r3.fits) return r3;
     }
     var f = wins.filter(function (w) { return w.focused; })[0];
-    if (f) out.push(f.i);
-    return layout(W, on, wins, pages, out, trayOut, input);
+    if (f) {
+        out.push(f.i);
+        var r4 = layout(W, on, wins, pages, out, trayOut, input);
+        if (r4.fits) return r4;
+    }
+    // The readouts go before the bar changes shape.
+    var r5 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true });
+    if (r5.fits) return r5;
+    if (present.indexOf("bat") >= 0) trayOut.push("bat");
+    var r6 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true });
+    if (r6.fits) return r6;
+    var r7 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, structure: "compact" });
+    if (r7.fits) return r7;
+    return layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, structure: "start" });
 }
 
-function layout(W, on, wins, pages, outW, outT, input) {
+function layout(W, on, wins, pages, outW, outT, input, opts) {
+    var o = opts || {};
+    var structure = o.structure || "full";
     var has = function (s) { return on.indexOf(s) >= 0; };
     var measure = input.measure;
     var startW = has("startIcon") ? START_ICON : startWidth(measure);
     var tray = input.tray.filter(function (t) { return outT.indexOf(t.id) < 0; });
     var clockText = has("clockShort") || !input.clock.ampm ? input.clock.time : input.clock.time + " " + input.clock.ampm;
-    var trayW = 3 + 3 + tray.reduce(function (s, t) { return s + trayWidth(t.badge); }, 0)
-        + (outT.length ? CHEV + 2 : 0) + 6 + measure(clockText, false) + 5 + 2;
+    var chevron = outT.length > 0 || !!o.clockOut || (structure === "compact" && outW.length > 0);
+    var trayW = structure === "start" ? 0
+        : 3 + 3 + tray.reduce(function (s, t) { return s + trayWidth(t.badge); }, 0)
+            + (chevron ? CHEV + 2 : 0) + (o.clockOut ? 0 : 6 + measure(clockText, false) + 5) + 2;
     var dict = input.dict || { visible: false };
     var dictW = 0;
     var dictShow = false;
@@ -103,30 +131,50 @@ function layout(W, on, wins, pages, outW, outT, input) {
     var groups = pages.map(function (p) {
         return { page: p, windows: shown.filter(function (w) { return w.page === p; }).map(function (w) { return w.i; }) };
     }).filter(function (g) { return g.windows.length > 0; });
-    var taskFixed = groups.length * (BAND + TAG + GAP) + (outW.length ? CHEV + GAP : 0);
-    var avail = W - 2 - 2 - startW - GAP - dictW - trayW - 3;
+    var tasksChevron = outW.length > 0 && structure === "full";
+    var taskFixed = groups.length * (BAND + TAG + GAP) + (tasksChevron ? CHEV + GAP : 0);
     var n = shown.length;
     var perBtn = has("titles") ? TBTN_ICON : TBTN_MIN;
+    // Start alone: 2 u each side while there is room, then less.
+    var startX = structure === "start" ? Math.max(0, Math.min(2, Math.floor((W - 1) / 2))) : 2;
+    if (structure === "start") startW = Math.max(1, Math.min(startW, W - 2 * startX));
+    var avail = W - 2 - 2 - startW - GAP - dictW - trayW - 3;
     var room = avail - taskFixed - n * GAP;
-    var fits = room >= n * perBtn;
+    var fits = structure === "start" ? W >= MIN_WIDTH : avail >= 0 && room >= n * perBtn;
     var bw = Math.max(perBtn, Math.min(TBTN_MAX, Math.floor(room / Math.max(1, n))));
     var steps = on.slice();
     if (outW.length) steps.push("windows»");
     if (outT.length) steps.push("tray»");
+    if (o.clockOut) steps.push("clockOut");
+    if (outT.indexOf("bat") >= 0) steps.push("batteryOut");
+    if (structure !== "full") steps.push("compact");
+    if (structure === "start") steps.push("start");
+    // Where each part stands, in units, as the bar draws it.
+    var trayBox = structure === "start" ? null : { x: W - 2 - (trayW - 3), w: trayW - 3 };
+    var right = trayBox ? trayBox.x - 3 : W - 2;
+    var dictBox = dictShow && structure !== "start" ? { x: right - dictW, w: dictW } : null;
+    var tasksBox = { x: 2 + startW, w: Math.max(0, (dictBox ? dictBox.x : right) - 2 - startW) };
     return {
         fits: fits,
         steps: steps,
+        structure: structure,
         startW: startW,
         startIcon: has("startIcon"),
         tray: tray.map(function (t) { return t.id; }),
         trayOut: outT.slice(),
+        clockOut: !!o.clockOut,
+        chevron: chevron && structure !== "start",
+        tasksChevron: tasksChevron,
         clockText: clockText,
-        dictShow: dictShow,
+        dictShow: dictShow && structure !== "start",
         dictTextShow: !has("dictText"),
         groups: groups,
         taskOut: outW.slice(),
         bw: bw,
         icons: bw < LABEL_MIN,
+        startX: startX,
+        boxes: { start: { x: startX, w: startW }, tasks: tasksBox, dict: dictBox, tray: trayBox,
+                 used: taskFixed + n * (bw + GAP) },
         width: W
     };
 }

@@ -31,33 +31,61 @@ assert.equal(p.clockText, '4:51 PM');
 assert.equal(p.groups.length, 3);
 assert.equal(p.bw, 160);
 
-// Width falls from 1440 u to 120 u: steps only ever grow, in the declared
-// order, and every window and tray icon stays reachable at every width.
-const order = ['clockShort', 'dictText', 'titles', 'startIcon', 'windows»', 'tray»'];
-for (const windows of [[], ideal, many]) {
-    let last = [];
-    for (let W = 1440; W >= 120; W--) {
-        const inp = input(windows);
-        const q = P.plan(W, inp);
-        const r = all(q, inp);
-        eq(r.windows, windows.map((_, i) => i), 'every window reachable at ' + W);
-        eq(r.tray.slice().sort(), trayIds.slice().sort(), 'every tray icon reachable at ' + W);
-        for (const s of last) assert.ok(q.steps.includes(s), `step ${s} came back at ${W}`);
-        const idx = q.steps.map(s => order.indexOf(s));
-        eq(idx, idx.slice().sort((a, b) => a - b), 'steps in order at ' + W);
-        // The focused window is the last to leave the bar.
-        const focused = windows.findIndex(w => w.focused);
-        if (focused >= 0 && q.taskOut.includes(focused)) assert.equal(q.taskOut.length, windows.length);
-        last = q.steps;
+// Width falls from 1440 u to 1 u: steps only ever grow, in the declared
+// order; the plan fits at every width from MIN_WIDTH up; its parts stay
+// inside the bar without overlapping; and every window, tray icon, the
+// clock and the battery stay reachable (on the bar, in a chevron menu, or
+// through Start in the last structure).
+const order = ['clockShort', 'dictText', 'titles', 'startIcon', 'windows»', 'tray»', 'clockOut', 'batteryOut', 'compact', 'start'];
+const inside = (b, W) => !b || (b.x >= 0 && b.w >= 0 && b.x + b.w <= W + 1e-9);
+for (const windows of [[], [{ page: 1, focused: true }], ideal, many]) {
+    for (const dictOn of [false, true]) {
+        let last = [];
+        for (let W = 1440; W >= 1; W--) {
+            const inp = input(windows, dictOn ? { dict: { visible: true, failed: true, canRetry: true, text: 'Dictation failed · Groq' },
+                tray: [{ id: 'dict' }].concat(trayIds.map(id => ({ id, badge: id === 'ntf' ? '3' : '' }))) } : {});
+            const q = P.plan(W, inp);
+            const all = trayIds.concat(dictOn ? ['dict'] : []);
+            if (W >= P.MIN_WIDTH) assert.ok(q.fits, `fits at ${W} u (${q.steps})`);
+            for (const s of last) assert.ok(q.steps.includes(s), `step ${s} came back at ${W}`);
+            const idx = q.steps.map(s => order.indexOf(s));
+            assert.ok(!idx.includes(-1), 'known steps at ' + W);
+            eq(idx, idx.slice().sort((a, b) => a - b), 'steps in order at ' + W);
+            last = q.steps;
+            // Reachable: on the bar, in a chevron, or through Start.
+            const onBar = q.groups.reduce((s, g) => s.concat(g.windows), []);
+            eq(onBar.concat(q.taskOut).sort((a, b) => a - b), windows.map((_, i) => i), 'every window at ' + W);
+            eq(q.tray.concat(q.trayOut).slice().sort(), all.slice().sort(), 'every tray icon at ' + W);
+            if (q.taskOut.length && q.structure === 'full') assert.ok(q.tasksChevron, 'windows chevron at ' + W);
+            if ((q.trayOut.length || q.clockOut) && q.structure !== 'start') assert.ok(q.chevron, 'tray chevron at ' + W);
+            if (q.structure !== 'full') eq(q.taskOut.length, windows.length, 'compact holds every window at ' + W);
+            if (q.structure === 'start') { assert.ok(q.clockOut); assert.ok(q.trayOut.includes('bat')); }
+            // Bounds: inside the bar, in order, and the buttons fit their band.
+            const b = q.boxes;
+            if (W >= P.MIN_WIDTH) {
+                for (const k of ['start', 'tasks', 'dict', 'tray']) assert.ok(inside(b[k], W), `${k} inside at ${W}: ${JSON.stringify(b[k])}`);
+                assert.ok(b.start.x + b.start.w <= b.tasks.x + 1e-9, 'start before tasks at ' + W);
+                if (b.dict) assert.ok(b.tasks.x + b.tasks.w <= b.dict.x + 1e-9, 'tasks before dictation at ' + W);
+                if (b.tray) assert.ok((b.dict ? b.dict.x + b.dict.w : b.tasks.x + b.tasks.w) <= b.tray.x + 1e-9, 'before the tray at ' + W);
+                assert.ok(b.used <= b.tasks.w + 1e-9, `window buttons fit their band at ${W}: ${b.used} > ${b.tasks.w}`);
+            } else {
+                assert.equal(q.structure, 'start');
+                assert.ok(b.start.w >= 1 && b.start.x + b.start.w <= W, 'Start still on the bar at ' + W);
+            }
+        }
     }
 }
+// MIN_WIDTH: Start alone, 2 u each side.
+assert.equal(P.MIN_WIDTH, 28);
+assert.ok(P.plan(P.MIN_WIDTH, input(many)).fits);
+assert.ok(!P.plan(P.MIN_WIDTH - 1, input(many)).fits);
 
 // One unit either side of each yield boundary.
 function boundary(windows, step) {
-    for (let W = 1440; W >= 120; W--) if (P.plan(W, input(windows)).steps.includes(step)) return W;
+    for (let W = 1440; W >= 1; W--) if (P.plan(W, input(windows)).steps.includes(step)) return W;
     return -1;
 }
-for (const step of ['clockShort', 'titles', 'startIcon', 'windows»', 'tray»']) {
+for (const step of ['clockShort', 'titles', 'startIcon', 'windows»', 'tray»', 'clockOut', 'batteryOut', 'compact', 'start']) {
     const b = boundary(ideal, step);
     assert.ok(b > 0, step);
     assert.ok(!P.plan(b + 1, input(ideal)).steps.includes(step), step + ' above its boundary');
@@ -68,6 +96,10 @@ assert.ok(boundary(ideal, 'clockShort') > boundary(ideal, 'titles'));
 assert.ok(boundary(ideal, 'titles') > boundary(ideal, 'startIcon'));
 assert.ok(boundary(ideal, 'startIcon') >= boundary(ideal, 'windows»'));
 assert.ok(boundary(ideal, 'windows»') > boundary(ideal, 'tray»'));
+assert.ok(boundary(ideal, 'tray»') > boundary(ideal, 'clockOut'));
+assert.ok(boundary(ideal, 'clockOut') > boundary(ideal, 'batteryOut'));
+assert.ok(boundary(ideal, 'batteryOut') > boundary(ideal, 'compact'));
+assert.ok(boundary(ideal, 'compact') > boundary(ideal, 'start'));
 
 // Windows go into the chevron other pages first, the last page first.
 const w = P.plan(boundary(ideal, 'windows»'), input(ideal));

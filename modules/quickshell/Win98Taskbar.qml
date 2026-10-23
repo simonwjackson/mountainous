@@ -68,6 +68,8 @@ PanelWindow {
         measure: bar.m
     })
 
+    // The window buttons' band, for the geometry checks.
+    readonly property var tasksArea: ({ x: tasks.x, w: tasks.width })
     function overflowed(id) { return bar.plan.trayOut.indexOf(id) >= 0; }
 
     // Where each control is, in bar coordinates, for placing its window and
@@ -139,7 +141,7 @@ PanelWindow {
         // ---- Start
         TaskButton {
             id: start
-            x: bar.units(2); y: bar.units(4)
+            x: bar.units(bar.plan.startX); y: bar.units(4)
             width: bar.units(bar.plan.startW)
             down: bar.isOpen("start") || bar.pressed("start")
             focusRing: bar.focused("start")
@@ -164,7 +166,8 @@ PanelWindow {
             id: tasks
             x: start.x + start.width
             y: bar.units(4)
-            width: Math.max(0, trayBox.x - bar.units(3) - (dictBand.visible ? dictBand.width : 0) - x)
+            width: Math.max(0, (trayBox.visible ? trayBox.x - bar.units(3) : bar.width - bar.units(2))
+                - (dictBand.visible ? dictBand.width : 0) - x)
             height: bar.units(22)
             clip: true
 
@@ -173,7 +176,10 @@ PanelWindow {
                 height: parent.height
 
                 Repeater {
-                    model: bar.plan.groups.length > 0 ? bar.plan.groups : [{ page: -1, windows: [] }]
+                    // An empty bar keeps its band's grip, as Win98's did; the
+                    // compact structures have no bands at all.
+                    model: bar.plan.groups.length > 0 ? bar.plan.groups
+                        : bar.plan.structure === "full" ? [{ page: -1, windows: [] }] : []
 
                     Item {
                         id: band
@@ -244,7 +250,7 @@ PanelWindow {
                 Chevron {
                     id: tasksChevron
                     cid: "tasks"
-                    visible: bar.plan.taskOut.length > 0
+                    visible: bar.plan.tasksChevron
                     Component.onCompleted: bar.register("tasks", tasksChevron)
                 }
             }
@@ -294,7 +300,9 @@ PanelWindow {
         // ---- the tray: icons, then the clock
         Item {
             id: trayBox
-            readonly property real clockW: bar.units(6 + 5) + Win98Tokens.ceilU(Win98Tokens.textWidth(bar.plan.clockText, false, bar.u), bar.u)
+            visible: bar.plan.structure !== "start"
+            readonly property real clockW: bar.plan.clockOut ? 0
+                : bar.units(6 + 5) + Win98Tokens.ceilU(Win98Tokens.textWidth(bar.plan.clockText, false, bar.u), bar.u)
             x: bar.width - bar.units(2) - width
             y: bar.units(4)
             height: bar.units(22)
@@ -306,7 +314,7 @@ PanelWindow {
                 id: moreChevron
                 cid: "more"
                 x: bar.units(3)
-                visible: bar.plan.trayOut.length > 0
+                visible: bar.plan.chevron
                 Component.onCompleted: bar.register("more", moreChevron)
             }
 
@@ -325,6 +333,7 @@ PanelWindow {
 
             Item {
                 id: clockItem
+                visible: !bar.plan.clockOut
                 x: trayRow.x + trayRow.width
                 y: bar.units(1)
                 width: trayBox.clockW
