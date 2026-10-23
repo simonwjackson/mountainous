@@ -1,17 +1,16 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import "oci-model.js" as OciModel
 
 // OCI's monthly Outbound Data Transfer Zone 1 usage. Quickshell owns the
 // readout; a separate helper holds the credentials and API request.
+// Each profile has its own tone and its own failed label (OciModel.rowRule).
 Scope {
     id: root
-    required property var screen
     property bool shown: false
-    signal closeRequested
-    readonly property bool enabled: Quickshell.env("OCI_EGRESS_ENABLED") === "1"
+    property bool enabled: Quickshell.env("OCI_EGRESS_ENABLED") === "1"
     property var rows: []
     property string state: "loading"
     readonly property string label: {
@@ -22,15 +21,20 @@ Scope {
             return row.name + ":" + row.percent + "%";
         }).join(" ");
     }
-    readonly property color statusColor: {
-        if (state !== "ready") return Theme.textMuted;
-        let max = 0;
-        for (const row of rows) {
-            const value = Number(row.percent);
-            if (Number.isFinite(value)) max = Math.max(max, value);
-        }
-        return max >= 80 ? Theme.danger : max >= 50 ? Theme.warning : Theme.accent;
+    readonly property var ruledRows: root.rows.map(function (row) { return OciModel.rowRule(row); })
+    // The bar icon's tone: the worst profile's, or muted while there is
+    // no usage to show.
+    readonly property string tone: {
+        if (state !== "ready") return "muted";
+        const tones = root.ruledRows.map(function (r) { return r.tone; });
+        if (tones.indexOf("danger") >= 0) return "danger";
+        if (tones.indexOf("warning") >= 0) return "warning";
+        return "normal";
     }
+    readonly property string stateText: state === "loading" ? "Loading usage…"
+        : state === "unavailable" ? "OCI credentials unavailable"
+        : state === "error" ? "Usage request failed"
+        : "Outbound data, Zone 1"
 
     function refresh() {
         if (root.enabled && !usage.running) usage.running = true;
@@ -72,82 +76,50 @@ Scope {
         onExited: function (code) { if (code !== 0) root.state = "error"; }
     }
 
-    LazyLoader {
-        active: root.shown && root.enabled
-        PanelWindow {
-            id: veil
-            screen: root.screen
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            focusable: true
-            color: "transparent"
-            HyprlandFocusGrab {
-                active: root.shown
-                windows: [ veil ]
-                onCleared: root.closeRequested()
-            }
-            MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
-            Rectangle {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 32
-                anchors.rightMargin: 6
-                width: Math.min(310, Math.max(0, veil.width - 12))
-                height: Math.max(0, Math.min(280, veil.height - 44))
-                radius: Theme.radiusLarge
-                color: Theme.bgPanel
-                border.width: 1
-                border.color: Theme.borderMuted
-                MouseArea { anchors.fill: parent }
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+    property Component menu: Component {
+        MenuFrame {
+            id: frame
+
+            preferredWidth: 420
+            title: "OCI egress · this month"
+            detail: root.stateText
+            scrolls: profiles.scrolls
+
+            readonly property real valueWidth: PlatinumMetrics.widest(["100.0%", "Failed"])
+
+            // Profiles scroll: a tenancy with many no longer clips.
+            MenuList {
+                id: profiles
+                visible: root.rows.length > 0
+                model: ScriptModel { values: root.rows }
+
+                delegate: MenuListRow {
+                    id: profileRow
+                    required property var modelData
+                    readonly property var rule: OciModel.rowRule(modelData)
+                    width: ListView.view.width
+                    rightInset: frame.rightInset
+                    name: rule.name
+                    detail: rule.failed ? "Usage request failed"
+                        : modelData.used + " GB / 10240 GB · projected " + modelData.projected + " GB"
+                    detailColor: rule.failed ? Theme.menuTextSecondary : Theme.menuTextSecondary
+
+                    // The profile's own tone, on its own value.
                     Text {
-                        text: "OCI egress · this month"
-                        color: Theme.textPrimary
-                        font.pixelSize: 14
-                        font.family: Theme.fontFamily
-                        font.bold: true
-                    }
-                    Text {
-                        visible: root.state !== "ready"
-                        text: root.state === "loading" ? "Loading usage…" :
-                            root.state === "unavailable" ? "OCI credentials unavailable" : "Usage request failed"
-                        color: Theme.textSecondary
-                        font.pixelSize: 11
-                        font.family: Theme.fontFamily
-                    }
-                    Repeater {
-                        model: root.rows
-                        ColumnLayout {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            spacing: 2
-                            Text {
-                                text: modelData.name + "  " + modelData.percent + "%"
-                                color: modelData.percent === "--" ? Theme.textMuted : root.statusColor
-                                font.pixelSize: 12
-                                font.family: Theme.fontFamily
-                            }
-                            Text {
-                                text: modelData.used === "--" ? "Usage request failed" :
-                                    modelData.used + " GB / 10240 GB · projected " + modelData.projected + " GB"
-                                color: Theme.textSecondary
-                                font.pixelSize: 10
-                                font.family: Theme.fontFamily
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-                    Item { Layout.fillHeight: true }
-                    Text {
-                        text: "Esc or click outside to close"
-                        color: Theme.textMuted
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
+                        width: frame.valueWidth
+                        horizontalAlignment: Text.AlignRight
+                        text: profileRow.rule.value
+                        color: Theme.menuTone(profileRow.rule.tone)
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumText
+                        font.letterSpacing: Theme.platinumTracking
                     }
                 }
+            }
+
+            MenuParts.Hint {
+                rightInset: frame.rightInset
+                text: "Esc or click outside to close"
             }
         }
     }

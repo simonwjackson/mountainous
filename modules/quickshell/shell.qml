@@ -2,13 +2,10 @@
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
-import Quickshell.Networking
 import Quickshell.Widgets
-import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
 import "lanes.js" as Lanes
-import "notification-model.js" as NotificationModel
 
 ShellRoot {
     id: root
@@ -16,87 +13,36 @@ ShellRoot {
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
     property bool topbarAccessVisible: false
-    property var bluetoothScreen: null
-    property var wifiScreen: null
-    property var soundScreen: null
-    property var brightnessScreen: null
-    property var ociScreen: null
-    property var storageScreen: null
-    property var notificationScreen: null
+    // True when SUPER+O R opened the builder menu: its focus ring shows
+    // from the start. Any other menu clears it.
+    property bool builderKeyboard: false
 
-    function toggleBluetooth(screen) {
+    // One menu is open at a time, on one screen: MenuState. The bar's
+    // controls, the Super+O chord and the IPC targets below all go
+    // through it, so opening one menu closes any other, OCI included.
+    function openMenu(name, screen) {
         root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.storageScreen = null;
-        root.wifiScreen = null;
-        root.soundScreen = null;
-        root.brightnessScreen = null;
-        root.bluetoothScreen = root.bluetoothScreen === screen ? null : screen;
+        MenuState.open(name, screen, -1);
     }
 
-    function toggleWifi(screen) {
+    function toggleMenu(name, screen) {
         root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.storageScreen = null;
-        root.bluetoothScreen = null;
-        root.soundScreen = null;
-        root.brightnessScreen = null;
-        root.wifiScreen = root.wifiScreen === screen ? null : screen;
+        MenuState.toggle(name, screen, -1);
     }
 
-    function toggleSound(screen) {
-        root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.storageScreen = null;
-        root.bluetoothScreen = null;
-        root.wifiScreen = null;
-        root.brightnessScreen = null;
-        root.soundScreen = root.soundScreen === screen ? null : screen;
+    function closeMenu(name) {
+        if (MenuState.current === name) MenuState.close();
     }
 
-    function toggleBrightness(screen) {
-        root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.bluetoothScreen = null;
-        root.wifiScreen = null;
-        root.soundScreen = null;
-        root.ociScreen = null;
-        root.storageScreen = null;
-        root.brightnessScreen = root.brightnessScreen === screen ? null : screen;
+    Connections {
+        target: MenuState
+        function onCurrentChanged() {
+            if (MenuState.current !== "builder") root.builderKeyboard = false;
+            if (MenuState.current !== "") root.topbarAccessVisible = false;
+        }
     }
 
-    function toggleOci(screen) {
-        root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.bluetoothScreen = null;
-        root.wifiScreen = null;
-        root.soundScreen = null;
-        root.brightnessScreen = null;
-        root.storageScreen = null;
-        root.ociScreen = root.ociScreen === screen ? null : screen;
-    }
-
-    function toggleStorage(screen) {
-        root.topbarAccessVisible = false;
-        root.notificationScreen = null;
-        root.bluetoothScreen = null;
-        root.wifiScreen = null;
-        root.soundScreen = null;
-        root.brightnessScreen = null;
-        root.ociScreen = null;
-        root.storageScreen = root.storageScreen === screen ? null : screen;
-    }
-
-    function toggleNotifications(screen) {
-        root.topbarAccessVisible = false;
-        root.bluetoothScreen = null;
-        root.wifiScreen = null;
-        root.soundScreen = null;
-        root.brightnessScreen = null;
-        root.ociScreen = null;
-        root.storageScreen = null;
-        root.notificationScreen = root.notificationScreen === screen ? null : screen;
-    }
+    onChromeVisibleChanged: if (!root.chromeVisible) MenuState.close()
 
     // Popups go to the screen with keyboard focus, where the reader is
     // looking, and to the first screen when Hyprland has not said.
@@ -110,51 +56,43 @@ ShellRoot {
         return root.primaryScreen();
     }
 
-    // The keyboard hint lists only the panels this host shows.
-    function topbarAccessHint(cloud, disks) {
-        let keys = ["B Bluetooth", "W Wi-Fi", "S Sound", "L Brightness"];
-        if (cloud) keys.push("C Cloud");
-        if (disks) keys.push("D Disks");
-        keys.push("Esc cancel");
-        return keys.join("  ·  ");
-    }
-
     function primaryScreen() {
         return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
     }
 
     // The omni bar. Its component lives in modules/omni.nix, which
     // QML resolves by filename from this directory.
-    OmniBar { id: omniBar }
+    OmniBar { id: omniBarService }
 
     // One owner for capture, queueing, backend work, insertion, and the
     // bottom-centre state overlay. The top bar only reads its public state.
-    Dictation { id: dictation }
+    Dictation { id: dictationService }
 
     // The notification socket, and the popups. notifyd owns the D-Bus name;
     // see modules/notification-view.nix. Each top bar has its own centre.
-    Notifications { id: notifications }
+    Notifications { id: notificationService }
+
+    // Whether myoko accepts remote builds; see BuilderGate.qml. Hosts
+    // without nix-builder-gate show no control.
+    BuilderGate { id: builderGateService }
 
     NotificationPopups {
-        service: notifications
+        service: notificationService
         screen: root.focusedScreen()
-        suppressed: root.notificationScreen !== null
-        onOpenCentreRequested: root.toggleNotifications(root.focusedScreen())
+        suppressed: MenuState.current === "ntf"
+        onOpenCentreRequested: root.openMenu("ntf", root.focusedScreen())
     }
 
     IpcHandler {
         target: "notifications"
-        function toggle(): void { root.toggleNotifications(root.focusedScreen()); }
-        function hide(): void { root.notificationScreen = null; }
-        function reveal(): void {
-            root.notificationScreen = null;
-            root.toggleNotifications(root.focusedScreen());
-        }
+        function toggle(): void { root.toggleMenu("ntf", root.focusedScreen()); }
+        function hide(): void { root.closeMenu("ntf"); }
+        function reveal(): void { root.openMenu("ntf", root.focusedScreen()); }
         function current(): string {
-            return notifications.connection.kind
-                + " " + notifications.status.server
-                + " " + notifications.count
-                + " " + notifications.popups.length;
+            return notificationService.connection.kind
+                + " " + notificationService.status.server
+                + " " + notificationService.count
+                + " " + notificationService.popups.length;
         }
     }
 
@@ -162,16 +100,16 @@ ShellRoot {
     // transport here and forward every event to the dictation state owner.
     IpcHandler {
         target: "dictation"
-        function press(): void { dictation.press(false); }
-        function pressEnter(): void { dictation.press(true); }
-        function release(): void { dictation.release(); }
-        function cancel(): void { dictation.cancel(); }
-        function retry(): void { dictation.retryFailed(); }
-        function dismiss(): void { dictation.dismissFailure(); }
+        function press(): void { dictationService.press(false); }
+        function pressEnter(): void { dictationService.press(true); }
+        function release(): void { dictationService.release(); }
+        function cancel(): void { dictationService.cancel(); }
+        function retry(): void { dictationService.retryFailed(); }
+        function dismiss(): void { dictationService.dismissFailure(); }
         function current(): string {
-            return dictation.state + " "
-                + (dictation.backend || "none") + " "
-                + dictation.queueCount;
+            return dictationService.state + " "
+                + (dictationService.backend || "none") + " "
+                + dictationService.queueCount;
         }
     }
 
@@ -187,59 +125,62 @@ ShellRoot {
         function reveal(): void { root.chromeVisible = true; }
     }
 
+    // The Super+O chord's letters (modules/hyprland/hyprland.lua) land here.
     IpcHandler {
         target: "bluetooth"
-        function toggle(): void { root.toggleBluetooth(root.primaryScreen()); }
-        function hide(): void { root.bluetoothScreen = null; }
-        function reveal(): void {
-            root.topbarAccessVisible = false;
-            root.bluetoothScreen = root.primaryScreen();
-        }
+        function toggle(): void { root.toggleMenu("bt", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("bt"); }
+        function reveal(): void { root.openMenu("bt", root.primaryScreen()); }
     }
 
     IpcHandler {
         target: "wifi"
-        function toggle(): void { root.toggleWifi(root.primaryScreen()); }
-        function hide(): void { root.wifiScreen = null; }
-        function reveal(): void {
-            root.topbarAccessVisible = false;
-            root.bluetoothScreen = null;
-            root.wifiScreen = root.primaryScreen();
-        }
+        function toggle(): void { root.toggleMenu("wifi", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("wifi"); }
+        function reveal(): void { root.openMenu("wifi", root.primaryScreen()); }
     }
 
     IpcHandler {
         target: "sound"
-        function toggle(): void { root.toggleSound(root.primaryScreen()); }
-        function hide(): void { root.soundScreen = null; }
-        function reveal(): void {
-            root.topbarAccessVisible = false;
-            root.bluetoothScreen = null;
-            root.wifiScreen = null;
-            root.soundScreen = root.primaryScreen();
-        }
+        function toggle(): void { root.toggleMenu("vol", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("vol"); }
+        function reveal(): void { root.openMenu("vol", root.primaryScreen()); }
     }
 
     IpcHandler {
         target: "brightness"
-        function toggle(): void { root.toggleBrightness(root.primaryScreen()); }
-        function hide(): void { root.brightnessScreen = null; }
-        function reveal(): void {
-            root.brightnessScreen = null;
-            root.toggleBrightness(root.primaryScreen());
-        }
+        function toggle(): void { root.toggleMenu("bri", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("bri"); }
+        function reveal(): void { root.openMenu("bri", root.primaryScreen()); }
     }
 
     IpcHandler {
         target: "oci"
-        function reveal(): void { root.toggleOci(root.primaryScreen()); }
-        function hide(): void { root.ociScreen = null; }
+        function reveal(): void { root.openMenu("oci", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("oci"); }
     }
 
     IpcHandler {
         target: "storage"
-        function reveal(): void { root.toggleStorage(root.primaryScreen()); }
-        function hide(): void { root.storageScreen = null; }
+        function reveal(): void { root.openMenu("disk", root.primaryScreen()); }
+        function hide(): void { root.closeMenu("disk"); }
+    }
+
+    IpcHandler {
+        target: "builder"
+        function reveal(): void {
+            if (!builderGateService.enabled) return;
+            root.builderKeyboard = true;
+            root.openMenu("builder", root.focusedScreen());
+        }
+        function hide(): void { root.closeMenu("builder"); }
+        function current(): string {
+            const s = builderGateService.sample;
+            return s.kind + (s.kind === "ready"
+                ? " " + s.value.accepting + " " + s.value.reason + " " + s.value.running : "")
+                + " pending=" + (builderGateService.pending || "none")
+                + " panel=" + (MenuState.current === "builder");
+        }
     }
 
     IpcHandler {
@@ -372,29 +313,22 @@ ShellRoot {
         precision: SystemClock.Minutes
     }
 
-    function formatClock(date) {
-        const hour = date.getHours() % 12 || 12;
-        return Qt.formatDateTime(date, "M/d  ")
-            + hour
-            + Qt.formatDateTime(date, ":mm");
-    }
-
     //----------------------------------------------------------------
     // TOP BAR
     //----------------------------------------------------------------
+    // Per screen: the data owners, the bar that reads them, and the one
+    // window that shows whichever menu is open.
     Variants {
         model: Quickshell.screens
 
-        PanelWindow {
-            id: topBar
+        Scope {
+            id: screenScope
 
             required property var modelData
-            screen: modelData
-            visible: root.chromeVisible
 
             // The window that last had focus on this screen. The title
-            // below falls back to it once focus moves to another screen,
-            // so this bar keeps naming what this screen shows.
+            // falls back to it once focus moves to another screen, so this
+            // bar keeps naming what this screen shows.
             property var lastFocused: null
 
             Connections {
@@ -402,7 +336,7 @@ ShellRoot {
 
                 function onActiveToplevelChanged() {
                     const t = Hyprland.activeToplevel;
-                    if (t && Lanes.screenOf(t) === topBar.modelData.name) topBar.lastFocused = t;
+                    if (t && Lanes.screenOf(t) === screenScope.modelData.name) screenScope.lastFocused = t;
                 }
             }
 
@@ -410,463 +344,72 @@ ShellRoot {
                 Hyprland.toplevels.values, modelData.name,
                 Hyprland.activeToplevel, lastFocused)
 
-            BluetoothPanel {
-                id: bluetoothPanel
-                screen: modelData
-                shown: root.bluetoothScreen === modelData
-                onCloseRequested: root.bluetoothScreen = null
+            function shows(name) {
+                return MenuState.current === name && MenuState.screen === screenScope.modelData;
             }
 
-            WifiPanel {
-                id: wifiPanel
-                screen: modelData
-                shown: root.wifiScreen === modelData
-                onCloseRequested: root.wifiScreen = null
+            BluetoothPanel { id: bluetoothPanel; shown: screenScope.shows("bt") }
+            WifiPanel { id: wifiPanel; shown: screenScope.shows("wifi") }
+            SoundPanel { id: soundPanel; shown: screenScope.shows("vol") }
+            BrightnessPanel { id: brightnessPanel; shown: screenScope.shows("bri") }
+            OciEgress { id: ociEgress; shown: screenScope.shows("oci") }
+            StorageHealth { id: storageHealth; shown: screenScope.shows("disk") }
+            BuilderPanel {
+                id: builderPanel
+                gate: builderGateService
+                shown: screenScope.shows("builder")
+                openedByKeyboard: root.builderKeyboard
             }
-
-            SoundPanel {
-                id: soundPanel
-                screen: modelData
-                shown: root.soundScreen === modelData
-                onCloseRequested: root.soundScreen = null
-            }
-
-            BrightnessPanel {
-                id: brightnessPanel
-                screen: modelData
-                shown: root.brightnessScreen === modelData
-                onCloseRequested: root.brightnessScreen = null
-            }
-
-            OciEgress {
-                id: ociEgress
-                screen: modelData
-                shown: root.ociScreen === modelData
-                onCloseRequested: root.ociScreen = null
-            }
-
-            StorageHealth {
-                id: storageHealth
-                screen: modelData
-                shown: root.storageScreen === modelData
-                onCloseRequested: root.storageScreen = null
-            }
-
             NotificationCentre {
-                service: notifications
-                screen: modelData
-                shown: root.notificationScreen === modelData
-                onCloseRequested: root.notificationScreen = null
+                id: notificationCentre
+                service: notificationService
+                shown: screenScope.shows("ntf")
             }
 
-            anchors { top: true; left: true; right: true }
-            implicitHeight: 26
-            color: Theme.bgBase
-
-            // Left: dictation state replaces the window-title readout while
-            // it matters. The readout yields before controls, so Retry and
-            // Dismiss stay reachable after a failure.
-            Item {
-                id: leftStatus
-                anchors.left: parent.left
-                anchors.leftMargin: 10
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, parent.width / 2 - 90)
-                height: parent.height
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !dictation.barVisible
-                    elide: Text.ElideRight
-                    text: topBar.frontWindow ? topBar.frontWindow.title : ""
-                    color: Theme.textPage
-                    font.pixelSize: 11
-                    font.family: Theme.fontFamily
-                }
-
-                RowLayout {
-                    anchors.fill: parent
-                    visible: dictation.barVisible
-                    spacing: 6
-
-                    Rectangle {
-                        Layout.preferredWidth: 7
-                        Layout.preferredHeight: 7
-                        radius: 4
-                        color: dictation.accentColor
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                        text: {
-                            let value = dictation.statusText;
-                            if (dictation.backendLabel !== "") {
-                                value += " · " + dictation.backendLabel;
-                            }
-                            if (dictation.queueCount > 1) {
-                                value += " · " + dictation.queueCount;
-                            }
-                            return value;
-                        }
-                        color: Theme.textPrimary
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: 38
-                        Layout.preferredHeight: 22
-                        visible: dictation.state === "failed" && dictation.canRetry
-                        radius: Theme.radiusSmall
-                        color: retryArea.containsMouse ? Theme.bgActive : Theme.bgSelected
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Retry"
-                            color: Theme.accent
-                            font.pixelSize: 9
-                            font.family: Theme.fontFamily
-                        }
-
-                        MouseArea {
-                            id: retryArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: dictation.retryFailed()
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: 46
-                        Layout.preferredHeight: 22
-                        visible: dictation.state === "failed"
-                        radius: Theme.radiusSmall
-                        color: dismissArea.containsMouse ? Theme.bgActive : Theme.bgSelected
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Dismiss"
-                            color: Theme.textSecondary
-                            font.pixelSize: 9
-                            font.family: Theme.fontFamily
-                        }
-
-                        MouseArea {
-                            id: dismissArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: dictation.dismissFailure()
-                        }
-                    }
-                }
+            TopBar {
+                id: topBar
+                modelData: screenScope.modelData
+                visible: root.chromeVisible
+                bluetooth: bluetoothPanel
+                wifi: wifiPanel
+                sound: soundPanel
+                brightness: brightnessPanel
+                oci: ociEgress
+                storage: storageHealth
+                notifications: notificationService
+                dictation: dictationService
+                omniBar: omniBarService
+                frontWindow: screenScope.frontWindow
+                builderGate: builderGateService
+                now: clock.date
+                chordVisible: root.topbarAccessVisible
             }
 
-            // Centre: the time, or the active keyboard chord.
-            Text {
-                anchors.centerIn: parent
-                text: root.topbarAccessVisible
-                    ? root.topbarAccessHint(ociEgress.enabled, storageHealth.enabled)
-                    : root.formatClock(clock.date)
-                color: root.topbarAccessVisible ? Theme.accent : Theme.textPrimary
-                font.pixelSize: 11
-                font.family: Theme.fontFamily
+            Component {
+                id: clockMenu
+                ClockMenu { now: clock.date }
             }
 
-            // Right: Bluetooth and Wi-Fi are controls. The power source is a
-            // readout, so it yields first when the bar is narrow. Battery
-            // percentage stays visible.
-            RowLayout {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.rightMargin: 10
-                spacing: 12
+            Component {
+                id: overflowMenu
+                OverflowMenu { bar: topBar }
+            }
 
-                Rectangle {
-                    Layout.preferredWidth: 28
-                    Layout.preferredHeight: 26
-                    visible: bluetoothPanel.adapter !== null
-                    color: bluetoothArea.containsMouse ? Theme.bgSelected : "transparent"
-                    radius: Theme.radiusSmall
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: bluetoothPanel.connectedCount > 0
-                            ? "BT " + bluetoothPanel.connectedCount
-                            : "BT"
-                        color: {
-                            if (bluetoothPanel.connectedCount > 0) return Theme.accent;
-                            return bluetoothPanel.adapter && bluetoothPanel.adapter.enabled
-                                ? Theme.textPrimary : Theme.textOff;
-                        }
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-
-                    MouseArea {
-                        id: bluetoothArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleBluetooth(modelData)
-                    }
-                }
-
-                // Wi-Fi strength. The one status item Kamoi's README
-                // actually specifies, at line 32:
-                //
-                //   "The top bar shows Wi-Fi and cellular signal
-                //    strength as fixed-width Lucide icons. It does not
-                //    show a network name, carrier name, or cell
-                //    identity."
-                //
-                // Strength only, never the SSID, and a fixed 11px so
-                // the bar never reflows as the signal moves. No
-                // cellular rung: the Galaxy Book3 has no cellular
-                // radio, and Kamoi draws no icon for an absent radio.
-                //
-                // Written against Quickshell 0.3.1's own
-                // quickshell-network.qmltypes:
-                //   Networking    singleton, devices UntypedObjectModel
-                //   NetworkDevice type DeviceType::Enum, connected,
-                //                 networks
-                //   WifiDevice  : NetworkDevice
-                //   WifiNetwork : Network, signalStrength double
-                //
-                // signalStrength is 0.0 to 1.0, not 0 to 100. Measured
-                // on hiyori against nmcli on the same association:
-                // nmcli said 81, this said 0.8.
-                //
-                // The NetworkManager backend fills in over D-Bus after
-                // the engine loads. Sampled on hiyori: at 1.5s
-                // devices=0 and wifiEnabled=false, at 3.0s the device
-                // is present. Every property read here is notifiable,
-                // so the bindings simply fill in and nothing polls.
-                Rectangle {
-                    id: wifiControl
-
-                    Layout.preferredWidth: 28
-                    Layout.preferredHeight: 26
-                    visible: Networking.wifiHardwareEnabled && topBar.width >= 420
-                    color: wifiArea.containsMouse ? Theme.bgSelected : "transparent"
-                    radius: Theme.radiusSmall
-
-                    // Four rungs, so one bar is a quarter of the scale.
-                    // Zero bars means the radio is on with no link,
-                    // which is a different fact from having no radio.
-                    readonly property int level: {
-                        if (!wifiPanel.connectedNetwork) return 0;
-                        const strength = wifiPanel.connectedNetwork.signalStrength;
-                        if (strength >= 0.75) return 4;
-                        if (strength >= 0.5) return 3;
-                        if (strength >= 0.25) return 2;
-                        return 1;
-                    }
-
-                    Row {
-                        id: wifiBars
-                        anchors.centerIn: parent
-                        spacing: 1
-                        height: 9
-
-                        Repeater {
-                            model: 4
-                            Rectangle {
-                                required property int index
-                                width: 2
-                                height: 3 + index * 2
-                                y: wifiBars.height - height
-                                color: index < wifiControl.level
-                                    ? Theme.accent : Theme.textOff
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: wifiArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleWifi(modelData)
-                    }
-                }
-
-                // Volume. The control is always here once PipeWire has a
-                // sink, because opening the panel is a capability. The
-                // number beside it is a readout, so it is what yields when
-                // the bar runs short of width.
-                Rectangle {
-                    id: soundControl
-
-                    readonly property bool showLevel: topBar.width >= 460
-
-                    Layout.preferredWidth: showLevel ? 50 : 28
-                    Layout.preferredHeight: 26
-                    visible: soundPanel.available
-                    color: soundArea.containsMouse ? Theme.bgSelected : "transparent"
-                    radius: Theme.radiusSmall
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: {
-                            if (!soundControl.showLevel) return "VOL";
-                            if (soundPanel.muted) return "VOL --";
-                            return "VOL " + soundPanel.volumePercent;
-                        }
-                        color: soundPanel.muted ? Theme.textOff : Theme.textPrimary
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-
-                    MouseArea {
-                        id: soundArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleSound(modelData)
-                    }
-                }
-
-                // Brightness: one level for every screen. Same shape as
-                // volume: the control stays, the number yields first. The
-                // wheel steps it like the keys do.
-                Rectangle {
-                    id: brightnessControl
-
-                    readonly property bool showLevel: topBar.width >= 520
-
-                    Layout.preferredWidth: showLevel ? 50 : 28
-                    Layout.preferredHeight: 26
-                    visible: brightnessPanel.available
-                    color: brightnessArea.containsMouse ? Theme.bgSelected : "transparent"
-                    radius: Theme.radiusSmall
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: brightnessControl.showLevel
-                            ? "BRI " + brightnessPanel.shownLevel
-                            : "BRI"
-                        color: Theme.textPrimary
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-
-                    MouseArea {
-                        id: brightnessArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleBrightness(modelData)
-                        onWheel: function (wheel) {
-                            if (wheel.angleDelta.y !== 0)
-                                brightnessPanel.step(wheel.angleDelta.y > 0 ? 1 : -1);
-                        }
-                    }
-                }
-
-                Rectangle {
-                    id: ociControl
-                    visible: ociEgress.enabled
-                    Layout.preferredWidth: topBar.width >= 900 ? 130 : 48
-                    Layout.preferredHeight: 26
-                    radius: Theme.radiusSmall
-                    color: ociArea.containsMouse ? Theme.bgSelected : "transparent"
-                    Text {
-                        anchors.fill: parent
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        text: topBar.width >= 900 ? ociEgress.label : "OCI"
-                        color: ociEgress.statusColor
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-                    MouseArea {
-                        id: ociArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleOci(modelData)
-                    }
-                }
-
-                // A readout that opens a panel. Narrow bars keep the count
-                // and colour; the panel holds every finding.
-                Rectangle {
-                    id: storageControl
-                    visible: storageHealth.enabled
-                    Layout.preferredWidth: topBar.width >= 900 ? 104 : 52
-                    Layout.preferredHeight: 26
-                    radius: Theme.radiusSmall
-                    color: storageArea.containsMouse ? Theme.bgSelected : "transparent"
-                    Text {
-                        anchors.fill: parent
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        text: topBar.width >= 900 ? storageHealth.label : storageHealth.shortLabel
-                        color: storageHealth.statusColor
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-                    MouseArea {
-                        id: storageArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleStorage(modelData)
-                    }
-                }
-
-                // The centre's control, on every desktop. The count is a
-                // readout: narrow bars keep "NTF" and the count. Red means an
-                // urgent item is open; amber means the daemon or the sync
-                // server is out of reach.
-                Rectangle {
-                    id: notificationControl
-                    readonly property bool wide: topBar.width >= 900
-                    Layout.preferredWidth: wide ? notificationLabel.implicitWidth + 16 : 48
-                    Layout.preferredHeight: 26
-                    radius: Theme.radiusSmall
-                    color: root.notificationScreen === modelData ? Theme.bgActive
-                        : notificationArea.containsMouse ? Theme.bgSelected : "transparent"
-                    Text {
-                        id: notificationLabel
-                        anchors.centerIn: parent
-                        width: notificationControl.wide ? implicitWidth : parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        text: NotificationModel.barText(notifications.view, notifications.status,
-                            notifications.count, notificationControl.wide)
-                        color: ({
-                            danger: Theme.danger,
-                            warning: Theme.warning,
-                            primary: Theme.textPrimary,
-                            muted: Theme.textMuted
-                        })[NotificationModel.barTone(notifications.view, notifications.status, notifications.items)]
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                    }
-                    MouseArea {
-                        id: notificationArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.toggleNotifications(modelData)
-                    }
-                }
-
-                Text {
-                    visible: topBar.width >= 360
-                    text: UPower.onBattery ? "BAT" : "AC"
-                    color: Theme.textMuted
-                    font.pixelSize: 11
-                    font.family: Theme.fontFamily
-                }
-
-                Text {
-                    readonly property var dev: UPower.displayDevice
-                    text: dev ? Math.round(dev.percentage * 100) + "%" : ""
-                    visible: text !== ""
-                    color: Theme.textPrimary
-                    font.pixelSize: 11
-                    font.family: Theme.fontFamily
-                }
+            MenuHost {
+                screen: screenScope.modelData
+                bar: topBar
+                menus: ({
+                    bt: bluetoothPanel.menu,
+                    wifi: wifiPanel.menu,
+                    vol: soundPanel.menu,
+                    bri: brightnessPanel.menu,
+                    oci: ociEgress.enabled ? ociEgress.menu : null,
+                    disk: storageHealth.enabled ? storageHealth.menu : null,
+                    ntf: notificationCentre.menu,
+                    builder: builderGateService.enabled ? builderPanel.menu : null,
+                    clock: clockMenu,
+                    more: overflowMenu
+                })
             }
         }
     }

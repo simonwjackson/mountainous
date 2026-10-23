@@ -174,7 +174,7 @@ Offline fixture preview on a graphical test session (no SSH):
 
 ```sh
 preview=$(mktemp -d)
-cp modules/quickshell/{StorageHealthPreview.qml,StorageHealth.qml,Theme.qml,storage-health.js} "$preview/"
+cp -r modules/quickshell/{StorageHealthPreview.qml,StorageHealth.qml,Theme.qml,storage-health.js,MenuFrame.qml,MenuParts.qml,MenuList.qml,MenuListRow.qml,Bevel.qml,PlatinumButton.qml,PlatinumIcon.qml,PlatinumMetrics.qml,PlatinumScrollBar.qml,IconStore.qml,icons} "$preview/"
 PATH="$PWD/tests/fixtures/storage-health-bin:$PATH" \
   STORAGE_HEALTH_ENABLED=1 STORAGE_HEALTH_PREVIEW=issues \
   quickshell -p "$preview/StorageHealthPreview.qml"

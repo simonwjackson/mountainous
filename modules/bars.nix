@@ -6,6 +6,19 @@
 # windows. See quickshell/lanes.js.
 # Meta+I toggles both for immersive browsing.
 {
+  perSystem =
+    { pkgs, ... }:
+    {
+      # The builder control's words, actions, focus order and layout plans,
+      # run under node from the same file QML loads.
+      checks.builder-gate-view =
+        pkgs.runCommand "builder-gate-view" { nativeBuildInputs = [ pkgs.nodejs ]; }
+          ''
+            node ${./quickshell/builder-gate.test.js} ${./quickshell/builder-gate.js}
+            touch $out
+          '';
+    };
+
   nixos.modules.desktop =
     {
       config,

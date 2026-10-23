@@ -1,8 +1,6 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "storage-health.js" as Health
 
@@ -11,10 +9,8 @@ import "storage-health.js" as Health
 // see modules/storage-health.nix. The readout stays quiet while all is well.
 Scope {
     id: root
-    required property var screen
     property bool shown: false
-    signal closeRequested
-    readonly property bool enabled: Quickshell.env("STORAGE_HEALTH_ENABLED") === "1"
+    property bool enabled: Quickshell.env("STORAGE_HEALTH_ENABLED") === "1"
     property var rows: []
     property string sampleState: "loading"
     property double now: Date.now()
@@ -34,17 +30,30 @@ Scope {
         if (issues.length === 0) return "Disks ok";
         return "Disks " + issues.length + (issues.length === 1 ? " issue" : " issues");
     }
-    readonly property string shortLabel: state === "ready" && issues.length > 0
-        ? "DSK " + issues.length : "DSK"
-    readonly property color statusColor: {
-        if (state === "error" || state === "stale") return Theme.warning;
-        if (state !== "ready") return Theme.textMuted;
-        return worst === "bad" ? Theme.danger : worst === "warn" ? Theme.warning : Theme.textMuted;
+    // The bar's tone. All well stays quiet on purpose: the readout only
+    // asks for attention when something is wrong.
+    readonly property string tone: {
+        if (state === "error" || state === "stale") return "warning";
+        if (state !== "ready") return "muted";
+        return worst === "bad" ? "danger" : worst === "warn" ? "warning" : "quiet";
     }
+    readonly property bool checking: probe.running
+    readonly property string statusText: state === "loading" ? "Checking the servers…"
+        : state === "error" && rows.length === 0 ? "The check did not run"
+        : state === "error" ? "The last check failed. Showing " + Qt.formatTime(checkedAt, "HH:mm")
+        : state === "stale" ? "Stale result from " + Qt.formatDateTime(checkedAt, "yyyy-MM-dd HH:mm")
+        : "Checked " + Qt.formatTime(checkedAt, "HH:mm") + ", again every 5 minutes"
 
     function levelColor(level) {
-        return level === "bad" ? Theme.danger
-            : level === "ok" ? Theme.textSecondary : Theme.warning;
+        return level === "bad" ? Theme.menuDanger
+            : level === "ok" ? Theme.menuTextSecondary : Theme.menuWarning;
+    }
+
+    // Fill the findings list from rows (a harness sets rows directly).
+    function setFindings(list) {
+        root.rows = list;
+        findingsModel.clear();
+        for (const row of list) findingsModel.append(row);
     }
 
     function refresh() {
@@ -60,9 +69,7 @@ Scope {
         const sample = pending.code === 0 ? Health.parse(pending.output, Date.now()) : {state: "error"};
         root.sampleState = sample.state;
         if (sample.state === "error") return;
-        root.rows = sample.rows;
-        findingsModel.clear();
-        for (const row of sample.rows) findingsModel.append(row);
+        root.setFindings(sample.rows);
         root.checkedAt = new Date(sample.checkedAt);
         root.now = Date.now();
     }
@@ -94,134 +101,85 @@ Scope {
         onExited: function (code) { root.pending.code = code; root.settle(); }
     }
 
-    LazyLoader {
-        active: root.shown && root.enabled
-        PanelWindow {
-            id: veil
-            screen: root.screen
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            focusable: true
-            color: "transparent"
-            HyprlandFocusGrab {
-                active: root.shown
-                windows: [ veil ]
-                onCleared: root.closeRequested()
+    property Component menu: Component {
+        MenuFrame {
+            id: frame
+
+            preferredWidth: 400
+            title: "Server storage"
+            scrolls: findings.scrolls
+
+            headerTrailing: PlatinumButton {
+                text: root.checking ? "Checking" : "Check now"
+                fixedWidth: PlatinumMetrics.buttonWidth(["Check now", "Checking"])
+                enabled: !root.checking
+                onClicked: root.refresh()
             }
-            MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
-            Rectangle {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 32
-                anchors.rightMargin: 6
-                width: Math.min(380, Math.max(0, veil.width - 12))
-                // Grow with the findings, up to what the screen allows.
-                height: Math.max(0, Math.min(content.implicitHeight + 24, veil.height - 44))
-                radius: Theme.radiusLarge
-                color: Theme.bgPanel
-                border.width: 1
-                border.color: Theme.borderMuted
-                MouseArea { anchors.fill: parent }
-                ColumnLayout {
-                    id: content
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Server storage"
-                            color: Theme.textPrimary
-                            font.pixelSize: 14
-                            font.family: Theme.fontFamily
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-                        Rectangle {
-                            Layout.preferredWidth: checkNow.implicitWidth + 12
-                            Layout.preferredHeight: 22
-                            radius: Theme.radiusSmall
-                            color: checkArea.containsMouse ? Theme.bgSelected : "transparent"
-                            Text {
-                                id: checkNow
-                                anchors.centerIn: parent
-                                text: probe.running ? "Checking" : "Check now"
-                                color: probe.running ? Theme.textMuted : Theme.accent
-                                font.pixelSize: 11
-                                font.family: Theme.fontFamily
-                            }
-                            MouseArea {
-                                id: checkArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: root.refresh()
-                            }
-                        }
+
+            // When the servers were checked, said in full: it wraps rather
+            // than cut the time off.
+            MenuParts.Line {
+                rightInset: frame.rightInset
+                text: root.statusText
+                color: root.state === "error" || root.state === "stale"
+                    ? Theme.menuWarning : Theme.menuTextSecondary
+                bottomPadding: 4
+            }
+
+            MenuParts.Separator { visible: findingsModel.count > 0 }
+
+            // Findings by host. The host is a section label on the text
+            // edge; each finding's level is its mark in the gutter and its
+            // colour.
+            MenuList {
+                id: findings
+                visible: findingsModel.count > 0
+                model: findingsModel
+                view.section.property: "host"
+                view.section.delegate: MenuParts.Section {
+                    required property string section
+                    width: ListView.view.width
+                    x: Theme.menuTextLeft
+                    rightInset: frame.rightInset
+                    topPadding: 6
+                    text: section
+                }
+
+                delegate: Item {
+                    id: finding
+                    required property string level
+                    required property string message
+                    width: ListView.view.width
+                    height: findingText.implicitHeight + 6
+
+                    PlatinumIcon {
+                        x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+                        y: 3 + (16 - height) / 2
+                        name: finding.level === "ok" ? "check" : finding.level === "bad" ? "dot" : "ring"
+                        size: 10
+                        color: root.levelColor(finding.level)
                     }
+
                     Text {
-                        Layout.fillWidth: true
-                        text: root.state === "loading" ? "Checking the servers…"
-                            : root.state === "error" && root.rows.length === 0 ? "The check did not run"
-                            : root.state === "error" ? "The last check failed. Showing "
-                                + Qt.formatTime(root.checkedAt, "HH:mm")
-                            : root.state === "stale" ? "Stale result from " + Qt.formatDateTime(root.checkedAt, "yyyy-MM-dd HH:mm")
-                            : "Checked " + Qt.formatTime(root.checkedAt, "HH:mm")
-                                + ", again every 5 minutes"
-                        color: Theme.textSecondary
-                        font.pixelSize: 11
-                        font.family: Theme.fontFamily
-                        elide: Text.ElideRight
-                    }
-                    ListView {
-                        id: findings
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.preferredHeight: contentHeight
-                        clip: true
-                        spacing: 2
-                        model: findingsModel
-                        boundsBehavior: Flickable.StopAtBounds
-                        // Shows that more findings exist below the fold.
-                        ScrollIndicator.vertical: ScrollIndicator { }
-                        section.property: "host"
-                        section.delegate: Text {
-                            required property string section
-                            width: findings.width
-                            topPadding: 6
-                            text: section
-                            color: Theme.textPrimary
-                            font.pixelSize: 12
-                            font.family: Theme.fontFamily
-                            font.bold: true
-                        }
-                        delegate: Text {
-                            required property string level
-                            required property string message
-                            width: findings.width
-                            leftPadding: 10
-                            text: message
-                            color: root.levelColor(level)
-                            font.pixelSize: 11
-                            font.family: Theme.fontFamily
-                            wrapMode: Text.Wrap
-                        }
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        text: "Esc or click outside to close"
-                        color: Theme.textMuted
-                        font.pixelSize: 10
-                        font.family: Theme.fontFamily
-                        elide: Text.ElideRight
+                        id: findingText
+                        x: Theme.menuTextLeft
+                        y: 3
+                        width: parent.width - x - frame.rightInset
+                        text: finding.message
+                        textFormat: Text.PlainText
+                        wrapMode: Text.Wrap
+                        color: root.levelColor(finding.level)
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                        font.letterSpacing: Theme.platinumTracking
+                        lineHeight: 1.15
                     }
                 }
             }
 
-            Shortcut {
-                sequence: "Escape"
-                context: Qt.WindowShortcut
-                onActivated: root.closeRequested()
+            MenuParts.Hint {
+                rightInset: frame.rightInset
+                text: "Esc or click outside to close"
             }
         }
     }
