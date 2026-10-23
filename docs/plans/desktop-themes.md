@@ -1,8 +1,8 @@
-# Desktop themes for Myoko: design draft
+# Desktop themes for Myoko
 
-Status: phase 1 implementation in progress. Written 2026-10-23.
+Status: phase 1 implemented on the a05c2ead base. Written 2026-10-23. No deployment.
 
-Base: the newest Platinum branch, `c-c1a4b00c…` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). Platinum lands on `cairn` first, by someone else. The build starts from `cairn` after that.
+Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). The later `77dd2791` bevel/shadow change is not included; that line has not landed on `cairn`.
 
 ## Goal
 
@@ -10,7 +10,7 @@ Simon can switch the whole desktop chrome between a handful of themes: Mac OS 8 
 
 ## What a theme is
 
-A theme is a folder of QML plus one entry in a list. It is not a palette file. Omarchy's model (one `colors.toml`, rendered into each app's config) cannot express a bevel, a bottom taskbar or a cascading Start menu. Its staging step, the live IPC switch, and the "on-screen apps first" order are still worth copying. See the Omarchy notes at the end.
+A theme is a set of prefixed QML files plus one entry in a list. Assets and pure policy code live in its folder. Phase 1 tried the original folder-based QML plan and used the specified flat fallback after the dynamic-load spike failed. It is not a palette file. Omarchy's model (one `colors.toml`, rendered into each app's config) cannot express a bevel, a bottom taskbar or a cascading Start menu. Its staging step, the live IPC switch, and the "on-screen apps first" order are still worth copying. See the Omarchy notes at the end.
 
 | A theme decides | Platinum | Windows 98 |
 |---|---|---|
@@ -45,26 +45,32 @@ A theme declares which settings it honours. Win98 has no Extra dark: its picker 
 
 ```
 modules/quickshell/
-  shell.qml                 data owners per screen, MenuState, IPC, one Loader per screen
-  Theme.qml                 mode, extraDark, theme name; tokens for unthemed parts only
-  themes.json               canonical IDs, labels, appearances, options and preview paths
-  ThemeCatalog.qml          reads themes.json (Nix reads the same JSON)
-  ThemeDesktop.qml          two-slot per-screen loader with rollback
-  panels/                   data Scopes (today's *Panel.qml minus their `menu` Component)
+  shell.qml                 shared owners per screen, transport and composition
+  Theme.qml                 watched mode, extraDark and name; unthemed tokens
+  themes.json               canonical registry used by Nix and QML
+  ThemeCatalog.qml          synchronous registry reader
+  ThemeDesktop.qml          two-slot per-screen loader and rollback
+  ThemePicker.qml           persistent shared picker model
+  panels/                   shared data owners, no theme imports or menu Components
+  PlatinumDesktop.qml       complete one-screen top bar, menus and dock
+  Platinum*Menu.qml          views receiving a shared `panel` data owner
+  PlatinumTopBar.qml, PlatinumMenuHost.qml, PlatinumBarControl.qml …
+  PlatinumTokens.qml        Platinum tokens reading Theme.dark / Theme.extraDark
+  PlatinumPickerView.qml    Appearance control panel
   themes/platinum/
-    Desktop.qml             TopBar + MenuHost (+ dock) for one screen
-    menus/SoundMenu.qml …   today's `menu: Component { MenuFrame {…} }` bodies
-    Platinum*.qml, PlatinumTokens.qml, PickerView.qml
-  themes/win98/
-    Desktop.qml             Taskbar + tray host for one screen
-    menus/…, Win98*.qml, Win98Tokens.qml, PickerView.qml, StartMenu.qml
+    previews/light.png, dark.png
+    picker-plan.js          pure container policy and its test
+  theme-dev/                excluded from host delivery
+    fixtures/               disconnected data inputs, alternate and broken Desktops
+    lifecycle.test.js       actual Platinum, rollback, CLI picker and 20 swaps
+    check-boundaries.py     registry and cross-theme dependency checks
 ```
 
-1. **Data and view split.** Each `*Panel.qml` today holds both its data and a Platinum `menu` Component. The data part stays in `panels/`. The view moves to `themes/<id>/menus/`. A theme's `Desktop.qml` receives the panels and builds its own menu map, as `MenuHost` does now.
-2. **Per-screen loader.** `shell.qml` keeps one `Variants` over screens. Inside it, a `Loader` loads `themes/<Theme.name>/Desktop.qml`. Each theme's Desktop owns its windows (layer-shell `PanelWindow`s). The exclusive zone moves with the bar, so Hyprland's usable area follows: top for Platinum, bottom for Win98.
-3. **Tokens.** Each theme's components read their own `<Theme>Tokens` singleton, which reads `Theme.dark` and `Theme.extraDark`. `Theme.qml` keeps only the tokens of the unthemed parts. No component ever reads another theme's tokens. A check fails on any cross-theme import.
-4. **No `qmldir`.** Verified with this flake's Quickshell 0.3.1 (`gvgrz4bh8hryjzrvkqjiwyh4acpn27aj`): a relative `import "sub"` resolves both a regular component and its sibling `pragma Singleton`, without a `qmldir`. The headless spike printed `SUBFOLDER_SINGLETON_OK`; evidence: `/tmp/themes-p1/spike.log`. Keep subfolders. A partial root `qmldir` still must not be added.
-5. **Delivery.** `modules/bars.nix` already walks directories recursively. Phase 1 extends its file filter to JSON and PNG so the canonical registry and thumbnails reach the host. `checks.bar-delivery` explicitly requires nested Desktop and preview files, and rejects development fixture delivery.
+1. **Data and view split.** The eight shared owners remain in `panels/`. Every moved view has `required property var panel` and reads that owner's existing public properties and methods. `StorageHealth.findings` exposes its existing ListModel; its colour mapping moved into the Platinum view. Data owners never import a theme.
+2. **Per-screen loader.** `shell.qml` retains one `Variants` over screens and instantiates `ThemeDesktop` beside each screen's owners. It compiles the requested entry point asynchronously, then uses the inactive Loader slot. Every window of the candidate starts hidden. Only Ready activates it and unloads the old slot. Dock lane ordering, refresh and drag dispatch logic stay shared.
+3. **Tokens.** Platinum views read `PlatinumTokens`, including the unchanged dock palette. Shared `Theme` retains mode, extra, name and unthemed overlay tokens. Its theme-neutral diagnostic string preserves `theme current`'s existing bar/rule words without retaining Platinum tokens there.
+4. **Spike result: use flat QML.** The first static spike passed: `import "sub"` resolved a component and its sibling singleton without a `qmldir`. The actual dynamic-loader test then failed: local menu types were not discovered. Removing the old root preview's static Platinum import exposed the failure. A minimal `Qt.createComponent("sub/View.qml")` spike confirmed `ReferenceError: Tokens is not defined`. Evidence: `/tmp/themes-p1/spike.log`, `/tmp/themes-p1/spike-dynamic.log`, `/tmp/themes-p1/dynamic-spike.log`. The exact flake package is Quickshell 0.3.1 at `gvgrz4bh8hryjzrvkqjiwyh4acpn27aj`. Flat `Platinum*` files work under the real dynamic loader. **Do not restore subfolder QML without repeating the dynamic spike. Do not add a root qmldir.**
+5. **Delivery.** `modules/bars.nix` already collects recursively. It now includes the root registry and all non-development files below `themes/`, including thumbnails. `checks.bar-delivery` requires `PlatinumDesktop.qml`, `themes.json` and a nested preview, and rejects development fixture delivery. The boundary check handles both flat type prefixes and asset-folder imports.
 
 ## Switching live
 
@@ -85,7 +91,7 @@ If the new Desktop fails to load (a QML error), the old one stays, `theme-name` 
 
 ## The picker
 
-One shared model in `themes.json`, `ThemeCatalog.qml` and `ThemePicker.qml`: the list of themes, their appearances and options, the current choice, `preview(theme, mode)` and `apply()`. Each theme ships only the view:
+One registry in `themes.json`, read by `ThemeCatalog.qml`, and one shared model in `ThemePicker.qml`: the list of themes, their appearances and options, the current choice, `preview(theme, mode)` and `apply()`. Each theme supplies its view, registered by the `picker` path in `themes.json`:
 - Platinum: the Mac OS 8.5 Appearance control panel. Click applies at once, as on Mac OS 8.
 - Win98: Display Properties, Appearance tab. The preview pane changes on selection; OK and Apply commit; Cancel reverts.
 
@@ -95,11 +101,11 @@ Every theme must open the picker from all of: its own menu (Platinum clock menu,
 
 ## Keyboard and Hyprland
 
-`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. Rename the IPC target to `chrome` (`reveal`, `hide`, `open <control>`), which every Desktop implements. Win98 maps the same chord letters to its tray icons, and Super alone (or Ctrl+Esc) opens Start.
+`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. The `chrome` target now forwards `reveal`, `hide`, and `open <control>` to the active Desktop. `topbar` remains an alias; `chrome toggle` retains the whole-chrome immersive toggle. Win98 maps the same chord letters to its tray icons, and Super alone (or Ctrl+Esc) opens Start.
 
 ## Fonts
 
-Install ChicagoFLF and W95FA on Myoko always. Both are small, so a switch never waits for a font. W95FA comes from a `flake = false` input (the mockup prefetched its hash). Its licence file has the template copyright line; record that in the input's comment.
+Phase 1 keeps ChicagoFLF installed and adds no unused font. Phase 2 must install ChicagoFLF and W95FA on Myoko always. Both are small, so a switch never waits for a font. W95FA comes from a `flake = false` input (the mockup prefetched its hash). Its licence file has the template copyright line; record that in the input's comment.
 
 ## Checks
 
@@ -124,7 +130,7 @@ Phase 1 is a refactor with no visible change, so its review is a pixel diff of t
 - Phase 1 touches every panel file that the Platinum branches just changed. It cannot start before Platinum lands.
 - Two themes double the screenshot sweep and the review work for any later bar change.
 - The swap shows two bars for one frame at most, and windows resize once when the bar changes edge. I do not know yet how Hyprland animates that resize.
-- Singleton discovery is verified by the phase 1 spike above. No flat-prefix fallback is needed.
+- Static subfolder discovery passed, but dynamic discovery failed. Phase 1 uses the flat-prefix fallback above.
 
 ## Omarchy notes (verified at omacom/omarchy 967bbdd, v4.0.6)
 
@@ -133,3 +139,83 @@ Phase 1 is a refactor with no visible change, so its review is a pixel diff of t
 - Apps on screen retint first; the rest retint in the background.
 - Light and dark are separate themes; there is no mode switch.
 - Taken here: atomic staging, live switch without restart, on-screen first. Not taken: palette-only themes.
+
+
+## Phase 1 public contract (for phase 2)
+
+### Registry
+
+Add one entry to `modules/quickshell/themes.json`. It is the only installed-theme list. Nix reads it for CLI validation and `list`; QML reads the same file.
+
+| Field | Platinum value / contract |
+|---|---|
+| `id` | `platinum`; lower-case slug |
+| `label` | `Mac OS 8 Platinum` |
+| `qmlPrefix` | `Platinum`; use `Win98` for phase 2 |
+| `desktop` | `PlatinumDesktop.qml`; root-level prefixed file |
+| `picker` | `PlatinumPickerView.qml`; root-level prefixed file |
+| `appearances` | `{mode: "light" or "dark", label, thumbnail}` per supported appearance |
+| `options.extraDark` | `true` for Platinum; `false` for Win98 |
+
+Thumbnails are static PNGs under `themes/<id>/previews/`. Register each path in its appearance. The current thumbnails are crops of the real headless bar and Sound menu, not drawings or another theme's QML. QML delivery finds them recursively.
+
+### Desktop
+
+The loader supplies these properties at construction, before QML evaluates required bindings:
+
+| Property | Contract |
+|---|---|
+| `required property var screen` | This screen's Quickshell ShellScreen; kept live |
+| `required property var context` | This screen's shared owner object; kept live |
+| `required property var theme` | The registry entry being loaded, not the requested global name |
+| `property bool active: false` | Every window must remain hidden/non-reserving while false. The loader sets true only on Ready. |
+| optional `readonly property string diagnostics` | Extra words for `theme current`; Platinum reports ` bar=… rule=…`. No palette belongs in shared Theme. |
+
+`context` contains `bluetooth`, `wifi`, `sound`, `brightness`, `oci`, `storage`, `builder`, `centre`, `notifications`, `dictation`, `omniBar`, `builderGate`, `frontWindow`, `now`, and `shell`. The first eight are shared per-screen data owners. The services and clock retain their existing owners. No view owns another copy of their data.
+
+`context.shell` supplies `chromeVisible`, `chromeAccessVisible`, `builderKeyboard`, the shared menu methods (`openMenu`, `toggleMenu`, `closeMenu`), and dock helpers (`windowsOn`, `pageOf`, `dropOnto`). A theme may omit the dock. The menu selection remains the shared `MenuState` singleton.
+
+Each Desktop implements these methods. It must **not** register an IPC handler per screen; root handlers are reliable in Quickshell 0.3.1 and forward to the selected instance.
+
+| Method / transport | Contract |
+|---|---|
+| `reveal()` / `chrome reveal` | Reveal chrome and its keyboard-access hints. |
+| `hide()` / `chrome hide` | Hide keyboard-access hints, not the immersive whole-chrome toggle. |
+| `open(control)` / `chrome open <id>` | Open the requested control. Ignore unsupported/disabled IDs. |
+| `chrome toggle` | Shared whole-chrome visibility toggle; unchanged Super+I behaviour. |
+| `topbar reveal`, `hide`, `open` | Compatibility aliases for the theme-neutral routes. |
+
+The stable IDs are `bt`, `wifi`, `vol`, `bri`, `oci`, `disk`, `builder`, `ntf`, `clock`, `more`, and `theme` (picker). Existing chord routing is preserved: hardware controls use the primary screen; builder, notifications and picker follow focus. Existing per-control IPC targets remain available. Hyprland's Super+O chord now uses `chrome` for the hint and control routes.
+
+A candidate must create all chrome in its Desktop and honour `active`. A compilation/creation error keeps the old object, closes the menu, calls `desktop-theme set <previous>`, and sends one primary-screen notification with the failed ID and Qt error. The fixture's broken type is never delivered to hosts. Runtime binding warnings are not a Loader Error: each new theme must still pass the warning-free engine test.
+
+### Picker view
+
+The Desktop's picker Loader reads `theme.picker`, passes `{screen, model: ThemePicker}`, and loads it only when the Desktop is active and `ThemePicker.screen` matches. The shared model persists across swaps; a theme must not reset it.
+
+The view receives `required property var model` and the Quickshell window's `screen`. Model properties are `themes`, `choices`, `currentTheme`, `currentMode`, `extraDark`, `applying`, `error`, `visible`, and `screen`. Methods are `open(screen?)`, `close()`, `preview(theme, mode)`, and `apply(theme, mode, extraBoolean)`. Apply runs `desktop-theme apply …`; only watched state files establish the current choice. Win98 can keep a view-local draft for its Apply/Cancel convention and call the same method only on commit.
+
+A theme without Extra dark hides that option and preserves the stored value. Platinum disables the option in light mode, as before. Error text stays in the scrollable collection; Close and Extra dark remain outside that collection. Tab/Enter/Space select themes, E toggles Extra dark, and Escape closes. `desktop-theme picker`, the omni command and the clock item all open the same model. Only Themes is implemented; the mock's inert Appearance/Scale tabs are not added as non-functional controls.
+
+## Phase 1 decisions and evidence
+
+| Choice | Reason / cost |
+|---|---|
+| Flat prefixed QML; asset subfolders retained | Dynamic folder discovery failed without qmldir. This increases the root file count but avoids a hidden static-import dependency. |
+| JSON registry instead of a JS-only list | Nix and QML parse one source without generation or duplicate IDs. |
+| `desktop-theme picker` and `apply <theme> <mode> <on/off>` | Preserve the existing no-argument toggle. Apply serializes all three preferences under the existing lock. |
+| `status`: `mode=dark extra=off theme=platinum` | Explicit field names; scripts parsing the old one-word status must change. |
+| Async preflight compilation plus two Loader slots | Qt's component errorString supplies a useful rollback notification. A Ready candidate replaces the old slot only once. |
+| Hardware chord routes remain primary-screen routes | Preserve existing behaviour rather than silently changing multi-screen focus policy. |
+| W95FA deferred to phase 2 | No installed theme uses it in phase 1. The original licence/input guidance still applies when adding Win98. |
+| Controlled fixture clocks and a raster app icon in the capture harness | Avoid the storage timer becoming stale mid-sweep and per-process external SVG raster noise. Production helpers, views and palettes remain the actual files. |
+
+Final visual evidence is under `/tmp/themes-p1/before/` and `/tmp/themes-p1/after/`, with exact comparison results in `/tmp/themes-p1/pixel-diffs.json`. The capture size is 1920×1200 logical at 1.5 (2880×1800 PNGs). Thirty of the 33 bar/menu comparisons are byte-pixel-identical. The three clock menus differ only for the new Desktop theme item and the resulting menu height/hint position. The 1920-wide overflow menu has no overflow entries; the narrow picker renders also exercise the bar's overflow layout.
+
+The final sweep uses production `MenuState.qml`, `bar-plan.js`, `battery.js`, and `oci-model.js` from a05c2ead, not the old session's temporary stubs. The renderer is Qt Quick software inside an isolated Wayland-only Hyprland. To force its fallback safely, set `LIBSEAT_BACKEND=seatd`, a nonexistent `SEATD_SOCK`, and a nonexistent `AQ_DRM_DEVICES`; verify its log has no `drm: Starting backend` before creating any output. Nix checks must use `--option builders ''` when host access is forbidden.
+
+Picker ladder evidence: `/tmp/themes-p1/picker-ladder/{full,half,narrow-tall,wide-short,tiny}.png`, covering 1920×1200, 960×600, 240×800, 1200×180 and 160×150 logical. The one installed theme has exactly two appearance choices. Zero installed themes is rejected by the registry check. Larger lists and Win98's deferred-apply interaction require a new phase 2 ladder.
+
+`checks.desktop-theme-shell` runs the actual Platinum Desktop without qmldir, opens the picker through the packaged CLI, rejects the broken fixture with a captured notification, and completes ten Platinum → alternate-fixture → Platinum rounds. It checks a single loaded slot, missing/unknown state, and no QML scene warnings. Missing sandbox PipeWire/UPower services can emit transport diagnostics; no service is contacted on a fleet host. The cross-theme check has also been exercised with an intentionally forbidden import.
+
+The focused checks are `desktop-theme`, `desktop-theme-shell`, `bar-delivery`, `bar-model`, `builder-gate-view`, `notification-view`, and `dictation-lifecycle`. The Myoko toplevel evaluation is recorded at `/tmp/themes-p1/myoko-toplevel.txt`. The final full flake check log is `/tmp/themes-p1-flake-check.log`.
