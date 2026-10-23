@@ -17,12 +17,12 @@ set -euo pipefail
 if [ -z "${BUILDER_DEV_SHELL:-}" ]; then
   repo=$(git rev-parse --show-toplevel)
   export BUILDER_DEV_SHELL=1
-  store() { nix build --no-link --print-out-paths --inputs-from "$repo" "nixpkgs#$1"; }
+  store() { nix --option builders '' build --no-link --print-out-paths --inputs-from "$repo" "nixpkgs#$1"; }
   BUILDER_DEV_FONTS=$(store dejavu_fonts)
   BUILDER_DEV_ICONS="$(store adwaita-icon-theme)/share:$(store hicolor-icon-theme)/share"
   QML2_IMPORT_PATH="$(store qt6.qtwebsockets)/lib/qt-6/qml"
   export BUILDER_DEV_FONTS BUILDER_DEV_ICONS QML2_IMPORT_PATH
-  exec nix shell --inputs-from "$repo" \
+  exec nix --option builders '' shell --inputs-from "$repo" \
     nixpkgs#sway nixpkgs#grim nixpkgs#quickshell nixpkgs#wtype nixpkgs#socat \
     nixpkgs#python3 nixpkgs#dbus \
     --command bash "$0" "$@"
@@ -94,13 +94,20 @@ trap cleanup EXIT
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
   sway -c "$work/sway.conf" >"$work/sway.log" 2>&1 &
 pids+=($!)
+sock=
 for _ in $(seq 50); do
-  sock=$(ls "$XDG_RUNTIME_DIR" 2>/dev/null | grep -E '^wayland-[0-9]+$' | head -1 || true)
+  for candidate in "$XDG_RUNTIME_DIR"/wayland-*; do
+    if [ -S "$candidate" ]; then sock=${candidate##*/}; break; fi
+  done
   [ -n "$sock" ] && break
   sleep 0.1
 done
+if [ -z "$sock" ]; then cat "$work/sway.log" >&2; exit 1; fi
 export WAYLAND_DISPLAY="$sock"
-export SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock | head -1)
+for candidate in "$XDG_RUNTIME_DIR"/sway-ipc.*.sock; do
+  if [ -S "$candidate" ]; then export SWAYSOCK="$candidate"; break; fi
+done
+: "${SWAYSOCK:?headless sway did not create its IPC socket}"
 
 mkfifo "$work/pointer"
 python3 "$notification_dev/pointer.py" 1920 1200 <"$work/pointer" >"$work/pointer.log" 2>&1 &
@@ -118,7 +125,7 @@ sleep 0.5
 
 stage="$work/shell"
 mkdir -p "$stage"
-for f in "$shell_dir"/*; do [ -f "$f" ] && ln -s "$f" "$stage/"; done
+bash "$shell_dir/stage-runtime.sh" "$shell_dir" "$stage"
 bash "$shell_dir/notification-schema-js.sh" \
   "$shell_dir/../../packages/notify-sync/schema/ui-socket.v1.json" > "$stage/notification-schema.js"
 

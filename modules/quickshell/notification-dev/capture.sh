@@ -18,13 +18,13 @@ set -euo pipefail
 if [ -z "${NOTIFICATION_DEV_SHELL:-}" ]; then
   repo=$(git rev-parse --show-toplevel)
   export NOTIFICATION_DEV_SHELL=1
-  store() { nix build --no-link --print-out-paths --inputs-from "$repo" "nixpkgs#$1"; }
+  store() { nix --option builders '' build --no-link --print-out-paths --inputs-from "$repo" "nixpkgs#$1"; }
   NOTIFICATION_DEV_FONTS=$(store dejavu_fonts)
   NOTIFICATION_DEV_ICONS="$(store adwaita-icon-theme)/share:$(store hicolor-icon-theme)/share"
   # modules/browser.nix gives the real service QtWebSockets the same way.
   QML2_IMPORT_PATH="$(store qt6.qtwebsockets)/lib/qt-6/qml"
   export NOTIFICATION_DEV_FONTS NOTIFICATION_DEV_ICONS QML2_IMPORT_PATH
-  exec nix shell --inputs-from "$repo" \
+  exec nix --option builders '' shell --inputs-from "$repo" \
     nixpkgs#sway nixpkgs#grim nixpkgs#quickshell nixpkgs#wtype nixpkgs#socat \
     nixpkgs#python3 nixpkgs#dbus \
     --command bash "$0" "$@"
@@ -74,13 +74,20 @@ trap cleanup EXIT
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
   sway -c "$work/sway.conf" >"$work/sway.log" 2>&1 &
 pids+=($!)
+sock=
 for _ in $(seq 50); do
-  sock=$(ls "$XDG_RUNTIME_DIR" 2>/dev/null | grep -E '^wayland-[0-9]+$' | head -1 || true)
+  for candidate in "$XDG_RUNTIME_DIR"/wayland-*; do
+    if [ -S "$candidate" ]; then sock=${candidate##*/}; break; fi
+  done
   [ -n "$sock" ] && break
   sleep 0.1
 done
+if [ -z "$sock" ]; then cat "$work/sway.log" >&2; exit 1; fi
 export WAYLAND_DISPLAY="$sock"
-export SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock | head -1)
+for candidate in "$XDG_RUNTIME_DIR"/sway-ipc.*.sock; do
+  if [ -S "$candidate" ]; then export SWAYSOCK="$candidate"; break; fi
+done
+: "${SWAYSOCK:?headless sway did not create its IPC socket}"
 
 # Input that lasts: a virtual pointer (pointer.py) and a virtual keyboard
 # held open by a long wtype. One-shot devices vanish before Qt binds them.
@@ -110,7 +117,7 @@ size() { swaymsg -q output HEADLESS-1 resolution "$1" scale 1.5; sleep 1; }
 # restart the session after an edit.
 stage="$work/shell"
 mkdir -p "$stage"
-for f in "$shell_dir"/*; do [ -f "$f" ] && ln -s "$f" "$stage/"; done
+bash "$shell_dir/stage-runtime.sh" "$shell_dir" "$stage"
 bash "$shell_dir/notification-schema-js.sh" \
   "$shell_dir/../../packages/notify-sync/schema/ui-socket.v1.json" > "$stage/notification-schema.js"
 
