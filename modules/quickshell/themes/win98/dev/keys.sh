@@ -37,6 +37,17 @@ expect s "path=Settings cursor=Display..."
 expect b "triggered=Bluetooth"
 ipc resetMenu >/dev/null
 expect x "ignored"
+# A disabled item is never selected: Down from Zen skips Mirror workspace.
+ipc resetMenu >/dev/null
+expect c "path=Commands cursor=New terminal"
+expect Down "cursor=Go to address..."
+expect Down "cursor=Close window"
+expect Down "cursor=Monocle"
+expect Down "cursor=Zen"
+expect Down "cursor=Even / golden split"
+expect Up "cursor=Zen"
+# M matches only Monocle (Mirror is disabled), so it runs it.
+expect m "triggered=Monocle"
 # Roll-out: 120 ms when motion is allowed, none when reduced.
 ipc motion false >/dev/null; ipc resetMenu >/dev/null
 r=$(ipc keyReveal p); [ "$r" = 0 ] && echo "ok    roll-out starts at 0" || { echo "FAIL  roll-out did not start ($r)"; fail=1; }

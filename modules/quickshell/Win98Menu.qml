@@ -72,7 +72,8 @@ FocusScope {
     }
     function selectable(items) {
         const out = [];
-        for (let i = 0; i < items.length; i++) if (items[i] && !items[i].separator) out.push(i);
+        // Separators and disabled items are never selected.
+        for (let i = 0; i < items.length; i++) if (items[i] && !items[i].separator && items[i].enabled !== false) out.push(i);
         return out;
     }
     function hasSub(it) { return !!it && !it.separator && it.enabled !== false && !!it.submenu && it.submenu.length > 0; }
@@ -204,11 +205,16 @@ FocusScope {
             height: implicitHeight
             z: level
 
+            // Right of its parent; left when the right edge is in the way;
+            // over the parent when neither side has room. Always inside.
             x: {
                 if (!parentPanel) return 0;
+                const minX = -origin.x, maxX = boundsWidth - origin.x - width;
                 const right = parentPanel.x + parentPanel.width - 3 * root.u;
-                if (origin.x + right + width > boundsWidth) return parentPanel.x - width + 3 * root.u;
-                return right;
+                const left = parentPanel.x - width + 3 * root.u;
+                if (right <= maxX + 0.5) return right;
+                if (left >= minX - 0.5) return left;
+                return Math.max(minX, Math.min(right, maxX));
             }
             y: {
                 if (!parentPanel) return 0;
