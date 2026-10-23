@@ -40,7 +40,10 @@ function windowsOn(toplevels, screen) {
     for (const t of toplevels) {
         if (pageOf(t) > 0 && screenOf(t) === screen) out.push(t);
     }
-    out.sort(function (a, b) { return pageOf(a) - pageOf(b); });
+    // By page, and in the compositor's order inside a page. Qt's engine
+    // sorts unstably, so the original position breaks ties.
+    const at = out.slice();
+    out.sort(function (a, b) { return pageOf(a) - pageOf(b) || at.indexOf(a) - at.indexOf(b); });
     return out;
 }
 
