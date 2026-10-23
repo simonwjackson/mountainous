@@ -31,7 +31,7 @@ shell_dir=$(cd "$theme_dir/../.." && pwd)
 out=$(realpath -m "${1:-/tmp/win98-components}")
 shift || true
 pages=("$@")
-[ ${#pages[@]} -gt 0 ] || pages=(controls fields frames menus lists icons stress scenes)
+[ ${#pages[@]} -gt 0 ] || pages=(text controls fields frames menus lists icons stress scenes)
 mkdir -p "$out"
 
 work=$(mktemp -d /tmp/win98-gallery.XXXXXX)

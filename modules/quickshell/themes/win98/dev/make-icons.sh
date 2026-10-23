@@ -5,6 +5,7 @@
 #
 # Colour placeholders, swapped by Win98IconStore.url():
 #   #000001       the outline ("ink"): black in light, a mid grey in dark grey
+#                 (the mock's var(--ink), and its black 1-u strokes)
 #   currentColor  the text colour of the surface the icon sits on
 #   #00ff01       the battery level colour (tone); width 7.77 is its length
 set -euo pipefail
@@ -46,6 +47,10 @@ for (const [name, svg0] of Object.entries(files)) {
   let svg = svg0.replace(/var\(--ink\)/g, "#000001")
     .replace(/ class="crisp"/, ' shape-rendering="crispEdges"')
     .replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
+  // Black outlines become ink, so they read on dark grey too. The marks
+  // whose black strokes draw a glyph on yellow or white keep them.
+  if (!["warn", "builder-warn", "builder-unknown"].includes(name))
+    svg = svg.replace(/stroke="#000(000)?"/g, 'stroke="#000001"');
   if (name.startsWith("battery")) svg = svg.replace('width="6.22"', 'width="7.77"').replace(/fill="#00a000"/, 'fill="#00ff01"');
   fs.writeFileSync(`${out}/${name}.svg`, svg + "\n");
 }

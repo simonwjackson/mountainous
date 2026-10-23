@@ -67,6 +67,8 @@ FocusScope {
             selectionColor: Win98Tokens.selection
             selectedTextColor: Win98Tokens.selectionText
             selectByMouse: true
+            // W95FA has no bullet; Win98 masked with asterisks.
+            passwordCharacter: "*"
             font.family: Win98Tokens.fontFamily
             font.pixelSize: Win98Tokens.fontRaster
             font.hintingPreference: Font.PreferNoHinting

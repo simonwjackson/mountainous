@@ -25,6 +25,10 @@ Item {
     property real widthUnits: 0        // fixed outer width; 0 = measured
     property int highlighted: -1
     property real maxHeight: 0         // logical px; 0 = no limit
+    // The widest the panel may be (logical px; 0 = no limit). Labels
+    // longer than the room elide with three dots; shortcuts keep their
+    // column.
+    property real maxWidth: 0
     // Roll-out: "none", "up" (from the bottom edge), "down" or "right".
     property string roll: "none"
 
@@ -41,8 +45,11 @@ Item {
     readonly property bool anySub: items.some(it => it && !it.separator && it.submenu && it.submenu.length > 0)
     readonly property real textW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && !it.separator).map(it => Win98Tokens.plainText(it.text || "")), false))
     readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && it.shortcut).map(it => it.shortcut), false))
+    readonly property real fixedW: 2 * pad + band + leftPad + iconCol + iconGap + 14 * u + (keyW > 0 ? 12 * u + keyW : 0) + 16 * u
+    readonly property real textCol: maxWidth > 0 && widthUnits <= 0
+        ? Math.max(40 * u, Math.min(textW, Math.floor((maxWidth - fixedW) / u) * u)) : textW
     // Where the shortcut column starts, from the row's left edge.
-    readonly property real keyX: leftPad + iconCol + iconGap + textW + 14 * u + (keyW > 0 ? 12 * u : 0)
+    readonly property real keyX: leftPad + iconCol + iconGap + textCol + 14 * u + (keyW > 0 ? 12 * u : 0)
     readonly property real rowWidth: keyX + keyW + 10 * u + 6 * u
     readonly property int count: items.length
     readonly property bool hasSeparators: items.some(it => it && it.separator)

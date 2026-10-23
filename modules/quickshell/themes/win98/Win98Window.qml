@@ -4,7 +4,7 @@ import QtQuick
 // inside), 3 u of face, an 18-u caption with a gradient from the left
 // (navy to blue when active, greys when not), a 16-u icon, the bold title
 // (elided with three dots), and the caption buttons: help (?) and close
-// (×), 2 u apart. Children go in the body under the caption, with Win98's
+// (×), 5 u apart as the mock draws them (Win98 itself left 2 px). Children go in the body under the caption, with Win98's
 // dialog margins (6 u top, 8 u sides and bottom) unless margins is false.
 // The frame takes its first child's implicit size unless you size it.
 FocusScope {
@@ -70,7 +70,7 @@ FocusScope {
             id: buttons
             x: caption.width - 2 * root.u - width
             y: 2 * root.u
-            spacing: 2 * root.u
+            spacing: 5 * root.u
             Win98CaptionButton {
                 visible: root.showHelp
                 glyph: "help"

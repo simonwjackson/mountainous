@@ -185,6 +185,7 @@ FocusScope {
             bandSubText: level === 0 ? root.bandSubText : ""
             widthUnits: level === 0 ? root.widthUnits : 0
             maxHeight: boundsHeight
+            maxWidth: boundsWidth
             // A panel on its way out (index -1) highlights nothing.
             highlighted: level >= 0 && level < root.path.length ? root.path[level] : level === root.path.length ? root.cursor : -1
             roll: !rolls ? "none" : level === 0 ? root.roll : "right"

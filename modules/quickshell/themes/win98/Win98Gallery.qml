@@ -565,8 +565,8 @@ Scope {
             // A list taller than its room runs into columns.
             Item {
                 id: shortRoom
-                x: 800 * gallery.u; y: 10 * gallery.u
-                width: 620 * gallery.u; height: 300 * gallery.u
+                x: 900 * gallery.u; y: 470 * gallery.u
+                width: 530 * gallery.u; height: 300 * gallery.u
                 Win98Menu {
                     model: gallery.manyApps.map(n => ({ text: n, icon: "doc" }))
                     animate: false
@@ -789,7 +789,7 @@ Scope {
                             Win98Button { text: gallery.longWord; width: parent.width }
                             Win98CheckBox { text: gallery.longWord; width: parent.width }
                             Win98ComboBox { width: parent.width; model: [gallery.longWord] }
-                            Win98TextField { width: parent.width; text: gallery.longWord }
+                            Win98TextField { id: longField; width: parent.width; text: gallery.longWord; Component.onCompleted: longField.input.cursorPosition = 0 }
                             Win98StatusBar { width: parent.width; panes: [gallery.longWord] }
                         }
                     }
@@ -807,7 +807,7 @@ Scope {
                             title: modelData[0]
                             value: modelData[1]
                             valueUnits: 70
-                            titleColor: modelData[1].startsWith("-") ? Win98Tokens.danger : Win98Tokens.winText
+                            titleColor: /^-[0-9]/.test(modelData[1]) ? Win98Tokens.danger : Win98Tokens.winText
                         }
                     }
                 }
@@ -978,11 +978,25 @@ Scope {
                                         title: "Active Window"; margins: false
                                         Column {
                                             width: 234 * gallery.u
+                                            // The mock's menu bar: each word 6 u in from its box.
                                             Row {
                                                 height: 17 * gallery.u
-                                                Item { width: 60 * gallery.u; height: 17 * gallery.u; Win98Text { x: 6 * gallery.u; y: 2 * gallery.u; text: "Normal"; accessMarks: false } }
-                                                Item { width: 60 * gallery.u; height: 17 * gallery.u; Win98Text { x: 6 * gallery.u; y: 2 * gallery.u; text: "Disabled"; accessMarks: false; disabledLook: true } }
-                                                Rectangle { width: 60 * gallery.u; height: 17 * gallery.u; color: Win98Tokens.selection; Win98Text { x: 6 * gallery.u; y: 2 * gallery.u; text: "Selected"; accessMarks: false; color: Win98Tokens.selectionText } }
+                                                Repeater {
+                                                    model: ["Normal", "Disabled", "Selected"]
+                                                    Rectangle {
+                                                        id: word
+                                                        required property string modelData
+                                                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false)) + 12 * gallery.u
+                                                        height: 17 * gallery.u
+                                                        color: modelData === "Selected" ? Win98Tokens.selection : "transparent"
+                                                        Win98Text {
+                                                            x: 6 * gallery.u; y: 2 * gallery.u
+                                                            text: word.modelData; accessMarks: false
+                                                            disabledLook: word.modelData === "Disabled"
+                                                            color: word.modelData === "Selected" ? Win98Tokens.selectionText : Win98Tokens.text
+                                                        }
+                                                    }
+                                                }
                                             }
                                             Win98Bevel {
                                                 width: 234 * gallery.u; height: 34 * gallery.u
@@ -991,13 +1005,24 @@ Scope {
                                             }
                                         }
                                     }
+                                    // The preview's taskbar.
+                                    Rectangle {
+                                        x: 2 * gallery.u; y: parent.height - 14 * gallery.u
+                                        width: parent.width - 4 * gallery.u; height: 12 * gallery.u
+                                        color: Win98Tokens.face
+                                        Rectangle { width: parent.width; height: gallery.u; color: Win98Tokens.hi }
+                                        Win98Bevel { x: 2 * gallery.u; y: 2 * gallery.u; width: 26 * gallery.u; height: 9 * gallery.u }
+                                    }
                                     Win98Window {
                                         x: 142 * gallery.u; y: 66 * gallery.u
                                         width: 150 * gallery.u; height: 62 * gallery.u
                                         title: "Message Box"; margins: false
                                         Column {
                                             width: 144 * gallery.u
-                                            Win98Text { x: 6 * gallery.u; y: 0; height: 19 * gallery.u; text: "Message Text"; accessMarks: false }
+                                            Item {
+                                                width: 144 * gallery.u; height: 19 * gallery.u
+                                                Win98Text { x: 6 * gallery.u; y: 3 * gallery.u; text: "Message Text"; accessMarks: false }
+                                            }
                                             Win98Button { x: Win98Tokens.snap((144 * gallery.u - width) / 2); widthUnits: 50; small: true; height: 18 * gallery.u; text: "OK" }
                                         }
                                     }
@@ -1023,6 +1048,7 @@ Scope {
                         }
                         Row {
                             x: parent.width - width
+                            topPadding: 6 * gallery.u
                             spacing: 6 * gallery.u
                             Win98Button { text: "OK"; isDefault: true }
                             Win98Button { text: "Cancel" }
