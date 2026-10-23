@@ -824,6 +824,25 @@ hl.bind(mod .. " + O", function()
     end, { timeout = 3000, type = "oneshot" })
 end)
 
+-- Win98's Start key. While the Windows 98 desktop theme is active (see
+-- modules/theme.nix: theme-name), Ctrl+Esc opens its Start menu; under any
+-- other theme the keys go to the focused window as before. A lone Super is
+-- not bound: Kanata's held Space is Super, so a lone Super release would
+-- fire whenever a held Space times out without a chord.
+local function desktop_theme_name()
+    local dir = os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")
+    local file = io.open(dir .. "/mountainous/theme-name", "r")
+    if not file then return "platinum" end
+    local name = (file:read("*l") or ""):match("^%s*(.-)%s*$")
+    file:close()
+    return name ~= "" and name or "platinum"
+end
+hl.bind("CTRL + Escape", function()
+    if desktop_theme_name() ~= "win98" then return { ok = false } end
+    hl.exec_cmd("qs -c mountainous ipc call chrome open start")
+    return { ok = true }
+end, { auto_consuming = true })
+
 hl.define_submap("topbar-access", "reset", function()
     hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open bt"))
     hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open wifi"))
