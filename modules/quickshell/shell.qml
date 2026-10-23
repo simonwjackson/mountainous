@@ -92,6 +92,12 @@ ShellRoot {
         return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
     }
 
+    IpcHandler {
+        target: "themePicker"
+        function open(): void { MenuState.close(); ThemePicker.open(root.focusedScreen()); }
+        function hide(): void { ThemePicker.close(); }
+    }
+
     // The omni bar. Its component lives in modules/omni.nix, which
     // QML resolves by filename from this directory.
     OmniBar { id: omniBarService }

@@ -21,9 +21,22 @@ Scope {
     }
     function hide() { context.shell.topbarAccessVisible = false; }
     function open(control) {
+        if (control === "theme") { ThemePicker.open(screen); return; }
         if (!menuMap[control]) return;
         if (control === "builder") context.shell.builderKeyboard = true;
         context.shell.openMenu(control, desktop.screen);
+    }
+
+    // The installed registry selects this theme's picker. The shared model
+    // persists across PlatinumDesktop swaps; the view is destroyed with its theme.
+    Loader {
+        active: desktop.active && ThemePicker.visible && ThemePicker.screen === desktop.screen
+        function loadView() {
+            if (active) setSource(Qt.resolvedUrl(desktop.theme.picker),
+                {screen: desktop.screen, model: ThemePicker});
+        }
+        onActiveChanged: loadView()
+        Component.onCompleted: loadView()
     }
 
     Component { id: btMenu; PlatinumBluetoothMenu { panel: desktop.context.bluetooth } }
