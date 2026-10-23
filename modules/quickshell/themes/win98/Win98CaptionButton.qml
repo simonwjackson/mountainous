@@ -1,0 +1,35 @@
+import QtQuick
+
+// A caption button: 16 x 14 u, raised, with Marlett's glyph (close "×" or
+// help "?"). Pressed: sunken and the glyph 1 u down and right.
+Item {
+    id: root
+
+    property string glyph: "close"     // "close" or "help"
+    property bool showPressed: false
+
+    signal clicked
+
+    readonly property real u: Win98Tokens.u
+    readonly property bool down: showPressed || (area.pressed && area.containsMouse)
+
+    implicitWidth: Win98Tokens.captionButtonWidth * u
+    implicitHeight: Win98Tokens.captionButtonHeight * u
+
+    Win98Bevel {
+        anchors.fill: parent
+        variant: root.down ? "pressed" : "button"
+    }
+    Win98Icon {
+        name: root.glyph
+        color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
+        x: Win98Tokens.snap((root.width - width) / 2) + (root.down ? root.u : 0)
+        y: Win98Tokens.snap((root.height - height) / 2) + (root.down ? root.u : 0)
+    }
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        enabled: root.enabled
+        onClicked: root.clicked()
+    }
+}

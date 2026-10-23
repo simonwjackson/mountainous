@@ -118,6 +118,8 @@
                       "notification-dev"
                       "builder-dev"
                       "theme-dev"
+                      # themes/win98/dev: the control gallery and its scripts.
+                      "dev"
                     ])
                   ) (collect (relative + "/") (directory + "/${name}"))
                 else

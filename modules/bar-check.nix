@@ -16,7 +16,8 @@
         || lib.hasPrefix "theme-dev/" name
         || lib.hasSuffix ".test.js" name
         || lib.hasSuffix ".py" name
-        || lib.hasSuffix ".sh" name;
+        || lib.hasSuffix ".sh" name
+        || lib.hasInfix "/dev/" name;
       required = builtins.filter (
         name:
         !(development name)
