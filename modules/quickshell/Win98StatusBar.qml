@@ -65,13 +65,17 @@ Item {
                     wrap: true
                     lineUnits: 14
                     maximumLineCount: root.maximumLineCount
-                    onImplicitHeightChanged: root.measure()
-                    Component.onCompleted: root.measure()
+                    onImplicitHeightChanged: Qt.callLater(root.measure)
+                    Component.onCompleted: Qt.callLater(root.measure)
                 }
             }
         }
     }
 
+    // The unit settles after the window maps (its scale arrives late), and
+    // a text's height can change before this item's unit has: measure
+    // again, once both are current.
+    onUChanged: Qt.callLater(root.measure)
     function measure() {
         let h = root.lineHeight;
         for (let i = 0; i < repeater.count; i++) {
