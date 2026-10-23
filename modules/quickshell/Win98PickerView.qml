@@ -71,6 +71,44 @@ PanelWindow {
         onPressed: win.model.close()
     }
 
+    // Small screens. Narrow: labels go above their lists and the buttons
+    // stack. Short: the preview gives way first, then the note; only then
+    // does the dialog scroll, and the focused control scrolls into view.
+    readonly property real buttonRow: 3 * 75 * win.u + 12 * win.u
+    readonly property bool stackLabels: sheet.width < 62 * win.u + 100 * win.u
+    readonly property real previewNatural: 150 * win.u
+    // Measured after layout settles, not bound: the list's height feeds
+    // the window's own height, so a binding would loop. The sum is a fixed
+    // point (what the list gives up, it adds back).
+    property real natural: 0
+    function measureNatural() { win.natural = dialog.implicitHeight + (previewNatural - preview.height)
+        + (note.visible ? 0 : note.height + 8 * win.u); }
+    Connections {
+        target: dialog
+        function onImplicitHeightChanged() { Qt.callLater(win.measureNatural); }
+    }
+    Component.onCompleted: Qt.callLater(win.measureNatural)
+    readonly property real squeeze: Math.max(0, natural - win.area)
+    readonly property real previewHeight: {
+        const h = Math.floor((previewNatural - squeeze) / win.u) * win.u;
+        return h >= 40 * win.u ? h : 0;
+    }
+    readonly property bool dropNote: squeeze > previewNatural + 0.5
+    Connections {
+        target: dialog.Window.window
+        ignoreUnknownSignals: true
+        function onActiveFocusItemChanged() { Qt.callLater(win.revealFocus); }
+    }
+    function revealFocus() {
+        const item = dialog.Window.activeFocusItem;
+        if (!item || !bar.visible) return;
+        const top = item.mapToItem(scroller.contentItem, 0, 0).y;
+        let y = scroller.contentY;
+        if (top < y) y = top - 4 * win.u;
+        else if (top + item.height > y + scroller.height) y = top + item.height - scroller.height + 4 * win.u;
+        scroller.contentY = Math.max(0, Math.min(scroller.contentHeight - scroller.height, y));
+    }
+
     // A screen shorter than the dialog scrolls it, so OK, Cancel and Apply
     // stay reachable by the pointer too (the keys reach them anyway).
     Flickable {
@@ -134,9 +172,11 @@ PanelWindow {
                             spacing: 8 * win.u
 
                             Win98Bevel {
+                                id: preview
                                 objectName: "pickerPreview"
+                                visible: height > 0
                                 width: parent.width
-                                height: 150 * win.u
+                                height: win.previewHeight
                                 variant: "field"
                                 clip: true
                                 color: win.theme && win.theme.id === "win98" ? Win98Tokens.palette(win.scheme && win.scheme.mode === "dark").desktop : "#000000"
@@ -160,32 +200,38 @@ PanelWindow {
                                     source: visible && win.scheme ? win.model.preview(win.theme.id, win.scheme.mode) : ""
                                 }
                             }
-                            Row {
-                                spacing: 6 * win.u
-                                Win98Text { width: 56 * win.u; y: 4 * win.u; text: "&Theme:" }
+                            Grid {
+                                columns: win.stackLabels ? 1 : 2
+                                columnSpacing: 6 * win.u
+                                rowSpacing: 2 * win.u
+                                Item { width: win.stackLabels ? sheet.width : 56 * win.u; height: win.stackLabels ? 13 * win.u : 21 * win.u; Win98Text { y: win.stackLabels ? 0 : 4 * win.u; text: "&Theme:" } }
                                 Win98ComboBox {
                                     id: themeBox
                                     objectName: "pickerTheme"
-                                    width: sheet.width - 62 * win.u
+                                    width: win.stackLabels ? sheet.width : sheet.width - 62 * win.u
                                     model: win.themes.map(function (t) { return t.label; })
                                     currentIndex: win.themeIndex
                                     focus: true
                                     onActivated: function (i) { win.pickTheme(i); }
                                 }
                             }
-                            Row {
-                                spacing: 6 * win.u
-                                Win98Text { width: 56 * win.u; y: 4 * win.u; text: "&Scheme:" }
+                            Grid {
+                                columns: win.stackLabels ? 1 : 2
+                                columnSpacing: 6 * win.u
+                                rowSpacing: 2 * win.u
+                                Item { width: win.stackLabels ? sheet.width : 56 * win.u; height: win.stackLabels ? 13 * win.u : 21 * win.u; Win98Text { y: win.stackLabels ? 0 : 4 * win.u; text: "&Scheme:" } }
                                 Win98ComboBox {
                                     id: schemeBox
                                     objectName: "pickerScheme"
-                                    width: sheet.width - 62 * win.u
+                                    width: win.stackLabels ? sheet.width : sheet.width - 62 * win.u
                                     model: win.schemes.map(function (a) { return a.label; })
                                     currentIndex: win.schemeIndex
                                     onActivated: function (i) { win.schemeIndex = i; }
                                 }
                             }
                             Win98Text {
+                                id: note
+                                visible: !win.dropNote || win.model.error !== ""
                                 width: parent.width
                                 wrap: true
                                 accessMarks: false
@@ -205,7 +251,8 @@ PanelWindow {
                                 accessMarks: false
                                 text: "Make everything on the screen larger or smaller. The keys do the same: Super+= and Super+-."
                             }
-                            Row {
+                            Flow {
+                                width: parent.width
                                 spacing: 6 * win.u
                                 Win98Button { text: "Scale &up"; onClicked: Quickshell.execDetached(["hypr-scale", "up"]) }
                                 Win98Button { text: "Scale &down"; onClicked: Quickshell.execDetached(["hypr-scale", "down"]) }
@@ -215,12 +262,15 @@ PanelWindow {
                     }
                 }
 
-                Row {
+                // One row while it fits; stacked, right-aligned, when not.
+                Grid {
                     x: parent.width - width
                     topPadding: 6 * win.u
+                    columns: dp.width >= win.buttonRow ? 3 : 1
                     spacing: 6 * win.u
                     Win98Button {
                         id: okButton
+                        widthUnits: dp.width < 75 * win.u ? Math.floor(dp.width / win.u) : 0
                         objectName: "pickerOk"
                         text: "OK"
                         isDefault: !applyButton.activeFocus && !cancelButton.activeFocus
@@ -228,6 +278,7 @@ PanelWindow {
                     }
                     Win98Button {
                         id: cancelButton
+                        widthUnits: okButton.widthUnits
                         objectName: "pickerCancel"
                         text: "Cancel"
                         isDefault: activeFocus
@@ -235,6 +286,7 @@ PanelWindow {
                     }
                     Win98Button {
                         id: applyButton
+                        widthUnits: okButton.widthUnits
                         objectName: "pickerApply"
                         text: "&Apply"
                         enabled: win.changed && !win.model.applying
