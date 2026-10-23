@@ -59,7 +59,7 @@ PlatinumMenuFrame {
         Layout.leftMargin: PlatinumTokens.menuTextLeft
         Layout.rightMargin: frame.rightInset
         Layout.topMargin: PlatinumTokens.menuGap
-        text: "PlatinumDesktop theme…"
+        text: "Desktop theme…"
         onClicked: { const screen = MenuState.screen; MenuState.close(); ThemePicker.open(screen); }
     }
 

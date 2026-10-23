@@ -44,7 +44,7 @@ ShellRoot {
 
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
-    property bool topbarAccessVisible: false
+    property bool chromeAccessVisible: false
     // True when SUPER+O R opened the builder menu: its focus ring shows
     // from the start. Any other menu clears it.
     property bool builderKeyboard: false
@@ -53,12 +53,12 @@ ShellRoot {
     // controls, the Super+O chord and the IPC targets below all go
     // through it, so opening one menu closes any other, OCI included.
     function openMenu(name, screen) {
-        root.topbarAccessVisible = false;
+        root.chromeAccessVisible = false;
         MenuState.open(name, screen, -1);
     }
 
     function toggleMenu(name, screen) {
-        root.topbarAccessVisible = false;
+        root.chromeAccessVisible = false;
         MenuState.toggle(name, screen, -1);
     }
 
@@ -70,7 +70,7 @@ ShellRoot {
         target: MenuState
         function onCurrentChanged() {
             if (MenuState.current !== "builder") root.builderKeyboard = false;
-            if (MenuState.current !== "") root.topbarAccessVisible = false;
+            if (MenuState.current !== "") root.chromeAccessVisible = false;
         }
     }
 

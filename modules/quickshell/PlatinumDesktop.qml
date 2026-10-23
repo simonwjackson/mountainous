@@ -17,9 +17,9 @@ Scope {
 
     function reveal() {
         context.shell.chromeVisible = true;
-        context.shell.topbarAccessVisible = true;
+        context.shell.chromeAccessVisible = true;
     }
-    function hide() { context.shell.topbarAccessVisible = false; }
+    function hide() { context.shell.chromeAccessVisible = false; }
     function open(control) {
         if (control === "theme") { ThemePicker.open(screen); return; }
         if (!menuMap[control]) return;
@@ -64,7 +64,7 @@ Scope {
         frontWindow: desktop.context.frontWindow
         builderGate: desktop.context.builderGate
         now: desktop.context.now
-        chordVisible: desktop.context.shell.topbarAccessVisible
+        chordVisible: desktop.context.shell.chromeAccessVisible
     }
 
     Component {
