@@ -28,6 +28,25 @@ Win98Window {
     iconName: "bell"
     onCloseClicked: MenuState.close()
 
+    // A short screen: the card list gives up height first (to 80 u), then
+    // the key hint goes; the body scrolls only after that.
+    readonly property real listNatural: 260 * u
+    readonly property real listMin: 80 * u
+    // Measured after layout settles, not bound: the list's height feeds
+    // the window's own height, so a binding would loop. The sum is a fixed
+    // point (what the list gives up, it adds back).
+    property real natural: 0
+    function measureNatural() { root.natural = implicitHeight + (well.visible ? listNatural - well.height : 0)
+        + (hintArea.visible || !ready ? 0 : hint.height + 8 * u); }
+    Connections {
+        target: root
+        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+    }
+    Component.onCompleted: Qt.callLater(root.measureNatural)
+    readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
+    readonly property bool dropStatus: squeeze > (well.visible ? listNatural - listMin : 0) + 0.5
+    readonly property real listHeight: Math.max(listMin, Math.floor((listNatural - squeeze) / u) * u)
+
     // The desktop's minute clock: "4 min" needs no finer step.
     required property date now
 
@@ -54,7 +73,7 @@ Win98Window {
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
         spacing: 6 * root.u
 
         Item {
@@ -131,7 +150,7 @@ Win98Window {
             id: well
             visible: root.ready
             width: parent.width
-            height: 260 * root.u
+            height: root.listHeight
             variant: "field"
             ListView {
                 id: list
@@ -170,7 +189,8 @@ Win98Window {
         }
 
         Item {
-            visible: root.ready
+            id: hintArea
+            visible: root.ready && !root.dropStatus
             width: parent.width
             height: visible ? hint.height + 2 * root.u : 0
             Win98StatusBar {

@@ -19,7 +19,7 @@ Win98Window {
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
         spacing: 6 * root.u
 
         Win98Text { text: Qt.formatDateTime(root.now, "dddd, MMMM d, yyyy"); accessMarks: false; bold: true; width: Math.min(implicitWidth, body.width) }

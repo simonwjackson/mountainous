@@ -41,10 +41,10 @@ Scope {
             out.push("page" + g.page);
             for (const i of g.windows) out.push("win" + i);
         }
-        if (p.taskOut.length) out.push("tasks");
-        if (p.trayOut.length) out.push("more");
-        for (const id of p.tray) if (id !== "bat") out.push(id);
-        out.push("clock");
+        if (p.tasksChevron) out.push("tasks");
+        if (p.chevron) out.push("more");
+        if (p.structure !== "start") for (const id of p.tray) if (id !== "bat") out.push(id);
+        if (!p.clockOut) out.push("clock");
         return out;
     }
     function moveFocus(delta) {
@@ -59,7 +59,12 @@ Scope {
         else desktop.openMenu(id, true);
     }
 
+    // The open menu or window's root item, for checks.
+    // (The live window binds it; a destroyed item reads as null.)
+    property var openItem: null
+
     LazyLoader {
+        id: lazy
         active: host.menuShown || host.keyboardMode
 
         PanelWindow {
@@ -79,6 +84,15 @@ Scope {
                 bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
                 disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow
             })
+            Binding {
+                target: host
+                property: "openItem"
+                value: loader.item
+                // A window on its way out unloads after the next has loaded;
+                // only a loaded item is written.
+                when: win.alive && loader.item !== null
+                restoreMode: Binding.RestoreNone
+            }
             readonly property real barTop: win.height - host.taskbar.barHeight
             // Input everywhere but the bar.
             mask: Region { x: 0; y: 0; width: win.width; height: Math.max(0, win.barTop) }
@@ -129,7 +143,9 @@ Scope {
                 Loader {
                     id: loader
                     focus: true
-                    sourceComponent: host.menuShown ? (win.components[host.current] || null) : null
+                    // A window on its way out (LazyLoader deletes it later)
+                    // never loads again: the next menu is the next window's.
+                    sourceComponent: host.menuShown && win.alive ? (win.components[host.current] || null) : null
                     readonly property bool isMenu: host.current === "start" || host.current === "tasks" || host.current === "more"
                     readonly property var anchor: host.taskbar.placeOf(host.desktop.anchorId !== "" ? host.desktop.anchorId : host.current)
                     readonly property real w: item ? (item as Item).width : 0
@@ -144,8 +160,7 @@ Scope {
                         if (host.current === "logoff") return Win98Tokens.snap(win.barTop / 2 - h / 2, win.u);
                         return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * win.u : 0));
                     }
-                    onLoaded: { host.desktop.openItem = item; (item as Item).forceActiveFocus(); }
-                    Component.onDestruction: if (host.desktop.openItem === item) host.desktop.openItem = null
+                    onLoaded: (item as Item).forceActiveFocus()
 
                     // A press inside the menu stays inside it.
                     MouseArea {
@@ -163,7 +178,7 @@ Scope {
                 id: startMenu
                 Win98Menu {
                     big: true
-                    widthUnits: 196
+                    widthUnits: Math.min(196, Math.floor(win.width / win.u) - 4)
                     bandText: "Kamoi"
                     bandSubText: host.desktop.hostLabel
                     roll: "up"
@@ -206,11 +221,11 @@ Scope {
                     animate: false
                     widthUnits: Math.min(260, Math.floor(win.width / win.u) - 4)
                     bounds: menuBounds
-                    model: host.taskbar.plan.trayOut.map(function (id) {
-                        return { text: Tray.LABEL[id], icon: host.desktop.trayIcon(id),
-                            shortcut: Tray.overflowValue(id, host.desktop.trayData).replace(/&/g, "&&"), control: id };
-                    })
-                    onTriggered: function (item) { host.desktop.openFromOverflow(item.control); }
+                    model: host.desktop.overflowItems(host.taskbar.plan.structure === "compact")
+                    onTriggered: function (item) {
+                        if (item.action === "window") { MenuState.close(); host.desktop.activateWindow(host.desktop.lane[item.window]); }
+                        else host.desktop.openFromOverflow(item.control);
+                    }
                     onClosed: MenuState.close()
                 }
             }
@@ -218,19 +233,20 @@ Scope {
                 id: logoffDialog
                 Win98LogOffDialog {
                     width: win.widthFor(300)
+                    availableHeight: win.barTop
                     desktop: host.desktop
                 }
             }
-            Component { id: btWindow; Win98BluetoothWindow { width: win.widthFor(340); panel: host.desktop.context.bluetooth } }
-            Component { id: wifiWindow; Win98WifiWindow { width: win.widthFor(340); panel: host.desktop.context.wifi } }
-            Component { id: soundWindow; Win98SoundWindow { width: win.widthFor(350); panel: host.desktop.context.sound } }
-            Component { id: brightnessWindow; Win98BrightnessWindow { width: win.widthFor(310); panel: host.desktop.context.brightness } }
-            Component { id: ociWindow; Win98OciWindow { width: win.widthFor(420); panel: host.desktop.context.oci } }
-            Component { id: storageWindow; Win98StorageWindow { width: win.widthFor(390); panel: host.desktop.context.storage } }
-            Component { id: builderWindow; Win98BuilderWindow { width: win.widthFor(360); panel: host.desktop.context.builder } }
-            Component { id: notificationWindow; Win98NotificationWindow { width: win.widthFor(430); panel: host.desktop.context.centre; now: host.desktop.context.now } }
-            Component { id: dictationWindow; Win98DictationWindow { width: win.widthFor(310); dictation: host.desktop.dictation; text: host.desktop.dictText } }
-            Component { id: clockWindow; Win98ClockWindow { width: win.widthFor(210); now: host.desktop.context.now } }
+            Component { id: btWindow; Win98BluetoothWindow { width: win.widthFor(340); availableHeight: win.barTop; panel: host.desktop.context.bluetooth } }
+            Component { id: wifiWindow; Win98WifiWindow { width: win.widthFor(340); availableHeight: win.barTop; panel: host.desktop.context.wifi } }
+            Component { id: soundWindow; Win98SoundWindow { width: win.widthFor(350); availableHeight: win.barTop; panel: host.desktop.context.sound } }
+            Component { id: brightnessWindow; Win98BrightnessWindow { width: win.widthFor(310); availableHeight: win.barTop; panel: host.desktop.context.brightness } }
+            Component { id: ociWindow; Win98OciWindow { width: win.widthFor(420); availableHeight: win.barTop; panel: host.desktop.context.oci } }
+            Component { id: storageWindow; Win98StorageWindow { width: win.widthFor(390); availableHeight: win.barTop; panel: host.desktop.context.storage } }
+            Component { id: builderWindow; Win98BuilderWindow { width: win.widthFor(360); availableHeight: win.barTop; panel: host.desktop.context.builder } }
+            Component { id: notificationWindow; Win98NotificationWindow { width: win.widthFor(430); availableHeight: win.barTop; panel: host.desktop.context.centre; now: host.desktop.context.now } }
+            Component { id: dictationWindow; Win98DictationWindow { width: win.widthFor(310); availableHeight: win.barTop; dictation: host.desktop.dictation; text: host.desktop.dictText } }
+            Component { id: clockWindow; Win98ClockWindow { width: win.widthFor(210); availableHeight: win.barTop; now: host.desktop.context.now } }
         }
     }
 }

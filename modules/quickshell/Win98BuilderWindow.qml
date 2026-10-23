@@ -44,7 +44,7 @@ Win98Window {
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
         spacing: 6 * root.u
 
         Item {

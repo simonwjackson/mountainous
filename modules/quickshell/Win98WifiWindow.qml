@@ -25,6 +25,24 @@ Win98Window {
     iconName: "wifi-4"
     onCloseClicked: MenuState.close()
 
+    // A short screen: the list gives up rows first (down to two), then the
+    // status bar goes; the body scrolls only after that (Win98Window).
+    readonly property real listNatural: 140 * u
+    readonly property real listMin: 72 * u
+    // Measured after layout settles, not bound: the list's height feeds
+    // the window's own height, so a binding would loop. The sum is a fixed
+    // point (what the list gives up, it adds back).
+    property real natural: 0
+    function measureNatural() { root.natural = implicitHeight + (listNatural - list.height) + (statusArea.visible ? 0 : statusBar.height + 8 * u); }
+    Connections {
+        target: root
+        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+    }
+    Component.onCompleted: Qt.callLater(root.measureNatural)
+    readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
+    readonly property bool dropStatus: squeeze > listNatural - listMin + 0.5
+    readonly property real listHeight: Math.max(listMin, Math.floor((listNatural - squeeze) / u) * u)
+
     // Esc closes the prompt first.
     function cancel() {
         if (!root.asking) return false;
@@ -59,7 +77,7 @@ Win98Window {
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
 
         Item {
             width: parent.width
@@ -89,7 +107,7 @@ Win98Window {
                 Win98ListView {
                     id: list
                     width: parent.width
-                    height: 140 * root.u
+                    height: root.listHeight
                     model: root.panel.networks
                     focus: true
                     showFocus: !root.asking
@@ -189,11 +207,18 @@ Win98Window {
                 }
             }
         }
-        Item { width: 1; height: 8 * root.u }
+        Item {
+            id: statusArea
+            visible: !root.dropStatus
+            width: parent.width
+            height: visible ? statusBar.height + 8 * root.u : 0
         Win98StatusBar {
+            id: statusBar
+            y: 8 * root.u
             width: parent.width
             panes: [root.panel.statusText, root.asking ? "Enter connect \u00b7 Esc cancel"
                 : "\u2191\u2193 select \u00b7 Enter action \u00b7 S scan \u00b7 P power \u00b7 Shift+Del forget"]
+        }
         }
     }
 

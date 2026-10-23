@@ -20,6 +20,23 @@ Win98Window {
     margins: false
     onCloseClicked: MenuState.close()
 
+    // A short screen: the device list and the trackbar give up height
+    // first (50 u, keeping two rows), then the key hint goes; the body
+    // scrolls only after that.
+    // Measured after layout settles, not bound: the list's height feeds
+    // the window's own height, so a binding would loop. The sum is a fixed
+    // point (what the list gives up, it adds back).
+    property real natural: 0
+    function measureNatural() { root.natural = implicitHeight + shrink + (statusArea.visible ? 0 : status.height + 8 * u); }
+    Connections {
+        target: root
+        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+    }
+    Component.onCompleted: { selectDefault(); Qt.callLater(root.measureNatural); }
+    readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
+    readonly property real shrink: Math.min(50 * u, Math.ceil(squeeze / u - 1e-6) * u)
+    readonly property bool dropStatus: squeeze > 50 * u + 0.5
+
     readonly property var nodes: panel.currentNodes
     property int cursor: -1
     readonly property var selected: cursor >= 0 && cursor < nodes.length ? nodes[cursor] : null
@@ -43,11 +60,11 @@ Win98Window {
         root.selectDefault();
     }
     onNodesChanged: if (cursor < 0 || cursor >= nodes.length) selectDefault()
-    Component.onCompleted: selectDefault()
+
 
     Item {
         x: 8 * root.u; y: 6 * root.u
-        width: root.width - 22 * root.u
+        width: root.bodyWidth - 16 * root.u
         implicitHeight: body.height + 10 * root.u
 
         Column {
@@ -57,12 +74,12 @@ Win98Window {
 
             Row {
                 spacing: 8 * root.u
-                height: 161 * root.u
+                height: 161 * root.u - root.shrink
 
                 Win98GroupBox {
                     y: -root.u
                     width: 86 * root.u
-                    height: 162 * root.u
+                    height: 162 * root.u - root.shrink
                     title: "Volume"
                     topUnits: 12
                     Column {
@@ -71,7 +88,7 @@ Win98Window {
                         Win98Slider {
                             x: 21 * root.u
                             orientation: Qt.Vertical
-                            height: 100 * root.u
+                            height: 100 * root.u - root.shrink
                             enabled: root.hasAudio
                             value: root.volume
                             onMoved: function (v) { if (root.hasAudio) root.selected.audio.volume = v; }
@@ -111,7 +128,7 @@ Win98Window {
                     }
                     Win98Tabs {
                         width: parent.width
-                        height: 145 * root.u
+                        height: 145 * root.u - root.shrink
                         tabs: ["&Outputs " + root.panel.outputs.length, "&Inputs " + root.panel.inputs.length]
                         currentIndex: root.panel.section === "outputs" ? 0 : 1
                         padUnits: 6
@@ -119,7 +136,7 @@ Win98Window {
                         Win98ListView {
                             id: list
                             width: rightCol.width - 12 * root.u
-                            height: 108 * root.u
+                            height: 108 * root.u - root.shrink
                             model: root.nodes
                             showFocus: true
                             emptyText: !root.panel.pipewireReady ? "PipeWire is not running."
@@ -143,6 +160,8 @@ Win98Window {
             }
 
             Item {
+                id: statusArea
+                visible: !root.dropStatus
                 width: parent.width
                 height: status.height + 2 * root.u
                 Win98StatusBar {

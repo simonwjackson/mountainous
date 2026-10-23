@@ -8,6 +8,12 @@ import QtQuick
 // (×), 5 u apart as the mock draws them (Win98 itself left 2 px). Children go in the body under the caption, with Win98's
 // dialog margins (6 u top, 8 u sides and bottom) unless margins is false.
 // The frame takes its first child's implicit size unless you size it.
+//
+// availableHeight (logical px, 0 = no limit) caps the frame: a window
+// taller than the room keeps its caption and scrolls its body, with a
+// Win98 scroll bar, and keyboard focus moving inside it scrolls the
+// focused control into view. A window with lists shrinks them first (it
+// reads squeeze, how far its natural height is over the room).
 FocusScope {
     id: root
 
@@ -37,8 +43,32 @@ FocusScope {
     readonly property real marginSide: margins ? 8 * u : 0
     readonly property Item first: body.children.length > 0 ? body.children[0] : null
 
+    property real availableHeight: 0
+    // The body's usable width: less the scroll bar while it shows.
+    readonly property real bodyWidth: body.width
+    readonly property bool scrolls: view.contentHeight > view.height + 0.5
+
     implicitWidth: (first ? first.implicitWidth : 100 * u) + 2 * frame + 2 * marginSide
     implicitHeight: captionBottom + marginTop + (first ? first.implicitHeight : 0) + marginSide + frame
+    height: availableHeight > 0 ? Math.min(implicitHeight, Math.floor(availableHeight / u) * u) : implicitHeight
+
+    // Keep the focused control in view while the body scrolls.
+    Connections {
+        target: root.Window.window
+        ignoreUnknownSignals: true
+        function onActiveFocusItemChanged() { Qt.callLater(root.revealFocus); }
+    }
+    function revealFocus() {
+        const item = root.Window.activeFocusItem;
+        let inside = false;
+        for (let p = item; p; p = p.parent) if (p === body) { inside = true; break; }
+        if (!root.scrolls || !inside) return;
+        const top = item.mapToItem(view.contentItem, 0, 0).y;
+        let y = view.contentY;
+        if (top < y) y = top - 2 * u;
+        else if (top + item.height > y + view.height) y = top + item.height - view.height + 2 * u;
+        view.contentY = Math.max(0, Math.min(view.contentHeight - view.height, Win98Tokens.snap(y, u)));
+    }
 
     Win98Bevel {
         anchors.fill: parent
@@ -96,11 +126,37 @@ FocusScope {
         }
     }
 
-    Item {
-        id: body
-        x: root.frame + root.marginSide
-        y: root.captionBottom + root.marginTop
-        width: root.width - 2 * root.frame - 2 * root.marginSide
-        height: root.height - y - root.frame - root.marginSide
+    Flickable {
+        id: view
+        x: root.frame
+        y: root.captionBottom
+        width: root.width - 2 * root.frame
+        height: Math.max(0, root.height - y - root.frame)
+        contentWidth: width
+        contentHeight: root.marginTop + (root.first ? root.first.implicitHeight : 0) + root.marginSide
+        interactive: false
+        clip: true
+        WheelHandler {
+            enabled: root.scrolls
+            onWheel: event => view.contentY = Math.max(0, Math.min(view.contentHeight - view.height,
+                view.contentY - Math.sign(event.angleDelta.y) * 20 * root.u))
+        }
+
+        Item {
+            id: body
+            x: root.marginSide
+            y: root.marginTop
+            width: view.width - 2 * root.marginSide - (root.scrolls ? 18 * root.u : 0)
+            height: root.first ? root.first.implicitHeight : 0
+        }
+    }
+
+    Win98ScrollBar {
+        visible: root.scrolls
+        x: root.width - root.frame - width - root.u
+        y: view.y
+        height: view.height
+        flickable: view
+        step: 16 * root.u
     }
 }

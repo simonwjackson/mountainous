@@ -13,7 +13,7 @@ Win98Window {
 
     Item {
         x: 12 * root.u; y: 10 * root.u
-        width: root.width - 30 * root.u
+        width: root.bodyWidth - 24 * root.u
         // 10 u in, the question, 6 u and 8 u, the buttons, 10 u out.
         implicitHeight: 10 * root.u + 24 * root.u + 14 * root.u + 23 * root.u + 10 * root.u
         Win98Icon { name: "logoff" }

@@ -20,7 +20,7 @@ Win98Window {
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
 
         Item { width: 1; height: 2 * root.u }
         Item {

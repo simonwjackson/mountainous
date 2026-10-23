@@ -15,7 +15,7 @@ Win98Window {
     onCloseClicked: MenuState.close()
 
     Column {
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
         spacing: 6 * root.u
 
         Row {

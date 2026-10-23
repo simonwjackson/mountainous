@@ -23,11 +23,25 @@ Win98Window {
     // widths and scroll sideways. Otherwise the last column takes the rest.
     readonly property bool narrow: width < 420 * u - 0.5
     readonly property real tableWidth: narrow ? Math.max(innerWidth, contentUnits * u) : innerWidth
-    readonly property int visibleRows: 5
+    // A short screen: rows go first (down to two), then the status bar;
+    // the body scrolls only after that.
+    // Measured after layout settles, not bound: the list's height feeds
+    // the window's own height, so a binding would loop. The sum is a fixed
+    // point (what the list gives up, it adds back).
+    property real natural: 0
+    function measureNatural() { root.natural = implicitHeight + (5 - visibleRows) * 16 * u + (statusArea.visible ? 0 : 26 * u); }
+    Connections {
+        target: root
+        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+    }
+    Component.onCompleted: Qt.callLater(root.measureNatural)
+    readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
+    readonly property int visibleRows: Math.max(2, 5 - Math.ceil(squeeze / (16 * u) - 1e-6))
+    readonly property bool dropStatus: squeeze > 3 * 16 * u + 0.5
 
     Column {
         id: body
-        width: root.width - 22 * root.u
+        width: root.bodyWidth
         spacing: 6 * root.u
 
         Win98Text {
@@ -134,6 +148,8 @@ Win98Window {
         }
 
         Item {
+            id: statusArea
+            visible: !root.dropStatus
             width: parent.width
             height: 20 * root.u
             Win98StatusBar {
