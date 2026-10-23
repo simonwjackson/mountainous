@@ -37,9 +37,26 @@
           ''
             node ${./quickshell/battery.test.js} ${./quickshell/battery.js}
             node ${./quickshell/oci-model.test.js} ${./quickshell/oci-model.js}
-            node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js}
+            node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
             node ${./quickshell/MenuState.test.js} ${./quickshell/MenuState.qml}
             qmllint -I "$QML_IMPORT_PATH" ${./quickshell/MenuState.qml}
+            touch $out
+          '';
+      # Run the production QML with a headless software Wayland compositor.
+      # The recorder and backend are real child processes with controlled exits.
+      checks.dictation-lifecycle =
+        pkgs.runCommand "dictation-lifecycle"
+          {
+            nativeBuildInputs = [
+              pkgs.nodejs
+              pkgs.quickshell
+              pkgs.labwc
+            ];
+            QUICKSHELL = "${pkgs.quickshell}/bin/qs";
+            LABWC = "${pkgs.labwc}/bin/labwc";
+          }
+          ''
+            node ${./quickshell/dictation-lifecycle.test.js} ${./quickshell/Dictation.qml} ${./quickshell/Theme.qml}
             touch $out
           '';
       checks.bar-delivery =

@@ -1,0 +1,39 @@
+{
+  "description": "Round 1 bar readouts with the 6px gap removed, plus ChicagoFLF status/button measurements from PlatinumMetrics. Dictation text and actions are separate.",
+  "failedDictationMetrics": {
+    "controls": [
+      {"id": "bt", "iconWidth": 16, "readoutWidth": 11},
+      {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
+      {"id": "vol", "iconWidth": 16, "readoutWidth": 30},
+      {"id": "bri", "iconWidth": 16, "readoutWidth": 30},
+      {"id": "oci", "iconWidth": 16, "readoutWidth": 240.90625},
+      {"id": "disk", "iconWidth": 16, "readoutWidth": 19.234375, "compactReadoutWidth": 0},
+      {"id": "ntf", "iconWidth": 16, "readoutWidth": 29, "compactReadoutWidth": 0}
+    ],
+    "markWidth": 20,
+    "titleWidth": 202,
+    "titleMinWidth": 84,
+    "dictationActionsWidth": 154,
+    "clockWidth": 103,
+    "clockTimeWidth": 45,
+    "chordWidth": 0,
+    "batteryWidth": 66,
+    "appIconWidth": 16,
+    "appNameWidth": 57,
+    "overflowWidth": 16
+  },
+  "states": [
+    {"id": "w-dict-failed-400", "width": 400, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
+    {"id": "w-dict-failed-320", "width": 320, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
+    {"id": "w-overflow-oci-eight", "width": 320, "open": "oci", "anchor": "more", "ociRows": [
+      {"name": "DEFAULT", "percent": "40.0", "used": "4096.0", "projected": "5800"},
+      {"name": "family", "percent": "35.3", "used": "3616.0", "projected": "5200"},
+      {"name": "lab", "percent": "30.6", "used": "3136.0", "projected": "4600"},
+      {"name": "osaka", "percent": "25.9", "used": "2656.0", "projected": "4000"},
+      {"name": "tokyo-2", "percent": "21.2", "used": "2176.0", "projected": "3400"},
+      {"name": "backup", "percent": "16.5", "used": "1696.0", "projected": "2800"},
+      {"name": "ci", "percent": "11.8", "used": "1216.0", "projected": "2200"},
+      {"name": "archive", "percent": "7.1", "used": "736.0", "projected": "1600"}
+    ]}
+  ]
+}

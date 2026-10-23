@@ -522,7 +522,6 @@ function statusBadge(view, status) {
 const EDGE = 6;            // gap from a screen edge
 const BAR_CLEAR = 32;      // the top bar plus a gap, as the other panels use
 const POPUP_MAX_W = 380;
-const CENTRE_MAX_W = 440;
 const CARD_MIN_POPUP_H = 96;
 const MORE_CHIP_H = 30;
 const POPUP_GAP = 6;
@@ -566,26 +565,6 @@ function fitPopups(heights, room, gap, chipHeight, maxCount) {
         visible -= 1;
     }
     return {visible: visible, hidden: total - visible};
-}
-
-// The centre card, from the screen it is drawn on. Height decides structure,
-// width decides content.
-function centrePlan(width, height) {
-    const cardWidth = Math.max(0, Math.min(CENTRE_MAX_W, width - 2 * EDGE));
-    const maxHeight = Math.max(0, height - BAR_CLEAR - EDGE);
-    const padding = maxHeight < 360 || cardWidth < 300 ? 8 : 12;
-    return {
-        cardWidth: cardWidth,
-        maxHeight: maxHeight,
-        padding: padding,
-        // The status badge is a readout; it moves under the title before the
-        // title row gives up a control.
-        badgeOwnRow: cardWidth < 360,
-        // "Dismiss all" keeps its words while it fits, then becomes "All".
-        dismissAllLabel: cardWidth >= 300 ? "Dismiss all" : "All",
-        showHint: maxHeight >= 400 && cardWidth >= 300,
-        bodyLines: maxHeight >= 600 ? 6 : 3
-    };
 }
 
 // One notification card, from the width it is given. Used by the popups and

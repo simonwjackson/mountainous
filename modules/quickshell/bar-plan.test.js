@@ -25,7 +25,7 @@ for (let width = 2999; width >= 0; width--) {
     const all = [...plan.controls, ...plan.overflow];
     assert.deepEqual([...all].sort(), metrics.controls.map(c => c.id).sort(), "no control disappears at " + width);
     assert.equal(new Set(all).size, 7);
-    assert.deepEqual(Array.from(plan.steps).filter(s => s !== "overflow"), expectedSteps.slice(0, Math.min(plan.steps.length, expectedSteps.length)), "yield order at " + width);
+    assert.deepEqual(Array.from(plan.steps).filter(s => s !== "overflow" && s !== "underflow"), expectedSteps.slice(0, Math.min(plan.steps.length, expectedSteps.length)), "yield order at " + width);
     assert.deepEqual(Array.from(plan.overflow), overflowOrder.slice(0, plan.overflow.length));
     assert.ok(plan.overflow.length >= previous.overflow.length, "overflow is monotonic");
     assert.ok(plan.steps.length >= previous.steps.length, "yielding is monotonic");
@@ -89,4 +89,85 @@ assert.throws(() => model.plan(NaN, metrics), /width/i);
 assert.throws(() => model.plan(100, {...metrics, batteryWidth: -1}), /batteryWidth/i);
 assert.throws(() => model.plan(100, {...metrics, controls: [{id: "other", iconWidth: 16, readoutWidth: 0}]}), /control/i);
 assert.throws(() => model.plan(100, {...metrics, controls: [metrics.controls[0], metrics.controls[0]]}), /control/i);
-console.log("bar-plan: 3001 widths, ordered yields, overflow, hardware absence and chord pass");
+const fixtures = JSON.parse(fs.readFileSync(process.argv[3] || __dirname + "/bar-fixtures.json", "utf8"));
+const failed = fixtures.failedDictationMetrics;
+// Budget the exact retained content, independently of the planner. In
+// particular, no left-group cap may take space away from the mark or buttons.
+function assertKeptControlsFit(width, input) {
+    const result = model.plan(width, input);
+    assert.ok(Number.isInteger(result.pad), "padding uses whole logical pixels");
+    const mark = 6 + 2 * result.pad + input.markWidth;
+    const actions = result.show.dictationActions && input.dictationActionsWidth > 0 ? 6 + input.dictationActionsWidth : 0;
+    const leftGap = input.titleWidth > 0 || actions > 0 ? result.gap : 0;
+    assert.ok(result.leftMax >= mark + leftGap + actions, "left controls have full width at " + width);
+    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", ntf: "notificationCount"};
+    let right = 6, count = 0;
+    for (const id of result.controls) {
+        const item = input.controls.find(c => c.id === id);
+        const readout = result.show[mapping[id]] !== false ? item.readoutWidth : Math.min(item.readoutWidth, item.compactReadoutWidth || 0);
+        right += 2 * result.pad + item.iconWidth + (readout > 0 ? 6 + readout : 0);
+        count++;
+    }
+    if (input.batteryWidth > 0) { right += 2 * result.pad + input.batteryWidth; count++; }
+    if (input.appIconWidth > 0 || (result.show.appName && input.appNameWidth > 0)) {
+        right += 2 * result.pad + input.appIconWidth + (result.show.appName && input.appNameWidth > 0 ? 6 + input.appNameWidth : 0);
+        count++;
+    }
+    if (result.overflow.length) { right += 2 * result.pad + input.overflowWidth; count++; }
+    right += result.gap * Math.max(0, count - 1);
+    if (!result.steps.includes("underflow")) {
+        assert.ok(result.leftMax + result.centreW + right + 16 <= width + 0.00001,
+            "retained controls, mark, battery and clock fit at " + width);
+    }
+    const all = result.controls.concat(result.overflow.filter(id => id !== "dictation"));
+    assert.deepEqual(Array.from(all).sort(), input.controls.map(c => c.id).sort());
+    if (result.overflow.includes("dictation")) {
+        assert.equal(result.controls.length, 0, "dictation actions overflow after all other controls");
+        assert.equal(result.show.dictationActions, false);
+    }
+    return result;
+}
+for (const width of [1920, 600, 400, 320, 200, 191]) {
+    const result = assertKeptControlsFit(width, failed);
+    assert.equal(result.steps.includes("underflow"), false, "the captured metrics support " + width);
+}
+const wideFailed = model.plan(1920, failed);
+assert.equal(wideFailed.show.dictationActions, true);
+assert.equal(wideFailed.leftMax - 6, 2 * wideFailed.pad + failed.markWidth + wideFailed.gap + failed.titleWidth + 6 + failed.dictationActionsWidth,
+    "mark + inter-item gap + status + exactly one actions gap + actions, without the outer edge");
+const withoutActions = {...failed, dictationActionsWidth: 0};
+const noActionsPlan = model.plan(1920, withoutActions);
+assert.equal(noActionsPlan.leftMax - 6, 2 * noActionsPlan.pad + failed.markWidth + noActionsPlan.gap + failed.titleWidth,
+    "no actions means no actions gap");
+const dismissOnly = {...failed, dictationActionsWidth: 74};
+const dismissPlan = model.plan(1920, dismissOnly);
+assert.equal(dismissPlan.leftMax - 6, 2 * dismissPlan.pad + failed.markWidth + dismissPlan.gap + failed.titleWidth + 6 + 74,
+    "Dismiss alone still has exactly one leading actions gap");
+assert.equal(JSON.stringify(model.plan(600, metrics)), JSON.stringify(model.plan(600, {...metrics, dictationActionsWidth: 0})), "new metric defaults to zero");
+for (const dictationActionsWidth of [-1, NaN]) assert.throws(() => model.plan(600, {...metrics, dictationActionsWidth}), /dictationActionsWidth/i);
+assert.equal(model.plan(320, failed).show.dictationActions, false);
+assert.equal(model.plan(200, failed).pad, 0, "padding falls below five only after every control overflows");
+// Captured floor: mark20 + battery66 + clock45 + app16 + overflow16 +
+// two edges6 + the clock clearance16 = 191 logical pixels, at zero padding.
+assert.equal(model.plan(191, failed).pad, 0);
+assert.equal(model.plan(190, failed).steps.includes("underflow"), true, "below the supported floor is explicit, not silent clipping");
+for (let width = 0; width <= 1920; width++) {
+    const result = assertKeptControlsFit(width, failed);
+    assert.equal(result.steps.includes("underflow"), width < 191, "metrics-derived floor at " + width);
+    if (result.pad < 5) {
+        assert.equal(result.controls.length, 0);
+        assert.equal(result.show.dictationActions, false);
+    }
+}
+for (const fixture of fixtures.states) {
+    if (fixture.dictation) assertKeptControlsFit(fixture.width, failed);
+    if (fixture.ociRows) {
+        const input = {...withoutActions, controls: failed.controls.map(c => c.id === "oci" ? {...c, readoutWidth: fixture.ociRows.length * 120} : c)};
+        const result = assertKeptControlsFit(fixture.width, input);
+        assert.equal(fixture.ociRows.length, 8);
+        assert.equal(fixture.open, "oci");
+        assert.equal(fixture.anchor, "more");
+        assert.ok(result.overflow.includes("oci"), "the eight-profile menu is reachable from »");
+    }
+}
+console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps and overflow fixtures pass");

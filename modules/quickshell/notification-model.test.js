@@ -325,28 +325,6 @@ assert.equal(cp(1000).imageSize, 64);
 assert.equal(cp(0).inner, 0);
 assert.ok(cp(120).buttonMaxWidth > 0, "a button always has room for its wrapped label");
 
-const c = model.centrePlan;
-assert.equal(c(1920, 1200).cardWidth, 440);
-assert.equal(c(200, 1200).cardWidth, 188);
-assert.equal(c(0, 0).cardWidth, 0);
-assert.equal(c(0, 0).maxHeight, 0);
-assert.equal(c(371, 1200).badgeOwnRow, true);
-assert.equal(c(372, 1200).badgeOwnRow, false);
-assert.equal(c(311, 1200).dismissAllLabel, "All");
-assert.equal(c(312, 1200).dismissAllLabel, "Dismiss all");
-assert.equal(c(1920, 437).showHint, false);
-assert.equal(c(1920, 438).showHint, true);
-assert.equal(c(1920, 637).bodyLines, 3);
-assert.equal(c(1920, 638).bodyLines, 6);
-assert.equal(c(1920, 397).padding, 8);
-assert.equal(c(1920, 398).padding, 12);
-// Dismiss all and close are in every plan: no field can turn them off.
-for (const [w, h] of [[1920, 1200], [960, 1200], [480, 1000], [1920, 360], [200, 200]]) {
-    const plan = c(w, h);
-    assert.ok(plan.dismissAllLabel.length > 0);
-    assert.ok(!("showDismissAll" in plan) && !("showClose" in plan));
-}
-
 const p = model.popupPlan(1920, 1200);
 assert.equal(p.cardWidth, 380);
 assert.equal(p.maxHeight, 1162);
@@ -363,4 +341,4 @@ assert.deepEqual(fit([100, 100, 100], 241), {visible: 1, hidden: 2});
 assert.deepEqual(fit([100, 100, 100, 100, 100, 100], 5000), {visible: 4, hidden: 2}, "at most four");
 assert.deepEqual(fit([100, 100, 100, 100], 5000), {visible: 4, hidden: 0});
 
-console.log("notification-view model: parse, fold, ops, backoff, readouts, card/centre/popup plans passed");
+console.log("notification-view model: parse, fold, ops, backoff, readouts, card/popup plans passed");
