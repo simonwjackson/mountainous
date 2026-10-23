@@ -87,6 +87,9 @@ Item {
         else if (bottom > root.scrollY + view) root.scrollY = Math.min(root.scrollMax, bottom - view);
     }
     onHighlightedChanged: revealRow(highlighted)
+    // A panel that stops scrolling (its bounds grew) shows its first row.
+    onScrollsChanged: if (!scrolls) scrollY = 0
+    onScrollMaxChanged: if (scrollY > scrollMax) scrollY = scrollMax
 
     implicitWidth: widthUnits > 0 ? widthUnits * u : 2 * pad + band + columns * columnWidth
     implicitHeight: scrolls ? Math.floor(maxHeight / u) * u : naturalHeight

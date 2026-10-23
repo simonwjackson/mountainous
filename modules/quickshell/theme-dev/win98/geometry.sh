@@ -57,6 +57,15 @@ for size in 1920x1200 600x600 320x600 160x600 80x600 56x600 40x600; do
     w98 set "$state" >/dev/null; settle
     check "taskbar $state at ${size}: inside, in order (structure $(w98 geometry | python3 -c 'import json,sys; print(json.load(sys.stdin)["plan"]["structure"])'))" "$BAR"
   done
+  if [ "$w" = 1920 ]; then
+    # Room for everything: no panel scrolls or sits scrolled (a panel that
+    # scrolled while it opened must show its first row again).
+    for state in s-settings s-windows s-commands-scale; do
+      w98 set "$state" >/dev/null; settle
+      check "Start $state at ${size}: no panel scrolled" \
+        'len(g["panels"]) >= 2 and all(not p["scrolls"] and p["scrollY"] == 0 for p in g["panels"])'
+    done
+  fi
   if [ "$w" = 320 ] || [ "$w" = 160 ]; then
     for state in s-programs s-commands-scale; do
       w98 set "$state" >/dev/null; settle

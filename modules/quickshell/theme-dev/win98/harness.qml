@@ -436,7 +436,7 @@ ShellRoot {
             const out = { w: scr.width, h: scr.height, places: d.debugPlaces(), plan: d.taskbarPlan(), panels: [], window: null, picker: null, openIs: String(d.openItem) };
             const m = d.openItem;
             if (m && m.panelAt) {
-                for (let l = 0; l < 8; l++) { const p = m.panelAt(l); if (!p) break; out.panels.push(rect(p)); }
+                for (let l = 0; l < 8; l++) { const p = m.panelAt(l); if (!p) break; const r = rect(p); r.scrolls = !!p.scrolls; r.scrollY = p.scrollY || 0; out.panels.push(r); }
             } else if (m) {
                 out.window = rect(m);
                 out.window.natural = m.implicitHeight;
