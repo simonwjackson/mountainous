@@ -23,7 +23,7 @@
 // Below that metrics-derived floor, steps includes 'underflow'; the mark still
 // gets its full width, rather than being silently clipped.
 /**
- * @typedef {'bt'|'wifi'|'vol'|'bri'|'oci'|'disk'|'ntf'} ControlId
+ * @typedef {'bt'|'wifi'|'vol'|'bri'|'oci'|'disk'|'builder'|'ntf'} ControlId
  * @typedef {{id: ControlId, iconWidth: number, readoutWidth: number, compactReadoutWidth?: number}} Control
  * @param {number} width
  * @param {{controls: Control[], markWidth: number, titleWidth: number, titleMinWidth: number,
@@ -33,9 +33,9 @@
  * widths. The planner owns the 6 px icon/readout gap; do not include it here.
  */
 function plan(width, metrics) {
-    const yieldOrder = ["space", "ociLabel", "diskLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount", "uncentre", "titleMin"];
-    const overflowOrder = ["oci", "disk", "bri", "bt", "wifi", "ntf", "vol"];
-    const readouts = {oci: "ociLabel", disk: "diskLabel", bt: "btCount", bri: "brightnessNumber", vol: "volumeNumber", ntf: "notificationCount"};
+    const yieldOrder = ["space", "ociLabel", "diskLabel", "builderLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount", "uncentre", "titleMin"];
+    const overflowOrder = ["oci", "disk", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+    const readouts = {oci: "ociLabel", disk: "diskLabel", builder: "builderLabel", bt: "btCount", bri: "brightnessNumber", vol: "volumeNumber", ntf: "notificationCount"};
     const edge = 6, insideGap = 6, clockGap = 16, titleStub = 56;
     const dimension = function (value, name) {
         if (typeof value !== "number" || Number.isNaN(value) || value < 0) throw new Error("Invalid " + name + " width");
@@ -64,6 +64,9 @@ function plan(width, metrics) {
     };
     const steps = yieldOrder.filter(function (step) {
         const control = metrics.controls.find(function (item) { return readouts[item.id] === step; });
+        // Adding the optional builder must not add a no-op yield on hosts
+        // without the gate, or change their existing layout steps.
+        if (step === "builderLabel" && !control) return false;
         return !control || compactWidth(control) < control.readoutWidth;
     });
 
@@ -113,7 +116,7 @@ function plan(width, metrics) {
                 controls: controls.map(function (control) { return control.id; }),
                 overflow: overflow,
                 show: {
-                    ociLabel: !yielded("ociLabel"), diskLabel: !yielded("diskLabel"), appName: !yielded("appName"),
+                    ociLabel: !yielded("ociLabel"), diskLabel: !yielded("diskLabel"), builderLabel: !yielded("builderLabel"), appName: !yielded("appName"),
                     clockDate: !yielded("clockDate"), btCount: !yielded("btCount"), brightnessNumber: !yielded("brightnessNumber"),
                     volumeNumber: !yielded("volumeNumber"), notificationCount: !yielded("notificationCount"),
                     title: metrics.titleWidth > 0 && budget(right) - keptLeft() >= titleStub,

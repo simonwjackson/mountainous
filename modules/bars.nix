@@ -100,7 +100,12 @@
                   relative = prefix + name;
                 in
                 if type == "directory" then
-                  lib.optionals (name != "notification-dev") (collect (relative + "/") (directory + "/${name}"))
+                  lib.optionals (
+                    !(builtins.elem name [
+                      "notification-dev"
+                      "builder-dev"
+                    ])
+                  ) (collect (relative + "/") (directory + "/${name}"))
                 else
                   lib.optional (type == "regular") relative
               ) (builtins.readDir directory)

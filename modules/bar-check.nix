@@ -12,6 +12,7 @@
       development =
         name:
         lib.hasPrefix "notification-dev/" name
+        || lib.hasPrefix "builder-dev/" name
         || lib.hasSuffix ".test.js" name
         || lib.hasSuffix ".py" name
         || lib.hasSuffix ".sh" name;

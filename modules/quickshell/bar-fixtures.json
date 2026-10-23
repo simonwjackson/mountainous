@@ -22,6 +22,12 @@
     "appNameWidth": 57,
     "overflowWidth": 16
   },
+  "builderAbsentPlans": [
+    {"width":1920,"plan":{"steps":[],"pad":8,"gap":2,"centred":true,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":true,"diskLabel":true,"appName":true,"clockDate":true,"btCount":true,"brightnessNumber":true,"volumeNumber":true,"notificationCount":true,"title":true,"dictationActions":false},"leftMax":244,"centreW":128}},
+    {"width":600,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre"],"pad":5,"gap":0,"centred":false,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":true,"dictationActions":false},"leftMax":236,"centreW":58}},
+    {"width":400,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre","titleMin"],"pad":5,"gap":0,"centred":false,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":false,"dictationActions":false},"leftMax":46,"centreW":58}},
+    {"width":320,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre","titleMin","overflow"],"pad":5,"gap":0,"centred":false,"controls":["wifi","vol","ntf"],"overflow":["oci","disk","bri","bt"],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":false,"dictationActions":false},"leftMax":44,"centreW":58}}
+  ],
   "states": [
     {"id": "w-dict-failed-400", "width": 400, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
     {"id": "w-dict-failed-320", "width": 320, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
@@ -34,6 +40,7 @@
       {"name": "backup", "percent": "16.5", "used": "1696.0", "projected": "2800"},
       {"name": "ci", "percent": "11.8", "used": "1216.0", "projected": "2200"},
       {"name": "archive", "percent": "7.1", "used": "736.0", "projected": "1600"}
-    ]}
+    ]},
+    {"id":"w-builder-320","width":320,"open":"builder","anchor":"more","builder":{"present":true,"running":3}}
   ]
 }

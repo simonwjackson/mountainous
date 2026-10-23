@@ -100,7 +100,7 @@ function assertKeptControlsFit(width, input) {
     const actions = result.show.dictationActions && input.dictationActionsWidth > 0 ? 6 + input.dictationActionsWidth : 0;
     const leftGap = input.titleWidth > 0 || actions > 0 ? result.gap : 0;
     assert.ok(result.leftMax >= mark + leftGap + actions, "left controls have full width at " + width);
-    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", ntf: "notificationCount"};
+    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", builder: "builderLabel", ntf: "notificationCount"};
     let right = 6, count = 0;
     for (const id of result.controls) {
         const item = input.controls.find(c => c.id === id);
@@ -170,4 +170,33 @@ for (const fixture of fixtures.states) {
         assert.ok(result.overflow.includes("oci"), "the eight-profile menu is reachable from »");
     }
 }
-console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps and overflow fixtures pass");
+// A host without the gate must keep the old layout, including its yield
+// steps. Only the newly exposed show.builderLabel field is additive.
+for (const fixture of fixtures.builderAbsentPlans) {
+    const actual = JSON.parse(JSON.stringify(model.plan(fixture.width, metrics)));
+    delete actual.show.builderLabel;
+    assert.deepEqual(actual, fixture.plan, "builder absent keeps the old plan at " + fixture.width);
+}
+const builderMetrics = {...metrics, controls: metrics.controls.slice()};
+builderMetrics.controls.splice(6, 0, {id: "builder", iconWidth: 16, readoutWidth: 96, compactReadoutWidth: 24});
+const builderOverflowOrder = ["oci", "disk", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+for (const width of [1920, 600, 400, 320]) {
+    const result = assertKeptControlsFit(width, builderMetrics);
+    assert.equal(result.controls.concat(result.overflow).filter(id => id === "builder").length, 1, "builder never disappears at " + width);
+    assert.deepEqual(Array.from(result.overflow), builderOverflowOrder.slice(0, result.overflow.length));
+}
+assert.equal(model.plan(1920, builderMetrics).show.builderLabel, true);
+assert.ok(model.plan(320, builderMetrics).overflow.includes("builder"));
+for (let width = 0; width <= 1920; width++) {
+    const result = assertKeptControlsFit(width, builderMetrics);
+    assert.deepEqual(Array.from(result.overflow), builderOverflowOrder.slice(0, result.overflow.length));
+    if (result.steps.includes("builderLabel")) {
+        const label = result.steps.indexOf("builderLabel");
+        assert.ok(result.steps.indexOf("diskLabel") < label);
+        if (result.steps.includes("appName")) assert.ok(label < result.steps.indexOf("appName"));
+    }
+}
+const builderFixture = fixtures.states.find(f => f.builder);
+assert.ok(builderFixture.builder.present && builderFixture.width === 320);
+assertKeptControlsFit(builderFixture.width, builderMetrics);
+console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps and builder presence/absence pass");
