@@ -74,7 +74,14 @@ export WAYLAND_DISPLAY="$sock"
 stage="$work/shell"
 mkdir -p "$stage/themes/win98"
 ln -s "$shell_dir/Theme.qml" "$stage/Theme.qml"
-for f in "$shell_dir"/Win98*.qml; do ln -s "$f" "$stage/$(basename "$f")"; done
+for f in "$shell_dir"/Win98*.qml; do
+  case "$(basename "$f")" in
+    Win98Window.qml) ;;
+    # The Desktop's own files import the shell's shared scripts.
+    Win98Desktop.qml|Win98Taskbar.qml|Win98MenuHost.qml|Win98TipWindow.qml|Win98PickerView.qml|Win98Preview.qml|Win98LogOffDialog.qml|Win98*Window.qml) continue ;;
+  esac
+  ln -s "$f" "$stage/$(basename "$f")"
+done
 ln -s "$here/Win98Gallery.qml" "$stage/Win98Gallery.qml"
 ln -s "$theme_dir/icons" "$stage/themes/win98/icons"
 cat > "$stage/shell.qml" <<'EOF'
