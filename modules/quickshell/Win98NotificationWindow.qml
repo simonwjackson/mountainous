@@ -136,10 +136,11 @@ Win98Window {
             ListView {
                 id: list
                 x: 2 * root.u; y: 2 * root.u
-                // The scroll bar takes its room once more than three cards
-                // or an opened card can need it; it never resizes the cards
-                // it measures.
-                readonly property bool roomForBar: count > 3 || Object.keys(root.service.expandedIds || {}).length > 0
+                // The scroll bar takes its room once the cards overflow. A
+                // narrower list only grows taller, so the choice is stable;
+                // it is made again when the list changes.
+                property bool roomForBar: count > 3
+                onContentHeightChanged: if (contentHeight > height + 0.5) roomForBar = true
                 width: well.width - 4 * root.u - (roomForBar ? 18 * root.u : 0)
                 height: well.height - 4 * root.u
                 clip: true
@@ -150,6 +151,7 @@ Win98Window {
                 focus: true
                 onCurrentIndexChanged: root.panel.actionFocus = Model.noActionFocus()
                 onCountChanged: {
+                    roomForBar = count > 3 || contentHeight > height + 0.5;
                     if (count > 0 && currentIndex < 0) currentIndex = 0;
                     if (currentIndex >= count) currentIndex = count - 1;
                 }
@@ -158,7 +160,7 @@ Win98Window {
             }
             Win98ScrollBar {
                 id: bar
-                visible: list.roomForBar || list.contentHeight > list.height + 0.5
+                visible: list.roomForBar
                 x: well.width - 2 * root.u - width
                 y: 2 * root.u
                 height: well.height - 4 * root.u
