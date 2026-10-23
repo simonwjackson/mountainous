@@ -201,6 +201,7 @@ PanelWindow {
 
                 Row {
                     x: parent.width - width
+                    topPadding: 6 * win.u
                     spacing: 6 * win.u
                     Win98Button {
                         id: okButton

@@ -368,7 +368,7 @@ PanelWindow {
         id: ghost
         visible: bar.dragIndex >= 0 && bar.dropIndex >= 0 && bar.dropIndex !== bar.dragIndex
         readonly property var target: visible ? bar.placeOf("win" + bar.dropIndex) : null
-        x: bar.preview.drag && target ? target.x + bar.units(10) : Win98Tokens.snap(bar.dragX - width / 2)
+        x: bar.preview.drag && target ? target.x + bar.units(7) : Win98Tokens.snap(bar.dragX - width / 2)
         y: face.y + bar.units(4) - bar.units(14)
         width: bar.units(bar.plan.bw)
         height: bar.units(22)

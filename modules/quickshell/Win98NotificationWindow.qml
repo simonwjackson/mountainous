@@ -213,7 +213,7 @@ Win98Window {
         Rectangle {
             x: 4 * root.u; y: (card.index > 0 ? 7 : 5) * root.u
             width: 20 * root.u; height: 20 * root.u
-            color: ["#008080", "#800080", "#000080", "#808000"][(card.index || 0) % 4]
+            color: ["#008080", "#800080", "#000080", "#808000"][Math.max(0, card.index || 0) % 4]
             Win98Text {
                 x: Win98Tokens.half((parent.width - width) / 2)
                 y: Win98Tokens.snap((parent.height - height) / 2)

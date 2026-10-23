@@ -184,6 +184,8 @@ Scope {
             Component {
                 id: tasksMenu
                 Win98Menu {
+                    // The chevron menus appear at once, as the mock's do.
+                    animate: false
                     widthUnits: Math.min(340, Math.floor(win.width / host.u) - 4)
                     bounds: menuBounds
                     model: Plan.overflowWindows(host.desktop.lane.map(function (t) {
@@ -200,6 +202,7 @@ Scope {
             Component {
                 id: moreMenu
                 Win98Menu {
+                    animate: false
                     widthUnits: Math.min(260, Math.floor(win.width / host.u) - 4)
                     bounds: menuBounds
                     model: host.taskbar.plan.trayOut.map(function (id) {

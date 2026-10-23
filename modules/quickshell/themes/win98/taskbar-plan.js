@@ -131,9 +131,10 @@ function layout(W, on, wins, pages, outW, outT, input) {
     };
 }
 
-// The windows chevron lists its windows by page.
+// The windows chevron lists its windows by page; inside a page, in the
+// order they left the bar (the mock's stable sort of its overflow list).
 function overflowWindows(windows, taskOut) {
     return taskOut.slice().sort(function (a, b) {
-        return windows[a].page - windows[b].page || a - b;
+        return windows[a].page - windows[b].page || taskOut.indexOf(a) - taskOut.indexOf(b);
     });
 }

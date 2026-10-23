@@ -45,9 +45,19 @@ FocusScope {
     signal closed
 
     readonly property real u: Win98Tokens.u
+    // Where the menu stands in its bounds. mapToItem is not a binding, so
+    // this reads the positions it depends on (the menu's and its parent's),
+    // and a host that places the menu after creating it moves the cascade.
+    readonly property point origin: {
+        root.x; root.y;
+        if (root.parent) { root.parent.x; root.parent.y; }
+        return root.bounds ? root.mapToItem(root.bounds, 0, 0) : Qt.point(0, 0);
+    }
 
-    implicitWidth: levels.count > 0 && panels.itemAt(0) ? panels.itemAt(0).implicitWidth : 0
-    implicitHeight: levels.count > 0 && panels.itemAt(0) ? panels.itemAt(0).implicitHeight : 0
+    // The top level's size. itemAt() is no binding; the Repeater's count is,
+    // and it changes once the level's panel exists.
+    implicitWidth: panels.count > 0 && panels.itemAt(0) ? panels.itemAt(0).implicitWidth : 0
+    implicitHeight: panels.count > 0 && panels.itemAt(0) ? panels.itemAt(0).implicitHeight : 0
     focus: true
 
     function itemsAt(level) {
@@ -177,7 +187,7 @@ FocusScope {
             readonly property Win98MenuPanel parentPanel: index > 0 ? panels.itemAt(index - 1) as Win98MenuPanel : null
             readonly property real boundsWidth: root.bounds ? root.bounds.width : 1e6
             readonly property real boundsHeight: root.bounds ? root.bounds.height : 1e6
-            readonly property point origin: root.bounds ? root.mapToItem(root.bounds, 0, 0) : Qt.point(0, 0)
+            readonly property point origin: root.origin
 
             items: root.itemsAt(level)
             big: level === 0 && root.big

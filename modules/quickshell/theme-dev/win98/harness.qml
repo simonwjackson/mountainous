@@ -365,8 +365,8 @@ ShellRoot {
         function theme(mode: string): void { Theme.mode = mode; }
         function current(): string {
             const d = root.desktop;
-            return JSON.stringify({ state: root.stateId, theme: Theme.name, loaded: loader.currentName, open: MenuState.current,
-                picker: ThemePicker.visible, steps: d ? d.taskbarPlan().steps : [], log: root.log });
+            return JSON.stringify({ state: root.stateId, theme: Theme.name, loaded: loader.currentName, slots: loader.loadedCount, open: MenuState.current,
+                picker: ThemePicker.visible, steps: d && d.taskbarPlan ? d.taskbarPlan().steps : [], log: root.log });
         }
         // The Start menu's open path and cursor, by name.
         function menu(): string {
