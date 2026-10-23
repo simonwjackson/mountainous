@@ -276,7 +276,9 @@ PanelWindow {
             onPressed: if (bar.menuHere) MenuState.close()
         }
 
+        // The rule. Extra dark draws none: the black bar meets the windows.
         Rectangle {
+            visible: Theme.barRuled
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom

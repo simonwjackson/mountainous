@@ -52,7 +52,7 @@ Item {
         anchors.margins: root.ring
         radius: Theme.radiusSmall
         sunken: root.down
-        bevelled: !root.onBar || !Theme.dark
+        bevelled: !root.onBar || Theme.barBevelled
         edgeColor: root.onBar ? Theme.barButtonEdge : Theme.menuEdge
         color: root.down ? Theme.well : root.onBar ? Theme.barButton : Theme.raised
     }

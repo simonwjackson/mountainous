@@ -12,11 +12,14 @@ if [[ ${1:-} != --session ]]; then
   dconf_root=$(dirname "$(dirname "$(command -v dconf)")")
   export XDG_DATA_DIRS="$dconf_root/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
   exec_path=$(realpath "$0")
-  dbus-run-session -- bash "$exec_path" --session "$command_path"
+  # A build sandbox has no /etc/dbus-1; the check passes the packaged file.
+  dbus-run-session ${DBUS_SESSION_CONFIG:+--config-file="$DBUS_SESSION_CONFIG"} -- \
+    bash "$exec_path" --session "$command_path"
   exit
 fi
 command_path=$2
 state="$XDG_STATE_HOME/mountainous/theme"
+extra="$XDG_STATE_HOME/mountainous/theme-extra"
 check() {
   local mode=$1 scheme=$2
   [[ $("$command_path" status) == "$mode" ]]
@@ -46,4 +49,51 @@ if DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" light; the
   exit 1
 fi
 check dark prefer-dark
+
+# Extra dark: its own file, on or off, and off when the file is missing.
+check_extra() {
+  local value=$1
+  [[ $("$command_path" extra status) == "$value" ]]
+  [[ $(<"$extra") == "$value" ]]
+}
+rm -f "$extra"
+[[ $("$command_path" extra status) == off ]]
+[[ ! -e $extra ]] # status only reads
+[[ $("$command_path" extra toggle) == on ]] # a missing file toggles to on
+check_extra on
+[[ $("$command_path" extra toggle) == off ]]
+check_extra off
+[[ $("$command_path" extra on) == on ]]
+check_extra on
+# The mode commands keep the extra file, and extra keeps the mode.
+"$command_path" light
+check light prefer-light
+check_extra on
+"$command_path" toggle
+check dark prefer-dark
+check_extra on
+"$command_path" extra off
+check dark prefer-dark
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita-dark'" ]]
+# Reapply restores both files and writes a missing extra file as off.
+"$command_path" extra on
+[[ $("$command_path" reapply) == dark ]]
+check dark prefer-dark
+check_extra on
+rm -f "$extra"
+"$command_path" reapply
+check_extra off
+# Any other content reads as off.
+printf 'maybe\n' > "$extra"
+[[ $("$command_path" extra status) == off ]]
+[[ $("$command_path" extra toggle) == on ]]
+check_extra on
+for bad in '' bogus; do
+  if "$command_path" extra $bad 2>/dev/null; then
+    echo "FAIL: extra '$bad' succeeded" >&2
+    exit 1
+  fi
+done
+check_extra on
+[[ ! -e $extra.new && ! -e $state.new ]]
 echo 'DESKTOP_THEME_TESTS_PASSED'

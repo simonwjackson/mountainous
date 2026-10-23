@@ -134,6 +134,9 @@ Scope {
         { kind: "cmd", label: "Toggle bars",           detail: "Super+I",           act: "chrome" },
         { kind: "cmd", label: "Dark appearance",        detail: "Super+D",           act: "theme:dark" },
         { kind: "cmd", label: "Light appearance",       detail: "Super+D",           act: "theme:light" },
+        // A toggle. Its detail is the current state; light mode ignores it.
+        { kind: "cmd", label: "Extra dark appearance",  detail: !Theme.dark ? "dark only" : Theme.extraDark ? "on" : "off",
+          act: "theme:extra" },
         { kind: "cmd", label: "Screenshot",            detail: "Super+S",           act: "shot" }
     ]
 
@@ -232,6 +235,7 @@ Scope {
         else if (a === "chrome")     Quickshell.execDetached(["qs", "-c", "mountainous", "ipc", "call", "chrome", "toggle"]);
         else if (a === "theme:dark")   Quickshell.execDetached(["desktop-theme", "dark"]);
         else if (a === "theme:light")  Quickshell.execDetached(["desktop-theme", "light"]);
+        else if (a === "theme:extra")  Quickshell.execDetached(["desktop-theme", "extra", "toggle"]);
         else if (a === "shot")       Quickshell.execDetached(["mountainous-screenshot", "screen"]);
 
         root.shown = false;

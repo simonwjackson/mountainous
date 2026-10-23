@@ -2,8 +2,144 @@
 # portal. Ghostty follows that preference directly, while Quickshell reads the
 # generated state file. Applications with explicit theme overrides can ignore
 # the desktop preference.
-{
+#
+# "Extra dark" is a second, separate preference in its own state file. Only
+# the Quickshell top bar reads it: in dark mode it turns the bar black, for
+# the OLED panel. The mode stays dark or light, so GTK, Ghostty and dconf do
+# not see it.
+let
+  desktopThemeCommand =
+    pkgs:
+    pkgs.writeShellApplication {
+      name = "desktop-theme";
+      runtimeInputs = [
+        pkgs.coreutils
+        pkgs.dconf
+        pkgs.util-linux
+      ];
+      text = ''
+        state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/mountainous"
+        state_file="$state_dir/theme"
+        extra_file="$state_dir/theme-extra"
+
+        # Serialize toggles and publish only complete files.
+        mkdir -p "$state_dir"
+        exec 9>"$state_dir/theme.lock"
+        flock 9
+
+        usage() {
+          printf 'usage: desktop-theme dark|light|toggle|status|reapply\n' >&2
+          printf '       desktop-theme extra on|off|toggle|status\n' >&2
+          exit 2
+        }
+
+        # A missing or unreadable file means off.
+        read_extra() {
+          if [ -r "$extra_file" ] && [ "$(tr -d '[:space:]' < "$extra_file")" = on ]; then
+            printf 'on'
+          else
+            printf 'off'
+          fi
+        }
+
+        write_extra() {
+          printf '%s\n' "$1" > "$extra_file.new"
+          mv -f "$extra_file.new" "$extra_file"
+        }
+
+        extra() {
+          case "''${1:-}" in
+            on|off) value="$1" ;;
+            toggle)
+              if [ "$(read_extra)" = on ]; then value=off; else value=on; fi
+              ;;
+            status)
+              read_extra
+              printf '\n'
+              return
+              ;;
+            *) usage ;;
+          esac
+          write_extra "$value"
+          printf '%s\n' "$value"
+        }
+
+        read_state() {
+          if [ -r "$state_file" ]; then
+            tr -d '[:space:]' < "$state_file"
+          else
+            printf 'dark'
+          fi
+        }
+
+        apply() {
+          mode="$1"
+
+          if [ "$mode" = light ]; then
+            scheme=prefer-light
+            gtk_theme=Adwaita
+          else
+            mode=dark
+            scheme=prefer-dark
+            gtk_theme=Adwaita-dark
+          fi
+
+          # Do not report success if the session preference could not change.
+          # Ghostty, GTK, Chromium, Qt and Electron all follow this preference.
+          dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'"
+          dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'"
+
+          printf '%s\n' "$mode" > "$state_file.new"
+          mv -f "$state_file.new" "$state_file"
+          printf '%s\n' "$mode"
+        }
+
+        case "''${1:-toggle}" in
+          dark) apply dark ;;
+          light) apply light ;;
+          toggle)
+            if [ "$(read_state)" = dark ]; then
+              apply light
+            else
+              apply dark
+            fi
+            ;;
+          # Also writes the extra file, so the bar has a file to watch.
+          reapply)
+            write_extra "$(read_extra)"
+            apply "$(read_state)"
+            ;;
+          extra) extra "''${2:-}" ;;
+          status)
+            read_state
+            printf '\n'
+            ;;
+          *) usage ;;
+        esac
+      '';
+    };
+in {
+  # The packaged switcher in a private D-Bus session with a real dconf:
+  # mode, the extra-dark file, toggles, reapply and a missing file.
+  perSystem = {pkgs, ...}: {
+    checks.desktop-theme =
+      pkgs.runCommand "desktop-theme" {
+        nativeBuildInputs = [
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.dbus
+          pkgs.dconf
+        ];
+        DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+      } ''
+        bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
+        touch $out
+      '';
+  };
+
   nixos.modules.desktop = {pkgs, ...}: let
+    desktop-theme = desktopThemeCommand pkgs;
+
     ghosttyDark = pkgs.writeText "mountainous-dark" ''
       background = 000000
       foreground = e0e0e0
@@ -58,77 +194,6 @@
       theme = light:mountainous-light,dark:mountainous-dark
       window-theme = system
     '';
-
-    desktop-theme = pkgs.writeShellApplication {
-      name = "desktop-theme";
-      runtimeInputs = [
-        pkgs.coreutils
-        pkgs.dconf
-        pkgs.util-linux
-      ];
-      text = ''
-        state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/mountainous"
-        state_file="$state_dir/theme"
-
-        # Serialize toggles and publish only complete files.
-        mkdir -p "$state_dir"
-        exec 9>"$state_dir/theme.lock"
-        flock 9
-
-        usage() {
-          printf 'usage: desktop-theme dark|light|toggle|status|reapply\n' >&2
-          exit 2
-        }
-
-        read_state() {
-          if [ -r "$state_file" ]; then
-            tr -d '[:space:]' < "$state_file"
-          else
-            printf 'dark'
-          fi
-        }
-
-        apply() {
-          mode="$1"
-
-          if [ "$mode" = light ]; then
-            scheme=prefer-light
-            gtk_theme=Adwaita
-          else
-            mode=dark
-            scheme=prefer-dark
-            gtk_theme=Adwaita-dark
-          fi
-
-          # Do not report success if the session preference could not change.
-          # Ghostty, GTK, Chromium, Qt and Electron all follow this preference.
-          dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'"
-          dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'"
-
-          printf '%s\n' "$mode" > "$state_file.new"
-          mv -f "$state_file.new" "$state_file"
-          printf '%s\n' "$mode"
-        }
-
-        case "''${1:-toggle}" in
-          dark) apply dark ;;
-          light) apply light ;;
-          toggle)
-            if [ "$(read_state)" = dark ]; then
-              apply light
-            else
-              apply dark
-            fi
-            ;;
-          reapply) apply "$(read_state)" ;;
-          status)
-            read_state
-            printf '\n'
-            ;;
-          *) usage ;;
-        esac
-      '';
-    };
   in {
     # Direct build targets let regression tests exercise the packaged command
     # and inspect the exact Ghostty configuration delivered by hjem.

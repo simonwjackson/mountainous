@@ -17,9 +17,15 @@ Singleton {
         return (x && x !== "") ? x : Quickshell.env("HOME") + "/.local/state";
     }
     readonly property string statePath: stateDir + "/mountainous/theme"
+    readonly property string extraPath: stateDir + "/mountainous/theme-extra"
 
     property string mode: "dark"
     readonly property bool dark: mode !== "light"
+
+    // "Extra dark": the stored choice, on or off. It changes only the top
+    // bar, and only in dark mode (see barBlack). A missing file is off.
+    property string extraState: "off"
+    readonly property bool extraDark: extraState === "on"
 
     FileView {
         id: stateFile
@@ -33,10 +39,24 @@ Singleton {
         }
     }
 
+    FileView {
+        path: root.extraPath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.extraState = text().trim() === "on" ? "on" : "off"
+        onLoadFailed: root.extraState = "off"
+    }
+
     // Query the live palette without exposing a second write path.
+    // The first three words are the old answer; the rest were added after.
     IpcHandler {
         target: "theme"
-        function current(): string { return root.mode + " " + root.bgBase + " " + root.bgVeil; }
+        function current(): string {
+            return root.mode + " " + root.bgBase + " " + root.bgVeil
+                + " extra=" + root.extraState + " bar=" + root.barSurface
+                + " rule=" + (root.barRuled ? root.barRule : "none");
+        }
     }
 
     readonly property string fontFamily: "monospace"
@@ -82,9 +102,11 @@ Singleton {
     //----------------------------------------------------------------
     // Mac OS 8.1, read in a modern way. Light takes the 8.1 values: bar
     // #DDDDDD, a black rule, bevels #FFFFFF/#999999, a #222222 hard
-    // shadow and the #333399 highlight. Dark is the hybrid: a black bar,
-    // which keeps the OLED rule above, under dark grey Platinum menus.
-    // Menus are transient, so the OLED argument does not apply to them.
+    // shadow and the #333399 highlight. Dark is dark grey Platinum: a
+    // #363636 bar on the same black rule, over dark grey menus.
+    // Extra dark (dark mode only) makes the bar black with no rule, which
+    // keeps the OLED rule above; the menus stay dark grey, because menus
+    // are transient and the OLED argument does not apply to them.
     // The dock, the omni bar and the popups keep the tokens above.
 
     // ChicagoFLF 2.1 is the only face in the bar and its menus. It lacks
@@ -102,20 +124,29 @@ Singleton {
 
     readonly property int barHeight: 28
 
-    // The bar surface is one token. The dark value is the OLED black; a
-    // dark grey bar (#363636) is a change to this line alone.
-    readonly property color barSurface: dark ? "#000000" : "#dddddd"
-    readonly property color barRule: dark ? "#5e5e5e" : "#000000"
-    readonly property color barText: dark ? "#e6e6e6" : "#000000"
-    readonly property color barTextSecondary: dark ? "#a4a4a4" : "#3a3a3a"
-    readonly property color barTextOff: dark ? "#5c5c5c" : "#8a8a8a"
+    // The bar has three appearances: light, dark grey, and black (extra
+    // dark, in dark mode only). Every bar token below picks from them.
+    readonly property bool barBlack: dark && extraDark
+
+    // The bar surface is one token.
+    readonly property color barSurface: !dark ? "#dddddd" : barBlack ? "#000000" : "#363636"
+    // The Mac OS 8 rule under the bar. On black there is no rule at all:
+    // the bar meets the windows directly, so no lit line stays on screen.
+    readonly property bool barRuled: !barBlack
+    readonly property color barRule: "#000000"
+    readonly property color barText: !dark ? "#000000" : barBlack ? "#e6e6e6" : "#ececec"
+    readonly property color barTextSecondary: !dark ? "#3a3a3a" : barBlack ? "#a4a4a4" : "#b8b8b8"
+    // About 3:1 on each surface, so a muted readout still reads.
+    readonly property color barTextOff: !dark ? "#8a8a8a" : barBlack ? "#5c5c5c" : "#808080"
     readonly property color barHover: dark ? "#1fffffff" : "#1a000000"
     readonly property color barDanger: dark ? "#ef8f8f" : "#9e2525"
     readonly property color barWarning: dark ? "#d5a66f" : "#7a4d12"
-    // Bar buttons (dictation Retry and Dismiss). On black they lose the
-    // bevel, which would read as noise there.
-    readonly property color barButton: dark ? "#262626" : "#e6e6e6"
-    readonly property color barButtonEdge: dark ? "#8c8c8c" : "#000000"
+    // Bar buttons (dictation Retry and Dismiss). Light and grey bars give
+    // them the Platinum bevel. On black they lose it, which would read as
+    // noise there.
+    readonly property bool barBevelled: !barBlack
+    readonly property color barButton: !dark ? "#e6e6e6" : barBlack ? "#262626" : "#444444"
+    readonly property color barButtonEdge: barBlack ? "#8c8c8c" : "#000000"
 
     // The highlight: an open title, a pressed control, a selected row.
     readonly property color highlight: dark ? "#5858d0" : "#333399"
