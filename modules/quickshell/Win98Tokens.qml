@@ -35,50 +35,85 @@ Singleton {
     function px(n) { return n * root.u; }
     // To the whole unit; a half goes up (down the screen, to the right).
     function snap(v) { return Math.floor(v / root.u + 0.5 + 1e-6) * root.u; }
+    // To the half unit: one physical pixel. The mock's browser centred boxes
+    // and text runs across (horizontally) without snapping them to a unit;
+    // a half unit still lands on whole physical pixels.
+    function half(v) { return Math.round(v / (root.u / 2) + 1e-6) * (root.u / 2); }
     // Up to a whole unit, for sizes measured from text.
     function ceilU(v) { return Math.ceil(v / root.u - 1e-6) * root.u; }
 
     readonly property bool dark: Theme.dark
 
     // ---- colours. hi/li: outer/inner light edge; sh/dk: inner/outer dark edge.
-    readonly property color face: dark ? "#3c3c3c" : "#c0c0c0"
-    readonly property color hi: dark ? "#7a7a7a" : "#ffffff"
-    readonly property color li: dark ? "#565656" : "#dfdfdf"
-    readonly property color sh: dark ? "#222222" : "#808080"
-    readonly property color dk: "#000000"
-    readonly property color text: dark ? "#ececec" : "#000000"
-    // Disabled and secondary text.
-    readonly property color gray: dark ? "#8e8e8e" : "#808080"
-    // The 1-u shadow under disabled text. Dark grey has none.
-    readonly property color emboss: dark ? "transparent" : "#ffffff"
-    // Fields and lists.
-    readonly property color win: dark ? "#1d1d1d" : "#ffffff"
-    readonly property color winText: dark ? "#e8e8e8" : "#000000"
-    readonly property color selection: dark ? "#2f4fc7" : "#000080"
-    readonly property color selectionText: "#ffffff"
-    // Captions: a gradient from the left.
-    readonly property color caption1: "#000080"
-    readonly property color caption2: "#1084d0"
-    readonly property color inactiveCaption1: dark ? "#2a2a2a" : "#808080"
-    readonly property color inactiveCaption2: dark ? "#4a4a4a" : "#c0c0c0"
-    readonly property color captionText: "#ffffff"
-    readonly property color inactiveCaptionText: dark ? "#9a9a9a" : "#c0c0c0"
-    readonly property color tip: dark ? "#3a3a2a" : "#ffffe1"
-    readonly property color tipText: dark ? "#f0f0d8" : "#000000"
-    readonly property color tipEdge: dark ? "#8a8a7a" : "#000000"
-    readonly property color desktop: dark ? "#000000" : "#008080"
-    // The checkerboard of a scroll track and a latched button.
-    readonly property color dither: dark ? "#565656" : "#ffffff"
-    readonly property color danger: dark ? "#ff8a80" : "#800000"
-    readonly property color warning: dark ? "#e0b060" : "#5c4400"
-    readonly property color ok: dark ? "#7fd07f" : "#008000"
-    readonly property color badge: dark ? "#d03030" : "#c00000"
-    readonly property color focus: dark ? "#ececec" : "#000000"
-    // Icon outlines. Black on #C0C0C0; on #3C3C3C black has 1.9:1 and the
-    // outlines vanish (mock tray, dark grey), so dark grey draws them in a
-    // grey that stays darker than the icons' white and yellow fills and
-    // lighter than the face.
-    readonly property color ink: dark ? "#9a9a9a" : "#000000"
+    // palette(dark) is the one source: the properties below read the current
+    // appearance, and a preview of the other scheme (Display Properties)
+    // passes palette(true or false) to the controls that draw it.
+    // ink is the icons' outline: black on #C0C0C0, but on #3C3C3C black has
+    // 1.9:1 and the outlines vanish, so dark grey draws them in a grey that
+    // stays darker than the icons' white and yellow fills.
+    function palette(dark) {
+        return {
+            face: dark ? "#3c3c3c" : "#c0c0c0",
+            hi: dark ? "#7a7a7a" : "#ffffff",
+            li: dark ? "#565656" : "#dfdfdf",
+            sh: dark ? "#222222" : "#808080",
+            dk: "#000000",
+            text: dark ? "#ececec" : "#000000",
+            gray: dark ? "#8e8e8e" : "#808080",
+            emboss: dark ? "transparent" : "#ffffff",
+            win: dark ? "#1d1d1d" : "#ffffff",
+            winText: dark ? "#e8e8e8" : "#000000",
+            selection: dark ? "#2f4fc7" : "#000080",
+            selectionText: "#ffffff",
+            caption1: "#000080",
+            caption2: "#1084d0",
+            inactiveCaption1: dark ? "#2a2a2a" : "#808080",
+            inactiveCaption2: dark ? "#4a4a4a" : "#c0c0c0",
+            captionText: "#ffffff",
+            inactiveCaptionText: dark ? "#9a9a9a" : "#c0c0c0",
+            tip: dark ? "#3a3a2a" : "#ffffe1",
+            tipText: dark ? "#f0f0d8" : "#000000",
+            tipEdge: dark ? "#8a8a7a" : "#000000",
+            desktop: dark ? "#000000" : "#008080",
+            dither: dark ? "#565656" : "#ffffff",
+            danger: dark ? "#ff8a80" : "#800000",
+            warning: dark ? "#e0b060" : "#5c4400",
+            ok: dark ? "#7fd07f" : "#008000",
+            badge: dark ? "#d03030" : "#c00000",
+            focus: dark ? "#ececec" : "#000000",
+            ink: dark ? "#9a9a9a" : "#000000"
+        };
+    }
+    readonly property var current: palette(dark)
+    readonly property color face: current.face
+    readonly property color hi: current.hi
+    readonly property color li: current.li
+    readonly property color sh: current.sh
+    readonly property color dk: current.dk
+    readonly property color text: current.text
+    readonly property color gray: current.gray
+    readonly property color emboss: current.emboss
+    readonly property color win: current.win
+    readonly property color winText: current.winText
+    readonly property color selection: current.selection
+    readonly property color selectionText: current.selectionText
+    readonly property color caption1: current.caption1
+    readonly property color caption2: current.caption2
+    readonly property color inactiveCaption1: current.inactiveCaption1
+    readonly property color inactiveCaption2: current.inactiveCaption2
+    readonly property color captionText: current.captionText
+    readonly property color inactiveCaptionText: current.inactiveCaptionText
+    readonly property color tip: current.tip
+    readonly property color tipText: current.tipText
+    readonly property color tipEdge: current.tipEdge
+    readonly property color desktop: current.desktop
+    readonly property color dither: current.dither
+    readonly property color danger: current.danger
+    readonly property color warning: current.warning
+    readonly property color ok: current.ok
+    readonly property color badge: current.badge
+    readonly property color focus: current.focus
+    readonly property color ink: current.ink
 
     function tone(name) {
         if (name === "danger") return root.danger;

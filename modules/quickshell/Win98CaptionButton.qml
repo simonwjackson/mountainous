@@ -7,6 +7,7 @@ Item {
 
     property string glyph: "close"     // "close" or "help"
     property bool showPressed: false
+    property var scheme: null
 
     signal clicked
 
@@ -19,10 +20,11 @@ Item {
     Win98Bevel {
         anchors.fill: parent
         variant: root.down ? "pressed" : "button"
+        scheme: root.scheme
     }
     Win98Icon {
         name: root.glyph
-        color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
+        color: (root.scheme || Win98Tokens)[root.enabled ? "text" : "gray"]
         x: Win98Tokens.snap((root.width - width) / 2) + (root.down ? root.u : 0)
         y: Win98Tokens.snap((root.height - height) / 2) + (root.down ? root.u : 0)
     }

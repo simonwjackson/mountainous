@@ -85,18 +85,18 @@ FocusScope {
         x: 3 * root.u; y: 3 * root.u
         width: root.width - 3 * root.u - 2 * root.u - 16 * root.u - 2 * root.u
         height: root.rowHeight
-        color: root.focusShown && !root.open ? Win98Tokens.selection : "transparent"
+        color: root.focusShown ? Win98Tokens.selection : "transparent"
 
         Win98Text {
             x: 2 * root.u; y: root.u
             width: valueBox.width - 4 * root.u
             text: root.model.length > root.currentIndex && root.currentIndex >= 0 ? root.model[root.currentIndex] : ""
             accessMarks: false
-            color: root.focusShown && !root.open ? Win98Tokens.selectionText : Win98Tokens.winText
+            color: root.focusShown ? Win98Tokens.selectionText : Win98Tokens.winText
             disabledLook: !root.enabled
         }
         Win98FocusRect {
-            visible: root.focusShown && !root.open
+            visible: root.focusShown
             anchors.fill: parent
             color: Win98Tokens.selectionText
         }

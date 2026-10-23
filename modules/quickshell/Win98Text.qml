@@ -23,7 +23,10 @@ Item {
     id: root
 
     property string text: ""
-    property color color: Win98Tokens.text
+    // Another appearance's colours (Win98Tokens.palette), for previews.
+    property var scheme: null
+    readonly property var tokens: scheme || Win98Tokens
+    property color color: tokens.text
     property bool bold: false
     property int size: 1
     property bool showAccess: true
@@ -42,7 +45,7 @@ Item {
     readonly property real k: Win98Tokens.textScale
     readonly property string plain: accessMarks ? Win98Tokens.plainText(text) : text
     readonly property int accessIndex: accessMarks ? Win98Tokens.accessIndex(text) : -1
-    readonly property color shownColor: disabledLook ? Win98Tokens.gray : color
+    readonly property color shownColor: disabledLook ? tokens.gray : color
     readonly property bool truncated: main.truncated
 
     implicitWidth: main.implicitWidth * k * size
@@ -86,10 +89,10 @@ Item {
         }
 
         Face {
-            visible: root.disabledLook && Win98Tokens.emboss.a > 0
+            visible: root.disabledLook && root.tokens.emboss.a > 0
             x: root.u
             y: root.u
-            color: Win98Tokens.emboss
+            color: root.tokens.emboss
         }
         Face {
             id: main
@@ -104,7 +107,7 @@ Item {
         // The access key's underline: 1 u below the baseline, under one
         // letter. A disabled label draws the underline's emboss too.
         Repeater {
-            model: root.showAccess && root.accessIndex >= 0 && !root.wrap ? (root.disabledLook && Win98Tokens.emboss.a > 0 ? 2 : 1) : 0
+            model: root.showAccess && root.accessIndex >= 0 && !root.wrap ? (root.disabledLook && root.tokens.emboss.a > 0 ? 2 : 1) : 0
 
             Rectangle {
                 required property int index
@@ -113,7 +116,7 @@ Item {
                 y: (Win98Tokens.ascentUnits + 1) * root.u + (index === 1 ? root.u : 0)
                 width: Win98Tokens.textWidth(root.plain.charAt(root.accessIndex), false) - root.u
                 height: root.u
-                color: index === 1 ? Win98Tokens.emboss : root.shownColor
+                color: index === 1 ? root.tokens.emboss : root.shownColor
             }
         }
     }

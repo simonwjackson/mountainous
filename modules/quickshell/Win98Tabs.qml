@@ -103,7 +103,8 @@ FocusScope {
                 text: tab.modelData
             }
             Win98FocusRect {
-                visible: tab.current && root.enabled && (root.showFocus || root.activeFocus)
+                // The strip itself has the keyboard, not a control on the sheet.
+                visible: tab.current && root.enabled && (root.showFocus || root.Window.activeFocusItem === root)
                 x: tabLabel.x - root.u
                 y: tabLabel.y - root.u
                 width: tabLabel.width + 2 * root.u

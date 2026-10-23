@@ -8,10 +8,13 @@ import QtQuick
 //
 // Rows (from the mock's CSS): 18 u (32 u when big); a 20-u icon column
 // (32 u when big, with 24-u icons), 3 u (6 u) to the text, 14 u after the
-// text, a shortcut column 12 u after that, a 10-u column for the submenu
-// arrow, and 6 u to the edge. Separators are 8 u: an etched line 3 u from
-// each neighbour, 2 u in from the sides. Every label starts on one edge,
-// every shortcut starts on one edge and every arrow ends on one edge.
+// text, the shortcut at least 12 u after that, a 10-u column for the
+// submenu arrow, and 6 u to the edge. Separators are 8 u: an etched line
+// 3 u from each neighbour, 2 u in from the sides. Every label starts on one
+// edge; shortcuts end on one edge, before the arrow column, as the mock's
+// flex rows put them; every arrow ends on one edge. The width is the
+// widest label-and-shortcut pair, not the widest label plus the widest
+// shortcut.
 //
 // A menu taller than maxHeight runs into more columns, as Win98's did
 // (only when it has no separators).
@@ -45,12 +48,14 @@ Item {
     readonly property bool anySub: items.some(it => it && !it.separator && it.submenu && it.submenu.length > 0)
     readonly property real textW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && !it.separator).map(it => Win98Tokens.plainText(it.text || "")), false))
     readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && it.shortcut).map(it => it.shortcut), false))
-    readonly property real fixedW: 2 * pad + band + leftPad + iconCol + iconGap + 14 * u + (keyW > 0 ? 12 * u + keyW : 0) + 16 * u
-    readonly property real textCol: maxWidth > 0 && widthUnits <= 0
-        ? Math.max(40 * u, Math.min(textW, Math.floor((maxWidth - fixedW) / u) * u)) : textW
-    // Where the shortcut column starts, from the row's left edge.
-    readonly property real keyX: leftPad + iconCol + iconGap + textCol + 14 * u + (keyW > 0 ? 12 * u : 0)
-    readonly property real rowWidth: keyX + keyW + 10 * u + 6 * u
+    // The widest label and its shortcut, with the 12-u gap between them.
+    readonly property real pairW: items.reduce((w, it) => it && !it.separator
+        ? Math.max(w, Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), false))
+            + (it.shortcut ? 12 * u + Win98Tokens.ceilU(Win98Tokens.textWidth(it.shortcut, false)) : 0)) : w, 0)
+    readonly property real fixedW: 2 * pad + band + leftPad + iconCol + iconGap + 14 * u + 16 * u
+    readonly property real pairCol: maxWidth > 0 && widthUnits <= 0
+        ? Math.max(40 * u, Math.min(pairW, Math.floor((maxWidth - fixedW) / u) * u)) : pairW
+    readonly property real rowWidth: leftPad + iconCol + iconGap + pairCol + 14 * u + 10 * u + 6 * u
     readonly property int count: items.length
     readonly property bool hasSeparators: items.some(it => it && it.separator)
     readonly property real naturalRows: items.reduce((h, it) => h + (it && it.separator ? 8 * u : rowH), 0)
@@ -171,18 +176,22 @@ Item {
                             y: Win98Tokens.snap((iconCell.height - height) / 2)
                         }
                     }
+                    // Shortcuts end 16 u from the row's right edge.
+                    readonly property real keyRight: row.width - 16 * root.u
+                    readonly property real keyWidth: !row.separator && row.modelData.shortcut
+                        ? Win98Tokens.ceilU(Win98Tokens.textWidth(row.modelData.shortcut, false)) : 0
                     Win98Text {
                         visible: !row.separator
                         x: root.leftPad + root.iconCol + root.iconGap
                         y: Win98Tokens.snap((row.height - height) / 2)
-                        width: Math.min(implicitWidth, root.keyX - 14 * root.u - x)
+                        width: Math.max(0, Math.min(implicitWidth, row.keyRight - (row.keyWidth > 0 ? row.keyWidth + 12 * root.u : 0) - 14 * root.u - x))
                         text: row.separator ? "" : (row.modelData.text || "")
                         color: row.usable ? row.ink : Win98Tokens.gray
                         disabledLook: !row.usable && !row.on
                     }
                     Win98Text {
                         visible: !row.separator && !!row.modelData.shortcut
-                        x: root.keyX
+                        x: row.keyRight - row.keyWidth
                         y: Win98Tokens.snap((row.height - height) / 2)
                         text: row.separator ? "" : (row.modelData.shortcut || "")
                         accessMarks: false

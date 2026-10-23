@@ -26,12 +26,14 @@ Item {
     id: root
 
     property string variant: "button"
-    property color color: Win98Tokens.face
+    // Another appearance's colours (Win98Tokens.palette), for previews.
+    property var scheme: null
+    property color color: scheme ? scheme.face : Win98Tokens.face
     property bool filled: true
 
     readonly property real u: Win98Tokens.u
     readonly property var rings: {
-        const T = Win98Tokens;
+        const T = root.scheme || Win98Tokens;
         switch (root.variant) {
         case "window": return [[T.li, T.dk], [T.hi, T.sh]];
         case "pressed": return [[T.dk, T.hi], [T.sh, T.li]];

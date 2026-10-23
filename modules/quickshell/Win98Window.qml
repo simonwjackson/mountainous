@@ -18,7 +18,13 @@ FocusScope {
     property bool margins: true
     // Draw a caption button pressed: "", "help" or "close".
     property string showPressed: ""
+    // Another appearance's colours (Win98Tokens.palette), for previews.
+    property var scheme: null
+    readonly property var tokens: scheme || Win98Tokens
     default property alias content: body.data
+
+    // Esc closes the window unless this returns true (it handled Esc).
+    function cancel() { return false; }
 
     signal closeClicked
     signal helpClicked
@@ -36,6 +42,7 @@ FocusScope {
     Win98Bevel {
         anchors.fill: parent
         variant: "window"
+        scheme: root.scheme
     }
 
     Rectangle {
@@ -45,8 +52,8 @@ FocusScope {
         height: Win98Tokens.captionHeight * root.u
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: root.active ? Win98Tokens.caption1 : Win98Tokens.inactiveCaption1 }
-            GradientStop { position: 1; color: root.active ? Win98Tokens.caption2 : Win98Tokens.inactiveCaption2 }
+            GradientStop { position: 0; color: root.active ? root.tokens.caption1 : root.tokens.inactiveCaption1 }
+            GradientStop { position: 1; color: root.active ? root.tokens.caption2 : root.tokens.inactiveCaption2 }
         }
 
         Win98Icon {
@@ -55,7 +62,7 @@ FocusScope {
             x: 3 * root.u
             y: root.u
             name: root.iconName
-            color: Win98Tokens.captionText
+            color: root.tokens.captionText
         }
         Win98Text {
             x: root.iconName !== "" ? icon.x + icon.width + 3 * root.u : 3 * root.u
@@ -64,7 +71,7 @@ FocusScope {
             text: root.title
             accessMarks: false
             bold: true
-            color: root.active ? Win98Tokens.captionText : Win98Tokens.inactiveCaptionText
+            color: root.active ? root.tokens.captionText : root.tokens.inactiveCaptionText
         }
         Row {
             id: buttons
@@ -74,12 +81,14 @@ FocusScope {
             Win98CaptionButton {
                 visible: root.showHelp
                 glyph: "help"
+                scheme: root.scheme
                 showPressed: root.showPressed === "help"
                 onClicked: root.helpClicked()
             }
             Win98CaptionButton {
                 visible: root.showClose
                 glyph: "close"
+                scheme: root.scheme
                 showPressed: root.showPressed === "close"
                 onClicked: root.closeClicked()
             }

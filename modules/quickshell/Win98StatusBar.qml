@@ -55,7 +55,9 @@ Item {
                 Win98Text {
                     id: label
                     x: 4 * root.u
-                    y: 2 * root.u    // 2 u padding; the half unit of leading rounds away
+                    // 2 u padding; a shorter pane centres its text, as the
+                    // mock's flex panes do. The half unit of leading rounds away.
+                    y: Math.max(2 * root.u, Win98Tokens.snap((pane.height - Win98Tokens.ceilU(implicitHeight)) / 2))
                     width: pane.width - 8 * root.u
                     text: pane.modelData
                     accessMarks: false

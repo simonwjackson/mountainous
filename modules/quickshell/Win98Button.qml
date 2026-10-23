@@ -21,6 +21,8 @@ FocusScope {
     // that drives the button by its own keys).
     property bool showPressed: false
     property bool showFocus: false
+    // Another appearance's colours (Win98Tokens.palette), for previews.
+    property var scheme: null
 
     signal clicked
 
@@ -58,6 +60,7 @@ FocusScope {
     Win98Bevel {
         anchors.fill: parent
         variant: root.down ? "defaultPressed" : root.isDefault && root.enabled ? "default" : "button"
+        scheme: root.scheme
     }
 
     Row {
@@ -76,6 +79,7 @@ FocusScope {
             y: Win98Tokens.snap((content.height - height) / 2)
             text: root.text
             disabledLook: !root.enabled
+            scheme: root.scheme
             width: Math.min(implicitWidth, root.width - 2 * root.padUnits * root.u)
         }
     }
