@@ -164,6 +164,9 @@ in {
   # The packaged switcher in a private D-Bus session with a real dconf:
   # mode, the extra-dark file, toggles, reapply and a missing file.
   perSystem = {pkgs, ...}: {
+    # Native CLI target for headless checks on each flake system. The NixOS
+    # module below uses the same factory for the installed command.
+    packages.desktop-theme = desktopThemeCommand pkgs;
     checks.desktop-theme =
       pkgs.runCommand "desktop-theme" {
         nativeBuildInputs = [

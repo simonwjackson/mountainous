@@ -145,7 +145,7 @@ Phase 1 is a refactor with no visible change, so its review is a pixel diff of t
 
 ### Registry
 
-Add one entry to `modules/quickshell/themes.json`. It is the only installed-theme list. Nix reads it for CLI validation and `list`; QML reads the same file.
+Add one entry to `modules/quickshell/themes.json`. It is the only installed-theme list. Nix reads it for CLI validation and `list`; QML reads the same file. `packages.<system>.desktop-theme` exposes a native command for each check platform; the installed NixOS command uses the same factory.
 
 | Field | Platinum value / contract |
 |---|---|
