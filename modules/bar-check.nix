@@ -73,6 +73,7 @@
           node ${./quickshell/themes/platinum/picker-plan.test.js} ${./quickshell/themes/platinum/picker-plan.js}
           bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > notification-schema.js
           node ${./quickshell/theme-dev/lifecycle.test.js} ${./quickshell} ${config.packages.desktop-theme}/bin/desktop-theme "$PWD/notification-schema.js"
+          node ${./quickshell/theme-dev/picker-geometry.test.js} ${./quickshell} "$PWD/notification-schema.js"
           touch $out
         '';
       checks.bar-delivery =
