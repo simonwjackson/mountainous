@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 scheme drawn small, in that scheme's own palette: an inactive
@@ -11,7 +12,7 @@ Item {
 
     property var scheme: Win98Tokens.current
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property var p: scheme
 
     Win98Window {
@@ -35,7 +36,7 @@ Item {
                     Rectangle {
                         id: word
                         required property string modelData
-                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false)) + 12 * root.u
+                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false, root.u), root.u) + 12 * root.u
                         height: 17 * root.u
                         color: modelData === "Selected" ? root.p.selection : "transparent"
                         Win98Text {
@@ -75,7 +76,7 @@ Item {
                 Win98Text { x: 6 * root.u; y: 3 * root.u; text: "Message Text"; accessMarks: false; color: root.p.text }
             }
             Win98Button {
-                x: Win98Tokens.snap((144 * root.u - width) / 2)
+                x: Win98Tokens.snap((144 * root.u - width) / 2, root.u)
                 widthUnits: 50; small: true; height: 18 * root.u
                 text: "OK"
                 scheme: root.p

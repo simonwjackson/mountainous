@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A count badge: white digits in a 3x5 pixel face on red, 7 u tall, with a
@@ -10,7 +11,7 @@ Item {
     property color color: Win98Tokens.badge
     property color ringColor: Win98Tokens.face
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property var digits: ({
         "0": "111101101101111", "1": "010110010010111", "2": "111001111100111", "3": "111001111001111",
         "4": "101101111001001", "5": "111100111001111", "6": "111100111101111", "7": "111001001010010",

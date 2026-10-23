@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A cascading Win98 menu (the Start menu, a popup menu) with Win98's
@@ -44,7 +45,7 @@ FocusScope {
     signal triggered(var item, var indices)
     signal closed
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     // Where the menu stands in its bounds. mapToItem is not a binding, so
     // this reads the positions it depends on (the menu's and its parent's),
     // and a host that places the menu after creating it moves the cascade.

@@ -231,6 +231,17 @@ ShellRoot {
         onDesktopChanged: Qt.callLater(root.apply)
     }
     readonly property var desktop: loader.desktop
+    readonly property var fixtureContext: context
+
+    // A second screen (scales.sh adds one): its own Desktop, so each screen's
+    // taskbar draws in its own unit.
+    Loader {
+        active: Quickshell.screens.length > 1
+        sourceComponent: ThemeDesktop {
+            screen: Quickshell.screens[1]
+            context: root.fixtureContext
+        }
+    }
 
     // The mock's apps (data.js PROGRAMS), as DesktopEntries would list them.
     function apps() {

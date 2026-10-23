@@ -49,7 +49,7 @@ Win98Window {
                                 width: 22 * root.u; height: 15 * root.u
                                 color: Win98Tokens.dark ? "#2a2a2a" : Win98Tokens.sh
                                 Win98Text {
-                                    x: Win98Tokens.half((parent.width - width) / 2); y: root.u
+                                    x: Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
                                     text: parent.modelData; accessMarks: false
                                     color: Win98Tokens.dark ? "#dddddd" : Win98Tokens.hi
                                 }
@@ -67,7 +67,7 @@ Win98Window {
                                 width: 22 * root.u; height: 15 * root.u
                                 color: today ? Win98Tokens.selection : "transparent"
                                 Win98Text {
-                                    x: Win98Tokens.half((parent.width - width) / 2); y: root.u
+                                    x: Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
                                     text: String(parent.index + 1); accessMarks: false
                                     color: parent.today ? Win98Tokens.selectionText : Win98Tokens.winText
                                 }

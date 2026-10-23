@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A Win98 option button: a 12-u pixel circle with two rings split on the
@@ -15,7 +16,7 @@ FocusScope {
 
     signal clicked
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool pressing: showPressed || (area.pressed && area.containsMouse)
 
     implicitWidth: Win98Tokens.radio * u + (text !== "" ? 5 * u + label.implicitWidth : 0)
@@ -38,7 +39,7 @@ FocusScope {
 
     Win98Svg {
         id: circle
-        y: Win98Tokens.snap((root.height - height) / 2)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u)
         width: Win98Tokens.radio * root.u
         height: width
         svg: {

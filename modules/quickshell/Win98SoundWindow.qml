@@ -80,13 +80,13 @@ Win98Window {
                             width: 72 * root.u
                             height: 13 * root.u
                             Win98Text {
-                                x: Win98Tokens.half((72 * root.u - width) / 2)
+                                x: Win98Tokens.half((72 * root.u - width) / 2, root.u)
                                 text: !root.hasAudio || root.muted ? "--" : Math.round(root.volume * 100) + "%"
                                 accessMarks: false
                             }
                         }
                         Win98CheckBox {
-                            x: Win98Tokens.half((72 * root.u - width) / 2)
+                            x: Win98Tokens.half((72 * root.u - width) / 2, root.u)
                             text: "&Mute"
                             enabled: root.hasAudio
                             checked: root.muted

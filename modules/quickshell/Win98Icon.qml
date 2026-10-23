@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // One icon from the Win98 set, at its own grid size (16 u, or 24 u for the
@@ -5,6 +6,7 @@ import QtQuick
 // pixel per physical pixel, so its 1-u lines are exact.
 Item {
     id: root
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
 
     property string name: ""
     // The colour for the icon's currentColor strokes (wifi bars, sound
@@ -18,15 +20,15 @@ Item {
 
     readonly property var natural: Win98IconStore.size(name)
 
-    implicitWidth: (size > 0 ? size : natural[0]) * Win98Tokens.u
-    implicitHeight: (size > 0 ? size * natural[1] / natural[0] : natural[1]) * Win98Tokens.u
+    implicitWidth: (size > 0 ? size : natural[0]) * root.u
+    implicitHeight: (size > 0 ? size * natural[1] / natural[0] : natural[1]) * root.u
 
     Image {
         anchors.fill: parent
         smooth: true
         mipmap: false
-        sourceSize.width: Math.max(1, Math.round(root.width * Win98Tokens.pixelRatio))
-        sourceSize.height: Math.max(1, Math.round(root.height * Win98Tokens.pixelRatio))
+        sourceSize.width: Math.max(1, Math.round(root.width * (2 / root.u)))
+        sourceSize.height: Math.max(1, Math.round(root.height * (2 / root.u)))
         source: root.name === "" ? "" : Win98IconStore.url(root.name, root.color, root.level, root.levelColor)
     }
 }

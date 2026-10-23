@@ -25,6 +25,7 @@ Scope {
 
         PanelWindow {
             id: win
+            readonly property real u: Win98Tokens.unitFor(win)
             screen: host.desktop.screen
             anchors { top: true; bottom: true; left: true; right: true }
             exclusionMode: ExclusionMode.Ignore
@@ -38,9 +39,9 @@ Scope {
                 text: host.text
                 x: {
                     const x = win.place ? win.place.x : win.width;
-                    return Math.max(2 * host.u, Math.min(x, win.width - width - 2 * host.u));
+                    return Math.max(2 * win.u, Math.min(x, win.width - width - 2 * win.u));
                 }
-                y: win.height - host.taskbar.barHeight - 3 * host.u - height
+                y: win.height - host.taskbar.barHeight - 3 * win.u - height
             }
         }
     }

@@ -24,7 +24,7 @@ PanelWindow {
 
     required property var model
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(win)
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
@@ -37,7 +37,6 @@ PanelWindow {
     // The taskbar stays usable under the picker.
     mask: Region { x: 0; y: 0; width: win.width; height: Math.max(0, win.area) }
 
-    onDevicePixelRatioChanged: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
 
     // ---- the draft
     // This theme first, then the others in registry order.
@@ -93,8 +92,8 @@ PanelWindow {
         id: dialog
         objectName: "pickerDialog"
         width: Math.min(410 * win.u, win.width - 4 * win.u)
-        x: Win98Tokens.half((win.width - width) / 2)
-        y: Math.max(0, Win98Tokens.snap(win.area / 2 - height / 2))
+        x: Win98Tokens.half((win.width - width) / 2, win.u)
+        y: Math.max(0, Win98Tokens.snap(win.area / 2 - height / 2, win.u))
         title: "Display Properties"
         showHelp: true
         margins: false

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // Text on the Win98 grid, in W95FA Grid.
@@ -41,8 +42,8 @@ Item {
     // Line pitch of wrapped text, in units (13 = the font's own line).
     property int lineUnits: Win98Tokens.lineUnits
 
-    readonly property real u: Win98Tokens.u
-    readonly property real k: Win98Tokens.textScale
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real k: (root.u / 2)
     readonly property string plain: accessMarks ? Win98Tokens.plainText(text) : text
     readonly property int accessIndex: accessMarks ? Win98Tokens.accessIndex(text) : -1
     readonly property color shownColor: disabledLook ? tokens.gray : color
@@ -112,9 +113,9 @@ Item {
             Rectangle {
                 required property int index
                 z: index === 1 ? -1 : 0
-                x: Win98Tokens.textWidth(root.plain.slice(0, root.accessIndex), root.bold) + (index === 1 ? root.u : 0)
+                x: Win98Tokens.textWidth(root.plain.slice(0, root.accessIndex), root.bold, root.u) + (index === 1 ? root.u : 0)
                 y: (Win98Tokens.ascentUnits + 1) * root.u + (index === 1 ? root.u : 0)
-                width: Win98Tokens.textWidth(root.plain.charAt(root.accessIndex), false) - root.u
+                width: Win98Tokens.textWidth(root.plain.charAt(root.accessIndex), false, root.u) - root.u
                 height: root.u
                 color: index === 1 ? root.tokens.emboss : root.shownColor
             }

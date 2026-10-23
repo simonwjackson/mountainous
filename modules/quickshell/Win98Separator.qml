@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // An etched line: grey over white (horizontal) or grey beside white
@@ -8,7 +9,7 @@ Item {
     id: root
 
     property int orientation: Qt.Horizontal
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool vertical: orientation === Qt.Vertical
 
     implicitWidth: vertical ? 6 * u : 20 * u

@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A Win98 window frame: the window bevel (light grey outside, white
@@ -29,7 +30,7 @@ FocusScope {
     signal closeClicked
     signal helpClicked
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real frame: Win98Tokens.frame * u
     readonly property real captionBottom: frame + Win98Tokens.captionHeight * u + u
     readonly property real marginTop: margins ? 6 * u : 0

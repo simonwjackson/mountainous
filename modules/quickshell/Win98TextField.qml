@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 text field: 21 u tall, sunken, white (dark in dark grey), the
@@ -21,8 +22,8 @@ FocusScope {
 
     signal accepted
 
-    readonly property real u: Win98Tokens.u
-    readonly property real k: Win98Tokens.textScale
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real k: (root.u / 2)
 
     implicitWidth: 120 * u
     implicitHeight: Win98Tokens.fieldHeight * u

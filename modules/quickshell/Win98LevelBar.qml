@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // The Sound window's level bar: 4 u tall, a thin sunken edge, the level in
@@ -10,7 +11,7 @@ Item {
     property bool muted: false
     property bool onSelection: false
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
 
     implicitWidth: 100 * u
     implicitHeight: 4 * u
@@ -35,7 +36,7 @@ Item {
     Rectangle {
         x: root.u; y: root.u
         height: root.height - 2 * root.u
-        width: Math.max(0, Win98Tokens.snap(root.width * Math.max(0, Math.min(1, root.value))) - 2 * root.u)
+        width: Math.max(0, Win98Tokens.snap(root.width * Math.max(0, Math.min(1, root.value)), root.u) - 2 * root.u)
         color: root.onSelection ? Win98Tokens.selectionText : root.muted ? Win98Tokens.gray : Win98Tokens.selection
     }
 }

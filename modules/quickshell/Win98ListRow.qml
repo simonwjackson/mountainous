@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // One row of a Win98 list view.
@@ -35,7 +36,7 @@ Item {
     signal clicked
     signal doubleClicked
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool twoLine: detail !== "" || level >= 0
     readonly property real markWidth: iconName !== "" ? 16 * u : mark !== "" ? 10 * u : 0
     readonly property color ink: selected ? Win98Tokens.selectionText : titleColor
@@ -58,8 +59,8 @@ Item {
         Win98Icon {
             name: root.iconName !== "" ? root.iconName : root.mark
             color: root.ink
-            x: Win98Tokens.snap((markCell.width - width) / 2)
-            y: Win98Tokens.snap((markCell.height - height) / 2)
+            x: Win98Tokens.snap((markCell.width - width) / 2, root.u)
+            y: Win98Tokens.snap((markCell.height - height) / 2, root.u)
         }
     }
 
@@ -68,7 +69,7 @@ Item {
         x: 3 * root.u + (root.markWidth > 0 ? root.markWidth + 4 * root.u : 0)
         width: (root.value !== "" ? valueText.x - 4 * root.u
             : root.trailing !== "" ? root.width - 17 * root.u : root.width - 3 * root.u) - x
-        y: Win98Tokens.snap((root.height - height) / 2)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u)
         spacing: root.level >= 0 ? 3 * root.u : 0
 
         Win98Text {
@@ -98,7 +99,7 @@ Item {
         id: valueText
         visible: root.value !== ""
         x: root.width - 3 * root.u - width
-        y: Win98Tokens.snap((root.height - height) / 2)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u)
         width: Math.max(implicitWidth, root.valueUnits * root.u)
         horizontalAlignment: Text.AlignRight
         text: root.value
@@ -115,8 +116,8 @@ Item {
         Win98Icon {
             name: root.trailing
             color: root.ink
-            x: Win98Tokens.snap((trailCell.width - width) / 2)
-            y: Win98Tokens.snap((trailCell.height - height) / 2)
+            x: Win98Tokens.snap((trailCell.width - width) / 2, root.u)
+            y: Win98Tokens.snap((trailCell.height - height) / 2, root.u)
         }
     }
 

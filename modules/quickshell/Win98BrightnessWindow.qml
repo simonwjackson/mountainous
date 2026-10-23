@@ -41,7 +41,7 @@ Win98Window {
             }
             Win98Text {
                 x: parent.width - width
-                y: Win98Tokens.snap((parent.height - height) / 2)
+                y: Win98Tokens.snap((parent.height - height) / 2, root.u)
                 text: root.level >= 0 ? root.level + "%" : "--"
                 accessMarks: false
             }

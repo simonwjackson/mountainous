@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 drop-down list (CBS_DROPDOWNLIST).
@@ -26,13 +27,13 @@ FocusScope {
 
     signal activated(int index)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool focusShown: enabled && (showFocus || activeFocus)
     property int highlighted: currentIndex
     readonly property real rowHeight: 15 * u
     readonly property real listRow: 17 * u
 
-    implicitWidth: Win98Tokens.ceilU(Win98Tokens.widest(model, false)) + 4 * u + 23 * u + 4 * u
+    implicitWidth: Win98Tokens.ceilU(Win98Tokens.widest(model, false, root.u), root.u) + 4 * u + 23 * u + 4 * u
     implicitHeight: Win98Tokens.fieldHeight * u
     activeFocusOnTab: enabled
 
@@ -52,8 +53,8 @@ FocusScope {
         if (!host) return;
         list.parent = host;
         const p = root.mapToItem(host, 0, root.height);
-        list.x = Win98Tokens.snap(p.x);
-        list.y = Win98Tokens.snap(p.y);
+        list.x = Win98Tokens.snap(p.x, root.u);
+        list.y = Win98Tokens.snap(p.y, root.u);
     }
 
     Keys.onPressed: event => {
@@ -115,8 +116,8 @@ FocusScope {
         Win98Icon {
             name: "arrow-down"
             color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
-            x: Win98Tokens.snap((button.width - width) / 2) + (root.open ? root.u : 0)
-            y: Win98Tokens.snap((button.height - height) / 2) + (root.open ? root.u : 0)
+            x: Win98Tokens.snap((button.width - width) / 2, root.u) + (root.open ? root.u : 0)
+            y: Win98Tokens.snap((button.height - height) / 2, root.u) + (root.open ? root.u : 0)
         }
     }
 

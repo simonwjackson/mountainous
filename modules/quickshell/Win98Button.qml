@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A Win98 push button: 23 u tall (21 u small), at least 75 u wide, its
@@ -26,19 +27,19 @@ FocusScope {
 
     signal clicked
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool down: showPressed || (area.pressed && area.containsMouse) || keyDown
     readonly property bool focusShown: enabled && (showFocus || activeFocus)
     readonly property real padUnits: small ? 7 : 8
     property bool keyDown: false
 
     readonly property real labelWidth: Math.max(
-        Win98Tokens.textWidth(Win98Tokens.plainText(text), false),
-        Win98Tokens.widest(roleLabels.map(Win98Tokens.plainText), false))
+        Win98Tokens.textWidth(Win98Tokens.plainText(text), false, root.u),
+        Win98Tokens.widest(roleLabels.map(Win98Tokens.plainText), false, root.u))
         + (iconName !== "" ? 16 * u + (text !== "" ? 4 * u : 0) : 0)
 
     implicitWidth: widthUnits > 0 ? widthUnits * u
-        : Math.max(small ? 0 : Win98Tokens.buttonMinWidth * u, Win98Tokens.ceilU(labelWidth) + 2 * padUnits * u)
+        : Math.max(small ? 0 : Win98Tokens.buttonMinWidth * u, Win98Tokens.ceilU(labelWidth, root.u) + 2 * padUnits * u)
     implicitHeight: (small ? Win98Tokens.buttonSmallHeight : Win98Tokens.buttonHeight) * u
     activeFocusOnTab: enabled
 
@@ -66,8 +67,8 @@ FocusScope {
     Row {
         id: content
         spacing: 4 * root.u
-        x: Win98Tokens.snap((root.width - width) / 2) + (root.down ? root.u : 0)
-        y: Win98Tokens.snap((root.height - height) / 2) + (root.down ? root.u : 0)
+        x: Win98Tokens.snap((root.width - width) / 2, root.u) + (root.down ? root.u : 0)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u) + (root.down ? root.u : 0)
 
         Win98Icon {
             visible: root.iconName !== ""
@@ -76,7 +77,7 @@ FocusScope {
         }
         Win98Text {
             visible: root.text !== ""
-            y: Win98Tokens.snap((content.height - height) / 2)
+            y: Win98Tokens.snap((content.height - height) / 2, root.u)
             text: root.text
             disabledLook: !root.enabled
             scheme: root.scheme

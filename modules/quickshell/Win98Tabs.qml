@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 property sheet: a row of tabs over a raised sheet. Tabs are
@@ -23,10 +24,10 @@ FocusScope {
 
     signal selected(int index)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real strip: 24 * u
     readonly property Item first: sheetBody.children.length > 0 ? sheetBody.children[0] : null
-    readonly property var tabWidths: tabs.map(t => Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(t), false)) + 14 * u)
+    readonly property var tabWidths: tabs.map(t => Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(t), false, root.u), root.u) + 14 * u)
     // Each tab's left edge in the row: 2 u in, every tab 1 u over the last,
     // except the one after the current tab.
     readonly property var tabX: {

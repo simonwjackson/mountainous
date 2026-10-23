@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 list view: a sunken white well, 2 u of padding, the rows, and a
@@ -27,7 +28,7 @@ FocusScope {
 
     signal activated(int index)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real step: rowUnits * u
     readonly property bool overflows: view.contentHeight > view.height + 0.5
 
@@ -105,7 +106,7 @@ FocusScope {
         visible: view.count === 0 && root.emptyText !== ""
         x: 12 * root.u
         width: root.width - 24 * root.u
-        y: Win98Tokens.snap((root.height - height) / 2)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u)
         wrap: true
         horizontalAlignment: Text.AlignHCenter
         text: root.emptyText

@@ -20,27 +20,31 @@ import QtQuick
 Singleton {
     id: root
 
-    // The window's device pixel ratio. The surface that hosts the theme
-    // keeps it current, as TopBar does for Theme.pixelRatio. One value for
-    // the process: two screens at different scales would need per-window
-    // tokens.
+    // The unit belongs to each window: 2 physical px at that window's own
+    // device pixel ratio. Every control reads it through unitFor(QsWindow
+    // .window), so a taskbar on a scale-1 screen and one on a scale-1.5
+    // screen each draw 2-px bevels. pixelRatio and u are only the fallback
+    // for an object outside a window (a Scope).
     property real pixelRatio: 1.5
     readonly property real u: 2 / pixelRatio
+    function unitFor(w) {
+        return w && w.devicePixelRatio > 0 ? 2 / w.devicePixelRatio : root.u;
+    }
 
     // No roll-out when true. The host sets it; nothing in the session
     // publishes a reduced-motion preference yet.
     property bool reducedMotion: false
     readonly property int rollDuration: reducedMotion ? 0 : 120
 
-    function px(n) { return n * root.u; }
+    function px(n, unit) { return n * (unit || root.u); }
     // To the whole unit; a half goes up (down the screen, to the right).
-    function snap(v) { return Math.floor(v / root.u + 0.5 + 1e-6) * root.u; }
+    function snap(v, unit) { const k = unit || root.u; return Math.floor(v / k + 0.5 + 1e-6) * k; }
     // To the half unit: one physical pixel. The mock's browser centred boxes
     // and text runs across (horizontally) without snapping them to a unit;
     // a half unit still lands on whole physical pixels.
-    function half(v) { return Math.round(v / (root.u / 2) + 1e-6) * (root.u / 2); }
+    function half(v, unit) { const k = (unit || root.u) / 2; return Math.round(v / k + 1e-6) * k; }
     // Up to a whole unit, for sizes measured from text.
-    function ceilU(v) { return Math.ceil(v / root.u - 1e-6) * root.u; }
+    function ceilU(v, unit) { const k = unit || root.u; return Math.ceil(v / k - 1e-6) * k; }
 
     readonly property bool dark: Theme.dark
 
@@ -142,13 +146,13 @@ Singleton {
     }
 
     // A string's width in logical px. Drawn bold adds 1 u per letter.
-    function textWidth(s, bold) {
-        const str = String(s);
-        return metrics.advanceWidth(str) * root.textScale + (bold ? str.length * root.u : 0);
+    function textWidth(s, bold, unit) {
+        const str = String(s), k = unit || root.u;
+        return metrics.advanceWidth(str) * k / 2 + (bold ? str.length * k : 0);
     }
-    function widest(strings, bold) {
+    function widest(strings, bold, unit) {
         let w = 0;
-        for (const s of strings) w = Math.max(w, root.textWidth(s, bold));
+        for (const s of strings) w = Math.max(w, root.textWidth(s, bold, unit));
         return w;
     }
 

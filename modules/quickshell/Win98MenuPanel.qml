@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // One level of a Win98 menu: the window bevel, 3 u of face, an optional
@@ -38,7 +39,7 @@ Item {
     signal hovered(int index)
     signal clicked(int index)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real pad: Win98Tokens.frame * u
     readonly property real band: bandText !== "" ? (Win98Tokens.menuBand + 1) * u : 0
     readonly property real rowH: (big ? Win98Tokens.menuBigItemHeight : Win98Tokens.menuItemHeight) * u
@@ -46,12 +47,12 @@ Item {
     readonly property real iconGap: (big ? 6 : 3) * u
     readonly property real leftPad: (big ? 4 : 2) * u
     readonly property bool anySub: items.some(it => it && !it.separator && it.submenu && it.submenu.length > 0)
-    readonly property real textW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && !it.separator).map(it => Win98Tokens.plainText(it.text || "")), false))
-    readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && it.shortcut).map(it => it.shortcut), false))
+    readonly property real textW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && !it.separator).map(it => Win98Tokens.plainText(it.text || "")), false, root.u), root.u)
+    readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && it.shortcut).map(it => it.shortcut), false, root.u), root.u)
     // The widest label and its shortcut, with the 12-u gap between them.
     readonly property real pairW: items.reduce((w, it) => it && !it.separator
-        ? Math.max(w, Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), false))
-            + (it.shortcut ? 12 * u + Win98Tokens.ceilU(Win98Tokens.textWidth(it.shortcut, false)) : 0)) : w, 0)
+        ? Math.max(w, Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), false, root.u), root.u)
+            + (it.shortcut ? 12 * u + Win98Tokens.ceilU(Win98Tokens.textWidth(it.shortcut, false, root.u), root.u) : 0)) : w, 0)
     readonly property real fixedW: 2 * pad + band + leftPad + iconCol + iconGap + 14 * u + 16 * u
     readonly property real pairCol: maxWidth > 0 && widthUnits <= 0
         ? Math.max(40 * u, Math.min(pairW, Math.floor((maxWidth - fixedW) / u) * u)) : pairW
@@ -88,9 +89,9 @@ Item {
         id: clipper
         clip: root.reveal < 1
         x: 0
-        y: root.roll === "up" ? Win98Tokens.snap(root.height * (1 - root.reveal)) : 0
-        width: root.roll === "right" ? Win98Tokens.snap(root.width * root.reveal) : root.width
-        height: root.roll === "up" ? root.height - y : root.roll === "down" ? Win98Tokens.snap(root.height * root.reveal) : root.height
+        y: root.roll === "up" ? Win98Tokens.snap(root.height * (1 - root.reveal), root.u) : 0
+        width: root.roll === "right" ? Win98Tokens.snap(root.width * root.reveal, root.u) : root.width
+        height: root.roll === "up" ? root.height - y : root.roll === "down" ? Win98Tokens.snap(root.height * root.reveal, root.u) : root.height
 
         Item {
             id: content
@@ -165,25 +166,25 @@ Item {
                             visible: !row.separator && !!row.modelData.icon
                             name: row.separator ? "" : (row.modelData.icon || "")
                             color: row.ink
-                            x: Win98Tokens.snap((iconCell.width - width) / 2)
-                            y: Win98Tokens.snap((iconCell.height - height) / 2)
+                            x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
+                            y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)
                         }
                         Win98Icon {
                             visible: !row.separator && !row.modelData.icon && row.modelData.checked === true
                             name: "check"
                             color: row.usable ? row.ink : Win98Tokens.gray
-                            x: Win98Tokens.snap((iconCell.width - width) / 2)
-                            y: Win98Tokens.snap((iconCell.height - height) / 2)
+                            x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
+                            y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)
                         }
                     }
                     // Shortcuts end 16 u from the row's right edge.
                     readonly property real keyRight: row.width - 16 * root.u
                     readonly property real keyWidth: !row.separator && row.modelData.shortcut
-                        ? Win98Tokens.ceilU(Win98Tokens.textWidth(row.modelData.shortcut, false)) : 0
+                        ? Win98Tokens.ceilU(Win98Tokens.textWidth(row.modelData.shortcut, false, root.u), root.u) : 0
                     Win98Text {
                         visible: !row.separator
                         x: root.leftPad + root.iconCol + root.iconGap
-                        y: Win98Tokens.snap((row.height - height) / 2)
+                        y: Win98Tokens.snap((row.height - height) / 2, root.u)
                         width: Math.max(0, Math.min(implicitWidth, row.keyRight - (row.keyWidth > 0 ? row.keyWidth + 12 * root.u : 0) - 14 * root.u - x))
                         text: row.separator ? "" : (row.modelData.text || "")
                         color: row.usable ? row.ink : Win98Tokens.gray
@@ -192,7 +193,7 @@ Item {
                     Win98Text {
                         visible: !row.separator && !!row.modelData.shortcut
                         x: row.keyRight - row.keyWidth
-                        y: Win98Tokens.snap((row.height - height) / 2)
+                        y: Win98Tokens.snap((row.height - height) / 2, root.u)
                         text: row.separator ? "" : (row.modelData.shortcut || "")
                         accessMarks: false
                         color: row.usable ? row.ink : Win98Tokens.gray
@@ -203,7 +204,7 @@ Item {
                         name: "arrow-right"
                         color: row.usable ? row.ink : Win98Tokens.gray
                         x: row.width - 6 * root.u - width
-                        y: Win98Tokens.snap((row.height - height) / 2)
+                        y: Win98Tokens.snap((row.height - height) / 2, root.u)
                     }
 
                     MouseArea {

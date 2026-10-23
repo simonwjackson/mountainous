@@ -19,13 +19,13 @@ Win98Window {
         Win98Icon { name: "logoff" }
         Win98Text {
             x: 36 * root.u
-            y: Win98Tokens.snap((24 * root.u - height) / 2)
+            y: Win98Tokens.snap((24 * root.u - height) / 2, root.u)
             width: Math.min(implicitWidth, parent.width - x)
             text: "Are you sure you want to log off?"
             accessMarks: false
         }
         Row {
-            x: Win98Tokens.half((parent.width - width) / 2)
+            x: Win98Tokens.half((parent.width - width) / 2, root.u)
             y: 38 * root.u
             spacing: 6 * root.u
             Win98Button { id: yes; text: "&Yes"; isDefault: true; focus: true; onClicked: root.desktop.logOff() }

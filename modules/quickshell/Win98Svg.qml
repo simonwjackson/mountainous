@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // An SVG drawn at exactly one source pixel per physical pixel. Qt loads an
@@ -9,6 +10,7 @@ import QtQuick
 // check box, the radio button and the trackbar thumb draw through this.
 Image {
     id: root
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
 
     property string svg: ""
 
@@ -16,8 +18,8 @@ Image {
     mipmap: false
     cache: false
     asynchronous: false
-    sourceSize.width: Math.max(1, Math.round(width * Win98Tokens.pixelRatio))
-    sourceSize.height: Math.max(1, Math.round(height * Win98Tokens.pixelRatio))
+    sourceSize.width: Math.max(1, Math.round(width * (2 / root.u)))
+    sourceSize.height: Math.max(1, Math.round(height * (2 / root.u)))
     source: svg === "" || width <= 0 || height <= 0 ? ""
         : "data:image/svg+xml;utf8," + encodeURIComponent(svg)
 }

@@ -23,7 +23,7 @@ Scope {
     IpcHandler {
         target: "win98gallery"
         function page(name: string): string { gallery.page = name; return name; }
-        function ready(): string { return gallery.page + " dpr=" + Win98Tokens.pixelRatio + " dark=" + Win98Tokens.dark; }
+        function ready(): string { return gallery.page + " dpr=" + (2 / gallery.u) + " dark=" + Win98Tokens.dark; }
         function motion(reduced: bool): string { Win98Tokens.reducedMotion = reduced; return String(Win98Tokens.reducedMotion); }
         // The live test menu (page "keys"): send a key, read the state back.
         function key(name: string): string { return gallery.menuKey(name); }
@@ -466,7 +466,7 @@ Scope {
                             Win98Text { y: 5.5 * gallery.u; text: "Are you sure you want to log off?"; accessMarks: false }
                         }
                         Row {
-                            x: Win98Tokens.snap((276 * gallery.u - width) / 2)
+                            x: Win98Tokens.snap((276 * gallery.u - width) / 2, gallery.u)
                             spacing: 6 * gallery.u
                             Win98Button { text: "&Yes"; isDefault: true; showFocus: true }
                             Win98Button { text: "&No" }
@@ -724,7 +724,7 @@ Scope {
                                 width: 60 * gallery.u; height: 44 * gallery.u
                                 color: iconFlow.modelData
                                 Win98Icon {
-                                    x: Win98Tokens.snap((cell.width - width) / 2); y: 4 * gallery.u
+                                    x: Win98Tokens.snap((cell.width - width) / 2, gallery.u); y: 4 * gallery.u
                                     name: cell.modelData
                                     color: iconFlow.modelData === Win98Tokens.win ? Win98Tokens.winText : Win98Tokens.text
                                     level: cell.modelData.startsWith("battery") ? 0.62 : undefined
@@ -885,8 +885,8 @@ Scope {
                                     width: 72 * gallery.u
                                     spacing: 5 * gallery.u
                                     Win98Slider { x: 21 * gallery.u; orientation: Qt.Vertical; height: 100 * gallery.u; value: 0.42 }
-                                    Win98Text { x: Win98Tokens.snap((72 * gallery.u - width) / 2); text: "42%"; accessMarks: false }
-                                    Win98CheckBox { x: Win98Tokens.snap((72 * gallery.u - width) / 2); text: "&Mute" }
+                                    Win98Text { x: Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "42%"; accessMarks: false }
+                                    Win98CheckBox { x: Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "&Mute" }
                                 }
                             }
                             Column {
@@ -986,7 +986,7 @@ Scope {
                                                     Rectangle {
                                                         id: word
                                                         required property string modelData
-                                                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false)) + 12 * gallery.u
+                                                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false, gallery.u), gallery.u) + 12 * gallery.u
                                                         height: 17 * gallery.u
                                                         color: modelData === "Selected" ? Win98Tokens.selection : "transparent"
                                                         Win98Text {
@@ -1023,7 +1023,7 @@ Scope {
                                                 width: 144 * gallery.u; height: 19 * gallery.u
                                                 Win98Text { x: 6 * gallery.u; y: 3 * gallery.u; text: "Message Text"; accessMarks: false }
                                             }
-                                            Win98Button { x: Win98Tokens.snap((144 * gallery.u - width) / 2); widthUnits: 50; small: true; height: 18 * gallery.u; text: "OK" }
+                                            Win98Button { x: Win98Tokens.snap((144 * gallery.u - width) / 2, gallery.u); widthUnits: 50; small: true; height: 18 * gallery.u; text: "OK" }
                                         }
                                     }
                                 }

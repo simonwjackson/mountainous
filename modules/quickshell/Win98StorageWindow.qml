@@ -35,7 +35,7 @@ Win98Window {
             height: Math.max(21 * root.u, status.height)
             Win98Text {
                 id: status
-                y: Math.max(0, Win98Tokens.snap((21 * root.u - height) / 2))
+                y: Math.max(0, Win98Tokens.snap((21 * root.u - height) / 2, root.u))
                 width: parent.width - check.width - 6 * root.u
                 wrap: true
                 text: root.panel.statusText.replace(/\u2026/g, "...")
@@ -81,7 +81,7 @@ Win98Window {
                             // [−] host
                             Rectangle {
                                 visible: line.host
-                                x: 3 * root.u; y: Win98Tokens.snap((line.height - height) / 2)
+                                x: 3 * root.u; y: Win98Tokens.snap((line.height - height) / 2, root.u)
                                 width: 9 * root.u; height: 9 * root.u
                                 color: Win98Tokens.win
                                 border.width: root.u
@@ -91,7 +91,7 @@ Win98Window {
                             Win98Icon {
                                 visible: line.host
                                 name: "host"
-                                x: 16 * root.u; y: Win98Tokens.snap((line.height - height) / 2)
+                                x: 16 * root.u; y: Win98Tokens.snap((line.height - height) / 2, root.u)
                             }
                             Win98Icon {
                                 visible: !line.host
@@ -101,7 +101,7 @@ Win98Window {
                             Win98Text {
                                 id: msg
                                 x: line.host ? 36 * root.u : 34 * root.u
-                                y: line.host ? Win98Tokens.snap((line.height - height) / 2) : root.u
+                                y: line.host ? Win98Tokens.snap((line.height - height) / 2, root.u) : root.u
                                 width: line.host ? Math.min(implicitWidth, line.width - x) : line.width - x - 3 * root.u
                                 wrap: !line.host
                                 text: line.modelData.text

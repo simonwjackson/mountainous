@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 surface: a fill and up to three 1-u rings of edge lines. Each
@@ -31,7 +32,7 @@ Item {
     property color color: scheme ? scheme.face : Win98Tokens.face
     property bool filled: true
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property var rings: {
         const T = root.scheme || Win98Tokens;
         switch (root.variant) {

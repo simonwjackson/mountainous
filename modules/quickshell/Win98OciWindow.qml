@@ -166,7 +166,7 @@ Win98Window {
         height: 16 * root.u
         Win98Text {
             x: c.alignRight ? c.width - width : 0
-            y: Win98Tokens.snap((c.height - height) / 2)
+            y: Win98Tokens.snap((c.height - height) / 2, root.u)
             width: Math.min(implicitWidth, c.width)
             text: c.text
             accessMarks: false

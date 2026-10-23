@@ -22,7 +22,7 @@ Win98Window {
             spacing: 6 * root.u
             Win98Icon { name: root.failed ? "mic-failed" : root.dictation.state === "working" ? "mic-working" : "mic-recording" }
             Win98Text {
-                y: Win98Tokens.snap((16 * root.u - height) / 2)
+                y: Win98Tokens.snap((16 * root.u - height) / 2, root.u)
                 text: root.text
                 accessMarks: false
                 bold: true

@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A Win98 group box: an etched frame (grey over white) with its title on
@@ -14,7 +15,7 @@ Item {
     property real padUnits: 7
     property real topUnits: 10
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     // The title's line box sits across the frame's top line.
     readonly property real frameTop: 7 * u
     readonly property Item first: body.children.length > 0 ? body.children[0] : null

@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A Win98 check box: a 13-u sunken white box with a 7-u check, the label
@@ -14,7 +15,7 @@ FocusScope {
 
     signal toggled
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool pressing: showPressed || (area.pressed && area.containsMouse)
 
     implicitWidth: Win98Tokens.checkBox * u + (text !== "" ? 5 * u + label.implicitWidth : 0)

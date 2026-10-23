@@ -217,8 +217,8 @@ Win98Window {
             width: 20 * root.u; height: 20 * root.u
             color: ["#008080", "#800080", "#000080", "#808000"][Math.max(0, card.index || 0) % 4]
             Win98Text {
-                x: Win98Tokens.half((parent.width - width) / 2)
-                y: Win98Tokens.snap((parent.height - height) / 2)
+                x: Win98Tokens.half((parent.width - width) / 2, root.u)
+                y: Win98Tokens.snap((parent.height - height) / 2, root.u)
                 text: Model.appLabel(card.item).charAt(0).toUpperCase()
                 accessMarks: false
                 color: "#ffffff"
@@ -253,8 +253,8 @@ Win98Window {
                     Win98Bevel { anchors.fill: parent; variant: closeArea.pressed ? "pressed" : "button" }
                     Win98Icon {
                         name: "close"
-                        x: Win98Tokens.half((close.width - width) / 2) + (closeArea.pressed ? root.u : 0)
-                        y: Win98Tokens.snap((close.height - height) / 2) + (closeArea.pressed ? root.u : 0)
+                        x: Win98Tokens.half((close.width - width) / 2, root.u) + (closeArea.pressed ? root.u : 0)
+                        y: Win98Tokens.snap((close.height - height) / 2, root.u) + (closeArea.pressed ? root.u : 0)
                     }
                     MouseArea { id: closeArea; anchors.fill: parent; onClicked: root.service.dismiss(card.item.id) }
                 }

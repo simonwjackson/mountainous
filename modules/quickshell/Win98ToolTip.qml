@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 tooltip: pale yellow (olive-grey in dark grey), a 1-u edge,
@@ -11,12 +12,12 @@ Item {
     property string text: ""
     property real maxWidthUnits: 400
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property var lines: text.split("\n")
-    readonly property real textWidth: Math.min(maxWidthUnits * u, Win98Tokens.ceilU(Win98Tokens.widest(lines, false)))
+    readonly property real textWidth: Math.min(maxWidthUnits * u, Win98Tokens.ceilU(Win98Tokens.widest(lines, false, root.u), root.u))
 
     implicitWidth: textWidth + 8 * u
-    implicitHeight: lines.length * Win98Tokens.line + 4 * u
+    implicitHeight: lines.length * (Win98Tokens.lineUnits * root.u) + 4 * u
 
     Rectangle {
         anchors.fill: parent

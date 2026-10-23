@@ -9,8 +9,8 @@ Win98Svg {
     property color color: Win98Tokens.dither
     property int phase: 0
 
-    readonly property int cols: Math.max(1, Math.round(width / Win98Tokens.u))
-    readonly property int rows: Math.max(1, Math.round(height / Win98Tokens.u))
+    readonly property int cols: Math.max(1, Math.round(width / root.u))
+    readonly property int rows: Math.max(1, Math.round(height / root.u))
 
     svg: '<svg xmlns="http://www.w3.org/2000/svg" width="' + cols + '" height="' + rows
         + '" viewBox="0 0 ' + cols + ' ' + rows + '" shape-rendering="crispEdges">'

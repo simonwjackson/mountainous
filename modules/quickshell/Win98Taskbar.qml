@@ -25,7 +25,7 @@ PanelWindow {
     required property var desktop
     screen: desktop.screen
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(bar)
     readonly property real barHeight: 28 * u
     readonly property real headroom: 16 * u
     readonly property real faceY: face.y
@@ -35,7 +35,7 @@ PanelWindow {
     // size is whole, and the bar sits on its bottom edge, so every bevel
     // line still lands on whole physical pixels. The zone rounds up.
     function wholeHeight(want) {
-        const dpr = bar.devicePixelRatio > 0 ? bar.devicePixelRatio : Win98Tokens.pixelRatio;
+        const dpr = bar.devicePixelRatio > 0 ? bar.devicePixelRatio : (2 / bar.u);
         for (let k = Math.ceil(want - 1e-6); k < want + 16; k++)
             if (Math.abs(k * dpr - Math.round(k * dpr)) < 1e-4) return k;
         return Math.ceil(want);
@@ -47,15 +47,13 @@ PanelWindow {
     WlrLayershell.namespace: "mountainous-taskbar"
     mask: Region { item: face }
 
-    onDevicePixelRatioChanged: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
-    Component.onCompleted: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
 
     function units(n) { return n * bar.u; }
     // A text's width for the plan, in units: one more than its whole
     // pixels, as the approved mock's canvas measured (a width just over a
     // whole pixel, rounded up). The plan yields at the mock's widths, and
     // every estimate errs one unit wide.
-    function m(text, bold) { return Math.floor(Win98Tokens.textWidth(text, bold) / bar.u + 1e-6) + 1; }
+    function m(text, bold) { return Math.floor(Win98Tokens.textWidth(text, bold, bar.u) / bar.u + 1e-6) + 1; }
 
     readonly property var lane: bar.desktop.lane
     readonly property var dict: bar.desktop.dictation
@@ -206,7 +204,7 @@ PanelWindow {
                             Win98Text {
                                 // Centred to the half unit (a whole physical px), as the mock is.
                                 x: (tag.width - width) / 2
-                                y: Win98Tokens.snap((tag.height - height) / 2)
+                                y: Win98Tokens.snap((tag.height - height) / 2, bar.u)
                                 text: String(band.page)
                                 accessMarks: false
                                 bold: band.showing
@@ -268,7 +266,7 @@ PanelWindow {
                 id: dictLabel
                 visible: bar.plan.dictTextShow
                 x: bar.units(13)
-                y: Win98Tokens.snap((parent.height - height) / 2)
+                y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
                 text: bar.desktop.dictText
                 accessMarks: false
                 color: bar.dictFailed ? Win98Tokens.danger : Win98Tokens.text
@@ -296,7 +294,7 @@ PanelWindow {
         // ---- the tray: icons, then the clock
         Item {
             id: trayBox
-            readonly property real clockW: bar.units(6 + 5) + Win98Tokens.ceilU(Win98Tokens.textWidth(bar.plan.clockText, false))
+            readonly property real clockW: bar.units(6 + 5) + Win98Tokens.ceilU(Win98Tokens.textWidth(bar.plan.clockText, false, bar.u), bar.u)
             x: bar.width - bar.units(2) - width
             y: bar.units(4)
             height: bar.units(22)
@@ -341,7 +339,7 @@ PanelWindow {
                 }
                 Win98Text {
                     x: bar.units(6)
-                    y: Win98Tokens.snap((parent.height - height) / 2)
+                    y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
                     text: bar.plan.clockText
                     accessMarks: false
                 }
@@ -368,7 +366,7 @@ PanelWindow {
         id: ghost
         visible: bar.dragIndex >= 0 && bar.dropIndex >= 0 && bar.dropIndex !== bar.dragIndex
         readonly property var target: visible ? bar.placeOf("win" + bar.dropIndex) : null
-        x: bar.preview.drag && target ? target.x + bar.units(7) : Win98Tokens.snap(bar.dragX - width / 2)
+        x: bar.preview.drag && target ? target.x + bar.units(7) : Win98Tokens.snap(bar.dragX - width / 2, bar.u)
         y: face.y + bar.units(4) - bar.units(14)
         width: bar.units(bar.plan.bw)
         height: bar.units(22)
@@ -432,11 +430,11 @@ PanelWindow {
                 Win98Icon {
                     visible: tb.iconName !== ""
                     name: tb.iconName
-                    y: Win98Tokens.snap((iconCell.height - height) / 2)
+                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
                 IconImage {
                     visible: tb.iconName === "" && source !== ""
-                    y: Win98Tokens.snap((iconCell.height - height) / 2)
+                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                     implicitSize: bar.units(16)
                     source: {
                         if (tb.iconName !== "" || !tb.toplevel) return "";
@@ -449,7 +447,7 @@ PanelWindow {
             }
             Win98Text {
                 visible: tb.label !== ""
-                y: Win98Tokens.snap((parent.height - height) / 2)
+                y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
                 width: Math.max(0, Math.min(implicitWidth, tb.width - bar.units(tb.padLeft + 16 + 3 + tb.padRight)))
                 text: tb.label
                 accessMarks: false
@@ -570,8 +568,8 @@ PanelWindow {
         }
         Win98Icon {
             name: "chevron"
-            x: Win98Tokens.half((ch.width - width) / 2)
-            y: Win98Tokens.snap((ch.height - height) / 2)
+            x: Win98Tokens.half((ch.width - width) / 2, bar.u)
+            y: Win98Tokens.snap((ch.height - height) / 2, bar.u)
         }
         Win98FocusRect {
             visible: bar.focused(ch.cid)
@@ -630,7 +628,7 @@ PanelWindow {
             border.width: bar.u
             border.color: Win98Tokens.dk
             Win98Text {
-                x: Win98Tokens.half((parent.width - width) / 2)
+                x: Win98Tokens.half((parent.width - width) / 2, bar.u)
                 y: -bar.u
                 text: Tray.CHORD[ti.tid] || ""
                 accessMarks: false

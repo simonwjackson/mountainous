@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 scroll bar: two 16-u arrow buttons and a dithered track with a
@@ -15,7 +16,7 @@ Item {
 
     property int orientation: Qt.Vertical
     property Flickable flickable: null
-    property real step: Win98Tokens.listRow * Win98Tokens.u   // logical px per arrow
+    property real step: Win98Tokens.listRow * root.u   // logical px per arrow
     property real position: 0
     property real size: 1
     // "", "back", "forward" or "thumb": draw that part pressed.
@@ -25,7 +26,7 @@ Item {
     signal paged(int direction)
     signal dragged(real position)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool vertical: orientation === Qt.Vertical
     readonly property real length: vertical ? height : width
     readonly property real range: flickable ? (vertical ? flickable.contentHeight - flickable.height : flickable.contentWidth - flickable.width) : 0
@@ -33,8 +34,8 @@ Item {
     readonly property real shownSize: flickable ? (range > 0 ? (vertical ? flickable.height / flickable.contentHeight : flickable.width / flickable.contentWidth) : 1) : size
     readonly property bool active: enabled && shownSize < 1
     readonly property real track: Math.max(0, length - 2 * Win98Tokens.scrollBar * u)
-    readonly property real thumbLength: Math.max(8 * u, Win98Tokens.snap(track * Math.min(1, shownSize)))
-    readonly property real thumbAt: Win98Tokens.snap((track - thumbLength) * Math.max(0, Math.min(1, shownPosition)))
+    readonly property real thumbLength: Math.max(8 * u, Win98Tokens.snap(track * Math.min(1, shownSize), root.u))
+    readonly property real thumbAt: Win98Tokens.snap((track - thumbLength) * Math.max(0, Math.min(1, shownPosition)), root.u)
     property string pressedPart: ""
 
     implicitWidth: vertical ? Win98Tokens.scrollBar * u : 100 * u
@@ -69,8 +70,8 @@ Item {
             name: root.vertical ? (arrow.part === "back" ? "arrow-up" : "arrow-down")
                                 : (arrow.part === "back" ? "arrow-left" : "arrow-right")
             color: root.active ? Win98Tokens.text : Win98Tokens.gray
-            x: Win98Tokens.snap((parent.width - width) / 2) + (arrow.down ? root.u : 0)
-            y: Win98Tokens.snap((parent.height - height) / 2) + (arrow.down ? root.u : 0)
+            x: Win98Tokens.snap((parent.width - width) / 2, root.u) + (arrow.down ? root.u : 0)
+            y: Win98Tokens.snap((parent.height - height) / 2, root.u) + (arrow.down ? root.u : 0)
         }
         // Disabled glyphs carry the white emboss, as disabled text does.
         Win98Icon {

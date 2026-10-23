@@ -1,3 +1,4 @@
+import Quickshell
 import QtQuick
 
 // A flat toolbar or tray button, as IE4 brought to Win98's toolbars: flat
@@ -21,14 +22,14 @@ FocusScope {
 
     signal clicked
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real side: (tray ? Win98Tokens.trayButton : Win98Tokens.toolButton) * u
     readonly property bool hovered: showHover || area.containsMouse
     readonly property bool pressing: showPressed || (area.pressed && area.containsMouse)
     readonly property bool sunken: pressing || open || checked
 
     implicitWidth: text === "" ? side
-        : Win98Tokens.ceilU((iconName !== "" ? 16 * u + 3 * u : 0) + Win98Tokens.textWidth(Win98Tokens.plainText(text), false)) + 7 * u
+        : Win98Tokens.ceilU((iconName !== "" ? 16 * u + 3 * u : 0) + Win98Tokens.textWidth(Win98Tokens.plainText(text), false, root.u), root.u) + 7 * u
     implicitHeight: side
     activeFocusOnTab: enabled
 
@@ -57,8 +58,8 @@ FocusScope {
 
     Row {
         spacing: 3 * root.u
-        x: (root.text === "" ? Win98Tokens.snap((root.width - width) / 2) : 3 * root.u) + (root.pressing ? root.u : 0)
-        y: Win98Tokens.snap((root.height - height) / 2) + (root.pressing ? root.u : 0)
+        x: (root.text === "" ? Win98Tokens.snap((root.width - width) / 2, root.u) : 3 * root.u) + (root.pressing ? root.u : 0)
+        y: Win98Tokens.snap((root.height - height) / 2, root.u) + (root.pressing ? root.u : 0)
 
         Win98Icon {
             visible: root.iconName !== ""
@@ -68,7 +69,7 @@ FocusScope {
         }
         Win98Text {
             visible: root.text !== ""
-            y: Win98Tokens.snap((root.height - height) / 2) - parent.y + (root.pressing ? root.u : 0)
+            y: Win98Tokens.snap((root.height - height) / 2, root.u) - parent.y + (root.pressing ? root.u : 0)
             text: root.text
             disabledLook: !root.enabled
             width: Math.min(implicitWidth, root.width - 7 * root.u - (root.iconName !== "" ? 19 * root.u : 0))

@@ -64,6 +64,7 @@ Scope {
 
         PanelWindow {
             id: win
+            readonly property real u: Win98Tokens.unitFor(win)
 
             screen: host.desktop.screen
             anchors { top: true; bottom: true; left: true; right: true }
@@ -134,14 +135,14 @@ Scope {
                     readonly property real w: item ? (item as Item).width : 0
                     readonly property real h: item ? (item as Item).height : 0
                     x: {
-                        if (host.current === "start") return 2 * host.u;
-                        if (host.current === "logoff") return Win98Tokens.snap(win.width / 2 - w / 2);
+                        if (host.current === "start") return 2 * win.u;
+                        if (host.current === "logoff") return Win98Tokens.snap(win.width / 2 - w / 2, win.u);
                         const centre = loader.anchor ? loader.anchor.x + loader.anchor.w / 2 : win.width;
-                        return Math.max(2 * host.u, Math.min(Win98Tokens.snap(centre - w / 2), win.width - w - 2 * host.u));
+                        return Math.max(2 * win.u, Math.min(Win98Tokens.snap(centre - w / 2, win.u), win.width - w - 2 * win.u));
                     }
                     y: {
-                        if (host.current === "logoff") return Win98Tokens.snap(win.barTop / 2 - h / 2);
-                        return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * host.u : 0));
+                        if (host.current === "logoff") return Win98Tokens.snap(win.barTop / 2 - h / 2, win.u);
+                        return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * win.u : 0));
                     }
                     onLoaded: { host.desktop.openItem = item; (item as Item).forceActiveFocus(); }
                     Component.onDestruction: if (host.desktop.openItem === item) host.desktop.openItem = null
@@ -156,7 +157,7 @@ Scope {
             }
 
             // The widest a window may be: the screen, less 2 u each side.
-            function widthFor(units) { return Math.min(units * host.u, win.width - 4 * host.u); }
+            function widthFor(units) { return Math.min(units * win.u, win.width - 4 * win.u); }
 
             Component {
                 id: startMenu
@@ -186,7 +187,7 @@ Scope {
                 Win98Menu {
                     // The chevron menus appear at once, as the mock's do.
                     animate: false
-                    widthUnits: Math.min(340, Math.floor(win.width / host.u) - 4)
+                    widthUnits: Math.min(340, Math.floor(win.width / win.u) - 4)
                     bounds: menuBounds
                     model: Plan.overflowWindows(host.desktop.lane.map(function (t) {
                         return { page: host.desktop.shell.pageOf(t) };
@@ -203,7 +204,7 @@ Scope {
                 id: moreMenu
                 Win98Menu {
                     animate: false
-                    widthUnits: Math.min(260, Math.floor(win.width / host.u) - 4)
+                    widthUnits: Math.min(260, Math.floor(win.width / win.u) - 4)
                     bounds: menuBounds
                     model: host.taskbar.plan.trayOut.map(function (id) {
                         return { text: Tray.LABEL[id], icon: host.desktop.trayIcon(id),

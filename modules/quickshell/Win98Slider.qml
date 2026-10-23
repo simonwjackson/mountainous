@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
 import QtQuick
 
 // A Win98 trackbar.
@@ -25,7 +26,7 @@ FocusScope {
 
     signal moved(real value)
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property bool vertical: orientation === Qt.Vertical
     // Length along the travel, in whole units.
     readonly property int span: Math.max(12, Math.round((vertical ? height : width) / u))
