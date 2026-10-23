@@ -231,8 +231,11 @@ Item {
                         width: root.iconCol
                         height: row.height
                         Win98Icon {
+                            id: rowIcon
                             visible: !row.separator && !!row.modelData.icon
                             name: row.separator ? "" : (row.modelData.icon || "")
+                            // A large icon in a small row (a narrow Start) draws at 16 u.
+                            size: !root.big && rowIcon.natural[0] > 16 ? 16 : 0
                             color: row.ink
                             x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
                             y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)

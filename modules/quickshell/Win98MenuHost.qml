@@ -177,9 +177,13 @@ Scope {
             Component {
                 id: startMenu
                 Win98Menu {
-                    big: true
-                    widthUnits: Math.min(196, Math.floor(win.width / win.u) - 4)
-                    bandText: "Kamoi"
+                    // Narrow, decoration gives way before the labels do:
+                    // first the 32-u rows become 20-u rows, then the
+                    // band goes.
+                    readonly property int room: Math.floor(win.width / win.u) - 4
+                    big: room >= 160
+                    widthUnits: Math.min(196, room)
+                    bandText: room >= 140 ? "Kamoi" : ""
                     bandSubText: host.desktop.hostLabel
                     roll: "up"
                     bounds: menuBounds
