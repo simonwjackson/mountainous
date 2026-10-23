@@ -169,39 +169,49 @@ PanelWindow {
     //----------------------------------------------------------------
     // The plan
     //----------------------------------------------------------------
-    // Widths without padding. A control's readout width includes the gap
-    // between icon and readout.
+    // Raw content widths, as bar-plan.js wants them: an icon alone, a
+    // readout's text box alone. The planner adds every pad and every gap
+    // (the 6 px between icon and readout included), so none is counted here.
     readonly property real numW: PlatinumMetrics.widest(["100", PlatinumMetrics.digits(2)])
     readonly property real clockTimeW: PlatinumMetrics.widest(["12:" + PlatinumMetrics.digits(2),
         "10:" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + ":" + PlatinumMetrics.digits(2)])
     readonly property real clockDateW: PlatinumMetrics.widest(["12/" + PlatinumMetrics.digits(2),
         "10/" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + "/" + PlatinumMetrics.digits(2)])
     readonly property real clockGap: PlatinumMetrics.width("  ")
+    readonly property bool diskCounting: storage.state === "ready" && storage.issues.length > 0
+    readonly property bool ntfOffline: notifications.view.kind === "offline"
 
     readonly property var metrics: ({
         controls: [
             btPresent ? { id: "bt", iconWidth: 16,
-                readoutWidth: btCount > 0 ? inGap + btCountBox.width : 0 } : null,
+                readoutWidth: btCount > 0 ? btCountBox.width : 0 } : null,
             wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: 0 } : null,
-            volPresent ? { id: "vol", iconWidth: 16, readoutWidth: inGap + numW } : null,
-            brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: inGap + numW } : null,
-            oci.enabled ? { id: "oci", iconWidth: 16, readoutWidth: inGap + ociFull.implicitWidth } : null,
-            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: inGap + diskFull.implicitWidth,
-                compactReadoutWidth: diskCompact.implicitWidth > 0 ? inGap + diskCompact.implicitWidth : 0 } : null,
+            volPresent ? { id: "vol", iconWidth: 16, readoutWidth: numW } : null,
+            brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: numW } : null,
+            oci.enabled ? { id: "oci", iconWidth: 16, readoutWidth: ociFull.implicitWidth } : null,
+            // When the label yields, the issue count keeps its fixed box.
+            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskFull.implicitWidth,
+                compactReadoutWidth: diskCounting ? diskCountBox.width : 0 } : null,
+            // When the count yields it becomes a dot on the bell; offline
+            // keeps a "!".
             { id: "ntf", iconWidth: 16,
-                readoutWidth: ntfNumber !== "" || ntfSuffix !== "" ? inGap + ntfFull.implicitWidth : 0,
-                compactReadoutWidth: ntfCompact.implicitWidth > 0 ? inGap + ntfCompact.implicitWidth : 0 }
+                readoutWidth: ntfNumber !== "" || ntfSuffix !== "" ? ntfFull.implicitWidth : 0,
+                compactReadoutWidth: ntfOffline ? ntfCompact.implicitWidth : 0 }
         ].filter(function (c) { return c !== null; }),
         markWidth: 20,
-        titleWidth: dictation.barVisible ? dictationRow.implicitWidth + 16
+        // The title box draws 8 px either side of its text; the dictation
+        // row's implicit width already holds its own spacing.
+        titleWidth: dictation.barVisible ? dictationRow.implicitWidth
             : title !== "" ? PlatinumMetrics.width(title) + 16 : 0,
         titleMinWidth: dictation.barVisible ? dictationRow.minimumWidth : 96,
         clockWidth: clockDateW + clockGap + clockTimeW,
         clockTimeWidth: clockTimeW,
         chordWidth: chordVisible ? chord.implicitWidth : 0,
+        // The battery is the planner's one whole-content width: icon, the
+        // 6 px between, and the percent box, because it never splits.
         batteryWidth: battery.present ? 18 + inGap + batteryBox.width : 0,
         appIconWidth: appId !== "" ? 16 : 0,
-        appNameWidth: appId !== "" ? inGap + PlatinumMetrics.width(appName) : 0,
+        appNameWidth: appId !== "" ? PlatinumMetrics.width(appName) : 0,
         overflowWidth: 16
     })
 
@@ -629,6 +639,7 @@ PanelWindow {
                 id: diskCompact
                 visible: !bar.plan.show.diskLabel && diskControl.counting
                 BarNumber {
+                    id: diskCountBox
                     visible: diskControl.counting
                     widest: ["99", PlatinumMetrics.digits(2)]
                     text: String(diskControl.issues)
