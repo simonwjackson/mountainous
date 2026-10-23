@@ -20,5 +20,27 @@
       "extraDark": true
     },
     "qmlPrefix": "Platinum"
+  },
+  {
+    "id": "win98",
+    "label": "Windows 98",
+    "desktop": "Win98Desktop.qml",
+    "picker": "Win98PickerView.qml",
+    "appearances": [
+      {
+        "mode": "light",
+        "label": "Windows Standard",
+        "thumbnail": "themes/win98/previews/light.png"
+      },
+      {
+        "mode": "dark",
+        "label": "Dark grey",
+        "thumbnail": "themes/win98/previews/dark.png"
+      }
+    ],
+    "options": {
+      "extraDark": false
+    },
+    "qmlPrefix": "Win98"
   }
 ]

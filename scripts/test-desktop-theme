@@ -126,14 +126,18 @@ check_extra off
 check_extra on
 "$command_path" apply win98 dark on
 [[ $(<"$name") == win98 ]]
-check dark prefer-dark
+[[ $(<"$state") == dark ]]
+[[ $(dconf read /org/gnome/desktop/interface/color-scheme) == "'prefer-dark'" ]]
 check_extra on
 [[ $("$command_path" status) == 'mode=dark extra=on theme=win98' ]]
 [[ $("$command_path" set platinum) == platinum ]]
+check dark prefer-dark
 check_extra on
 "$command_path" apply win98 light off
 [[ $(<"$name") == win98 ]]
-check light prefer-light
+[[ $(<"$state") == light ]]
+[[ $("$command_path" status) == 'mode=light extra=off theme=win98' ]]
 "$command_path" set platinum >/dev/null
+check light prefer-light
 [[ ! -e $name.new ]]
 echo 'DESKTOP_THEME_TESTS_PASSED' 
