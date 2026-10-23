@@ -108,6 +108,13 @@ creation_rules:
           - *master
           - *rakku
 
+  # The Beszel hub's SSH key, every agent's token, and its alert bridge token.
+  - path_regex: secrets/beszel/hub\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *rakku
+
   - path_regex: secrets/notify/storage-unzen\.yaml$
     key_groups:
       - age:

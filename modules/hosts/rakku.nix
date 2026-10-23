@@ -16,6 +16,7 @@ in
       "tailnet-names"
       "decision-gateway"
       "notify-server"
+      "beszel-hub"
       "pi-assistant"
       "no-builds"
     ];
