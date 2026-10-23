@@ -255,7 +255,7 @@ hint_shot() { ipc topbar reveal; sleep 0.3; grim -g "0,0 ${W}x28" "$out/bar-acce
 hint_shot ""
 
 # ---- other bar widths. Below 1400 the words shorten to "BLD"; below 560
-# only the mark and the count remain. The mark, the latch and both targets
+# only the mark and the count remain. The mark and both targets
 # stay at every width.
 size() { swaymsg -q output HEADLESS-1 resolution "$1" scale 1.5; sleep 1.2; W=$2; }
 size 2100x1800 1400

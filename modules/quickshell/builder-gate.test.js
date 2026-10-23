@@ -104,7 +104,7 @@ for (const over of Object.values(states).concat([{running: 99}])) {
     assert.ok(tiny(over).length <= 2, tiny(over));
 }
 
-// ---- tone, mark, latch
+// ---- tone, mark
 assert.equal(g.tone(ready(states.home), "", null), "accent");
 assert.equal(g.tone(ready(states.choiceOn), "", null), "accent");
 assert.equal(g.tone(ready(states.away), "", null), "muted");
@@ -116,10 +116,9 @@ assert.equal(g.mark(ready(states.home), ""), "on");
 assert.equal(g.mark(ready(states.battery), ""), "off");
 assert.equal(g.mark(g.failure("x"), ""), "none");
 assert.equal(g.mark(ready(states.home), "off"), "none");
-assert.equal(g.latched(ready(states.choiceOn)), true);
-assert.equal(g.latched(ready(states.choiceOff)), true);
-assert.equal(g.latched(ready(states.home)), false);
-assert.equal(g.latched(g.failure("x")), false);
+// A manual choice shows in the words alone. The title draws no outline
+// (latch) for it, so the view has no latch rule.
+assert.equal(g.latched, undefined);
 
 // ---- one click
 assert.equal(g.clickAction(ready(states.home), ""), "off");

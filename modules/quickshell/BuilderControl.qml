@@ -9,8 +9,8 @@ import "builder-gate.js" as Gate
 // At rest the title still says the state at a glance: the hammer while
 // myoko accepts, the hammer struck through while it refuses, in the gate's
 // tone (grey when the default rule refuses, the text colour when you
-// chose it). A choice you made by hand draws a thin outline, the latch,
-// until myoko joins another network.
+// chose it). The words say when the choice is yours ("On by you"), so the
+// title draws no outline for it.
 //
 // The words ("Builds off: battery", "Building 2") are a readout and yield
 // to the count alone, which stays in its own box.
@@ -28,7 +28,6 @@ BarControl {
     icon: "builder"
     slashed: Gate.mark(sample, pending) === "off"
     tone: Theme.barTone(Gate.tone(sample, pending, actionError))
-    outlined: Gate.latched(sample) && pending === ""
 
     // What the plan measures: the full words and the compact count. A
     // count sits in a box as wide as two wide digits, so "Building 2" and

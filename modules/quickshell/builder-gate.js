@@ -14,7 +14,7 @@ var POWERS = ["ac", "battery"];
 var ACCEPTING_REASONS = ["home", "choice-on"];
 
 // The bar's three forms, by the bar's width. The words are a readout, so they
-// shorten first; the mark, the latch and both targets stay at every width.
+// shorten first; the mark and both targets stay at every width.
 //   wide   >= 1400  "Builds off: battery"
 //   short  >= 560   "BLD 2"
 //   tiny   below    the mark and the count only
@@ -135,11 +135,6 @@ function tone(sample, pending, actionError) {
 function mark(sample, pending) {
     if (pending || sample.kind !== "ready") return "none";
     return sample.value.accepting ? "on" : "off";
-}
-
-// A manual choice draws a latch: a thin outline around the bar control.
-function latched(sample) {
-    return sample.kind === "ready" && sample.value.choice !== null;
 }
 
 // What one click on the bar does. "on" or "off" sets a manual choice; "panel"
