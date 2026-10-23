@@ -451,7 +451,7 @@ ShellRoot {
                     return null;
                 };
                 out.picker = { area: v.area };
-                for (const n of ["pickerDialog", "pickerOk", "pickerCancel", "pickerApply", "pickerTheme", "pickerScheme"]) {
+                for (const n of ["pickerDialog", "pickerOk", "pickerCancel", "pickerApply", "pickerTheme", "pickerScheme", "tab0", "tab1", "tabLabel0", "tabLabel1"]) {
                     const it = find(v.contentItem, n);
                     if (it) out.picker[n] = rect(it);
                 }

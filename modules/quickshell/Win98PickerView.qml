@@ -153,7 +153,7 @@ PanelWindow {
                 Win98Tabs {
                     id: tabs
                     width: parent.width
-                    height: 22 * win.u + sheet.height + 20 * win.u
+                    height: tabs.strip - 2 * win.u + sheet.height + 20 * win.u
                     tabs: ["Appearance", "Scale"]
                     currentIndex: win.tab
                     padUnits: 0

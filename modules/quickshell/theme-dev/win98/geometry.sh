@@ -96,6 +96,10 @@ for size in 160x800 160x80 1200x400; do
   w98 set pk-win98-light >/dev/null; settle
   check "Display Properties at ${size}: dialog and buttons inside the screen width" \
     'g["picker"] and all(g["picker"][n]["x"] >= -e and g["picker"][n]["x"] + g["picker"][n]["w"] <= W + e for n in ("pickerDialog", "pickerOk", "pickerCancel", "pickerApply", "pickerTheme", "pickerScheme"))'
+  # Both tabs inside the dialog, their labels whole and not covered: a
+  # narrow sheet wraps its tabs into rows.
+  check "Display Properties at ${size}: both tabs inside the dialog, labels whole and uncovered" \
+    'g["picker"] and all(g["picker"]["tab%d" % i]["x"] >= g["picker"]["pickerDialog"]["x"] - e and g["picker"]["tab%d" % i]["x"] + g["picker"]["tab%d" % i]["w"] <= g["picker"]["pickerDialog"]["x"] + g["picker"]["pickerDialog"]["w"] + e and g["picker"]["tabLabel%d" % i]["w"] >= 20 for i in (0, 1)) and all(abs(g["picker"]["tab%d" % i]["y"] - g["picker"]["tab%d" % (1 - i)]["y"]) <= 8 or g["picker"]["tab%d" % i]["y"] > g["picker"]["tab%d" % (1 - i)]["y"] or g["picker"]["tabLabel%d" % i]["y"] + g["picker"]["tabLabel%d" % i]["h"] <= g["picker"]["tab%d" % (1 - i)]["y"] + e for i in (0, 1))'
   w98 set pk-apply >/dev/null; settle; sleep 0.4
   check "Display Properties at ${size}: the focused Apply is in view" \
     'g["picker"] and ins(g["picker"]["pickerApply"], y1=g["picker"]["area"])'
