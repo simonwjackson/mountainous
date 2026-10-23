@@ -63,6 +63,9 @@ async function main() {
     try {
         fs.copyFileSync(source, path.join(config, "Dictation.qml"));
         fs.copyFileSync(theme, path.join(config, "Theme.qml"));
+        for (const name of ["ThemeCatalog.qml", "themes.json"]) {
+            fs.copyFileSync(path.join(path.dirname(theme), name), path.join(config, name));
+        }
         fs.writeFileSync(env.DICTATION_TEST_MODE_FILE, "ok");
         // Same contract as DESIGN's recorder: SIGINT exits 1 with a whole
         // take; microphone failure exits 3 before capture can complete.

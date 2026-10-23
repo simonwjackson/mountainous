@@ -174,13 +174,18 @@ Offline fixture preview on a graphical test session (no SSH):
 
 ```sh
 preview=$(mktemp -d)
-cp -r modules/quickshell/{StorageHealthPreview.qml,StorageHealth.qml,Theme.qml,storage-health.js,MenuFrame.qml,MenuParts.qml,MenuList.qml,MenuListRow.qml,Bevel.qml,PlatinumButton.qml,PlatinumIcon.qml,PlatinumMetrics.qml,PlatinumScrollBar.qml,IconStore.qml,icons} "$preview/"
+cp -r modules/quickshell/. "$preview/"
+cat > "$preview/preview.qml" <<'QML'
+import Quickshell
+import "theme-dev"
+Scope { StorageHealthPreview {} }
+QML
 PATH="$PWD/tests/fixtures/storage-health-bin:$PATH" \
   STORAGE_HEALTH_ENABLED=1 STORAGE_HEALTH_PREVIEW=issues \
-  quickshell -p "$preview/StorageHealthPreview.qml"
+  quickshell -p "$preview/preview.qml"
 ```
 
-The isolated directory prevents Quickshell from scanning unrelated bar modules.
+Only the preview entry point is instantiated. The directory preserves the shared-data and Platinum-view relative imports.
 Use `healthy`, `stale`, `partial`, or `error` in place of `issues` to check other
 states. Capture with the session's existing screenshot tool, for example
 `grim /tmp/storage-health-fixture.png`. The real collector remains unchanged by
