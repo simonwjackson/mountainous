@@ -101,9 +101,10 @@ click_at $(w98 control pickerCancel)
 sleep 0.5
 grep -q "desktop-theme apply" "$work/commands.log" 2>/dev/null && { echo "FAIL Cancel applied a theme"; fail=1; } || { echo "PASS Cancel changes nothing"; pass=$((pass + 1)); }
 w98 set pk-win98-light >/dev/null; sleep 1.2
-wtype -M alt s -m alt; sleep 0.2; key Down
+wtype -M alt s -m alt; sleep 0.2; key Down; sleep 0.4
 click_at $(w98 control pickerApply)
-sleep 0.8
+# A loaded machine runs the command late: wait up to 4 s.
+for _ in $(seq 40); do grep -q "desktop-theme apply" "$work/commands.log" 2>/dev/null && break; sleep 0.1; done
 if grep -q "desktop-theme apply win98 dark off" "$work/commands.log" 2>/dev/null; then echo "PASS Apply commits win98 dark"; pass=$((pass + 1));
 else echo "FAIL Apply did not commit ($(cat "$work/commands.log" 2>/dev/null | tr '\n' ' '))"; fail=1; fi
 check 'Apply keeps the window open' 'picker=open'
