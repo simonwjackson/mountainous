@@ -24,7 +24,7 @@ Item {
     property bool selected: false
     property var actionFocus: Model.noActionFocus()
     property bool lastRow: false
-    property real rightInset: Theme.menuRightInset
+    property real rightInset: PlatinumTokens.menuRightInset
 
     signal dismissRequested
     signal actionRequested(string key)
@@ -56,7 +56,7 @@ Item {
     readonly property string localOnly: Model.localOnlyLabel(item)
     readonly property bool hasDefault: Model.defaultAction(item).kind === "some"
     readonly property var icon: NotificationIcons.choice(item)
-    readonly property real textWidth: width - Theme.menuTextLeft - rightInset
+    readonly property real textWidth: width - PlatinumTokens.menuTextLeft - rightInset
     readonly property real actionMinWidth: PlatinumMetrics.buttonWidth(["Dismiss all", "Open"])
 
     onImageUrlChanged: imageFailed = false
@@ -77,34 +77,34 @@ Item {
         y: 0
         width: 4
         height: parent.height
-        color: Theme.menuDanger
+        color: PlatinumTokens.menuDanger
     }
 
     // The keyboard's current card.
     Rectangle {
         visible: card.selected
         anchors.fill: parent
-        anchors.margins: Theme.hair
+        anchors.margins: PlatinumTokens.hair
         color: "transparent"
-        border.width: 2 * Theme.hair
-        border.color: Theme.highlight
+        border.width: 2 * PlatinumTokens.hair
+        border.color: PlatinumTokens.highlight
     }
 
     // Etched rule between cards.
     Rectangle {
         visible: !card.lastRow
         anchors.bottom: parent.bottom
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         width: parent.width - x - card.rightInset
-        height: Theme.hair
-        color: Theme.bevelDark
+        height: PlatinumTokens.hair
+        color: PlatinumTokens.bevelDark
     }
 
     Item {
-        x: Theme.menuGutter
+        x: PlatinumTokens.menuGutter
         y: 8
-        width: Theme.menuGutterWidth
-        height: Theme.menuGutterWidth
+        width: PlatinumTokens.menuGutterWidth
+        height: PlatinumTokens.menuGutterWidth
 
         IconImage {
             anchors.centerIn: parent
@@ -113,22 +113,22 @@ Item {
             implicitSize: 16
         }
 
-        Bevel {
+        PlatinumBevel {
             anchors.fill: parent
             visible: card.icon.kind === "letter"
             Text {
                 anchors.centerIn: parent
                 text: card.icon.kind === "letter" ? card.icon.letter : ""
-                color: Theme.menuText
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumSmall
+                color: PlatinumTokens.menuText
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumSmall
             }
         }
     }
 
     ColumnLayout {
         id: content
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         y: 8
         width: card.textWidth
         spacing: 3
@@ -138,7 +138,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.minimumHeight: 20
-            spacing: Theme.menuGap
+            spacing: PlatinumTokens.menuGap
 
             Text {
                 id: appText
@@ -147,10 +147,10 @@ Item {
                 textFormat: Text.PlainText
                 wrapMode: card.expanded ? Text.Wrap : Text.NoWrap
                 elide: card.expanded ? Text.ElideNone : Text.ElideRight
-                color: Theme.menuTextSecondary
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumSmall
-                font.letterSpacing: Theme.platinumTracking
+                color: PlatinumTokens.menuTextSecondary
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumSmall
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
 
             Text {
@@ -160,25 +160,25 @@ Item {
                 text: card.meta
                 textFormat: Text.PlainText
                 elide: Text.ElideLeft
-                color: Theme.menuTextSecondary
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumSmall
-                font.letterSpacing: Theme.platinumTracking
+                color: PlatinumTokens.menuTextSecondary
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumSmall
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
 
-            Bevel {
+            PlatinumBevel {
                 Layout.preferredWidth: 16
                 Layout.preferredHeight: 16
                 Layout.alignment: Qt.AlignTop | Qt.AlignRight
                 Layout.topMargin: 2
                 sunken: dismissArea.pressed
-                color: dismissArea.pressed ? Theme.well : Theme.raised
+                color: dismissArea.pressed ? PlatinumTokens.well : PlatinumTokens.raised
 
                 PlatinumIcon {
                     anchors.centerIn: parent
                     name: "close"
                     size: 8
-                    color: Theme.menuText
+                    color: PlatinumTokens.menuText
                 }
 
                 MouseArea {
@@ -196,15 +196,15 @@ Item {
             text: card.meta
             textFormat: Text.PlainText
             wrapMode: Text.Wrap
-            color: Theme.menuTextSecondary
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumSmall
-            font.letterSpacing: Theme.platinumTracking
+            color: PlatinumTokens.menuTextSecondary
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumSmall
+            font.letterSpacing: PlatinumTokens.platinumTracking
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.menuGap
+            spacing: PlatinumTokens.menuGap
 
             ColumnLayout {
                 Layout.fillWidth: true
@@ -220,10 +220,10 @@ Item {
                     wrapMode: Text.Wrap
                     maximumLineCount: card.expanded ? undefined : 2
                     elide: Text.ElideRight
-                    color: card.low ? Theme.menuTextSecondary : Theme.menuText
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    color: card.low ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
 
                 // Bodies are plain text: markup from an app or an agent is
@@ -237,19 +237,19 @@ Item {
                     wrapMode: Text.Wrap
                     maximumLineCount: card.expanded ? undefined : card.bodyLines
                     elide: Text.ElideRight
-                    color: Theme.menuTextSecondary
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumSmall
-                    font.letterSpacing: Theme.platinumTracking
+                    color: PlatinumTokens.menuTextSecondary
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumSmall
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                     lineHeight: 1.15
                 }
 
                 Text {
                     visible: card.expanded || card.cut
                     text: card.expanded ? "Show less" : "Show more"
-                    color: Theme.menuText
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumSmall
+                    color: PlatinumTokens.menuText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumSmall
                     font.underline: true
 
                     MouseArea {
@@ -265,13 +265,13 @@ Item {
                 Layout.preferredWidth: card.expanded ? 0 : 56
                 Layout.preferredHeight: 56
                 Layout.alignment: Qt.AlignTop
-                color: Theme.well
-                border.width: Theme.hair
-                border.color: Theme.menuEdge
+                color: PlatinumTokens.well
+                border.width: PlatinumTokens.hair
+                border.color: PlatinumTokens.menuEdge
 
                 Image {
                     anchors.fill: parent
-                    anchors.margins: Theme.hair
+                    anchors.margins: PlatinumTokens.hair
                     source: card.hasImage && !card.expanded ? card.imageUrl : ""
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
@@ -304,16 +304,16 @@ Item {
                 width: urgentText.implicitWidth + 12
                 height: 18
                 color: "transparent"
-                border.width: Theme.hair
-                border.color: Theme.menuDanger
+                border.width: PlatinumTokens.hair
+                border.color: PlatinumTokens.menuDanger
 
                 Text {
                     id: urgentText
                     anchors.centerIn: parent
                     text: "Urgent, stays until dismissed"
-                    color: Theme.menuDanger
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumHint
+                    color: PlatinumTokens.menuDanger
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumHint
                 }
             }
 
@@ -322,8 +322,8 @@ Item {
                 width: Math.min(localText.implicitWidth + 12, content.width)
                 height: Math.max(18, localText.height + 4)
                 color: "transparent"
-                border.width: Theme.hair
-                border.color: Theme.bevelDark
+                border.width: PlatinumTokens.hair
+                border.color: PlatinumTokens.bevelDark
 
                 Text {
                     id: localText
@@ -333,9 +333,9 @@ Item {
                     wrapMode: Text.Wrap
                     text: card.localOnly + ", not synced"
                     textFormat: Text.PlainText
-                    color: Theme.menuTextSecondary
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumHint
+                    color: PlatinumTokens.menuTextSecondary
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumHint
                 }
             }
         }
@@ -345,9 +345,9 @@ Item {
             visible: !card.item.sender_alive && card.item.actions.length > 0
             text: "The app that sent this has closed. Its buttons no longer work."
             wrapMode: Text.Wrap
-            color: Theme.menuWarning
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumSmall
+            color: PlatinumTokens.menuWarning
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumSmall
         }
 
         // Every action, in the app's order. A row that runs out of width

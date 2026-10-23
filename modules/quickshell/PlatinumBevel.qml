@@ -3,21 +3,21 @@ import QtQuick
 // A Platinum surface: an optional black edge, then a one-rule bevel. A
 // raised surface is light at the top and left and dark at the bottom and
 // right; a sunken one (a pressed button, a well) is the reverse. Every
-// line is Theme.hair thick, so it lands on whole physical pixels.
+// line is PlatinumTokens.hair thick, so it lands on whole physical pixels.
 Rectangle {
     id: root
 
     property bool sunken: false
     property bool edged: true
-    property color edgeColor: Theme.menuEdge
-    property color lightColor: Theme.bevelLight
-    property color darkColor: Theme.bevelDark
+    property color edgeColor: PlatinumTokens.menuEdge
+    property color lightColor: PlatinumTokens.bevelLight
+    property color darkColor: PlatinumTokens.bevelDark
     property bool bevelled: true
 
-    readonly property real h: Theme.hair
+    readonly property real h: PlatinumTokens.hair
     readonly property real inset: edged ? h : 0
 
-    color: Theme.raised
+    color: PlatinumTokens.raised
     border.width: edged ? h : 0
     border.color: edgeColor
 

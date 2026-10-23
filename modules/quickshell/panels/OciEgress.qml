@@ -1,8 +1,7 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
-import QtQuick.Layouts
-import "oci-model.js" as OciModel
+import "../oci-model.js" as OciModel
 
 // OCI's monthly Outbound Data Transfer Zone 1 usage. Quickshell owns the
 // readout; a separate helper holds the credentials and API request.
@@ -74,53 +73,5 @@ Scope {
         stdout: StdioCollector { onStreamFinished: root.accept(this.text) }
         stderr: StdioCollector { }
         onExited: function (code) { if (code !== 0) root.state = "error"; }
-    }
-
-    property Component menu: Component {
-        MenuFrame {
-            id: frame
-
-            preferredWidth: 420
-            title: "OCI egress · this month"
-            detail: root.stateText
-            scrolls: profiles.scrolls
-
-            readonly property real valueWidth: PlatinumMetrics.widest(["100.0%", "Failed"])
-
-            // Profiles scroll: a tenancy with many no longer clips.
-            MenuList {
-                id: profiles
-                visible: root.rows.length > 0
-                model: ScriptModel { values: root.rows }
-
-                delegate: MenuListRow {
-                    id: profileRow
-                    required property var modelData
-                    readonly property var rule: OciModel.rowRule(modelData)
-                    width: ListView.view.width
-                    rightInset: frame.rightInset
-                    name: rule.name
-                    detail: rule.failed ? "Usage request failed"
-                        : modelData.used + " GB / 10240 GB · projected " + modelData.projected + " GB"
-                    detailColor: rule.failed ? Theme.menuTextSecondary : Theme.menuTextSecondary
-
-                    // The profile's own tone, on its own value.
-                    Text {
-                        width: frame.valueWidth
-                        horizontalAlignment: Text.AlignRight
-                        text: profileRow.rule.value
-                        color: Theme.menuTone(profileRow.rule.tone)
-                        font.family: Theme.platinumFont
-                        font.pixelSize: Theme.platinumText
-                        font.letterSpacing: Theme.platinumTracking
-                    }
-                }
-            }
-
-            MenuParts.Hint {
-                rightInset: frame.rightInset
-                text: "Esc or click outside to close"
-            }
-        }
     }
 }

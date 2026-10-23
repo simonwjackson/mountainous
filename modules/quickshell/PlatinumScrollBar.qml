@@ -11,7 +11,7 @@ Item {
     readonly property bool needed: flickable.contentHeight > flickable.height + 1
 
     visible: needed
-    width: Theme.menuScrollBar - Theme.hair
+    width: PlatinumTokens.menuScrollBar - PlatinumTokens.hair
 
     readonly property real span: Math.max(1, flickable.contentHeight - flickable.height)
     readonly property real thumbHeight: Math.max(18, height * flickable.height / Math.max(1, flickable.contentHeight))
@@ -20,11 +20,11 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: Theme.well
+        color: PlatinumTokens.well
         Rectangle {
-            width: Theme.hair
+            width: PlatinumTokens.hair
             height: parent.height
-            color: Theme.bevelDark
+            color: PlatinumTokens.bevelDark
         }
     }
 
@@ -39,13 +39,13 @@ Item {
         }
     }
 
-    Bevel {
+    PlatinumBevel {
         id: thumb
         x: 0
         width: parent.width
         y: root.thumbY
         height: root.thumbHeight
-        color: drag.pressed ? Theme.well : Theme.raised
+        color: drag.pressed ? PlatinumTokens.well : PlatinumTokens.raised
 
         MouseArea {
             id: drag

@@ -19,7 +19,7 @@ Item {
     property real iconWidth: 16
     property real iconHeight: 16
     property bool slashed: false
-    property color tone: Theme.barText
+    property color tone: PlatinumTokens.barText
     property real pad: 8
     property bool hoverable: true
     default property alias readout: readoutRow.data
@@ -34,12 +34,12 @@ Item {
     readonly property bool held: area.pressed
     readonly property bool inverted: open || (held && menu === "")
     // Colours for children: the readout follows the inversion.
-    readonly property color fg: inverted ? Theme.highlightText : tone
-    readonly property color bg: inverted ? Theme.highlight
-        : hovered && hoverable ? Qt.tint(Theme.barSurface, Theme.barHover) : Theme.barSurface
+    readonly property color fg: inverted ? PlatinumTokens.highlightText : tone
+    readonly property color bg: inverted ? PlatinumTokens.highlight
+        : hovered && hoverable ? Qt.tint(PlatinumTokens.barSurface, PlatinumTokens.barHover) : PlatinumTokens.barSurface
 
     implicitWidth: PlatinumMetrics.even(pad * 2 + content.implicitWidth)
-    implicitHeight: Theme.barHeight - Theme.hair
+    implicitHeight: PlatinumTokens.barHeight - PlatinumTokens.hair
 
     Rectangle {
         anchors.fill: parent

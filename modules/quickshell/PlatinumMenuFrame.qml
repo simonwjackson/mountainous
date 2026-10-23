@@ -15,15 +15,15 @@ Item {
 
     property string title: ""
     property string detail: ""
-    property color detailColor: Theme.menuTextSecondary
-    // The width the menu asks for; MenuHost caps it by the screen.
+    property color detailColor: PlatinumTokens.menuTextSecondary
+    // The width the menu asks for; PlatinumMenuHost caps it by the screen.
     property real preferredWidth: 360
     property real menuWidth: preferredWidth
     property real maxHeight: 600
     property bool scrolls: false
     property bool showHeader: true
-    readonly property real rightInset: Theme.menuRightInset + (scrolls ? Theme.menuScrollBar : 0)
-    readonly property real hair: Theme.hair
+    readonly property real rightInset: PlatinumTokens.menuRightInset + (scrolls ? PlatinumTokens.menuScrollBar : 0)
+    readonly property real hair: PlatinumTokens.hair
     default property alias content: column.data
     property alias headerTrailing: headerRow.data
     signal closeRequested
@@ -40,12 +40,12 @@ Item {
         y: root.hair
         width: parent.width
         height: parent.height
-        color: Theme.menuShadow
+        color: PlatinumTokens.menuShadow
     }
 
-    Bevel {
+    PlatinumBevel {
         anchors.fill: parent
-        color: Theme.menuSurface
+        color: PlatinumTokens.menuSurface
     }
 
     ColumnLayout {
@@ -63,19 +63,19 @@ Item {
             Layout.preferredHeight: root.detail !== "" ? 42 : 28
 
             Column {
-                x: Theme.menuTextLeft
+                x: PlatinumTokens.menuTextLeft
                 anchors.verticalCenter: parent.verticalCenter
-                width: headerRow.x - x - Theme.menuGap
+                width: headerRow.x - x - PlatinumTokens.menuGap
                 spacing: 1
 
                 Text {
                     width: parent.width
                     text: root.title
                     elide: Text.ElideRight
-                    color: Theme.menuText
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    color: PlatinumTokens.menuText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
 
                 Text {
@@ -85,22 +85,22 @@ Item {
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                     color: root.detailColor
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumSmall
-                    font.letterSpacing: Theme.platinumTracking
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumSmall
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
             }
 
             Row {
                 id: headerRow
                 anchors.right: closeBox.left
-                anchors.rightMargin: children.length > 0 ? Theme.menuGap : 0
+                anchors.rightMargin: children.length > 0 ? PlatinumTokens.menuGap : 0
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.menuGap
+                spacing: PlatinumTokens.menuGap
             }
 
             // The Platinum close box: a small raised square.
-            Bevel {
+            PlatinumBevel {
                 id: closeBox
                 width: 16
                 height: 16
@@ -108,13 +108,13 @@ Item {
                 anchors.rightMargin: root.rightInset
                 anchors.verticalCenter: parent.verticalCenter
                 sunken: closeArea.pressed
-                color: closeArea.pressed ? Theme.well : Theme.raised
+                color: closeArea.pressed ? PlatinumTokens.well : PlatinumTokens.raised
 
                 PlatinumIcon {
                     anchors.centerIn: parent
                     name: "close"
                     size: 8
-                    color: Theme.menuText
+                    color: PlatinumTokens.menuText
                 }
 
                 MouseArea {

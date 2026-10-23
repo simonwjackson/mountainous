@@ -9,13 +9,13 @@ Item {
 
     property string text: ""
     property bool checked: false
-    property real rightInset: Theme.menuRightInset
+    property real rightInset: PlatinumTokens.menuRightInset
     default property alias trailing: trailingRow.data
     signal toggled(bool checked)
 
     Layout.fillWidth: true
-    implicitHeight: Theme.menuLine + 4
-    implicitWidth: Theme.menuTextLeft + label.implicitWidth + rightInset
+    implicitHeight: PlatinumTokens.menuLine + 4
+    implicitWidth: PlatinumTokens.menuTextLeft + label.implicitWidth + rightInset
 
     MouseArea {
         x: 0
@@ -30,7 +30,7 @@ Item {
 
     PlatinumCheckBox {
         id: box
-        x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+        x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         checked: root.checked
         enabled: root.enabled
@@ -38,13 +38,13 @@ Item {
 
     Text {
         id: label
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         anchors.verticalCenter: parent.verticalCenter
         text: root.text
-        color: root.enabled ? Theme.menuText : Theme.menuTextOff
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumText
-        font.letterSpacing: Theme.platinumTracking
+        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumText
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 
     Row {
@@ -52,6 +52,6 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: root.rightInset
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Theme.menuGap
+        spacing: PlatinumTokens.menuGap
     }
 }

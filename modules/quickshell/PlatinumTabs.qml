@@ -10,18 +10,18 @@ Item {
     // [{key, label}]
     property var model: []
     property string current: ""
-    property real rightInset: Theme.menuRightInset
+    property real rightInset: PlatinumTokens.menuRightInset
     signal selected(string key)
 
     Layout.fillWidth: true
-    implicitHeight: Theme.menuButtonHeight + 8
+    implicitHeight: PlatinumTokens.menuButtonHeight + 8
 
     Item {
         id: strip
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         y: 2
-        width: root.width - Theme.menuTextLeft - root.rightInset
-        height: Theme.menuButtonHeight
+        width: root.width - PlatinumTokens.menuTextLeft - root.rightInset
+        height: PlatinumTokens.menuButtonHeight
 
         Repeater {
             model: root.model
@@ -36,22 +36,22 @@ Item {
                 // what is left, so the strip ends on the grid's right edge.
                 readonly property real step: Math.round(strip.width / root.model.length)
                 x: index * step
-                width: index < root.model.length - 1 ? step + Theme.hair : strip.width - x
+                width: index < root.model.length - 1 ? step + PlatinumTokens.hair : strip.width - x
                 height: strip.height
 
-                Bevel {
+                PlatinumBevel {
                     anchors.fill: parent
                     sunken: tab.active || area.pressed
-                    color: tab.active || area.pressed ? Theme.well : Theme.raised
+                    color: tab.active || area.pressed ? PlatinumTokens.well : PlatinumTokens.raised
                 }
 
                 Text {
                     anchors.centerIn: parent
                     text: tab.modelData.label
-                    color: Theme.menuText
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumSmall
-                    font.letterSpacing: Theme.platinumTracking
+                    color: PlatinumTokens.menuText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumSmall
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
 
                 MouseArea {

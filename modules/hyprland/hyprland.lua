@@ -811,7 +811,7 @@ hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle
 local topbar_access_timer = nil
 hl.bind(mod .. " + O", function()
     hl.dispatch(hl.dsp.submap("topbar-access"))
-    hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call topbar reveal"))
+    hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call chrome reveal"))
 
     if topbar_access_timer then
         topbar_access_timer:set_enabled(false)
@@ -819,20 +819,20 @@ hl.bind(mod .. " + O", function()
     topbar_access_timer = hl.timer(function()
         if hl.get_current_submap() == "topbar-access" then
             hl.dispatch(hl.dsp.submap("reset"))
-            hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
+            hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call chrome hide"))
         end
     end, { timeout = 3000, type = "oneshot" })
 end)
 
 hl.define_submap("topbar-access", "reset", function()
-    hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call bluetooth reveal"))
-    hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call wifi reveal"))
-    hl.bind("S", hl.dsp.exec_cmd("qs -c mountainous ipc call sound reveal"))
-    hl.bind("L", hl.dsp.exec_cmd("qs -c mountainous ipc call brightness reveal"))
-    hl.bind("C", hl.dsp.exec_cmd("qs -c mountainous ipc call oci reveal"))
-    hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call storage reveal"))
-    hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call builder reveal"))
-    hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call topbar hide"))
+    hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open bt"))
+    hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open wifi"))
+    hl.bind("S", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open vol"))
+    hl.bind("L", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open bri"))
+    hl.bind("C", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open oci"))
+    hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open disk"))
+    hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
+    hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome hide"))
 end)
 
 -- O toggles the panels. Moved off SHIFT+P, which the omni bar's window

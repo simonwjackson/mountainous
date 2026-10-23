@@ -1,7 +1,6 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
-import QtQuick.Layouts
 
 // Brightness: the bar control's state and its menu, reached from the bar
 // or with SUPER+O then L. This Scope owns the state; MenuHost shows the
@@ -149,67 +148,5 @@ Scope {
             });
         }
         return list;
-    }
-
-    property Component menu: Component {
-        MenuFrame {
-            id: frame
-
-            preferredWidth: 340
-            title: "Brightness"
-            scrolls: screens.scrolls
-
-            // The one level. The track's left end is the dim minimum, not
-            // zero, so the whole drag is the whole range the keys reach.
-            PlatinumSlider {
-                rightInset: frame.rightInset
-                icon: "brightness"
-                hasValue: root.shownLevel >= 0
-                enabled: root.shownLevel >= 0
-                ratio: root.shownLevel < 0 ? 0
-                    : (root.shownLevel - root.minimum) / (root.maximum - root.minimum)
-                valueText: root.shownLevel >= 0 ? root.shownLevel + "%" : "--"
-                onMoved: function (ratio) {
-                    root.dragging = true;
-                    root.setLevel(root.minimum + ratio * (root.maximum - root.minimum));
-                }
-                onReleased: root.dragging = false
-            }
-
-            MenuParts.Separator {}
-
-            MenuParts.Empty {
-                visible: root.rows.length === 0
-                rightInset: frame.rightInset
-                text: "No screen here can change its brightness."
-            }
-
-            MenuList {
-                id: screens
-                visible: root.rows.length > 0
-                model: ScriptModel { values: root.rows }
-
-                delegate: MenuListRow {
-                    required property var modelData
-                    width: ListView.view.width
-                    rightInset: frame.rightInset
-                    mark: modelData.follows ? "dot" : "ring"
-                    markDim: !modelData.follows
-                    name: modelData.label
-                    nameColor: modelData.follows ? Theme.menuText : Theme.menuTextSecondary
-                    // Why a screen does not follow is the one fact a user
-                    // can act on.
-                    detail: modelData.follows ? modelData.detail : "Keeps its own brightness"
-                }
-            }
-
-            MenuParts.Hint {
-                rightInset: frame.rightInset
-                text: "←→ brightness · Esc close"
-            }
-
-            Shortcut { sequence: "Left"; context: Qt.WindowShortcut; onActivated: root.step(-1) }
-            Shortcut { sequence: "Right"; context: Qt.WindowShortcut; onActivated: root.step(1) }
-        }
     }
 }

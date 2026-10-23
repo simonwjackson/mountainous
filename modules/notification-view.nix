@@ -22,7 +22,7 @@ let
   qml = [
     "Notifications.qml"
     "NotificationPopups.qml"
-    "NotificationCentre.qml"
+    "panels/NotificationCentre.qml"
     "NotificationCard.qml"
     "NotificationButton.qml"
     "NotificationStyle.qml"

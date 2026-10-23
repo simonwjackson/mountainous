@@ -14,7 +14,7 @@ Item {
     property string icon: ""
     property bool dimmed: false     // muted: the fill goes grey
     property bool hasValue: true
-    property real rightInset: Theme.menuRightInset
+    property real rightInset: PlatinumTokens.menuRightInset
     readonly property bool dragging: area.pressed
     signal moved(real ratio)
     signal released
@@ -26,50 +26,50 @@ Item {
 
     PlatinumIcon {
         visible: root.icon !== ""
-        x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+        x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         name: root.icon
         size: 14
-        color: Theme.menuText
+        color: PlatinumTokens.menuText
     }
 
     Item {
         id: track
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         anchors.verticalCenter: parent.verticalCenter
-        width: root.width - Theme.menuTextLeft - root.rightInset - root.valueWidth - Theme.menuGap
+        width: root.width - PlatinumTokens.menuTextLeft - root.rightInset - root.valueWidth - PlatinumTokens.menuGap
         height: 10
 
-        Bevel {
+        PlatinumBevel {
             anchors.fill: parent
             sunken: true
             edged: false
-            color: Theme.well
+            color: PlatinumTokens.well
         }
 
         Rectangle {
-            x: Theme.hair
-            y: Theme.hair
-            height: parent.height - 2 * Theme.hair
-            width: Math.max(0, (parent.width - 2 * Theme.hair) * Math.min(1, Math.max(0, root.ratio)))
-            color: root.dimmed ? Theme.menuTextOff : Theme.highlight
+            x: PlatinumTokens.hair
+            y: PlatinumTokens.hair
+            height: parent.height - 2 * PlatinumTokens.hair
+            width: Math.max(0, (parent.width - 2 * PlatinumTokens.hair) * Math.min(1, Math.max(0, root.ratio)))
+            color: root.dimmed ? PlatinumTokens.menuTextOff : PlatinumTokens.highlight
         }
 
-        Bevel {
+        PlatinumBevel {
             id: thumb
             visible: root.hasValue
             width: 12
             height: 20
             anchors.verticalCenter: parent.verticalCenter
             x: Math.round(parent.width * Math.min(1, Math.max(0, root.ratio)) - width / 2)
-            color: root.dragging ? Theme.well : Theme.raised
+            color: root.dragging ? PlatinumTokens.well : PlatinumTokens.raised
 
             PlatinumIcon {
                 anchors.centerIn: parent
                 name: "grip"
                 width: 6
                 height: 4
-                color: Theme.bevelDark
+                color: PlatinumTokens.bevelDark
             }
         }
 
@@ -101,9 +101,9 @@ Item {
         width: root.valueWidth
         horizontalAlignment: Text.AlignRight
         text: root.valueText
-        color: root.dimmed ? Theme.menuTextOff : Theme.menuText
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumText
-        font.letterSpacing: Theme.platinumTracking
+        color: root.dimmed ? PlatinumTokens.menuTextOff : PlatinumTokens.menuText
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumText
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 }

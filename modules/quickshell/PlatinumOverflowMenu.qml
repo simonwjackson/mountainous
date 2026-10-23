@@ -9,7 +9,7 @@ import QtQuick.Layouts
 // The name column is reserved at its longest name; a value gets what is
 // left and elides on the right edge. The control's own menu always has
 // the full value.
-MenuFrame {
+PlatinumMenuFrame {
     id: frame
 
     required property var bar
@@ -63,35 +63,35 @@ MenuFrame {
     Repeater {
         model: frame.entries
 
-        MenuListRow {
+        PlatinumMenuListRow {
             id: row
             required property string modelData
             Layout.fillWidth: true
-            Layout.preferredHeight: Theme.menuLine + 4
-            rowHeight: Theme.menuLine + 4
+            Layout.preferredHeight: PlatinumTokens.menuLine + 4
+            rowHeight: PlatinumTokens.menuLine + 4
             rightInset: frame.rightInset
             readonly property bool action: modelData === "retry" || modelData === "dismiss"
             readonly property bool status: modelData === "status"
             selected: hover.hovered && !status
             mark: action || status ? "" : frame.bar.iconFor(modelData)
             name: status ? frame.bar.dictationText : frame.labels[modelData] || modelData
-            nameColor: status ? Theme.menuDanger : Theme.menuText
+            nameColor: status ? PlatinumTokens.menuDanger : PlatinumTokens.menuText
             onClicked: if (!status) frame.run(modelData)
 
             HoverHandler { id: hover }
 
             Text {
-                readonly property real room: row.width - Theme.menuTextLeft - row.rightInset
-                    - Theme.menuGap - frame.nameWidth
+                readonly property real room: row.width - PlatinumTokens.menuTextLeft - row.rightInset
+                    - PlatinumTokens.menuGap - frame.nameWidth
                 width: Math.max(0, Math.min(implicitWidth, room))
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
                 text: row.action || row.status ? "" : frame.bar.valueFor(row.modelData)
                 color: row.fg2
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumSmall
-                font.letterSpacing: Theme.platinumTracking
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumSmall
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
         }
     }

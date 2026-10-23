@@ -2,12 +2,23 @@
   {
     "id": "platinum",
     "label": "Mac OS 8 Platinum",
-    "desktop": "themes/platinum/Desktop.qml",
-    "picker": "themes/platinum/PickerView.qml",
+    "desktop": "PlatinumDesktop.qml",
+    "picker": "PlatinumPickerView.qml",
     "appearances": [
-      {"mode": "light", "label": "Light", "thumbnail": "themes/platinum/previews/light.png"},
-      {"mode": "dark", "label": "Dark grey", "thumbnail": "themes/platinum/previews/dark.png"}
+      {
+        "mode": "light",
+        "label": "Light",
+        "thumbnail": "themes/platinum/previews/light.png"
+      },
+      {
+        "mode": "dark",
+        "label": "Dark grey",
+        "thumbnail": "themes/platinum/previews/dark.png"
+      }
     ],
-    "options": {"extraDark": true}
+    "options": {
+      "extraDark": true
+    },
+    "qmlPrefix": "Platinum"
   }
 ]

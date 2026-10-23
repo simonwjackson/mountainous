@@ -1,78 +1,78 @@
 import QtQuick
 import QtQuick.Layouts
 
-// Small pieces every bar menu shares. Use them as MenuParts.Separator,
-// MenuParts.Section, MenuParts.Hint, MenuParts.Empty and MenuParts.Line.
+// Small pieces every bar menu shares. Use them as PlatinumMenuParts.Separator,
+// PlatinumMenuParts.Section, PlatinumMenuParts.Hint, PlatinumMenuParts.Empty and PlatinumMenuParts.Line.
 // Each starts on the menu's text edge and ends on its right edge.
 QtObject {
     // An etched rule: dark over light, as Platinum draws a divider.
     component Separator: Item {
         Layout.fillWidth: true
-        implicitHeight: 4 + 2 * Theme.hair + 6
+        implicitHeight: 4 + 2 * PlatinumTokens.hair + 6
 
         Rectangle {
-            x: Theme.hair
+            x: PlatinumTokens.hair
             y: 4
-            width: parent.width - 2 * Theme.hair
-            height: Theme.hair
-            color: Theme.bevelDark
+            width: parent.width - 2 * PlatinumTokens.hair
+            height: PlatinumTokens.hair
+            color: PlatinumTokens.bevelDark
         }
         Rectangle {
-            x: Theme.hair
-            y: 4 + Theme.hair
-            width: parent.width - 2 * Theme.hair
-            height: Theme.hair
-            color: Theme.bevelLight
+            x: PlatinumTokens.hair
+            y: 4 + PlatinumTokens.hair
+            width: parent.width - 2 * PlatinumTokens.hair
+            height: PlatinumTokens.hair
+            color: PlatinumTokens.bevelLight
         }
     }
 
     // A section label, such as DEVICES or a host name.
     component Section: Text {
-        property real rightInset: Theme.menuRightInset
+        property real rightInset: PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.menuTextLeft
+        Layout.leftMargin: PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 2
         bottomPadding: 4
         elide: Text.ElideRight
         textFormat: Text.PlainText
-        color: Theme.menuTextSecondary
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumSmall
-        font.letterSpacing: Theme.platinumTracking
+        color: PlatinumTokens.menuTextSecondary
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumSmall
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 
     // One line of plain text on the grid, with an optional colour.
     component Line: Text {
-        property real rightInset: Theme.menuRightInset
+        property real rightInset: PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.menuTextLeft
+        Layout.leftMargin: PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 2
         bottomPadding: 2
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
-        color: Theme.menuTextSecondary
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumSmall
-        font.letterSpacing: Theme.platinumTracking
+        color: PlatinumTokens.menuTextSecondary
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumSmall
+        font.letterSpacing: PlatinumTokens.platinumTracking
         lineHeight: 1.15
     }
 
     // What an empty list says, and what to do about it.
     component Empty: Text {
-        property real rightInset: Theme.menuRightInset
+        property real rightInset: PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.menuTextLeft
+        Layout.leftMargin: PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 12
         bottomPadding: 12
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
-        color: Theme.menuTextSecondary
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumSmall
-        font.letterSpacing: Theme.platinumTracking
+        color: PlatinumTokens.menuTextSecondary
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumSmall
+        font.letterSpacing: PlatinumTokens.platinumTracking
         lineHeight: 1.2
     }
 
@@ -81,7 +81,7 @@ QtObject {
     component Hint: Flow {
         id: hint
         property string text: ""
-        property real rightInset: Theme.menuRightInset
+        property real rightInset: PlatinumTokens.menuRightInset
         readonly property var words: {
             const out = [];
             for (const part of hint.text.split(" ")) {
@@ -91,7 +91,7 @@ QtObject {
             return out;
         }
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.menuTextLeft
+        Layout.leftMargin: PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         Layout.topMargin: 6
         spacing: 0
@@ -121,10 +121,10 @@ QtObject {
                             visible: !parent.arrow
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.modelData
-                            color: Theme.menuTextSecondary
-                            font.family: Theme.platinumFont
-                            font.pixelSize: Theme.platinumHint
-                            font.letterSpacing: Theme.platinumTracking
+                            color: PlatinumTokens.menuTextSecondary
+                            font.family: PlatinumTokens.platinumFont
+                            font.pixelSize: PlatinumTokens.platinumHint
+                            font.letterSpacing: PlatinumTokens.platinumTracking
                         }
 
                         PlatinumIcon {
@@ -133,7 +133,7 @@ QtObject {
                             name: "arrow"
                             width: 9
                             height: 10
-                            color: Theme.menuTextSecondary
+                            color: PlatinumTokens.menuTextSecondary
                             rotation: ({"↑": 0, "→": 90, "↓": 180, "←": 270})[parent.modelData] || 0
                         }
                     }

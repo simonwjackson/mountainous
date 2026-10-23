@@ -7,10 +7,10 @@ import QtQuick.Layouts
 // one click away here.
 //
 // "Extra dark" turns the bar black in dark mode. The desktop-theme command
-// owns the choice and Theme.qml reads it back, so the check box shows what
+// owns the choice and PlatinumTokens.qml reads it back, so the check box shows what
 // is stored, not what was clicked. In light mode the row stays, disabled,
 // and says why.
-MenuFrame {
+PlatinumMenuFrame {
     id: frame
 
     property date now: new Date()
@@ -21,17 +21,17 @@ MenuFrame {
 
     readonly property real keyWidth: PlatinumMetrics.smallWidth("E")
 
-    preferredWidth: Math.max(220, PlatinumMetrics.even(Theme.menuTextLeft
-        + PlatinumMetrics.width(frame.title) + Theme.menuGap + 16 + Theme.menuRightInset + 4))
+    preferredWidth: Math.max(220, PlatinumMetrics.even(PlatinumTokens.menuTextLeft
+        + PlatinumMetrics.width(frame.title) + PlatinumTokens.menuGap + 16 + PlatinumTokens.menuRightInset + 4))
     title: Qt.formatDate(frame.now, "dddd, MMMM d, yyyy")
     detail: {
         const hour = frame.now.getHours() % 12 || 12;
         return hour + Qt.formatTime(frame.now, ":mm") + (frame.now.getHours() < 12 ? " AM" : " PM");
     }
 
-    MenuParts.Separator {}
+    PlatinumMenuParts.Separator {}
 
-    MenuCheckRow {
+    PlatinumMenuCheckRow {
         text: "Extra dark"
         rightInset: frame.rightInset
         checked: Theme.extraDark
@@ -43,19 +43,27 @@ MenuFrame {
             width: frame.keyWidth
             horizontalAlignment: Text.AlignRight
             text: "E"
-            color: Theme.dark ? Theme.menuTextSecondary : Theme.menuTextOff
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumSmall
+            color: Theme.dark ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuTextOff
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumSmall
         }
     }
 
-    MenuParts.Line {
+    PlatinumMenuParts.Line {
         visible: !Theme.dark
         rightInset: frame.rightInset
         text: "Only applies in dark mode."
     }
 
-    MenuParts.Hint {
+    PlatinumButton {
+        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.rightMargin: frame.rightInset
+        Layout.topMargin: PlatinumTokens.menuGap
+        text: "PlatinumDesktop theme…"
+        onClicked: { const screen = MenuState.screen; MenuState.close(); ThemePicker.open(screen); }
+    }
+
+    PlatinumMenuParts.Hint {
         rightInset: frame.rightInset
         text: Theme.dark ? "E extra dark · Esc close" : "Esc close"
     }

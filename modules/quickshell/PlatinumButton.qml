@@ -8,7 +8,7 @@ import QtQuick
 // A press sinks the bevel and darkens the face, as Mac OS 8 did. An icon
 // button (the × forget box) passes icon instead of text and is square.
 //
-// The face takes Theme.radiusSmall. The default ring and the focus ring
+// The face takes PlatinumTokens.radiusSmall. The default ring and the focus ring
 // sit outside it, so their radii grow by their distance from the face;
 // that keeps all three corners concentric at any hair width.
 Item {
@@ -29,11 +29,11 @@ Item {
 
     readonly property bool hovered: area.containsMouse
     readonly property bool down: area.pressed && area.containsMouse
-    readonly property real ring: isDefault ? 2 * Theme.hair : 0
+    readonly property real ring: isDefault ? 2 * PlatinumTokens.hair : 0
 
-    implicitHeight: (onBar ? 20 : Theme.menuButtonHeight) + 2 * ring
+    implicitHeight: (onBar ? 20 : PlatinumTokens.menuButtonHeight) + 2 * ring
     implicitWidth: (fixedWidth > 0 ? fixedWidth
-        : icon !== "" && text === "" ? Theme.menuButtonHeight
+        : icon !== "" && text === "" ? PlatinumTokens.menuButtonHeight
         : label.implicitWidth + 20) + 2 * ring
     opacity: 1
 
@@ -41,30 +41,30 @@ Item {
         visible: root.isDefault
         anchors.fill: parent
         color: "transparent"
-        border.width: Theme.hair
-        border.color: Theme.menuEdge
-        radius: Theme.radiusSmall + root.ring
+        border.width: PlatinumTokens.hair
+        border.color: PlatinumTokens.menuEdge
+        radius: PlatinumTokens.radiusSmall + root.ring
     }
 
-    Bevel {
+    PlatinumBevel {
         id: face
         anchors.fill: parent
         anchors.margins: root.ring
-        radius: Theme.radiusSmall
+        radius: PlatinumTokens.radiusSmall
         sunken: root.down
-        bevelled: !root.onBar || Theme.barBevelled
-        edgeColor: root.onBar ? Theme.barButtonEdge : Theme.menuEdge
-        color: root.down ? Theme.well : root.onBar ? Theme.barButton : Theme.raised
+        bevelled: !root.onBar || PlatinumTokens.barBevelled
+        edgeColor: root.onBar ? PlatinumTokens.barButtonEdge : PlatinumTokens.menuEdge
+        color: root.down ? PlatinumTokens.well : root.onBar ? PlatinumTokens.barButton : PlatinumTokens.raised
     }
 
     Rectangle {
         visible: root.focused
         anchors.fill: face
-        anchors.margins: -2 * Theme.hair
+        anchors.margins: -2 * PlatinumTokens.hair
         color: "transparent"
-        radius: Theme.radiusSmall + 2 * Theme.hair
-        border.width: 2 * Theme.hair
-        border.color: Theme.highlight
+        radius: PlatinumTokens.radiusSmall + 2 * PlatinumTokens.hair
+        border.width: 2 * PlatinumTokens.hair
+        border.color: PlatinumTokens.highlight
     }
 
     Text {
@@ -76,10 +76,10 @@ Item {
         elide: Text.ElideRight
         text: root.keyHint !== "" ? root.keyHint + "  " + root.text : root.text
         textFormat: Text.PlainText
-        color: !root.enabled ? Theme.menuTextOff : root.onBar ? Theme.barText : Theme.menuText
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumSmall
-        font.letterSpacing: Theme.platinumTracking
+        color: !root.enabled ? PlatinumTokens.menuTextOff : root.onBar ? PlatinumTokens.barText : PlatinumTokens.menuText
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumSmall
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 
     PlatinumIcon {
@@ -87,7 +87,7 @@ Item {
         anchors.centerIn: face
         name: root.icon
         size: 8
-        color: root.enabled ? Theme.menuText : Theme.menuTextOff
+        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
     }
 
     MouseArea {

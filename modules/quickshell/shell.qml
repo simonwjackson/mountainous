@@ -5,10 +5,42 @@ import Quickshell.Hyprland
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
+import "panels"
 import "lanes.js" as Lanes
 
 ShellRoot {
     id: root
+
+    property var desktops: ({})
+    Binding {
+        target: Theme
+        property: "chromeStatus"
+        value: {
+            const desktops = Object.values(root.desktops);
+            return desktops.length > 0 ? desktops[0].diagnostics || "" : "";
+        }
+    }
+    function registerDesktop(screen, desktop) {
+        if (!screen) return;
+        const next = Object.assign({}, root.desktops);
+        if (desktop) next[screen.name] = desktop;
+        else delete next[screen.name];
+        root.desktops = next;
+    }
+    function revealChrome() {
+        for (const desktop of Object.values(root.desktops).filter(Boolean)) desktop.reveal();
+    }
+    function hideChrome() {
+        for (const desktop of Object.values(root.desktops).filter(Boolean)) desktop.hide();
+    }
+    function openChrome(control) {
+        // Keep the established chord routing: hardware controls use the
+        // primary screen; builder, notifications and picker follow focus.
+        const primary = ["bt", "wifi", "vol", "bri", "oci", "disk"].indexOf(control) >= 0;
+        const screen = primary ? root.primaryScreen() : root.focusedScreen();
+        const desktop = screen ? root.desktops[screen.name] : null;
+        if (desktop) desktop.open(control);
+    }
 
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
@@ -117,12 +149,13 @@ ShellRoot {
     IpcHandler {
         target: "chrome"
         function toggle(): void { root.chromeVisible = !root.chromeVisible; }
-        function hide(): void   { root.chromeVisible = false; }
+        function hide(): void { root.hideChrome(); }
         // Named reveal, not show: `qs ipc call chrome show` returns the
         // interface listing and does nothing, because `show` collides
         // with the qs CLI's own introspection verb. toggle and hide
         // both work, and Meta+I uses toggle.
-        function reveal(): void { root.chromeVisible = true; }
+        function reveal(): void { root.revealChrome(); }
+        function open(control: string): void { root.openChrome(control); }
     }
 
     // The Super+O chord's letters (modules/hyprland/hyprland.lua) land here.
@@ -185,11 +218,9 @@ ShellRoot {
 
     IpcHandler {
         target: "topbar"
-        function hide(): void { root.topbarAccessVisible = false; }
-        function reveal(): void {
-            root.chromeVisible = true;
-            root.topbarAccessVisible = true;
-        }
+        function hide(): void { root.hideChrome(); }
+        function reveal(): void { root.revealChrome(); }
+        function open(control: string): void { root.openChrome(control); }
     }
 
     // Quickshell 0.3.1 drops an openwindow event when Hyprland creates the
@@ -298,11 +329,11 @@ ShellRoot {
         if (fromPage < 0 || toPage < 0) return;
 
         if (fromPage === toPage) {
-            Quickshell.execDetached(["hyprctl", "--batch",
+            Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch",
                 'dispatch hl.dsp.focus({ window = "address:' + a + '" }) ; '
                 + 'dispatch hl.dsp.window.swap({ target = "address:' + b + '" })']);
         } else {
-            Quickshell.execDetached(["hyprctl", "dispatch",
+            Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch",
                 'hl.dsp.window.move({ window = "address:' + a + '", '
                 + 'workspace = ' + toPage + ' })']);
         }
@@ -366,292 +397,30 @@ ShellRoot {
                 shown: screenScope.shows("ntf")
             }
 
-            TopBar {
-                id: topBar
-                modelData: screenScope.modelData
-                visible: root.chromeVisible
-                bluetooth: bluetoothPanel
-                wifi: wifiPanel
-                sound: soundPanel
-                brightness: brightnessPanel
-                oci: ociEgress
-                storage: storageHealth
-                notifications: notificationService
-                dictation: dictationService
-                omniBar: omniBarService
-                frontWindow: screenScope.frontWindow
-                builderGate: builderGateService
-                now: clock.date
-                chordVisible: root.topbarAccessVisible
+            readonly property var desktopContext: QtObject {
+                readonly property var shell: root
+                readonly property var bluetooth: bluetoothPanel
+                readonly property var wifi: wifiPanel
+                readonly property var sound: soundPanel
+                readonly property var brightness: brightnessPanel
+                readonly property var oci: ociEgress
+                readonly property var storage: storageHealth
+                readonly property var builder: builderPanel
+                readonly property var centre: notificationCentre
+                readonly property var notifications: notificationService
+                readonly property var dictation: dictationService
+                readonly property var omniBar: omniBarService
+                readonly property var builderGate: builderGateService
+                readonly property var frontWindow: screenScope.frontWindow
+                readonly property date now: clock.date
             }
 
-            Component {
-                id: clockMenu
-                ClockMenu { now: clock.date }
-            }
-
-            Component {
-                id: overflowMenu
-                OverflowMenu { bar: topBar }
-            }
-
-            MenuHost {
+            ThemeDesktop {
                 screen: screenScope.modelData
-                bar: topBar
-                menus: ({
-                    bt: bluetoothPanel.menu,
-                    wifi: wifiPanel.menu,
-                    vol: soundPanel.menu,
-                    bri: brightnessPanel.menu,
-                    oci: ociEgress.enabled ? ociEgress.menu : null,
-                    disk: storageHealth.enabled ? storageHealth.menu : null,
-                    ntf: notificationCentre.menu,
-                    builder: builderGateService.enabled ? builderPanel.menu : null,
-                    clock: clockMenu,
-                    more: overflowMenu
-                })
+                context: screenScope.desktopContext
+                onDesktopChanged: root.registerDesktop(screen, desktop)
             }
         }
     }
 
-    //----------------------------------------------------------------
-    // BOTTOM DOCK
-    //----------------------------------------------------------------
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            id: dockWindow
-
-            required property var modelData
-            screen: modelData
-            visible: root.chromeVisible
-
-            // This screen's windows only. See root.windowsOn.
-            readonly property var lane: root.windowsOn(modelData)
-
-            anchors { bottom: true; left: true; right: true }
-            implicitHeight: 44
-            // Kamoi: "a floating window dock reserves space at the
-            // bottom". The margin floats it; the anchors reserve it.
-            margins { bottom: 6; left: 6; right: 6 }
-            color: "transparent"
-
-            Rectangle {
-                id: dock
-                anchors.centerIn: parent
-                implicitWidth: dockRow.implicitWidth + 16
-                implicitHeight: 38
-                radius: Theme.radiusMedium
-                color: Theme.bgPanel
-                visible: dockWindow.lane.length > 0
-
-                // -1 means no drag is in progress. Holding both ends
-                // here rather than in each icon keeps one owner for the
-                // gesture, so the icons only read it.
-                property int dragIndex: -1
-                property int dropIndex: -1
-
-                // The row is one flat strip, so the icon under the
-                // pointer is whatever child sits at that x. childAt
-                // returns the slot, and each slot knows its own index.
-                function slotIndexAt(x, y) {
-                    const item = dockRow.childAt(x, y);
-                    return (item && item.slotIndex !== undefined) ? item.slotIndex : -1;
-                }
-
-                RowLayout {
-                    id: dockRow
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    Repeater {
-                        model: ScriptModel { values: dockWindow.lane }
-
-                        delegate: Rectangle {
-                            required property var modelData
-                            required property int index
-
-                            // dock.slotIndexAt reads this off whatever
-                            // childAt returns, so a drop can name the
-                            // window it landed on.
-                            readonly property int slotIndex: index
-
-                            // A hairline before the first window of each
-                            // workspace, so the strip's shape is visible
-                            // without labelling every group.
-                            readonly property bool startsWorkspace: {
-                                if (index === 0) return false;
-                                const here = root.pageOf(modelData);
-                                const prev = root.pageOf(dockWindow.lane[index - 1]);
-                                // While either window is between pages,
-                                // draw nothing rather than a separator
-                                // that moves again a moment later.
-                                if (here < 0 || prev < 0) return false;
-                                return here !== prev;
-                            }
-
-                            implicitWidth: 30 + (startsWorkspace ? 9 : 0)
-                            implicitHeight: 30
-                            radius: Theme.radiusSmall
-                            color: "transparent"
-
-                            Rectangle {
-                                visible: parent.startsWorkspace
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 1
-                                height: 18
-                                color: Theme.bgSeparator
-                            }
-
-                            Rectangle {
-                                id: cell
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 30
-                                height: 30
-                                radius: Theme.radiusSmall
-                                // The focused window is marked, on
-                                // whichever screen has focus. Windows on
-                                // pages this screen is not showing are
-                                // dimmed rather than hidden, so the
-                                // screen's whole session reads at a
-                                // glance. "Showing" is per screen: focus
-                                // on the other screen does not dim this
-                                // one. A window between pages is not
-                                // shown anywhere, so it stays dimmed.
-                                color: modelData.activated ? Theme.bgActive : "transparent"
-                                opacity: Lanes.isShown(modelData) ? 1.0 : 0.45
-
-                                // A toplevel has no wayland handle until
-                                // Hyprland reports its address, so appId
-                                // is briefly empty. iconPath("") builds a
-                                // malformed url and the journal fills up
-                                // with: Could not load icon "?fallback="
-                                readonly property string appId: {
-                                    const wl = modelData.wayland;
-                                    return wl && wl.appId ? wl.appId : "";
-                                }
-
-                                // A window class is not an icon name.
-                                // Chromium reports the class
-                                // chromium-browser while its icon is
-                                // named chromium, so asking the theme
-                                // for the class filled the journal
-                                // with: Could not load icon
-                                // "chromium-browser?fallback=...".
-                                //
-                                // The desktop entry is the mapping
-                                // between the two. heuristicLookup
-                                // matches on id, name and
-                                // StartupWMClass, which is how the
-                                // --app web apps resolve: their class
-                                // is chrome-<host>__-Default and only
-                                // their entry knows that.
-                                readonly property string iconName: {
-                                    if (cell.appId === "") return "";
-                                    const e = DesktopEntries.heuristicLookup(cell.appId);
-                                    return (e && e.icon) ? e.icon : cell.appId;
-                                }
-
-                                IconImage {
-                                    anchors.centerIn: parent
-                                    implicitSize: 20
-                                    visible: source !== ""
-                                    source: cell.iconName === ""
-                                        ? ""
-                                        : Quickshell.iconPath(cell.iconName, "application-x-executable")
-                                }
-
-                                // Until the icon resolves, show the first
-                                // letter rather than an empty square.
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: cell.appId === ""
-                                    text: (modelData.title || "?").charAt(0).toUpperCase()
-                                    color: Theme.textSecondary
-                                    font.pixelSize: 13
-                                    font.family: Theme.fontFamily
-                                }
-
-                                // The icon lifts while it is dragged, and
-                                // the icon under the pointer lights up, so
-                                // the drop target is never a guess.
-                                scale: dock.dragIndex === index ? 1.18 : 1.0
-                                border.width: dock.dropIndex === index
-                                              && dock.dragIndex !== index ? 1 : 0
-                                border.color: Theme.accent
-
-                                MouseArea {
-                                    id: grip
-                                    anchors.fill: parent
-                                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-
-                                    // A click and a drag start the same
-                                    // way, so the gesture only becomes a
-                                    // drag after the pointer travels far
-                                    // enough to rule out a shaky click.
-                                    readonly property int threshold: 8
-                                    property real pressX: 0
-                                    property bool dragging: false
-
-                                    function targetAt(mx, my) {
-                                        const p = grip.mapToItem(dockRow, mx, my);
-                                        return dock.slotIndexAt(p.x, p.y);
-                                    }
-
-                                    onPressed: function (mouse) {
-                                        grip.pressX = mouse.x;
-                                        grip.dragging = false;
-                                    }
-
-                                    onPositionChanged: function (mouse) {
-                                        if (!(mouse.buttons & Qt.LeftButton)) return;
-                                        if (!grip.dragging
-                                            && Math.abs(mouse.x - grip.pressX) < grip.threshold) return;
-                                        grip.dragging = true;
-                                        dock.dragIndex = index;
-                                        dock.dropIndex = grip.targetAt(mouse.x, mouse.y);
-                                    }
-
-                                    onReleased: function (mouse) {
-                                        if (!grip.dragging) return;
-                                        root.dropOnto(dockWindow.lane, index, grip.targetAt(mouse.x, mouse.y));
-                                        dock.dragIndex = -1;
-                                        dock.dropIndex = -1;
-                                    }
-
-                                    // A release after a drag still emits
-                                    // clicked, and activating the window
-                                    // there would undo the drop by pulling
-                                    // focus to the old page.
-                                    onClicked: function (mouse) {
-                                        if (grip.dragging) { grip.dragging = false; return; }
-                                        const wl = modelData.wayland;
-                                        if (!wl) return;
-                                        // Go through the Wayland toplevel
-                                        // protocol, not Hyprland.dispatch:
-                                        // dispatcher syntax differs under
-                                        // a Lua config (Hyprland.usingLua)
-                                        // and this path avoids the issue.
-                                        // activate() also pulls the focus
-                                        // to that window's workspace.
-                                        if (mouse.button === Qt.MiddleButton) wl.close();
-                                        else wl.activate();
-                                    }
-
-                                    onCanceled: {
-                                        grip.dragging = false;
-                                        dock.dragIndex = -1;
-                                        dock.dropIndex = -1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

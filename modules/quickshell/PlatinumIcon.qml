@@ -6,7 +6,7 @@ Item {
     id: root
 
     property string name: ""
-    property color color: Theme.menuText
+    property color color: PlatinumTokens.menuText
     // The colour behind the mark, for the strokes that cut into it (the
     // cloud's arrow, the charging bolt, a slash).
     property color knock: "transparent"
@@ -19,8 +19,8 @@ Item {
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         smooth: true
-        sourceSize.width: Math.ceil(root.width * Theme.pixelRatio)
-        sourceSize.height: Math.ceil(root.height * Theme.pixelRatio)
-        source: root.name === "" ? "" : IconStore.url(root.name, root.color, root.knock)
+        sourceSize.width: Math.ceil(root.width * PlatinumTokens.pixelRatio)
+        sourceSize.height: Math.ceil(root.height * PlatinumTokens.pixelRatio)
+        source: root.name === "" ? "" : PlatinumIconStore.url(root.name, root.color, root.knock)
     }
 }

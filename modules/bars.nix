@@ -97,7 +97,7 @@
           notificationFiles = [
             "Notifications.qml"
             "NotificationPopups.qml"
-            "NotificationCentre.qml"
+            "panels/NotificationCentre.qml"
             "NotificationCard.qml"
             "NotificationButton.qml"
             "NotificationStyle.qml"
@@ -117,6 +117,7 @@
                     !(builtins.elem name [
                       "notification-dev"
                       "builder-dev"
+                      "theme-dev"
                     ])
                   ) (collect (relative + "/") (directory + "/${name}"))
                 else
@@ -129,7 +130,7 @@
             && !(lib.hasSuffix ".test.js" name)
             && !(lib.hasSuffix ".py" name)
             && !(lib.hasSuffix ".sh" name)
-            && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || lib.hasPrefix "icons/" name);
+            && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || name == "themes.json" || lib.hasPrefix "themes/" name || lib.hasPrefix "icons/" name);
         in
         builtins.listToAttrs (
           map (name: {

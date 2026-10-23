@@ -1,7 +1,7 @@
 import QtQuick
 
 // A Platinum check box: a sunken well with a black edge and a check mark.
-// The box sits centred in the menu gutter (MenuCheckRow), so its label
+// The box sits centred in the menu gutter (PlatinumMenuCheckRow), so its label
 // starts on the text edge like every other row.
 Item {
     id: root
@@ -13,12 +13,12 @@ Item {
     implicitWidth: 14
     implicitHeight: 14
 
-    Bevel {
+    PlatinumBevel {
         anchors.fill: parent
         sunken: true
-        color: root.down ? Theme.bevelDark : Theme.well
-        lightColor: Theme.bevelLight
-        darkColor: Theme.bevelDark
+        color: root.down ? PlatinumTokens.bevelDark : PlatinumTokens.well
+        lightColor: PlatinumTokens.bevelLight
+        darkColor: PlatinumTokens.bevelDark
     }
 
     PlatinumIcon {
@@ -26,6 +26,6 @@ Item {
         visible: root.checked
         name: "check"
         size: 10
-        color: root.enabled ? Theme.menuText : Theme.menuTextOff
+        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
     }
 }

@@ -14,7 +14,7 @@ import "builder-gate.js" as Gate
 //
 // The words ("Builds off: battery", "Building 2") are a readout and yield
 // to the count alone, which stays in its own box.
-BarControl {
+PlatinumBarControl {
     id: root
 
     required property var gate
@@ -27,7 +27,7 @@ BarControl {
     menu: "builder"
     icon: "builder"
     slashed: Gate.mark(sample, pending) === "off"
-    tone: Theme.barTone(Gate.tone(sample, pending, actionError))
+    tone: PlatinumTokens.barTone(Gate.tone(sample, pending, actionError))
 
     // What the plan measures: the full words and the compact count. A
     // count sits in a box as wide as two wide digits, so "Building 2" and
@@ -49,8 +49,8 @@ BarControl {
         text: root.showLabel ? root.fullText : root.compactText
         textFormat: Text.PlainText
         color: root.fg
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumText
-        font.letterSpacing: Theme.platinumTracking
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumText
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 }

@@ -8,13 +8,13 @@ Text {
 
     // Every string the box must hold; the widest sets the width.
     property var widest: ["100"]
-    property color tone: Theme.barText
+    property color tone: PlatinumTokens.barText
 
     width: PlatinumMetrics.widest(widest)
     horizontalAlignment: Text.AlignLeft
     textFormat: Text.PlainText
     color: tone
-    font.family: Theme.platinumFont
-    font.pixelSize: Theme.platinumText
-    font.letterSpacing: Theme.platinumTracking
+    font.family: PlatinumTokens.platinumFont
+    font.pixelSize: PlatinumTokens.platinumText
+    font.letterSpacing: PlatinumTokens.platinumTracking
 }

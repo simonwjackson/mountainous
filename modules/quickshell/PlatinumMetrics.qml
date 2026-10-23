@@ -12,16 +12,16 @@ Singleton {
 
     FontMetrics {
         id: text
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumText
-        font.letterSpacing: Theme.platinumTracking
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumText
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 
     FontMetrics {
         id: small
-        font.family: Theme.platinumFont
-        font.pixelSize: Theme.platinumSmall
-        font.letterSpacing: Theme.platinumTracking
+        font.family: PlatinumTokens.platinumFont
+        font.pixelSize: PlatinumTokens.platinumSmall
+        font.letterSpacing: PlatinumTokens.platinumTracking
     }
 
     // Whole even logical pixels: at scale 1.5 an even width ends on a

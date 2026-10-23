@@ -16,17 +16,17 @@ Item {
     property bool markDim: false
     property string name: ""
     property string detail: ""
-    property color nameColor: Theme.menuText
-    property color detailColor: Theme.menuTextSecondary
+    property color nameColor: PlatinumTokens.menuText
+    property color detailColor: PlatinumTokens.menuTextSecondary
     property bool selected: false
-    property real rightInset: Theme.menuRightInset
-    property real rowHeight: detail !== "" ? Theme.menuRow : Theme.menuLine
+    property real rightInset: PlatinumTokens.menuRightInset
+    property real rowHeight: detail !== "" ? PlatinumTokens.menuRow : PlatinumTokens.menuLine
     default property alias trailing: trailingRow.data
     property alias below: belowItem.data
     readonly property real textRight: trailingRow.width > 0
-        ? trailingRow.x - Theme.menuGap : width - rightInset
-    readonly property color fg: selected ? Theme.highlightText : nameColor
-    readonly property color fg2: selected ? Theme.highlightText : detailColor
+        ? trailingRow.x - PlatinumTokens.menuGap : width - rightInset
+    readonly property color fg: selected ? PlatinumTokens.highlightText : nameColor
+    readonly property color fg2: selected ? PlatinumTokens.highlightText : detailColor
     signal entered
     signal clicked
     signal doubleClicked
@@ -40,7 +40,7 @@ Item {
         anchors.leftMargin: 0
         anchors.rightMargin: 0
         visible: root.selected
-        color: Theme.highlight
+        color: PlatinumTokens.highlight
     }
 
     MouseArea {
@@ -53,17 +53,17 @@ Item {
 
     PlatinumIcon {
         visible: root.mark !== ""
-        x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+        x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
         // On the name's line, not the row's middle.
         y: textColumn.y + (nameText.height - height) / 2
         name: root.mark
         size: 12
-        color: root.selected ? Theme.highlightText : root.markDim ? Theme.menuTextOff : Theme.menuText
+        color: root.selected ? PlatinumTokens.highlightText : root.markDim ? PlatinumTokens.menuTextOff : PlatinumTokens.menuText
     }
 
     Column {
         id: textColumn
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         y: Math.round((root.rowHeight - height - root.belowHeight) / 2)
         width: Math.max(0, root.textRight - x)
         spacing: 1
@@ -75,9 +75,9 @@ Item {
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: root.fg
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumText
-            font.letterSpacing: Theme.platinumTracking
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumText
+            font.letterSpacing: PlatinumTokens.platinumTracking
         }
 
         Text {
@@ -87,15 +87,15 @@ Item {
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: root.fg2
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumSmall
-            font.letterSpacing: Theme.platinumTracking
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumSmall
+            font.letterSpacing: PlatinumTokens.platinumTracking
         }
     }
 
     Item {
         id: belowItem
-        x: Theme.menuTextLeft
+        x: PlatinumTokens.menuTextLeft
         y: textColumn.y + textColumn.height + 4
         width: Math.max(0, root.textRight - x)
     }
@@ -105,6 +105,6 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: root.rightInset
         y: (root.rowHeight - height) / 2
-        spacing: Theme.menuGap
+        spacing: PlatinumTokens.menuGap
     }
 }

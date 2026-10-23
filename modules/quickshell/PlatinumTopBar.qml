@@ -54,11 +54,11 @@ PanelWindow {
     }
 
     anchors { top: true; left: true; right: true }
-    implicitHeight: Theme.barHeight
+    implicitHeight: PlatinumTokens.barHeight
     color: "transparent"
 
-    onDevicePixelRatioChanged: if (devicePixelRatio > 0) Theme.pixelRatio = devicePixelRatio
-    Component.onCompleted: if (devicePixelRatio > 0) Theme.pixelRatio = devicePixelRatio
+    onDevicePixelRatioChanged: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
+    Component.onCompleted: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
 
     readonly property bool menuHere: MenuState.current !== "" && MenuState.screen === bar.modelData
     function isOpen(name) { return bar.menuHere && MenuState.current === name; }
@@ -268,7 +268,7 @@ PanelWindow {
     Rectangle {
         id: surface
         anchors.fill: parent
-        color: Theme.barSurface
+        color: PlatinumTokens.barSurface
 
         // A press on the bar outside a control closes an open menu.
         MouseArea {
@@ -278,12 +278,12 @@ PanelWindow {
 
         // The rule. Extra dark draws none: the black bar meets the windows.
         Rectangle {
-            visible: Theme.barRuled
+            visible: PlatinumTokens.barRuled
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: Theme.hair
-            color: Theme.barRule
+            height: PlatinumTokens.hair
+            color: PlatinumTokens.barRule
         }
     }
 
@@ -316,7 +316,7 @@ PanelWindow {
     // clipped. The title and the dictation status are readouts and elide
     // in what the plan leaves after it. Retry and Dismiss are controls:
     // they show at full width or move into the » menu, never shrink.
-    BarControl {
+    PlatinumBarControl {
         id: markControl
         x: 6
         screen: bar.modelData
@@ -335,7 +335,7 @@ PanelWindow {
         // The plan's gap between the mark and the title: 2 px, or 0 once
         // spacing has yielded.
         x: markControl.x + markControl.width + bar.plan.gap
-        height: Theme.barHeight - Theme.hair
+        height: PlatinumTokens.barHeight - PlatinumTokens.hair
         // The plan's budget for the whole left group, less the mark.
         width: Math.max(0, bar.plan.leftMax - x)
 
@@ -353,10 +353,10 @@ PanelWindow {
                 text: bar.title
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
-                color: Theme.barTextSecondary
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumText
-                font.letterSpacing: Theme.platinumTracking
+                color: PlatinumTokens.barTextSecondary
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumText
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
         }
 
@@ -378,7 +378,7 @@ PanelWindow {
                 radius: 4
                 // Recording and failure are the danger tone. Working is a
                 // status at rest, so it takes the text colour.
-                color: bar.dictation.state === "working" ? Theme.barText : Theme.barDanger
+                color: bar.dictation.state === "working" ? PlatinumTokens.barText : PlatinumTokens.barDanger
             }
 
             Text {
@@ -392,10 +392,10 @@ PanelWindow {
                 text: bar.dictationText
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
-                color: bar.dictation.state === "failed" ? Theme.barDanger : Theme.barText
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumText
-                font.letterSpacing: Theme.platinumTracking
+                color: bar.dictation.state === "failed" ? PlatinumTokens.barDanger : PlatinumTokens.barText
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumText
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
 
             Row {
@@ -428,7 +428,7 @@ PanelWindow {
     // The clock sits in the middle of the bar. Once the bar is too narrow
     // it leaves the centre for the right group, the Mac OS 8 place. A
     // click opens the clock menu with the full date.
-    component ClockTitle: BarControl {
+    component ClockTitle: PlatinumBarControl {
         id: clockTitle
         screen: bar.modelData
         menu: "clock"
@@ -444,9 +444,9 @@ PanelWindow {
                 ? bar.clockDate + "  " + bar.clockTime(bar.now)
                 : bar.clockTime(bar.now)
             color: clockTitle.fg
-            font.family: Theme.platinumFont
-            font.pixelSize: Theme.platinumText
-            font.letterSpacing: Theme.platinumTracking
+            font.family: PlatinumTokens.platinumFont
+            font.pixelSize: PlatinumTokens.platinumText
+            font.letterSpacing: PlatinumTokens.platinumTracking
         }
     }
 
@@ -463,7 +463,7 @@ PanelWindow {
         id: chord
         visible: bar.chordVisible
         x: PlatinumMetrics.even(bar.width / 2 - width / 2)
-        height: Theme.barHeight - Theme.hair
+        height: PlatinumTokens.barHeight - PlatinumTokens.hair
         spacing: 0
         readonly property var keys: {
             const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
@@ -498,16 +498,16 @@ PanelWindow {
                     height: 18
                     radius: 3
                     color: "transparent"
-                    border.width: Theme.hair
-                    border.color: Theme.barText
+                    border.width: PlatinumTokens.hair
+                    border.color: PlatinumTokens.barText
 
                     Text {
                         id: keyText
                         anchors.centerIn: parent
                         text: modelData[0]
-                        color: Theme.barText
-                        font.family: Theme.platinumFont
-                        font.pixelSize: Theme.platinumSmall
+                        color: PlatinumTokens.barText
+                        font.family: PlatinumTokens.platinumFont
+                        font.pixelSize: PlatinumTokens.platinumSmall
                     }
                 }
 
@@ -515,10 +515,10 @@ PanelWindow {
                     visible: !chord.compact
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData[1]
-                    color: Theme.barText
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    color: PlatinumTokens.barText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
             }
         }
@@ -529,7 +529,7 @@ PanelWindow {
         id: rightGroup
         anchors.right: parent.right
         anchors.rightMargin: 6
-        height: Theme.barHeight - Theme.hair
+        height: PlatinumTokens.barHeight - PlatinumTokens.hair
         spacing: bar.plan.gap
         layoutDirection: Qt.LeftToRight
 
@@ -538,7 +538,7 @@ PanelWindow {
             visible: !bar.chordVisible && !bar.plan.centred
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: btControl
             visible: bar.btPresent && bar.onBar("bt")
             screen: bar.modelData
@@ -548,7 +548,7 @@ PanelWindow {
             icon: "bluetooth"
             slashed: !bar.btOn
 
-            BarNumber {
+            PlatinumBarNumber {
                 id: btCountBox
                 visible: bar.btCount > 0 && bar.plan.show.btCount
                 widest: ["8", PlatinumMetrics.digits(1)]
@@ -557,7 +557,7 @@ PanelWindow {
             }
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: wifiControl
             visible: bar.wifiPresent && bar.onBar("wifi")
             screen: bar.modelData
@@ -568,7 +568,7 @@ PanelWindow {
             slashed: bar.wifiRadioOff
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: volControl
             visible: bar.volPresent && bar.onBar("vol")
             screen: bar.modelData
@@ -577,7 +577,7 @@ PanelWindow {
             pad: bar.pad
             icon: bar.volIcon
 
-            BarNumber {
+            PlatinumBarNumber {
                 visible: bar.plan.show.volumeNumber
                 width: bar.numW
                 text: bar.sound.muted ? "--" : String(bar.sound.volumePercent)
@@ -585,7 +585,7 @@ PanelWindow {
             }
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: briControl
             visible: bar.brightness.available && bar.onBar("bri")
             screen: bar.modelData
@@ -595,7 +595,7 @@ PanelWindow {
             icon: "brightness"
             onWheel: function (delta) { if (delta !== 0) bar.brightness.step(delta > 0 ? 1 : -1); }
 
-            BarNumber {
+            PlatinumBarNumber {
                 visible: bar.plan.show.brightnessNumber
                 width: bar.numW
                 text: String(bar.brightness.shownLevel)
@@ -604,7 +604,7 @@ PanelWindow {
 
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: ociControl
             visible: bar.oci.enabled && bar.onBar("oci")
             screen: bar.modelData
@@ -612,7 +612,7 @@ PanelWindow {
             open: bar.isOpen("oci")
             pad: bar.pad
             icon: "cloud"
-            tone: Theme.barTone(bar.oci.tone)
+            tone: PlatinumTokens.barTone(bar.oci.tone)
 
             Row {
                 id: ociFull
@@ -622,9 +622,9 @@ PanelWindow {
                     visible: bar.oci.state !== "ready"
                     text: bar.ociStateMark
                     color: ociControl.fg
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
 
                 Repeater {
@@ -636,24 +636,24 @@ PanelWindow {
 
                         Text {
                             text: (index > 0 ? " " : "") + modelData.name + ":"
-                            color: ociControl.inverted ? ociControl.fg : Theme.barText
-                            font.family: Theme.platinumFont
-                            font.pixelSize: Theme.platinumText
-                            font.letterSpacing: Theme.platinumTracking
+                            color: ociControl.inverted ? ociControl.fg : PlatinumTokens.barText
+                            font.family: PlatinumTokens.platinumFont
+                            font.pixelSize: PlatinumTokens.platinumText
+                            font.letterSpacing: PlatinumTokens.platinumTracking
                         }
 
                         // Each profile in its own tone.
-                        BarNumber {
+                        PlatinumBarNumber {
                             widest: bar.ociBoxText
                             text: modelData.value
-                            tone: ociControl.inverted ? ociControl.fg : Theme.barTone(modelData.tone)
+                            tone: ociControl.inverted ? ociControl.fg : PlatinumTokens.barTone(modelData.tone)
                         }
                     }
                 }
             }
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: diskControl
             visible: bar.storage.enabled && bar.onBar("disk")
             screen: bar.modelData
@@ -661,7 +661,7 @@ PanelWindow {
             open: bar.isOpen("disk")
             pad: bar.pad
             icon: "disk"
-            tone: Theme.barTone(bar.storage.tone)
+            tone: PlatinumTokens.barTone(bar.storage.tone)
 
             readonly property int issues: bar.storage.issues.length
             readonly property bool counting: bar.storage.state === "ready" && issues > 0
@@ -670,7 +670,7 @@ PanelWindow {
                 id: diskFull
                 visible: bar.plan.show.diskLabel
 
-                BarNumber {
+                PlatinumBarNumber {
                     visible: diskControl.counting
                     widest: bar.diskBoxText
                     text: String(diskControl.issues)
@@ -679,9 +679,9 @@ PanelWindow {
                 Text {
                     text: bar.diskWord
                     color: diskControl.fg
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
             }
 
@@ -689,7 +689,7 @@ PanelWindow {
             Row {
                 id: diskCompact
                 visible: !bar.plan.show.diskLabel && diskControl.counting
-                BarNumber {
+                PlatinumBarNumber {
                     id: diskCountBox
                     visible: diskControl.counting
                     widest: bar.diskBoxText
@@ -699,7 +699,7 @@ PanelWindow {
             }
         }
 
-        BuilderControl {
+        PlatinumBuilderControl {
             id: builderControl
             gate: bar.builderGate
             visible: bar.builderPresent && bar.onBar("builder")
@@ -709,7 +709,7 @@ PanelWindow {
             showLabel: bar.plan.show.builderLabel !== false
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: ntfControl
             visible: bar.onBar("ntf")
             screen: bar.modelData
@@ -717,8 +717,8 @@ PanelWindow {
             open: bar.isOpen("ntf")
             pad: bar.pad
             icon: "bell"
-            tone: ({ danger: Theme.barDanger, warning: Theme.barWarning,
-                     primary: Theme.barText, muted: Theme.barTextOff })[bar.ntfTone] || Theme.barText
+            tone: ({ danger: PlatinumTokens.barDanger, warning: PlatinumTokens.barWarning,
+                     primary: PlatinumTokens.barText, muted: PlatinumTokens.barTextOff })[bar.ntfTone] || PlatinumTokens.barText
 
             Row {
                 id: ntfFull
@@ -726,7 +726,7 @@ PanelWindow {
 
                 // The count keeps its fixed box. With a suffix the digits sit
                 // at the box's right end, next to ", local only".
-                BarNumber {
+                PlatinumBarNumber {
                     visible: bar.ntfNumber !== ""
                     widest: bar.ntfBoxText
                     horizontalAlignment: bar.ntfSuffix !== "" ? Text.AlignRight : Text.AlignLeft
@@ -738,9 +738,9 @@ PanelWindow {
                     visible: text !== ""
                     text: bar.ntfSuffix
                     color: ntfControl.fg
-                    font.family: Theme.platinumFont
-                    font.pixelSize: Theme.platinumText
-                    font.letterSpacing: Theme.platinumTracking
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumText
+                    font.letterSpacing: PlatinumTokens.platinumTracking
                 }
             }
 
@@ -749,8 +749,8 @@ PanelWindow {
                 visible: !bar.plan.show.notificationCount && bar.notifications.view.kind === "offline"
                 text: "!"
                 color: ntfControl.fg
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumText
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumText
             }
 
             // The count becomes a dot when it yields.
@@ -762,12 +762,12 @@ PanelWindow {
                 height: 7
                 radius: 3.5
                 color: ntfControl.fg
-                border.width: Theme.hair
+                border.width: PlatinumTokens.hair
                 border.color: ntfControl.bg
             }
         }
 
-        BarControl {
+        PlatinumBarControl {
             id: moreControl
             visible: bar.plan.overflow.length > 0
             screen: bar.modelData
@@ -778,7 +778,7 @@ PanelWindow {
         }
 
         // The battery is a readout with no menu. Its percent never yields.
-        BarControl {
+        PlatinumBarControl {
             id: batteryControl
             visible: bar.battery.present
             screen: bar.modelData
@@ -786,7 +786,7 @@ PanelWindow {
             pad: bar.pad
             icon: "battery"
             iconWidth: 18
-            tone: Theme.barTone(bar.batteryRule.tone)
+            tone: PlatinumTokens.barTone(bar.batteryRule.tone)
 
             iconExtras: [
                 Rectangle {
@@ -805,7 +805,7 @@ PanelWindow {
                 }
             ]
 
-            BarNumber {
+            PlatinumBarNumber {
                 id: batteryBox
                 widest: ["100%", PlatinumMetrics.digits(2) + "%"]
                 text: bar.battery.percent + "%"
@@ -815,7 +815,7 @@ PanelWindow {
 
         // The front app: its icon and name, a way into the omni bar's
         // window list. The name is the first readout to yield.
-        BarControl {
+        PlatinumBarControl {
             id: appControl
             visible: bar.appId !== ""
             screen: bar.modelData
@@ -837,9 +837,9 @@ PanelWindow {
                 text: bar.appName
                 textFormat: Text.PlainText
                 color: appControl.fg
-                font.family: Theme.platinumFont
-                font.pixelSize: Theme.platinumText
-                font.letterSpacing: Theme.platinumTracking
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumText
+                font.letterSpacing: PlatinumTokens.platinumTracking
             }
         }
     }

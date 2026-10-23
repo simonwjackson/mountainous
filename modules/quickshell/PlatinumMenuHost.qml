@@ -16,13 +16,14 @@ Scope {
     id: host
 
     required property var screen
-    // The screen's TopBar window.
+    // The screen's PlatinumTopBar window.
     required property var bar
-    // Menu name -> Component. Each component's root is a MenuFrame.
+    // Menu name -> Component. Each component's root is a PlatinumMenuFrame.
     required property var menus
 
+    property bool enabled: true
     readonly property string current: MenuState.current
-    readonly property bool active: current !== "" && MenuState.screen === host.screen
+    readonly property bool active: host.enabled && current !== "" && MenuState.screen === host.screen
         && host.menus[current] !== undefined && host.menus[current] !== null
 
     LazyLoader {
@@ -41,9 +42,9 @@ Scope {
             // Input everywhere but the bar.
             mask: Region {
                 x: 0
-                y: Theme.barHeight
+                y: PlatinumTokens.barHeight
                 width: win.width
-                height: Math.max(0, win.height - Theme.barHeight)
+                height: Math.max(0, win.height - PlatinumTokens.barHeight)
             }
 
             // A window outlives its menu for a moment (LazyLoader deletes it
@@ -83,7 +84,7 @@ Scope {
                 focus: true
                 sourceComponent: host.active ? host.menus[host.current] : null
                 // The menu's top edge lies on the bar's rule, as in Mac OS.
-                y: Theme.barHeight - Theme.hair
+                y: PlatinumTokens.barHeight - PlatinumTokens.hair
                 x: {
                     const w = item ? item.width : 0;
                     const edge = 4;
