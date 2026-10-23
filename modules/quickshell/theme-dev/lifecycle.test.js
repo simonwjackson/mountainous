@@ -62,7 +62,7 @@ async function stop(child) {
         writable(path.join(config,'fixtures'));
         // Preserve the production registry entry, view and thumbnails. Only
         // the test checkout knows the alternate and broken fixture IDs.
-        const themes = JSON.parse(fs.readFileSync(path.join(config, 'themes.json'), 'utf8'));
+        var themes = JSON.parse(fs.readFileSync(path.join(config, 'themes.json'), 'utf8'));
         themes.push({id:'alternate',desktop:'fixtures/Desktop.qml',appearances:[],options:{extraDark:false}},
             {id:'broken',desktop:'fixtures/Broken.qml',appearances:[],options:{extraDark:false}});
         fs.writeFileSync(path.join(config,'themes.json'),JSON.stringify(themes));
@@ -112,7 +112,9 @@ ShellRoot {
         const picker = spawnSync(desktopTheme, ['picker'], {env, encoding:'utf8', timeout:3000});
         assert.equal(picker.status, 0, picker.stderr + picker.stdout);
         await until(()=>snapshot().picker, 'CLI picker');
-        assert.equal(snapshot().choices, 2);
+        // Every installed appearance of every theme (Platinum's two, Win98's two).
+        assert.equal(snapshot().choices, themes.reduce((n, t) => n + t.appearances.length, 0));
+        assert.ok(snapshot().choices >= 4);
         await wait(150);
         write('broken');
         await until(()=>snapshot().failures===1 && snapshot().theme==='platinum','rollback');

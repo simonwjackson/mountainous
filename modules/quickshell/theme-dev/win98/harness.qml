@@ -249,7 +249,9 @@ ShellRoot {
         const now = new Date(2026, 9, 22, 16, 51).getTime();
         notes.items = d.ntf.items.map(function (it, i) {
             return Object.assign({ id: 100 + i, seq: "s" + i, app_icon: "", local_only: false, resident: false }, it,
-                { created: now - it.updated * 60000, updated: now - it.updated * 60000, image: null });
+                { created: now - it.updated * 60000, updated: now - it.updated * 60000,
+                  // A real picture for the mock's image card.
+                  image: it.image ? Qt.resolvedUrl("themes/win98/previews/light.png").toString() : null });
         });
         notes.status = d.ntf.status;
         notes.view = d.ntf.conn === "offline" ? { kind: "offline", retryInSeconds: d.ntf.retryIn }
@@ -365,7 +367,9 @@ ShellRoot {
         function theme(mode: string): void { Theme.mode = mode; }
         function current(): string {
             const d = root.desktop;
-            return JSON.stringify({ state: root.stateId, theme: Theme.name, loaded: loader.currentName, slots: loader.loadedCount, open: MenuState.current,
+            const p = root.st.p || {};
+            const want = p.open ? String(p.open).split(":")[0] : p.win === "logoff" ? "logoff" : "";
+            return JSON.stringify({ state: root.stateId, settled: MenuState.current === want && (p.win !== "picker" || ThemePicker.visible), theme: Theme.name, loaded: loader.currentName, slots: loader.loadedCount, open: MenuState.current,
                 picker: ThemePicker.visible, steps: d && d.taskbarPlan ? d.taskbarPlan().steps : [], log: root.log });
         }
         // The Start menu's open path and cursor, by name.

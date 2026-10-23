@@ -54,7 +54,10 @@ for width in $(echo "$list" | awk '{print $2}' | sort -un); do
     swaymsg -q output HEADLESS-1 bg "$([ $a = grey ] && echo '#000000' || echo '#008080')" solid_color
     for id in $ids; do
       w98 set "$id" >/dev/null
-      sleep 0.9
+      # Until the state's menu or window is the one open, then let it draw.
+      sleep 0.4
+      for _ in $(seq 30); do w98 current | grep -q '"settled":true' && break; sleep 0.1; done
+      sleep 0.7
       shot "$out/$a/$id.png"
       echo "$a/$id $(w98 current | head -c 160)"
     done

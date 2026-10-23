@@ -59,4 +59,10 @@ assert not (root / 'qmldir').exists()
 assert 'Desktop theme…' in (root / 'OmniBar.qml').read_text()
 assert 'text: "Desktop theme…"' in (root / 'PlatinumClockMenu.qml').read_text()
 assert 'target: "themePicker"' in (root / 'shell.qml').read_text()
+# Win98 opens the picker from Start > Settings > Display... and Ctrl+Esc /
+# chrome open start reaches its Start menu.
+start_model = (root / 'themes/win98/start-model.js').read_text()
+assert '"&Display..."' in start_model and 'action: "picker"' in start_model
+assert 'item.action === "picker") ThemePicker.open' in (root / 'Win98Desktop.qml').read_text()
+assert 'control === "start"' in (root / 'Win98Desktop.qml').read_text()
 print('THEME_BOUNDARIES_PASSED')
