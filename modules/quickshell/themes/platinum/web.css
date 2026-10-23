@@ -1,0 +1,341 @@
+/*
+ * Mac OS 8 Platinum for web pages: type, scroll bars and form controls.
+ *
+ * WebTheme.qml adopts this file into every Chromium page and frame over CDP
+ * (see docs/decisions/web-theme.md). web-theme.js splits it at the section
+ * markers below. "tokens all" always applies; one "tokens <mode>" block
+ * follows the desktop mode; each "level" can be switched off per site.
+ *
+ * Rules for this file:
+ * - Selectors sit inside :where(), so a site's own !important rule (for
+ *   example a utility class on an icon button) still wins over ours.
+ * - Layout properties (display, position, size, padding, margin) are left
+ *   alone, except where a control cannot draw without them.
+ * - Page content colours are left alone. Only controls, scroll bars, type
+ *   and the selection tint change.
+ * - No url(): a strict img-src policy would block a data: image, so every
+ *   arrow and mark is drawn with gradients.
+ * - The values match PlatinumTokens.qml. Light is Mac OS 8.1; dark is dark
+ *   grey Platinum. Extra dark uses dark: it blackens only the bar.
+ */
+
+/* @tokens all */
+:root {
+  /* One physical rule, as PlatinumTokens.hair: 2 px at 1.5, 1 px at 1 and 2. */
+  --mtn-hair: 1px;
+  --mtn-hair2: calc(2 * var(--mtn-hair));
+  --mtn-chicago: "ChicagoFLF", "Public Sans", system-ui, sans-serif;
+  --mtn-body: "Public Sans", "Inter", system-ui, sans-serif;
+  --mtn-radius: 4px;
+  --mtn-bar: 16px;
+}
+@media (resolution: 1.25dppx) { :root { --mtn-hair: 0.8px; } }
+@media (resolution: 1.5dppx) { :root { --mtn-hair: calc(4px / 3); } }
+@media (resolution: 1.75dppx) { :root { --mtn-hair: calc(8px / 7); } }
+@media (resolution: 2.5dppx) { :root { --mtn-hair: 1.2px; } }
+
+/* @tokens light */
+:root {
+  --mtn-text: #000000;
+  --mtn-text-off: #8a8a8a;
+  --mtn-edge: #000000;
+  --mtn-edge-off: #999999;
+  --mtn-well-edge: #000000;
+  --mtn-face: #e6e6e6;
+  --mtn-face-down: #bdbdbd;
+  --mtn-light: #ffffff;
+  --mtn-dark: #999999;
+  --mtn-field: #ffffff;
+  --mtn-field-off: #e6e6e6;
+  --mtn-track: #bdbdbd;
+  --mtn-track-stripe: #b3b3b3;
+  --mtn-track-shadow: #888888;
+  --mtn-thumb: #ccccff;
+  --mtn-thumb-light: #eeeeff;
+  --mtn-thumb-dark: #7777aa;
+  --mtn-thumb-down: #9999dd;
+  --mtn-highlight: #333399;
+  --mtn-focus: #333399;
+  --mtn-selection: #ccccff;
+  --mtn-selection-text: #000000;
+}
+
+/* @tokens dark */
+:root {
+  --mtn-text: #ececec;
+  --mtn-text-off: #767676;
+  --mtn-edge: #000000;
+  --mtn-edge-off: #1e1e1e;
+  /* A black edge vanishes on a dark page; the desktop's black bar uses this grey. */
+  --mtn-well-edge: #8c8c8c;
+  --mtn-face: #444444;
+  --mtn-face-down: #242424;
+  --mtn-light: #565656;
+  --mtn-dark: #1e1e1e;
+  --mtn-field: #262626;
+  --mtn-field-off: #363636;
+  --mtn-track: #2c2c2c;
+  --mtn-track-stripe: #272727;
+  --mtn-track-shadow: #151515;
+  --mtn-thumb: #50508a;
+  --mtn-thumb-light: #6e6eaa;
+  --mtn-thumb-dark: #2a2a4c;
+  --mtn-thumb-down: #3a3a6a;
+  --mtn-highlight: #5858d0;
+  --mtn-focus: #7878e8;
+  --mtn-selection: #4a4aa8;
+  --mtn-selection-text: #ffffff;
+}
+
+/* @level type */
+:root { accent-color: var(--mtn-highlight); }
+::selection { background-color: var(--mtn-selection); color: var(--mtn-selection-text); }
+
+/* Body text: a Geneva-like face. Elements that name their own family
+   (code, icon fonts, a site's display face) keep it. */
+:where(html, body) { font-family: var(--mtn-body) !important; }
+
+/* Chicago for the interface words. ChicagoFLF has one weight, so a
+   synthesised bold is switched off rather than smeared. */
+:where(h1, h2, h3, h4, h5, h6, th, caption, legend, label, summary, nav a, [role="tab"],
+  button, select, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([class*="icon" i], [class*="material" i], [class*="symbol" i], [class*="glyph" i],
+  [class^="fa" i], [class*=" fa" i], [data-mtn-skip])) {
+  font-family: var(--mtn-chicago) !important;
+  font-synthesis: none !important;
+}
+
+/* @level scrollbars */
+/* A non-auto scrollbar-color or scrollbar-width switches off every
+   ::-webkit-scrollbar rule below, and scrollbar-color inherits. */
+:where(*) { scrollbar-color: auto !important; scrollbar-width: auto !important; }
+
+::-webkit-scrollbar { width: var(--mtn-bar); height: var(--mtn-bar); background-color: var(--mtn-track); }
+
+::-webkit-scrollbar-track {
+  background-color: var(--mtn-track);
+  background-image: repeating-linear-gradient(to bottom, var(--mtn-track-stripe) 0 var(--mtn-hair), transparent var(--mtn-hair) var(--mtn-hair2));
+}
+::-webkit-scrollbar-track:vertical {
+  box-shadow: inset var(--mtn-hair) 0 0 var(--mtn-edge), inset var(--mtn-hair2) var(--mtn-hair) 0 var(--mtn-track-shadow);
+}
+::-webkit-scrollbar-track:horizontal {
+  background-image: repeating-linear-gradient(to right, var(--mtn-track-stripe) 0 var(--mtn-hair), transparent var(--mtn-hair) var(--mtn-hair2));
+  box-shadow: inset 0 var(--mtn-hair) 0 var(--mtn-edge), inset var(--mtn-hair) var(--mtn-hair2) 0 var(--mtn-track-shadow);
+}
+
+/* The scroll box: lavender, bevelled, with a ridged grip in the middle. */
+::-webkit-scrollbar-thumb {
+  background-color: var(--mtn-thumb);
+  border: var(--mtn-hair) solid var(--mtn-edge);
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-thumb-light), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-thumb-dark);
+  background-repeat: no-repeat;
+  background-position: center;
+}
+::-webkit-scrollbar-thumb:vertical {
+  min-height: 24px;
+  background-image: repeating-linear-gradient(to bottom, var(--mtn-thumb-light) 0 var(--mtn-hair), var(--mtn-thumb-dark) var(--mtn-hair) var(--mtn-hair2), transparent var(--mtn-hair2) calc(2 * var(--mtn-hair2)));
+  background-size: 8px calc(7 * var(--mtn-hair2));
+}
+::-webkit-scrollbar-thumb:horizontal {
+  min-width: 24px;
+  background-image: repeating-linear-gradient(to right, var(--mtn-thumb-light) 0 var(--mtn-hair), var(--mtn-thumb-dark) var(--mtn-hair) var(--mtn-hair2), transparent var(--mtn-hair2) calc(2 * var(--mtn-hair2)));
+  background-size: calc(7 * var(--mtn-hair2)) 8px;
+}
+::-webkit-scrollbar-thumb:active { background-color: var(--mtn-thumb-down); }
+
+/* One stepper at each end, as Mac OS 8 drew them. */
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  display: block;
+  width: var(--mtn-bar);
+  height: var(--mtn-bar);
+  background-color: var(--mtn-face);
+  background-repeat: no-repeat;
+  background-position: center;
+  border: var(--mtn-hair) solid var(--mtn-edge);
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-dark);
+}
+::-webkit-scrollbar-button:vertical:start:decrement {
+  background-image: conic-gradient(from 135deg at 50% 0, var(--mtn-text) 90deg, transparent 0);
+  background-size: 8px 4px;
+}
+::-webkit-scrollbar-button:vertical:end:increment {
+  background-image: conic-gradient(from -45deg at 50% 100%, var(--mtn-text) 90deg, transparent 0);
+  background-size: 8px 4px;
+}
+::-webkit-scrollbar-button:horizontal:start:decrement {
+  background-image: conic-gradient(from 45deg at 0 50%, var(--mtn-text) 90deg, transparent 0);
+  background-size: 4px 8px;
+}
+::-webkit-scrollbar-button:horizontal:end:increment {
+  background-image: conic-gradient(from 225deg at 100% 50%, var(--mtn-text) 90deg, transparent 0);
+  background-size: 4px 8px;
+}
+::-webkit-scrollbar-button:active {
+  background-color: var(--mtn-face-down);
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-light);
+}
+::-webkit-scrollbar-corner { background-color: var(--mtn-face); }
+/* The grow box of a resizable text area. */
+::-webkit-resizer {
+  background-color: var(--mtn-face);
+  background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--mtn-dark) 2px 3px, var(--mtn-light) 3px 4px);
+}
+
+/* @level forms */
+/* Guards: ARIA widgets built on native buttons (switches, tabs, menu
+   items), icon-only buttons, buttons a site names as an icon or a link,
+   and a site's own skip list (data-mtn-skip is replaced per site). */
+
+/* Push buttons: raised, a black edge, a sunken face while pressed. */
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])),
+:where(input[type="file" i])::file-selector-button {
+  appearance: none !important;
+  color: var(--mtn-text) !important;
+  background: var(--mtn-face) !important;
+  border: var(--mtn-hair) solid var(--mtn-edge) !important;
+  border-radius: var(--mtn-radius) !important;
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-dark) !important;
+  text-shadow: none !important;
+  font-family: var(--mtn-chicago) !important;
+  font-synthesis: none !important;
+  /* Chicago is wide. A word longer than the button breaks inside it
+     instead of running out over the page. A site's own rule wins. */
+  overflow-wrap: anywhere;
+}
+/* Inside a Platinum button, every word and currentColor icon takes the
+   button's colour, and inner badges lose their fill, so nothing keeps a
+   colour chosen for the site's own button face. */
+:where(button):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty, :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])) :where(*) {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+/* Mac OS's default button: the ring Return runs. Only where the form offers
+   another button too; a lone submit button needs no ring. */
+:where(form:has(:is(button, input:is([type="submit" i], [type="button" i], [type="reset" i])):not(:default)))
+  :where(button, input[type="submit" i]):where(:default):where(:not([role], [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])) {
+  outline: var(--mtn-hair2) solid var(--mtn-edge) !important;
+  outline-offset: var(--mtn-hair) !important;
+}
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])):where(:active:not(:disabled), [aria-pressed="true"]),
+:where(input[type="file" i]:not(:disabled))::file-selector-button:active {
+  background: var(--mtn-face-down) !important;
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-light) !important;
+}
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])):where(:disabled),
+:where(input[type="file" i]:disabled)::file-selector-button {
+  color: var(--mtn-text-off) !important;
+  border-color: var(--mtn-edge-off) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Text fields and list boxes: white wells with a sunken bevel outside a black frame.
+   A field with an icon beside it is part of a site's composite field (the
+   wrapper draws the box), so it keeps the site's look. */
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i], [type="date" i], [type="time" i], [type="datetime-local" i],
+  [type="month" i], [type="week" i]), textarea, select:is([multiple], [size]:not([size="1"]))):where(:not(svg ~ *, :has(> svg) ~ *, :has(~ svg, ~ * > svg), [data-mtn-skip])) {
+  appearance: none !important;
+  color: var(--mtn-text) !important;
+  background: var(--mtn-field) !important;
+  border: var(--mtn-hair) solid var(--mtn-well-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-dark), var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light) !important;
+  font-family: var(--mtn-body) !important;
+}
+:where(input, textarea):where(:not([data-mtn-skip]))::placeholder { color: var(--mtn-text-off) !important; opacity: 1 !important; }
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i], [type="date" i], [type="time" i], [type="datetime-local" i],
+  [type="month" i], [type="week" i]), textarea, select:is([multiple], [size]:not([size="1"]))):where(:not(svg ~ *, :has(> svg) ~ *, :has(~ svg, ~ * > svg), [data-mtn-skip])):where(:disabled, :read-only:not(select)) {
+  color: var(--mtn-text-off) !important;
+  background: var(--mtn-field-off) !important;
+}
+
+/* Pop-up menus: a raised button with an arrow box on the right. */
+:where(select:not([multiple]):is(:not([size]), [size="1"])):where(:not([data-mtn-skip])) {
+  appearance: none !important;
+  color: var(--mtn-text) !important;
+  background:
+    conic-gradient(from -45deg at 50% 100%, var(--mtn-text) 90deg, transparent 0) right calc((var(--mtn-bar) - 8px) / 2) center / 8px 4px no-repeat,
+    linear-gradient(var(--mtn-light), var(--mtn-light)) right calc(var(--mtn-bar) - var(--mtn-hair)) top 0 / var(--mtn-hair) 100% no-repeat,
+    linear-gradient(var(--mtn-edge), var(--mtn-edge)) right var(--mtn-bar) top 0 / var(--mtn-hair) 100% no-repeat,
+    var(--mtn-face) !important;
+  border: var(--mtn-hair) solid var(--mtn-edge) !important;
+  border-radius: var(--mtn-radius) !important;
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-dark) !important;
+  padding-inline-end: calc(var(--mtn-bar) + 6px) !important;
+  /* No !important: a site's own padding wins; the bare control gets room. */
+  padding-inline-start: 6px;
+  font-family: var(--mtn-chicago) !important;
+  font-synthesis: none !important;
+}
+:where(select:not([multiple]):is(:not([size]), [size="1"])):where(:not([data-mtn-skip])):where(:disabled) {
+  color: var(--mtn-text-off) !important;
+  border-color: var(--mtn-edge-off) !important;
+  box-shadow: none !important;
+}
+
+/* Check boxes and radio buttons: sunken wells, as PlatinumCheckBox.qml.
+   The size has no !important, so a site that sizes or hides its own wins. */
+:where(input:is([type="checkbox" i], [type="radio" i])):where(:not([role="switch"], [data-mtn-skip])) {
+  appearance: none !important;
+  width: 13px;
+  height: 13px;
+  vertical-align: middle;
+  background: var(--mtn-face-down) !important;
+  border: var(--mtn-hair) solid var(--mtn-well-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-hair)) calc(-1 * var(--mtn-hair)) 0 var(--mtn-light) !important;
+}
+:where(input[type="radio" i]):where(:not([role="switch"], [data-mtn-skip])) { border-radius: 50% !important; }
+/* The check mark: a short and a long stroke, drawn as two diagonal bands. */
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])):where(:checked) {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1.1px), var(--mtn-text) calc(50% - 1.1px) calc(50% + 1.1px), transparent calc(50% + 1.1px)) 12% 70% / 40% 40% no-repeat,
+    linear-gradient(to bottom right, transparent calc(50% - 1.2px), var(--mtn-text) calc(50% - 1.2px) calc(50% + 1.2px), transparent calc(50% + 1.2px)) 85% 25% / 55% 80% no-repeat,
+    var(--mtn-face-down) !important;
+}
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])):where(:indeterminate) {
+  background: linear-gradient(var(--mtn-text), var(--mtn-text)) center / 60% var(--mtn-hair2) no-repeat, var(--mtn-face-down) !important;
+}
+:where(input[type="radio" i]):where(:not([role="switch"], [data-mtn-skip])):where(:checked) {
+  background: radial-gradient(circle, var(--mtn-text) 0 30%, transparent 36%), var(--mtn-face-down) !important;
+}
+:where(input:is([type="checkbox" i], [type="radio" i])):where(:not([role="switch"], [data-mtn-skip])):where(:active:not(:disabled)) {
+  background-color: var(--mtn-dark) !important;
+}
+:where(input:is([type="checkbox" i], [type="radio" i])):where(:not([role="switch"], [data-mtn-skip])):where(:disabled) {
+  opacity: 0.5;
+}
+
+/* Group boxes: an etched frame, a dark rule with a light rule beside it. */
+:where(fieldset):where(:not([data-mtn-skip])) {
+  border: var(--mtn-hair) solid var(--mtn-dark) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light), var(--mtn-hair) var(--mtn-hair) 0 var(--mtn-light) !important;
+}
+
+/* Keyboard focus: a ring in the highlight, outside the bevel. Fields show it
+   on any focus, as Mac OS 8 did; buttons only for the keyboard. */
+:where(button, input, select, textarea):where(:not([data-mtn-skip])):where(:focus-visible),
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i]), textarea):where(:not([data-mtn-skip])):where(:focus) {
+  outline: var(--mtn-hair2) solid var(--mtn-focus) !important;
+  outline-offset: var(--mtn-hair) !important;
+}
