@@ -1,0 +1,17 @@
+[package]
+name = "signal-responder"
+version = "0.1.0"
+edition = "2021"
+description = "Turns alerts on the notify topic into read-only triage runs of Simon's assistant"
+publish = false
+
+[dependencies]
+base64 = "0.22"
+regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Loopback HTTP only: ntfy and the assistant both listen on 127.0.0.1.
+ureq = { version = "2", default-features = false }
+
+[profile.release]
+strip = true

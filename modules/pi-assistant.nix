@@ -221,6 +221,14 @@ in
                   default = false;
                   description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
                 };
+                credentials = lib.mkOption {
+                  type = lib.types.attrsOf lib.types.path;
+                  default = { };
+                  example = {
+                    beszel-mcp-token = "/run/secrets/beszel-mcp-token";
+                  };
+                  description = "More secrets for this assistant, by name. Its tools read each one as $CREDENTIALS_DIRECTORY/<name>.";
+                };
               };
             }
           );
@@ -388,7 +396,8 @@ in
                   "cliproxyapi-key:${cfg.cliproxyapiKeyFile}"
                   "brave-api-key:${cfg.braveApiKeyFile}"
                 ]
-                ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}";
+                ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}"
+                ++ lib.mapAttrsToList (name: file: "${name}:${file}") (instance.credentials or { });
                 # Scratch clones of repositories: on disk, never persisted,
                 # safe to delete. $CACHE_DIRECTORY points here.
                 CacheDirectory = "pi-assistant-${name}";

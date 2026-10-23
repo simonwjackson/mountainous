@@ -18,6 +18,7 @@ in
       "notify-server"
       "beszel-hub"
       "pi-assistant"
+      "signal-responder"
       "no-builds"
     ];
     module =
@@ -40,6 +41,11 @@ in
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
         mountainous.features.notify-server.enable = true;
+        # Beszel and storage alerts get a read-only triage by Simon's assistant.
+        mountainous.features.signal-responder = {
+          enable = true;
+          person = "simon";
+        };
         mountainous.features.cliproxyapi = {
           enable = true;
           deployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIGFCc1rafaJq+i2sfHq2RiZdxGMfk/HeNHwKBzGyS7Q cliproxyapi-updater@unzen";
