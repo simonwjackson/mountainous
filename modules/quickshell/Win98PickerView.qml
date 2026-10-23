@@ -72,6 +72,23 @@ PanelWindow {
         onPressed: win.model.close()
     }
 
+    // A screen shorter than the dialog scrolls it, so OK, Cancel and Apply
+    // stay reachable by the pointer too (the keys reach them anyway).
+    Flickable {
+        id: scroller
+        width: win.width - (bar.visible ? 18 * win.u : 0)
+        height: Math.max(0, win.area)
+        contentWidth: width
+        contentHeight: Math.max(height, dialog.height)
+        interactive: false
+        clip: true
+        WheelHandler {
+            onWheel: event => {
+                const max = Math.max(0, scroller.contentHeight - scroller.height);
+                scroller.contentY = Math.max(0, Math.min(max, scroller.contentY - event.angleDelta.y / 120 * 40 * win.u));
+            }
+        }
+
     Win98Window {
         id: dialog
         objectName: "pickerDialog"
@@ -235,6 +252,16 @@ PanelWindow {
         x: dialog.x; y: dialog.y; width: dialog.width; height: dialog.height
         z: -1
         onPressed: function (mouse) { mouse.accepted = true; }
+    }
+    }
+    Win98ScrollBar {
+        id: bar
+        objectName: "pickerScroll"
+        visible: dialog.height > win.area + 0.5
+        x: win.width - width
+        height: Math.max(0, win.area)
+        flickable: scroller
+        step: 20 * win.u
     }
 
     // A state drawn without the pointer (state sheets and the harness):
