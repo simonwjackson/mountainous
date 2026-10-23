@@ -44,8 +44,40 @@ const compact = {...metrics, controls: metrics.controls.map(c => c.id === "disk"
 assert.equal(model.plan(3000, compact).steps.length, 0, "compact width does not change the wide layout");
 assert.ok(model.plan(400, compact).overflow.length > model.plan(400, metrics).overflow.length,
     "the disk issue count still consumes width after its label yields");
-for (const compactReadoutWidth of [-1, Infinity, 25]) {
+for (const compactReadoutWidth of [-1, NaN, -Infinity]) {
     assert.throws(() => model.plan(100, {...metrics, controls: [{id: "disk", iconWidth: 16, readoutWidth: 24, compactReadoutWidth}]}), /compact/i);
+}
+// Captured from the real TopBar in round 1, before DESIGN's gap correction.
+const captured = {
+    controls: [
+        {id: "bt", iconWidth: 16, readoutWidth: 17},
+        {id: "wifi", iconWidth: 16, readoutWidth: 0},
+        {id: "vol", iconWidth: 16, readoutWidth: 36},
+        {id: "bri", iconWidth: 16, readoutWidth: 36},
+        {id: "oci", iconWidth: 16, readoutWidth: 246.90625},
+        {id: "disk", iconWidth: 16, readoutWidth: 25.234375, compactReadoutWidth: 0},
+        {id: "ntf", iconWidth: 16, readoutWidth: 6, compactReadoutWidth: 12.984375}
+    ],
+    markWidth: 20, titleWidth: 322, titleMinWidth: 96, clockWidth: 103, clockTimeWidth: 45,
+    chordWidth: 0, batteryWidth: 66, appIconWidth: 16, appNameWidth: 63, overflowWidth: 16
+};
+for (const width of [0, 1, 100, 320, 600, 1920, 3000, Infinity]) {
+    const result = model.plan(width, captured);
+    assert.equal(result.show.notificationCount, true, "larger compact readout keeps the full readout at " + width);
+    assert.equal(result.steps.includes("notificationCount"), false, "skip a yield that saves no space");
+}
+for (const readoutWidth of [0, 6, 24]) {
+    for (const compactReadoutWidth of [readoutWidth, readoutWidth + 0.125, readoutWidth + 1000000, Infinity]) {
+        const input = {...metrics, controls: [{id: "ntf", iconWidth: 16, readoutWidth, compactReadoutWidth}]};
+        const clamped = {...input, controls: [{...input.controls[0], compactReadoutWidth: readoutWidth}]};
+        for (const width of [0, 0.125, 100, 320, 600, 3000]) {
+            const result = model.plan(width, input);
+            assert.equal(result.show.notificationCount, true, "equal/larger compact width keeps the full readout");
+            assert.equal(result.steps.includes("notificationCount"), false);
+            assert.equal(JSON.stringify(result), JSON.stringify(model.plan(width, clamped)), "clamp without mutating the input");
+            assert.equal(input.controls[0].compactReadoutWidth, compactReadoutWidth);
+        }
+    }
 }
 const missing = {...metrics, controls: metrics.controls.filter(c => !["bt", "bri"].includes(c.id))};
 assert.equal(model.plan(0, missing).overflow.length, 5, "only hardware-present controls are planned");

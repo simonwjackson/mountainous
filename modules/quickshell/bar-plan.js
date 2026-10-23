@@ -17,14 +17,16 @@
  * @param {{controls: Control[], markWidth: number, titleWidth: number, titleMinWidth: number,
  * clockWidth: number, clockTimeWidth: number, chordWidth: number, batteryWidth: number,
  * appIconWidth: number, appNameWidth: number, overflowWidth: number}} metrics
+ * Control readoutWidth, compactReadoutWidth and appNameWidth are raw content
+ * widths. The planner owns the 6 px icon/readout gap; do not include it here.
  */
 function plan(width, metrics) {
-    const steps = ["space", "ociLabel", "diskLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount", "uncentre", "titleMin"];
+    const yieldOrder = ["space", "ociLabel", "diskLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount", "uncentre", "titleMin"];
     const overflowOrder = ["oci", "disk", "bri", "bt", "wifi", "ntf", "vol"];
     const readouts = {oci: "ociLabel", disk: "diskLabel", bt: "btCount", bri: "brightnessNumber", vol: "volumeNumber", ntf: "notificationCount"};
     const edge = 6, insideGap = 6, clockGap = 16, titleStub = 56;
     const dimension = function (value, name) {
-        if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new Error("Invalid " + name + " width");
+        if (typeof value !== "number" || Number.isNaN(value) || value < 0) throw new Error("Invalid " + name + " width");
     };
     dimension(width, "container");
     if (!metrics || !Array.isArray(metrics.controls)) throw new Error("Invalid controls");
@@ -37,9 +39,19 @@ function plan(width, metrics) {
         dimension(control.readoutWidth, "control readout");
         if (control.compactReadoutWidth !== undefined) {
             dimension(control.compactReadoutWidth, "compact readout");
-            if (control.compactReadoutWidth > control.readoutWidth) throw new Error("Invalid compact readout width: larger than full readout");
         }
     }
+
+    // Transient QML measurements can make a compact readout wider than the
+    // full readout. Clamp without changing the caller's metrics, and retain
+    // the full readout when yielding it would save no space.
+    const compactWidth = function (control) {
+        return Math.min(control.readoutWidth, control.compactReadoutWidth || 0);
+    };
+    const steps = yieldOrder.filter(function (step) {
+        const control = metrics.controls.find(function (item) { return readouts[item.id] === step; });
+        return !control || compactWidth(control) < control.readoutWidth;
+    });
 
     for (let count = 0; count <= steps.length; count++) {
         const applied = steps.slice(0, count);
@@ -51,7 +63,7 @@ function plan(width, metrics) {
         const mark = edge + 2 * pad + metrics.markWidth;
         const leftMin = yielded("titleMin") ? 0 : Math.min(metrics.titleMinWidth, metrics.titleWidth);
         const controlWidth = function (control) {
-            const readout = !yielded(readouts[control.id]) ? control.readoutWidth : (control.compactReadoutWidth || 0);
+            const readout = !yielded(readouts[control.id]) ? control.readoutWidth : compactWidth(control);
             return 2 * pad + control.iconWidth + (readout > 0 ? insideGap + readout : 0);
         };
         const rightWidth = function (controls, overflow) {

@@ -22,7 +22,8 @@ QtObject {
         root._selection = {
             name: name,
             screen: screen,
-            anchorX: typeof anchorX === "number" && Number.isFinite(anchorX) ? Math.max(0, anchorX) : 0
+            // -1 means no control anchor; MenuHost places this menu top right.
+            anchorX: anchorX === -1 ? -1 : typeof anchorX === "number" && Number.isFinite(anchorX) ? Math.max(0, anchorX) : 0
         };
     }
 

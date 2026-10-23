@@ -37,8 +37,15 @@ Item {
             check(MenuState.current === "", "empty name stays closed");
             MenuState.open("oci", null, 20);
             check(MenuState.current === "", "no screen stays closed");
-            MenuState.open("oci", first, NaN);
-            check(MenuState.anchorX === 0, "invalid anchor normalizes to zero");
+            MenuState.open("bt", first, -1);
+            check(MenuState.anchorX === -1, "-1 means no anchor: place at the top right");
+            MenuState.close();
+            MenuState.toggle("bt", first, -1);
+            check(MenuState.anchorX === -1, "toggle preserves the no-anchor sentinel too");
+            for (const invalid of [-2, -0.5, NaN, Infinity, undefined]) {
+                MenuState.open("oci", first, invalid);
+                check(MenuState.anchorX === 0, "other invalid anchors normalize to zero");
+            }
             let readonly = false;
             try { MenuState.current = "wifi"; } catch (_) { readonly = true; }
             check(readonly && MenuState.current === "oci", "public current is readonly");
