@@ -31,7 +31,8 @@
               pkgs.gnugrep
               pkgs.gnused
               pkgs.nodejs
-              pkgs.sway
+              # The wrapped sway starts a D-Bus session; the sandbox has none.
+              pkgs.sway-unwrapped
               pkgs.grim
               pkgs.wtype
               pkgs.quickshell
@@ -44,6 +45,9 @@
               ];
             };
             QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            # No EGL in the sandbox: Qt Quick's software renderer. The checks
+            # here assert behaviour and placement, not exact pixels.
+            QT_QUICK_BACKEND = "software";
             WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
             WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
           }

@@ -24,7 +24,9 @@ fail=0
 pass=0
 for _ in $(seq 50); do w98 current | grep -q '"loaded":"win98"' && break; sleep 0.2; done
 w98 set tb-normal >/dev/null
-sleep 1.5
+# A slow machine (a build sandbox renders in software) needs longer.
+for _ in $(seq 100); do w98 places | grep -q '"vol"' && w98 places | grep -q '"clock"' && break; sleep 0.2; done
+sleep 1
 
 # A virtual pointer gives the seat a pointer (pointer.py).
 mkfifo "$work/pointer"
@@ -36,6 +38,7 @@ grep -q ready "$work/pointer.log" || { cat "$work/pointer.log" >&2; echo "no vir
 at() { echo "move $1 $2" >&3; sleep 0.25; }
 # The centre of a taskbar control, in logical px.
 centre() {
+  for _ in $(seq 30); do w98 places | grep -q "\"$1\"" && break; sleep 0.1; done
   w98 places | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d[sys.argv[1]]; print(round(p["x"]+p["w"]/2), round(1200 - d["barHeight"]/2))' "$1"
 }
 move() { at $(centre "$1"); }
