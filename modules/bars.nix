@@ -129,7 +129,14 @@
             && !(lib.hasSuffix ".test.js" name)
             && !(lib.hasSuffix ".py" name)
             && !(lib.hasSuffix ".sh" name)
-            && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || lib.hasPrefix "icons/" name);
+            # Test-only scene for the Win98 controls (themes/win98/dev/).
+            && name != "themes/win98/Win98Gallery.qml"
+            && (
+              lib.hasSuffix ".qml" name
+              || lib.hasSuffix ".js" name
+              || lib.hasPrefix "icons/" name
+              || lib.hasInfix "/icons/" name
+            );
         in
         builtins.listToAttrs (
           map (name: {

@@ -15,11 +15,17 @@
         || lib.hasPrefix "builder-dev/" name
         || lib.hasSuffix ".test.js" name
         || lib.hasSuffix ".py" name
-        || lib.hasSuffix ".sh" name;
+        || lib.hasSuffix ".sh" name
+        || name == "themes/win98/Win98Gallery.qml";
       required = builtins.filter (
         name:
         !(development name)
-        && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || lib.hasPrefix "icons/" name)
+        && (
+          lib.hasSuffix ".qml" name
+          || lib.hasSuffix ".js" name
+          || lib.hasPrefix "icons/" name
+          || lib.hasInfix "/icons/" name
+        )
       ) sourceFiles;
       allDelivered = builtins.all (name: builtins.hasAttr (prefix + name) files) required;
       noDevelopment = builtins.all (name: !(development (lib.removePrefix prefix name))) delivered;
