@@ -181,6 +181,28 @@ PanelWindow {
     readonly property bool diskCounting: storage.state === "ready" && storage.issues.length > 0
     readonly property bool ntfOffline: notifications.view.kind === "offline"
 
+    // Readout widths come from the strings the bar draws, not from the
+    // drawn items: an item's implicit width settles one layout pass late,
+    // and the plan must never see a full readout narrower than its compact
+    // one.
+    readonly property var ociBoxText: ["100.0%", PlatinumMetrics.digits(3) + ".0%", "Failed"]
+    readonly property string ociStateMark: oci.state === "unavailable" ? "--" : oci.state === "loading" ? "..." : "!"
+    readonly property real ociReadoutW: {
+        if (oci.state !== "ready") return PlatinumMetrics.width(ociStateMark);
+        let w = 0;
+        for (let i = 0; i < ociRows.length; i++)
+            w += PlatinumMetrics.width((i > 0 ? " " : "") + ociRows[i].name + ":") + PlatinumMetrics.widest(ociBoxText);
+        return w;
+    }
+    readonly property var diskBoxText: ["99", PlatinumMetrics.digits(2)]
+    readonly property string diskWord: diskCounting ? (storage.issues.length === 1 ? " issue" : " issues")
+        : storage.label.replace(/^Disks /, "")
+    readonly property real diskReadoutW: (diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0)
+        + PlatinumMetrics.width(diskWord)
+    readonly property var ntfBoxText: ["99+", PlatinumMetrics.digits(2)]
+    readonly property real ntfReadoutW: (ntfNumber !== "" ? PlatinumMetrics.widest(ntfBoxText) : 0)
+        + (ntfSuffix !== "" ? PlatinumMetrics.width(ntfSuffix) : 0)
+
     readonly property var metrics: ({
         controls: [
             btPresent ? { id: "bt", iconWidth: 16,
@@ -188,15 +210,15 @@ PanelWindow {
             wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: 0 } : null,
             volPresent ? { id: "vol", iconWidth: 16, readoutWidth: numW } : null,
             brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: numW } : null,
-            oci.enabled ? { id: "oci", iconWidth: 16, readoutWidth: ociFull.implicitWidth } : null,
+            oci.enabled ? { id: "oci", iconWidth: 16, readoutWidth: ociReadoutW } : null,
             // When the label yields, the issue count keeps its fixed box.
-            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskFull.implicitWidth,
-                compactReadoutWidth: diskCounting ? diskCountBox.width : 0 } : null,
+            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskReadoutW,
+                compactReadoutWidth: diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0 } : null,
             // When the count yields it becomes a dot on the bell; offline
             // keeps a "!".
             { id: "ntf", iconWidth: 16,
-                readoutWidth: ntfNumber !== "" || ntfSuffix !== "" ? ntfFull.implicitWidth : 0,
-                compactReadoutWidth: ntfOffline ? ntfCompact.implicitWidth : 0 }
+                readoutWidth: ntfReadoutW,
+                compactReadoutWidth: ntfOffline ? Math.min(PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
         ].filter(function (c) { return c !== null; }),
         markWidth: 20,
         // The title box draws 8 px either side of its text; the dictation
@@ -569,10 +591,11 @@ PanelWindow {
 
                 Text {
                     visible: bar.oci.state !== "ready"
-                    text: bar.oci.state === "unavailable" ? "--" : bar.oci.state === "loading" ? "..." : "!"
+                    text: bar.ociStateMark
                     color: ociControl.fg
                     font.family: Theme.platinumFont
                     font.pixelSize: Theme.platinumText
+                    font.letterSpacing: Theme.platinumTracking
                 }
 
                 Repeater {
@@ -592,7 +615,7 @@ PanelWindow {
 
                         // Each profile in its own tone.
                         BarNumber {
-                            widest: ["100.0%", PlatinumMetrics.digits(3) + ".0%", "Failed"]
+                            widest: bar.ociBoxText
                             text: modelData.value
                             tone: ociControl.inverted ? ociControl.fg : Theme.barTone(modelData.tone)
                         }
@@ -620,13 +643,12 @@ PanelWindow {
 
                 BarNumber {
                     visible: diskControl.counting
-                    widest: ["99", PlatinumMetrics.digits(2)]
+                    widest: bar.diskBoxText
                     text: String(diskControl.issues)
                     tone: diskControl.fg
                 }
                 Text {
-                    text: diskControl.counting ? (diskControl.issues === 1 ? " issue" : " issues")
-                        : bar.storage.label.replace(/^Disks /, "")
+                    text: bar.diskWord
                     color: diskControl.fg
                     font.family: Theme.platinumFont
                     font.pixelSize: Theme.platinumText
@@ -641,7 +663,7 @@ PanelWindow {
                 BarNumber {
                     id: diskCountBox
                     visible: diskControl.counting
-                    widest: ["99", PlatinumMetrics.digits(2)]
+                    widest: bar.diskBoxText
                     text: String(diskControl.issues)
                     tone: diskControl.fg
                 }
@@ -667,7 +689,7 @@ PanelWindow {
                 // at the box's right end, next to ", local only".
                 BarNumber {
                     visible: bar.ntfNumber !== ""
-                    widest: ["99+", PlatinumMetrics.digits(2)]
+                    widest: bar.ntfBoxText
                     horizontalAlignment: bar.ntfSuffix !== "" ? Text.AlignRight : Text.AlignLeft
                     text: bar.ntfNumber
                     tone: ntfControl.fg
