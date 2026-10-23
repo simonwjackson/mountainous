@@ -1,57 +1,54 @@
 import Quickshell
-import Quickshell.Hyprland
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "builder-gate.js" as Gate
 
-// The remote-builder panel: the full state, why, and every action.
+// The remote-builder menu: the full state, why, and every action, as a
+// Platinum menu under the builder title (MenuHost shows it).
 //
-//   Remote builds                                ×
-//   ○ Refusing builds
-//     You turned builds off. This lasts until myoko
-//     joins another network.
-//   Network home   Power mains   Running 0
-//   ────────────────────────────────────────────
-//   T  Accept builds                       [pill]
-//   [D  Use default (on)]  [X  Stop builds]
-//   Tab move · Enter choose · Esc close
+//   Remote builds                                   [×]
+//   ●  Accepting builds
+//      At home on mains power, so myoko accepts by default.
+//      Network                                    home
+//      Power                                     mains
+//      Running                                       0
+//   ────────────────────────────────────────────────────
+//   ☑  Accept builds                                 T
+//      [Use default (on)]                            D
+//      [Stop builds     ]                            X
+//      No manual choice to clear. No builds running.
+//      Tab move · Enter choose · Esc close
 //
-// Opened from the ▾ beside the bar control, a right-click on it, or
-// SUPER+O then R. Every action has a letter, and Tab walks them.
+// Opened from the title (press or right-click) or SUPER+O then R. Every
+// action has its letter on the right edge, and Tab walks them. The header
+// carries what the old tooltip said: the headline, the reason, the running
+// note and the facts.
 Scope {
     id: root
 
-    required property var screen
     required property var gate
     property bool shown: false
-    // True when SUPER+O R opened the panel.
+    // True when SUPER+O R opened the menu: the focus ring shows at once.
     property bool openedByKeyboard: false
-    // True when the keyboard opened the panel or has been used in it; the
-    // focus ring shows only then.
     property bool keyboardUsed: false
-    // The id of the action the keyboard is on.
+    // The action the keyboard is on.
     property string focusId: "toggle"
-    signal closeRequested
 
     readonly property var actionList: Gate.actions(gate.sample, gate.pending)
-    readonly property var focusTargets: actionList.concat([{id: "close", enabled: true}])
 
     onShownChanged: {
         if (!shown) return;
         root.keyboardUsed = root.openedByKeyboard;
-        root.focusId = Gate.moveFocus(root.focusTargets, "", 1);
+        root.focusId = Gate.moveFocus(root.actionList, "", 1);
         root.gate.refresh();
     }
 
     // When the focused action turns disabled (it just ran, or its reason
-    // went away), the focus moves to the first one that is still enabled.
+    // went away), the focus moves to the first one still enabled.
     onActionListChanged: {
         if (root.gate.pending !== "") return;
-        // focusTargets may not have caught up yet; build it from the new list.
-        const targets = root.actionList.concat([{id: "close", enabled: true}]);
-        const target = targets.filter(function (t) { return t.id === root.focusId; })[0];
-        if (!target || !target.enabled) root.focusId = Gate.moveFocus(targets, "", 1);
+        const target = root.actionList.filter(function (t) { return t.id === root.focusId; })[0];
+        if (!target || !target.enabled) root.focusId = Gate.moveFocus(root.actionList, "", 1);
     }
 
     function action(id) {
@@ -60,10 +57,6 @@ Scope {
     }
 
     function activate(id) {
-        if (id === "close") {
-            root.closeRequested();
-            return;
-        }
         const a = root.action(id);
         if (a && a.enabled) root.gate.run(a.command);
     }
@@ -76,431 +69,251 @@ Scope {
 
     function moveFocus(delta) {
         root.keyboardUsed = true;
-        root.focusId = Gate.moveFocus(root.focusTargets, root.focusId, delta);
+        root.focusId = Gate.moveFocus(root.actionList, root.focusId, delta);
     }
 
-    function hintText() {
-        // Each action shows its own letter, so the hint names only the rest.
-        return "Tab move  ·  Enter choose  ·  Esc close";
-    }
+    property Component menu: Component {
+        MenuFrame {
+            id: frame
 
-    LazyLoader {
-        active: root.shown && root.gate.enabled
+            readonly property var sample: root.gate.sample
+            readonly property string pending: root.gate.pending
+            readonly property string markName: Gate.mark(sample, pending)
+            readonly property var facts: Gate.facts(sample)
+            readonly property var toggle: root.action("toggle")
+            readonly property var others: root.actionList.filter(function (a) { return a.id !== "toggle"; })
+            // "Use default" and "Stop" are one role: one width.
+            readonly property real buttonWidth: PlatinumMetrics.buttonWidth(frame.others.map(function (a) { return a.label; })
+                .concat(["Use default (off)", "Stop 88 builds"]))
+            readonly property real keyWidth: PlatinumMetrics.widest(["T", "D", "X", "W"])
+            readonly property string why: root.actionList.filter(function (a) {
+                return !a.enabled && a.detail !== "";
+            }).map(function (a) { return a.detail + "."; }).join(" ")
 
-        PanelWindow {
-            id: veil
+            preferredWidth: 360
+            title: "Remote builds"
 
-            screen: root.screen
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            focusable: true
-            color: "transparent"
+            // The state and why, with the gutter mark: ● accepting,
+            // ○ refusing, none without a valid status.
+            Item {
+                Layout.fillWidth: true
+                implicitHeight: stateColumn.implicitHeight + 6
 
-            HyprlandFocusGrab {
-                active: root.shown
-                windows: [ veil ]
-                onCleared: root.closeRequested()
-            }
+                PlatinumIcon {
+                    visible: frame.markName !== "none"
+                    x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+                    y: (headlineText.height - height) / 2
+                    name: frame.markName === "on" ? "dot" : "ring"
+                    size: 12
+                    color: frame.markName === "on" ? Theme.menuText : Theme.menuTextSecondary
+                }
 
-            MouseArea { anchors.fill: parent; onClicked: root.closeRequested() }
+                Column {
+                    id: stateColumn
+                    x: Theme.menuTextLeft
+                    width: parent.width - x - frame.rightInset
+                    spacing: 3
 
-            Rectangle {
-                id: card
-
-                readonly property var plan: Gate.panelPlan(veil.width, veil.height)
-                readonly property var sample: root.gate.sample
-                readonly property string pending: root.gate.pending
-                readonly property bool accepting: sample.kind === "ready" && sample.value.accepting
-
-                // Bring the keyboard's target into view when the card scrolls.
-                function revealFocus() {
-                    let item = null;
-                    if (root.focusId === "close") item = closeButton;
-                    else if (root.focusId === "toggle") item = card.plan.inlineSwitch ? inlineSwitch : switchRow;
-                    else for (let i = 0; i < buttons.count; i++) {
-                        if (buttons.model[i].id === root.focusId) item = buttons.itemAt(i);
+                    Text {
+                        id: headlineText
+                        width: parent.width
+                        text: Gate.headline(frame.sample, frame.pending)
+                        wrapMode: Text.Wrap
+                        color: Theme.menuText
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumText
+                        font.letterSpacing: Theme.platinumTracking
                     }
-                    if (!item) return;
-                    const top = item.mapToItem(content, 0, 0).y;
-                    const bottom = top + item.height;
-                    if (top < flick.contentY) flick.contentY = Math.max(0, top - 6);
-                    else if (bottom > flick.contentY + flick.height)
-                        flick.contentY = Math.min(flick.contentHeight - flick.height, bottom - flick.height + 6);
-                }
 
-                Connections {
-                    target: root
-                    function onFocusIdChanged() { Qt.callLater(card.revealFocus); }
-                }
+                    Text {
+                        width: parent.width
+                        visible: text !== ""
+                        text: Gate.reasonText(frame.sample)
+                        wrapMode: Text.Wrap
+                        color: Theme.menuTextSecondary
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                        font.letterSpacing: Theme.platinumTracking
+                        lineHeight: 1.15
+                    }
 
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 32
-                anchors.rightMargin: 6
-                width: plan.cardWidth
-                height: Math.min(content.implicitHeight + 24, plan.maxHeight)
-                radius: Theme.radiusLarge
-                color: Theme.bgPanel
-                border.width: 1
-                border.color: Theme.borderMuted
-
-                MouseArea { anchors.fill: parent }
-
-                // What does not fit scrolls. The plan has already dropped the
-                // readouts that may yield, so only a very short screen gets here.
-                Flickable {
-                    id: flick
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    clip: true
-                    contentWidth: width
-                    contentHeight: content.implicitHeight
-                    boundsBehavior: Flickable.StopAtBounds
-                    interactive: contentHeight > height
-                    ScrollIndicator.vertical: ScrollIndicator { }
-
-                    ColumnLayout {
-                        id: content
-                        width: flick.width
-                        spacing: 8
-
-                        // The title row. On a short screen the headline
-                        // takes the title's place, and on a shorter one the
-                        // switch joins it.
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 6
-
-                            Text {
-                                visible: card.plan.titleIsHeadline
-                                    && Gate.mark(card.sample, card.pending) !== "none"
-                                text: Gate.mark(card.sample, card.pending) === "on" ? "●" : "○"
-                                color: card.accepting ? Theme.accent : Theme.textMuted
-                                font.pixelSize: 10
-                                font.family: Theme.fontFamily
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: card.plan.titleIsHeadline
-                                    ? Gate.headline(card.sample, card.pending) : "Remote builds"
-                                color: card.plan.titleIsHeadline && card.accepting
-                                    ? Theme.accent : Theme.textPrimary
-                                font.pixelSize: card.plan.titleIsHeadline ? 12 : 14
-                                font.family: Theme.fontFamily
-                                font.bold: !card.plan.titleIsHeadline
-                                elide: Text.ElideRight
-                            }
-
-                            Rectangle {
-                                id: inlineSwitch
-                                readonly property bool focused: root.keyboardUsed && root.focusId === "toggle"
-                                visible: card.plan.inlineSwitch
-                                Layout.preferredWidth: 46
-                                Layout.preferredHeight: 28
-                                radius: Theme.radiusSmall
-                                color: "transparent"
-                                border.width: focused ? 2 : 0
-                                border.color: Theme.accent
-
-                                TogglePill {
-                                    anchors.centerIn: parent
-                                    checked: switchRow.model.checked
-                                    enabled: switchRow.model.enabled
-                                    onToggled: root.activate("toggle")
-                                }
-                            }
-
-                            Rectangle {
-                                id: closeButton
-                                readonly property bool focused: root.keyboardUsed && root.focusId === "close"
-                                Layout.preferredWidth: 28
-                                Layout.preferredHeight: 28
-                                radius: Theme.radiusSmall
-                                color: closeArea.pressed ? Theme.bgActive
-                                    : closeArea.containsMouse ? Theme.bgSelected : "transparent"
-                                border.width: focused ? 2 : 0
-                                border.color: Theme.accent
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "×"
-                                    color: Theme.textSecondary
-                                    font.pixelSize: 16
-                                    font.family: Theme.fontFamily
-                                }
-
-                                MouseArea {
-                                    id: closeArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: root.closeRequested()
-                                }
-                            }
-                        }
-
-                        // The state and why.
-                        RowLayout {
-                            Layout.fillWidth: true
-                            visible: !card.plan.titleIsHeadline
-                            spacing: 8
-
-                            Text {
-                                Layout.alignment: Qt.AlignTop
-                                Layout.topMargin: 2
-                                visible: Gate.mark(card.sample, card.pending) !== "none"
-                                text: Gate.mark(card.sample, card.pending) === "on" ? "●" : "○"
-                                color: card.accepting ? Theme.accent : Theme.textMuted
-                                font.pixelSize: 10
-                                font.family: Theme.fontFamily
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 3
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: Gate.headline(card.sample, card.pending)
-                                    color: card.accepting ? Theme.accent : Theme.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: Theme.fontFamily
-                                    wrapMode: Text.Wrap
-                                }
-
-                                // On a short screen the reason keeps one
-                                // line; the bar's tooltip has all of it.
-                                Text {
-                                    Layout.fillWidth: true
-                                    visible: card.plan.showReason && text !== ""
-                                    text: Gate.reasonText(card.sample)
-                                    color: Theme.textSecondary
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: card.plan.reasonLines
-                                    elide: Text.ElideRight
-                                }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    visible: card.plan.showReason && text !== ""
-                                    text: Gate.runningNote(card.sample)
-                                    color: Theme.textSecondary
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: card.plan.reasonLines
-                                    elide: Text.ElideRight
-                                }
-                            }
-                        }
-
-                        // The facts behind the answer. A readout: it yields
-                        // on a short screen; the reason above keeps the
-                        // decision.
-                        Flow {
-                            Layout.fillWidth: true
-                            visible: card.plan.showFacts && Gate.facts(card.sample).length > 0
-                            spacing: 14
-
-                            Repeater {
-                                model: Gate.facts(card.sample)
-
-                                Row {
-                                    required property var modelData
-                                    spacing: 5
-
-                                    Text {
-                                        text: modelData.label
-                                        color: Theme.textDetail
-                                        font.pixelSize: 10
-                                        font.family: Theme.fontFamily
-                                    }
-
-                                    Text {
-                                        text: modelData.value
-                                        color: Theme.textSecondary
-                                        font.pixelSize: 10
-                                        font.family: Theme.fontFamily
-                                    }
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 1
-                            visible: !card.plan.titleIsHeadline
-                            color: Theme.bgSeparator
-                        }
-
-                        // The main control: the switch. TogglePill draws it;
-                        // the whole row is the target.
-                        Rectangle {
-                            id: switchRow
-
-                            readonly property var model: root.action("toggle")
-                            readonly property bool focused: root.keyboardUsed && root.focusId === "toggle"
-
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 34
-                            visible: !card.plan.inlineSwitch
-                            radius: Theme.radiusSmall
-                            color: !model.enabled ? "transparent"
-                                : switchArea.pressed ? Theme.bgActive
-                                : switchArea.containsMouse ? Theme.bgSelected : Theme.bgInput
-                            border.width: focused ? 2 : 1
-                            border.color: focused ? Theme.accent
-                                : model.enabled ? Theme.borderMuted : Theme.bgSelected
-
-                            MouseArea {
-                                id: switchArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                enabled: switchRow.model.enabled
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.activate("toggle")
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 4
-                                spacing: 8
-
-                                Text {
-                                    text: switchRow.model.key
-                                    color: switchRow.model.enabled ? Theme.textMuted : Theme.textOff
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
-                                }
-
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: switchRow.model.label
-                                    color: switchRow.model.enabled ? Theme.textPrimary : Theme.textOff
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
-                                    elide: Text.ElideRight
-                                }
-
-                                TogglePill {
-                                    checked: switchRow.model.checked
-                                    enabled: switchRow.model.enabled
-                                    onToggled: root.activate("toggle")
-                                }
-                            }
-                        }
-
-                        // The other two actions. They share a row while the
-                        // card is wide enough and stack when it is not.
-                        GridLayout {
-                            Layout.fillWidth: true
-                            columns: card.plan.buttonsInRow ? 2 : 1
-                            columnSpacing: 6
-                            rowSpacing: 6
-
-                            Repeater {
-                                id: buttons
-                                model: root.actionList.filter(function (a) { return a.id !== "toggle"; })
-
-                                NotificationButton {
-                                    required property var modelData
-                                    Layout.fillWidth: true
-                                    text: modelData.label
-                                    keyHint: modelData.key
-                                    enabled: modelData.enabled
-                                    focused: root.keyboardUsed && root.focusId === modelData.id
-                                    maxWidth: card.width
-                                    onClicked: root.activate(modelData.id)
-                                }
-                            }
-                        }
-
-                        // Why an action is disabled, in one line.
-                        Text {
-                            Layout.fillWidth: true
-                            visible: card.plan.showDetail && text !== ""
-                            text: {
-                                const why = root.actionList.filter(function (a) {
-                                    return !a.enabled && a.detail !== "";
-                                }).map(function (a) { return a.detail + "."; });
-                                return why.join(" ");
-                            }
-                            color: Theme.textDetail
-                            font.pixelSize: 10
-                            font.family: Theme.fontFamily
-                            wrapMode: Text.Wrap
-                        }
-
-                        // A failed command. It stays until the next command,
-                        // the gate's next write, or 30 s.
-                        Text {
-                            Layout.fillWidth: true
-                            visible: root.gate.actionError !== null
-                            text: Gate.actionErrorText(root.gate.actionError)
-                            color: Theme.warning
-                            font.pixelSize: 11
-                            font.family: Theme.fontFamily
-                            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            visible: card.plan.showHint
-                            text: root.hintText()
-                            color: Theme.textDetail
-                            font.pixelSize: 9
-                            font.family: Theme.fontFamily
-                            wrapMode: Text.Wrap
-                        }
+                    Text {
+                        width: parent.width
+                        visible: text !== ""
+                        text: Gate.runningNote(frame.sample)
+                        wrapMode: Text.Wrap
+                        color: Theme.menuWarning
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                        font.letterSpacing: Theme.platinumTracking
+                        lineHeight: 1.15
                     }
                 }
             }
 
-            Shortcut {
-                sequence: "T"
-                context: Qt.WindowShortcut
-                onActivated: root.byKey("toggle")
+            // The facts behind the answer: label on the text edge, value on
+            // the right edge.
+            Repeater {
+                model: frame.facts
+
+                Item {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: 20
+
+                    Text {
+                        x: Theme.menuTextLeft
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.label
+                        color: Theme.menuTextSecondary
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                        font.letterSpacing: Theme.platinumTracking
+                    }
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: frame.rightInset
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.value
+                        color: Theme.menuText
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                        font.letterSpacing: Theme.platinumTracking
+                    }
+                }
             }
 
-            Shortcut {
-                sequence: "D"
-                context: Qt.WindowShortcut
-                onActivated: root.byKey("default")
+            MenuParts.Separator {}
+
+            // The flip: a check box in the gutter, its letter on the right.
+            Item {
+                id: toggleRow
+                readonly property bool focused: root.keyboardUsed && root.focusId === "toggle"
+                Layout.fillWidth: true
+                implicitHeight: Theme.menuLine + 4
+                enabled: frame.toggle.enabled
+
+                Rectangle {
+                    visible: toggleRow.focused
+                    x: Theme.menuGutter - 2
+                    width: toggleLabel.x + toggleLabel.width + 6 - x
+                    height: parent.height - 4
+                    y: 2
+                    color: "transparent"
+                    border.width: 2 * Theme.hair
+                    border.color: Theme.highlight
+                }
+
+                PlatinumCheckBox {
+                    id: toggleBox
+                    x: Theme.menuGutter + (Theme.menuGutterWidth - width) / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: frame.toggle.checked
+                    enabled: frame.toggle.enabled
+                    down: toggleArea.pressed
+                }
+
+                Text {
+                    id: toggleLabel
+                    x: Theme.menuTextLeft
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: frame.toggle.label
+                    color: frame.toggle.enabled ? Theme.menuText : Theme.menuTextOff
+                    font.family: Theme.platinumFont
+                    font.pixelSize: Theme.platinumText
+                    font.letterSpacing: Theme.platinumTracking
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: frame.rightInset
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: frame.keyWidth
+                    horizontalAlignment: Text.AlignRight
+                    text: frame.toggle.key
+                    color: frame.toggle.enabled ? Theme.menuTextSecondary : Theme.menuTextOff
+                    font.family: Theme.platinumFont
+                    font.pixelSize: Theme.platinumSmall
+                }
+
+                MouseArea {
+                    id: toggleArea
+                    width: toggleLabel.x + toggleLabel.width + 4
+                    height: parent.height
+                    enabled: frame.toggle.enabled
+                    onClicked: {
+                        root.focusId = "toggle";
+                        root.activate("toggle");
+                    }
+                }
             }
 
-            Shortcut {
-                sequence: "X"
-                context: Qt.WindowShortcut
-                onActivated: root.byKey("stop")
+            // Use default and Stop: one width, on the text edge, each with
+            // its letter on the right edge.
+            Repeater {
+                model: frame.others
+
+                Item {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: Theme.menuButtonHeight + 8
+
+                    PlatinumButton {
+                        x: Theme.menuTextLeft
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.label
+                        fixedWidth: frame.buttonWidth
+                        enabled: modelData.enabled
+                        focused: root.keyboardUsed && root.focusId === modelData.id
+                        onClicked: {
+                            root.focusId = modelData.id;
+                            root.activate(modelData.id);
+                        }
+                    }
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: frame.rightInset
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: frame.keyWidth
+                        horizontalAlignment: Text.AlignRight
+                        text: modelData.key
+                        color: modelData.enabled ? Theme.menuTextSecondary : Theme.menuTextOff
+                        font.family: Theme.platinumFont
+                        font.pixelSize: Theme.platinumSmall
+                    }
+                }
             }
 
-            Shortcut {
-                sequence: "Tab"
-                context: Qt.WindowShortcut
-                onActivated: root.moveFocus(1)
+            // Why an action is off, in one place.
+            MenuParts.Line {
+                visible: text !== ""
+                rightInset: frame.rightInset
+                text: frame.why
             }
 
-            Shortcut {
-                sequence: "Backtab"
-                context: Qt.WindowShortcut
-                onActivated: root.moveFocus(-1)
+            // A failed command. It stays until the next command, the gate's
+            // next write, or 30 s.
+            MenuParts.Line {
+                visible: root.gate.actionError !== null
+                rightInset: frame.rightInset
+                text: Gate.actionErrorText(root.gate.actionError)
+                color: Theme.menuWarning
             }
 
-            Shortcut {
-                sequences: ["Down", "Right"]
-                context: Qt.WindowShortcut
-                onActivated: root.moveFocus(1)
+            MenuParts.Hint {
+                rightInset: frame.rightInset
+                text: "Tab move · Enter choose · Esc close"
             }
 
-            Shortcut {
-                sequences: ["Up", "Left"]
-                context: Qt.WindowShortcut
-                onActivated: root.moveFocus(-1)
-            }
-
+            Shortcut { sequence: "T"; context: Qt.WindowShortcut; onActivated: root.byKey("toggle") }
+            Shortcut { sequence: "D"; context: Qt.WindowShortcut; onActivated: root.byKey("default") }
+            Shortcut { sequence: "X"; context: Qt.WindowShortcut; onActivated: root.byKey("stop") }
+            Shortcut { sequence: "Tab"; context: Qt.WindowShortcut; onActivated: root.moveFocus(1) }
+            Shortcut { sequence: "Backtab"; context: Qt.WindowShortcut; onActivated: root.moveFocus(-1) }
+            Shortcut { sequences: ["Down", "Right"]; context: Qt.WindowShortcut; onActivated: root.moveFocus(1) }
+            Shortcut { sequences: ["Up", "Left"]; context: Qt.WindowShortcut; onActivated: root.moveFocus(-1) }
             Shortcut {
                 sequences: ["Return", "Enter", "Space"]
                 context: Qt.WindowShortcut
@@ -508,12 +321,6 @@ Scope {
                     root.keyboardUsed = true;
                     root.activate(root.focusId);
                 }
-            }
-
-            Shortcut {
-                sequence: "Escape"
-                context: Qt.WindowShortcut
-                onActivated: root.closeRequested()
             }
         }
     }

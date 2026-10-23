@@ -13,6 +13,9 @@ ShellRoot {
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
     property bool topbarAccessVisible: false
+    // True when SUPER+O R opened the builder menu: its focus ring shows
+    // from the start. Any other menu clears it.
+    property bool builderKeyboard: false
 
     // One menu is open at a time, on one screen: MenuState. The bar's
     // controls, the Super+O chord and the IPC targets below all go
@@ -34,6 +37,7 @@ ShellRoot {
     Connections {
         target: MenuState
         function onCurrentChanged() {
+            if (MenuState.current !== "builder") root.builderKeyboard = false;
             if (MenuState.current !== "") root.topbarAccessVisible = false;
         }
     }
@@ -67,6 +71,10 @@ ShellRoot {
     // The notification socket, and the popups. notifyd owns the D-Bus name;
     // see modules/notification-view.nix. Each top bar has its own centre.
     Notifications { id: notificationService }
+
+    // Whether myoko accepts remote builds; see BuilderGate.qml. Hosts
+    // without nix-builder-gate show no control.
+    BuilderGate { id: builderGateService }
 
     NotificationPopups {
         service: notificationService
@@ -156,6 +164,23 @@ ShellRoot {
         target: "storage"
         function reveal(): void { root.openMenu("disk", root.primaryScreen()); }
         function hide(): void { root.closeMenu("disk"); }
+    }
+
+    IpcHandler {
+        target: "builder"
+        function reveal(): void {
+            if (!builderGateService.enabled) return;
+            root.builderKeyboard = true;
+            root.openMenu("builder", root.focusedScreen());
+        }
+        function hide(): void { root.closeMenu("builder"); }
+        function current(): string {
+            const s = builderGateService.sample;
+            return s.kind + (s.kind === "ready"
+                ? " " + s.value.accepting + " " + s.value.reason + " " + s.value.running : "")
+                + " pending=" + (builderGateService.pending || "none")
+                + " panel=" + (MenuState.current === "builder");
+        }
     }
 
     IpcHandler {
@@ -329,6 +354,12 @@ ShellRoot {
             BrightnessPanel { id: brightnessPanel; shown: screenScope.shows("bri") }
             OciEgress { id: ociEgress; shown: screenScope.shows("oci") }
             StorageHealth { id: storageHealth; shown: screenScope.shows("disk") }
+            BuilderPanel {
+                id: builderPanel
+                gate: builderGateService
+                shown: screenScope.shows("builder")
+                openedByKeyboard: root.builderKeyboard
+            }
             NotificationCentre {
                 id: notificationCentre
                 service: notificationService
@@ -349,6 +380,7 @@ ShellRoot {
                 dictation: dictationService
                 omniBar: omniBarService
                 frontWindow: screenScope.frontWindow
+                builderGate: builderGateService
                 now: clock.date
                 chordVisible: root.topbarAccessVisible
             }
@@ -374,6 +406,7 @@ ShellRoot {
                     oci: ociEgress.enabled ? ociEgress.menu : null,
                     disk: storageHealth.enabled ? storageHealth.menu : null,
                     ntf: notificationCentre.menu,
+                    builder: builderGateService.enabled ? builderPanel.menu : null,
                     clock: clockMenu,
                     more: overflowMenu
                 })

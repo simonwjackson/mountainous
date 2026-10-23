@@ -33,6 +33,9 @@ PanelWindow {
     required property var notifications
     required property var dictation
     required property var omniBar
+    // The remote-builder gate (BuilderGate.qml), on hosts that have one.
+    property var builderGate: null
+    readonly property bool builderPresent: !!builderGate && builderGate.enabled === true
     property var frontWindow: null
     property date now: new Date()
     property bool chordVisible: false
@@ -67,7 +70,7 @@ PanelWindow {
     function anchorFor(name) {
         const item = ({
             bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
-            oci: ociControl, disk: diskControl, ntf: ntfControl,
+            oci: ociControl, disk: diskControl, builder: builderControl, ntf: ntfControl,
             clock: bar.plan.centred ? clockCentre : clockRight,
             more: moreControl
         })[name];
@@ -80,7 +83,8 @@ PanelWindow {
     // What the » menu shows for a control that moved into it.
     function iconFor(id) {
         return ({ bt: "bluetooth", wifi: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel,
-                  vol: bar.volIcon, bri: "brightness", oci: "cloud", disk: "disk", ntf: "bell" })[id] || "";
+                  vol: bar.volIcon, bri: "brightness", oci: "cloud", disk: "disk", builder: "builder",
+                  ntf: "bell" })[id] || "";
     }
 
     function valueFor(id) {
@@ -92,6 +96,7 @@ PanelWindow {
             ? bar.ociRows.map(function (r) { return r.value; }).join(" ") : bar.oci.stateText;
         if (id === "disk") return bar.storage.label.replace(/^Disks /, "");
         if (id === "ntf") return bar.ntfWide;
+        if (id === "builder") return builderControl.fullText;
         return "";
     }
 
@@ -224,6 +229,9 @@ PanelWindow {
             // When the label yields, the issue count keeps its fixed box.
             storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskReadoutW,
                 compactReadoutWidth: diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0 } : null,
+            // The builder's words yield to its running count alone.
+            builderPresent ? { id: "builder", iconWidth: 16, readoutWidth: builderControl.fullWidth,
+                compactReadoutWidth: builderControl.compactWidth } : null,
             // When the count yields it becomes a dot on the bell; offline
             // keeps a "!".
             { id: "ntf", iconWidth: 16,
@@ -459,6 +467,7 @@ PanelWindow {
             const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
             if (bar.oci.enabled) k.push(["C", "Cloud"]);
             if (bar.storage.enabled) k.push(["D", "Disks"]);
+            if (bar.builderPresent) k.push(["R", "Builder"]);
             k.push(["Esc", "cancel"]);
             return k;
         }
@@ -686,6 +695,16 @@ PanelWindow {
                     tone: diskControl.fg
                 }
             }
+        }
+
+        BuilderControl {
+            id: builderControl
+            gate: bar.builderGate
+            visible: bar.builderPresent && bar.onBar("builder")
+            screen: bar.modelData
+            open: bar.isOpen("builder")
+            pad: bar.pad
+            showLabel: bar.plan.show.builderLabel !== false
         }
 
         BarControl {

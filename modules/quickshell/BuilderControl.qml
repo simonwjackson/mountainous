@@ -1,188 +1,57 @@
-import Quickshell
 import QtQuick
 import "builder-gate.js" as Gate
 
-// The remote-builder control in the top bar: two targets side by side.
+// The remote-builder gate on the Platinum bar: a title like every other.
+// A press, or a right-click, opens its menu (BuilderPanel), and the menus
+// follow the pointer onto it. The flip itself is the menu's first row,
+// "Accept builds" (T).
 //
-//   [● Builds on][▾]
+// At rest the title still says the state at a glance: the hammer while
+// myoko accepts, the hammer struck through while it refuses, in the gate's
+// tone (grey when the default rule refuses, the text colour when you
+// chose it). A choice you made by hand draws a thin outline, the latch,
+// until myoko joins another network.
 //
-// The left target is the state and the one-click toggle: a click sets a
-// manual choice the other way. The right target opens the panel, which also
-// holds "use default" and "stop now". A right-click on either opens the
-// panel too. A manual choice draws a thin outline around both, a latch that
-// stays until myoko joins another network.
-//
-// The words are a readout and shorten on a narrow bar (Gate.barPlan); the
-// mark, the latch and both targets stay at every width, and the tooltip
-// keeps the full words.
-Item {
+// The words ("Builds off: battery", "Building 2") are a readout and yield
+// to the count alone, which stays in its own box.
+BarControl {
     id: root
 
     required property var gate
-    required property real barWidth
-    property bool panelOpen: false
-    signal panelRequested
+    property bool showLabel: true
 
-    readonly property var plan: Gate.barPlan(barWidth)
-    readonly property string toneName: Gate.tone(gate.sample, gate.pending, gate.actionError)
-    readonly property color toneColor: ({
-        accent: Theme.accent,
-        primary: Theme.textPrimary,
-        muted: Theme.textMuted,
-        warning: Theme.warning,
-        quiet: Theme.textMuted
-    })[toneName]
-    readonly property string markName: Gate.mark(gate.sample, gate.pending)
+    readonly property var sample: gate ? gate.sample : Gate.loading()
+    readonly property string pending: gate ? gate.pending : ""
+    readonly property var actionError: gate ? gate.actionError : null
 
-    implicitWidth: main.implicitWidth + opener.implicitWidth
-    implicitHeight: 26
+    menu: "builder"
+    icon: "builder"
+    slashed: Gate.mark(sample, pending) === "off"
+    tone: Theme.barTone(Gate.tone(sample, pending, actionError))
+    outlined: Gate.latched(sample) && pending === ""
 
-    function press(mouse) {
-        if (mouse.button === Qt.RightButton) root.panelRequested();
-        else if (Gate.clickAction(root.gate.sample, root.gate.pending) === "panel") root.panelRequested();
-        else root.gate.toggle();
+    // What the plan measures: the full words and the compact count. A
+    // count sits in a box as wide as two wide digits, so "Building 2" and
+    // "Building 12" take one width and the bar does not move.
+    readonly property string fullText: Gate.barText(sample, pending, actionError, "wide")
+    readonly property string compactText: Gate.barText(sample, pending, actionError, "tiny")
+    function boxWidth(text) {
+        if (text === "") return 0;
+        return PlatinumMetrics.widest([text.replace(/\d+/g, function (m) {
+            return PlatinumMetrics.digits(Math.max(2, m.length));
+        })]);
     }
+    readonly property real fullWidth: boxWidth(fullText)
+    readonly property real compactWidth: Math.min(boxWidth(compactText), fullWidth)
 
-    Rectangle {
-        id: main
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        implicitWidth: row.implicitWidth + 12
-        width: implicitWidth
-        topLeftRadius: Theme.radiusSmall
-        bottomLeftRadius: Theme.radiusSmall
-        color: mainArea.pressed ? Theme.bgActive
-            : mainArea.containsMouse ? Theme.bgSelected : "transparent"
-
-        Row {
-            id: row
-            anchors.centerIn: parent
-            spacing: 5
-
-            // On: a filled dot. Off: a ring. No mark without a valid status.
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: root.markName !== "none"
-                text: root.markName === "on" ? "●" : "○"
-                color: root.toneColor
-                font.pixelSize: 9
-                font.family: Theme.fontFamily
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: text !== ""
-                text: Gate.barText(root.gate.sample, root.gate.pending, root.gate.actionError, root.plan.form)
-                color: root.toneColor
-                font.pixelSize: 10
-                font.family: Theme.fontFamily
-            }
-        }
-
-        MouseArea {
-            id: mainArea
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            cursorShape: Qt.PointingHandCursor
-            onClicked: function (mouse) { root.press(mouse); }
-        }
-    }
-
-    Rectangle {
-        id: opener
-        anchors.left: main.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        implicitWidth: 16
-        width: implicitWidth
-        topRightRadius: Theme.radiusSmall
-        bottomRightRadius: Theme.radiusSmall
-        color: root.panelOpen || openerArea.pressed ? Theme.bgActive
-            : openerArea.containsMouse ? Theme.bgSelected : "transparent"
-
-        // A hairline between the two targets, so they read as two.
-        Rectangle {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: 1
-            height: 12
-            color: Theme.bgSeparator
-        }
-
-        Text {
-            anchors.centerIn: parent
-            anchors.horizontalCenterOffset: 1
-            text: "▾"
-            color: Theme.textMuted
-            font.pixelSize: 10
-            font.family: Theme.fontFamily
-        }
-
-        MouseArea {
-            id: openerArea
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.panelRequested()
-        }
-    }
-
-    // The latch: a manual choice is in force.
-    Rectangle {
-        anchors.fill: parent
-        anchors.topMargin: 3
-        anchors.bottomMargin: 3
-        visible: Gate.latched(root.gate.sample) && !root.gate.pending
-        color: "transparent"
-        radius: Theme.radiusSmall
-        border.width: 1
-        border.color: root.toneColor
-        opacity: 0.6
-    }
-
-    // The tooltip says why, and what a click does. It waits half a second,
-    // so passing over the bar does not flash it.
-    Timer {
-        id: hoverDelay
-        interval: 500
-        running: mainArea.containsMouse && !root.panelOpen
-    }
-
-    PopupWindow {
-        id: tip
-        visible: mainArea.containsMouse && !mainArea.pressed && !hoverDelay.running && !root.panelOpen
-        anchor.item: root
-        anchor.rect.x: 0
-        // Quickshell's defaults: the popup grows down and right from the
-        // point below the control, and the compositor slides it back on
-        // screen near the right edge.
-        anchor.rect.y: root.height + 4
-        implicitWidth: Math.min(440, tipText.implicitWidth + 20)
-        implicitHeight: tipText.implicitHeight + 14
-        color: "transparent"
-
-        Rectangle {
-            anchors.fill: parent
-            radius: Theme.radiusMedium
-            color: Theme.bgPanel
-            border.width: 1
-            border.color: Theme.borderMuted
-
-            Text {
-                id: tipText
-                x: 10
-                y: 7
-                width: Math.min(420, implicitWidth)
-                text: Gate.tooltip(root.gate.sample, root.gate.pending, root.gate.actionError).join("\n")
-                color: Theme.textSecondary
-                wrapMode: Text.Wrap
-                lineHeight: 1.15
-                font.pixelSize: 10
-                font.family: Theme.fontFamily
-            }
-        }
+    Text {
+        visible: text !== ""
+        width: root.showLabel ? root.fullWidth : root.compactWidth
+        text: root.showLabel ? root.fullText : root.compactText
+        textFormat: Text.PlainText
+        color: root.fg
+        font.family: Theme.platinumFont
+        font.pixelSize: Theme.platinumText
+        font.letterSpacing: Theme.platinumTracking
     }
 }

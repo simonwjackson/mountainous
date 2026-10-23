@@ -22,6 +22,9 @@ Item {
     property color tone: Theme.barText
     property real pad: 8
     property bool hoverable: true
+    // A thin outline inside the title: a setting you chose by hand is in
+    // force (the builder gate's latch).
+    property bool outlined: false
     default property alias readout: readoutRow.data
     property alias readoutRow: readoutRow
     property alias iconItem: iconBox
@@ -44,6 +47,15 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: root.inverted || (root.hovered && root.hoverable) ? root.bg : "transparent"
+    }
+
+    Rectangle {
+        visible: root.outlined
+        anchors.fill: parent
+        anchors.margins: 3
+        color: "transparent"
+        border.width: Theme.hair
+        border.color: root.fg
     }
 
     Row {
@@ -90,7 +102,8 @@ Item {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton
+        // A right-click opens a title's menu too.
+        acceptedButtons: root.menu === "" ? Qt.LeftButton : Qt.LeftButton | Qt.RightButton
         onPressed: {
             if (root.menu === "") return;
             MenuState.toggle(root.menu, root.screen, root.mapToItem(null, 0, 0).x);
