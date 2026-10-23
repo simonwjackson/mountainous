@@ -296,6 +296,11 @@ assert.equal(model.barText(off, up, 3, true), "Notifications offline");
 assert.equal(model.barText({kind: "connecting"}, up, 3, false), "NTF");
 assert.equal(model.barText({kind: "empty"}, up, 0, false), "NTF");
 assert.equal(model.barText(ready, up, 12, false), "NTF 12");
+for (const [count, text] of [[99, "99"], [100, "99+"], [128, "99+"], [1000000, "99+"]]) {
+    assert.equal(model.barText(ready, up, count, false), "NTF " + text);
+    assert.equal(model.barText(ready, up, count, true), "Notifications " + text);
+}
+assert.equal(model.barText(ready, refused, 128, true), "Notifications 99+, sync error");
 assert.equal(model.barText(ready, {server: "unreachable", outbox: 2, last_error: null}, 12, true), "Notifications 12, local only");
 assert.equal(model.barTone(off, up, [item({urgency: 2})]), "warning", "a dead socket outranks an urgent item");
 assert.equal(model.barTone({kind: "connecting"}, up, []), "muted");

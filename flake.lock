@@ -85,6 +85,19 @@
         "url": "https://raw.githubusercontent.com/korri-os/korri/e6902f0f3c7c2081db033b31c4cd6557b254537a/nix/cache/github-cache.py"
       }
     },
+    "chicagoflf-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1400766801,
+        "narHash": "sha256-eWA31QVZC8R1gw3/c6M2ooYDxcgD9lxdC8h9Wifrd7M=",
+        "type": "tarball",
+        "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1785284101,
@@ -697,6 +710,7 @@
     "root": {
       "inputs": {
         "airconnect-src": "airconnect-src",
+        "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
         "flake-parts": "flake-parts",

@@ -19,6 +19,12 @@
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # ChicagoFLF 2.1: the font and README declare it Public Domain.
+    chicagoflf-src = {
+      url = "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip";
+      flake = false;
+    };
+
     # Keep its package pin: following ours would change the signed cache path.
     nix-extras.url = "github:simonwjackson/nix-extras";
 

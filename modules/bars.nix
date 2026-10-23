@@ -7,16 +7,28 @@
 # Meta+I toggles both for immersive browsing.
 {
   nixos.modules.desktop =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       ociEgress = pkgs.writeShellApplication {
         name = "oci-egress-status";
-        runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.oci-cli ];
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.gawk
+          pkgs.oci-cli
+        ];
         text = builtins.readFile ./quickshell/oci-egress-status.sh;
       };
     in
     {
-      environment.systemPackages = [ pkgs.quickshell ociEgress ];
+      environment.systemPackages = [
+        pkgs.quickshell
+        ociEgress
+      ];
 
       # UPower is required for accurate battery percentage reporting.
       services.upower.enable = true;
@@ -65,29 +77,49 @@
         };
       };
 
-      hjem.users.simon.files.".config/quickshell/mountainous/shell.qml".source =
-        ./quickshell/shell.qml;
-      # Per-screen lanes for the docks, top bars and omni bar.
-      hjem.users.simon.files.".config/quickshell/mountainous/lanes.js".source =
-        ./quickshell/lanes.js;
-      hjem.users.simon.files.".config/quickshell/mountainous/Theme.qml".source =
-        ./quickshell/Theme.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/TogglePill.qml".source =
-        ./quickshell/TogglePill.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/BluetoothPanel.qml".source =
-        ./quickshell/BluetoothPanel.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/WifiPanel.qml".source =
-        ./quickshell/WifiPanel.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/SoundPanel.qml".source =
-        ./quickshell/SoundPanel.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/BrightnessPanel.qml".source =
-        ./quickshell/BrightnessPanel.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/OciEgress.qml".source =
-        ./quickshell/OciEgress.qml;
-      hjem.users.simon.files.".config/quickshell/mountainous/storage-health.js".source =
-        ./quickshell/storage-health.js;
-      # Shown only where modules/storage-health.nix is enabled.
-      hjem.users.simon.files.".config/quickshell/mountainous/StorageHealth.qml".source =
-        ./quickshell/StorageHealth.qml;
+      # Discover new controls and icons without a second Nix file list. The
+      # notification view retains ownership of its files and generated schema.
+      hjem.users.simon.files =
+        let
+          notificationFiles = [
+            "Notifications.qml"
+            "NotificationPopups.qml"
+            "NotificationCentre.qml"
+            "NotificationCard.qml"
+            "NotificationButton.qml"
+            "NotificationStyle.qml"
+            "notification-model.js"
+            "notification-schema.js"
+          ];
+          collect =
+            prefix: directory:
+            lib.concatLists (
+              lib.mapAttrsToList (
+                name: type:
+                let
+                  relative = prefix + name;
+                in
+                if type == "directory" then
+                  lib.optionals (name != "notification-dev") (collect (relative + "/") (directory + "/${name}"))
+                else
+                  lib.optional (type == "regular") relative
+              ) (builtins.readDir directory)
+            );
+          deliver =
+            name:
+            !(builtins.elem name notificationFiles)
+            && !(lib.hasSuffix ".test.js" name)
+            && !(lib.hasSuffix ".py" name)
+            && !(lib.hasSuffix ".sh" name)
+            && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || lib.hasPrefix "icons/" name);
+        in
+        builtins.listToAttrs (
+          map (name: {
+            name = ".config/quickshell/mountainous/${name}";
+            value.source = ./quickshell + "/${name}";
+          }) (builtins.filter deliver (collect "" ./quickshell))
+        );
+      # Quickshell discovers pragma Singleton files itself. A partial qmldir
+      # would hide the other local types (including Theme) from that scan.
     };
 }

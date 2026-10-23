@@ -459,14 +459,15 @@ function letter(item) {
 function barText(view, status, count, wide) {
     if (view.kind === "offline") return wide ? "Notifications offline" : "NTF !";
     if (view.kind === "connecting") return wide ? "Notifications" : "NTF";
+    const shownCount = count > 99 ? "99+" : String(count);
     if (wide) {
-        let text = count > 0 ? "Notifications " + count : "Notifications";
+        let text = count > 0 ? "Notifications " + shownCount : "Notifications";
         const badge = statusBadge(view, status);
         if (badge.kind === "local_only") text += ", local only";
         if (badge.kind === "delivery_error") text += ", sync error";
         return text;
     }
-    return count > 0 ? "NTF " + count : "NTF";
+    return count > 0 ? "NTF " + shownCount : "NTF";
 }
 
 // The bar control's colour, as a tone the caller maps to a Theme colour.
