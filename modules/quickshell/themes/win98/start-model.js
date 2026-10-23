@@ -31,7 +31,7 @@ function appIcon(id, name) {
     if (/firefox/.test(s)) return "firefox";
     if (/signal/.test(s)) return "signal";
     if (/(^|[ .])zed/.test(s)) return "zed";
-    if (/obs/.test(s)) return "obs";
+    if (/obsproject|obs studio|(^| )obs( |$)/.test(s)) return "obs";
     if (/sunshine/.test(s)) return "sun";
     if (/syncthing/.test(s)) return "sync";
     if (/transmission/.test(s)) return "tx";

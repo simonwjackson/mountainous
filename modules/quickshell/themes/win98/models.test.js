@@ -86,6 +86,8 @@ const p = plain(S.programs(apps));
 assert.deepEqual(p.map(f => f.text), ['Development', 'Internet', 'Other']);
 assert.deepEqual(p[1].submenu.map(a => a.text), ['Chromium', 'Signal']);
 assert.equal(p[1].submenu[0].icon, 'chromium');
+assert.equal(S.appIcon('md.obsidian.Obsidian', 'Obsidian'), '');
+assert.equal(S.appIcon('com.obsproject.Studio', 'OBS Studio'), 'obs');
 assert.equal(p[2].submenu[0].text, 'Rock && Roll', 'data never carries an access key');
 const flat = plain(S.programs([{ id: 'a', name: 'Beta', categories: [] }, { id: 'b', name: 'Alpha', categories: [] }]));
 assert.deepEqual(flat.map(a => a.text), ['Alpha', 'Beta']);
