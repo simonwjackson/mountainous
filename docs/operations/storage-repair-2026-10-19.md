@@ -173,6 +173,9 @@ warning even after a controlled drain because scheduled copies do not free space
 Offline fixture preview on a graphical test session (no SSH):
 
 ```sh
+# Match modules/browser.nix using this flake's pinned Qt package.
+qtwebsockets=$(nix --option builders '' build --no-link --print-out-paths \
+  .#nixosConfigurations.myoko.pkgs.qt6.qtwebsockets)
 preview=$(mktemp -d)
 cp -r modules/quickshell/. "$preview/"
 cat > "$preview/preview.qml" <<'QML'
@@ -180,7 +183,8 @@ import Quickshell
 import "theme-dev"
 Scope { StorageHealthPreview {} }
 QML
-PATH="$PWD/tests/fixtures/storage-health-bin:$PATH" \
+QML2_IMPORT_PATH="$qtwebsockets/lib/qt-6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}" \
+  PATH="$PWD/tests/fixtures/storage-health-bin:$PATH" \
   STORAGE_HEALTH_ENABLED=1 STORAGE_HEALTH_PREVIEW=issues \
   quickshell -p "$preview/preview.qml"
 ```
