@@ -2,7 +2,6 @@ pragma Singleton
 
 import Quickshell
 import QtQuick
-import qs
 
 // The Windows 98 theme's tokens: the unit, the two appearances, the font
 // and the metrics every Win98 control shares.

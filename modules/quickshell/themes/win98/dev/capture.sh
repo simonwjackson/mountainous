@@ -67,17 +67,18 @@ for _ in $(seq 50); do
 done
 export WAYLAND_DISPLAY="$sock"
 
-# The shell root, as the theme loader will see it: Theme.qml at the top,
-# the theme under themes/win98. Only Theme.qml is staged beside it, which
-# also proves the theme imports nothing else from the shell. A stub
-# shell.qml loads only the gallery.
+# The shell root, as the theme loader will see it: Theme.qml and the flat
+# Win98*.qml files at the top, the theme's assets under themes/win98. Only
+# Theme.qml is staged beside them, which also proves the theme imports
+# nothing else from the shell. A stub shell.qml loads only the gallery.
 stage="$work/shell"
-mkdir -p "$stage/themes"
+mkdir -p "$stage/themes/win98"
 ln -s "$shell_dir/Theme.qml" "$stage/Theme.qml"
-ln -s "$theme_dir" "$stage/themes/win98"
+for f in "$shell_dir"/Win98*.qml; do ln -s "$f" "$stage/$(basename "$f")"; done
+ln -s "$here/Win98Gallery.qml" "$stage/Win98Gallery.qml"
+ln -s "$theme_dir/icons" "$stage/themes/win98/icons"
 cat > "$stage/shell.qml" <<'EOF'
 import Quickshell
-import qs.themes.win98
 
 ShellRoot {
     Win98Gallery {}

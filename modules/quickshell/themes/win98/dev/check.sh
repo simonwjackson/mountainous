@@ -4,8 +4,8 @@
 #
 #   QUICKSHELL=qs LABWC=labwc modules/quickshell/themes/win98/dev/check.sh <shell dir>
 #
-# Loads Win98Gallery.qml with only Theme.qml beside the theme (so the theme
-# imports nothing else from the shell), opens every page in both
+# Loads Win98Gallery.qml with only Theme.qml, the flat Win98*.qml files and
+# the theme's assets (so the theme imports nothing else from the shell), opens every page in both
 # appearances, fails on any QML warning, then runs the Start menu's
 # keyboard checks (keys.sh). No screenshots; dev/capture.sh takes those.
 set -euo pipefail
@@ -40,13 +40,12 @@ for _ in $(seq 100); do [ -S "$XDG_RUNTIME_DIR/wayland-0" ] && break; sleep 0.1;
 export WAYLAND_DISPLAY=wayland-0
 
 stage="$work/shell"
-mkdir -p "$stage/themes"
-cp "$shell_dir/Theme.qml" "$stage/Theme.qml"
-cp -r "$shell_dir/themes/win98" "$stage/themes/win98"
+mkdir -p "$stage/themes/win98"
+cp "$shell_dir/Theme.qml" "$shell_dir"/Win98*.qml "$here/Win98Gallery.qml" "$stage/"
+cp -r "$shell_dir/themes/win98/icons" "$stage/themes/win98/icons"
 chmod -R u+w "$stage"
 cat > "$stage/shell.qml" <<'QML'
 import Quickshell
-import qs.themes.win98
 
 ShellRoot {
     Win98Gallery {}

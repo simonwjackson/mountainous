@@ -6,9 +6,10 @@
 #
 # Quickshell writes the qmldirs itself (a singleton is a file with
 # `pragma Singleton`), so the source tree has none and qmllint alone cannot
-# see Theme or Win98Tokens as singletons. This stages the shell root as the
-# module `qs` with Theme.qml and the theme as `qs.themes.win98`, writes the
-# qmldirs Quickshell would, and lints there. Any warning fails, except
+# see Theme or Win98Tokens as singletons. The theme's QML is flat in the
+# shell root (Quickshell cannot load QML from subfolders at run time), so
+# this stages Theme.qml, every Win98*.qml and the gallery (dev/) as the
+# module `qs`, writes the qmldir Quickshell would, and lints there. Any warning fails, except
 # PanelWindow's uncreatable-type in the gallery (Quickshell's own idiom,
 # reported on every PanelWindow in this repo).
 set -euo pipefail
@@ -18,14 +19,12 @@ qmllint=${QMLLINT:-qmllint}
 work=$(mktemp -d "${TMPDIR:-/tmp}/win98-lint.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 
-theme="$work/qs/themes/win98"
+theme="$work/qs"
 mkdir -p "$theme"
-cp "$shell_dir/Theme.qml" "$work/qs/"
-printf 'module qs\nsingleton Theme 1.0 Theme.qml\n' > "$work/qs/qmldir"
-cp "$shell_dir"/themes/win98/Win98*.qml "$theme/"
+cp "$shell_dir/Theme.qml" "$shell_dir"/Win98*.qml "$shell_dir/themes/win98/dev/Win98Gallery.qml" "$theme/"
 {
-  echo "module qs.themes.win98"
-  for f in "$theme"/Win98*.qml; do
+  echo "module qs"
+  for f in "$theme"/*.qml; do
     n=$(basename "$f" .qml)
     if grep -q '^pragma Singleton' "$f"; then echo "singleton $n 1.0 $n.qml"; else echo "$n 1.0 $n.qml"; fi
   done
