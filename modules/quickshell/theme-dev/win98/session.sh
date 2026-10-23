@@ -57,7 +57,7 @@ mkdir -p "$stage/win98-dev"
 cp "$session_here"/states.js "$stage/win98-dev/"
 cp "$session_here/harness.qml" "$stage/shell.qml"
 [ -n "${SESSION_SCHEMA:-}" ] && cp "$SESSION_SCHEMA" "$stage/notification-schema.js"
-printf 'win98\n' > "$XDG_STATE_HOME/mountainous/theme-name"
+printf '%s\n' "${SESSION_THEME:-win98}" > "$XDG_STATE_HOME/mountainous/theme-name"
 printf 'light\n' > "$XDG_STATE_HOME/mountainous/theme"
 
 cat > "$session_work/sway.conf" <<EOF
@@ -76,6 +76,25 @@ for _ in $(seq 100); do
 done
 export WAYLAND_DISPLAY="$sock"
 export SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1)
+
+# SESSION_COMPOSITOR=niri: the shell runs in a niri nested in the headless
+# sway (software GL), because niri reports its layer-shell surfaces
+# (niri msg layers) and sway does not. NIRI_SOCKET is exported for that.
+if [ "${SESSION_COMPOSITOR:-sway}" = niri ]; then
+  scale=1.5
+  mkdir -p "$session_work/niri"
+  printf 'output "winit" { scale %s; }\nprefer-no-csd\nhotkey-overlay { skip-at-startup; }\n' "$scale" > "$session_work/niri/config.kdl"
+  LIBGL_ALWAYS_SOFTWARE=1 niri -c "$session_work/niri/config.kdl" >"$session_work/niri.log" 2>&1 &
+  session_pids+=($!)
+  for _ in $(seq 100); do
+    NIRI_SOCKET=$(ls "$XDG_RUNTIME_DIR"/niri.*.sock 2>/dev/null | head -1 || true)
+    [ -n "$NIRI_SOCKET" ] && break
+    sleep 0.1
+  done
+  export NIRI_SOCKET
+  WAYLAND_DISPLAY=$(basename "$NIRI_SOCKET" | sed -E 's/^niri\.(wayland-[0-9]+)\..*$/\1/')
+  export WAYLAND_DISPLAY
+fi
 
 USER=simon HOSTNAME=myoko QT_QPA_PLATFORM=wayland QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough \
   qs -p "$stage/shell.qml" --no-color >"$session_work/qs.log" 2>&1 &

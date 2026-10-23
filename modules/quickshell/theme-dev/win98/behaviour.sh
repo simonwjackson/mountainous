@@ -85,6 +85,14 @@ letter s;                                   check 'keyboard: S again cycles to S
 key Left;                                   check 'keyboard: Left closes Internet, Internet stays selected' 'path=Programs cursor=Internet'
 key Escape; key Escape;                     check 'keyboard: Esc twice closes Start' 'open= vol'
 
+# No windows: Start > Windows holds only "(No windows)", disabled, and the
+# keyboard never selects it.
+w98 set tb-empty >/dev/null; sleep 1
+click start; settle start
+letter w;                                   check 'keyboard: no windows, W opens Windows with nothing selected' 'path=Windows cursor=- '
+key Down;                                   check 'keyboard: Down skips the disabled "(No windows)"' 'path=Windows cursor=- '
+key Escape; key Escape; settle ''
+
 # The picker: Cancel leaves the theme alone; Apply commits through the
 # shared model (desktop-theme apply).
 w98 set pk-win98-light >/dev/null; sleep 1.2

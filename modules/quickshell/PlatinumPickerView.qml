@@ -27,6 +27,9 @@ PanelWindow {
         Qt.callLater(revealFocused);
     }
     function revealFocused() {
+        // A theme swap can destroy the view before this delayed call runs.
+        if (typeof win.reveal !== "function")
+            return;
         const item = focusedControl;
         if (item && item.visible && item.activeFocus)
             reveal(item);

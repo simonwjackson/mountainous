@@ -20,8 +20,11 @@
       # ThemeDesktop and Win98Desktop over the production panel owners in a
       # private headless sway session (no output device). behaviour.sh runs
       # the approved mock's interaction checks with a virtual pointer and
-      # keyboard; switch.sh switches Platinum and Win98 ten times and asserts
-      # the reserved edge at the compositor, then rolls back a broken Win98.
+      # keyboard; switch.sh switches Platinum and Win98 ten times with a menu,
+      # cascade or the picker open and asserts the reserved edge (sway) and
+      # the mapped layer surfaces (niri) after each swap, then rolls back a
+      # broken Win98; geometry.sh checks real control bounds at small sizes;
+      # scales.sh checks 2-px bevels on outputs at scales 1.5 and 1.
       checks.win98-desktop =
         pkgs.runCommand "win98-desktop"
           {
@@ -36,8 +39,16 @@
               pkgs.grim
               pkgs.wtype
               pkgs.quickshell
+              # Reports its mapped layer-shell surfaces (switch.sh).
+              pkgs.niri
               (pkgs.python3.withPackages (p: [ p.pywayland ]))
             ];
+            # niri and Qt render with GL: Mesa's software rasteriser
+            # (llvmpipe), found through these in the sandbox. Qt's own
+            # software renderer would draw 1.5-scale lines unevenly, which
+            # scales.sh would rightly fail.
+            __EGL_VENDOR_LIBRARY_DIRS = "${pkgs.mesa}/share/glvnd/egl_vendor.d";
+            LIBGL_DRIVERS_PATH = "${pkgs.mesa}/lib/dri";
             FONTCONFIG_FILE = pkgs.makeFontsConf {
               fontDirectories = [
                 config.packages.w95fa-grid
@@ -45,9 +56,6 @@
               ];
             };
             QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
-            # No EGL in the sandbox: Qt Quick's software renderer. The checks
-            # here assert behaviour and placement, not exact pixels.
-            QT_QUICK_BACKEND = "software";
             WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
             WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
           }
@@ -59,6 +67,8 @@
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
             bash ${quickshell}/theme-dev/win98/switch.sh ${quickshell} $TMPDIR/switch
+            bash ${quickshell}/theme-dev/win98/geometry.sh ${quickshell} $TMPDIR/geometry
+            bash ${quickshell}/theme-dev/win98/scales.sh ${quickshell} $TMPDIR/scales
             touch $out
           '';
       checks.win98-theme =

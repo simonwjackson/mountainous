@@ -228,7 +228,9 @@ ShellRoot {
         id: loader
         screen: root.screen0
         context: context
-        onDesktopChanged: Qt.callLater(root.apply)
+        // A new Desktop (a theme swap) gets the data, not the state's open
+        // menus: a swap closes menus, and the checks open their own.
+        onDesktopChanged: Qt.callLater(function () { root.apply(false); })
     }
     readonly property var desktop: loader.desktop
     readonly property var fixtureContext: context
@@ -253,7 +255,7 @@ ShellRoot {
         return out;
     }
 
-    function apply() {
+    function apply(view) {
         const d = root.dd, p = root.st.p || {};
         root.buildWindows();
         // notifications
@@ -299,7 +301,13 @@ ShellRoot {
         shellStub.chromeAccessVisible = !!d.chord;
         if (!root.desktop) return;
         const desk = root.desktop;
-        if (desk.preview === undefined) return;
+        if (desk.preview === undefined || view === false) {
+            if (desk.preview !== undefined) {
+                desk.battery = { present: d.bat.present, percent: d.bat.pct, charging: !!d.bat.charging, full: !!d.bat.full, onBattery: d.bat.onBattery };
+                desk.apps = root.apps();
+            }
+            return;
+        }
         desk.battery = { present: d.bat.present, percent: d.bat.pct, charging: !!d.bat.charging, full: !!d.bat.full, onBattery: d.bat.onBattery };
         desk.apps = root.apps();
         // The view's state: hover, press, focus, tooltip, flash, drag.
@@ -417,6 +425,49 @@ ShellRoot {
             const p = it.mapToItem(null, it.width / 2, it.height / 2);
             return Math.round(p.x) + " " + Math.round(p.y);
         }
+        // Where everything stands, in screen logical px (geometry.sh).
+        function geometry(): string {
+            const d = root.desktop, scr = root.screen0;
+            if (!d || !d.debugPlaces) return "{}";
+            const rect = function (it) {
+                const q = it.mapToItem(null, 0, 0);
+                return { x: q.x, y: q.y, w: it.width, h: it.height };
+            };
+            const out = { w: scr.width, h: scr.height, places: d.debugPlaces(), plan: d.taskbarPlan(), panels: [], window: null, picker: null, openIs: String(d.openItem) };
+            const m = d.openItem;
+            if (m && m.panelAt) {
+                for (let l = 0; l < 8; l++) { const p = m.panelAt(l); if (!p) break; out.panels.push(rect(p)); }
+            } else if (m) {
+                out.window = rect(m);
+                out.window.natural = m.implicitHeight;
+                out.window.scrolls = !!m.scrolls;
+            }
+            const v = root.findPicker();
+            if (v) {
+                const find = function (item, name) {
+                    if (!item) return null;
+                    if (item.objectName === name) return item;
+                    for (let i = 0; i < item.children.length; i++) { const f = find(item.children[i], name); if (f) return f; }
+                    return null;
+                };
+                out.picker = { area: v.area };
+                for (const n of ["pickerDialog", "pickerOk", "pickerCancel", "pickerApply", "pickerTheme", "pickerScheme"]) {
+                    const it = find(v.contentItem, n);
+                    if (it) out.picker[n] = rect(it);
+                }
+            }
+            return JSON.stringify(out);
+        }
+        function focusApply(): string {
+            const v = root.findPicker();
+            if (!v) return "no picker";
+            v.show({ applyFocus: true });
+            return "ok";
+        }
+        // Open a menu or the picker under whichever theme is loaded.
+        function openMenu(name: string): string { MenuState.open(name, root.screen0, -1); return MenuState.current; }
+        function openPicker(): string { ThemePicker.open(root.screen0); return String(ThemePicker.visible); }
+        function closeAll(): string { MenuState.close(); ThemePicker.close(); return "closed"; }
         function volume(): string { return sound.defaultSink ? String(Math.round(sound.defaultSink.audio.volume * 100)) : "-"; }
         function picker(): string { return ThemePicker.visible ? "open" : "closed"; }
         function commands(): string { return root.log.join("|"); }
