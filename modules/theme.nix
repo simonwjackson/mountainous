@@ -8,6 +8,9 @@
 # the OLED panel. The mode stays dark or light, so GTK, Ghostty and dconf do
 # not see it.
 let
+  themes = builtins.fromJSON (builtins.readFile ./quickshell/themes.json);
+  themeNames = builtins.concatStringsSep "|" (map (theme: theme.id) themes);
+  themeList = builtins.concatStringsSep "\n" (map (theme: "${theme.id}\t${theme.label}") themes);
   desktopThemeCommand =
     pkgs:
     pkgs.writeShellApplication {
@@ -15,12 +18,14 @@ let
       runtimeInputs = [
         pkgs.coreutils
         pkgs.dconf
+        pkgs.quickshell
         pkgs.util-linux
       ];
       text = ''
         state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/mountainous"
         state_file="$state_dir/theme"
         extra_file="$state_dir/theme-extra"
+        name_file="$state_dir/theme-name"
 
         # Serialize toggles and publish only complete files.
         mkdir -p "$state_dir"
@@ -29,6 +34,8 @@ let
 
         usage() {
           printf 'usage: desktop-theme dark|light|toggle|status|reapply\n' >&2
+          printf '       desktop-theme set <theme>|list|picker\n' >&2
+          printf '       desktop-theme apply <theme> dark|light on|off\n' >&2
           printf '       desktop-theme extra on|off|toggle|status\n' >&2
           exit 2
         }
@@ -62,6 +69,21 @@ let
           esac
           write_extra "$value"
           printf '%s\n' "$value"
+        }
+
+        valid_theme() {
+          case "$1" in ${themeNames}) return 0 ;; *) return 1 ;; esac
+        }
+
+        read_name() {
+          value=""
+          if [ -r "$name_file" ]; then value=$(tr -d '[:space:]' < "$name_file"); fi
+          if valid_theme "$value"; then printf '%s' "$value"; else printf platinum; fi
+        }
+
+        write_name() {
+          printf '%s\n' "$1" > "$name_file.new"
+          mv -f "$name_file.new" "$name_file"
         }
 
         read_state() {
@@ -106,13 +128,33 @@ let
             ;;
           # Also writes the extra file, so the bar has a file to watch.
           reapply)
+            write_name "$(read_name)"
             write_extra "$(read_extra)"
             apply "$(read_state)"
             ;;
+          set)
+            if [ "$#" -ne 2 ] || ! valid_theme "$2"; then usage; fi
+            write_name "$2"
+            printf '%s\n' "$2"
+            ;;
+          list) printf '%s\n' '${themeList}' ;;
+          picker)
+            flock -u 9
+            qs -c mountainous ipc call themePicker open
+            ;;
+          apply)
+            if [ "$#" -ne 4 ] || ! valid_theme "$2"; then usage; fi
+            case "$3" in dark|light) ;; *) usage ;; esac
+            case "$4" in on|off) ;; *) usage ;; esac
+            # Apply the session first: a failed dconf write must not publish
+            # a new theme. All three preferences share this lock.
+            apply "$3"
+            write_extra "$4"
+            write_name "$2"
+            ;;
           extra) extra "''${2:-}" ;;
           status)
-            read_state
-            printf '\n'
+            printf 'mode=%s extra=%s theme=%s\n' "$(read_state)" "$(read_extra)" "$(read_name)"
             ;;
           *) usage ;;
         esac

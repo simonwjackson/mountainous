@@ -22,11 +22,11 @@ state="$XDG_STATE_HOME/mountainous/theme"
 extra="$XDG_STATE_HOME/mountainous/theme-extra"
 check() {
   local mode=$1 scheme=$2
-  [[ $("$command_path" status) == "$mode" ]]
+  [[ $("$command_path" status) == "mode=$mode extra=$($command_path extra status) theme=platinum" ]]
   [[ $(<"$state") == "$mode" ]]
   [[ $(dconf read /org/gnome/desktop/interface/color-scheme) == "'$scheme'" ]]
 }
-[[ $("$command_path" status) == dark ]]
+[[ $("$command_path" status) == "mode=dark extra=off theme=platinum" ]]
 "$command_path" light
 check light prefer-light
 [[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita'" ]]
@@ -96,4 +96,29 @@ for bad in '' bogus; do
 done
 check_extra on
 [[ ! -e $extra.new && ! -e $state.new ]]
-echo 'DESKTOP_THEME_TESTS_PASSED'
+# Theme identity uses the same lock and atomic publication as mode and extra.
+name="$XDG_STATE_HOME/mountainous/theme-name"
+rm -f "$name"
+[[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
+[[ ! -e $name ]]
+[[ $("$command_path" list) == $'platinum\tMac OS 8 Platinum' ]]
+[[ $("$command_path" set platinum) == platinum ]]
+[[ $(<"$name") == platinum ]]
+for bad in unknown '../platinum' ''; do
+  if "$command_path" set "$bad"; then echo 'FAIL: unknown theme accepted' >&2; exit 1; fi
+  [[ $(<"$name") == platinum ]]
+done
+printf 'unknown\n' > "$name"
+[[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
+"$command_path" reapply
+[[ $(<"$name") == platinum ]]
+"$command_path" apply platinum light off
+check light prefer-light
+check_extra off
+if "$command_path" apply unknown dark on; then exit 1; fi
+if "$command_path" apply platinum bogus on; then exit 1; fi
+if "$command_path" apply platinum dark bogus; then exit 1; fi
+check light prefer-light
+check_extra off
+[[ ! -e $name.new ]]
+echo 'DESKTOP_THEME_TESTS_PASSED' 
