@@ -85,6 +85,16 @@
         assert builtins.hasAttr (prefix + "themes/platinum/previews/light.png") files;
         assert builtins.hasAttr (prefix + "themes.json") files;
         assert !(builtins.hasAttr (prefix + "qmldir") files);
+        # Win98: its flat QML, its policies, icons and thumbnails; never the
+        # control gallery, its scripts or the harness.
+        assert builtins.hasAttr (prefix + "Win98Desktop.qml") files;
+        assert builtins.hasAttr (prefix + "Win98PickerView.qml") files;
+        assert builtins.hasAttr (prefix + "themes/win98/taskbar-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/icons/mark.svg") files;
+        assert builtins.hasAttr (prefix + "themes/win98/previews/light.png") files;
+        assert !(builtins.hasAttr (prefix + "themes/win98/dev/Win98Gallery.qml") files);
+        assert !(builtins.hasAttr (prefix + "themes/win98/taskbar-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/win98/harness.qml") files);
         pkgs.runCommand "bar-delivery" { } "touch $out";
     };
 }
