@@ -25,6 +25,14 @@
       flake = false;
     };
 
+    # W95FA 1.002, SIL OFL 1.1. Upstream OFL.txt still has the template
+    # "Copyright (c) <dates>, <Copyright Holder>"; no actual Reserved Font Name.
+    # The derived font is renamed W95FA Grid and ships that OFL text unchanged.
+    w95fa-src = {
+      url = "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip";
+      flake = false;
+    };
+
     # Keep its package pin: following ours would change the signed cache path.
     nix-extras.url = "github:simonwjackson/nix-extras";
 

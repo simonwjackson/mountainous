@@ -749,7 +749,8 @@
         "nixpkgs-sunshine": "nixpkgs-sunshine",
         "pi": "pi",
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "w95fa-src": "w95fa-src"
       }
     },
     "rust-overlay": {
@@ -1050,6 +1051,19 @@
         "owner": "numtide",
         "repo": "flake-utils",
         "type": "github"
+      }
+    },
+    "w95fa-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1578028708,
+        "narHash": "sha256-eobn+Bvy0U6eRGOVCoTXpRTPKPZPCrlJlHRNxiyoizY=",
+        "type": "tarball",
+        "url": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip"
       }
     }
   },
