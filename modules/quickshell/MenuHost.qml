@@ -67,10 +67,15 @@ Scope {
                 onPressed: MenuState.close()
             }
 
+            // The control's place on the bar, kept live: if the bar's
+            // layout moves while the menu is open, the menu moves with it.
+            // MenuState.anchorX is the fallback for a menu the bar does not
+            // show.
             readonly property real anchorX: {
+                const live = host.bar.anchorFor(host.current);
+                if (live >= 0) return live;
                 const given = MenuState.anchorX;
-                if (given !== undefined && given !== null && given >= 0) return given;
-                return host.bar.anchorFor(host.current);
+                return given !== undefined && given !== null ? given : -1;
             }
 
             Loader {

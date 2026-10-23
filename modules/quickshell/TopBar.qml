@@ -1,5 +1,4 @@
 import Quickshell
-import Quickshell.Networking
 import Quickshell.Widgets
 import Quickshell.Services.UPower
 import QtQuick
@@ -63,6 +62,8 @@ PanelWindow {
 
     // Where a menu hangs: under its control, under » when the control
     // overflowed, or -1 (top right) when the bar does not show it.
+    // It reads x through the parents, not mapToItem, so a binding that
+    // calls it follows the bar when its layout changes under an open menu.
     function anchorFor(name) {
         const item = ({
             bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
@@ -70,9 +71,9 @@ PanelWindow {
             clock: bar.plan.centred ? clockCentre : clockRight,
             more: moreControl
         })[name];
-        if (plan.overflow.indexOf(name) >= 0 && moreControl.visible)
-            return moreControl.mapToItem(null, 0, 0).x;
-        if (item && item.visible && item.width > 0) return item.mapToItem(null, 0, 0).x;
+        const xOf = function (it) { return it.parent === rightGroup ? rightGroup.x + it.x : it.x; };
+        if (bar.plan.overflow.indexOf(name) >= 0 && moreControl.visible) return xOf(moreControl);
+        if (item && item.visible && item.width > 0) return xOf(item);
         return -1;
     }
 
