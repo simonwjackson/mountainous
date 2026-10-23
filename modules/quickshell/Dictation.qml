@@ -40,7 +40,10 @@ Scope {
     readonly property bool barVisible: state === "recording"
         || state === "working"
         || state === "failed"
-    readonly property bool canRetry: failedTake !== null
+    // Retry resends the take that failed in the backend. A microphone
+    // failure has no take to resend, so it offers Dismiss only, even when
+    // an older backend failure still holds a take.
+    readonly property bool canRetry: failedTake !== null && failureKind === "backend"
     readonly property int queueCount: queue.length
         + (workerTake !== null ? 1 : 0)
         + (activeTake !== null ? 1 : 0)
@@ -56,10 +59,12 @@ Scope {
     readonly property string backendLabel: state === "recording" || backend === ""
         ? ""
         : backend === "zao" ? "Zao" : "Groq";
+    // One wording for the queue, in the bar and in the overlay.
+    readonly property string queueText: queueCount + " takes"
     readonly property string overlayText: {
         let text = statusText;
         if (backendLabel !== "") text += " · " + backendLabel;
-        if (queueCount > 1) text += " · " + queueCount + " takes";
+        if (queueCount > 1) text += " · " + queueText;
         return text;
     }
     readonly property color accentColor: state === "recording" || state === "failed"
@@ -287,6 +292,13 @@ Scope {
 
     function dismissFailure() {
         if (root.deliveryState !== "failed") return;
+        // A microphone failure on top of an older backend failure: clear
+        // the microphone message and show the older failure again, so its
+        // take can still be retried rather than deleted unseen.
+        if (root.failureKind === "recorder" && root.failedTake !== null) {
+            root.failureKind = "backend";
+            return;
+        }
         doneTimer.stop();
         if (root.failedTake !== null) root.removeAudio(root.failedTake.path);
         root.failedTake = null;

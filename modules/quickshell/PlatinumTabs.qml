@@ -1,0 +1,64 @@
+import QtQuick
+import QtQuick.Layouts
+
+// Platinum tabs: equal raised segments in one strip; the current one is
+// sunken into a well. The strip spans the menu's text edge to its right
+// edge, so its ends sit on the same lines as the rows below it.
+Item {
+    id: root
+
+    // [{key, label}]
+    property var model: []
+    property string current: ""
+    property real rightInset: Theme.menuRightInset
+    signal selected(string key)
+
+    Layout.fillWidth: true
+    implicitHeight: Theme.menuButtonHeight + 8
+
+    Item {
+        id: strip
+        x: Theme.menuTextLeft
+        y: 2
+        width: root.width - Theme.menuTextLeft - root.rightInset
+        height: Theme.menuButtonHeight
+
+        Repeater {
+            model: root.model
+
+            Item {
+                id: tab
+                required property var modelData
+                required property int index
+                readonly property bool active: root.current === modelData.key
+                // Neighbours share one edge line, so the strip has no
+                // doubled rule between segments.
+                width: Math.round(strip.width / root.model.length)
+                    + (index < root.model.length - 1 ? Theme.hair : 0)
+                x: index * Math.round(strip.width / root.model.length)
+                height: strip.height
+
+                Bevel {
+                    anchors.fill: parent
+                    sunken: tab.active || area.pressed
+                    color: tab.active || area.pressed ? Theme.well : Theme.raised
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: tab.modelData.label
+                    color: Theme.menuText
+                    font.family: Theme.platinumFont
+                    font.pixelSize: Theme.platinumSmall
+                    font.letterSpacing: Theme.platinumTracking
+                }
+
+                MouseArea {
+                    id: area
+                    anchors.fill: parent
+                    onClicked: root.selected(tab.modelData.key)
+                }
+            }
+        }
+    }
+}

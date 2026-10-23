@@ -1,13 +1,11 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
 
-// The brightness panel, reached from the top bar or with SUPER+O then L.
-// Built to the same shape as SoundPanel: a Scope that owns the state, a
-// LazyLoader that builds the window only while it is shown, a veil with a
-// Hyprland focus grab, and one card under the bar.
+// Brightness: the bar control's state and its menu, reached from the bar
+// or with SUPER+O then L. This Scope owns the state; MenuHost shows the
+// menu.
 //
 // There is one level for every screen. modules/brightness.py owns it:
 //   ~/.local/state/mountainous/brightness      the level, a percentage
@@ -20,9 +18,7 @@ import QtQuick.Layouts
 Scope {
     id: root
 
-    required property var screen
     property bool shown: false
-    signal closeRequested
 
     // modules/brightness.py: MINIMUM and MAXIMUM.
     readonly property int minimum: 5
@@ -140,7 +136,7 @@ Scope {
 
     // Every connected screen, plus any monitor the daemon reaches that is
     // not a screen here, such as one showing another computer's input.
-    readonly property var rows: {
+    property var rows: {
         const list = Quickshell.screens.map(function (s) {
             return { label: root.screenLabel(s), detail: s.name, follows: root.follows(s) };
         });
@@ -155,261 +151,65 @@ Scope {
         return list;
     }
 
-    // Layout is a pure function of the veil's size. Height decides structure,
-    // width decides content. The level row is the control and always renders;
-    // the hint and the per-row output name are readouts and yield first.
-    function layoutPlan(width, height) {
-        const cardWidth = Math.min(340, Math.max(0, width - 12));
-        const rowHeight = 40;
-        const showHint = height >= 260;
-        const content = 30 + 6 + 40 + 6 + 1 + 6 + root.rows.length * (rowHeight + 2)
-            + (showHint ? 6 + 22 : 0) + 20;
-        return {
-            cardWidth: cardWidth,
-            cardHeight: Math.min(content, Math.max(150, height - 44)),
-            rowHeight: rowHeight,
-            showDetail: cardWidth >= 280,
-            showHint: showHint
-        };
-    }
+    property Component menu: Component {
+        MenuFrame {
+            id: frame
 
-    LazyLoader {
-        active: root.shown
+            preferredWidth: 340
+            title: "Brightness"
+            scrolls: screens.scrolls
 
-        PanelWindow {
-            id: veil
-
-            screen: root.screen
-            anchors { top: true; bottom: true; left: true; right: true }
-            exclusionMode: ExclusionMode.Ignore
-            focusable: true
-            color: "transparent"
-
-            HyprlandFocusGrab {
-                active: root.shown
-                windows: [ veil ]
-                onCleared: root.closeRequested()
+            // The one level. The track's left end is the dim minimum, not
+            // zero, so the whole drag is the whole range the keys reach.
+            PlatinumSlider {
+                rightInset: frame.rightInset
+                icon: "brightness"
+                hasValue: root.shownLevel >= 0
+                enabled: root.shownLevel >= 0
+                ratio: root.shownLevel < 0 ? 0
+                    : (root.shownLevel - root.minimum) / (root.maximum - root.minimum)
+                valueText: root.shownLevel >= 0 ? root.shownLevel + "%" : "--"
+                onMoved: function (ratio) {
+                    root.dragging = true;
+                    root.setLevel(root.minimum + ratio * (root.maximum - root.minimum));
+                }
+                onReleased: root.dragging = false
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: root.closeRequested()
+            MenuParts.Separator {}
+
+            MenuParts.Empty {
+                visible: root.rows.length === 0
+                rightInset: frame.rightInset
+                text: "No screen here can change its brightness."
             }
 
-            Rectangle {
-                id: card
+            MenuList {
+                id: screens
+                visible: root.rows.length > 0
+                model: ScriptModel { values: root.rows }
 
-                readonly property var plan: root.layoutPlan(veil.width, veil.height)
-
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 32
-                anchors.rightMargin: 6
-                width: plan.cardWidth
-                height: plan.cardHeight
-                radius: Theme.radiusLarge
-                color: Theme.bgPanel
-                border.width: 1
-                border.color: Theme.borderMuted
-
-                MouseArea { anchors.fill: parent }
-
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 6
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 30
-                        spacing: 6
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Brightness"
-                            color: Theme.textPrimary
-                            font.pixelSize: 14
-                            font.family: Theme.fontFamily
-                            font.bold: true
-                        }
-
-                        Rectangle {
-                            Layout.preferredWidth: 30
-                            Layout.preferredHeight: 30
-                            radius: Theme.radiusSmall
-                            color: closeArea.containsMouse ? Theme.bgSelected : "transparent"
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "×"
-                                color: Theme.textSecondary
-                                font.pixelSize: 16
-                                font.family: Theme.fontFamily
-                            }
-
-                            MouseArea {
-                                id: closeArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                onClicked: root.closeRequested()
-                            }
-                        }
-                    }
-
-                    // The one level. The track's left end is the dim minimum,
-                    // not zero, so the full drag is the full range the keys
-                    // can reach.
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 40
-                        spacing: 8
-
-                        Text {
-                            Layout.preferredWidth: 38
-                            horizontalAlignment: Text.AlignRight
-                            text: root.shownLevel >= 0 ? root.shownLevel + "%" : "--"
-                            color: Theme.textPrimary
-                            font.pixelSize: 12
-                            font.family: Theme.fontFamily
-                        }
-
-                        Rectangle {
-                            id: track
-
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 6
-                            radius: 3
-                            color: Theme.bgSeparator
-
-                            readonly property real ratio: root.shownLevel < 0 ? 0
-                                : (root.shownLevel - root.minimum) / (root.maximum - root.minimum)
-
-                            Rectangle {
-                                width: Math.round(parent.width * Math.min(1, Math.max(0, track.ratio)))
-                                height: parent.height
-                                radius: parent.radius
-                                color: Theme.accent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                anchors.topMargin: -12
-                                anchors.bottomMargin: -12
-
-                                function setFromX(x) {
-                                    const ratio = Math.min(1, Math.max(0, x / track.width));
-                                    root.setLevel(root.minimum + ratio * (root.maximum - root.minimum));
-                                }
-
-                                onPressed: function (mouse) {
-                                    root.dragging = true;
-                                    setFromX(mouse.x);
-                                }
-                                onPositionChanged: function (mouse) {
-                                    if (pressed) setFromX(mouse.x);
-                                }
-                                onReleased: root.dragging = false
-                                onCanceled: root.dragging = false
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 1
-                        color: Theme.bgSeparator
-                    }
-
-                    ListView {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-                        spacing: 2
-                        model: ScriptModel { values: root.rows }
-
-                        delegate: Item {
-                            required property var modelData
-
-                            width: ListView.view.width
-                            height: card.plan.rowHeight
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
-                                spacing: 6
-
-                                Text {
-                                    Layout.preferredWidth: 14
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: modelData.follows ? "●" : "○"
-                                    color: modelData.follows ? Theme.accent : Theme.textDim
-                                    font.pixelSize: 11
-                                    font.family: Theme.fontFamily
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 1
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: modelData.label
-                                        elide: Text.ElideRight
-                                        color: modelData.follows ? Theme.textPrimary : Theme.textMuted
-                                        font.pixelSize: 12
-                                        font.family: Theme.fontFamily
-                                    }
-
-                                    // Why a screen does not follow is the
-                                    // one fact a user can act on, so it
-                                    // stays when the output name yields.
-                                    Text {
-                                        Layout.fillWidth: true
-                                        visible: card.plan.showDetail || !modelData.follows
-                                        text: modelData.follows
-                                            ? modelData.detail
-                                            : "Keeps its own brightness"
-                                        elide: Text.ElideRight
-                                        color: Theme.textDetail
-                                        font.pixelSize: 10
-                                        font.family: Theme.fontFamily
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 22
-                        visible: card.plan.showHint
-                        text: "←→ brightness · Esc close"
-                        elide: Text.ElideRight
-                        color: Theme.textDetail
-                        font.pixelSize: 9
-                        font.family: Theme.fontFamily
-                    }
+                delegate: MenuListRow {
+                    required property var modelData
+                    width: ListView.view.width
+                    rightInset: frame.rightInset
+                    mark: modelData.follows ? "dot" : "ring"
+                    markDim: !modelData.follows
+                    name: modelData.label
+                    nameColor: modelData.follows ? Theme.menuText : Theme.menuTextSecondary
+                    // Why a screen does not follow is the one fact a user
+                    // can act on.
+                    detail: modelData.follows ? modelData.detail : "Keeps its own brightness"
                 }
             }
 
-            Shortcut {
-                sequence: "Left"
-                context: Qt.WindowShortcut
-                onActivated: root.step(-1)
+            MenuParts.Hint {
+                rightInset: frame.rightInset
+                text: "←→ brightness · Esc close"
             }
 
-            Shortcut {
-                sequence: "Right"
-                context: Qt.WindowShortcut
-                onActivated: root.step(1)
-            }
-
-            Shortcut {
-                sequence: "Escape"
-                context: Qt.WindowShortcut
-                onActivated: root.closeRequested()
-            }
+            Shortcut { sequence: "Left"; context: Qt.WindowShortcut; onActivated: root.step(-1) }
+            Shortcut { sequence: "Right"; context: Qt.WindowShortcut; onActivated: root.step(1) }
         }
     }
 }
