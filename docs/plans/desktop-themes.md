@@ -1,6 +1,6 @@
 # Desktop themes for Myoko
 
-Status: phase 1 implemented on the a05c2ead base. Written 2026-10-23. No deployment.
+Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implemented on b7f20f04. Written 2026-10-23. No deployment.
 
 Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). The later `77dd2791` bevel/shadow change is not included; that line has not landed on `cairn`.
 
@@ -101,11 +101,11 @@ Every theme must open the picker from all of: its own menu (Platinum clock menu,
 
 ## Keyboard and Hyprland
 
-`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. The `chrome` target now forwards `reveal`, `hide`, and `open <control>` to the active Desktop. `topbar` remains an alias; `chrome toggle` retains the whole-chrome immersive toggle. Win98 maps the same chord letters to its tray icons, and Super alone (or Ctrl+Esc) opens Start.
+`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. The `chrome` target now forwards `reveal`, `hide`, and `open <control>` to the active Desktop. `topbar` remains an alias; `chrome toggle` retains the whole-chrome immersive toggle. Win98 maps the same chord letters to its tray icons, and Ctrl+Esc opens Start (`chrome open start`). Super alone is not bound; see the phase 2 decisions.
 
 ## Fonts
 
-Phase 1 keeps ChicagoFLF installed and adds no unused font. Phase 2 must install ChicagoFLF and W95FA on Myoko always. Both are small, so a switch never waits for a font. W95FA comes from a `flake = false` input (the mockup prefetched its hash). Its licence file has the template copyright line; record that in the input's comment.
+ChicagoFLF and W95FA Grid are installed on every desktop host (`modules/fonts.nix`, merged from `win98-font`), so a switch never waits for a font. W95FA comes from the `w95fa-src` flake input (`flake = false`); `scripts/w95fa-grid.py` snaps it to its pixel grid as "W95FA Grid", and `checks.w95fa-grid` verifies the family name, the grid and the unchanged OFL text (its template copyright line is recorded in the input's comment). The Win98 Desktop names the packaged family; only the development gallery uses a FontLoader.
 
 ## Checks
 
@@ -120,7 +120,7 @@ Phase 1 keeps ChicagoFLF installed and adds no unused font. Phase 2 must install
 |---|---|---|
 | 0 | Platinum lands on `cairn` (someone else) | Platinum |
 | 1 | Data/view split, per-screen loader, `theme-name`, `chrome` IPC, picker in Platinum style | None except the new picker |
-| 2 | Win98 theme from the approved mockup and state boards | Win98 selectable |
+| 2 | Win98 theme from the approved mockup and state boards (implemented, see below) | Win98 selectable |
 | 3 | Mac OS 8 bottom app bar (backlog card) | Platinum dock |
 
 Phase 1 is a refactor with no visible change, so its review is a pixel diff of the Platinum sweep before and after.
@@ -238,3 +238,96 @@ Run these as bounded headless tests and focused single-attribute checks, never a
 
 
 Review validation evidence lives under `/tmp/themes-p1/review/`. `picker-before.log` records the −11px reproduction; `picker-after.log` records 27 geometry cases with the original and new boundaries, counts and errors. The single `checks.x86_64-linux.desktop-theme-shell` build also runs those assertions, the picker policy tests, runtime-staging tests and the existing real-Platinum rollback test. `storage-runbook.log` records the documented headless preview loading four ready findings. The complete notification and builder capture scripts produced 50 and 178 PNGs respectively in `notification-capture-final/` and `builder-capture-final/`; neither log has missing-type/import failures. Notification stress scenarios deliberately include a nonexistent image, which can emit image-load warnings. The picker engine and new ladder have no QML scene warnings. ShellCheck, QML lint and parser checks passed. No full flake check, deployment or push was run for these fixes.
+
+
+## Phase 2: Windows 98 (implemented)
+
+Simon can pick "Windows 98" in either picker (or run `desktop-theme set win98`). Each screen's chrome becomes one Win98 taskbar on the bottom edge, with the Start menu, tray windows, tooltips and Display Properties. The switch is live through the phase 1 loader, and it switches back to Platinum the same way. Spec: the approved mock at `/tmp/win98-mock/` (`REPORT.md`, `STATES.md`, the state sheets).
+
+### What was built
+
+| Part | Files |
+|---|---|
+| Control library (merged from `c-341adb…`, moved flat) | `Win98*.qml` controls; icons in `themes/win98/icons/`; gallery and scripts in `themes/win98/dev/` (not delivered) |
+| Font (merged from `win98-font`) | `modules/fonts.nix` `w95fa-grid`, `scripts/w95fa-grid.py`, `tests/w95fa-grid.py` |
+| Desktop | `Win98Desktop.qml` (contract, selection, tray data, Start model), `Win98Taskbar.qml`, `Win98MenuHost.qml` (Start, chevron menus, tray windows, Log Off), `Win98TipWindow.qml` |
+| Tray windows | `Win98SoundWindow`, `Win98BluetoothWindow`, `Win98WifiWindow`, `Win98BrightnessWindow`, `Win98OciWindow`, `Win98StorageWindow`, `Win98BuilderWindow`, `Win98NotificationWindow`, `Win98DictationWindow`, `Win98ClockWindow`, `Win98LogOffDialog` |
+| Picker view | `Win98PickerView.qml` (Display Properties), `Win98Preview.qml` (a scheme drawn in its own palette) |
+| Pure policies and tests | `themes/win98/taskbar-plan.js` (+ `.test.js`), `tray-model.js`, `start-model.js` (+ `models.test.js`) |
+| Registry | `themes.json` entry `win98` (`qmlPrefix` `Win98`, `options.extraDark` false), thumbnails `themes/win98/previews/{light,dark}.png` cut from the real Desktop |
+| Keyboard | `modules/hyprland/hyprland.lua`: Ctrl+Esc opens Start while `theme-name` is `win98` |
+| Harness and checks | `theme-dev/win98/` (harness, mock state catalogue, capture, behaviour, switch, virtual pointer); `checks.win98-desktop` |
+
+Every view reads the shared owners in `context` and owns no data. The one menu or window open at a time is the shared `MenuState`, across screens. The Desktop does not register IPC handlers; `chrome open start` reaches it through the root `chrome` target. The window buttons use the shell's `windowsOn`, `pageOf` and `dropOnto` (lanes.js), not a copy.
+
+The layer surfaces: the taskbar (`mountainous-taskbar`, always mapped while active; it reserves `ceil(28 u)` = 38 logical px), the menu host (`mountainous-menu`, only while a menu, window or taskbar keyboard focus exists), the tooltip (`mountainous-tooltip`, overlay, no input, only while a tip shows) and the picker (`mountainous-picker`, only while open). A layer surface is a whole number of logical px tall and 28 u is not, so the taskbar surface takes the next height whose physical size is whole and draws the bar on its bottom edge; small surfaces (tooltips) are full-screen and transparent so they land on whole physical pixels.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| A lone Super is not bound; Ctrl+Esc opens Start | Kanata's held Space is Super, so a lone Super release would fire whenever a held Space timed out. Ctrl+Esc reads `theme-name` in Lua and declines (passes the keys on) under Platinum, so Platinum's routing is unchanged. Cost: Win98 users have no one-key Start. |
+| Urgency is real, not stubbed | Quickshell 0.3.1's `HyprlandToplevel` has `urgent` (qmltypes). A button flashes navy every 500 ms for seven phases, then stays lit until the window is focused. Not tested against a live urgent window. |
+| Taskbar keyboard focus exists, but only from the keyboard | The mock's "focus" column needs reachable states, and decision 8 kept Super+O. Esc from a Start menu the keyboard opened leaves the focus on Start, as Win98 did: Left/Right/Tab move along the bar, Enter/Space/Up open, Esc lets go. Pointer use is unchanged. |
+| Hover switching includes Start, both chevrons and the clock | As the mock's `MENU_IDS`. |
+| Log Off runs `hyprctl --instance 0 dispatch hl.dsp.exit()` after Yes | The same dispatcher as Super+Shift+E. |
+| Start > Settings opens Bluetooth, Wi-Fi, Sound and Brightness even when their hardware is missing | Their windows say why; this closes flag 28 (hidden controls only reachable by Super+O) for pointer users. |
+| Programs: freedesktop main category → Win98 folder (Accessories, Development, Education, Games, Graphics, Internet, Multimedia, Office, System, Other) | When every app lands in one folder, Programs lists the apps flat, so the mock's 63-app column state is reachable. Known apps get Win98 icons; others `doc`. |
+| Commands: the omni bar's rows without the theme rows and "Go to window"; the three scale rows cascade | As the mock. "Desktop theme..." is Start > Settings > Display.... |
+| The builder's manual choice latches its tray button (sunken over the dither) | The mock shows it; `builder-gate.js` dropped `latched()` for Platinum's bar titles, so the rule (`choice !== null`, nothing pending) lives in the Win98 Desktop only. |
+| Display Properties: its own theme first in the Theme list, then the registry order | Matches the mock's list in both states. |
+| Another theme's preview is its registered thumbnail | The contract forbids loading another theme's QML. The mock drew a Platinum sketch; the build shows Platinum's real thumbnail. |
+| Extra dark is not offered in Display Properties | Win98 has none; Apply passes the stored value through, so Platinum finds it again. Platinum's own picker still has it. |
+| The Scale tab holds Scale up / Scale down / 100% (`hypr-scale`) | The mock showed the tab but not its content; phase 1 rejected inert tabs, so it does what the omni bar's scale rows do. |
+| Initial focus in Display Properties is the dialog; OK is the default button; Alt+T, Alt+S, Alt+A, Ctrl+Tab | The mock shows no focus ring until Apply is focused. |
+| Notification relative times use the Desktop's minute clock (`context.now`) | Deterministic in the harness; "4 min" needs no finer step. |
+| The chevron menus and the tooltip appear at once; Start rolls up and cascades roll right in 120 ms | The mock's motion spec (DIRECTION.md); the library's `Win98Tokens.reducedMotion` turns it off, but nothing in the session publishes reduced motion yet. |
+| Window order inside a page is the compositor's | lanes.js sorted unstably under Qt's engine (Signal and Zed swapped in the first render). The fix breaks ties by position; it is shared, so the dock gains it too. |
+| The taskbar plan measures text one unit wide | The mock's canvas measured every string just over its whole pixels and rounded up; matching that makes the yields happen at the mock's widths. Drawn widths are exact. |
+| Horizontal centring to the half unit | The mock centred boxes and text runs without snapping across; a half unit is still one whole physical pixel. Vertical positions keep the library's whole-unit snap. |
+| Menu shortcuts end on one edge; a menu is as wide as its widest label-and-shortcut pair | The mock's flex rows. This changed the library's left-aligned shortcut column. |
+
+### Evidence
+
+All renders are headless: sway's headless backend with the pixman renderer, private runtime, state, config and cache directories, no DRM output, Qt on llvmpipe. The live Quickshell was not touched.
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Every mock state, both appearances, 2880x1800 at 1.5 | 227 states x 2 rendered from the real QML | `/tmp/win98-desktop/states/{light,grey}/*.png`; side-by-side mock/build crops and per-state pixel counts in `/tmp/win98-desktop/compare/` (`summary.tsv`) |
+| Behaviour (the mock's `bin/check.sh` list plus Cancel/Apply) | 31 of 31 pass against the real QML with a virtual pointer and keyboard, in the build sandbox | `theme-dev/win98/behaviour.sh`, run by `checks.win98-desktop`; log `/tmp/win98-desktop/checks-win98-desktop.log` |
+| 10 x Platinum ↔ Win98, compositor level, then a broken Win98 | 71 of 71 pass: sway's usable area starts 28 px down for Platinum and ends 38 px up for Win98, no old chrome on screen, one loaded slot, no QML warnings; the broken Win98 keeps Platinum, writes `platinum` back and sends one notification naming the error | `theme-dev/win98/switch.sh`, run by `checks.win98-desktop`; logs `/tmp/win98-desktop/checks-win98-desktop.log`, `/tmp/win98-desktop/switch-run.log` |
+| Platinum unchanged | 33 of 33 phase 1 Platinum states: phase 1 code (b7f20f04) and this branch rendered in the same session differ by at most 1% in any channel on 0 pixels; the same code rendered twice shows the same sub-1% llvmpipe noise (55 to 576 pixels) | `/tmp/win98-desktop/plat/{before,before2,after}/`, `/tmp/win98-desktop/plat/pixel-diffs.json` |
+| The Platinum picker lists Win98 | 4 choices, Win98 thumbnails from the real Desktop | `/tmp/win98-desktop/states/switch/6b-picker-platinum-*.png`, `6c-switch-*.png` |
+| Pixel rules in the full desktop | Every bevel line is 2 physical px (taskbar edge and Start button columns: `DFDFDF` 2, `FFFFFF` 2, ..., `808080` 2, `000000` 2); the clock's text crop has exactly two colours (`#000000`, `#C0C0C0`), so no glyph edge is blended | `/tmp/win98-desktop/states/light/tb-normal.png` |
+| Narrow widths | `taskbar-plan.test.js` walks 1440 u down to 120 u with 0, 5 and 12 windows: steps only grow, in order, and every window and tray icon stays reachable; one unit either side of each boundary | `checks.win98-desktop` |
+| Short screen | Display Properties scrolls when taller than the room above the taskbar | 1200x600 render in `/tmp/win98-desktop/dbgp/shot.png` |
+
+Focused Nix checks, one at a time with `--option builders ''`, all pass: `bar-model`, `bar-delivery`, `dictation-lifecycle`, `notification-view`, `desktop-theme`, `desktop-theme-shell`, `builder-gate-view`, `win98-theme`, `w95fa-grid`, and the new `win98-desktop` (`/tmp/win98-desktop/nix/summary.txt` and one log per check beside it). `nix eval --option builders '' .#nixosConfigurations.myoko.config.system.build.toplevel.drvPath` succeeds (`/tmp/win98-desktop/nix/myoko-toplevel.txt`); Myoko's `fonts.packages` contain `chicagoflf` and `w95fa-grid`. No full flake check, deployment, ssh or push was run.
+
+### Where the build differs from the mock
+
+Per-state counts compare the bar strip and the mock's menu, window and tooltip boxes; the backgrounds differ by design (the mock painted app windows; the captures show the Win98 desktop colour). Medians by sheet: 1 (taskbar) 1.6%, 2 (controls) 1.6%, 3 (tray data) 1.4%, 4a to 4e (windows) 2.9 to 6.6%, 5 (Start) 3.6%, 6 (picker) 16.3%, 7 (widths) 3.4%. Every visible difference reviewed:
+
+| Difference | Why |
+|---|---|
+| Antialiased edges of round and diagonal icons, and the caption gradients | Qt's SVG and gradient rasterisers differ from Chrome's. Qt's SVG renderer ignores `shape-rendering="crispEdges"`, so the diagonal strokes in the terminal, Zed and Commands icons are antialiased where the mock's are aliased. Bevels, text and patterns are exact. |
+| Platinum previews in Display Properties (sheet 6, the largest counts) | The contract shows another theme's registered thumbnail; the mock drew a Platinum sketch. |
+| Bluetooth and Wi-Fi windows say Stop / "(scanning)" | The shared panels start discovery whenever their window is shown; the mock's not-scanning windows are a state the data owners never show while open. |
+| Storage shows "Checking" | The harness's stand-in `storage-health-status` never exits, so the real `StorageHealth.checking` stays true. |
+| Wi-Fi password prompt selects the network it asks about | The mock selected another row than the one it prompted for. The caret blinks, so a shot may miss it. |
+| OCI list with eight profiles keeps its column header | The mock's flex rows pushed the header out; Win98 list views keep it. |
+| The flat 63-app Programs list shows Win98 icons for known apps | The mock used the document icon for all of them. |
+| Notifications: a third card that overflows gets a scroll bar | The mock clipped it with no bar; a scroll region must show that more exists. |
+| Elision points in long titles differ by a glyph or two | Qt and Chrome cut at different characters before the three dots. |
+| The focused card shows the focus rectangle on the button Enter runs | The mock drew it on the first card's first button only. |
+
+### Not verified
+
+- Nothing ran on Myoko or under the real Hyprland. Layer surfaces were not counted with `hyprctl`: a nested Hyprland (labwc parent, seat and DRM disabled) stalled waiting for the parent's dmabuf feedback in this session, so the compositor-level assertions use sway's usable area and screenshots instead. `HyprlandFocusGrab` does nothing under sway; the menus there rely on exclusive keyboard focus and the full-screen press catcher, which Hyprland also honours.
+- The Ctrl+Esc bind: its Lua (the theme-name reader) was run under Lua 5.4 and `luac -p` passes on the whole file; Hyprland's Lua was shown to provide `io` in a nested test, but the bind itself was not pressed in a running Hyprland.
+- Urgency: wired to `HyprlandToplevel.urgent`; no real window asked for attention.
+- `Win98Tokens.pixelRatio` is one value for the process. With two screens at different scales (Myoko plus the Sunshine tablet) one taskbar draws at the other's unit: sizes and bevels are then off by the ratio. Per-window tokens would fix it.
+- Tray windows taller than a very short screen are clipped at the top; only Display Properties scrolls.
+- Motion: the Start roll-out (120 ms) and its reduced-motion form are checked by `checks.win98-theme` on the library; no recorded take of the Desktop was made, and nothing in the session publishes reduced motion.
+- Drag and drop between window buttons was drawn (the `tb-drag` state) and `dropOnto` is the shell's; a real drag was not performed in the behaviour test.
+- The captures and the behaviour test use llvmpipe or Qt's software renderer, not Myoko's GPU.
