@@ -306,6 +306,12 @@ in
                 lib.optional (!(lib.elem "/var/lib/beszel-hub" persisted)) "hub database is not persisted"
                 ++ lib.optional (!(lib.elem "/var/lib/beszel-notify" persisted)) "bridge state is not persisted"
                 ++ lib.optional (rakku.services.beszel.hub.host != "127.0.0.1") "hub listens beyond loopback"
+                ++ lib.optional (
+                  rakku.systemd.services.beszel-mcp.environment.MCP_HOST != "127.0.0.1"
+                ) "beszel-mcp listens beyond loopback"
+                ++ lib.optional (
+                  !(lib.hasInfix "MCP_AUTH_TOKEN=" rakku.sops.templates."beszel-mcp.env".content)
+                ) "beszel-mcp has no bearer token"
                 ++ lib.optional (rakku.systemd.services.beszel-hub.serviceConfig.DynamicUser) "hub uses a dynamic user"
                 ++ map (h: "config.yml misses ${h}") (
                   lib.filter (h: !(lib.hasInfix "- name: ${h}\n" template)) hostNames

@@ -39,6 +39,11 @@
     # from this pin. Upgrade them only as a separate, backed-up change.
     # gomod2nix-rakku and tests/fleet-sync-external.nix also use it.
     nixpkgs-rakku.url = "github:NixOS/nixpkgs/1306659b587dc277866c7b69eb97e5f07864d8c4";
+    # Read-only MCP server for the Beszel hub. Bun app; see modules/beszel-mcp.nix.
+    beszel-mcp = {
+      url = "github:maxbth/beszel-mcp/v1.0.0";
+      flake = false;
+    };
     airconnect-src = {
       url = "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip";
       flake = false;

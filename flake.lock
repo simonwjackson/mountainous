@@ -13,6 +13,23 @@
         "url": "https://github.com/philippe44/AirConnect/releases/download/1.9.2/AirConnect-1.9.2.zip"
       }
     },
+    "beszel-mcp": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786433571,
+        "narHash": "sha256-KMaYngWCFNYxaC4lgBZTEoIl7ysuxUNNE0ntYIfWubY=",
+        "owner": "maxbth",
+        "repo": "beszel-mcp",
+        "rev": "5f2fd85975aaf7016490fde3a5e0bbcf9c7f0ed5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "maxbth",
+        "ref": "v1.0.0",
+        "repo": "beszel-mcp",
+        "type": "github"
+      }
+    },
     "bun2nix": {
       "inputs": {
         "flake-parts": [
@@ -710,6 +727,7 @@
     "root": {
       "inputs": {
         "airconnect-src": "airconnect-src",
+        "beszel-mcp": "beszel-mcp",
         "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
