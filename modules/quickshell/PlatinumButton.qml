@@ -2,11 +2,15 @@ import QtQuick
 
 // A Platinum push button. Buttons that share a role share one width: the
 // caller passes the width of the role's longest label (see
-// PlatinumButton.widthFor), so a column of Connect / Disconnect / Pair
+// PlatinumMetrics.buttonWidth), so a column of Connect / Disconnect / Pair
 // ends on one edge and starts on one edge.
 //
 // A press sinks the bevel and darkens the face, as Mac OS 8 did. An icon
 // button (the × forget box) passes icon instead of text and is square.
+//
+// The face takes Theme.radiusSmall. The default ring and the focus ring
+// sit outside it, so their radii grow by their distance from the face;
+// that keeps all three corners concentric at any hair width.
 Item {
     id: root
 
@@ -39,14 +43,14 @@ Item {
         color: "transparent"
         border.width: Theme.hair
         border.color: Theme.menuEdge
-        radius: 5
+        radius: Theme.radiusSmall + root.ring
     }
 
     Bevel {
         id: face
         anchors.fill: parent
         anchors.margins: root.ring
-        radius: 4
+        radius: Theme.radiusSmall
         sunken: root.down
         bevelled: !root.onBar || !Theme.dark
         edgeColor: root.onBar ? Theme.barButtonEdge : Theme.menuEdge
@@ -58,7 +62,7 @@ Item {
         anchors.fill: face
         anchors.margins: -2 * Theme.hair
         color: "transparent"
-        radius: 6
+        radius: Theme.radiusSmall + 2 * Theme.hair
         border.width: 2 * Theme.hair
         border.color: Theme.highlight
     }

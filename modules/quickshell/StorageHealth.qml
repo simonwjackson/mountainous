@@ -30,8 +30,6 @@ Scope {
         if (issues.length === 0) return "Disks ok";
         return "Disks " + issues.length + (issues.length === 1 ? " issue" : " issues");
     }
-    readonly property string shortLabel: state === "ready" && issues.length > 0
-        ? "DSK " + issues.length : "DSK"
     // The bar's tone. All well stays quiet on purpose: the readout only
     // asks for attention when something is wrong.
     readonly property string tone: {

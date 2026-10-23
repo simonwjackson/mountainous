@@ -39,7 +39,11 @@ Item {
     readonly property string imageUrl: image.kind === "some" ? image.value : ""
     property bool imageFailed: false
     readonly property bool hasImage: image.kind === "some" && !imageFailed
-    readonly property bool cut: headlineText.truncated || bodyText.truncated
+    // True while any text on the card is cut short. "Show more" opens the
+    // card, and an open card cuts nothing: the app name and the time and
+    // origin wrap there instead.
+    readonly property bool cut: appText.truncated || metaText.truncated
+        || headlineText.truncated || bodyText.truncated
     readonly property string meta: {
         const parts = [];
         const origin = Model.originLabel(item);
@@ -51,16 +55,7 @@ Item {
     readonly property string headline: Model.headline(item)
     readonly property string localOnly: Model.localOnlyLabel(item)
     readonly property bool hasDefault: Model.defaultAction(item).kind === "some"
-    readonly property var icon: Model.iconChoice(item,
-        function (name) {
-            const url = Quickshell.iconPath(name, true);
-            return url !== "" ? Model.some(url) : Model.none();
-        },
-        function (appName) {
-            const entry = DesktopEntries.heuristicLookup(appName);
-            const url = entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : "";
-            return url !== "" ? Model.some(url) : Model.none();
-        })
+    readonly property var icon: NotificationIcons.choice(item)
     readonly property real textWidth: width - Theme.menuTextLeft - rightInset
     readonly property real actionMinWidth: PlatinumMetrics.buttonWidth(["Dismiss all", "Open"])
 
@@ -138,17 +133,20 @@ Item {
         width: card.textWidth
         spacing: 3
 
-        // App name, then when and where from, then dismiss.
+        // App name, then when and where from, then dismiss. On an open
+        // card the time and origin take a line of their own and both wrap.
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 20
+            Layout.minimumHeight: 20
             spacing: Theme.menuGap
 
             Text {
+                id: appText
                 Layout.fillWidth: true
                 text: Model.appLabel(card.item)
                 textFormat: Text.PlainText
-                elide: Text.ElideRight
+                wrapMode: card.expanded ? Text.Wrap : Text.NoWrap
+                elide: card.expanded ? Text.ElideNone : Text.ElideRight
                 color: Theme.menuTextSecondary
                 font.family: Theme.platinumFont
                 font.pixelSize: Theme.platinumSmall
@@ -156,7 +154,8 @@ Item {
             }
 
             Text {
-                visible: card.meta !== ""
+                id: metaText
+                visible: card.meta !== "" && !card.expanded
                 Layout.maximumWidth: card.textWidth * 0.5
                 text: card.meta
                 textFormat: Text.PlainText
@@ -170,6 +169,8 @@ Item {
             Bevel {
                 Layout.preferredWidth: 16
                 Layout.preferredHeight: 16
+                Layout.alignment: Qt.AlignTop | Qt.AlignRight
+                Layout.topMargin: 2
                 sunken: dismissArea.pressed
                 color: dismissArea.pressed ? Theme.well : Theme.raised
 
@@ -187,6 +188,18 @@ Item {
                     onClicked: card.dismissRequested()
                 }
             }
+        }
+
+        Text {
+            Layout.fillWidth: true
+            visible: card.expanded && card.meta !== ""
+            text: card.meta
+            textFormat: Text.PlainText
+            wrapMode: Text.Wrap
+            color: Theme.menuTextSecondary
+            font.family: Theme.platinumFont
+            font.pixelSize: Theme.platinumSmall
+            font.letterSpacing: Theme.platinumTracking
         }
 
         RowLayout {

@@ -72,19 +72,9 @@ Rectangle {
     readonly property string localOnly: Model.localOnlyLabel(item)
     readonly property bool hasDefault: Model.defaultAction(item).kind === "some"
 
-    // Paths and icon names both arrive in app_icon; Model.iconChoice sets
-    // the order. Quickshell answers a missing icon with "", which these
-    // lookups turn into none.
-    readonly property var icon: Model.iconChoice(item,
-        function (name) {
-            const url = Quickshell.iconPath(name, true);
-            return url !== "" ? Model.some(url) : Model.none();
-        },
-        function (appName) {
-            const entry = DesktopEntries.heuristicLookup(appName);
-            const url = entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : "";
-            return url !== "" ? Model.some(url) : Model.none();
-        })
+    // Paths and icon names both arrive in app_icon; NotificationIcons
+    // holds the lookup the centre shares.
+    readonly property var icon: NotificationIcons.choice(item)
 
     onImageUrlChanged: imageFailed = false
 

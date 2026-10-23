@@ -32,10 +32,11 @@ Item {
                 required property int index
                 readonly property bool active: root.current === modelData.key
                 // Neighbours share one edge line, so the strip has no
-                // doubled rule between segments.
-                width: Math.round(strip.width / root.model.length)
-                    + (index < root.model.length - 1 ? Theme.hair : 0)
-                x: index * Math.round(strip.width / root.model.length)
+                // doubled rule between segments. The last segment takes
+                // what is left, so the strip ends on the grid's right edge.
+                readonly property real step: Math.round(strip.width / root.model.length)
+                x: index * step
+                width: index < root.model.length - 1 ? step + Theme.hair : strip.width - x
                 height: strip.height
 
                 Bevel {

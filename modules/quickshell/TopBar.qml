@@ -178,6 +178,16 @@ PanelWindow {
     readonly property real clockDateW: PlatinumMetrics.widest(["12/" + PlatinumMetrics.digits(2),
         "10/" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + "/" + PlatinumMetrics.digits(2)])
     readonly property real clockGap: PlatinumMetrics.width("  ")
+    // Retry and Dismiss share one width. Their group is the buttons and
+    // the gap between them, nothing before.
+    readonly property real dictationButtonW: PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
+    readonly property bool dictationFailed: dictation.barVisible && dictation.state === "failed"
+    readonly property real dictationActionsW: !dictationFailed ? 0
+        : dictation.canRetry ? 2 * dictationButtonW + inGap : dictationButtonW
+    readonly property bool dictationOverflowed: plan.overflow.indexOf("dictation") >= 0
+    readonly property bool showDictationActions: dictationFailed && !dictationOverflowed
+        && plan.show.dictationActions !== false
+
     readonly property bool diskCounting: storage.state === "ready" && storage.issues.length > 0
     readonly property bool ntfOffline: notifications.view.kind === "offline"
 
@@ -221,11 +231,14 @@ PanelWindow {
                 compactReadoutWidth: ntfOffline ? Math.min(PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
         ].filter(function (c) { return c !== null; }),
         markWidth: 20,
-        // The title box draws 8 px either side of its text; the dictation
-        // row's implicit width already holds its own spacing.
-        titleWidth: dictation.barVisible ? dictationRow.implicitWidth
+        // The title box draws 8 px either side of its text. While dictation
+        // shows, the title is its dot and status text and ends at the
+        // text; Retry and Dismiss are dictationActionsWidth, and the
+        // planner adds the 6 px before them.
+        titleWidth: dictation.barVisible ? 8 + 8 + 8 + PlatinumMetrics.width(dictationText)
             : title !== "" ? PlatinumMetrics.width(title) + 16 : 0,
-        titleMinWidth: dictation.barVisible ? dictationRow.minimumWidth : 96,
+        titleMinWidth: dictation.barVisible ? 8 + 8 + 8 + 60 : 96,
+        dictationActionsWidth: dictationActionsW,
         clockWidth: clockDateW + clockGap + clockTimeW,
         clockTimeWidth: clockTimeW,
         chordWidth: chordVisible ? chord.implicitWidth : 0,
@@ -289,38 +302,43 @@ PanelWindow {
     }
 
     // ---------------------------------------------------------- left
-    Row {
-        id: leftGroup
+    // The mark is a control: it always keeps its full width and is never
+    // clipped. The title and the dictation status are readouts and elide
+    // in what the plan leaves after it. Retry and Dismiss are controls:
+    // they show at full width or move into the » menu, never shrink.
+    BarControl {
+        id: markControl
         x: 6
-        height: Theme.barHeight - Theme.hair
-        // The plan's budget for the whole left group; the title elides
-        // inside it, so it never runs under the clock or the chord.
-        width: Math.max(0, bar.plan.leftMax - x)
-        clip: true
-
-        BarControl {
-            id: markControl
-            screen: bar.modelData
-            pad: bar.pad
-            icon: "mark"
-            iconWidth: 20
-            iconHeight: 18
-            onActivated: {
-                MenuState.close();
-                bar.omniBar.enterRoot();
-            }
+        screen: bar.modelData
+        pad: bar.pad
+        icon: "mark"
+        iconWidth: 20
+        iconHeight: 18
+        onActivated: {
+            MenuState.close();
+            bar.omniBar.enterRoot();
         }
+    }
+
+    Item {
+        id: leftText
+        // The plan's gap between the mark and the title: 2 px, or 0 once
+        // spacing has yielded.
+        x: markControl.x + markControl.width + bar.plan.gap
+        height: Theme.barHeight - Theme.hair
+        // The plan's budget for the whole left group, less the mark.
+        width: Math.max(0, bar.plan.leftMax - x)
 
         Item {
             id: titleBox
             visible: !bar.dictation.barVisible && bar.plan.show.title
             height: parent.height
-            width: Math.max(0, Math.min(titleText.implicitWidth + 16, leftGroup.width - markControl.width))
+            width: Math.min(titleText.implicitWidth + 16, leftText.width)
 
             Text {
                 id: titleText
                 x: 8
-                width: parent.width - 16
+                width: Math.max(0, parent.width - 16)
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.title
                 textFormat: Text.PlainText
@@ -332,20 +350,17 @@ PanelWindow {
             }
         }
 
-        // Dictation replaces the title while it matters. Retry and Dismiss
-        // are controls, so the text yields to them, never the reverse.
+        // Dictation replaces the title while it matters.
         Item {
             id: dictationRow
             visible: bar.dictation.barVisible
-            height: parent.height
-            readonly property real buttonsWidth: (retryButton.visible ? retryButton.width + 6 : 0)
-                + (dismissButton.visible ? dismissButton.width + 6 : 0)
-            readonly property real minimumWidth: 8 + 8 + 8 + 60 + buttonsWidth
-            implicitWidth: 8 + 8 + 8 + dictationLabel.implicitWidth + 8 + buttonsWidth
-            width: Math.max(0, Math.min(implicitWidth, leftGroup.width - markControl.width))
+            anchors.fill: parent
 
+            // The dot stays while it fits, even when the words yield, so a
+            // failure still shows on the bar.
             Rectangle {
                 id: dictationDot
+                visible: leftText.width >= 24
                 x: 8
                 anchors.verticalCenter: parent.verticalCenter
                 width: 8
@@ -358,8 +373,11 @@ PanelWindow {
 
             Text {
                 id: dictationLabel
+                visible: bar.plan.show.title
                 x: dictationDot.x + 8 + 8
-                width: Math.max(0, dictationRow.width - x - 8 - dictationRow.buttonsWidth)
+                // The status gives way to the actions, never the reverse.
+                width: Math.max(0, Math.min(implicitWidth, dictationRow.width - x
+                    - (bar.showDictationActions ? bar.dictationActionsW + bar.inGap : 0)))
                 anchors.verticalCenter: parent.verticalCenter
                 text: bar.dictationText
                 textFormat: Text.PlainText
@@ -371,25 +389,25 @@ PanelWindow {
             }
 
             Row {
-                anchors.right: parent.right
+                id: dictationActions
+                visible: bar.showDictationActions
+                // Exactly 6 px after the status text, only while inline.
+                x: dictationLabel.visible ? dictationLabel.x + dictationLabel.width + bar.inGap : 0
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
+                spacing: bar.inGap
 
                 PlatinumButton {
-                    id: retryButton
                     onBar: true
-                    visible: bar.dictation.state === "failed" && bar.dictation.canRetry
+                    visible: bar.dictation.canRetry
                     text: "Retry"
-                    fixedWidth: PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
+                    fixedWidth: bar.dictationButtonW
                     onClicked: bar.dictation.retryFailed()
                 }
 
                 PlatinumButton {
-                    id: dismissButton
                     onBar: true
-                    visible: bar.dictation.state === "failed"
                     text: "Dismiss"
-                    fixedWidth: PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
+                    fixedWidth: bar.dictationButtonW
                     onClicked: bar.dictation.dismissFailure()
                 }
             }
