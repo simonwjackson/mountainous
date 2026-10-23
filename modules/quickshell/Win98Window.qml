@@ -47,6 +47,10 @@ FocusScope {
     // The body's usable width: less the scroll bar while it shows.
     readonly property real bodyWidth: body.width
     readonly property bool scrolls: view.contentHeight > view.height + 0.5
+    // A body that stops scrolling (the window reached its full height, as
+    // it does just after it maps) shows its top again; a shorter view
+    // never stays scrolled past its end.
+    onScrollsChanged: if (!scrolls) view.contentY = 0
 
     implicitWidth: (first ? first.implicitWidth : 100 * u) + 2 * frame + 2 * marginSide
     implicitHeight: captionBottom + marginTop + (first ? first.implicitHeight : 0) + marginSide + frame
@@ -136,6 +140,7 @@ FocusScope {
         contentHeight: root.marginTop + (root.first ? root.first.implicitHeight : 0) + root.marginSide
         interactive: false
         clip: true
+        onHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
         WheelHandler {
             enabled: root.scrolls
             onWheel: event => view.contentY = Math.max(0, Math.min(view.contentHeight - view.height,

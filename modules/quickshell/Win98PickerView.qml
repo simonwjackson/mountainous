@@ -119,6 +119,9 @@ PanelWindow {
         contentHeight: Math.max(height, dialog.height)
         interactive: false
         clip: true
+        // Never left scrolled past the end when the room grows.
+        onHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
+        onContentHeightChanged: contentY = Math.max(0, Math.min(contentY, contentHeight - height))
         WheelHandler {
             onWheel: event => {
                 const max = Math.max(0, scroller.contentHeight - scroller.height);
