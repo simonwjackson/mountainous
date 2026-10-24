@@ -98,7 +98,7 @@ in
             && screenOff.Type == "oneshot"
             && screenOff.RemainAfterExit
             && pkgs.lib.hasSuffix "/bin/sleep 30" screenOff.ExecStart
-            && pkgs.lib.hasInfix " -c ${policy}" unit;
+            && unit == "${c.services.hypridle.package}/bin/hypridle -c ${policy}";
         in
         assert valid;
         pkgs.runCommand "lock-policy" { nativeBuildInputs = [ pkgs.python3 ]; } ''
