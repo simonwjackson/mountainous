@@ -62,6 +62,10 @@ in
       "/var/lib/zwave-js"
       # DynamicUser uses /var/cache/private/zwave-js. Persist its parent to
       # preserve systemd's private-directory ownership and symlink semantics.
+      # Impermanence copies the mode of /tundra/permafrost/var/cache to the
+      # tmpfs /var/cache on every activation. It must stay 0755: at 0700 the
+      # service cannot reach /var/cache/zwave-js, and zwave-js fails with
+      # "Failed to create the cache directory" on its next restart.
       {
         directory = "/var/cache/private";
         mode = "0700";
