@@ -21,6 +21,13 @@ in
         node ${./quickshell/beszel-model.test.js} ${./quickshell/beszel-model.js}
         touch $out
       '';
+      # The Fleet view's layout levels and the glance space's layout, zoom
+      # motion and widget registry, from the same files QML loads.
+      checks.fleet-glance-model = pkgs.runCommand "fleet-glance-model" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+        node ${./quickshell/fleet-plan.test.js} ${./quickshell/fleet-plan.js}
+        node ${./quickshell/glance-plan.test.js} ${./quickshell/glance-plan.js} ${./quickshell/glance-registry.js}
+        touch $out
+      '';
       checks.beszel-status =
         pkgs.runCommand "beszel-status-test"
           {

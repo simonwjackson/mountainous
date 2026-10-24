@@ -20,7 +20,7 @@ PlatinumMenuFrame {
 
     readonly property var labels: ({
         bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
-        oci: "OCI egress", disk: "Server storage", builder: "Remote builds", ntf: "Notifications",
+        oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
         retry: "Retry dictation", dismiss: "Dismiss"
     })
 

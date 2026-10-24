@@ -48,9 +48,19 @@ Scope {
     Component { id: builderMenu; PlatinumBuilderMenu { panel: desktop.context.builder } }
     Component { id: ntfMenu; PlatinumNotificationCentreMenu { panel: desktop.context.centre } }
 
+    // Fleet: its bar readout, the Fleet window and the glance space.
+    PlatinumFleetGlance { id: fleetGlance; desktop: desktop; bar: topBar }
+    readonly property bool fleetShown: fleetGlance.shown
+    readonly property bool fleetDetailShown: fleetGlance.detailShown
+    function toggleFleet() { fleetGlance.toggleFleet(); }
+    function toggleGlance() { fleetGlance.toggleGlance(null); }
+    function showGlance() { fleetGlance.showGlance(); }
+    function hideGlance() { fleetGlance.hideGlance(); }
+
     PlatinumTopBar {
         id: topBar
         modelData: desktop.screen
+        beszel: fleetGlance.beszel
         visible: desktop.active && desktop.context.shell.chromeVisible
         bluetooth: desktop.context.bluetooth
         wifi: desktop.context.wifi
@@ -87,6 +97,7 @@ Scope {
             bri: briMenu,
             oci: desktop.context.oci.enabled ? ociMenu : null,
             disk: desktop.context.storage.enabled ? diskMenu : null,
+            fleet: fleetGlance.menu,
             ntf: ntfMenu,
             builder: desktop.context.builderGate.enabled ? builderMenu : null,
             clock: clockMenu,

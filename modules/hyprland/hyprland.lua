@@ -812,11 +812,18 @@ hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl --player=pyxamp prev
 -- browsing. The bars are Quickshell; see modules/bars.nix.
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle"))
 
+-- The Fleet window (Beszel's fleet health) and the glance space, the
+-- Mac OS 8 focus layer it shares with Disks. Both are Platinum Quickshell
+-- surfaces; under another desktop theme the calls do nothing.
+hl.bind(mod .. " + B", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
+hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle"))
+
 -- Top-bar keyboard access uses one mnemonic namespace. SUPER+O enters the
 -- namespace, then B opens Bluetooth, W opens Wi-Fi, S opens Sound, L opens
--- Brightness, C opens Cloud, D opens Disks, or R opens Remote builds on hosts
--- that show them. The top bar shows the available keys while the submap is
--- active. Escape or three seconds of inactivity cancels it.
+-- Brightness, C opens Cloud, D opens Disks, F toggles the Fleet window, or R
+-- opens Remote builds on hosts that show them. The top bar shows the
+-- available keys while the submap is active. Escape or three seconds of
+-- inactivity cancels it.
 local topbar_access_timer = nil
 hl.bind(mod .. " + O", function()
     hl.dispatch(hl.dsp.submap("topbar-access"))
@@ -859,6 +866,7 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("L", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open bri"))
     hl.bind("C", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open oci"))
     hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open disk"))
+    hl.bind("F", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
     hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
     hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome hide"))
 end)

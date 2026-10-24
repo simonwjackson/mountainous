@@ -7,7 +7,9 @@
 // again in Quickshell with ChicagoFLF through the caller's measurements.
 //
 // The caller measures text; this file never sees a font. m:
-//   border     the window's two edges (2 × hair)
+//   border     the window's side chrome (its edges and bevel)
+//   chrome     its vertical chrome besides the 16-px title (edges, rules);
+//              defaults to the mock's border + 3
 //   rows       host rows to plan for (8 while loading, so the size holds)
 //   nameW      widest host name at 14 px, capped by the caller (120)
 //   head       {id: [label widths at 12 px, longest label first]}
@@ -15,10 +17,15 @@
 //   pctW, tempW, failedW, notesW   "100%", "100°", "14", "14 failed" at 12 px
 //   upLongW, upShortW   widest uptime or "seen" text in each form at 12 px
 
+// Every size is an even number of logical pixels, so at scale 1.5 each
+// edge lands on a whole device pixel and every hair stays sharp. The mock's
+// 19-px header and short row and its 15-px footer became 20, 20 and 16.
 var C = {
-    TITLE: 16, INFO: 24, COLH: 19, FOOT: 15, ROW: 24, ROW_MIN: 19,
-    SB: 15, TRI: 16, LAMP: 20, BAR_GAP: 5, MINW: 150
+    TITLE: 16, INFO: 24, COLH: 20, FOOT: 16, ROW: 24, ROW_MIN: 20,
+    SB: 16, TRI: 16, LAMP: 20, BAR_GAP: 6, MINW: 150
 };
+
+function even(v) { return Math.ceil(v / 2 - 1e-6) * 2; }
 
 // Each level gives up one more thing. The name and the status light never
 // yield; every value that leaves the row stays in the drill-down.
@@ -81,7 +88,7 @@ function headLabel(id, level, m, width) {
 // (null: as tall as it needs). detailH is an open host's drill-down.
 function heightPlan(h, m, detailH) {
     const rows = Math.max(1, m.rows || 8);
-    const fixed = C.TITLE + C.INFO + C.COLH + C.FOOT + m.border + 3;
+    const fixed = C.TITLE + C.INFO + C.COLH + C.FOOT + (m.chrome !== undefined ? m.chrome : m.border + 3);
     let rowH = C.ROW, infoInTitle = false, scrolls = false, listH = null;
     if (h !== null && h !== undefined) {
         if (fixed + rows * C.ROW > h) rowH = C.ROW_MIN;
@@ -107,8 +114,8 @@ function plan(w, h, m, opt) {
         const level = LEVELS[i];
         const widths = {};
         let sum = 0;
-        for (const id of level.cols) { widths[id] = colWidth(id, level, m); sum += widths[id]; }
-        const nameW = m.nameW + 2 * level.pad;
+        for (const id of level.cols) { widths[id] = even(colWidth(id, level, m)); sum += widths[id]; }
+        const nameW = even(m.nameW + 2 * level.pad);
         const total = C.TRI + C.LAMP + nameW + sum + sb;
         if (total <= inner || i === LEVELS.length - 1) {
             // The spare width goes to the reason column, else to the name, so
@@ -132,7 +139,7 @@ function plan(w, h, m, opt) {
 
 // The narrowest and shortest a window may be dragged.
 function minimum(m) {
-    return {w: C.MINW, h: C.TITLE + C.COLH + C.FOOT + 2 * C.ROW_MIN + 5};
+    return {w: C.MINW, h: C.TITLE + C.COLH + C.FOOT + 2 * C.ROW_MIN + 8};
 }
 
 // The first variant that fits the room, else the last (the shortest).

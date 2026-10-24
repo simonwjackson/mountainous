@@ -64,12 +64,12 @@ assert.equal(plan.headLabel("failed", plan.LEVELS[4], m, w12("Fail") + 8), "Fail
 const fixed = plan.C.TITLE + plan.C.INFO + plan.C.COLH + plan.C.FOOT + m.border + 3;
 const at = h => plan.plan(natural, h, m);
 assert.equal(at(fixed + 8 * 24).rowH, 24);
-assert.equal(at(fixed + 8 * 24 - 1).rowH, 19);
-assert.equal(at(fixed + 8 * 19).infoInTitle, false);
-assert.equal(at(fixed + 8 * 19 - 1).infoInTitle, true);
-assert.equal(at(fixed + 8 * 19 - 1).scrolls, false, "the summary's room pays for the rows first");
-assert.equal(at(fixed + 8 * 19 - plan.C.INFO - 1).scrolls, true);
-assert.equal(at(fixed + 8 * 19 - plan.C.INFO - 1).sb, plan.C.SB);
+assert.equal(at(fixed + 8 * 24 - 1).rowH, 20);
+assert.equal(at(fixed + 8 * 20).infoInTitle, false);
+assert.equal(at(fixed + 8 * 20 - 1).infoInTitle, true);
+assert.equal(at(fixed + 8 * 20 - 1).scrolls, false, "the summary's room pays for the rows first");
+assert.equal(at(fixed + 8 * 20 - plan.C.INFO - 1).scrolls, true);
+assert.equal(at(fixed + 8 * 20 - plan.C.INFO - 1).sb, plan.C.SB);
 assert.equal(at(null).scrolls, false);
 assert.equal(at(null).listH, null);
 assert.equal(plan.plan(natural, fixed + 8 * 24, m, {detailH: 1}).scrolls, true, "an open host's drill-down scrolls the list");
@@ -85,5 +85,18 @@ const variants = ["8 hosts · 1 problem: unzen", "1 problem: unzen", "1 problem"
 assert.equal(plan.fit(variants, 1000, w12), variants[0]);
 assert.equal(plan.fit(variants, w12("1 problem"), w12), "1 problem");
 assert.equal(plan.fit(variants, 0, w12), "1");
-assert.equal(JSON.stringify(plan.minimum(m)), JSON.stringify({w: 150, h: 16 + 19 + 15 + 38 + 5}));
+assert.equal(JSON.stringify(plan.minimum(m)), JSON.stringify({w: 150, h: 16 + 20 + 16 + 40 + 8}));
 console.log("fleet-plan: " + boundaries.length + " width levels at +/-1 px, row height, summary, scroll and fitting pass");
+// The real windoid passes its exact chrome instead of the mock's estimate.
+{
+    const exact = {...m, chrome: 7 * (2 / 1.5)};
+    const fx = plan.C.TITLE + plan.C.INFO + plan.C.COLH + plan.C.FOOT + exact.chrome;
+    assert.equal(plan.plan(natural, fx + 8 * 24, exact).rowH, 24);
+    assert.equal(plan.plan(natural, fx + 8 * 24 - 0.5, exact).rowH, 20);
+    assert.ok(Math.abs(plan.plan(natural, fx + 8 * 24, exact).listH - 8 * 24) < 1e-9);
+}
+// Whole device pixels at 1.5: every column is an even width.
+for (let w = 900; w >= 60; w -= 7) {
+    const p = plan.plan(w, null, m);
+    for (const id of p.cols) assert.equal(p.widths[id] % 2 === 0 || id === "why", true, id + " at " + w);
+}

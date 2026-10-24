@@ -117,6 +117,51 @@ ShellRoot {
     // without nix-builder-gate show no control.
     BuilderGate { id: builderGateService }
 
+    // The fleet's health (Beszel), one owner for every screen's Fleet views.
+    // It polls while a Desktop shows one; a theme without them never does.
+    function anyDesktop(flag) {
+        return Object.values(root.desktops).some(function (d) { return d && d[flag] === true; });
+    }
+    Beszel {
+        id: beszelService
+        shown: root.anyDesktop("fleetShown")
+        detailShown: root.anyDesktop("fleetDetailShown")
+    }
+    // Fleet and glance routes go to the focused screen's Desktop; a theme
+    // without them (Win98) ignores them.
+    function fleetCall(method) {
+        const screen = root.focusedScreen();
+        const desktop = screen ? root.desktops[screen.name] : null;
+        if (desktop && typeof desktop[method] === "function") desktop[method]();
+    }
+
+    // Super+B and Super+O F: the Fleet window.
+    IpcHandler {
+        target: "fleet"
+        function toggle(): void { root.fleetCall("toggleFleet"); }
+        function current(): string {
+            return beszelService.state + " " + beszelService.fleet.tone + " " + beszelService.fleet.hosts.length
+                + " problems=" + beszelService.fleet.problems.length + " stale=" + beszelService.stale
+                + " window=" + (GlanceState.fleetScreen ? GlanceState.fleetScreen.name : "none");
+        }
+    }
+
+    // Super+W: the glance space. Named reveal, not show (see chrome).
+    IpcHandler {
+        target: "glance"
+        function toggle(): void { root.fleetCall("toggleGlance"); }
+        function reveal(): void { root.fleetCall("showGlance"); }
+        function hide(): void { root.fleetCall("hideGlance"); }
+        // Review tools: hold the motion at ms (-1 runs again), "in" or "out";
+        // play it n times slower.
+        function seek(ms: int, direction: string): void { GlanceState.hold(ms, direction); }
+        function slow(factor: int): void { GlanceState.slow = Math.max(1, factor); }
+        function current(): string {
+            return (GlanceState.glanceScreen ? "shown " + GlanceState.glanceScreen.name : "hidden")
+                + " motion=" + (GlanceState.reducedMotion ? "reduced" : "full");
+        }
+    }
+
     NotificationPopups {
         service: notificationService
         screen: root.focusedScreen()
@@ -393,7 +438,8 @@ ShellRoot {
             SoundPanel { id: soundPanel; shown: screenScope.shows("vol") }
             BrightnessPanel { id: brightnessPanel; shown: screenScope.shows("bri") }
             OciEgress { id: ociEgress; shown: screenScope.shows("oci") }
-            StorageHealth { id: storageHealth; shown: screenScope.shows("disk") }
+            // The glance space's Disks widget reads this owner too.
+            StorageHealth { id: storageHealth; shown: screenScope.shows("disk") || GlanceState.glanceScreen === screenScope.modelData }
             BuilderPanel {
                 id: builderPanel
                 gate: builderGateService
@@ -420,6 +466,7 @@ ShellRoot {
                 readonly property var dictation: dictationService
                 readonly property var omniBar: omniBarService
                 readonly property var builderGate: builderGateService
+                readonly property var beszel: beszelService
                 readonly property var frontWindow: screenScope.frontWindow
                 readonly property date now: clock.date
             }

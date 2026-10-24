@@ -37,6 +37,10 @@ PanelWindow {
     property var builderGate: null
     readonly property bool builderPresent: !!builderGate && builderGate.enabled === true
     property var frontWindow: null
+    // The shared Beszel owner (panels/Beszel.qml), where the shell has one.
+    property var beszel: null
+    readonly property bool fleetPresent: beszel !== null
+    readonly property var fleetReadout: fleetPresent ? beszel.readout : ({shape: "down", tone: "muted", text: ""})
     property date now: new Date()
     property bool chordVisible: false
 
@@ -70,7 +74,7 @@ PanelWindow {
     function anchorFor(name) {
         const item = ({
             bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
-            oci: ociControl, disk: diskControl, builder: builderControl, ntf: ntfControl,
+            oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
             clock: bar.plan.centred ? clockCentre : clockRight,
             more: moreControl
         })[name];
@@ -78,6 +82,16 @@ PanelWindow {
         if (bar.plan.overflow.indexOf(name) >= 0 && moreControl.visible) return xOf(moreControl);
         if (item && item.visible && item.width > 0) return xOf(item);
         return -1;
+    }
+
+    // A control's place and width on the bar ({x, w}), or »'s when it
+    // overflowed; null when the bar does not show it. The glance space's
+    // zoom rects start here.
+    function controlRect(name) {
+        const x = bar.anchorFor(name);
+        if (x < 0) return null;
+        const item = bar.plan.overflow.indexOf(name) >= 0 ? moreControl : ({ fleet: fleetControl })[name];
+        return {x: x, w: item ? item.width : 16};
     }
 
     // What the » menu shows for a control that moved into it.
@@ -95,6 +109,9 @@ PanelWindow {
         if (id === "oci") return bar.oci.state === "ready"
             ? bar.ociRows.map(function (r) { return r.value; }).join(" ") : bar.oci.stateText;
         if (id === "disk") return bar.storage.label.replace(/^Disks /, "");
+        if (id === "fleet") return bar.fleetPresent ? bar.beszel.fleet.state === "ready"
+            ? (bar.beszel.fleet.problems.length ? bar.beszel.fleet.problems.length + (bar.beszel.fleet.problems.length === 1 ? " problem" : " problems") : "ok")
+            : bar.beszel.fleet.state === "loading" ? "..." : "--" : "";
         if (id === "ntf") return bar.ntfWide;
         if (id === "builder") return builderControl.fullText;
         return "";
@@ -215,6 +232,8 @@ PanelWindow {
     readonly property real diskReadoutW: (diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0)
         + PlatinumMetrics.width(diskWord)
     readonly property var ntfBoxText: ["99+", PlatinumMetrics.digits(2)]
+    readonly property var fleetBoxText: ["99", PlatinumMetrics.digits(2), "--"]
+    readonly property real fleetReadoutW: fleetReadout.text !== "" ? PlatinumMetrics.widest(fleetBoxText) : 0
     readonly property real ntfReadoutW: (ntfNumber !== "" ? PlatinumMetrics.widest(ntfBoxText) : 0)
         + (ntfSuffix !== "" ? PlatinumMetrics.width(ntfSuffix) : 0)
 
@@ -229,6 +248,10 @@ PanelWindow {
             // When the label yields, the issue count keeps its fixed box.
             storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskReadoutW,
                 compactReadoutWidth: diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0 } : null,
+            // Fleet: a light, and a count only when there are problems. When
+            // the count yields the light stays; the Glance menu's header
+            // keeps the summary.
+            fleetPresent ? { id: "fleet", iconWidth: 12, readoutWidth: fleetReadoutW, compactReadoutWidth: 0 } : null,
             // The builder's words yield to its running count alone.
             builderPresent ? { id: "builder", iconWidth: 16, readoutWidth: builderControl.fullWidth,
                 compactReadoutWidth: builderControl.compactWidth } : null,
@@ -489,6 +512,7 @@ PanelWindow {
             const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
             if (bar.oci.enabled) k.push(["C", "Cloud"]);
             if (bar.storage.enabled) k.push(["D", "Disks"]);
+            if (bar.fleetPresent) k.push(["F", "Fleet"]);
             if (bar.builderPresent) k.push(["R", "Builder"]);
             k.push(["Esc", "cancel"]);
             return k;
@@ -716,6 +740,34 @@ PanelWindow {
                     text: String(diskControl.issues)
                     tone: diskControl.fg
                 }
+            }
+        }
+
+        // The Fleet readout: a quiet status light, a count only when hosts
+        // have problems, "--" without data. It is the Glance menu's title.
+        PlatinumBarControl {
+            id: fleetControl
+            visible: bar.fleetPresent && bar.onBar("fleet")
+            screen: bar.modelData
+            menu: "fleet"
+            open: bar.isOpen("fleet")
+            pad: bar.pad
+            icon: ""
+            iconWidth: 12
+            iconHeight: 12
+            tone: PlatinumTokens.barTone(bar.fleetReadout.tone)
+
+            iconExtras: PlatinumStatusLight {
+                anchors.fill: parent
+                shape: bar.fleetReadout.shape
+                tone: bar.fleetPresent && bar.beszel.stale ? "muted" : bar.fleetReadout.tone
+            }
+
+            PlatinumBarNumber {
+                visible: bar.fleetReadout.text !== "" && bar.plan.show.fleetCount !== false
+                widest: bar.fleetBoxText
+                text: bar.fleetReadout.text
+                tone: fleetControl.fg
             }
         }
 
