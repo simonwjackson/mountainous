@@ -33,6 +33,15 @@ from inheriting the shell's watchdog contract. The scope inherits the graphical
 session environment from the launching process rather than relying on a possibly
 stale user-manager environment.
 
+The systemd-run scope transport itself uses `XDG_RUNTIME_DIR` to locate the
+user manager. Production inherits `/run/user/1000` on Myoko, not a private
+preview directory. A NixOS assertion rejects a conflicting global/service
+runtime override; the recorder check also verifies UID 1000 and no override.
+Launcher does not set or unset this variable. A nested preview deliberately has
+a different graphical runtime, so its test-only systemd-run adapter routes the
+manager connection through `/run/user/1000` and restores the private runtime
+inside the scoped command. That adapter is not shipped in production.
+
 Nixpkgs also packages `app2unit` (the inspected package is 1.4.4). It launches
 Desktop Entries as user units, and includes terminal and open helpers. It is a
 useful general desktop-entry launcher. Here Quickshell already supplies the

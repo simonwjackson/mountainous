@@ -27,6 +27,10 @@
       ...
     }:
     let
+      userRuntimeDir = "/run/user/${toString config.users.users.simon.uid}";
+      runtimeOverride =
+        (config.systemd.globalEnvironment // config.systemd.user.services.quickshell.environment)
+        .XDG_RUNTIME_DIR or null;
       ociEgress = pkgs.writeShellApplication {
         name = "oci-egress-status";
         runtimeInputs = [
@@ -38,6 +42,13 @@
       };
     in
     {
+      assertions = [
+        {
+          assertion = runtimeOverride == null || runtimeOverride == userRuntimeDir;
+          message = "Quickshell Launcher scopes require the real user-manager XDG_RUNTIME_DIR (${userRuntimeDir}); a private runtime needs an explicit manager transport adapter.";
+        }
+      ];
+
       environment.systemPackages = [
         pkgs.quickshell
         ociEgress

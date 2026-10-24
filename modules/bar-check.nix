@@ -13,6 +13,8 @@
           configurationRevision = desktop.system.configurationRevision;
           toplevelDrvPath = desktop.system.build.toplevel.drvPath;
           quickshell = desktop.systemd.user.services.quickshell.serviceConfig;
+          userManagerRuntimeDir = "/run/user/${toString desktop.users.users.simon.uid}";
+          runtimeOverride = (desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment).XDG_RUNTIME_DIR or null;
           unitOverrideStrategy = desktop.systemd.user.units."quickshell.service".overrideStrategy;
         }
       );
@@ -62,6 +64,8 @@
       # Two real mpv MPRIS players on a private session bus prove the media hold.
       checks.dictation-lifecycle =
         assert desktop.systemd.user.services.quickshell.serviceConfig.KillMode == "mixed";
+        assert desktop.users.users.simon.uid == 1000;
+        assert ((desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment).XDG_RUNTIME_DIR or null) == null;
         pkgs.runCommand "dictation-lifecycle"
           {
             nativeBuildInputs = [

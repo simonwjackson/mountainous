@@ -11,6 +11,11 @@ const meta = {id: '../../Bad id;$', name: 'Example', icon: 'example', kind: 'app
 assert.deepEqual(plain(model.scopeCommand(argv, meta.id, 'nonce')).slice(-argv.length), argv);
 assert(model.scopeCommand(argv, meta.id, 'nonce').includes('--expand-environment=no'));
 assert(model.scopeCommand(argv, meta.id, 'nonce').includes('--slice=app.slice'));
+// Production inherits systemd's real user runtime; it must not invent a private
+// runtime or unset it while connecting to the user manager's scope transport.
+const launchPrefix = plain(model.scopeCommand(argv, meta.id, 'nonce')).slice(0, -argv.length);
+assert(!launchPrefix.some(arg => arg === 'XDG_RUNTIME_DIR' || arg.startsWith('XDG_RUNTIME_DIR=')));
+
 assert(model.scopeCommand(argv, meta.id, 'nonce').find(x => x.startsWith('--unit=')).match(/^--unit=app-[a-zA-Z0-9_-]+-nonce$/));
 for (const bad of [[], [''], ['x', 1], ['x\0y'], null, 'echo x']) assert.equal(model.validArgv(bad), false);
 assert.equal(model.validArgv(argv), true);
