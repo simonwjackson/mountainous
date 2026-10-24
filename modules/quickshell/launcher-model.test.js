@@ -15,6 +15,8 @@ assert(model.scopeCommand(argv, meta.id, 'nonce').find(x => x.startsWith('--unit
 for (const bad of [[], [''], ['x', 1], ['x\0y'], null, 'echo x']) assert.equal(model.validArgv(bad), false);
 assert.equal(model.validArgv(argv), true);
 for (const input of ['', '{broken', '{}', 'null', '[1,{},null]']) assert.deepEqual(plain(model.readRecent(input)), []);
+const repaired = model.record(model.readRecent('{corrupt'), ['repaired'], meta, 99);
+assert.deepEqual(plain(model.readRecent(JSON.stringify(repaired))), [{...meta, argv:['repaired'], lastLaunched:99}]);
 const first = model.record([], argv, meta, 100);
 assert.deepEqual(plain(first), [{...meta, argv, lastLaunched: 100}]);
 assert.deepEqual(plain(model.record(first, ['ignored'], {...meta, kind: 'command'}, 101)), plain(first));

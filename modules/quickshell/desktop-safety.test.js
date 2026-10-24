@@ -13,6 +13,7 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), 'desktop-safety-'));
 const shellPath = path.join(work, 'shell');
 const state = path.join(work, 'state/mountainous/recent-apps.json');
 for (const dir of ['r', 'shell', 'bin']) fs.mkdirSync(path.join(work, dir), {mode:0o700});
+const args = ['app name','','a b','$HOME','${USER}','$(touch unsafe)',"a'b",'a\\b','a\nb','--flag'];
 let log = '', compositor, shell;
 const env = {...process.env, XDG_RUNTIME_DIR:path.join(work,'r'), XDG_STATE_HOME:path.join(work,'state'),
     XDG_CONFIG_HOME:path.join(work,'config'), WAYLAND_DISPLAY:'wayland-0', QT_QPA_PLATFORM:'wayland',
@@ -61,11 +62,12 @@ import Quickshell.Io
 ShellRoot {
     Heartbeat { id: heartbeat }
     OptionalWebTheme {}
-    FileView { id: input; path: ${JSON.stringify(path.join(work,'input'))}; blockLoading: true; printErrors: false }
     IpcHandler {
         target: "safety"
         function recent(): string { return JSON.stringify(Launcher.recent); }
-        function fire(): void { input.reload(); Launcher.launch(JSON.parse(input.text()), {id:"fixture", name:"Fixture", icon:"fixture", kind:"app"}); }
+        function fire(): void { Launcher.launch(${JSON.stringify(args)}, {id:"fixture", name:"Fixture", icon:"fixture", kind:"app"}); }
+        function repair(): void { Launcher.launch(["repaired"], {id:"fixture", name:"Fixture", icon:"fixture", kind:"app"}); }
+        function append(): void { Launcher.launch(["new"], {id:"fixture", name:"Fixture", icon:"fixture", kind:"app"}); }
         function entry(): void { Launcher.launchEntry({id:"entry", name:"Entry", icon:"entry", command:["app", "literal $HOME"], runInTerminal:true, workingDirectory:"/a b"}); }
     }
 }
@@ -83,8 +85,6 @@ ShellRoot {
         await until(() => fs.readFileSync(path.join(work,'pings'),'utf8').trim().split('\n').length >= initialPings + 4, 'broken feature stopped heartbeat');
         assert(log.includes('optional service failed to load'),'Loader error was not reported');
         assert(!log.includes('ReferenceError'),'optional failure escaped Loader');
-        const args = ['app name','','a b','$HOME','${USER}','$(touch unsafe)',"a'b",'a\\b','a\nb','--flag'];
-        fs.writeFileSync(path.join(work,'input'),JSON.stringify(args));
         ipc('fire');
         log += 'History after fire: ' + ipc('recent') + '\n';
         await until(() => fs.existsSync(path.join(work,'argv')),'launcher did not invoke systemd-run');
@@ -92,10 +92,12 @@ ShellRoot {
         assert.deepEqual(recorded.slice(-args.length),args);
         assert(recorded.includes('--expand-environment=no'));
         await until(() => fs.existsSync(state),'history did not persist');
+        console.log('PASS: argv delivered unchanged and missing history persisted');
         assert.deepEqual(JSON.parse(fs.readFileSync(state,'utf8'))[0].argv,args);
         await stop(shell);
         await boot();
         assert.equal(JSON.parse(ipc('recent'))[0].id,'fixture','history did not survive restart');
+        console.log('PASS: recent history survived shell restart');
         ipc('entry');
         await until(() => JSON.parse(ipc('recent') || '[]')[0]?.id === 'entry','DesktopEntry did not launch');
         assert.deepEqual(JSON.parse(ipc('recent'))[0].argv,['ghostty','-e','env','--chdir=/a b','app','literal $HOME']);
@@ -103,17 +105,16 @@ ShellRoot {
         fs.writeFileSync(state,'{corrupt');
         await boot();
         assert.equal(ipc('recent'),'[]','corrupt history must be empty');
-        fs.writeFileSync(path.join(work,'input'),JSON.stringify(['repaired']));
-        ipc('fire');
+        ipc('repair');
         await until(() => { try { return JSON.parse(fs.readFileSync(state,'utf8'))[0].argv[0] === 'repaired'; } catch (_) { return false; } },'corrupt history was not repaired');
+        console.log('PASS: corrupt history repaired on disk');
         await stop(shell);
         const full = Array.from({length:15},(_,i) => ({id:String(i), name:'App '+i, icon:'app', kind:'app', argv:['app',String(i)], lastLaunched:i+1}));
         fs.writeFileSync(state,JSON.stringify(full));
         await boot();
         assert.equal(JSON.parse(ipc('recent')).length,10);
         assert.equal(JSON.parse(ipc('recent'))[0].id,'14');
-        fs.writeFileSync(path.join(work,'input'),JSON.stringify(['new']));
-        ipc('fire');
+        ipc('append');
         await until(() => { try { return JSON.parse(fs.readFileSync(state,'utf8'))[0].id === 'fixture'; } catch (_) { return false; } },'full history did not update');
         assert.equal(JSON.parse(fs.readFileSync(state,'utf8')).length,10);
         assert(!fs.readdirSync(path.dirname(state)).some(name => name !== 'recent-apps.json'),'atomic write left temporary files');
