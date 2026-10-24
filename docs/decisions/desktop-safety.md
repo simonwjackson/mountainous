@@ -92,26 +92,92 @@ Cost: Hjem activations can restart the bar even when unrelated home files
 changed. A running optional WebTheme failure can remain unavailable until a
 reload or restart. This hook has not been deployed as part of this work.
 
-## KillMode backstop
+## KillMode and legacy-app transition
 
-Keep declarative `KillMode=process`, in addition to independent app scopes.
-This preserves applications started by older generations in the service cgroup
-and protects against an external helper starting an unexpected long-lived app.
-`mixed` is not an app-survival backstop: its final SIGKILL still targets the
-remaining cgroup. `control-group` would clean up all helpers but also kill those
-legacy applications.
+Use declarative `KillMode=mixed`. Launcher apps live in independent app.slice
+scopes, not quickshell.service's cgroup. On a normal stop, systemd sends SIGTERM
+to the main process, then kills remaining service-cgroup helpers when the main
+process exits (or the stop timeout expires). On a watchdog SIGKILL the main
+process cannot clean up its children, so systemd's final cgroup cleanup matters.
+This covers `pw-record`, whose 180-second limit otherwise lives in a QML Timer,
+and a stuck `systemd-notify`. Scoped apps are outside that cgroup.
 
-Cost: a helper can outlive Quickshell unless it has its own parent-death
-protection. This is not limited to short-lived helpers: Dictation starts
-`pw-record` directly, and its 180-second limit is a QML Timer. This work has not
-proved recorder cleanup after SIGKILL. Treat SIGKILL-during-capture coverage as
-a deployment gate; an orphan recorder could keep capturing. Systemd no longer
-guarantees cgroup-wide cleanup on restart. The app scopes remain the primary
-lifetime mechanism, not this exception. Reconsider
-`control-group` only after legacy processes are gone and every external launch
-path is known to use an independent scope. Ending the full user session can
-still end its applications; this change promises restart safety, not logout
-survival.
+Cost: an application still in the bar's cgroup is a leftover too and will die.
+An in-progress dictation take can be lost when the shell is killed. Unlike the
+previous `process` backstop, mixed does not permit arbitrary helper orphans.
+Ending the full user session can still end its applications; the guarantee here
+is restart safety, not logout survival.
+
+### Which drop-in wins
+
+The NixOS unit generator (`nixos/lib/systemd-lib.nix`, `generateUnits`) calls
+its generated drop-in `overrides.conf`. The default strategy is
+`asDropinIfExists`: it writes a complete unit if there is no upstream unit,
+otherwise that drop-in. The existing realized user-unit tree inspected here has
+a complete `quickshell.service`; the strategy is also captured by the focused
+recorder check. Do not assume a future upstream/package unit cannot turn this
+into a drop-in.
+
+When both named drop-ins exist, the result is unambiguous:
+
+| File | Setting | Result |
+|---|---|---|
+| `/run/systemd/user/quickshell.service.d/deploy-3-preserve-apps.conf` | `process` | Read first |
+| `/etc/systemd/user/quickshell.service.d/overrides.conf` | `mixed` | Read later; wins |
+| `/run/systemd/user/quickshell.service.d/zz-deploy-preserve-apps.conf` | `process` | If installed, read last; wins |
+
+Different basenames sort lexicographically across directories. Directory
+priority (`/etc` over `/run`) resolves *identical* basenames; it does not stop a
+later-named runtime file from winning. Any drop-in overrides the base unit.
+`tests/quickshell-dropin-order.sh` exercises systemd's own offline configuration
+loader for all three cases, without changing a live user manager.
+
+### Exact preservation step before the approved switch
+
+An operator must run this **on Myoko as root, before any switch, daemon reload
+that loads mixed, or Quickshell restart**. Do not remove the existing runtime
+file yet. This work does not execute these commands or deploy:
+
+```sh
+set -eu
+install -d -m 0755 /run/systemd/user/quickshell.service.d
+printf '[Service]\nKillMode=process\n' > /run/systemd/user/quickshell.service.d/zz-deploy-preserve-apps.conf
+chmod 0644 /run/systemd/user/quickshell.service.d/zz-deploy-preserve-apps.conf
+uid=$(id -u simon)
+as_simon() {
+  runuser -u simon -- env XDG_RUNTIME_DIR="/run/user/$uid" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" "$@"
+}
+as_simon systemctl --user daemon-reload
+test "$(as_simon systemctl --user show quickshell.service --property=KillMode --value)" = process
+as_simon systemctl --user cat quickshell.service
+```
+
+Only after that check passes, run the normal approved `nixos-rebuild switch`
+from the tested checkout. The late runtime file remains present while Nix and
+Hjem activate/restart the shell, so already-running legacy apps keep their
+process-only protection. After the switch, run the same `show` check again; it
+must still say `process`, not `mixed`.
+
+Prefer leaving both runtime files until the next planned reboot. A reboot ends
+legacy apps and removes `/run` overrides; new Launcher apps then use independent
+scopes and the declared mixed policy applies. During this transition, helper
+cleanup still has the old process-only limitation.
+
+To enable mixed without a reboot, first close **all legacy GUI applications
+still in quickshell.service's cgroup**. Inspect the unit's cgroup/status; a
+window's existence alone does not show its cgroup. Then, as root with the same
+`as_simon` function, remove only these two known transition files and reload:
+
+```sh
+rm /run/systemd/user/quickshell.service.d/deploy-3-preserve-apps.conf \
+   /run/systemd/user/quickshell.service.d/zz-deploy-preserve-apps.conf
+as_simon systemctl --user daemon-reload
+test "$(as_simon systemctl --user show quickshell.service --property=KillMode --value)" = mixed
+```
+
+No immediate restart is needed. Do not remove the protection while legacy apps
+remain: the next restart or watchdog kill would terminate them.
 
 ## About / configuration revision
 

@@ -91,10 +91,10 @@
           Restart = "on-failure";
           RestartSec = 2;
           Slice = "session.slice";
-          # Launcher gives new apps their own scopes. Keep legacy apps (and
-          # apps an external helper might start) alive during the transition.
-          # Cost: a stuck helper can outlive the shell; see desktop-safety.md.
-          KillMode = "process";
+          # GUI apps live in app.slice scopes. Kill leftover service helpers
+          # too, including a recorder whose QML owner no longer runs.
+          # Legacy apps need the deploy-time runtime override in desktop-safety.md.
+          KillMode = "mixed";
           WatchdogSec = "20s";
           WatchdogSignal = "SIGKILL";
           NotifyAccess = "all";

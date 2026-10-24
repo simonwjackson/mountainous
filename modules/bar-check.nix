@@ -4,7 +4,18 @@
   perSystem =
     { pkgs, lib, config, ... }:
     let
-      files = self.nixosConfigurations.myoko.config.hjem.users.simon.files;
+      desktop = self.nixosConfigurations.myoko.config;
+      files = desktop.hjem.users.simon.files;
+      # Unit cleanup is part of recorder lifecycle: capture the evaluated policy
+      # without pulling the host closure into this focused check.
+      lifecycleUnitEvidence = builtins.unsafeDiscardStringContext (
+        builtins.toJSON {
+          configurationRevision = desktop.system.configurationRevision;
+          toplevelDrvPath = desktop.system.build.toplevel.drvPath;
+          quickshell = desktop.systemd.user.services.quickshell.serviceConfig;
+          unitOverrideStrategy = desktop.systemd.user.units."quickshell.service".overrideStrategy;
+        }
+      );
       prefix = ".config/quickshell/mountainous/";
       delivered = builtins.filter (lib.hasPrefix prefix) (builtins.attrNames files);
       relative = path: lib.removePrefix (toString ./quickshell + "/") (toString path);
@@ -50,12 +61,14 @@
       # The recorder and backend are real child processes with controlled exits.
       # Two real mpv MPRIS players on a private session bus prove the media hold.
       checks.dictation-lifecycle =
+        assert desktop.systemd.user.services.quickshell.serviceConfig.KillMode == "mixed";
         pkgs.runCommand "dictation-lifecycle"
           {
             nativeBuildInputs = [
               pkgs.nodejs
               pkgs.quickshell
               pkgs.labwc
+              pkgs.systemd
             ];
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
@@ -65,6 +78,8 @@
             MPV_MPRIS = "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
           }
           ''
+            printf 'Evaluated recorder unit settings: %s\n' ${lib.escapeShellArg lifecycleUnitEvidence}
+            bash ${../tests/quickshell-dropin-order.sh}
             node ${./quickshell/dictation-lifecycle.test.js} ${./quickshell/Dictation.qml} ${./quickshell}/Theme.qml
             touch $out
           '';

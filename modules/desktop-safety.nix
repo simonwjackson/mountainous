@@ -24,7 +24,7 @@
     in
     {
       checks.desktop-safety =
-        assert unit.serviceConfig.KillMode == "process";
+        assert unit.serviceConfig.KillMode == "mixed";
         assert unit.serviceConfig.WatchdogSec == "20s";
         assert unit.serviceConfig.WatchdogSignal == "SIGKILL";
         assert unit.serviceConfig.NotifyAccess == "all";
