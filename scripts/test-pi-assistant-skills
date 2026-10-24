@@ -1,0 +1,42 @@
+#!/usr/bin/env nix
+#!nix shell nixpkgs#bash nixpkgs#coreutils nixpkgs#shellcheck --command bash
+set -euo pipefail
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+helper=$root/modules/pi-assistant-skills.sh
+scratch=$(mktemp -d)
+trap 'rm -rf -- "$scratch"' EXIT
+shellcheck --shell=bash "$helper" "$0"
+mkdir -p "$scratch/package one" "$scratch/package two" "$scratch/simon" "$scratch/laure"
+printf 'First skill\n' > "$scratch/package one/SKILL.md"
+printf 'Updated skill\n' > "$scratch/package two/SKILL.md"
+for person in simon laure; do
+  bash "$helper" "$scratch/$person" scryer "$scratch/package one"
+  test -L "$scratch/$person/skills/scryer"
+  test "$(readlink "$scratch/$person/skills/scryer")" = "$scratch/package one"
+  bash "$helper" "$scratch/$person" scryer "$scratch/package one"
+  bash "$helper" "$scratch/$person" scryer "$scratch/package two"
+  test "$(readlink "$scratch/$person/skills/scryer")" = "$scratch/package two"
+done
+mkdir -p "$scratch/simon/skills/local"
+printf 'keep\n' > "$scratch/simon/skills/local/SKILL.md"
+if bash "$helper" "$scratch/simon" scryer "$scratch/package one" local "$scratch/package two" 2>/dev/null; then
+  echo 'Local skill conflict was not refused' >&2; exit 1
+fi
+test "$(readlink "$scratch/simon/skills/scryer")" = "$scratch/package two"
+test "$(< "$scratch/simon/skills/local/SKILL.md")" = keep
+if bash "$helper" "$scratch/simon" scryer "$scratch/missing" 2>/dev/null; then
+  echo 'Missing source was not refused' >&2; exit 1
+fi
+if bash "$helper" "$scratch/simon" ../escape "$scratch/package one" 2>/dev/null; then
+  echo 'Unsafe name was not refused' >&2; exit 1
+fi
+if bash "$helper" "$scratch/simon" scryer relative 2>/dev/null; then
+  echo 'Relative source was not refused' >&2; exit 1
+fi
+if bash "$helper" "$scratch/simon" unpaired 2>/dev/null; then
+  echo 'Unpaired argument was not refused' >&2; exit 1
+fi
+bash "$helper" "$scratch/household"
+test -d "$scratch/household/skills"
+test ! -e "$scratch/household/skills/scryer"
+printf 'PASS: shared skills install for both people; updates, isolation, conflicts, and invalid inputs.\n'

@@ -133,10 +133,14 @@ in
               webPort = 4318;
               # Simon's assistant clones, pushes, and opens pull requests as him.
               github = true;
+              skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+              credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
             };
             laure = {
               voicePort = 4327;
               webPort = 4328;
+              skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+              credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
             };
           };
           tailnet = "hummingbird-lake.ts.net";
@@ -160,6 +164,15 @@ in
           };
         };
         # Root reads these; each assistant unit gets a copy as a credential.
+        # The existing Scryer admin password is shared only by the two personal assistants.
+        sops.secrets.scryer-admin-password = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [
+            "pi-assistant-simon.service"
+            "pi-assistant-laure.service"
+          ];
+        };
         sops.secrets.pi-assistant-cliproxyapi-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";

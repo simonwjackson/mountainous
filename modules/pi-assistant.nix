@@ -71,6 +71,22 @@ in
       );
     in
     {
+      checks.pi-assistant-skills =
+        pkgs.runCommand "pi-assistant-skills"
+          {
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.coreutils
+              pkgs.shellcheck
+            ];
+          }
+          ''
+            mkdir -p modules scripts
+            cp ${./pi-assistant-skills.sh} modules/pi-assistant-skills.sh
+            cp ${../scripts/test-pi-assistant-skills} scripts/test-pi-assistant-skills
+            bash scripts/test-pi-assistant-skills
+            touch "$out"
+          '';
       checks.pi-assistant =
         if problems == [ ] then
           pkgs.runCommand "pi-assistant" { } "touch $out"
@@ -174,6 +190,16 @@ in
             if [ ! -f "$state/model-lanes.json" ]; then
               cp --no-preserve=mode ${lanesSeed} "$state/model-lanes.json"
             fi
+            ${pkgs.bash}/bin/bash ${./pi-assistant-skills.sh} "$state/agent" ${
+              lib.escapeShellArgs (
+                lib.concatLists (
+                  lib.mapAttrsToList (skill: source: [
+                    skill
+                    source
+                  ]) (instances.${name}.skills or { })
+                )
+              )
+            }
           '';
         };
 
@@ -220,6 +246,14 @@ in
                   type = lib.types.bool;
                   default = false;
                   description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
+                };
+                skills = lib.mkOption {
+                  type = lib.types.attrsOf lib.types.str;
+                  default = { };
+                  example = {
+                    scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+                  };
+                  description = "Shared skill directories linked into this assistant's own agent directory. Sources must be absolute paths containing SKILL.md.";
                 };
                 credentials = lib.mkOption {
                   type = lib.types.attrsOf lib.types.path;
@@ -317,7 +351,9 @@ in
         systemd.tmpfiles.rules = [
           "d /nix/var/nix/profiles/per-user/pi-assistant 0755 root root -"
         ]
-        ++ lib.mapAttrsToList (name: _: "d ${stateOf name}/workspace 0700 pi-${name} pi-${name} -") instances;
+        ++ lib.mapAttrsToList (
+          name: _: "d ${stateOf name}/workspace 0700 pi-${name} pi-${name} -"
+        ) instances;
 
         users.groups = {
           household = { };
