@@ -9,6 +9,7 @@
           enable = true;
           mediaGid = 390;
           library = "scryer";
+          scryerTailnet = true;
           usenet = "nzbfast";
           nzbfast.held = false;
           processing = lib.mkDefault "enabled";

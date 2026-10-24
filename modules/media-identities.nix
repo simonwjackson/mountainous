@@ -43,7 +43,7 @@
         "prowlarr"
       ];
       names = {
-        scryer = "library";
+        scryer = "scryer";
         sonarr = "tv";
         radarr = "movies";
         prowlarr = "indexers";
@@ -123,7 +123,7 @@
                 requires = lib.optional (name == "scryer") "scryer.service";
                 unitConfig = {
                   ConditionPathExists = "/var/lib/media-migration/ready/${name}";
-                  # ARR identities must already exist. The library identity is
+                  # ARR identities must already exist. The Scryer identity is
                   # new: the explicit opt-in permits its first OAuth enrollment.
                   ConditionFileNotEmpty = lib.mkIf (name != "scryer") "${state}/tailscaled.state";
                 };

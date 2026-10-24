@@ -126,7 +126,7 @@
         scryerTailnet = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Publish the authenticated Scryer UI under the library identity.";
+          description = "Publish the authenticated Scryer UI under the scryer identity.";
         };
         usenet = lib.mkOption {
           type = lib.types.enum [

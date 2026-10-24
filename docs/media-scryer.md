@@ -1,7 +1,7 @@
 # Scryer held trial and rollback
 
-Unzen remains `mountainous.features.media-applications.library = "arr"`.
-This change does not deploy or migrate production data.
+Unzen uses `mountainous.features.media-applications.library = "scryer"`
+and enables `scryerTailnet`. Its endpoint is `https://scryer.hummingbird-lake.ts.net`.
 Scryer is pinned to nix-extras main and uses that input's own nixpkgs/cache identity.
 In a reused Scryer state, turn acquisition off before a `both` trial. Read-only mounts
 prevent library writes, but they do not prevent download-client RPC requests.
@@ -11,14 +11,14 @@ prevent library writes, but they do not prevent download-client RPC requests.
 | `library` | Managers | Scryer filesystem access | Public identities |
 |---|---|---|---|
 | `arr` (default) | Sonarr, Radarr | No Scryer unit | Existing `tv`, `movies` |
-| `both` | Sonarr, Radarr, Scryer | Library roots, basin media, bindfs view and Zao mount read-only; completed downloads not writable | Existing `tv`, `movies`; optional `library` |
-| `scryer` | Scryer | Library roots and tv/movie branches writable; only NZBFAST's completion root and Transmission's completed root writable | No `tv`/`movies` proxy; optional `library` |
+| `both` | Sonarr, Radarr, Scryer | Library roots, basin media, bindfs view and Zao mount read-only; completed downloads not writable | Existing `tv`, `movies`; optional `scryer` |
+| `scryer` | Scryer | Library roots and tv/movie branches writable; only NZBFAST's completion root and Transmission's completed root writable | No `tv`/`movies` proxy; optional `scryer` |
 
 `mountainous.features.media-applications.scryerTailnet` defaults to `false`.
 Set it to `true` only after provisioning and checking authentication.
-It publishes `library` to `127.0.0.1:8080` only in `both` or `scryer`.
+It publishes `scryer` to `127.0.0.1:8080` only in `both` or `scryer`.
 It does not redirect the saved `tv` or `movies` identities.
-The explicit flag permits first OAuth enrollment of the new `library` identity.
+The explicit flag permits first OAuth enrollment of the new `scryer` identity.
 The proxy requires ready Scryer; existing ARR proxies still require saved identity state.
 Existing identity state stays on disk in every mode.
 

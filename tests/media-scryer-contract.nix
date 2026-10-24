@@ -24,7 +24,7 @@ let
           {
             mountainous.features.media-applications = {
               library = lib.mkForce library;
-              scryerTailnet = tailnet;
+              scryerTailnet = lib.mkForce tailnet;
             };
           }
         )
@@ -82,6 +82,10 @@ let
       "srv-range-media-movies.mount"
     ];
   comparisons = {
+    productionScryerProxy =
+      host.config.mountainous.features.media-applications.scryerTailnet
+      && lib.hasInfix "-hostname scryer" (units host.config)."tsnet-proxy-scryer.service".text
+      && host.config.systemd.services.tsnet-proxy-scryer.requires == [ "scryer.service" ];
     arrHasOnlyArr =
       (units arr) ? "sonarr.service"
       && (units arr) ? "radarr.service"
@@ -164,7 +168,7 @@ let
       && !((units scryer) ? "tsnet-proxy-scryer.service")
       && !((units arrTailnet) ? "tsnet-proxy-scryer.service");
     explicitLibraryProxy =
-      lib.hasInfix "-hostname library" (units bothTailnet)."tsnet-proxy-scryer.service".text
+      lib.hasInfix "-hostname scryer" (units bothTailnet)."tsnet-proxy-scryer.service".text
       &&
         lib.hasInfix "-backend http://127.0.0.1:8080"
           (units scryerTailnet)."tsnet-proxy-scryer.service".text;
