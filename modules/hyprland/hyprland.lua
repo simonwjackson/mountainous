@@ -116,6 +116,8 @@ hl.config({
     },
 
     misc = {
+        -- 0.56.2 ConfigValues.cpp:498. Permit a new lock after a locker crash.
+        allow_session_lock_restore = true,
         disable_hyprland_logo   = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,
@@ -759,6 +761,9 @@ end, { ignore_mods = true, auto_consuming = true })
 -- the state file the command writes.
 --------------------------------------------------------------------
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))
+
+-- SUPER+L is free in the compositor and Kanata. Route all locks through hypridle.
+hl.bind(mod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
 
 -- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
 -- navigate mode, which is the address bar an --app window never built.

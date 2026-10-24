@@ -215,22 +215,6 @@
       text = builtins.readFile ./hyprland/screenshot.sh;
     };
 
-    oled-idle = pkgs.writeShellApplication {
-      name = "oled-idle";
-      runtimeInputs = [
-        pkgs.swayidle
-        hyprPkg
-      ];
-      text = ''
-        # `dispatch dpms off` is the legacy argument form. Under the Lua
-        # parser, dispatch evaluates one Lua expression instead.
-        exec swayidle -w \
-          timeout 300 "hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = \"off\" })'" \
-          resume "hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = \"on\" })'" \
-          before-sleep "hyprctl --instance 0 dispatch 'hl.dsp.dpms({ action = \"off\" })'"
-      '';
-    };
-
     # The session, not just the compositor.
     #
     # Hyprland publishes its own environment to the systemd user manager and
@@ -322,18 +306,6 @@
       bindsTo = ["graphical-session.target"];
       wants = ["graphical-session-pre.target"];
       after = ["graphical-session-pre.target"];
-    };
-
-    systemd.user.services.oled-idle = {
-      description = "Blank OLED displays after five idle minutes";
-      documentation = ["man:swayidle(1)"];
-      wantedBy = ["hyprland-session.target"];
-      partOf = ["graphical-session.target"];
-      serviceConfig = {
-        ExecStart = "${oled-idle}/bin/oled-idle";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
     };
 
     services.greetd = {
