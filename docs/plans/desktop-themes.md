@@ -4,6 +4,8 @@ Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implement
 
 Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). The later `77dd2791` bevel/shadow change is not included; that line has not landed on `cairn`.
 
+Later (2026-10-24): the `77dd2791` bevel and cast shadow were ported onto the phase 2 layout. `PlatinumTopBar` draws the bevel hairs, `PlatinumTokens` holds `barRaised`, `barBevelLight`/`barBevelDark` and `barShadowHeight`/`barShadowTop`, and `PlatinumDesktop` owns one `PlatinumBarShadow` window per screen (layer namespace `mountainous-bar-shadow`, no exclusive zone, empty input mask, visible with its bar). Extra dark stays flat. Platinum therefore maps three layer surfaces, not two; `theme-dev/win98/switch.sh` expects the shadow. `checks.bar-shadow` runs the window under labwc. The registered Platinum thumbnails predate the bevel. Evidence: `/tmp/ship-prep/shots/`.
+
 ## Goal
 
 Simon can switch the whole desktop chrome between a handful of themes: Mac OS 8 Platinum and Windows 98 first, more later. Each theme has its own bars, menus, controls, font and colours. The picker draws itself in the style of the current theme. A switch is live, with no restart and no logout.

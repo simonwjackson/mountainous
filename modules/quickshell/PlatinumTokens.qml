@@ -53,6 +53,17 @@ Singleton {
     // the bar meets the windows directly, so no lit line stays on screen.
     readonly property bool barRuled: !barBlack
     readonly property color barRule: "#000000"
+
+    // Depth for the light and grey bars: the raised Platinum bevel (one
+    // highlight hair on top, one shade hair just above the rule) and a
+    // short shadow cast on what lies under the bar (PlatinumBarShadow).
+    // At 1.5 the hairs fall on physical rows 0-1 and 38-39, the rule on
+    // 40-41. The black bar has neither, so it stays flat.
+    readonly property bool barRaised: barRuled
+    readonly property color barBevelLight: bevelLight
+    readonly property color barBevelDark: bevelDark
+    readonly property int barShadowHeight: 4
+    readonly property color barShadowTop: "#40000000"   // 25% black, fading to 0
     readonly property color barText: !dark ? "#000000" : barBlack ? "#e6e6e6" : "#ececec"
     readonly property color barTextSecondary: !dark ? "#3a3a3a" : barBlack ? "#a4a4a4" : "#b8b8b8"
     // About 3:1 on each surface, so a muted readout still reads.

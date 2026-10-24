@@ -67,6 +67,9 @@ Scope {
         chordVisible: desktop.context.shell.chromeAccessVisible
     }
 
+    // The shadow under this bar. It shows and hides with the bar.
+    PlatinumBarShadow { bar: topBar }
+
     Component {
         id: clockMenu
         PlatinumClockMenu { now: desktop.context.now }

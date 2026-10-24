@@ -62,6 +62,23 @@
             node ${./quickshell/dictation-lifecycle.test.js} ${./quickshell/Dictation.qml} ${./quickshell}/Theme.qml
             touch $out
           '';
+      # The Platinum bar's shadow window: no reserved space, no input,
+      # mapped only with its bar, painted only on the light and grey bars.
+      checks.bar-shadow =
+        pkgs.runCommand "bar-shadow"
+          {
+            nativeBuildInputs = [
+              pkgs.nodejs
+              pkgs.quickshell
+              pkgs.labwc
+            ];
+            QUICKSHELL = "${pkgs.quickshell}/bin/qs";
+            LABWC = "${pkgs.labwc}/bin/labwc";
+          }
+          ''
+            node ${./quickshell/bar-shadow.test.js} ${./quickshell}
+            touch $out
+          '';
       checks.desktop-theme-shell =
         pkgs.runCommand "desktop-theme-shell" {
           nativeBuildInputs = [pkgs.nodejs pkgs.python3 pkgs.quickshell pkgs.labwc pkgs.bash];

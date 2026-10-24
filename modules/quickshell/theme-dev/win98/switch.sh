@@ -114,8 +114,8 @@ want_layers() {   # want_layers <theme> <picker:0|1>
   if [ "$1" = win98 ]; then
     [ "$2" = 1 ] && echo "mountainous-picker mountainous-taskbar" || echo "mountainous-taskbar"
   else
-    # Platinum: its top bar and its dock, plus its picker view.
-    [ "$2" = 1 ] && echo "quickshell quickshell quickshell" || echo "quickshell quickshell"
+    # Platinum: its top bar, the bar's shadow and its dock, plus its picker view.
+    [ "$2" = 1 ] && echo "mountainous-bar-shadow quickshell quickshell quickshell" || echo "mountainous-bar-shadow quickshell quickshell"
   fi
 }
 assert_layers() {   # assert_layers <label> <theme> <picker>

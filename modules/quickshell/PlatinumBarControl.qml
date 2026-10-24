@@ -41,9 +41,12 @@ Item {
     implicitWidth: PlatinumMetrics.even(pad * 2 + content.implicitWidth)
     implicitHeight: PlatinumTokens.barHeight - PlatinumTokens.hair
 
+    // Hover lays a translucent tint over the bar instead of a flat fill,
+    // so the bevel under the title still shows. Where the bar is flat it
+    // gives the colour the old Qt.tint fill gave.
     Rectangle {
         anchors.fill: parent
-        color: root.inverted || (root.hovered && root.hoverable) ? root.bg : "transparent"
+        color: root.inverted ? root.bg : root.hovered && root.hoverable ? PlatinumTokens.barHover : "transparent"
     }
 
     Row {

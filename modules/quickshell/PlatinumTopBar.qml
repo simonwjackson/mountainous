@@ -276,6 +276,26 @@ PanelWindow {
             onPressed: if (bar.menuHere) MenuState.close()
         }
 
+        // The raised Platinum bevel on the light and grey bars: one
+        // highlight hair on top, one shade hair just above the rule. The
+        // shadow under the bar is PlatinumBarShadow, a window of its own.
+        Rectangle {
+            visible: PlatinumTokens.barRaised
+            anchors.left: parent.left
+            anchors.right: parent.right
+            y: 0
+            height: PlatinumTokens.hair
+            color: PlatinumTokens.barBevelLight
+        }
+        Rectangle {
+            visible: PlatinumTokens.barRaised
+            anchors.left: parent.left
+            anchors.right: parent.right
+            y: parent.height - 2 * PlatinumTokens.hair
+            height: PlatinumTokens.hair
+            color: PlatinumTokens.barBevelDark
+        }
+
         // The rule. Extra dark draws none: the black bar meets the windows.
         Rectangle {
             visible: PlatinumTokens.barRuled
