@@ -17,6 +17,9 @@
       assert n.settings.cache-duration == "720h";
       assert n.environmentFile == c.sops.secrets.notify-server-env.path;
       assert lib.elem "/var/lib/ntfy-sh" persisted;
+      # auth.db holds access tokens in plain text. Only ntfy may read it.
+      assert c.systemd.services.ntfy-sh.serviceConfig.StateDirectoryMode == "0700";
+      assert c.systemd.services.ntfy-sh.serviceConfig.UMask == "0077";
       assert c.mountainous.tailnetNames ? ntfy;
       assert !(lib.elem 2586 c.networking.firewall.allowedTCPPorts);
       pkgs.runCommand "notify-server-contract" { } "touch $out";
@@ -67,6 +70,11 @@
           DynamicUser = lib.mkForce false;
           User = "ntfy-sh";
           Group = "ntfy-sh";
+          # auth.db stores access tokens in plain text, and cache.db holds
+          # message bodies. systemd resets the directory to 0755 on each start
+          # unless told otherwise, and ntfy creates its files 0644.
+          StateDirectoryMode = "0700";
+          UMask = "0077";
         };
         environment.persistence."/tundra/permafrost".directories = [
           {
