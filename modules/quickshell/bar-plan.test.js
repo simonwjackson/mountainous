@@ -100,7 +100,7 @@ function assertKeptControlsFit(width, input) {
     const actions = result.show.dictationActions && input.dictationActionsWidth > 0 ? 6 + input.dictationActionsWidth : 0;
     const leftGap = input.titleWidth > 0 || actions > 0 ? result.gap : 0;
     assert.ok(result.leftMax >= mark + leftGap + actions, "left controls have full width at " + width);
-    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", builder: "builderLabel", ntf: "notificationCount"};
+    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "notificationCount"};
     let right = 6, count = 0;
     for (const id of result.controls) {
         const item = input.controls.find(c => c.id === id);
@@ -175,6 +175,7 @@ for (const fixture of fixtures.states) {
 for (const fixture of fixtures.builderAbsentPlans) {
     const actual = JSON.parse(JSON.stringify(model.plan(fixture.width, metrics)));
     delete actual.show.builderLabel;
+    delete actual.show.fleetCount;
     assert.deepEqual(actual, fixture.plan, "builder absent keeps the old plan at " + fixture.width);
 }
 const builderMetrics = {...metrics, controls: metrics.controls.slice()};
@@ -199,4 +200,33 @@ for (let width = 0; width <= 1920; width++) {
 const builderFixture = fixtures.states.find(f => f.builder);
 assert.ok(builderFixture.builder.present && builderFixture.width === 320);
 assertKeptControlsFit(builderFixture.width, builderMetrics);
-console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps and builder presence/absence pass");
+// The Fleet readout: a light (12 px) and a problem count. Its count yields
+// right after the disk label, and the control overflows right after Disks.
+// Without it (Win98, no Beszel owner) every plan above is unchanged, which
+// the fixture comparison already proves.
+const fleetMetrics = {...builderMetrics, controls: builderMetrics.controls.slice()};
+fleetMetrics.controls.splice(6, 0, {id: "fleet", iconWidth: 12, readoutWidth: 10, compactReadoutWidth: 0});
+const fleetOverflowOrder = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+assert.equal(model.plan(1920, fleetMetrics).show.fleetCount, true);
+assert.deepEqual(Array.from(model.plan(1920, fleetMetrics).controls).slice(5, 8), ["disk", "fleet", "builder"]);
+let fleetSeen = {count: false, overflow: false};
+for (let width = 0; width <= 1920; width++) {
+    const result = assertKeptControlsFit(width, fleetMetrics);
+    assert.equal(result.controls.concat(result.overflow).filter(id => id === "fleet").length, 1, "the readout never disappears at " + width);
+    assert.deepEqual(Array.from(result.overflow), fleetOverflowOrder.slice(0, result.overflow.length));
+    if (result.steps.includes("fleetCount")) {
+        fleetSeen.count = true;
+        const at = result.steps.indexOf("fleetCount");
+        assert.ok(result.steps.indexOf("diskLabel") < at && at < result.steps.indexOf("builderLabel") + (result.steps.includes("builderLabel") ? 0 : 99));
+        assert.equal(result.show.fleetCount, false);
+    }
+    if (result.overflow.includes("fleet")) {
+        fleetSeen.overflow = true;
+        assert.ok(result.overflow.includes("disk"), "Disks overflows before the readout");
+        assert.equal(result.show.fleetCount, false, "readouts yield before controls overflow");
+    }
+}
+assert.ok(fleetSeen.count && fleetSeen.overflow, "the sweep reaches the count's yield and the control's overflow");
+// "--" and a two-digit count are wider than no count; equal widths skip the step.
+assert.equal(model.plan(400, {...fleetMetrics, controls: fleetMetrics.controls.map(c => c.id === "fleet" ? {...c, readoutWidth: 0} : c)}).steps.includes("fleetCount"), false);
+console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps, builder presence/absence and the Fleet readout pass");
