@@ -164,7 +164,7 @@ Singleton {
             root.log(root.lastError);
             // Not a browser window, or the browser is not running:
             // open the address as a window of its own instead.
-            Quickshell.execDetached(["web-app", target]);
+            Launcher.launch(["web-app", target], {id: target, name: target, icon: "chromium", kind: "webapp"});
             return true;
         }
 
@@ -266,7 +266,7 @@ Singleton {
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            Quickshell.execDetached(["web-app", url]);
+            Launcher.launch(["web-app", url], {id: url, name: url, icon: "chromium", kind: "webapp"});
             root.refresh();
         };
         xhr.open("GET", "http://127.0.0.1:" + root.port + "/json/close/" + targetId);

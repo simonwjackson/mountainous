@@ -320,7 +320,7 @@ Scope {
     function runStart(item) {
         MenuState.close();
         if (!item) return;
-        if (item.action === "app") { const a = desktop.apps[item.app]; if (a && a.entry) a.entry.execute(); }
+        if (item.action === "app") { const a = desktop.apps[item.app]; if (a && a.entry) Launcher.launchEntry(a.entry); }
         else if (item.action === "window") desktop.activateWindow(desktop.lane[item.window]);
         else if (item.action === "command") context.omniBar.run(desktop.commandRows[item.row]);
         else if (item.action === "run") context.omniBar.enterRoot();

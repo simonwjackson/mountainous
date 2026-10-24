@@ -80,15 +80,45 @@
         };
 
         # Ensure user profile binaries (web-app, qs, hypr-scale) resolve on PATH.
-        path = [ "/run/current-system/sw" ];
+        path = [
+          "/run/current-system/sw"
+          pkgs.systemd
+          pkgs.coreutils
+        ];
 
         serviceConfig = {
           ExecStart = "${pkgs.quickshell}/bin/qs -c mountainous";
           Restart = "on-failure";
           RestartSec = 2;
           Slice = "session.slice";
+          # Launcher gives new apps their own scopes. Keep legacy apps (and
+          # apps an external helper might start) alive during the transition.
+          # Cost: a stuck helper can outlive the shell; see desktop-safety.md.
+          KillMode = "process";
+          WatchdogSec = "20s";
+          WatchdogSignal = "SIGKILL";
+          NotifyAccess = "all";
         };
       };
+
+      # Hjem's system unit completes all links, then reloads user units. A user
+      # service cannot order itself After= a system-manager unit. Restart here,
+      # after the reload phase, so Quickshell never relies on an inotify reload
+      # part way through linking a generation. Do not start a stopped desktop.
+      systemd.services."hjem-reload@".serviceConfig.ExecStartPost = [
+        "${pkgs.writeShellScript "quickshell-after-hjem" ''
+          set -eu
+          [ "$1" = simon ] || exit 0
+          runtime=$(${pkgs.systemd}/bin/loginctl show-user "$1" --property=RuntimePath --value 2>/dev/null || true)
+          [ -n "$runtime" ] && [ -S "$runtime/bus" ] || exit 0
+          export XDG_RUNTIME_DIR="$runtime" DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus"
+          if ${pkgs.systemd}/bin/systemctl --user is-active --quiet quickshell.service ||
+             ${pkgs.systemd}/bin/systemctl --user is-failed --quiet quickshell.service; then
+            ${pkgs.systemd}/bin/systemctl --user reset-failed quickshell.service
+            ${pkgs.systemd}/bin/systemctl --user restart quickshell.service
+          fi
+        ''} %i"
+      ];
 
       # Discover new controls and icons without a second Nix file list. The
       # notification view retains ownership of its files and generated schema.
@@ -132,7 +162,13 @@
             && !(lib.hasSuffix ".test.js" name)
             && !(lib.hasSuffix ".py" name)
             && !(lib.hasSuffix ".sh" name)
-            && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || name == "themes.json" || lib.hasPrefix "themes/" name || lib.hasPrefix "icons/" name);
+            && (
+              lib.hasSuffix ".qml" name
+              || lib.hasSuffix ".js" name
+              || name == "themes.json"
+              || lib.hasPrefix "themes/" name
+              || lib.hasPrefix "icons/" name
+            );
         in
         builtins.listToAttrs (
           map (name: {

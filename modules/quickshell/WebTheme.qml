@@ -1,5 +1,3 @@
-pragma Singleton
-
 import Quickshell
 import Quickshell.Io
 import QtWebSockets
@@ -21,7 +19,7 @@ import "web-theme.js" as Policy
 // registered scripts: open documents keep their last styles, a document
 // loaded while the socket is down is plain until the socket reconnects and
 // styles it in place.
-Singleton {
+Scope {
     id: root
 
     readonly property string portPath: CdpBrowser.profile + "/DevToolsActivePort"
@@ -201,52 +199,12 @@ Singleton {
         }
     }
 
-    //--------------------------------------------------------------
-    // LIVENESS: a systemd watchdog on quickshell.service (bars.nix).
-    //--------------------------------------------------------------
-    // This socket's browser-level auto-attach makes Chromium wait on this
-    // thread. If the thread stalls, a window that a page opens
-    // (window.open, a target=_blank link) never loads, and its opener
-    // page freezes with it. Closing the socket does not release them;
-    // only a client that attaches and resumes does, which this one does
-    // on its next start (attached()). Measured in docs/decisions/web-theme.md.
-    //
-    // So the event loop proves it is alive: every half second it tells
-    // systemd, and systemd kills and restarts a shell that stops. The
-    // first message also shortens the watchdog from the unit's start-up
-    // allowance to the running limit. Outside systemd (no WATCHDOG_USEC)
-    // nothing runs.
-    readonly property bool watchdog: Quickshell.env("WATCHDOG_USEC") !== ""
-    readonly property int watchdogRunningUsec: 2000000
-    property bool watchdogArmed: false
-
-    Process {
-        id: notify
-        command: root.watchdogArmed
-            ? ["systemd-notify", "WATCHDOG=1"]
-            : ["systemd-notify", "WATCHDOG=1", "WATCHDOG_USEC=" + root.watchdogRunningUsec]
-        onExited: function (code) {
-            if (code === 0) root.watchdogArmed = true;
-            else root.log("systemd-notify exited " + code);
-        }
-    }
-
-    Timer {
-        interval: 500
-        repeat: true
-        triggeredOnStart: true
-        running: root.watchdog
-        // A ping still waiting for systemd is enough; do not queue another.
-        onTriggered: if (!notify.running) notify.running = true
-    }
-
     IpcHandler {
         target: "webTheme"
         function status(): string {
             return (root.connected ? "connected" : "disconnected") + " port=" + root.port
                 + " frames=" + root.sessionCount + " theme=" + Theme.name
-                + " appearance=" + (root.payload.appearance || "none") + " pushed=" + root.lastPush
-                + " watchdog=" + (!root.watchdog ? "off" : root.watchdogArmed ? "armed" : "starting");
+                + " appearance=" + (root.payload.appearance || "none") + " pushed=" + root.lastPush;
         }
         // Register the current styles again in every frame.
         function reapply(): void { root.pushAll(); }

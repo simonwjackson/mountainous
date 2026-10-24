@@ -102,8 +102,8 @@ ShellRoot {
     // QML resolves by filename from this directory.
     OmniBar { id: omniBarService }
 
-    // Chromium pages follow the desktop theme. Reading the singleton starts it.
-    readonly property bool webThemeConnected: WebTheme.connected
+    Heartbeat {}
+    OptionalWebTheme {}
 
     // One owner for capture, queueing, backend work, insertion, and the
     // bottom-centre state overlay. The top bar only reads its public state.

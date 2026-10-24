@@ -205,7 +205,7 @@ Scope {
         }
 
         if (row.kind === "app") {
-            if (row.entry) row.entry.execute();
+            if (row.entry) Launcher.launchEntry(row.entry);
             root.shown = false;
             return;
         }
@@ -221,7 +221,7 @@ Scope {
         if (a === "mode:window") { root.enterMode("window"); return; }
         if (a === "mode:app")    { root.enterRoot(); return; }
 
-        if (a === "term")            Quickshell.execDetached(["ghostty"]);
+        if (a === "term")            Launcher.launch(["ghostty"], {id: "com.mitchellh.ghostty", name: "Ghostty", icon: "com.mitchellh.ghostty", kind: "app"});
         else if (a === "close") {
             const w = Hyprland.activeToplevel;
             if (w && w.wayland) w.wayland.close();
