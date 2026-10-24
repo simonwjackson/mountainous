@@ -33,5 +33,23 @@
       # interface words. Pages reach both by family name through
       # fontconfig, which a strict font-src policy does not block.
       fonts.packages = [ pkgs.public-sans ];
+
+      # WebTheme.qml's CDP auto-attach makes Chromium wait on Quickshell's
+      # event loop: while it stalls, a window that a page opens never loads
+      # and closing the socket does not release it. WebTheme pings this
+      # watchdog every 0.5 s (systemd-notify, so NotifyAccess=all) and its
+      # first ping lowers the limit from 20 s (start-up) to 2 s. SIGKILL,
+      # not the default SIGABRT: Quickshell's crash handler would show a
+      # crash dialog, and a stopped process never handles SIGABRT. The
+      # unit's Restart=on-failure brings it back; the new instance resumes
+      # the waiting window. See docs/decisions/web-theme.md.
+      systemd.user.services.quickshell = {
+        path = [ pkgs.systemd ];
+        serviceConfig = {
+          WatchdogSec = "20s";
+          WatchdogSignal = "SIGKILL";
+          NotifyAccess = "all";
+        };
+      };
     };
 }
