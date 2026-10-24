@@ -2,6 +2,12 @@
 
 Status: built and verified in a nested session on 2026-10-23. Not deployed.
 
+Restart-safety update: the root `Heartbeat.qml` now owns watchdog pings, and
+WebTheme loads behind an optional filename Loader. See
+[Quickshell restart safety](desktop-safety.md) for the scope launcher, Hjem
+completion hook, KillMode trade-off and verification limits. The stall
+measurements below predate that ownership split.
+
 Chromium's pages take the active desktop theme's type, scroll bars and form controls. Page content colours stay the site's own. There is no injected window chrome and no DOM rewriting.
 
 ## Mechanism: CDP from Quickshell
@@ -54,7 +60,7 @@ Options, with "the theme ran before the page's own scripts" counted per window k
 | Pause only iframes | 30/30, 30/30, 30/30 | Still frozen |
 | **(a) As built plus a systemd watchdog (chosen)** | 30/30, 30/30, 30/30 | Released 4.3–4.4 s after the stall starts |
 
-The watchdog: `WebTheme.qml` runs `systemd-notify WATCHDOG=1` every 0.5 s when systemd set `WATCHDOG_USEC`. The unit (`web-theme.nix`) has `WatchdogSec=20s` for start-up; the first ping sets `WATCHDOG_USEC=2000000`. `NotifyAccess=all`, because the sender is a child. `WatchdogSignal=SIGKILL`: with the default SIGABRT, Quickshell's crash handler restarted it in place in 2.1 s but put a "Quickshell has crashed" dialog on screen, and a stopped process never handles SIGABRT. The unit's existing `Restart=on-failure`, `RestartSec=2` brings it back, and the new instance resumes the waiting window.
+The watchdog (now owned by `Heartbeat.qml`): it runs `systemd-notify WATCHDOG=1` every 0.5 s when systemd set `WATCHDOG_USEC`. The unit (`web-theme.nix`) has `WatchdogSec=20s` for start-up; the first ping sets `WATCHDOG_USEC=2000000`. `NotifyAccess=all`, because the sender is a child. `WatchdogSignal=SIGKILL`: with the default SIGABRT, Quickshell's crash handler restarted it in place in 2.1 s but put a "Quickshell has crashed" dialog on screen, and a stopped process never handles SIGABRT. The unit's existing `Restart=on-failure`, `RestartSec=2` brings it back, and the new instance resumes the waiting window.
 
 Measured with Quickshell as a transient `systemd-run --user` unit with these settings:
 
@@ -72,12 +78,14 @@ Costs: two `systemd-notify` processes a second. A real stall over 2 s restarts t
 
 | File | Role |
 |---|---|
-| `modules/quickshell/WebTheme.qml` | Socket, attach, register, push, watchdog pings; IPC `webTheme status` and `reapply` |
+| `modules/quickshell/WebTheme.qml` | Socket, attach, register, push; IPC `webTheme status` and `reapply` |
 | `modules/quickshell/web-theme.js` | Pure policy: theme to stylesheet, sections, per-site opt-outs |
 | `modules/quickshell/web-theme-page.js` | The in-page function |
 | `modules/quickshell/themes/platinum/web.css` | Platinum tokens and the three levels |
 | `modules/quickshell/web-theme.test.js` | Policy, in-page script in a fake window, lint of every theme's `web.css` |
-| `modules/web-theme.nix` | `checks.web-theme`; Public Sans in `fonts.packages`; the Quickshell unit's watchdog |
+| `modules/web-theme.nix` | `checks.web-theme`; Public Sans in `fonts.packages` |
+| `modules/quickshell/Heartbeat.qml` | Event-loop watchdog pings, independent of WebTheme |
+| `modules/bars.nix` | Quickshell unit, watchdog settings and restart after Hjem linking |
 
 ## Theme contract (Win98 slot)
 

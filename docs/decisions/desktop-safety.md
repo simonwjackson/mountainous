@@ -101,9 +101,13 @@ and protects against an external helper starting an unexpected long-lived app.
 remaining cgroup. `control-group` would clean up all helpers but also kill those
 legacy applications.
 
-Cost: a stuck helper can outlive Quickshell. Its normal helpers are short-lived,
-but systemd no longer guarantees cgroup-wide cleanup on restart. The app scopes
-remain the primary lifetime mechanism, not this exception. Reconsider
+Cost: a helper can outlive Quickshell unless it has its own parent-death
+protection. This is not limited to short-lived helpers: Dictation starts
+`pw-record` directly, and its 180-second limit is a QML Timer. This work has not
+proved recorder cleanup after SIGKILL. Treat SIGKILL-during-capture coverage as
+a deployment gate; an orphan recorder could keep capturing. Systemd no longer
+guarantees cgroup-wide cleanup on restart. The app scopes remain the primary
+lifetime mechanism, not this exception. Reconsider
 `control-group` only after legacy processes are gone and every external launch
 path is known to use an independent scope. Ending the full user session can
 still end its applications; this change promises restart safety, not logout
@@ -117,3 +121,19 @@ in the shared desktop layer. No new NixOS special argument is needed.
 `nixos-version --configuration-revision` and `nixos-version --json` consume this
 NixOS setting. Dirty source is explicitly marked by `dirtyRev`; a non-Git source
 without either value reports no revision rather than inventing one.
+
+## Verification limit
+
+The focused `desktop-safety` and `desktop-theme-shell` checks pass for code
+commit `0656f1f9747c84c02d2f4729f02aa7682cd09094`. The safety check also evaluates
+Myoko's toplevel drvPath, configuration revision and merged unit settings without
+building the host. It exercises the real FileView persistence path, including
+repair of corrupt JSON, and heartbeat pings with an intentionally broken
+optional WebTheme.
+
+The direct-launch transient-unit proof did not reach Quickshell: nested
+Hyprland's Aquamarine backend reported `Output WAYLAND-1: pending state rejected:
+invalid mode`, and `hyprctl --instance 0` returned `no such instance`. No app
+scope was created. Application cgroups, restart survival and SIGSTOP/watchdog
+survival therefore remain unverified. No retry beyond the agreed three-run
+budget was made. Evidence is in `/tmp/safety/REPORT.md` and its linked logs.
