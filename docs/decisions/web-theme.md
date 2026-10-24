@@ -60,7 +60,7 @@ Options, with "the theme ran before the page's own scripts" counted per window k
 | Pause only iframes | 30/30, 30/30, 30/30 | Still frozen |
 | **(a) As built plus a systemd watchdog (chosen)** | 30/30, 30/30, 30/30 | Released 4.3–4.4 s after the stall starts |
 
-The watchdog (now owned by `Heartbeat.qml`): it runs `systemd-notify WATCHDOG=1` every 0.5 s when systemd set `WATCHDOG_USEC`. The unit (`web-theme.nix`) has `WatchdogSec=20s` for start-up; the first ping sets `WATCHDOG_USEC=2000000`. `NotifyAccess=all`, because the sender is a child. `WatchdogSignal=SIGKILL`: with the default SIGABRT, Quickshell's crash handler restarted it in place in 2.1 s but put a "Quickshell has crashed" dialog on screen, and a stopped process never handles SIGABRT. The unit's existing `Restart=on-failure`, `RestartSec=2` brings it back, and the new instance resumes the waiting window.
+The watchdog (now owned by `Heartbeat.qml`): it runs `systemd-notify WATCHDOG=1` every 0.5 s when systemd set `WATCHDOG_USEC`. The unit (`bars.nix`) has `WatchdogSec=20s` for start-up; the first ping sets `WATCHDOG_USEC=2000000`. `NotifyAccess=all`, because the sender is a child. `WatchdogSignal=SIGKILL`: with the default SIGABRT, Quickshell's crash handler restarted it in place in 2.1 s but put a "Quickshell has crashed" dialog on screen, and a stopped process never handles SIGABRT. The unit's existing `Restart=on-failure`, `RestartSec=2` brings it back, and the new instance resumes the waiting window.
 
 Measured with Quickshell as a transient `systemd-run --user` unit with these settings:
 

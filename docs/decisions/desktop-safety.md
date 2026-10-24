@@ -197,18 +197,61 @@ in the shared desktop layer. No new NixOS special argument is needed.
 NixOS setting. Dirty source is explicitly marked by `dirtyRev`; a non-Git source
 without either value reports no revision rather than inventing one.
 
-## Verification limit
+## Verification
 
-The focused `desktop-safety` and `desktop-theme-shell` checks pass for code
-commit `0656f1f9747c84c02d2f4729f02aa7682cd09094`. The safety check also evaluates
-Myoko's toplevel drvPath, configuration revision and merged unit settings without
-building the host. It exercises the real FileView persistence path, including
-repair of corrupt JSON, and heartbeat pings with an intentionally broken
-optional WebTheme.
+The focused tests exercise argv preservation, missing/corrupt/full recent-app
+state, actual FileView repair/persistence, and heartbeat pings with a broken
+WebTheme. The recorder check also asserts `KillMode=mixed`, UID 1000 and no
+runtime override, prints the evaluated Myoko unit/revision/toplevel, and runs
+the offline drop-in ordering test. The new pure launcher test checks that the
+launch prefix neither sets nor unsets `XDG_RUNTIME_DIR`.
 
-The direct-launch transient-unit proof did not reach Quickshell: nested
-Hyprland's Aquamarine backend reported `Output WAYLAND-1: pending state rejected:
-invalid mode`, and `hyprctl --instance 0` returned `no such instance`. No app
-scope was created. Application cgroups, restart survival and SIGSTOP/watchdog
-survival therefore remain unverified. No retry beyond the agreed three-run
-budget was made. Evidence is in `/tmp/safety/REPORT.md` and its linked logs.
+A real private Hyprland proof ran at 2880x1800, scale 1.5, with a transient
+`safety-quickshell-mixed.service` mirroring the watchdog, restart and kill-mode
+settings. It used the production shell, Launcher, Heartbeat and optional Loader,
+with only test IPC and a non-recording lingering helper added to the staged copy.
+The helper ignores SIGTERM/SIGHUP and clears its parent-death signal, so a QML
+limit or parent-death cleanup cannot explain its death after a watchdog SIGKILL.
+
+| Event | Observed result |
+|---|---|
+| Launch through Launcher | Foot PID `1756994` in `app.slice/app-safety-mixed-mvmp52qx-1-sseviz94.scope`; its actual argv[0] and kernel cgroup were checked |
+| Restart test Quickshell | Bar `1756930` → `1757091`; app PID unchanged/alive; old helper `1756945` killed |
+| SIGSTOP bar beyond the 2-second watchdog | systemd killed `1757091`, killed helper `1757105` with SIGKILL, then started bar `1757288`; app PID unchanged/alive; `NRestarts=1` |
+| Broken WebTheme | Bar PID `1757343` remained alive past the 20-second startup allowance; app PID unchanged/alive; bar still visible |
+
+The native scope status, PID/cgroup snapshots, journal and screenshots are in
+`/tmp/safety/mixed/`; the complete passing transcript is
+`/tmp/safety/mixed-budget-3-proof.log`. No microphone was opened.
+
+### Harness corrections and safety
+
+The earlier reference harnesses used DRM backends. They were not copied in that
+respect. The successful setup keeps `LIBSEAT_BACKEND=seatd`, a nonexistent
+`SEATD_SOCK`, and a nonexistent `AQ_DRM_DEVICES`. Render-node offscreen rendering
+is allowed; no modesetting `card*` descriptors were observed, and neither log
+contained `drm: Starting backend`.
+
+The successful launch setup copies the references' setsid/stdin handling,
+private D-Bus, and create/configure/disable order. Unlike the failing software-only
+startup, it initially enables WAYLAND-1 at `mode="preferred"`, creates and
+configures HEADLESS-1 at 2880x1800/1.5, and only then disables WAYLAND-1. The
+combined setup fixed startup; the individual launch-variable changes were not
+A/B tested separately.
+
+Two later harness problems were diagnosed before retrying:
+
+- Scope transport failed because the graphical fixture's private runtime lacked
+  the user manager's socket. The test-only argv adapter uses the real manager
+  runtime for systemd-run and restores the private runtime inside the scoped
+  command. Production inherits the real session runtime and needs no adapter.
+- A broad `pgrep -f` matched the Python diagnostic adapter because its command
+  line contained the foot arguments. The final proof reads the scope's
+  `cgroup.procs` and matches argv[0] exactly to the foot executable. A pure test
+  rejects the wrapper case. The kernel cgroup check therefore describes the
+  application, not a launcher parent.
+
+The proof and focused builds hold the shared heavy lock only while running,
+pass the 60-second memory/swap gate, and use nice 10. All private proof processes
+and test scopes were stopped. Nothing was deployed, landed or pushed. Full
+check logs and the final evaluation are indexed by `/tmp/safety/REPORT.md`.
