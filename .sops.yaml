@@ -133,6 +133,19 @@ creation_rules:
           - *master
           - *hiyori
 
+  # Read-only Beszel MCP access for each desktop, separate from notifications.
+  - path_regex: secrets/desktop/myoko\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *myoko
+
+  - path_regex: secrets/desktop/hiyori\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *hiyori
+
   - path_regex: secrets/notify/fleet\.yaml$
     key_groups:
       - age:
