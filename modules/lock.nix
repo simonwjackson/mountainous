@@ -98,7 +98,12 @@ in
             && screenOff.Type == "oneshot"
             && screenOff.RemainAfterExit
             && pkgs.lib.hasSuffix "/bin/sleep 30" screenOff.ExecStart
-            && unit == "${c.services.hypridle.package}/bin/hypridle -c ${policy}";
+            &&
+              unit == [
+                ""
+                "${c.services.hypridle.package}/bin/hypridle -c ${policy}"
+              ]
+            && pkgs.lib.hasInfix "\nExecStart=\nExecStart=" c.systemd.user.units."hypridle.service".text;
         in
         assert valid;
         pkgs.runCommand "lock-policy" { nativeBuildInputs = [ pkgs.python3 ]; } ''
@@ -141,7 +146,12 @@ in
       systemd.user.services.hypridle = lib.mkIf config.services.hypridle.enable {
         # Upstream exposes enable/package only. -c prevents a stale home config
         # from shadowing the policy. The NixOS module installs the upstream unit.
-        serviceConfig.ExecStart = lib.mkDefault "${config.services.hypridle.package}/bin/hypridle -c ${policy}";
+        # The generated unit is a drop-in for the upstream packaged unit. Reset
+        # its ExecStart first: Type=simple cannot have two start commands.
+        serviceConfig.ExecStart = lib.mkDefault [
+          ""
+          "${config.services.hypridle.package}/bin/hypridle -c ${policy}"
+        ];
         path = [
           pkgs.systemd
           pkgs.procps
