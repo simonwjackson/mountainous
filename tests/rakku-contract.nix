@@ -33,6 +33,9 @@ assert builtins.all (path: builtins.elem path directories) [
 assert builtins.match ".*4xdbwlvdmkd278fzy69bawfj1df487m5-homeassistant-2025.12.3.*" haExec != null;
 assert
   builtins.match ".*rirnmd7dk9ikj4fw51n5fwjvsbb7q2s0-zwave-js-server-3.4.0.*" zwaveExec != null;
+# The Z-Wave server has no authentication. The LAN and tailnet interfaces are
+# trusted, so it must listen on loopback only.
+assert builtins.match ".* --host 127\\.0\\.0\\.1 .*" zwaveExec != null;
 assert c.users.users.hass.uid == 286 && c.users.groups.hass.gid == 286;
 assert c.users.users.simonwjackson.uid == 1000 && c.users.users.simon.uid == 1001;
 assert

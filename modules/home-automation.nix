@@ -114,6 +114,14 @@
         package = pinned.zwave-js-server;
         port = 3000;
         secretsConfigFile = config.sops.secrets.zwave-js-secrets.path;
+        # The server protocol has no authentication, and Home Assistant
+        # connects on this host. Listen on loopback only, and do not
+        # advertise an address that nothing else can reach.
+        extraFlags = [
+          "--host"
+          "127.0.0.1"
+          "--disable-dns-sd"
+        ];
       };
       # The fleet nixpkgs removed `openFirewall`. Open the same port it did.
       networking.firewall.allowedTCPPorts = [
