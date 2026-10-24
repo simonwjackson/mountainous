@@ -344,8 +344,10 @@ FocusScope {
                             focusRing: view.activeFocus
                             onClicked: { view.forceActiveFocus(); view.panel.toggleExpanded(entry.modelData); }
                         }
+                        // A Loader keeps its last height when it unloads; bind it.
                         Loader {
                             width: parent.width
+                            height: active && item ? item.implicitHeight : 0
                             active: entry.hv !== null && view.panel.expanded === entry.modelData
                             sourceComponent: PlatinumFleetDetail {
                                 hv: entry.hv

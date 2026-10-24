@@ -81,7 +81,7 @@ Item {
             id: labelColumn
             width: 66
             Small { text: spark.label }
-            Tiny { text: spark.s.now === null ? "--" : spark.format(spark.s.now) + " now" }
+            Tiny { width: labelColumn.width; elide: Text.ElideRight; text: spark.s.now === null ? "--" : spark.format(spark.s.now) + (spark.key === "net" ? "" : " now") }
         }
         PlatinumSparkline {
             id: well
