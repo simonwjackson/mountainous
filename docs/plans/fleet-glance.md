@@ -59,3 +59,11 @@ See the report in `/tmp/fleet-glance/REPORT.md` for evidence. Short list:
 | Dark grey dither: black ink, the other cells clear | The mock's token table; "#000 on #363636" is what it gives over the bar-grey surfaces. `PlatinumGlanceTokens.ditherGround` makes an opaque #363636 ground a one-line change. |
 | Widget checks are check boxes inside selectable menu rows | They keep keyboard selection (Up, Down, Return) like the other menu rows. |
 | The glance Fleet has no grow box | Its size is the plan's; the standalone window keeps its grow box. |
+
+## Evidence and limits
+
+Nested Hyprland 0.56.2 in headless labwc at 2880×1800, scale 1.5 (`/tmp/fleet-glance/`, `REPORT.md`). Measured there: summon ends at frame 9 (152–157 ms after the call), dismiss at 161–162 ms, reduced motion draws no animation frame; the dither's ink cells are 100% pure black on the screen's 3-device-px checker; the Glance menu draws over the space; a Win98 swap leaves only the taskbar mapped and the Fleet/glance IPC does nothing there. Focused checks `beszel-model`, `beszel-status`, `fleet-glance-model`, `bar-model`, `bar-delivery`, `desktop-theme`, `desktop-theme-shell` and `win98-desktop` pass; the Myoko toplevel evaluates.
+
+Not proven: Super+W and Super+B as real key presses (the binds load; a virtual Super from wtype did not fire them), the dither on Myoko's OLED, the space over a fullscreen window, two screens.
+
+Review tools: `qs -c mountainous ipc call glance seek <ms> in|out` holds one frame (`-1` runs again), `glance slow <n>` plays the motion n times slower, and `MOUNTAINOUS_GLANCE_TRACE=1` logs each frame.
