@@ -1,4 +1,5 @@
-# Rakku's own tailnet names (https://<name>.<tailnet>), one per local backend.
+# A host's own tailnet names (https://<name>.<tailnet>), one per local
+# backend: Rakku's home services, Unzen's Valhalla and Traccar.
 #
 # Every name joins with the fleet OAuth client, the same credential that
 # tailscale-join and the media identities use. Tailscale makes a one-hour,
@@ -36,6 +37,17 @@
               ) "${host}: tailnet name ${name} does not join with the fleet OAuth client"
             ) c.mountainous.tailnetNames or { }
           )
+          # Fixed ids only where the root forgets allocated ones.
+          ++ lib.optionals ((c.mountainous.tailnetNames or { }) != { }) (
+            let
+              tmpfsRoot = system.options.environment ? persistence;
+              user = c.users.users.tsnet-proxy;
+              group = c.users.groups.tsnet-proxy;
+            in
+            lib.optional (
+              if tmpfsRoot then user.uid != 991 || group.gid != 989 else user.uid != null || group.gid != null
+            ) "${host}: tsnet-proxy has ${if tmpfsRoot then "no fixed" else "a fixed"} uid/gid"
+          )
         ) self.nixosConfigurations
       );
     in
@@ -63,10 +75,18 @@
       tailscale = config.mountainous.tailscale;
       # Rakku's root is tmpfs, so the identities live on its persistent
       # volume. A host with a persistent root (Unzen) keeps them in /var/lib.
+      #
+      # The fixed ids belong to that case too: on a tmpfs root NixOS forgets
+      # the ids it handed out, and the persisted state must keep its owner.
+      # On a persistent root NixOS remembers them (/var/lib/nixos), so the
+      # account takes a free id there; a fixed one could match an id already
+      # handed to another account.
       persistence =
         { options, ... }:
         {
           config = lib.optionalAttrs (options.environment ? persistence) {
+            users.users.tsnet-proxy.uid = 991;
+            users.groups.tsnet-proxy.gid = 989;
             environment.persistence."/tundra/permafrost".directories = lib.mapAttrsToList (name: _: {
               directory = directory name;
               user = "tsnet-proxy";
@@ -110,9 +130,8 @@
         users.users.tsnet-proxy = {
           isSystemUser = true;
           group = "tsnet-proxy";
-          uid = 991;
         };
-        users.groups.tsnet-proxy.gid = 989;
+        users.groups.tsnet-proxy = { };
 
         systemd.services = lib.mapAttrs' (
           name: cfg:
