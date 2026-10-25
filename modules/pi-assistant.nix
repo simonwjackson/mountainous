@@ -217,7 +217,9 @@ in
           ASSISTANT_PORT = toString instance.voicePort;
           ASSISTANT_WEB_PORT = toString instance.webPort;
           ASSISTANT_WEB_ROOT = "${profile}/share/assistant-web";
-          ASSISTANT_WEB_ORIGINS = "https://${cfg.tailnetName}.${cfg.tailnet}";
+          ASSISTANT_WEB_ORIGINS = lib.concatStringsSep "," (
+            [ "https://${cfg.tailnetName}.${cfg.tailnet}" ] ++ cfg.extraWebOrigins
+          );
           ASSISTANT_WEB_AUTH = "tailnet";
           ASSISTANT_HOME_PLACE = cfg.homePlace;
           ASSISTANT_PEOPLE = lib.concatStringsSep "," people;
@@ -295,6 +297,12 @@ in
         tailnetName = lib.mkOption {
           type = lib.types.str;
           default = "assistant";
+        };
+        extraWebOrigins = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "https://vela.example.ts.net" ];
+          description = "More exact browser origins for ASSISTANT_WEB_ORIGINS, beside the assistant's own: other apps that call the assistant, such as Vela.";
         };
         homePlace = lib.mkOption {
           type = lib.types.str;

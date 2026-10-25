@@ -788,6 +788,7 @@
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
         "pyxamp": "pyxamp",
         "sops-nix": "sops-nix",
+        "vela": "vela",
         "w95fa-src": "w95fa-src"
       }
     },
@@ -1089,6 +1090,26 @@
         "owner": "numtide",
         "repo": "flake-utils",
         "type": "github"
+      }
+    },
+    "vela": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792902959,
+        "narHash": "sha256-F9HNZ7i8KivO7N5sy0U3ZC8OFrswR/D0MYliAWDNJKU=",
+        "ref": "refs/heads/main",
+        "rev": "d0500d1e44e9ac2788ce07b8d9f62688c9ebbb3d",
+        "revCount": 1,
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/vela"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/vela"
       }
     },
     "w95fa-src": {

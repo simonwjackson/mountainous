@@ -19,6 +19,7 @@ in
       "beszel-hub"
       "pi-assistant"
       "signal-responder"
+      "vela"
       "no-builds"
     ];
     module =
@@ -148,6 +149,8 @@ in
             credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
           };
           tailnet = "hummingbird-lake.ts.net";
+          # Vela's /surface link (Vela ADR 0007).
+          extraWebOrigins = [ config.mountainous.features.vela.origin ];
           homePlace = "Denver|39.739|-104.985|America/Denver";
           cliproxyapiKeyFile = config.sops.secrets.pi-assistant-cliproxyapi-key.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
@@ -167,6 +170,31 @@ in
             ];
           };
         };
+        # Vela, the car dashboard: https://vela.hummingbird-lake.ts.net.
+        # Pyxis (pyxis), Ossicle (podcasts) and voice-gateway (voice) are user
+        # units on Zao, outside this flake: pyxis-tsnet, ossicle-proxy and
+        # voice-tsnet. Valhalla and Traccar run on Unzen (modules/hosts/unzen.nix).
+        mountainous.features.vela.tailnet = "hummingbird-lake.ts.net";
+        services.vela.settings = {
+          origins = {
+            pyxis = "https://pyxis.hummingbird-lake.ts.net";
+            ossicle = "https://podcasts.hummingbird-lake.ts.net";
+            assistant =
+              let
+                a = config.mountainous.features.pi-assistant;
+              in
+              "https://${a.tailnetName}.${a.tailnet}";
+            voice = "https://voice.hummingbird-lake.ts.net";
+            valhalla = "https://valhalla.hummingbird-lake.ts.net";
+            traccar = "https://traccar-osmand.hummingbird-lake.ts.net";
+          };
+          photonUrl = "https://photon.komoot.io";
+          # Traccar registers this device on its first report.
+          traccarDeviceId = "vela";
+          # Vela's default; raise it if turn sounds start late over Bluetooth.
+          turnSoundLeadMs = 250;
+        };
+
         # Root reads these; each assistant unit gets a copy as a credential.
         # The same media account serves both people and their Household assistant.
         sops.secrets.scryer-admin-password = {
