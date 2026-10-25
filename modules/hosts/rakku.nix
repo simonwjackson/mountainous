@@ -143,6 +143,10 @@ in
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
             };
           };
+          household = {
+            skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+            credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+          };
           tailnet = "hummingbird-lake.ts.net";
           homePlace = "Denver|39.739|-104.985|America/Denver";
           cliproxyapiKeyFile = config.sops.secrets.pi-assistant-cliproxyapi-key.path;
@@ -164,13 +168,14 @@ in
           };
         };
         # Root reads these; each assistant unit gets a copy as a credential.
-        # The existing Scryer admin password is shared only by the two personal assistants.
+        # The same media account serves both people and their Household assistant.
         sops.secrets.scryer-admin-password = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
           restartUnits = [
             "pi-assistant-simon.service"
             "pi-assistant-laure.service"
+            "pi-assistant-household.service"
           ];
         };
         sops.secrets.pi-assistant-cliproxyapi-key = {

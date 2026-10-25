@@ -87,6 +87,11 @@ in
             bash scripts/test-pi-assistant-skills
             touch "$out"
           '';
+      checks.pi-assistant-resources =
+        if import ../tests/pi-assistant-resources.nix { flake = self; } then
+          pkgs.runCommand "pi-assistant-resources" { } "touch $out"
+        else
+          throw "pi-assistant: instance resource contract failed";
       checks.pi-assistant =
         if problems == [ ] then
           pkgs.runCommand "pi-assistant" { } "touch $out"
@@ -233,6 +238,26 @@ in
         };
       };
 
+      # Personal and Household instances use the same reviewed resources.
+      resourceOptions = {
+        skills = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          example = {
+            scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+          };
+          description = "Shared skill directories linked into this assistant's own agent directory. Sources must be absolute paths containing SKILL.md.";
+        };
+        credentials = lib.mkOption {
+          type = lib.types.attrsOf lib.types.path;
+          default = { };
+          example = {
+            beszel-mcp-token = "/run/secrets/beszel-mcp-token";
+          };
+          description = "More secrets for this assistant, by name. Its tools read each one as $CREDENTIALS_DIRECTORY/<name>.";
+        };
+      };
+
       # Whether an instance acts on GitHub as the operator (modules/github.nix).
       githubOf = instance: instance.github or false;
     in
@@ -241,29 +266,16 @@ in
         people = lib.mkOption {
           type = lib.types.attrsOf (
             lib.types.submodule {
-              options = portsOption 4317 4318 // {
-                github = lib.mkOption {
-                  type = lib.types.bool;
-                  default = false;
-                  description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
-                };
-                skills = lib.mkOption {
-                  type = lib.types.attrsOf lib.types.str;
-                  default = { };
-                  example = {
-                    scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+              options =
+                portsOption 4317 4318
+                // resourceOptions
+                // {
+                  github = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
                   };
-                  description = "Shared skill directories linked into this assistant's own agent directory. Sources must be absolute paths containing SKILL.md.";
                 };
-                credentials = lib.mkOption {
-                  type = lib.types.attrsOf lib.types.path;
-                  default = { };
-                  example = {
-                    beszel-mcp-token = "/run/secrets/beszel-mcp-token";
-                  };
-                  description = "More secrets for this assistant, by name. Its tools read each one as $CREDENTIALS_DIRECTORY/<name>.";
-                };
-              };
             }
           );
           default = { };
@@ -275,7 +287,7 @@ in
           };
           description = "Each person's own assistant, by name, with its loopback ports. Names sort alphabetically in the app's picker.";
         };
-        household = portsOption 4337 4338;
+        household = portsOption 4337 4338 // resourceOptions;
         tailnet = lib.mkOption {
           type = lib.types.str;
           example = "example.ts.net";
