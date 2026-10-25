@@ -7,6 +7,7 @@ import QtQuick
 import QtQuick.Layouts
 import "panels"
 import "lanes.js" as Lanes
+import "app-model.js" as AppModel
 
 ShellRoot {
     id: root
@@ -40,6 +41,96 @@ ShellRoot {
         const screen = primary ? root.primaryScreen() : root.focusedScreen();
         const desktop = screen ? root.desktops[screen.name] : null;
         if (desktop) desktop.open(control);
+    }
+
+    // Super+Tab held: hyprland.lua numbers each step; see app-model.js.
+    property real cycleSeq: 0
+    function cycleChrome(action, position, seq) {
+        if (!AppModel.accept(root.cycleSeq, seq)) return;
+        root.cycleSeq = seq;
+        const screen = root.focusedScreen();
+        const desktop = screen ? root.desktops[screen.name] : null;
+        if (desktop && typeof desktop.cycle === "function") desktop.cycle(action, position);
+    }
+
+    //----------------------------------------------------------------
+    // Windows as plain rows, for every theme
+    //----------------------------------------------------------------
+    // Every toplevel, hidden ones included: the hide/show owner, the
+    // running-app lists and the window strips read these. A row's address
+    // has no "0x"; x and y are where Hyprland last said the window sits.
+    readonly property var windowRows: Hyprland.toplevels.values.map(function (t) { return root.rowOf(t); })
+    function rowOf(t) {
+        const o = t.lastIpcObject || {};
+        const ws = t.workspace;
+        const wl = t.wayland;
+        const at = o.at && o.at.length === 2 ? o.at : null;
+        return {
+            address: AppModel.key(t.address || o.address),
+            appId: wl && wl.appId ? wl.appId : (o["class"] || ""),
+            title: t.title || "",
+            page: ws ? ws.id : -1,
+            workspace: ws ? ws.name : "",
+            screen: Lanes.screenOf(t),
+            x: at ? at[0] : undefined,
+            y: at ? at[1] : undefined,
+            focusHistory: typeof o.focusHistoryID === "number" ? o.focusHistoryID : -1,
+            toplevel: t
+        };
+    }
+
+    // Most recently used windows first, across screens. Hyprland's focus
+    // history seeds it after a restart.
+    property var focusOrder: []
+    readonly property var mru: AppModel.reconcile(root.focusOrder, root.windowRows)
+    Connections {
+        target: Hyprland
+        function onActiveToplevelChanged() {
+            const t = Hyprland.activeToplevel;
+            if (t && t.address) root.focusOrder = AppModel.touch(root.focusOrder, t.address);
+        }
+    }
+
+    // Hide and Show (Hyprland has no minimise). See WindowHider.qml.
+    WindowHider { id: windowHider; rows: root.windowRows }
+    readonly property var hider: windowHider
+
+    function rowFor(address) {
+        const k = AppModel.key(address);
+        for (const r of root.windowRows) if (r.address === k) return r;
+        return null;
+    }
+
+    // Bring a window forward, on its page. A hidden window's app is shown
+    // first, and the window is focused in the same batch.
+    function activate(address) {
+        const r = root.rowFor(address);
+        if (!r) return;
+        if (windowHider.isHidden(r)) { windowHider.showApp(r.appId, 0, r.address); return; }
+        const wl = r.toplevel ? r.toplevel.wayland : null;
+        if (wl) wl.activate();
+        else Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch",
+            'hl.dsp.focus({ window = "address:0x' + r.address + '" })']);
+    }
+
+    function closeWindow(address) {
+        const r = root.rowFor(address);
+        const wl = r && r.toplevel ? r.toplevel.wayland : null;
+        if (wl) wl.close();
+    }
+
+    // Send a window to a page without following it there.
+    function moveToPage(address, page) {
+        const k = AppModel.key(address);
+        if (k === "" || !(page > 0)) return;
+        Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch",
+            'hl.dsp.window.move({ window = "address:0x' + k + '", workspace = ' + page + ', follow = false })']);
+        positionRefresh.restart();
+    }
+
+    // Every page id Hyprland has, on every screen.
+    function pageIds() {
+        return Hyprland.workspaces.values.map(function (w) { return w.id; }).filter(function (id) { return id > 0; });
     }
 
     // Kamoi Meta+I hides the top bar and the dock together.
@@ -210,6 +301,11 @@ ShellRoot {
         // both work, and Meta+I uses toggle.
         function reveal(): void { root.revealChrome(); }
         function open(control: string): void { root.openChrome(control); }
+        // Super+Tab held (hyprland.lua): step <position> <seq>,
+        // commit <position> <seq>, cancel 0 <seq>.
+        function cycle(action: string, position: int, seq: string): void {
+            root.cycleChrome(action, position, Number(seq));
+        }
     }
 
     // The Super+O chord's letters (modules/hyprland/hyprland.lua) land here.
@@ -307,10 +403,28 @@ ShellRoot {
         target: Hyprland
 
         function onRawEvent(event) {
+            if (event.name === "closewindow" || event.name === "activewindowv2"
+                || event.name === "changefloatingmode" || event.name === "fullscreen") {
+                positionRefresh.restart();
+                return;
+            }
             if (event.name !== "openwindow" && event.name !== "movewindowv2") return;
             dockToplevelRefresh.restart();
             Hyprland.refreshWorkspaces();
         }
+    }
+
+    // Where each window sits (lastIpcObject.at) orders a page's windows on
+    // the Control Strip, so a swap moves the tiles with the windows.
+    // Hyprland sends no event for a swap or a layout change, only for the
+    // focus that comes with it, and the toplevel's IPC object is only
+    // rewritten by a refresh. Measured in the nested session: after
+    // window.swap the socket said only activewindow/activewindowv2.
+    Timer {
+        id: positionRefresh
+        interval: 150
+        repeat: false
+        onTriggered: Hyprland.refreshToplevels()
     }
 
     // One screen's windows, ordered along its pages. Each screen is its
@@ -391,6 +505,7 @@ ShellRoot {
                 'hl.dsp.window.move({ window = "address:' + a + '", '
                 + 'workspace = ' + toPage + ' })']);
         }
+        positionRefresh.restart();
     }
 
     SystemClock {
