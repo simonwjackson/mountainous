@@ -172,6 +172,13 @@
             ];
             costing = "auto";
           };
+          # A build that failed all its tries reaches the phone like a storage
+          # alert, with the same publish-only token.
+          alert = {
+            notify = self.packages.${pkgs.stdenv.hostPlatform.system}.notify-sync;
+            tokenFile = config.sops.secrets.storage-alerts-token.path;
+            buttonTokenFile = config.sops.secrets.notify-button-token.path;
+          };
         };
         # One LAN interface: the 2.5 GbE Realtek (enp62s0) carries traffic and
         # the onboard 1 GbE Intel (eno1) takes over if it fails.

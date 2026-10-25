@@ -58,6 +58,9 @@ echo "building tiles with $VALHALLA_CONCURRENCY threads"
 valhalla_build_tiles --config "$work/build.json" "$pbf"
 echo "writing the tile extract"
 valhalla_build_extract --config "$work/build.json" --overwrite
+# The tar holds every tile now. Dropping the loose tiles cuts the peak disk
+# use, and the smoke route below can then only read the tar.
+rm -rf "$work/tiles" "$work/admins.sqlite"
 
 # The new extract must route before it goes live.
 valhalla_service "$work/build.json" route "$VALHALLA_SMOKE_REQUEST" >"$work/smoke.json"

@@ -11,6 +11,10 @@
 #
 # The first extract does not build itself: start valhalla-tiles once after the
 # first deploy. The server waits for the extract to exist.
+#
+# A failed build tries again 6 hours later, three tries in all. Only then does
+# the unit fail and, when `alert` is set, send one notification. Until two days
+# pass, a manual start then needs `systemctl reset-failed valhalla-tiles` first.
 { self, ... }:
 let
   # The tile builder as a command, so the check runs the code the host runs.
@@ -62,6 +66,10 @@ in
             ) "the tiles are on the root disk (${dataMount})"
             ++ want (cfg.buildConcurrency <= 4) "the tile build uses more than 4 threads"
             ++ want (build.serviceConfig ? MemoryMax) "the tile build has no memory limit"
+            ++ want ((build.serviceConfig.Restart or "no") == "on-failure") "a failed tile build is not retried"
+            ++ want (
+              cfg.alert == null || lib.elem "valhalla-tiles-failed.service" build.onFailure
+            ) "a failed tile build is not reported"
             ++ want (c.systemd.timers ? valhalla-tiles) "no timer rebuilds the tiles"
             ++ want (c.mountainous.tailnetNames ? valhalla) "no tailnet name"
             ++ want (!(lib.elem cfg.port c.networking.firewall.allowedTCPPorts)) "the server port is open"
@@ -190,6 +198,32 @@ in
           type = lib.types.attrs;
           description = "A /route request a new extract must answer before it goes live.";
         };
+        alert = lib.mkOption {
+          type = lib.types.nullOr (
+            lib.types.submodule {
+              options = {
+                notify = lib.mkOption {
+                  type = lib.types.package;
+                  description = "Package providing bin/notify.";
+                };
+                url = lib.mkOption {
+                  type = lib.types.str;
+                  default = "https://ntfy.hummingbird-lake.ts.net";
+                };
+                tokenFile = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Runtime path of a publish-only ntfy token.";
+                };
+                buttonTokenFile = lib.mkOption {
+                  type = lib.types.str;
+                  description = "Runtime path of the write-only notify-ctl token used by the Done button.";
+                };
+              };
+            }
+          );
+          default = null;
+          description = "Where a tile build that failed all its tries is reported.";
+        };
         serverConfig = lib.mkOption {
           type = lib.types.path;
           readOnly = true;
@@ -210,7 +244,13 @@ in
           description = "Build the Valhalla tile extract and swap it in";
           wants = [ "network-online.target" ];
           after = [ "network-online.target" ];
-          unitConfig.RequiresMountsFor = [ cfg.dataDir ];
+          unitConfig = {
+            RequiresMountsFor = [ cfg.dataDir ];
+            # Three starts in two days: the first try and two retries.
+            StartLimitIntervalSec = "2d";
+            StartLimitBurst = 3;
+          };
+          onFailure = lib.optional (cfg.alert != null) "valhalla-tiles-failed.service";
           environment = {
             VALHALLA_DATA = cfg.dataDir;
             VALHALLA_PBF_URL = cfg.extractUrl;
@@ -229,6 +269,8 @@ in
             ExecStartPost = "+${config.systemd.package}/bin/systemctl restart valhalla.service";
             # The whole-US build takes hours; it runs behind media and storage.
             TimeoutStartSec = "16h";
+            Restart = "on-failure";
+            RestartSec = "6h";
             Nice = 19;
             CPUWeight = 20;
             IOSchedulingClass = "idle";
@@ -249,6 +291,42 @@ in
               "AF_INET"
               "AF_INET6"
             ];
+          };
+        };
+
+        # Started by OnFailure once the retries are spent. It never touches the
+        # live extract; it only says the monthly build did not happen.
+        systemd.services.valhalla-tiles-failed = lib.mkIf (cfg.alert != null) {
+          description = "Report a failed Valhalla tile build";
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
+          environment = {
+            NOTIFY_URL = cfg.alert.url;
+            NOTIFY_TOKEN_FILE = "%d/token";
+            NOTIFY_BUTTON_TOKEN_FILE = "%d/button";
+          };
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = lib.escapeShellArgs [
+              "${cfg.alert.notify}/bin/notify"
+              "send"
+              "--name"
+              "valhalla-${config.networking.hostName}"
+              "--summary"
+              "Valhalla tile build failed"
+              "--body"
+              "valhalla-tiles failed three times on ${config.networking.hostName}. Routing still serves the previous extract. See journalctl -u valhalla-tiles."
+            ];
+            LoadCredential = [
+              "token:${cfg.alert.tokenFile}"
+              "button:${cfg.alert.buttonTokenFile}"
+            ];
+            DynamicUser = true;
+            TimeoutStartSec = "5min";
+            NoNewPrivileges = true;
+            ProtectSystem = "strict";
+            ProtectHome = true;
+            PrivateTmp = true;
           };
         };
 
