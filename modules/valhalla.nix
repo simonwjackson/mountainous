@@ -13,8 +13,9 @@
 # first deploy. The server waits for the extract to exist.
 #
 # A failed build tries again 6 hours later, three tries in all. Only then does
-# the unit fail and, when `alert` is set, send one notification. Until two days
-# pass, a manual start then needs `systemctl reset-failed valhalla-tiles` first.
+# the unit fail and, when `alert` is set, send one notification. Until three
+# days pass, a manual start then needs `systemctl reset-failed valhalla-tiles`
+# first.
 { self, ... }:
 let
   # The tile builder as a command, so the check runs the code the host runs.
@@ -53,6 +54,28 @@ in
               );
             dataMount = mountOf cfg.dataDir;
             build = c.systemd.services.valhalla-tiles;
+            # systemd time spans as this module writes them: "<n>s|min|h|d".
+            seconds =
+              span:
+              let
+                m = builtins.match "([0-9]+)(s|min|h|d)" (toString span);
+                unit = {
+                  s = 1;
+                  min = 60;
+                  h = 3600;
+                  d = 86400;
+                };
+              in
+              if m == null then
+                throw "valhalla: cannot read the time span ${toString span}"
+              else
+                lib.toInt (lib.elemAt m 0) * unit.${lib.elemAt m 1};
+            burst = build.unitConfig.StartLimitBurst;
+            # Slowest failures: every try runs to its timeout. The start limit
+            # must still see all of them, or the retries never stop or alert.
+            slowestTries =
+              burst * seconds build.serviceConfig.TimeoutStartSec
+              + (burst - 1) * seconds build.serviceConfig.RestartSec;
           in
           lib.optionals (cfg != null && cfg.enable) (
             want (
@@ -67,6 +90,9 @@ in
             ++ want (cfg.buildConcurrency <= 4) "the tile build uses more than 4 threads"
             ++ want (build.serviceConfig ? MemoryMax) "the tile build has no memory limit"
             ++ want ((build.serviceConfig.Restart or "no") == "on-failure") "a failed tile build is not retried"
+            ++
+              want (seconds build.unitConfig.StartLimitIntervalSec >= slowestTries)
+                "the start limit interval is shorter than ${toString burst} tries that each time out (${toString slowestTries}s), so slow failures retry forever"
             ++ want (
               cfg.alert == null || lib.elem "valhalla-tiles-failed.service" build.onFailure
             ) "a failed tile build is not reported"
@@ -246,8 +272,10 @@ in
           after = [ "network-online.target" ];
           unitConfig = {
             RequiresMountsFor = [ cfg.dataDir ];
-            # Three starts in two days: the first try and two retries.
-            StartLimitIntervalSec = "2d";
+            # Three starts in three days: the first try and two retries. Three
+            # days covers three tries that each hit the 16h timeout, plus the
+            # two 6h waits (60h); checks.valhalla holds that.
+            StartLimitIntervalSec = "3d";
             StartLimitBurst = 3;
           };
           onFailure = lib.optional (cfg.alert != null) "valhalla-tiles-failed.service";
