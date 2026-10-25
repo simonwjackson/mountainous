@@ -111,6 +111,31 @@ Singleton {
     readonly property int menuLine: 26           // one-line row
     readonly property int menuRow: 40            // two-line row
 
+    //----------------------------------------------------------------
+    // THE CONTROL STRIP (bottom left) and its windoids.
+    //----------------------------------------------------------------
+    // The strip stays on screen for hours, so on the black bar it is black
+    // and flat too, with a dim hair edge; the light and grey strips take
+    // the Platinum bevel. Geometry lives in themes/platinum/strip-plan.js.
+    readonly property color stripSurface: barSurface
+    readonly property color stripEdge: barBlack ? "#3a3a3a" : "#000000"
+    readonly property bool stripBevelled: !barBlack
+    readonly property color tile: !dark ? "#e6e6e6" : barBlack ? "transparent" : "#444444"
+    readonly property color tileSunk: !dark ? "#bdbdbd" : barBlack ? "#262626" : "#242424"
+    readonly property color tileSunkEdge: "#8c8c8c"      // black strip only
+    readonly property color grooveLow: !dark ? "#999999" : barBlack ? "#3a3a3a" : "#1e1e1e"
+    readonly property color grooveHigh: !dark ? "#ffffff" : barBlack ? "transparent" : "#565656"
+    readonly property color ridgeLow: !dark ? "#999999" : barBlack ? "#5c5c5c" : "#1e1e1e"
+    readonly property color ridgeHigh: !dark ? "#ffffff" : barBlack ? "transparent" : "#565656"
+
+    // Motion that answers a gesture (the strip scrolling) turns off here.
+    // Nothing in the session publishes reduced motion yet.
+    property bool reducedMotion: false
+
+    // A length on whole physical pixels, so hairs and stipples stay crisp
+    // at fractional scales.
+    function snap(v) { return Math.round(v * root.pixelRatio) / root.pixelRatio; }
+
     // A tone word from the models (battery.js, oci-model.js,
     // notification-model.js) as a colour. Unknown words read as normal.
     function barTone(tone) {

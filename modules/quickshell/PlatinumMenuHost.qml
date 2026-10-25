@@ -79,22 +79,38 @@ Scope {
                 return given !== undefined && given !== null ? given : -1;
             }
 
+            // Where the title ends, for a menu that hangs from the right end
+            // of its title (the Application menu at the right end of the bar).
+            readonly property real anchorRight: {
+                const live = host.bar.anchorRightFor ? host.bar.anchorRightFor(host.current) : -1;
+                return live >= 0 ? live : -1;
+            }
+            // A menu that opens upward (a Control Strip tile's) gives its
+            // bottom edge; every other menu hangs from the bar.
+            readonly property real bottomY: loader.item && loader.item.bottomY !== undefined ? loader.item.bottomY : -1
+
             Loader {
                 id: loader
                 focus: true
                 sourceComponent: host.active ? host.menus[host.current] : null
                 // The menu's top edge lies on the bar's rule, as in Mac OS.
-                y: PlatinumTokens.barHeight - PlatinumTokens.hair
+                y: win.bottomY >= 0
+                    ? Math.max(PlatinumTokens.barHeight - PlatinumTokens.hair, win.bottomY - (item ? item.height : 0))
+                    : PlatinumTokens.barHeight - PlatinumTokens.hair
                 x: {
                     const w = item ? item.width : 0;
                     const edge = 4;
-                    const wanted = win.anchorX >= 0 ? win.anchorX : win.width - w - edge;
+                    const right = item && item.alignRight === true && win.anchorRight >= 0;
+                    const wanted = right ? win.anchorRight - w
+                        : win.anchorX >= 0 ? win.anchorX : win.width - w - edge;
                     return Math.max(edge, Math.min(wanted, win.width - w - edge));
                 }
 
                 onLoaded: {
                     const menu = item;
-                    menu.maxHeight = Qt.binding(function () { return win.height - loader.y - 12; });
+                    menu.maxHeight = Qt.binding(function () {
+                        return win.bottomY >= 0 ? win.bottomY - PlatinumTokens.barHeight - 8 : win.height - loader.y - 12;
+                    });
                     menu.menuWidth = Qt.binding(function () {
                         return Math.min(menu.preferredWidth || 360, win.width - 8);
                     });

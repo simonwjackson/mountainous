@@ -73,6 +73,7 @@ PanelWindow {
     // calls it follows the bar when its layout changes under an open menu.
     function anchorFor(name) {
         const item = ({
+            apple: markControl, app: appControl,
             bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
             oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
             clock: bar.plan.centred ? clockCentre : clockRight,
@@ -92,6 +93,13 @@ PanelWindow {
         if (x < 0) return null;
         const item = bar.plan.overflow.indexOf(name) >= 0 ? moreControl : ({ fleet: fleetControl })[name];
         return {x: x, w: item ? item.width : 16};
+    }
+
+    // The right end of a title, for a menu that hangs from its right end:
+    // the Application menu, at the right end of the bar, as in Mac OS 8.5.
+    function anchorRightFor(name) {
+        if (name !== "app" || !appControl.visible || appControl.width <= 0) return -1;
+        return rightGroup.x + appControl.x + appControl.width;
     }
 
     // What the » menu shows for a control that moved into it.
@@ -276,7 +284,9 @@ PanelWindow {
         // The battery is the planner's one whole-content width: icon, the
         // 6 px between, and the percent box, because it never splits.
         batteryWidth: battery.present ? 18 + inGap + batteryBox.width : 0,
-        appIconWidth: appId !== "" ? 16 : 0,
+        // The Application menu is always on the bar, even with no front
+        // app: it is where Show All lives.
+        appIconWidth: 16,
         appNameWidth: appId !== "" ? PlatinumMetrics.width(appName) : 0,
         overflowWidth: 16
     })
@@ -359,18 +369,18 @@ PanelWindow {
     // clipped. The title and the dictation status are readouts and elide
     // in what the plan leaves after it. Retry and Dismiss are controls:
     // they show at full width or move into the » menu, never shrink.
+    // The mountain drops the Apple menu, like every other title: inverted
+    // while it is open, and part of the sticky hover between titles.
     PlatinumBarControl {
         id: markControl
         x: 6
         screen: bar.modelData
+        menu: "apple"
+        open: bar.isOpen("apple")
         pad: bar.pad
         icon: "mark"
         iconWidth: 20
         iconHeight: 18
-        onActivated: {
-            MenuState.close();
-            bar.omniBar.enterRoot();
-        }
     }
 
     Item {
@@ -885,27 +895,27 @@ PanelWindow {
             }
         }
 
-        // The front app: its icon and name, a way into the omni bar's
-        // window list. The name is the first readout to yield.
+        // The Application menu: the front app's icon and name. It drops the
+        // running apps (Hide, Hide Others, Show All, then each app). The name
+        // is the first readout to yield. With no front app it shows the
+        // desktop mark alone, so Show All stays one click away.
         PlatinumBarControl {
             id: appControl
-            visible: bar.appId !== ""
             screen: bar.modelData
+            menu: "app"
+            open: bar.isOpen("app")
             pad: bar.pad
-            icon: ""
-            onActivated: {
-                MenuState.close();
-                bar.omniBar.enterMode("window");
-            }
+            icon: bar.appId !== "" ? "" : "desktop"
 
             iconExtras: IconImage {
                 anchors.fill: parent
                 implicitSize: 16
-                source: bar.appIcon !== "" ? Quickshell.iconPath(bar.appIcon, "application-x-executable") : ""
+                visible: bar.appId !== ""
+                source: bar.appId !== "" && bar.appIcon !== "" ? Quickshell.iconPath(bar.appIcon, "application-x-executable") : ""
             }
 
             Text {
-                visible: bar.plan.show.appName
+                visible: bar.plan.show.appName && bar.appId !== ""
                 text: bar.appName
                 textFormat: Text.PlainText
                 color: appControl.fg

@@ -47,7 +47,7 @@ function scan(dir) {
             if (item.name === "Launcher.qml" && call[1].startsWith("Model.scopeCommand(")) continue;
             const literal = call[1].match(/^\["([^"]+)"/);
             assert(literal, `${item.name}: detached argv must go through Launcher`);
-            assert(['rm','hyprctl','hypr-zen','hypr-split','hypr-scale','qs','desktop-theme','mountainous-screenshot','notify-send','mountainous-brightness'].includes(literal[1]), `${item.name}: unscoped command ${literal[1]}`);
+            assert(['rm','hyprctl','hypr-zen','hypr-split','hypr-scale','qs','desktop-theme','mountainous-screenshot','notify-send','mountainous-brightness','loginctl','systemctl','mkdir'].includes(literal[1]), `${item.name}: unscoped command ${literal[1]}`);
         }
     }
 }

@@ -48,10 +48,13 @@ PanelWindow {
         anchors.fill: parent
         onClicked: win.model.close()
     }
+    // Below the bar at the left, never centred, as every window the Apple
+    // menu opens. A short or narrow screen moves it up and left to fit.
     PlatinumBevel {
         id: panel
         objectName: "pickerPanel"
-        anchors.centerIn: parent
+        x: Math.max(0, Math.min(24, Math.floor((parent.width - width) / 2)))
+        y: Math.max(0, Math.min(PlatinumTokens.barHeight + 22, Math.floor((parent.height - height) / 2)))
         width: win.plan.width
         height: win.plan.height
         color: PlatinumTokens.menuSurface
