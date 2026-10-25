@@ -1099,16 +1099,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1792908269,
-        "narHash": "sha256-75iwdN65SmecNsRIw2Istc3/9sXx7A4Gspsv2ilLBng=",
-        "ref": "vela-integration",
-        "rev": "76ebac5000aaade629f4b002fec4b0d52b4ccb51",
-        "revCount": 22,
+        "lastModified": 1792914438,
+        "narHash": "sha256-ISrfG3u8QU6LgdSNdy0ElvRXHporCzZ+qDogI4Y185c=",
+        "ref": "main",
+        "rev": "3339427b8909f6ccb9bd67e0788f2d6f36456cac",
+        "revCount": 26,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/vela"
       },
       "original": {
-        "ref": "vela-integration",
+        "ref": "main",
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/vela"
       }
