@@ -96,6 +96,9 @@ in
             ++ want (
               cfg.alert == null || lib.elem "valhalla-tiles-failed.service" build.onFailure
             ) "a failed tile build is not reported"
+            ++ want (lib.elem "AF_NETLINK" (
+              c.systemd.services.valhalla.serviceConfig.RestrictAddressFamilies or [ ]
+            )) "the server cannot list interfaces (AF_NETLINK), so it aborts at start"
             ++ want (c.systemd.timers ? valhalla-tiles) "no timer rebuilds the tiles"
             ++ want (c.mountainous.tailnetNames ? valhalla) "no tailnet name"
             ++ want (!(lib.elem cfg.port c.networking.firewall.allowedTCPPorts)) "the server port is open"
@@ -405,10 +408,14 @@ in
             RestrictRealtime = true;
             RestrictSUIDSGID = true;
             LockPersonality = true;
+            # AF_NETLINK: prime_server lists the host interfaces when it binds
+            # (ip_resolver.cpp); without it the server aborts with "Address
+            # family not supported by protocol" and restarts forever.
             RestrictAddressFamilies = [
               "AF_UNIX"
               "AF_INET"
               "AF_INET6"
+              "AF_NETLINK"
             ];
           };
         };
