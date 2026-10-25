@@ -19,6 +19,9 @@
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    # Keep the reviewed runtime's own nixpkgs (Quickshell 0.3.2).
+    pyxamp.url = "github:simonwjackson/pyxamp/c08f2f0b1048f3a1f47f23a8dad942c484f44b9a";
+
     # ChicagoFLF 2.1: the font and README declare it Public Domain.
     chicagoflf-src = {
       url = "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip";

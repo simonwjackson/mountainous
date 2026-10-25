@@ -762,6 +762,9 @@ end, { ignore_mods = true, auto_consuming = true })
 --------------------------------------------------------------------
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))
 
+-- Separate face and verified runtime; do not send this to the desktop shell.
+hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))
+
 -- SUPER+L is free in the compositor and Kanata. Route all locks through hypridle.
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
 
@@ -800,9 +803,10 @@ hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })
 hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
-hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"), { locked = true })
-hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+-- Pyxamp owns the follow policy and forwards to the observed native player.
+hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl --player=pyxamp play-pause"), { locked = true })
+hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl --player=pyxamp next"), { locked = true })
+hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl --player=pyxamp previous"), { locked = true })
 
 -- Kamoi Meta+I hides the top bar and the dock together for immersive
 -- browsing. The bars are Quickshell; see modules/bars.nix.
