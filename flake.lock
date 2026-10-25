@@ -1099,18 +1099,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1792914438,
-        "narHash": "sha256-ISrfG3u8QU6LgdSNdy0ElvRXHporCzZ+qDogI4Y185c=",
-        "ref": "main",
-        "rev": "3339427b8909f6ccb9bd67e0788f2d6f36456cac",
-        "revCount": 26,
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/vela"
+        "lastModified": 1792925382,
+        "narHash": "sha256-w+NvS1sMmxyidNsjE0PjvJgLFILBXCyAd6VApXqQKlc=",
+        "owner": "simonwjackson",
+        "repo": "vela",
+        "rev": "8041ff204a839bb571e4b87207df4744bb0dab67",
+        "type": "github"
       },
       "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/vela"
+        "owner": "simonwjackson",
+        "repo": "vela",
+        "type": "github"
       }
     },
     "w95fa-src": {
