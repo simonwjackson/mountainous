@@ -1,6 +1,6 @@
 # Desktop themes for Myoko
 
-Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implemented on b7f20f04. Written 2026-10-23. No deployment.
+Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implemented on b7f20f04; phase 3 (Platinum Apple menu, Application menu and Control Strip) implemented on 37c91c12. Written 2026-10-23. No deployment.
 
 Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). The later `77dd2791` bevel/shadow change is not included; that line has not landed on `cairn`.
 
@@ -123,7 +123,7 @@ ChicagoFLF and W95FA Grid are installed on every desktop host (`modules/fonts.ni
 | 0 | Platinum lands on `cairn` (someone else) | Platinum |
 | 1 | Data/view split, per-screen loader, `theme-name`, `chrome` IPC, picker in Platinum style | None except the new picker |
 | 2 | Win98 theme from the approved mockup and state boards (implemented, see below) | Win98 selectable |
-| 3 | Mac OS 8 bottom app bar (backlog card) | Platinum dock |
+| 3 | Apple menu, Application menu and Control Strip (implemented, see below) | Platinum dock becomes the Control Strip |
 
 Phase 1 is a refactor with no visible change, so its review is a pixel diff of the Platinum sweep before and after.
 
@@ -351,3 +351,68 @@ Per-state counts compare the bar strip and the mock's menu, window and tooltip b
 - Motion: the Start roll-out (120 ms) and its reduced-motion form are checked by `checks.win98-theme` on the library; no recorded take of the Desktop was made, and nothing in the session publishes reduced motion.
 - Drag and drop between window buttons was drawn (the `tb-drag` state) and `dropOnto` is the shell's; a real drag was not performed in the behaviour test.
 - The captures and the checks use llvmpipe, not Myoko's GPU.
+
+
+## Phase 3: Platinum Apple menu, Application menu and Control Strip (implemented)
+
+Spec: the approved mock at `/tmp/strip-mock/` (`REPORT.md`, `shots/`; the 8.5 tear-off palette was dropped and is not built). Built inside the phase 1 contract: flat `Platinum*` files, `PlatinumTokens`, `context.shell`, the shared `MenuState`, the `chrome` IPC.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| Cascading Platinum menus drawn from rows | `PlatinumCascadeMenu.qml`; rows from `themes/platinum/menu-models.js` (+ `.test.js`) |
+| Apple menu on the mountain | `PlatinumTopBar.qml` (the mark is the `apple` title), `PlatinumDesktop.qml` (`appleRows`, `perform`) |
+| About, confirmation alerts | `PlatinumDialogFrame.qml`, `PlatinumAboutWindow.qml`, `PlatinumAlert.qml` |
+| Application menu at the right end | `PlatinumTopBar.qml` (the `app` title, always on the bar), `PlatinumDesktop.qml` (`applicationRows`, cycling) |
+| Hide / Show for every theme | `WindowHider.qml` (one owner at the shell root), `window-hide.js` (+ `.test.js`) |
+| Running apps, MRU, Super+Tab order | `app-model.js` (+ `.test.js`); `shell.qml` (`windowRows`, `mru`, `chrome cycle`) |
+| Control Strip | `PlatinumControlStrip.qml`, `PlatinumStripTile.qml`, `PlatinumAppIcon.qml` + `PlatinumStipple.qml` (the disabled stipple), `themes/platinum/strip-plan.js` (+ `.test.js`) |
+| Super+Tab held | `modules/hyprland/hyprland.lua` |
+| Picker below the bar | `PlatinumPickerView.qml` (anchored at the left under the bar, not centred) |
+| Check | `checks.platinum-desktop` (the four policy tests); `bar-delivery` asserts the new files are delivered and their tests are not |
+
+The contract grows, it does not change: `context.shell` gains `windowRows`, `mru`, `hider`, `rowOf`, `activate`, `closeWindow`, `moveToPage` and `pageIds`; the `chrome` target gains `cycle <step|commit|cancel> <position> <seq>`; `chrome open` accepts `apple` and `app` (focused screen). A Desktop without `cycle()` (Win98) ignores the cycle messages. The strip keeps the default layer namespace, so `theme-dev/win98/switch.sh` still counts Platinum's two `quickshell` surfaces.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| **Window order inside a page: screen position** (x, then y, from `lastIpcObject.at`), the compositor's order when a position is unknown | Evidence, nested Hyprland 0.56.2: after `window.swap` the socket sent only `activewindow`/`activewindowv2`, and the strip kept the old order because `lastIpcObject` is only rewritten by a refresh (`/tmp/platinum-menus/evidence/order-0-after-swap-stale-positions-x2.png`). The shell now refreshes toplevels 150 ms after `closewindow`, `activewindowv2`, `changefloatingmode`, `fullscreen` and after its own swap/move; after a strip swap and after `layout swapwithmaster` the tiles follow the windows (`order-1-…`, `order-2-…`). The shared `lanes.js windowsOn` (Win98's taskbar) is unchanged. Cost: a layout change with no event and no focus change stays stale until the next one. |
+| **Super+Tab:** a quick press is still `focus { last = true }`; a held Super with more Tabs cycles apps in MRU order on the Application menu; Super up commits | `hl.is_key_down("Super_L")` reports the held key (`SUPER_L` and keycodes do not). A 25 ms repeat timer in Lua watches it, instead of a release bind on Super_L that would fire after every Super chord. Each message carries the position and a rising number (`os.time()*1000+n`), so out-of-order `qs` processes cannot undo a commit. Shift+Tab steps back; Escape mid-cycle cancels and the release then commits nothing; a lost release ends the cycle after 60 s. Evidence: 30 of 30 held trials (2–4 Tabs, 20–270 ms gaps, release 5–120 ms after the last Tab) closed the menu and switched to the highlighted app (`/tmp/platinum-menus/logs/cycle-trials.log`). |
+| The cycle order starts after the app the quick press reached | The first Tab already focused the last window, so position 2 is the next app after it in the pre-press order (the MRU with its two first windows swapped back). Hidden apps take part; choosing one shows it. |
+| Hide: per-app special workspace `special:hidden-<app id>`, `follow = false`; home pages in `$XDG_STATE_HOME/mountainous/hidden-windows.json` keyed by window address | Survives a Quickshell restart (verified: hide two apps, kill Quickshell, start it, Show All returns both to pages 1 and 3). A window found hidden with no entry goes to the screen's shown page. Show returns a window to its page, not to its old layout slot. |
+| Hide Others is this screen only; Hide <app> and Show All act on every screen | The brief fixed Hide Others; Hide <app> means the app, and Show All undoes any hide. |
+| The Application menu is always on the bar | With no front app (everything hidden) it shows the desktop mark alone, so Show All stays one click away. The bar plan always counts its 16 px icon. |
+| A window submenu lists windows in page order, each with its page; another screen's window adds the screen's name | As the mock. Choosing an app activates its most recent window (MRU). |
+| Every menu action runs on the next turn of the event loop, after the menu closes | The menu is destroyed while its signal is on the stack; acting in that call lost Control Panels ▸ Appearance… and logged `QQmlVMEMetaObject … invalid context`. The alerts clear their state last for the same reason. |
+| All panels of a cascading menu live in one window-sized item | With the cascade outside its parent item's bounds, the first hover into a cascade was lost 8 times in 10 (warped pointer); inside, 34 of 38 probes lit the row at once. |
+| Launches go through `Launcher` (`docs/decisions/desktop-safety.md`): a pinned web app runs `Launcher.launch(entry.command, {id: "webapp-<id>", name, icon, kind: "webapp"})` (`launchEntry` when the entry has no command); a Recent Applications row runs `Launcher.launch` with its recorded argv and metadata | Each app gets its own systemd scope, and Recent Applications reads `Launcher.recent`. This phase was built against a stub with the same API in the nested session; the stub fallback was removed when the branch landed on the real singleton. |
+| Pinned web apps: desktop entries whose id starts `webapp-` | `modules/web-apps.nix` names them so; their lettermark icons come with them. |
+| Remote builds under Control Panels only where `builderGate.enabled` | As the bar. Bluetooth, Brightness, Sound and Wi-Fi are always listed and open their own menu under their title, under » when overflowed, or top right when the hardware is absent (as `chrome open`). |
+| Session commands | Lock `loginctl lock-session`, Sleep `systemctl suspend`, Log Out `hyprctl --instance 0 dispatch hl.dsp.exit()` (as Super+Shift+E and Win98), Restart `systemctl reboot`, Shut Down `systemctl poweroff`. |
+| No polkit agent or rule is added for Sleep, Restart and Shut Down | Myoko's evaluated `security.polkit.extraConfig` has no `login1` rule, and Simon is in `wheel`. systemd's `org.freedesktop.login1.policy` (read on Zao's systemd, not Myoko's build) allows `reboot`, `power-off`, `suspend` and their `-multiple-sessions` forms for an active session (`allow_active yes`). Cost: an app holding a *block* inhibitor makes logind ask for `ignore-inhibit`, which needs an agent the session does not run; the command then fails and nothing happens. |
+| About shows Host, NixOS (version, generation), Revision (`configurationRevision`, "Not recorded" when unset), Uptime, and the DMI product name under the title | The brief's fields; the product name is what the mock showed. |
+| Strip surface is taller (42 + 52 px) than its 42 px exclusive zone; input only on the strip | The drag label and ghost draw above the tiles. Collapsing never changes the zone. |
+| Move to page from a tile is silent (`follow = false`); a drag across pages keeps today's `dropOnto` | The menu row says where the window goes; the user stays where they are. |
+| Tile menu: right-click or the ▴ corner (13 × 15 hit area) | As the mock. |
+| Stipple: icon through `MultiEffect` (saturation −1, contrast −0.25) under a one-physical-pixel checker of the surface colour masked to the icon | Qt's SVG renderer has no `<pattern>`, so the checker is one path of unit squares at the icon's physical size. |
+
+### Evidence
+
+Nested Hyprland 0.56.2 (Lua config with the shipped Super+Tab block cut from this file), headless labwc, 2880×1800 at 1.5, no seat, no DRM, no libinput (`LIBSEAT_BACKEND=seatd`, a missing `SEATD_SOCK` and `AQ_DRM_DEVICES`; the harness refuses to continue if the log shows otherwise). Stand-in apps are foot windows with the mock's app ids and icons. A persistent virtual keyboard with a full US keymap drives Super+Tab (wtype's per-run keymap fired no Hyprland bind). Session commands ran against logging stubs; nothing was suspended, rebooted, powered off or logged out.
+
+Shots (`/tmp/platinum-menus/shots/`, light, grey, black): rest, collapsed, tile menu with Move to page ▸, Application menu with GitHub's windows, Apple menu, Control Panels ▸, Recent Applications ▸, the hover sweep Apple → clock → Application, Super+Tab, drag to page 3 and its result, a same-page swap and its result, About, the three alerts, Appearance…, Hide Firefox then Show All, resized short and scrolled, Find…, Control Panels ▸ Bluetooth, 300 % zooms; 600 and 360 px wide; Win98 and back. Side-by-side with the mock: `/tmp/platinum-menus/compare/`. Logs: `/tmp/platinum-menus/logs/`.
+
+Theme swap with the Apple menu and a cascade open, three rounds: Platinum maps `mountainous-bar-shadow` + two `quickshell` surfaces and reserves top 28 / bottom 42; Win98 maps `mountainous-taskbar` and reserves bottom 38; no menu surface survives a swap; one Quickshell process.
+
+### Not verified
+
+- Nothing ran on Myoko or under its GPU, Kanata or real keyboard. Super release was read from a virtual keyboard; Kanata's uinput device is a real libinput keyboard, which `is_key_down` should see the same way (inferred).
+- Two screens: Hide Others per screen and the per-screen strip state are covered by the unit tests only.
+- Hover into a cascade by a warped pointer still missed 4 of 38 probes; a real pointer sends continuous motion (inferred to be unaffected).
+- With the pointer resting on a bar title, a menu opened by keyboard from a cascade can hand over to that title's menu (the sticky hover sees the bar re-entered).
+- Strip keyboard focus: the strip, like the dock, has no keyboard path; its windows are reachable from the Application menu and the omni bar.
+- The nested session ran against a `Launcher` stub. The landed code calls the real singleton; its launches into scopes were proven in the desktop-safety work, not in this phase's session.
+- `configurationRevision` was not set on the evaluating host, so About showed "Not recorded".
+

@@ -59,6 +59,16 @@
             qmllint -I "$QML_IMPORT_PATH" ${./quickshell/MenuState.qml}
             touch $out
           '';
+      # The Platinum Apple menu, Application menu and Control Strip: their
+      # pure policies, and the theme-neutral hide/show and running-app models.
+      checks.platinum-desktop =
+        pkgs.runCommand "platinum-desktop" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+          node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
+          node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
+          node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js}
+          node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
+          touch $out
+        '';
       # Run the production QML with a headless software Wayland compositor.
       # The recorder and backend are real child processes with controlled exits.
       # Two real mpv MPRIS players on a private session bus prove the media hold.
@@ -137,6 +147,17 @@
         assert !(builtins.hasAttr (prefix + "themes/win98/dev/Win98Gallery.qml") files);
         assert !(builtins.hasAttr (prefix + "themes/win98/taskbar-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/win98/harness.qml") files);
+        # Platinum phase 3: the strip, the cascading menus and their policies,
+        # and the theme-neutral hide/show and running-app models; never tests.
+        assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumCascadeMenu.qml") files;
+        assert builtins.hasAttr (prefix + "WindowHider.qml") files;
+        assert builtins.hasAttr (prefix + "themes/platinum/strip-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/platinum/menu-models.js") files;
+        assert builtins.hasAttr (prefix + "window-hide.js") files;
+        assert builtins.hasAttr (prefix + "app-model.js") files;
+        assert !(builtins.hasAttr (prefix + "themes/platinum/strip-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "app-model.test.js") files);
         pkgs.runCommand "bar-delivery" { } "touch $out";
     };
 }
