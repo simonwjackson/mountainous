@@ -529,7 +529,52 @@ end
 
 -- Kamoi Meta+Tab, quick press: straight back to the window you came
 -- from, with nothing drawn.
-hl.bind(mod .. " + Tab", hl.dsp.focus({ last = true }))
+--
+-- Held: with Super still down, each further Tab steps through the apps in
+-- most recently used order on the Platinum Application menu (Shift+Tab
+-- steps back), and releasing Super switches to the app it is on. A repeat
+-- timer watches for Super going up (hl.is_key_down), because a release
+-- bind on Super_L would also fire after every other Super chord. Each
+-- message carries the position and a rising number, so two qs processes
+-- that arrive out of order cannot undo a commit (app-model.js accept()).
+-- A theme without the menu ignores the messages; the quick press is the
+-- same under every theme.
+local app_cycle = nil
+local app_cycle_seq = os.time() * 1000
+local function app_cycle_send(action, position)
+    app_cycle_seq = app_cycle_seq + 1
+    hl.exec_cmd("qs -c mountainous ipc call chrome cycle " .. action .. " " .. position .. " " .. app_cycle_seq)
+end
+local function super_down()
+    return hl.is_key_down("Super_L") or hl.is_key_down("Super_R")
+end
+local function app_cycle_end()
+    if not app_cycle then return end
+    local c = app_cycle
+    app_cycle = nil
+    c.watch:set_enabled(false)
+    if c.stepped then app_cycle_send("commit", c.position) end
+end
+local function app_cycle_step(delta)
+    if not app_cycle then
+        hl.dispatch(hl.dsp.focus({ last = true }))
+        if not super_down() then return end
+        local c = { position = 1, stepped = false, started = os.time() }
+        app_cycle = c
+        c.watch = hl.timer(function()
+            -- Super is up, or a lost release left the cycle open for a
+            -- minute: end it.
+            if app_cycle ~= c then return end
+            if not super_down() or os.time() - c.started > 60 then app_cycle_end() end
+        end, { timeout = 25, type = "repeat" })
+        return
+    end
+    app_cycle.position = app_cycle.position + delta
+    app_cycle.stepped = true
+    app_cycle_send("step", app_cycle.position)
+end
+hl.bind(mod .. " + Tab", function() app_cycle_step(1) end)
+hl.bind(mod .. " + SHIFT + Tab", function() app_cycle_step(-1) end)
 
 hl.bind(mod .. " + bracketleft",  hl.dsp.layout("cycleprev"))
 hl.bind(mod .. " + bracketright", hl.dsp.layout("cyclenext"))
