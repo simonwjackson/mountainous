@@ -22,7 +22,7 @@ jq -e '
   and (.jellyfin | keys == ["api_key_file", "url", "user"])
   and .jellyfin.url == "https://watch.hummingbird-lake.ts.net"
   and .jellyfin.api_key_file == "/run/secrets/pyxamp/jellyfin-api-key"
-  and .jellyfin.user == "simon"
+  and .jellyfin.user == "simonwjackson"
 ' "$TMPDIR/configured.json" >/dev/null
 if grep -E 'pyx_dev_|pyx_api_' "$SOURCES_CONFIGURED" "$SOURCES_UNCONFIGURED"; then
   echo "sources.toml holds a token" >&2

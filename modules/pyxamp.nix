@@ -95,7 +95,7 @@
             // {
               user = lib.mkOption {
                 type = lib.types.str;
-                default = "simon";
+                default = "simonwjackson";
                 description = "Jellyfin user name; the connector resolves its id.";
               };
             };
