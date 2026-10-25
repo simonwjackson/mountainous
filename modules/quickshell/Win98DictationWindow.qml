@@ -2,7 +2,7 @@ import QtQuick
 
 // Dictation as a Win98 window: what the recorder is doing, and Retry and
 // Dismiss after a failure (Retry only when a take can be sent again). The
-// shared Dictation owns the takes; the bottom-centre overlay is unchanged.
+// shared Dictation owns the takes.
 Win98Window {
     id: root
 
@@ -57,7 +57,7 @@ Win98Window {
             visible: !root.failed
             width: parent.width
             wrap: true
-            text: "The overlay at the bottom centre shows the take."
+            text: "The taskbar shows the take while it records."
             accessMarks: false
             color: Win98Tokens.gray
         }

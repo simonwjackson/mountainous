@@ -1,14 +1,19 @@
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Mpris
 import QtQuick
-import QtQuick.Layouts
+import "media-hold.js" as MediaHold
 
 // One owner for a take from Right Alt press through insertion.
 //
 // The public state is a tagged value: idle, recording, working, done, or
 // failed. Capture and delivery are separate internal state machines because a
 // new take can be recorded while an older one is still with a backend.
+//
+// The bar and the taskbar show the state. There is no separate overlay.
+//
+// While a take records, the media that was playing is paused. When capture
+// ends for any reason, only those players resume (see media-hold.js).
 Scope {
     id: root
 
@@ -36,7 +41,6 @@ Scope {
     readonly property string state: captureState === "idle"
         ? deliveryState
         : "recording"
-    readonly property bool overlayVisible: state !== "idle"
     readonly property bool barVisible: state === "recording"
         || state === "working"
         || state === "failed"
@@ -59,21 +63,60 @@ Scope {
     readonly property string backendLabel: state === "recording" || backend === ""
         ? ""
         : backend === "zao" ? "Zao" : "Groq";
-    // One wording for the queue, in the bar and in the overlay.
+    // One wording for the queue, in the bar and in the taskbar.
     readonly property string queueText: queueCount + " takes"
-    readonly property string overlayText: {
-        let text = statusText;
-        if (backendLabel !== "") text += " · " + backendLabel;
-        if (queueCount > 1) text += " · " + queueText;
-        return text;
-    }
-    readonly property color accentColor: state === "recording" || state === "failed"
-        ? Theme.danger
-        : Theme.accent
+
+    // The players this take paused, in resume order. Empty outside a take.
+    property var heldPlayers: []
+    // Reading the model starts Quickshell's MPRIS watcher at shell start, so
+    // the first take already sees the players that are running.
+    readonly property int mediaPlayerCount: Mpris.players.values.length
 
     onStateChanged: console.log("[dictation] state " + state)
+    onCaptureStateChanged: {
+        if (captureState === "recording") holdMedia();
+        else releaseMedia();
+    }
     onBackendChanged: {
         if (backend !== "") console.log("[dictation] backend " + backend);
+    }
+
+    function describePlayer(player) {
+        const state = player.playbackState === MprisPlaybackState.Playing ? "playing"
+            : player.playbackState === MprisPlaybackState.Paused ? "paused" : "stopped";
+        return {
+            key: player,
+            dbusName: player.dbusName || "",
+            state: state,
+            canPause: player.canControl && player.canPause,
+            canPlay: player.canControl && player.canPlay,
+            title: player.trackTitle || "",
+            artist: player.trackArtist || ""
+        };
+    }
+
+    function mediaPlayers() {
+        return Mpris.players.values.map(root.describePlayer);
+    }
+
+    function holdMedia() {
+        if (root.heldPlayers.length > 0) return;
+        const held = MediaHold.toPause(root.mediaPlayers());
+        for (const player of held) player.pause();
+        root.heldPlayers = held;
+        if (held.length > 0) {
+            console.log("[dictation] paused " + held.map(p => p.dbusName).join(" "));
+        }
+    }
+
+    function releaseMedia() {
+        const held = root.heldPlayers;
+        if (held.length === 0) return;
+        root.heldPlayers = [];
+        const resumed = MediaHold.toResume(held, root.mediaPlayers());
+        for (const player of resumed) player.play();
+        console.log("[dictation] resumed " + resumed.map(p => p.dbusName).join(" ")
+            + " of " + held.length);
     }
 
     function audioPath() {
@@ -376,63 +419,5 @@ Scope {
             onStreamFinished: root.updateSessionLock(this.text.trim() !== "no")
         }
         stderr: StdioCollector { }
-    }
-
-    // Shipped voice surfaces use one compact status pill. Keep the same shape,
-    // but omit their waveform, timer, and transcript because this surface
-    // reports state only.
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            id: overlay
-
-            required property var modelData
-            screen: modelData
-            visible: root.overlayVisible
-                && Hyprland.monitorFor(modelData) === Hyprland.focusedMonitor
-            anchors { bottom: true; left: true; right: true }
-            margins { bottom: 56; left: 12; right: 12 }
-            implicitHeight: 38
-            exclusionMode: ExclusionMode.Ignore
-            color: "transparent"
-
-            // The overlay has no controls. Every pointer event goes to the
-            // application below it, including events over the visible pill.
-            mask: Region { width: 0; height: 0 }
-
-            Rectangle {
-                id: pill
-                anchors.centerIn: parent
-                width: Math.min(parent.width, contents.implicitWidth + 20)
-                height: 36
-                radius: 18
-                color: Theme.bgPanel
-                border.width: 1
-                border.color: root.accentColor
-
-                RowLayout {
-                    id: contents
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    Rectangle {
-                        Layout.preferredWidth: 8
-                        Layout.preferredHeight: 8
-                        radius: 4
-                        color: root.accentColor
-                    }
-
-                    Text {
-                        Layout.maximumWidth: Math.max(0, overlay.width - 52)
-                        text: root.overlayText
-                        elide: Text.ElideRight
-                        color: Theme.textPrimary
-                        font.pixelSize: 11
-                        font.family: Theme.fontFamily
-                    }
-                }
-            }
-        }
     }
 }

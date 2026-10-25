@@ -40,6 +40,7 @@
           ''
             node ${./quickshell/battery.test.js} ${./quickshell/battery.js}
             node ${./quickshell/oci-model.test.js} ${./quickshell/oci-model.js}
+            node ${./quickshell/media-hold.test.js} ${./quickshell/media-hold.js}
             node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
             node ${./quickshell/MenuState.test.js} ${./quickshell/MenuState.qml}
             qmllint -I "$QML_IMPORT_PATH" ${./quickshell/MenuState.qml}
@@ -47,6 +48,7 @@
           '';
       # Run the production QML with a headless software Wayland compositor.
       # The recorder and backend are real child processes with controlled exits.
+      # Two real mpv MPRIS players on a private session bus prove the media hold.
       checks.dictation-lifecycle =
         pkgs.runCommand "dictation-lifecycle"
           {
@@ -57,6 +59,10 @@
             ];
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
+            DBUS_DAEMON = "${pkgs.dbus}/bin/dbus-daemon";
+            DBUS_SESSION_CONF = "${pkgs.dbus}/share/dbus-1/session.conf";
+            MPV = lib.getExe pkgs.mpv;
+            MPV_MPRIS = "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
           }
           ''
             node ${./quickshell/dictation-lifecycle.test.js} ${./quickshell/Dictation.qml} ${./quickshell}/Theme.qml

@@ -105,6 +105,8 @@ real clipboard does not change.
 
 ### D7. The Quickshell surface is an overlay and a bar state
 
+Superseded by D41: there is no overlay.
+
 A small overlay appears near the centre of the screen during a take. The top bar
 also shows the state and the backend.
 
@@ -212,6 +214,8 @@ Do not guess the value. Do not vary it with take length, because quality that
 changes with take length is hard to reason about later.
 
 ### D19. The overlay shows state only
+
+Superseded by D41: there is no overlay. The bar keeps the same rule.
 
 The overlay shows the state of the take: recording, working, done, failed. It
 does not show a level meter and it does not show the text.
@@ -390,6 +394,8 @@ first when a game reports a memory fault on Zao.
 
 ### D40. The overlay sits at the bottom centre
 
+Superseded by D41: there is no overlay.
+
 The overlay appears at the bottom centre of the focused screen, above the dock.
 
 It stays clear of text the user edits, and it stays visible when Meta and I hide
@@ -397,6 +403,34 @@ the bar and the dock.
 
 Cost of this decision: it sits near the dock, so the two can read as one thing.
 The visual design must separate them.
+
+### D41. The bar is the only take indicator
+
+The user removed the bottom-centre overlay on 2026-10-25. It did not match the
+desktop themes. The Platinum top bar and the Win98 taskbar already show the
+take, and they follow the theme.
+
+Cost of this decision: while Meta and I hide the bar and the dock, a take shows
+nothing on screen. The media hold (D42) is then the only sign that a take is
+live.
+
+### D42. A take pauses the media that is playing
+
+When a take starts, Quickshell pauses every MPRIS player that is playing. When
+capture ends, for any reason, it resumes only the players that this take
+paused. A player that the user had paused stays paused. A player that quit,
+restarted or stopped during the take is not resumed. The rules are in
+`modules/quickshell/media-hold.js`.
+
+Quickshell owns this, not the Pyxamp daemon. The daemon follows one player, and
+Pyxamp may not run at all. The hold skips Pyxamp's own MPRIS name, because that
+name mirrors the player Pyxamp follows and forwards commands to it. The player
+that Pyxamp follows resumes last, so Pyxamp still follows it after the take.
+
+Cost of this decision: a player that the user pauses and plays again during the
+take cannot be told apart from a held one, so it resumes. When Pyxamp gets its
+own playback, that playback is behind the skipped mirror name, and it needs a
+daemon command for the hold.
 
 ## Measured facts
 
