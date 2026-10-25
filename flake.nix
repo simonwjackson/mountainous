@@ -91,12 +91,11 @@
       url = "github:simonwjackson/korri";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Zao consumes the isolated Linux host profile without changing the Korri
-    # revision used by Aka and Sobo.
-    korri-input-host = {
-      url = "github:simonwjackson/korri/37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # Zao consumes Korri's Linux host profile and plugin host from korri-os/korri
+    # without changing the Korri revision used by Aka and Sobo. It keeps Korri's
+    # own locked Nixpkgs: Korri's packages are the ones its checks and cache
+    # cover, and Zao's sway overlay reads that same Nixpkgs.
+    korri-input-host.url = "github:korri-os/korri/231055efd2b1defd17102ec781476bdb538d794b";
     # mountainous.features.korri-cache reads Korri's cache address and the keys
     # allowed to sign for it, so this repository keeps no second copy to drift.
     # It is pinned apart from the inputs above so that trusting a new builder
@@ -529,11 +528,20 @@
         "korrid"
       ];
       retiredUserTargets = ["korri-session" "sway-session"];
+      korriPublishers = (import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;}).constants.publishers;
+      pluginHost = zao.services.korri.pluginHost;
     in
       assert lib.assertMsg zao.services.korriLinuxHost.enable "Zao must consume Korri's isolated Linux host profile";
       assert lib.assertMsg (zao.services.korriLinuxHost.runtimeUser == "simonwjackson" && zao.services.korriLinuxHost.runtimeUid == 1000 && zao.services.korriLinuxHost.runtimeGroup == "users" && zao.services.korriLinuxHost.runtimeGid == 100) "Zao must preserve its existing Korri runtime identity";
-      assert lib.assertMsg (zao.services.korridLinuxDevice.advertisedEndpoints == ["http://zao:39217"] && zao.services.korridLinuxDevice.moonlightAddress == "zao:47989") "Zao must forward its federation endpoints to korrid";
-      assert lib.assertMsg (!(builtins.hasAttr "korri" zao.services)) "Zao must keep the legacy Korri source stack retired";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.address == "[::]:39217" && zao.services.korridLinuxDevice.moonlightAddress == "zao:47989") "Zao must serve korrid on its peer port and announce its Moonlight address";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.relays == ["wss://relay.nostr.band" "wss://relay.primal.net"]) "Zao must keep its Nostr relays";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.ownerBindingFile != null) "Zao must import its owner binding";
+      assert lib.assertMsg (!(zao.services ? korri) || builtins.attrNames zao.services.korri == ["pluginHost"]) "Zao must keep the legacy Korri source stack retired; only the plugin host may live under services.korri";
+      assert lib.assertMsg pluginHost.enable "Zao must run Korri's plugin host, whose registry korrid reads";
+      assert lib.assertMsg (pluginHost.publishers == korriPublishers) "Zao must bind exactly Korri's official publishers";
+      assert lib.assertMsg (pluginHost.officialCatalogUrl == null) "Zao must not point at a plugin catalog";
+      assert lib.assertMsg (zao.systemd.services.korrid.environment.KORRID_PLUGIN_ADMIN_SOCKET == pluginHost.adminSocket) "korrid must reach the plugin host through its admin socket";
+      assert lib.assertMsg (zao.systemd.sockets.korri-plugin-admin.socketConfig.ListenStream == pluginHost.adminSocket) "The plugin admin socket must listen where korrid looks";
       assert lib.assertMsg (!zao.programs.sway.enable) "Zao must keep Sway retired";
       assert lib.assertMsg (!zao.programs.steam.enable) "Zao must keep Steam retired";
       assert lib.assertMsg (!zao.programs.gamemode.enable) "Zao must keep GameMode retired";
@@ -606,6 +614,12 @@
     in
       assert lib.assertMsg zao.nix.distributedBuilds
       "Zao must dispatch builds it cannot do itself";
+      # Korri's plugin host imports a device policy that forces max-jobs = 0 and
+      # builders = ""; Zao overrides both because it is a build host.
+      assert lib.assertMsg (zao.nix.settings.max-jobs != 0)
+      "Zao must build its own x86_64 outputs";
+      assert lib.assertMsg (zao.nix.settings.builders == "@/etc/nix/machines")
+      "Zao must read its builders from /etc/nix/machines";
       assert lib.assertMsg (fuji.system == "aarch64-linux" && fuji.protocol == "ssh-ng" && fuji.sshUser == "simon")
       "Zao must reach Fuji as an aarch64 builder over ssh-ng";
       assert lib.assertMsg (fuji.publicHostKey == registry.fuji.publicHostKey)
@@ -757,7 +771,10 @@
       zao = mkHost {
         system = "x86_64-linux";
         hostPath = ./hosts/zao;
-        extraModules = [inputs.korri-input-host.nixosModules.korri-linux-host];
+        extraModules = [
+          inputs.korri-input-host.nixosModules.korri-linux-host
+          inputs.korri-input-host.nixosModules.korri-plugin-host
+        ];
       };
       ibuki = mkHost {
         system = "x86_64-linux";
