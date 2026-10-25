@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An invented road square for the valhalla-tiles check. Not real places. -->
+<osm version="0.6" generator="mountainous tests">
+  <node id="1" version="1" lat="10.000" lon="10.000"/>
+  <node id="2" version="1" lat="10.000" lon="10.010"/>
+  <node id="3" version="1" lat="10.010" lon="10.010"/>
+  <node id="4" version="1" lat="10.010" lon="10.000"/>
+  <way id="10" version="1">
+    <nd ref="1"/><nd ref="2"/><nd ref="3"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="First Street"/>
+  </way>
+  <way id="11" version="1">
+    <nd ref="3"/><nd ref="4"/><nd ref="1"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="Second Street"/>
+  </way>
+</osm>

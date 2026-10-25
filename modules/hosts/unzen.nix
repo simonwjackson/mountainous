@@ -84,6 +84,9 @@
       "media-placement-unzen"
       "media-jellyfin"
       "towada"
+      "tailnet-names"
+      "valhalla"
+      "traccar"
     ];
 
     module =
@@ -150,6 +153,26 @@
           libraryMediaGid = 390;
         };
         mountainous.features.media-jellyfin.enable = towadaHere;
+        # Vela's routing server. The tiles live on the Towada pool, not the
+        # root NVMe; without the enclosure there is no place for them.
+        mountainous.features.valhalla = {
+          enable = towadaHere;
+          dataDir = "/srv/lakes/towada/valhalla";
+          # Denver to Colorado Springs: a new US extract must route it.
+          smokeRequest = {
+            locations = [
+              {
+                lat = 39.7392;
+                lon = -104.9903;
+              }
+              {
+                lat = 38.8339;
+                lon = -104.8214;
+              }
+            ];
+            costing = "auto";
+          };
+        };
         # One LAN interface: the 2.5 GbE Realtek (enp62s0) carries traffic and
         # the onboard 1 GbE Intel (eno1) takes over if it fails.
         mountainous.features.lan-bond = {

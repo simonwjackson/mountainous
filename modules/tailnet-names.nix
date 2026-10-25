@@ -61,8 +61,24 @@
       # A new subdirectory: the old, dead TS_AUTHKEY state stays beside it.
       state = name: "${directory name}/tailnet";
       tailscale = config.mountainous.tailscale;
+      # Rakku's root is tmpfs, so the identities live on its persistent
+      # volume. A host with a persistent root (Unzen) keeps them in /var/lib.
+      persistence =
+        { options, ... }:
+        {
+          config = lib.optionalAttrs (options.environment ? persistence) {
+            environment.persistence."/tundra/permafrost".directories = lib.mapAttrsToList (name: _: {
+              directory = directory name;
+              user = "tsnet-proxy";
+              group = "tsnet-proxy";
+              mode = "0700";
+            }) names;
+          };
+        };
     in
     {
+      imports = [ persistence ];
+
       options.mountainous.tailnetNames = lib.mkOption {
         type = lib.types.attrsOf (
           lib.types.submodule {
@@ -97,13 +113,6 @@
           uid = 991;
         };
         users.groups.tsnet-proxy.gid = 989;
-
-        environment.persistence."/tundra/permafrost".directories = lib.mapAttrsToList (name: _: {
-          directory = directory name;
-          user = "tsnet-proxy";
-          group = "tsnet-proxy";
-          mode = "0700";
-        }) names;
 
         systemd.services = lib.mapAttrs' (
           name: cfg:
