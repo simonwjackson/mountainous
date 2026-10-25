@@ -174,20 +174,20 @@ in
         # Pyxis (pyxis), Ossicle (podcasts) and voice-gateway (voice) are user
         # units on Zao, outside this flake: pyxis-tsnet, ossicle-proxy and
         # voice-tsnet. Valhalla and Traccar run on Unzen (modules/hosts/unzen.nix).
-        mountainous.features.vela.tailnet = "hummingbird-lake.ts.net";
+        mountainous.features.vela.tailnet = config.mountainous.features.pi-assistant.tailnet;
         services.vela.settings = {
-          origins = {
-            pyxis = "https://pyxis.hummingbird-lake.ts.net";
-            ossicle = "https://podcasts.hummingbird-lake.ts.net";
-            assistant =
-              let
-                a = config.mountainous.features.pi-assistant;
-              in
-              "https://${a.tailnetName}.${a.tailnet}";
-            voice = "https://voice.hummingbird-lake.ts.net";
-            valhalla = "https://valhalla.hummingbird-lake.ts.net";
-            traccar = "https://traccar-osmand.hummingbird-lake.ts.net";
-          };
+          origins =
+            let
+              at = name: "https://${name}.${config.mountainous.features.vela.tailnet}";
+            in
+            {
+              pyxis = at "pyxis";
+              ossicle = at "podcasts";
+              assistant = at config.mountainous.features.pi-assistant.tailnetName;
+              voice = at "voice";
+              valhalla = at "valhalla";
+              traccar = at "traccar-osmand";
+            };
           photonUrl = "https://photon.komoot.io";
           # Traccar registers this device on its first report.
           traccarDeviceId = "vela";
