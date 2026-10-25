@@ -307,7 +307,10 @@ in
             NoNewPrivileges = true;
             ProtectSystem = "strict";
             ProtectHome = true;
-            ReadWritePaths = [ cfg.dataDir ];
+            # "-": the directory may not exist until ExecStartPre makes it, and a
+            # missing ReadWritePaths entry otherwise fails namespace setup for every
+            # command, the privileged ExecStartPre included (status 226/NAMESPACE).
+            ReadWritePaths = [ "-${cfg.dataDir}" ];
             PrivateTmp = true;
             PrivateDevices = true;
             ProtectKernelTunables = true;
