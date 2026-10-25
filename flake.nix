@@ -19,12 +19,13 @@
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Vela, the car dashboard (modules/vela.nix). A local checkout until it is
-    # published; then this becomes github:simonwjackson/vela. git+file takes
-    # only committed files, so node_modules and worktrees stay out. Only a
-    # machine with this checkout can lock or evaluate Rakku until then.
+    # Vela, the car dashboard (modules/vela.nix). A local checkout on its
+    # integration branch for now: move it to main when Vela lands there, and
+    # to github:simonwjackson/vela once it is published. git+file takes only
+    # committed files, so node_modules and worktrees stay out. Only a machine
+    # with this checkout can lock or evaluate Rakku until then.
     vela = {
-      url = "git+file:///home/simonwjackson/code/sandbox/vela";
+      url = "git+file:///home/simonwjackson/code/sandbox/vela?ref=vela-integration";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
