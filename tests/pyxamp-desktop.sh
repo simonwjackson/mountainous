@@ -6,6 +6,30 @@ export HOME="$TMPDIR/home"
 export XDG_RUNTIME_DIR="$TMPDIR/runtime"
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_STATE_HOME="$HOME/.local/state"
+# sources.toml carries only the seam's keys and secret paths, never a secret.
+sources_json() { yq -p toml -o json '.' "$1"; }
+sources_json "$SOURCES_UNCONFIGURED" > "$TMPDIR/unconfigured.json"
+sources_json "$SOURCES_CONFIGURED" > "$TMPDIR/configured.json"
+jq -e '. == {ossicle: {url: "https://podcasts.hummingbird-lake.ts.net"}}' \
+  "$TMPDIR/unconfigured.json" >/dev/null
+jq -e '
+  (keys == ["jellyfin", "ossicle", "pyxis"])
+  and (.pyxis | keys == ["device_name", "token_file", "url"])
+  and .pyxis.url == "https://pyxis.hummingbird-lake.ts.net"
+  and .pyxis.token_file == "/run/secrets/pyxamp/pyxis-token"
+  and .pyxis.device_name == "myoko"
+  and .ossicle == {url: "https://podcasts.hummingbird-lake.ts.net"}
+  and (.jellyfin | keys == ["api_key_file", "url", "user"])
+  and .jellyfin.url == "https://watch.hummingbird-lake.ts.net"
+  and .jellyfin.api_key_file == "/run/secrets/pyxamp/jellyfin-api-key"
+  and .jellyfin.user == "simon"
+' "$TMPDIR/configured.json" >/dev/null
+if grep -E 'pyx_dev_|pyx_api_' "$SOURCES_CONFIGURED" "$SOURCES_UNCONFIGURED"; then
+  echo "sources.toml holds a token" >&2
+  exit 1
+fi
+echo PYXAMP_SOURCES_PASSED
+export PYXAMP_SOURCES="$SOURCES_UNCONFIGURED"
 mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME/quickshell" "$XDG_STATE_HOME"
 chmod 700 "$XDG_RUNTIME_DIR"
 ln -s "$PYXAMP/etc/xdg/quickshell/pyxamp" "$XDG_CONFIG_HOME/quickshell/pyxamp"

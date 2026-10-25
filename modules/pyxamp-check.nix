@@ -36,6 +36,7 @@
         in
         if desktop name then
           c.mountainous.features.pyxamp.enable
+          && wiring c
           && builtins.elem p c.environment.systemPackages
           &&
             toString c.hjem.users.simon.files.".config/quickshell/pyxamp".source
@@ -55,6 +56,50 @@
           modules = [ { mountainous.features.pyxamp.enable = false; } ];
         }).config;
       myoko = self.nixosConfigurations.myoko.config;
+      withSecrets =
+        on:
+        (self.nixosConfigurations.myoko.extendModules {
+          modules = [
+            {
+              mountainous.features.pyxamp.sources.pyxis.enable = on;
+              mountainous.features.pyxamp.sources.jellyfin.enable = on;
+            }
+          ];
+        }).config;
+      # Both secret keys present, and both absent, whatever Myoko's file holds.
+      configured = withSecrets true;
+      unprovisioned = withSecrets false;
+      keyIn =
+        name: key:
+        let
+          file = ../secrets/desktop + "/${name}.yaml";
+        in
+        builtins.pathExists file && lib.hasInfix "\n${key}:" ("\n" + builtins.readFile file);
+      pyxampSecrets = c: lib.filter (lib.hasPrefix "pyxamp/") (builtins.attrNames c.sops.secrets);
+      ownSecret =
+        c: name: key:
+        let
+          s = c.sops.secrets.${name};
+        in
+        s.key == key
+        && s.owner == "simon"
+        && s.mode == "0400"
+        && s.path == "/run/secrets/${name}"
+        && toString s.sopsFile == toString (../secrets/desktop + "/${c.networking.hostName}.yaml");
+      # A source with a secret is wired exactly when its key is in the host's file.
+      wiring =
+        c:
+        let
+          s = c.mountainous.features.pyxamp.sources;
+          host = c.networking.hostName;
+          file = c.systemd.user.services.pyxamp-daemon.environment.PYXAMP_SOURCES;
+        in
+        s.pyxis.enable == keyIn host "pyxamp-pyxis-token"
+        && s.jellyfin.enable == keyIn host "pyxamp-jellyfin-api-key"
+        && s.ossicle.enable
+        && (c.sops.secrets ? "pyxamp/pyxis-token") == s.pyxis.enable
+        && (c.sops.secrets ? "pyxamp/jellyfin-api-key") == s.jellyfin.enable
+        && toString c.hjem.users.simon.files.".config/pyxamp/sources.toml".source == file;
       bindings = builtins.readFile ./hyprland/hyprland.lua;
       has = text: lib.hasInfix text bindings;
     in
@@ -64,6 +109,17 @@
         assert desktop "myoko" && desktop "hiyori" && !(desktop "ibuki");
         assert !(present disabled);
         assert !(disabled.hjem.users.simon.files ? ".config/quickshell/pyxamp");
+        assert !(disabled.hjem.users.simon.files ? ".config/pyxamp/sources.toml");
+        assert pyxampSecrets disabled == [ ];
+        # Without keys no Pyxamp secret is declared, so activation cannot fail.
+        assert pyxampSecrets unprovisioned == [ ];
+        assert
+          pyxampSecrets configured == [
+            "pyxamp/jellyfin-api-key"
+            "pyxamp/pyxis-token"
+          ];
+        assert ownSecret configured "pyxamp/pyxis-token" "pyxamp-pyxis-token";
+        assert ownSecret configured "pyxamp/jellyfin-api-key" "pyxamp-jellyfin-api-key";
         assert
           !(builtins.elem disabled.mountainous.features.pyxamp.package disabled.environment.systemPackages);
         assert builtins.elem "graphical-session.target" myoko.systemd.user.targets.hyprland-session.bindsTo;
@@ -81,7 +137,10 @@
               pkgs.labwc
               pkgs.jq
               pkgs.lua
+              pkgs.yq-go
             ];
+            SOURCES_UNCONFIGURED = unprovisioned.systemd.user.services.pyxamp-daemon.environment.PYXAMP_SOURCES;
+            SOURCES_CONFIGURED = configured.systemd.user.services.pyxamp-daemon.environment.PYXAMP_SOURCES;
             PYXAMP = package;
             QS = "${package.quickshell}/bin/qs";
             DESKTOP_QS = "${pkgs.quickshell}/bin/qs";
