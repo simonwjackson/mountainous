@@ -123,7 +123,7 @@
         assert
           !(builtins.elem disabled.mountainous.features.pyxamp.package disabled.environment.systemPackages);
         assert builtins.elem "graphical-session.target" myoko.systemd.user.targets.hyprland-session.bindsTo;
-        assert inputs.pyxamp.rev == "c08f2f0b1048f3a1f47f23a8dad942c484f44b9a";
+        assert inputs.pyxamp.rev == "9b53e1f7fd54e1ab482e71825cde600f358cf2eb";
         assert package.quickshell.version == "0.3.2";
         assert has ''hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))'';
         assert has ''hl.dsp.exec_cmd("playerctl --player=pyxamp play-pause")'';
