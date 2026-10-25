@@ -85,8 +85,8 @@ in
               serverConfig.mjolnir.tile_extract == "${cfg.dataDir}/valhalla_tiles.tar"
             ) "the server does not serve the swapped extract"
             ++ want (
-              c.fileSystems.${dataMount}.device != c.fileSystems."/".device
-            ) "the tiles are on the root disk (${dataMount})"
+              !lib.elem dataMount cfg.avoidMounts
+            ) "the tile build shares ${dataMount}, a filesystem it must stay off"
             ++ want (cfg.buildConcurrency <= 4) "the tile build uses more than 4 threads"
             ++ want (build.serviceConfig ? MemoryMax) "the tile build has no memory limit"
             ++ want ((build.serviceConfig.Restart or "no") == "on-failure") "a failed tile build is not retried"
@@ -188,7 +188,13 @@ in
         dataDir = lib.mkOption {
           type = lib.types.str;
           example = "/srv/lakes/towada/valhalla";
-          description = "Holds the live tile extract and the build's work files. Needs about 80 GB for the whole US. Not the root disk.";
+          description = "Holds the live tile extract and the build's work files. Needs about 80 GB for the whole US.";
+        };
+        avoidMounts = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          example = [ "/srv/lakes/towada" ];
+          description = "Filesystems the tile build must not use. A whole-US build writes tens of GB for hours; on a pool that a storage guard watches, it can stall the guard and stop the services it protects.";
         };
         port = lib.mkOption {
           type = lib.types.port;

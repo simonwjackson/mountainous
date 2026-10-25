@@ -153,11 +153,14 @@
           libraryMediaGid = 390;
         };
         mountainous.features.media-jellyfin.enable = towadaHere;
-        # Vela's routing server. The tiles live on the Towada pool, not the
-        # root NVMe; without the enclosure there is no place for them.
+        # Vela's routing server. The tiles live on the root NVMe pool (2 TB,
+        # three devices), not Towada: the first build's writes stalled
+        # media-storage-health past its 20 s deadline, and the guard stopped the
+        # media consumers (2026-10-25).
         mountainous.features.valhalla = {
-          enable = towadaHere;
-          dataDir = "/srv/lakes/towada/valhalla";
+          enable = true;
+          dataDir = "/var/lib/valhalla";
+          avoidMounts = [ "/srv/lakes/towada" ];
           # Denver to Colorado Springs: a new US extract must route it.
           smokeRequest = {
             locations = [
