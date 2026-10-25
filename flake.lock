@@ -735,17 +735,17 @@
         "webamp": "webamp"
       },
       "locked": {
-        "lastModified": 1792911597,
-        "narHash": "sha256-/d22JxjYIrs7EiVzdzBDBFiB61pYlUpP8d4Clcf6mHA=",
+        "lastModified": 1792915763,
+        "narHash": "sha256-LkjNJhXa2h/2FQOnGrmUV/yUmVEtwCm/WP1KC2gwZpc=",
         "owner": "simonwjackson",
         "repo": "pyxamp",
-        "rev": "9b53e1f7fd54e1ab482e71825cde600f358cf2eb",
+        "rev": "05ae787336b408aeed0d78444a133a8a6e75f143",
         "type": "github"
       },
       "original": {
         "owner": "simonwjackson",
         "repo": "pyxamp",
-        "rev": "9b53e1f7fd54e1ab482e71825cde600f358cf2eb",
+        "rev": "05ae787336b408aeed0d78444a133a8a6e75f143",
         "type": "github"
       }
     },
