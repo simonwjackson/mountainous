@@ -12,8 +12,12 @@
 # position purge setting (no database.historyDays key), so nothing is set.
 #
 # Devices register themselves on their first report (database.registerUnknown),
-# so Vela's traccarDeviceId needs no setup. The first account made in the web
-# app becomes the administrator: make it at once after the first deploy.
+# so Vela's traccarDeviceId needs no setup.
+#
+# After the first deploy, before anything else: open https://traccar.<tailnet>
+# and register the administrator account (the first account made becomes the
+# administrator). Then, in Settings > Server, turn off Registration so nobody
+# else on the tailnet can make an account.
 { self, ... }:
 {
   perSystem =
@@ -58,36 +62,59 @@
     };
 
   nixos.modules.traccar =
-    { config, ... }:
+    { config, lib, ... }:
     let
+      cfg = config.mountainous.features.traccar;
       s = config.services.traccar.settings;
     in
     {
-      services.traccar = {
-        enable = true;
-        settings = {
-          web = {
-            address = "127.0.0.1";
-            port = "8082";
-          };
-          protocols.enable = "osmand";
-          osmand = {
-            address = "127.0.0.1";
-            port = "5055";
-          };
-          database.registerUnknown = "true";
+      # services.traccar.settings is one untyped value: lib.mkDefault does not
+      # work on a single key inside it. The values a host may change are
+      # options here instead. Loopback and OsmAnd-only stay fixed
+      # (checks.traccar).
+      options.mountainous.features.traccar = {
+        webPort = lib.mkOption {
+          type = lib.types.port;
+          default = 8082;
+        };
+        osmandPort = lib.mkOption {
+          type = lib.types.port;
+          default = 5055;
+        };
+        registerUnknown = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Create a device on its first report (database.registerUnknown).";
         };
       };
 
-      mountainous.tailnetNames.traccar = {
-        description = "Traccar web and API tailnet proxy";
-        backend = "http://127.0.0.1:${s.web.port}";
-        after = [ "traccar.service" ];
-      };
-      mountainous.tailnetNames.traccar-osmand = {
-        description = "Traccar OsmAnd protocol tailnet proxy";
-        backend = "http://127.0.0.1:${s.osmand.port}";
-        after = [ "traccar.service" ];
+      config = {
+        services.traccar = {
+          enable = true;
+          settings = {
+            web = {
+              address = "127.0.0.1";
+              port = toString cfg.webPort;
+            };
+            protocols.enable = "osmand";
+            osmand = {
+              address = "127.0.0.1";
+              port = toString cfg.osmandPort;
+            };
+            database.registerUnknown = lib.boolToString cfg.registerUnknown;
+          };
+        };
+
+        mountainous.tailnetNames.traccar = {
+          description = "Traccar web and API tailnet proxy";
+          backend = "http://127.0.0.1:${s.web.port}";
+          after = [ "traccar.service" ];
+        };
+        mountainous.tailnetNames.traccar-osmand = {
+          description = "Traccar OsmAnd protocol tailnet proxy";
+          backend = "http://127.0.0.1:${s.osmand.port}";
+          after = [ "traccar.service" ];
+        };
       };
     };
 }
