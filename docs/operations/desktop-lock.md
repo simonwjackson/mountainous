@@ -1,8 +1,10 @@
 # Desktop lock
 
 `modules/lock.nix` installs hyprlock, its PAM service, hypridle and
-`mountainous-lock` in the desktop layer. Super+L asks logind to lock the
-session. The Apple-menu actions are not connected yet.
+`mountainous-lock` in the desktop layer. Super+Escape asks logind to lock
+the session: hold Space (Super), then press the K+L chord, which is Kanata's
+Escape. Super+L stays the focus-right key. The Platinum Apple menu's Lock item
+runs the same `loginctl lock-session`.
 
 ## Policy
 
@@ -47,9 +49,9 @@ can restart the fallback; it does not unlock the session.
 ## First-deploy recovery
 
 Before testing on Myoko, keep an authenticated text console and a trusted
-remote administration channel available. Do not rely only on Super+L: normal
-keybindings are blocked while a session lock owns input. Kanata also remaps
-Ctrl, Alt and the function keys; verify access to the text console first.
+remote administration channel available. Do not rely only on Super+Escape:
+normal keybindings are blocked while a session lock owns input. Kanata also
+remaps Ctrl, Alt and the function keys; verify access to the text console first.
 
 From Simon's text console:
 

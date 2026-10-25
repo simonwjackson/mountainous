@@ -810,8 +810,11 @@ hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))
 -- Separate face and verified runtime; do not send this to the desktop shell.
 hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))
 
--- SUPER+L is free in the compositor and Kanata. Route all locks through hypridle.
-hl.bind(mod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"))
+-- Lock. SUPER+L belongs to the H/J/K/L focus keys above, so the lock is
+-- SUPER+Escape: hold Space (Super), then the K+L chord (Kanata's Escape;
+-- the physical Escape key is dead on the base layer). The Alt_R Escape bind
+-- above passes this through. Route all locks through hypridle.
+hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("loginctl lock-session"))
 
 -- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
 -- navigate mode, which is the address bar an --app window never built.
