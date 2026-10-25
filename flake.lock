@@ -743,31 +743,29 @@
         "crane": "crane_2",
         "flake-utils": "flake-utils_6",
         "inputplumber-nixpkgs": "inputplumber-nixpkgs_2",
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs_4",
         "proseql": "proseql_2",
         "rust-overlay": "rust-overlay_3"
       },
       "locked": {
-        "lastModified": 1788833704,
-        "narHash": "sha256-a9tVNvRHkYkLlQ3Bfpd1x+YHY9bOJ5v9tR1TIA+Xj9U=",
-        "owner": "simonwjackson",
+        "lastModified": 1792907895,
+        "narHash": "sha256-MnLTpvOiaUJGSN6RTV1spGysnbzr2D/9F5JyUtsL4qA=",
+        "owner": "korri-os",
         "repo": "korri",
-        "rev": "37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2",
+        "rev": "231055efd2b1defd17102ec781476bdb538d794b",
         "type": "github"
       },
       "original": {
-        "owner": "simonwjackson",
+        "owner": "korri-os",
         "repo": "korri",
-        "rev": "37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2",
+        "rev": "231055efd2b1defd17102ec781476bdb538d794b",
         "type": "github"
       }
     },
     "korri_2": {
       "inputs": {
         "flake-utils": "flake-utils_7",
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "nixpkgs-2405": "nixpkgs-2405_2"
       },
       "locked": {
@@ -1228,6 +1226,22 @@
     },
     "nixpkgs_4": {
       "locked": {
+        "lastModified": 1790185690,
+        "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_5": {
+      "locked": {
         "lastModified": 1777270315,
         "narHash": "sha256-yKB4G6cKsQsWN7M6rZGk6gkJPDNPIzT05y4qzRyCDlI=",
         "owner": "NixOS",
@@ -1242,7 +1256,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1773389992,
         "narHash": "sha256-wvfdLLWJ2I9oEpDd9PfMA8osfIZicoQ5MT1jIwNs9Tk=",
@@ -1407,7 +1421,7 @@
         "nixos-anywhere": "nixos-anywhere",
         "nixos-hardware": "nixos-hardware",
         "nixos-wsl": "nixos-wsl",
-        "nixpkgs": "nixpkgs_5",
+        "nixpkgs": "nixpkgs_6",
         "nixpkgs-droid": "nixpkgs-droid",
         "nixpkgs-rpcs3-v0-0-41": "nixpkgs-rpcs3-v0-0-41",
         "notify-sync-src": "notify-sync-src",

@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   ...
 }: {
@@ -103,14 +104,54 @@
       "wss://relay.nostr.band"
       "wss://relay.primal.net"
     ];
-    advertisedEndpoints = ["http://zao:39217"];
-    moonlightAddress = "zao:47989";
     ownerBindingFile = ./korrid-owner-binding.json;
     compositor.renderDevice = "/dev/dri/by-path/pci-0000:01:00.0-render";
     compositor.mode = "1920x1080@120Hz";
     compositor.renderer = "pixman";
-    sunshine.encoder = "nvenc";
-    sunshine.inputSeats.enable = true;
+    # Korri's default local-signer GID (978) is already Podman's GID on Zao
+    # (/var/lib/nixos/gid-map). 974 is unused there.
+    serviceIdentities.localSignerGid = 974;
+  };
+
+  # korrid now derives its advertised peer origins from live interfaces; only
+  # the Moonlight address remains a declared announcement.
+  services.korridLinuxDevice.moonlightAddress = "zao:47989";
+
+  # korrid reads the plugin host's registry. No plugins are installed here; the
+  # official publisher binding comes from Korri's own product requirements so
+  # this repository keeps no second copy of the key.
+  services.korri.pluginHost = {
+    enable = true;
+    publishers."@korri" =
+      (import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;})
+      .constants
+      .publishers
+      ."@korri";
+  };
+
+  # TEMPORARY: Korri's services/inputd/nix/sway-activity.nix asserts
+  # sway-unwrapped 1.12 and wlroots 0.20.2 from the host's pkgs, and the fleet
+  # Nixpkgs still has sway 1.11. Take both from the Nixpkgs that Korri's own
+  # lock pins until the fleet Nixpkgs reaches sway 1.12, then delete this.
+  nixpkgs.overlays = [
+    (_: _: {
+      inherit (inputs.korri-input-host.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}) sway-unwrapped wlroots_0_20;
+    })
+  ];
+
+  # WORKAROUND: the plugin host imports Korri's nix/device-cache/nixos-module.nix,
+  # which force-disables local and remote builds ("Device policy only. CI and
+  # development machines must not import this module."; its README: "CI and
+  # development builders do not import this device policy."). Zao is a build
+  # host, so restore what it had before. Priority 49 beats that module's
+  # mkForce (50). `fallback` is not restored: the module forces false, which is
+  # also Nix's default and what Zao ran with before. Remove this once Korri's
+  # plugin host stops importing the device policy.
+  nix.distributedBuilds = lib.mkOverride 49 true;
+  nix.settings = {
+    max-jobs = lib.mkOverride 49 "auto";
+    # Nix's own default; NixOS leaves it unset while distributedBuilds is on.
+    builders = lib.mkOverride 49 "@/etc/nix/machines";
   };
 
   users.users.simonwjackson.extraGroups = [

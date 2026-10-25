@@ -49,11 +49,11 @@ KORRI=/path/to/korri \
 ## Zao published federation pin — build only
 
 Zao's `korri-input-host` URL and lock pin the Korri revision
-`37b37f69d3ed8140bf2a00bc5fcb6c71ceb7a4f2`, which is a pushed revision on GitHub
-at `github:simonwjackson/korri` and is the tip of that repository's `main`
-branch. Any build machine can fetch it; the pin does not depend on a local
-repository, a local tag or an absolute path. The separate `korri` input for Aka
-and Sobo remains unchanged.
+`231055efd2b1defd17102ec781476bdb538d794b` on `github:korri-os/korri` (its
+`main` branch). Any build machine can fetch it; the pin does not depend on a
+local repository, a local tag or an absolute path. The input keeps Korri's own
+locked Nixpkgs. The stale fork `github:simonwjackson/korri` is no longer read
+for Zao. The separate `korri` input for Aka and Sobo remains unchanged.
 
 A normal Zao rebuild from the checkout containing this `flake.nix`/`flake.lock`
 pair now consumes the pin without `--override-input`. Build and retain it with:
