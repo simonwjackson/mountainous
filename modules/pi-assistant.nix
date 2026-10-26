@@ -192,6 +192,13 @@ in
               mv "$state/agent/cliproxyapi.json.new" "$state/agent/cliproxyapi.json"
             fi
             cp --no-preserve=mode ${webSearch name} "$state/agent/web-search.json"
+            ${lib.optionalString (cfg.groceries != null) ''
+              # The core wants an owner-only 0600 file. The credential is root's,
+              # with an ACL for this user, so it is copied.
+              mkdir -p "$state/.config/assistant"
+              install -m 600 "$CREDENTIALS_DIRECTORY/groceries-service-token" \
+                "$state/.config/assistant/groceries-service-token"
+            ''}
             if [ ! -f "$state/model-lanes.json" ]; then
               cp --no-preserve=mode ${lanesSeed} "$state/model-lanes.json"
             fi
@@ -230,8 +237,8 @@ in
         // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
         // lib.optionalAttrs (cfg.groceries != null) {
           ASSISTANT_GROCERIES_BASE_URL = cfg.groceries.url;
-          # The systemd credential, mode 0400 and owned by the instance's user.
-          ASSISTANT_GROCERIES_TOKEN_PATH = "/run/credentials/pi-assistant-${name}.service/groceries-service-token";
+          # ExecStartPre copies the credential here (see prepare).
+          ASSISTANT_GROCERIES_TOKEN_PATH = "${stateOf name}/.config/assistant/groceries-service-token";
         };
 
       portsOption = voice: web: {
