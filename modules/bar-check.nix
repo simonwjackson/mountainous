@@ -132,6 +132,7 @@
           QUICKSHELL = "${pkgs.quickshell}/bin/qs";
           LABWC = "${pkgs.labwc}/bin/labwc";
         } ''
+          node ${./quickshell/chrome-open.test.js} ${./quickshell}
           python3 ${./quickshell/theme-dev/check-boundaries.py} ${./quickshell}
           python3 ${./quickshell/theme-dev/check-registry.test.py} ${./quickshell}
           bash ${./quickshell/stage-runtime.test.sh} ${./quickshell}
@@ -175,6 +176,8 @@
         assert builtins.hasAttr (prefix + "PlatinumTextField.qml") files;
         assert builtins.hasAttr (prefix + "find-model.js") files;
         assert builtins.hasAttr (prefix + "cdp-target.js") files;
+        assert builtins.hasAttr (prefix + "chrome-open.js") files;
+        assert !(builtins.hasAttr (prefix + "chrome-open.test.js") files);
         assert !(builtins.hasAttr (prefix + "cdp-target.test.js") files);
         assert builtins.hasAttr (prefix + "themes/platinum/find-plan.js") files;
         assert builtins.hasAttr (prefix + "icons/popup.svg") files;

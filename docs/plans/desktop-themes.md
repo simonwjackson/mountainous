@@ -375,6 +375,13 @@ Spec: the approved mock at `/tmp/strip-mock/` (`REPORT.md`, `shots/`; the 8.5 te
 
 The contract grows, it does not change: `context.shell` gains `windowRows`, `mru`, `hider`, `rowOf`, `activate`, `closeWindow`, `moveToPage` and `pageIds`; the `chrome` target gains `cycle <step|commit|cancel> <position> <seq>`; `chrome open` accepts `apple` and `app` (focused screen). A Desktop without `cycle()` (Win98) ignores the cycle messages. The strip keeps the default layer namespace, so `theme-dev/win98/switch.sh` still counts Platinum's two `quickshell` surfaces.
 
+Early `chrome open` calls wait for an active Desktop of the requested theme.
+The shell keeps only the latest request per captured screen. It drains the
+request on the next event-loop turn after registration, not inside the Loader's
+activation callback. A theme change drops pending requests; an old Desktop
+cannot consume a request for its replacement. Cost: rapid opens before readiness
+coalesce, and an open during a theme change can be dropped.
+
 ### Decisions made without asking
 
 | Decision | Reason / cost |

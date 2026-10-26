@@ -8,11 +8,17 @@ import QtQuick.Layouts
 import "panels"
 import "lanes.js" as Lanes
 import "app-model.js" as AppModel
+import "chrome-open.js" as ChromeOpen
 
 ShellRoot {
     id: root
 
     property var desktops: ({})
+    property var pendingChrome: ({})
+    Connections {
+        target: Theme
+        function onNameChanged() { root.pendingChrome = {}; }
+    }
     Binding {
         target: Theme
         property: "chromeStatus"
@@ -27,6 +33,7 @@ ShellRoot {
         if (desktop) next[screen.name] = desktop;
         else delete next[screen.name];
         root.desktops = next;
+        Qt.callLater(root.flushChrome);
     }
     function revealChrome() {
         for (const desktop of Object.values(root.desktops).filter(Boolean)) desktop.reveal();
@@ -39,8 +46,18 @@ ShellRoot {
         // primary screen; builder, notifications and picker follow focus.
         const primary = ["bt", "wifi", "vol", "bri", "oci", "disk"].indexOf(control) >= 0;
         const screen = primary ? root.primaryScreen() : root.focusedScreen();
-        const desktop = screen ? root.desktops[screen.name] : null;
-        if (desktop) desktop.open(control);
+        if (!screen) return;
+        root.pendingChrome = ChromeOpen.enqueue(root.pendingChrome, screen.name, Theme.name, control);
+        Qt.callLater(root.flushChrome);
+    }
+    function flushChrome() {
+        for (const name of Object.keys(root.pendingChrome)) {
+            const desktop = root.desktops[name];
+            const ready = !!desktop && desktop.active && desktop.theme.id === Theme.name;
+            const result = ChromeOpen.take(root.pendingChrome, name, Theme.name, ready);
+            root.pendingChrome = result.pending;
+            if (result.request) desktop.open(result.request.control);
+        }
     }
 
     // Super+Tab held: hyprland.lua numbers each step; see app-model.js.
