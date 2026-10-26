@@ -36,6 +36,10 @@ assert.equal(recent.filter(x => x.id === '10').length, 1);
 assert.deepEqual(plain(model.readRecent(JSON.stringify(recent.slice().reverse().concat(recent, {id:'bad'})))), plain(recent));
 assert.deepEqual(plain(model.entryArgv({command:['app','literal $x']})), ['app','literal $x']);
 assert.deepEqual(plain(model.entryArgv({command:['app'], workingDirectory:'/a b', runInTerminal:true})), ['ghostty','-e','env','--chdir=/a b','app']);
+// A declared web app is recorded as a web app wherever it was launched from.
+assert.equal(model.entryKind({id:'webapp-forgerie'}), 'webapp');
+assert.equal(model.entryKind({id:'firefox'}), 'app');
+assert.equal(model.entryKind(null), 'app');
 const root = process.argv[3] || __dirname;
 function scan(dir) {
     for (const item of fs.readdirSync(dir, {withFileTypes:true})) {

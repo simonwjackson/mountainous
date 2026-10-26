@@ -92,6 +92,17 @@ Singleton {
     readonly property color menuShadow: dark ? "#9e000000" : "#222222"
     readonly property color well: dark ? "#242424" : "#bdbdbd"
     readonly property color raised: dark ? "#444444" : "#e6e6e6"
+    // Edit fields and list boxes (the Find menu, Go to Address): a white
+    // well in light, a dark one in dark grey. Menus and dialogs are
+    // transient, so extra dark leaves them dark grey too.
+    readonly property color field: dark ? "#242424" : "#ffffff"
+    readonly property color list: dark ? "#2c2c2c" : "#ffffff"
+    // Platinum's default focus ring is lavender (Mac OS 8 HIG): the only
+    // ring, around the field that has the keyboard. 3 device px at 1.5.
+    readonly property color focusRing: dark ? "#7c7ce8" : "#9999ff"
+    readonly property real focusRingWidth: Math.max(2, Math.round(2 * pixelRatio)) / pixelRatio
+    // Balloon Help: the full text of a row the menu cut off.
+    readonly property color balloon: dark ? "#2c2c2c" : "#ffffff"
     readonly property color menuDanger: dark ? "#ef8f8f" : "#9e2525"
     readonly property color menuWarning: dark ? "#d5a66f" : "#7a4d12"
 

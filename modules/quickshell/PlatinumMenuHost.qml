@@ -94,12 +94,15 @@ Scope {
                 focus: true
                 sourceComponent: host.active ? host.menus[host.current] : null
                 // The menu's top edge lies on the bar's rule, as in Mac OS.
+                // A dialog that hangs a little under the bar (Go to Address)
+                // gives its gap; one that places itself gives its x.
                 y: win.bottomY >= 0
                     ? Math.max(PlatinumTokens.barHeight - PlatinumTokens.hair, win.bottomY - (item ? item.height : 0))
-                    : PlatinumTokens.barHeight - PlatinumTokens.hair
+                    : PlatinumTokens.barHeight - PlatinumTokens.hair + (item && item.topGap > 0 ? item.topGap : 0)
                 x: {
                     const w = item ? item.width : 0;
                     const edge = 4;
+                    if (item && item.placeX !== undefined && item.placeX >= 0) return Math.max(0, Math.min(item.placeX, win.width - w));
                     const right = item && item.alignRight === true && win.anchorRight >= 0;
                     const wanted = right ? win.anchorRight - w
                         : win.anchorX >= 0 ? win.anchorX : win.width - w - edge;

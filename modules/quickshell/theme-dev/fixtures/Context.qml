@@ -62,7 +62,22 @@ Scope {
     }
     QtObject {
         id: omniData
+        property bool shown: false
+        property string mode: "root"
+        property string query: ""
+        property var caller: null
+        property var screen: null
+        property var windowRows: []
+        property var appRows: []
+        property var commandRows: []
         function enterRoot() { }
-        function enterMode(mode) { }
+        function enterMode(mode, text) { }
+        function enterNavigate(text) { }
+        function back() { }
+        function dismiss() { }
+        function run(row) { }
+        function navigateTo(text) { }
+        function claimView(owner) { }
+        function releaseView(owner) { }
     }
 }

@@ -103,6 +103,9 @@ Item {
         onWheel: function (event) { root.wheel(event.angleDelta.y); }
         onEntered: {
             if (root.menu === "" || MenuState.current === "" || MenuState.current === root.menu) return;
+            // The Find menu and Go to Address hold typed text and opened from
+            // the keyboard: passing over the bar must not take over from them.
+            if (MenuState.current === "find" || MenuState.current === "address") return;
             if (MenuState.screen !== root.screen) return;
             if (root.open) return;
             MenuState.open(root.menu, root.screen, root.mapToItem(null, 0, 0).x);

@@ -4,66 +4,108 @@ import Quickshell.Io
 import Quickshell.Widgets
 import QtQuick
 import "lanes.js" as Lanes
+import "find-model.js" as FindModel
 
 Scope {
     id: root
 
     property bool shown: false
     // "root" leads with windows and offers commands; the others scope
-    // the field to one list, which is Kamoi's notion of a mode.
+    // the field to one list, which is Kamoi's notion of a mode:
+    // "window", "app", "cmd", and "nav" (the address).
     property string mode: "root"
     property string query: ""
 
     // The window that was focused when the bar was summoned.
     //
-    // Kamoi's Ctrl+L acts on the active window, and the veil below takes
+    // Kamoi's Ctrl+L acts on the active window, and the surface below takes
     // keyboard focus the instant it maps, so by the time anything is
-    // typed the focused window is the veil. Capture it on the way in.
+    // typed the focused window is the surface. Capture it on the way in:
+    // on every entry point, not only Ctrl+L (find-model.js enter()).
     property var caller: null
+    // The screen the bar opens on: the focused one, captured on the way in.
+    property var screen: null
+
+    // A theme that draws the bar itself (Platinum's Find menu) claims the
+    // view while its Desktop is active. With no claim, the unthemed card
+    // below shows, as it always has (Win98, or a theme without a view).
+    property var views: []
+    readonly property bool themed: root.views.length > 0
+    function claimView(owner) {
+        if (owner && root.views.indexOf(owner) < 0) root.views = root.views.concat([owner]);
+    }
+    function releaseView(owner) {
+        const i = root.views.indexOf(owner);
+        if (i >= 0) { const next = root.views.slice(); next.splice(i, 1); root.views = next; }
+    }
+
+    readonly property var state: ({ shown: root.shown, mode: root.mode, query: root.query, caller: root.caller })
+    function apply(next) {
+        root.caller = next.caller;
+        root.mode = next.mode;
+        root.query = next.query;
+        root.shown = next.shown;
+    }
+
+    // Hyprland.activeToplevel, or the last window that held it while a
+    // layer surface (a menu) has the keyboard.
+    property var lastActive: null
+    Connections {
+        target: Hyprland
+        function onActiveToplevelChanged() { if (Hyprland.activeToplevel) root.lastActive = Hyprland.activeToplevel; }
+    }
+    function activeWindow() {
+        const t = Hyprland.activeToplevel;
+        if (t) return t;
+        const last = root.lastActive;
+        return last && Hyprland.toplevels.values.indexOf(last) >= 0 ? last : null;
+    }
+    function focusedScreen() {
+        const m = Hyprland.focusedMonitor;
+        const screens = Quickshell.screens;
+        if (m) for (const s of screens) if (s.name === m.name) return s;
+        return screens.length > 0 ? screens[0] : null;
+    }
 
     function enterRoot() {
         // Kamoi's list is ordered by focus history, and Hyprland does
         // not push that on every change, so ask for it on open.
         Hyprland.refreshToplevels();
-        root.mode = "root";
-        root.query = "";
-        root.shown = true;
+        if (!root.shown) root.screen = root.focusedScreen();
+        root.apply(FindModel.enter(root.state, "root", root.activeWindow()));
     }
 
-    function enterMode(m) {
+    // `text` keeps the field ("Search All for “…”").
+    function enterMode(m, text) {
         Hyprland.refreshToplevels();
-        root.mode = m;
-        root.query = "";
-        root.shown = true;
+        if (!root.shown) root.screen = root.focusedScreen();
+        root.apply(FindModel.enter(root.state, m, root.activeWindow(), typeof text === "string" ? text : ""));
     }
 
     // Kamoi's Ctrl+L: "show and focus browser chrome". An --app window
     // has no chrome to show, so this IS the chrome -- one field that
-    // points the active window somewhere else.
-    function enterNavigate() {
-        if (!root.shown) root.caller = Hyprland.activeToplevel;
+    // points the active window somewhere else. `text` starts the field
+    // (the Find menu's "Go to Address “…”" row).
+    function enterNavigate(text) {
         CdpBrowser.refresh();
-        root.mode = "nav";
-        root.query = "";
-        root.shown = true;
+        if (!root.shown) root.screen = root.focusedScreen();
+        root.apply(FindModel.enter(root.state, "nav", root.activeWindow(), typeof text === "string" ? text : ""));
     }
 
-    function back() {
-        if (root.mode !== "root") { root.mode = "root"; root.query = ""; }
-        else root.shown = false;
-    }
+    function back() { root.apply(FindModel.back(root.state)); }
+    function dismiss() { if (root.shown) root.apply(FindModel.close(root.state)); }
 
     IpcHandler {
         target: "omni"
         // Deliberately not named open/show/list/close: `qs ipc call`
         // owns those verbs and silently returns its own interface
         // listing instead of calling the function.
-        function toggle(): void { if (root.shown) root.shown = false; else root.enterRoot(); }
+        function toggle(): void { if (root.shown) root.dismiss(); else root.enterRoot(); }
         function reveal(): void { root.enterRoot(); }
         function gotowindow(): void { root.enterMode("window"); }
-        function apps(): void { root.enterRoot(); }
+        function apps(): void { root.enterMode("app"); }
         function navigate(): void { root.enterNavigate(); }
-        function dismiss(): void { root.shown = false; }
+        function dismiss(): void { root.dismiss(); }
     }
 
     //--------------------------------------------------------------
@@ -90,6 +132,8 @@ Scope {
                 kind: "window",
                 label: t.title && t.title !== "" ? t.title : "(untitled)",
                 detail: "page " + t.workspace.id,
+                page: t.workspace.id,
+                appId: t.wayland ? (t.wayland.appId || "") : "",
                 order: h,
                 screen: Lanes.screenOf(t),
                 toplevel: t,
@@ -179,6 +223,7 @@ Scope {
         if (root.mode === "nav")    return navRows;
         if (root.mode === "window") return windowRows.filter(function (r) { return matches(r, q); });
         if (root.mode === "app")    return appRows.filter(function (r) { return matches(r, q); });
+        if (root.mode === "cmd")    return commandRows.filter(function (r) { return matches(r, q); });
 
         // Root. Empty field leads with windows. Typing puts matching
         // applications and commands first and blends matching windows underneath.
@@ -200,30 +245,40 @@ Scope {
             // dispatcher syntax differs under a Lua config, and
             // activate() also pulls focus to that window's page.
             if (wl) wl.activate();
-            root.shown = false;
+            root.dismiss();
             return;
         }
 
         if (row.kind === "app") {
             if (row.entry) Launcher.launchEntry(row.entry);
-            root.shown = false;
+            root.dismiss();
+            return;
+        }
+
+        // A Recent Applications row launches its recorded argv again.
+        if (row.kind === "recent") {
+            const e = row.entry;
+            if (e && e.argv) Launcher.launch(e.argv, {id: e.id, name: e.name || e.id, icon: e.icon || "", kind: e.kind === "webapp" ? "webapp" : "app"});
+            root.dismiss();
             return;
         }
 
         if (row.kind === "nav") {
-            CdpBrowser.navigate(root.caller, row.label);
-            root.shown = false;
+            root.navigateTo(row.label);
             return;
         }
 
         const a = row.act;
         if (a === "mode:nav")    { root.enterNavigate(); return; }
         if (a === "mode:window") { root.enterMode("window"); return; }
-        if (a === "mode:app")    { root.enterRoot(); return; }
+        if (a === "mode:app")    { root.enterMode("app"); return; }
+        if (a === "mode:cmd")    { root.enterMode("cmd"); return; }
+        if (a === "mode:root")   { root.enterRoot(); return; }
 
         if (a === "term")            Launcher.launch(["ghostty"], {id: "com.mitchellh.ghostty", name: "Ghostty", icon: "com.mitchellh.ghostty", kind: "app"});
         else if (a === "close") {
-            const w = Hyprland.activeToplevel;
+            // The window the bar was summoned over, not the bar's surface.
+            const w = root.caller || Hyprland.activeToplevel;
             if (w && w.wayland) w.wayland.close();
         }
         else if (a === "monocle")    Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.window.fullscreen({ mode = \"fullscreen\", action = \"toggle\" })"]);
@@ -240,17 +295,31 @@ Scope {
         else if (a === "theme:extra")  Quickshell.execDetached(["desktop-theme", "extra", "toggle"]);
         else if (a === "shot")       Quickshell.execDetached(["mountainous-screenshot", "screen"]);
 
-        root.shown = false;
+        root.dismiss();
+    }
+
+    // Point the window the bar was summoned over at an address: CDP when it
+    // is a browser page, else a new web-app window (CdpBrowser.navigate).
+    function navigateTo(text) {
+        const t = (text || "").trim();
+        if (t === "") return;
+        CdpBrowser.navigate(root.caller, t);
+        root.dismiss();
     }
 
     //--------------------------------------------------------------
     // THE VEIL
     //--------------------------------------------------------------
+    // The unthemed card: Win98's Super+P and Start > Run…, and any theme
+    // that does not draw the bar itself (themes.md: the omni bar stays
+    // unthemed). A theme with its own view claims it with claimView().
     LazyLoader {
-        active: root.shown
+        active: root.shown && !root.themed
 
         PanelWindow {
             id: veil
+            // The focused screen, captured when the bar was summoned.
+            screen: root.screen
             anchors { top: true; bottom: true; left: true; right: true }
             // Cover the screen without reserving any of it; the bars
             // own the exclusive zones.
@@ -264,13 +333,13 @@ Scope {
             HyprlandFocusGrab {
                 active: root.shown
                 windows: [ veil ]
-                onCleared: root.shown = false
+                onCleared: root.dismiss()
             }
 
             // A click on the veil itself dismisses, as Escape does.
             MouseArea {
                 anchors.fill: parent
-                onClicked: root.shown = false
+                onClicked: root.dismiss()
             }
 
             Rectangle {
@@ -306,6 +375,7 @@ Scope {
                             text: root.mode === "root" ? ">"
                                 : root.mode === "window" ? "window"
                                 : root.mode === "nav" ? "go"
+                                : root.mode === "cmd" ? "cmd"
                                 : "app"
                             color: Theme.textHint
                             font.pixelSize: 13
@@ -338,7 +408,7 @@ Scope {
                             // the mode too."
                             Keys.onPressed: function (event) {
                                 if (event.key === Qt.Key_Backspace && text === "" && root.mode !== "root") {
-                                    root.mode = "root";
+                                    root.enterRoot();
                                     event.accepted = true;
                                 }
                             }

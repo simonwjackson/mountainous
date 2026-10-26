@@ -8,6 +8,7 @@ import "lanes.js" as Lanes
 import "app-model.js" as AppModel
 import "themes/platinum/menu-models.js" as Menus
 import "themes/platinum/strip-plan.js" as StripPlan
+import "find-model.js" as FindModel
 
 // One screen's complete chrome. Data owners outlive this theme instance.
 Scope {
@@ -215,6 +216,12 @@ Scope {
     Connections {
         target: MenuState
         function onCurrentChanged() {
+            // Another menu, or a click outside, closed the Find menu or Go to
+            // Address: the omni service closes with it.
+            if (!desktop.syncing) {
+                const want = desktop.omniWant();
+                if (want !== "" && (MenuState.current !== want || MenuState.screen !== desktop.screen)) desktop.omni.dismiss();
+            }
             if (desktop.cycleState && MenuState.current !== "app") {
                 desktop.cycleState = null;
                 desktop.cycleTarget = "";
@@ -260,7 +267,104 @@ Scope {
     property string confirming: ""
     function endConfirm() { desktop.confirming = ""; }
     readonly property var alertSpec: Menus.alert(desktop.confirming, desktop.host)
-    onActiveChanged: if (!active) { aboutOpen = false; confirming = ""; }
+    onActiveChanged: {
+        if (!active) { aboutOpen = false; confirming = ""; }
+        desktop.claimOmni();
+    }
+
+    //----------------------------------------------------------------
+    // The Find menu and Go to Address: Platinum's view of the omni bar
+    //----------------------------------------------------------------
+    // The omni service (OmniBar.qml) owns the state: shown, the mode, the
+    // query and the caller. While this Desktop is active it claims the
+    // view, so the service's unthemed card stays hidden; the service's
+    // screen picks which Desktop draws it. The menus are bar menus in
+    // MenuState, so only one menu is open at a time and a click outside
+    // closes it; closing one closes the service.
+    readonly property var omni: desktop.context.omniBar
+    property bool omniClaimed: false
+    function claimOmni() {
+        const o = desktop.omni;
+        if (!o || typeof o.claimView !== "function") return;
+        if (desktop.active && !desktop.omniClaimed) { o.claimView(desktop); desktop.omniClaimed = true; }
+        else if (!desktop.active && desktop.omniClaimed) {
+            o.releaseView(desktop);
+            desktop.omniClaimed = false;
+            if (o.shown && o.screen === desktop.screen) o.dismiss();
+        }
+    }
+    Component.onCompleted: desktop.claimOmni()
+    Component.onDestruction: {
+        const o = desktop.omni;
+        if (o && desktop.omniClaimed && typeof o.releaseView === "function") o.releaseView(desktop);
+    }
+    // Which of the two menus the service wants on this screen, read when
+    // asked (not a binding: the menus and the service move each other, and
+    // a binding here was read again while its own change was on the stack).
+    function omniWant() {
+        const o = desktop.omni;
+        if (!desktop.active || !o || o.shown !== true || o.screen !== desktop.screen) return "";
+        return o.mode === "nav" ? "address" : "find";
+    }
+    // The service changed: open or close the menu on the next turn of the
+    // event loop, once the service's own change has finished.
+    property bool syncing: false
+    function syncOmni() {
+        const name = desktop.omniWant();
+        desktop.syncing = true;
+        if (name !== "") {
+            if (MenuState.current !== name || MenuState.screen !== desktop.screen) {
+                desktop.context.shell.chromeAccessVisible = false;
+                MenuState.open(name, desktop.screen, -1);
+            }
+        } else if (MenuState.screen === desktop.screen && (MenuState.current === "find" || MenuState.current === "address")) {
+            MenuState.close();
+        }
+        desktop.syncing = false;
+    }
+    Connections {
+        target: desktop.omni
+        ignoreUnknownSignals: true
+        function onShownChanged() { Qt.callLater(desktop.syncOmni); }
+        function onModeChanged() { Qt.callLater(desktop.syncOmni); }
+        function onScreenChanged() { Qt.callLater(desktop.syncOmni); }
+    }
+    // A chosen row or a request from the menu, run on the next turn of the
+    // event loop: the menu that emitted it may be replaced (Find → Go to
+    // Address) or closed by what it runs.
+    function findAction(kind, arg) { Qt.callLater(desktop.performFind, kind, arg); }
+    function performFind(kind, arg) {
+        const o = desktop.omni;
+        if (!o) return;
+        if (kind === "address") { o.enterNavigate(arg || ""); return; }
+        if (kind === "go") { o.navigateTo(arg || ""); return; }
+        if (kind === "find") { o.enterRoot(); return; }
+        if (kind !== "row" || !arg) return;
+        switch (arg.k) {
+        case "win": case "app": case "cmd": o.run(arg.ref); break;
+        case "recent": o.run({ kind: "recent", entry: arg.entry }); break;
+        case "scope": o.enterMode(FindModel.modeOf(arg.to), arg.keep ? o.query : ""); break;
+        case "addr": o.enterNavigate(arg.text || ""); break;
+        }
+    }
+
+    Component {
+        id: findMenu
+        PlatinumFindMenu {
+            omni: desktop.omni
+            owner: desktop
+            onAction: function (kind, arg) { desktop.findAction(kind, arg); }
+        }
+    }
+    Component {
+        id: addressMenu
+        PlatinumGoToAddress {
+            omni: desktop.omni
+            owner: desktop
+            titleX: topBar.titleX
+            onAction: function (kind, arg) { desktop.findAction(kind, arg); }
+        }
+    }
 
     LazyLoader {
         active: desktop.active && desktop.aboutOpen
@@ -388,6 +492,8 @@ Scope {
             clock: clockMenu,
             more: overflowMenu,
             apple: appleMenu,
+            find: desktop.omniClaimed ? findMenu : null,
+            address: desktop.omniClaimed ? addressMenu : null,
             app: applicationMenu,
             strip: desktop.stripMenuAddress !== "" ? stripMenu : null
         })

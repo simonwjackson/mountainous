@@ -69,6 +69,15 @@
           node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
           touch $out
         '';
+      # The Platinum Find menu and Go to Address (Super+P): the rows, ranking,
+      # scopes and empty/no-results states; the omni service's caller rule on
+      # every entry point; the web-app launch kind; the menu and dialog plans.
+      checks.find-menu =
+        pkgs.runCommand "find-menu" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+          node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
+          node ${./quickshell/themes/platinum/find-plan.test.js} ${./quickshell/themes/platinum/find-plan.js}
+          touch $out
+        '';
       # Run the production QML with a headless software Wayland compositor.
       # The recorder and backend are real child processes with controlled exits.
       # Two real mpv MPRIS players on a private session bus prove the media hold.
@@ -158,6 +167,15 @@
         assert builtins.hasAttr (prefix + "app-model.js") files;
         assert !(builtins.hasAttr (prefix + "themes/platinum/strip-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "app-model.test.js") files);
+        # The Find menu (Super+P) and Go to Address, their model and plan.
+        assert builtins.hasAttr (prefix + "PlatinumFindMenu.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumGoToAddress.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumTextField.qml") files;
+        assert builtins.hasAttr (prefix + "find-model.js") files;
+        assert builtins.hasAttr (prefix + "themes/platinum/find-plan.js") files;
+        assert builtins.hasAttr (prefix + "icons/popup.svg") files;
+        assert !(builtins.hasAttr (prefix + "find-model.test.js") files);
+        assert !(builtins.hasAttr (prefix + "themes/platinum/find-plan.test.js") files);
         pkgs.runCommand "bar-delivery" { } "touch $out";
     };
 }

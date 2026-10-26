@@ -60,6 +60,6 @@ Singleton {
 
     function launchEntry(entry) {
         if (!entry) return;
-        root.launch(Model.entryArgv(entry), {id: entry.id, name: entry.name, icon: entry.icon, kind: "app"});
+        root.launch(Model.entryArgv(entry), {id: entry.id, name: entry.name, icon: entry.icon, kind: Model.entryKind(entry)});
     }
 }

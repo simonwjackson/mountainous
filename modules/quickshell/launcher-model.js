@@ -24,6 +24,12 @@ function entryArgv(entry) {
     return argv;
 }
 
+// A desktop entry named webapp-<id> is a declared web app (modules/web-apps.nix),
+// so Recent Applications calls it a web app wherever it was launched from.
+function entryKind(entry) {
+    return entry && typeof entry.id === "string" && entry.id.indexOf("webapp-") === 0 ? "webapp" : "app";
+}
+
 function readRecent(text) {
     let rows;
     try { rows = JSON.parse(text); } catch (_) { return []; }

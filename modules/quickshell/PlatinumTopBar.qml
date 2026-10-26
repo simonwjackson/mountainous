@@ -65,6 +65,8 @@ PanelWindow {
     Component.onCompleted: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
 
     readonly property bool menuHere: MenuState.current !== "" && MenuState.screen === bar.modelData
+    // Where the front window's title box starts (Go to Address's left edge).
+    readonly property real titleX: leftText.x + titleBox.x
     function isOpen(name) { return bar.menuHere && MenuState.current === name; }
 
     // Where a menu hangs: under its control, under » when the control
@@ -72,8 +74,10 @@ PanelWindow {
     // It reads x through the parents, not mapToItem, so a binding that
     // calls it follows the bar when its layout changes under an open menu.
     function anchorFor(name) {
+        // Go to Address hangs from the front window's title, the window it acts on.
+        if (name === "address") return bar.titleX;
         const item = ({
-            apple: markControl, app: appControl,
+            apple: markControl, find: markControl, app: appControl,
             bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
             oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
             clock: bar.plan.centred ? clockCentre : clockRight,
@@ -376,7 +380,10 @@ PanelWindow {
         x: 6
         screen: bar.modelData
         menu: "apple"
-        open: bar.isOpen("apple")
+        // The Find menu hangs from the mountain too: Super+P, F1 and Apple
+        // menu ▸ Find… open it, and the mountain shows open. A click on the
+        // mountain still opens the Apple menu.
+        open: bar.isOpen("apple") || bar.isOpen("find")
         pad: bar.pad
         icon: "mark"
         iconWidth: 20
@@ -406,7 +413,9 @@ PanelWindow {
                 text: bar.title
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
-                color: PlatinumTokens.barTextSecondary
+                // Underlined while Go to Address acts on this window.
+                font.underline: bar.isOpen("address")
+                color: bar.isOpen("address") ? PlatinumTokens.barText : PlatinumTokens.barTextSecondary
                 font.family: PlatinumTokens.platinumFont
                 font.pixelSize: PlatinumTokens.platinumText
                 font.letterSpacing: PlatinumTokens.platinumTracking

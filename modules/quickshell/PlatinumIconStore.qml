@@ -15,9 +15,9 @@ Singleton {
     id: root
 
     readonly property var names: [
-        "appearance", "arrow", "battery", "bell", "bluetooth", "bolt", "builder", "brightness", "check",
+        "appearance", "arrow", "band-down", "band-up", "battery", "bell", "bluetooth", "bolt", "builder", "brightness", "check",
         "close", "cloud", "desktop", "disk", "dot", "folder", "grip", "lock", "mark", "more", "plug",
-        "pop", "ring", "scroll-left", "scroll-right", "slash", "speaker", "submenu",
+        "pop", "popup", "ring", "scroll-left", "scroll-right", "slash", "speaker", "submenu",
         "volume-0", "volume-1", "volume-2",
         "volume-muted", "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4"
     ]
