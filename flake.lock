@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793046946,
-        "narHash": "sha256-9mj5fte+ykc71vcA6B96FJMRZ0l4qI+Oo0JliMxo9EA=",
+        "lastModified": 1793048757,
+        "narHash": "sha256-gCg80cgSpw0VvsSkEvpFgqU8DHKJaxeg9t0S5M1dvJo=",
         "ref": "front-door",
-        "rev": "5c9385433ff8e4084eeea33decd606fd3272a9b9",
-        "revCount": 11,
+        "rev": "a24d07fb5af7b02b8fa8a8df55e66c75852f6335",
+        "revCount": 13,
         "type": "git",
         "url": "file:///home/simonwjackson/code/sandbox/ai-gateway"
       },

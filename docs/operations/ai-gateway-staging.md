@@ -41,7 +41,7 @@ input resolution until publication.
 
 The module keeps the TOML in one `settings` attrset, generated with
 `pkgs.formats.toml`. It follows `examples/front-door.toml` at ai-gateway commit
-`5c9385433ff8e4084eeea33decd606fd3272a9b9`. Optional paid chat models declare the
+`a24d07fb5af7b02b8fa8a8df55e66c75852f6335`. Optional paid chat models declare the
 positive context windows needed for cap reservations: DeepSeek 1,048,576 and
 Grok 4 256,000 tokens, each with an 8,192-token output ceiling. The focused
 check evaluates those optional-provider settings too. It checks that two fixed
