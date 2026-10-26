@@ -117,7 +117,7 @@ exists. This tests the cap with the existing Typesafe key, without expanding the
 Gemini image key's purpose. The `systemone_charges` table sets a fixed USD 0.004
 charge for each Jev or Solar attempt. This is a **ceiling, not a tariff**.
 Two successful Jev calls spend USD 0.008 of test-b's USD 0.01 cap. The third
-call must fail before an upstream call because its reservation would exceed
+call must fail before an upstream call because its reservation exceeds
 the cap. A confirmed unbilled attempt releases its reservation. An ambiguous
 failure retains its charge. Keep requests minimal.
 
