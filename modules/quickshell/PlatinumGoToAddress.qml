@@ -155,43 +155,50 @@ FocusScope {
                 }
             }
 
-            // Opens in this window: [icon] <title>
-            Item {
+            // Opens in this window: [icon] <title>. The title moves to its own
+            // line when the two do not fit side by side, and wraps to a second.
+            Flow {
                 x: 14
                 width: parent.width - 28
-                height: 18
+                spacing: 6
                 Text {
                     id: destText
-                    anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, parent.width)
+                    height: 18
+                    verticalAlignment: Text.AlignVCenter
                     text: root.dest.text
                     textFormat: Text.PlainText
-                    elide: Text.ElideRight
+                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                     color: PlatinumTokens.menuTextSecondary
                     font.family: PlatinumTokens.platinumFont
                     font.pixelSize: PlatinumTokens.platinumSmall
                     font.letterSpacing: PlatinumTokens.platinumTracking
                 }
-                IconImage {
-                    id: destIcon
-                    visible: root.dest.here && root.callerApp !== ""
-                    x: destText.width + 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    implicitSize: 16
-                    source: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "application-x-executable") : ""
-                }
-                Text {
+                Row {
                     visible: root.dest.here
-                    x: destIcon.visible ? destIcon.x + 16 + 6 : destText.width + 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(0, parent.width - x)
-                    text: root.dest.title
-                    textFormat: Text.PlainText
-                    elide: Text.ElideRight
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    spacing: 6
+                    IconImage {
+                        id: destIcon
+                        visible: root.callerApp !== ""
+                        y: 1
+                        implicitSize: 16
+                        source: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "application-x-executable") : ""
+                    }
+                    Text {
+                        readonly property real room: body.width - 28 - (destIcon.visible ? 22 : 0)
+                        width: Math.min(implicitWidth, room)
+                        height: lineCount > 1 ? implicitHeight : 18
+                        verticalAlignment: Text.AlignVCenter
+                        text: root.dest.title
+                        textFormat: Text.PlainText
+                        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        color: PlatinumTokens.menuText
+                        font.family: PlatinumTokens.platinumFont
+                        font.pixelSize: PlatinumTokens.platinumSmall
+                        font.letterSpacing: PlatinumTokens.platinumTracking
+                    }
                 }
             }
 
