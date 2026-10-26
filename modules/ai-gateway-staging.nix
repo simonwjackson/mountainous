@@ -212,7 +212,14 @@
         mode = "0400";
         restartUnits = [ "ai-gateway-staging.service" ];
       };
+      # Ceiling, not tariff: each attempted decision reserves this fixed USD
+      # charge. Test-b can pay for two Jev calls, but not a third.
+      systemoneCharges = {
+        jev = 0.004;
+        solar = 0.004;
+      };
       settings = {
+        systemone_charges = systemoneCharges;
         listen = "127.0.0.1:8420";
         state_dir = state;
         egress_proxy = "http://127.0.0.1:8421";
@@ -289,12 +296,9 @@
           };
           "eleven_multilingual_v2".audio_per_million_characters = 500.0;
           "grok-tts".audio_per_million_characters = 500.0;
-          jev.request = 0.005;
-          solar = {
-            input_per_million = 1.0;
-            output_per_million = 1.0;
-            request = 0.01;
-          };
+          # Use the same ceilings for API-equivalent decision usage reporting.
+          jev.request = systemoneCharges.jev;
+          solar.request = systemoneCharges.solar;
           "gemini-3.1-flash-image".image_per_unit = 1.0;
         };
         gateway_keys = [
@@ -336,7 +340,7 @@
             name = "ai-staging-test-b";
             key_file = credential "test-b";
             # Parent-approved deviation: existing paid chat keys are unavailable.
-            # Two Jev decisions at the staging ceiling exhaust this cap.
+            # Two Jev decisions leave too little cap for the next reservation.
             models = [ "jev" ];
             dialects = [ "systemone" ];
             monthly_cap_usd = 0.01;

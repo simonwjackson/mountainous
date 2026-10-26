@@ -30,7 +30,11 @@ assert set(a["dialects"]) == {
 }
 assert b["models"] == ["jev"] and b["dialects"] == ["systemone"]
 assert b["monthly_cap_usd"] == 0.01
-assert settings["prices"]["jev"]["request"] == 0.005
+assert settings["systemone_charges"] == {"jev": 0.004, "solar": 0.004}
+charge = settings["systemone_charges"]["jev"]
+assert 2 * charge <= b["monthly_cap_usd"] < 3 * charge
+for model, fixed_charge in settings["systemone_charges"].items():
+    assert settings["prices"][model]["request"] == fixed_charge
 assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"}
 for price in settings["prices"].values():
     assert all(value > 0 for value in price.values())

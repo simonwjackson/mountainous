@@ -41,11 +41,12 @@ input resolution until publication.
 
 The module keeps the TOML in one `settings` attrset, generated with
 `pkgs.formats.toml`. It follows `examples/front-door.toml` at ai-gateway commit
-`e0f6568503f6f714ad49820003c5c87467016890`. Optional paid chat models declare the
+`5c9385433ff8e4084eeea33decd606fd3272a9b9`. Optional paid chat models declare the
 positive context windows needed for cap reservations: DeepSeek 1,048,576 and
 Grok 4 256,000 tokens, each with an 8,192-token output ceiling. The focused
-check evaluates those optional-provider settings too. With these conservative
-prices, reserving the full context can exceed test-a's USD 2 cap. Enabling a
+check evaluates those optional-provider settings too. It checks that two fixed
+Jev charges fit test-b's cap and a third does not. With these conservative prices,
+reserving the full context can exceed test-a's USD 2 cap. Enabling a
 provider does not guarantee that this small grant can use its chat model.
 
 ## Credentials
@@ -113,16 +114,21 @@ price of their own.
 **Test-b differs from the initial chat-completions-only request.** The parent
 approved a System One / Jev grant because no independent paid chat-provider key
 exists. This tests the cap with the existing Typesafe key, without expanding the
-Gemini image key's purpose. Jev's staging ceiling is USD 0.005 per request: two
-successful paid decisions fill the cap. The next must fail before an upstream
-call. A failed upstream request can leave the cap unchanged. Keep requests minimal.
+Gemini image key's purpose. The `systemone_charges` table sets a fixed USD 0.004
+charge for each Jev or Solar attempt. This is a **ceiling, not a tariff**.
+Two successful Jev calls spend USD 0.008 of test-b's USD 0.01 cap. The third
+call must fail before an upstream call because its reservation would exceed
+the cap. A confirmed unbilled attempt releases its reservation. An ambiguous
+failure retains its charge. Keep requests minimal.
 
 Every configured paid price is nonzero and deliberately a **ceiling, not a
 tariff**. They are not verified provider bills. Gemini images reserve USD 1
 per image. Optional speech reserves USD 500 per million characters. Optional
-paid chat uses USD 10/50 per million input/output tokens. Solar reserves
-USD 0.01/request plus USD 1/1 per million tokens. Plan prices (Claude USD 200,
-Codex USD 200, Antigravity USD 20) are estimates for plan-share accounting.
+paid chat uses USD 10/50 per million input/output tokens. System One reserves
+and settles the fixed charge for each attempt, not a token estimate. The
+`prices.jev` and `prices.solar` reporting entries use the same fixed ceiling.
+Plan prices (Claude USD 200, Codex USD 200, Antigravity USD 20) are estimates
+for plan-share accounting.
 Replace estimates with verified tariffs before production. This conservatism
 reduces available test traffic. It does not prove that every future provider
 price is below the ceiling. Subscription traffic has no paid API charge.
