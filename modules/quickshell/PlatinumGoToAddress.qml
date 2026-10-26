@@ -182,12 +182,13 @@ FocusScope {
                         visible: root.callerApp !== ""
                         y: 1
                         implicitSize: 16
-                        source: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "application-x-executable") : ""
+                        // A browser window: Chromium's icon when its site has no entry.
+                        source: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "chromium") : ""
                     }
                     Text {
                         readonly property real room: body.width - 28 - (destIcon.visible ? 22 : 0)
                         width: Math.min(implicitWidth, room)
-                        height: lineCount > 1 ? implicitHeight : 18
+                        height: Math.max(18, implicitHeight)
                         verticalAlignment: Text.AlignVCenter
                         text: root.dest.title
                         textFormat: Text.PlainText
