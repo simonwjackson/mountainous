@@ -1,0 +1,11 @@
+# Run only from hjem-reload@'s ExecStartPost, after the complete link pass.
+set -eu
+[ "$1" = simon ] || exit 0
+runtime=$(loginctl show-user "$1" --property=RuntimePath --value 2>/dev/null || true)
+[ -n "$runtime" ] && [ -S "$runtime/bus" ] || exit 0
+export XDG_RUNTIME_DIR="$runtime" DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus"
+if systemctl --user is-active --quiet quickshell.service ||
+   systemctl --user is-failed --quiet quickshell.service; then
+  systemctl --user reset-failed quickshell.service
+  systemctl --user restart quickshell.service
+fi

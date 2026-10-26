@@ -97,9 +97,44 @@ A source restart trigger alone would change when Nix requests a restart, not
 order that restart after Hjem has finished. The hook therefore establishes the
 explicit completion boundary instead of relying on file watching.
 
-Cost: Hjem activations can restart the bar even when unrelated home files
-changed. A running optional WebTheme failure can remain unavailable until a
-reload or restart. This hook has not been deployed as part of this work.
+Quickshell sets `restartIfChanged = false`, which emits
+`[Service] X-RestartIfChanged=false`. The ordered Hjem hook is the sole
+switch-time restart owner. There is no source restart trigger. A successful
+switch with an active shell and user bus gives one restart after all links,
+even when the user unit or its package changed. The hook still repairs a shell
+that is failed at hook time and leaves a manually stopped shell alone.
+Watchdog/crash recovery and normal graphical-session startup are unchanged.
+
+The pinned nixpkgs `pkgs/by-name/sw/switch-to-configuration-ng/src/main.rs`
+explains the two paths. System switching spawns the per-user switch and waits
+for it, **before** restarting `sysinit-reactivation.target` (the target that
+pulls Hjem in). `do_user_switch` compares NixOS-owned `/etc/systemd/user` units and stops changed
+services that need stop/start. It reexecutes the user manager, resets failure
+state and reloads unit definitions, then submits the changed-unit reload,
+restart and start jobs through systemd D-Bus. Finally it explicitly restarts
+`nixos-activation.service` for user activation scripts. A daemon reload alone
+does not restart Quickshell.
+The changed-unit decision in `handle_modified_unit` honours
+`X-RestartIfChanged=false` from the **new** unit. `nixos-activation.service` is
+not itself the source of Quickshell's restart. Hjem subsequently links files
+and runs its reload actions, then our `ExecStartPost`. It does not manage the
+NixOS-owned Quickshell unit as a home unit.
+
+Cost: every Hjem activation can restart the bar even when unrelated home files
+changed. Unit/package changes now depend on that hook and a running user bus;
+without Hjem activation an already-running shell keeps its old process until a
+manual restart or session restart. A failed Hjem link/reload blocks the restart
+instead of starting a partially linked shell. A running optional WebTheme
+failure can remain unavailable until a reload or restart. A shell concurrently
+starting/stopping, or crashing independently, is outside the one-start contract.
+
+`checks.desktop-safety` asserts the evaluated Myoko policy and Hjem dependency
+edges. `tests/quickshell-switch.py` reads the generated unit and runs the real
+hook against executable command recorders, with a private socket instead of a
+live bus. The offline changed-unit policy trace gives **before: 2 starts**
+(one before linking), **after: 1 start** (after linking), including three repeat
+switches. Failed, inactive, other-user and absent-bus cases are covered. This
+is not a live NixOS switch or deployment proof; no real user manager is touched.
 
 ## KillMode and legacy-app transition
 

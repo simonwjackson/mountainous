@@ -79,6 +79,9 @@
 
       systemd.user.services.quickshell = {
         description = "Quickshell: top bar and window dock";
+        # Hjem's ordered hook is the only switch-time restart owner. The NixOS
+        # user switch runs earlier, before sysinit-reactivation links the home.
+        restartIfChanged = false;
         partOf = [ "graphical-session.target" ];
         after = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
@@ -117,18 +120,18 @@
       # after the reload phase, so Quickshell never relies on an inotify reload
       # part way through linking a generation. Do not start a stopped desktop.
       systemd.services."hjem-reload@".serviceConfig.ExecStartPost = [
-        "${pkgs.writeShellScript "quickshell-after-hjem" ''
-          set -eu
-          [ "$1" = simon ] || exit 0
-          runtime=$(${pkgs.systemd}/bin/loginctl show-user "$1" --property=RuntimePath --value 2>/dev/null || true)
-          [ -n "$runtime" ] && [ -S "$runtime/bus" ] || exit 0
-          export XDG_RUNTIME_DIR="$runtime" DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus"
-          if ${pkgs.systemd}/bin/systemctl --user is-active --quiet quickshell.service ||
-             ${pkgs.systemd}/bin/systemctl --user is-failed --quiet quickshell.service; then
-            ${pkgs.systemd}/bin/systemctl --user reset-failed quickshell.service
-            ${pkgs.systemd}/bin/systemctl --user restart quickshell.service
-          fi
-        ''} %i"
+        "${
+          lib.getExe (
+            pkgs.writeShellApplication {
+              name = "quickshell-after-hjem";
+              runtimeInputs = [
+                pkgs.systemd
+                pkgs.coreutils
+              ];
+              text = builtins.readFile ../scripts/quickshell-after-hjem;
+            }
+          )
+        } %i"
       ];
 
       # Discover new controls and icons without a second Nix file list. The
