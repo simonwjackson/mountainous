@@ -1,0 +1,4 @@
+pre-push:
+  commands:
+    no-local-flake-paths:
+      run: bash scripts/check-flake-inputs.sh
