@@ -6,6 +6,19 @@
     let
       c = self.nixosConfigurations.rakku.config;
       cfg = c.mountainous.features.ai-gateway-staging;
+      # Optional paid chat must also satisfy the binary's startup contract,
+      # even though those providers are disabled in this staging placement.
+      optionalModels =
+        (self.nixosConfigurations.rakku.extendModules {
+          modules = [
+            {
+              mountainous.features.ai-gateway-staging.providers = {
+                openrouter.enable = true;
+                xai.enable = true;
+              };
+            }
+          ];
+        }).config.mountainous.features.ai-gateway-staging.settings.paid_models;
       unit = c.systemd.services.ai-gateway-staging.serviceConfig;
       proxy = c.systemd.services.ai-gateway-staging-egress.serviceConfig;
       want = ok: message: lib.optional (!ok) message;
@@ -17,6 +30,9 @@
             "::1/128"
           ]
         ) "front door allows non-loopback IPs"
+        ++ want (lib.all (
+          model: model.provider == "elevenlabs" || model.id == "grok-tts" || (model.context_window or 0) > 0
+        ) optionalModels) "paid chat models require a positive context_window for cap reservations"
         ++ want unit.DynamicUser "front door must use DynamicUser"
         ++ want (cfg.settings.listen == "127.0.0.1:8420") "front door listens beyond IPv4 loopback"
         ++ want (cfg.settings.egress_proxy == "http://127.0.0.1:8421") "missing egress proxy"
@@ -210,6 +226,8 @@
               id = "deepseek-v4.1-flash";
               provider = "openrouter";
               upstream_model = "deepseek/deepseek-v4.1-flash";
+              context_window = 1048576;
+              max_tokens = 8192;
             }
           ]
           ++ lib.optionals cfg.providers.elevenlabs.enable [
@@ -222,6 +240,8 @@
             {
               id = "grok-4";
               provider = "xai";
+              context_window = 256000;
+              max_tokens = 8192;
             }
             {
               id = "grok-tts";

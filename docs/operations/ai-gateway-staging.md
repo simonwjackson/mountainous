@@ -30,7 +30,13 @@ sharing cairn. The cost of this temporary arrangement is no portable full-flake
 input resolution until publication.
 
 The module keeps the TOML in one `settings` attrset, generated with
-`pkgs.formats.toml`. It follows `examples/front-door.toml` in ai-gateway.
+`pkgs.formats.toml`. It follows `examples/front-door.toml` at ai-gateway commit
+`e0f6568503f6f714ad49820003c5c87467016890`. Optional paid chat models declare the
+positive context windows needed for cap reservations: DeepSeek 1,048,576 and
+Grok 4 256,000 tokens, each with an 8,192-token output ceiling. The focused
+check evaluates those optional-provider settings too. With these conservative
+prices, reserving the full context can exceed test-a's USD 2 cap; enabling a
+provider does not guarantee that this small grant can use its chat model.
 
 ## Credentials
 
