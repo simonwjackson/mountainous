@@ -62,6 +62,14 @@
   security.tpm2.enable = lib.mkDefault true;
 
   services = {
+    # Runtime suspend/resume of the XPS 17 9710 iGPU triggers i915 DC-state,
+    # CDCLK PLL and DBuf power-well timeouts on kernel 6.18.17. Keeping this
+    # device active stopped the boot-time hangs on 2026-10-23. Apply on cold
+    # enumeration, driver bind and later change events; leave the NVIDIA GPU
+    # and system-wide suspend policy alone.
+    udev.extraRules = ''
+      ACTION=="add|bind|change", SUBSYSTEM=="pci", KERNEL=="0000:00:02.0", DRIVER=="i915", TEST=="power/control", ATTR{power/control}="on"
+    '';
     fwupd.enable = lib.mkDefault true;
     thermald.enable = lib.mkDefault true;
     hardware.bolt.enable = lib.mkDefault true;
