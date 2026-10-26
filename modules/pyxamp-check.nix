@@ -123,7 +123,18 @@
         assert
           !(builtins.elem disabled.mountainous.features.pyxamp.package disabled.environment.systemPackages);
         assert builtins.elem "graphical-session.target" myoko.systemd.user.targets.hyprland-session.bindsTo;
-        assert inputs.pyxamp.rev == "05ae787336b408aeed0d78444a133a8a6e75f143";
+        assert inputs.pyxamp.rev == "1d774e700b5e02a16373a0aeaa3b8218f8a96e9b";
+        # The face picks its renderer from the registry that the bar reads
+        # (themes.json pyxampFace), at the path Hjem links it to.
+        assert lib.hasInfix "/quickshell/mountainous/themes.json" (
+          builtins.readFile "${inputs.pyxamp}/face/lib/desktop-theme.js"
+        );
+        assert myoko.hjem.users.simon.files ? ".config/quickshell/mountainous/themes.json";
+        assert
+          map (t: t.pyxampFace) (lib.importJSON ./quickshell/themes.json) == [
+            "platinum"
+            "winamp"
+          ];
         assert package.quickshell.version == "0.3.2";
         assert has ''hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))'';
         assert has ''hl.dsp.exec_cmd("playerctl --player=pyxamp play-pause")'';
