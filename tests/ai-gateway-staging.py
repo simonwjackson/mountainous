@@ -76,6 +76,10 @@ assert {
     "fc00::/7",
     "fe80::/10",
 } <= set(private_line.split()[3:])
+assert "memory_cache_shared off\n" in policy
+assert "cache_mem 0 MB\n" in policy
+assert "cache_log /run/ai-gateway-staging-egress/cache.log\n" in policy
+assert "access_log stdio:/run/ai-gateway-staging-egress/access.log\n" in policy
 subprocess.run(["squid", "-k", "parse", "-f", str(proxy_path)], check=True)
 
 with tempfile.TemporaryDirectory() as tmp:
@@ -85,7 +89,10 @@ with tempfile.TemporaryDirectory() as tmp:
     # still fail. No test sends a request to an external provider.
     hosts.write_text("127.0.0.1 api.typesafe.ai\n")
     test_config = root / "squid.conf"
-    test_config.write_text(policy + f"\nhosts_file {hosts}\n")
+    test_config.write_text(
+        policy.replace("/run/ai-gateway-staging-egress/", f"{root}/")
+        + f"\nhosts_file {hosts}\n"
+    )
     with (root / "squid.log").open("w+") as log:
         proxy = subprocess.Popen(
             ["squid", "-N", "-f", str(test_config)], cwd=tmp, stdout=log, stderr=log
@@ -126,14 +133,28 @@ with tempfile.TemporaryDirectory() as tmp:
                 with socket.create_connection(("127.0.0.1", 8421), timeout=2) as conn:
                     conn.settimeout(3)
                     conn.sendall((request + "Connection: close\r\n\r\n").encode())
-                    response = conn.recv(4096)
+                    # Finish the response before shutdown so Squid can record
+                    # the completed denial instead of an aborted transaction.
+                    response = b""
+                    while chunk := conn.recv(4096):
+                        response += chunk
                     assert response.split(b"\r\n", 1)[0].split()[1] == b"403", (
                         request,
                         response,
                     )
-            print(
-                f"PASS: generated TOML, proxy parse, {len(requests)} real denied proxy requests"
-            )
+            for _ in range(100):
+                if (root / "access.log").read_text().count("/403 ") == len(requests):
+                    break
+                time.sleep(0.05)
+            else:
+                raise AssertionError("denied requests were not all logged")
         finally:
             proxy.terminate()
             proxy.wait(timeout=10)
+    access_log = (root / "access.log").read_text()
+    assert access_log.count("/403 ") == len(requests), access_log
+    assert "example.com:443" in access_log
+    assert "FATAL" not in (root / "cache.log").read_text()
+    print(
+        f"PASS: generated TOML, proxy parse, {len(requests)} real denied and logged proxy requests"
+    )

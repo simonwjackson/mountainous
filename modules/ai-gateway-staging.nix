@@ -37,6 +37,9 @@
           "tsnet-proxy-ai-staging"
         ]) "disabled feature still declares staging services"
         ++ want (
+          !(disabled.users.users ? ai-gateway-staging) && !(disabled.users.groups ? ai-gateway-staging)
+        ) "disabled feature still declares its static account"
+        ++ want (
           !(disabled.mountainous.tailnetNames ? ai-staging)
         ) "disabled feature still declares a tailnet name"
         ++ want (
@@ -46,6 +49,7 @@
           !(lib.any (
             entry:
             lib.elem (if builtins.isString entry then entry else entry.directory) [
+              "/var/lib/ai-gateway-staging"
               "/var/lib/private/ai-gateway-staging"
               "/var/lib/tsnet-proxy-ai-staging"
             ]
@@ -61,10 +65,76 @@
         ++ want (lib.all (
           model: model.provider == "elevenlabs" || model.id == "grok-tts" || (model.context_window or 0) > 0
         ) optionalModels) "paid chat models require a positive context_window for cap reservations"
-        ++ want unit.DynamicUser "front door must use DynamicUser"
+        ++ want (
+          !unit.DynamicUser
+          && unit.RemoveIPC
+          && unit.User == "ai-gateway-staging"
+          && unit.Group == "ai-gateway-staging"
+          && c.users.users.ai-gateway-staging.isSystemUser
+          && c.users.users.ai-gateway-staging.group == "ai-gateway-staging"
+          && c.users.groups.ai-gateway-staging.gid != 0
+          && c.users.users.ai-gateway-staging.uid != 0
+        ) "front door must use its static non-root system user and group"
+        ++ want (
+          unit.StateDirectory == "ai-gateway-staging"
+          && unit.StateDirectoryMode == "0700"
+          && unit.ReadWritePaths == [ "/var/lib/ai-gateway-staging" ]
+          && lib.any (
+            entry:
+            !(builtins.isString entry)
+            && entry.directory == "/var/lib/ai-gateway-staging"
+            && entry.user == "ai-gateway-staging"
+            && entry.group == "ai-gateway-staging"
+            && entry.mode == "0700"
+          ) c.environment.persistence."/tundra/permafrost".directories
+        ) "front door state must be private and persisted with its static owner"
+        ++ want (lib.all
+          (
+            service:
+            service.ProtectSystem == "strict"
+            && lib.all (key: service.${key}) [
+              "ProtectHome"
+              "PrivateTmp"
+              "PrivateDevices"
+              "NoNewPrivileges"
+              "ProtectKernelTunables"
+              "ProtectKernelModules"
+              "ProtectKernelLogs"
+              "ProtectControlGroups"
+              "RestrictSUIDSGID"
+              "RestrictRealtime"
+              "RestrictNamespaces"
+              "LockPersonality"
+            ]
+            && service.UMask == "0077"
+            && service.CapabilityBoundingSet == ""
+            &&
+              service.RestrictAddressFamilies == [
+                "AF_INET"
+                "AF_INET6"
+                "AF_UNIX"
+              ]
+            && service.SystemCallFilter == [ "@system-service" ]
+            && service.MemoryMax == "512M"
+            && lib.all (path: lib.elem path service.ReadOnlyPaths) [
+              "/tmp"
+              "/var/tmp"
+            ]
+          )
+          [
+            unit
+            proxy
+          ]
+        ) "staging service sandbox protections changed"
         ++ want (cfg.settings.listen == "127.0.0.1:8420") "front door listens beyond IPv4 loopback"
         ++ want (cfg.settings.egress_proxy == "http://127.0.0.1:8421") "missing egress proxy"
-        ++ want (proxy.DynamicUser && proxy.ProtectSystem == "strict") "egress proxy is not sandboxed"
+        ++ want (
+          lib.elem "/dev/shm" unit.ReadOnlyPaths
+          && proxy.DynamicUser
+          && proxy.RuntimeDirectoryMode == "0700"
+          && proxy.TemporaryFileSystem == [ "/dev/shm:rw,nosuid,nodev,noexec,size=16M,mode=1777" ]
+          && !(lib.elem "/dev/shm" proxy.ReadOnlyPaths)
+        ) "egress shared memory must be private, writable and bounded"
         ++ want (
           c.mountainous.tailnetNames.ai-staging.backend == "http://127.0.0.1:8420"
         ) "wrong tailnet backend"
@@ -157,11 +227,12 @@
         http_access allow loopback_client connect_method tls_port provider
         http_access deny all
         cache deny all
-        cache_mem 8 MB
+        memory_cache_shared off
+        cache_mem 0 MB
         maximum_object_size 0 KB
-        access_log none
+        access_log stdio:/run/ai-gateway-staging-egress/access.log
         cache_store_log none
-        cache_log /dev/stderr
+        cache_log /run/ai-gateway-staging-egress/cache.log
         pid_filename none
         shutdown_lifetime 1 seconds
         forwarded_for delete
@@ -398,6 +469,11 @@
         // lib.mapAttrs' (
           name: _: lib.nameValuePair "ai-staging-${name}-api-key" (hostSecret "ai-staging-${name}-api-key")
         ) enabledProviders;
+        users.groups.ai-gateway-staging = { };
+        users.users.ai-gateway-staging = {
+          isSystemUser = true;
+          group = "ai-gateway-staging";
+        };
         systemd.services.ai-gateway-staging = {
           description = "AI gateway staging front door (no production cutover)";
           wantedBy = [ "multi-user.target" ];
@@ -409,6 +485,11 @@
           ];
           unitConfig.RequiresMountsFor = [ state ];
           serviceConfig = sandbox // {
+            DynamicUser = false;
+            # Preserve the IPC cleanup previously implied by DynamicUser.
+            RemoveIPC = true;
+            User = "ai-gateway-staging";
+            Group = "ai-gateway-staging";
             StateDirectory = "ai-gateway-staging";
             StateDirectoryMode = "0700";
             ReadWritePaths = [ state ];
@@ -441,15 +522,27 @@
           after = [ "network-online.target" ];
           serviceConfig = sandbox // {
             RuntimeDirectory = "ai-gateway-staging-egress";
+            RuntimeDirectoryMode = "0700";
+            RuntimeDirectoryPreserve = "restart";
+            # Squid 7.6 still creates IPC metadata with its memory cache off.
+            # Give it a private, bounded POSIX shm mount, never the host's shm.
+            ReadOnlyPaths = [
+              "/tmp"
+              "/var/tmp"
+            ];
+            TemporaryFileSystem = [ "/dev/shm:rw,nosuid,nodev,noexec,size=16M,mode=1777" ];
             WorkingDirectory = "/run/ai-gateway-staging-egress";
             ExecStart = "${pkgs.squid}/bin/squid -N -f ${cfg.egressConfigFile}";
           };
         };
-        # DynamicUser state lives below private/ on the tmpfs-root host. Persist
-        # that backing directory, not systemd's public symlink to it.
+        # Rakku's shared /var/lib/private is 0755 for existing production state.
+        # A static owner avoids DynamicUser's incompatible parent-mode check.
+        # Do not change that shared directory or any production state.
         environment.persistence."/tundra/permafrost".directories = [
           {
-            directory = "/var/lib/private/ai-gateway-staging";
+            directory = "/var/lib/ai-gateway-staging";
+            user = "ai-gateway-staging";
+            group = "ai-gateway-staging";
             mode = "0700";
           }
         ];

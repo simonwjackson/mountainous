@@ -1,8 +1,9 @@
 # AI gateway staging on Rakku
 
 This is an additive staging service, not a production cutover. Do not change
-CLIProxyAPI, LiteLLM, Pi, the assistants or client keys to test it. No host was
-deployed, switched or restarted while preparing this change.
+CLIProxyAPI, LiteLLM, Pi, the assistants or client keys to test it. This runbook
+does not authorize a deployment. Sandbox verification runs transient test units
+on Zao only.
 
 ## Identity and placement
 
@@ -16,9 +17,11 @@ deployed, switched or restarted while preparing this change.
   `tsnet-proxy-ai-staging`. Ports 8420 and 8421 were free in Rakku's `ss -lnt`
   output on 2026-10-26. Check again before an approved deployment.
 - Service state: SQLite usage and key hashes in `/var/lib/ai-gateway-staging`.
-  Systemd manages the DynamicUser backing directory under `/var/lib/private`.
-  That directory is persisted on Rakku's permafrost volume. Tailnet identity
-  state is persisted by `tailnet-names` as for its other names.
+  The static system user and group `ai-gateway-staging` own that directory with
+  mode 0700. That directory is persisted on Rakku's permafrost volume.
+  Do not change `/var/lib/private`. Its existing 0755 mode belongs to production
+  state and prevents use of DynamicUser with StateDirectory on this host.
+  Tailnet identity state is persisted by `tailnet-names` as for its other names.
 
 ## Source pin: publication blocker
 
@@ -51,8 +54,8 @@ provider does not guarantee that this small grant can use its chat model.
 
 ## Credentials
 
-Systemd `LoadCredential` copies root-readable sops files for DynamicUser. No
-credential value is in the Nix store, TOML, environment or command line.
+Systemd `LoadCredential` copies root-readable sops files for the non-root
+front door. No credential value is in the Nix store, TOML, environment or command line.
 
 | Credential | Encrypted source | Use |
 | --- | --- | --- |
@@ -149,16 +152,32 @@ LiteLLM's `litellm/llms/typesafe/decisions/transformation.py`,
 
 It denies private IPv4/IPv6, loopback, link-local, CGNAT `100.64.0.0/10`,
 multicast and reserved test ranges, and all other requests by default. The
-proxy does not cache content or log requests. Its cost is a second service and
-DNS-dependent provider availability. A new provider needs both configuration
+proxy does not cache content. Its native access log records CONNECT targets
+and outcomes, including denied requests. It does not record authorization
+headers or request bodies. Read `/run/ai-gateway-staging-egress/access.log` as
+root. Startup diagnostics are in `cache.log` in that same mode-0700 runtime
+directory. Logs survive automatic restarts but are removed when the unit stops.
+Its cost is a second service, local log storage and DNS-dependent availability. A new provider needs both configuration
 and a reviewed allowlist change. There is no CORS setting.
 
-Both units use DynamicUser, strict filesystem protection, private read-only
-temporary directories, no capabilities, restricted address families and
-`@system-service` syscalls, and a 512 MiB memory limit. The front door can write
-only its state directory. The proxy has only its private runtime directory.
-Kernel-enforced IP filtering and systemd sandboxes still need an approved
-on-host verification after deployment. They were evaluated, not activated.
+The front door uses the static non-root account `ai-gateway-staging`. The
+proxy retains DynamicUser. Both units retain strict filesystem protection,
+private read-only temporary directories, no capabilities, restricted address
+families and `@system-service` syscalls, and a 512 MiB memory limit. The front
+door can write only its state directory. Its `/dev/shm` remains read-only.
+
+Squid 7.6 creates IPC metadata even with `memory_cache_shared off` and
+`cache_mem 0 MB`. The proxy therefore gets a private writable 16 MiB tmpfs at
+`/dev/shm`, mounted nosuid, nodev and noexec. It never uses the host's shared
+memory mount. Its only other writable directory is its private runtime
+directory. This exception adds a bounded memory cost.
+
+The first staging deployment found two startup defects that an ordinary
+process test did not catch. DynamicUser rejected Rakku's existing 0755
+`/var/lib/private`. Squid could not open the journal socket through
+`/dev/stderr` and could not create IPC metadata on read-only shared memory.
+The static front-door owner, runtime log files and private shm mount fix these
+paths without changing production directory permissions.
 
 ## Bounded verification (no deployment)
 
@@ -174,10 +193,33 @@ nix eval --raw .#nixosConfigurations.rakku.config.system.build.toplevel.drvPath 
   --output /tmp/ai-staging-rakku-diff.txt
 ```
 
-Run these again on the final commit. The focused check inspects the generated
+For sandbox changes, run this test on Zao before the commit:
+
+```sh
+./scripts/test-ai-staging-sandbox --output /tmp/ai-staging-sandbox-proof.json
+```
+
+The test requires Zao's passwordless sudo wrapper. It reads the evaluated
+Rakku service properties and starts transient units with those properties.
+Only unit names, the test config path and synthetic credential paths differ.
+It refuses existing state paths, test units and occupied ports. It creates a
+root-owned 0700 state directory and verifies that systemd gives it to the
+static service account. It checks `/v1/models` without a key returns 401.
+It checks a non-allowlisted CONNECT returns 403 and appears in the access log.
+It verifies the private 16 MiB shm mount, zero restarts and clean shutdown.
+It removes its own state, transient units and any test account it created.
+It checks that `/var/lib/private` ownership and mode are unchanged. It does
+not contact Rakku or a provider and never reads production credentials.
+
+The real sandbox test on Zao does not prove sops decryption, tailnet joins or
+impermanence activation on Rakku. Verify those after an approved deployment.
+
+Run the focused build and evaluation diff again on the final commit.
+The focused check inspects the generated
 TOML, evaluates the systemd invariants, parses the real Squid configuration,
 and sends 13 denied requests to the real proxy (including a provider hostname
-forced to resolve to loopback). It makes no external provider call. It also
+forced to resolve to loopback). It verifies that those denials appear in the
+access log. It makes no external provider call. It also
 checks that disabling the feature removes its declarations. It proves that the
 evaluation-diff guard rejects production changes.
 
