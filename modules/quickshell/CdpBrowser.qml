@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import QtWebSockets
 import QtQuick
+import "cdp-target.js" as CdpTarget
 
 Singleton {
     id: root
@@ -15,6 +16,7 @@ Singleton {
     property int port: 0
     property var pages: []          // [{ id, url, title, host, ws }]
     property string lastError: ""
+    property var navigationHistory: ({})
 
     // A dead browser leaves DevToolsActivePort behind holding the port
     // it used to own. Zeroing `port` when a request fails made the
@@ -101,6 +103,7 @@ Singleton {
                         ws: t.webSocketDebuggerUrl
                     });
                 }
+                root.navigationHistory = CdpTarget.remember(root.navigationHistory, out);
                 root.pages = out;
             } catch (e) { root.lastError = "" + e; }
         };
@@ -123,17 +126,8 @@ Singleton {
     function targetFor(toplevel) {
         if (!toplevel) return null;
         const wl = toplevel.wayland;
-        const host = root.hostOfAppId(wl ? wl.appId : "");
-        if (host === "") return null;
-
-        const byHost = root.pages.filter(function (p) { return p.host === host; });
-        if (byHost.length === 1) return byHost[0];
-        if (byHost.length === 0) return null;
-
-        // Same host in more than one window: fall back to the title.
-        const t = toplevel.title || "";
-        const byTitle = byHost.filter(function (p) { return p.title === t; });
-        return byTitle.length > 0 ? byTitle[0] : byHost[0];
+        return CdpTarget.targetFor(root.pages, root.navigationHistory,
+            wl ? wl.appId : "", toplevel.title || "");
     }
 
     function isBrowserWindow(toplevel) {
@@ -168,7 +162,7 @@ Singleton {
             return true;
         }
 
-        root.pendingNav = { ws: t.ws, url: target };
+        root.pendingNav = { id: t.id, ws: t.ws, url: target };
         pageSock.active = false;
         pageSock.url = t.ws;
         pageSock.active = true;
@@ -192,6 +186,16 @@ Singleton {
             }
         }
         onTextMessageReceived: function (msg) {
+            let response;
+            try { response = JSON.parse(msg); } catch (e) { return; }
+            if (response.id !== 1) return;
+            if (!response.error && root.pendingNav) {
+                root.navigationHistory = CdpTarget.remember(root.navigationHistory,
+                    root.pages.map(function (page) {
+                        return page.id === root.pendingNav.id
+                            ? {id: page.id, url: root.pendingNav.url} : page;
+                    }));
+            }
             root.pendingNav = null;
             pageSock.active = false;
             root.refresh();
