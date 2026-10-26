@@ -15,6 +15,7 @@ in
       "logbook"
       "tailnet-names"
       "decision-gateway"
+      "ai-gateway-staging"
       "notify-server"
       "beszel-hub"
       "pi-assistant"

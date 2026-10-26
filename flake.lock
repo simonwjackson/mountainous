@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "ai-gateway": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793041008,
+        "narHash": "sha256-F4QR++VlJ90HY30EowMfCkuDb5q7B7E4J76+2qMzQ28=",
+        "ref": "front-door",
+        "rev": "769e0e3a549a94e0745997e44a8d790737a43de9",
+        "revCount": 3,
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/ai-gateway"
+      },
+      "original": {
+        "ref": "front-door",
+        "type": "git",
+        "url": "file:///home/simonwjackson/code/sandbox/ai-gateway"
+      }
+    },
     "airconnect-src": {
       "flake": false,
       "locked": {
@@ -763,6 +784,7 @@
     },
     "root": {
       "inputs": {
+        "ai-gateway": "ai-gateway",
         "airconnect-src": "airconnect-src",
         "beszel-mcp": "beszel-mcp",
         "chicagoflf-src": "chicagoflf-src",

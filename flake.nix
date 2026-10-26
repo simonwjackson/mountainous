@@ -7,6 +7,13 @@
   };
 
   inputs = {
+    # STAGING ONLY: publish this repo and replace this one URL before pushing cairn.
+    # Only Rakku's staging layer consumes the package (other host evals stay lazy).
+    ai-gateway = {
+      url = "git+file:///home/simonwjackson/code/sandbox/ai-gateway?ref=front-door";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     pi.url = "github:lukasl-dev/pi.nix";
     pi-cliproxyapi-provider = {
       url = "github:router-for-me/pi-cliproxyapi-provider";

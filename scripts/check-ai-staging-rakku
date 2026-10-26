@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Compare evaluated Rakku against cairn. Never deploy or print environment values."""
+
+import argparse
+import json
+import pathlib
+import subprocess
+import sys
+
+PROJECTION = r"""system: let
+  c = system.config;
+  lib = system.pkgs.lib;
+in {
+  units = builtins.attrNames c.systemd.units;
+  services = builtins.mapAttrs (_: unit: {
+    ExecStart = unit.serviceConfig.ExecStart or null;
+    inherit (unit) environment;
+  }) c.systemd.services;
+  secrets = builtins.mapAttrs (_: secret: {
+    inherit (secret) key owner group mode path restartUnits neededForUsers;
+    sopsFile = builtins.baseNameOf secret.sopsFile;
+  }) c.sops.secrets;
+  tailnetNames = c.mountainous.tailnetNames;
+}"""
+NEW_SERVICES = {
+    "ai-gateway-staging",
+    "ai-gateway-staging-egress",
+    "tsnet-proxy-ai-staging",
+}
+NEW_SECRETS = {
+    "ai-staging-test-a",
+    "ai-staging-test-b",
+    "ai-staging-usage",
+    "ai-staging-login-keeper",
+}
+
+
+def evaluate(ref):
+    # Sequential evaluations keep memory bounded. Capture values for equality
+    # only. Output contains names, not environment or credential values.
+    return json.loads(
+        subprocess.check_output(
+            [
+                "nix",
+                "eval",
+                "--json",
+                "--option",
+                "eval-cache",
+                "false",
+                f"{ref}#nixosConfigurations.rakku",
+                "--apply",
+                PROJECTION,
+            ]
+        )
+    )
+
+
+def compare(before, after):
+    report = {}
+    errors = []
+    for kind, allowed in [
+        ("units", {name + ".service" for name in NEW_SERVICES}),
+        ("services", NEW_SERVICES),
+        ("secrets", NEW_SECRETS),
+        ("tailnetNames", {"ai-staging"}),
+    ]:
+        old, new = before[kind], after[kind]
+        removed = sorted(set(old) - set(new))
+        added = sorted(set(new) - set(old))
+        changed = (
+            {}
+            if kind == "units"
+            else {
+                name: sorted(
+                    field
+                    for field in set(old[name]) | set(new[name])
+                    if old[name].get(field) != new[name].get(field)
+                )
+                for name in sorted(set(old) & set(new))
+                if old[name] != new[name]
+            }
+        )
+        report[kind] = {"added": added, "removed": removed, "changed_fields": changed}
+        if removed or changed or not set(added) <= allowed:
+            errors.append(kind)
+        # Required additions must not silently disappear.
+        if not allowed <= set(added):
+            errors.append(f"{kind}: missing additions")
+    report["status"] = "FAIL" if errors else "PASS"
+    if errors:
+        report["errors"] = errors
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--base", default="cairn")
+    parser.add_argument("--candidate", default="HEAD")
+    parser.add_argument("--output", default="/tmp/ai-staging-rakku-diff.txt")
+    args = parser.parse_args()
+    root = subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], text=True
+    ).strip()
+    base = subprocess.check_output(["git", "rev-parse", args.base], text=True).strip()
+    candidate = subprocess.check_output(
+        [
+            "git",
+            "rev-parse",
+            "HEAD" if args.candidate == "working-tree" else args.candidate,
+        ],
+        text=True,
+    ).strip()
+    # Accept the current checkout only for development before its final commit.
+    target = (
+        root
+        if args.candidate == "working-tree"
+        else f"git+file://{root}?rev={candidate}"
+    )
+    before = evaluate(f"git+file://{root}?rev={base}")
+    after = evaluate(target)
+    report = {"base": base, "candidate": candidate, **compare(before, after)}
+    # Existing encrypted entries must be byte-for-byte equal. sops metadata and
+    # new entries may change; this check never decrypts or emits ciphertext.
+    old_yaml = subprocess.check_output(
+        ["git", "show", f"{base}:secrets/hosts/rakku.yaml"], text=True
+    )
+    new_yaml = (
+        (pathlib.Path(root) / "secrets/hosts/rakku.yaml").read_text()
+        if args.candidate == "working-tree"
+        else subprocess.check_output(
+            ["git", "show", f"{candidate}:secrets/hosts/rakku.yaml"], text=True
+        )
+    )
+
+    def entries(text):
+        result = {}
+        current = None
+        for line in text.splitlines(keepends=True):
+            if line and not line[0].isspace() and ":" in line:
+                current = line.split(":", 1)[0]
+                result[current] = ""
+            if current:
+                result[current] += line
+        return result
+
+    old_entries, new_entries = entries(old_yaml), entries(new_yaml)
+    unchanged = all(
+        new_entries.get(key) == value
+        for key, value in old_entries.items()
+        if key != "sops"
+    )
+    report["existing_encrypted_secrets_unchanged"] = unchanged
+    if not unchanged:
+        report["status"] = "FAIL"
+    output = json.dumps(report, indent=2) + "\n"
+    pathlib.Path(args.output).write_text(output)
+    print(output, end="")
+    return 0 if report["status"] == "PASS" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
