@@ -363,7 +363,7 @@ FocusScope {
                 }
                 onEntered: { startX = mouseX; startY = mouseY; armed = false; }
                 onPositionChanged: function (mouse) {
-                    if (!armed && Math.abs(mouse.x - startX) + Math.abs(mouse.y - startY) > 3) armed = true;
+                    if (!armed && Math.abs(mouse.x - startX) + Math.abs(mouse.y - startY) > 0.5) armed = true;
                     if (armed) track(mouse.y);
                 }
                 onExited: root.hoverRow(-1)

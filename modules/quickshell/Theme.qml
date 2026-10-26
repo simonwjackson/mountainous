@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Appearance state and tokens for the unthemed omni bar and overlays.
+// Appearance state and tokens for the unthemed omni bar card and overlays.
 //
 // Two palettes, one live value. The `desktop-theme` command owns the state
 // file; this singleton only reads it, so the bar, the dock and the omni bar

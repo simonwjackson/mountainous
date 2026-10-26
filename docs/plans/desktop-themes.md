@@ -18,7 +18,7 @@ A theme is a set of prefixed QML files plus one entry in a list. Assets and pure
 |---|---|---|
 | Which bars exist, on which edge | Top menu bar, plus the dock (restyled later) | One bottom taskbar, no dock |
 | Where window switching lives | Dock | Taskbar buttons, banded by page |
-| Launcher entry | Omni mark opens the omni bar | Start menu; Run... opens the omni bar |
+| Launcher entry | Super+P drops the Find menu from the mountain (the omni service's Platinum view) | Start menu; Run... opens the omni bar's unthemed card |
 | Status controls | Bar titles with readouts | Tray icons with tooltips |
 | Menu shape and direction | Hangs down from its title | Rises from the tray; Start cascades up and right |
 | Components | `Platinum*` set | New Win98 set |
@@ -29,7 +29,7 @@ A theme is a set of prefixed QML files plus one entry in a list. Assets and pure
 Shared by every theme, never forked:
 - the data owners: Pipewire, Bluetooth, Wi-Fi, brightness, `OciEgress`, `StorageHealth`, `BuilderGate`, `Notifications`, `Dictation`, `Lanes`, the clock;
 - the logic modules and their tests: `MenuState`, `battery.js`, `oci-model.js`, `notification-model.js`, `builder-gate.js`;
-- what stays unthemed: the omni bar, notification popups, the dictation overlay, app windows, GTK.
+- what stays unthemed: the omni bar's service and its card (a theme may draw its own view of the service, see "Find menu" below), notification popups, the dictation overlay, app windows, GTK.
 
 ## The three settings
 
@@ -416,3 +416,50 @@ Theme swap with the Apple menu and a cascade open, three rounds: Platinum maps `
 - The nested session ran against a `Launcher` stub. The landed code calls the real singleton; its launches into scopes were proven in the desktop-safety work, not in this phase's session.
 - `configurationRevision` was not set on the evaluating host, so About showed "Not recorded".
 
+
+
+## Find menu: Platinum's Super+P (implemented)
+
+Spec: the approved option B at `/tmp/find-mock/` (`REPORT.md`, `INVESTIGATION.md`, `DIRECTION.md`, `shots/*-B-*`). Super+P, F1 and Apple menu ▸ Find… drop a 400 px Platinum menu from the mountain on the focused screen, with no veil and no motion. Its first item is a scope pop-up ("All ⇕") and a sunken field with the lavender focus ring; the rows filter live, grouped under Windows (by screen), Applications and Commands. Ctrl+L and the "Go to address" rows open Go to Address, a Platinum dialog under the front window's title that navigates through `CdpBrowser`.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| Rows, ranking, scopes, entry rules (pure) | `find-model.js` (+ `find-model.test.js`), shared and theme-neutral |
+| Menu and dialog sizes (pure) | `themes/platinum/find-plan.js` (+ `.test.js`) |
+| The Find menu | `PlatinumFindMenu.qml`: field row, scope pop-up, grouped rows, ▲/▼ arrow bands, Balloon Help |
+| Go to Address | `PlatinumGoToAddress.qml` on `PlatinumDialogFrame` and `PlatinumButton` |
+| The field | `PlatinumTextField.qml`: sunken well, black inner edge, lavender ring (`PlatinumTokens.focusRing`) |
+| Wiring | `PlatinumDesktop.qml` (menus `find` and `address` in `menuMap`, the service sync), `PlatinumTopBar.qml` (the mountain open for `find`, the title underlined and the dialog's anchor for `address`), `PlatinumMenuHost.qml` (`placeX`, `topGap`), `PlatinumBarControl.qml` (hover over the bar does not take over from `find` or `address`) |
+| The service | `OmniBar.qml`: `enter*` through `FindModel.enter`, `screen`, `claimView`/`releaseView`, `navigateTo`, the `cmd` mode, `run({kind: "recent"})` |
+| Launch kind | `launcher-model.js` `entryKind`, used by `Launcher.launchEntry` |
+| Check | `checks.find-menu`; `bar-delivery` asserts the new files are delivered and their tests are not |
+
+### The contract grows
+
+The omni service stays one shared owner (`shell.qml`, `context.omniBar`), with its IPC target `omni` (`toggle`, `reveal`, `gotowindow`, `apps`, `navigate`, `dismiss`) and its public rows (`windowRows`, `appRows`, `commandRows`) and `run(row)`. New: `mode` may be `cmd`; `screen` is the focused screen captured on the way in; `enterMode(mode, text?)` and `enterNavigate(text?)`; `back()`, `dismiss()`, `navigateTo(text)`; `claimView(owner)` and `releaseView(owner)` with `themed`. A Desktop that draws its own view claims it while active; the unthemed card shows only while nothing claims it. Win98 claims nothing, so its Super+P, Ctrl+L and Start ▸ Run… keep today's card and look. `omni apps` now opens the Applications scope (it opened All, and the `app` mode was unreachable).
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| **The old card stays in `OmniBar.qml`**, as the service's unthemed default view, shown when no active Desktop claims the view | The contract keeps the omni bar unthemed and shared by every theme. Win98 uses it unchanged, and any later theme without its own view still has a working Super+P. Moving it into a `Win98*` file would make Win98 own a shared view and would leave a third theme with no Super+P. Cost: `OmniBar.qml` holds both the service and one view. |
+| The caller is captured on every entry point, in `FindModel.enter`, from `Hyprland.activeToplevel` or the last window that held it | Bug 1 of the investigation: only Ctrl+L captured it, so "Go to address" from Super+P could target a stale window. A layer surface (the Apple menu) can hold the keyboard when Find… runs, so the last active window is the fallback. "Close window" now closes the caller too. |
+| Find and Go to Address are bar menus in `MenuState` (`find`, `address`) | One menu at a time, a click outside closes, Esc goes through the host. The Desktop syncs the service and MenuState on the next turn of the event loop (a binding here was read again inside its own change and closed the service). |
+| Esc and Backspace on an empty field leave the scope, then close; a held Backspace stops at the empty field | The brief; the auto-repeat guard keeps a held Backspace that clears the text from closing the menu. |
+| Esc in Go to Address cancels and closes; Backspace on its empty field goes back to the Find menu | The brief and the Mac rule; Backspace keeps today's way back. |
+| Hover moves the highlight only after the pointer really moves | A pointer resting where the menu opens would otherwise take the highlight and break "Super+P, Return". |
+| Balloon Help: 600 ms on a cut-off row, beside the menu, or over the rows under it when the screen has under 180 px to the right | The full title stays reachable at 360 px. |
+| The hint column is a readout: 45% of the row, 38% under 300 px, hidden under 250 px; the scope pop-up becomes a "Windows:" label under 260 px | `find-plan.js`; every threshold is a guess until measured on Myoko. |
+| A host typed alone offers "Go to “host”" with no rule above it | The mock drew an empty rule there. |
+
+### Evidence
+
+Nested Hyprland 0.56.2 under headless labwc, 2880×1800 at 1.5 with a second output "SUNSHINE", light, dark grey and extra dark. labwc and Hyprland ran in a bubblewrap namespace whose `/dev` held only `/dev/dri/renderD128`; Chromium ran in one with no `/dev/dri` at all and `--disable-gpu`. Evidence and logs: `/tmp/find-build/` (served at `http://100.114.19.92:8765/find-build/`).
+
+### Not verified
+
+- Nothing ran on Myoko, under its GPU, Kanata or a real keyboard. Keys came from a virtual keyboard through the real Hyprland binds.
+- Ctrl+L inside the Find menu with a non-browser front window: Hyprland's Ctrl+L bind passes the key to that window, so the menu does not see it. The scope pop-up's "Go to Address…" and the "Go to address" rows still open the dialog.
+- Keys typed in the moment between Super+P and the menu's surface mapping go to the window behind (inferred to be as before).
