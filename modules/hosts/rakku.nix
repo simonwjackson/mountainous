@@ -136,17 +136,26 @@ in
               github = true;
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+              # The household decision gateway (modules/decision-gateway.nix): core's
+              # reflexes, thread choice and recall ask Jev through it (assistant ADR 0001).
+              credentials.decide-api-key = config.sops.secrets.pi-decide-api-key.path;
             };
             laure = {
               voicePort = 4327;
               webPort = 4328;
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+              # The household decision gateway (modules/decision-gateway.nix): core's
+              # reflexes, thread choice and recall ask Jev through it (assistant ADR 0001).
+              credentials.decide-api-key = config.sops.secrets.pi-decide-api-key.path;
             };
           };
           household = {
             skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
             credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+            # The household decision gateway (modules/decision-gateway.nix): core's
+            # reflexes, thread choice and recall ask Jev through it (assistant ADR 0001).
+            credentials.decide-api-key = config.sops.secrets.pi-decide-api-key.path;
           };
           tailnet = "hummingbird-lake.ts.net";
           # Vela's /surface link (Vela ADR 0007).
