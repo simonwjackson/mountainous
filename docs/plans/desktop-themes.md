@@ -365,7 +365,7 @@ Spec: the approved mock at `/tmp/strip-mock/` (`REPORT.md`, `shots/`; the 8.5 te
 | Cascading Platinum menus drawn from rows | `PlatinumCascadeMenu.qml`; rows from `themes/platinum/menu-models.js` (+ `.test.js`) |
 | Apple menu on the mountain | `PlatinumTopBar.qml` (the mark is the `apple` title), `PlatinumDesktop.qml` (`appleRows`, `perform`) |
 | About, confirmation alerts | `PlatinumDialogFrame.qml`, `PlatinumAboutWindow.qml`, `PlatinumAlert.qml` |
-| Application menu at the right end | `PlatinumTopBar.qml` (the `app` title, always on the bar), `PlatinumDesktop.qml` (`applicationRows`, cycling) |
+| Application menu at the right end | `PlatinumTopBar.qml` (the `app` title, on the bar or in »), `PlatinumDesktop.qml` (`applicationRows`, cycling) |
 | Hide / Show for every theme | `WindowHider.qml` (one owner at the shell root), `window-hide.js` (+ `.test.js`) |
 | Running apps, MRU, Super+Tab order | `app-model.js` (+ `.test.js`); `shell.qml` (`windowRows`, `mru`, `chrome cycle`) |
 | Control Strip | `PlatinumControlStrip.qml`, `PlatinumStripTile.qml`, `PlatinumAppIcon.qml` + `PlatinumStipple.qml` (the disabled stipple), `themes/platinum/strip-plan.js` (+ `.test.js`) |
@@ -391,7 +391,7 @@ coalesce, and an open during a theme change can be dropped.
 | The cycle order starts after the app the quick press reached | The first Tab already focused the last window, so position 2 is the next app after it in the pre-press order (the MRU with its two first windows swapped back). Hidden apps take part; choosing one shows it. |
 | Hide: per-app special workspace `special:hidden-<app id>`, `follow = false`; home pages in `$XDG_STATE_HOME/mountainous/hidden-windows.json` keyed by window address | Survives a Quickshell restart (verified: hide two apps, kill Quickshell, start it, Show All returns both to pages 1 and 3). A window found hidden with no entry goes to the screen's shown page. Show returns a window to its page, not to its old layout slot. |
 | Hide Others is this screen only; Hide <app> and Show All act on every screen | The brief fixed Hide Others; Hide <app> means the app, and Show All undoes any hide. |
-| The Application menu is always on the bar | With no front app (everything hidden) it shows the desktop mark alone, so Show All stays one click away. The bar plan always counts its 16 px icon. |
+| The Application menu stays reachable | With no front app (everything hidden) it shows the desktop mark alone, so Show All stays one click away at ordinary widths. Below the old 191 px floor, it can move into » after battery and clock; Show All remains available there. |
 | A window submenu lists windows in page order, each with its page; another screen's window adds the screen's name | As the mock. Choosing an app activates its most recent window (MRU). |
 | Every menu action runs on the next turn of the event loop, after the menu closes | The menu is destroyed while its signal is on the stack; acting in that call lost Control Panels ▸ Appearance… and logged `QQmlVMEMetaObject … invalid context`. The alerts clear their state last for the same reason. |
 | All panels of a cascading menu live in one window-sized item | With the cascade outside its parent item's bounds, the first hover into a cascade was lost 8 times in 10 (warped pointer); inside, 34 of 38 probes lit the row at once. |
@@ -405,6 +405,22 @@ coalesce, and an open during a theme change can be dropped.
 | Move to page from a tile is silent (`follow = false`); a drag across pages keeps today's `dropOnto` | The menu row says where the window goes; the user stays where they are. |
 | Tile menu: right-click or the ▴ corner (13 × 15 hit area) | As the mock. |
 | Stipple: icon through `MultiEffect` (saturation −1, contrast −0.25) under a one-physical-pixel checker of the surface colour masked to the icon | Qt's SVG renderer has no `<pattern>`, so the checker is one path of unit squares at the icon's physical size. |
+
+### Narrow and short bar follow-ups
+
+The planner no longer returns a clipped layout below its old 191 px floor.
+After the normal controls and dictation actions overflow, padding reaches zero.
+Battery, clock and Application then move into » in that order. Clock clearance
+and outer edges yield last. The full mountain and » fit down to 36 px. Below
+36 px, Apple menu is the first row in », including its Find… row. Below 16 px,
+» itself shrinks to the container width. A zero-width container cannot present
+a control. Cost: more menu depth at tiny widths; the battery is a read-only row.
+
+The overflow menu uses `PlatinumMenuList` and `PlatinumScrollBar`. Selection
+brings each row into view. The real-QML probe visits all rows at `maxHeight`
+60, 130 and 600. The planner sweep checks every width from 1 to 400 px.
+`bar-model` runs both tests; `bar-delivery` requires their passing result.
+Cost: short menus scroll instead of showing the whole list at once.
 
 ### Evidence
 

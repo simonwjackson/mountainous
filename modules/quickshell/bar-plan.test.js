@@ -22,11 +22,11 @@ let previous = generous;
 const transitions = [];
 for (let width = 2999; width >= 0; width--) {
     const plan = model.plan(width, metrics);
-    const all = [...plan.controls, ...plan.overflow];
+    const all = [...plan.controls, ...plan.overflow.filter(id => metrics.controls.some(c => c.id === id))];
     assert.deepEqual([...all].sort(), metrics.controls.map(c => c.id).sort(), "no control disappears at " + width);
     assert.equal(new Set(all).size, 7);
-    assert.deepEqual(Array.from(plan.steps).filter(s => s !== "overflow" && s !== "underflow"), expectedSteps.slice(0, Math.min(plan.steps.length, expectedSteps.length)), "yield order at " + width);
-    assert.deepEqual(Array.from(plan.overflow), overflowOrder.slice(0, plan.overflow.length));
+    assert.deepEqual(Array.from(plan.steps).filter(s => s !== "overflow" && s !== "underflow" && s !== "compact"), expectedSteps.slice(0, Math.min(plan.steps.length, expectedSteps.length)), "yield order at " + width);
+    assert.deepEqual(Array.from(plan.overflow).filter(id => metrics.controls.some(c => c.id === id)), overflowOrder.slice(0, plan.overflow.length));
     assert.ok(plan.overflow.length >= previous.overflow.length, "overflow is monotonic");
     assert.ok(plan.steps.length >= previous.steps.length, "yielding is monotonic");
     if (plan.steps.length !== previous.steps.length || plan.overflow.length !== previous.overflow.length) transitions.push(width);
@@ -80,7 +80,7 @@ for (const readoutWidth of [0, 6, 24]) {
     }
 }
 const missing = {...metrics, controls: metrics.controls.filter(c => !["bt", "bri"].includes(c.id))};
-assert.equal(model.plan(0, missing).overflow.length, 5, "only hardware-present controls are planned");
+assert.equal(model.plan(0, missing).overflow.filter(id => missing.controls.some(c => c.id === id)).length, 5, "only hardware-present controls are planned");
 const chord = model.plan(900, {...metrics, chordWidth: 300});
 assert.equal(chord.centreW, 300, "chord uses its measured width, not the clock's width");
 assert.ok(chord.leftMax <= 900 - 300, "title cannot overlap the chord");
@@ -96,7 +96,7 @@ const failed = fixtures.failedDictationMetrics;
 function assertKeptControlsFit(width, input) {
     const result = model.plan(width, input);
     assert.ok(Number.isInteger(result.pad), "padding uses whole logical pixels");
-    const mark = 6 + 2 * result.pad + input.markWidth;
+    const mark = (result.edge === undefined ? 6 : result.edge) + (result.show.mark === false ? 0 : 2 * result.pad + input.markWidth);
     const actions = result.show.dictationActions && input.dictationActionsWidth > 0 ? 6 + input.dictationActionsWidth : 0;
     const leftGap = input.titleWidth > 0 || actions > 0 ? result.gap : 0;
     assert.ok(result.leftMax >= mark + leftGap + actions, "left controls have full width at " + width);
@@ -108,18 +108,18 @@ function assertKeptControlsFit(width, input) {
         right += 2 * result.pad + item.iconWidth + (readout > 0 ? 6 + readout : 0);
         count++;
     }
-    if (input.batteryWidth > 0) { right += 2 * result.pad + input.batteryWidth; count++; }
-    if (input.appIconWidth > 0 || (result.show.appName && input.appNameWidth > 0)) {
+    if (input.batteryWidth > 0 && result.show.battery !== false) { right += 2 * result.pad + input.batteryWidth; count++; }
+    if (result.show.app !== false && (input.appIconWidth > 0 || (result.show.appName && input.appNameWidth > 0))) {
         right += 2 * result.pad + input.appIconWidth + (result.show.appName && input.appNameWidth > 0 ? 6 + input.appNameWidth : 0);
         count++;
     }
     if (result.overflow.length) { right += 2 * result.pad + input.overflowWidth; count++; }
     right += result.gap * Math.max(0, count - 1);
-    if (!result.steps.includes("underflow")) {
+    if (!result.steps.includes("compact")) {
         assert.ok(result.leftMax + result.centreW + right + 16 <= width + 0.00001,
             "retained controls, mark, battery and clock fit at " + width);
     }
-    const all = result.controls.concat(result.overflow.filter(id => id !== "dictation"));
+    const all = result.controls.concat(result.overflow.filter(id => input.controls.some(c => c.id === id)));
     assert.deepEqual(Array.from(all).sort(), input.controls.map(c => c.id).sort());
     if (result.overflow.includes("dictation")) {
         assert.equal(result.controls.length, 0, "dictation actions overflow after all other controls");
@@ -150,10 +150,10 @@ assert.equal(model.plan(200, failed).pad, 0, "padding falls below five only afte
 // Captured floor: mark20 + battery66 + clock45 + app16 + overflow16 +
 // two edges6 + the clock clearance16 = 191 logical pixels, at zero padding.
 assert.equal(model.plan(191, failed).pad, 0);
-assert.equal(model.plan(190, failed).steps.includes("underflow"), true, "below the supported floor is explicit, not silent clipping");
+assert.equal(model.plan(190, failed).steps.includes("compact"), true, "below the old floor moves remaining items into overflow");
 for (let width = 0; width <= 1920; width++) {
     const result = assertKeptControlsFit(width, failed);
-    assert.equal(result.steps.includes("underflow"), width < 191, "metrics-derived floor at " + width);
+    assert.equal(result.steps.includes("compact"), width < 191, "compact layout below the old floor at " + width);
     if (result.pad < 5) {
         assert.equal(result.controls.length, 0);
         assert.equal(result.show.dictationActions, false);
@@ -184,13 +184,13 @@ const builderOverflowOrder = ["oci", "disk", "builder", "bri", "bt", "wifi", "nt
 for (const width of [1920, 600, 400, 320]) {
     const result = assertKeptControlsFit(width, builderMetrics);
     assert.equal(result.controls.concat(result.overflow).filter(id => id === "builder").length, 1, "builder never disappears at " + width);
-    assert.deepEqual(Array.from(result.overflow), builderOverflowOrder.slice(0, result.overflow.length));
+    assert.deepEqual(Array.from(result.overflow).filter(id => builderMetrics.controls.some(c => c.id === id)), builderOverflowOrder.slice(0, result.overflow.length));
 }
 assert.equal(model.plan(1920, builderMetrics).show.builderLabel, true);
 assert.ok(model.plan(320, builderMetrics).overflow.includes("builder"));
 for (let width = 0; width <= 1920; width++) {
     const result = assertKeptControlsFit(width, builderMetrics);
-    assert.deepEqual(Array.from(result.overflow), builderOverflowOrder.slice(0, result.overflow.length));
+    assert.deepEqual(Array.from(result.overflow).filter(id => builderMetrics.controls.some(c => c.id === id)), builderOverflowOrder.slice(0, result.overflow.length));
     if (result.steps.includes("builderLabel")) {
         const label = result.steps.indexOf("builderLabel");
         assert.ok(result.steps.indexOf("diskLabel") < label);
@@ -213,7 +213,7 @@ let fleetSeen = {count: false, overflow: false};
 for (let width = 0; width <= 1920; width++) {
     const result = assertKeptControlsFit(width, fleetMetrics);
     assert.equal(result.controls.concat(result.overflow).filter(id => id === "fleet").length, 1, "the readout never disappears at " + width);
-    assert.deepEqual(Array.from(result.overflow), fleetOverflowOrder.slice(0, result.overflow.length));
+    assert.deepEqual(Array.from(result.overflow).filter(id => fleetMetrics.controls.some(c => c.id === id)), fleetOverflowOrder.slice(0, result.overflow.length));
     if (result.steps.includes("fleetCount")) {
         fleetSeen.count = true;
         const at = result.steps.indexOf("fleetCount");
@@ -229,4 +229,4 @@ for (let width = 0; width <= 1920; width++) {
 assert.ok(fleetSeen.count && fleetSeen.overflow, "the sweep reaches the count's yield and the control's overflow");
 // "--" and a two-digit count are wider than no count; equal widths skip the step.
 assert.equal(model.plan(400, {...fleetMetrics, controls: fleetMetrics.controls.map(c => c.id === "fleet" ? {...c, readoutWidth: 0} : c)}).steps.includes("fleetCount"), false);
-console.log("bar-plan: width sweeps, dictation actions, 191px floor, exact gaps, builder presence/absence and the Fleet readout pass");
+console.log("bar-plan: width sweeps, dictation actions, compact fallback, exact gaps, builder presence/absence and the Fleet readout pass");

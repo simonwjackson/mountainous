@@ -110,10 +110,13 @@ PanelWindow {
     function iconFor(id) {
         return ({ bt: "bluetooth", wifi: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel,
                   vol: bar.volIcon, bri: "brightness", oci: "cloud", disk: "disk", builder: "builder",
-                  ntf: "bell" })[id] || "";
+                  ntf: "bell", apple: "mark", battery: "battery", clock: "", app: "desktop" })[id] || "";
     }
 
     function valueFor(id) {
+        if (id === "battery") return bar.battery.percent + "%";
+        if (id === "clock") return Qt.formatDateTime(bar.now, "M/d") + "  " + bar.clockTime(bar.now);
+        if (id === "app") return bar.appName;
         if (id === "bt") return !bar.btOn ? "Off" : bar.btCount > 0 ? bar.btCount + " connected" : "On";
         if (id === "wifi") return bar.wifi.statusText;
         if (id === "vol") return bar.sound.muted ? "Muted" : bar.sound.volumePercent + "%";
@@ -288,8 +291,8 @@ PanelWindow {
         // The battery is the planner's one whole-content width: icon, the
         // 6 px between, and the percent box, because it never splits.
         batteryWidth: battery.present ? 18 + inGap + batteryBox.width : 0,
-        // The Application menu is always on the bar, even with no front
-        // app: it is where Show All lives.
+        // Keep the Application menu reachable, even with no front app:
+        // it is where Show All lives. Only tiny bars move it into ».
         appIconWidth: 16,
         appNameWidth: appId !== "" ? PlatinumMetrics.width(appName) : 0,
         overflowWidth: 16
@@ -369,15 +372,16 @@ PanelWindow {
     }
 
     // ---------------------------------------------------------- left
-    // The mark is a control: it always keeps its full width and is never
-    // clipped. The title and the dictation status are readouts and elide
+    // The mark keeps its full width. Below mark + », its Apple menu moves
+    // into » instead of clipping either control. The title and the dictation status are readouts and elide
     // in what the plan leaves after it. Retry and Dismiss are controls:
     // they show at full width or move into the » menu, never shrink.
     // The mountain drops the Apple menu, like every other title: inverted
     // while it is open, and part of the sticky hover between titles.
     PlatinumBarControl {
         id: markControl
-        x: 6
+        visible: bar.plan.show.mark !== false
+        x: bar.plan.edge === undefined ? 6 : bar.plan.edge
         screen: bar.modelData
         menu: "apple"
         // The Find menu hangs from the mountain too: Super+P, F1 and Apple
@@ -514,7 +518,7 @@ PanelWindow {
 
     ClockTitle {
         id: clockCentre
-        visible: !bar.chordVisible && bar.plan.centred
+        visible: !bar.chordVisible && bar.plan.centred && bar.plan.show.clock !== false
         x: PlatinumMetrics.even(bar.width / 2 - width / 2)
     }
 
@@ -523,7 +527,7 @@ PanelWindow {
     // names drop and the key caps stay.
     Row {
         id: chord
-        visible: bar.chordVisible
+        visible: bar.chordVisible && bar.plan.show.chord !== false
         x: PlatinumMetrics.even(bar.width / 2 - width / 2)
         height: PlatinumTokens.barHeight - PlatinumTokens.hair
         spacing: 0
@@ -591,14 +595,14 @@ PanelWindow {
     Row {
         id: rightGroup
         anchors.right: parent.right
-        anchors.rightMargin: 6
+        anchors.rightMargin: bar.plan.edge === undefined ? 6 : bar.plan.edge
         height: PlatinumTokens.barHeight - PlatinumTokens.hair
         spacing: bar.plan.gap
         layoutDirection: Qt.LeftToRight
 
         ClockTitle {
             id: clockRight
-            visible: !bar.chordVisible && !bar.plan.centred
+            visible: !bar.chordVisible && !bar.plan.centred && bar.plan.show.clock !== false
         }
 
         PlatinumBarControl {
@@ -860,6 +864,10 @@ PanelWindow {
 
         PlatinumBarControl {
             id: moreControl
+            // Below 16 px » itself uses the available width. Override the
+            // normal even-pixel rounding so it cannot extend off screen.
+            width: bar.plan.overflowIconWidth === undefined ? implicitWidth : 2 * bar.pad + bar.plan.overflowIconWidth
+            iconWidth: bar.plan.overflowIconWidth === undefined ? 16 : bar.plan.overflowIconWidth
             visible: bar.plan.overflow.length > 0
             screen: bar.modelData
             menu: "more"
@@ -868,10 +876,10 @@ PanelWindow {
             icon: "more"
         }
 
-        // The battery is a readout with no menu. Its percent never yields.
+        // The battery is a whole readout. Only tiny bars move it into ».
         PlatinumBarControl {
             id: batteryControl
-            visible: bar.battery.present
+            visible: bar.battery.present && bar.plan.show.battery !== false
             screen: bar.modelData
             hoverable: false
             pad: bar.pad
@@ -910,6 +918,7 @@ PanelWindow {
         // desktop mark alone, so Show All stays one click away.
         PlatinumBarControl {
             id: appControl
+            visible: bar.plan.show.app !== false
             screen: bar.modelData
             menu: "app"
             open: bar.isOpen("app")

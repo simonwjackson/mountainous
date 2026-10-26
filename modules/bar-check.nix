@@ -2,7 +2,12 @@
 { self, ... }:
 {
   perSystem =
-    { pkgs, lib, config, ... }:
+    {
+      pkgs,
+      lib,
+      config,
+      ...
+    }:
     let
       desktop = self.nixosConfigurations.myoko.config;
       files = desktop.hjem.users.simon.files;
@@ -14,7 +19,9 @@
           toplevelDrvPath = desktop.system.build.toplevel.drvPath;
           quickshell = desktop.systemd.user.services.quickshell.serviceConfig;
           userManagerRuntimeDir = "/run/user/${toString desktop.users.users.simon.uid}";
-          runtimeOverride = (desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment).XDG_RUNTIME_DIR or null;
+          runtimeOverride =
+            (desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment)
+            .XDG_RUNTIME_DIR or null;
           unitOverrideStrategy = desktop.systemd.user.units."quickshell.service".overrideStrategy;
         }
       );
@@ -34,7 +41,13 @@
       required = builtins.filter (
         name:
         !(development name)
-        && (lib.hasSuffix ".qml" name || lib.hasSuffix ".js" name || name == "themes.json" || lib.hasPrefix "themes/" name || lib.hasPrefix "icons/" name)
+        && (
+          lib.hasSuffix ".qml" name
+          || lib.hasSuffix ".js" name
+          || name == "themes.json"
+          || lib.hasPrefix "themes/" name
+          || lib.hasPrefix "icons/" name
+        )
       ) sourceFiles;
       allDelivered = builtins.all (name: builtins.hasAttr (prefix + name) files) required;
       noDevelopment = builtins.all (name: !(development (lib.removePrefix prefix name))) delivered;
@@ -46,7 +59,13 @@
             nativeBuildInputs = [
               pkgs.nodejs
               pkgs.qt6.qtdeclarative
+              pkgs.quickshell
+              pkgs.labwc
             ];
+            QUICKSHELL = "${pkgs.quickshell}/bin/qs";
+            LABWC = "${pkgs.labwc}/bin/labwc";
+            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
             QML = "${pkgs.qt6.qtdeclarative}/bin/qml";
             QML_IMPORT_PATH = "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml";
           }
@@ -55,6 +74,8 @@
             node ${./quickshell/oci-model.test.js} ${./quickshell/oci-model.js}
             node ${./quickshell/media-hold.test.js} ${./quickshell/media-hold.js}
             node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
+            node ${./quickshell/bar-compact.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
+            node ${./quickshell/theme-dev/overflow-geometry.test.js} ${./quickshell}
             node ${./quickshell/MenuState.test.js} ${./quickshell/MenuState.qml}
             qmllint -I "$QML_IMPORT_PATH" ${./quickshell/MenuState.qml}
             touch $out
@@ -62,30 +83,33 @@
       # The Platinum Apple menu, Application menu and Control Strip: their
       # pure policies, and the theme-neutral hide/show and running-app models.
       checks.platinum-desktop =
-        pkgs.runCommand "platinum-desktop" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
-          node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
-          node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
-          node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js}
-          node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
-          touch $out
-        '';
+        pkgs.runCommand "platinum-desktop" { nativeBuildInputs = [ pkgs.nodejs ]; }
+          ''
+            node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
+            node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
+            node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js}
+            node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
+            touch $out
+          '';
       # The Platinum Find menu and Go to Address (Super+P): the rows, ranking,
       # scopes and empty/no-results states; the omni service's caller rule on
       # every entry point; the web-app launch kind; the menu and dialog plans.
-      checks.find-menu =
-        pkgs.runCommand "find-menu" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
-          node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
-          node ${./quickshell/cdp-target.test.js} ${./quickshell}
-          node ${./quickshell/themes/platinum/find-plan.test.js} ${./quickshell/themes/platinum/find-plan.js}
-          touch $out
-        '';
+      checks.find-menu = pkgs.runCommand "find-menu" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+        node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
+        node ${./quickshell/cdp-target.test.js} ${./quickshell}
+        node ${./quickshell/themes/platinum/find-plan.test.js} ${./quickshell/themes/platinum/find-plan.js}
+        touch $out
+      '';
       # Run the production QML with a headless software Wayland compositor.
       # The recorder and backend are real child processes with controlled exits.
       # Two real mpv MPRIS players on a private session bus prove the media hold.
       checks.dictation-lifecycle =
         assert desktop.systemd.user.services.quickshell.serviceConfig.KillMode == "mixed";
         assert desktop.users.users.simon.uid == 1000;
-        assert ((desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment).XDG_RUNTIME_DIR or null) == null;
+        assert
+          ((desktop.systemd.globalEnvironment // desktop.systemd.user.services.quickshell.environment)
+            .XDG_RUNTIME_DIR or null
+          ) == null;
         pkgs.runCommand "dictation-lifecycle"
           {
             nativeBuildInputs = [
@@ -125,23 +149,31 @@
             touch $out
           '';
       checks.desktop-theme-shell =
-        pkgs.runCommand "desktop-theme-shell" {
-          nativeBuildInputs = [pkgs.nodejs pkgs.python3 pkgs.quickshell pkgs.labwc pkgs.bash];
-          QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
-          FONTCONFIG_FILE = pkgs.makeFontsConf {fontDirectories = [pkgs.dejavu_fonts];};
-          QUICKSHELL = "${pkgs.quickshell}/bin/qs";
-          LABWC = "${pkgs.labwc}/bin/labwc";
-        } ''
-          node ${./quickshell/chrome-open.test.js} ${./quickshell}
-          python3 ${./quickshell/theme-dev/check-boundaries.py} ${./quickshell}
-          python3 ${./quickshell/theme-dev/check-registry.test.py} ${./quickshell}
-          bash ${./quickshell/stage-runtime.test.sh} ${./quickshell}
-          node ${./quickshell/themes/platinum/picker-plan.test.js} ${./quickshell/themes/platinum/picker-plan.js}
-          bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > notification-schema.js
-          node ${./quickshell/theme-dev/lifecycle.test.js} ${./quickshell} ${config.packages.desktop-theme}/bin/desktop-theme "$PWD/notification-schema.js"
-          node ${./quickshell/theme-dev/picker-geometry.test.js} ${./quickshell} "$PWD/notification-schema.js"
-          touch $out
-        '';
+        pkgs.runCommand "desktop-theme-shell"
+          {
+            nativeBuildInputs = [
+              pkgs.nodejs
+              pkgs.python3
+              pkgs.quickshell
+              pkgs.labwc
+              pkgs.bash
+            ];
+            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+            QUICKSHELL = "${pkgs.quickshell}/bin/qs";
+            LABWC = "${pkgs.labwc}/bin/labwc";
+          }
+          ''
+            node ${./quickshell/chrome-open.test.js} ${./quickshell}
+            python3 ${./quickshell/theme-dev/check-boundaries.py} ${./quickshell}
+            python3 ${./quickshell/theme-dev/check-registry.test.py} ${./quickshell}
+            bash ${./quickshell/stage-runtime.test.sh} ${./quickshell}
+            node ${./quickshell/themes/platinum/picker-plan.test.js} ${./quickshell/themes/platinum/picker-plan.js}
+            bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > notification-schema.js
+            node ${./quickshell/theme-dev/lifecycle.test.js} ${./quickshell} ${config.packages.desktop-theme}/bin/desktop-theme "$PWD/notification-schema.js"
+            node ${./quickshell/theme-dev/picker-geometry.test.js} ${./quickshell} "$PWD/notification-schema.js"
+            touch $out
+          '';
       checks.bar-delivery =
         assert allDelivered;
         assert noDevelopment;
@@ -183,6 +215,11 @@
         assert builtins.hasAttr (prefix + "icons/popup.svg") files;
         assert !(builtins.hasAttr (prefix + "find-model.test.js") files);
         assert !(builtins.hasAttr (prefix + "themes/platinum/find-plan.test.js") files);
-        pkgs.runCommand "bar-delivery" { } "touch $out";
+        # Delivery must not pass with a working manifest but unreachable bar
+        # capabilities. Reuse the focused planner and real-QML probe result.
+        pkgs.runCommand "bar-delivery" { } ''
+          test -e ${config.checks.bar-model}
+          touch $out
+        '';
     };
 }

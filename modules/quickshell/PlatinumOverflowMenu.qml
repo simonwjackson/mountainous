@@ -1,5 +1,6 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
-import QtQuick.Layouts
 
 // The » menu: what a narrow bar could not hold, by name, with what each
 // would have shown. A control opens its own menu, hung from ». Failed
@@ -16,11 +17,12 @@ PlatinumMenuFrame {
 
     preferredWidth: 260
     showHeader: false
-    scrolls: false
+    scrolls: entriesList.scrolls
 
     readonly property var labels: ({
         bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
         oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
+        apple: "Apple menu", battery: "Battery", clock: "Clock", app: "Applications",
         retry: "Retry dictation", dismiss: "Dismiss"
     })
 
@@ -49,6 +51,7 @@ PlatinumMenuFrame {
     }
 
     function run(id) {
+        if (id === "battery" || id === "status") return;
         if (id === "retry") {
             MenuState.close();
             frame.bar.dictation.retryFailed();
@@ -60,23 +63,30 @@ PlatinumMenuFrame {
         }
     }
 
-    Repeater {
+    PlatinumMenuList {
+        id: entriesList
         model: frame.entries
+        currentIndex: -1
+        Component.onCompleted: view.forceActiveFocus()
+        Keys.onUpPressed: moveSelection(-1)
+        Keys.onDownPressed: moveSelection(1)
+        Keys.onReturnPressed: if (currentIndex >= 0) frame.run(frame.entries[currentIndex])
+        Keys.onEnterPressed: if (currentIndex >= 0) frame.run(frame.entries[currentIndex])
 
-        PlatinumMenuListRow {
+        delegate: PlatinumMenuListRow {
             id: row
             required property string modelData
-            Layout.fillWidth: true
-            Layout.preferredHeight: PlatinumTokens.menuLine + 4
+            width: ListView.view.width
             rowHeight: PlatinumTokens.menuLine + 4
             rightInset: frame.rightInset
             readonly property bool action: modelData === "retry" || modelData === "dismiss"
             readonly property bool status: modelData === "status"
-            selected: hover.hovered && !status
+            readonly property bool readout: status || modelData === "battery"
+            selected: (hover.hovered || ListView.isCurrentItem) && !readout
             mark: action || status ? "" : frame.bar.iconFor(modelData)
             name: status ? frame.bar.dictationText : frame.labels[modelData] || modelData
             nameColor: status ? PlatinumTokens.menuDanger : PlatinumTokens.menuText
-            onClicked: if (!status) frame.run(modelData)
+            onClicked: if (!readout) frame.run(modelData)
 
             HoverHandler { id: hover }
 

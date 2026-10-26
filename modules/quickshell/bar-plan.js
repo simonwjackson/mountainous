@@ -17,11 +17,10 @@
 // Dismiss, or Dismiss alone, with no leading gap. It defaults to zero.
 // The left group's ordinary item gap is plan.gap. Its actions gap is 6 px.
 //
-// After all controls and actions overflow, padding may fall from 5 to 0 in
-// whole pixels. The floor is then mark + battery + clock + app icon + » + two
-// 6px edges + 16px clock clearance. The captured metrics give 191 logical px.
-// Below that metrics-derived floor, steps includes 'underflow'; the mark still
-// gets its full width, rather than being silently clipped.
+// Below the old 191 px floor, battery, clock and Application move into ».
+// Edges and clock clearance yield last. Below mark + » (36 px for the
+// captured metrics), the Apple menu becomes the first overflow row. Only
+// below »'s own width does that mark shrink. Zero width has no hit surface.
 /**
  * @typedef {'bt'|'wifi'|'vol'|'bri'|'oci'|'disk'|'fleet'|'builder'|'ntf'} ControlId
  * @typedef {{id: ControlId, iconWidth: number, readoutWidth: number, compactReadoutWidth?: number}} Control
@@ -149,7 +148,54 @@ function plan(width, metrics) {
                 centreW = metrics.chordWidth > 0 ? metrics.chordWidth : 2 * pad + clockContent;
                 right = rightWidth(controls, overflow);
             }
-            return done(controls, overflow, right);
+            const result = done(controls, overflow, right);
+            return fits(right) ? result : compactPlan(width, metrics, result);
         }
     }
+}
+
+function compactPlan(width, metrics, result) {
+    const show = result.show;
+    show.title = false;
+    show.battery = metrics.batteryWidth > 0;
+    show.clock = true;
+    show.app = metrics.appIconWidth > 0;
+    show.mark = true;
+    show.chord = metrics.chordWidth > 0;
+    let edge = 6, clearance = 16;
+    let clock = result.centreW;
+    let more = metrics.overflowWidth;
+    const total = function () {
+        return 2 * edge + clearance + (show.mark ? metrics.markWidth : 0) + more
+            + (show.battery ? metrics.batteryWidth : 0) + clock
+            + (show.app ? metrics.appIconWidth : 0);
+    };
+    if (total() > width && show.battery) {
+        show.battery = false;
+        result.overflow.push("battery");
+    }
+    if (total() > width) {
+        show.clock = false;
+        show.chord = false; // Hints only; their controls are already in ».
+        clock = 0;
+        result.overflow.push("clock");
+    }
+    if (total() > width && show.app) {
+        show.app = false;
+        result.overflow.push("app");
+    }
+    clearance = Math.max(0, clearance - Math.max(0, total() - width));
+    edge = Math.max(0, edge - Math.max(0, total() - width) / 2);
+    if (total() > width) {
+        show.mark = false;
+        result.overflow.unshift("apple");
+        more = Math.min(width, more);
+    }
+    result.steps = result.steps.filter(function (step) { return step !== "underflow"; });
+    result.steps.push("compact");
+    result.edge = edge;
+    result.overflowIconWidth = more;
+    result.leftMax = edge + (show.mark ? metrics.markWidth : 0);
+    result.centreW = clock;
+    return result;
 }
