@@ -12,6 +12,7 @@ prefixes = [theme['qmlPrefix'] for theme in registry]
 assert len(ids) == len(set(ids)) and 'platinum' in ids
 assert len(prefixes) == len(set(prefixes))
 for theme in registry:
+    assert theme.get('pyxampFace') in ('platinum', 'winamp'), (theme['id'], 'pyxampFace')
     name, prefix = theme['id'], theme['qmlPrefix']
     assert re.fullmatch(r'[a-z][a-z0-9-]*', name), name
     assert re.fullmatch(r'[A-Z][A-Za-z0-9]*', prefix), prefix

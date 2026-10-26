@@ -19,7 +19,8 @@
     "options": {
       "extraDark": true
     },
-    "qmlPrefix": "Platinum"
+    "qmlPrefix": "Platinum",
+    "pyxampFace": "platinum"
   },
   {
     "id": "win98",
@@ -41,6 +42,7 @@
     "options": {
       "extraDark": false
     },
-    "qmlPrefix": "Win98"
+    "qmlPrefix": "Win98",
+    "pyxampFace": "winamp"
   }
 ]

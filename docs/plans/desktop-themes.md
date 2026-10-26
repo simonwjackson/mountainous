@@ -153,6 +153,7 @@ Add one entry to `modules/quickshell/themes.json`. It is the only installed-them
 |---|---|
 | `id` | `platinum`; lower-case slug |
 | `label` | `Mac OS 8 Platinum` |
+| `pyxampFace` | `platinum` for Platinum; `winamp` for Win98. Required; only these two values are valid. Pyxamp reads the delivered registry and `theme-name`, falling back to `platinum` for a missing/unknown name. |
 | `qmlPrefix` | `Platinum`; use `Win98` for phase 2 |
 | `desktop` | `PlatinumDesktop.qml`; root-level prefixed file |
 | `picker` | `PlatinumPickerView.qml`; root-level prefixed file |

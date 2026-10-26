@@ -63,8 +63,8 @@ async function stop(child) {
         // Preserve the production registry entry, view and thumbnails. Only
         // the test checkout knows the alternate and broken fixture IDs.
         var themes = JSON.parse(fs.readFileSync(path.join(config, 'themes.json'), 'utf8'));
-        themes.push({id:'alternate',desktop:'fixtures/Desktop.qml',appearances:[],options:{extraDark:false}},
-            {id:'broken',desktop:'fixtures/Broken.qml',appearances:[],options:{extraDark:false}});
+        themes.push({id:'alternate',desktop:'fixtures/Desktop.qml',appearances:[],options:{extraDark:false},pyxampFace:'platinum'},
+            {id:'broken',desktop:'fixtures/Broken.qml',appearances:[],options:{extraDark:false},pyxampFace:'platinum'});
         fs.writeFileSync(path.join(config,'themes.json'),JSON.stringify(themes));
         fs.writeFileSync(path.join(config, 'fixtures/Context.qml'),
             fs.readFileSync(path.join(source, 'theme-dev/fixtures/Context.qml'), 'utf8').replace('"../../panels"', '"../panels"'));
@@ -93,6 +93,10 @@ ShellRoot {
     }
     IpcHandler {
         target: "test"
+        function validateRegistry(encoded: string): string {
+            try { ThemeCatalog.parseRegistry(Qt.atob(encoded)); return "accepted"; }
+            catch (error) { return "rejected: " + error + " / " + error.stack; }
+        }
         function snapshot(): string { return JSON.stringify({
             theme: Theme.name, current: loader.currentName, ready: !!loader.desktop,
             active: loader.desktop ? loader.desktop.active : false,
@@ -108,6 +112,19 @@ ShellRoot {
         await until(()=>fs.existsSync(path.join(runtime,'wayland-0')),'Wayland socket');
         shell=start(qs,['-p',config]);
         await until(()=>snapshot().active,'initial Desktop');
+        for (const entry of themes) {
+            for (const face of [undefined, "unknown", "", 1, "platinum", "winamp"]) {
+                const value = {...entry, pyxampFace:face};
+                const result = spawnSync(qs, ['-p',config,'ipc','call','test','validateRegistry',Buffer.from(JSON.stringify([value])).toString('base64')],
+                    {env,encoding:'utf8',timeout:2000});
+                assert.equal(result.status, 0, result.stderr);
+                if (["platinum","winamp"].includes(face))
+                    assert.equal(result.stdout.trim(), "accepted", JSON.stringify(value) + " / " + result.stdout);
+                else
+                    assert.match(result.stdout.trim(), /^rejected: .*pyxampFace/, JSON.stringify(value) + " / " + result.stdout);
+            }
+        }
+        console.log('THEME_CATALOG_TESTS_PASSED: missing/invalid faces rejected; both supported faces accepted');
         assert.equal(snapshot().same,true);
         const picker = spawnSync(desktopTheme, ['picker'], {env, encoding:'utf8', timeout:3000});
         assert.equal(picker.status, 0, picker.stderr + picker.stdout);

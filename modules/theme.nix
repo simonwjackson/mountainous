@@ -9,10 +9,14 @@
 # not see it.
 let
   themes = builtins.fromJSON (builtins.readFile ./quickshell/themes.json);
+  validFaces = registry: builtins.all (
+    theme: builtins.elem (theme.pyxampFace or null) [ "platinum" "winamp" ]
+  ) registry;
   themeNames = builtins.concatStringsSep "|" (map (theme: theme.id) themes);
   themeList = builtins.concatStringsSep "\n" (map (theme: "${theme.id}\t${theme.label}") themes);
   desktopThemeCommand =
     pkgs:
+    assert validFaces themes;
     pkgs.writeShellApplication {
       name = "desktop-theme";
       runtimeInputs = [
@@ -168,6 +172,9 @@ in {
     # module below uses the same factory for the installed command.
     packages.desktop-theme = desktopThemeCommand pkgs;
     checks.desktop-theme =
+      assert validFaces themes;
+      assert !(validFaces [ { id = "missing"; } ]);
+      assert !(validFaces [ { id = "invalid"; pyxampFace = "unknown"; } ]);
       pkgs.runCommand "desktop-theme" {
         nativeBuildInputs = [
           pkgs.bash

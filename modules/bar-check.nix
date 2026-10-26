@@ -132,6 +132,7 @@
           LABWC = "${pkgs.labwc}/bin/labwc";
         } ''
           python3 ${./quickshell/theme-dev/check-boundaries.py} ${./quickshell}
+          python3 ${./quickshell/theme-dev/check-registry.test.py} ${./quickshell}
           bash ${./quickshell/stage-runtime.test.sh} ${./quickshell}
           node ${./quickshell/themes/platinum/picker-plan.test.js} ${./quickshell/themes/platinum/picker-plan.js}
           bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > notification-schema.js
