@@ -1,9 +1,15 @@
 """Regression tests for the production-unit equality guard."""
 
 import copy
+import pathlib
 import runpy
 import sys
 
+header = pathlib.Path(sys.argv[1]).read_text().splitlines()[:2]
+assert header == [
+    "#!/usr/bin/env nix-shell",
+    "#!nix-shell -i python3 -p python3 nix git",
+]
 script = runpy.run_path(sys.argv[1])
 compare = script["compare"]
 services = script["NEW_SERVICES"]

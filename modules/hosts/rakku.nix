@@ -42,6 +42,7 @@ in
         # NeededForUsers decrypts before /etc's persisted file links are set up.
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
+        mountainous.features.ai-gateway-staging.enable = true;
         mountainous.features.notify-server.enable = true;
         # Beszel and storage alerts get a read-only triage by Simon's assistant.
         mountainous.features.signal-responder = {

@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 nix git
+# ruff: noqa: EXE005
+# nix-shell requires its interpreter directive on the second line.
 """Compare evaluated Rakku against cairn. Never deploy or print environment values."""
 
 import argparse

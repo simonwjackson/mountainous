@@ -19,11 +19,39 @@
             }
           ];
         }).config.mountainous.features.ai-gateway-staging.settings.paid_models;
+      disabled =
+        (self.nixosConfigurations.rakku.extendModules {
+          modules = [ { mountainous.features.ai-gateway-staging.enable = lib.mkForce false; } ];
+        }).config;
       unit = c.systemd.services.ai-gateway-staging.serviceConfig;
       proxy = c.systemd.services.ai-gateway-staging-egress.serviceConfig;
       want = ok: message: lib.optional (!ok) message;
       problems =
-        want (unit.IPAddressDeny == [ "any" ]) "front door must deny all IPs by default"
+        want cfg.enable "Rakku must explicitly enable the staging feature"
+        ++ want (
+          !self.nixosConfigurations.rakku.options.mountainous.features.ai-gateway-staging.enable.default
+        ) "staging feature must default off"
+        ++ want (lib.all (name: !(builtins.hasAttr name disabled.systemd.services)) [
+          "ai-gateway-staging"
+          "ai-gateway-staging-egress"
+          "tsnet-proxy-ai-staging"
+        ]) "disabled feature still declares staging services"
+        ++ want (
+          !(disabled.mountainous.tailnetNames ? ai-staging)
+        ) "disabled feature still declares a tailnet name"
+        ++ want (
+          !(lib.any (name: lib.hasPrefix "ai-staging-" name) (lib.attrNames disabled.sops.secrets))
+        ) "disabled feature still declares staging secrets"
+        ++ want (
+          !(lib.any (
+            entry:
+            lib.elem (if builtins.isString entry then entry else entry.directory) [
+              "/var/lib/private/ai-gateway-staging"
+              "/var/lib/tsnet-proxy-ai-staging"
+            ]
+          ) disabled.environment.persistence."/tundra/permafrost".directories)
+        ) "disabled feature still persists staging state"
+        ++ want (unit.IPAddressDeny == [ "any" ]) "front door must deny all IPs by default"
         ++ want (
           unit.IPAddressAllow == [
             "127.0.0.1/32"
@@ -319,6 +347,7 @@
     in
     {
       options.mountainous.features.ai-gateway-staging = {
+        enable = lib.mkEnableOption "the isolated AI gateway staging service";
         providers = lib.mapAttrs (_: _: {
           enable = lib.mkEnableOption "optional staging provider (requires its host sops secret)";
         }) optionalProviders;
@@ -338,7 +367,7 @@
           internal = true;
         };
       };
-      config = {
+      config = lib.mkIf cfg.enable {
         mountainous.features.ai-gateway-staging = {
           inherit settings;
           configFile = toml.generate "ai-gateway-staging.toml" settings;
