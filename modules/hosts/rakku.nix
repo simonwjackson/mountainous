@@ -154,6 +154,12 @@ in
           homePlace = "Denver|39.739|-104.985|America/Denver";
           cliproxyapiKeyFile = config.sops.secrets.pi-assistant-cliproxyapi-key.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
+          # The groceries app on Zao (sandbox/groceries); its copy of the token is
+          # ~/.config/groceries/assistant-service-token there.
+          groceries = {
+            url = "https://groceries.hummingbird-lake.ts.net";
+            tokenFile = config.sops.secrets.pi-assistant-groceries-token.path;
+          };
           lanes = {
             chat = "cliproxyapi/claude-opus-5-5";
             creative = "cliproxyapi/claude-opus-5-5";
@@ -220,6 +226,15 @@ in
           ];
         };
         sops.secrets.pi-assistant-brave-api-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [
+            "pi-assistant-simon.service"
+            "pi-assistant-laure.service"
+            "pi-assistant-household.service"
+          ];
+        };
+        sops.secrets.pi-assistant-groceries-token = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
           restartUnits = [

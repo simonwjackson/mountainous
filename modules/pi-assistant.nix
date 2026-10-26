@@ -227,7 +227,12 @@ in
         }
         // lib.optionalAttrs (instance.person != null) { ASSISTANT_PERSON = instance.person; }
         // lib.optionalAttrs (instance.person == null) { ASSISTANT_HOUSEHOLD = "1"; }
-        // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; };
+        // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
+        // lib.optionalAttrs (cfg.groceries != null) {
+          ASSISTANT_GROCERIES_BASE_URL = cfg.groceries.url;
+          # The systemd credential, mode 0400 and owned by the instance's user.
+          ASSISTANT_GROCERIES_TOKEN_PATH = "/run/credentials/pi-assistant-${name}.service/groceries-service-token";
+        };
 
       portsOption = voice: web: {
         voicePort = lib.mkOption {
@@ -322,6 +327,25 @@ in
           type = lib.types.nullOr lib.types.str;
           default = null;
           description = "An OpenAI-compatible speech service for the voice link.";
+        };
+        groceries = lib.mkOption {
+          type = lib.types.nullOr (
+            lib.types.submodule {
+              options = {
+                url = lib.mkOption {
+                  type = lib.types.str;
+                  example = "https://groceries.example.ts.net";
+                  description = "ASSISTANT_GROCERIES_BASE_URL: the groceries app's HTTPS origin.";
+                };
+                tokenFile = lib.mkOption {
+                  type = lib.types.path;
+                  description = "The shared service token. Every instance reads it as the groceries-service-token credential.";
+                };
+              };
+            }
+          );
+          default = null;
+          description = "The household groceries app, which the assistants call with a shared service token.";
         };
         lanes = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
@@ -453,6 +477,7 @@ in
                   "brave-api-key:${cfg.braveApiKeyFile}"
                 ]
                 ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}"
+                ++ lib.optional (cfg.groceries != null) "groceries-service-token:${cfg.groceries.tokenFile}"
                 ++ lib.mapAttrsToList (name: file: "${name}:${file}") (instance.credentials or { });
                 # Scratch clones of repositories: on disk, never persisted,
                 # safe to delete. $CACHE_DIRECTORY points here.
