@@ -117,6 +117,15 @@
   # the Moonlight address remains a declared announcement.
   services.korridLinuxDevice.moonlightAddress = "zao:47989";
 
+  # Korri's product module sets this; korriLinuxHost does not. Without it
+  # korrid validates every systemd helper call with an empty stream root,
+  # host-session recovery never resolves ("host session authority is
+  # unresolved", HostRecoveryBlocked) and no game can start. The value is the
+  # product default: Sunshine's state, hidden from every game unit. korrid
+  # also lists it in its own InaccessiblePaths without a "-" prefix, so the
+  # directory must exist or korrid will not start.
+  services.korridLinuxDevice.streamPrivateStateRoot = "/home/simonwjackson/.config/sunshine";
+
   # korrid reads the plugin host's registry. No plugins are installed here; the
   # official publisher binding comes from Korri's own product requirements so
   # this repository keeps no second copy of the key.
