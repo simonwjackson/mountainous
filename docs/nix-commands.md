@@ -71,6 +71,26 @@ Do not use the general activation commands above for this cutover without separa
 approval. Other checkouts, including the shared main checkout, are not updated by
 this worktree-only change.
 
+## Zao temporary workarounds
+
+`hosts/zao/default.nix` has two workarounds for the Korri input. Each one has
+an exit condition. When the condition is true, delete the workaround and build
+Zao's toplevel and the `zao-korri-consumer` and `nix-builders` checks.
+
+| Workaround | Why | Remove when |
+|---|---|---|
+| `nixpkgs.overlays` takes `sway-unwrapped` and `wlroots_0_20` from Korri's own locked Nixpkgs. Zao only. | Korri's `services/inputd/nix/sway-activity.nix` asserts sway 1.12 and wlroots 0.20.2. The fleet Nixpkgs has sway 1.11. | The fleet Nixpkgs provides sway 1.12 and wlroots 0.20.2. |
+| `lib.mkOverride 49` on `nix.distributedBuilds`, `nix.settings.max-jobs` and `nix.settings.builders`. | The Korri plugin host imports the device no-build policy, which forces builds off. Zao is a build machine. | korri-os/korri#249 is fixed and Zao's `korri-input-host` is bumped past that fix. |
+
+Check the second one after the bump, before you remove it:
+
+```bash
+nix eval .#nixosConfigurations.zao.config.nix.settings.max-jobs
+nix eval .#nixosConfigurations.zao.config.nix.distributedBuilds
+```
+
+Without the override they must still be `"auto"` and `true`.
+
 ## Nix-on-Droid
 
 Run activation from an existing repository checkout on the device.

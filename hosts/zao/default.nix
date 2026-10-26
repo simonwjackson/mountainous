@@ -129,24 +129,32 @@
       ."@korri";
   };
 
-  # TEMPORARY: Korri's services/inputd/nix/sway-activity.nix asserts
-  # sway-unwrapped 1.12 and wlroots 0.20.2 from the host's pkgs, and the fleet
-  # Nixpkgs still has sway 1.11. Take both from the Nixpkgs that Korri's own
-  # lock pins until the fleet Nixpkgs reaches sway 1.12, then delete this.
+  # TEMPORARY (Zao only; see docs/nix-commands.md "Zao temporary workarounds"):
+  # Korri's services/inputd/nix/sway-activity.nix asserts sway-unwrapped 1.12
+  # and wlroots 0.20.2 from the host's pkgs, and the fleet Nixpkgs still has
+  # sway 1.11 and no wlroots_0_20. Take both from the Nixpkgs that Korri's own
+  # lock pins.
+  # Exit condition: delete this overlay when the fleet Nixpkgs provides
+  # sway-unwrapped 1.12 and wlroots_0_20 0.20.2 and Zao still evaluates
+  # without it.
   nixpkgs.overlays = [
     (_: _: {
       inherit (inputs.korri-input-host.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}) sway-unwrapped wlroots_0_20;
     })
   ];
 
-  # WORKAROUND: the plugin host imports Korri's nix/device-cache/nixos-module.nix,
+  # TEMPORARY (see docs/nix-commands.md "Zao temporary workarounds"):
+  # the plugin host imports Korri's nix/device-cache/nixos-module.nix,
   # which force-disables local and remote builds ("Device policy only. CI and
   # development machines must not import this module."; its README: "CI and
   # development builders do not import this device policy."). Zao is a build
   # host, so restore what it had before. Priority 49 beats that module's
   # mkForce (50). `fallback` is not restored: the module forces false, which is
-  # also Nix's default and what Zao ran with before. Remove this once Korri's
-  # plugin host stops importing the device policy.
+  # also Nix's default and what Zao ran with before.
+  # Exit condition: remove these three mkOverride 49 lines after
+  # korri-os/korri#249 is fixed and Zao's korri-input-host is bumped past that
+  # fix. Zao must stay a build machine: check that nix.settings.max-jobs and
+  # nix.distributedBuilds keep these values without the override.
   nix.distributedBuilds = lib.mkOverride 49 true;
   nix.settings = {
     max-jobs = lib.mkOverride 49 "auto";
