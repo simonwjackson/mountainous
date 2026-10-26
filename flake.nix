@@ -26,7 +26,7 @@
     };
 
     # Keep the reviewed runtime's own nixpkgs (Quickshell 0.3.2).
-    pyxamp.url = "github:simonwjackson/pyxamp/05ae787336b408aeed0d78444a133a8a6e75f143";
+    pyxamp.url = "github:simonwjackson/pyxamp/1d774e700b5e02a16373a0aeaa3b8218f8a96e9b";
 
     # ChicagoFLF 2.1: the font and README declare it Public Domain.
     chicagoflf-src = {
