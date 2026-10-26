@@ -193,6 +193,10 @@ in
           traccarDeviceId = "vela";
           # Vela's default; raise it if turn sounds start late over Bluetooth.
           turnSoundLeadMs = 250;
+          # The assistant serves each person's SurfaceLink under /people/<name>,
+          # and voice-gateway answers Talk with that person's assistant model.
+          assistantSurfacePath = "/people/simon/surface";
+          talkModel = "simon";
         };
 
         # Root reads these; each assistant unit gets a copy as a credential.
