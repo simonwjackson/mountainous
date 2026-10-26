@@ -44,7 +44,7 @@ input resolution until publication.
 
 The module keeps the TOML in one `settings` attrset, generated with
 `pkgs.formats.toml`. It follows `examples/front-door.toml` at ai-gateway commit
-`a24d07fb5af7b02b8fa8a8df55e66c75852f6335`. Optional paid chat models declare the
+`3924b6597d9ef4af515d617efe0d71bad569b38c`. Optional paid chat models declare the
 positive context windows needed for cap reservations: DeepSeek 1,048,576 and
 Grok 4 256,000 tokens, each with an 8,192-token output ceiling. The focused
 check evaluates those optional-provider settings too. It checks that two fixed
@@ -63,7 +63,7 @@ front door. No credential value is in the Nix store, TOML, environment or comman
 | `ai-staging-test-b` | `secrets/hosts/rakku.yaml` | Small paid-cap test grant |
 | `ai-staging-usage` | `secrets/hosts/rakku.yaml` | Read-only usage endpoint |
 | `ai-staging-login-keeper` | `secrets/fleet.yaml`, key `pi-cliproxyapi-api-key` | Existing CLIProxyAPI client key |
-| existing `cliproxyapi-gemini-api-key` | `secrets/hosts/rakku.yaml` | Gemini image fallback only |
+| existing `cliproxyapi-gemini-api-key` | `secrets/hosts/rakku.yaml` | Direct Gemini images and GPT-image fallback |
 | existing `litellm-env` | `secrets/hosts/rakku.yaml` | `TYPESAFE_API_KEY`, `UPSTAGE_API_KEY` |
 
 Three independent random 32-byte keys (hex encoded) are already encrypted for
@@ -103,9 +103,17 @@ OpenRouter's key is not in fleet sops. Do not read CLIProxyAPI's private config
 to copy it. `deepseek-v4.1-flash` remains allowed through the login keeper's
 existing catalog until a reviewed separate paid OpenRouter key is supplied.
 Speech models remain in test-a's grant, but requests fail clearly until a
-speech provider is enabled. Only the configured image fallback has a paid
-Gemini price. Other granted image IDs use subscriptions and have no paid fallback
-price of their own.
+speech provider is enabled.
+
+Gemini image requests go directly to the paid Gemini API with the requested
+model ID. All six existing Gemini image grants have a catalog entry and a
+USD 1 per-image staging ceiling. These are ceilings, not verified tariffs.
+
+Test-a also allows `gpt-image-2` through the login keeper first. That subscription
+model has no paid-model or price entry. A successful keeper call does not charge
+the paid cap. A 429 or known plan exhaustion can use the configured paid Gemini
+fallback, `gemini-3.1-flash-image`, at its USD 1 ceiling. A keeper 400 never
+triggers paid fallback. All paid image calls still require remaining paid cap.
 
 ## Grants and staging accounting
 

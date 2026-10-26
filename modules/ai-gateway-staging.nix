@@ -63,7 +63,13 @@
           ]
         ) "front door allows non-loopback IPs"
         ++ want (lib.all (
-          model: model.provider == "elevenlabs" || model.id == "grok-tts" || (model.context_window or 0) > 0
+          model:
+          lib.elem model.provider [
+            "gemini"
+            "elevenlabs"
+          ]
+          || model.id == "grok-tts"
+          || (model.context_window or 0) > 0
         ) optionalModels) "paid chat models require a positive context_window for cap reservations"
         ++ want (
           !unit.DynamicUser
@@ -283,6 +289,16 @@
         mode = "0400";
         restartUnits = [ "ai-gateway-staging.service" ];
       };
+      # The existing Gemini image grants now route directly to the paid API.
+      # Keep their catalog, grant and ceiling prices on the same reviewed IDs.
+      geminiImageModels = [
+        "gemini-3.1-flash-image"
+        "gemini-3.1-flash-image-preview"
+        "gemini-3.1-flash-lite-image"
+        "gemini-3-pro-image"
+        "gemini-3-pro-image-preview"
+        "gemini-2.5-flash-image"
+      ];
       # Ceiling, not tariff: each attempted decision reserves this fixed USD
       # charge. Test-b can pay for two Jev calls, but not a third.
       systemoneCharges = {
@@ -327,7 +343,15 @@
           key_file = credential name;
         }) enabledProviders;
         paid_models =
-          lib.optionals cfg.providers.openrouter.enable [
+          map (id: {
+            inherit id;
+            provider = "gemini";
+            input_modalities = [
+              "text"
+              "image"
+            ];
+          }) geminiImageModels
+          ++ lib.optionals cfg.providers.openrouter.enable [
             {
               id = "deepseek-v4.1-flash";
               provider = "openrouter";
@@ -370,8 +394,10 @@
           # Use the same ceilings for API-equivalent decision usage reporting.
           jev.request = systemoneCharges.jev;
           solar.request = systemoneCharges.solar;
-          "gemini-3.1-flash-image".image_per_unit = 1.0;
-        };
+        }
+        // lib.genAttrs geminiImageModels (_: {
+          image_per_unit = 1.0;
+        });
         gateway_keys = [
           {
             name = "ai-staging-test-a";
@@ -379,20 +405,16 @@
             models = [
               "claude-opus-5-5"
               "gpt-6.1-sol"
+              "gpt-image-2"
               "gemini-3.8-flash-high"
               "deepseek-v4.1-flash"
               "jev"
               "solar"
               "fast"
-              "gemini-3.1-flash-image"
-              "gemini-3.1-flash-image-preview"
-              "gemini-3.1-flash-lite-image"
-              "gemini-3-pro-image"
-              "gemini-3-pro-image-preview"
-              "gemini-2.5-flash-image"
               "eleven_multilingual_v2"
               "grok-tts"
-            ];
+            ]
+            ++ geminiImageModels;
             dialects = [
               "codex"
               "responses"

@@ -28,6 +28,23 @@ assert set(a["dialects"]) == {
     "models",
     "quota",
 }
+assert "gpt-image-2" in a["models"]
+assert "gpt-image-2" not in settings["prices"]
+assert all(model["id"] != "gpt-image-2" for model in settings["paid_models"])
+gemini_images = {
+    "gemini-3.1-flash-image",
+    "gemini-3.1-flash-image-preview",
+    "gemini-3.1-flash-lite-image",
+    "gemini-3-pro-image",
+    "gemini-3-pro-image-preview",
+    "gemini-2.5-flash-image",
+}
+assert {model["id"] for model in settings["paid_models"]} == gemini_images
+for model in settings["paid_models"]:
+    assert model["provider"] == "gemini"
+    assert model["input_modalities"] == ["text", "image"]
+    assert model["id"] in a["models"]
+    assert settings["prices"][model["id"]]["image_per_unit"] == 1.0
 assert b["models"] == ["jev"] and b["dialects"] == ["systemone"]
 assert b["monthly_cap_usd"] == 0.01
 assert settings["systemone_charges"] == {"jev": 0.004, "solar": 0.004}
