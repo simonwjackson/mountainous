@@ -24,7 +24,7 @@ in {
     inherit (secret) key owner group mode path restartUnits neededForUsers;
     sopsFile = builtins.baseNameOf secret.sopsFile;
   }) c.sops.secrets;
-  tailnetNames = c.mountainous.tailnetNames;
+  tailnetNames = c.mountainous.tailnetNames or { };
 }"""
 NEW_SERVICES = {
     "ai-gateway-staging",
@@ -43,7 +43,7 @@ PRODUCTION_SECRETS = {"ai-gateway-usage", "ai-gateway-key-assistant-rakku"}
 ASSISTANTS = {"pi-assistant-simon", "pi-assistant-laure", "pi-assistant-household"}
 
 
-def evaluate(ref):
+def evaluate(ref, host="rakku"):
     # Sequential evaluations keep memory bounded. Values are for equality only.
     return json.loads(
         subprocess.check_output(
@@ -54,7 +54,7 @@ def evaluate(ref):
                 "--option",
                 "eval-cache",
                 "false",
-                f"{ref}#nixosConfigurations.rakku",
+                f"{ref}#nixosConfigurations.{host}",
                 "--apply",
                 PROJECTION,
             ]
@@ -175,12 +175,18 @@ def main():
     parser.add_argument("--base", default="cairn")
     parser.add_argument("--candidate", default="HEAD")
     parser.add_argument(
-        "--phase", choices=["staging", "A", "B", "voice"], default="staging"
+        "--phase", choices=["staging", "A", "B", "voice", "clients"], default="staging"
     )
+    parser.add_argument("--host", default="rakku")
+    parser.add_argument("--pi-hosts", nargs="+", default=[])
     parser.add_argument("--staging-base", help="rebased staging commit before A")
     parser.add_argument("--production-base", help="commit A, required for B")
     parser.add_argument("--output", default="/tmp/ai-staging-rakku-diff.txt")
     args = parser.parse_args()
+    if args.phase == "clients" and not args.pi_hosts:
+        parser.error("--pi-hosts is required for clients")
+    if args.host != "rakku" and args.phase != "clients":
+        parser.error("--host is only supported for clients")
     if args.phase in {"A", "B"} and not args.staging_base:
         parser.error("--staging-base is required for A/B")
     if args.phase == "B" and not args.production_base:
@@ -197,12 +203,14 @@ def main():
 
     base = resolve(args.base)
     candidate = resolve("HEAD" if args.candidate == "working-tree" else args.candidate)
-    target = evaluate(root if args.candidate == "working-tree" else source(candidate))
+    target = evaluate(
+        root if args.candidate == "working-tree" else source(candidate), args.host
+    )
     new_yaml = (
-        (pathlib.Path(root) / "secrets/hosts/rakku.yaml").read_text()
+        (pathlib.Path(root) / f"secrets/hosts/{args.host}.yaml").read_text()
         if args.candidate == "working-tree"
         else subprocess.check_output(
-            ["git", "show", f"{candidate}:secrets/hosts/rakku.yaml"], text=True
+            ["git", "show", f"{candidate}:secrets/hosts/{args.host}.yaml"], text=True
         )
     )
 
@@ -210,11 +218,17 @@ def main():
 
     def snapshot(sha):
         if sha not in snapshots:
-            snapshots[sha] = evaluate(source(sha))
+            snapshots[sha] = evaluate(source(sha), args.host)
         return snapshots[sha]
 
     def comparison(
-        sha, services, secrets, tailnets, changed=frozenset(), text_changes=None
+        sha,
+        services,
+        secrets,
+        tailnets,
+        changed=frozenset(),
+        text_changes=None,
+        encrypted_secrets=None,
     ):
         report = compare(
             snapshot(sha),
@@ -232,9 +246,13 @@ def main():
             voice_rotation=args.phase == "voice",
         )
         old_yaml = subprocess.check_output(
-            ["git", "show", f"{sha}:secrets/hosts/rakku.yaml"], text=True
+            ["git", "show", f"{sha}:secrets/hosts/{args.host}.yaml"], text=True
         )
-        report["encrypted_entries"] = encrypted_diff(old_yaml, new_yaml, secrets)
+        report["encrypted_entries"] = encrypted_diff(
+            old_yaml,
+            new_yaml,
+            secrets if encrypted_secrets is None else encrypted_secrets,
+        )
         encrypted = report["encrypted_entries"]
         if (
             not encrypted["existing_unchanged"]
@@ -247,6 +265,24 @@ def main():
     changed = ASSISTANTS if args.phase == "B" else set()
     if args.phase == "staging":
         report = comparison(base, NEW_SERVICES, NEW_SECRETS, {"ai-staging"})
+    elif args.phase == "clients":
+        gateway_keys = {
+            "ai-gateway-key-storia-zao",
+            "ai-gateway-key-korri-zao",
+            "ai-gateway-key-pi-zao",
+            *{f"ai-gateway-key-pi-{host}" for host in args.pi_hosts},
+        }
+        is_gateway = args.host == "rakku"
+        report = comparison(
+            base,
+            set(),
+            {"pi-ai-gateway-api-key"} | (gateway_keys if is_gateway else set()),
+            set(),
+            {"ai-gateway"} if is_gateway else set(),
+            encrypted_secrets=(
+                gateway_keys if is_gateway else {f"ai-gateway-key-pi-{args.host}"}
+            ),
+        )
     elif args.phase == "voice":
         report = comparison(
             base, set(), {"ai-gateway-key-voice-zao"}, set(), {"ai-gateway"}
@@ -308,7 +344,7 @@ def main():
             if all(section["status"] == "PASS" for section in report.values())
             else "FAIL"
         )
-    report.update(candidate=candidate, phase=args.phase)
+    report.update(candidate=candidate, phase=args.phase, host=args.host)
     output = json.dumps(report, indent=2) + "\n"
     pathlib.Path(args.output).write_text(output)
     print(output, end="")

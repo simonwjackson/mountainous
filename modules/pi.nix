@@ -53,10 +53,10 @@ in
             TMPDIR=$(mktemp -d "$agent_dir/tmp/run.XXXXXXXXXX")
             trap 'rm -rf -- "$TMPDIR"' EXIT
             export PI_OFFLINE=1
-            export CLIPROXYAPI_BASE_URL=https://cliproxyapi.hummingbird-lake.ts.net
+            export CLIPROXYAPI_BASE_URL=https://ai.hummingbird-lake.ts.net
             export CLIPROXYAPI_API_KEY PI_DECIDE_API_KEY
-            CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-cliproxyapi-api-key)
-            PI_DECIDE_API_KEY=$(cat /run/secrets/pi-decide-api-key)
+            CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-ai-gateway-api-key)
+            PI_DECIDE_API_KEY=$CLIPROXYAPI_API_KEY
             ${agent}/bin/pi \
               -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts \
               -e ${./pi-decide.ts} "$@"
@@ -73,6 +73,13 @@ in
         home = config.users.users.simon.home;
       in
       lib.mkIf config.mountainous.appProfiles.pi.enable {
+        sops.secrets.pi-ai-gateway-api-key = {
+          sopsFile = ../secrets/hosts/${config.networking.hostName}.yaml;
+          key = "ai-gateway-key-pi-${config.networking.hostName}";
+          owner = "simon";
+          mode = "0400";
+        };
+        # Keep retired credentials declared until the separate cleanup.
         sops.secrets.pi-cliproxyapi-api-key = {
           owner = "simon";
           mode = "0400";

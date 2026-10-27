@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+
 import tomllib
 
 proxy_path, toml_path = map(pathlib.Path, sys.argv[1:3])
@@ -30,7 +31,8 @@ assert all(
 assert "cors" not in json.dumps(settings).lower()
 a = settings["gateway_keys"][0]
 if production:
-    assert len(settings["gateway_keys"]) == 2
+    pi_hosts = json.loads(sys.argv[4])
+    assert len(settings["gateway_keys"]) == 5 + len(pi_hosts)
     assert a["name"] == "assistant@rakku"
     assert a["models"] == [
         "claude-opus-5-5",
@@ -48,6 +50,41 @@ if production:
         "dialects": ["speech"],
         "monthly_cap_usd": 5,
         "requests_per_minute": 120,
+    }
+    keys = {key["name"]: key for key in settings["gateway_keys"]}
+    assert len(keys) == len(settings["gateway_keys"])
+    for host in ["zao", *pi_hosts]:
+        assert keys[f"pi@{host}"] == {
+            "name": f"pi@{host}",
+            "key_file": f"{credential_dir}/pi-{host}",
+            "dialects": ["codex", "models", "responses", "systemone"],
+            "models": ["*"],
+            "monthly_cap_usd": 1,
+            "requests_per_minute": 1200 if host == "zao" else 600,
+        }
+    assert keys["storia@zao"] == {
+        "name": "storia@zao",
+        "key_file": f"{credential_dir}/storia-zao",
+        "dialects": ["messages", "systemone"],
+        "models": ["claude-opus-5-5", "jev"],
+        "monthly_cap_usd": 1,
+        "requests_per_minute": 120,
+    }
+    assert keys["korri@zao"] == {
+        "name": "korri@zao",
+        "key_file": f"{credential_dir}/korri-zao",
+        "dialects": ["images"],
+        "models": ["gemini-3.1-flash-image", "gemini-3-pro-image", "gpt-image-2"],
+        "monthly_cap_usd": 5,
+        "requests_per_minute": 30,
+    }
+    assert settings["prices"]["gemini-3.1-flash-image"] == {
+        "image_per_unit": 0.151,
+        "input_per_million": 0.50,
+    }
+    assert settings["prices"]["gemini-3-pro-image"] == {
+        "image_per_unit": 0.24,
+        "input_per_million": 2.0,
     }
     # The only speech provider is ElevenLabs; no aliases replace voice IDs.
     assert settings["providers"]["elevenlabs"] == {
@@ -102,8 +139,14 @@ for model in settings["paid_models"]:
     assert model["provider"] == "gemini"
     assert model["input_modalities"] == ["text", "image"]
     assert (model["id"] in a["models"]) != production
-    assert settings["prices"][model["id"]]["image_per_unit"] == 1.0
-assert settings["systemone_charges"] == {"jev": 0.004, "solar": 0.004}
+    if not production or model["id"] not in {
+        "gemini-3.1-flash-image",
+        "gemini-3-pro-image",
+    }:
+        assert settings["prices"][model["id"]]["image_per_unit"] == 1.0
+assert settings["systemone_charges"] == (
+    {"jev": 0.0001, "solar": 0.0003} if production else {"jev": 0.004, "solar": 0.004}
+)
 for model, fixed_charge in settings["systemone_charges"].items():
     assert settings["prices"][model]["request"] == fixed_charge
 assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"} | (

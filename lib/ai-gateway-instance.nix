@@ -10,6 +10,12 @@
   loginKeeperSecret,
   usageSecret,
   gatewayKeys,
+  # Staging reserves deliberately high fixed charges. Production supplies tariffs.
+  systemoneCharges ? {
+    jev = 0.004;
+    solar = 0.004;
+  },
+  modelPrices ? { },
   elevenlabsSpeech ? {
     model = {
       id = "eleven_multilingual_v2";
@@ -151,12 +157,6 @@ let
     "gemini-3-pro-image-preview"
     "gemini-2.5-flash-image"
   ];
-  # Ceiling, not tariff: each attempted decision reserves this fixed USD
-  # charge. Test-b can pay for two Jev calls, but not a third.
-  systemoneCharges = {
-    jev = 0.004;
-    solar = 0.004;
-  };
   keys = gatewayKeys geminiImageModels;
   settings = {
     systemone_charges = systemoneCharges;
@@ -226,8 +226,7 @@ let
           provider = "xai";
         }
       ];
-    # Ceiling, not tariff: deliberately high staging charges bound tests.
-    # Reconcile against verified tariffs before any production cutover.
+    # Default ceilings bound staging tests; production overrides reviewed models.
     prices = {
       "deepseek-v4.1-flash" = {
         input_per_million = 10.0;
@@ -248,7 +247,8 @@ let
     })
     // lib.optionalAttrs cfg.providers.elevenlabs.enable {
       "${elevenlabsSpeech.model.id}" = elevenlabsSpeech.price;
-    };
+    }
+    // modelPrices;
     gateway_keys = map (
       key:
       (lib.removeAttrs key [

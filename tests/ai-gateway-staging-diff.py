@@ -170,3 +170,42 @@ assert compare(production, changed, **policy)["status"] == "FAIL"
 print(
     "PASS: speech scope permits only the front door, new key and provider rotation hook"
 )
+
+# Fleet client cutover changes only the production front door. Consumer keys
+# are aliases and must not allow a unit restart on an ordinary Pi host.
+clients = copy.deepcopy(voice)
+client_secrets = {
+    "pi-ai-gateway-api-key",
+    "ai-gateway-key-pi-rakku",
+    "ai-gateway-key-pi-zao",
+    "ai-gateway-key-storia-zao",
+    "ai-gateway-key-korri-zao",
+}
+clients["secrets"].update({name: {"key": name} for name in client_secrets})
+clients["unit_texts"]["ai-gateway.service"] = "with-client-config-and-credentials"
+clients["services"]["ai-gateway"]["ExecStart"] = "/new-client-config"
+policy = {
+    "services": set(),
+    "secrets": client_secrets,
+    "tailnets": set(),
+    "changed_services": {"ai-gateway"},
+    "changed_texts": {"ai-gateway.service"},
+}
+assert compare(voice, clients, **policy)["status"] == "PASS"
+for unit in [
+    "ai-gateway-staging.service",
+    "pi-assistant-simon.service",
+    "ai-gateway-egress.service",
+]:
+    changed = copy.deepcopy(clients)
+    changed["unit_texts"][unit] = "unexpected-restart"
+    assert compare(voice, changed, **policy)["status"] == "FAIL"
+ordinary = copy.deepcopy(voice)
+ordinary["secrets"]["pi-ai-gateway-api-key"] = {"key": "ai-gateway-key-pi-fuji"}
+policy = {"services": set(), "secrets": {"pi-ai-gateway-api-key"}, "tailnets": set()}
+assert compare(voice, ordinary, **policy)["status"] == "PASS"
+ordinary["unit_texts"]["ai-gateway.service"] = "unexpected-restart"
+assert compare(voice, ordinary, **policy)["status"] == "FAIL"
+print(
+    "PASS: fleet-client scope permits only production front door and per-host secrets"
+)

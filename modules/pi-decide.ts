@@ -9,7 +9,7 @@ export default function (pi: ExtensionAPI) {
   // This provider's classify dispatches to the built-in System One adapter.
   const classify = builtinProviders().find((provider) => provider.id === "typesafe")?.classify;
   if (!classify) throw new Error("Built-in TypeSafe System One classifier is unavailable");
-  const baseUrl = "https://decide.hummingbird-lake.ts.net/v1";
+  const baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
   pi.registerProvider("decide", {
     apiKey: "$PI_DECIDE_API_KEY",
     baseUrl,

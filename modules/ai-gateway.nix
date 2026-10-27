@@ -1,6 +1,14 @@
-# Production is additive. Client cutovers are separate commits.
-{ inputs, self, ... }:
+# Production front door and per-client grants.
+{
+  inputs,
+  self,
+  lib,
+  ...
+}:
 let
+  piHosts = lib.filter (
+    host: self.nixosConfigurations.${host}.config.mountainous.appProfiles.pi.enable or false
+  ) (lib.attrNames self.nixosConfigurations);
   instance = {
     name = "ai-gateway";
     tailnetName = "ai";
@@ -46,35 +54,101 @@ in
               # ElevenLabs API Flash/Turbo, $0.04 per 1K characters, every plan; https://elevenlabs.io/pricing/api, checked 2026-10-27
               price.audio_per_million_characters = 40.0;
             };
-            gatewayKeys = _: [
-              {
-                name = "assistant@rakku";
-                secret = "ai-gateway-key-assistant-rakku";
-                credential = "assistant";
+            systemoneCharges = {
+              # Typesafe: $42/billion input tokens, output free; ~2,400 tokens/call ceiling.
+              # https://typesafe.ai/, checked 2026-10-27.
+              jev = 0.0001;
+              # Upstage: $0.10/M input tokens, output free; see modules/decision-gateway.nix.
+              solar = 0.0003;
+            };
+            modelPrices = {
+              # Google pricing updated 2026-10-26: flash $0.045/0.5K, $0.067/1K,
+              # $0.101/2K, $0.151/4K. Reserve the 4K ceiling plus $0.50/M input tokens.
+              # https://ai.google.dev/gemini-api/docs/pricing
+              "gemini-3.1-flash-image" = {
+                image_per_unit = 0.151;
+                input_per_million = 0.50;
+              };
+              # Google: pro $0.134/1K or 2K, $0.24/4K, plus $2/M input tokens.
+              # https://ai.google.dev/gemini-api/docs/pricing, updated 2026-10-26.
+              "gemini-3-pro-image" = {
+                image_per_unit = 0.24;
+                input_per_million = 2.0;
+              };
+            };
+            gatewayKeys =
+              _:
+              [
+                {
+                  name = "assistant@rakku";
+                  secret = "ai-gateway-key-assistant-rakku";
+                  credential = "assistant";
+                  dialects = [
+                    "codex"
+                    "models"
+                    "responses"
+                  ];
+                  models = [
+                    "claude-opus-5-5"
+                    "gpt-6.1-sol"
+                    "gemini-3.8-flash-high"
+                    "gpt-5.6-luna"
+                  ];
+                  monthly_cap_usd = 0;
+                  requests_per_minute = 600;
+                }
+                {
+                  name = "voice@zao";
+                  secret = "ai-gateway-key-voice-zao";
+                  credential = "voice-zao";
+                  dialects = [ "speech" ];
+                  models = [ "eleven_flash_v2_5" ];
+                  monthly_cap_usd = 5;
+                  requests_per_minute = 120;
+                }
+                {
+                  name = "storia@zao";
+                  secret = "ai-gateway-key-storia-zao";
+                  credential = "storia-zao";
+                  dialects = [
+                    "messages"
+                    "systemone"
+                  ];
+                  models = [
+                    "claude-opus-5-5"
+                    "jev"
+                  ];
+                  monthly_cap_usd = 1;
+                  requests_per_minute = 120;
+                }
+                {
+                  name = "korri@zao";
+                  secret = "ai-gateway-key-korri-zao";
+                  credential = "korri-zao";
+                  dialects = [ "images" ];
+                  models = [
+                    "gemini-3.1-flash-image"
+                    "gemini-3-pro-image"
+                    "gpt-image-2"
+                  ];
+                  monthly_cap_usd = 5;
+                  requests_per_minute = 30;
+                }
+              ]
+              ++ map (host: {
+                name = "pi@${host}";
+                secret = "ai-gateway-key-pi-${host}";
+                credential = "pi-${host}";
                 dialects = [
                   "codex"
                   "models"
                   "responses"
+                  "systemone"
                 ];
-                models = [
-                  "claude-opus-5-5"
-                  "gpt-6.1-sol"
-                  "gemini-3.8-flash-high"
-                  "gpt-5.6-luna"
-                ];
-                monthly_cap_usd = 0;
-                requests_per_minute = 600;
-              }
-              {
-                name = "voice@zao";
-                secret = "ai-gateway-key-voice-zao";
-                credential = "voice-zao";
-                dialects = [ "speech" ];
-                models = [ "eleven_flash_v2_5" ];
-                monthly_cap_usd = 5;
-                requests_per_minute = 120;
-              }
-            ];
+                models = [ "*" ];
+                monthly_cap_usd = 1;
+                requests_per_minute = if host == "zao" then 1200 else 600;
+              }) ([ "zao" ] ++ piHosts);
           }
         ))
       ];

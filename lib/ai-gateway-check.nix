@@ -12,6 +12,9 @@
 let
   c = self.nixosConfigurations.rakku.config;
   cfg = c.mountainous.features.${name};
+  piHosts = lib.filter (
+    host: self.nixosConfigurations.${host}.config.mountainous.appProfiles.pi.enable or false
+  ) (lib.attrNames self.nixosConfigurations);
   # Optional paid chat must also satisfy the binary's startup contract,
   # even though those providers are disabled in this placement.
   optionalModels =
@@ -158,7 +161,44 @@ let
       !(lib.hasInfix "cors" (lib.toLower (builtins.toJSON cfg.settings)))
     ) "CORS config is forbidden"
     ++ lib.optionals (testMode == "production") (
-      want (
+      lib.concatMap (
+        host:
+        let
+          client = self.nixosConfigurations.${host}.config.sops.secrets.pi-ai-gateway-api-key;
+          gateway = c.sops.secrets."ai-gateway-key-pi-${host}";
+        in
+        want (
+          client.owner == "simon"
+          && client.mode == "0400"
+          && client.key == gateway.key
+          && client.sopsFile == ../secrets/hosts/${host}.yaml
+          && gateway.sopsFile == ../secrets/hosts/rakku.yaml
+        ) "${host}: Pi must read its own private host key, matched to its production grant"
+      ) piHosts
+      ++
+        lib.concatMap
+          (
+            key:
+            let
+              secret = c.sops.secrets.${key};
+            in
+            want (
+              secret.restartUnits == [ "ai-gateway.service" ]
+              && secret.mode == "0400"
+              && secret.owner == null
+              && secret.uid == 0
+              && lib.elem "${lib.removePrefix "ai-gateway-key-" key}:${secret.path}" unit.LoadCredential
+            ) "${key}: production client credential needs private LoadCredential and rotation restart"
+          )
+          (
+            [
+              "ai-gateway-key-storia-zao"
+              "ai-gateway-key-korri-zao"
+              "ai-gateway-key-pi-zao"
+            ]
+            ++ map (host: "ai-gateway-key-pi-${host}") piHosts
+          )
+      ++ want (
         cfg.providers.elevenlabs.enable && !cfg.providers.xai.enable && !cfg.providers.openrouter.enable
       ) "ElevenLabs must be the only enabled speech provider; xAI and OpenRouter stay off"
       ++
@@ -187,7 +227,7 @@ in
         }
         ''
           export HOME=$TMPDIR
-          python3 ${../tests/ai-gateway-staging.py} ${cfg.egressConfigFile} ${cfg.configFile} ${testMode}
+          python3 ${../tests/ai-gateway-staging.py} ${cfg.egressConfigFile} ${cfg.configFile} ${testMode} ${lib.escapeShellArg (builtins.toJSON piHosts)}
           python3 ${../tests/ai-gateway-staging-diff.py} ${../scripts/check-ai-staging-rakku}
           touch $out
         '';
