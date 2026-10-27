@@ -11,7 +11,9 @@ import "themes/win98/tray-model.js" as Tray
 //
 //   [Start] | ‖1 [window][window] | ‖2 [window] ... » | ‖ dictation | [» icons  4:51 PM]
 //
-// One band per page, with its number; the page on screen is pressed in.
+// One band per page, behind a divider (etch and grip) with no number: a
+// page is named by its apps (the divider's tooltip), never numbered; the
+// page on screen has its box pressed in.
 // Window buttons carry the dock's behaviour: a click focuses, the middle
 // button closes, a drag swaps two windows on one page or moves a window to
 // another page (shell dropOnto). Layout is Plan.plan(width): readouts yield
@@ -49,6 +51,9 @@ PanelWindow {
 
 
     function units(n) { return n * bar.u; }
+    // The bar's top edge in the screen's logical px (where context menus
+    // rise from).
+    readonly property real screenTop: (bar.screen ? bar.screen.height : bar.height) - bar.barHeight
     // A text's width for the plan, in units: one more than its whole
     // pixels, as the approved mock's canvas measured (a width just over a
     // whole pixel, rounded up). The plan yields at the mock's widths, and
@@ -60,7 +65,7 @@ PanelWindow {
     readonly property bool dictFailed: dict.barVisible && dict.state === "failed"
 
     readonly property var plan: Plan.plan(Math.round(width / u), {
-        windows: lane.map(function (t) { return { page: bar.desktop.shell.pageOf(t), focused: !!t.activated }; }),
+        windows: lane.map(function (t) { return { page: bar.desktop.pageOf(t), focused: !!t.activated && !bar.desktop.isMinimized(t) }; }),
         showingPage: bar.desktop.showingPage,
         tray: bar.desktop.trayIds.map(function (id) { return { id: id, badge: bar.desktop.badge(id) }; }),
         clock: bar.desktop.clock,
@@ -142,6 +147,19 @@ PanelWindow {
         Rectangle { width: parent.width; height: bar.u; color: Win98Tokens.li }
         Rectangle { y: bar.u; width: parent.width; height: bar.u; color: Win98Tokens.hi }
 
+        // A right click where no control takes it: the taskbar's own menu
+        // (Minimize All, Minimize Other, Restore All, Find...), from the
+        // pointer. Below every control, so their own buttons come first.
+        MouseArea {
+            objectName: "taskbarBackground"
+            anchors.fill: parent
+            acceptedButtons: Qt.RightButton
+            onPressed: function (mouse) {
+                bar.desktop.tipId = "";
+                bar.desktop.taskbarMenu(mouse.x, bar.screenTop);
+            }
+        }
+
         // ---- Start
         TaskButton {
             id: start
@@ -211,22 +229,18 @@ PanelWindow {
                                 visible: tag.sunk || bar.hovered(band.pid)
                                 variant: tag.sunk ? "thinSunken" : "thinRaised"
                             }
-                            Win98Text {
-                                // Centred to the half unit (a whole physical px), as the mock is.
-                                x: (tag.width - width) / 2
-                                y: Win98Tokens.snap((tag.height - height) / 2, bar.u)
-                                text: String(band.page)
-                                accessMarks: false
-                                bold: band.showing
-                                color: Win98Tokens.text
-                            }
                             Win98FocusRect {
                                 visible: bar.focused(band.pid)
                                 x: bar.units(2); y: bar.units(2)
                                 width: parent.width - bar.units(4); height: parent.height - bar.units(4)
                             }
+                            // The band's head (the divider's etch, its grip and this
+                            // box) shows the page; its tooltip names the band's apps.
+                            // Pages carry no number (Simon: they are ephemeral).
                             MouseArea {
-                                anchors.fill: parent
+                                x: -bar.units(11)
+                                width: parent.width + bar.units(11)
+                                height: parent.height
                                 hoverEnabled: true
                                 onEntered: bar.hoverIn(band.pid)
                                 onExited: bar.hoverOut(band.pid)
@@ -578,7 +592,9 @@ PanelWindow {
         property int index_: 0
         readonly property var t: bar.lane[index_] || null
         readonly property string wid: "win" + index_
-        readonly property bool activated: !!(t && t.activated)
+        // A minimized window keeps its button, raised (Win98).
+        readonly property bool minimized: bar.desktop.isMinimized(t)
+        readonly property bool activated: !!(t && t.activated) && !minimized
         readonly property bool urgent: !!(t && t.urgent) && !activated
         // Win98 flashed a window that wanted attention, then left it lit
         // until it was focused.
@@ -620,7 +636,7 @@ PanelWindow {
             id: grip
             anchors.fill: parent
             hoverEnabled: true
-            acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+            acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
             // A click and a drag start alike; a drag needs travel.
             readonly property real threshold: bar.units(6)
             property real pressX: 0
@@ -632,6 +648,11 @@ PanelWindow {
                 grip.dragging = false;
                 bar.desktop.tipId = "";
                 if (mouse.button === Qt.LeftButton) bar.pressId = wb.wid;
+                // The right button: the window menu, from the pointer.
+                if (mouse.button === Qt.RightButton) {
+                    const p = grip.mapToItem(face, mouse.x, mouse.y);
+                    bar.desktop.windowMenu(bar.desktop.addressOf(wb.t), p.x, bar.screenTop);
+                }
             }
             onPositionChanged: function (mouse) {
                 if (!(mouse.buttons & Qt.LeftButton)) return;
@@ -654,10 +675,15 @@ PanelWindow {
             // undo the move by pulling focus to the old page.
             onClicked: function (mouse) {
                 if (grip.dragging) { grip.dragging = false; return; }
+                if (mouse.button === Qt.RightButton) return;
                 if (mouse.button === Qt.MiddleButton) { bar.desktop.closeWindow(wb.t); return; }
-                // Over the glance space a window button dismisses it, then switches.
+                // Over the glance space a window button dismisses it, then
+                // switches; the active window's button minimizes it, a
+                // minimized one's restores it.
+                const glance = bar.desktop.fleetGlance.glanceShown;
                 bar.desktop.hideGlance();
-                bar.desktop.activateWindow(wb.t);
+                if (glance && !wb.minimized) bar.desktop.activateWindow(wb.t);
+                else bar.desktop.clickWindow(wb.t);
             }
             onCanceled: {
                 grip.dragging = false;

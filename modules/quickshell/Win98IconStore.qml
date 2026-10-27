@@ -28,7 +28,9 @@ Singleton {
         "signal", "sun", "sync", "term", "tx", "volume-0", "volume-1", "volume-2", "volume-muted", "warn",
         "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4", "wifi-off", "windows", "zed",
         // Find (Super+P) and Internet Explorer's Open (Ctrl+L)
-        "find", "find-large", "globe", "globe-large"
+        "find", "find-large", "globe", "globe-large",
+        // The taskbar and session pieces (dev/make-parity-icons.sh).
+        "favorites", "documents", "lock-computer", "computer", "system", "maximize", "restore"
     ]
 
     property var sources: ({})

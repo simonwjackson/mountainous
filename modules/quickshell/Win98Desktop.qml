@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import QtQuick
 import "lanes.js" as Lanes
+import "app-model.js" as AppModel
 import "battery.js" as BatteryRule
 import "oci-model.js" as OciModel
 import "builder-gate.js" as Gate
@@ -12,7 +13,11 @@ import "themes/win98/tray-model.js" as Tray
 import "themes/win98/start-model.js" as StartModel
 import "themes/win98/taskbar-plan.js" as Plan
 import "themes/win98/host-icon.js" as HostIcon
+import "themes/win98/task-model.js" as TaskModel
+import "themes/win98/session-model.js" as Session
 import "beszel-model.js" as FleetModel
+// TEMPORARY: pages-caption's page-names.js once it lands (see the file).
+import "page-names-temporary.js" as PageNames
 import "glance-registry.js" as GlanceRegistry
 
 // One screen's Windows 98 chrome: one bottom taskbar (Start, a band per
@@ -75,6 +80,9 @@ Scope {
 
     readonly property var menuIds: ["start", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks",
         "glance", "fleetmenu"]
+    // Opened by the Desktop itself, never by hovering onto a control: the
+    // dialogs and the two context menus (Win98's context menus stayed put).
+    readonly property var ownIds: ["logoff", "shutdown", "sysprops", "winmenu", "tbmenu"]
 
     function canOpen(id) {
         if (id === "fleet" || id === "fleetmenu") return fleetGlance.present;
@@ -84,8 +92,9 @@ Scope {
         if (id === "builder") return context.builderGate.enabled;
         if (id === "dict") return context.dictation.barVisible;
         if (id === "find" || id === "address") return omniView.want() === id;
+        if (id === "winmenu") return desktop.menuRow !== null;
         if (id === "bat" || id === "") return false;
-        return menuIds.indexOf(id) >= 0 || id === "logoff";
+        return menuIds.indexOf(id) >= 0 || ownIds.indexOf(id) >= 0;
     }
 
     function openMenu(id, byKeyboard) {
@@ -114,7 +123,7 @@ Scope {
     // that control's menu takes over (Win98 did this only inside menu
     // bars; the approved mock extends it to Start and the tray).
     function enter(id) {
-        if (desktop.openId === "" || desktop.openId === id || desktop.openId === "logoff") return;
+        if (desktop.openId === "" || desktop.openId === id || desktop.ownIds.indexOf(desktop.openId) >= 0) return;
         if (desktop.openId === "find" || desktop.openId === "address") return;
         if (desktop.menuIds.indexOf(id) < 0 || !desktop.canOpen(id)) return;
         desktop.openMenu(id, false);
@@ -148,10 +157,14 @@ Scope {
         }
         if (withWindows && p.taskOut.length) {
             if (out.length) out.push({ separator: true });
-            for (const i of Plan.overflowWindows(desktop.lane.map(function (t) { return { page: shell.pageOf(t) }; }), p.taskOut)) {
+            let last = null;
+            for (const i of Plan.overflowWindows(desktop.lane.map(function (t) { return { page: desktop.pageOf(t) }; }), p.taskOut)) {
                 const t = desktop.lane[i];
+                // Pages are never numbered: a separator between two pages.
+                if (last !== null && desktop.pageOf(t) !== last) out.push({ separator: true });
+                last = desktop.pageOf(t);
                 out.push({ text: label((t && t.title) || "(untitled)"), icon: desktop.winIcon(t) || "doc",
-                    shortcut: "Page " + shell.pageOf(t), action: "window", window: i });
+                    shortcut: desktop.windowHint(t), action: "window", window: i });
             }
         }
         if (p.clockOut || p.trayOut.indexOf("bat") >= 0) {
@@ -171,15 +184,58 @@ Scope {
             if (MenuState.current === "") desktop.anchorId = "";
         }
     }
-    onActiveChanged: if (!active) { tipId = ""; taskbarFocus = ""; }
+    onActiveChanged: if (!active) { tipId = ""; taskbarFocus = ""; cycleState = null; popupId = ""; }
 
     //------------------------------------------------------------------
-    // Windows and pages (the dock's lane; shared code, not a fork)
+    // Windows and pages
     //------------------------------------------------------------------
-    readonly property var lane: shell.windowsOn(screen)
+    // Win98 kept a minimized window's button on the taskbar. Minimize is the
+    // shared hide (WindowHider), which lanes.js leaves off every taskbar,
+    // so this lane is the Win98 taskbar's own (task-model.js): the windows
+    // shown on this screen plus the hidden ones whose home is here, each in
+    // its home page's band. lanes.js and Platinum are unchanged.
+    readonly property string here: screen ? screen.name : ""
+    readonly property var rows: shell.windowRows || []
+    readonly property var hider: shell.hider || null
+    // The page this screen shows (for windows whose home is unknown).
+    readonly property int shownPage: {
+        for (const r of desktop.rows) if (r.screen === desktop.here && r.page > 0 && Lanes.isShown(r.toplevel)) return r.page;
+        const p = typeof shell.shownPageOn === "function" ? shell.shownPageOn(desktop.here) : -1;
+        return p > 0 ? p : 1;
+    }
+    readonly property var laneEntries: shell.windowRows !== undefined
+        ? TaskModel.lane(desktop.rows, desktop.hider ? desktop.hider.state : null, desktop.here, {
+            screens: Quickshell.screens.map(function (s) { return s.name; }), fallbackPage: desktop.shownPage })
+        : shell.windowsOn(screen).map(function (t) { return { row: { toplevel: t, address: "", appId: desktop.appIdOf(t) }, home: Lanes.pageOf(t), minimized: false }; })
+    readonly property var lane: laneEntries.map(function (e) { return e.row.toplevel; })
     readonly property int showingPage: {
-        for (const t of desktop.lane) if (Lanes.isShown(t)) return shell.pageOf(t);
+        for (const t of desktop.lane) if (Lanes.isShown(t)) return Lanes.pageOf(t);
         return -1;
+    }
+    function entryOf(t) {
+        const i = t ? desktop.lane.indexOf(t) : -1;
+        return i >= 0 ? desktop.laneEntries[i] : null;
+    }
+    // A window's band: its page, or a minimized window's home page.
+    function pageOf(t) { const e = desktop.entryOf(t); return e ? e.home : Lanes.pageOf(t); }
+    function isMinimized(t) { const e = desktop.entryOf(t); return !!e && e.minimized; }
+    function addressOf(t) { const e = desktop.entryOf(t); return e ? e.row.address : ""; }
+    // What a menu row says beside a window: never its page (Simon: pages
+    // are ephemeral, not places), only that it is minimized.
+    function windowHint(t) { return desktop.isMinimized(t) ? "Minimized" : ""; }
+    // An app's name, for naming pages by their apps (page-names.js). A
+    // harness may supply names (appNames: app id -> name).
+    property var appNames: ({})
+    function appName(appId) {
+        if (!appId) return "";
+        if (desktop.appNames[appId]) return desktop.appNames[appId];
+        DesktopEntries.applications.values;
+        const e = DesktopEntries.heuristicLookup(appId);
+        return e && e.name ? e.name : appId;
+    }
+    // A band's apps, left to right ("Signal and Zed"): its divider's tooltip.
+    function bandNames(page) {
+        return PageNames.listNames(TaskModel.pageApps(desktop.laneEntries, page, desktop.appName, ""));
     }
     function appIdOf(t) {
         const wl = t ? t.wayland : null;
@@ -187,7 +243,9 @@ Scope {
     }
     // The Win98 icon for a window's app, or "" to use the icon theme.
     function winIcon(t) { return StartModel.appIcon(desktop.appIdOf(t), ""); }
+    // Bring a window forward; a minimized one is restored (only it).
     function activateWindow(t) {
+        if (desktop.isMinimized(t)) { desktop.restoreWindow(desktop.addressOf(t)); return; }
         const wl = t ? t.wayland : null;
         if (wl) wl.activate();
     }
@@ -195,6 +253,38 @@ Scope {
         const wl = t ? t.wayland : null;
         if (wl) wl.close();
     }
+    // A click on a window button: the active window minimizes (Win98), a
+    // minimized one restores, any other comes forward.
+    function clickWindow(t) {
+        if (!t) return;
+        if (desktop.isMinimized(t)) desktop.restoreWindow(desktop.addressOf(t));
+        else if (t.activated) desktop.minimizeWindow(desktop.addressOf(t));
+        else desktop.activateWindow(t);
+    }
+    function rowFor(address) {
+        const k = AppModel.key(address);
+        if (k === "") return null;
+        for (const r of desktop.rows) if (r.address === k) return r;
+        return null;
+    }
+    function minimizeWindow(address) { if (desktop.hider && address) desktop.hider.hideWindow(address); }
+    function restoreWindow(address, after) {
+        if (desktop.hider && address) desktop.hider.showWindow(address, desktop.shownPage, true, after || "");
+    }
+    // Win98 maximize is Hyprland's maximized fullscreen state (the usable
+    // area, the taskbar stays); fullscreen state 2 covers everything.
+    function fullscreenOf(r) {
+        const o = r && r.toplevel ? r.toplevel.lastIpcObject || {} : {};
+        return typeof o.fullscreen === "number" ? o.fullscreen : 0;
+    }
+    function focusThen(address, lua) {
+        const k = AppModel.key(address);
+        if (k === "") return;
+        Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch",
+            'dispatch hl.dsp.focus({ window = "address:0x' + k + '" }) ; dispatch ' + lua]);
+    }
+    readonly property string maximizeLua: 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })'
+    readonly property string fullscreenLua: 'hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" })'
     // A click on a page number shows that page.
     function showPage(page) {
         if (shell.showPage) { shell.showPage(page); return; }
@@ -306,7 +396,7 @@ Scope {
             const t = desktop.lane[Number(id.slice(3))];
             return t ? (t.title || "(untitled)") : "";
         }
-        if (id.indexOf("page") === 0) return "Page " + id.slice(4);
+        if (id.indexOf("page") === 0) return desktop.bandNames(Number(id.slice(4)));
         return Tray.tooltip(id, desktop.trayData);
     }
 
@@ -331,31 +421,44 @@ Scope {
         return out;
     }
     readonly property var commandRows: context.omniBar.commandRows || []
+    // Recent Applications (Launcher records every launch) and the pinned web
+    // apps (desktop entries webapp-<id>, modules/web-apps.nix), as
+    // Platinum's Apple menu reads them. A harness may replace either.
+    property var recent: Launcher.recent
+    property var webApps: DesktopEntries.applications.values
+        .filter(function (e) { return e && e.id && e.id.indexOf("webapp-") === 0; })
+        .map(function (e) { return { id: e.id.slice(7), name: e.name, icon: e.icon, entry: e }; })
     readonly property var startModel: StartModel.top(
         StartModel.programs(desktop.apps),
         StartModel.windows(desktop.lane.map(function (t) {
-            return { title: t.title, page: shell.pageOf(t), icon: desktop.winIcon(t) || "doc" };
+            return { title: t.title, page: desktop.pageOf(t), hint: desktop.windowHint(t), icon: desktop.winIcon(t) || "doc" };
         })),
         StartModel.commands(desktop.commandRows),
         desktop.userName,
-        taskbar.plan.structure === "start" ? desktop.overflowItems(false) : [])
+        taskbar.plan.structure === "start" ? desktop.overflowItems(false) : [],
+        { favorites: StartModel.favorites(desktop.webApps), documents: StartModel.documents(desktop.recent), host: desktop.hostName })
 
     function runStart(item) {
         MenuState.close();
         if (!item) return;
         if (item.action === "app") { const a = desktop.apps[item.app]; if (a && a.entry) Launcher.launchEntry(a.entry); }
+        else if (item.action === "webapp") desktop.launchWebApp(desktop.webApps[item.webapp]);
+        else if (item.action === "recent") desktop.launchRecent(desktop.recent[item.recent]);
         else if (item.action === "window") desktop.activateWindow(desktop.lane[item.window]);
         else if (item.action === "command") context.omniBar.run(desktop.commandRows[item.row]);
         else if (item.action === "run") omniView.openScope("all");
         else if (item.action === "find") omniView.openScope(item.scope);
         else if (item.action === "picker") ThemePicker.open(desktop.screen);
+        else if (item.action === "system") desktop.openMenu("sysprops", false);
         else if (item.action === "open") desktop.openMenu(item.control, false);
         else if (item.action === "restorefleet") fleetGlance.restore();
         else if (item.action === "logoff") desktop.openMenu("logoff", false);
+        else if (item.action === "shutdown") desktop.openShutDown();
+        else if (item.action === "lock") Qt.callLater(desktop.runSession, "lock");
     }
     function logOff() {
         MenuState.close();
-        Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch", "hl.dsp.exit()"]);
+        desktop.runSession("logout");
     }
 
     // The omni service's Win98 view: the Find window and IE's Open dialog
@@ -365,8 +468,237 @@ Scope {
     readonly property bool omniClaimed: omniView.claimed
     function findAction(kind, arg) { omniView.findAction(kind, arg); }
 
-    // The open menu or window's root item, for checks.
+    // Launches go through Launcher, exactly as Platinum's do: a web app
+    // from its desktop entry's command with web-app metadata (launchEntry
+    // when it has none), a recent item from its recorded argv.
+    function launchWebApp(app) {
+        if (!app) return;
+        const meta = { id: "webapp-" + app.id, name: app.name || app.id, icon: app.icon || "", kind: "webapp" };
+        const argv = app.entry && app.entry.command ? Array.from(app.entry.command) : [];
+        if (argv.length > 0) Launcher.launch(argv, meta);
+        else if (app.entry) Launcher.launchEntry(app.entry);
+    }
+    function launchRecent(e) {
+        if (!e) return;
+        Launcher.launch(e.argv, { id: e.id, name: e.name, icon: e.icon || "", kind: e.kind });
+    }
+
+    //------------------------------------------------------------------
+    // Session: Lock, Shut Down Myoko, Log Off
+    //------------------------------------------------------------------
+    // The same commands as Platinum's runSession. hypridle locks before
+    // sleep. Short-lived system helpers, not apps, so not through Launcher;
+    // each argv is a literal (launcher-model.test.js).
+    function runSession(what) {
+        switch (what) {
+        case "lock": Quickshell.execDetached(["loginctl", "lock-session"]); break;
+        case "sleep": Quickshell.execDetached(["systemctl", "suspend"]); break;
+        case "logout": Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch", "hl.dsp.exit()"]); break;
+        case "restart": Quickshell.execDetached(["systemctl", "reboot"]); break;
+        case "shutdown": Quickshell.execDetached(["systemctl", "poweroff"]); break;
+        }
+    }
+    // The Shut Down dialog opens on the last choice OK'd, as Win98's did;
+    // the choice is kept in $XDG_STATE_HOME/mountainous/win98-shut-down.
+    readonly property var shutChoices: Session.shutdownChoices(desktop.userName)
+    property string shutChoice: "standby"
+    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mountainous"
+    FileView {
+        id: shutFile
+        path: desktop.stateDir + "/win98-shut-down"
+        printErrors: false
+        atomicWrites: true
+        watchChanges: true
+        onFileChanged: reload()
+    }
+    function openShutDown() {
+        desktop.shutChoice = Session.initialChoice(shutFile.loaded ? shutFile.text() : "");
+        desktop.openMenu("shutdown", true);
+    }
+    function confirmShutDown(id) {
+        const c = desktop.shutChoices.find(function (x) { return x.id === id; });
+        MenuState.close();
+        if (!c) return;
+        shutFile.setText(c.id + "\n");
+        Qt.callLater(desktop.runSession, c.what);
+    }
+
+    //------------------------------------------------------------------
+    // The window menu and the taskbar's own menu
+    //------------------------------------------------------------------
+    // The window menu's window and where a context menu opens, in this
+    // screen's logical px: its top-left (it moves up to stay above the
+    // taskbar, and left to stay on the screen).
+    property string menuAddress: ""
+    property var menuPoint: ({ x: 0, y: 0 })
+    readonly property var menuRow: desktop.rowFor(desktop.menuAddress)
+    readonly property var menuEntry: {
+        const k = desktop.menuAddress;
+        for (const e of desktop.laneEntries) if (e.row.address === k) return e;
+        return null;
+    }
+    readonly property var windowMenuItems: {
+        const r = desktop.menuRow;
+        if (!r) return [];
+        const e = desktop.menuEntry;
+        const minimized = e ? e.minimized : !!(desktop.hider && desktop.hider.isHidden(r));
+        const page = e ? e.home : r.page;
+        return TaskModel.windowMenu({
+            minimized: minimized,
+            maximized: !minimized && desktop.fullscreenOf(r) > 0,
+            move: TaskModel.movePages({ entries: desktop.laneEntries, address: r.address, page: page, shownPage: desktop.shownPage,
+                pageIds: typeof shell.pageIds === "function" ? shell.pageIds() : [], appName: desktop.appName, label: PageNames.pageLabel })
+        });
+    }
+    // The windows IPC (shell.qml: a caption's icon, Alt+Space) and a
+    // taskbar button's right click. x, y: this screen's logical px.
+    function windowMenu(address, x, y) {
+        const r = desktop.rowFor(address);
+        if (!r || !desktop.active) return;
+        desktop.menuAddress = r.address;
+        desktop.menuPoint = { x: x, y: y };
+        desktop.openMenu("winmenu", true);
+    }
+    function taskbarMenu(x, y) {
+        if (!desktop.active) return;
+        desktop.menuPoint = { x: x, y: y };
+        desktop.openMenu("tbmenu", true);
+    }
+    readonly property string frontApp: {
+        const w = context.frontWindow;
+        const r = w ? desktop.rowFor(shell.addressOf ? shell.addressOf(w) : "") : null;
+        return r ? r.appId : (w ? desktop.appIdOf(w) : "");
+    }
+    readonly property var taskbarMenuItems: {
+        const shown = desktop.laneEntries.filter(function (e) { return !e.minimized; });
+        const front = desktop.frontApp;
+        return TaskModel.taskbarMenu({
+            shown: shown.length,
+            others: front === "" ? shown.length : shown.filter(function (e) { return e.row.appId !== front; }).length,
+            hidden: desktop.hider ? desktop.hider.hiddenCount : 0
+        });
+    }
+    // A chosen item runs on the next turn of the event loop, once the menu
+    // that emitted it is gone (as Platinum's perform).
+    function runMenu(item) {
+        MenuState.close();
+        if (!item || !item.act) return;
+        Qt.callLater(desktop.perform, item.act, item.page || 0, desktop.menuAddress);
+    }
+    function perform(act, page, address) {
+        const r = desktop.rowFor(address);
+        const e = r ? desktop.laneEntries.find(function (x) { return x.row.address === r.address; }) : null;
+        const minimized = e ? e.minimized : !!(r && desktop.hider && desktop.hider.isHidden(r));
+        switch (act) {
+        case "restore":
+            if (!r) return;
+            if (minimized) desktop.restoreWindow(r.address);
+            else if (desktop.fullscreenOf(r) === 1) desktop.focusThen(r.address, desktop.maximizeLua);
+            else if (desktop.fullscreenOf(r) > 1) desktop.focusThen(r.address, desktop.fullscreenLua);
+            break;
+        case "move":
+            if (!r || !(page > 0)) return;
+            if (minimized) { if (desktop.hider) desktop.hider.setHome(r.address, page); }
+            else if (typeof shell.moveToPage === "function") shell.moveToPage(r.address, page);
+            break;
+        case "minimize": if (r) desktop.minimizeWindow(r.address); break;
+        case "maximize":
+            if (!r) return;
+            if (minimized) desktop.restoreWindow(r.address, desktop.maximizeLua);
+            else desktop.focusThen(r.address, desktop.maximizeLua);
+            break;
+        case "close": if (r && typeof shell.closeWindow === "function") shell.closeWindow(r.address); break;
+        case "minimizeAll": if (desktop.hider) desktop.hider.hideScreen(desktop.here); break;
+        case "minimizeOthers":
+            if (!desktop.hider) return;
+            if (desktop.frontApp !== "") desktop.hider.hideOthers(desktop.frontApp, desktop.here);
+            else desktop.hider.hideScreen(desktop.here);
+            break;
+        case "restoreAll": if (desktop.hider) desktop.hider.showAll(desktop.shownPage); break;
+        case "find": context.omniBar.enterRoot(); break;
+        }
+    }
+
+    //------------------------------------------------------------------
+    // Held Super+Tab: Win98's Cool Switch, over windows
+    //------------------------------------------------------------------
+    // shell.qml drops stale messages (AppModel.accept) and sends the rest
+    // to the focused screen's Desktop. The quick press already focused the
+    // last window; position 2 is the window after it. Super up commits.
+    property var cycleState: null
+    property int cyclePosition: 1
+    readonly property string cycleTarget: cycleState ? AppModel.cycleTarget(cycleState, cyclePosition) : ""
+    function cycle(action, position) {
+        if (action === "cancel") { desktop.cycleState = null; return; }
+        if (!desktop.cycleState) {
+            if (action === "commit" && position <= 1) return;
+            desktop.cycleState = AppModel.windowCycleStart(desktop.rows, shell.mru || []);
+            MenuState.close();
+        }
+        desktop.cyclePosition = position;
+        if (action !== "commit") return;
+        const target = desktop.cycleTarget;
+        desktop.cycleState = null;
+        console.debug("[win98] window cycle commit " + target);
+        if (target !== "") desktop.activateAddress(target);
+    }
+    // A window by address: a hidden one is restored (alone), any other
+    // comes forward through the shell.
+    function activateAddress(address) {
+        const r = desktop.rowFor(address);
+        if (!r) return;
+        if (desktop.hider && desktop.hider.isHidden(r)) desktop.restoreWindow(r.address);
+        else if (typeof shell.activate === "function") shell.activate(r.address);
+    }
+
+    //------------------------------------------------------------------
+    // The volume and brightness pop-up
+    //------------------------------------------------------------------
+    // A change shows the value above its tray icon for 1.5 s, Platinum's
+    // tag rules: none for the values the owners load at start (each value
+    // arms 2 s after its owner has one, and again when the output device
+    // changes), and none while a menu or window is open on this screen
+    // (it shows the value). The harness's state sheets disarm it too.
+    property string popupId: ""
+    property bool volArmed: false
+    property bool briArmed: false
+    readonly property bool volPresent: context.sound.available === true
+    readonly property bool briPresent: context.brightness.available === true
+    readonly property int volLevel: context.sound.volumePercent
+    readonly property bool volMuted: context.sound.muted === true
+    readonly property var volSink: context.sound.defaultSink
+    readonly property int briLevel: Math.max(0, Math.min(100, context.brightness.shownLevel))
+    Timer { id: volArm; interval: 2000; running: true; onTriggered: desktop.volArmed = desktop.volPresent }
+    Timer { id: briArm; interval: 2000; running: true; onTriggered: desktop.briArmed = desktop.briPresent }
+    Timer { id: popupTimer; interval: 1500; onTriggered: desktop.popupId = "" }
+    function disarm(which) {
+        if (which !== "bri") { desktop.volArmed = false; volArm.restart(); }
+        if (which !== "vol") { desktop.briArmed = false; briArm.restart(); }
+        desktop.popupId = "";
+    }
+    onVolPresentChanged: disarm("vol")
+    onVolSinkChanged: disarm("vol")
+    onBriPresentChanged: disarm("bri")
+    onPreviewChanged: disarm("")
+    function showPopup(id) {
+        if (!desktop.active || !shell.chromeVisible || desktop.openId !== "") return;
+        if (id === "vol" ? !(desktop.volArmed && desktop.volPresent) : !(desktop.briArmed && desktop.briPresent)) return;
+        desktop.tipId = "";
+        desktop.popupId = id;
+        popupTimer.restart();
+    }
+    onVolLevelChanged: showPopup("vol")
+    onVolMutedChanged: showPopup("vol")
+    onBriLevelChanged: showPopup("bri")
+    onOpenIdChanged: if (openId !== "") { popupId = ""; popupTimer.stop(); }
+
+    // The open menu or window's root item, and the other surfaces' boxes,
+    // for checks.
     readonly property var openItem: menuHost.openItem
+    readonly property var shutDownItem: shutDownScreen.dialog
+    readonly property var coolSwitchItem: coolSwitch.box
+    readonly property var popupItem: volumePopup.box
+    readonly property var taskbarItem: taskbar.contentItem
 
     // For the harness and checks: the taskbar's plan and where things are.
     function taskbarPlan() { return taskbar.plan; }
@@ -460,6 +792,26 @@ Scope {
     }
 
     Win98TipWindow {
+        desktop: desktop
+        taskbar: taskbar
+    }
+
+    // Shut Down Myoko over the whole screen's checker, the taskbar too.
+    Win98ShutDownScreen {
+        id: shutDownScreen
+        desktop: desktop
+    }
+
+    // Held Super+Tab.
+    Win98CoolSwitch {
+        id: coolSwitch
+        desktop: desktop
+        taskbar: taskbar
+    }
+
+    // A volume or brightness change.
+    Win98VolumePopup {
+        id: volumePopup
         desktop: desktop
         taskbar: taskbar
     }

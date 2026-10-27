@@ -87,6 +87,27 @@ Scope {
         return hider.run(WindowHide.showAll(hider.state, hider.rows, fallbackPage));
     }
 
+    // Win98: Minimize All Windows on one screen; Restore one window (its
+    // app's other windows stay hidden), focused in the same batch when
+    // focus is true, then `after` (one more dispatch, such as maximize); a
+    // minimized window's Move to Page changes only where Restore will put
+    // it.
+    function hideScreen(screenName) {
+        if (!screenName) return 0;
+        return hider.run(WindowHide.hideScreen(hider.state, hider.rows, screenName));
+    }
+    function showWindow(address, fallbackPage, focus, after) {
+        if (!address) return 0;
+        let f = focus ? 'dispatch hl.dsp.focus({ window = "address:0x' + WindowHide.key(address) + '" })' : "";
+        if (after) f = f === "" ? "dispatch " + after : f + " ; dispatch " + after;
+        return hider.run(WindowHide.showWindow(hider.state, hider.rows, address, fallbackPage), f);
+    }
+    function setHome(address, page) {
+        hider.state = WindowHide.setHome(hider.state, hider.rows, address, page);
+        hider.save();
+    }
+    function homeOf(address) { return WindowHide.homeOf(hider.state, address); }
+
     function isHidden(row) {
         return !!row && WindowHide.isHiddenWorkspace(row.workspace);
     }

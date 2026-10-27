@@ -130,6 +130,29 @@ function cycleStart(rows, mru, names) {
     return { order: order, base: base < 0 ? 0 : base };
 }
 
+// The same cycle over windows, not apps (Win98's Cool Switch, as Alt+Tab
+// stepped through windows): every live window in the order before the
+// quick press, hidden ones included, starting from the window the quick
+// press reached. order holds window keys; cycleTarget reads it alike.
+function windowCycleStart(rows, mru) {
+    var live = {}, liveOrder = [];
+    for (var i = 0; i < (rows || []).length; i++) {
+        var k = key(rows[i].address);
+        if (k !== "" && !live[k]) { live[k] = true; liveOrder.push(k); }
+    }
+    var before = [];
+    for (var j = 0; j < (mru || []).length; j++) {
+        var m = key(mru[j]);
+        if (live[m] && before.indexOf(m) < 0) before.push(m);
+    }
+    // Windows the MRU does not know yet follow, in Hyprland's order.
+    for (var n = 0; n < liveOrder.length; n++) if (before.indexOf(liveOrder[n]) < 0) before.push(liveOrder[n]);
+    var front = mru && mru.length > 0 ? key(mru[0]) : "";
+    if (before.length >= 2 && before[0] === front) { var t = before[0]; before[0] = before[1]; before[1] = t; }
+    var base = before.indexOf(front);
+    return { order: before, base: base < 0 ? 0 : base };
+}
+
 // The target app for a position (1 = the app the quick press reached).
 function cycleTarget(cycle, position) {
     if (!cycle || !cycle.order || cycle.order.length === 0) return "";

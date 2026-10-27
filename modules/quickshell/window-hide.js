@@ -133,6 +133,11 @@ function hideWindow(state, rows, address) {
     return hide(state, rows, function (r) { return k !== "" && key(r.address) === k; });
 }
 
+// Every shown window on one screen: Win98's Minimize All Windows.
+function hideScreen(state, rows, screen) {
+    return hide(state, rows, function (r) { return r.screen === screen; });
+}
+
 // Mac OS "Hide Others", per screen: every other app's windows on `screen`.
 // The same app's windows on another screen, and other screens, stay.
 function hideOthers(state, rows, appId, screen) {
@@ -162,6 +167,34 @@ function showApp(state, rows, appId, fallbackPage) {
 
 function showAll(state, rows, fallbackPage) {
     return show(state, rows, function () { return true; }, fallbackPage);
+}
+
+// One window: Win98's Restore (a minimized window's taskbar button). The
+// rest of its app stays hidden.
+function showWindow(state, rows, address, fallbackPage) {
+    var k = key(address);
+    return show(state, rows, function (r) { return k !== "" && key(r.address) === k; }, fallbackPage);
+}
+
+// Where a window goes when it is shown: its recorded page, or null.
+function homeOf(state, address) {
+    var e = state && state.windows ? state.windows[key(address)] : null;
+    return e && e.page > 0 ? e.page : null;
+}
+
+// Give a hidden window another home page without showing it (Win98's
+// Move to Page on a minimized window). A window the state does not know
+// gets an entry. Returns the new state; nothing moves.
+function setHome(state, rows, address, page) {
+    var out = clone(state), k = key(address);
+    if (k === "" || !(page > 0)) return out;
+    var row = null;
+    for (var i = 0; i < (rows || []).length; i++) if (key(rows[i].address) === k) row = rows[i];
+    if (!row || !hidden(row)) return out;
+    var e = out.windows[k] || { app: row.appId || "", page: null, screen: row.screen || "", title: row.title || "" };
+    e.page = Math.floor(page);
+    out.windows[k] = e;
+    return out;
 }
 
 // One hyprctl --batch string for a list of moves. follow = false keeps the

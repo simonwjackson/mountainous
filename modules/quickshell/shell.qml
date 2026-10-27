@@ -150,6 +150,41 @@ ShellRoot {
         return Hyprland.workspaces.values.map(function (w) { return w.id; }).filter(function (id) { return id > 0; });
     }
 
+    // The page a screen shows, or -1 while Hyprland has not said.
+    function shownPageOn(name) {
+        const m = Hyprland.monitors.values.find(function (x) { return x.name === name; });
+        return m && m.activeWorkspace ? m.activeWorkspace.id : -1;
+    }
+
+    // The window menu for one window, on its screen's Desktop (windows menu
+    // IPC). address: hex without 0x, or "" for the focused window; x, y: the
+    // menu's top-left in global logical px, or -1, -1 for the window's own
+    // top-left (Hyprland's at: the client's corner, just under its caption).
+    // Anything that is not a live window is ignored.
+    function windowMenu(address, x, y) {
+        const given = String(address || "");
+        if (given !== "" && !/^(0x)?[0-9a-fA-F]+$/.test(given)) return;
+        let r = null;
+        if (given === "") {
+            const t = Hyprland.activeToplevel;
+            r = t && t.address ? root.rowFor(t.address) : null;
+        } else {
+            r = root.rowFor(given);
+        }
+        if (!r) return;
+        const screen = Quickshell.screens.find(function (s) { return s.name === r.screen; }) || root.focusedScreen();
+        if (!screen) return;
+        let gx = x, gy = y;
+        if (x < 0 && y < 0) {
+            // Not reported yet: the screen's corner.
+            gx = r.x !== undefined ? r.x : screen.x;
+            gy = r.y !== undefined ? r.y : screen.y;
+        }
+        const desktop = screen ? root.desktops[screen.name] : null;
+        if (desktop && typeof desktop.windowMenu === "function")
+            desktop.windowMenu(r.address, Math.round(gx - screen.x), Math.round(gy - screen.y));
+    }
+
     // Kamoi Meta+I hides the top bar and the dock together.
     property bool chromeVisible: true
     property bool chromeAccessVisible: false
@@ -209,6 +244,9 @@ ShellRoot {
             const t = Hyprland.activeToplevel;
             if (t && t.address) windowHider.hideWindow(t.address);
         }
+        // A Win98 caption's icon and Alt+Space (hyprbars, hyprland.lua):
+        // the window menu at x, y. See windowMenu above.
+        function menu(address: string, x: int, y: int): void { root.windowMenu(address, x, y); }
     }
 
     IpcHandler {

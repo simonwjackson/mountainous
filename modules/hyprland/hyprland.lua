@@ -537,13 +537,14 @@ end
 -- from, with nothing drawn.
 --
 -- Held: with Super still down, each further Tab steps through the apps in
--- most recently used order on the Platinum Application menu (Shift+Tab
--- steps back), and releasing Super switches to the app it is on. A repeat
+-- most recently used order on the Platinum Application menu, or through
+-- the windows in Win98's Cool Switch box (Shift+Tab steps back), and
+-- releasing Super switches to the one it is on. A repeat
 -- timer watches for Super going up (hl.is_key_down), because a release
 -- bind on Super_L would also fire after every other Super chord. Each
 -- message carries the position and a rising number, so two qs processes
 -- that arrive out of order cannot undo a commit (app-model.js accept()).
--- A theme without the menu ignores the messages; the quick press is the
+-- A theme without a cycle() ignores the messages; the quick press is the
 -- same under every theme.
 local app_cycle = nil
 local app_cycle_seq = os.time() * 1000
@@ -877,8 +878,9 @@ hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle
 -- namespace, then B opens Bluetooth, W opens Wi-Fi, S opens Sound, L opens
 -- Brightness, C opens Cloud, D opens Disks, F toggles the Fleet window, R
 -- opens Remote builds on hosts that show them, or N opens Notifications
--- (Platinum only; under another desktop theme N passes through as before).
--- The top bar shows the available keys while the submap is active. Escape
+-- (Platinum and Win98; under another desktop theme N passes through as
+-- before). The top bar or the tray shows the available keys while the
+-- submap is active. Escape
 -- or three seconds of inactivity cancels it.
 local topbar_access_timer = nil
 hl.bind(mod .. " + O", function()
@@ -932,10 +934,11 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open disk"))
     hl.bind("F", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
     hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
-    -- Win98 keeps its own chord letters (its tray shows no N), so N opens
-    -- Notifications only under Platinum.
+    -- Both desktop themes draw N (Platinum's bar, Win98's tray); under any
+    -- other theme N passes through.
     hl.bind("N", function()
-        if desktop_theme_name() ~= "platinum" then return { ok = false } end
+        local theme = desktop_theme_name()
+        if theme ~= "platinum" and theme ~= "win98" then return { ok = false } end
         hl.exec_cmd("qs -c mountainous ipc call chrome open ntf")
         return { ok = true }
     end, { auto_consuming = true })

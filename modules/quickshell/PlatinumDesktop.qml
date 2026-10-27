@@ -240,6 +240,13 @@ Scope {
         desktop.stripMenuBottom = bottom;
         MenuState.open("strip", screen, x);
     }
+    // The windows menu IPC (shell.qml windowMenu): that window's tile menu,
+    // rising from the point (x, y in this screen's logical px), as from
+    // its tile. Platinum's title bars never send it; Alt+Space is Win98's.
+    function windowMenu(address, x, y) {
+        if (!desktop.active) return;
+        desktop.openStripMenu(desktop.screen, AppModel.key(address), Math.max(0, x), Math.max(0, y));
+    }
     function stripMenuOpen(screen, address) {
         return MenuState.current === "strip" && MenuState.screen === screen && desktop.stripMenuAddress === address;
     }

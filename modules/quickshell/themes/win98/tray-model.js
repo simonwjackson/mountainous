@@ -10,7 +10,7 @@
 var ORDER = ["dict", "bt", "wifi", "vol", "bri", "oci", "disk", "fleet", "builder", "ntf", "bat"];
 
 // The Super+O chord's keys (hyprland.lua topbar-access submap).
-var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R" };
+var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" };
 
 var LABEL = {
     start: "Start", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",

@@ -113,4 +113,27 @@ const many = Array.from({ length: 60 }, (_, i) => row("m" + i, "app" + (i % 3), 
 const big = H.hideOthers(H.empty(), many, "app0", "eDP-1");
 assert.equal(big.moves.length, 40);
 assert.equal(Object.keys(big.state.windows).length, 40);
-console.log("window-hide: hide, show, restart, hide others per screen, adoption, bad files pass");
+// ---- Win98: Minimize All on one screen, Restore one window, Move to Page
+// while minimized
+const all = H.hideScreen(H.empty(), rows, "eDP-1");
+assert.deepEqual(plain(all.moves.map((m) => m.address)), ["a1", "a2", "a3", "a4"],
+    "every shown window on this screen; DP-2 and the between-pages window stay");
+const hid = [row("w1", "term", -98, "eDP-1", { workspace: "special:hidden-term" }),
+    row("w2", "term", -98, "eDP-1", { workspace: "special:hidden-term" }),
+    row("w3", "zed", 2, "eDP-1")];
+let st = { version: 1, windows: { w1: { app: "term", page: 3, screen: "eDP-1", title: "" }, w2: { app: "term", page: 1, screen: "eDP-1", title: "" } } };
+const restoreOne = H.showWindow(st, hid, "0xw1", 5);
+assert.deepEqual(plain(restoreOne.moves), [{ address: "w1", workspace: 3 }], "only that window, to its home page");
+assert.deepEqual(Object.keys(restoreOne.state.windows), ["w2"], "the app's other window stays hidden");
+assert.equal(H.showWindow(st, hid, "w3", 5).moves.length, 0, "a shown window does not move");
+assert.equal(H.showWindow(st, hid, "", 5).moves.length, 0);
+assert.equal(H.homeOf(st, "0xw1"), 3);
+assert.equal(H.homeOf(st, "w3"), null);
+st = H.setHome(st, hid, "w1", 7);
+assert.equal(H.homeOf(st, "w1"), 7, "Move to Page on a minimized window sets its home");
+assert.deepEqual(plain(H.showWindow(st, hid, "w1", 5).moves), [{ address: "w1", workspace: 7 }]);
+assert.equal(H.homeOf(H.setHome(st, hid, "w3", 4), "w3"), null, "a shown window has no home to set");
+assert.equal(H.homeOf(H.setHome(st, hid, "w1", 0), "w1"), 7, "page 0 is ignored");
+const adoptedHome = H.setHome(H.empty(), hid, "w2", 2);
+assert.deepEqual(plain(adoptedHome.windows.w2), { app: "term", page: 2, screen: "eDP-1", title: "term w2" });
+console.log("window-hide: hide, show, restart, hide others per screen, adoption, bad files, Win98 minimize/restore pass");

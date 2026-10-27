@@ -93,4 +93,57 @@ const many = Array.from({ length: 52 }, (_, i) => row("m" + i, "app" + (i % 9), 
 const mm = A.reconcile([], many);
 assert.equal(A.apps(many, mm, "m0", {}, {}).length, 9);
 assert.equal(A.appOrder(many, mm, {}).length, 9);
-console.log("app-model: MRU, grouping, recent window, cycle order and stale messages pass");
+// ---- window cycling (Win98's Cool Switch): windows, not apps
+// Before the quick press: w2 (Firefox) in front, then w3, w5, w1, w4, w6, w7.
+// The quick press focused w3; position 1 is w3, 2 the next window after it.
+let wc = A.windowCycleStart(rows, afterQuick);
+assert.deepEqual(plain(wc.order), ["w2", "w3", "w5", "w1", "w4", "w6", "w7"], "the window order before the quick press");
+assert.equal(wc.base, 1);
+assert.equal(A.cycleTarget(wc, 1), "w3");
+assert.equal(A.cycleTarget(wc, 2), "w5", "another window of the same app is its own stop");
+assert.equal(A.cycleTarget(wc, 5), "w6", "a hidden window takes part");
+assert.equal(A.cycleTarget(wc, 7), "w2", "wraps to the window the quick press left");
+assert.equal(A.cycleTarget(wc, 0), "w2", "Shift+Tab back past the start");
+assert.equal(A.cycleTarget(wc, -1), "w7");
+// Closed windows leave the order; unknown ones join at the end; 0x is dropped.
+wc = A.windowCycleStart(rows.filter((r) => r.address !== "w5"), ["0xw3", "gone", "w2"]);
+assert.deepEqual(plain(wc.order), ["w2", "w3", "w1", "w4", "w6", "w7"]);
+assert.equal(A.cycleTarget(wc, 2), "w1");
+// One window, and none.
+wc = A.windowCycleStart([row("w1", "ghostty", 1)], ["w1"]);
+assert.deepEqual(plain(wc), { order: ["w1"], base: 0 });
+assert.equal(A.cycleTarget(wc, 3), "w1");
+assert.equal(A.cycleTarget(A.windowCycleStart([], []), 2), "");
+assert.equal(A.windowCycleStart(rows, []).base, 0, "no MRU: the first live window");
+
+// ---- out-of-order messages: the shell's guard (shell.qml cycleChrome) in
+// front of a window cycle. Two qs processes can deliver hyprland.lua's
+// numbered messages in any order; a step older than the commit must not
+// reopen or move the finished cycle.
+function runCycle(messages) {
+    let last = 0, cycle = null, target = "", committed = "";
+    const seen = [];
+    for (const m of messages) {
+        if (!A.accept(last, m.seq)) { seen.push("stale " + m.seq); continue; }
+        last = m.seq;
+        if (m.action === "cancel") { cycle = null; target = ""; seen.push("cancel"); continue; }
+        if (!cycle) cycle = A.windowCycleStart(rows, afterQuick);
+        target = A.cycleTarget(cycle, m.position);
+        if (m.action === "commit") { committed = target; cycle = null; }
+        seen.push(m.action + " " + target);
+    }
+    return { committed, open: cycle !== null, seen };
+}
+let run = runCycle([{ action: "step", position: 2, seq: 11 }, { action: "step", position: 3, seq: 12 }, { action: "commit", position: 3, seq: 13 }]);
+assert.equal(run.committed, "w1");
+assert.equal(run.open, false);
+run = runCycle([{ action: "step", position: 2, seq: 11 }, { action: "commit", position: 3, seq: 13 }, { action: "step", position: 3, seq: 12 }]);
+assert.equal(run.committed, "w1", "the commit carries the final position");
+assert.equal(run.open, false, "the late step does not open a new cycle");
+assert.deepEqual(run.seen, ["step w5", "commit w1", "stale 12"]);
+run = runCycle([{ action: "commit", position: 2, seq: 21 }, { action: "step", position: 2, seq: 20 }]);
+assert.deepEqual(run.seen, ["commit w5", "stale 20"], "a step that arrives after its commit is dropped");
+run = runCycle([{ action: "step", position: 2, seq: 31 }, { action: "cancel", position: 0, seq: 33 }, { action: "commit", position: 2, seq: 32 }]);
+assert.equal(run.committed, "", "a commit older than the cancel is dropped");
+assert.equal(run.open, false);
+console.log("app-model: MRU, grouping, recent window, cycle order, window cycle and stale messages pass");

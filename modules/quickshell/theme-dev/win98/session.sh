@@ -30,9 +30,14 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE SWAYSOCK
 for helper in oci-egress-status storage-health-status nix-builder-gate; do
   printf '#!/bin/sh\nexec sleep 100000\n' > "$session_work/bin/$helper"
 done
-for helper in mountainous-brightness hyprctl hypr-scale notify-send wpctl; do
+# The session commands (Lock, Stand by, Restart, Shut down, Log off) and
+# Launcher's scopes only log: nothing in a session may lock, suspend,
+# reboot, power off, log out or start an app.
+for helper in mountainous-brightness hyprctl hypr-scale notify-send wpctl loginctl systemctl systemd-run; do
   printf '#!/bin/sh\necho "%s $*" >> "%s/commands.log"\n' "$helper" "$session_work" > "$session_work/bin/$helper"
 done
+# System Properties' NixOS line: the parity mock's values.
+printf '#!/bin/sh\necho %s\n' "'{\"nixosVersion\":\"26.05.20260313.c06b4ae\"}'" > "$session_work/bin/nixos-version"
 # The Fleet views' data: beszel-status answers from the mock's fixtures
 # (beszel-stub.js); the harness picks the fixture (fleet-fixture).
 cat > "$session_work/bin/beszel-status" <<EOF

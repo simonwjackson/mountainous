@@ -10,7 +10,10 @@
 #     the bar, scrolling only when it still does not fit;
 #   - Display Properties at 160x800, 160x80 and 1200x400: the dialog and
 #     OK, Cancel and Apply inside the screen; the focused Apply scrolled
-#     into view.
+#     into view;
+#   - the window and taskbar menus, Shut Down Myoko, System Properties, the
+#     Cool Switch and the volume pop-up at 360x640, 800x480, 1280x360 and
+#     1920x1200: inside the screen, above the bar, or scrolling.
 #
 #   modules/quickshell/theme-dev/win98/geometry.sh <shell dir> [work dir]
 #
@@ -112,6 +115,43 @@ for size in 160x800 160x80 1200x400; do
   w98 set pk-apply >/dev/null; settle; sleep 0.4
   check "Display Properties at ${size}: the focused Apply is in view" \
     'g["picker"] and ins(g["picker"]["pickerApply"], y1=g["picker"]["area"])'
+  session_stop
+done
+
+# The taskbar and session pieces, from 360x640 up (nothing may become
+# unreachable): the window menu with its Move to cascade open and the
+# taskbar menu inside the screen, above the bar; Shut Down Myoko with its
+# choices, OK and Cancel inside the screen (or its body scrolls with the
+# caption kept); System Properties with OK inside, or scrolling; the Cool
+# Switch box and the pop-up inside the room above the bar.
+ROOM='y1=H - g["places"]["barHeight"] + e'
+for size in 360x640 800x480 1280x360 1920x1200; do
+  w=${size%x*}; h=${size#*x}
+  session "$w" "$h"
+  for state in tb-normal tb-many; do
+    w98 set "$state" >/dev/null; settle
+    w98 windowMenu 1001 $(( w - 10 )) $(( h - 60 )) >/dev/null; sleep 0.5; w98 cascade 1 >/dev/null; sleep 0.5
+    check "window menu and Move to at ${size} ($state): every panel inside, above the bar" \
+      "len(g['panels']) == 2 and all(ins(p, $ROOM) for p in g['panels'])"
+    w98 closeAll >/dev/null; sleep 0.2
+    w98 taskbarMenu $(( w - 4 )) >/dev/null; sleep 0.5
+    check "taskbar menu at ${size} ($state): inside, above the bar" "len(g['panels']) == 1 and all(ins(p, $ROOM) for p in g['panels'])"
+    w98 closeAll >/dev/null; sleep 0.2
+  done
+  w98 set tb-many >/dev/null; settle
+  w98 openMenu shutdown >/dev/null; sleep 0.8
+  check "Shut Down Myoko at ${size}: the dialog inside; OK, Cancel and the choices inside or the body scrolls" \
+    'g.get("shutdown") and ins(g["shutdown"]) and (g["shutdown"]["scrolls"] or all(g["shutdown"][n] and ins(g["shutdown"][n]) for n in ("shutDownOk", "shutDownCancel", "shutDown-standby", "shutDown-logoff")))'
+  w98 closeAll >/dev/null; sleep 0.2
+  w98 openMenu sysprops >/dev/null; sleep 0.8
+  check "System Properties at ${size}: inside above the bar; OK inside or the body scrolls" \
+    "g['window'] and ins(g['window'], $ROOM) and (g['window']['scrolls'] or ins(g['window'].get('systemOk'), $ROOM))"
+  w98 closeAll >/dev/null; sleep 0.2
+  w98 cycle step 2 $(( $(date +%s%N) / 1000000 )) >/dev/null; sleep 0.6
+  check "Cool Switch at ${size} (12 windows): inside, above the bar" "g.get('cool') and ins(g['cool'], $ROOM)"
+  w98 cycle cancel 0 $(( $(date +%s%N) / 1000000 )) >/dev/null; sleep 0.3
+  sleep 2.2; w98 setVolume $(( 30 + w % 50 )) >/dev/null; sleep 0.4
+  check "volume pop-up at ${size}: inside, above the bar" "g.get('popup') and ins(g['popup'], $ROOM)"
   session_stop
 done
 

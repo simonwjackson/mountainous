@@ -10,6 +10,8 @@ import Quickshell.Networking
 import QtQuick
 import "panels"
 import "lanes.js" as Lanes
+import "app-model.js" as AppModel
+import "window-hide.js" as WindowHide
 import "win98-dev/states.js" as States
 import "win98-dev/find-states.js" as FindStates
 
@@ -47,33 +49,124 @@ ShellRoot {
         function openMenu(name, screen) { MenuState.open(name, screen, -1); }
         function toggleMenu(name, screen) { MenuState.toggle(name, screen, -1); }
         function closeMenu(name) { if (MenuState.current === name) MenuState.close(); }
+        // shell.qml's window rows and actions over the fixture's windows
+        // (the hide/show owner below moves them between workspaces).
+        readonly property var windowRows: root.toplevels.map(function (t) { return root.rowOf(t); })
+        readonly property var mru: root.mru
+        readonly property var hider: hiderStub
+        function addressOf(t) { return t && t.lastIpcObject ? t.lastIpcObject.address : ""; }
+        function rowFor(address) { const k = AppModel.key(address); return windowRows.find(function (r) { return r.address === k; }) || null; }
+        function activate(address) { const i = root.indexOf(address); if (i >= 0) { root.focus(i); root.note("activate " + i); } }
+        function closeWindow(address) { const i = root.indexOf(address); if (i >= 0) root.note("close " + i); }
+        function moveToPage(address, page) { const i = root.indexOf(address); if (i < 0) return; root.note("move " + i + " " + page); const t = root.toplevels[i]; t.workspace = root.pageWs(page, t.workspace && t.workspace.monitor ? t.workspace.monitor.name : ""); }
+        function pageIds() { return root.toplevels.map(function (t) { return t.workspace ? t.workspace.id : -1; }).filter(function (id) { return id > 0; }); }
+        function shownPageOn(name) { return root.dd.showingPage; }
+    }
+
+    // ---- WindowHider's public shape, with window-hide.js's own rules; its
+    // moves land on the fixture's windows instead of Hyprland.
+    QtObject {
+        id: hiderStub
+        property var state: WindowHide.empty()
+        readonly property int hiddenCount: WindowHide.hiddenRows(shellStub.windowRows).length
+        function run(result, focusIndex) {
+            const before = hiderStub.state;
+            hiderStub.state = result.state;
+            for (const m of result.moves) {
+                const i = root.indexOf(m.address);
+                if (i < 0) continue;
+                const t = root.toplevels[i];
+                const home = before.windows[WindowHide.key(m.address)];
+                if (typeof m.workspace === "number") { t.workspace = root.pageWs(m.workspace, home ? home.screen : ""); root.note("show " + i + " " + m.workspace); }
+                else { t.workspace = { id: -98, name: m.workspace, active: false, monitor: t.workspace ? t.workspace.monitor : root.monitor }; t.activated = false; root.note("hide " + i); }
+            }
+            if (focusIndex >= 0) root.focus(focusIndex);
+            return result.moves.length;
+        }
+        function hideWindow(a) { return run(WindowHide.hideWindow(state, shellStub.windowRows, a), -1); }
+        function hideApp(id) { return run(WindowHide.hideApp(state, shellStub.windowRows, id), -1); }
+        function hideScreen(name) { return run(WindowHide.hideScreen(state, shellStub.windowRows, name), -1); }
+        function hideOthers(id, name) { return run(WindowHide.hideOthers(state, shellStub.windowRows, id || "", name || ""), -1); }
+        function showWindow(a, page, focus, after) {
+            const n = run(WindowHide.showWindow(state, shellStub.windowRows, a, page), focus ? root.indexOf(a) : -1);
+            if (after) root.note("after " + after);
+            return n;
+        }
+        function showApp(id, page, a) { return run(WindowHide.showApp(state, shellStub.windowRows, id, page), a ? root.indexOf(a) : -1); }
+        function showAll(page) { return run(WindowHide.showAll(state, shellStub.windowRows, page), -1); }
+        function setHome(a, page) { state = WindowHide.setHome(state, shellStub.windowRows, a, page); root.note("home " + root.indexOf(a) + " " + page); }
+        function homeOf(a) { return WindowHide.homeOf(state, a); }
+        function isHidden(row) { return !!row && WindowHide.isHiddenWorkspace(row.workspace); }
     }
 
     // ---- windows: Hyprland toplevels' shape (lanes.js)
     property var toplevels: []
+    property var monitor: ({ name: "" })
+    property var monitors: ({})
+    property var pages: ({})
+    // The state's windows: the Find states' own lists, else the mock's.
+    function windowList() { return FindStates.windowsFor(root.stateId) || root.dd.windows; }
+    // Most recently used first: the focused window, then the fixture's order.
+    property var mru: []
+    function rowOf(t) {
+        const ws = t.workspace;
+        const o = t.lastIpcObject || {};
+        return { address: AppModel.key(o.address), appId: t.wayland ? t.wayland.appId : "", title: t.title || "",
+            page: ws ? ws.id : -1, workspace: ws ? ws.name : "", screen: ws && ws.monitor ? ws.monitor.name : "",
+            x: o.at ? o.at[0] : undefined, y: o.at ? o.at[1] : undefined, toplevel: t };
+    }
+    function indexOf(address) {
+        const k = AppModel.key(address);
+        return root.toplevels.findIndex(function (t) { return AppModel.key(t.lastIpcObject.address) === k; });
+    }
+    // One workspace object per screen and page, as Hyprland has.
+    function pageWs(page, screen) {
+        const name = screen || root.monitor.name;
+        if (!root.monitors[name]) {
+            const m = Object.assign({}, root.monitors);
+            m[name] = name === root.monitor.name ? root.monitor : { name: name };
+            root.monitors = m;
+        }
+        const key = name + ":" + page;
+        if (!root.pages[key]) {
+            const next = Object.assign({}, root.pages);
+            next[key] = { id: page, name: String(page), active: page === root.dd.showingPage, monitor: root.monitors[name] };
+            root.pages = next;
+        }
+        return root.pages[key];
+    }
+    function focus(i) {
+        root.toplevels.forEach(function (t, j) { t.activated = j === i; });
+        if (root.toplevels[i]) root.mru = AppModel.touch(root.mru, root.toplevels[i].lastIpcObject.address);
+    }
     function appId(icon) {
         return ({ term: "com.mitchellh.ghostty", chromium: "chromium-browser", signal: "signal", zed: "dev.zed.Zed",
             obs: "com.obsproject.Studio", tx: "transmission-gtk", firefox: "firefox", sun: "sunshine", sync: "syncthing" })[icon] || icon;
     }
     function buildWindows() {
         const name = root.screen0 ? root.screen0.name : "";
-        const monitors = {};
-        const pages = {};
-        root.toplevels = (FindStates.windowsFor(root.stateId) || root.dd.windows).map(function (w, i) {
-            const screen = w.screen || name;
-            const monitor = monitors[screen] || (monitors[screen] = { name: screen });
-            const key = screen + ":" + w.page;
-            const ws = pages[key] || (pages[key] = { id: w.page, active: w.page === root.dd.showingPage, monitor: monitor });
-            return root.obj({ title: w.title, activated: !!w.focused, urgent: !!w.urgent, workspace: ws,
-                lastIpcObject: { address: "0x" + (1000 + i), at: w.at, size: w.size },
+        root.monitor = { name: name };
+        root.monitors = ({});
+        root.pages = ({});
+        hiderStub.state = WindowHide.empty();
+        // Each window stands where its fixture says (Hyprland's at), or in
+        // a column of the screen, 600 px wide, 40 px down, so the windows
+        // IPC has a corner to use. A fixture may put a window on another
+        // screen (the Find window's two-screen states).
+        root.toplevels = root.windowList().map(function (w, i) {
+            return root.obj({ title: w.title, activated: !!w.focused, urgent: !!w.urgent, workspace: root.pageWs(w.page, w.screen || name),
+                lastIpcObject: { address: "0x" + (1000 + i), at: w.at || [4 + (i % 3) * 600, 40], size: w.size, fullscreen: w.max ? 1 : 0 },
                 wayland: root.handle(w.appId || root.appId(w.icon), i) });
         });
+        const order = root.toplevels.map(function (t) { return AppModel.key(t.lastIpcObject.address); });
+        const f = root.windowList().findIndex(function (w) { return !!w.focused; });
+        root.mru = f >= 0 ? [order[f]].concat(order.filter(function (k, j) { return j !== f; })) : order;
     }
     // A Wayland toplevel handle whose activate() and close() the log records.
     function handle(appId, i) {
         const o = root.obj({ appId: appId },
             "signal didActivate()\nsignal didClose()\nfunction activate() { didActivate(); }\nfunction close() { didClose(); }");
-        o.didActivate.connect(function () { root.note("activate " + i); });
+        o.didActivate.connect(function () { root.focus(i); root.note("activate " + i); });
         o.didClose.connect(function () { root.note("close " + i); });
         return o;
     }
@@ -301,7 +394,7 @@ ShellRoot {
         readonly property var omniBar: omni
         readonly property var builderGate: gate
         readonly property var beszel: fleetData
-        readonly property var frontWindow: null
+        readonly property var frontWindow: root.toplevels.find(function (t) { return t.activated; }) || null
         readonly property date now: new Date(2026, 9, 22, 16, 51)
     }
 
@@ -336,9 +429,40 @@ ShellRoot {
         return out;
     }
 
+    // Recent Applications (Launcher.recent's shape) and the pinned web apps
+    // (desktop entries webapp-<id>), as the parity mock lists them.
+    property bool recentEmpty: false
+    readonly property var recentFixture: [
+        { id: "dev.zed.Zed", name: "Zed", icon: "dev.zed.Zed", kind: "app", argv: ["zeditor"], lastLaunched: 5 },
+        { id: "webapp-ytmusic", name: "YouTube Music", icon: "webapp-ytmusic", kind: "webapp", argv: ["chromium", "--app=https://music.youtube.com"], lastLaunched: 4 },
+        { id: "signal", name: "Signal", icon: "signal", kind: "app", argv: ["signal-desktop"], lastLaunched: 3 },
+        { id: "com.mitchellh.ghostty", name: "Ghostty", icon: "com.mitchellh.ghostty", kind: "app", argv: ["ghostty"], lastLaunched: 2 },
+        { id: "com.obsproject.Studio", name: "OBS Studio", icon: "com.obsproject.Studio", kind: "app", argv: ["obs"], lastLaunched: 1 }
+    ]
+    readonly property var webAppFixture: [
+        { id: "github", name: "GitHub", icon: "webapp-github", entry: { command: ["chromium", "--app=https://github.com"] } },
+        { id: "ytmusic", name: "YouTube Music", icon: "webapp-ytmusic", entry: { command: ["chromium", "--app=https://music.youtube.com"] } },
+        { id: "gmail", name: "Gmail", icon: "webapp-gmail", entry: { command: ["chromium", "--app=https://mail.google.com"] } }
+    ]
+    // App names for naming pages (the fixture's own; DesktopEntries in a
+    // sandbox has none).
+    function seedNames() {
+        if (!root.desktop || !root.desktop.theme || root.desktop.theme.id !== "win98") return;
+        const names = {};
+        for (const w of root.windowList()) names[w.appId || root.appId(w.icon)] = w.app || w.title;
+        root.desktop.appNames = names;
+    }
+    function seedLists() {
+        root.seedNames();
+        if (!root.desktop || !root.desktop.theme || root.desktop.theme.id !== "win98") return;
+        root.desktop.recent = root.recentEmpty ? [] : root.recentFixture;
+        root.desktop.webApps = root.recentEmpty ? [] : root.webAppFixture;
+    }
+
     function apply(view) {
         const d = root.dd, p = root.st.p || {};
         root.buildWindows();
+        root.seedLists();
         // notifications
         const now = new Date(2026, 9, 22, 16, 51).getTime();
         notes.items = d.ntf.items.map(function (it, i) {
@@ -393,6 +517,7 @@ ShellRoot {
         }
         desk.battery = { present: d.bat.present, percent: d.bat.pct, charging: !!d.bat.charging, full: !!d.bat.full, onBattery: d.bat.onBattery };
         desk.apps = root.apps();
+        root.seedNames();
         // The view's state: hover, press, focus, tooltip, flash, drag.
         const id = function (c) { return c === "win1" ? "win1" : c; };
         const preview = {};
@@ -448,6 +573,8 @@ ShellRoot {
                 ? root.wifiDevice.networks.values.find(function (n) { return n.name === d.wifi.password; }) || null : null;
         }
     }
+    property real cycleSeq: 0
+    function volumeNow() { return sound.defaultSink ? String(Math.round(sound.defaultSink.audio.volume * 100)) : "-"; }
     property var pickerState: null
     Timer {
         interval: 300
@@ -527,6 +654,28 @@ ShellRoot {
                 out.window.natural = m.implicitHeight;
                 out.window.scrolls = !!m.scrolls;
             }
+            // The Shut Down dialog and its buttons, the Cool Switch box,
+            // the pop-up, and named controls inside the open window.
+            const named = function (top, n) {
+                if (!top) return null;
+                if (top.objectName === n && top.visible !== false) return top;
+                for (let i = 0; i < top.children.length; i++) { const f = named(top.children[i], n); if (f) return f; }
+                return null;
+            };
+            if (d.shutDownItem) {
+                out.shutdown = rect(d.shutDownItem);
+                out.shutdown.scrolls = !!d.shutDownItem.scrolls;
+                for (const n of ["shutDownOk", "shutDownCancel", "shutDown-standby", "shutDown-logoff"]) {
+                    const it = named(d.shutDownItem, n);
+                    out.shutdown[n] = it ? rect(it) : null;
+                }
+            }
+            if (m && out.window) for (const n of ["systemOk", "systemCancel", "systemFacts"]) {
+                const it = named(m, n);
+                if (it) out.window[n] = rect(it);
+            }
+            if (d.coolSwitchItem) out.cool = rect(d.coolSwitchItem);
+            if (d.popupItem) out.popup = rect(d.popupItem);
             const v = root.findPicker();
             if (v) {
                 const find = function (item, name) {
@@ -553,7 +702,7 @@ ShellRoot {
         function openMenu(name: string): string { MenuState.open(name, root.screen0, -1); return MenuState.current; }
         function openPicker(): string { ThemePicker.open(root.screen0); return String(ThemePicker.visible); }
         function closeAll(): string { MenuState.close(); ThemePicker.close(); return "closed"; }
-        function volume(): string { return sound.defaultSink ? String(Math.round(sound.defaultSink.audio.volume * 100)) : "-"; }
+        function volume(): string { return root.volumeNow(); }
         function picker(): string { return ThemePicker.visible ? "open" : "closed"; }
         function commands(): string { return root.log.join("|"); }
         // The Fleet views: a fixture, a Desktop method, a view setting, and
@@ -682,6 +831,154 @@ ShellRoot {
             const g = JSON.parse(findGeometry());
             const r = g.parts[name];
             return r ? Math.round(r.x + r.w / 2) + " " + Math.round(r.y + r.h / 2) : "";
+        }
+
+        // ---- the taskbar's windows, the window and taskbar menus, the
+        // session dialogs, the Cool Switch and the pop-up
+        function tasks(): string {
+            const d = root.desktop;
+            if (!d || !d.laneEntries) return "[]";
+            return JSON.stringify(d.laneEntries.map(function (e) {
+                return { i: root.indexOf(e.row.address), title: e.row.title, page: e.home, min: e.minimized, active: !!e.row.toplevel.activated };
+            }));
+        }
+        // shell.qml windowMenu's routing, for one screen at 0, 0.
+        function windowMenu(address: string, x: int, y: int): string {
+            const d = root.desktop;
+            if (address !== "" && !/^(0x)?[0-9a-fA-F]+$/.test(address)) return "invalid";
+            const t = address === "" ? root.toplevels.find(function (w) { return w.activated; }) : null;
+            const r = shellStub.rowFor(t ? t.lastIpcObject.address : address);
+            if (!r || !d) return "none";
+            d.windowMenu(r.address, x < 0 && y < 0 ? r.x : x, x < 0 && y < 0 ? r.y : y);
+            return "ok " + r.address;
+        }
+        function taskbarMenu(x: int): string { if (root.desktop) root.desktop.taskbarMenu(x, root.screen0.height - 28 * Win98Tokens.u); return MenuState.current; }
+        // shell.qml cycleChrome: numbered messages, stale ones dropped.
+        function cycle(action: string, position: int, seqText: string): string {
+            const seq = Number(seqText);
+            if (!AppModel.accept(root.cycleSeq, seq)) return "stale";
+            root.cycleSeq = seq;
+            if (root.desktop && typeof root.desktop.cycle === "function") root.desktop.cycle(action, position);
+            return root.desktop && root.desktop.cycleState ? "cycling " + root.desktop.cycleTarget : "idle";
+        }
+        function cycleState(): string {
+            const d = root.desktop;
+            const b = d ? d.coolSwitchItem : null;
+            return JSON.stringify({ target: d ? d.cycleTarget : "", open: !!(d && d.cycleState), order: d && d.cycleState ? d.cycleState.order : [],
+                box: b ? { x: b.mapToItem(null, 0, 0).x, y: b.mapToItem(null, 0, 0).y, w: b.width, h: b.height } : null });
+        }
+        function setVolume(v: int): string { const n = sound.defaultSink; if (n) n.audio.volume = v / 100; return root.volumeNow(); }
+        function setMuted(m: bool): string { const n = sound.defaultSink; if (n) n.audio.muted = m; return root.volumeNow(); }
+        function setBrightness(v: int): string { bri.level = v; return String(bri.level); }
+        function popup(): string {
+            const d = root.desktop;
+            const b = d ? d.popupItem : null;
+            const q = b ? b.mapToItem(null, 0, 0) : null;
+            return JSON.stringify({ id: d ? d.popupId : "", armed: d ? [d.volArmed, d.briArmed] : [],
+                box: b ? { x: q.x, y: q.y, w: b.width, h: b.height } : null });
+        }
+        function lists(which: string): string { root.recentEmpty = which === "empty"; root.seedLists(); return which; }
+        // The centre (or, with "rect:", the bounds) of an item by
+        // objectName on one of the Desktop's surfaces: menu (the open menu
+        // or window), shutdown, cool, popup.
+        function at(where: string, wanted: string): string {
+            const d = root.desktop;
+            if (!d) return "";
+            const rect = wanted.indexOf("rect:") === 0;
+            const name = rect ? wanted.slice(5) : wanted;
+            const top = where === "shutdown" ? d.shutDownItem : where === "cool" ? d.coolSwitchItem : where === "popup" ? d.popupItem : d.openItem;
+            const find = function (item) {
+                if (!item) return null;
+                if ((item.objectName === name || name === "") && item.visible !== false) return item;
+                for (let i = 0; i < item.children.length; i++) { const f = find(item.children[i]); if (f) return f; }
+                return null;
+            };
+            const it = find(top);
+            if (!it) return "";
+            const p = it.mapToItem(null, 0, 0);
+            if (rect) return JSON.stringify({ x: p.x, y: p.y, w: it.width, h: it.height, text: it.text !== undefined ? String(it.text) : "" });
+            return Math.round(p.x + it.width / 2) + " " + Math.round(p.y + it.height / 2);
+        }
+        // A Desktop action by name (captures): minimizeAll, minimizeOthers,
+        // restoreAll; and the Shut Down dialog's choice.
+        function perform(act: string): string { if (root.desktop) root.desktop.perform(act, 0, root.desktop.menuAddress); return act; }
+        function setShutChoice(id: string): string { if (root.desktop) root.desktop.shutChoice = id; return id; }
+        // Open the open menu's cascade at a top-level index (geometry.sh).
+        function cascade(index: int): string {
+            const m = root.desktop ? root.desktop.openItem : null;
+            if (!m || !m.setState) return "no menu";
+            m.setState([index], 0);
+            return "ok";
+        }
+        function reduced(on: bool): string { Win98Tokens.reducedMotion = on; return String(Win98Tokens.reducedMotion); }
+        // Every string the Win98 Desktop draws now (the taskbar, the open
+        // menu or window and its whole model, the Shut Down dialog, the Cool
+        // Switch, the pop-up, every taskbar control's tooltip), and the text
+        // drawn inside each page band's divider (which must be none).
+        function strings(): string {
+            const d = root.desktop;
+            if (!d) return "{}";
+            const out = [];
+            const walk = function (item) {
+                if (!item) return;
+                if (item.plain !== undefined && item.visible !== false && typeof item.plain === "string" && item.plain !== "") out.push(item.plain);
+                for (let i = 0; i < item.children.length; i++) walk(item.children[i]);
+            };
+            for (const top of [d.taskbarItem, d.openItem, d.shutDownItem, d.coolSwitchItem, d.popupItem]) walk(top);
+            const model = function (items) {
+                for (const it of items || []) {
+                    if (!it || it.separator) continue;
+                    out.push(Win98Tokens.plainText(it.text || ""));
+                    if (it.shortcut) out.push(it.shortcut);
+                    model(it.submenu);
+                }
+            };
+            if (d.openItem && d.openItem.model) model(d.openItem.model);
+            model(d.startModel);
+            model(d.windowMenuItems);
+            model(d.taskbarMenuItems);
+            const places = d.debugPlaces();
+            const tips = [];
+            for (const id in places) if (/^(win|page)\d|^[a-z]+$/.test(id) && typeof places[id] === "object" && "w" in places[id]) tips.push(d.tooltip(id));
+            const tb = d.taskbarItem;
+            const bandText = [];
+            for (const id in places) {
+                if (id.indexOf("page") !== 0 || typeof places[id] !== "object") continue;
+                // Text drawn over the divider's box, from the taskbar's items.
+                const p = places[id];
+                const inBox = [];
+                const look = function (item) {
+                    if (!item) return;
+                    if (item.plain !== undefined && item.visible !== false && item.plain !== "") {
+                        const q = item.mapToItem(null, 0, 0);
+                        const top = tb.mapToItem(null, 0, 0);
+                        if (q.x + item.width > p.x - 0.5 && q.x < p.x + p.w + 0.5 && q.y >= top.y + tb.height - places.barHeight - 0.5) inBox.push(item.plain);
+                    }
+                    for (let i = 0; i < item.children.length; i++) look(item.children[i]);
+                };
+                look(tb);
+                bandText.push({ id: id, tip: d.tooltip(id), text: inBox });
+            }
+            return JSON.stringify({ drawn: out, tips: tips, bands: bandText });
+        }
+        function shutChoice(): string { return root.desktop ? root.desktop.shutChoice : ""; }
+        // The items under a point of the open menu's window, top first (development).
+        function probe(x: int, y: int): string {
+            const m = root.desktop ? root.desktop.openItem : null;
+            const w = m ? m.Window.window : null;
+            if (!w) return "no window";
+            const out = [];
+            const walk = function (item, depth) {
+                for (let i = item.children.length - 1; i >= 0; i--) {
+                    const c = item.children[i];
+                    if (!c.visible) continue;
+                    const p = c.mapFromItem(null, x, y);
+                    if (p.x >= 0 && p.y >= 0 && p.x < c.width && p.y < c.height) out.push(depth + ":" + (c.objectName || String(c).split("(")[0]) + " z=" + c.z + " en=" + c.enabled);
+                    walk(c, depth + 1);
+                }
+            };
+            walk(w.contentItem, 0);
+            return out.join("\n");
         }
     }
 }

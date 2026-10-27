@@ -79,12 +79,20 @@ function shortTitle(title) {
     return t.length > 44 ? t.slice(0, 41) + "..." : t;
 }
 
-// windows: [{ title, page, icon }] in lane order.
+// windows: [{ title, page, icon, hint }] in lane order (by page). Pages are
+// never numbered on screen: a separator stands between two pages' windows.
+// hint goes in the shortcut column ("Minimized").
 function windows(list) {
     if (!list.length) return [{ text: "(No windows)", enabled: false }];
-    return list.map(function (w, i) {
-        return { text: literal(shortTitle(w.title)), icon: w.icon || "doc", shortcut: "Page " + w.page, action: "window", window: i };
-    });
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+        var w = list[i];
+        if (i > 0 && w.page !== list[i - 1].page) out.push({ separator: true });
+        var item = { text: literal(shortTitle(w.title)), icon: w.icon || "doc", action: "window", window: i };
+        if (w.hint) item.shortcut = w.hint;
+        out.push(item);
+    }
+    return out;
 }
 
 // The omni bar's commands, without the rows the picker owns (appearance and
@@ -111,9 +119,39 @@ function commands(rows) {
     return out.concat(tail);
 }
 
+// Favorites ▸: the pinned web apps (desktop entries webapp-<id>, from
+// modules/web-apps.nix), by name, each with its lettermark (a theme icon).
+// webApps: [{ id, name, icon }]; an item's webapp is the index into it.
+function favorites(webApps) {
+    var list = (webApps || []).map(function (a, i) { return { a: a, i: i }; })
+        .filter(function (x) { return x.a && (x.a.name || x.a.id); });
+    if (!list.length) return [{ text: "(Empty)", enabled: false }];
+    list.sort(function (x, y) { return String(x.a.name || x.a.id).toLowerCase() < String(y.a.name || y.a.id).toLowerCase() ? -1 : 1; });
+    return list.map(function (x) {
+        return { text: literal(x.a.name || x.a.id), themeIcon: x.a.icon || "", action: "webapp", webapp: x.i };
+    });
+}
+
+// Documents ▸: Recent Applications (Launcher.recent, most recent first, at
+// most 15), as Win98's Documents held the recent items. A web app says so
+// in the shortcut column. recent: [{ id, name, icon, kind }].
+function documents(recent) {
+    var out = [];
+    var list = recent || [];
+    for (var i = 0; i < list.length && out.length < 15; i++) {
+        var r = list[i];
+        if (!r || !(r.name || r.id)) continue;
+        var own = appIcon(r.id, r.name);
+        out.push({ text: literal(r.name || r.id), icon: own, themeIcon: own ? "" : (r.icon || ""),
+            shortcut: r.kind === "webapp" ? "web app" : "", action: "recent", recent: i });
+    }
+    return out.length ? out : [{ text: "(Empty)", enabled: false }];
+}
+
 function settings() {
     return [
         { text: "&Display...", icon: "display", action: "picker" },
+        { text: "S&ystem...", icon: "host", action: "system" },
         { separator: true },
         { text: "&Bluetooth", icon: "bluetooth-on", action: "open", control: "bt" },
         { text: "&Wi-Fi", icon: "wifi-4", action: "open", control: "wifi" },
@@ -138,11 +176,17 @@ function findMenu() {
 
 // taskbarList: what a bar too narrow for its tray holds (the tray
 // controls, the clock, the battery); empty while the bar has room.
-function top(programList, windowList, commandList, user, taskbarList) {
+// extra: { favorites, documents, host } (favorites() and documents()
+// lists; the host name for Lock).
+function top(programList, windowList, commandList, user, taskbarList, extra) {
+    var x = extra || {};
     var taskbar = taskbarList && taskbarList.length
         ? [{ text: "T&askbar", icon: "windows", submenu: taskbarList }] : [];
+    var host = x.host ? x.host.charAt(0).toUpperCase() + x.host.slice(1) : "";
     return [
         { text: "&Programs", icon: "programs", submenu: programList },
+        { text: "Fa&vorites", icon: "favorites", submenu: x.favorites || favorites([]) },
+        { text: "&Documents", icon: "documents", submenu: x.documents || documents([]) },
         { text: "&Windows", icon: "windows", submenu: windowList },
         { text: "&Commands", icon: "commands", submenu: commandList },
         { text: "&Settings", icon: "settings", submenu: settings() }
@@ -151,6 +195,8 @@ function top(programList, windowList, commandList, user, taskbarList) {
         { text: "&Find", icon: "find-large", submenu: findMenu() },
         { text: "&Run...", icon: "run", action: "run" },
         { separator: true },
-        { text: "&Log Off " + user + "...", icon: "logoff", action: "logoff" }
+        { text: host ? "Loc&k " + host : "Loc&k", icon: "lock-computer", action: "lock" },
+        { text: "&Log Off " + user + "...", icon: "logoff", action: "logoff" },
+        { text: "Sh&ut Down...", icon: "shutdown", action: "shutdown" }
     ]);
 }

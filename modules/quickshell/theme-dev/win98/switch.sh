@@ -2,8 +2,10 @@
 # Platinum <-> Win98, ten round trips each way, through the real
 # ThemeDesktop and theme-name file, then a broken Win98 that must roll
 # back. Before every swap a transient surface is open: a Start cascade, a
-# tray window or menu, or the picker (rotating), over the theme's Fleet
-# window or glance space (alternating). After each swap it asserts:
+# tray window or menu, or the picker, and under Win98 also the window menu,
+# the taskbar menu, Shut Down Myoko, System Properties, the Cool Switch
+# and the volume pop-up (rotating), over the theme's Fleet window or glance
+# space (alternating). After each swap it asserts:
 #
 # Part 1, a private headless sway session (sway reports the usable area):
 #   - the reserved edge: the workspace rectangle starts 28 px down for
@@ -17,7 +19,9 @@
 # theme's bars, plus the picker when it was open (the picker model is
 # shared across a swap by contract), and nothing else: no leaked menu,
 # cascade, tooltip, old bar, Fleet window (mountainous-fleet) or glance
-# space (mountainous-glance). Before every swap the old theme's Fleet window
+# space (mountainous-glance), Shut Down checker (mountainous-shutdown), Cool
+# Switch (mountainous-coolswitch) or pop-up (mountainous-popup). Before
+# every swap the old theme's Fleet window
 # or glance space is open and mapped. The same after the broken Win98's
 # rollback.
 #
@@ -53,16 +57,36 @@ open_fleet() {   # open_fleet <round>
 }
 
 # The transient surface open before a swap, by round. Win98 uses the
-# harness states; Platinum is opened through the shared MenuState and
-# ThemePicker. Prints "picker" when the picker is the one left open.
+# harness states, then (rounds 3 to 9) a window button's window menu, the
+# taskbar's own menu, Shut Down Myoko over its checker, System Properties,
+# the Cool Switch (held Super+Tab) and the volume pop-up; Platinum is
+# opened through the shared MenuState and ThemePicker. Prints what is
+# open ("picker" when the picker is the one left open).
+cycle_seq=$(( $(date +%s) % 100000 * 100 ))
 open_transient() {   # open_transient <theme> <round>
-  case "$1:$(( $2 % 3 ))" in
+  local kinds=3
+  [ "$1" = win98 ] && kinds=9
+  case "$1:$(( $2 % kinds ))" in
     win98:0) w98 set s-programs-internet >/dev/null; settle; echo cascade ;;
     win98:1) w98 set m-sound >/dev/null; settle; echo window ;;
     win98:2) w98 set pk-win98-light >/dev/null; settle; echo picker ;;
+    win98:3) w98 windowMenu 1001 600 700 >/dev/null; sleep 0.6; echo winmenu ;;
+    win98:4) w98 taskbarMenu 900 >/dev/null; sleep 0.6; echo tbmenu ;;
+    win98:5) w98 openMenu shutdown >/dev/null; sleep 0.8; echo shutdown ;;
+    win98:6) w98 openMenu sysprops >/dev/null; sleep 0.8; echo sysprops ;;
+    win98:7) cycle_seq=$((cycle_seq + 1)); w98 cycle step 2 "$cycle_seq" >/dev/null; sleep 0.6; echo cool ;;
+    win98:8) for _ in $(seq 50); do w98 popup | grep -q '"armed":\[true' && break; sleep 0.1; done
+             w98 setVolume $(( 20 + $2 )) >/dev/null; sleep 0.3; echo popup ;;
     platinum:0) w98 openMenu vol >/dev/null; sleep 0.6; echo menu ;;
     platinum:1) w98 openMenu clock >/dev/null; sleep 0.6; echo menu ;;
     platinum:2) w98 openPicker >/dev/null; sleep 0.8; echo picker ;;
+  esac
+}
+# The layer surface a transient maps.
+surface_of() {
+  case "$1" in
+    picker) echo mountainous-picker ;; shutdown) echo mountainous-shutdown ;;
+    cool) echo mountainous-coolswitch ;; popup) echo mountainous-popup ;; *) echo mountainous-menu ;;
   esac
 }
 
@@ -161,10 +185,8 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
   what=$(open_transient win98 "$round")
   [ "$what" = picker ] && p=1 || p=0
   # The transient is really mapped before the swap.
-  case "$what" in
-    picker) [[ " $(layers) " == *" mountainous-picker "* ]] && ok "niri round $round: the picker is mapped before the swap" || bad "niri round $round: no picker before the swap" ;;
-    *) [[ " $(layers) " == *" mountainous-menu "* ]] && ok "niri round $round: the $what is mapped before the swap" || bad "niri round $round: no $what before the swap" ;;
-  esac
+  ns=$(surface_of "$what")
+  [[ " $(layers) " == *" $ns "* ]] && ok "niri round $round: the $what ($ns) is mapped before the swap" || bad "niri round $round: no $what before the swap ($(layers))"
   name platinum
   wait_loaded platinum || bad "niri round $round: platinum did not load"
   assert_layers "niri round $round win98 -> platinum (a $what was open)" platinum "$p"

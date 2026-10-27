@@ -31,7 +31,8 @@ Scope {
 
     readonly property real u: Win98Tokens.u
     readonly property string current: desktop.openId
-    readonly property bool menuShown: host.enabled && current !== ""
+    // The Shut Down dialog has a surface of its own (Win98ShutDownScreen).
+    readonly property bool menuShown: host.enabled && current !== "" && current !== "shutdown"
     readonly property bool keyboardMode: host.enabled && desktop.taskbarFocus !== "" && current === ""
 
     // The taskbar's controls in keyboard order.
@@ -54,9 +55,20 @@ Scope {
     function activateFocus() {
         const id = desktop.taskbarFocus;
         desktop.taskbarFocus = "";
-        if (id.indexOf("win") === 0) desktop.activateWindow(desktop.lane[Number(id.slice(3))]);
+        if (id.indexOf("win") === 0) desktop.clickWindow(desktop.lane[Number(id.slice(3))]);
         else if (id.indexOf("page") === 0) desktop.showPage(Number(id.slice(4)));
         else desktop.openMenu(id, true);
+    }
+    // Shift+F10 or the Menu key: the focused window button's window menu,
+    // anything else the taskbar's own menu, from the control's left edge.
+    function contextFocus() {
+        const id = desktop.taskbarFocus;
+        const place = host.taskbar.placeOf(id);
+        const x = place ? place.x : 0;
+        const y = host.taskbar.height > 0 ? desktop.screen.height - host.taskbar.barHeight : 0;
+        desktop.taskbarFocus = "";
+        if (id.indexOf("win") === 0) desktop.windowMenu(desktop.addressOf(desktop.lane[Number(id.slice(3))]), x, y);
+        else desktop.taskbarMenu(x, y);
     }
 
     // The open menu or window's root item, for checks.
@@ -82,6 +94,7 @@ Scope {
             readonly property var components: ({
                 start: startMenu, tasks: tasksMenu, more: moreMenu, logoff: logoffDialog,
                 glance: glanceMenu, fleetmenu: fleetMenu,
+                winmenu: windowMenu, tbmenu: taskbarMenu, sysprops: systemWindow,
                 bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
                 disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow,
                 find: host.desktop.omniClaimed ? findWindow : null, address: host.desktop.omniClaimed ? openDialog : null
@@ -129,6 +142,7 @@ Scope {
                         if (event.key === Qt.Key_Escape) host.desktop.taskbarFocus = "";
                         else if (event.key === Qt.Key_Right || (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ShiftModifier))) host.moveFocus(1);
                         else if (event.key === Qt.Key_Left || event.key === Qt.Key_Backtab) host.moveFocus(-1);
+                        else if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) host.contextFocus();
                         else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space || event.key === Qt.Key_Up) host.activateFocus();
                         else return;
                         event.accepted = true;
@@ -149,6 +163,12 @@ Scope {
                     // never loads again: the next menu is the next window's.
                     sourceComponent: host.menuShown && win.alive ? (win.components[host.current] || null) : null
                     readonly property bool isMenu: ["start", "tasks", "more", "glance", "fleetmenu"].indexOf(host.current) >= 0
+                    // The context menus open at a point (the pointer, a
+                    // caption's left edge below its bar): its top-left,
+                    // moved up to stay above the taskbar and left to stay
+                    // on the screen.
+                    readonly property bool atPoint: host.current === "winmenu" || host.current === "tbmenu"
+                    readonly property bool centred: host.current === "logoff" || host.current === "sysprops"
                     readonly property var anchor: host.taskbar.placeOf(host.desktop.anchorId !== "" ? host.desktop.anchorId : host.current)
                     readonly property real w: item ? (item as Item).width : 0
                     readonly property real h: item ? (item as Item).height : 0
@@ -159,14 +179,16 @@ Scope {
                         if (loader.findItem) return loader.findItem.placeX;
                         if (loader.dialogItem) return loader.dialogItem.placeX;
                         if (host.current === "start") return 2 * win.u;
-                        if (host.current === "logoff") return Win98Tokens.snap(win.width / 2 - w / 2, win.u);
+                        if (loader.centred) return Win98Tokens.snap(win.width / 2 - w / 2, win.u);
+                        if (loader.atPoint) return Math.max(0, Math.min(Win98Tokens.snap(host.desktop.menuPoint.x, win.u), win.width - w));
                         const centre = loader.anchor ? loader.anchor.x + loader.anchor.w / 2 : win.width;
                         return Math.max(2 * win.u, Math.min(Win98Tokens.snap(centre - w / 2, win.u), win.width - w - 2 * win.u));
                     }
                     y: {
                         if (loader.findItem) return loader.findItem.placeY;
                         if (loader.dialogItem) return loader.dialogItem.placeY;
-                        if (host.current === "logoff") return Win98Tokens.snap(win.barTop / 2 - h / 2, win.u);
+                        if (loader.centred) return Math.max(0, Win98Tokens.snap(win.barTop / 2 - h / 2, win.u));
+                        if (loader.atPoint) return Math.max(0, Math.min(Win98Tokens.snap(host.desktop.menuPoint.y, win.u), win.barTop - h));
                         return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * win.u : 0));
                     }
                     onLoaded: (item as Item).forceActiveFocus()
@@ -217,13 +239,21 @@ Scope {
                     animate: false
                     widthUnits: Math.min(340, Math.floor(win.width / win.u) - 4)
                     bounds: menuBounds
-                    model: Plan.overflowWindows(host.desktop.lane.map(function (t) {
-                        return { page: host.desktop.shell.pageOf(t) };
-                    }), host.taskbar.plan.taskOut).map(function (i) {
-                        const t = host.desktop.lane[i];
-                        return { text: String((t && t.title) || "(untitled)").replace(/&/g, "&&"), icon: host.desktop.winIcon(t) || "doc",
-                            shortcut: "Page " + host.desktop.shell.pageOf(t), window: i };
-                    })
+                    // By page, a separator between two pages (never a number).
+                    model: {
+                        const out = [];
+                        let last = null;
+                        for (const i of Plan.overflowWindows(host.desktop.lane.map(function (t) {
+                            return { page: host.desktop.pageOf(t) };
+                        }), host.taskbar.plan.taskOut)) {
+                            const t = host.desktop.lane[i];
+                            if (last !== null && host.desktop.pageOf(t) !== last) out.push({ separator: true });
+                            last = host.desktop.pageOf(t);
+                            out.push({ text: String((t && t.title) || "(untitled)").replace(/&/g, "&&"), icon: host.desktop.winIcon(t) || "doc",
+                                shortcut: host.desktop.windowHint(t), window: i });
+                        }
+                        return out;
+                    }
                     onTriggered: function (item) { MenuState.close(); host.desktop.activateWindow(host.desktop.lane[item.window]); }
                     onClosed: MenuState.close()
                 }
@@ -264,6 +294,38 @@ Scope {
                     model: host.desktop.fleetMenu
                     onTriggered: function (item) { host.desktop.runFleetMenu(item); }
                     onClosed: MenuState.close()
+                }
+            }
+            // The window menu (a button's right click, a caption's icon,
+            // Alt+Space) and the taskbar's own menu.
+            Component {
+                id: windowMenu
+                Win98Menu {
+                    objectName: "windowMenu"
+                    animate: false
+                    bounds: menuBounds
+                    model: host.desktop.windowMenuItems
+                    onTriggered: function (item) { host.desktop.runMenu(item); }
+                    onClosed: MenuState.close()
+                }
+            }
+            Component {
+                id: taskbarMenu
+                Win98Menu {
+                    objectName: "taskbarMenu"
+                    animate: false
+                    bounds: menuBounds
+                    model: host.desktop.taskbarMenuItems
+                    onTriggered: function (item) { host.desktop.runMenu(item); }
+                    onClosed: MenuState.close()
+                }
+            }
+            Component {
+                id: systemWindow
+                Win98SystemProperties {
+                    width: win.widthFor(420)
+                    availableHeight: win.barTop
+                    desktop: host.desktop
                 }
             }
             Component {

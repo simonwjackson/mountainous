@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import Quickshell
+import Quickshell.Widgets
 import QtQuick
 
 // One level of a Win98 menu: the window bevel, 3 u of face, an optional
@@ -120,7 +121,7 @@ Item {
         x: 0
         y: root.roll === "up" ? Win98Tokens.snap(root.height * (1 - root.reveal), root.u) : 0
         width: root.roll === "right" ? Win98Tokens.snap(root.width * root.reveal, root.u) : root.width
-        height: root.roll === "up" ? root.height - y : root.roll === "down" ? Win98Tokens.snap(root.height * root.reveal, root.u) : root.height
+        height: root.roll === "up" ? root.height - y : Win98Tokens.snap(root.height * (root.roll === "down" ? root.reveal : 1), root.u)
 
         Item {
             id: content
@@ -230,18 +231,33 @@ Item {
                         x: root.leftPad
                         width: root.iconCol
                         height: row.height
-                        Win98Icon {
-                            id: rowIcon
-                            visible: !row.separator && !!row.modelData.icon
-                            name: row.separator ? "" : (row.modelData.icon || "")
-                            // A large icon in a small row (a narrow Start) draws at 16 u.
-                            size: !root.big && rowIcon.natural[0] > 16 ? 16 : 0
-                            color: row.ink
+                        // An app's own icon from the icon theme (a web app's
+                        // lettermark), when the item has no Win98 icon;
+                        // the document icon when the theme lacks it.
+                        readonly property string themeSource: row.separator || row.modelData.icon || !row.modelData.themeIcon ? ""
+                            : Quickshell.iconPath(row.modelData.themeIcon, true)
+                        IconImage {
+                            visible: iconCell.themeSource !== ""
+                            source: iconCell.themeSource
+                            implicitSize: (root.big ? 24 : 16) * root.u
                             x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
                             y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)
                         }
                         Win98Icon {
-                            visible: !row.separator && !row.modelData.icon && row.modelData.checked === true
+                            id: rowIcon
+                            readonly property string want: row.separator ? "" : (row.modelData.icon
+                                || (row.modelData.themeIcon !== undefined && iconCell.themeSource === "" ? "doc" : ""))
+                            visible: want !== ""
+                            name: want
+                            // A large icon in a small row (a narrow Start) draws at 16 u.
+                            size: !root.big && rowIcon.natural[0] > 16 ? 16 : 0
+                            // A grey item's glyph is grey too (Restore on a normal window).
+                            color: row.usable || row.on ? row.ink : Win98Tokens.gray
+                            x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
+                            y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)
+                        }
+                        Win98Icon {
+                            visible: !row.separator && !row.modelData.icon && !row.modelData.themeIcon && row.modelData.checked === true
                             // A radio item (one of a group) draws the dot.
                             name: !row.separator && row.modelData.radio === true ? "dot" : "check"
                             color: row.usable ? row.ink : Win98Tokens.gray

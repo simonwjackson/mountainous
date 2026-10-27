@@ -77,7 +77,7 @@ click start; settle start; at $(item 0 Settings); click_at $(item 1 Display...);
 key Escape;                                 check 'Esc closes the picker' 'picker=closed'
 click start; settle start; at 900 300
 key Down;                                   check 'keyboard: Down selects the first item' 'path= cursor=Programs open=start'
-key Up;                                     check 'keyboard: Up wraps to the last item' 'path= cursor=Log Off simon... open=start'
+key Up;                                     check 'keyboard: Up wraps to the last item' 'path= cursor=Shut Down... open=start'
 letter p;                                   check 'keyboard: P opens Programs' 'path=Programs cursor=Accessories'
 key Down; key Down; key Right;              check 'keyboard: Down x2, Right opens Internet' 'path=Programs/Internet cursor=Chromium'
 letter s;                                   check 'keyboard: S selects Signal' 'cursor=Signal'

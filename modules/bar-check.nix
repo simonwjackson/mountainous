@@ -212,6 +212,19 @@
         assert !(builtins.hasAttr (prefix + "themes/win98/find-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/win98/OmniFixture.qml") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/theme-parity.js") files);
+        # Win98's taskbar and session pieces, their policies, the shared
+        # About reader and the page names; never their tests or scripts.
+        assert builtins.hasAttr (prefix + "Win98ShutDownScreen.qml") files;
+        assert builtins.hasAttr (prefix + "Win98SystemProperties.qml") files;
+        assert builtins.hasAttr (prefix + "Win98CoolSwitch.qml") files;
+        assert builtins.hasAttr (prefix + "Win98VolumePopup.qml") files;
+        assert builtins.hasAttr (prefix + "SystemFacts.qml") files;
+        assert builtins.hasAttr (prefix + "page-names-temporary.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/task-model.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/session-model.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/icons/computer.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/win98/task-model.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/win98/taskbar.sh") files);
         # Platinum phase 3: the strip, the cascading menus and their policies,
         # and the theme-neutral hide/show and running-app models; never tests.
         assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;

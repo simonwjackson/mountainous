@@ -92,10 +92,15 @@ assert.equal(p[2].submenu[0].text, 'Rock && Roll', 'data never carries an access
 const flat = plain(S.programs([{ id: 'a', name: 'Beta', categories: [] }, { id: 'b', name: 'Alpha', categories: [] }]));
 assert.deepEqual(flat.map(a => a.text), ['Alpha', 'Beta']);
 assert.deepEqual(plain(S.programs([])), []);
-// Windows: every window with its page; long titles cut with three dots
+// Windows: every window, pages apart by separators (never numbered); long
+// titles cut with three dots; a minimized window says so.
 const w = plain(S.windows([{ title: 'x'.repeat(60), page: 2, icon: 'term' }]));
 assert.equal(w[0].text, 'x'.repeat(41) + '...');
-assert.equal(w[0].shortcut, 'Page 2');
+assert.equal(w[0].shortcut, undefined, 'no page number');
+const wp = plain(S.windows([{ title: 'a', page: 1 }, { title: 'b', page: 1, hint: 'Minimized' }, { title: 'c', page: 4 }, { title: 'd', page: 7 }]));
+assert.deepEqual(wp.map(i => i.separator ? '-' : i.text + (i.shortcut ? ' ' + i.shortcut : '')), ['a', 'b Minimized', '-', 'c', '-', 'd']);
+assert.deepEqual(wp.filter(i => !i.separator).map(i => i.window), [0, 1, 2, 3]);
+assert.ok(!/\bpage\s*\d/i.test(JSON.stringify(wp)));
 assert.equal(plain(S.windows([]))[0].enabled, false);
 // Commands: no theme rows, no window mode; scale rows cascade
 const rows = [
@@ -110,20 +115,43 @@ const rows = [
 const c = plain(S.commands(rows));
 assert.deepEqual(c.map(r => r.separator ? '-' : r.text), ['New terminal', 'Go to address...', '-', 'Interface scale', 'Toggle bars']);
 assert.equal(c[3].submenu[0].text, 'Scale up');
-// The top level: no Shut Down, no power actions; Display... opens the picker
-const top = plain(S.top(p, w, c, 'simon'));
-assert.deepEqual(top.filter(i => !i.separator).map(i => i.text),
-    ['&Programs', '&Windows', '&Commands', '&Settings', '&Find', '&Run...', '&Log Off simon...']);
+// The top level: Favorites and Documents after Programs; Lock, Log Off
+// and Shut Down at the bottom; Display... opens the picker, System... the
+// System Properties.
+const fav = plain(S.favorites([{ id: 'ytmusic', name: 'YouTube Music', icon: 'webapp-ytmusic' }, { id: 'gh', name: 'GitHub', icon: 'webapp-gh' }, null]));
+assert.deepEqual(fav.map(i => i.text), ['GitHub', 'YouTube Music'], 'by name');
+assert.deepEqual([fav[0].action, fav[0].webapp, fav[0].themeIcon], ['webapp', 1, 'webapp-gh']);
+assert.deepEqual(plain(S.favorites([])), [{ text: '(Empty)', enabled: false }]);
+const recent = Array.from({ length: 20 }, (_, i) => ({ id: i ? 'app' + i : 'dev.zed.Zed', name: i ? 'App & ' + i : 'Zed', icon: 'icon' + i, kind: i === 1 ? 'webapp' : 'app' }));
+const docs = plain(S.documents(recent));
+assert.equal(docs.length, 15, 'at most 15');
+assert.deepEqual([docs[0].text, docs[0].icon, docs[0].themeIcon, docs[0].recent], ['Zed', 'zed', '', 0], 'a known app takes its Win98 icon');
+assert.deepEqual([docs[1].text, docs[1].icon, docs[1].themeIcon, docs[1].shortcut], ['App && 1', '', 'icon1', 'web app'], 'data never carries an access key');
+assert.deepEqual(plain(S.documents([])), [{ text: '(Empty)', enabled: false }]);
+assert.deepEqual(plain(S.documents(null)), [{ text: '(Empty)', enabled: false }]);
+const top = plain(S.top(p, w, c, 'simon', [], { favorites: fav, documents: docs, host: 'myoko' }));
+assert.deepEqual(top.map(i => i.separator ? '-' : i.text),
+    ['&Programs', 'Fa&vorites', '&Documents', '&Windows', '&Commands', '&Settings', '-', '&Find', '&Run...', '-', 'Loc&k Myoko', '&Log Off simon...', 'Sh&ut Down...']);
+assert.deepEqual(top[1].submenu, fav);
+assert.deepEqual([top[10].action, top[11].action, top[12].action], ['lock', 'logoff', 'shutdown']);
 // Start > Find: the Find window in each scope, and Open (Ctrl+L); Run... is Find in All.
 const find = top.find(i => i.text === '&Find');
 assert.deepEqual(find.submenu.filter(i => !i.separator).map(i => [i.action, i.scope]),
     [['find', 'all'], ['find', 'app'], ['find', 'win'], ['find', 'cmd'], ['find', 'address']]);
 assert.equal(top.find(i => i.text === '&Run...').action, 'run');
-assert.equal(top[3].submenu[0].action, 'picker');
-assert.ok(!JSON.stringify(top).match(/Shut Down|Restart|Stand By/));
+assert.equal(top[5].submenu[0].action, 'picker');
+assert.deepEqual([top[5].submenu[1].text, top[5].submenu[1].action], ['S&ystem...', 'system']);
+assert.deepEqual(plain(S.top(p, w, c, 'simon'))[1].submenu, [{ text: '(Empty)', enabled: false }], 'no lists: (Empty)');
+assert.equal(plain(S.top(p, w, c, 'simon'))[10].text, 'Loc&k', 'no host name yet');
+// Access keys stay unique on the top level.
+const keys = top.filter(i => !i.separator).map(i => (/&(.)/.exec(i.text) || [])[1].toLowerCase());
+assert.equal(new Set(keys).size, keys.length, keys.join(''));
 // A bar too narrow for its tray: Start gains a Taskbar cascade, after Settings.
 const narrow = plain(S.top(p, w, c, 'simon', [{ text: 'Sound', action: 'open', control: 'vol' }]));
-assert.equal(narrow[4].text, 'T&askbar');
-assert.equal(narrow[4].submenu[0].control, 'vol');
-assert.equal(plain(S.top(p, w, c, 'simon', [])).length, top.length);
+assert.equal(narrow[6].text, 'T&askbar');
+assert.equal(narrow[6].submenu[0].control, 'vol');
+assert.equal(plain(S.top(p, w, c, 'simon', [])).length, plain(S.top(p, w, c, 'simon')).length);
+// Super+O: every tray letter, N for Notifications included.
+assert.deepEqual(Object.keys(T.CHORD).map(k => T.CHORD[k]).join(''), 'BWSLCDFRN');
+assert.equal(T.CHORD.ntf, 'N');
 console.log('WIN98_MODEL_TESTS_PASSED');

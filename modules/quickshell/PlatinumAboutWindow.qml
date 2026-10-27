@@ -3,9 +3,10 @@ import Quickshell.Io
 import QtQuick
 
 // About <host>…: a Platinum windoid under the bar at the left, never
-// centred. It reads the host name, the NixOS version and generation, the
-// configuration revision (nixos-version --json) and the uptime when it
-// opens, and the uptime again each minute while it stays open.
+// centred. SystemFacts reads the host name, the NixOS version and
+// generation, the configuration revision (nixos-version --json) and the
+// uptime when it opens, and the uptime again each minute while it stays
+// open. Win98's System Properties reads the same.
 PanelWindow {
     id: about
 
@@ -22,11 +23,13 @@ PanelWindow {
     focusable: true
     color: "transparent"
 
-    property string host: ""
-    property string product: ""
-    property var version: ({})
-    property string generation: ""
-    property real uptime: -1
+    // The facts, from the reader every theme's About view shares.
+    SystemFacts { id: facts; live: about.visible }
+    readonly property string host: facts.host
+    readonly property string product: facts.product
+    readonly property var version: facts.version
+    readonly property string generation: facts.generation
+    readonly property real uptime: facts.uptime
 
     function capitalised(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
     function uptimeText(seconds) {
@@ -43,32 +46,6 @@ PanelWindow {
         ["Revision", about.version.configurationRevision || "Not recorded"],
         ["Uptime", about.uptimeText(about.uptime)]
     ]
-
-    FileView { path: "/proc/sys/kernel/hostname"; blockLoading: true; printErrors: false
-        onLoaded: about.host = text().trim() }
-    FileView { path: "/sys/class/dmi/id/product_name"; blockLoading: true; printErrors: false
-        onLoaded: about.product = text().trim() }
-    FileView { id: uptimeFile; path: "/proc/uptime"; blockLoading: true; printErrors: false
-        onLoaded: about.uptime = parseFloat(text().split(" ")[0]) }
-    Timer { interval: 60000; repeat: true; running: about.visible; onTriggered: uptimeFile.reload() }
-
-    Process {
-        command: ["nixos-version", "--json"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: { try { about.version = JSON.parse(text); } catch (e) { about.version = {}; } }
-        }
-    }
-    Process {
-        command: ["readlink", "/nix/var/nix/profiles/system"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const m = /system-(\d+)-link/.exec(text);
-                about.generation = m ? m[1] : "";
-            }
-        }
-    }
 
     PlatinumDialogFrame {
         id: frame

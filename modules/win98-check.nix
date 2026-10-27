@@ -59,10 +59,12 @@
       # the mapped layer surfaces (niri) after each swap, then rolls back a
       # broken Win98; geometry.sh checks real control bounds at small sizes;
       # scales.sh checks 2-px bevels on outputs at scales 1.5 and 1. switch.sh
-      # opens each theme's Fleet window or glance space before every swap.
-      # find.sh checks the Find window (Super+P) and IE's Open dialog
-      # (Ctrl+L): keys, pointer, the omni claim, and their bounds from 1920x1200
-      # down to 360x640.
+      # opens each theme's Fleet window or glance space before every swap,
+      # and under Win98 also the window or taskbar menu, Shut Down Myoko,
+      # System Properties, the Cool Switch or the volume pop-up; geometry.sh
+      # checks those from 360x640 up. find.sh checks the Find window
+      # (Super+P) and IE's Open dialog (Ctrl+L): keys, pointer, the omni
+      # claim, and their bounds from 1920x1200 down to 360x640.
       checks.win98-desktop =
         pkgs.runCommand "win98-desktop" sessionEnv
           ''
@@ -72,6 +74,8 @@
             node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
               ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
             node ${quickshell}/themes/win98/find-plan.test.js ${quickshell}/themes/win98/find-plan.js
+            node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
+              ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names-temporary.js
             bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
@@ -91,6 +95,23 @@
         bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
         export SESSION_SCHEMA=$TMPDIR/notification-schema.js
         bash ${quickshell}/theme-dev/win98/fleet.sh ${quickshell} $TMPDIR/fleet
+        touch $out
+      '';
+      # The Win98 taskbar and session parity items in the same session:
+      # taskbar.sh (minimized buttons, the window and taskbar menus, the
+      # windows menu call, held Super+Tab, Lock, Shut Down Myoko, System
+      # Properties, Documents and Favorites, the volume pop-up, and no page
+      # number anywhere). Session commands and launches are logging stubs.
+      # Its own attribute, so each build stays under the 15-minute step.
+      checks.win98-taskbar = pkgs.runCommand "win98-taskbar" sessionEnv ''
+        export HOME=$TMPDIR
+        node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
+          ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names-temporary.js
+        node ${quickshell}/app-model.test.js ${quickshell}/app-model.js
+        node ${quickshell}/window-hide.test.js ${quickshell}/window-hide.js
+        bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+        export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+        bash ${quickshell}/theme-dev/win98/taskbar.sh ${quickshell} $TMPDIR/taskbar
         touch $out
       '';
       checks.win98-theme =
