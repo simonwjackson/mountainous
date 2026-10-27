@@ -83,7 +83,8 @@ Scope {
                 start: startMenu, tasks: tasksMenu, more: moreMenu, logoff: logoffDialog,
                 glance: glanceMenu, fleetmenu: fleetMenu,
                 bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
-                disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow
+                disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow,
+                find: host.desktop.omniClaimed ? findWindow : null, address: host.desktop.omniClaimed ? openDialog : null
             })
             Binding {
                 target: host
@@ -151,13 +152,20 @@ Scope {
                     readonly property var anchor: host.taskbar.placeOf(host.desktop.anchorId !== "" ? host.desktop.anchorId : host.current)
                     readonly property real w: item ? (item as Item).width : 0
                     readonly property real h: item ? (item as Item).height : 0
+                    // Find and Open place themselves (themes/win98/find-plan.js).
+                    readonly property Win98FindWindow findItem: item as Win98FindWindow
+                    readonly property Win98OpenDialog dialogItem: item as Win98OpenDialog
                     x: {
+                        if (loader.findItem) return loader.findItem.placeX;
+                        if (loader.dialogItem) return loader.dialogItem.placeX;
                         if (host.current === "start") return 2 * win.u;
                         if (host.current === "logoff") return Win98Tokens.snap(win.width / 2 - w / 2, win.u);
                         const centre = loader.anchor ? loader.anchor.x + loader.anchor.w / 2 : win.width;
                         return Math.max(2 * win.u, Math.min(Win98Tokens.snap(centre - w / 2, win.u), win.width - w - 2 * win.u));
                     }
                     y: {
+                        if (loader.findItem) return loader.findItem.placeY;
+                        if (loader.dialogItem) return loader.dialogItem.placeY;
                         if (host.current === "logoff") return Win98Tokens.snap(win.barTop / 2 - h / 2, win.u);
                         return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * win.u : 0));
                     }
@@ -276,6 +284,26 @@ Scope {
             Component { id: notificationWindow; Win98NotificationWindow { width: win.widthFor(430); availableHeight: win.barTop; panel: host.desktop.context.centre; now: host.desktop.context.now } }
             Component { id: dictationWindow; Win98DictationWindow { width: win.widthFor(310); availableHeight: win.barTop; dictation: host.desktop.dictation; text: host.desktop.dictText } }
             Component { id: clockWindow; Win98ClockWindow { width: win.widthFor(210); availableHeight: win.barTop; now: host.desktop.context.now } }
+            // The omni service's Win98 view: the Find window and IE's Open.
+            Component {
+                id: findWindow
+                Win98FindWindow {
+                    omni: host.desktop.omni
+                    areaWidth: win.width
+                    areaHeight: win.barTop
+                    onAction: function (kind, arg) { host.desktop.findAction(kind, arg); }
+                }
+            }
+            Component {
+                id: openDialog
+                Win98OpenDialog {
+                    omni: host.desktop.omni
+                    screen: host.desktop.screen
+                    areaWidth: win.width
+                    areaHeight: win.barTop
+                    onAction: function (kind, arg) { host.desktop.findAction(kind, arg); }
+                }
+            }
         }
     }
 }

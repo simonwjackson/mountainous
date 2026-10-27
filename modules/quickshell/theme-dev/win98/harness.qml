@@ -11,6 +11,7 @@ import QtQuick
 import "panels"
 import "lanes.js" as Lanes
 import "win98-dev/states.js" as States
+import "win98-dev/find-states.js" as FindStates
 
 ShellRoot {
     id: root
@@ -18,6 +19,8 @@ ShellRoot {
     property string stateId: "tb-normal"
     property var st: States.stateById(stateId) || { p: {} }
     property var dd: States.dataFor(stateId)
+    // A Find window or Open dialog state (find-states.js), or null.
+    property var findSt: FindStates.stateById(stateId)
     readonly property var screen0: Quickshell.screens[0]
     property var log: []
     function note(s) { root.log = root.log.concat([s]); console.log("harness:", s); }
@@ -54,13 +57,16 @@ ShellRoot {
     }
     function buildWindows() {
         const name = root.screen0 ? root.screen0.name : "";
-        const monitor = { name: name };
+        const monitors = {};
         const pages = {};
-        root.toplevels = root.dd.windows.map(function (w, i) {
-            const ws = pages[w.page] || (pages[w.page] = { id: w.page, active: w.page === root.dd.showingPage, monitor: monitor });
+        root.toplevels = (FindStates.windowsFor(root.stateId) || root.dd.windows).map(function (w, i) {
+            const screen = w.screen || name;
+            const monitor = monitors[screen] || (monitors[screen] = { name: screen });
+            const key = screen + ":" + w.page;
+            const ws = pages[key] || (pages[key] = { id: w.page, active: w.page === root.dd.showingPage, monitor: monitor });
             return root.obj({ title: w.title, activated: !!w.focused, urgent: !!w.urgent, workspace: ws,
-                lastIpcObject: { address: "0x" + (1000 + i) },
-                wayland: root.handle(root.appId(w.icon), i) });
+                lastIpcObject: { address: "0x" + (1000 + i), at: w.at, size: w.size },
+                wayland: root.handle(w.appId || root.appId(w.icon), i) });
         });
     }
     // A Wayland toplevel handle whose activate() and close() the log records.
@@ -137,32 +143,65 @@ ShellRoot {
         function dismissFailure() { root.note("dismiss dictation"); }
     }
 
-    QtObject {
+    // The omni service's public shape (OmniFixture.qml), fed by find-states.js.
+    OmniFixture {
         id: omni
-        // OmniBar.commandRows, as written in OmniBar.qml.
-        readonly property var commandRows: [
-            { kind: "cmd", label: "New terminal", detail: "Super+N", act: "term" },
-            { kind: "cmd", label: "Go to address", detail: "Ctrl+L", act: "mode:nav" },
-            { kind: "cmd", label: "Go to window", detail: "mode", act: "mode:window" },
-            { kind: "cmd", label: "Close window", detail: "Super+C", act: "close" },
-            { kind: "cmd", label: "Monocle", detail: "Super+M", act: "monocle" },
-            { kind: "cmd", label: "Zen", detail: "Super+Shift+M", act: "zen" },
-            { kind: "cmd", label: "Mirror workspace", detail: "Super+Shift+G", act: "mirror" },
-            { kind: "cmd", label: "Even / golden split", detail: "Super+G", act: "split" },
-            { kind: "cmd", label: "Interface scale up", detail: "Super+=", act: "scaleup" },
-            { kind: "cmd", label: "Interface scale down", detail: "Super+-", act: "scaledown" },
-            { kind: "cmd", label: "Interface scale 100%", detail: "Super+0", act: "scalereset" },
-            { kind: "cmd", label: "Toggle bars", detail: "Super+I", act: "chrome" },
-            { kind: "cmd", label: "Dark appearance", detail: "Super+D", act: "theme:dark" },
-            { kind: "cmd", label: "Light appearance", detail: "Super+D", act: "theme:light" },
-            { kind: "cmd", label: "Desktop theme\u2026", detail: "Appearance", act: "theme:picker" },
-            { kind: "cmd", label: "Extra dark appearance", detail: "off", act: "theme:extra" },
-            { kind: "cmd", label: "Screenshot", detail: "Super+S", act: "shot" }
-        ]
-        function enterRoot() { root.note("omni root"); }
-        function enterMode(m) { root.note("omni mode " + m); }
-        function run(row) { root.note("omni run " + (row ? row.act : "")); }
+        screen0: root.screen0
+        onNote: text => root.note(text)
     }
+    // The service's rows for a Find state: the windows behind the focused
+    // one, grouped by screen as OmniBar.windowRows; the mock's apps, recent
+    // launches and open pages.
+    function feedOmni() {
+        const here = root.screen0 ? root.screen0.name : "";
+        const out = [];
+        root.toplevels.forEach(function (t, i) {
+            if (t.activated) return;
+            out.push({ kind: "window", label: t.title, detail: "page " + t.workspace.id, page: t.workspace.id,
+                appId: t.wayland.appId, order: i, screen: t.workspace.monitor.name, toplevel: t, entry: null });
+        });
+        omni.windowRows = Lanes.groupRows(out, here);
+        omni.appRows = FindStates.APPS;
+        Launcher._recent = root.findSt && root.findSt.noRecent ? [] : FindStates.RECENT;
+        CdpBrowser.pages = FindStates.PAGES;
+        const f = root.findSt;
+        const caller = f && f.caller !== undefined ? f.caller : root.toplevels.findIndex(function (t) { return t.activated; });
+        omni.active = caller >= 0 ? root.toplevels[caller] : null;
+    }
+    // Open the state's Find window or Open dialog, then set what the keys
+    // and the pointer would have (Look in open, the drop-down, the tip).
+    function playFind() {
+        const f = root.findSt;
+        if (!f) return;
+        omni.dismiss();
+        MenuState.close();
+        Qt.callLater(function () {
+            if (f.mode === "nav") omni.enterNavigate(f.typed || f.query || "");
+            else omni.enterMode(f.mode, f.query || "");
+            findLater.restart();
+        });
+    }
+    Timer {
+        id: findLater
+        interval: 100
+        repeat: true
+        property int tries: 0
+        onRunningChanged: if (running) tries = 0
+        onTriggered: {
+            const f = root.findSt, item = root.desktop ? root.desktop.openItem : null;
+            tries++;
+            const want = f && f.mode === "nav" ? "Win98OpenDialog" : "Win98FindWindow";
+            if (!f || tries > 50) { stop(); return; }
+            if (!item || String(item).indexOf(want) < 0) return;
+            stop();
+            if (f.drop !== undefined) { item.dropOpen = true; item.dropIndex = f.drop; }
+            for (let i = 0; i < (f.steps || 0); i++) item.move(1);
+            if (f.tip) item.tipIndex = item.current;
+            if (f.list) { item.listOpen = true; item.pick = f.pick === undefined ? -1 : f.pick; }
+            root.findReady = root.stateId;
+        }
+    }
+    property string findReady: ""
 
     QtObject {
         id: gate
@@ -340,6 +379,8 @@ ShellRoot {
         storage.setFindings(d.disk.rows);
         // After the window opens: showing it clears both (WifiPanel).
         wifiLater.restart();
+        root.findReady = "";
+        root.feedOmni();
         shellStub.chromeAccessVisible = !!d.chord;
         if (!root.desktop) return;
         const desk = root.desktop;
@@ -389,6 +430,7 @@ ShellRoot {
             if (p.anchor) desk.anchorId = p.anchor;
         });
         if (p.win === "logoff") Qt.callLater(function () { MenuState.open("logoff", root.screen0, -1); });
+        if (root.findSt) root.playFind();
         if (p.win === "picker") Qt.callLater(function () {
             ThemePicker.open(root.screen0);
             root.pickerState = { theme: p.pt === "platinum" ? "platinum" : "win98", scheme: p.ps === "grey" ? "dark" : p.ps || undefined,
@@ -430,7 +472,8 @@ ShellRoot {
             const d = root.desktop;
             const p = root.st.p || {};
             const want = p.open ? String(p.open).split(":")[0] : p.win === "logoff" ? "logoff" : "";
-            return JSON.stringify({ state: root.stateId, settled: MenuState.current === want && (p.win !== "picker" || ThemePicker.visible), theme: Theme.name, loaded: loader.currentName, slots: loader.loadedCount, open: MenuState.current,
+            const settled = root.findSt ? root.findReady === root.stateId : MenuState.current === want && (p.win !== "picker" || ThemePicker.visible);
+            return JSON.stringify({ state: root.stateId, settled: settled, theme: Theme.name, loaded: loader.currentName, slots: loader.loadedCount, open: MenuState.current,
                 picker: ThemePicker.visible, steps: d && d.taskbarPlan ? d.taskbarPlan().steps : [], log: root.log });
         }
         // The Start menu's open path and cursor, by name.
@@ -587,6 +630,58 @@ ShellRoot {
         function places(): string {
             const d = root.desktop;
             return d ? JSON.stringify(d.debugPlaces()) : "{}";
+        }
+        // ---- the Find window and Open dialog (find.sh)
+        // The service and the open view: what the keys and clicks changed.
+        function find(): string {
+            const item = root.desktop ? root.desktop.openItem : null;
+            const kind = item ? String(item).replace(/_QML.*|\(.*/, "") : "";
+            const out = { shown: omni.shown, mode: omni.mode, query: omni.query, views: omni.views.length,
+                caller: omni.caller ? omni.caller.title : "", open: MenuState.current, item: kind,
+                claimed: root.desktop ? !!root.desktop.omniClaimed : false };
+            if (kind.indexOf("Win98FindWindow") === 0) {
+                const r = item.rows[item.current];
+                Object.assign(out, { scope: item.scope, rows: item.rows.length, current: r ? r.label : "-",
+                    drop: item.dropOpen, dropIndex: item.dropIndex, tip: item.tipIndex, steps: item.plan.steps,
+                    inView: item.currentInView, scrollY: item.scrollY,
+                    status: item.statusInfo.count + " | " + item.statusInfo.detail });
+            } else if (kind.indexOf("Win98OpenDialog") === 0) {
+                Object.assign(out, { list: item.listOpen, pick: item.pick, address: item.address,
+                    pages: item.shownPages.length, dest: item.dest.text + " " + item.dest.title, plan: item.plan.steps });
+            }
+            return JSON.stringify(out);
+        }
+        // Drive the service as the IPC targets and Start do.
+        function omniCall(verb: string, arg: string): string {
+            if (verb === "root") omni.enterRoot();
+            else if (verb === "mode") omni.enterMode(arg);
+            else if (verb === "nav") omni.enterNavigate(arg);
+            else if (verb === "dismiss") omni.dismiss();
+            else if (verb === "active") omni.active = root.toplevels[Number(arg)] || null;
+            return verb;
+        }
+        // Rectangles in screen logical px of the open Find or Open's parts
+        // (visible items with these objectNames), and the room.
+        function findGeometry(): string {
+            const item = root.desktop ? root.desktop.openItem : null;
+            const out = { w: root.screen0.width, h: root.screen0.height, bar: root.desktop ? root.desktop.debugPlaces().barHeight : 0, parts: {} };
+            if (!item) return JSON.stringify(out);
+            const rect = function (it) { const q = it.mapToItem(null, 0, 0); return { x: q.x, y: q.y, w: it.width, h: it.height }; };
+            out.window = rect(item);
+            out.plan = item.plan;
+            const walk = function (it) {
+                if (!it || !it.visible) return;
+                if (it.objectName && !out.parts[it.objectName]) out.parts[it.objectName] = rect(it);
+                for (let i = 0; i < it.children.length; i++) walk(it.children[i]);
+            };
+            walk(item);
+            return JSON.stringify(out);
+        }
+        // The centre of a visible part of the open Find or Open, by objectName.
+        function findControl(name: string): string {
+            const g = JSON.parse(findGeometry());
+            const r = g.parts[name];
+            return r ? Math.round(r.x + r.w / 2) + " " + Math.round(r.y + r.h / 2) : "";
         }
     }
 }

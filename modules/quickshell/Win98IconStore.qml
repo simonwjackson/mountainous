@@ -26,7 +26,9 @@ Singleton {
         "minimize", "mic-recording", "mic-working", "obs", "oci-danger", "oci-muted",
         "oci-normal", "oci-warning", "ok", "programs", "ring", "run", "scale", "settings", "shutdown",
         "signal", "sun", "sync", "term", "tx", "volume-0", "volume-1", "volume-2", "volume-muted", "warn",
-        "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4", "wifi-off", "windows", "zed"
+        "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4", "wifi-off", "windows", "zed",
+        // Find (Super+P) and Internet Explorer's Open (Ctrl+L)
+        "find", "find-large", "globe", "globe-large"
     ]
 
     property var sources: ({})

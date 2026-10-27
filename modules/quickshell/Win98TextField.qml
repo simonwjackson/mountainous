@@ -19,8 +19,13 @@ FocusScope {
     property string placeholder: ""
     // Draw a steady caret without keyboard focus (galleries).
     property bool showCaret: false
+    // Units on the right the text keeps clear of (a combo's drop button).
+    property real rightInsetUnits: 0
 
     signal accepted
+    // Every key before the field takes it; a handler that accepts the
+    // event keeps it from the field (the Find window's list keys).
+    signal keyPressed(var event)
 
     readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real k: (root.u / 2)
@@ -38,7 +43,7 @@ FocusScope {
     Item {
         id: clipper
         x: 2 * root.u; y: 2 * root.u
-        width: root.width - 4 * root.u
+        width: root.width - 4 * root.u - root.rightInsetUnits * root.u
         height: root.height - 4 * root.u
         clip: true
 
@@ -76,6 +81,7 @@ FocusScope {
             font.kerning: false
             cursorVisible: root.enabled && (root.activeFocus || root.showCaret)
             onAccepted: root.accepted()
+            Keys.onPressed: event => root.keyPressed(event)
 
             cursorDelegate: Rectangle {
                 id: caret

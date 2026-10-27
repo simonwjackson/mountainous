@@ -60,6 +60,9 @@
       # broken Win98; geometry.sh checks real control bounds at small sizes;
       # scales.sh checks 2-px bevels on outputs at scales 1.5 and 1. switch.sh
       # opens each theme's Fleet window or glance space before every swap.
+      # find.sh checks the Find window (Super+P) and IE's Open dialog
+      # (Ctrl+L): keys, pointer, the omni claim, and their bounds from 1920x1200
+      # down to 360x640.
       checks.win98-desktop =
         pkgs.runCommand "win98-desktop" sessionEnv
           ''
@@ -68,12 +71,14 @@
             node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js
             node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
               ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
+            node ${quickshell}/themes/win98/find-plan.test.js ${quickshell}/themes/win98/find-plan.js
             bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
             bash ${quickshell}/theme-dev/win98/switch.sh ${quickshell} $TMPDIR/switch
             bash ${quickshell}/theme-dev/win98/geometry.sh ${quickshell} $TMPDIR/geometry
             bash ${quickshell}/theme-dev/win98/scales.sh ${quickshell} $TMPDIR/scales
+            bash ${quickshell}/theme-dev/win98/find.sh ${quickshell} $TMPDIR/find
             touch $out
           '';
       # The Win98 Fleet window and glance space in the same session: fleet.sh

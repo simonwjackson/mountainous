@@ -122,6 +122,20 @@ function settings() {
     ];
 }
 
+// Start > Find: the Find window (Super+P) in each scope, and IE's Open
+// dialog (Ctrl+L). Run... opens the Find window too, in All.
+function findMenu() {
+    return [
+        { text: "&All...", icon: "find", shortcut: "Super+P", action: "find", scope: "all" },
+        { separator: true },
+        { text: "A&pplications...", icon: "programs", shortcut: "Ctrl+1", action: "find", scope: "app" },
+        { text: "&Windows...", icon: "windows", shortcut: "Ctrl+2", action: "find", scope: "win" },
+        { text: "&Commands...", icon: "commands", shortcut: "Ctrl+3", action: "find", scope: "cmd" },
+        { separator: true },
+        { text: "A&ddress...", icon: "globe", shortcut: "Ctrl+L", action: "find", scope: "address" }
+    ];
+}
+
 // taskbarList: what a bar too narrow for its tray holds (the tray
 // controls, the clock, the battery); empty while the bar has room.
 function top(programList, windowList, commandList, user, taskbarList) {
@@ -134,6 +148,7 @@ function top(programList, windowList, commandList, user, taskbarList) {
         { text: "&Settings", icon: "settings", submenu: settings() }
     ].concat(taskbar, [
         { separator: true },
+        { text: "&Find", icon: "find-large", submenu: findMenu() },
         { text: "&Run...", icon: "run", action: "run" },
         { separator: true },
         { text: "&Log Off " + user + "...", icon: "logoff", action: "logoff" }

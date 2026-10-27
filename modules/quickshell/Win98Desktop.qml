@@ -83,6 +83,7 @@ Scope {
         if (id === "disk") return context.storage.enabled;
         if (id === "builder") return context.builderGate.enabled;
         if (id === "dict") return context.dictation.barVisible;
+        if (id === "find" || id === "address") return omniView.want() === id;
         if (id === "bat" || id === "") return false;
         return menuIds.indexOf(id) >= 0 || id === "logoff";
     }
@@ -114,6 +115,7 @@ Scope {
     // bars; the approved mock extends it to Start and the tray).
     function enter(id) {
         if (desktop.openId === "" || desktop.openId === id || desktop.openId === "logoff") return;
+        if (desktop.openId === "find" || desktop.openId === "address") return;
         if (desktop.menuIds.indexOf(id) < 0 || !desktop.canOpen(id)) return;
         desktop.openMenu(id, false);
     }
@@ -344,7 +346,8 @@ Scope {
         if (item.action === "app") { const a = desktop.apps[item.app]; if (a && a.entry) Launcher.launchEntry(a.entry); }
         else if (item.action === "window") desktop.activateWindow(desktop.lane[item.window]);
         else if (item.action === "command") context.omniBar.run(desktop.commandRows[item.row]);
-        else if (item.action === "run") context.omniBar.enterRoot();
+        else if (item.action === "run") omniView.openScope("all");
+        else if (item.action === "find") omniView.openScope(item.scope);
         else if (item.action === "picker") ThemePicker.open(desktop.screen);
         else if (item.action === "open") desktop.openMenu(item.control, false);
         else if (item.action === "restorefleet") fleetGlance.restore();
@@ -354,6 +357,13 @@ Scope {
         MenuState.close();
         Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch", "hl.dsp.exit()"]);
     }
+
+    // The omni service's Win98 view: the Find window and IE's Open dialog
+    // (Win98OmniView.qml). Claimed while this Desktop is active.
+    Win98OmniView { id: omniView; desktop: desktop }
+    readonly property var omni: context.omniBar
+    readonly property bool omniClaimed: omniView.claimed
+    function findAction(kind, arg) { omniView.findAction(kind, arg); }
 
     // The open menu or window's root item, for checks.
     readonly property var openItem: menuHost.openItem

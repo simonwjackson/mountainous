@@ -200,6 +200,17 @@
         assert builtins.hasAttr (prefix + "themes/win98/icons/glance.svg") files;
         assert !(builtins.hasAttr (prefix + "themes/win98/fleet-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/win98/fleet-fixtures.json") files);
+        # Win98's Find window and Open dialog, their plan and its web sheet;
+        # never their tests or the harness fixtures.
+        assert builtins.hasAttr (prefix + "Win98FindWindow.qml") files;
+        assert builtins.hasAttr (prefix + "Win98OpenDialog.qml") files;
+        assert builtins.hasAttr (prefix + "Win98OmniView.qml") files;
+        assert builtins.hasAttr (prefix + "themes/win98/find-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/web.css") files;
+        assert builtins.hasAttr (prefix + "themes/win98/icons/find.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/win98/find-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/win98/OmniFixture.qml") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/theme-parity.js") files);
         # Platinum phase 3: the strip, the cascading menus and their policies,
         # and the theme-neutral hide/show and running-app models; never tests.
         assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;

@@ -113,7 +113,12 @@ assert.equal(c[3].submenu[0].text, 'Scale up');
 // The top level: no Shut Down, no power actions; Display... opens the picker
 const top = plain(S.top(p, w, c, 'simon'));
 assert.deepEqual(top.filter(i => !i.separator).map(i => i.text),
-    ['&Programs', '&Windows', '&Commands', '&Settings', '&Run...', '&Log Off simon...']);
+    ['&Programs', '&Windows', '&Commands', '&Settings', '&Find', '&Run...', '&Log Off simon...']);
+// Start > Find: the Find window in each scope, and Open (Ctrl+L); Run... is Find in All.
+const find = top.find(i => i.text === '&Find');
+assert.deepEqual(find.submenu.filter(i => !i.separator).map(i => [i.action, i.scope]),
+    [['find', 'all'], ['find', 'app'], ['find', 'win'], ['find', 'cmd'], ['find', 'address']]);
+assert.equal(top.find(i => i.text === '&Run...').action, 'run');
 assert.equal(top[3].submenu[0].action, 'picker');
 assert.ok(!JSON.stringify(top).match(/Shut Down|Restart|Stand By/));
 // A bar too narrow for its tray: Start gains a Taskbar cascade, after Settings.
