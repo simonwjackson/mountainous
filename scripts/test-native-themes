@@ -99,6 +99,33 @@ before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
 if DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" apply win98 light off; then exit 1; fi
 [[ $("$command_path" status) == 'mode=dark extra=off theme=platinum' ]]
 [[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
+# Recovery must restore the chrome's name even when native synchronisation
+# fails. Native output stays stale until a later successful reapply.
+"$command_path" apply win98 dark on
+before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
+printf 'broken\n' > "$XDG_STATE_HOME/mountainous/theme-name"
+DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" rollback broken platinum
+[[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
+[[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
+"$command_path" reapply
+verify platinum dark on
+# A stale callback must not revert a newer choice or touch its native files.
+"$command_path" apply win98 dark on
+before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
+"$command_path" rollback broken platinum
+[[ $("$command_path" status) == 'mode=dark extra=on theme=win98' ]]
+[[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
+# Also recover when the native writer, rather than D-Bus, refuses a change.
+collision="$XDG_CONFIG_HOME/Kvantum/Mountainous-platinum-light"
+rm "$collision" # a derived link in this private test HOME
+mkdir "$collision"
+printf 'broken\n' > "$XDG_STATE_HOME/mountainous/theme-name"
+"$command_path" rollback broken platinum
+[[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
+[[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
+rmdir "$collision"
+"$command_path" reapply
+verify platinum dark on
 # Empty/relative XDG values must follow the specification, not write into cwd.
 for config_home in '' relative-config; do
   XDG_CONFIG_HOME="$config_home" "$command_path" apply platinum light off

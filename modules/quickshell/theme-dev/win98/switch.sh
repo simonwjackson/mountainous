@@ -197,7 +197,7 @@ for _ in $(seq 60); do grep -q "Desktop theme could not load" "$work/run3/comman
 sleep 0.5
 if grep -q "notify-send Desktop theme could not load win98:.*ThisWin98IsDeliberatelyBroken" "$work/run3/commands.log"; then ok "broken win98 sends a notification naming the error"; else bad "no notification ($(cat "$work/run3/commands.log" 2>/dev/null))"; fi
 expect "broken: one notification" "$(grep -c "notify-send Desktop theme could not load" "$work/run3/commands.log")" 1
-grep -q "desktop-theme set platinum" "$work/run3/commands.log" && ok "theme-name rolled back to platinum" || bad "no rollback"
+grep -q "desktop-theme rollback win98 platinum" "$work/run3/commands.log" && ok "theme-name rolled back to platinum" || bad "no rollback"
 expect "theme-name file" "$(cat "$XDG_STATE_HOME/mountainous/theme-name")" platinum
 expect "broken: still Platinum, one slot" "$(loaded)" "platinum 1"
 assert_layers "broken: after the rollback (the open menu closed)" platinum 0

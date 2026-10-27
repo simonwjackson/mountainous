@@ -142,6 +142,24 @@ check_extra on
 check light prefer-light
 [[ ! -e $name.new ]]
 
+# Loader recovery is local first, even when the session bus is absent. Keep
+# mode/Extra dark, and do not let a delayed rejection replace a newer choice.
+"$command_path" apply win98 dark on >/dev/null
+printf 'broken\n' > "$name"
+[[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" rollback broken platinum) == platinum ]]
+[[ $(<"$name") == platinum && $(<"$state") == dark && $(<"$extra") == on ]]
+"$command_path" reapply >/dev/null
+check dark prefer-dark
+check_extra on
+"$command_path" set win98 >/dev/null
+[[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" rollback broken platinum) == win98 ]]
+[[ $(<"$name") == win98 ]]
+for fallback in unknown '../platinum' ''; do
+  if "$command_path" rollback win98 "$fallback"; then echo 'FAIL: invalid rollback accepted' >&2; exit 1; fi
+  [[ $(<"$name") == win98 ]]
+done
+"$command_path" set platinum >/dev/null
+
 # Every change asks a running Hyprland to restyle the title bars; reads and
 # refused commands do not, and nothing is asked outside a Hyprland session.
 fake="$XDG_RUNTIME_DIR/fake-bin"
@@ -160,11 +178,11 @@ asked() { # command... -> how many times hyprctl was asked
     echo 0
   fi
 }
-for change in dark light toggle reapply 'set win98' 'set platinum' 'apply platinum dark on' 'extra off' 'extra toggle' 'extra on'; do
+for change in dark light toggle reapply 'set win98' 'set platinum' 'apply platinum dark on' 'extra off' 'extra toggle' 'extra on' 'rollback platinum win98' 'rollback win98 platinum'; do
   # shellcheck disable=SC2086
   [[ $(asked $change) == 1 ]] || { echo "FAIL: '$change' did not restyle the title bars" >&2; exit 1; }
 done
-for read in status 'extra status' list 'set unknown' 'apply platinum bogus on' bogus; do
+for read in status 'extra status' list 'set unknown' 'apply platinum bogus on' 'rollback broken platinum' 'rollback platinum unknown' bogus; do
   # shellcheck disable=SC2086
   [[ $(asked $read) == 0 ]] || { echo "FAIL: '$read' restyled the title bars" >&2; exit 1; }
 done

@@ -22,9 +22,10 @@ Scope {
     function fail(name, error) {
         root.pendingComponent = null;
         root.failed(name, error);
-        // Every screen may reject the same attempt. set is idempotent, and
+        // Recovery saves the known-good name before best-effort native work.
+        // The rejected ID prevents a late callback replacing a newer choice;
         // only the primary screen sends the desktop-wide notification.
-        Quickshell.execDetached(["desktop-theme", "set", root.currentName]);
+        Quickshell.execDetached(["desktop-theme", "rollback", name, root.currentName]);
         if (root.screen === Quickshell.screens[0])
             Quickshell.execDetached(["notify-send", "Desktop theme could not load", name + ": " + error]);
     }

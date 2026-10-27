@@ -227,7 +227,7 @@ Each Desktop implements these methods. It must **not** register an IPC handler p
 
 The stable IDs are `bt`, `wifi`, `vol`, `bri`, `oci`, `disk`, `builder`, `ntf`, `clock`, `more`, and `theme` (picker). Existing chord routing is preserved: hardware controls use the primary screen; builder, notifications and picker follow focus. Existing per-control IPC targets remain available. Hyprland's Super+O chord now uses `chrome` for the hint and control routes.
 
-A candidate must create all chrome in its Desktop and honour `active`. A compilation/creation error keeps the old object, closes the menu, calls `desktop-theme set <previous>`, and sends one primary-screen notification with the failed ID and Qt error. The fixture's broken type is never delivered to hosts. Runtime binding warnings are not a Loader Error: each new theme must still pass the warning-free engine test.
+A candidate must create all chrome in its Desktop and honour `active`. A compilation/creation error keeps the old object, closes the menu, calls `desktop-theme rollback <failed> <previous>`, and sends one primary-screen notification with the failed ID and Qt error. The fixture's broken type is never delivered to hosts. Runtime binding warnings are not a Loader Error: each new theme must still pass the warning-free engine test.
 
 ### Picker view
 
@@ -789,7 +789,8 @@ Nested Hyprland 0.56.2 under headless labwc, `eDP-1` 2880×1800 at 1.5, the work
 as the chrome and web theme. `set`, `apply`, mode changes, Extra dark and `reapply`
 all update GTK, Qt and Ghostty under the existing lock. Win98 preserves Extra
 dark but ignores it. Status and refused commands do not change toolkit files.
-A failed session-bus write does not publish a choice or change native files.
+An ordinary change with a failed session-bus write does not publish a choice
+or change native files. Loader recovery is the exception described below.
 
 ### What was built
 
@@ -1165,3 +1166,35 @@ route to complete ownership. Theme manifest documentation:
 <https://developer.chrome.com/docs/extensions/develop/ui/themes>. It can reuse
 our existing tokens; it cannot turn modern rounded tabs into our caption or
 replace Chrome's navigation controls. A design engineer must review that gap.
+
+### Loader recovery after native integration (2026-10-27)
+
+Confirmed regression: the loader used `desktop-theme set platinum` after a
+broken load. With no session bus, dconf returned 1 before the name was saved.
+The old Desktop stayed mapped but `theme-name` stayed `broken`, so the lifecycle
+check timed out. Giving only the test a healthy bus would hide a real failure.
+
+`desktop-theme rollback <failed-theme> <fallback-theme>` now compares the raw
+stored ID under the existing lock, validates the fallback, and atomically saves
+the fallback before native work. It preserves mode and Extra dark. A delayed
+callback does nothing if another choice has replaced the failed ID. Native
+synchronisation is best effort for recovery only; a failure reports that native
+files may lag and a later `reapply` repairs them. Ordinary `set`/`apply` keep their
+strict failure behaviour. No pending-state file or second preference owner was
+added. A storage write failure still returns an error; recovery cannot bypass
+an unwritable state directory.
+
+The lifecycle test explicitly disconnects both buses and exercises the real
+loader, packaged command and atomic state file. CLI/native tests cover a failed
+bus, a refusing native writer, preserved mode/Extra dark, stale recovery,
+invalid fallbacks and successful reapply.
+
+Recovery validation: `desktop-theme-shell`, `desktop-theme`, and `native-themes`
+all passed, one at a time through `/tmp/phase1/heavy.sh` (logs:
+`/tmp/tandem/phase3/logs/rollback-{desktop-theme-shell,desktop-theme,native-themes}.log`).
+The exact previously packaged command reproduced exit 1 and `theme-name=broken`;
+the new packaged recovery command returned 0 with `platinum dark on` intact
+while reporting the disconnected bus and stale native settings. Nixfmt, the
+focused CLI/native ShellCheck and the lifecycle Node parser passed. The two
+legacy capture scripts retain their pre-existing ShellCheck warnings; their
+syntax checks passed. No SSH, push or deployment ran.

@@ -55,6 +55,7 @@ let
           printf 'usage: desktop-theme dark|light|toggle|status|reapply\n' >&2
           printf '       desktop-theme set <theme>|list|picker\n' >&2
           printf '       desktop-theme apply <theme> dark|light on|off\n' >&2
+          printf '       desktop-theme rollback <failed-theme> <fallback-theme>\n' >&2
           printf '       desktop-theme extra on|off|toggle|status\n' >&2
           exit 2
         }
@@ -123,7 +124,7 @@ let
           case "$value" in light) printf light ;; *) printf dark ;; esac
         }
 
-        apply() {
+        apply_native() {
           mode="$1"
           name="''${2:-$(read_name)}"
           extra_value="''${3:-$(read_extra)}"
@@ -133,13 +134,17 @@ let
           if [ "$mode" = light ]; then scheme=prefer-light; else mode=dark; scheme=prefer-dark; fi
           if [ "$name" = platinum ]; then font=ChicagoFLF; else font='W95FA Grid'; fi
 
-          # Do not publish a choice after a session-bus failure. The native
-          # writer preserves unrelated user settings; errors are not hidden.
-          dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'"
-          dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'"
-          dconf write /org/gnome/desktop/interface/font-name "'$font 12'"
+          # Explicit returns also stop on failure when recovery calls this
+          # function in a conditional (where Bash disables errexit).
+          dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'" || return
+          dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'" || return
+          dconf write /org/gnome/desktop/interface/font-name "'$font 12'" || return
           python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value"
+        }
 
+        apply() {
+          # Ordinary changes publish only after native synchronisation.
+          apply_native "$@" || return
           printf '%s\n' "$mode" > "$state_file.new"
           mv -f "$state_file.new" "$state_file"
           write_extra "$extra_value"
@@ -168,6 +173,23 @@ let
             apply "$(read_state)" "$2" "$(read_extra)" > /dev/null
             changed=1
             printf '%s\n' "$2"
+            ;;
+          rollback)
+            if [ "$#" -ne 3 ] || ! valid_theme "$3"; then usage; fi
+            # Compare the raw stored ID: a rejected fixture/new theme may
+            # not be in this command's registry. Ignore stale callbacks.
+            saved_name=""
+            if [ -r "$name_file" ]; then saved_name=$(tr -d '[:space:]' < "$name_file"); fi
+            if [ "$saved_name" = "$2" ]; then
+              # Chrome recovery must not depend on D-Bus or toolkit files.
+              # Preserve mode/Extra dark; publish the known-good name first.
+              write_name "$3"
+              changed=1
+              if ! apply_native "$(read_state)" "$3" "$(read_extra)"; then
+                printf 'desktop-theme: restored %s; native settings may lag; run desktop-theme reapply\n' "$3" >&2
+              fi
+            fi
+            printf '%s\n' "$(read_name)"
             ;;
           list) printf '%s\n' '${themeList}' ;;
           picker)

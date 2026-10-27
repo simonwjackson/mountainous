@@ -51,6 +51,7 @@ put() { printf '%s\n' "\$2" > "\$dir/\$1.new" && mv "\$dir/\$1.new" "\$dir/\$1";
 case "\$1" in
   apply) put theme-name "\$2"; put theme "\$3"; put theme-extra "\$4" ;;
   set) put theme-name "\$2" ;;
+  rollback) if [ "\$(cat "\$dir/theme-name")" = "\$2" ]; then put theme-name "\$3"; fi ;;
   picker) exit 0 ;;
 esac
 EOF

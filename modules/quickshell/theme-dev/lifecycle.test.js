@@ -16,6 +16,9 @@ const runtime = path.join(temp, 'run');
 for (const dir of [config,state,bin,runtime]) fs.mkdirSync(dir, {recursive:true,mode:0o700});
 const env = {...process.env, HOME:temp, XDG_RUNTIME_DIR:runtime, XDG_STATE_HOME:path.dirname(state),
     XDG_CONFIG_HOME:path.join(temp,"xdg"), WAYLAND_DISPLAY:'wayland-0', QT_QPA_PLATFORM:'wayland',
+    // Recovery must work with a disconnected bus, not just a healthy test bus.
+    DBUS_SESSION_BUS_ADDRESS:'unix:path='+path.join(temp,'missing-session-bus'),
+    DBUS_SYSTEM_BUS_ADDRESS:'unix:path='+path.join(temp,'missing-system-bus'),
     WLR_BACKENDS:'headless', WLR_RENDERER:'pixman', WLR_LIBINPUT_NO_DEVICES:'1',
     PATH:bin + ':' + process.env.PATH, QT_QUICK_BACKEND:'software'};
 delete env.HYPRLAND_INSTANCE_SIGNATURE;
@@ -112,6 +115,9 @@ ShellRoot {
         await until(()=>fs.existsSync(path.join(runtime,'wayland-0')),'Wayland socket');
         shell=start(qs,['-p',config]);
         await until(()=>snapshot().active,'initial Desktop');
+        const refused = spawnSync(desktopTheme, ['set', 'win98'], {env, encoding:'utf8', timeout:3000});
+        assert.equal(refused.status, 1, 'ordinary changes must report the disconnected bus: ' + refused.stderr);
+        assert.equal(fs.readFileSync(path.join(state,'theme-name'),'utf8').trim(),'platinum');
         for (const entry of themes) {
             for (const face of [undefined, "unknown", "", 1, "platinum", "winamp"]) {
                 const value = {...entry, pyxampFace:face};
@@ -150,7 +156,7 @@ ShellRoot {
         fs.unlinkSync(path.join(state,'theme-name'));await wait(100);
         assert.equal(snapshot().theme,'platinum');
         if (/WARN scene|TypeError|ReferenceError|Failed to load configuration|QML.*(Error|Warning)/i.test(logs))throw Error(logs);
-        console.log('THEME_LIFECYCLE_TESTS_PASSED: rollback, notification, 20 swaps, missing/unknown state');
+        console.log('THEME_LIFECYCLE_TESTS_PASSED: disconnected-bus rollback, notification, 20 swaps, missing/unknown state');
     } finally {
         await stop(shell);await stop(compositor);
         fs.writeFileSync(path.join(temp,'test.log'),logs);
