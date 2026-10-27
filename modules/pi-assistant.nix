@@ -65,6 +65,10 @@ in
                   && lib.elem "cliproxyapi.service" service.after
                 ) "pi-assistant-${name} must start after the front door and login keeper"
                 ++ want (lib.elem "cliproxyapi-key:${c.sops.secrets.ai-gateway-key-assistant-rakku.path}" service.serviceConfig.LoadCredential) "pi-assistant-${name} does not load its front-door key"
+                ++ want (
+                  lib.elem "decide-api-key:${c.sops.secrets.ai-gateway-key-assistant-rakku.path}" service.serviceConfig.LoadCredential
+                  && (service.environment.ASSISTANT_DECIDE_URL or null) == "http://127.0.0.1:8430/v1"
+                ) "pi-assistant-${name} does not ask Jev through the front door"
               )
             ) names
             ++ want (
@@ -91,6 +95,12 @@ in
                   )
                 )
               ) "assistant lanes or web search request a model outside the gateway grant"
+              ++ want (
+                let
+                  grant = builtins.head c.mountainous.features.ai-gateway.settings.gateway_keys;
+                in
+                lib.elem "jev" grant.models && lib.elem "systemone" grant.dialects
+              ) "the assistant grant does not allow Jev (model jev, dialect systemone)"
               ++ want (
                 lib.all (
                   name:
@@ -141,6 +151,9 @@ in
     }:
     let
       cfg = config.mountainous.features.pi-assistant;
+      # With the front door, core asks Jev (reflexes, thread choice, recall;
+      # assistant ADR 0001) through it, on the same grant as the chat lanes.
+      frontDoor = config.mountainous.features.ai-gateway.enable or false;
       people = lib.attrNames cfg.people;
       instances = lib.mapAttrs (name: ports: ports // { person = name; }) cfg.people // {
         household = cfg.household // {
@@ -268,6 +281,9 @@ in
         // lib.optionalAttrs (instance.person != null) { ASSISTANT_PERSON = instance.person; }
         // lib.optionalAttrs (instance.person == null) { ASSISTANT_HOUSEHOLD = "1"; }
         // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
+        // lib.optionalAttrs frontDoor {
+          ASSISTANT_DECIDE_URL = "http://127.0.0.1:${toString cfg.cliproxyapiPort}/v1";
+        }
         // lib.optionalAttrs (cfg.groceries != null) {
           ASSISTANT_GROCERIES_BASE_URL = cfg.groceries.url;
           # ExecStartPre copies the credential here (see prepare).
@@ -520,6 +536,8 @@ in
                   "cliproxyapi-key:${cfg.cliproxyapiKeyFile}"
                   "brave-api-key:${cfg.braveApiKeyFile}"
                 ]
+                # Core reads $CREDENTIALS_DIRECTORY/decide-api-key for Jev.
+                ++ lib.optional frontDoor "decide-api-key:${cfg.cliproxyapiKeyFile}"
                 ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}"
                 ++ lib.optional (cfg.groceries != null) "groceries-service-token:${cfg.groceries.tokenFile}"
                 ++ lib.mapAttrsToList (name: file: "${name}:${file}") (instance.credentials or { });

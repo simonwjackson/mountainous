@@ -66,13 +66,16 @@ below. xAI and OpenRouter stay off.
 | Production gateway key | Grant |
 | --- | --- |
 | name | assistant@rakku |
-| dialects | codex, models, responses |
-| models | claude-opus-5-5, gpt-6.1-sol, gemini-3.8-flash-high, gpt-5.6-luna |
-| paid cap | USD 0/month |
+| dialects | codex, models, responses, systemone |
+| models | claude-opus-5-5, gpt-6.1-sol, gemini-3.8-flash-high, gpt-5.6-luna, jev |
+| paid cap | USD 5/month |
 | rate limit | 600 requests/minute |
 
-The assistant key cannot use a paid model. Subscription requests do not charge
-the paid cap. The usage key only reads the usage endpoint. The separate voice
+The assistant key can use one paid model: Jev, through System One. The
+assistants ask Jev for reflexes, thread choice and recall (assistant ADR 0001),
+at the fixed $0.0001 charge per call. Past the cap the front door returns 402,
+and core falls back to its rules. Subscription requests do not charge the paid
+cap. The usage key only reads the usage endpoint. The separate voice
 key below can use only ElevenLabs Flash v2.5. Other configured prices remain
 staging **ceilings, not tariffs**; the Flash v2.5 price is a verified tariff.
 

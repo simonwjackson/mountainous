@@ -83,18 +83,25 @@ in
                   name = "assistant@rakku";
                   secret = "ai-gateway-key-assistant-rakku";
                   credential = "assistant";
+                  # systemone and jev: core's reflexes, thread choice and
+                  # recall ask Jev here (assistant ADR 0001).
                   dialects = [
                     "codex"
                     "models"
                     "responses"
+                    "systemone"
                   ];
                   models = [
                     "claude-opus-5-5"
                     "gpt-6.1-sol"
                     "gemini-3.8-flash-high"
                     "gpt-5.6-luna"
+                    "jev"
                   ];
-                  monthly_cap_usd = 0;
+                  # Jev is the one paid model here, at the fixed $0.0001 charge
+                  # per call. About 12,000 calls a month are expected; past the
+                  # cap, core falls back to its rules (assistant ADR 0001).
+                  monthly_cap_usd = 5;
                   requests_per_minute = 600;
                 }
                 {

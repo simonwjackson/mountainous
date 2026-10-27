@@ -39,9 +39,10 @@ if production:
         "gpt-6.1-sol",
         "gemini-3.8-flash-high",
         "gpt-5.6-luna",
+        "jev",
     ]
-    assert a["dialects"] == ["codex", "models", "responses"]
-    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (0, 600)
+    assert a["dialects"] == ["codex", "models", "responses", "systemone"]
+    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (5, 600)
     voice = settings["gateway_keys"][1]
     assert voice == {
         "name": "voice@zao",
