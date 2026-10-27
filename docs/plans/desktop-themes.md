@@ -18,7 +18,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Unthemed card | Run dialog / Find window (not mocked) |
-| Window title bars | Done (hyprbars patch) | Missing | Navy caption with minimize, maximize, close (not mocked) |
+| Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption, minimize/maximize/close; shared menu IPC contract below |
 | Web page styling | Done (`themes/platinum/web.css`) | Missing | `themes/win98/web.css` |
 | Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
 | About | Done | Missing | System Properties (not mocked) |
@@ -651,7 +651,7 @@ Nested Hyprland 0.56.2 inside bubblewrap under headless labwc (only `/dev/dri/re
 
 ## Window title bars (implemented)
 
-Under Platinum every window that leaves its frame to the compositor gets a Mac OS 8 title bar and frame: a close box on the left; a zoom box and a collapse box on the right; pinstripes either side of a plain patch behind the ChicagoFLF title; a black edge and a one-hair bevel round the whole window. An inactive window's bar is flat, with a grey title and no boxes. The bars take the theme's appearance (light, dark grey, black) and follow `desktop-theme` live. Under Win98 there are none, and windows keep the session's edge and corners.
+Under Platinum every window that leaves its frame to the compositor gets a Mac OS 8 title bar and frame: a close box on the left; a zoom box and a collapse box on the right; pinstripes either side of a plain patch behind the ChicagoFLF title; a black edge and a one-hair bevel round the whole window. An inactive window's bar is flat, with a grey title and no boxes. The bars take the theme's appearance (light, dark grey, black) and follow `desktop-theme` live. Windows 98 is a second live style in the same plugin: navy or inactive grey gradient, W95FA Grid bold caption, minimize/maximize/close boxes and a raised square frame. Both appearances follow Win98Tokens. See the Win98 caption section below for the app-icon and menu integration boundary.
 
 ### What was built
 
@@ -675,11 +675,11 @@ Under Platinum every window that leaves its frame to the compositor gets a Mac O
 | No bar on a client that asked to draw its own frame, or never asked (GTK4/libadwaita, GTK3, a normal Chromium window); decided from the client's own decoration request | The spike's plan was a hand-kept `no_bar` list of libadwaita classes. The request is what the client said, so no list drifts. Cost: such a window has no frame either; normal Chromium windows keep their own tab strip and caption. X11 windows keep stock hyprbars' rule. |
 | Collapse hides the focused window (`windows collapseActive`); its app's Show brings it back | Hyprland cannot roll a window up to its title bar (WindowShade). Hiding is the nearest thing that keeps the window. Cost: the window leaves the screen instead of leaving its title bar. The spike made it a float toggle, which matches nothing on Mac OS. |
 | A double click on the bar zooms, not collapses | Mac OS 8 shades on a double click; here that would hide the window on a stray double click. |
-| Boxes act on press, as stock hyprbars does; no pressed state is drawn | Mac OS acts on release with a sunken box. Not worth the patch size yet. |
+| Both themes now act on release, draw a sunken box while held, and cancel when released off that box | Shared capture handling closes the old Platinum parity gap. Cost: another input state in the patch; a live theme change cancels that state. |
 | Groups keep Hyprland's tab bar and get no title bar; the tab bar's indicator takes the title colours | As the spike found, two strips stack otherwise. |
 | `hl.plugin.load()` on every parse | See `docs/decisions/hyprland.md`. |
 
-### Evidence
+### Original Platinum evidence (before Win98 captions)
 
 Nested Hyprland 0.56.2 under headless labwc, `eDP-1` 2880×1800 at 1.5, the worktree's real `hyprland.lua` and `titlebars.lua` with only the plugin path changed. labwc, Hyprland and every client ran in a bubblewrap namespace whose `/dev` held only `/dev/dri/renderD128`; no seat, no libinput, no `drm: Starting backend`, no `card*` open. Evidence: `/tmp/phase2/` (served at `http://100.114.19.92:8765/phase2/`).
 
@@ -821,3 +821,39 @@ is 148 distinct realised paths from 208 environment-package entries;
 that package graph, **not** a built-system closure delta. Test-only Qt probes
 and libobs do not add runtime packages. The licence report records upstream
 claims; no separate artwork-rights review was performed.
+
+
+### Windows 98 captions (second hyprbars style)
+
+The same `hyprbars-platinum.so` now draws Win98. `titlebars.settings(state)` switches the style, palette, font and square edge live; Win98 ignores Extra dark. Client decoration requests and the group rule still decide whether a bar exists. No class list was added.
+
+The caption is 18 units plus a one-unit seam; the raised frame is three units. Each unit is two device pixels on the window's output. Active/inactive gradients, bevels and glyphs use `Win98Tokens`; `checks.titlebars` compares both palettes, alongside Platinum's. W95FA Grid draws at 25px without smoothing or hinting, with extra advance and a second strike, as `Win98Text.qml` does bold. Pango/Cairo is an explicit dependency. Maximized windows use Restore and no frame; Hyprland's existing maximized gaps remain.
+
+`captionLayout.hpp` shares drawing and hit testing. Compile-time assertions cover the mock's 109/79/45-unit boundaries and widths 1–1024: title first, then the minimize/maximize pair, then Close move to the window menu. The title remains on the taskbar. Both themes now act on release, reverse the held bevel and cancel an off-box release; Platinum's black appearance stays flat. A theme change or reload cancels capture. Minimize retains `windows collapseActive` / `WindowHider.hideWindow`; caption double-click maximizes.
+
+#### Window-menu integration boundary
+
+```
+qs -c mountainous ipc call windows menu <address> <x> <y>
+```
+
+- Hex address without `0x`; global logical `x`, `y` are the menu's top-left anchor. The caption sends its left edge, below the bar.
+- Empty address and `x=y=-1` select the focused window's caption anchor. Alt+Space sends this under Win98; under Platinum it passes through.
+- The window-menu worker adds `menu(address: string, x: int, y: int)` to the **existing root** `windows` handler, validates against `windowRows`, and routes to the screen's Desktop. It reuses the taskbar's Restore / Move to Page / Minimize / Maximize / Close menu. No second menu or handler is added here.
+
+The producer is built; the menu consumer is a separate integration dependency. Until it lands, narrow overflow actions require keyboard bindings or the taskbar. The caption uses a standard document menu affordance, **not an application icon**. App icons, a caption-title tooltip and icon double-click-to-close are deferred. A future shared publisher can atomically write 32×32 PNGs to `$XDG_RUNTIME_DIR/mountainous/titlebar-icons/<address>.png` from the existing app lookup and remove them on close. The plugin should cache by revision and use the document fallback, never resolve icons in its draw loop. No unused reader or publisher is shipped.
+
+#### Cache and verification
+
+The whole caption is one texture per window, rebuilt for title, focus, physical size, palette, held box or maximize/restore changes. The earlier gradient and title were already cached; the avoidable work was 48 face/bevel/glyph rectangles plus two textures **per caption per frame**, even while inactive. The new caption needs one texture draw; the frame retains 12 rectangles.
+
+CPU seconds per 20-second interval, three windows, one spinning page, full redraw at nominal 60 Hz:
+
+| Draw path | Win98 | Platinum | No bars |
+|---|---|---|---|
+| Before whole-caption cache | 2.26 / 2.03 | 1.45 / 1.40 | 0.86 / 0.91 |
+| Whole-caption cache | 1.21 / 1.39 | 1.18 / 1.36 | 0.90 / 0.85 |
+
+Mean Win98 extra CPU falls 66%, from 1.26 to 0.425 seconds. All six new intervals have zero cache rebuilds after warm-up; the CPU harness exits cleanly. The caption has zero changed pixels against the old renderer in a 1410×38 crop. Bevels and text strokes are whole two-pixel steps in both appearances, without blended text edges.
+
+`checks.titlebars` and Myoko toplevel evaluation pass. The private nested Hyprland passes 32 input/caption assertions, including a real title change, empty/long titles, actual narrow rungs, a classless Qt client, Alt+Space, ten live round trips and reload. DRM log/fd scans show no backend, seat, real input or `card*`; only `renderD128` is exposed. Evidence and fixture corrections: `/tmp/tandem/win98-titlebars/` (`DETAILS.md`, `logs/{final-caption,cpu-cached}.log`, `compare/`, `logs/pixels.json`). Real Quickshell menu/hide integration, Myoko's GPU, real input, other scales and X11 remain unverified. No deployment.

@@ -915,6 +915,14 @@ hl.bind("CTRL + Escape", function()
     return { ok = true }
 end, { auto_consuming = true })
 
+-- The same window menu as a Win98 caption's icon and taskbar right click.
+-- Empty address and -1/-1 request the focused window's caption anchor.
+hl.bind("ALT + Space", function()
+    if desktop_theme_name() ~= "win98" then return { ok = false } end
+    hl.exec_cmd("qs -c mountainous ipc call windows menu '' -1 -1")
+    return { ok = true }
+end, { auto_consuming = true })
+
 hl.define_submap("topbar-access", "reset", function()
     hl.bind("B", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open bt"))
     hl.bind("W", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open wifi"))

@@ -1,18 +1,11 @@
--- Mac OS 8 Platinum window title bars, drawn by the hyprbars-platinum
+-- Platinum and Windows 98 window title bars, drawn by hyprbars-platinum
 -- plugin (modules/hyprland/hyprbars-platinum.patch, built in
 -- modules/hyprland.nix). modules/hyprland.nix installs this file next to
 -- hyprland.lua, which attaches it.
 --
--- The bars follow the desktop theme. Under Platinum they take its
--- appearance: light, dark grey, or black (extra dark). Under any other
--- theme there are no bars, and windows keep the session's own border and
--- corners. The theme lives in three files under
--- $XDG_STATE_HOME/mountainous (modules/theme.nix: theme-name, theme,
--- theme-extra). This module reads them at every config load, and
--- desktop-theme calls apply() after each change:
---
---   hyprctl eval 'local ok, t = pcall(require, "titlebars"); if ok then t.apply() end'
---
+-- One plugin draws both desktop themes. Settings follow the three state
+-- files on every parse and desktop-theme change. Unknown themes keep the
+-- session's edge and corners. Both supported themes use square frames.
 -- apply() only sets values. The buttons and rules are made once per config
 -- load in attach(), because a config reload clears them and eval does not.
 local M = {}
@@ -42,7 +35,22 @@ M.PALETTES = {
     },
 }
 
--- Platinum windows are square. The plugin's frame draws their black edge,
+-- Win98Tokens.palette(). checks.titlebars compares every caption/frame
+-- token in both appearances; Extra dark is intentionally ignored.
+M.WIN98_PALETTES = {
+    light = {
+        face = "c0c0c0", hi = "ffffff", li = "dfdfdf", lo = "808080", edge = "000000",
+        text = "ffffff", text_off = "c0c0c0", glyph = "000000",
+        caption1 = "000080", caption2 = "1084d0", inactive1 = "808080", inactive2 = "c0c0c0",
+    },
+    dark = {
+        face = "3c3c3c", hi = "7a7a7a", li = "565656", lo = "222222", edge = "000000",
+        text = "ffffff", text_off = "9a9a9a", glyph = "ececec",
+        caption1 = "000080", caption2 = "1084d0", inactive1 = "2a2a2a", inactive2 = "4a4a4a",
+    },
+}
+
+-- Both desktop themes are square. The plugin's frame draws their black edge,
 -- because a hair is whole device pixels (2 at scale 1.5) and Hyprland's
 -- border is whole logical pixels (1.5 device pixels, rounded unevenly).
 -- attach() takes the session's own values for every other theme.
@@ -70,8 +78,9 @@ function M.state()
     return { name = name, mode = mode, extra = read("theme-extra") == "on" }
 end
 
--- The palette name for a state, or nil when the theme draws no bars.
+-- The palette name for a state, or nil for an unsupported theme.
 function M.appearance(state)
+    if state.name == "win98" then return "win98_" .. (state.mode == "light" and "light" or "dark") end
     if state.name ~= "platinum" then return nil end
     if state.mode == "light" then return "light" end
     return state.extra and "black" or "dark"
@@ -90,24 +99,40 @@ function M.settings(state)
             plugin = { hyprbars = { enabled = false } },
         }
     end
-    local p = M.PALETTES[key]
+    local win98 = state.name == "win98"
+    local p = win98 and M.WIN98_PALETTES[state.mode == "light" and "light" or "dark"] or M.PALETTES[key]
+    local style = {
+        platinum = true, -- shared client-decoration test and frame owner
+        win98 = win98,
+        -- Win98 computes its 18-u caption plus 1-u seam per output; the
+        -- config height is the caption at the default 1.5 scale.
+        bar_height = win98 and 24 or 20,
+        bar_text_font = win98 and "W95FA Grid" or "ChicagoFLF",
+        bar_text_size = win98 and 17 or 12,
+        bar_text_align = win98 and "left" or "center",
+        enabled = true,
+        bar_color = rgb(p.face),
+        ["col.text"] = rgb(p.text),
+        platinum_title_inactive = rgb(p.text_off),
+        platinum_hi = rgb(p.hi), platinum_lo = rgb(p.lo),
+        platinum_frame = rgb(p.edge), platinum_box = rgb(win98 and p.face or p.box),
+        platinum_rule = rgb(win98 and p.edge or p.rule),
+    }
+    if win98 then
+        style.win98_li = rgb(p.li)
+        style.win98_caption1 = rgb(p.caption1)
+        style.win98_caption2 = rgb(p.caption2)
+        style.win98_inactive1 = rgb(p.inactive1)
+        style.win98_inactive2 = rgb(p.inactive2)
+        style.win98_button_text = rgb(p.glyph)
+    end
     return {
         general = { border_size = M.PLATINUM_WINDOW.border_size },
         decoration = { rounding = M.PLATINUM_WINDOW.rounding },
         -- A group keeps Hyprland's tab bar and no title bar. Its indicator
         -- takes the title colours, square.
         group = { groupbar = { rounding = 0, col = { active = rgb(p.text), inactive = rgb(p.text_off) } } },
-        plugin = { hyprbars = {
-            enabled = true,
-            bar_color = rgb(p.face),
-            ["col.text"] = rgb(p.text),
-            platinum_title_inactive = rgb(p.text_off),
-            platinum_hi = rgb(p.hi),
-            platinum_lo = rgb(p.lo),
-            platinum_frame = rgb(p.edge),
-            platinum_box = rgb(p.box),
-            platinum_rule = rgb(p.rule),
-        } },
+        plugin = { hyprbars = style },
     }
 end
 
@@ -124,7 +149,7 @@ function M.apply()
 end
 
 local function dispatch(lua)
-    return "hyprctl dispatch '" .. lua .. "'"
+    return "hyprctl --instance 0 dispatch '" .. lua .. "'"
 end
 
 -- opts: the session's border_size and rounding, for themes without bars.
@@ -143,11 +168,6 @@ function M.attach(opts)
 
     local zoom = dispatch('hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })')
     hl.config({ plugin = { hyprbars = {
-        platinum = true,
-        bar_height = 20,
-        bar_text_font = "ChicagoFLF",
-        bar_text_size = 12,
-        bar_text_align = "center",
         bar_padding = 7,
         bar_button_padding = 5,
         bar_precedence_over_border = true,
