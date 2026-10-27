@@ -581,6 +581,78 @@ Nested Hyprland 0.56.2 under headless labwc, 2880×1800 at 1.5 with a second out
 - Ctrl+L inside the Find menu with a non-browser front window: Hyprland's Ctrl+L bind passes the key to that window, so the menu does not see it. The scope pop-up's "Go to Address…" and the "Go to address" rows still open the dialog.
 - Keys typed in the moment between Super+P and the menu's surface mapping go to the window behind (inferred to be as before).
 
+## Find window, Open and web pages for Win98 (implemented)
+
+Spec: the approved parity mock at `/tmp/tandem/win98-parity-mock/` (`REPORT.md`, every default approved; items 2 and 10; `DIRECTION.md`). Super+P, F1, Start ▸ Find ▸ <scope> and Start ▸ Run… open Win98's Find window above the Start button; Ctrl+L, Look in ▸ Go to Address…, Start ▸ Find ▸ Address… and the Find window's "Go to" rows open Internet Explorer's Open dialog, centred on the window it acts on. Web pages get `themes/win98/web.css`. Both are views of the shared omni service; nothing in `OmniBar.qml`, `find-model.js` or `CdpBrowser` changed.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| Find window | `Win98FindWindow.qml`: Named field, Look in (All, Applications, Windows, Commands, Go to Address…), Open and Close, the Details list with Platinum's groups as rows (bold on the face colour, an etched rule), a status bar (count, the chosen row's kind and details), an in-place tip for a cut name |
+| Open dialog | `Win98OpenDialog.qml`: the globe and its line, "Open:" with an editable combo (the address prefilled and selected, the open pages in its drop-down, filtered as you type), where OK opens it, OK and Cancel |
+| Claim and wiring | `Win98OmniView.qml` (claim while active, release when inactive or destroyed, the service ↔ `MenuState` sync, running a row), ten lines in `Win98Desktop.qml`, the `find`/`address` entries and their placement in `Win98MenuHost.qml` |
+| Sizes (pure) | `themes/win98/find-plan.js` (+ `.test.js`): `findPlan`, `openPlan`, `dropPlan`, row arithmetic |
+| Start | `themes/win98/start-model.js`: Start ▸ Find ▸ All…, Applications…, Windows…, Commands…, Address…; Run… opens Find in All |
+| Controls | `Win98TextField.qml` gains `keyPressed` (the list keys) and `rightInsetUnits` (a combo's button); `Win98Text.qml` exposes `drawnText`, `accessX`, `accessWidth`; icons `find`, `find-large`, `globe`, `globe-large` |
+| Web pages | `themes/win98/web.css`: Platinum's sections, guards and rules, Win98's scroll bars and controls, W95FA on buttons, drop-down lists and legends only |
+| Checks | `checks.win98-desktop` runs `find-plan.test.js` and `theme-dev/win98/find.sh` (behaviour and geometry, real keys and pointer); `checks.win98-theme` runs `dev/access.sh`; `checks.web-theme` lints win98; `checks.theme-parity` (new); `bar-delivery` asserts the new files |
+
+### Keys
+
+As `find-model.js` and Platinum's menu: typing filters; Up/Down/PageUp/PageDown move; Enter, Open, or a double click runs the row; Ctrl+1/2/3 pick a scope; Ctrl+L opens Open; Alt+Down or F4 opens Look in (Up/Down/Enter/Esc inside it); Alt+N, Alt+L, Alt+O. Esc and Backspace on an empty field leave the scope, then close; a held Backspace stops at the empty field. In Open: Enter is OK; Down or F4 opens the list; Esc closes the list, then the dialog; Backspace on an empty field (a new press) goes back to Find.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| Find and Open are `MenuState` entries (`find`, `address`) in the Win98 menu host, as Platinum's are in its host | One menu or window at a time, a click outside closes, and the host's full-screen surface already has the keyboard and the press-catcher. Cost: a click outside closes Find, which a Win98 dialog did not do. |
+| The claim lives in `Win98OmniView.qml`, not in `Win98Desktop.qml` | Other workers edit the Desktop too; ten added lines rebase more easily than a hundred. |
+| A pointer resting on a taskbar control does not take over from Find or Open | As Platinum's bar; the hover hand-over is for menus. |
+| Window rows use the Win98 icon set where the taskbar does (`start-model.js appIcon`), else the icon theme, else the document icon | One icon per app across the taskbar, Start and Find. Cost: a Chromium web app shows Chromium's icon, not its lettermark (as on its taskbar button). |
+| The Find window's body scrolls as a whole when even three rows do not fit (under about 160 u of room) | Phase 2's rule for every Win98 window: the buttons scroll with the body, Enter and Esc work wherever they are. The mock pinned them; the case starts far below 360x640. |
+| Open's drop-down opens as you type, and a click on a page goes there at once | IE5's AutoComplete; as the mock. |
+| Open names the caller's app from its desktop entry itself | The Desktop has no `appName()`; the dialog does not need one. |
+| `web.css` token names are `--mtn-*`, with two new ones: `--mtn-well-edge-low` (a well's light outer edge) and `--mtn-focus` dark = `#8e8e8e` | The lint is shared; a Win98 well has two outer colours, and the dotted focus box outside a check box sits on the page, which may be white in dark mode. |
+| W95FA stays off list boxes (`select[multiple]`, `[size]`) | The brief says drop-down lists; a list box is a well of typed data, like a field. |
+| No new site opt-outs | Nothing found broke on the stress page; live sites were not tried (see Not verified). The YouTube Music skip is shared and applies to Win98 too. |
+| The parity check finds the contract in `shell.qml` itself | A new routed method (`desktop.X()`, `typeof desktop.X`, `fleetCall`, `anyDesktop`) is covered without editing the check. Cost: a feature routed some other way needs a line in the check. Chrome control IDs (`chrome open <id>`) are not compared. |
+| A closed gap fails the check until its ledger line goes | Keeps the ledger true. Cost: when Fleet/Glance or Alt+Tab lands for Win98, that branch (or the rebase of this one) must delete the matching lines. |
+
+### Evidence
+
+Headless, as phase 2: the real QML in sway's headless backend (pixman), Qt on llvmpipe, private runtime, state and config directories, the harness's data owners and `OmniFixture.qml` (the omni service's public shape with the real `find-model.js` entry rules). By hand, every session ran in a bubblewrap namespace whose `/dev` held only `/dev/dri/renderD128`, with `LIBGL_ALWAYS_SOFTWARE=1` and nonexistent `SEATD_SOCK`, `AQ_DRM_DEVICES` and `WLR_DRM_DEVICES`; Chromium ran in one with no `/dev/dri` and `--disable-gpu`. The live session was not touched. Evidence: `/tmp/tandem/win98-find-web/` (http://100.114.19.92:8765/tandem/win98-find-web/).
+
+| Gate | Result | Evidence |
+|---|---|---|
+| `find.sh` (in `checks.win98-desktop`) | 102 of 102: 41 behaviour checks (claim, Super+P, typing, Up/Down, Ctrl+1/2/3, Look in by keys and pointer, Esc and Backspace rules, a held Backspace, Enter, Open, a double click, Close, a click outside, Ctrl+L, Open's prefill, list, Esc order and navigation, Backspace back to Find, Start ▸ Find ▸ Windows…, Start ▸ Run…, the release on a swap to Platinum and back) and 61 bounds checks at 1920x1200, 1280x360, 1280x300 (one criteria row in a 520 u window), 640x360, 360x640 and 360x800 | `logs/find4.log` |
+| The plans | `find-plan.test.js`: every threshold one unit either side, the height ladder from 431 u down to 40 u (steps only grow, whole rows, at least three) | `checks.win98-desktop` |
+| Access keys | 7 labels: the drawn run keeps its spaces and their advance; the underline starts after them | `checks.win98-theme` |
+| Web pages | The mock's stress page under no theme, Platinum's and Win98's real sheets, light and dark, 2880x1800 at 1.5, and 360x640; the Win98 column matches the approved draft except list boxes, which keep the site's font | `shots/web/` |
+| Beside the mock | 11 Find and Open states x light and dark grey x the mock's 1920x1200, 1280x360 and 360x800: whole screens and window crops side by side | `compare/` (`summary.tsv`) |
+| No GPU, no seat | Every session: 0 `/dev/dri/card*` open in an fd scan of the namespace, 0 DRM or seat lines in sway's log | `shots/*/drm-proof.txt` |
+
+### Where the build differs from the mock
+
+| Difference | Why |
+|---|---|
+| The desktop colour behind the windows | The mock painted app windows; the harness shows the Win98 desktop. Most of each crop's differing pixels (11% on average; 7% in dark grey) are this. |
+| A Chromium web app's row shows Chromium's icon | As its taskbar button (`start-model.js appIcon`); the mock drew site lettermarks. Web apps without a theme icon fall back to the document icon. |
+| 28 items, "Go to window", "Go to address" | The harness lists `OmniBar.commandRows` as written; the mock used its own shorter list. |
+| Names elide a glyph or two later or earlier | Qt and Chrome cut at different characters. |
+| The criteria rows are as tall as the buttons beside them (23 u) | The mock's plan counted 21 u rows and its render drew 23 u ones; the plan now counts what is drawn (the window is 4 u taller). |
+| On a short, wide screen the window widens to 520 u to put Named, Look in, Open and Close on one row | The mock's one-row step kept Open and Close stacked beside a 21 u row, so it saved nothing; spending width is what the step is for. |
+| Open's "new window" line takes two lines when it is long | The mock's line was one line; a long app name was cut. |
+| A cut name's tip sits under its row and breaks into lines inside the screen | The mock's tip ran off a 360 px screen, so the end of the name was still unreadable there. |
+
+### Not verified
+
+- Nothing ran on Myoko, under Hyprland, with its GPU, Kanata or a real keyboard. Keys came from a virtual keyboard into sway; `HyprlandFocusGrab` does nothing under sway. The Hyprland binds (Super+P, F1, Ctrl+L on a `chrome-*` window) are unchanged and were not pressed.
+- The omni service was the harness's stand-in, not `OmniBar.qml`: windows, apps, recent launches and pages were fixtures. A real navigation through `CdpBrowser` and a real launch were not run.
+- `web.css` was applied to one local stress page, not to live sites (GitHub, Wikipedia, YouTube Music). A site whose buttons have a fixed height may clip W95FA's 16.67 px words; no opt-out was added for that, since none was seen.
+- Scales other than 1.5 for the Find window (the plan is in units, so 1 and 2 follow by construction); `web.css` names 1 to 3 dppx; other ratios fall back to 1 px.
+- Two screens: the Windows scope's groups by screen were drawn from fixture rows, not from a second output.
+
 ## Quiet glyphs: the Platinum top bar, direction A (implemented)
 
 Spec: the approved mock at `/tmp/bar-calm/` (`REPORT.md`, `plans.js`, `shots/*-A-*`). Simon: "This is feeling a little crowded. We need to think about overflow and also just in general, like show, don't tell." Same items in the same places; the icons carry the values. Win98 is unchanged: it has its own taskbar, and no Win98 file or shared Win98 dependency changed.
