@@ -17,9 +17,9 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Pyxamp face | Done (`platinum`) | Done (`winamp`) | Pyxamp's Winamp face |
 | Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
-| Find menu and Go to Address (Super+P, Ctrl+L) | Done | Unthemed card | Run dialog / Find window (not mocked) |
+| Find menu and Go to Address (Super+P, Ctrl+L) | Done | Done | Find window above Start, IE's Open dialog (parity mock item 2; see "Find window, Open and web pages for Win98") |
 | Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption, minimize/maximize/close; shared menu IPC contract below |
-| Web page styling | Done (`themes/platinum/web.css`) | Missing | `themes/win98/web.css` |
+| Web page styling | Done (`themes/platinum/web.css`) | Done (`themes/win98/web.css`) | Win98 scroll bars and form controls; W95FA on buttons, drop-down lists and legends only |
 | Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
 | About | Done | Missing | System Properties (not mocked) |
 | Hide, Hide Others, Show All | Done | Missing | Minimize to the taskbar (not mocked) |
@@ -33,6 +33,13 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |
 | Verified on Myoko with real input | Yes (generations 50–52) | No (#13) | — |
 
+`checks.theme-parity` (`modules/quickshell/theme-dev/theme-parity.js`, `node` only) holds both themes to this table for what the code can show. It reads what a Desktop exposes from the code itself: every method or flag `shell.qml` calls or reads on a Desktop (`reveal`, `cycle`, `toggleFleet`, `fleetShown`, …), whether the Desktop claims the omni view (`omniClaimed` and a `claimView()` call), whether `themes/<id>/web.css` exists, and whether the registry's picker exists and the Desktop loads it. It fails when one theme has one of these and another lacks it, unless the block below lists that gap with a reason; it also fails when a listed gap has closed, so the line goes when the piece lands. The table's rows that are not code (icons, native apps, verification on Myoko) are kept by hand.
+
+```parity-gaps
+# feature         missing in  reason
+cycle             win98       Held Super+Tab: Win98's Alt+Tab Cool Switch is being built with the window menus (another worker; parity mock item 6)
+```
+
 ## Goal
 
 Simon can switch the whole desktop chrome between a handful of themes: Mac OS 8 Platinum and Windows 98 first, more later. Each theme has its own bars, menus, controls, font and colours. The picker draws itself in the style of the current theme. A switch is live, with no restart and no logout.
@@ -45,7 +52,7 @@ A theme is a set of prefixed QML files plus one entry in a list. Assets and pure
 |---|---|---|
 | Which bars exist, on which edge | Top menu bar, plus the dock (restyled later) | One bottom taskbar, no dock |
 | Where window switching lives | Dock | Taskbar buttons, banded by page |
-| Launcher entry | Super+P drops the Find menu from the mountain (the omni service's Platinum view) | Start menu; Run... opens the omni bar's unthemed card |
+| Launcher entry | Super+P drops the Find menu from the mountain (the omni service's Platinum view) | Super+P, Start ▸ Find and Run... open the Find window above Start (the omni service's Win98 view) |
 | Status controls | Bar titles with readouts | Tray icons with tooltips |
 | Menu shape and direction | Hangs down from its title | Rises from the tray; Start cascades up and right |
 | Components | `Platinum*` set | New Win98 set |
@@ -548,7 +555,7 @@ Spec: the approved option B at `/tmp/find-mock/` (`REPORT.md`, `INVESTIGATION.md
 
 ### The contract grows
 
-The omni service stays one shared owner (`shell.qml`, `context.omniBar`), with its IPC target `omni` (`toggle`, `reveal`, `gotowindow`, `apps`, `navigate`, `dismiss`) and its public rows (`windowRows`, `appRows`, `commandRows`) and `run(row)`. New: `mode` may be `cmd`; `screen` is the focused screen captured on the way in; `enterMode(mode, text?)` and `enterNavigate(text?)`; `back()`, `dismiss()`, `navigateTo(text)`; `claimView(owner)` and `releaseView(owner)` with `themed`. A Desktop that draws its own view claims it while active; the unthemed card shows only while nothing claims it. Win98 claims nothing, so its Super+P, Ctrl+L and Start ▸ Run… keep today's card and look. `omni apps` now opens the Applications scope (it opened All, and the `app` mode was unreachable).
+The omni service stays one shared owner (`shell.qml`, `context.omniBar`), with its IPC target `omni` (`toggle`, `reveal`, `gotowindow`, `apps`, `navigate`, `dismiss`) and its public rows (`windowRows`, `appRows`, `commandRows`) and `run(row)`. New: `mode` may be `cmd`; `screen` is the focused screen captured on the way in; `enterMode(mode, text?)` and `enterNavigate(text?)`; `back()`, `dismiss()`, `navigateTo(text)`; `claimView(owner)` and `releaseView(owner)` with `themed`. A Desktop that draws its own view claims it while active; the unthemed card shows only while nothing claims it. Win98 claims it too since its Find window and Open dialog landed (see "Find window, Open and web pages for Win98" below); `checks.theme-parity` now fails if either theme stops claiming it. `omni apps` now opens the Applications scope (it opened All, and the `app` mode was unreachable).
 
 ### Decisions made without asking
 
