@@ -134,7 +134,7 @@ PanelWindow {
         if (id === "vol") return bar.sound.muted ? "Muted" : bar.sound.volumePercent + "%";
         if (id === "bri") return bar.briLevel + "%";
         if (id === "oci") return bar.oci.state === "ready"
-            ? bar.ociRows.map(function (r) { return r.value; }).join(" ") : bar.oci.stateText;
+            ? bar.ociRows.map(function (r) { return r.name + " " + r.value; }).join(", ") : bar.oci.stateText;
         if (id === "disk") return bar.storage.label.replace(/^Disks /, "");
         if (id === "fleet") return bar.fleetPresent ? bar.beszel.fleet.state === "ready"
             ? (bar.beszel.fleet.problems.length ? bar.beszel.fleet.problems.length + (bar.beszel.fleet.problems.length === 1 ? " problem" : " problems") : "ok")

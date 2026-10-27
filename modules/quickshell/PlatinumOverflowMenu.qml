@@ -9,7 +9,8 @@ import QtQuick
 //
 // The name column is reserved at its longest name; a value gets what is
 // left and elides on the right edge. The control's own menu always has
-// the full value.
+// the full value. A warning value keeps its tone, and each control's
+// Super+O letter stands on the right edge.
 PlatinumMenuFrame {
     id: frame
 
@@ -42,6 +43,15 @@ PlatinumMenuFrame {
             }
         }
         return out;
+    }
+    // Each control's Super+O letter, on the right edge, as in the mock.
+    readonly property var keys: ({ bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" })
+    readonly property real keyWidth: PlatinumMetrics.smallWidest(["B", "W", "S", "L", "C", "D", "F", "R", "N"])
+    readonly property bool anyKey: frame.entries.some(function (id) { return frame.keys[id] !== undefined; })
+    // A value in a warning or danger tone keeps that tone here, as on the bar.
+    function valueColor(id) {
+        const t = typeof frame.bar.toneOf === "function" ? frame.bar.toneOf(id) : "normal";
+        return t === "danger" || t === "warning" ? PlatinumTokens.menuTone(t) : PlatinumTokens.menuTextSecondary;
     }
     readonly property real nameWidth: {
         let w = 0;
@@ -93,11 +103,23 @@ PlatinumMenuFrame {
             Text {
                 readonly property real room: row.width - PlatinumTokens.menuTextLeft - row.rightInset
                     - PlatinumTokens.menuGap - frame.nameWidth
+                    - (frame.anyKey && !row.status && !row.action ? frame.keyWidth + PlatinumTokens.menuGap : 0)
                 width: Math.max(0, Math.min(implicitWidth, room))
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
                 text: row.action || row.status ? "" : frame.bar.valueFor(row.modelData)
+                color: row.selected ? row.fg2 : frame.valueColor(row.modelData)
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumSmall
+                font.letterSpacing: PlatinumTokens.platinumTracking
+            }
+
+            Text {
+                visible: frame.anyKey && !row.status && !row.action
+                width: frame.keyWidth
+                horizontalAlignment: Text.AlignRight
+                text: frame.keys[row.modelData] || ""
                 color: row.fg2
                 font.family: PlatinumTokens.platinumFont
                 font.pixelSize: PlatinumTokens.platinumSmall
