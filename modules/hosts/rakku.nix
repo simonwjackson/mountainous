@@ -148,7 +148,10 @@ in
               webPort = 4318;
               # Simon's assistant clones, pushes, and opens pull requests as him.
               github = true;
+              # Training in the Assistant: Logbook on loopback and the Coach skill.
+              logbook = true;
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
+              skills.coach = "/nix/var/nix/profiles/per-user/pi-assistant/skills/coach";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
             };
             laure = {

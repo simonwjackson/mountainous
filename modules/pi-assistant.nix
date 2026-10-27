@@ -284,6 +284,11 @@ in
         // lib.optionalAttrs frontDoor {
           ASSISTANT_DECIDE_URL = "http://127.0.0.1:${toString cfg.cliproxyapiPort}/v1";
         }
+        // lib.optionalAttrs (instance.logbook or false) {
+          # Training tools and the training live-UI domain (assistant core). Core
+          # also refuses them for anyone but Simon's personal instance.
+          ASSISTANT_LOGBOOK_URL = "http://127.0.0.1:3160";
+        }
         // lib.optionalAttrs (cfg.groceries != null) {
           ASSISTANT_GROCERIES_BASE_URL = cfg.groceries.url;
           # ExecStartPre copies the credential here (see prepare).
@@ -337,6 +342,11 @@ in
                     type = lib.types.bool;
                     default = false;
                     description = "Give this person's assistant the fleet's GitHub token, so its gh and git act as the operator.";
+                  };
+                  logbook = lib.mkOption {
+                    type = lib.types.bool;
+                    default = false;
+                    description = "Give this person's assistant the training tools, which read and write this host's Logbook on loopback.";
                   };
                 };
             }
