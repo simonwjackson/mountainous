@@ -994,3 +994,15 @@ The option sheet with five candidates and the pick: `/tmp/tandem/pages-caption/c
 - The omni card's window detail is empty rather than the app name; the card already heads each screen's group.
 - The selection changes with the caption, in QML, GTK, Qt and Ghostty. Level bars use the selection colour, so they change too.
 
+### Evidence
+
+Evidence: `/tmp/tandem/pages-caption/` (served at `http://100.114.19.92:8765/tandem/pages-caption/`), `index.html` pairs each shot before (cairn `2d713979`) and after. The real Quickshell ran in a nested Hyprland 0.56.2 under headless labwc, 2880×1800 at 1.5 with a second output "SUNSHINE", with the hyprbars plugin built from cairn's patch and each tree's own `titlebars.lua`. labwc and Hyprland ran in a bubblewrap namespace whose `/dev` held only `/dev/dri/renderD128`, with `AQ_DRM_DEVICES` and `SEATD_SOCK` set to missing paths. The Hyprland logs have no `drm: Starting backend`, seat or libinput line, and an fd scan found 0 `card*` nodes (`logs/{before,after}/drm-proof.log`). Shots in dark grey and light:
+
+- Platinum: Find menu (Super+P), Application menu ▸ GitHub's three windows, tile menu ▸ Move to page, a strip drag onto page 3.
+- Win98: the Find window, Start, and hyprbars captions. The caption sequence shows navy before, steel after, navy in light, and steel again after a live switch with the plugin still loaded.
+
+### Not verified
+
+- Nothing ran on Myoko, its GPU or real input.
+- The GTK, Qt and Ghostty dark Win98 appearances were checked by `checks.native-themes` (palette agreement), not by a screenshot.
+- The Win98 taskbar, Move to Page, Start ▸ Windows and Alt+Tab still show page numbers until `win98-taskbar-session` lands; the shots show its taskbar numbers unchanged.
