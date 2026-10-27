@@ -4,11 +4,11 @@
 # scripts and the theme folder. See docs/decisions/web-theme.md.
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, config, ... }:
     {
       # The theme-to-stylesheet policy, the in-page script in a fake
-      # window, a lint of each theme's web.css, and the body face's family
-      # name, which web.css names literally.
+      # window, a lint of each theme's web.css, and the family names the
+      # sheets name literally: Platinum's body face, Win98's W95FA Grid.
       checks.web-theme =
         pkgs.runCommand "web-theme"
           {
@@ -21,6 +21,7 @@
             node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
             export HOME="$TMPDIR" XDG_CACHE_HOME="$TMPDIR/cache"
             test "$(fc-scan --format '%{family[0]}' ${pkgs.public-sans}/share/fonts/truetype/PublicSans-Regular.ttf)" = "Public Sans"
+            test "$(fc-scan --format '%{family[0]}' ${config.packages.w95fa-grid}/share/fonts/truetype/W95FAGrid.ttf)" = "W95FA Grid"
             touch $out
           '';
     };

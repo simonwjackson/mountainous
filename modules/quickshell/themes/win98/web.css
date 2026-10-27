@@ -1,0 +1,366 @@
+/*
+ * Windows 98 for web pages: scroll bars, form controls and the words on
+ * push buttons, drop-down lists and group-box legends.
+ *
+ * The same contract as themes/platinum/web.css: WebTheme.qml adopts this
+ * file into every Chromium page and frame over CDP (docs/decisions/
+ * web-theme.md); web-theme.js cuts it at the section markers below; each
+ * "level" can be switched off per site (web-theme.js sites); the forms
+ * level keeps Platinum's guards, including [data-mtn-skip], which
+ * web-theme-page.js rewrites with a site's skip list.
+ *
+ * Rules for this file (Platinum's, plus two of Win98's own):
+ * - Selectors sit inside :where(), so a site's own !important rule still wins.
+ * - Layout properties are left alone, except where a control cannot draw.
+ * - Page content colours, body text, headings, labels and typed text keep
+ *   the site's fonts. Internet Explorer drew a page in the page's own fonts;
+ *   only form controls used the system font. W95FA has Latin only.
+ * - No url(): every arrow, check mark and grip is drawn with gradients.
+ * - One Win98 pixel (--mtn-u) is 2 device px, as on the desktop
+ *   (Win98Tokens.unitFor). Every bevel line is one --mtn-u.
+ * - W95FA Grid draws exactly only at 12.5 u (one font pixel on 2 x 2 device
+ *   px). The words that take the face take that size too, and no other.
+ * - The values match Win98Tokens.qml: light is Windows Standard, dark is
+ *   the dark grey scheme. Win98 has no Extra dark.
+ * - A CSS box 1 u wide at a fractional position can round to 1 or 2 device
+ *   px; the arrows are smooth triangles and the check mark is overlapping
+ *   copies of one column, so neither breaks into uneven rows (seen in the
+ *   approved mock at /tmp/tandem/win98-parity-mock/).
+ */
+
+/* @tokens all */
+:root {
+  --mtn-u: 1px;
+  --mtn-u2: calc(2 * var(--mtn-u));
+  --mtn-ui-font: "W95FA Grid", "Public Sans", system-ui, sans-serif;
+  --mtn-ui-size: calc(12.5 * var(--mtn-u));
+  --mtn-bar: calc(16 * var(--mtn-u));
+}
+@media (resolution: 1dppx) { :root { --mtn-u: 2px; } }
+@media (resolution: 1.25dppx) { :root { --mtn-u: 1.6px; } }
+@media (resolution: 1.5dppx) { :root { --mtn-u: calc(4px / 3); } }
+@media (resolution: 1.75dppx) { :root { --mtn-u: calc(8px / 7); } }
+@media (resolution: 2.5dppx) { :root { --mtn-u: 0.8px; } }
+@media (resolution: 3dppx) { :root { --mtn-u: calc(2px / 3); } }
+
+/* @tokens light */
+:root {
+  /* Windows Standard, as Win98Tokens.qml (light). */
+  --mtn-face: #c0c0c0;
+  --mtn-light: #ffffff;
+  --mtn-light-inner: #dfdfdf;
+  --mtn-shadow: #808080;
+  --mtn-dark: #000000;
+  --mtn-text: #000000;
+  --mtn-text-off: #808080;
+  --mtn-emboss: #ffffff;
+  --mtn-field: #ffffff;
+  --mtn-field-text: #000000;
+  --mtn-dither: #ffffff;
+  --mtn-selection: #000080;
+  --mtn-selection-text: #ffffff;
+  /* Win98 drew a pressed face and a scroll box in the face colour. */
+  --mtn-face-down: #c0c0c0;
+  --mtn-thumb: #c0c0c0;
+  /* A well's outer edges: dark at the top left, light at the bottom right. */
+  --mtn-well-edge: #808080;
+  --mtn-well-edge-low: #ffffff;
+  /* The dotted focus rectangle outside a check box or option button. */
+  --mtn-focus: #000000;
+}
+
+/* @tokens dark */
+:root {
+  /* Dark grey, as Win98Tokens.qml (dark). */
+  --mtn-face: #3c3c3c;
+  --mtn-light: #7a7a7a;
+  --mtn-light-inner: #565656;
+  --mtn-shadow: #222222;
+  --mtn-dark: #000000;
+  --mtn-text: #ececec;
+  --mtn-text-off: #8e8e8e;
+  --mtn-emboss: transparent;
+  --mtn-field: #1d1d1d;
+  --mtn-field-text: #e8e8e8;
+  --mtn-dither: #565656;
+  --mtn-selection: #2f4fc7;
+  --mtn-selection-text: #ffffff;
+  --mtn-face-down: #3c3c3c;
+  --mtn-thumb: #3c3c3c;
+  --mtn-well-edge: #222222;
+  --mtn-well-edge-low: #7a7a7a;
+  /* Outside a control it sits on the page, which may be white: a mid grey
+     stays visible on white, on black and on the dark field. */
+  --mtn-focus: #8e8e8e;
+}
+
+/* @level type */
+:root { accent-color: var(--mtn-selection); }
+::selection { background-color: var(--mtn-selection); color: var(--mtn-selection-text); }
+/* Only the words on push buttons, drop-down lists and group-box legends
+   take W95FA, at its one exact size. Body text, headings, labels, fields and
+   list boxes keep the site's fonts (typed text needs every script; W95FA has
+   Latin only). */
+:where(button, select:not([multiple]):is(:not([size]), [size="1"]), legend, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([class*="icon" i], [class*="material" i], [class*="symbol" i], [class*="glyph" i],
+  [class^="fa" i], [class*=" fa" i], [role="switch"], [role="tab"], [data-mtn-skip])) {
+  font-family: var(--mtn-ui-font) !important;
+  font-size: var(--mtn-ui-size) !important;
+  font-weight: normal !important;
+  font-synthesis: none !important;
+  -webkit-font-smoothing: none;
+}
+
+/* @level scrollbars */
+:where(*) { scrollbar-color: auto !important; scrollbar-width: auto !important; }
+::-webkit-scrollbar { width: var(--mtn-bar); height: var(--mtn-bar); background-color: var(--mtn-face); }
+/* The track: Win98's 50% checker of the face and the light edge, one u per cell. */
+::-webkit-scrollbar-track {
+  background-color: var(--mtn-face);
+  background-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
+  background-size: var(--mtn-u2) var(--mtn-u2);
+}
+/* The thumb and the arrow buttons are push buttons. */
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  background-color: var(--mtn-thumb);
+  box-shadow: inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-dark), inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-light-inner),
+    inset calc(-2 * var(--mtn-u)) calc(-2 * var(--mtn-u)) 0 var(--mtn-shadow), inset var(--mtn-u2) var(--mtn-u2) 0 var(--mtn-light);
+}
+::-webkit-scrollbar-thumb:vertical { min-height: calc(8 * var(--mtn-u)); }
+::-webkit-scrollbar-thumb:horizontal { min-width: calc(8 * var(--mtn-u)); }
+/* One arrow at each end, as Win98 drew them. */
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+  display: block;
+  width: var(--mtn-bar);
+  height: var(--mtn-bar);
+  background-repeat: no-repeat;
+}
+/* Arrows: 7 x 4 u triangles. Win98 drew them as stepped pixel rows; rows of 1 u
+   drawn as CSS backgrounds land on fractional CSS px at 1.5 and Chrome resamples
+   them into broken rows (seen in the mock), so these are smooth triangles, as Platinum's. */
+::-webkit-scrollbar-button:vertical:start:decrement { background-image: conic-gradient(from 135deg at 50% 0, var(--mtn-text) 90deg, transparent 0); background-size: calc(7 * var(--mtn-u)) calc(4 * var(--mtn-u)); background-position: center; }
+::-webkit-scrollbar-button:vertical:end:increment { background-image: conic-gradient(from -45deg at 50% 100%, var(--mtn-text) 90deg, transparent 0); background-size: calc(7 * var(--mtn-u)) calc(4 * var(--mtn-u)); background-position: center; }
+::-webkit-scrollbar-button:horizontal:start:decrement { background-image: conic-gradient(from 45deg at 0 50%, var(--mtn-text) 90deg, transparent 0); background-size: calc(4 * var(--mtn-u)) calc(7 * var(--mtn-u)); background-position: center; }
+::-webkit-scrollbar-button:horizontal:end:increment { background-image: conic-gradient(from 225deg at 100% 50%, var(--mtn-text) 90deg, transparent 0); background-size: calc(4 * var(--mtn-u)) calc(7 * var(--mtn-u)); background-position: center; }
+/* Held down: a flat dark frame, the arrow one u down and right. */
+::-webkit-scrollbar-button:active {
+  box-shadow: inset 0 0 0 var(--mtn-u) var(--mtn-shadow);
+  background-origin: content-box;
+  padding: var(--mtn-u) 0 0 var(--mtn-u);
+}
+::-webkit-scrollbar-corner { background-color: var(--mtn-face); }
+/* The size grip: three light-and-dark diagonals. */
+::-webkit-resizer {
+  background-color: var(--mtn-face);
+  background-image: repeating-linear-gradient(135deg, transparent 0 calc(2 * var(--mtn-u)), var(--mtn-light) calc(2 * var(--mtn-u)) calc(3 * var(--mtn-u)), var(--mtn-shadow) calc(3 * var(--mtn-u)) calc(5 * var(--mtn-u)));
+}
+
+/* @level forms */
+/* Guards, as Platinum's: ARIA widgets built on native buttons, icon-only
+   buttons, buttons a site names as an icon or a link, and [data-mtn-skip]. */
+
+/* Push buttons: Win98's two-line raised bevel, square corners. */
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])),
+:where(input[type="file" i])::file-selector-button {
+  appearance: none !important;
+  color: var(--mtn-text) !important;
+  background: var(--mtn-face) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-dark), inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-light),
+    inset calc(-2 * var(--mtn-u)) calc(-2 * var(--mtn-u)) 0 var(--mtn-shadow), inset var(--mtn-u2) var(--mtn-u2) 0 var(--mtn-light-inner) !important;
+  text-shadow: none !important;
+  overflow-wrap: anywhere;
+}
+:where(button):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty, :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])) :where(*) {
+  color: inherit !important;
+  background-color: transparent !important;
+}
+/* The default button (the one Return runs): one more black line inside. Only
+   where the form offers another button too. */
+:where(form:has(:is(button, input:is([type="submit" i], [type="button" i], [type="reset" i])):not(:default)))
+  :where(button, input[type="submit" i]):where(:default):where(:not([role], [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])) {
+  box-shadow: inset 0 0 0 var(--mtn-u) var(--mtn-dark), inset calc(-2 * var(--mtn-u)) calc(-2 * var(--mtn-u)) 0 var(--mtn-dark), inset var(--mtn-u2) var(--mtn-u2) 0 var(--mtn-light),
+    inset calc(-3 * var(--mtn-u)) calc(-3 * var(--mtn-u)) 0 var(--mtn-shadow), inset calc(3 * var(--mtn-u)) calc(3 * var(--mtn-u)) 0 var(--mtn-light-inner) !important;
+}
+/* Held down: black outer line, grey inner line, all round. */
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])):where(:active:not(:disabled), [aria-pressed="true"]),
+:where(input[type="file" i]:not(:disabled))::file-selector-button:active {
+  box-shadow: inset 0 0 0 var(--mtn-u) var(--mtn-dark), inset 0 0 0 var(--mtn-u2) var(--mtn-shadow) !important;
+}
+/* Unavailable: grey words with a light emboss, as Win98's disabled text. */
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i])):where(:not([role="switch"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"],
+  [role="option"], [role="treeitem"], [role="link"], [aria-expanded]:not([aria-haspopup]),
+  [class*="icon" i], [class*="link" i], button:empty,
+  :has(> :is(svg, img, i, picture):only-child), [data-mtn-skip])):where(:disabled),
+:where(input[type="file" i]:disabled)::file-selector-button {
+  color: var(--mtn-text-off) !important;
+  text-shadow: var(--mtn-u) var(--mtn-u) 0 var(--mtn-emboss) !important;
+}
+
+/* Text fields and list boxes: white wells, two-line sunken edge. A field with an
+   icon beside it belongs to a site's composite field and keeps the site's look. */
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i], [type="date" i], [type="time" i], [type="datetime-local" i],
+  [type="month" i], [type="week" i]), textarea, select:is([multiple], [size]:not([size="1"]))):where(:not(svg ~ *, :has(> svg) ~ *, :has(~ svg, ~ * > svg), [data-mtn-skip])) {
+  appearance: none !important;
+  color: var(--mtn-field-text) !important;
+  background: var(--mtn-field) !important;
+  border-style: solid !important;
+  border-width: var(--mtn-u) !important;
+  border-color: var(--mtn-well-edge) var(--mtn-well-edge-low) var(--mtn-well-edge-low) var(--mtn-well-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-light-inner) !important;
+}
+:where(input, textarea):where(:not([data-mtn-skip]))::placeholder { color: var(--mtn-text-off) !important; opacity: 1 !important; }
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i], [type="date" i], [type="time" i], [type="datetime-local" i],
+  [type="month" i], [type="week" i]), textarea, select:is([multiple], [size]:not([size="1"]))):where(:not(svg ~ *, :has(> svg) ~ *, :has(~ svg, ~ * > svg), [data-mtn-skip])):where(:disabled, :read-only:not(select)) {
+  color: var(--mtn-text-off) !important;
+  background: var(--mtn-face) !important;
+}
+:where(select:is([multiple], [size]:not([size="1"]))) :where(option:checked) { background: var(--mtn-selection) linear-gradient(var(--mtn-selection), var(--mtn-selection)) !important; color: var(--mtn-selection-text) !important; }
+
+/* Drop-down lists: a white well with a push button at the right that holds the arrow. */
+:where(select:not([multiple]):is(:not([size]), [size="1"])):where(:not([data-mtn-skip])) {
+  appearance: none !important;
+  color: var(--mtn-field-text) !important;
+  border-style: solid !important;
+  border-width: var(--mtn-u) !important;
+  border-color: var(--mtn-well-edge) var(--mtn-well-edge-low) var(--mtn-well-edge-low) var(--mtn-well-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-light-inner) !important;
+  background:
+    /* the arrow, 7 x 4 u, in the middle of the button */
+    conic-gradient(from -45deg at 50% 100%, var(--mtn-text) 90deg, transparent 0) right calc(5.5 * var(--mtn-u)) top 50% / calc(7 * var(--mtn-u)) calc(4 * var(--mtn-u)) no-repeat,
+    /* the button's bevel: outer dark right and bottom, outer light left and top, then the inner pair */
+    linear-gradient(var(--mtn-dark), var(--mtn-dark)) right var(--mtn-u) top var(--mtn-u) / var(--mtn-u) calc(100% - 2 * var(--mtn-u)) no-repeat,
+    linear-gradient(var(--mtn-dark), var(--mtn-dark)) right var(--mtn-u) bottom var(--mtn-u) / calc(16 * var(--mtn-u)) var(--mtn-u) no-repeat,
+    linear-gradient(var(--mtn-shadow), var(--mtn-shadow)) right var(--mtn-u2) top var(--mtn-u2) / var(--mtn-u) calc(100% - 4 * var(--mtn-u)) no-repeat,
+    linear-gradient(var(--mtn-shadow), var(--mtn-shadow)) right var(--mtn-u2) bottom var(--mtn-u2) / calc(14 * var(--mtn-u)) var(--mtn-u) no-repeat,
+    linear-gradient(var(--mtn-light-inner), var(--mtn-light-inner)) right calc(16 * var(--mtn-u)) top var(--mtn-u) / var(--mtn-u) calc(100% - 2 * var(--mtn-u)) no-repeat,
+    linear-gradient(var(--mtn-light-inner), var(--mtn-light-inner)) right var(--mtn-u) top var(--mtn-u) / calc(16 * var(--mtn-u)) var(--mtn-u) no-repeat,
+    linear-gradient(var(--mtn-light), var(--mtn-light)) right calc(15 * var(--mtn-u)) top var(--mtn-u2) / var(--mtn-u) calc(100% - 4 * var(--mtn-u)) no-repeat,
+    linear-gradient(var(--mtn-light), var(--mtn-light)) right var(--mtn-u2) top var(--mtn-u2) / calc(14 * var(--mtn-u)) var(--mtn-u) no-repeat,
+    linear-gradient(var(--mtn-face), var(--mtn-face)) right var(--mtn-u) top var(--mtn-u) / calc(16 * var(--mtn-u)) calc(100% - 2 * var(--mtn-u)) no-repeat,
+    var(--mtn-field) !important;
+  padding-inline-end: calc(19 * var(--mtn-u)) !important;
+  padding-inline-start: calc(3 * var(--mtn-u));
+}
+:where(select:not([multiple]):is(:not([size]), [size="1"])):where(:not([data-mtn-skip])):where(:disabled) {
+  color: var(--mtn-text-off) !important;
+  opacity: 1;
+}
+
+/* Check boxes: a 13 u white well with a sunken edge and Win98's 7 x 7 u check. */
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])) {
+  appearance: none !important;
+  width: calc(13 * var(--mtn-u));
+  height: calc(13 * var(--mtn-u));
+  vertical-align: middle;
+  box-sizing: border-box !important;
+  background: var(--mtn-field) !important;
+  border-style: solid !important;
+  border-width: var(--mtn-u) !important;
+  border-color: var(--mtn-well-edge) var(--mtn-well-edge-low) var(--mtn-well-edge-low) var(--mtn-well-edge) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-light-inner) !important;
+}
+/* The check: one 1 x 3 u column and six box-shadow copies of it, stepping down
+   then up (Win98's 7 x 7 check). Copies of one box land identically on the
+   device grid, which separate background rows did not. */
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip]))::before {
+  content: "";
+  display: block;
+  /* 1.5 u wide, so neighbouring copies overlap: a box 1.33 CSS px wide at a
+     fractional position rounds to 1 device px and left gaps (seen in the mock). */
+  width: calc(1.5 * var(--mtn-u));
+  height: calc(3 * var(--mtn-u));
+  margin: calc(4 * var(--mtn-u)) 0 0 calc(2 * var(--mtn-u));
+}
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])):where(:checked)::before {
+  background: var(--mtn-field-text);
+  box-shadow: var(--mtn-u) var(--mtn-u) 0 var(--mtn-field-text), var(--mtn-u2) var(--mtn-u2) 0 var(--mtn-field-text),
+    calc(3 * var(--mtn-u)) var(--mtn-u) 0 var(--mtn-field-text), calc(4 * var(--mtn-u)) 0 0 var(--mtn-field-text),
+    calc(5 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-field-text), calc(6 * var(--mtn-u)) calc(-2 * var(--mtn-u)) 0 var(--mtn-field-text);
+}
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])):where(:indeterminate) {
+  background: repeating-conic-gradient(var(--mtn-shadow) 0 25%, var(--mtn-field) 0 50%) calc(2 * var(--mtn-u)) calc(2 * var(--mtn-u)) / var(--mtn-u2) var(--mtn-u2) !important;
+}
+/* Option buttons: a 12 u circle, dark on the upper left and light on the lower right. */
+:where(input[type="radio" i]):where(:not([role="switch"], [data-mtn-skip])) {
+  appearance: none !important;
+  width: calc(12 * var(--mtn-u));
+  height: calc(12 * var(--mtn-u));
+  vertical-align: middle;
+  box-sizing: border-box !important;
+  background: var(--mtn-field) !important;
+  border-style: solid !important;
+  border-width: var(--mtn-u) !important;
+  border-color: var(--mtn-well-edge) var(--mtn-well-edge-low) var(--mtn-well-edge-low) var(--mtn-well-edge) !important;
+  border-radius: 50% !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-dark), inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-light-inner) !important;
+}
+:where(input[type="radio" i]):where(:not([role="switch"], [data-mtn-skip])):where(:checked) {
+  background: radial-gradient(circle, var(--mtn-field-text) 0 calc(2 * var(--mtn-u)), transparent calc(2 * var(--mtn-u) + 0.5px)), var(--mtn-field) !important;
+}
+/* Held down or unavailable: the well turns to the face colour, as in Win98. */
+:where(input:is([type="checkbox" i], [type="radio" i])):where(:not([role="switch"], [data-mtn-skip])):where(:active:not(:disabled), :disabled) {
+  background-color: var(--mtn-face-down) !important;
+}
+:where(input[type="checkbox" i]):where(:not([role="switch"], [data-mtn-skip])):where(:disabled:checked) {
+  filter: contrast(0.5);
+}
+
+/* Group boxes: an etched frame, a dark line with a light line beside it. */
+:where(fieldset):where(:not([data-mtn-skip])) {
+  border: var(--mtn-u) solid var(--mtn-shadow) !important;
+  border-radius: 0 !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-light), var(--mtn-u) var(--mtn-u) 0 var(--mtn-light) !important;
+}
+
+/* Progress bars: navy blocks in a thin sunken well. */
+:where(progress):where(:not([data-mtn-skip])) {
+  appearance: none !important;
+  height: calc(13 * var(--mtn-u));
+  border: 0 !important;
+  background: var(--mtn-face) !important;
+  box-shadow: inset var(--mtn-u) var(--mtn-u) 0 var(--mtn-shadow), inset calc(-1 * var(--mtn-u)) calc(-1 * var(--mtn-u)) 0 var(--mtn-light) !important;
+  padding: var(--mtn-u2);
+  box-sizing: border-box;
+}
+:where(progress):where(:not([data-mtn-skip]))::-webkit-progress-bar { background: transparent; }
+:where(progress):where(:not([data-mtn-skip]))::-webkit-progress-value {
+  background: repeating-linear-gradient(to right, var(--mtn-selection) 0 calc(6 * var(--mtn-u)), transparent calc(6 * var(--mtn-u)) calc(8 * var(--mtn-u)));
+}
+
+/* Keyboard focus: Win98's dotted rectangle inside a button, around a check
+   box or option button. Fields show only their caret, as Win98 did. */
+:where(button, input:is([type="button" i], [type="submit" i], [type="reset" i]), select):where(:not([data-mtn-skip])):where(:focus-visible) {
+  outline: var(--mtn-u) dotted var(--mtn-text) !important;
+  outline-offset: calc(-4 * var(--mtn-u)) !important;
+}
+:where(input:is([type="checkbox" i], [type="radio" i])):where(:not([data-mtn-skip])):where(:focus-visible) {
+  outline: var(--mtn-u) dotted var(--mtn-focus) !important;
+  outline-offset: var(--mtn-u) !important;
+}
+:where(input:is(:not([type]), [type="text" i], [type="search" i], [type="email" i], [type="url" i], [type="tel" i],
+  [type="password" i], [type="number" i]), textarea):where(:not([data-mtn-skip])):where(:focus) {
+  outline: none !important;
+}

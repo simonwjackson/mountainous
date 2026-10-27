@@ -216,10 +216,14 @@ for (const theme of registry) {
         assert.ok(contrast(hex("--mtn-text"), hex("--mtn-face-down")) >= 4.5, `${theme.id}/${mode}: text on pressed face`);
         assert.ok(contrast(hex("--mtn-selection-text"), hex("--mtn-selection")) >= 4.5, `${theme.id}/${mode}: selection`);
         assert.ok(contrast(hex("--mtn-text"), hex("--mtn-thumb")) >= 3, `${theme.id}/${mode}: grip and arrows`);
-        // A well (field, check box) stays findable on a white or a near-black page.
+        // A well (field, check box) stays findable on a white or a near-black
+        // page: its fill or one of its outer edges stands out. A theme whose
+        // well has a second outer colour (Win98: dark top left, light bottom
+        // right) names it --mtn-well-edge-low.
+        const edges = ["--mtn-well-edge"].concat(t["--mtn-well-edge-low"] ? ["--mtn-well-edge-low"] : []);
         for (const page of ["#ffffff", "#121212"]) {
             for (const fill of ["--mtn-field", "--mtn-face-down"]) {
-                assert.ok(Math.max(contrast(hex("--mtn-well-edge"), page), contrast(hex(fill), page)) >= 3,
+                assert.ok(Math.max(contrast(hex(fill), page), ...edges.map((n) => contrast(hex(n), page))) >= 3,
                     `${theme.id}/${mode}: ${fill} on ${page}`);
             }
         }
@@ -229,5 +233,105 @@ for (const theme of registry) {
         }
     }
 }
-assert.ok(linted >= 1, "at least one theme ships web.css");
+assert.ok(linted >= 2, "Platinum and Win98 ship web.css");
+
+// ---- Win98: the same sections and guards as Platinum's, its own rules ---
+// Style rules with their bodies, at any @media depth.
+function styleRules(css) {
+    const out = [];
+    let start = 0;
+    const stack = [];
+    for (let i = 0; i < css.length; i++) {
+        if (css[i] === "{") {
+            const prelude = css.slice(start, i).trim();
+            stack.push({ prelude, at: prelude.startsWith("@"), open: i + 1 });
+            start = i + 1;
+        } else if (css[i] === "}") {
+            const r = stack.pop();
+            if (r && !r.at) out.push({ prelude: r.prelude, body: css.slice(r.open, i) });
+            start = i + 1;
+        }
+    }
+    return out;
+}
+// The guard lists: the inside of every :where(:not(...)).
+function guards(css) {
+    const out = [];
+    const open = ":where(:not(";
+    for (let i = css.indexOf(open); i >= 0; i = css.indexOf(open, i + 1)) {
+        let depth = 2, j = i + open.length;
+        for (; j < css.length && depth > 0; j++) { if (css[j] === "(") depth++; if (css[j] === ")") depth--; }
+        out.push(css.slice(i + open.length, j - 2).replace(/\s+/g, " ").trim());
+    }
+    return out;
+}
+const strip = (sections) => ({ tokens: Object.fromEntries(Object.entries(sections.tokens).map(([k, v]) => [k, stripComments(v)])),
+    levels: Object.fromEntries(Object.entries(sections.levels).map(([k, v]) => [k, stripComments(v)])) });
+const win98Raw = fs.readFileSync(path.join(root, "themes/win98/web.css"), "utf8");
+const win98Css = stripComments(win98Raw);
+const win98 = strip(policy.parse(win98Raw));
+const plat = strip(policy.parse(fs.readFileSync(path.join(root, "themes/platinum/web.css"), "utf8")));
+assert.deepEqual(Object.keys(win98.levels).sort(), Object.keys(plat.levels).sort(), "win98: Platinum's levels");
+assert.deepEqual(Object.keys(win98.tokens).sort(), Object.keys(plat.tokens).filter((k) => k !== "extra").sort(), "win98: Platinum's token blocks");
+// Every Platinum guard is kept, once for each place Platinum uses it: a
+// Win98 guard of its own in the same level skips at least what it skips
+// (Win98 may skip more: W95FA stays off ARIA tabs and switches, which its
+// forms level leaves alone too).
+for (const level of policy.levels) {
+    const ours = guards(win98.levels[level]).map((g) => new Set(splitTop(g)));
+    const missing = guards(plat.levels[level]).filter((g) => {
+        const i = ours.findIndex((w) => splitTop(g).every((t) => w.has(t)));
+        if (i >= 0) ours.splice(i, 1);
+        return i < 0;
+    });
+    assert.deepEqual(missing, [], `win98/${level}: every Platinum guard is kept`);
+}
+// One Win98 pixel is 2 device px at every resolution it names.
+const length = (v) => {
+    const m = /^calc\((\d+(?:\.\d+)?)px \/ (\d+(?:\.\d+)?)\)$/.exec(v) || /^(\d+(?:\.\d+)?)px$/.exec(v);
+    assert.ok(m, "a length: " + v);
+    return m[2] ? Number(m[1]) / Number(m[2]) : Number(m[1]);
+};
+// The base block (before the @media blocks): 1 px is 2 device px at 2 dppx.
+const base = tokens(/^:root \{[^}]*\}/.exec(win98.tokens.all)[0]);
+assert.equal(length(base["--mtn-u"]), 1, "1 px at 2 dppx");
+const resolutions = [...win98.tokens.all.matchAll(/@media \(resolution: ([\d.]+)dppx\) \{ :root \{ --mtn-u: ([^;]+); \} \}/g)];
+assert.ok(resolutions.length >= 6, "win98: u at 1, 1.25, 1.5, 1.75, 2.5 and 3 dppx");
+for (const [, dppx, u] of resolutions) assert.ok(Math.abs(length(u) * Number(dppx) - 2) < 1e-9, `win98: u = 2 device px at ${dppx} dppx`);
+// W95FA at its one size, 12.5 u, and on buttons, drop-down lists and legends only.
+assert.equal(base["--mtn-ui-size"], "calc(12.5 * var(--mtn-u))");
+assert.match(base["--mtn-ui-font"], /^"W95FA Grid",/);
+const faced = styleRules(win98Css).filter((r) => /font-family/.test(r.body));
+assert.ok(faced.length >= 1, "win98: W95FA is set somewhere");
+for (const r of faced) {
+    assert.match(r.body, /font-family: var\(--mtn-ui-font\) !important;/, "win98: only W95FA: " + r.prelude);
+    assert.match(r.body, /font-size: var\(--mtn-ui-size\) !important;/, "win98: W95FA at 12.5 u: " + r.prelude);
+    for (const sel of splitTop(r.prelude)) {
+        const elements = /^:where\(([^)]*?)(?:\)|, input)/.exec(sel);
+        assert.ok(elements, "win98: " + sel);
+        for (const el of splitTop(sel.slice(":where(".length, sel.indexOf("):where(")))) {
+            assert.match(el, /^(button|legend|select:not\(\[multiple\]\):is\(:not\(\[size\]\), \[size="1"\]\)|input:is\(\[type="button" i\], \[type="submit" i\], \[type="reset" i\]\))$/,
+                "win98: W95FA only on buttons, drop-down lists and legends, not " + el);
+        }
+    }
+}
+assert.doesNotMatch(win98Css, /:where\(html|body\b/, "win98: body text keeps the site's font");
+assert.doesNotMatch(win98Css, /font-size:(?! var\(--mtn-ui-size\))/, "win98: no other font size");
+// Scroll bars are 16 u.
+assert.equal(base["--mtn-bar"], "calc(16 * var(--mtn-u))");
+assert.match(win98.levels.scrollbars, /::-webkit-scrollbar \{ width: var\(--mtn-bar\); height: var\(--mtn-bar\);/);
+// The colours are Win98Tokens.qml's, both schemes.
+const qmlTokens = fs.readFileSync(path.join(root, "Win98Tokens.qml"), "utf8");
+const palette = (dark) => {
+    const out = {};
+    for (const m of qmlTokens.matchAll(/^\s*(\w+): (?:dark \? "(#[0-9a-f]{6})" : "(#[0-9a-f]{6})"|"(#[0-9a-f]{6})"),?$/gm)) out[m[1]] = m[4] || (dark ? m[2] : m[3]);
+    return out;
+};
+const same = { "--mtn-face": "face", "--mtn-light": "hi", "--mtn-light-inner": "li", "--mtn-shadow": "sh", "--mtn-dark": "dk",
+    "--mtn-text": "text", "--mtn-text-off": "gray", "--mtn-field": "win", "--mtn-field-text": "winText",
+    "--mtn-selection": "selection", "--mtn-selection-text": "selectionText", "--mtn-dither": "dither" };
+for (const mode of ["light", "dark"]) {
+    const css = tokens(win98.tokens[mode]), qml = palette(mode === "dark");
+    for (const [name, key] of Object.entries(same)) assert.equal(css[name].toLowerCase(), qml[key], `win98/${mode}: ${name} is Win98Tokens.${key}`);
+}
 console.log(`WEB_THEME_TESTS_PASSED themes=${linted}`);
