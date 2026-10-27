@@ -1,232 +1,318 @@
+// The Platinum bar's layout policy (bar-plan.js), direction A "Quiet
+// glyphs". Run: node bar-plan.test.js bar-plan.js bar-fixtures.json [PlatinumTopBar.qml]
+//
+// The fixtures are the widths the real bar measured in ChicagoFLF for the
+// approved mock's states (bar-fixtures.json "quiet"): calm, everything
+// wrong, long values, failed dictation, and Super+O held.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const model = {};
 vm.runInNewContext(fs.readFileSync(process.argv[2] || __dirname + "/bar-plan.js", "utf8").replace(/^\.pragma library\s*$/m, ""), model);
-const metrics = {
-    controls: ["bt", "wifi", "vol", "bri", "oci", "disk", "ntf"].map(id => ({id, iconWidth: 16, readoutWidth: id === "oci" ? 160 : id === "wifi" ? 0 : 24})),
-    markWidth: 20, titleWidth: 200, titleMinWidth: 96, clockWidth: 112, clockTimeWidth: 48,
-    chordWidth: 0, batteryWidth: 56, appIconWidth: 16, appNameWidth: 70, overflowWidth: 16
-};
-const expectedSteps = ["space", "ociLabel", "diskLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount", "uncentre", "titleMin"];
-const overflowOrder = ["oci", "disk", "bri", "bt", "wifi", "ntf", "vol"];
-const generous = model.plan(3000, metrics);
-assert.equal(generous.steps.length, 0);
-assert.equal(generous.controls.length, 7);
-assert.equal(generous.overflow.length, 0);
-assert.equal(generous.show.title, true);
-assert.equal(generous.centred, true);
-assert.equal(generous.pad, 8);
-assert.equal(generous.gap, 2);
-let previous = generous;
-const transitions = [];
-for (let width = 2999; width >= 0; width--) {
-    const plan = model.plan(width, metrics);
-    const all = [...plan.controls, ...plan.overflow.filter(id => metrics.controls.some(c => c.id === id))];
-    assert.deepEqual([...all].sort(), metrics.controls.map(c => c.id).sort(), "no control disappears at " + width);
-    assert.equal(new Set(all).size, 7);
-    assert.deepEqual(Array.from(plan.steps).filter(s => s !== "overflow" && s !== "underflow" && s !== "compact"), expectedSteps.slice(0, Math.min(plan.steps.length, expectedSteps.length)), "yield order at " + width);
-    assert.deepEqual(Array.from(plan.overflow).filter(id => metrics.controls.some(c => c.id === id)), overflowOrder.slice(0, plan.overflow.length));
-    assert.ok(plan.overflow.length >= previous.overflow.length, "overflow is monotonic");
-    assert.ok(plan.steps.length >= previous.steps.length, "yielding is monotonic");
-    if (plan.steps.length !== previous.steps.length || plan.overflow.length !== previous.overflow.length) transitions.push(width);
-    if (plan.overflow.length) {
-        for (const key of ["ociLabel", "diskLabel", "appName", "clockDate", "btCount", "brightnessNumber", "volumeNumber", "notificationCount"]) assert.equal(plan.show[key], false);
-    }
-    assert.ok(plan.leftMax >= 0);
-    assert.ok(plan.centreW >= 0);
-    previous = plan;
-}
-assert.ok(transitions.length >= 10, "the sweep exercises yield and overflow boundaries at +/-1 px");
-assert.equal(model.plan(600, metrics).overflow.length, 0, "readouts yield before controls");
-assert.equal(model.plan(320, metrics).overflow[0], "oci");
-const compact = {...metrics, controls: metrics.controls.map(c => c.id === "disk" ? {...c, compactReadoutWidth: 24} : c)};
-assert.equal(model.plan(3000, compact).steps.length, 0, "compact width does not change the wide layout");
-assert.ok(model.plan(400, compact).overflow.length > model.plan(400, metrics).overflow.length,
-    "the disk issue count still consumes width after its label yields");
-for (const compactReadoutWidth of [-1, NaN, -Infinity]) {
-    assert.throws(() => model.plan(100, {...metrics, controls: [{id: "disk", iconWidth: 16, readoutWidth: 24, compactReadoutWidth}]}), /compact/i);
-}
-// Captured from the real TopBar in round 1, before DESIGN's gap correction.
-const captured = {
-    controls: [
-        {id: "bt", iconWidth: 16, readoutWidth: 17},
-        {id: "wifi", iconWidth: 16, readoutWidth: 0},
-        {id: "vol", iconWidth: 16, readoutWidth: 36},
-        {id: "bri", iconWidth: 16, readoutWidth: 36},
-        {id: "oci", iconWidth: 16, readoutWidth: 246.90625},
-        {id: "disk", iconWidth: 16, readoutWidth: 25.234375, compactReadoutWidth: 0},
-        {id: "ntf", iconWidth: 16, readoutWidth: 6, compactReadoutWidth: 12.984375}
-    ],
-    markWidth: 20, titleWidth: 322, titleMinWidth: 96, clockWidth: 103, clockTimeWidth: 45,
-    chordWidth: 0, batteryWidth: 66, appIconWidth: 16, appNameWidth: 63, overflowWidth: 16
-};
-for (const width of [0, 1, 100, 320, 600, 1920, 3000, Infinity]) {
-    const result = model.plan(width, captured);
-    assert.equal(result.show.notificationCount, true, "larger compact readout keeps the full readout at " + width);
-    assert.equal(result.steps.includes("notificationCount"), false, "skip a yield that saves no space");
-}
-for (const readoutWidth of [0, 6, 24]) {
-    for (const compactReadoutWidth of [readoutWidth, readoutWidth + 0.125, readoutWidth + 1000000, Infinity]) {
-        const input = {...metrics, controls: [{id: "ntf", iconWidth: 16, readoutWidth, compactReadoutWidth}]};
-        const clamped = {...input, controls: [{...input.controls[0], compactReadoutWidth: readoutWidth}]};
-        for (const width of [0, 0.125, 100, 320, 600, 3000]) {
-            const result = model.plan(width, input);
-            assert.equal(result.show.notificationCount, true, "equal/larger compact width keeps the full readout");
-            assert.equal(result.steps.includes("notificationCount"), false);
-            assert.equal(JSON.stringify(result), JSON.stringify(model.plan(width, clamped)), "clamp without mutating the input");
-            assert.equal(input.controls[0].compactReadoutWidth, compactReadoutWidth);
-        }
-    }
-}
-const missing = {...metrics, controls: metrics.controls.filter(c => !["bt", "bri"].includes(c.id))};
-assert.equal(model.plan(0, missing).overflow.filter(id => missing.controls.some(c => c.id === id)).length, 5, "only hardware-present controls are planned");
-const chord = model.plan(900, {...metrics, chordWidth: 300});
-assert.equal(chord.centreW, 300, "chord uses its measured width, not the clock's width");
-assert.ok(chord.leftMax <= 900 - 300, "title cannot overlap the chord");
-assert.throws(() => model.plan(-1, metrics), /width/i);
-assert.throws(() => model.plan(NaN, metrics), /width/i);
-assert.throws(() => model.plan(100, {...metrics, batteryWidth: -1}), /batteryWidth/i);
-assert.throws(() => model.plan(100, {...metrics, controls: [{id: "other", iconWidth: 16, readoutWidth: 0}]}), /control/i);
-assert.throws(() => model.plan(100, {...metrics, controls: [metrics.controls[0], metrics.controls[0]]}), /control/i);
 const fixtures = JSON.parse(fs.readFileSync(process.argv[3] || __dirname + "/bar-fixtures.json", "utf8"));
-const failed = fixtures.failedDictationMetrics;
-// Budget the exact retained content, independently of the planner. In
-// particular, no left-group cap may take space away from the mark or buttons.
-function assertKeptControlsFit(width, input) {
-    const result = model.plan(width, input);
-    assert.ok(Number.isInteger(result.pad), "padding uses whole logical pixels");
-    const mark = (result.edge === undefined ? 6 : result.edge) + (result.show.mark === false ? 0 : 2 * result.pad + input.markWidth);
-    const actions = result.show.dictationActions && input.dictationActionsWidth > 0 ? 6 + input.dictationActionsWidth : 0;
-    const leftGap = input.titleWidth > 0 || actions > 0 ? result.gap : 0;
-    assert.ok(result.leftMax >= mark + leftGap + actions, "left controls have full width at " + width);
-    const mapping = {bt: "btCount", vol: "volumeNumber", bri: "brightnessNumber", oci: "ociLabel", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "notificationCount"};
-    let right = 6, count = 0;
-    for (const id of result.controls) {
-        const item = input.controls.find(c => c.id === id);
-        const readout = result.show[mapping[id]] !== false ? item.readoutWidth : Math.min(item.readoutWidth, item.compactReadoutWidth || 0);
-        right += 2 * result.pad + item.iconWidth + (readout > 0 ? 6 + readout : 0);
-        count++;
+const qmlPath = process.argv[4] || __dirname + "/PlatinumTopBar.qml";
+const Q = fixtures.quiet;
+const EDGE = 6, GAP16 = 16;
+const even = v => Math.ceil(v / 2 - 1e-6) * 2;
+const YIELD = ["space", "appName", "diskLabel", "uncentre", "titleMin", "builderLabel", "ociNumber", "ntfCount", "fleetCount", "batteryPct"];
+const OVERFLOW = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+const KEY = {oci: "ociNumber", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "ntfCount"};
+let checks = 0;
+const ok = (v, m) => { assert.ok(v, m); checks++; };
+// Plans come from another realm (vm), so compare their JSON.
+const plain = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
+const eq = (a, b, m) => { assert.deepEqual(plain(a), plain(b), m); checks++; };
+
+// What the bar draws for a plan, computed here independently of the
+// planner: every item at an even width (PlatinumBarControl).
+function widths(p, m) {
+    const w = {};
+    const shownReadout = (c) => p.show[KEY[c.id]] === false ? Math.min(c.readoutWidth, c.compactReadoutWidth || 0) : c.readoutWidth;
+    for (const c of m.controls) {
+        const r = shownReadout(c);
+        w[c.id] = even(2 * p.pad + c.iconWidth + (r > 0 ? 6 + r : 0));
     }
-    if (input.batteryWidth > 0 && result.show.battery !== false) { right += 2 * result.pad + input.batteryWidth; count++; }
-    if (result.show.app !== false && (input.appIconWidth > 0 || (result.show.appName && input.appNameWidth > 0))) {
-        right += 2 * result.pad + input.appIconWidth + (result.show.appName && input.appNameWidth > 0 ? 6 + input.appNameWidth : 0);
-        count++;
-    }
-    if (result.overflow.length) { right += 2 * result.pad + input.overflowWidth; count++; }
-    right += result.gap * Math.max(0, count - 1);
-    if (!result.steps.includes("compact")) {
-        assert.ok(result.leftMax + result.centreW + right + 16 <= width + 0.00001,
-            "retained controls, mark, battery and clock fit at " + width);
-    }
-    const all = result.controls.concat(result.overflow.filter(id => input.controls.some(c => c.id === id)));
-    assert.deepEqual(Array.from(all).sort(), input.controls.map(c => c.id).sort());
-    if (result.overflow.includes("dictation")) {
-        assert.equal(result.controls.length, 0, "dictation actions overflow after all other controls");
-        assert.equal(result.show.dictationActions, false);
-    }
-    return result;
+    w.more = p.overflowIconWidth === undefined ? even(2 * p.pad + m.overflowWidth) : 2 * p.pad + p.overflowIconWidth;
+    const br = p.show.batteryPct === false ? 0 : (m.batteryReadoutWidth || 0);
+    w.battery = even(2 * p.pad + m.batteryWidth + (br > 0 ? 6 + br : 0));
+    const an = p.show.appName === false ? 0 : m.appNameWidth;
+    w.app = even(2 * p.pad + m.appIconWidth + (an > 0 ? 6 + an : 0));
+    return w;
 }
-for (const width of [1920, 600, 400, 320, 200, 191]) {
-    const result = assertKeptControlsFit(width, failed);
-    assert.equal(result.steps.includes("underflow"), false, "the captured metrics support " + width);
-}
-const wideFailed = model.plan(1920, failed);
-assert.equal(wideFailed.show.dictationActions, true);
-assert.equal(wideFailed.leftMax - 6, 2 * wideFailed.pad + failed.markWidth + wideFailed.gap + failed.titleWidth + 6 + failed.dictationActionsWidth,
-    "mark + inter-item gap + status + exactly one actions gap + actions, without the outer edge");
-const withoutActions = {...failed, dictationActionsWidth: 0};
-const noActionsPlan = model.plan(1920, withoutActions);
-assert.equal(noActionsPlan.leftMax - 6, 2 * noActionsPlan.pad + failed.markWidth + noActionsPlan.gap + failed.titleWidth,
-    "no actions means no actions gap");
-const dismissOnly = {...failed, dictationActionsWidth: 74};
-const dismissPlan = model.plan(1920, dismissOnly);
-assert.equal(dismissPlan.leftMax - 6, 2 * dismissPlan.pad + failed.markWidth + dismissPlan.gap + failed.titleWidth + 6 + 74,
-    "Dismiss alone still has exactly one leading actions gap");
-assert.equal(JSON.stringify(model.plan(600, metrics)), JSON.stringify(model.plan(600, {...metrics, dictationActionsWidth: 0})), "new metric defaults to zero");
-for (const dictationActionsWidth of [-1, NaN]) assert.throws(() => model.plan(600, {...metrics, dictationActionsWidth}), /dictationActionsWidth/i);
-assert.equal(model.plan(320, failed).show.dictationActions, false);
-assert.equal(model.plan(200, failed).pad, 0, "padding falls below five only after every control overflows");
-// Captured floor: mark20 + battery66 + clock45 + app16 + overflow16 +
-// two edges6 + the clock clearance16 = 191 logical pixels, at zero padding.
-assert.equal(model.plan(191, failed).pad, 0);
-assert.equal(model.plan(190, failed).steps.includes("compact"), true, "below the old floor moves remaining items into overflow");
-for (let width = 0; width <= 1920; width++) {
-    const result = assertKeptControlsFit(width, failed);
-    assert.equal(result.steps.includes("compact"), width < 191, "compact layout below the old floor at " + width);
-    if (result.pad < 5) {
-        assert.equal(result.controls.length, 0);
-        assert.equal(result.show.dictationActions, false);
+const markRight = (p, m) => p.edge + (p.show.mark === false ? 0 : even(2 * p.pad + m.markWidth));
+
+// Nothing drawn overlaps: the left group ends 16 px before the clock (or
+// the chord) and before the right group; the right group stays on screen.
+function assertPlaced(width, m, p, label) {
+    const at = model.place(width, m, p, widths(p, m));
+    const where = label + " at " + width;
+    ok(at.rightStart >= -1e-6, "the right group starts on screen " + where);
+    const left = Math.max(p.leftMax, markRight(p, m));
+    if (p.steps.indexOf("compact") < 0) {
+        ok(left + GAP16 <= at.rightStart + 1e-6, "the left group ends 16 px before the right group " + where);
+        const centre = at.chord || at.clock;
+        // The centre item's x is rounded up to an even pixel, so its
+        // right side may lose up to 2 px of the 16.
+        if (p.centred && centre) {
+            ok(left + GAP16 <= centre.x + 1e-6, "16 px between the left group and the centre " + where);
+            ok(centre.x + centre.w + GAP16 - 2 <= at.rightStart + 1e-6, "16 px between the centre and the right group " + where);
+        }
+    } else {
+        ok(markRight(p, m) <= at.rightStart + 1e-6, "the mark and the right group do not meet " + where);
     }
-}
-for (const fixture of fixtures.states) {
-    if (fixture.dictation) assertKeptControlsFit(fixture.width, failed);
-    if (fixture.ociRows) {
-        const input = {...withoutActions, controls: failed.controls.map(c => c.id === "oci" ? {...c, readoutWidth: fixture.ociRows.length * 120} : c)};
-        const result = assertKeptControlsFit(fixture.width, input);
-        assert.equal(fixture.ociRows.length, 8);
-        assert.equal(fixture.open, "oci");
-        assert.equal(fixture.anchor, "more");
-        assert.ok(result.overflow.includes("oci"), "the eight-profile menu is reachable from »");
+    // The chord stands where the plan reserved it (bug 1: it was always
+    // drawn centred, over the controls, from 387 to 918 px).
+    if (p.show.chord) {
+        const c = at.chord;
+        ok(c && c.w === p.chordWidth, "the chord has its planned width " + where);
+        for (const id of Object.keys(at)) {
+            if (id === "chord" || id === "rightStart" || id === "clock") continue;
+            const r = at[id];
+            ok(c.x + c.w <= r.x + 1e-6 || r.x + r.w <= c.x + 1e-6, "the chord does not cover " + id + " " + where);
+        }
+        ok(c.x >= left - 1e-6, "the chord does not cover the left group " + where);
     }
+    return at;
 }
-// A host without the gate must keep the old layout, including its yield
-// steps. Only the newly exposed show.builderLabel field is additive.
-for (const fixture of fixtures.builderAbsentPlans) {
-    const actual = JSON.parse(JSON.stringify(model.plan(fixture.width, metrics)));
-    delete actual.show.builderLabel;
-    delete actual.show.fleetCount;
-    assert.deepEqual(actual, fixture.plan, "builder absent keeps the old plan at " + fixture.width);
-}
-const builderMetrics = {...metrics, controls: metrics.controls.slice()};
-builderMetrics.controls.splice(6, 0, {id: "builder", iconWidth: 16, readoutWidth: 96, compactReadoutWidth: 24});
-const builderOverflowOrder = ["oci", "disk", "builder", "bri", "bt", "wifi", "ntf", "vol"];
-for (const width of [1920, 600, 400, 320]) {
-    const result = assertKeptControlsFit(width, builderMetrics);
-    assert.equal(result.controls.concat(result.overflow).filter(id => id === "builder").length, 1, "builder never disappears at " + width);
-    assert.deepEqual(Array.from(result.overflow).filter(id => builderMetrics.controls.some(c => c.id === id)), builderOverflowOrder.slice(0, result.overflow.length));
-}
-assert.equal(model.plan(1920, builderMetrics).show.builderLabel, true);
-assert.ok(model.plan(320, builderMetrics).overflow.includes("builder"));
-for (let width = 0; width <= 1920; width++) {
-    const result = assertKeptControlsFit(width, builderMetrics);
-    assert.deepEqual(Array.from(result.overflow).filter(id => builderMetrics.controls.some(c => c.id === id)), builderOverflowOrder.slice(0, result.overflow.length));
-    if (result.steps.includes("builderLabel")) {
-        const label = result.steps.indexOf("builderLabel");
-        assert.ok(result.steps.indexOf("diskLabel") < label);
-        if (result.steps.includes("appName")) assert.ok(label < result.steps.indexOf("appName"));
+
+// Every capability is on the bar or in », once.
+function assertReachable(width, m, p, label) {
+    const where = label + " at " + width;
+    const ids = m.controls.map(c => c.id);
+    const all = p.controls.concat(p.overflow.filter(id => ids.includes(id)));
+    eq(all.slice().sort(), ids.slice().sort(), "every control reachable " + where);
+    eq(new Set(all).size, ids.length, "no control twice " + where);
+    for (const id of ["battery", "clock", "app"]) {
+        if (id === "battery" && !(m.batteryWidth > 0)) continue;
+        ok(p.show[id] !== false || p.overflow.includes(id), id + " reachable " + where);
     }
+    ok(p.show.mark !== false || p.overflow[0] === "apple", "Apple menu reachable " + where);
+    if (m.dictationActionsWidth > 0) ok(p.show.dictationActions || p.overflow.includes("dictation"), "dictation reachable " + where);
+    ok(Number.isInteger(p.pad) && p.pad >= 0, "whole-pixel padding " + where);
 }
-const builderFixture = fixtures.states.find(f => f.builder);
-assert.ok(builderFixture.builder.present && builderFixture.width === 320);
-assertKeptControlsFit(builderFixture.width, builderMetrics);
-// The Fleet readout: a light (12 px) and a problem count. Its count yields
-// right after the disk label, and the control overflows right after Disks.
-// Without it (Win98, no Beszel owner) every plan above is unchanged, which
-// the fixture comparison already proves.
-const fleetMetrics = {...builderMetrics, controls: builderMetrics.controls.slice()};
-fleetMetrics.controls.splice(6, 0, {id: "fleet", iconWidth: 12, readoutWidth: 10, compactReadoutWidth: 0});
-const fleetOverflowOrder = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol"];
-assert.equal(model.plan(1920, fleetMetrics).show.fleetCount, true);
-assert.deepEqual(Array.from(model.plan(1920, fleetMetrics).controls).slice(5, 8), ["disk", "fleet", "builder"]);
-let fleetSeen = {count: false, overflow: false};
-for (let width = 0; width <= 1920; width++) {
-    const result = assertKeptControlsFit(width, fleetMetrics);
-    assert.equal(result.controls.concat(result.overflow).filter(id => id === "fleet").length, 1, "the readout never disappears at " + width);
-    assert.deepEqual(Array.from(result.overflow).filter(id => fleetMetrics.controls.some(c => c.id === id)), fleetOverflowOrder.slice(0, result.overflow.length));
-    if (result.steps.includes("fleetCount")) {
-        fleetSeen.count = true;
-        const at = result.steps.indexOf("fleetCount");
-        assert.ok(result.steps.indexOf("diskLabel") < at && at < result.steps.indexOf("builderLabel") + (result.steps.includes("builderLabel") ? 0 : 99));
-        assert.equal(result.show.fleetCount, false);
-    }
-    if (result.overflow.includes("fleet")) {
-        fleetSeen.overflow = true;
-        assert.ok(result.overflow.includes("disk"), "Disks overflows before the readout");
-        assert.equal(result.show.fleetCount, false, "readouts yield before controls overflow");
+
+// The steps a fixture can take: a step that would save nothing is skipped.
+function expectedSteps(m) {
+    const items = m.controls.map(c => ({key: KEY[c.id], r: c.readoutWidth, c: Math.min(c.readoutWidth, c.compactReadoutWidth || 0)}));
+    if (m.batteryWidth > 0) items.push({key: "batteryPct", r: m.batteryReadoutWidth || 0, c: 0});
+    items.push({key: "appName", r: m.appNameWidth, c: 0});
+    return YIELD.filter(k => k === "space" || k === "uncentre" || (k === "titleMin" ? m.titleWidth > 0 : items.some(i => i.key === k && i.c < i.r)));
+}
+const severity = p => [p.steps.filter(s => s !== "overflow" && s !== "underflow" && s !== "compact").length, p.overflow.length, 99 - p.pad, p.steps.includes("compact") ? 1 : 0];
+const shape = p => JSON.stringify({steps: p.steps, overflow: p.overflow, pad: p.pad, chord: p.show.chordNames});
+
+// ---------------------------------------------------------------- sweeps
+const cases = {
+    calm: Q.calm, wrong: Q.wrong, long: Q.long, dictation: Q.dictation,
+    chordCalm: {...Q.calm, chordWidth: Q.chord.named, chordCompactWidth: Q.chord.caps},
+    chordWrong: {...Q.wrong, chordWidth: Q.chord.named, chordCompactWidth: Q.chord.caps}
+};
+const thresholds = {};
+for (const [label, m] of Object.entries(cases)) {
+    const steps = expectedSteps(m);
+    const present = OVERFLOW.filter(id => m.controls.some(c => c.id === id));
+    let previous = null;
+    thresholds[label] = [];
+    for (let width = 2400; width >= 0; width--) {
+        const p = model.plan(width, m);
+        assertReachable(width, m, p, label);
+        assertPlaced(width, m, p, label);
+        const applied = p.steps.filter(s => s !== "overflow" && s !== "underflow" && s !== "compact");
+        eq(applied, steps.slice(0, applied.length), "yield order " + label + " at " + width);
+        eq(p.overflow.filter(id => present.includes(id)), present.slice(0, p.overflow.filter(id => present.includes(id)).length), "overflow order " + label + " at " + width);
+        ok(!p.steps.includes("underflow"), "the plan always fits " + label + " at " + width);
+        // Readouts yield before any control moves into ».
+        if (p.overflow.some(id => present.includes(id))) eq(applied, steps, "every readout yielded before a control overflowed: " + label + " at " + width);
+        if (p.overflow.includes("dictation")) eq(p.controls.length, 0, "dictation's group moves after every control " + label);
+        eq(p.show.dictationActions, (m.dictationActionsWidth || 0) > 0 && !p.overflow.includes("dictation"), "Retry and Dismiss move together " + label + " at " + width);
+        if (previous) {
+            const a = severity(previous), b = severity(p);
+            // Super+O's names are the one readout that can trade back:
+            // once they drop to key caps, the spacing they cost returns.
+            const tradedNames = previous.show.chordNames && !p.show.chordNames;
+            ok(tradedNames || (b[0] >= a[0] && b[1] >= a[1]), "monotonic as the bar narrows: " + label + " at " + width);
+            ok(b[1] >= a[1], "overflow never shrinks as the bar narrows: " + label + " at " + width);
+            if (shape(previous) !== shape(p)) thresholds[label].push(width + 1);
+        }
+        previous = p;
     }
 }
-assert.ok(fleetSeen.count && fleetSeen.overflow, "the sweep reaches the count's yield and the control's overflow");
-// "--" and a two-digit count are wider than no count; equal widths skip the step.
-assert.equal(model.plan(400, {...fleetMetrics, controls: fleetMetrics.controls.map(c => c.id === "fleet" ? {...c, readoutWidth: 0} : c)}).steps.includes("fleetCount"), false);
-console.log("bar-plan: width sweeps, dictation actions, compact fallback, exact gaps, builder presence/absence and the Fleet readout pass");
+
+// ---------------------------------------------------------------- thresholds
+// Every threshold, one px either side: t is the narrowest width that keeps
+// the wider layout; t - 1 is the first width of the next rung, and t + 1
+// keeps the wider layout too.
+for (const [label, list] of Object.entries(thresholds)) {
+    ok(list.length >= 10, label + ": the sweep crosses the rungs (" + list.length + ")");
+    for (const t of list) {
+        const at = model.plan(t, cases[label]), below = model.plan(t - 1, cases[label]), above = model.plan(t + 1, cases[label]);
+        ok(shape(at) !== shape(below), label + ": " + t + " and " + (t - 1) + " differ");
+        const sa = severity(at), sb = severity(below);
+        ok(sb[0] > sa[0] || sb[1] > sa[1] || sb[2] > sa[2] || sb[3] > sa[3] || (at.show.chordNames && !below.show.chordNames),
+            label + ": " + (t - 1) + " gives up more than " + t);
+        if (!list.includes(t + 1)) eq(shape(above), shape(at), label + ": " + (t + 1) + " keeps the layout of " + t);
+    }
+}
+// The pinned rungs of the calm bar, as measured (bar-fixtures.json
+// quiet.calmThresholds): the first control moves into » at about 402 px.
+for (const [step, t] of Object.entries(Q.calmThresholds)) {
+    const at = model.plan(t, Q.calm), below = model.plan(t - 1, Q.calm);
+    const has = (p) => step.startsWith("overflow:") ? p.overflow.includes(step.slice(9)) : step === "compact" ? p.steps.includes("compact")
+        : step.startsWith("pad:") ? p.pad <= Number(step.slice(4)) : p.steps.includes(step);
+    ok(!has(at) && has(below), "calm: " + step + " starts at " + (t - 1) + " px, not at " + t + " px");
+    ok(!has(model.plan(t + 1, Q.calm)), "calm: " + step + " not at " + (t + 1) + " px");
+}
+ok(Q.calmThresholds["overflow:oci"] >= 398 && Q.calmThresholds["overflow:oci"] <= 406, "the first control moves into » at about 402 px");
+eq(model.plan(1920, Q.calm).steps, [], "calm at 1920 gives up nothing");
+
+// ---------------------------------------------------------------- yield order
+// Words go before the clock leaves the centre; a number in a warning or
+// danger tone outlasts the window title.
+{
+    const m = Q.wrong;
+    const order = expectedSteps(m);
+    ok(order.indexOf("diskLabel") < order.indexOf("uncentre"), "the disk's words yield before the clock leaves the centre");
+    for (const k of ["builderLabel", "ociNumber", "ntfCount", "fleetCount", "batteryPct"])
+        if (order.includes(k)) ok(order.indexOf("titleMin") < order.indexOf(k), k + " outlasts the window title");
+    // The disk count keeps its box after " issue" yields, until Disks moves into ».
+    let seenCount = false;
+    for (let w = 2400; w > 0; w--) {
+        const p = model.plan(w, m);
+        if (p.show.diskLabel === false && p.controls.includes("disk")) { seenCount = true; break; }
+    }
+    ok(seenCount, "a width shows the disk count without its words");
+    // The Wi-Fi "!" never yields: it stays while Wi-Fi is on the bar.
+    for (let w = 2400; w > 0; w -= 7) {
+        const p = model.plan(w, m);
+        if (p.controls.includes("wifi")) ok(model.place(w, m, p, widths(p, m)).wifi.w === even(2 * p.pad + 16 + 6 + m.controls.find(c => c.id === "wifi").readoutWidth), "the Wi-Fi ! stays at " + w);
+    }
+}
+// The Application menu's name: only when the title does not name the app.
+eq(model.plan(2400, Q.calm).show.appName, true);
+ok(!expectedSteps(Q.calm).includes("appName"), "no appName step when the title names the app (Forgerie)");
+ok(expectedSteps(Q.long).includes("appName"), "the name (Ghostty) is a readout when the title does not name it");
+eq(expectedSteps(Q.long)[1], "appName", "the name is the first readout to yield");
+// Hosts without the builder gate or Beszel take no step for them.
+{
+    const bare = {...Q.wrong, controls: Q.wrong.controls.filter(c => c.id !== "builder" && c.id !== "fleet")};
+    for (const w of [2400, 1200, 700, 500, 400, 300, 200]) {
+        const p = model.plan(w, bare);
+        ok(!p.steps.includes("builderLabel") && !p.steps.includes("fleetCount"), "no builder or fleet step at " + w);
+    }
+}
+
+// ---------------------------------------------------------------- Super+O
+{
+    const m = cases.chordCalm;
+    const named = Q.chord.named, caps = Q.chord.caps;
+    // Names while the whole hint takes at most half the bar.
+    const half = Math.ceil(2 * named);
+    eq(model.plan(half, m).show.chordNames, true, "names at " + half);
+    eq(model.plan(half + 1, m).show.chordNames, true, "names at " + (half + 1));
+    // Below that, names only while they make nothing but spacing yield.
+    for (let w = half - 1; w > 0; w--) {
+        const p = model.plan(w, m);
+        if (p.show.chordNames) {
+            eq(p.steps.filter(s => s !== "space"), [], "names below half only while calm, at " + w);
+            eq(p.chordWidth, named);
+        } else if (p.show.chord) eq(p.chordWidth, caps, "key caps alone at " + w);
+    }
+    // The chord moves with the clock: centred, or at the head of the right group.
+    let right = 0;
+    for (let w = 2400; w > 0; w--) {
+        const p = model.plan(w, m);
+        if (!p.show.chord) continue;
+        eq(p.chordPlace, p.centred ? "centre" : "right", "the chord stands in the clock's place at " + w);
+        if (p.chordPlace === "right") right++;
+    }
+    ok(right > 100, "the sweep reaches the uncentred chord");
+    // Bug 1: drawn centred while the plan reserved it in the right group,
+    // the chord covered the controls. Today's plan (the mock's run) found
+    // 531 such widths; the same rule here still finds them, and place()
+    // finds none.
+    let covered = 0;
+    for (let w = 191; w <= 2400; w++) {
+        const p = model.plan(w, m);
+        if (!p.show.chord || p.chordPlace !== "right") continue;
+        const at = model.place(w, m, p, widths(p, m));
+        const centredX = even(w / 2 - p.chordWidth / 2);
+        const hits = Object.keys(at).some(id => !["chord", "rightStart", "clock"].includes(id)
+            && !(centredX + p.chordWidth <= at[id].x || at[id].x + at[id].w <= centredX));
+        if (hits) covered++;
+    }
+    ok(covered > 0, "the old centred chord would cover the controls (" + covered + " widths)");
+}
+// The QML draws the chord where the plan reserved it.
+if (fs.existsSync(qmlPath)) {
+    const qml = fs.readFileSync(qmlPath, "utf8");
+    ok(/x: bar\.plan\.chordPlace === "right" \? rightGroup\.x \+ chordSlot\.x/.test(qml), "PlatinumTopBar places the chord from the plan");
+    ok(/id: chordSlot[\s\S]{0,200}width: bar\.plan\.chordWidth/.test(qml), "the right group reserves the chord's slot");
+    ok(/compact: !bar\.plan\.show\.chordNames/.test(qml), "the names follow the plan");
+    ok(/\["N", "Notifications"\]/.test(qml), "Super+O lists N for Notifications");
+}
+
+// ---------------------------------------------------------------- compact
+{
+    const m = Q.dictation;
+    eq(model.plan(1920, m).show.dictationActions, true);
+    const p191 = model.plan(191, m);
+    ok(!p191.steps.includes("compact"), "the captured metrics fit 191 px before compact");
+    for (let w = 0; w <= 400; w++) {
+        const p = model.plan(w, m);
+        if (p.steps.includes("compact")) {
+            eq(p.controls, [], "compact only after every control overflowed at " + w);
+            ok(p.overflow.includes("dictation"), "and after dictation's actions at " + w);
+            eq(p.show.title, false);
+        }
+        if (p.pad < 5) eq(p.controls.length, 0, "padding goes only after every control at " + w);
+    }
+    // The compact order: battery, clock, Application, then the Apple menu.
+    let order = [];
+    for (let w = 400; w >= 0; w--) for (const id of model.plan(w, m).overflow) if (["battery", "clock", "app", "apple"].includes(id) && !order.includes(id)) order.push(id);
+    eq(order, ["battery", "clock", "app", "apple"], "compact order");
+}
+
+// ---------------------------------------------------------------- the tag and Balloon Help
+{
+    const num = 30, full = 8 + 16 + 8 + 64 + 8 + num + 8, slim = 8 + 16 + 6 + num + 8;
+    eq(model.tagPlan(full + 12, 0, 32, num).well, 64, "the well shows when the full tag fits");
+    eq(model.tagPlan(full + 11, 0, 32, num).well, 0, "one px short, the well goes");
+    eq(model.tagPlan(full + 13, 0, 32, num).well, 64);
+    eq(model.tagPlan(slim + 12, 0, 32, num).show, true, "the slim tag at its width");
+    eq(model.tagPlan(slim + 11, 0, 32, num).show, false, "one px short, no tag (the value is in the menu)");
+    eq(model.tagPlan(slim + 13, 0, 32, num).width, slim);
+    for (let w = 0; w <= 2400; w += 3) for (const ax of [-50, 0, w / 3, w - 40, w + 50]) {
+        const t = model.tagPlan(w, ax, 32, num);
+        if (t.show) ok(t.x >= 6 && t.x + t.width <= w - 6 + 1e-6, "the tag stays on screen at " + w);
+        const b = model.balloonPlan(w, ax, 32, 260);
+        ok(b.width <= 300 && b.width <= Math.max(0, w - 12), "the balloon fits at " + w);
+        if (w >= 40) ok(b.x >= 6 && b.x + b.width <= w - 6 + 1e-6, "the balloon stays on screen at " + w);
+        ok(b.tail >= 0 && b.tail <= b.width, "the tail is on the balloon at " + w);
+    }
+    // The balloon is as wide as its text wants, at most 300.
+    eq(model.balloonPlan(1920, 1500, 32, 120).width, 120);
+    eq(model.balloonPlan(1920, 1500, 32, 900).width, 300);
+    eq(model.balloonPlan(191, 100, 32, 900).width, 179);
+    // Its tail points at the title.
+    const b = model.balloonPlan(1920, 1500, 32, 200);
+    eq(b.x + b.tail, 1516);
+}
+
+// ---------------------------------------------------------------- input checks
+assert.throws(() => model.plan(-1, Q.calm), /width/i);
+assert.throws(() => model.plan(NaN, Q.calm), /width/i);
+assert.throws(() => model.plan(100, {...Q.calm, batteryWidth: -1}), /batteryWidth/i);
+assert.throws(() => model.plan(100, {...Q.calm, batteryReadoutWidth: NaN}), /batteryReadoutWidth/i);
+assert.throws(() => model.plan(100, {...Q.calm, chordCompactWidth: -2}), /chordCompactWidth/i);
+assert.throws(() => model.plan(100, {...Q.calm, controls: [{id: "other", iconWidth: 16, readoutWidth: 0}]}), /control/i);
+assert.throws(() => model.plan(100, {...Q.calm, controls: [Q.calm.controls[0], Q.calm.controls[0]]}), /control/i);
+for (const compactReadoutWidth of [-1, NaN]) assert.throws(() => model.plan(100, {...Q.calm, controls: [{id: "disk", iconWidth: 16, readoutWidth: 24, compactReadoutWidth}]}), /compact/i);
+// A compact readout wider than the full one is clamped, and the input is not changed.
+{
+    const input = {...Q.wrong, controls: Q.wrong.controls.map(c => c.id === "ntf" ? {...c, compactReadoutWidth: c.readoutWidth + 50} : c)};
+    const before = JSON.stringify(input);
+    for (const w of [2400, 900, 500, 300]) model.plan(w, input);
+    eq(JSON.stringify(input), before, "the planner does not change its input");
+}
+console.log("bar-plan: " + checks + " checks; quiet glyphs, every threshold one px either side ("
+    + Object.values(thresholds).reduce((s, l) => s + l.length, 0) + "), yield and overflow order, groups, Super+O placement, the tag and Balloon Help");

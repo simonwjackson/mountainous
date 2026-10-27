@@ -73,7 +73,7 @@
             node ${./quickshell/battery.test.js} ${./quickshell/battery.js}
             node ${./quickshell/oci-model.test.js} ${./quickshell/oci-model.js}
             node ${./quickshell/media-hold.test.js} ${./quickshell/media-hold.js}
-            node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
+            node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json} ${./quickshell/PlatinumTopBar.qml}
             node ${./quickshell/bar-compact.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
             node ${./quickshell/theme-dev/overflow-geometry.test.js} ${./quickshell}
             node ${./quickshell/MenuState.test.js} ${./quickshell/MenuState.qml}
@@ -215,6 +215,12 @@
         assert builtins.hasAttr (prefix + "icons/popup.svg") files;
         assert !(builtins.hasAttr (prefix + "find-model.test.js") files);
         assert !(builtins.hasAttr (prefix + "themes/platinum/find-plan.test.js") files);
+        # The quiet glyphs: Balloon Help and the tag, the badge, the new icons.
+        assert builtins.hasAttr (prefix + "PlatinumBarHelp.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumBarBadge.qml") files;
+        assert builtins.hasAttr (prefix + "icons/speaker-3.svg") files;
+        assert builtins.hasAttr (prefix + "icons/brightness-8.svg") files;
+        assert builtins.hasAttr (prefix + "icons/cloud-meter.svg") files;
         # Delivery must not pass with a working manifest but unreachable bar
         # capabilities. Reuse the focused planner and real-QML probe result.
         pkgs.runCommand "bar-delivery" { } ''

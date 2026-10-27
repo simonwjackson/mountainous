@@ -59,4 +59,12 @@ Singleton {
         return best;
     }
     function digits(n) { return root.wideDigit.repeat(n); }
+
+    // A box for a number as it stands, each digit at the widest digit's
+    // width: "1" and "7" take one width, "12" and "99" another. The
+    // value does not move while its digit count holds, and a short number
+    // leaves no empty box sized for three digits beside its word.
+    function digitBox(s) {
+        return root.widest([String(s).replace(/[0-9]/g, root.wideDigit)]);
+    }
 }

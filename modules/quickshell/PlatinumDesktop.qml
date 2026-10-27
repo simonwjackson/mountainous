@@ -419,6 +419,9 @@ Scope {
     function showGlance() { fleetGlance.showGlance(); }
     function hideGlance() { fleetGlance.hideGlance(); }
 
+    // This screen's top bar (the glance space and the harnesses read it).
+    readonly property var bar: topBar
+
     PlatinumTopBar {
         id: topBar
         modelData: desktop.screen
@@ -441,6 +444,9 @@ Scope {
 
     // The shadow under this bar. It shows and hides with the bar.
     PlatinumBarShadow { bar: topBar }
+
+    // Balloon Help and the volume and brightness tag, under this bar.
+    PlatinumBarHelp { bar: topBar }
 
     Component {
         id: clockMenu

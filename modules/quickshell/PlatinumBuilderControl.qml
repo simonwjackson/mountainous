@@ -6,14 +6,12 @@ import "builder-gate.js" as Gate
 // follow the pointer onto it. The flip itself is the menu's first row,
 // "Accept builds" (T).
 //
-// At rest the title still says the state at a glance: the hammer while
-// myoko accepts, the hammer struck through while it refuses, in the gate's
-// tone (grey when the default rule refuses, the text colour when you
-// chose it). The words say when the choice is yours ("On by you"), so the
-// title draws no outline for it.
-//
-// The words ("Builds off: battery", "Building 2") are a readout and yield
-// to the count alone, which stays in its own box.
+// The hammer is the state: whole while myoko accepts, struck through
+// while it refuses, grey when the default rule refuses. A dot on the
+// hammer says builds are running. Words come onto the bar only while an
+// action failed (the warning tone); they are a readout and yield first.
+// The full state ("On by you", "Building 2") is in Balloon Help and in
+// the menu's header.
 PlatinumBarControl {
     id: root
 
@@ -23,34 +21,34 @@ PlatinumBarControl {
     readonly property var sample: gate ? gate.sample : Gate.loading()
     readonly property string pending: gate ? gate.pending : ""
     readonly property var actionError: gate ? gate.actionError : null
+    readonly property string gateTone: Gate.tone(sample, pending, actionError)
+    readonly property int running: sample.kind === "ready" ? sample.value.running : 0
 
     menu: "builder"
     icon: "builder"
     slashed: Gate.mark(sample, pending) === "off"
-    tone: PlatinumTokens.barTone(Gate.tone(sample, pending, actionError))
+    tone: PlatinumTokens.barTone(gateTone === "warning" ? "warning" : gateTone === "muted" ? "muted" : "normal")
 
-    // What the plan measures: the full words and the compact count. A
-    // count sits in a box as wide as two wide digits, so "Building 2" and
-    // "Building 12" take one width and the bar does not move.
+    // The bar's words: the full state for Balloon Help and », and the
+    // warning words the bar shows while an action failed.
     readonly property string fullText: Gate.barText(sample, pending, actionError, "wide")
-    readonly property string compactText: Gate.barText(sample, pending, actionError, "tiny")
-    function boxWidth(text) {
-        if (text === "") return 0;
-        return PlatinumMetrics.widest([text.replace(/\d+/g, function (m) {
-            return PlatinumMetrics.digits(Math.max(2, m.length));
-        })]);
-    }
-    readonly property real fullWidth: boxWidth(fullText)
-    readonly property real compactWidth: Math.min(boxWidth(compactText), fullWidth)
+    readonly property string warnText: gateTone === "warning" ? fullText : ""
+    readonly property real fullWidth: warnText === "" ? 0 : PlatinumMetrics.width(warnText)
 
     Text {
-        visible: text !== ""
-        width: root.showLabel ? root.fullWidth : root.compactWidth
-        text: root.showLabel ? root.fullText : root.compactText
+        visible: root.showLabel && root.warnText !== ""
+        text: root.warnText
         textFormat: Text.PlainText
         color: root.fg
         font.family: PlatinumTokens.platinumFont
         font.pixelSize: PlatinumTokens.platinumText
         font.letterSpacing: PlatinumTokens.platinumTracking
+    }
+
+    // Builds are running: the badge the bell uses, on the hammer's head.
+    iconExtras: PlatinumBarBadge {
+        visible: root.running > 0
+        fill: root.fg
+        knock: root.bg
     }
 }

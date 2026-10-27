@@ -1,46 +1,69 @@
 {
-  "description": "Round 1 bar readouts with the 6px gap removed, plus ChicagoFLF status/button measurements from PlatinumMetrics. Dictation text and actions are separate.",
-  "failedDictationMetrics": {
-    "controls": [
-      {"id": "bt", "iconWidth": 16, "readoutWidth": 11},
-      {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
-      {"id": "vol", "iconWidth": 16, "readoutWidth": 30},
-      {"id": "bri", "iconWidth": 16, "readoutWidth": 30},
-      {"id": "oci", "iconWidth": 16, "readoutWidth": 240.90625},
-      {"id": "disk", "iconWidth": 16, "readoutWidth": 19.234375, "compactReadoutWidth": 0},
-      {"id": "ntf", "iconWidth": 16, "readoutWidth": 29, "compactReadoutWidth": 0}
-    ],
-    "markWidth": 20,
-    "titleWidth": 202,
-    "titleMinWidth": 84,
-    "dictationActionsWidth": 154,
-    "clockWidth": 103,
-    "clockTimeWidth": 45,
-    "chordWidth": 0,
-    "batteryWidth": 66,
-    "appIconWidth": 16,
-    "appNameWidth": 57,
-    "overflowWidth": 16
-  },
-  "builderAbsentPlans": [
-    {"width":1920,"plan":{"steps":[],"pad":8,"gap":2,"centred":true,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":true,"diskLabel":true,"appName":true,"clockDate":true,"btCount":true,"brightnessNumber":true,"volumeNumber":true,"notificationCount":true,"title":true,"dictationActions":false},"leftMax":244,"centreW":128}},
-    {"width":600,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre"],"pad":5,"gap":0,"centred":false,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":true,"dictationActions":false},"leftMax":236,"centreW":58}},
-    {"width":400,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre","titleMin"],"pad":5,"gap":0,"centred":false,"controls":["bt","wifi","vol","bri","oci","disk","ntf"],"overflow":[],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":false,"dictationActions":false},"leftMax":46,"centreW":58}},
-    {"width":320,"plan":{"steps":["space","ociLabel","diskLabel","appName","clockDate","btCount","brightnessNumber","volumeNumber","notificationCount","uncentre","titleMin","overflow"],"pad":5,"gap":0,"centred":false,"controls":["wifi","vol","ntf"],"overflow":["oci","disk","bri","bt"],"show":{"ociLabel":false,"diskLabel":false,"appName":false,"clockDate":false,"btCount":false,"brightnessNumber":false,"volumeNumber":false,"notificationCount":false,"title":false,"dictationActions":false},"leftMax":44,"centreW":58}}
-  ],
-  "states": [
-    {"id": "w-dict-failed-400", "width": 400, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
-    {"id": "w-dict-failed-320", "width": 320, "open": "", "dictation": {"state": "failed", "backend": "groq", "queue": 1, "failureKind": "backend", "canRetry": true}},
-    {"id": "w-overflow-oci-eight", "width": 320, "open": "oci", "anchor": "more", "ociRows": [
-      {"name": "DEFAULT", "percent": "40.0", "used": "4096.0", "projected": "5800"},
-      {"name": "family", "percent": "35.3", "used": "3616.0", "projected": "5200"},
-      {"name": "lab", "percent": "30.6", "used": "3136.0", "projected": "4600"},
-      {"name": "osaka", "percent": "25.9", "used": "2656.0", "projected": "4000"},
-      {"name": "tokyo-2", "percent": "21.2", "used": "2176.0", "projected": "3400"},
-      {"name": "backup", "percent": "16.5", "used": "1696.0", "projected": "2800"},
-      {"name": "ci", "percent": "11.8", "used": "1216.0", "projected": "2200"},
-      {"name": "archive", "percent": "7.1", "used": "736.0", "projected": "1600"}
-    ]},
-    {"id":"w-builder-320","width":320,"open":"builder","anchor":"more","builder":{"present":true,"running":3}}
-  ]
+  "description": "Widths the Platinum bar measured (barProbe in the nested session, 2026-10-26) in ChicagoFLF (PlatinumMetrics) for the approved mock's states (/tmp/bar-calm/states.js), direction A. Content widths only: the planner adds pads and gaps.",
+  "quiet": {
+    "calm": {
+      "controls": [
+        {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "bri", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "oci", "iconWidth": 22, "readoutWidth": 0},
+        {"id": "disk", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "fleet", "iconWidth": 12, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "builder", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "ntf", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0}
+      ],
+      "markWidth": 20, "titleWidth": 83, "titleMinWidth": 96, "dictationActionsWidth": 0,
+      "clockWidth": 45, "chordWidth": 0, "chordCompactWidth": 0,
+      "batteryWidth": 18, "batteryReadoutWidth": 0, "appIconWidth": 16, "appNameWidth": 0, "overflowWidth": 16
+    },
+    "wrong": {
+      "controls": [
+        {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "wifi", "iconWidth": 16, "readoutWidth": 8},
+        {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "bri", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "oci", "iconWidth": 22, "readoutWidth": 84},
+        {"id": "disk", "iconWidth": 16, "readoutWidth": 57, "compactReadoutWidth": 11},
+        {"id": "fleet", "iconWidth": 12, "readoutWidth": 11, "compactReadoutWidth": 0},
+        {"id": "builder", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "ntf", "iconWidth": 16, "readoutWidth": 29, "compactReadoutWidth": 0}
+      ],
+      "markWidth": 20, "titleWidth": 83, "titleMinWidth": 96, "dictationActionsWidth": 0,
+      "clockWidth": 45, "chordWidth": 0, "chordCompactWidth": 0,
+      "batteryWidth": 18, "batteryReadoutWidth": 23, "appIconWidth": 16, "appNameWidth": 0, "overflowWidth": 16
+    },
+    "long": {
+      "controls": [
+        {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "bri", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "oci", "iconWidth": 22, "readoutWidth": 0},
+        {"id": "disk", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "fleet", "iconWidth": 12, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "builder", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "ntf", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0}
+      ],
+      "markWidth": 20, "titleWidth": 1194, "titleMinWidth": 96, "dictationActionsWidth": 0,
+      "clockWidth": 45, "chordWidth": 0, "chordCompactWidth": 0,
+      "batteryWidth": 18, "batteryReadoutWidth": 0, "appIconWidth": 16, "appNameWidth": 62, "overflowWidth": 16
+    },
+    "dictation": {
+      "controls": [
+        {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "bri", "iconWidth": 16, "readoutWidth": 0},
+        {"id": "oci", "iconWidth": 22, "readoutWidth": 0},
+        {"id": "disk", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0},
+        {"id": "ntf", "iconWidth": 16, "readoutWidth": 0, "compactReadoutWidth": 0}
+      ],
+      "markWidth": 20, "titleWidth": 202, "titleMinWidth": 84, "dictationActionsWidth": 154,
+      "clockWidth": 45, "chordWidth": 0, "chordCompactWidth": 0,
+      "batteryWidth": 18, "batteryReadoutWidth": 0, "appIconWidth": 16, "appNameWidth": 57, "overflowWidth": 16
+    },
+    "chord": {"named": 993, "caps": 265},
+    "calmThresholds": {"space": 858, "uncentre": 680, "titleMin": 487, "overflow:oci": 404, "overflow:disk": 398, "overflow:fleet": 372, "overflow:builder": 350, "overflow:bri": 324, "overflow:bt": 298, "overflow:wifi": 272, "overflow:ntf": 246, "overflow:vol": 220, "overflow:battery": 144, "overflow:clock": 126, "overflow:app": 80, "overflow:apple": 36, "pad:4": 194, "pad:0": 154, "compact": 144}
+  }
 }

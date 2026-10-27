@@ -10,13 +10,19 @@ import "notification-model.js" as NotificationModel
 // One screen's top bar, as a Mac OS 8 Platinum menu bar.
 //
 //   left    the omni mark, then the front window's title or dictation
-//   centre  the clock, or the Super+O chord while it is active
+//   centre  the clock (the time alone), or the Super+O chord while active
 //   right   the controls, the battery, the front app
 //
-// Layout is BarPlan.plan(width, metrics): readouts yield before controls,
-// in one declared order, and controls move into the » menu only after
-// every readout has yielded. A control hides only when its hardware is
-// missing. Each yielded readout still lives in its menu's header.
+// Quiet glyphs: each icon carries its value (speaker waves, sun rays, a
+// cloud meter for the worst OCI profile, the battery fill, a dot on the
+// bell and on a busy hammer). A number comes onto the bar only in a
+// warning or danger tone. Exact values are in Balloon Help (rest the
+// pointer on a title) and in each menu's header. A volume or brightness
+// change shows its number in a tag under the icon for 1.5 s.
+//
+// Layout is BarPlan.plan(width, metrics): spacing yields, then readouts
+// in one declared order, then controls move into the » menu. A control
+// hides only when its hardware is missing.
 PanelWindow {
     id: bar
 
@@ -69,6 +75,19 @@ PanelWindow {
     readonly property real titleX: leftText.x + titleBox.x
     function isOpen(name) { return bar.menuHere && MenuState.current === name; }
 
+    // The bar's titles by name.
+    function itemFor(name) {
+        return ({
+            apple: markControl, find: markControl, app: appControl,
+            bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
+            oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
+            battery: batteryControl, chord: chord,
+            clock: bar.plan.centred ? clockCentre : clockRight,
+            more: moreControl
+        })[name] || null;
+    }
+    function xOf(it) { return it.parent === rightGroup ? rightGroup.x + it.x : it.x; }
+
     // Where a menu hangs: under its control, under » when the control
     // overflowed, or -1 (top right) when the bar does not show it.
     // It reads x through the parents, not mapToItem, so a binding that
@@ -76,26 +95,19 @@ PanelWindow {
     function anchorFor(name) {
         // Go to Address hangs from the front window's title, the window it acts on.
         if (name === "address") return bar.titleX;
-        const item = ({
-            apple: markControl, find: markControl, app: appControl,
-            bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
-            oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
-            clock: bar.plan.centred ? clockCentre : clockRight,
-            more: moreControl
-        })[name];
-        const xOf = function (it) { return it.parent === rightGroup ? rightGroup.x + it.x : it.x; };
-        if (bar.plan.overflow.indexOf(name) >= 0 && moreControl.visible) return xOf(moreControl);
-        if (item && item.visible && item.width > 0) return xOf(item);
+        const item = bar.itemFor(name);
+        if (bar.plan.overflow.indexOf(name) >= 0 && moreControl.visible) return bar.xOf(moreControl);
+        if (item && item.visible && item.width > 0) return bar.xOf(item);
         return -1;
     }
 
     // A control's place and width on the bar ({x, w}), or »'s when it
     // overflowed; null when the bar does not show it. The glance space's
-    // zoom rects start here.
+    // zoom rects, the transient tag and Balloon Help start here.
     function controlRect(name) {
         const x = bar.anchorFor(name);
         if (x < 0) return null;
-        const item = bar.plan.overflow.indexOf(name) >= 0 ? moreControl : ({ fleet: fleetControl })[name];
+        const item = bar.plan.overflow.indexOf(name) >= 0 ? moreControl : bar.itemFor(name);
         return {x: x, w: item ? item.width : 16};
     }
 
@@ -109,8 +121,8 @@ PanelWindow {
     // What the » menu shows for a control that moved into it.
     function iconFor(id) {
         return ({ bt: "bluetooth", wifi: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel,
-                  vol: bar.volIcon, bri: "brightness", oci: "cloud", disk: "disk", builder: "builder",
-                  ntf: "bell", apple: "mark", battery: "battery", clock: "", app: "desktop" })[id] || "";
+                  vol: bar.sound.muted ? "volume-muted" : bar.volIcon, bri: bar.briIcon, oci: "cloud", disk: "disk",
+                  builder: "builder", ntf: "bell", apple: "mark", battery: "battery", clock: "", app: "desktop" })[id] || "";
     }
 
     function valueFor(id) {
@@ -120,7 +132,7 @@ PanelWindow {
         if (id === "bt") return !bar.btOn ? "Off" : bar.btCount > 0 ? bar.btCount + " connected" : "On";
         if (id === "wifi") return bar.wifi.statusText;
         if (id === "vol") return bar.sound.muted ? "Muted" : bar.sound.volumePercent + "%";
-        if (id === "bri") return bar.brightness.shownLevel + "%";
+        if (id === "bri") return bar.briLevel + "%";
         if (id === "oci") return bar.oci.state === "ready"
             ? bar.ociRows.map(function (r) { return r.value; }).join(" ") : bar.oci.stateText;
         if (id === "disk") return bar.storage.label.replace(/^Disks /, "");
@@ -132,6 +144,38 @@ PanelWindow {
         return "";
     }
 
+    // Balloon Help: the full value of the title under the pointer, as a
+    // sentence (Mac OS 8). Every value here is also in its menu.
+    function balloonFor(id) {
+        if (id === "clock") return Qt.formatDate(bar.now, "dddd, MMMM d, yyyy") + ".";
+        if (id === "oci") return bar.oci.state === "ready"
+            ? "OCI egress this month: " + bar.ociRows.map(function (r) { return r.name + " " + r.value; }).join(", ")
+                + ". Click for usage in GB."
+            : "OCI egress: " + bar.oci.stateText + ".";
+        if (id === "bt") return "Bluetooth: " + (!bar.btOn ? "off" : bar.btCount > 0 ? bar.btCount + " connected" : "on, nothing connected") + ".";
+        if (id === "wifi") return "Wi-Fi: " + bar.wifi.statusText + ".";
+        if (id === "vol") return "Sound: " + (bar.sound.muted ? "muted" : bar.sound.volumePercent + "%") + ".";
+        if (id === "bri") return "Brightness: " + bar.briLevel + "%.";
+        if (id === "disk") return "Server storage: " + (bar.diskCounting
+            ? bar.storage.issues.length + (bar.storage.issues.length === 1 ? " issue" : " issues")
+            : bar.storage.state === "ready" ? "ok" : bar.storage.statusText) + ".";
+        if (id === "fleet") return "Fleet: " + bar.valueFor("fleet") + ".";
+        if (id === "builder") return "Remote builds: " + builderControl.fullText + ".";
+        if (id === "ntf") {
+            const n = bar.notifications.count;
+            const urgent = bar.notifications.items.filter(function (i) { return i.urgency === 2; }).length;
+            return "Notifications: " + (n === 0 ? "none" : n + (urgent > 0 ? ", " + urgent + " urgent" : ""))
+                + bar.ntfSuffix.replace(/^offline$/, ", offline") + ".";
+        }
+        if (id === "battery") {
+            const b = bar.battery;
+            return "Battery: " + b.percent + "%" + (b.onBattery ? (b.charging ? ", charging" : "")
+                : b.full ? ", charged" : b.charging ? ", charging" : "") + ".";
+        }
+        if (id === "app") return bar.appId !== "" ? bar.appName + "." : "No application in front.";
+        return "";
+    }
+
     //----------------------------------------------------------------
     // State the bar draws
     //----------------------------------------------------------------
@@ -140,6 +184,8 @@ PanelWindow {
     readonly property bool btPresent: bluetooth.adapter !== null
     readonly property bool btOn: btPresent && bluetooth.adapter.enabled
     readonly property int btCount: bluetooth.connectedCount
+    // On with nothing connected: the rune goes grey. Off: struck through.
+    readonly property string btTone: btOn && btCount === 0 ? "muted" : "normal"
 
     readonly property bool wifiPresent: wifi.device !== null
     readonly property bool wifiRadioOff: !wifi.radioEnabled || !wifi.hardwareEnabled
@@ -150,30 +196,52 @@ PanelWindow {
         const s = wifi.connectedNetwork.signalStrength;
         return s >= 0.75 ? 4 : s >= 0.5 ? 3 : s >= 0.25 ? 2 : 1;
     }
+    // On with no network: the dim bars and a "!" in the warning tone.
+    readonly property bool wifiDown: wifiPresent && !wifiRadioOff && wifiLevel === 0
 
     readonly property bool volPresent: sound.available
-    readonly property string volIcon: sound.muted ? "volume-muted"
-        : sound.volumePercent <= 0 ? "volume-0"
-        : sound.volumePercent <= 50 ? "volume-1" : "volume-2"
+    // Speaker waves: 0 at zero or muted (muted adds the slash), then one
+    // wave per third of the scale.
+    readonly property int volLevel: sound.volumePercent
+    readonly property int volWaves: sound.muted || volLevel <= 0 ? 0 : volLevel <= 33 ? 1 : volLevel <= 66 ? 2 : 3
+    readonly property string volIcon: "speaker-" + volWaves
+    // Sun rays: one lit ray per eighth of the scale, at least one.
+    readonly property int briLevel: Math.max(0, Math.min(100, brightness.shownLevel))
+    readonly property int briRays: Math.max(1, Math.min(8, Math.ceil(briLevel / 12.5)))
+    readonly property string briIcon: "brightness-" + briRays
 
     readonly property var ociRows: oci.rows.map(function (row) { return OciModel.rowRule(row); })
+    // The worst profile: by tone (danger, warning, normal), then by use.
+    readonly property var ociWorst: {
+        const rank = {danger: 2, warning: 1};
+        let worst = null;
+        for (const r of ociRows) {
+            const a = rank[r.tone] || 0, b = worst ? rank[worst.tone] || 0 : -1;
+            if (a > b || (a === b && (parseFloat(r.value) || 0) > (parseFloat(worst.value) || 0))) worst = r;
+        }
+        return oci.state === "ready" ? worst : null;
+    }
+    // The cloud's meter: the worst profile's share of its allowance.
+    readonly property real ociFraction: ociWorst ? Math.max(0, Math.min(1, (parseFloat(ociWorst.value) || 0) / 100)) : 0
+    readonly property bool ociAlarm: ociWorst !== null && (ociWorst.tone === "warning" || ociWorst.tone === "danger")
 
     readonly property string ntfNarrow: NotificationModel.barText(notifications.view,
         notifications.status, notifications.count, false).replace(/^NTF ?/, "")
     readonly property string ntfWide: NotificationModel.barText(notifications.view,
         notifications.status, notifications.count, true).replace(/^Notifications ?/, "")
     readonly property string ntfNumber: (/^\d+\+?/.exec(ntfNarrow) || [""])[0]
-    readonly property string ntfSuffix: {
-        // What the wide text adds after the count: ", local only",
-        // ", sync error", or "offline".
-        const rest = ntfWide.replace(/^\d+\+?/, "");
-        return rest;
-    }
+    // What the wide text adds after the count: ", local only",
+    // ", sync error", or "offline".
+    readonly property string ntfSuffix: ntfWide.replace(/^\d+\+?/, "")
     readonly property string ntfTone: NotificationModel.barTone(notifications.view,
         notifications.status, notifications.items)
+    // The count comes onto the bar only while it warns: an urgent
+    // notification (danger) or a sync failure (warning).
+    readonly property bool ntfAlarm: ntfTone === "danger" || ntfTone === "warning"
 
     readonly property var batteryRule: BatteryRule.rule(battery.percent, battery.charging,
         battery.full, battery.onBattery)
+    readonly property bool batteryAlarm: batteryRule.tone === "warning" || batteryRule.tone === "danger"
 
     readonly property string appId: {
         const w = bar.frontWindow;
@@ -189,6 +257,10 @@ PanelWindow {
     readonly property string appIcon: appEntry && appEntry.icon ? appEntry.icon : appId
 
     readonly property string title: frontWindow ? (frontWindow.title || "") : ""
+    // The title already names the app ("Forgerie" in "Forgerie"): the
+    // Application menu shows its icon alone, so the name is on the bar once.
+    readonly property bool titleNamesApp: !dictation.barVisible && appName !== ""
+        && title.toLowerCase().indexOf(appName.toLowerCase()) >= 0
 
     readonly property string dictationText: {
         let value = dictation.statusText;
@@ -201,7 +273,31 @@ PanelWindow {
         const hour = date.getHours() % 12 || 12;
         return hour + Qt.formatDateTime(date, ":mm");
     }
-    readonly property string clockDate: Qt.formatDateTime(now, "M/d")
+
+    // The Super+O chord's keys (modules/hyprland/hyprland.lua topbar-access).
+    readonly property var chordKeys: {
+        const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
+        if (bar.oci.enabled) k.push(["C", "Cloud"]);
+        if (bar.storage.enabled) k.push(["D", "Disks"]);
+        if (bar.fleetPresent) k.push(["F", "Fleet"]);
+        if (bar.builderPresent) k.push(["R", "Builder"]);
+        k.push(["N", "Notifications"]);
+        k.push(["Esc", "cancel"]);
+        return k;
+    }
+    function chordCapWidth(key) { return Math.max(18, PlatinumMetrics.smallWidth(key) + 8); }
+    // The chord row: 10 px, then per key its cap and 6 px, and with names
+    // the name and 14 px.
+    readonly property real chordNamedW: {
+        let w = 10;
+        for (const k of chordKeys) w += chordCapWidth(k[0]) + 6 + PlatinumMetrics.width(k[1]) + 14;
+        return w;
+    }
+    readonly property real chordCapsW: {
+        let w = 10;
+        for (const k of chordKeys) w += chordCapWidth(k[0]) + 6;
+        return w;
+    }
 
     //----------------------------------------------------------------
     // The plan
@@ -209,12 +305,8 @@ PanelWindow {
     // Raw content widths, as bar-plan.js wants them: an icon alone, a
     // readout's text box alone. The planner adds every pad and every gap
     // (the 6 px between icon and readout included), so none is counted here.
-    readonly property real numW: PlatinumMetrics.widest(["100", PlatinumMetrics.digits(2)])
     readonly property real clockTimeW: PlatinumMetrics.widest(["12:" + PlatinumMetrics.digits(2),
         "10:" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + ":" + PlatinumMetrics.digits(2)])
-    readonly property real clockDateW: PlatinumMetrics.widest(["12/" + PlatinumMetrics.digits(2),
-        "10/" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + "/" + PlatinumMetrics.digits(2)])
-    readonly property real clockGap: PlatinumMetrics.width("  ")
     // Retry and Dismiss share one width. Their group is the buttons and
     // the gap between them, nothing before.
     readonly property real dictationButtonW: PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
@@ -231,49 +323,34 @@ PanelWindow {
     // Readout widths come from the strings the bar draws, not from the
     // drawn items: an item's implicit width settles one layout pass late,
     // and the plan must never see a full readout narrower than its compact
-    // one.
-    readonly property var ociBoxText: ["100.0%", PlatinumMetrics.digits(3) + ".0%", "Failed"]
-    readonly property string ociStateMark: oci.state === "unavailable" ? "--" : oci.state === "loading" ? "..." : "!"
-    readonly property real ociReadoutW: {
-        if (oci.state !== "ready") return PlatinumMetrics.width(ociStateMark);
-        let w = 0;
-        for (let i = 0; i < ociRows.length; i++)
-            w += PlatinumMetrics.width((i > 0 ? " " : "") + ociRows[i].name + ":") + PlatinumMetrics.widest(ociBoxText);
-        return w;
-    }
-    readonly property var diskBoxText: ["99", PlatinumMetrics.digits(2)]
+    // one. A number's box holds its digits at the widest digit's width.
+    readonly property string ociName: ociAlarm ? ociWorst.name + ":" : ""
+    readonly property real ociReadoutW: ociAlarm ? PlatinumMetrics.width(ociName) + PlatinumMetrics.digitBox(ociWorst.value) : 0
     readonly property string diskWord: diskCounting ? (storage.issues.length === 1 ? " issue" : " issues")
-        : storage.label.replace(/^Disks /, "")
-    readonly property real diskReadoutW: (diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0)
-        + PlatinumMetrics.width(diskWord)
-    readonly property var ntfBoxText: ["99+", PlatinumMetrics.digits(2)]
-    readonly property var fleetBoxText: ["99", PlatinumMetrics.digits(2), "--"]
-    readonly property real fleetReadoutW: fleetReadout.text !== "" ? PlatinumMetrics.widest(fleetBoxText) : 0
-    readonly property real ntfReadoutW: (ntfNumber !== "" ? PlatinumMetrics.widest(ntfBoxText) : 0)
+        : storage.state === "error" ? "!" : storage.state === "stale" ? "stale" : ""
+    readonly property real diskCountW: diskCounting ? PlatinumMetrics.digitBox(storage.issues.length) : 0
+    readonly property real diskReadoutW: diskCountW + (diskWord !== "" ? PlatinumMetrics.width(diskWord) : 0)
+    readonly property real fleetReadoutW: fleetReadout.text !== "" ? PlatinumMetrics.digitBox(fleetReadout.text) : 0
+    readonly property real ntfReadoutW: !ntfAlarm ? 0 : (ntfNumber !== "" ? PlatinumMetrics.digitBox(ntfNumber) : 0)
         + (ntfSuffix !== "" ? PlatinumMetrics.width(ntfSuffix) : 0)
+    readonly property bool ntfShowsReadout: ntfAlarm && plan.show.ntfCount !== false && ntfReadoutW > 0
+    readonly property string batteryText: battery.percent + "%"
 
     readonly property var metrics: ({
         controls: [
-            btPresent ? { id: "bt", iconWidth: 16,
-                readoutWidth: btCount > 0 ? btCountBox.width : 0 } : null,
-            wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: 0 } : null,
-            volPresent ? { id: "vol", iconWidth: 16, readoutWidth: numW } : null,
-            brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: numW } : null,
-            oci.enabled ? { id: "oci", iconWidth: 16, readoutWidth: ociReadoutW } : null,
-            // When the label yields, the issue count keeps its fixed box.
-            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskReadoutW,
-                compactReadoutWidth: diskCounting ? PlatinumMetrics.widest(diskBoxText) : 0 } : null,
-            // Fleet: a light, and a count only when there are problems. When
-            // the count yields the light stays; the Glance menu's header
-            // keeps the summary.
+            btPresent ? { id: "bt", iconWidth: 16, readoutWidth: 0 } : null,
+            // The "!" of a radio with no network never yields.
+            wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: wifiDown ? PlatinumMetrics.width("!") : 0 } : null,
+            volPresent ? { id: "vol", iconWidth: 16, readoutWidth: 0 } : null,
+            brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: 0 } : null,
+            oci.enabled ? { id: "oci", iconWidth: 22, readoutWidth: ociReadoutW } : null,
+            // When the words yield, the issue count keeps its box.
+            storage.enabled ? { id: "disk", iconWidth: 16, readoutWidth: diskReadoutW, compactReadoutWidth: diskCountW } : null,
+            // Fleet: a light, and a count only when hosts have problems.
             fleetPresent ? { id: "fleet", iconWidth: 12, readoutWidth: fleetReadoutW, compactReadoutWidth: 0 } : null,
-            // The builder's words yield to its running count alone.
-            builderPresent ? { id: "builder", iconWidth: 16, readoutWidth: builderControl.fullWidth,
-                compactReadoutWidth: builderControl.compactWidth } : null,
-            // When the count yields it becomes a dot on the bell; offline
-            // keeps a "!".
-            { id: "ntf", iconWidth: 16,
-                readoutWidth: ntfReadoutW,
+            builderPresent ? { id: "builder", iconWidth: 16, readoutWidth: builderControl.fullWidth, compactReadoutWidth: 0 } : null,
+            // Offline keeps a "!" once the words yield.
+            { id: "ntf", iconWidth: 16, readoutWidth: ntfReadoutW,
                 compactReadoutWidth: ntfOffline ? Math.min(PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
         ].filter(function (c) { return c !== null; }),
         markWidth: 20,
@@ -285,22 +362,97 @@ PanelWindow {
             : title !== "" ? PlatinumMetrics.width(title) + 16 : 0,
         titleMinWidth: dictation.barVisible ? 8 + 8 + 8 + 60 : 96,
         dictationActionsWidth: dictationActionsW,
-        clockWidth: clockDateW + clockGap + clockTimeW,
-        clockTimeWidth: clockTimeW,
-        chordWidth: chordVisible ? chord.implicitWidth : 0,
-        // The battery is the planner's one whole-content width: icon, the
-        // 6 px between, and the percent box, because it never splits.
-        batteryWidth: battery.present ? 18 + inGap + batteryBox.width : 0,
+        clockWidth: clockTimeW,
+        chordWidth: chordVisible ? chordNamedW : 0,
+        chordCompactWidth: chordVisible ? chordCapsW : 0,
+        batteryWidth: battery.present ? 18 : 0,
+        batteryReadoutWidth: battery.present && batteryAlarm ? PlatinumMetrics.digitBox(batteryText) : 0,
         // Keep the Application menu reachable, even with no front app:
         // it is where Show All lives. Only tiny bars move it into ».
         appIconWidth: 16,
-        appNameWidth: appId !== "" ? PlatinumMetrics.width(appName) : 0,
+        appNameWidth: appId !== "" && !titleNamesApp ? PlatinumMetrics.width(appName) : 0,
         overflowWidth: 16
     })
 
     readonly property var plan: BarPlan.plan(bar.width, bar.metrics)
     readonly property real pad: plan.pad
     function onBar(id) { return plan.controls.indexOf(id) >= 0; }
+
+    // » takes the worst tone of what moved into it, so a warning in the
+    // menu still shows on the bar.
+    function toneOf(id) {
+        if (id === "oci") return bar.oci.tone;
+        if (id === "disk") return bar.storage.tone;
+        if (id === "fleet") return bar.fleetReadout.tone;
+        if (id === "builder") return builderControl.gateTone;
+        if (id === "ntf") return bar.ntfTone;
+        if (id === "battery") return bar.batteryRule.tone;
+        if (id === "wifi") return bar.wifiDown ? "warning" : "normal";
+        if (id === "dictation") return "danger";
+        return "normal";
+    }
+    readonly property string moreTone: {
+        let worst = "normal";
+        for (const id of plan.overflow) {
+            const t = bar.toneOf(id);
+            if (t === "danger") return "danger";
+            if (t === "warning") worst = "warning";
+        }
+        return worst;
+    }
+
+    //----------------------------------------------------------------
+    // Balloon Help and the transient tag (drawn by PlatinumBarHelp)
+    //----------------------------------------------------------------
+    // The title under the pointer, by name.
+    readonly property string hoverId: {
+        const titles = [["bt", btControl], ["wifi", wifiControl], ["vol", volControl], ["bri", briControl],
+            ["oci", ociControl], ["disk", diskControl], ["fleet", fleetControl], ["builder", builderControl],
+            ["ntf", ntfControl], ["battery", batteryControl], ["app", appControl],
+            ["clock", clockCentre], ["clock", clockRight]];
+        for (const t of titles) if (t[1].visible && t[1].hovered) return t[0];
+        return "";
+    }
+    // The balloon shows after the pointer rests 600 ms on a title, while
+    // no menu is open on this screen.
+    property string balloonId: ""
+    readonly property string balloonText: balloonId !== "" ? bar.balloonFor(balloonId) : ""
+    Timer {
+        id: balloonTimer
+        interval: 600
+        onTriggered: bar.balloonId = !bar.menuHere && bar.tagId === "" ? bar.hoverId : ""
+    }
+    onHoverIdChanged: {
+        bar.balloonId = "";
+        if (bar.hoverId !== "") balloonTimer.restart(); else balloonTimer.stop();
+    }
+
+    // The tag: a volume or brightness change shows its number under the
+    // control for 1.5 s. Not while a menu is open here (the menu shows
+    // the value), and not for the values the owners load at start.
+    // Each value arms 2 s after its owner has one, so a sink or a level
+    // file that appears later does not raise a tag either.
+    property string tagId: ""
+    property bool volArmed: false
+    property bool briArmed: false
+    Timer { id: volArm; interval: 2000; running: true; onTriggered: bar.volArmed = bar.volPresent }
+    Timer { id: briArm; interval: 2000; running: true; onTriggered: bar.briArmed = bar.brightness.available }
+    readonly property bool briPresent: brightness.available
+    onVolPresentChanged: { bar.volArmed = false; volArm.restart(); }
+    onBriPresentChanged: { bar.briArmed = false; briArm.restart(); }
+    Timer { id: tagTimer; interval: BarPlan.TAG.hold; onTriggered: bar.tagId = "" }
+    function showTag(id) {
+        if (!bar.visible || bar.menuHere) return;
+        if (id === "vol" ? !(bar.volArmed && bar.volPresent) : !(bar.briArmed && bar.briPresent)) return;
+        bar.balloonId = "";
+        bar.tagId = id;
+        tagTimer.restart();
+    }
+    onVolLevelChanged: bar.showTag("vol")
+    readonly property bool volMuted: sound.muted
+    onVolMutedChanged: bar.showTag("vol")
+    onBriLevelChanged: bar.showTag("bri")
+    onMenuHereChanged: if (bar.menuHere) { bar.balloonId = ""; balloonTimer.stop(); bar.tagId = ""; }
 
     //----------------------------------------------------------------
     // Drawing
@@ -491,9 +643,9 @@ PanelWindow {
     }
 
     // ---------------------------------------------------------- centre
-    // The clock sits in the middle of the bar. Once the bar is too narrow
-    // it leaves the centre for the right group, the Mac OS 8 place. A
-    // click opens the clock menu with the full date.
+    // The clock is the time alone; the full date is in its menu and its
+    // Balloon Help. It sits in the middle of the bar. Once the bar is too
+    // narrow it leaves the centre for the right group, the Mac OS 8 place.
     component ClockTitle: PlatinumBarControl {
         id: clockTitle
         screen: bar.modelData
@@ -504,11 +656,9 @@ PanelWindow {
         iconHeight: 0
 
         Text {
-            width: bar.plan.show.clockDate ? bar.clockDateW + bar.clockGap + bar.clockTimeW : bar.clockTimeW
+            width: bar.clockTimeW
             horizontalAlignment: Text.AlignHCenter
-            text: bar.plan.show.clockDate
-                ? bar.clockDate + "  " + bar.clockTime(bar.now)
-                : bar.clockTime(bar.now)
+            text: bar.clockTime(bar.now)
             color: clockTitle.fg
             font.family: PlatinumTokens.platinumFont
             font.pixelSize: PlatinumTokens.platinumText
@@ -522,35 +672,24 @@ PanelWindow {
         x: PlatinumMetrics.even(bar.width / 2 - width / 2)
     }
 
-    // The Super+O chord: each key as a key cap, then what it opens. When
-    // the full hint does not fit beside the title and the controls, the
-    // names drop and the key caps stay.
+    // The Super+O chord: each key as a key cap, then what it opens. It
+    // stands where the plan reserved it: in the centre, or, once the
+    // clock has left the centre, in the clock's place at the head of the
+    // right group (chordSlot), so it never covers a control. When the
+    // names do not fit, the key caps stay.
     Row {
         id: chord
         visible: bar.chordVisible && bar.plan.show.chord !== false
-        x: PlatinumMetrics.even(bar.width / 2 - width / 2)
+        readonly property bool compact: !bar.plan.show.chordNames
+        x: bar.plan.chordPlace === "right" ? rightGroup.x + chordSlot.x
+            : PlatinumMetrics.even(bar.width / 2 - width / 2)
         height: PlatinumTokens.barHeight - PlatinumTokens.hair
         spacing: 0
-        readonly property var keys: {
-            const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
-            if (bar.oci.enabled) k.push(["C", "Cloud"]);
-            if (bar.storage.enabled) k.push(["D", "Disks"]);
-            if (bar.fleetPresent) k.push(["F", "Fleet"]);
-            if (bar.builderPresent) k.push(["R", "Builder"]);
-            k.push(["Esc", "cancel"]);
-            return k;
-        }
-        readonly property real fullWidth: {
-            let w = 20;
-            for (const k of keys) w += PlatinumMetrics.smallWidth(k[0]) + 8 + 6 + PlatinumMetrics.width(k[1]) + 14;
-            return w;
-        }
-        readonly property bool compact: fullWidth > bar.width * 0.5
 
         Item { width: 10; height: 1 }
 
         Repeater {
-            model: chord.keys
+            model: bar.chordKeys
 
             Row {
                 required property var modelData
@@ -561,7 +700,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(18, keyText.implicitWidth + 8)
+                    width: bar.chordCapWidth(modelData[0])
                     height: 18
                     radius: 3
                     color: "transparent"
@@ -569,7 +708,6 @@ PanelWindow {
                     border.color: PlatinumTokens.barText
 
                     Text {
-                        id: keyText
                         anchors.centerIn: parent
                         text: modelData[0]
                         color: PlatinumTokens.barText
@@ -600,11 +738,21 @@ PanelWindow {
         spacing: bar.plan.gap
         layoutDirection: Qt.LeftToRight
 
+        // The chord's place once the clock has left the centre.
+        Item {
+            id: chordSlot
+            visible: chord.visible && bar.plan.chordPlace === "right"
+            width: bar.plan.chordWidth
+            height: parent.height
+        }
+
         ClockTitle {
             id: clockRight
             visible: !bar.chordVisible && !bar.plan.centred && bar.plan.show.clock !== false
         }
 
+        // Bluetooth: the rune alone. Grey while on with nothing connected,
+        // struck through while off.
         PlatinumBarControl {
             id: btControl
             visible: bar.btPresent && bar.onBar("bt")
@@ -614,14 +762,7 @@ PanelWindow {
             pad: bar.pad
             icon: "bluetooth"
             slashed: !bar.btOn
-
-            PlatinumBarNumber {
-                id: btCountBox
-                visible: bar.btCount > 0 && bar.plan.show.btCount
-                widest: ["8", PlatinumMetrics.digits(1)]
-                text: String(bar.btCount)
-                tone: btControl.fg
-            }
+            tone: PlatinumTokens.barTone(bar.btTone)
         }
 
         PlatinumBarControl {
@@ -633,8 +774,18 @@ PanelWindow {
             pad: bar.pad
             icon: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel
             slashed: bar.wifiRadioOff
+            tone: PlatinumTokens.barTone(bar.wifiDown ? "warning" : "normal")
+
+            Text {
+                visible: bar.wifiDown
+                text: "!"
+                color: wifiControl.fg
+                font.family: PlatinumTokens.platinumFont
+                font.pixelSize: PlatinumTokens.platinumText
+            }
         }
 
+        // Sound: speaker waves for the level, a slash when muted.
         PlatinumBarControl {
             id: volControl
             visible: bar.volPresent && bar.onBar("vol")
@@ -643,15 +794,10 @@ PanelWindow {
             open: bar.isOpen("vol")
             pad: bar.pad
             icon: bar.volIcon
-
-            PlatinumBarNumber {
-                visible: bar.plan.show.volumeNumber
-                width: bar.numW
-                text: bar.sound.muted ? "--" : String(bar.sound.volumePercent)
-                tone: volControl.fg
-            }
+            slashed: bar.sound.muted
         }
 
+        // Brightness: one lit ray per eighth of the scale.
         PlatinumBarControl {
             id: briControl
             visible: bar.brightness.available && bar.onBar("bri")
@@ -659,18 +805,12 @@ PanelWindow {
             menu: "bri"
             open: bar.isOpen("bri")
             pad: bar.pad
-            icon: "brightness"
+            icon: bar.briIcon
             onWheel: function (delta) { if (delta !== 0) bar.brightness.step(delta > 0 ? 1 : -1); }
-
-            PlatinumBarNumber {
-                visible: bar.plan.show.brightnessNumber
-                width: bar.numW
-                text: String(bar.brightness.shownLevel)
-                tone: briControl.fg
-            }
-
         }
 
+        // OCI egress: the cloud and one meter for the worst profile. While
+        // a profile warns, its name and percent come onto the bar.
         PlatinumBarControl {
             id: ociControl
             visible: bar.oci.enabled && bar.onBar("oci")
@@ -678,48 +818,44 @@ PanelWindow {
             menu: "oci"
             open: bar.isOpen("oci")
             pad: bar.pad
-            icon: "cloud"
+            icon: "cloud-meter"
+            iconWidth: 22
             tone: PlatinumTokens.barTone(bar.oci.tone)
 
+            // The meter's fill, inside the icon's well (x 18-20, y 5.33-12),
+            // in whole device pixels: at least two once there is any use.
+            iconExtras: Rectangle {
+                readonly property real dpr: PlatinumTokens.pixelRatio
+                readonly property real inner: 20 / 3
+                readonly property int device: bar.ociFraction > 0
+                    ? Math.max(2, Math.round(inner * dpr * bar.ociFraction)) : 0
+                x: 18
+                width: 2
+                height: Math.min(inner, device / dpr)
+                y: 12 - height
+                color: ociControl.fg
+            }
+
             Row {
-                id: ociFull
-                visible: bar.plan.show.ociLabel
+                visible: bar.ociAlarm && bar.plan.show.ociNumber !== false
 
                 Text {
-                    visible: bar.oci.state !== "ready"
-                    text: bar.ociStateMark
-                    color: ociControl.fg
+                    text: bar.ociName
+                    color: ociControl.inverted ? ociControl.fg : PlatinumTokens.barText
                     font.family: PlatinumTokens.platinumFont
                     font.pixelSize: PlatinumTokens.platinumText
                     font.letterSpacing: PlatinumTokens.platinumTracking
                 }
-
-                Repeater {
-                    model: bar.oci.state === "ready" ? bar.ociRows : []
-
-                    Row {
-                        required property var modelData
-                        required property int index
-
-                        Text {
-                            text: (index > 0 ? " " : "") + modelData.name + ":"
-                            color: ociControl.inverted ? ociControl.fg : PlatinumTokens.barText
-                            font.family: PlatinumTokens.platinumFont
-                            font.pixelSize: PlatinumTokens.platinumText
-                            font.letterSpacing: PlatinumTokens.platinumTracking
-                        }
-
-                        // Each profile in its own tone.
-                        PlatinumBarNumber {
-                            widest: bar.ociBoxText
-                            text: modelData.value
-                            tone: ociControl.inverted ? ociControl.fg : PlatinumTokens.barTone(modelData.tone)
-                        }
-                    }
+                PlatinumBarNumber {
+                    byDigits: true
+                    text: bar.ociWorst ? bar.ociWorst.value : ""
+                    tone: ociControl.inverted ? ociControl.fg : PlatinumTokens.barTone(bar.ociWorst ? bar.ociWorst.tone : "normal")
                 }
             }
         }
 
+        // Server storage: the disk alone while healthy; "1 issue" (or "!",
+        // "stale") in its tone otherwise. The words yield before the count.
         PlatinumBarControl {
             id: diskControl
             visible: bar.storage.enabled && bar.onBar("disk")
@@ -730,38 +866,23 @@ PanelWindow {
             icon: "disk"
             tone: PlatinumTokens.barTone(bar.storage.tone)
 
-            readonly property int issues: bar.storage.issues.length
-            readonly property bool counting: bar.storage.state === "ready" && issues > 0
-
             Row {
-                id: diskFull
-                visible: bar.plan.show.diskLabel
+                visible: bar.diskReadoutW > 0 && (bar.plan.show.diskLabel !== false || bar.diskCounting)
 
                 PlatinumBarNumber {
-                    visible: diskControl.counting
-                    widest: bar.diskBoxText
-                    text: String(diskControl.issues)
+                    visible: bar.diskCounting
+                    byDigits: true
+                    horizontalAlignment: Text.AlignRight
+                    text: String(bar.storage.issues.length)
                     tone: diskControl.fg
                 }
                 Text {
+                    visible: bar.plan.show.diskLabel !== false && bar.diskWord !== ""
                     text: bar.diskWord
                     color: diskControl.fg
                     font.family: PlatinumTokens.platinumFont
                     font.pixelSize: PlatinumTokens.platinumText
                     font.letterSpacing: PlatinumTokens.platinumTracking
-                }
-            }
-
-            // When the label yields, the count stays in its fixed box.
-            Row {
-                id: diskCompact
-                visible: !bar.plan.show.diskLabel && diskControl.counting
-                PlatinumBarNumber {
-                    id: diskCountBox
-                    visible: diskControl.counting
-                    widest: bar.diskBoxText
-                    text: String(diskControl.issues)
-                    tone: diskControl.fg
                 }
             }
         }
@@ -788,7 +909,7 @@ PanelWindow {
 
             PlatinumBarNumber {
                 visible: bar.fleetReadout.text !== "" && bar.plan.show.fleetCount !== false
-                widest: bar.fleetBoxText
+                byDigits: true
                 text: bar.fleetReadout.text
                 tone: fleetControl.fg
             }
@@ -804,6 +925,8 @@ PanelWindow {
             showLabel: bar.plan.show.builderLabel !== false
         }
 
+        // Notifications: the bell, with a dot while any wait. The count
+        // comes onto the bar only while it warns (urgent, or sync failed).
         PlatinumBarControl {
             id: ntfControl
             visible: bar.onBar("ntf")
@@ -813,18 +936,17 @@ PanelWindow {
             pad: bar.pad
             icon: "bell"
             tone: ({ danger: PlatinumTokens.barDanger, warning: PlatinumTokens.barWarning,
-                     primary: PlatinumTokens.barText, muted: PlatinumTokens.barTextOff })[bar.ntfTone] || PlatinumTokens.barText
+                     muted: PlatinumTokens.barTextOff })[bar.ntfTone] || PlatinumTokens.barText
 
             Row {
-                id: ntfFull
-                visible: bar.plan.show.notificationCount && (bar.ntfNumber !== "" || bar.ntfSuffix !== "")
+                visible: bar.ntfShowsReadout
 
-                // The count keeps its fixed box. With a suffix the digits sit
-                // at the box's right end, next to ", local only".
+                // With a suffix the digits sit at the box's right end, next
+                // to ", local only".
                 PlatinumBarNumber {
                     visible: bar.ntfNumber !== ""
-                    widest: bar.ntfBoxText
-                    horizontalAlignment: bar.ntfSuffix !== "" ? Text.AlignRight : Text.AlignLeft
+                    byDigits: true
+                    horizontalAlignment: Text.AlignRight
                     text: bar.ntfNumber
                     tone: ntfControl.fg
                 }
@@ -840,25 +962,17 @@ PanelWindow {
             }
 
             Text {
-                id: ntfCompact
-                visible: !bar.plan.show.notificationCount && bar.notifications.view.kind === "offline"
+                visible: bar.plan.show.ntfCount === false && bar.ntfOffline
                 text: "!"
                 color: ntfControl.fg
                 font.family: PlatinumTokens.platinumFont
                 font.pixelSize: PlatinumTokens.platinumText
             }
 
-            // The count becomes a dot when it yields.
-            iconExtras: Rectangle {
-                visible: !bar.plan.show.notificationCount && bar.notifications.count > 0
-                x: 11
-                y: -1
-                width: 7
-                height: 7
-                radius: 3.5
-                color: ntfControl.fg
-                border.width: PlatinumTokens.hair
-                border.color: ntfControl.bg
+            iconExtras: PlatinumBarBadge {
+                visible: bar.notifications.count > 0 && !bar.ntfShowsReadout
+                fill: ntfControl.fg
+                knock: ntfControl.bg
             }
         }
 
@@ -874,9 +988,12 @@ PanelWindow {
             open: bar.isOpen("more") || (bar.menuHere && bar.plan.overflow.indexOf(MenuState.current) >= 0)
             pad: bar.pad
             icon: "more"
+            tone: PlatinumTokens.barTone(bar.moreTone)
         }
 
-        // The battery is a whole readout. Only tiny bars move it into ».
+        // The battery: its fill is the level. The percent comes onto the
+        // bar while it warns (20% or less on battery). Only tiny bars move
+        // it into ».
         PlatinumBarControl {
             id: batteryControl
             visible: bar.battery.present && bar.plan.show.battery !== false
@@ -905,17 +1022,18 @@ PanelWindow {
             ]
 
             PlatinumBarNumber {
-                id: batteryBox
-                widest: ["100%", PlatinumMetrics.digits(2) + "%"]
-                text: bar.battery.percent + "%"
+                visible: bar.batteryAlarm && bar.plan.show.batteryPct !== false
+                byDigits: true
+                text: bar.batteryText
                 tone: batteryControl.fg
             }
         }
 
-        // The Application menu: the front app's icon and name. It drops the
-        // running apps (Hide, Hide Others, Show All, then each app). The name
-        // is the first readout to yield. With no front app it shows the
-        // desktop mark alone, so Show All stays one click away.
+        // The Application menu: the front app's icon, and its name only
+        // when the window title does not already say it. It drops the
+        // running apps (Hide, Hide Others, Show All, then each app). With
+        // no front app it shows the desktop mark alone, so Show All stays
+        // one click away.
         PlatinumBarControl {
             id: appControl
             visible: bar.plan.show.app !== false
@@ -933,7 +1051,7 @@ PanelWindow {
             }
 
             Text {
-                visible: bar.plan.show.appName && bar.appId !== ""
+                visible: bar.plan.show.appName !== false && bar.appId !== "" && !bar.titleNamesApp
                 text: bar.appName
                 textFormat: Text.PlainText
                 color: appControl.fg

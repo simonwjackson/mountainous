@@ -868,10 +868,11 @@ hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle
 
 -- Top-bar keyboard access uses one mnemonic namespace. SUPER+O enters the
 -- namespace, then B opens Bluetooth, W opens Wi-Fi, S opens Sound, L opens
--- Brightness, C opens Cloud, D opens Disks, F toggles the Fleet window, or R
--- opens Remote builds on hosts that show them. The top bar shows the
--- available keys while the submap is active. Escape or three seconds of
--- inactivity cancels it.
+-- Brightness, C opens Cloud, D opens Disks, F toggles the Fleet window, R
+-- opens Remote builds on hosts that show them, or N opens Notifications
+-- (Platinum only; under another desktop theme N passes through as before).
+-- The top bar shows the available keys while the submap is active. Escape
+-- or three seconds of inactivity cancels it.
 local topbar_access_timer = nil
 hl.bind(mod .. " + O", function()
     hl.dispatch(hl.dsp.submap("topbar-access"))
@@ -916,6 +917,13 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open disk"))
     hl.bind("F", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
     hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
+    -- Win98 keeps its own chord letters (its tray shows no N), so N opens
+    -- Notifications only under Platinum.
+    hl.bind("N", function()
+        if desktop_theme_name() ~= "platinum" then return { ok = false } end
+        hl.exec_cmd("qs -c mountainous ipc call chrome open ntf")
+        return { ok = true }
+    end, { auto_consuming = true })
     hl.bind("Escape", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome hide"))
 end)
 
