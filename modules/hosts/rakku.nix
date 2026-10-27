@@ -219,6 +219,9 @@ in
           # and voice-gateway answers Talk with that person's assistant model.
           assistantSurfacePath = "/people/simon/surface";
           talkModel = "simon";
+          # Range = fuel level x tank size / recent consumption (Vela ADR 0012).
+          # 62 L is the 2016 Mazda 6 figure from research; confirm it from the car.
+          tankLitres = 62;
         };
 
         # Root reads these; each assistant unit gets a copy as a credential.
