@@ -72,6 +72,7 @@ def compare(
     changed_services=frozenset(),
     changed_texts=frozenset(),
     assistant_rotation=False,
+    voice_rotation=False,
 ):
     services = NEW_SERVICES if services is None else services
     secrets = NEW_SECRETS if secrets is None else secrets
@@ -112,6 +113,14 @@ def compare(
             == {"ai-gateway.service"} | {name + ".service" for name in ASSISTANTS}
         ):
             permitted_changes = {assistant_key}
+        if (
+            kind == "secrets"
+            and voice_rotation
+            and changed.get("elevenlabs-api-key") == ["restartUnits"]
+            and old["elevenlabs-api-key"]["restartUnits"] == []
+            and new["elevenlabs-api-key"]["restartUnits"] == ["ai-gateway.service"]
+        ):
+            permitted_changes = {"elevenlabs-api-key"}
         if (
             removed
             or set(added) != set(allowed)
@@ -165,12 +174,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", default="cairn")
     parser.add_argument("--candidate", default="HEAD")
-    parser.add_argument("--phase", choices=["staging", "A", "B"], default="staging")
+    parser.add_argument(
+        "--phase", choices=["staging", "A", "B", "voice"], default="staging"
+    )
     parser.add_argument("--staging-base", help="rebased staging commit before A")
     parser.add_argument("--production-base", help="commit A, required for B")
     parser.add_argument("--output", default="/tmp/ai-staging-rakku-diff.txt")
     args = parser.parse_args()
-    if args.phase != "staging" and not args.staging_base:
+    if args.phase in {"A", "B"} and not args.staging_base:
         parser.error("--staging-base is required for A/B")
     if args.phase == "B" and not args.production_base:
         parser.error("--production-base is required for B")
@@ -218,6 +229,7 @@ def main():
                 else text_changes
             ),
             assistant_rotation=args.phase == "B",
+            voice_rotation=args.phase == "voice",
         )
         old_yaml = subprocess.check_output(
             ["git", "show", f"{sha}:secrets/hosts/rakku.yaml"], text=True
@@ -235,6 +247,10 @@ def main():
     changed = ASSISTANTS if args.phase == "B" else set()
     if args.phase == "staging":
         report = comparison(base, NEW_SERVICES, NEW_SECRETS, {"ai-staging"})
+    elif args.phase == "voice":
+        report = comparison(
+            base, set(), {"ai-gateway-key-voice-zao"}, set(), {"ai-gateway"}
+        )
     else:
         staging_base = resolve(args.staging_base)
         old_texts = snapshot(base)["unit_texts"]

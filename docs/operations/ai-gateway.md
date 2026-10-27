@@ -60,7 +60,8 @@ The login keeper stays at `http://127.0.0.1:8317`. Production reads the existing
 `pi-cliproxyapi-api-key` secret through LoadCredential. Staging's alias reads
 the same key from `secrets/fleet.yaml`. Neither declaration, owner nor key
 value changes. The existing Gemini secret and the Typesafe/Upstage dotenv
-secret are reused. ElevenLabs, xAI and OpenRouter stay off.
+secret are reused. ElevenLabs is enabled for production speech as described
+below. xAI and OpenRouter stay off.
 
 | Production gateway key | Grant |
 | --- | --- |
@@ -70,10 +71,10 @@ secret are reused. ElevenLabs, xAI and OpenRouter stay off.
 | paid cap | USD 0/month |
 | rate limit | 600 requests/minute |
 
-No production key can use a paid model. The provider wiring and price table
-remain ready but do not grant access. Prices are staging **ceilings, not
-tariffs**. Subscription requests do not charge the paid cap. The usage key
-only reads the usage endpoint.
+The assistant key cannot use a paid model. Subscription requests do not charge
+the paid cap. The usage key only reads the usage endpoint. The separate voice
+key below can use only ElevenLabs Flash v2.5. Other configured prices remain
+staging **ceilings, not tariffs**; the Flash v2.5 price is a verified tariff.
 
 ### Checks and diff scopes
 
@@ -157,3 +158,50 @@ Simon. Keep A running while the assistants return to their old endpoint and
 key. Do not remove or rotate the old key during this first cutover. Do not
 remove the login keeper. Rollback of A is separate and must keep its saved
 usage and tailnet identity state unless Simon chooses to remove them.
+
+## Production speech (2026-10-27)
+
+Production enables only ElevenLabs speech at `https://api.elevenlabs.io`.
+Its existing `elevenlabs-api-key` sops entry is unchanged. Systemd loads it as
+`elevenlabs` through `LoadCredential`. Rotation restarts `ai-gateway.service`.
+The existing CONNECT allowlist already permits `api.elevenlabs.io:443`, so
+the egress unit does not change. xAI and OpenRouter remain disabled; the
+existing `xai-api-key` remains unused. Staging configuration is unchanged.
+
+| Voice gateway key | Grant |
+| --- | --- |
+| name | voice@zao |
+| encrypted source | secrets/hosts/rakku.yaml, ai-gateway-key-voice-zao |
+| dialects | speech only |
+| models | eleven_flash_v2_5 (ElevenLabs Flash v2.5) only |
+| paid cap | USD 5/month |
+| rate limit | 120 requests/minute |
+
+The new key is an independent random 32-byte value, hex encoded and encrypted
+for Simon and Rakku. It loads as credential `voice-zao`; key rotation restarts
+only `ai-gateway.service`. No raw keys are in the config or Nix store.
+Voice IDs are not mapped: voice-gateway sends ElevenLabs voice IDs directly.
+The verified Flash/Turbo API tariff is USD 0.04 per 1K characters, every plan
+([ElevenLabs API pricing](https://elevenlabs.io/pricing/api), checked
+2026-10-27). `audio_per_million_characters = 40.0` is a tariff, not a ceiling.
+
+Run the two focused checks and Rakku evaluation above on the final commit.
+The voice diff phase compares against the current production baseline:
+
+```sh
+./scripts/check-ai-staging-rakku --phase voice --base origin/cairn \
+  --candidate HEAD --output /tmp/ai-voice-rakku-diff.txt
+./scripts/test-ai-staging-sandbox --instance production \
+  --output /tmp/ai-voice-sandbox-proof.json
+```
+
+The diff permits only `ai-gateway.service` text/ExecStart, the new voice secret,
+and the existing ElevenLabs secret's front-door rotation hook. It rejects
+changes to every other unit, including the assistants and staging. Existing
+encrypted entries must remain byte-identical. The sandbox test runs on Zao
+with synthetic keys, without contacting Rakku or a provider.
+
+Deployment restarts `ai-gateway.service` to load the new config and credentials.
+Pi assistant traffic uses that front door and can be interrupted during this
+restart. No deployment is part of this change. Live provider authentication,
+paid synthesis and Rakku activation remain deployment-time checks.

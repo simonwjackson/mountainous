@@ -156,7 +156,22 @@ let
     ) "wrong tailnet backend"
     ++ want (
       !(lib.hasInfix "cors" (lib.toLower (builtins.toJSON cfg.settings)))
-    ) "CORS config is forbidden";
+    ) "CORS config is forbidden"
+    ++ lib.optionals (testMode == "production") (
+      want (
+        cfg.providers.elevenlabs.enable && !cfg.providers.xai.enable && !cfg.providers.openrouter.enable
+      ) "ElevenLabs must be the only enabled speech provider; xAI and OpenRouter stay off"
+      ++
+        want
+          (
+            lib.elem "elevenlabs:${c.sops.secrets.elevenlabs-api-key.path}" unit.LoadCredential
+            && lib.elem "voice-zao:${c.sops.secrets.ai-gateway-key-voice-zao.path}" unit.LoadCredential
+            && c.sops.secrets.elevenlabs-api-key.restartUnits == [ "ai-gateway.service" ]
+            && c.sops.secrets.ai-gateway-key-voice-zao.restartUnits == [ "ai-gateway.service" ]
+            && c.sops.secrets.ai-gateway-key-voice-zao.mode == "0400"
+          )
+          "production speech credentials must use existing ElevenLabs and private voice secrets with rotation hooks"
+    );
 in
 {
   checks.${name} =

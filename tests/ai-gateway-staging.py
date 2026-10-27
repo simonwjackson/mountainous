@@ -30,7 +30,7 @@ assert all(
 assert "cors" not in json.dumps(settings).lower()
 a = settings["gateway_keys"][0]
 if production:
-    assert len(settings["gateway_keys"]) == 1
+    assert len(settings["gateway_keys"]) == 2
     assert a["name"] == "assistant@rakku"
     assert a["models"] == [
         "claude-opus-5-5",
@@ -40,6 +40,23 @@ if production:
     ]
     assert a["dialects"] == ["codex", "models", "responses"]
     assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (0, 600)
+    voice = settings["gateway_keys"][1]
+    assert voice == {
+        "name": "voice@zao",
+        "key_file": f"{credential_dir}/voice-zao",
+        "models": ["eleven_flash_v2_5"],
+        "dialects": ["speech"],
+        "monthly_cap_usd": 5,
+        "requests_per_minute": 120,
+    }
+    # The only speech provider is ElevenLabs; no aliases replace voice IDs.
+    assert settings["providers"]["elevenlabs"] == {
+        "base_url": "https://api.elevenlabs.io",
+        "key_file": f"{credential_dir}/elevenlabs",
+    }
+    assert settings["prices"]["eleven_flash_v2_5"] == {
+        "audio_per_million_characters": 40.0,
+    }
 else:
     assert len(settings["gateway_keys"]) == 2
     b = settings["gateway_keys"][1]
@@ -70,8 +87,18 @@ gemini_images = {
     "gemini-3-pro-image-preview",
     "gemini-2.5-flash-image",
 }
-assert {model["id"] for model in settings["paid_models"]} == gemini_images
+speech_models = {"eleven_flash_v2_5"} if production else set()
+assert {
+    model["id"] for model in settings["paid_models"]
+} == gemini_images | speech_models
 for model in settings["paid_models"]:
+    if model["id"] in speech_models:
+        assert model == {
+            "id": "eleven_flash_v2_5",
+            "provider": "elevenlabs",
+            "name": "ElevenLabs Flash v2.5",
+        }
+        continue
     assert model["provider"] == "gemini"
     assert model["input_modalities"] == ["text", "image"]
     assert (model["id"] in a["models"]) != production
@@ -79,7 +106,9 @@ for model in settings["paid_models"]:
 assert settings["systemone_charges"] == {"jev": 0.004, "solar": 0.004}
 for model, fixed_charge in settings["systemone_charges"].items():
     assert settings["prices"][model]["request"] == fixed_charge
-assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"}
+assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"} | (
+    {"elevenlabs"} if production else set()
+)
 for price in settings["prices"].values():
     assert all(value > 0 for value in price.values())
 

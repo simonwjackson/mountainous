@@ -278,11 +278,12 @@ in
           mode = "0400";
         };
 
-        # ElevenLabs and xAI API keys. No service reads them yet.
+        # ai-gateway.service reads the ElevenLabs API key through LoadCredential.
         sops.secrets.elevenlabs-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
         };
+        # No service reads the xAI API key yet.
         sops.secrets.xai-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";

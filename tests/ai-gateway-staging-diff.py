@@ -126,3 +126,47 @@ assert (
 print(
     "PASS: client key rotation is scoped to the gateway and the same three assistants"
 )
+
+# Speech may change only the front door and add its key. The reused provider
+# secret gains only the front door's rotation hook; its value stays unchanged.
+production["secrets"]["elevenlabs-api-key"] = {
+    "key": "elevenlabs-api-key",
+    "restartUnits": [],
+    "mode": "0400",
+}
+voice = copy.deepcopy(production)
+voice["unit_texts"]["ai-gateway.service"] = "with-speech-config-and-credentials"
+voice["services"]["ai-gateway"]["ExecStart"] = "/new-speech-config"
+voice["secrets"]["ai-gateway-key-voice-zao"] = {"key": "ai-gateway-key-voice-zao"}
+voice["secrets"]["elevenlabs-api-key"]["restartUnits"] = ["ai-gateway.service"]
+policy = {
+    "services": set(),
+    "secrets": {"ai-gateway-key-voice-zao"},
+    "tailnets": set(),
+    "changed_services": {"ai-gateway"},
+    "changed_texts": {"ai-gateway.service"},
+    "voice_rotation": True,
+}
+assert compare(production, voice, **policy)["status"] == "PASS"
+for unit in [
+    "ai-gateway-staging.service",
+    "pi-assistant-laure.service",
+    "ai-gateway-egress.service",
+    "tsnet-proxy-ai.service",
+]:
+    changed = copy.deepcopy(voice)
+    changed["unit_texts"][unit] = "unexpected-restart"
+    assert compare(production, changed, **policy)["status"] == "FAIL"
+for field, value in [
+    ("mode", "0444"),
+    ("restartUnits", ["ai-gateway-staging.service"]),
+]:
+    changed = copy.deepcopy(voice)
+    changed["secrets"]["elevenlabs-api-key"][field] = value
+    assert compare(production, changed, **policy)["status"] == "FAIL"
+changed = copy.deepcopy(voice)
+changed["secrets"][assistant_key]["mode"] = "0444"
+assert compare(production, changed, **policy)["status"] == "FAIL"
+print(
+    "PASS: speech scope permits only the front door, new key and provider rotation hook"
+)

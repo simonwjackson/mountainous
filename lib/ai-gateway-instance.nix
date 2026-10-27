@@ -10,6 +10,13 @@
   loginKeeperSecret,
   usageSecret,
   gatewayKeys,
+  elevenlabsSpeech ? {
+    model = {
+      id = "eleven_multilingual_v2";
+      provider = "elevenlabs";
+    };
+    price.audio_per_million_characters = 500.0;
+  },
   description,
   egressDescription,
   tailnetDescription,
@@ -206,12 +213,7 @@ let
           max_tokens = 8192;
         }
       ]
-      ++ lib.optionals cfg.providers.elevenlabs.enable [
-        {
-          id = "eleven_multilingual_v2";
-          provider = "elevenlabs";
-        }
-      ]
+      ++ lib.optionals cfg.providers.elevenlabs.enable [ elevenlabsSpeech.model ]
       ++ lib.optionals cfg.providers.xai.enable [
         {
           id = "grok-4";
@@ -243,7 +245,10 @@ let
     }
     // lib.genAttrs geminiImageModels (_: {
       image_per_unit = 1.0;
-    });
+    })
+    // lib.optionalAttrs cfg.providers.elevenlabs.enable {
+      "${elevenlabsSpeech.model.id}" = elevenlabsSpeech.price;
+    };
     gateway_keys = map (
       key:
       (lib.removeAttrs key [
@@ -259,8 +264,13 @@ in
 {
   options.mountainous.features.${name} = {
     enable = lib.mkEnableOption "the isolated ${name} front door";
-    providers = lib.mapAttrs (_: _: {
+    providers = lib.mapAttrs (provider: _: {
       enable = lib.mkEnableOption "optional gateway provider (requires its host sops secret)";
+      secret = lib.mkOption {
+        type = lib.types.str;
+        default = "${secretPrefix}-${provider}-api-key";
+        description = "Host sops secret loaded as the provider credential";
+      };
     }) optionalProviders;
     settings = lib.mkOption {
       inherit (toml) type;
@@ -297,9 +307,7 @@ in
       }
       // lib.mapAttrs' (
         provider: _:
-        lib.nameValuePair "${secretPrefix}-${provider}-api-key" (
-          hostSecret "${secretPrefix}-${provider}-api-key"
-        )
+        lib.nameValuePair cfg.providers.${provider}.secret (hostSecret cfg.providers.${provider}.secret)
       ) enabledProviders;
     users.groups.${name} = { };
     users.users.${name} = {
@@ -339,7 +347,7 @@ in
         ++ map (key: "${key.credential}:${config.sops.secrets.${key.secret}.path}") keys
         ++ [ "usage:${config.sops.secrets.${usageSecret}.path}" ]
         ++ lib.mapAttrsToList (
-          name: _: "${name}:${config.sops.secrets."${secretPrefix}-${name}-api-key".path}"
+          provider: _: "${provider}:${config.sops.secrets.${cfg.providers.${provider}.secret}.path}"
         ) enabledProviders;
         ExecStart = "${
           inputs.ai-gateway.packages.${pkgs.stdenv.hostPlatform.system}.default

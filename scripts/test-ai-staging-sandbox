@@ -96,8 +96,14 @@ def stop(name, process):
 
 def remove_runtime_symlink(runtime):
     # DynamicUser can leave its public symlink after removing the private dir.
-    if runtime.is_symlink() and not runtime.exists():
-        sudo("rm", "--", str(runtime))
+    if runtime.is_symlink():
+        # /run/private is root-only. An unprivileged exists() can raise
+        # PermissionError even after systemd has removed the target.
+        probe = subprocess.run([SUDO, "-n", "test", "-e", str(runtime)], check=False)
+        if probe.returncode == 1:
+            sudo("rm", "--", str(runtime))
+        else:
+            probe.check_returncode()
 
 
 def remove_account(user, remove_group):
