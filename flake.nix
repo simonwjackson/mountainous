@@ -35,6 +35,21 @@
     # Keep the reviewed runtime's own nixpkgs (Quickshell 0.3.2).
     pyxamp.url = "github:simonwjackson/pyxamp/1d774e700b5e02a16373a0aeaa3b8218f8a96e9b";
 
+    # Native desktop themes. Keep Apple-derived art in inputs, not this tree.
+    platinum-gtk-src = {
+      url = "github:B00merang-Project/Mac-OS-9";
+      flake = false;
+    };
+    chicago95-src = {
+      url = "github:grassmunk/Chicago95";
+      flake = false;
+    };
+    # Stable fork of opendesktop 1766812, with an explicit GPLv3 licence.
+    platinum-kvantum-src = {
+      url = "github:kdha200501/Mac9KvantumClassic";
+      flake = false;
+    };
+
     # ChicagoFLF 2.1: the font and README declare it Public Domain.
     chicagoflf-src = {
       url = "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip";

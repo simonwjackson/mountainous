@@ -25,8 +25,9 @@ Singleton {
     property string mode: "dark"
     readonly property bool dark: mode !== "light"
 
-    // "Extra dark": the stored choice, on or off. It changes only the top
-    // bar, and only in dark mode (see barBlack). A missing file is off.
+    // "Extra dark": the stored choice, on or off. Each theme and native
+    // toolkit adapter decides how it applies in dark mode. A missing file
+    // is off; Win98 keeps this preference but ignores it.
     property string extraState: "off"
     readonly property bool extraDark: extraState === "on"
 

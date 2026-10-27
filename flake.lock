@@ -123,6 +123,22 @@
         "url": "https://raw.githubusercontent.com/korri-os/korri/e6902f0f3c7c2081db033b31c4cd6557b254537a/nix/cache/github-cache.py"
       }
     },
+    "chicago95-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790869303,
+        "narHash": "sha256-8d9wrgoUwKvlEUJXF8E8tP0iNJlkWjbO4E5X0ZViZ8Y=",
+        "owner": "grassmunk",
+        "repo": "Chicago95",
+        "rev": "5da19b8b1e2a886ebf6628403023d5fac3acc3ee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "grassmunk",
+        "repo": "Chicago95",
+        "type": "github"
+      }
+    },
     "chicagoflf-src": {
       "flake": false,
       "locked": {
@@ -732,6 +748,38 @@
         "type": "github"
       }
     },
+    "platinum-gtk-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1687379763,
+        "narHash": "sha256-gMyLP+7rZdhlCZVVHjzvWvQzvWSLfNZWCvgFUWuMeyw=",
+        "owner": "B00merang-Project",
+        "repo": "Mac-OS-9",
+        "rev": "ca8a5d2a3fb1976cf904133574a3d0022ac2cf71",
+        "type": "github"
+      },
+      "original": {
+        "owner": "B00merang-Project",
+        "repo": "Mac-OS-9",
+        "type": "github"
+      }
+    },
+    "platinum-kvantum-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788644558,
+        "narHash": "sha256-yd/4inatrG+UKadug0pH8X2eq4FBOnWXx+1KyuimnHQ=",
+        "owner": "kdha200501",
+        "repo": "Mac9KvantumClassic",
+        "rev": "2339bf1239c64c06f2f7c6f2d5f481fef5c16d28",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kdha200501",
+        "repo": "Mac9KvantumClassic",
+        "type": "github"
+      }
+    },
     "proseql": {
       "flake": false,
       "locked": {
@@ -787,6 +835,7 @@
         "ai-gateway": "ai-gateway",
         "airconnect-src": "airconnect-src",
         "beszel-mcp": "beszel-mcp",
+        "chicago95-src": "chicago95-src",
         "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
@@ -808,6 +857,8 @@
         "nixpkgs-sunshine": "nixpkgs-sunshine",
         "pi": "pi",
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
+        "platinum-gtk-src": "platinum-gtk-src",
+        "platinum-kvantum-src": "platinum-kvantum-src",
         "pyxamp": "pyxamp",
         "sops-nix": "sops-nix",
         "vela": "vela",

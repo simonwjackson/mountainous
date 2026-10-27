@@ -48,8 +48,8 @@ function parse(cssText) {
     return out;
 }
 
-// Which token block applies. Extra dark only blackens the desktop bar, so
-// page controls use dark unless a theme ships its own "extra" block.
+// Which token block applies. Page controls keep dark unless a theme ships
+// an "extra" block, even when native surfaces and desktop chrome are black.
 function appearance(sections, mode, extraDark) {
     var dark = mode !== "light";
     if (dark && extraDark && sections.tokens.extra) return "extra";

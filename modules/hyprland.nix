@@ -435,10 +435,8 @@ in {
       XDG_SESSION_TYPE = "wayland";
       XDG_CURRENT_DESKTOP = "Hyprland";
       TERMINAL = "ghostty";
-      # Qt 6.5 and later read the XDG portal's color-scheme through this
-      # platform theme, so Qt applications follow the desktop-theme command
-      # instead of keeping a palette of their own. See modules/theme.nix.
-      QT_QPA_PLATFORMTHEME = "xdgdesktopportal";
+      # Qt's platform plugin and style are configured in theme.nix. The
+      # qtct plugins consume the native settings written by desktop-theme.
     };
 
     hjem.users.simon.files.".config/hypr/hyprland.lua".source =

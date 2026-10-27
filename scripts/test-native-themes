@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Public CLI contract, in a private HOME and real D-Bus/dconf.
+set -euo pipefail
+command_path=$(realpath "${1:?desktop-theme}")
+assets=$(realpath "${2:?native theme package}")
+if [[ ${3:-} != --session ]]; then
+  temp=$(mktemp -d)
+  trap 'rm -rf "$temp"' EXIT
+  export HOME="$temp" XDG_CONFIG_HOME="$temp/config" XDG_STATE_HOME="$temp/state" XDG_DATA_HOME="$temp/data" XDG_RUNTIME_DIR="$temp/run"
+  XDG_DATA_DIRS="$assets/share:$(dirname "$(dirname "$(command -v dconf)")")/share"
+  export XDG_DATA_DIRS
+  mkdir -m700 "$XDG_RUNTIME_DIR"
+  # A real D-Bus activation executes touch. It must not run when the
+  # terminal has no bus owner, even if its service is installed.
+  mkdir -p "$XDG_DATA_HOME/dbus-1/services"
+  printf '[D-BUS Service]\nName=com.mitchellh.ghostty\nExec=%s %s\n' "$(command -v touch)" "$HOME/ghostty-autostarted" > "$XDG_DATA_HOME/dbus-1/services/com.mitchellh.ghostty.service"
+  if [[ -n ${GHOSTTY_ROOT_CONFIG:-} ]]; then
+    mkdir -p "$XDG_CONFIG_HOME/ghostty"
+    ln -s "$GHOSTTY_ROOT_CONFIG" "$XDG_CONFIG_HOME/ghostty/config.ghostty"
+  fi
+  unset DCONF_PROFILE HYPRLAND_INSTANCE_SIGNATURE GTK_THEME
+  dbus-run-session ${DBUS_SESSION_CONFIG:+--config-file="$DBUS_SESSION_CONFIG"} -- bash "$0" "$command_path" "$assets" --session
+  exit
+fi
+# Keep unrelated user preferences when applying the theme.
+mkdir -p "$XDG_CONFIG_HOME/gtk-4.0" "$XDG_CONFIG_HOME/qt6ct"
+printf '/* user rule */\nlabel.user { opacity: 0.9; }\n' > "$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+printf '[Other]\nkeep=yes\n[Fonts]\nfixed="DejaVu Sans Mono,10,-1,5,50,0,0,0,0,0"\n' > "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
+chmod 600 "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
+verify() {
+  local theme=$1 mode=$2 extra=$3 appearance=$2 font style name face
+  [[ $theme == platinum && $mode == dark && $extra == on ]] && appearance=extra
+  name="Mountainous-$theme-$appearance"
+  if [[ $theme == platinum ]]; then font=ChicagoFLF; style=kvantum; else font='W95FA Grid'; style=Windows; fi
+  [[ ! -e $HOME/ghostty-autostarted ]]
+  [[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'$name'" ]]
+  for version in 3 4; do
+    grep -F "gtk-theme-name = $name" "$XDG_CONFIG_HOME/gtk-$version.0/settings.ini"
+    test -s "$assets/share/themes/$name/gtk-$version.0/gtk.css"
+    test -s "$assets/share/themes/$name/gtk-$version.0/gtk-dark.css"
+  done
+  grep -F "@import url(\"$assets/share/themes/$name/gtk-4.0/gtk.css\");" "$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+  [[ $(grep -c '^@import' "$XDG_CONFIG_HOME/gtk-4.0/gtk.css") == 1 ]]
+  grep -F 'label.user' "$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+  for version in 5 6; do
+    grep -F "style = $style" "$XDG_CONFIG_HOME/qt${version}ct/qt${version}ct.conf"
+    grep -F "$font" "$XDG_CONFIG_HOME/qt${version}ct/qt${version}ct.conf"
+    grep -F "$assets/share/mountainous/native/$theme-$appearance/qt-colors.conf" "$XDG_CONFIG_HOME/qt${version}ct/qt${version}ct.conf"
+  done
+  grep -F 'keep = yes' "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
+  grep -F 'fixed = "DejaVu Sans Mono,10,-1,5,50,0,0,0,0,0"' "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
+  grep -F 'fixed = "monospace,12,-1,5,50,0,0,0,0,0"' "$XDG_CONFIG_HOME/qt5ct/qt5ct.conf"
+  [[ $(stat -c %a "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf") == 600 ]]
+  [[ $(stat -c %a "$XDG_CONFIG_HOME/obs-studio/user.ini") == 600 ]]
+  grep -F 'Theme=com.obsproject.System' "$XDG_CONFIG_HOME/obs-studio/user.ini"
+  if [[ -n ${OBS_LIBRARY:-} ]]; then
+    python3 "$NATIVE_OBS_PROBE" "$OBS_LIBRARY" "$XDG_CONFIG_HOME/obs-studio/user.ini"
+  fi
+  grep -F "theme = Mountainous-platinum-$([[ $theme == platinum ]] && echo "$appearance" || echo light)" "$XDG_CONFIG_HOME/Kvantum/kvantum.kvconfig"
+  for variant in light dark extra; do
+    [[ $(readlink "$XDG_CONFIG_HOME/Kvantum/Mountainous-platinum-$variant") == "$assets/share/Kvantum/Mountainous-platinum-$variant" ]]
+  done
+  grep -F "font-family = $font" "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  if [[ -n ${GHOSTTY_ROOT_CONFIG:-} ]]; then
+    # Read the exact Hjem-delivered root through its real symlink. Checking
+    # the generated include alone would miss relative include-path errors.
+    parsed=$(ghostty +show-config)
+    grep -F "font-family = $font" <<< "$parsed"
+  fi
+  grep -F "gtk-custom-css = $assets/share/mountainous/native/$theme-$appearance/ghostty.css" "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  face=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[sys.argv[2]]["face"])' "$assets/share/mountainous/native/manifest.json" "$theme-$appearance")
+  # Optional for hand runs; the Nix check always supplies both real probes.
+  for probe in "${NATIVE_QT5_PROBE:-}" "${NATIVE_QT6_PROBE:-}"; do
+    if [[ -n $probe ]]; then "$probe" "$style" "$font" "$face"; fi
+  done
+}
+for theme in platinum win98; do
+  for mode in light dark; do
+    for extra in off on; do
+      "$command_path" apply "$theme" "$mode" "$extra"
+      verify "$theme" "$mode" "$extra"
+      "$command_path" reapply
+      verify "$theme" "$mode" "$extra"
+      "$command_path" toggle
+      if [[ $mode == light ]]; then other=dark; else other=light; fi
+      verify "$theme" "$other" "$extra"
+    done
+  done
+done
+"$command_path" apply platinum dark on
+"$command_path" set win98
+verify win98 dark on
+"$command_path" set platinum
+verify platinum dark on
+"$command_path" extra toggle
+verify platinum dark off
+# A bus error must leave the published choice and native files intact.
+before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
+if DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" apply win98 light off; then exit 1; fi
+[[ $("$command_path" status) == 'mode=dark extra=off theme=platinum' ]]
+[[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
+# Empty/relative XDG values must follow the specification, not write into cwd.
+for config_home in '' relative-config; do
+  XDG_CONFIG_HOME="$config_home" "$command_path" apply platinum light off
+  test -s "$HOME/.config/gtk-4.0/gtk.css"
+  test -s "$HOME/.config/ghostty/mountainous.conf"
+  test ! -e relative-config
+done
+echo NATIVE_THEME_TESTS_PASSED

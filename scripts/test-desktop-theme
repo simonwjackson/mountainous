@@ -30,12 +30,12 @@ check() {
 [[ $("$command_path" status) == "mode=dark extra=off theme=platinum" ]]
 "$command_path" light
 check light prefer-light
-[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita'" ]]
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Mountainous-platinum-light'" ]]
 "$command_path" reapply
 check light prefer-light
 "$command_path" toggle
 check dark prefer-dark
-[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita-dark'" ]]
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Mountainous-platinum-dark'" ]]
 "$command_path" toggle
 check light prefer-light
 "$command_path" dark
@@ -75,7 +75,7 @@ check dark prefer-dark
 check_extra on
 "$command_path" extra off
 check dark prefer-dark
-[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Adwaita-dark'" ]]
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Mountainous-platinum-dark'" ]]
 # Reapply restores both files and writes a missing extra file as off.
 "$command_path" extra on
 [[ $("$command_path" reapply) == dark ]]
@@ -149,7 +149,7 @@ calls="$XDG_RUNTIME_DIR/hyprctl-calls"
 mkdir -p "$fake"
 printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s"\n' "$calls" > "$fake/hyprctl"
 chmod +x "$fake/hyprctl"
-expected='eval local ok, t = pcall(require, "titlebars"); if ok then t.apply() end'
+expected='--instance 0 eval local ok, t = pcall(require, "titlebars"); if ok then t.apply() end'
 asked() { # command... -> how many times hyprctl was asked
   rm -f "$calls"
   PATH="$fake:$PATH" HYPRLAND_INSTANCE_SIGNATURE=test "$command_path" "$@" > /dev/null 2>&1 || true

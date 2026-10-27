@@ -28,7 +28,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Recent Applications, pinned web apps | Done | Missing | Start ▸ Documents, Favorites (not mocked) |
 | Volume and brightness change tag | Done | Missing | Volume pop-up (not mocked) |
 | Super+O N (Notifications) | Done | Off | A tray letter for the bell |
-| Native apps (GTK, Qt, Ghostty) | Phase 3, not started | Phase 3, not started | Chicago95 for GTK |
+| Native apps (GTK, Qt, Ghostty) | Built (five-appearance tandem phase below) | Built (same phase) | Chicago95 GTK, Qt Windows style, W95FA Grid Ghostty |
 | Icons, cursors, pattern, sounds, boot | Phase 4, not started | Phase 4, not started | Win98 counterparts |
 | State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |
 | Verified on Myoko with real input | Yes (generations 50–52) | No (#13) | — |
@@ -56,7 +56,7 @@ A theme is a set of prefixed QML files plus one entry in a list. Assets and pure
 Shared by every theme, never forked:
 - the data owners: Pipewire, Bluetooth, Wi-Fi, brightness, `OciEgress`, `StorageHealth`, `BuilderGate`, `Notifications`, `Dictation`, `Lanes`, the clock;
 - the logic modules and their tests: `MenuState`, `battery.js`, `oci-model.js`, `notification-model.js`, `builder-gate.js`;
-- what stays unthemed: the omni bar's service and its card (a theme may draw its own view of the service, see "Find menu" below), notification popups, the dictation overlay, app windows, GTK.
+- what stays unthemed: the omni bar's service and its card (a theme may draw its own view of the service, see "Find menu" below), notification popups, the dictation overlay, app-specific content and non-GTK/Qt renderers (for example Zed).
 
 ## The three settings
 
@@ -700,3 +700,124 @@ Nested Hyprland 0.56.2 under headless labwc, `eDP-1` 2880×1800 at 1.5, the work
 - Scales other than 1.5. Hairs are whole device pixels at 1, 1.5 and 2 by construction; odd rungs such as 1.333 are untested.
 - Electron, X11 and GTK3 apps: none were run, so whether each gets a bar follows only from what it asks for.
 - The collapse box through the real Quickshell: the nested run recorded the IPC call; `hideWindow` is covered by `window-hide.test.js`.
+
+## Native apps: tandem phase 3 (2026-10-27)
+
+`desktop-theme` now derives native toolkit files from the same three preferences
+as the chrome and web theme. `set`, `apply`, mode changes, Extra dark and `reapply`
+all update GTK, Qt and Ghostty under the existing lock. Win98 preserves Extra
+dark but ignores it. Status and refused commands do not change toolkit files.
+A failed session-bus write does not publish a choice or change native files.
+
+### What was built
+
+| Part | Implementation |
+|---|---|
+| One generated source | `scripts/generate-native-themes.py`: five palette ramps, GTK3/GTK4 CSS and raster derivatives, Qt palettes, three Kvantum derivatives and Ghostty configurations/tab strips. The check requires native ramps to match the existing Quickshell colour roles. Upstream widget geometry stays upstream. |
+| GTK | `Mountainous-platinum-{light,dark,extra}` from B00merang's Mac-OS-9; `Mountainous-win98-{light,dark}` from Chicago95. Every variant has GTK3 and GTK4 `gtk.css` and `gtk-dark.css`. The dark entry imports that variant, never Adwaita. |
+| libadwaita | A managed `@import` block in `$XDG_CONFIG_HOME/gtk-4.0/gtk.css`, following Chicago95's INSTALL.md. Existing unmarked CSS remains. Platinum adds modern libadwaita colour variables; Chicago95 already has its own GTK4/libadwaita port. No global `GTK_THEME`. |
+| Qt | qt5ct and qt6ct platform plugins (`QT_QPA_PLATFORMTHEME=qt5ct:mountainous`), with per-user Kvantum directory links to the immutable package (the engine does not search `XDG_DATA_DIRS`); Platinum uses Kvantum, Win98 uses Qt's built-in `Windows` widget style and a generated QPalette. Both get the interface font. Existing Qt fixed-font choices and GTK monospace content stay separate. `QT_STYLE_OVERRIDE` is not set. |
+| Myoko's OBS | Select OBS's built-in `com.obsproject.System` in `obs-studio/user.ini`, preserving other keys. Its default Yami stylesheet otherwise masks the platform theme. OBS's INI reader does not trim spaces before `=`; this file uses unspaced delimiters, tested through libobs itself. Close OBS, reapply the desktop theme, then reopen it if OBS saved its old preference on exit. |
+| Ghostty | The delivered root config includes writable `mountainous.conf`. ChicagoFLF for Platinum; W95FA Grid for Win98; 8/6 px padding; an AdwTabBar stylesheet through `gtk-custom-css` (Platinum adapts its upstream notebook tab rules; Win98 keeps Chicago95's tab rules). The previous light/dark ANSI ramps remain. That sheet imports the GTK4 derivative and reapplies tab paint and fonts. Win98 tab colours are resolved to literal paint to avoid stale names in GTK's startup provider. Other GTK4 controls can still need an app restart. Ghostty keeps fixed terminal cells with these interface faces, so letter gaps differ from GTK/Qt labels. |
+| Runtime | `scripts/apply-native-theme.py` preserves unrelated GTK/Qt INI keys and unmarked GTK4 CSS. It writes generated files atomically, keeps existing permission bits, and creates new files as 0600. These are outputs, not new preference state. The GTK theme name, font and colour scheme are also written through real dconf. |
+| Focused check | `checks.native-themes` builds all five appearances and both Qt plugin generations, drives the packaged CLI under private HOME/XDG/D-Bus, checks set/toggle/reapply/Extra dark/bus failure and preservation, checks palette/asset seams and validates every Ghostty configuration with Ghostty itself. Small real Qt5 and Qt6 programs assert the loaded style, resolved font, window colour and a rendered checked indicator for every choice; they use the offscreen platform, not a mock. |
+
+### Decisions made without asking
+
+| Decision | Reason and cost |
+|---|---|
+| Pin the stable `kdha200501/Mac9KvantumClassic` fork instead of vendoring an expiring download | Its README traces it to DrGordBord's opendesktop product 1766812 and includes GPLv3 text. All Apple-derived artwork remains a flake input. Cost: a fork, not a byte-identical copy of the 2022 zip. |
+| Generate CSS and asset colours with Python/Pillow instead of maintaining five SCSS forks | The pinned bases ship compiled CSS and image assets. Declaration-aware conversion keeps text, fields and bevel edges distinct; neutral image ramps change too, including embedded Kvantum PNGs. Checked/unchecked source pairs identify indicator ink so dark checkmarks do not become black edges. Cost: upstream selector/asset changes need visual review, not only a successful build. |
+| Qt's `Windows` style for Win98, not another downloaded Kvantum theme | It supplies the classic square Windows widget geometry in both Qt versions, with no additional artwork or licence ambiguity. Cost: native Qt Windows controls are not pixel-identical to Chicago95; app-specific controls and layouts remain the app's. |
+| QPA key `qt5ct:mountainous` | Both platform plugins implement `qt5ct` and ignore the optional argument. OBS deletes the bare `qt5ct` string as an old Qt6 crash workaround. The documented `key:argument` form avoids that exact-string blacklist. Cost: it depends on both plugins retaining their current argument contract; the check exercises both real engines. A semicolon is not a theme fallback list. |
+| Install Qt5 support as well as Qt6 | Myoko's OBS uses Qt6, but a desktop theme must not silently leave Qt5 apps on another style. Cost: the Qt5 runtime adds closure weight. |
+| Extra dark blackens native Platinum surfaces | The native phase explicitly asks for a black appearance. Menus in the existing Quickshell still follow their existing dark-grey tokens; that chrome policy did not change. |
+| Keep toolkit files outside Hjem's immutable file links | The switch must be live and must respect XDG directories. Hjem owns only Ghostty's root include. Cost: generated toolkit settings are recreated by `desktop-theme reapply`, not by Hjem alone. |
+
+### Live switching and limits
+
+On the first deployment, Qt apps need a new process with the new platform-theme
+and plugin environment. A new login provides it. Changing a running process's
+Qt platform plugin is not supported. Existing unmarked GTK4 user CSS stays
+after the managed import and can override the native theme.
+
+| Surface | Live behaviour / restart boundary |
+|---|---|
+| Quickshell, web and compositor title bars | Existing state watchers and title-bar hook; no second preference owner. |
+| GTK3 | Unique theme names for all five appearances. Running apps can reload the named theme through dconf. No logout. |
+| Plain GTK4 | Named themes can reload, but the higher-priority GTK4 user provider can keep its old stylesheet. Restart for a complete change; no general live user-CSS reload is promised. |
+| libadwaita | Its user CSS provider is read at startup. Restart ordinary libadwaita apps after a switch. Native colours, controls and fonts can be restyled; modern header/tab/sidebar layout, app CSS, symbolic icons and animations do not become a historical OS. |
+| Ghostty | Ask `org.gtk.Actions.Activate` for `reload-config` on this session's `com.mitchellh.ghostty`. The command first checks `NameHasOwner`, so an absent terminal is never auto-started. No PID scan, signals, synthetic keys or focus changes. Non-single-instance/custom-class launches need their own Reload Configuration action. |
+| Qt | qtct can update fonts and palette in running apps, but Kvantum's SVG theme and app-owned styles are not a reliable live interface. Restart Qt apps for a complete Kvantum change. OBS reads its System preference on startup but then forces Fusion geometry. The captures confirm its native palette and font, not Kvantum/Windows geometry. OBS retains its own Fusion geometry, preview canvas and bundled icons. Some icons stay black in dark mode. No OBS source patch was added. |
+| Apps that remain outside these toolkits | Zed's renderer, Chromium's own browser chrome, and application-supplied custom widgets are not GTK/Qt styles. Chromium page controls follow the separate web theme. Pyxamp follows its existing face setting, not Qt Widgets. No Flatpak/Snap override was added. |
+
+### Sources and licences
+
+All three sources are non-flake inputs in `flake.nix` and `flake.lock`.
+The generated package includes upstream licence/provenance files and a dated derivative change notice. No upstream
+artwork was copied into this repository.
+
+| Source | Locked revision | Licence evidence |
+|---|---|---|
+| `B00merang-Project/Mac-OS-9` | `ca8a5d2a3fb1976cf904133574a3d0022ac2cf71` | Included `LICENSE`: GPL-3.0. |
+| `grassmunk/Chicago95` | `5da19b8b1e2a886ebf6628403023d5fac3acc3ee` | Upstream README declares `GPL-3.0+/MIT`; retained in the package. |
+| `kdha200501/Mac9KvantumClassic` | `2339bf1239c64c06f2f7c6f2d5f481fef5c16d28` | Included `LICENSE.txt`: GPLv3. README names the original author, product and fork date. Original product's `gplv3` tag is corroboration, not the only licence evidence. |
+| ChicagoFLF / W95FA Grid | Existing font inputs, unchanged | Public Domain / SIL OFL 1.1 respectively; see `modules/fonts.nix`. |
+
+### Evidence and what was not verified
+
+Evidence is under `/tmp/tandem/phase3/`, served by the existing server at
+`http://100.114.19.92:8765/tandem/phase3/`. The capture uses Myoko's packaged
+Ghostty (GTK4/libadwaita), OBS (Qt Widgets), and xdg-desktop-portal-gtk's file
+chooser (GTK3). Myoko has no standalone GTK3 editor or libadwaita file manager
+in its host/layer package list. Ghostty therefore proves both the terminal
+integration and the actual installed libadwaita app; it is not evidence that
+all GNOME applications look the same. Qt5 was tested through its real offscreen engine, not a Myoko GUI application.
+
+No SSH, push, deployment, real-session dconf, theme files or Quickshell were used.
+No full flake check ran. Every build/evaluation/compositor capture used
+`/tmp/phase1/heavy.sh`; builds had no remote builders and one job/four cores.
+Myoko's GPU, real input, application state from its running session and scales
+other than 1.5 remain unverified. The parent owns review, landing and deployment.
+
+#### Verified results
+
+| Check | Result / evidence |
+|---|---|
+| `checks.x86_64-linux.native-themes` | Passed, `logs/check-native-themes-17.log`. 54 real Qt5/Qt6 style/font/palette/paint probes; 27 CLI appearance verifications; libobs reads the actual generated key; all five Ghostty configs validate. |
+| `checks.x86_64-linux.desktop-theme` | Passed, `logs/check-desktop-theme-complete.log`. |
+| Myoko toplevel `drvPath` | Evaluated, `logs/myoko-toplevel-complete.log`: `yf0dck53xifdpjh41ca3sdhqkpc9al2i-nixos-system-myoko-26.11.20260923.4975466.drv`. Not built or deployed. |
+| Static checks | Ruff, Python compilation, ShellCheck, the four new/expanded Nix files' Nixfmt check, and the existing web-theme VM test passed. `hyprland.nix` has pre-existing formatter differences; the six-line edit keeps its surrounding style instead of reformatting 400 unrelated lines. Raw Node syntax checking cannot parse Qt's `.pragma library`; the project's VM test handles it. |
+| Isolated runtime | `logs/final-capture-4.log` passed. Real Quickshell and packaged Ghostty 1.3.1, OBS 32.2.2 and portal-gtk; 2880×1800 at scale 1.5. No fake application windows. |
+| Device/process safety | `session/logs/drm-proof.log`: only `renderD128`, zero card-node FDs. `session/logs/cleanup.log`: **processes left: 0**. The sandbox exposes no card or real input device. |
+
+Reviewed all five primary captures:
+
+| Appearance | Screenshot |
+|---|---|
+| Platinum light | [platinum-light.png](http://100.114.19.92:8765/tandem/phase3/platinum-light.png) |
+| Platinum dark grey | [platinum-dark.png](http://100.114.19.92:8765/tandem/phase3/platinum-dark.png) |
+| Platinum extra black | [platinum-extra.png](http://100.114.19.92:8765/tandem/phase3/platinum-extra.png) |
+| Win98 light | [win98-light.png](http://100.114.19.92:8765/tandem/phase3/win98-light.png) |
+| Win98 dark grey | [win98-dark.png](http://100.114.19.92:8765/tandem/phase3/win98-dark.png) |
+
+`evidence.json` records the windows and chrome state. The GTK3 file chooser
+kept PID 1059498 and Ghostty kept PID 1060682 through all five appearances.
+OBS was restarted per appearance. `*-live.png` records the boundary before
+that Qt restart; it is not a promise that cached Qt artwork changes live.
+
+Measured fidelity gaps for design review: Win98 Ghostty tabs now have the
+right live font and paint, but Chicago95's bitmap tab bevels do not appear
+in this libadwaita surface; the strip remains flat. OBS adopts the font and
+palette but retains Fusion geometry, a fixed grey preview canvas and bundled
+icons. Some icon-only OBS actions stay black on dark/black surfaces. These
+are app/widget-level gaps, not evidence of a complete GNOME or OBS conversion.
+The Win98 title-bar work in the parallel branch is not in these captures.
+
+`closure.json` measures **+122.77 MiB NAR / 21 paths** for the added runtime
+package graph. The theme package itself is **3,322,728 NAR bytes**. The baseline
+is 148 distinct realised paths from 208 environment-package entries;
+`beszel-status` and `nixos-version` were unrealised. This is an estimate against
+that package graph, **not** a built-system closure delta. Test-only Qt probes
+and libobs do not add runtime packages. The licence report records upstream
+claims; no separate artwork-rights review was performed.

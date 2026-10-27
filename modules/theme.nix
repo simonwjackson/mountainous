@@ -1,27 +1,42 @@
-# Publish one desktop appearance preference through dconf and the Settings
-# portal. Ghostty follows that preference directly, while Quickshell reads the
-# generated state file. Applications with explicit theme overrides can ignore
-# the desktop preference.
-#
-# "Extra dark" is a second, separate preference in its own state file. Only
-# the Quickshell top bar reads it: in dark mode it turns the bar black, for
-# the OLED panel. The mode stays dark or light, so GTK, Ghostty and dconf do
-# not see it.
+# The three watched state files drive the bar, title bars, web and native apps.
+# Toolkit files are generated outputs, never a second preference store.
+{ inputs, ... }:
 let
   themes = builtins.fromJSON (builtins.readFile ./quickshell/themes.json);
-  validFaces = registry: builtins.all (
-    theme: builtins.elem (theme.pyxampFace or null) [ "platinum" "winamp" ]
-  ) registry;
+  validFaces =
+    registry:
+    builtins.all (
+      theme:
+      builtins.elem (theme.pyxampFace or null) [
+        "platinum"
+        "winamp"
+      ]
+    ) registry;
+  # Both ct plugins accept qt5ct and ignore QPA arguments. The argument
+  # avoids OBS's obsolete exact-string qt5ct blacklist without changing
+  # Qt's plugin selection. A theme is one key, not a semicolon list.
+  qtPlatformTheme = "qt5ct:mountainous";
   themeNames = builtins.concatStringsSep "|" (map (theme: theme.id) themes);
   themeList = builtins.concatStringsSep "\n" (map (theme: "${theme.id}\t${theme.label}") themes);
+  ghosttyRootConfig =
+    pkgs:
+    pkgs.writeText "ghostty-config" ''
+      # desktop-theme reapply creates this before Quickshell starts.
+      config-file = ?mountainous.conf
+    '';
   desktopThemeCommand =
     pkgs:
     assert validFaces themes;
+    let
+      nativeThemes = import ../lib/native-themes.nix { inherit pkgs inputs; };
+    in
     pkgs.writeShellApplication {
       name = "desktop-theme";
       runtimeInputs = [
         pkgs.coreutils
         pkgs.dconf
+        pkgs.glib
+        pkgs.python3
         pkgs.quickshell
         pkgs.util-linux
       ];
@@ -71,7 +86,7 @@ let
               ;;
             *) usage ;;
           esac
-          write_extra "$value"
+          apply "$(read_state)" "$(read_name)" "$value" > /dev/null
           changed=1
           printf '%s\n' "$value"
         }
@@ -82,7 +97,7 @@ let
         # does nothing; the next config load reads the files anyway.
         titlebars() {
           if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl > /dev/null; then
-            hyprctl eval 'local ok, t = pcall(require, "titlebars"); if ok then t.apply() end' > /dev/null 2>&1 || true
+            hyprctl --instance 0 eval 'local ok, t = pcall(require, "titlebars"); if ok then t.apply() end' > /dev/null 2>&1 || true
           fi
         }
         changed=0
@@ -103,32 +118,32 @@ let
         }
 
         read_state() {
-          if [ -r "$state_file" ]; then
-            tr -d '[:space:]' < "$state_file"
-          else
-            printf 'dark'
-          fi
+          value=""
+          if [ -r "$state_file" ]; then value=$(tr -d '[:space:]' < "$state_file"); fi
+          case "$value" in light) printf light ;; *) printf dark ;; esac
         }
 
         apply() {
           mode="$1"
+          name="''${2:-$(read_name)}"
+          extra_value="''${3:-$(read_extra)}"
+          appearance="$mode"
+          if [ "$name" = platinum ] && [ "$mode" = dark ] && [ "$extra_value" = on ]; then appearance=extra; fi
+          gtk_theme="Mountainous-$name-$appearance"
+          if [ "$mode" = light ]; then scheme=prefer-light; else mode=dark; scheme=prefer-dark; fi
+          if [ "$name" = platinum ]; then font=ChicagoFLF; else font='W95FA Grid'; fi
 
-          if [ "$mode" = light ]; then
-            scheme=prefer-light
-            gtk_theme=Adwaita
-          else
-            mode=dark
-            scheme=prefer-dark
-            gtk_theme=Adwaita-dark
-          fi
-
-          # Do not report success if the session preference could not change.
-          # Ghostty, GTK, Chromium, Qt and Electron all follow this preference.
+          # Do not publish a choice after a session-bus failure. The native
+          # writer preserves unrelated user settings; errors are not hidden.
           dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'"
           dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'"
+          dconf write /org/gnome/desktop/interface/font-name "'$font 12'"
+          python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value"
 
           printf '%s\n' "$mode" > "$state_file.new"
           mv -f "$state_file.new" "$state_file"
+          write_extra "$extra_value"
+          write_name "$name"
           printf '%s\n' "$mode"
         }
 
@@ -145,14 +160,12 @@ let
             ;;
           # Also writes the extra file, so the bar has a file to watch.
           reapply)
-            write_name "$(read_name)"
-            write_extra "$(read_extra)"
             apply "$(read_state)"
             changed=1
             ;;
           set)
             if [ "$#" -ne 2 ] || ! valid_theme "$2"; then usage; fi
-            write_name "$2"
+            apply "$(read_state)" "$2" "$(read_extra)" > /dev/null
             changed=1
             printf '%s\n' "$2"
             ;;
@@ -167,9 +180,7 @@ let
             case "$4" in on|off) ;; *) usage ;; esac
             # Apply the session first: a failed dconf write must not publish
             # a new theme. All three preferences share this lock.
-            apply "$3"
-            write_extra "$4"
-            write_name "$2"
+            apply "$3" "$2" "$4"
             changed=1
             ;;
           extra) extra "''${2:-}" ;;
@@ -178,136 +189,173 @@ let
             ;;
           *) usage ;;
         esac
-        if [ "$changed" = 1 ]; then titlebars; fi
+        if [ "$changed" = 1 ]; then
+          titlebars
+          # Ghostty exposes the GTK application action on this session's bus.
+          # No process scan, signals, synthetic keys or window focus changes.
+          # Absent Ghostty is normal. Other GTK4 apps need a restart to reread
+          # their user CSS; named GTK3 themes follow dconf live.
+          # NameHasOwner does not auto-activate Ghostty. A theme change
+          # must never launch a terminal that the user has not opened.
+          if [ "$(gdbus call --session --dest org.freedesktop.DBus \
+              --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.NameHasOwner \
+              com.mitchellh.ghostty 2>/dev/null)" = '(true,)' ]; then
+            gdbus call --session --dest com.mitchellh.ghostty \
+              --object-path /com/mitchellh/ghostty --method org.gtk.Actions.Activate \
+              reload-config '[]' '{}' > /dev/null 2>&1 || true
+          fi
+        fi
       '';
     };
-in {
+in
+{
   # The packaged switcher in a private D-Bus session with a real dconf:
   # mode, the extra-dark file, toggles, reapply and a missing file.
-  perSystem = {pkgs, ...}: {
+  perSystem = { pkgs, config, ... }: {
     # Native CLI target for headless checks on each flake system. The NixOS
     # module below uses the same factory for the installed command.
     packages.desktop-theme = desktopThemeCommand pkgs;
+    packages.desktop-native-themes = import ../lib/native-themes.nix { inherit pkgs inputs; };
+    checks.native-themes =
+      let
+        qt5Probe = import ../lib/native-qt-probe.nix {
+          inherit pkgs qtPlatformTheme;
+          qt = pkgs.libsForQt5;
+          ct = pkgs.libsForQt5.qt5ct;
+          kvantum = pkgs.libsForQt5.qtstyleplugin-kvantum;
+          name = "native-qt5-probe";
+        };
+        qt6Probe = import ../lib/native-qt-probe.nix {
+          inherit pkgs qtPlatformTheme;
+          qt = pkgs.qt6Packages;
+          ct = pkgs.qt6Packages.qt6ct;
+          kvantum = pkgs.qt6Packages.qtstyleplugin-kvantum;
+          name = "native-qt6-probe";
+        };
+      in
+      pkgs.runCommand "native-themes"
+        {
+          nativeBuildInputs = [
+            pkgs.bash
+            pkgs.coreutils
+            pkgs.dbus
+            pkgs.dconf
+            pkgs.gnugrep
+            (pkgs.python3.withPackages (p: [ p.pillow ]))
+            pkgs.ghostty
+            pkgs.libsForQt5.qt5ct
+            pkgs.qt6Packages.qt6ct
+            pkgs.libsForQt5.qtstyleplugin-kvantum
+            pkgs.qt6Packages.qtstyleplugin-kvantum
+          ];
+          DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+          FONTCONFIG_FILE = pkgs.makeFontsConf {
+            fontDirectories = [
+              config.packages.chicagoflf
+              config.packages.w95fa-grid
+            ];
+          };
+          GHOSTTY_ROOT_CONFIG = ghosttyRootConfig pkgs;
+          OBS_LIBRARY = "${pkgs.obs-studio}/lib/libobs.so";
+          NATIVE_OBS_PROBE = ../tests/native-obs.py;
+          NATIVE_QT5_PROBE = "${qt5Probe}/bin/native-qt-probe";
+          NATIVE_QT6_PROBE = "${qt6Probe}/bin/native-qt-probe";
+        }
+        ''
+          bash ${../scripts/test-native-themes} ${desktopThemeCommand pkgs}/bin/desktop-theme ${
+            import ../lib/native-themes.nix { inherit pkgs inputs; }
+          }
+          native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
+          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${./quickshell} "$native"
+          export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
+          mkdir -p "$HOME"
+          for config in "$native"/share/mountainous/native/*/ghostty.conf; do
+            ghostty +validate-config --config-file="$config"
+          done
+          touch $out
+        '';
     checks.desktop-theme =
       assert validFaces themes;
       assert !(validFaces [ { id = "missing"; } ]);
-      assert !(validFaces [ { id = "invalid"; pyxampFace = "unknown"; } ]);
-      pkgs.runCommand "desktop-theme" {
-        nativeBuildInputs = [
-          pkgs.bash
-          pkgs.coreutils
-          pkgs.dbus
-          pkgs.dconf
-        ];
-        DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
-      } ''
-        bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
-        touch $out
-      '';
+      assert
+        !(validFaces [
+          {
+            id = "invalid";
+            pyxampFace = "unknown";
+          }
+        ]);
+      pkgs.runCommand "desktop-theme"
+        {
+          nativeBuildInputs = [
+            pkgs.bash
+            pkgs.coreutils
+            pkgs.dbus
+            pkgs.dconf
+          ];
+          DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+        }
+        ''
+          bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
+          touch $out
+        '';
   };
 
-  nixos.modules.desktop = {pkgs, ...}: let
-    desktop-theme = desktopThemeCommand pkgs;
+  nixos.modules.desktop =
+    { pkgs, lib, ... }:
+    let
+      desktop-theme = desktopThemeCommand pkgs;
 
-    ghosttyDark = pkgs.writeText "mountainous-dark" ''
-      background = 000000
-      foreground = e0e0e0
-      cursor-color = 6a9fb5
-      cursor-text = 000000
-      selection-foreground = cell-foreground
-      selection-background = 2a2a2a
-      palette = 0=141414
-      palette = 1=e06c75
-      palette = 2=98c379
-      palette = 3=e5c07b
-      palette = 4=61afef
-      palette = 5=c678dd
-      palette = 6=56b6c2
-      palette = 7=e0e0e0
-      palette = 8=606060
-      palette = 9=e06c75
-      palette = 10=98c379
-      palette = 11=e5c07b
-      palette = 12=61afef
-      palette = 13=c678dd
-      palette = 14=56b6c2
-      palette = 15=ffffff
-    '';
+      nativeThemes = import ../lib/native-themes.nix { inherit pkgs inputs; };
+      ghosttyConfig = ghosttyRootConfig pkgs;
 
-    ghosttyLight = pkgs.writeText "mountainous-light" ''
-      background = f5f5f5
-      foreground = 1a1a1a
-      cursor-color = 3d7a94
-      cursor-text = f5f5f5
-      selection-foreground = cell-foreground
-      selection-background = d8d8d8
-      palette = 0=1a1a1a
-      palette = 1=b3261e
-      palette = 2=2e7d32
-      palette = 3=8a6d00
-      palette = 4=1f5fa8
-      palette = 5=8e24aa
-      palette = 6=00695c
-      palette = 7=3a3a3a
-      palette = 8=606060
-      palette = 9=c62828
-      palette = 10=388e3c
-      palette = 11=a07800
-      palette = 12=2962a8
-      palette = 13=9c27b0
-      palette = 14=00897b
-      palette = 15=1a1a1a
-    '';
+    in
+    {
+      # Direct build targets let regression tests exercise the packaged command
+      # and inspect the exact Ghostty configuration delivered by hjem.
+      system.build.desktopTheme = desktop-theme;
+      system.build.nativeThemes = nativeThemes;
+      system.build.ghosttyConfig = pkgs.linkFarm "mountainous-ghostty-config" [
+        {
+          name = "ghostty/config.ghostty";
+          path = ghosttyConfig;
+        }
+      ];
 
-    ghosttyConfig = pkgs.writeText "ghostty-config" ''
-      theme = light:mountainous-light,dark:mountainous-dark
-      window-theme = system
-    '';
-  in {
-    # Direct build targets let regression tests exercise the packaged command
-    # and inspect the exact Ghostty configuration delivered by hjem.
-    system.build.desktopTheme = desktop-theme;
-    system.build.ghosttyConfig = pkgs.linkFarm "mountainous-ghostty-config" [
-      {
-        name = "ghostty/config.ghostty";
-        path = ghosttyConfig;
-      }
-      {
-        name = "ghostty/themes/mountainous-dark";
-        path = ghosttyDark;
-      }
-      {
-        name = "ghostty/themes/mountainous-light";
-        path = ghosttyLight;
-      }
-    ];
+      # qt5ct and qt6ct both implement the qt5ct platform key. OBS removes
+      # the bare key; the supported QPA-argument form above keeps it intact.
+      # Do not set QT_STYLE_OVERRIDE; the choice belongs in the qtct files.
+      qt.enable = true;
+      environment.variables.QT_QPA_PLATFORMTHEME = lib.mkDefault qtPlatformTheme;
 
-    environment.systemPackages = [
-      desktop-theme
-      # gsettings is the documented front end to the same dconf keys the
-      # switcher writes. dconf alone is enough for the script; gsettings is
-      # there so the keys can be read and set by hand.
-      pkgs.glib
-    ];
+      environment.systemPackages = [
+        desktop-theme
+        nativeThemes
+        pkgs.libsForQt5.qt5ct
+        pkgs.qt6Packages.qt6ct
+        pkgs.libsForQt5.qtstyleplugin-kvantum
+        pkgs.qt6Packages.qtstyleplugin-kvantum
+        # gsettings is the documented front end to the same dconf keys the
+        # switcher writes. dconf alone is enough for the script; gsettings is
+        # there so the keys can be read and set by hand.
+        pkgs.glib
+      ];
 
-    # Restore the saved preference and create the watched file before the bars.
-    systemd.user.services.desktop-theme = {
-      description = "Apply the saved desktop appearance";
-      wantedBy = ["hyprland-session.target"];
-      partOf = ["graphical-session.target"];
-      before = ["quickshell.service"];
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "${desktop-theme}/bin/desktop-theme reapply";
-        RemainAfterExit = true;
-        TimeoutStartSec = 15;
+      # Restore the saved preference and create the watched file before the bars.
+      systemd.user.services.desktop-theme = {
+        description = "Apply the saved desktop appearance";
+        wantedBy = [ "hyprland-session.target" ];
+        partOf = [ "graphical-session.target" ];
+        before = [ "quickshell.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${desktop-theme}/bin/desktop-theme reapply";
+          RemainAfterExit = true;
+          TimeoutStartSec = 15;
+        };
+      };
+
+      hjem.users.simon.files = {
+        ".config/ghostty/config.ghostty".source = ghosttyConfig;
       };
     };
-
-    hjem.users.simon.files = {
-      ".config/ghostty/config.ghostty".source = ghosttyConfig;
-      ".config/ghostty/themes/mountainous-dark".source = ghosttyDark;
-      ".config/ghostty/themes/mountainous-light".source = ghosttyLight;
-    };
-  };
 }
