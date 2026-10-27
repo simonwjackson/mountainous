@@ -6,6 +6,33 @@ Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle").
 
 Later (2026-10-24): the `77dd2791` bevel and cast shadow were ported onto the phase 2 layout. `PlatinumTopBar` draws the bevel hairs, `PlatinumTokens` holds `barRaised`, `barBevelLight`/`barBevelDark` and `barShadowHeight`/`barShadowTop`, and `PlatinumDesktop` owns one `PlatinumBarShadow` window per screen (layer namespace `mountainous-bar-shadow`, no exclusive zone, empty input mask, visible with its bar). Extra dark stays flat. Platinum therefore maps three layer surfaces, not two; `theme-dev/win98/switch.sh` expects the shadow. `checks.bar-shadow` runs the window under labwc. The registered Platinum thumbnails predate the bevel. Evidence: `/tmp/ship-prep/shots/`.
 
+## Tandem rule and parity ledger (from 2026-10-27)
+
+Platinum and Windows 98 move together. A feature lands for both themes in the same phase, or this ledger records why one theme has no counterpart. New theme work updates this table when it lands. Fleet data, launches, windows and session actions stay in the shared owners; each theme draws its own view.
+
+| Feature | Platinum | Windows 98 | Win98 counterpart |
+|---|---|---|---|
+| Status controls (Bluetooth, Wi-Fi, Sound, Brightness, OCI, Disks, builder gate, Notifications, Dictation, battery, clock) | Done | Done | Tray icons and windows |
+| Theme picker | Done | Done | Display Properties |
+| Pyxamp face | Done (`platinum`) | Done (`winamp`) | Pyxamp's Winamp face |
+| Fleet window (Super+B, Super+O F) | Done | Missing | Fleet window above the tray (mock pass 2, `/tmp/win98-hud-mock/`) |
+| Glance space (Super+W) | Done | Missing | Shut Down dither, caption animation, Glance taskbar button (mock pass 2) |
+| Find menu and Go to Address (Super+P, Ctrl+L) | Done | Unthemed card | Run dialog / Find window (not mocked) |
+| Window title bars | Done (hyprbars patch) | Missing | Navy caption with minimize, maximize, close (not mocked) |
+| Web page styling | Done (`themes/platinum/web.css`) | Missing | `themes/win98/web.css` |
+| Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
+| About | Done | Missing | System Properties (not mocked) |
+| Hide, Hide Others, Show All | Done | Missing | Minimize to the taskbar (not mocked) |
+| Window menu (Move to page, Hide, Close) | Done (tile menu) | Missing | Taskbar button right-click menu (not mocked) |
+| Held Super+Tab app cycling | Done | Missing (`cycle()` absent) | Alt+Tab Cool Switch box (not mocked) |
+| Recent Applications, pinned web apps | Done | Missing | Start ▸ Documents, Favorites (not mocked) |
+| Volume and brightness change tag | Done | Missing | Volume pop-up (not mocked) |
+| Super+O N (Notifications) | Done | Off | A tray letter for the bell |
+| Native apps (GTK, Qt, Ghostty) | Phase 3, not started | Phase 3, not started | Chicago95 for GTK |
+| Icons, cursors, pattern, sounds, boot | Phase 4, not started | Phase 4, not started | Win98 counterparts |
+| State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |
+| Verified on Myoko with real input | Yes (generations 50–52) | No (#13) | — |
+
 ## Goal
 
 Simon can switch the whole desktop chrome between a handful of themes: Mac OS 8 Platinum and Windows 98 first, more later. Each theme has its own bars, menus, controls, font and colours. The picker draws itself in the style of the current theme. A switch is live, with no restart and no logout.
