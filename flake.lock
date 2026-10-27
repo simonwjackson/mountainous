@@ -1121,11 +1121,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793120522,
-        "narHash": "sha256-0OsMu44inK4+6R/rPnHLj/3g2Hj+/l1i8Ry03DrDmcw=",
+        "lastModified": 1793122357,
+        "narHash": "sha256-rU4d2kLhEPh13IIhjaiI9xZuNnxWrQDZI1PaCDasWmw=",
         "owner": "simonwjackson",
         "repo": "vela",
-        "rev": "d9ef13cd806c392105d5c516d156ac5923bc3b14",
+        "rev": "e7d5340f1440a855c486b43f32939b4945164ced",
         "type": "github"
       },
       "original": {
