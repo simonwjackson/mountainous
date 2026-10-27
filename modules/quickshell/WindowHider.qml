@@ -64,6 +64,12 @@ Scope {
         return hider.run(WindowHide.hideApp(hider.state, hider.rows, appId));
     }
 
+    // One window: the Platinum title bar's collapse box (windows IPC).
+    function hideWindow(address) {
+        if (!address) return 0;
+        return hider.run(WindowHide.hideWindow(hider.state, hider.rows, address));
+    }
+
     // Every other app's windows on one screen.
     function hideOthers(appId, screenName) {
         return hider.run(WindowHide.hideOthers(hider.state, hider.rows, appId || "", screenName || ""));

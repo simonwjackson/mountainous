@@ -57,6 +57,20 @@ assert.equal(H.hiddenRows(after).length, 2);
 const again = H.hideApp(r.state, after, "firefox");
 assert.equal(again.moves.length, 0);
 
+// ---- one window (a title bar's collapse box): only that window, with or without 0x
+const one = H.hideWindow(H.empty(), rows, "0xa2");
+assert.deepEqual(plain(one.moves), [{ address: "a2", workspace: "special:hidden-com.mitchellh.ghostty" }]);
+assert.deepEqual(plain(one.state.windows.a2), { app: "com.mitchellh.ghostty", page: 1, screen: "eDP-1", title: "com.mitchellh.ghostty a2" });
+assert.equal(H.hideWindow(H.empty(), rows, "a1").moves[0].address, "a1");
+// Show brings it back with its app.
+const oneAfter = rows.map((x) => x.address === "a2" ? Object.assign({}, x, { page: -97, workspace: "special:hidden-com.mitchellh.ghostty" }) : x);
+assert.deepEqual(plain(H.showApp(one.state, oneAfter, "com.mitchellh.ghostty", 1).moves), [{ address: "a2", workspace: 1 }]);
+// Nothing for an unknown, empty, between-pages or already hidden window.
+assert.equal(H.hideWindow(H.empty(), rows, "zz").moves.length, 0);
+assert.equal(H.hideWindow(H.empty(), rows, "").moves.length, 0);
+assert.equal(H.hideWindow(H.empty(), rows, "c1").moves.length, 0);
+assert.equal(H.hideWindow(one.state, oneAfter, "a2").moves.length, 0);
+
 // ---- a restart: the file round-trips, and reconcile keeps live entries
 const text = H.serialize(r.state);
 const loaded = H.parse(text);

@@ -126,6 +126,13 @@ function hideApp(state, rows, appId) {
     return hide(state, rows, function (r) { return r.appId === appId; });
 }
 
+// One window: a Platinum title bar's collapse box. Show brings it back with
+// the rest of its app, as for Hide.
+function hideWindow(state, rows, address) {
+    var k = key(address);
+    return hide(state, rows, function (r) { return k !== "" && key(r.address) === k; });
+}
+
 // Mac OS "Hide Others", per screen: every other app's windows on `screen`.
 // The same app's windows on another screen, and other screens, stay.
 function hideOthers(state, rows, appId, screen) {

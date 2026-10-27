@@ -200,6 +200,17 @@ ShellRoot {
         return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
     }
 
+    // The Platinum title bar's collapse box (modules/hyprland/titlebars.lua).
+    // Hyprland cannot roll a window up to its title bar, so collapse hides
+    // the focused window; its app's Show brings it back.
+    IpcHandler {
+        target: "windows"
+        function collapseActive(): void {
+            const t = Hyprland.activeToplevel;
+            if (t && t.address) windowHider.hideWindow(t.address);
+        }
+    }
+
     IpcHandler {
         target: "themePicker"
         function open(): void { MenuState.close(); ThemePicker.open(root.focusedScreen()); }
