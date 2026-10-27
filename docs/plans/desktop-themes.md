@@ -1,6 +1,6 @@
 # Desktop themes for Myoko
 
-Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implemented on b7f20f04; phase 3 (Platinum Apple menu, Application menu and Control Strip) implemented on 37c91c12. Written 2026-10-23. No deployment.
+Status: phase 1 implemented on the a05c2ead base; phase 2 (Windows 98) implemented on b7f20f04; phase 3 (Platinum Apple menu, Application menu and Control Strip) implemented on 37c91c12. The quiet-glyphs top bar (direction A) implemented on f47035fc. Written 2026-10-23. No deployment.
 
 Base: `cairn` at `a05c2ead` ("dark grey Platinum bar and an Extra dark toggle"). The later `77dd2791` bevel/shadow change is not included; that line has not landed on `cairn`.
 
@@ -103,7 +103,7 @@ Every theme must open the picker from all of: its own menu (Platinum clock menu,
 
 ## Keyboard and Hyprland
 
-`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. The `chrome` target now forwards `reveal`, `hide`, and `open <control>` to the active Desktop. `topbar` remains an alias; `chrome toggle` retains the whole-chrome immersive toggle. Win98 maps the same chord letters to its tray icons, and Ctrl+Esc opens Start (`chrome open start`). Super alone is not bound; see the phase 2 decisions.
+`hyprland.lua` today calls `qs -c mountainous ipc call topbar reveal` for the Super+O chord. That name is Platinum's. The `chrome` target now forwards `reveal`, `hide`, and `open <control>` to the active Desktop. `topbar` remains an alias; `chrome toggle` retains the whole-chrome immersive toggle. Win98 maps the same chord letters to its tray icons, and Ctrl+Esc opens Start (`chrome open start`). Platinum adds N for Notifications; the bind checks `theme-name` and passes N through under Win98, so Win98's letters are unchanged (see "Quiet glyphs" below). Super alone is not bound; see the phase 2 decisions.
 
 ## Fonts
 
@@ -487,3 +487,58 @@ Nested Hyprland 0.56.2 under headless labwc, 2880×1800 at 1.5 with a second out
 - Nothing ran on Myoko, under its GPU, Kanata or a real keyboard. Keys came from a virtual keyboard through the real Hyprland binds.
 - Ctrl+L inside the Find menu with a non-browser front window: Hyprland's Ctrl+L bind passes the key to that window, so the menu does not see it. The scope pop-up's "Go to Address…" and the "Go to address" rows still open the dialog.
 - Keys typed in the moment between Super+P and the menu's surface mapping go to the window behind (inferred to be as before).
+
+## Quiet glyphs: the Platinum top bar, direction A (implemented)
+
+Spec: the approved mock at `/tmp/bar-calm/` (`REPORT.md`, `plans.js`, `shots/*-A-*`). Simon: "This is feeling a little crowded. We need to think about overflow and also just in general, like show, don't tell." Same items in the same places; the icons carry the values. Win98 is unchanged: it has its own taskbar, and no Win98 file or shared Win98 dependency changed.
+
+### What changed on the bar
+
+| Item | Before | Now |
+|---|---|---|
+| Sound | speaker + "35" | speaker with 0–3 lit waves (33/66 % steps); a slash when muted |
+| Brightness | sun + "15" | sun with one lit ray per 12.5 % (at least one) |
+| Battery | icon + "100%" | the fill; the percent comes back at 20 % or less on battery (battery.js warning/danger) |
+| OCI egress | cloud + "fuji:1.8% yari:2.8%" | the cloud and one meter for the worst profile; "yari:84.0%" comes back while a profile warns (≥ 50 %) |
+| Remote builds | hammer + "On by you" | the hammer (struck through while refusing, grey when the rule refuses), a dot while builds run; the words only while an action failed |
+| Notifications | bell + "35" | the bell with a dot; the count only while urgent (danger) or sync fails (warning); offline keeps its "!" |
+| Disks | disk + "ok" | the disk alone while healthy; "1 issue" (or "!", "stale") in its tone |
+| Bluetooth | rune + "1" | the rune alone; grey while on with nothing connected, struck through while off |
+| Wi-Fi | bars | the bars; on with no network adds "!" in the warning tone (it never yields) |
+| Fleet | light + count | unchanged |
+| Clock | "10/26  5:06" | "5:06"; the date is in the clock menu's header and in Balloon Help |
+| Application menu | icon + name | the icon alone when the window title already names the app ("Forgerie" once) |
+| » | grey | takes the worst tone of what moved into it |
+
+Exact values stay in each menu's header and in **Balloon Help**, new: rest the pointer 600 ms on a title and a balloon under it gives the full value as a sentence ("OCI egress this month: fuji 1.8%, yari 2.8%. Click for usage in GB."). A volume or brightness change shows a **tag** under its control (under » when it overflowed) for 1.5 s: the icon, a level well and the number. Each value arms 2 s after its owner has one, so the values loaded at start raise no tag; a menu open on that screen suppresses it (the menu shows the value).
+
+### Files
+
+| Part | Files |
+|---|---|
+| The policy | `bar-plan.js`: the mock's `plan` ported (A's yield order, » order, dictation's group, the compact rungs), plus `place()`, `tagPlan()` and `balloonPlan()`; `bar-plan.test.js`, `bar-compact.test.js`, `bar-fixtures.json` (the widths the real bar measured for the mock's states) |
+| The bar | `PlatinumTopBar.qml` (glyphs, readouts, chord placement, hover and tag state), `PlatinumBuilderControl.qml`, `PlatinumBarNumber.qml` (`byDigits`), `PlatinumMetrics.qml` (`digitBox`), `PlatinumBarBadge.qml` (the dot, shared by the bell and the hammer) |
+| Balloon Help and the tag | `PlatinumBarHelp.qml`: a window of its own under the bar (namespace `mountainous-bar-help`, no exclusive zone, empty input mask), mapped only while it shows something; `PlatinumDesktop.qml` owns one per screen and exposes `bar` |
+| Glyphs | `icons/speaker-0..3.svg`, `icons/brightness-1..8.svg`, `icons/cloud-meter.svg` in `PlatinumIconStore.qml`; straight edges on whole device pixels at 1.5, `currentColor`, so one file serves light, dark grey and extra dark. The meter's fill is drawn by the bar in whole device pixels (at least two once there is any use). |
+| Super+O | `modules/hyprland/hyprland.lua`: N opens Notifications under Platinum (`desktop_theme_name()`); under Win98 the bind returns `ok = false`, so N passes through as before and Win98's chord letters are unchanged |
+| Checks | `checks.bar-model` passes `PlatinumTopBar.qml` to the plan test (the chord placement); `bar-delivery` asserts the new files |
+
+### The ladder (calm, as measured)
+
+Spacing yields at 857 px, the clock leaves the centre at 679, the window title at 486, and the first control moves into » at 403 px (the mock: about 402). Then Disks 397, Fleet 371, Remote builds 349, Brightness 323, Bluetooth 297, Wi-Fi 271, Notifications 245, Sound 219; padding goes from 193; battery, clock and Application move into » below 144, 126 and 80 px; the Apple menu below 36. Nothing is lost from 191 px up. The yield order is `space, appName, diskLabel, uncentre, titleMin, builderLabel, ociNumber, ntfCount, fleetCount, batteryPct`: words go before the clock leaves the centre, and a warning number outlasts the window title. Every threshold is a guess until it is measured on Myoko.
+
+### The two bugs the mock found
+
+1. **Super+O covered the controls** (387–918 px today). The plan reserved the hint in the clock's place at the head of the right group once the clock is uncentred, but `PlatinumTopBar.qml` drew it centred. The plan now returns `chordPlace` and `chordWidth`; the right group holds a `chordSlot` of that width, and the chord stands there. `bar-plan.test.js` checks at every width that the placed chord covers no control (and that the old centred rule would have, at 495 widths between 363 and 858 px for the measured metrics), and that the QML takes its x from the slot.
+2. **"1   issue"**: the count's box was sized for two wide digits. A warning number's box now holds its own digit count at the widest digit's width (`PlatinumMetrics.digitBox`), right-aligned before a word: "3" to "7" never moves, "9" to "10" grows by one digit, and "1 issue" has no gap.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| Every item counts at its even drawn width in the plan (the mock counted raw widths) | What the plan fits is what the bar draws, so the placement test is exact. Thresholds move by a pixel or two from the mock's. |
+| Disks shows "!" or "stale" in the warning tone when its check failed or is old | The mock showed the icon alone there; a warning state with no word would hide that the check is not running. They yield with the disk's words. |
+| Notifications offline keeps "!" after the count yields | As before; offline is a sync failure, and the tone alone is easy to miss. |
+| The tag shows on every screen's bar, and for a mute toggle ("--", speaker struck through) | The value is the machine's, not the screen's. Cost: two tags with two screens. |
+| Balloon Help has no balloon for » or the mountain | » lists its items with values; the Apple menu has no value. |
+| 191 px runs at scale 2 in the nested session | 191 logical px has no whole mode at 1.5 (286.5 px); Hyprland falls back to scale 1. 192 px at 1.5 stands beside it. |
