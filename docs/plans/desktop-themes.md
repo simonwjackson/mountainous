@@ -20,17 +20,17 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Done | Find window above Start, IE's Open dialog (parity mock item 2; see "Find window, Open and web pages for Win98") |
-| Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption in light, steel in dark grey; minimize/maximize/close; shared menu IPC contract below |
+| Window title bars | Done (hyprbars patch) | Done (caption; app icons pending) | Navy caption in light, steel in dark grey; minimize/maximize/close; the caption icon and Alt+Space open the window menu through `windows menu` (see "Windows 98 taskbar and session parity") |
 | Chromium normal-window frame | Phase A (system frame, Chromium tabs) | Phase A (same) | Shared preference, GTK paint; outer-chrome roadmap below |
 | Web page styling | Done (`themes/platinum/web.css`) | Done (`themes/win98/web.css`) | Win98 scroll bars and form controls; W95FA on buttons, drop-down lists and legends only |
-| Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
-| About | Done | Missing | System Properties (not mocked) |
-| Hide, Hide Others, Show All | Done | Missing | Minimize to the taskbar (not mocked) |
-| Window menu (Move to page, Hide, Close) | Done (tile menu) | Missing | Taskbar button right-click menu (not mocked) |
-| Held Super+Tab app cycling | Done | Missing (`cycle()` absent) | Alt+Tab Cool Switch box (not mocked) |
-| Recent Applications, pinned web apps | Done | Missing | Start ▸ Documents, Favorites (not mocked) |
-| Volume and brightness change tag | Done | Missing | Volume pop-up (not mocked) |
-| Super+O N (Notifications) | Done | Off | A tray letter for the bell |
+| Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Done | Start ▸ Lock Myoko; Shut Down Myoko over the checker (Stand by, Shut down, Restart, Log off; remembered choice); Log Off's confirmation (see "Windows 98 taskbar and session parity") |
+| About | Done | Done | Start ▸ Settings ▸ System...: System Properties ▸ General; one reader (`SystemFacts.qml`) for both themes |
+| Hide, Hide Others, Show All | Done | Done | Minimize (the button stays, raised); the taskbar's menu: Minimize All, Minimize Other, Restore All (see "Windows 98 taskbar and session parity") |
+| Window menu (Move to page, Hide, Close) | Done (tile menu) | Done | A button's right click, the caption icon, Alt+Space: Restore, Move to ▸, Minimize, Maximize, Close; pages named by their apps, never numbered (see "Windows 98 taskbar and session parity") |
+| Held Super+Tab app cycling | Done | Done (over windows) | Alt+Tab Cool Switch box on the same `chrome cycle` messages (see "Windows 98 taskbar and session parity") |
+| Recent Applications, pinned web apps | Done | Done | Start ▸ Documents (Recent Applications), Start ▸ Favorites (web apps), through `Launcher` |
+| Volume and brightness change tag | Done | Done | A raised box above the tray icon, the block bar and the value, 1.5 s; Platinum's arming rules |
+| Super+O N (Notifications) | Done | Done | The tray draws B W S L C D F R N; N opens Notifications under both themes |
 | Native apps (GTK, Qt, Ghostty) | Built (five-appearance tandem phase below) | Built (same phase) | Chicago95 GTK, Qt Windows style, W95FA Grid Ghostty |
 | Icons, cursors, pattern, sounds, boot | Phase 4, not started | Phase 4, not started | Win98 counterparts |
 | State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |
@@ -40,7 +40,6 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 
 ```parity-gaps
 # feature         missing in  reason
-cycle             win98       Held Super+Tab: Win98's Alt+Tab Cool Switch is being built with the window menus (another worker; parity mock item 6)
 ```
 
 ## Goal
@@ -926,7 +925,7 @@ qs -c mountainous ipc call windows menu <address> <x> <y>
 - Empty address and `x=y=-1` select the focused window's caption anchor. Alt+Space sends this under Win98; under Platinum it passes through.
 - The window-menu worker adds `menu(address: string, x: int, y: int)` to the **existing root** `windows` handler, validates against `windowRows`, and routes to the screen's Desktop. It reuses the taskbar's Restore / Move to Page / Minimize / Maximize / Close menu. No second menu or handler is added here.
 
-The producer is built; the menu consumer is a separate integration dependency. Until it lands, narrow overflow actions require keyboard bindings or the taskbar. The caption uses a standard document menu affordance, **not an application icon**. App icons, a caption-title tooltip and icon double-click-to-close are deferred. A future shared publisher can atomically write 32×32 PNGs to `$XDG_RUNTIME_DIR/mountainous/titlebar-icons/<address>.png` from the existing app lookup and remove them on close. The plugin should cache by revision and use the document fallback, never resolve icons in its draw loop. No unused reader or publisher is shipped.
+The producer is built, and so is the consumer: `windows menu` reaches the Win98 Desktop's window menu (see "Windows 98 taskbar and session parity"); under Platinum it opens that window's strip tile menu. The caption uses a standard document menu affordance, **not an application icon**. App icons, a caption-title tooltip and icon double-click-to-close are deferred. A future shared publisher can atomically write 32×32 PNGs to `$XDG_RUNTIME_DIR/mountainous/titlebar-icons/<address>.png` from the existing app lookup and remove them on close. The plugin should cache by revision and use the document fallback, never resolve icons in its draw loop. No unused reader or publisher is shipped.
 
 #### Cache and verification
 
@@ -969,7 +968,7 @@ What changed:
 - **Find rows (`find-model.js`, both themes).** The Windows group drops "page N". A window on another screen keeps the screen's name ("tablet"); a window on this screen has no hint, so the Win98 status bar reads "Window". Each screen's windows go page by page: the page the screen shows first, then the other pages where their most recent window falls, with a separator row between pages. A typed query keeps rank order and has no page separators. OmniBar's window rows carry `shown` (`Lanes.isShown`) and an empty `detail`, so the omni card shows no number either, and typing a number no longer finds a page.
 - **Platinum.** The Application menu's window submenus name only another screen or "hidden". The tile menu header drops the page ("GitHub, not showing"). Move to page uses `page-names.js`. A strip drag onto another page reads "Move beside …". The strip has no divider labels, so it uses no `listNames` yet.
 - **Win98 Find window.** Passes `shown` to the model. The Open dialog lists web pages (URL and title); it never showed a workspace number, so it did not change.
-- **Not here.** The Win98 taskbar bands, Move to Page menu, Start ▸ Windows and Alt+Tab belong to the `win98-taskbar-session` work, which imports `page-names.js`. `no-page-numbers.test.js` lists their three files in `PENDING` until that lands. Hyprland's notifications showed no page numbers; nothing changed there.
+- **Win98 taskbar (later).** The taskbar bands, Move to ▸, Start ▸ Windows and the Cool Switch came with the `win98-taskbar-session` work, which imports `page-names.js`; `no-page-numbers.test.js` no longer lists their files as pending (see "Windows 98 taskbar and session parity"). Hyprland's notifications showed no page numbers; nothing changed there.
 
 Checks: `checks.theme-parity` runs `theme-dev/no-page-numbers.test.js`. It renders every label, hint and detail from `find-model.js`, `menu-models.js`, `strip-plan.js` and `page-names.js` for 48 windows on 12 pages and two screens, in every scope, and fails on `/\bpage\s*\d/i`. It also sweeps the shipped QML and JS for a string ending in "page " joined to a value. Against the code before this change it fails on "page 1". The per-model tests (`find-model.test.js`, `menu-models.test.js`, `strip-plan.test.js`, `page-names.test.js`) assert the same.
 
@@ -1007,7 +1006,7 @@ Evidence: `/tmp/tandem/pages-caption/` (served at `http://100.114.19.92:8765/tan
 
 - Nothing ran on Myoko, its GPU or real input.
 - The GTK, Qt and Ghostty dark Win98 appearances were checked by `checks.native-themes` (palette agreement), not by a screenshot.
-- The Win98 taskbar, Move to Page, Start ▸ Windows and Alt+Tab still show page numbers until `win98-taskbar-session` lands; the shots show its taskbar numbers unchanged.
+- These shots predate the Win98 taskbar work: they show its taskbar numbers, since removed.
 ## Chromium outer chrome: Phase A and next phases
 
 Simon wants "completely our own outer chrome". Phase A delegates normal
@@ -1261,3 +1260,59 @@ changed QML files, boundary lint, Bash syntax and whitespace checks passed.
 Evidence: `/tmp/tandem/phase3/logs/win98-timer-final-*.log`,
 `win98-timer-find-reconcile.log`, `win98-timer-desktop-baseline.log` and
 `win98-timer-lint.log`. No full flake check, SSH, deploy or push ran.
+
+## Windows 98 taskbar and session parity (implemented)
+
+Spec: the approved parity mock at `/tmp/tandem/win98-parity-mock/` (`REPORT.md`, `DIRECTION.md`, items 3–9), with every default in its decisions table accepted. Later rule from Simon, for everything built here: **a page (workspace) is never numbered on screen.** Pages are ephemeral, not places; a page is named by the apps on it.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| The Win98 taskbar's own window list: windows shown on this screen plus hidden ones whose home is here, each in its home page's band; a minimized window keeps its raised button | `themes/win98/task-model.js` (`lane`), `Win98Desktop.qml` (`laneEntries`, `pageOf`, `isMinimized`, `clickWindow`), `Win98Taskbar.qml`. `lanes.js` and Platinum are unchanged |
+| A click on the active button minimizes (the shared hide); a click on a minimized one restores it alone, focused | `window-hide.js` `showWindow`, `hideScreen`, `setHome`, `homeOf` (+ tests); `WindowHider.qml` |
+| The window menu (a button's right click, Shift+F10 or the Menu key on a focused button, the windows IPC): Restore, Move to ▸, Minimize, Maximize, Close (bold, Alt+F4) | `task-model.js` (`movePages`, `windowMenu`), `Win98MenuHost.qml` (`winmenu`, placed at a point), `Win98Desktop.qml` (`windowMenu`, `perform`) |
+| The taskbar's own menu (a right click where no control takes it): Minimize All Windows, Minimize Other Windows (Hide Others), Restore All Windows (Show All), Find... Super+P | `task-model.js` (`taskbarMenu`), `Win98Taskbar.qml` (the bar's background), `Win98MenuHost.qml` (`tbmenu`) |
+| `windows menu <address> <x> <y>` on the existing root `windows` handler: hex address (or "" for the focused window), validated against `windowRows`, routed to that screen's Desktop; -1 -1 is the window's own corner (Hyprland's `at`) | `shell.qml` (`windowMenu`, `shownPageOn`); `Win98Desktop.windowMenu`; `PlatinumDesktop.windowMenu` opens that window's strip tile menu rising from the point |
+| Held Super+Tab: the Cool Switch over windows, on the existing `chrome cycle` messages | `app-model.js` `windowCycleStart` (+ tests with out-of-order messages), `Win98Desktop.cycle()`, `Win98CoolSwitch.qml` (layer `mountainous-coolswitch`, no input) |
+| Start ▸ Lock Myoko (at once); Start ▸ Shut Down... opens Shut Down Myoko over the whole screen's black checker (`Win98Dither`), the taskbar included: Stand by, Shut down, Restart, Log off simon; the last OK'd choice is kept in `$XDG_STATE_HOME/mountainous/win98-shut-down`; the red "Open windows close without saving." under the three that close windows. Log Off simon... keeps its confirmation | `Win98ShutDownScreen.qml` (layer `mountainous-shutdown`), `themes/win98/session-model.js`, `Win98Desktop.runSession` (Platinum's commands, literal argv) |
+| Start ▸ Settings ▸ System...: System Properties ▸ General, the facts of Platinum's About | `Win98SystemProperties.qml`; `SystemFacts.qml`, one reader now shared by `PlatinumAboutWindow.qml` |
+| Start ▸ Documents (Recent Applications, 15, "web app" hint, "(Empty)") and Start ▸ Favorites (the pinned web apps, their lettermarks), launched through `Launcher` exactly as Platinum's | `start-model.js` (`favorites`, `documents`, `top`), `Win98Desktop.qml` (`launchWebApp`, `launchRecent`), `Win98MenuPanel.qml` (`themeIcon`: an icon-theme icon in a menu row) |
+| The volume and brightness pop-up: a raised box above the tray icon (above » or Start when the icon moved), the block bar and the value, 1.5 s, no input; Platinum's arming rules (none for values loaded at start or a new output device, none while a menu or window is open here) | `Win98VolumePopup.qml` (layer `mountainous-popup`), `session-model.js` (`popupPlan`), `Win98Desktop.qml` |
+| Super+O: the tray draws B W S L C D F R N; N opens Notifications under Win98 too | `tray-model.js` (`CHORD.ntf`), `modules/hyprland/hyprland.lua` |
+| No page numbers: band dividers carry no number (a click still shows the page; the tooltip names the band's apps, "Signal and Zed"); Move to ▸ names each page "Beside Signal and Zed", the window's own page checked and grey ("On its own" when alone), "Empty page", then "New Page"; Start ▸ Windows and the chevron menus separate pages with separators | `page-names-temporary.js` (see below), `task-model.js`, `start-model.js`, `Win98Desktop.qml`, `Win98MenuHost.qml`, `Win98Taskbar.qml` |
+| Icons | `themes/win98/icons/{favorites,documents,lock-computer,computer,system,maximize,restore}.svg`, from the mock by `themes/win98/dev/make-parity-icons.sh` |
+| Checks | `checks.win98-taskbar` (new: `theme-dev/win98/taskbar.sh` and the pure tests), `checks.win98-desktop` (the new pure tests; `switch.sh` opens the window menu, taskbar menu, Shut Down, System Properties, the Cool Switch or the pop-up before Win98 swaps; `geometry.sh` checks them from 360x640 up), `bar-delivery` |
+
+The contract grows: a Desktop may implement `windowMenu(address, x, y)` (screen-local logical px). `context.shell` gains `shownPageOn(name)`. `WindowHider` gains `hideScreen`, `showWindow(address, fallbackPage, focus, after)`, `setHome` and `homeOf`. `app-model.js` gains `windowCycleStart`.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| **`page-names-temporary.js`** holds `listNames` and `pageLabel` written from the agreed wording, because pages-caption's `page-names.js` had not landed | Replace the import with `page-names.js` and delete the file when it lands (the parent reconciles). Cost: two copies until then |
+| Shut Down Myoko is its own Overlay surface, but still MenuState's `shutdown` | The checker must cover the taskbar, which the menu host's surface leaves out; MenuState keeps one menu or window open at a time. A press on the checker does nothing (modal, as Win98) |
+| System Properties is a menu-host window (MenuState `sysprops`), centred like Log Off | One window at a time, like the tray windows; a click outside closes it. Cost: it does not stay open beside a tray window |
+| The page band keeps its box (sunken over the dither for the page on screen) with no number; the head (etch, grip, box) is one click target | The divider stays; "which page is on screen" stays visible without a number |
+| Maximize is Hyprland's `maximized` fullscreen state (the taskbar stays), focusing the window first in one batch; Restore of a maximized or fullscreen window toggles that state | Win98's maximize kept the taskbar. Maximize on a minimized window restores it and maximizes in the same batch |
+| Move to ▸ on a minimized window changes only its home page (`WindowHider.setHome`) | The mock's rule: it stays minimized; Restore puts it there |
+| Restore All Windows acts on every screen (it is the shared Show All); Minimize All and Minimize Other act on this screen | As Platinum's Show All and Hide Others |
+| Minimize Other keeps the front window's app (Hide Others), not only the front window | The brief: "= Hide Others" |
+| The Cool Switch takes every window on every screen, hidden ones included; a commit on a hidden window restores it alone | Alt+Tab listed every window; the title box says "(minimized)" |
+| `checks.win98-taskbar` is its own attribute | `taskbar.sh` adds about five minutes; with the rest of `win98-desktop` one build could pass the 15-minute step |
+| **Win98MenuPanel's clipper height is snapped to the unit for every roll** | Measured in the sandboxed session: a cascade under a menu whose top level does not roll (the window menu) never received hover or presses (0 of 3 points); with the snapped height, 3 of 3. The Start menu worked only because its top level rolls. Cause not found; the fix keeps the panel's geometry identical to a finished roll |
+| The context menus appear at once (no roll) | The motion table: menus from the taskbar appear at once |
+
+### Evidence
+
+Headless sway in a bubblewrap namespace with its own PID namespace, no DRI node in `/dev`, a tmpfs over `/run/user`, `/run/dbus` and `/run/systemd`, Qt on llvmpipe; the real `ThemeDesktop` and `Win98Desktop` over the harness's windows and a `WindowHider` with `window-hide.js`'s own rules. `loginctl`, `systemctl`, `systemd-run` and `hyprctl` are logging stubs (`session.sh`). Evidence: `/tmp/tandem/win98-taskbar-session/` (http://100.114.19.92:8765/tandem/win98-taskbar-session/).
+
+RESULTS
+
+### Not verified
+
+- Nothing ran on Myoko, under Hyprland, or with a real pointer, keyboard or Kanata. Shift+F10 and the Menu key on a focused taskbar button were not pressed.
+- The windows IPC through `shell.qml` itself: the harness reproduces its routing; `shell.qml` only compiled. Whether Hyprland's `at` is just under a Win98 caption with hyprbars' `bar_part_of_window` is inferred, not measured.
+- Maximize and Restore dispatch the Lua strings shown; they were logged, not run in Hyprland.
+- Two screens: a window minimized on a screen that left falls to the primary screen's taskbar (unit test only).
+- The page names come from the fixtures' app names; real desktop entries were not read.
