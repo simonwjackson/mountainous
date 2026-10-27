@@ -45,7 +45,7 @@ FocusScope {
     }
     readonly property var ctx: ({
         windows: (root.omni.windowRows || []).map(function (r) {
-            return { label: r.label, page: r.page, screen: r.screen, order: r.order, appId: r.appId || "",
+            return { label: r.label, page: r.page, shown: !!r.shown, screen: r.screen, order: r.order, appId: r.appId || "",
                      icon: r.appId ? root.iconOf(r.appId) : "", ref: r };
         }),
         here: root.omni.screen ? root.omni.screen.name : "",

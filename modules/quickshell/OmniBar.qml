@@ -131,8 +131,12 @@ Scope {
             out.push({
                 kind: "window",
                 label: t.title && t.title !== "" ? t.title : "(untitled)",
-                detail: "page " + t.workspace.id,
+                // No page number: pages are ephemeral, never shown
+                // (docs/plans/desktop-themes.md, "No workspace numbers").
+                // page and shown order the themes' lists.
+                detail: "",
                 page: t.workspace.id,
+                shown: Lanes.isShown(t),
                 appId: t.wayland ? (t.wayland.appId || "") : "",
                 order: h,
                 screen: Lanes.screenOf(t),

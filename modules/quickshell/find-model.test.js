@@ -17,7 +17,10 @@ const items = (rows) => rows.filter((r) => r.t === "item");
 
 // ---------------------------------------------------------------- fixtures
 // OmniBar.windowRows order: the focused screen first, most recent first.
-const W = (label, page, screen, order, appId) => ({ label, page, screen, order, appId, icon: appId, ref: { label } });
+// shown: the window's page is the one its screen shows (laptop: page 1,
+// tablet: page 3).
+const SHOWN = { "eDP-1": 1, SUNSHINE: 3 };
+const W = (label, page, screen, order, appId) => ({ label, page, shown: SHOWN[screen] === page, screen, order, appId, icon: appId, ref: { label } });
 const windows = [
     W("~/code/mountainous — nvim modules/quickshell/OmniBar.qml", 1, "eDP-1", 1, "com.mitchellh.ghostty"),
     W("find-mock · Forgerie", 2, "eDP-1", 2, "chrome-forgerie.hummingbird-lake.ts.net__-Default"),
@@ -68,10 +71,12 @@ assert.equal(F.scopeOf("nav"), "all");
 assert.equal(F.modeOf("nope"), "root");
 
 // ---------------------------------------------------------------- empty field
+// Each screen's windows page by page, the page it shows first, a rule
+// between pages; most recent first inside a page.
 let rows = F.findRows("all", "", ctx);
 assert.deepEqual(plain(shape(rows)), [
-    "# Windows on laptop", "~/code/mountainous — nvim modules/quickshell/OmniBar.qml", "find-mock · Forgerie",
-    "Pull requests · simonwjackson/mountainous", "btop",
+    "# Windows on laptop", "~/code/mountainous — nvim modules/quickshell/OmniBar.qml", "btop", "—",
+    "find-mock · Forgerie", "Pull requests · simonwjackson/mountainous",
     "# Windows on tablet", "Desktop themes - Vault - Obsidian", "YouTube Music", "(untitled)",
     "# Recent Applications", "YouTube Music", "Ghostty", "Forgerie", "GNU Image Manipulation Program", "mpv Media Player",
     "# Commands", ...commands.map((c) => c.label),
@@ -79,9 +84,20 @@ assert.deepEqual(plain(shape(rows)), [
 // Super+P, Return: the first row Return runs is the last window.
 assert.equal(rows[F.firstSelectable(rows)].k, "win");
 assert.equal(rows[F.firstSelectable(rows)].ref.label, windows[0].label);
-// Page and screen detail; another screen's window names the screen.
-assert.equal(rows[1].hint, "page 1");
-assert.equal(rows.find((r) => r.label === "YouTube Music" && r.k === "win").hint, "page 3, tablet");
+// No page number, ever. Another screen's window names the screen.
+assert.equal(rows[1].hint, "");
+assert.equal(rows.find((r) => r.label === "YouTube Music" && r.k === "win").hint, "tablet");
+// The shown page goes first even when its window is not the most recent.
+const later = windows.map((w) => Object.assign({}, w, { shown: w.screen === "eDP-1" ? w.page === 2 : w.shown }));
+assert.deepEqual(plain(shape(F.findRows("win", "", Object.assign({}, ctx, { windows: later }))).slice(0, 6)), [
+    "# Windows on laptop", "find-mock · Forgerie", "Pull requests · simonwjackson/mountainous", "—",
+    "~/code/mountainous — nvim modules/quickshell/OmniBar.qml", "btop"]);
+// Nothing shown (the screen shows an empty page): the most recent page first.
+const none = windows.map((w) => Object.assign({}, w, { shown: false }));
+assert.equal(F.findRows("win", "", Object.assign({}, ctx, { windows: none }))[1].label, windows[0].label);
+// One page: no rule.
+const onePage = windows.filter((w) => w.page === 1);
+assert.ok(!F.findRows("win", "", Object.assign({}, ctx, { windows: onePage })).some((r) => r.t === "sep"));
 // Recent: five at most, web apps marked, launched from their record.
 const rec = items(rows).filter((r) => r.k === "recent");
 assert.equal(rec.length, 5);
@@ -123,9 +139,12 @@ assert.equal(F.rank({ label: "Anything" }, ""), 0);
 // Case does not matter; equal ranks keep the service's order.
 assert.deepEqual(plain(F.filter([{ label: "b Alpha" }, { label: "alpha" }, { label: "Alphabet" }], "ALPHA").map((r) => r.label)),
     ["alpha", "Alphabet", "b Alpha"]);
-// "page 3" still finds every window on page 3, by its detail.
-rows = F.findRows("win", "page 3", ctx);
-assert.deepEqual(plain(items(rows).map((r) => r.label)), ["Desktop themes - Vault - Obsidian", "YouTube Music", "(untitled)"]);
+// "tablet" finds every window on the tablet, by its hint; a filtered list
+// keeps rank order, with no page rules.
+rows = F.findRows("win", "tablet", ctx);
+assert.deepEqual(plain(shape(rows)), ["Desktop themes - Vault - Obsidian", "YouTube Music", "(untitled)"]);
+// A page number finds nothing: it is not shown, so it is not searched.
+assert.equal(items(F.findRows("win", "page 3", ctx)).filter((r) => r.k === "win").length, 0);
 // "super" finds every command whose shortcut uses Super; "web" finds the browsers by generic name...
 assert.equal(items(F.findRows("cmd", "super", ctx)).length, 13);
 // ...and the web apps, by their id and their "web app" hint (today: by id).
@@ -147,7 +166,9 @@ rows = F.findRows("win", "", ctx);
 assert.deepEqual(plain(rows.filter((r) => r.t === "head").map((r) => r.label)), ["Windows on laptop", "Windows on tablet"]);
 assert.equal(items(rows).length, windows.length);
 rows = F.findRows("win", "", oneScreen);
-assert.ok(rows.every((r) => r.t === "item"), "a one-screen Windows scope needs no heading");
+assert.ok(rows.every((r) => r.t !== "head"), "a one-screen Windows scope needs no heading");
+assert.deepEqual(plain(shape(rows)), ["~/code/mountainous — nvim modules/quickshell/OmniBar.qml", "btop", "—",
+    "find-mock · Forgerie", "Pull requests · simonwjackson/mountainous"]);
 rows = F.findRows("cmd", "", ctx);
 assert.deepEqual(plain(rows.map((r) => r.label)), commands.map((c) => c.label));
 assert.ok(rows.every((r) => r.k === "cmd" && r.ref && r.act));
@@ -201,7 +222,8 @@ const first = F.firstSelectable(rows);
 assert.equal(first, 1);
 assert.equal(F.step(rows, first, -1), rows.length - 1, "Up from the first row wraps to the last");
 assert.equal(F.step(rows, rows.length - 1, 1), first, "Down from the last row wraps to the first");
-assert.equal(F.step(rows, 4, 1), 6, "Down skips a heading");
+assert.equal(F.step(rows, 5, 1), 7, "Down skips a heading");
+assert.equal(F.step(rows, 2, 1), 4, "Down skips a page rule");
 assert.equal(F.page(rows, first, 1, 10) > first, true);
 assert.equal(F.page(rows, first, -1, 10), first, "PageUp stops at the top");
 assert.equal(F.step([], 0, 1), -1);
@@ -287,6 +309,10 @@ if (omniFile) {
     for (const verb of ["toggle", "reveal", "gotowindow", "apps", "navigate", "dismiss"])
         assert.match(src, new RegExp("function " + verb + "\\(\\): void"), "omni " + verb);
     assert.match(src, /target: "omni"/);
+    // A window row's detail is never its page number; it carries shown.
+    const wr = src.slice(src.indexOf("readonly property var windowRows"), src.indexOf("readonly property var appRows"));
+    assert.doesNotMatch(wr, /detail:\s*"page /, "OmniBar window rows show no page number");
+    assert.match(wr, /shown: Lanes\.isShown\(t\)/, "OmniBar window rows say which page is showing");
     // Web apps launched from the menu are recorded as web apps.
     assert.match(src, /Launcher\.launchEntry\(row\.entry\)/);
 }
@@ -302,4 +328,15 @@ if (launcherQml) {
     assert.match(src, /kind: Model\.entryKind\(entry\)/, "launchEntry records web apps as webapp");
     assert.doesNotMatch(src, /icon: entry\.icon, kind: "app"/);
 }
+// ---------------------------------------------------------------- no workspace numbers
+// Every rendered label and hint, in every scope, with and without a query.
+const NUMBER = /\bpage\s*\d/i;
+const many = [];
+for (let i = 0; i < 40; i++) many.push(W("Window " + i, 1 + (i % 9), i % 3 ? "eDP-1" : "SUNSHINE", i, "app" + i));
+for (const c of [ctx, Object.assign({}, ctx, { windows: many })])
+    for (const scope of ["all", "app", "win", "cmd"])
+        for (const q of ["", "w", "tablet", "1", "page"])
+            for (const r of F.findRows(scope, q, c))
+                for (const text of [r.label, r.hint]) if (text) assert.doesNotMatch(text, NUMBER, scope + " " + q + ": " + text);
+
 console.log("find-model: ranking, grouping, scopes, empty, no results, recent, kinds, scrolling and caller capture passed");

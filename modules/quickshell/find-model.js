@@ -102,7 +102,10 @@ function sep() { return { t: "sep" }; }
 
 // ctx.windows come from OmniBar.windowRows: the front window already left
 // out, the focused screen first, most recent first inside a screen.
-// { label, page, screen, order, appId, icon, ref }
+// { label, page, shown, screen, order, appId, icon, ref }
+// A row never shows a page number (docs/plans/desktop-themes.md, "No
+// workspace numbers"): the hint names the other screen, else is empty.
+// page and shown stay on the row, unrendered, to group it.
 function windowItems(ctx) {
     var here = ctx.here || "";
     var label = ctx.screenLabel || function (s) { return s; };
@@ -110,27 +113,52 @@ function windowItems(ctx) {
         var other = w.screen && here && w.screen !== here;
         return {
             t: "item", k: "win", label: w.label || "(untitled)", icon: w.icon || "",
-            hint: (w.page > 0 ? "page " + w.page : "") + (other ? ", " + label(w.screen) : ""),
-            id: w.appId || "", screen: w.screen || "", ref: w.ref
+            hint: other ? label(w.screen) : "",
+            id: w.appId || "", screen: w.screen || "", page: w.page > 0 ? w.page : 0, shown: !!w.shown, ref: w.ref
         };
     });
 }
-// Window rows under one heading per screen when they sit on more than one,
-// else under one "Windows" heading (headed: false leaves it out).
-function windowGroups(items, ctx, headed) {
-    var label = ctx.screenLabel || function (s) { return s; };
-    var screens = {};
-    var count = 0;
-    for (var i = 0; i < items.length; i++) if (!screens[items[i].screen]) { screens[items[i].screen] = true; count++; }
-    var out = [];
-    if (count < 2) {
-        if (headed && items.length) out.push(head("Windows"));
-        return out.concat(items);
+// One screen's rows, page by page: the page the screen shows first, then
+// the other pages, each where its most recent window falls, with a rule
+// between pages. Inside a page the rows keep their order.
+function byPage(items) {
+    var pages = [], groups = {};
+    for (var i = 0; i < items.length; i++) {
+        var p = items[i].page;
+        if (!groups[p]) { groups[p] = []; pages.push(p); }
+        groups[p].push(items[i]);
     }
-    var last = null;
-    for (var j = 0; j < items.length; j++) {
-        if (items[j].screen !== last) { out.push(head("Windows on " + label(items[j].screen))); last = items[j].screen; }
-        out.push(items[j]);
+    var first = -1;
+    for (var j = 0; j < items.length; j++) if (items[j].shown) { first = items[j].page; break; }
+    if (first >= 0) pages.sort(function (a, b) { return (a === first ? 0 : 1) - (b === first ? 0 : 1); });
+    var out = [];
+    for (var k = 0; k < pages.length; k++) {
+        if (k > 0) out.push(sep());
+        out = out.concat(groups[pages[k]]);
+    }
+    return out;
+}
+// Window rows under one heading per screen when they sit on more than one,
+// else under one "Windows" heading (headed: false leaves it out). paged
+// splits each screen's rows by page (an untouched field); a filtered list
+// keeps its rank order instead.
+function windowGroups(items, ctx, headed, paged) {
+    var label = ctx.screenLabel || function (s) { return s; };
+    var screens = [], of = {};
+    for (var i = 0; i < items.length; i++) {
+        var s = items[i].screen;
+        if (!of[s]) { of[s] = []; screens.push(s); }
+        of[s].push(items[i]);
+    }
+    var arrange = paged ? byPage : function (rows) { return rows; };
+    var out = [];
+    if (screens.length < 2) {
+        if (headed && items.length) out.push(head("Windows"));
+        return out.concat(arrange(items));
+    }
+    for (var j = 0; j < screens.length; j++) {
+        out.push(head("Windows on " + label(screens[j])));
+        out = out.concat(arrange(of[screens[j]]));
     }
     return out;
 }
@@ -181,7 +209,7 @@ function findRows(scope, q, ctx) {
     if (scope === "all" && !query) {
         // An untouched field leads with the windows behind the front one, so
         // Return goes back to the last window.
-        push(windowGroups(wins, c, true));
+        push(windowGroups(wins, c, true, true));
         section("Recent Applications", recent);
         section("Commands", cmds);
         if (apps.length)
@@ -196,7 +224,7 @@ function findRows(scope, q, ctx) {
         if (!query) { section("Recent Applications", recent); section("All Applications", apps); }
         else push(filter(apps, query));
     } else if (scope === "win") {
-        push(windowGroups(filter(wins, query), c, false));
+        push(windowGroups(query ? filter(wins, query) : wins, c, false, !query));
     } else if (scope === "cmd") {
         push(filter(cmds, query));
     }

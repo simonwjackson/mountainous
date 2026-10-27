@@ -83,15 +83,18 @@ function alert(what, host) {
     return null;
 }
 
-// A page label for a window row: "page 3", or "page 3, tablet" on another
-// screen. here is this bar's output name; screenLabel names the other one.
-function pageLabel(w, here, screenLabel) {
+// Where a window row is, for its hint: "hidden", the other screen's name
+// ("tablet"), or nothing on this screen. Never a page number: pages are
+// ephemeral (docs/plans/desktop-themes.md, "No workspace numbers").
+// here is this bar's output name; screenLabel names the other one.
+function placeLabel(w, here, screenLabel) {
     if (typeof w.workspace === "string" && w.workspace.indexOf("special:hidden-") === 0) return "hidden";
     if (!(w.page > 0)) return "";
-    return "page " + w.page + (w.screen && here && w.screen !== here ? ", " + (screenLabel ? screenLabel(w.screen) : w.screen) : "");
+    return w.screen && here && w.screen !== here ? (screenLabel ? screenLabel(w.screen) : w.screen) : "";
 }
 
-// The windows of one app, in page order, each with its page.
+// The windows of one app, in strip order (along the pages), each with
+// where it is.
 function windowRows(app, front, here, screenLabel) {
     var list = (app.windows || []).slice();
     var at = list.slice();
@@ -100,7 +103,7 @@ function windowRows(app, front, here, screenLabel) {
         return pa - pb || at.indexOf(a) - at.indexOf(b);
     });
     return list.map(function (w) {
-        return item({ id: "win-" + w.address, label: w.title || app.name, hint: pageLabel(w, here, screenLabel),
+        return item({ id: "win-" + w.address, label: w.title || app.name, hint: placeLabel(w, here, screenLabel),
                       check: w.address === front, action: { kind: "activate", address: w.address, appId: app.appId } });
     });
 }
@@ -134,7 +137,9 @@ function application(opts) {
 }
 
 // A Control Strip tile's menu. opts: { window (row), appName, appIcon,
-// front (bool), shown (bool), move (strip-plan movePages result) }
+// front (bool), shown (bool), move (strip-plan movePages result) }.
+// Move to page lists the pages by their apps (page-names.js), the window's
+// own page checked and disabled, then "New page".
 function tile(opts) {
     var w = opts.window, name = opts.appName || w.appId || "Window";
     var state = opts.front ? ", front window" : opts.shown ? "" : ", not showing";
@@ -145,11 +150,11 @@ function tile(opts) {
     });
     if (opts.move) {
         sub.push(sep());
-        sub.push(item({ id: "page-new", label: "New page (" + opts.move.newPage + ")",
+        sub.push(item({ id: "page-new", label: "New page",
                         action: { kind: "moveTo", address: w.address, page: opts.move.newPage } }));
     }
     return [
-        { kind: "header", label: w.title || name, detail: name + (w.page > 0 ? ", page " + w.page : "") + state, app: opts.appIcon || "" },
+        { kind: "header", label: w.title || name, detail: name + state, app: opts.appIcon || "" },
         sep(),
         item({ id: "switch", label: opts.front ? "Front window" : "Switch to window", hint: "Click", disabled: !!opts.front,
                action: { kind: "activate", address: w.address, appId: w.appId } }),

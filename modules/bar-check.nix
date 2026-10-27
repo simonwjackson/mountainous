@@ -88,7 +88,7 @@
             node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             node ${./quickshell/page-names.test.js} ${./quickshell/page-names.js}
-            node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js}
+            node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
             touch $out
           '';

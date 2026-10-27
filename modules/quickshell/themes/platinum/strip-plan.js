@@ -1,4 +1,5 @@
 .pragma library
+.import "../../page-names.js" as PageNames
 // The Platinum Control Strip: one screen's windows across all of its pages,
 // as square tiles at the bottom left, grouped by page with an engraved
 // groove between pages. A pure function of the strip's inputs, so the
@@ -111,32 +112,28 @@ function dragLength(startArea, dx, content) {
 }
 
 // What dropping one tile on another means, and the label the drag shows.
+// A move names the target page by its apps ("Move beside Signal and Zed"),
+// never by number. names maps an app id to its name.
 function drop(rows, from, to, names) {
     var a = rows[from], b = rows[to];
     if (!a || !b || from === to || !(a.page > 0) || !(b.page > 0)) return { kind: "none", label: "" };
     if (a.page === b.page)
-        return { kind: "swap", label: "Swap with " + ((names && names[b.appId]) || b.appId || "window") };
-    return { kind: "move", page: b.page, label: "Move to page " + b.page };
+        return { kind: "swap", label: "Swap with " + appName(b, names) };
+    var there = [];
+    for (var i = 0; i < rows.length; i++) if (i !== from && rows[i].page === b.page) there.push(appName(rows[i], names));
+    return { kind: "move", page: b.page, label: PageNames.moveBeside(there) };
 }
 
-// The tile menu's Move to page ▸ rows: every page this screen has (and the
-// one it shows), then a new page, numbered after every page on every
-// screen (Hyprland numbers pages globally).
-function movePages(rows, windowPage, shownPage, allPageIds) {
-    var seen = {}, pages = [];
-    var add = function (p) { if (p > 0 && !seen[p]) { seen[p] = true; pages.push(p); } };
-    for (var i = 0; i < (rows || []).length; i++) add(rows[i].page);
-    add(shownPage);
-    pages.sort(function (a, b) { return a - b; });
-    var top = 0;
-    for (var j = 0; j < (allPageIds || []).length; j++) if (allPageIds[j] > top) top = allPageIds[j];
-    for (var k = 0; k < pages.length; k++) if (pages[k] > top) top = pages[k];
-    return {
-        pages: pages.map(function (p) {
-            return { page: p, label: "Page " + p + (p === shownPage ? " (showing)" : ""), current: p === windowPage };
-        }),
-        newPage: top + 1,
-    };
+function appName(r, names) { return (names && names[r.appId]) || r.appId || "window"; }
+
+// The tile menu's Move to page ▸ rows (page-names.js): every page this
+// screen has and the one it shows, each named by its apps, the window's own
+// page checked; then a new page, numbered after every page on every screen
+// (Hyprland numbers pages globally). The numbers stay in `page`, for the
+// move; no label shows one.
+function movePages(rows, address, windowPage, shownPage, allPageIds, names) {
+    var windows = (rows || []).map(function (r) { return { page: r.page, name: appName(r, names), address: r.address }; });
+    return PageNames.movePages(windows, address, windowPage, shownPage, allPageIds);
 }
 
 // The saved strip, per screen: { "<output>": { collapsed, length } }.

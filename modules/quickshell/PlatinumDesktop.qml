@@ -255,8 +255,9 @@ Scope {
             window: r, appName: desktop.appName(r.appId), appIcon: desktop.appIcon(r.appId),
             front: r.toplevel ? r.toplevel.activated : false,
             shown: Lanes.isShown(r.toplevel),
-            move: StripPlan.movePages(lane, r.page, page,
-                typeof desktop.shell.pageIds === "function" ? desktop.shell.pageIds() : [])
+            // Pages by their apps, in strip order; never a number.
+            move: StripPlan.movePages(StripPlan.order(lane), r.address, r.page, page,
+                typeof desktop.shell.pageIds === "function" ? desktop.shell.pageIds() : [], desktop.appNames)
         });
     }
 

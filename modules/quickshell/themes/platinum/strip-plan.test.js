@@ -1,13 +1,17 @@
 // strip-plan.js at each boundary: one px either side of every threshold.
-// Run: node strip-plan.test.js strip-plan.js
+// Run: node strip-plan.test.js strip-plan.js page-names.js
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
-const P = {};
-vm.runInNewContext(fs.readFileSync(process.argv[2] || __dirname + "/strip-plan.js", "utf8")
-    .replace(/^\.pragma library\s*$/m, ""), P);
+// strip-plan.js .imports page-names.js as PageNames, as QML does.
+const lib = (file) => fs.readFileSync(file, "utf8").replace(/^\.pragma library\s*$/m, "");
+const PageNames = {};
+vm.runInNewContext(lib(process.argv[3] || __dirname + "/../../page-names.js"), PageNames);
+const P = { PageNames };
+vm.runInNewContext(lib(process.argv[2] || __dirname + "/strip-plan.js").replace(/^\.import "\.\.\/\.\.\/page-names\.js" as PageNames\s*$/m, ""), P);
 const plain = (v) => JSON.parse(JSON.stringify(v));
-const row = (id, page, x, y, appId) => ({ id, page, x, y, appId: appId || "app" + id });
+const row = (id, page, x, y, appId) => ({ id, address: "w" + id, page, x, y, appId: appId || "app" + id });
+const NUMBER = /\bpage\s*\d/i;
 
 // ---- order: by page, then by screen position; unknown positions keep order
 const ordered = P.order([row(1, 2, 900, 40), row(2, 1, 960, 40), row(3, 1, 8, 40), row(4, 2, 8, 40), row(5, 2, 900, 600)]);
@@ -89,23 +93,32 @@ assert.equal(P.dragLength(100, 1000, 154), null);
 assert.equal(P.dragLength(34, 15, 400), 34);
 assert.equal(P.dragLength(34, 17, 400), 66);
 
-// ---- drop meaning and label
+// ---- drop meaning and label: a page is named by its apps, never its number
 const lane = [row(1, 1, 0, 0, "firefox"), row(2, 1, 900, 0, "ghostty"), row(3, 3, 0, 0, "gh")];
+const names = { ghostty: "Ghostty", gh: "GitHub", firefox: "Firefox", signal: "Signal", zed: "Zed" };
 assert.deepEqual(plain(P.drop(lane, 0, 1, { ghostty: "Ghostty" })), { kind: "swap", label: "Swap with Ghostty" });
-assert.deepEqual(plain(P.drop(lane, 0, 2, {})), { kind: "move", page: 3, label: "Move to page 3" });
+assert.deepEqual(plain(P.drop(lane, 0, 2, names)), { kind: "move", page: 3, label: "Move beside GitHub" });
+assert.deepEqual(plain(P.drop(lane, 2, 0, names)), { kind: "move", page: 1, label: "Move beside Firefox and Ghostty" });
+assert.deepEqual(plain(P.drop(lane, 0, 2, {})), { kind: "move", page: 3, label: "Move beside gh" }, "an unnamed app falls back to its id");
 assert.equal(P.drop(lane, 1, 1, {}).kind, "none");
 assert.equal(P.drop(lane, 0, 9, {}).kind, "none");
 assert.equal(P.drop([row(1, -1), row(2, 1)], 0, 1, {}).kind, "none");
+const busy = lane.concat([row(4, 3, 900, 0, "signal"), row(5, 3, 0, 900, "zed"), row(6, 3, 900, 900, "ghostty")]);
+assert.equal(P.drop(busy, 0, 2, names).label, "Move beside GitHub, Signal, Zed…");
 
-// ---- move to page
-let mv = P.movePages(lane, 1, 1, [1, 2, 3, 6]);
+// ---- move to page: every page of this screen by its apps, own page checked
+let mv = P.movePages(lane, "w1", 1, 1, [1, 2, 3, 6], names);
 assert.deepEqual(plain(mv.pages), [
-    { page: 1, label: "Page 1 (showing)", current: true },
-    { page: 3, label: "Page 3", current: false }]);
+    { page: 1, current: true, label: "Beside Ghostty" },
+    { page: 3, current: false, label: "Beside GitHub" }]);
 assert.equal(mv.newPage, 7, "after every page on every screen");
-mv = P.movePages(lane, 3, 4, []);
-assert.deepEqual(plain(mv.pages.map((x) => x.label)), ["Page 1", "Page 3", "Page 4 (showing)"]);
+mv = P.movePages(lane, "w3", 3, 4, [], names);
+assert.deepEqual(plain(mv.pages.map((x) => [x.label, x.current])),
+    [["Beside Firefox and Ghostty", false], ["On its own", true], ["Empty page", false]]);
 assert.equal(mv.newPage, 5);
+for (const p of P.movePages(busy, "w1", 1, 7, [1, 3, 7, 12], names).pages) assert.doesNotMatch(p.label, NUMBER, p.label);
+for (let from = 0; from < busy.length; from++)
+    for (let to = 0; to < busy.length; to++) assert.doesNotMatch(P.drop(busy, from, to, names).label, NUMBER);
 
 // ---- saved state per screen
 let st = P.parseState('{"eDP-1": {"collapsed": true, "length": 130}, "DP-2": {"length": 3}, "x": 4}');
