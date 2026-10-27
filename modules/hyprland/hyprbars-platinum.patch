@@ -1,22 +1,43 @@
 diff --git a/barDeco.cpp b/barDeco.cpp
-index c27653d..845803a 100644
+index c27653d..5e93675 100644
 --- a/barDeco.cpp
 +++ b/barDeco.cpp
-@@ -22,6 +22,13 @@
+@@ -22,6 +22,34 @@
  #include <hyprland/src/layout/LayoutManager.hpp>
  #include <hyprland/src/render/OpenGL.hpp>
  #include <hyprland/src/state/MonitorState.hpp>
 +#include <hyprland/src/protocols/XDGShell.hpp>
-+
-+// platinum fork: what a client asked for is private protocol state.
-+#define private public
 +#include <hyprland/src/protocols/XDGDecoration.hpp>
 +#include <hyprland/src/protocols/ServerDecorationKDE.hpp>
-+#undef private
++
++// platinum fork: what a client asked for is private protocol state. Read it
++// through member pointers taken in an explicit instantiation, which the
++// language allows for private members; no header is rewritten.
++template <typename Tag, typename Tag::type M>
++struct SPlatinumMember {
++    friend typename Tag::type platinumMember(Tag) {
++        return M;
++    }
++};
++struct SXdgDecorations {
++    using type = std::unordered_map<wl_resource*, UP<CXDGDecoration>> CXDGDecorationProtocol::*;
++    friend type platinumMember(SXdgDecorations);
++};
++struct SKdeDecorations {
++    using type = std::vector<UP<CServerDecorationKDE>> CServerDecorationKDEProtocol::*;
++    friend type platinumMember(SKdeDecorations);
++};
++struct SToplevelResource {
++    using type = SP<CXdgToplevel> CXDGToplevelResource::*;
++    friend type platinumMember(SToplevelResource);
++};
++template struct SPlatinumMember<SXdgDecorations, &CXDGDecorationProtocol::m_decorations>;
++template struct SPlatinumMember<SKdeDecorations, &CServerDecorationKDEProtocol::m_decos>;
++template struct SPlatinumMember<SToplevelResource, &CXDGToplevelResource::m_resource>;
  
  #include "globals.hpp"
  #include "BarPassElement.hpp"
-@@ -224,7 +231,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
+@@ -224,7 +252,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
          return;
      }
  
@@ -26,7 +47,7 @@ index c27653d..845803a 100644
          Desktop::focusState()->fullWindowFocus(PWINDOW, Desktop::FOCUS_REASON_CLICK);
  
      if (PWINDOW->m_isFloating)
-@@ -233,7 +241,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
+@@ -233,7 +262,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
      info.cancelled   = true;
      m_bCancelledDown = true;
  
@@ -36,7 +57,7 @@ index c27653d..845803a 100644
          return;
  
      if (!ON_DOUBLE_CLICK.empty() &&
-@@ -278,6 +287,17 @@ void CHyprBar::handleMovement() {
+@@ -278,6 +308,17 @@ void CHyprBar::handleMovement() {
  
  bool CHyprBar::doButtonPress(Config::INTEGER barPadding, Config::INTEGER barButtonPadding, Config::INTEGER barHeight, Vector2D COORDS, const bool BUTTONSRIGHT) {
      //check if on a button
@@ -54,7 +75,7 @@ index c27653d..845803a 100644
      float offset = barPadding;
  
      for (auto& b : g_pGlobalState->buttons) {
-@@ -296,7 +316,6 @@ bool CHyprBar::doButtonPress(Config::INTEGER barPadding, Config::INTEGER barButt
+@@ -296,7 +337,6 @@ bool CHyprBar::doButtonPress(Config::INTEGER barPadding, Config::INTEGER barButt
  }
  
  void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
@@ -62,7 +83,7 @@ index c27653d..845803a 100644
      const auto SIZE             = g_pGlobalState->config.barTextSize->value();
      const auto WEIGHT           = g_pGlobalState->config.barTextWeight->value();
      const auto FONT             = g_pGlobalState->config.barTextFont->value();
-@@ -320,7 +339,8 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
+@@ -320,7 +360,8 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
          return;
      }
  
@@ -72,7 +93,7 @@ index c27653d..845803a 100644
      m_pTextTex             = g_pHyprRenderer->renderText(m_szLastTitle, COLOR, scaledSize, false, FONT, maxWidth, WEIGHT.m_value);
  }
  
-@@ -350,6 +370,18 @@ void CHyprBar::renderBarButtons(CBox* barBox, const float scale, const float a)
+@@ -350,6 +391,18 @@ void CHyprBar::renderBarButtons(CBox* barBox, const float scale, const float a)
      const auto visibleCount    = getVisibleButtonCount(BARBUTTONPADDING, BARPADDING, Vector2D{barBox->w, barBox->h}, scale);
      const bool INVALIDATEICONS = m_bButtonsDirty || m_bWindowSizeChanged;
  
@@ -91,7 +112,7 @@ index c27653d..845803a 100644
      int        offset = BARPADDING * scale;
      for (size_t i = 0; i < visibleCount; ++i) {
          auto&      button           = g_pGlobalState->buttons[i];
-@@ -387,6 +419,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
+@@ -387,6 +440,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
      const auto visibleCount = getVisibleButtonCount(BARBUTTONPADDING, BARPADDING, Vector2D{barBox->w, barBox->h}, scale);
      const auto COORDS       = cursorRelativeToBar();
  
@@ -101,7 +122,7 @@ index c27653d..845803a 100644
      int        offset        = BARPADDING * scale;
      float      noScaleOffset = BARPADDING;
  
-@@ -436,6 +471,16 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
+@@ -436,6 +492,16 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
          g_pDecorationPositioner->repositionDeco(this);
      }
  
@@ -118,7 +139,7 @@ index c27653d..845803a 100644
      if (m_hidden || !validMapped(m_pWindow) || !ENABLED)
          return;
  
-@@ -538,6 +583,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
+@@ -538,6 +604,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
      else
          g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
  
@@ -129,7 +150,7 @@ index c27653d..845803a 100644
      // render title
      if (ENABLETITLE && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || !m_pTextTex || m_pTextTex->m_texID == 0 || m_bTitleColorChanged)) {
          m_szLastTitle = PWINDOW->m_title;
-@@ -554,6 +603,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
+@@ -554,6 +624,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
      }
  
      CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
@@ -145,7 +166,7 @@ index c27653d..845803a 100644
      if (ENABLETITLE && m_pTextTex) {
          const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
          const auto BARBUTTONPADDING = g_pGlobalState->config.barButtonPadding->value();
-@@ -649,10 +707,12 @@ void CHyprBar::updateRules() {
+@@ -649,10 +728,12 @@ void CHyprBar::updateRules() {
  
      m_bForcedBarColor   = std::nullopt;
      m_bForcedTitleColor = std::nullopt;
@@ -160,7 +181,7 @@ index c27653d..845803a 100644
      if (PWINDOW->m_ruleApplicator->m_otherProps.props.contains(g_pGlobalState->barColorRuleIdx))
          m_bForcedBarColor = CHyprColor(Config::ParserUtils::parseColor(PWINDOW->m_ruleApplicator->m_otherProps.props.at(g_pGlobalState->barColorRuleIdx)->effect).value_or(0));
      if (PWINDOW->m_ruleApplicator->m_otherProps.props.contains(g_pGlobalState->titleColorRuleIdx))
-@@ -689,3 +749,181 @@ void CHyprBar::damageOnButtonHover() {
+@@ -689,3 +770,186 @@ void CHyprBar::damageOnButtonHover() {
          offset += BARBUTTONPADDING + b.size;
      }
  }
@@ -190,16 +211,21 @@ index c27653d..845803a 100644
 +
 +    const auto XDG      = window->m_xdgSurface.lock();
 +    const auto TOPLEVEL = XDG ? XDG->m_toplevel.lock() : nullptr;
-+    if (TOPLEVEL && PROTO::xdgDecoration) {
-+        for (const auto& [resource, deco] : PROTO::xdgDecoration->m_decorations) {
-+            if (deco && CXDGToplevelResource::fromResource(resource) == TOPLEVEL)
-+                return deco->mostRecentlyRequested == ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
-+        }
++    // Look the live toplevel's own wl_resource up by key. The map's keys are
++    // never dereferenced: one may outlive its toplevel until the client
++    // destroys the decoration object.
++    const SP<CXdgToplevel> TOPLEVELRES = TOPLEVEL ? TOPLEVEL.get()->*platinumMember(SToplevelResource{}) : nullptr;
++    if (TOPLEVELRES && TOPLEVELRES->resource() && PROTO::xdgDecoration) {
++        const auto& DECOS = PROTO::xdgDecoration.get()->*platinumMember(SXdgDecorations{});
++        const auto  IT    = DECOS.find(TOPLEVELRES->resource());
++        if (IT != DECOS.end() && IT->second)
++            return IT->second->mostRecentlyRequested == ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 +    }
 +
++    // m_surf is a strong reference, so comparing it is safe.
 +    const auto SURFACE = window->resource();
 +    if (SURFACE && PROTO::serverDecorationKDE) {
-+        for (const auto& d : PROTO::serverDecorationKDE->m_decos) {
++        for (const auto& d : PROTO::serverDecorationKDE.get()->*platinumMember(SKdeDecorations{})) {
 +            if (d && d->m_surf == SURFACE)
 +                return d->m_mostRecentlyRequested == ORG_KDE_KWIN_SERVER_DECORATION_MODE_CLIENT;
 +        }
@@ -676,10 +702,18 @@ index 0ef19ae..615d6da 100644
  };
  
 diff --git a/main.cpp b/main.cpp
-index ae9c90b..6d6e48f 100644
+index ae9c90b..fdcdc4b 100644
 --- a/main.cpp
 +++ b/main.cpp
-@@ -20,6 +20,7 @@
+@@ -14,12 +14,15 @@
+ #include <hyprland/src/config/lua/bindings/LuaBindingsInternal.hpp>
+ #include <hyprland/src/config/lua/types/LuaConfigColor.hpp>
+ #include <hyprland/src/state/MonitorState.hpp>
++#include <hyprland/src/layout/target/WindowTarget.hpp>
++#include <hyprland/src/render/decorations/DecorationPositioner.hpp>
+ 
+ #include <hyprutils/string/VarList.hpp>
+ 
  #include <algorithm>
  
  #include "barDeco.hpp"
@@ -687,7 +721,7 @@ index ae9c90b..6d6e48f 100644
  #include "globals.hpp"
  
  extern "C" {
-@@ -41,9 +42,40 @@ static void onNewWindow(PHLWINDOW window) {
+@@ -41,9 +44,40 @@ static void onNewWindow(PHLWINDOW window) {
          g_pGlobalState->bars.emplace_back(bar);
          bar->m_self = bar;
          HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(bar));
@@ -697,9 +731,9 @@ index ae9c90b..6d6e48f 100644
 +        g_pGlobalState->frames.emplace_back(frame);
 +        frame->m_self = frame;
 +        HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(frame));
-     }
- }
- 
++    }
++}
++
 +// platinum fork: redraw every bar and frame, for a focus or palette change.
 +// A focus change only damages: renderPass notices a title colour change itself.
 +static void refreshAll(bool palette) {
@@ -717,9 +751,9 @@ index ae9c90b..6d6e48f 100644
 +        if (palette)
 +            g_pDecorationPositioner->repositionDeco(f.get());
 +        f->damageEntire();
-+    }
-+}
-+
+     }
+ }
+ 
 +static int luaRefresh(lua_State* L) {
 +    refreshAll(true);
 +    return 0;
@@ -728,7 +762,7 @@ index ae9c90b..6d6e48f 100644
  static void onPreConfigReload() {
      g_pGlobalState->buttons.clear();
  }
-@@ -64,6 +96,10 @@ static void onUpdateWindowRules(PHLWINDOW window) {
+@@ -64,6 +98,10 @@ static void onUpdateWindowRules(PHLWINDOW window) {
          return;
  
      (*BARIT)->updateRules();
@@ -739,7 +773,7 @@ index ae9c90b..6d6e48f 100644
      window->updateWindowDecos();
  }
  
-@@ -182,6 +218,20 @@ int newLuaButton(lua_State* L) {
+@@ -182,6 +220,20 @@ int newLuaButton(lua_State* L) {
          button.cmd = lua_tostring(L, -1);
      }
  
@@ -760,7 +794,7 @@ index ae9c90b..6d6e48f 100644
      g_pGlobalState->buttons.push_back(std::move(button));
  
      for (auto& b : g_pGlobalState->bars) {
-@@ -233,6 +283,21 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+@@ -233,6 +285,21 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
      g_pGlobalState->config.iconOnHover         = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:icon_on_hover", "Whether to use an icon on hover of the buttons", false);
      g_pGlobalState->config.onDoubleClick       = makeShared<Config::Values::CStringValue>("plugin:hyprbars:on_double_click", "Action to execute on double click of the bar", "");
  
@@ -782,7 +816,7 @@ index ae9c90b..6d6e48f 100644
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barColor);
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.textColor);
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.inactiveButtonColor);
-@@ -254,8 +319,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+@@ -254,8 +321,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
  
      if (Config::mgr()->type() == Config::CONFIG_LEGACY)
          HyprlandAPI::addConfigKeyword(PHANDLE, "plugin:hyprbars:hyprbars-button", onNewButton, Hyprlang::SHandlerOptions{});
@@ -796,11 +830,38 @@ index ae9c90b..6d6e48f 100644
      static auto P4 = Event::bus()->m_events.config.preReload.listen([&] { onPreConfigReload(); });
      static auto P5 = Event::bus()->m_events.config.reloaded.listen([&] { onConfigReloaded(); });
  
-@@ -277,6 +346,7 @@ APICALL EXPORT void PLUGIN_EXIT() {
+@@ -277,6 +348,34 @@ APICALL EXPORT void PLUGIN_EXIT() {
          m->m_scheduledRecalc = true;
  
      g_pHyprRenderer->m_renderPass.removeAllOfType("CBarPassElement");
 +    g_pHyprRenderer->m_renderPass.removeAllOfType("CPlatinumFramePassElement");
++
++    // platinum fork: destroy this plugin's decorations now, on every window.
++    // Hyprland's own removal after PLUGIN_EXIT skips hidden and unmapped
++    // windows (CWindow::updateWindowDecos returns early), which would keep
++    // objects whose code is about to be unloaded. That removal only compares
++    // pointers, so it finds nothing left.
++    for (auto const& w : Desktop::windowState()->windows()) {
++        if (!w)
++            continue;
++        const auto OURS = [](IHyprWindowDecoration* d) { return d && (d->getDisplayName() == "Hyprbar" || d->getDisplayName() == "PlatinumFrame"); };
++        std::erase_if(w->m_decosToRemove, OURS);
++        bool removed = false;
++        for (auto it = w->m_windowDecorations.begin(); it != w->m_windowDecorations.end();) {
++            if (OURS(it->get())) {
++                g_pDecorationPositioner->uncacheDecoration(it->get());
++                it      = w->m_windowDecorations.erase(it);
++                removed = true;
++            } else
++                ++it;
++        }
++        if (removed && w->m_isMapped && !w->isHidden()) {
++            g_pDecorationPositioner->forceRecalcFor(w);
++            w->updateWindowDecos();
++            if (w->layoutTarget())
++                w->layoutTarget()->recalc();
++        }
++    }
  
      Desktop::Rule::windowEffects()->unregisterEffect(g_pGlobalState->barColorRuleIdx);
      Desktop::Rule::windowEffects()->unregisterEffect(g_pGlobalState->titleColorRuleIdx);
