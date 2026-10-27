@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import QtQuick
+import "themes/win98/tab-strip.js" as TabStrip
 
 // A Win98 property sheet: a row of tabs over a raised sheet. Tabs are
 // 18 u tall with 2-u cut corners and overlap by 1 u; the current tab is
@@ -20,6 +21,11 @@ import QtQuick
 // behind the row below; its tabs stretch to the row's width. The row
 // holding the current tab is the one on the sheet. A tab wider than the
 // sheet elides its label.
+//
+// singleRow: the tabs stay in one row instead (Win98's tab control without
+// multi-line). When they do not fit, the row scrolls: an up-down control
+// at its right end moves the first tab shown (`firstTab`), and the current
+// tab always shows (themes/win98/tab-strip.js).
 FocusScope {
     id: root
 
@@ -27,24 +33,35 @@ FocusScope {
     property int currentIndex: 0
     property bool showFocus: false
     property real padUnits: 8
+    property bool singleRow: false
+    property int firstTab: 0
     default property alias content: sheetBody.data
 
     signal selected(int index)
 
     readonly property real u: Win98Tokens.unitFor(QsWindow.window)
-    readonly property real strip: 24 * u + (rows.length - 1) * 20 * u
+    readonly property real strip: singleRow ? 24 * u : 24 * u + (rows.length - 1) * 20 * u
     readonly property Item first: sheetBody.children.length > 0 ? sheetBody.children[0] : null
     readonly property var tabWidths: tabs.map(t => Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(t), false, root.u), root.u) + 14 * u)
     // Each tab's left edge in the row: 2 u in, every tab 1 u over the last,
     // except the one after the current tab.
+    // One row: which tabs show (all of them while they fit).
+    readonly property var line: TabStrip.tabStrip(tabWidths.map(w => Math.round(w / u)), Math.round(width / u), currentIndex, firstTab)
+    readonly property bool scrolled: singleRow && line.mode === "scroll"
     readonly property var tabX: {
         const out = [];
         let x = 2 * u;
-        for (let i = 0; i < tabWidths.length; i++) { out.push(x); x += tabWidths[i] - (i === currentIndex ? 0 : u); }
+        const from = scrolled ? line.first : 0;
+        for (let i = 0; i < tabWidths.length; i++) {
+            if (i < from) { out.push(-1e6); continue; }
+            out.push(x);
+            x += tabWidths[i] - (i === currentIndex ? 0 : u);
+        }
         return out;
     }
+    function shown(i) { return !scrolled || (i >= line.first && i <= line.last); }
     readonly property real rowWidth: tabX.length ? tabX[tabX.length - 1] + tabWidths[tabWidths.length - 1] + 2 * u : 0
-    readonly property bool wraps: width > 0 && rowWidth > width + 0.5
+    readonly property bool wraps: !singleRow && width > 0 && rowWidth > width + 0.5
     // The rows, as lists of tab indexes, the current tab's row last.
     readonly property var rows: {
         if (!wraps) return [tabs.map((t, i) => i)];
@@ -124,12 +141,14 @@ FocusScope {
             readonly property real w: spot.w + (current ? 4 * root.u : 0)
             readonly property real h: (current ? 24 : upper ? 26 : 18) * root.u
             objectName: "tab" + index
+            visible: root.shown(index)
             z: current ? 2 : upper ? 0 : 1
             x: Math.max(0, spot.x - (current ? 2 * root.u : 0))
             y: rowTop + (current ? 0 : 4 * root.u)
-            width: w
+            // A scrolled row never draws a tab under its up-down control.
+            width: root.scrolled ? Math.max(0, Math.min(w, updown.x - x)) : w
             height: h
-
+            clip: root.scrolled && width < w
             // Face, then the edge pixel by pixel: the 2-u corners are cut
             // with one diagonal unit each, as Win98 drew them.
             Rectangle { x: 2 * root.u; y: 0; width: tab.w - 4 * root.u; height: root.u; color: Win98Tokens.hi }
@@ -161,6 +180,38 @@ FocusScope {
             MouseArea {
                 anchors.fill: parent
                 onPressed: { root.forceActiveFocus(); root.selected(tab.index); }
+            }
+        }
+    }
+
+    // The scrolled row's up-down control: two arrow buttons at the right.
+    Row {
+        id: updown
+        visible: root.scrolled
+        x: root.width - width
+        y: 4 * root.u
+        Repeater {
+            model: [-1, 1]
+            Item {
+                id: arrow
+                required property int modelData
+                readonly property bool can: arrow.modelData < 0 ? root.line.left : root.line.right
+                readonly property bool down: area.pressed && area.containsMouse && can
+                objectName: arrow.modelData < 0 ? "tabsLeft" : "tabsRight"
+                width: 16 * root.u
+                height: 16 * root.u
+                Win98Bevel { anchors.fill: parent; variant: arrow.down ? "pressed" : "button" }
+                Win98Icon {
+                    name: arrow.modelData < 0 ? "arrow-left" : "arrow-right"
+                    color: arrow.can ? Win98Tokens.text : Win98Tokens.gray
+                    x: Win98Tokens.snap((arrow.width - width) / 2, root.u) + (arrow.down ? root.u : 0)
+                    y: Win98Tokens.snap((arrow.height - height) / 2, root.u) + (arrow.down ? root.u : 0)
+                }
+                MouseArea {
+                    id: area
+                    anchors.fill: parent
+                    onClicked: if (arrow.can) root.firstTab = root.line.first + arrow.modelData
+                }
             }
         }
     }

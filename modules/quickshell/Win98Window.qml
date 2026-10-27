@@ -22,6 +22,9 @@ FocusScope {
     property bool active: true
     property bool showHelp: false
     property bool showClose: true
+    property bool showMinimize: false
+    // Drawn in the icon's place instead of iconName (a Fleet host icon).
+    property Component iconItem: null
     property bool margins: true
     // Draw a caption button pressed: "", "help" or "close".
     property string showPressed: ""
@@ -35,6 +38,9 @@ FocusScope {
 
     signal closeClicked
     signal helpClicked
+    signal minimizeClicked
+    // A press on the caption icon: Win98 opened the window's control menu.
+    signal iconClicked
 
     readonly property real u: Win98Tokens.unitFor(QsWindow.window)
     readonly property real frame: Win98Tokens.frame * u
@@ -93,14 +99,31 @@ FocusScope {
 
         Win98Icon {
             id: icon
-            visible: root.iconName !== ""
+            visible: root.iconName !== "" && !root.iconItem
             x: 3 * root.u
             y: root.u
             name: root.iconName
             color: root.tokens.captionText
         }
+        Loader {
+            id: iconLoader
+            active: root.iconItem !== null
+            x: 3 * root.u
+            y: root.u
+            width: 16 * root.u
+            height: 16 * root.u
+            sourceComponent: root.iconItem
+        }
+        MouseArea {
+            visible: icon.visible || iconLoader.active
+            x: 3 * root.u
+            y: root.u
+            width: 16 * root.u
+            height: 16 * root.u
+            onPressed: root.iconClicked()
+        }
         Win98Text {
-            x: root.iconName !== "" ? icon.x + icon.width + 3 * root.u : 3 * root.u
+            x: root.iconName !== "" || root.iconItem ? icon.x + 16 * root.u + 3 * root.u : 3 * root.u
             y: 3 * root.u        // 2.5 u, on the unit grid (snap)
             width: Math.max(0, Math.min(implicitWidth, buttons.x - 3 * root.u - x))
             text: root.title
@@ -113,6 +136,14 @@ FocusScope {
             x: caption.width - 2 * root.u - width
             y: 2 * root.u
             spacing: 5 * root.u
+            Win98CaptionButton {
+                visible: root.showMinimize
+                objectName: "captionMinimize"
+                glyph: "minimize"
+                scheme: root.scheme
+                showPressed: root.showPressed === "minimize"
+                onClicked: root.minimizeClicked()
+            }
             Win98CaptionButton {
                 visible: root.showHelp
                 glyph: "help"

@@ -21,8 +21,9 @@ Singleton {
         "battery", "bell-muted", "bell", "bluetooth-off", "bluetooth-on", "brightness", "builder-grey",
         "builder-off-grey", "builder-off", "builder", "builder-unknown", "builder-wait", "builder-warn",
         "check", "chevron", "chromium", "close", "commands", "disk-bad", "disk-muted", "disk-ok",
-        "disk-warn", "display", "doc", "dot", "firefox", "folder", "help", "host", "hourglass", "lock",
-        "logoff", "mark", "mic-failed", "mic-recording", "mic-working", "obs", "oci-danger", "oci-muted",
+        "disk-warn", "display", "doc", "dot", "firefox", "folder", "glance", "help", "host", "hourglass", "lock",
+        "logoff", "mark", "mic-failed",
+        "minimize", "mic-recording", "mic-working", "obs", "oci-danger", "oci-muted",
         "oci-normal", "oci-warning", "ok", "programs", "ring", "run", "scale", "settings", "shutdown",
         "signal", "sun", "sync", "term", "tx", "volume-0", "volume-1", "volume-2", "volume-muted", "warn",
         "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4", "wifi-off", "windows", "zed"

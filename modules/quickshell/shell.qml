@@ -247,7 +247,7 @@ ShellRoot {
         detailShown: root.anyDesktop("fleetDetailShown")
     }
     // Fleet and glance routes go to the focused screen's Desktop; a theme
-    // without them (Win98) ignores them.
+    // without them ignores them (Platinum and Win98 both have them).
     function fleetCall(method) {
         const screen = root.focusedScreen();
         const desktop = screen ? root.desktops[screen.name] : null;

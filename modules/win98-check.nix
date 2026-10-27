@@ -14,6 +14,40 @@
         "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
         "${pkgs.qt6.qtbase}/lib/qt-6/qml"
       ];
+      # A private headless sway session for the real Win98 Desktop (no
+      # output device): the tools and the environment its scripts need.
+      sessionEnv = {
+        nativeBuildInputs = [
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.gnugrep
+          pkgs.gnused
+          pkgs.nodejs
+          # The wrapped sway starts a D-Bus session; the sandbox has none.
+          pkgs.sway-unwrapped
+          pkgs.grim
+          pkgs.wtype
+          pkgs.quickshell
+          # Reports its mapped layer-shell surfaces (switch.sh).
+          pkgs.niri
+          (pkgs.python3.withPackages (p: [ p.pywayland ]))
+        ];
+        # niri and Qt render with GL: Mesa's software rasteriser
+        # (llvmpipe), found through these in the sandbox. Qt's own
+        # software renderer would draw 1.5-scale lines unevenly, which
+        # scales.sh would rightly fail.
+        __EGL_VENDOR_LIBRARY_DIRS = "${pkgs.mesa}/share/glvnd/egl_vendor.d";
+        LIBGL_DRIVERS_PATH = "${pkgs.mesa}/lib/dri";
+        FONTCONFIG_FILE = pkgs.makeFontsConf {
+          fontDirectories = [
+            config.packages.w95fa-grid
+            pkgs.dejavu_fonts
+          ];
+        };
+        QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+        WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
+        WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
+      };
     in
     {
       # The Win98 Desktop itself: its pure policies, then the real
@@ -24,45 +58,16 @@
       # cascade or the picker open and asserts the reserved edge (sway) and
       # the mapped layer surfaces (niri) after each swap, then rolls back a
       # broken Win98; geometry.sh checks real control bounds at small sizes;
-      # scales.sh checks 2-px bevels on outputs at scales 1.5 and 1.
+      # scales.sh checks 2-px bevels on outputs at scales 1.5 and 1. switch.sh
+      # opens each theme's Fleet window or glance space before every swap.
       checks.win98-desktop =
-        pkgs.runCommand "win98-desktop"
-          {
-            nativeBuildInputs = [
-              pkgs.bash
-              pkgs.coreutils
-              pkgs.gnugrep
-              pkgs.gnused
-              pkgs.nodejs
-              # The wrapped sway starts a D-Bus session; the sandbox has none.
-              pkgs.sway-unwrapped
-              pkgs.grim
-              pkgs.wtype
-              pkgs.quickshell
-              # Reports its mapped layer-shell surfaces (switch.sh).
-              pkgs.niri
-              (pkgs.python3.withPackages (p: [ p.pywayland ]))
-            ];
-            # niri and Qt render with GL: Mesa's software rasteriser
-            # (llvmpipe), found through these in the sandbox. Qt's own
-            # software renderer would draw 1.5-scale lines unevenly, which
-            # scales.sh would rightly fail.
-            __EGL_VENDOR_LIBRARY_DIRS = "${pkgs.mesa}/share/glvnd/egl_vendor.d";
-            LIBGL_DRIVERS_PATH = "${pkgs.mesa}/lib/dri";
-            FONTCONFIG_FILE = pkgs.makeFontsConf {
-              fontDirectories = [
-                config.packages.w95fa-grid
-                pkgs.dejavu_fonts
-              ];
-            };
-            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
-            WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
-            WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
-          }
+        pkgs.runCommand "win98-desktop" sessionEnv
           ''
             export HOME=$TMPDIR
             node ${quickshell}/themes/win98/taskbar-plan.test.js ${quickshell}/themes/win98/taskbar-plan.js
             node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js
+            node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
+              ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
             bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
@@ -71,6 +76,18 @@
             bash ${quickshell}/theme-dev/win98/scales.sh ${quickshell} $TMPDIR/scales
             touch $out
           '';
+      # The Win98 Fleet window and glance space in the same session: fleet.sh
+      # (behaviour, motion, every fixture, and the bounds from 360x640 to the
+      # 2560x1600 tablet). Its own attribute, so each build stays short.
+      checks.win98-fleet = pkgs.runCommand "win98-fleet" sessionEnv ''
+        export HOME=$TMPDIR
+        node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
+          ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
+        bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+        export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+        bash ${quickshell}/theme-dev/win98/fleet.sh ${quickshell} $TMPDIR/fleet
+        touch $out
+      '';
       checks.win98-theme =
         pkgs.runCommand "win98-theme"
           {

@@ -81,6 +81,7 @@ Scope {
 
             readonly property var components: ({
                 start: startMenu, tasks: tasksMenu, more: moreMenu, logoff: logoffDialog,
+                glance: glanceMenu, fleetmenu: fleetMenu,
                 bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
                 disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow
             })
@@ -146,7 +147,7 @@ Scope {
                     // A window on its way out (LazyLoader deletes it later)
                     // never loads again: the next menu is the next window's.
                     sourceComponent: host.menuShown && win.alive ? (win.components[host.current] || null) : null
-                    readonly property bool isMenu: host.current === "start" || host.current === "tasks" || host.current === "more"
+                    readonly property bool isMenu: ["start", "tasks", "more", "glance", "fleetmenu"].indexOf(host.current) >= 0
                     readonly property var anchor: host.taskbar.placeOf(host.desktop.anchorId !== "" ? host.desktop.anchorId : host.current)
                     readonly property real w: item ? (item as Item).width : 0
                     readonly property real h: item ? (item as Item).height : 0
@@ -228,8 +229,32 @@ Scope {
                     model: host.desktop.overflowItems(host.taskbar.plan.structure === "compact")
                     onTriggered: function (item) {
                         if (item.action === "window") { MenuState.close(); host.desktop.activateWindow(host.desktop.lane[item.window]); }
+                        else if (item.action === "restorefleet") { MenuState.close(); host.desktop.restoreFleet(); }
                         else host.desktop.openFromOverflow(item.control);
                     }
+                    onClosed: MenuState.close()
+                }
+            }
+            // The Glance button's menu, and the tray Fleet icon's.
+            Component {
+                id: glanceMenu
+                Win98Menu {
+                    objectName: "glanceMenu"
+                    animate: false
+                    bounds: menuBounds
+                    model: host.desktop.glanceMenu
+                    onTriggered: function (item) { host.desktop.runFleetMenu(item); }
+                    onClosed: MenuState.close()
+                }
+            }
+            Component {
+                id: fleetMenu
+                Win98Menu {
+                    objectName: "fleetTrayMenu"
+                    animate: false
+                    bounds: menuBounds
+                    model: host.desktop.fleetMenu
+                    onTriggered: function (item) { host.desktop.runFleetMenu(item); }
                     onClosed: MenuState.close()
                 }
             }

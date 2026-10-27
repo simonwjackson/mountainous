@@ -136,4 +136,55 @@ const h = P.plan(1440, input(huge));
 assert.ok(h.icons, 'titles give way to icons with 22 windows');
 assert.equal(h.taskOut.length, 0);
 eq(P.overflowWindows(huge, [9, 2, 20]), [2, 9, 20]);
+
+// The Fleet tray icon and the two extras (the Glance button, a minimized
+// Fleet window): every width from 1440 u down keeps the plan fitting, the
+// extras on the bar in their own box at the right end of the task area,
+// or (compact, start) in the windows' menu; the Fleet icon overflows
+// after Disks, as bar-plan.js orders it.
+const fleetTray = ['bt', 'wifi', 'vol', 'bri', 'oci', 'disk', 'fleet', 'builder', 'ntf', 'bat'];
+const extrasIn = (windows, extras) => input(windows, {
+    tray: fleetTray.map(id => ({ id, badge: id === 'ntf' ? '3' : '' })),
+    extras: extras.map(id => ({ id, label: id === 'glance' ? 'Glance' : 'Fleet: 1 problem: unzen', bold: id === 'glance' }))
+});
+for (const extras of [['glance'], ['fleet'], ['fleet', 'glance']]) {
+    for (const windows of [[], ideal, many]) {
+        let lastSteps = [];
+        for (let W = 1440; W >= 1; W--) {
+            const q = P.plan(W, extrasIn(windows, extras));
+            if (W >= P.MIN_WIDTH) assert.ok(q.fits, `fits with ${extras} at ${W} u (${q.steps})`);
+            for (const s of lastSteps) assert.ok(q.steps.includes(s), `step ${s} came back with extras at ${W}`);
+            lastSteps = q.steps;
+            eq(q.extras.concat(q.extrasOut).sort(), extras.slice().sort(), `every extra reachable at ${W}`);
+            eq(q.tray.concat(q.trayOut).sort(), fleetTray.slice().sort(), `every tray icon with Fleet at ${W}`);
+            if (q.structure === 'full') {
+                eq(q.extras, extras, 'extras stay on the full bar at ' + W);
+                const x = q.boxes.extras;
+                assert.ok(x && x.x >= q.boxes.tasks.x + q.boxes.tasks.w - 1e-9, 'extras after the windows at ' + W);
+                const end = q.boxes.dict ? q.boxes.dict.x : q.boxes.tray.x - 3;
+                assert.ok(x.x + x.w <= end + 1e-9, `extras before the tray at ${W}: ${JSON.stringify(x)} ${end}`);
+                assert.ok(q.boxes.used <= q.boxes.tasks.w + 1e-9, 'window buttons fit beside the extras at ' + W);
+                for (const id of extras) assert.ok(q.extraW[id] >= 26 && q.extraW[id] <= 160, 'extra width at ' + W);
+            } else {
+                eq(q.extras, [], 'compact moves the extras into its menu at ' + W);
+                if (q.structure === 'compact') assert.ok(q.chevron, 'the compact chevron holds them at ' + W);
+            }
+        }
+    }
+}
+const glanceWide = P.plan(1440, extrasIn(ideal, ['glance']));
+assert.equal(glanceWide.extraW.glance, 3 + 16 + 3 + measure('Glance', true) + 5, 'the Glance button is as wide as its label');
+assert.equal(P.plan(1440, extrasIn(ideal, ['fleet'])).extraW.fleet <= 160, true, 'a long Fleet title is cut at 160 u');
+const iconsOnly = P.plan(boundary(ideal, 'titles') - 40, extrasIn(ideal, ['glance']));
+assert.ok(iconsOnly.steps.includes('titles'));
+assert.equal(iconsOnly.extraW.glance, 26, 'icons only once titles go');
+const withFleet = extrasIn(ideal, []);
+let fleetOut = -1, diskOut = -1, builderOut = -1;
+for (let W = 1440; W >= 1; W--) {
+    const q = P.plan(W, withFleet);
+    if (diskOut < 0 && q.trayOut.includes('disk')) diskOut = W;
+    if (fleetOut < 0 && q.trayOut.includes('fleet')) fleetOut = W;
+    if (builderOut < 0 && q.trayOut.includes('builder')) builderOut = W;
+}
+assert.ok(diskOut > fleetOut && fleetOut > builderOut, `Fleet overflows after Disks, before Remote builds (${diskOut} ${fleetOut} ${builderOut})`);
 console.log('WIN98_TASKBAR_PLAN_TESTS_PASSED');

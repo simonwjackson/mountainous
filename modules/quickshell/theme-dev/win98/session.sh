@@ -6,7 +6,7 @@
 #   w98 set tb-normal; w98 theme light; shot out.png; session_stop
 #
 # Stages the shell with harness.qml as shell.qml, starts sway's headless
-# backend (pixman, no DRM output) at WxH physical px, scale 1.5, in private
+# backend (pixman, no DRM output) at WxH physical px, scale 1.5 (SESSION_SCALE), in private
 # runtime, state, config and cache directories, and starts Quickshell. The
 # live desktop and its Quickshell are never touched.
 #
@@ -33,6 +33,16 @@ done
 for helper in mountainous-brightness hyprctl hypr-scale notify-send wpctl; do
   printf '#!/bin/sh\necho "%s $*" >> "%s/commands.log"\n' "$helper" "$session_work" > "$session_work/bin/$helper"
 done
+# The Fleet views' data: beszel-status answers from the mock's fixtures
+# (beszel-stub.js); the harness picks the fixture (fleet-fixture).
+cat > "$session_work/bin/beszel-status" <<EOF
+#!/bin/sh
+echo "beszel-status \$*" >> "$session_work/beszel.log"
+exec node "$session_work/shell/win98-dev/beszel-stub.js" "\$@"
+EOF
+printf 'fake\n' > "$session_work/fake-token"
+export BESZEL_MCP_TOKEN_FILE="$session_work/fake-token"
+printf '%s\n' "${SESSION_FLEET:-unzen-problem}" > "$XDG_STATE_HOME/fleet-fixture"
 cat > "$session_work/bin/desktop-theme" <<EOF
 #!/bin/sh
 echo "desktop-theme \$*" >> "$session_work/commands.log"
@@ -54,14 +64,14 @@ cp -r "$session_shell"/. "$stage"/
 chmod -R u+w "$stage"
 rm -rf "$stage/win98-dev"
 mkdir -p "$stage/win98-dev"
-cp "$session_here"/states.js "$stage/win98-dev/"
+cp "$session_here"/states.js "$session_here"/beszel-stub.js "$session_here"/fleet-fixtures.json "$stage/win98-dev/"
 cp "$session_here/harness.qml" "$stage/shell.qml"
 [ -n "${SESSION_SCHEMA:-}" ] && cp "$SESSION_SCHEMA" "$stage/notification-schema.js"
 printf '%s\n' "${SESSION_THEME:-win98}" > "$XDG_STATE_HOME/mountainous/theme-name"
 printf 'light\n' > "$XDG_STATE_HOME/mountainous/theme"
 
 cat > "$session_work/sway.conf" <<EOF
-output HEADLESS-1 resolution $session_res scale 1.5 bg #202830 solid_color
+output HEADLESS-1 resolution $session_res scale ${SESSION_SCALE:-1.5} bg #202830 solid_color
 default_border none
 seat seat0 hide_cursor 100000
 EOF
@@ -81,7 +91,7 @@ export SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -1)
 # sway (software GL), because niri reports its layer-shell surfaces
 # (niri msg layers) and sway does not. NIRI_SOCKET is exported for that.
 if [ "${SESSION_COMPOSITOR:-sway}" = niri ]; then
-  scale=1.5
+  scale=${SESSION_SCALE:-1.5}
   mkdir -p "$session_work/niri"
   printf 'output "winit" { scale %s; }\nprefer-no-csd\nhotkey-overlay { skip-at-startup; }\n' "$scale" > "$session_work/niri/config.kdl"
   LIBGL_ALWAYS_SOFTWARE=1 niri -c "$session_work/niri/config.kdl" >"$session_work/niri.log" 2>&1 &
@@ -112,7 +122,35 @@ w98() { qs -p "$stage/shell.qml" ipc call w98 "$@" 2>/dev/null; }
 for _ in $(seq 100); do w98 current >/dev/null && break; sleep 0.2; done
 
 shot() { grim -o HEADLESS-1 "$1"; }
+# Stops the session and everything it started, the helpers' stand-ins
+# (sleep, node) that Quickshell spawned included: every process of this
+# user whose environment names this session's runtime directory. None may
+# outlive the session (they would keep inherited fds, a lock among them).
+# The shell that runs the session and its ancestors are never stopped.
+session_keep() {
+  local p=$BASHPID
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do echo "$p"; p=$(awk '/^PPid:/ {print $2}' "/proc/$p/status" 2>/dev/null); done
+  echo "$$"
+}
+session_procs() {
+  local p keep
+  keep=" $(session_keep | tr '\n' ' ') "
+  for p in /proc/[0-9]*; do
+    [[ "$keep" == *" ${p#/proc/} "* ]] && continue
+    { tr '\0' '\n' < "$p/environ"; } 2>/dev/null | grep -qxF "XDG_RUNTIME_DIR=$session_work/run" && echo "${p#/proc/}"
+  done
+  return 0
+}
 session_stop() {
   for pid in "${session_pids[@]}"; do kill "$pid" 2>/dev/null || true; done
+  local left
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    left=$(session_procs)
+    [ -z "$left" ] && break
+    kill $left 2>/dev/null || true
+    sleep 0.2
+  done
+  left=$(session_procs)
+  [ -n "$left" ] && kill -9 $left 2>/dev/null || true
   wait 2>/dev/null || true
 }

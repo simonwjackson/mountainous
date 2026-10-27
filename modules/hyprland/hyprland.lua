@@ -866,9 +866,10 @@ hl.bind("XF86AudioPrev",         hl.dsp.exec_cmd("playerctl --player=pyxamp prev
 -- browsing. The bars are Quickshell; see modules/bars.nix.
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle"))
 
--- The Fleet window (Beszel's fleet health) and the glance space, the
--- Mac OS 8 focus layer it shares with Disks. Both are Platinum Quickshell
--- surfaces; under another desktop theme the calls do nothing.
+-- The Fleet window (Beszel's fleet health) and the glance space it shares
+-- with Disks. Each desktop theme draws its own (Platinum's windoid and
+-- focus layer; Win98's window above the tray and the Shut Down checker);
+-- a theme without them ignores the calls.
 hl.bind(mod .. " + B", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
 hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle"))
 

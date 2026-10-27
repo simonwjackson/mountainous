@@ -11,6 +11,9 @@ import "builder-gate.js" as Gate
 import "themes/win98/tray-model.js" as Tray
 import "themes/win98/start-model.js" as StartModel
 import "themes/win98/taskbar-plan.js" as Plan
+import "themes/win98/host-icon.js" as HostIcon
+import "beszel-model.js" as FleetModel
+import "glance-registry.js" as GlanceRegistry
 
 // One screen's Windows 98 chrome: one bottom taskbar (Start, a band per
 // page with its window buttons, the dictation band, the tray and the
@@ -70,9 +73,12 @@ Scope {
     // the shell never sets it): { hover, press, focus, tip, flash, drag }.
     property var preview: ({})
 
-    readonly property var menuIds: ["start", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks"]
+    readonly property var menuIds: ["start", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks",
+        "glance", "fleetmenu"]
 
     function canOpen(id) {
+        if (id === "fleet" || id === "fleetmenu") return fleetGlance.present;
+        if (id === "glance") return fleetGlance.glanceShown;
         if (id === "oci") return context.oci.enabled;
         if (id === "disk") return context.storage.enabled;
         if (id === "builder") return context.builderGate.enabled;
@@ -83,10 +89,14 @@ Scope {
 
     function openMenu(id, byKeyboard) {
         if (!desktop.canOpen(id)) return;
+        // The tray's Fleet icon is the Fleet window's control, not a menu.
+        if (id === "fleet") { MenuState.close(); fleetGlance.toggleFleet(); return; }
         desktop.tipId = "";
         desktop.taskbarFocus = "";
         desktop.keyboardOpened = !!byKeyboard;
-        desktop.anchorId = taskbar.overflowed(id) ? "more" : "";
+        desktop.anchorId = taskbar.overflowed(id) ? "more"
+            : id === "fleetmenu" ? (taskbar.overflowed("fleet") ? "more" : "fleet")
+            : id === "glance" && !taskbar.placeOf("glance") ? (taskbar.plan.structure === "start" ? "start" : "more") : "";
         if (id !== "builder") shell.builderKeyboard = false;
         shell.chromeAccessVisible = false;
         MenuState.open(id, screen, -1);
@@ -111,7 +121,7 @@ Scope {
     function openFromOverflow(id) {
         if (!id) { desktop.closeMenu(); return; }
         desktop.openMenu(id, false);
-        desktop.anchorId = taskbar.plan.structure === "start" ? "start" : "more";
+        if (id !== "fleet") desktop.anchorId = taskbar.plan.structure === "start" ? "start" : "more";
     }
     // What the taskbar has no room for, as menu items: the tray controls,
     // then (compact) the windows, then the clock and the battery readouts.
@@ -122,8 +132,17 @@ Scope {
         const label = function (s) { return String(s).replace(/&/g, "&&"); };
         for (const id of p.trayOut) {
             if (id === "bat") continue;
-            out.push({ text: Tray.LABEL[id], icon: desktop.trayIcon(id), action: "open", control: id,
+            out.push({ text: Tray.LABEL[id], icon: id === "fleet" ? "host" : desktop.trayIcon(id), action: "open", control: id,
                 shortcut: label(Tray.overflowValue(id, desktop.trayData)) });
+        }
+        // The Glance button and a minimized Fleet, when the bar has no room
+        // for their band (compact, start): before the windows.
+        if (p.extrasOut.length) {
+            if (out.length) out.push({ separator: true });
+            for (const id of p.extrasOut) {
+                if (id === "glance") out.push({ text: "Glance", icon: "glance", action: "open", control: "glance", shortcut: "Win+W" });
+                else out.push({ text: label(fleetGlance.buttonText), icon: "host", action: "restorefleet" });
+            }
         }
         if (withWindows && p.taskOut.length) {
             if (out.length) out.push({ separator: true });
@@ -242,6 +261,7 @@ Scope {
                 tooltip: Gate.tooltip(gate.sample, gate.pending, gate.actionError),
                 barText: Gate.barText(gate.sample, gate.pending, gate.actionError, "wide") },
             dict: { text: desktop.dictText },
+            fleet: desktop.fleetTray,
             clock: { date: Qt.formatDateTime(c.now, "dddd, MMMM d, yyyy") }
         };
     }
@@ -257,6 +277,7 @@ Scope {
         if (c.brightness.available) out.push("bri");
         if (c.oci.enabled) out.push("oci");
         if (c.storage.enabled) out.push("disk");
+        if (fleetGlance.present) out.push("fleet");
         if (gate.enabled) out.push("builder");
         out.push("ntf");
         if (desktop.battery.present) out.push("bat");
@@ -326,6 +347,7 @@ Scope {
         else if (item.action === "run") context.omniBar.enterRoot();
         else if (item.action === "picker") ThemePicker.open(desktop.screen);
         else if (item.action === "open") desktop.openMenu(item.control, false);
+        else if (item.action === "restorefleet") fleetGlance.restore();
         else if (item.action === "logoff") desktop.openMenu("logoff", false);
     }
     function logOff() {
@@ -355,6 +377,63 @@ Scope {
     }
 
     //------------------------------------------------------------------
+    // Fleet: the tray's Fleet icon, the Fleet window and the glance space
+    // (the same semantics as the Platinum Desktop's)
+    //------------------------------------------------------------------
+    readonly property bool fleetShown: fleetGlance.shown
+    readonly property bool fleetDetailShown: fleetGlance.detailShown
+    function toggleFleet() { fleetGlance.toggleFleet(); }
+    function toggleGlance() { fleetGlance.toggleGlance(); }
+    function showGlance() { fleetGlance.showGlance(); }
+    function hideGlance() { fleetGlance.hideGlance(); }
+    function restoreFleet() { fleetGlance.restore(); }
+    readonly property var fleetGlance: fleetViews
+
+    readonly property var beszel: fleetViews.beszel
+    readonly property var fleetLook: beszel ? HostIcon.fleetLook(beszel.fleet, beszel.stale) : ({ status: "down", tone: "muted" })
+    readonly property string fleetButtonText: fleetViews.buttonText
+    readonly property var fleetTray: {
+        const b = desktop.beszel;
+        if (!b) return { summary: "Fleet", short: "", stale: false, age: "" };
+        const f = b.fleet, n = f.problems.length;
+        return {
+            summary: FleetModel.summaryVariants(f, true, "Fleet: ")[0],
+            short: f.state === "ready" ? (n ? n + (n === 1 ? " problem" : " problems") : "ok") : f.state === "loading" ? "..." : "--",
+            stale: b.stale,
+            age: "Last update " + FleetModel.ago(b.now - b.sampledAt)
+        };
+    }
+    // The taskbar's extra buttons (taskbar-plan.js extras).
+    readonly property var taskExtras: {
+        const out = [];
+        if (fleetViews.windowShown && fleetViews.minimized) out.push({ id: "fleet", label: fleetViews.buttonText });
+        if (fleetViews.glanceShown) out.push({ id: "glance", label: "Glance", bold: true });
+        return out;
+    }
+    // The Glance menu (the Glance button) and the Fleet icon's menu.
+    readonly property var glanceMenu: [
+        { text: "&Hide Glance", bold: true, shortcut: "Win+W", act: "hide" },
+        { text: "&Arrange Accessories", act: "arrange", enabled: GlanceState.hasPlaces },
+        { separator: true },
+        { text: "Desk accessories", enabled: false }
+    ].concat(GlanceRegistry.ids().map(function (id) {
+        return { text: GlanceRegistry.label(id), act: "toggle", arg: id, checked: GlanceState.enabled(id) };
+    }))
+    readonly property var fleetMenu: [
+        { text: fleetViews.windowShown && !fleetViews.minimized ? "&Close Fleet" : "&Open Fleet", bold: true, shortcut: "Win+B", act: "fleet" },
+        { text: fleetViews.glanceShown ? "Hide &Glance" : "Show &Glance", shortcut: "Win+W", act: "glance" }
+    ]
+    function runFleetMenu(item) {
+        MenuState.close();
+        if (!item) return;
+        if (item.act === "hide") fleetViews.hideGlance();
+        else if (item.act === "arrange") GlanceState.cleanUp();
+        else if (item.act === "toggle") GlanceState.setEnabled(item.arg, !GlanceState.enabled(item.arg));
+        else if (item.act === "fleet") fleetViews.toggleFleet();
+        else if (item.act === "glance") fleetViews.toggleGlance();
+    }
+
+    //------------------------------------------------------------------
     // Surfaces
     //------------------------------------------------------------------
     Win98Taskbar {
@@ -371,6 +450,12 @@ Scope {
     }
 
     Win98TipWindow {
+        desktop: desktop
+        taskbar: taskbar
+    }
+
+    Win98FleetGlance {
+        id: fleetViews
         desktop: desktop
         taskbar: taskbar
     }

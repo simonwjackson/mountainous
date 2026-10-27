@@ -1,12 +1,12 @@
 import Quickshell
 import QtQuick
 
-// A caption button: 16 x 14 u, raised, with Marlett's glyph (close "×" or
-// help "?"). Pressed: sunken and the glyph 1 u down and right.
+// A caption button: 16 x 14 u, raised, with Marlett's glyph (close "×",
+// help "?" or minimize "_"). Pressed: sunken and the glyph 1 u down and right.
 Item {
     id: root
 
-    property string glyph: "close"     // "close" or "help"
+    property string glyph: "close"     // "close", "help" or "minimize"
     property bool showPressed: false
     property var scheme: null
 

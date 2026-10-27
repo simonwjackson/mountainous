@@ -47,11 +47,11 @@ Item {
     readonly property real iconGap: (big ? 6 : 3) * u
     readonly property real leftPad: (big ? 4 : 2) * u
     readonly property bool anySub: items.some(it => it && !it.separator && it.submenu && it.submenu.length > 0)
-    readonly property real textW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && !it.separator).map(it => Win98Tokens.plainText(it.text || "")), false, root.u), root.u)
+    readonly property real textW: Win98Tokens.ceilU(Math.max(0, ...items.filter(it => it && !it.separator).map(it => Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), !!it.bold, root.u))), root.u)
     readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(items.filter(it => it && it.shortcut).map(it => it.shortcut), false, root.u), root.u)
     // The widest label and its shortcut, with the 12-u gap between them.
     readonly property real pairW: items.reduce((w, it) => it && !it.separator
-        ? Math.max(w, Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), false, root.u), root.u)
+        ? Math.max(w, Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(it.text || ""), !!it.bold, root.u), root.u)
             + (it.shortcut ? 12 * u + Win98Tokens.ceilU(Win98Tokens.textWidth(it.shortcut, false, root.u), root.u) : 0)) : w, 0)
     readonly property real fixedW: 2 * pad + band + leftPad + iconCol + iconGap + 14 * u + 16 * u
     readonly property real pairCol: maxWidth > 0 && widthUnits <= 0
@@ -242,7 +242,8 @@ Item {
                         }
                         Win98Icon {
                             visible: !row.separator && !row.modelData.icon && row.modelData.checked === true
-                            name: "check"
+                            // A radio item (one of a group) draws the dot.
+                            name: !row.separator && row.modelData.radio === true ? "dot" : "check"
                             color: row.usable ? row.ink : Win98Tokens.gray
                             x: Win98Tokens.snap((iconCell.width - width) / 2, root.u)
                             y: Win98Tokens.snap((iconCell.height - height) / 2, root.u)
@@ -258,6 +259,8 @@ Item {
                         y: Win98Tokens.snap((row.height - height) / 2, root.u)
                         width: Math.max(0, Math.min(implicitWidth, row.keyRight - (row.keyWidth > 0 ? row.keyWidth + 12 * root.u : 0) - 14 * root.u - x))
                         text: row.separator ? "" : (row.modelData.text || "")
+                        // The default item (a double-click runs it) is bold.
+                        bold: !row.separator && row.modelData.bold === true
                         color: row.usable ? row.ink : Win98Tokens.gray
                         disabledLook: !row.usable && !row.on
                     }

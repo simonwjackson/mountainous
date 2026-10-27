@@ -191,6 +191,15 @@
         assert !(builtins.hasAttr (prefix + "themes/win98/dev/Win98Gallery.qml") files);
         assert !(builtins.hasAttr (prefix + "themes/win98/taskbar-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/win98/harness.qml") files);
+        # Win98's Fleet window and glance space, their policies and icons;
+        # never their tests, the fixtures or the beszel-status stand-in.
+        assert builtins.hasAttr (prefix + "Win98FleetView.qml") files;
+        assert builtins.hasAttr (prefix + "Win98GlanceSpace.qml") files;
+        assert builtins.hasAttr (prefix + "themes/win98/fleet-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/host-icon.js") files;
+        assert builtins.hasAttr (prefix + "themes/win98/icons/glance.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/win98/fleet-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/win98/fleet-fixtures.json") files);
         # Platinum phase 3: the strip, the cascading menus and their policies,
         # and the theme-neutral hide/show and running-app models; never tests.
         assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;

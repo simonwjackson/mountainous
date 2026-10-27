@@ -85,7 +85,22 @@ Singleton {
             ok: dark ? "#7fd07f" : "#008000",
             badge: dark ? "#d03030" : "#c00000",
             focus: dark ? "#ececec" : "#000000",
-            ink: dark ? "#9a9a9a" : "#000000"
+            ink: dark ? "#9a9a9a" : "#000000",
+            // The Fleet views (the approved mock pass 2, pass2.css): System
+            // Monitor's lines and grid, Resource Meter's blocks, the drive pie.
+            chartCpu: dark ? "#6ad46a" : "#008000",
+            chartMem: dark ? "#7aa2ff" : "#0000ff",
+            chartDisk: dark ? "#d080d0" : "#800080",
+            chartNet: dark ? "#d0c060" : "#808000",
+            chartGrid: dark ? "#3a3a3a" : "#c0c0c0",
+            meter: dark ? "#5f7fff" : "#000080",
+            meterWarn: dark ? "#e0b060" : "#808000",
+            meterDanger: dark ? "#ff6060" : "#ff0000",
+            meterStale: dark ? "#6a6a6a" : "#808080",
+            pieUsed: dark ? "#4060ff" : "#0000ff",
+            pieUsedSide: dark ? "#2030a0" : "#000080",
+            pieFree: dark ? "#e040e0" : "#ff00ff",
+            pieFreeSide: dark ? "#802080" : "#800080"
         };
     }
     readonly property var current: palette(dark)
@@ -118,6 +133,19 @@ Singleton {
     readonly property color badge: current.badge
     readonly property color focus: current.focus
     readonly property color ink: current.ink
+    readonly property color chartCpu: current.chartCpu
+    readonly property color chartMem: current.chartMem
+    readonly property color chartDisk: current.chartDisk
+    readonly property color chartNet: current.chartNet
+    readonly property color chartGrid: current.chartGrid
+    readonly property color meter: current.meter
+    readonly property color meterWarn: current.meterWarn
+    readonly property color meterDanger: current.meterDanger
+    readonly property color meterStale: current.meterStale
+    readonly property color pieUsed: current.pieUsed
+    readonly property color pieUsedSide: current.pieUsedSide
+    readonly property color pieFree: current.pieFree
+    readonly property color pieFreeSide: current.pieFreeSide
 
     function tone(name) {
         if (name === "danger") return root.danger;

@@ -2,7 +2,8 @@
 # Platinum <-> Win98, ten round trips each way, through the real
 # ThemeDesktop and theme-name file, then a broken Win98 that must roll
 # back. Before every swap a transient surface is open: a Start cascade, a
-# tray window or menu, or the picker (rotating). After each swap it asserts:
+# tray window or menu, or the picker (rotating), over the theme's Fleet
+# window or glance space (alternating). After each swap it asserts:
 #
 # Part 1, a private headless sway session (sway reports the usable area):
 #   - the reserved edge: the workspace rectangle starts 28 px down for
@@ -15,7 +16,10 @@
 # not: the exact set of mapped layer surfaces after each swap: the new
 # theme's bars, plus the picker when it was open (the picker model is
 # shared across a swap by contract), and nothing else: no leaked menu,
-# cascade, tooltip or old bar. The same after the broken Win98's rollback.
+# cascade, tooltip, old bar, Fleet window (mountainous-fleet) or glance
+# space (mountainous-glance). Before every swap the old theme's Fleet window
+# or glance space is open and mapped. The same after the broken Win98's
+# rollback.
 #
 # checks.win98-desktop runs it; by hand:
 #
@@ -38,6 +42,15 @@ ok() { echo "PASS $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL $1"; fail=1; }
 expect() { if [ "$2" = "$3" ]; then ok "$1 ($2)"; else bad "$1: got '$2', want '$3'"; fi; }
 settle() { for _ in $(seq 40); do w98 current | grep -q '"settled":true' && break; sleep 0.1; done; sleep 0.5; }
+
+# The Fleet view open before a swap, by round: the Fleet window on even
+# rounds, the glance space on odd ones (each theme's own, through the
+# Desktop methods the fleet and glance IPC call). Neither may survive the
+# swap: the old Desktop's views go with it, and GlanceState forgets them.
+open_fleet() {   # open_fleet <round>
+  if [ $(( $1 % 2 )) = 0 ]; then w98 fleetCall toggleFleet >/dev/null; echo fleet; else w98 fleetCall toggleGlance >/dev/null; echo glance; fi
+  sleep 0.6
+}
 
 # The transient surface open before a swap, by round. Win98 uses the
 # harness states; Platinum is opened through the shared MenuState and
@@ -94,13 +107,17 @@ w98 set tb-normal >/dev/null
 name platinum
 assert_zone platinum 0
 for round in 1 2 3 4 5 6 7 8 9 10; do
-  echo "round $round: from platinum with a $(open_transient platinum "$round") open"
+  f=$(open_fleet "$round")
+  echo "round $round: from platinum with its $f and a $(open_transient platinum "$round") open"
   name win98
   assert_zone win98 "$round"
+  expect "round $round win98: no Fleet view carried over" "$(w98 fleet | python3 -c 'import json,sys; f=json.load(sys.stdin); print(f["glanceScreen"] + "|" + f["fleetScreen"])')" "|"
   w98 closeAll >/dev/null
-  echo "round $round: from win98 with a $(open_transient win98 "$round") open"
+  f=$(open_fleet "$round")
+  echo "round $round: from win98 with its $f and a $(open_transient win98 "$round") open"
   name platinum
   assert_zone platinum "$round"
+  expect "round $round platinum: no Fleet view carried over" "$(w98 fleet | python3 -c 'import json,sys; f=json.load(sys.stdin); print(f["glanceScreen"] + "|" + f["fleetScreen"])')" "|"
   w98 closeAll >/dev/null
 done
 if grep -E "WARN scene|TypeError|ReferenceError|Failed to load" "$work/run1/qs.log" >&2; then bad "QML warnings in 20 switches"; else ok "no QML warnings in 20 switches"; fi
@@ -131,12 +148,16 @@ name platinum
 wait_loaded platinum || bad "platinum did not load under niri"
 assert_layers "niri start platinum" platinum 0
 for round in 1 2 3 4 5 6 7 8 9 10; do
+  f=$(open_fleet "$round")
+  [[ " $(layers) " == *" mountainous-$f "* ]] && ok "niri round $round: Platinum's $f is mapped before the swap" || bad "niri round $round: no Platinum $f before the swap ($(layers))"
   what=$(open_transient platinum "$round")
   [ "$what" = picker ] && p=1 || p=0
   name win98
   wait_loaded win98 || bad "niri round $round: win98 did not load"
   assert_layers "niri round $round platinum -> win98 (a $what was open)" win98 "$p"
   w98 closeAll >/dev/null; sleep 0.3
+  f=$(open_fleet "$round")
+  [[ " $(layers) " == *" mountainous-$f "* ]] && ok "niri round $round: Win98's $f is mapped before the swap" || bad "niri round $round: no Win98 $f before the swap ($(layers))"
   what=$(open_transient win98 "$round")
   [ "$what" = picker ] && p=1 || p=0
   # The transient is really mapped before the swap.

@@ -65,6 +65,7 @@ PanelWindow {
         tray: bar.desktop.trayIds.map(function (id) { return { id: id, badge: bar.desktop.badge(id) }; }),
         clock: bar.desktop.clock,
         dict: { visible: dict.barVisible, failed: bar.dictFailed, canRetry: dict.canRetry, text: bar.desktop.dictText },
+        extras: bar.desktop.taskExtras,
         measure: bar.m
     })
 
@@ -90,6 +91,9 @@ PanelWindow {
     // ---- interaction state, with the preview override for state sheets
     readonly property var preview: bar.desktop.preview || ({})
     property string hoverId: ""
+    // The Glance button's last press, for its double-click (the button is
+    // rebuilt whenever the plan changes, so the time lives here).
+    property double glancePressAt: 0
     property string pressId: ""
     function hovered(id) { return preview.hover === id || (bar.hoverId === id && !preview.hover); }
     function pressed(id) { return preview.press === id || bar.pressId === id; }
@@ -167,7 +171,7 @@ PanelWindow {
             x: start.x + start.width
             y: bar.units(4)
             width: Math.max(0, (trayBox.visible ? trayBox.x - bar.units(3) : bar.width - bar.units(2))
-                - (dictBand.visible ? dictBand.width : 0) - x)
+                - (dictBand.visible ? dictBand.width : 0) - (extrasBand.visible ? extrasBand.width : 0) - x)
             height: bar.units(22)
             clip: true
 
@@ -252,6 +256,95 @@ PanelWindow {
                     cid: "tasks"
                     visible: bar.plan.tasksChevron
                     Component.onCompleted: bar.register("tasks", tasksChevron)
+                }
+            }
+        }
+
+        // ---- extras: a minimized Fleet window's button and the Glance
+        // button, in their own band at the right end of the task area.
+        Item {
+            id: extrasBand
+            visible: bar.plan.extras.length > 0
+            x: (dictBand.visible ? dictBand.x : trayBox.visible ? trayBox.x - bar.units(3) : bar.width - bar.units(2)) - width
+            y: bar.units(4)
+            height: bar.units(22)
+            width: bar.plan.boxes.extras ? bar.units(bar.plan.boxes.extras.w) : 0
+            Etch { x: bar.units(2) }
+            Grip { x: bar.units(7) }
+            Row {
+                x: bar.units(12)
+                spacing: bar.units(3)
+                Repeater {
+                    model: bar.plan.extras
+                    Loader {
+                        required property string modelData
+                        sourceComponent: modelData === "glance" ? glanceButton : fleetButton
+                    }
+                }
+            }
+        }
+        Component {
+            id: glanceButton
+            TaskButton {
+                id: gb
+                objectName: "glanceButton"
+                width: bar.units(bar.plan.extraW.glance || 26)
+                // Pressed and lit while the space shows, as the active
+                // window's button is.
+                down: true
+                dither: true
+                bold: true
+                iconName: "glance"
+                label: bar.plan.icons || bar.plan.steps.indexOf("titles") >= 0 ? "" : "Glance"
+                focusRing: bar.focused("glance")
+                Component.onCompleted: bar.register("glance", gb)
+                Component.onDestruction: if (bar.places.glance === gb) bar.register("glance", null)
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onEntered: bar.hoverIn("glance")
+                    onExited: bar.hoverOut("glance")
+                    // A click opens the Glance menu; a double-click runs its
+                    // default item (Hide Glance), as Win98 ran the bold item.
+                    onPressed: function (mouse) {
+                        bar.desktop.tipId = "";
+                        const now = Date.now();
+                        if (mouse.button === Qt.LeftButton && now - bar.glancePressAt < 400) {
+                            bar.glancePressAt = 0;
+                            bar.desktop.closeMenu();
+                            bar.desktop.hideGlance();
+                            return;
+                        }
+                        bar.glancePressAt = mouse.button === Qt.LeftButton ? now : 0;
+                        if (mouse.button === Qt.RightButton) bar.desktop.openMenu("glance", false);
+                        else bar.desktop.press("glance");
+                    }
+                }
+            }
+        }
+        Component {
+            id: fleetButton
+            TaskButton {
+                id: fb
+                objectName: "fleetButton"
+                width: bar.units(bar.plan.extraW.fleet || 26)
+                down: bar.pressed("fleetbutton")
+                hostLook: bar.desktop.fleetLook
+                label: bar.plan.icons || bar.plan.steps.indexOf("titles") >= 0 ? "" : bar.desktop.fleetButtonText
+                labelColor: Win98Tokens.tone(bar.desktop.fleetLook.tone === "muted" ? "normal" : bar.desktop.fleetLook.tone)
+                focusRing: bar.focused("fleetbutton")
+                Component.onCompleted: bar.register("fleetbutton", fb)
+                Component.onDestruction: if (bar.places.fleetbutton === fb) bar.register("fleetbutton", null)
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: bar.hoverIn("fleetbutton")
+                    onExited: bar.hoverOut("fleetbutton")
+                    onPressed: { bar.pressId = "fleetbutton"; bar.desktop.tipId = ""; }
+                    onReleased: bar.pressId = ""
+                    onCanceled: bar.pressId = ""
+                    onClicked: bar.desktop.restoreFleet()
                 }
             }
         }
@@ -418,7 +511,10 @@ PanelWindow {
         property bool focusRing: false
         property string iconName: ""
         property var toplevel: null
+        // A Fleet host icon instead ({ status, tone }).
+        property var hostLook: null
         property string label: ""
+        property color labelColor: Win98Tokens.text
         property bool bold: false
         property real padLeft: 3
         property real padRight: 4
@@ -441,12 +537,18 @@ PanelWindow {
                     name: tb.iconName
                     y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
+                Win98HostIcon {
+                    visible: tb.hostLook !== null
+                    hostStatus: tb.hostLook ? tb.hostLook.status : "up"
+                    tone: tb.hostLook ? tb.hostLook.tone : "normal"
+                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
+                }
                 IconImage {
-                    visible: tb.iconName === "" && source !== ""
+                    visible: tb.iconName === "" && tb.hostLook === null && source !== ""
                     y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                     implicitSize: bar.units(16)
                     source: {
-                        if (tb.iconName !== "" || !tb.toplevel) return "";
+                        if (tb.iconName !== "" || tb.hostLook !== null || !tb.toplevel) return "";
                         const id = bar.desktop.appIdOf(tb.toplevel);
                         if (id === "") return "";
                         const e = DesktopEntries.heuristicLookup(id);
@@ -461,7 +563,7 @@ PanelWindow {
                 text: tb.label
                 accessMarks: false
                 bold: tb.bold
-                color: tb.lit ? Win98Tokens.selectionText : Win98Tokens.text
+                color: tb.lit ? Win98Tokens.selectionText : tb.labelColor
             }
         }
         Win98FocusRect {
@@ -552,8 +654,10 @@ PanelWindow {
             // undo the move by pulling focus to the old page.
             onClicked: function (mouse) {
                 if (grip.dragging) { grip.dragging = false; return; }
-                if (mouse.button === Qt.MiddleButton) bar.desktop.closeWindow(wb.t);
-                else bar.desktop.activateWindow(wb.t);
+                if (mouse.button === Qt.MiddleButton) { bar.desktop.closeWindow(wb.t); return; }
+                // Over the glance space a window button dismisses it, then switches.
+                bar.desktop.hideGlance();
+                bar.desktop.activateWindow(wb.t);
             }
             onCanceled: {
                 grip.dragging = false;
@@ -616,8 +720,15 @@ PanelWindow {
             visible: ti.open || ti.latched || bar.hovered(ti.tid)
             variant: ti.open || ti.latched ? "thinSunken" : "thinRaised"
         }
+        Win98HostIcon {
+            visible: ti.tid === "fleet"
+            hostStatus: bar.desktop.fleetLook.status
+            tone: bar.desktop.fleetLook.tone
+            x: bar.units(2); y: bar.units(2)
+        }
         Win98Icon {
-            name: bar.desktop.trayIcon(ti.tid)
+            visible: ti.tid !== "fleet"
+            name: ti.tid === "fleet" ? "" : bar.desktop.trayIcon(ti.tid)
             level: ti.tid === "bat" ? Math.max(0, Math.min(1, bar.desktop.battery.percent / 100)) : undefined
             levelColor: Tray.batteryColor(bar.desktop.batteryRule.tone)
             x: bar.units(2); y: bar.units(2)
@@ -652,12 +763,16 @@ PanelWindow {
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
+            // The Fleet icon's right button opens its menu (Win98's tray
+            // context menu): Open Fleet, Show Glance.
+            acceptedButtons: ti.tid === "fleet" ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
             onEntered: bar.hoverIn(ti.tid)
             onExited: bar.hoverOut(ti.tid)
-            onPressed: {
+            onPressed: function (mouse) {
                 bar.pressId = ti.tid;
                 bar.desktop.tipId = "";
-                if (ti.tid !== "bat") bar.desktop.press(ti.tid);
+                if (ti.tid === "fleet" && mouse.button === Qt.RightButton) bar.desktop.openMenu("fleetmenu", false);
+                else if (ti.tid !== "bat") bar.desktop.press(ti.tid);
             }
             onReleased: bar.pressId = ""
             onCanceled: bar.pressId = ""

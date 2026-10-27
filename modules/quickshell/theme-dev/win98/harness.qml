@@ -205,6 +205,47 @@ ShellRoot {
     BuilderPanel { id: builderPanel; gate: gate; shown: MenuState.current === "builder"; openedByKeyboard: shellStub.builderKeyboard }
     NotificationCentre { id: centre; service: notes; shown: MenuState.current === "ntf" }
 
+    // The Fleet views' data: the production Beszel owner over the
+    // beszel-status stand-in (beszel-stub.js), polling as shell.qml has it.
+    Beszel {
+        id: fleetData
+        shown: !!root.desktop && root.desktop.fleetShown === true
+        detailShown: !!root.desktop && root.desktop.fleetDetailShown === true
+    }
+    FileView {
+        id: fleetFixtureFile
+        path: Quickshell.env("XDG_STATE_HOME") + "/fleet-fixture"
+        printErrors: false
+    }
+    // A fixture: written for the stand-in, then a refresh. Loading has no
+    // answer; rakku-down and error have no sample; stale is a good sample
+    // followed by a failed refresh, three minutes later.
+    property string fleetFixture: ""
+    function setFleet(name) {
+        root.fleetFixture = name;
+        fleetFixtureFile.setText(name + "\n");
+        if (name === "loading") { fleetData.systems = null; fleetData.sampleState = "loading"; fleetData.details = ({}); return; }
+        if (name === "rakku-down" || name === "error") { fleetData.systems = null; fleetData.details = ({}); }
+        fleetLater.restart();
+    }
+    Timer {
+        id: fleetLater
+        interval: 150
+        onTriggered: {
+            fleetData.refresh();
+            fleetData.refreshDetail();
+            if (root.fleetFixture === "stale") staleLater.restart();
+        }
+    }
+    Timer {
+        id: staleLater
+        interval: 800
+        onTriggered: {
+            fleetFixtureFile.setText("stale-fail\n");
+            Qt.callLater(function () { fleetData.refresh(); fleetData.sampledAt = Date.now() - 192000; });
+        }
+    }
+
     QtObject {
         id: context
         readonly property var shell: shellStub
@@ -220,6 +261,7 @@ ShellRoot {
         readonly property var dictation: dict
         readonly property var omniBar: omni
         readonly property var builderGate: gate
+        readonly property var beszel: fleetData
         readonly property var frontWindow: null
         readonly property date now: new Date(2026, 9, 22, 16, 51)
     }
@@ -471,6 +513,77 @@ ShellRoot {
         function volume(): string { return sound.defaultSink ? String(Math.round(sound.defaultSink.audio.volume * 100)) : "-"; }
         function picker(): string { return ThemePicker.visible ? "open" : "closed"; }
         function commands(): string { return root.log.join("|"); }
+        // The Fleet views: a fixture, a Desktop method, a view setting, and
+        // where everything stands.
+        function fleetFixture(name: string): string { root.setFleet(name); return name; }
+        function fleetCall(method: string): string {
+            const d = root.desktop;
+            if (!d || typeof d[method] !== "function") return "no " + method;
+            d[method]();
+            return "ok";
+        }
+        function fleetSet(key: string, value: string): string {
+            const d = root.desktop, c = d && d.fleetGlance ? d.fleetGlance : null;
+            if (key === "expanded" && value !== "") { fleetData.selected = value; fleetData.expanded = value; }
+            else if (key === "selected" || key === "expanded" || key === "sort") fleetData[key] = value;
+            else if (c && key === "view") c.view = value;
+            else if (c && key === "tab") c.tab = Number(value);
+            else if (c && key === "minimized") c.minimized = value === "true";
+            else if (key === "reduced") GlanceState.reducedMotion = value === "true";
+            else if (key === "enabled") { const kv = value.split(":"); GlanceState.setEnabled(kv[0], kv[1] === "true"); }
+            else if (key === "place") { const kv = value.split(":"); GlanceState.place(kv[0], Number(kv[1]), Number(kv[2])); }
+            else if (key === "cleanup") GlanceState.cleanUp();
+            else return "unknown " + key;
+            return "ok";
+        }
+        function seek(ms: int, direction: string): string { GlanceState.hold(ms, direction); return "ok"; }
+        function fleet(): string {
+            const d = root.desktop;
+            const c = d && d.fleetGlance ? d.fleetGlance.debug() : null;
+            return JSON.stringify({
+                state: fleetData.state, tone: fleetData.fleet.tone, hosts: fleetData.fleet.hosts.length,
+                problems: fleetData.fleet.problems.map(function (v) { return v.name; }), stale: fleetData.stale,
+                selected: fleetData.selected, expanded: fleetData.expanded, sort: fleetData.sort,
+                details: Object.keys(fleetData.details), shown: fleetData.shown, detailShown: fleetData.detailShown,
+                open: MenuState.current, tip: d ? d.tipId : "", tooltip: d && d.tipId ? d.tooltip(d.tipId) : "",
+                glanceScreen: GlanceState.glanceScreen ? GlanceState.glanceScreen.name : "", fleetScreen: GlanceState.fleetScreen ? GlanceState.fleetScreen.name : "",
+                places: GlanceState.saved.places, enabled: GlanceState.saved.enabled,
+                views: c, taskbar: d && d.debugPlaces ? d.debugPlaces() : null, plan: d && d.taskbarPlan ? d.taskbarPlan() : null
+            });
+        }
+        // The centre of an item by objectName in a Fleet surface, in screen
+        // logical px: "<window|glance|menu> <name>".
+        function fleetItem(where: string, wanted: string): string {
+            let name = wanted;
+            const d = root.desktop;
+            if (!d || !d.fleetGlance) return "";
+            const host = where === "window" ? d.fleetGlance.fleetWindow : where === "glance" ? d.fleetGlance.glanceSpace : null;
+            const top = where === "menu" ? (d.openItem || null) : host ? host.contentItem : null;
+            const find = function (item) {
+                if (!item) return null;
+                if (item.objectName === name && item.visible !== false) return item;
+                for (let i = 0; i < item.children.length; i++) { const f = find(item.children[i]); if (f) return f; }
+                return null;
+            };
+            // "menu:<row>": a row of the surface's own open menu (View, the
+            // control menu).
+            const inMenu = name.indexOf("menu:") === 0;
+            const rowText = inMenu ? name.slice(5) : name;
+            if (inMenu) name = "fleetMenu";
+            const it = where === "menu" ? top : find(top);
+            if (!it) return "";
+            if (where === "menu" || inMenu) {
+                name = rowText;
+                const panel = it.panelAt ? it.panelAt(0) : null;
+                if (!panel) return "";
+                const i = panel.items.findIndex(function (x) { return x.text && Win98Tokens.plainText(x.text) === name; });
+                if (i < 0) return "";
+                const p = panel.mapToItem(null, panel.rowX(i) + panel.columnWidth / 2, panel.rowY(i) + panel.rowH / 2);
+                return Math.round(p.x) + " " + Math.round(p.y);
+            }
+            const p = it.mapToItem(null, it.width / 2, it.height / 2);
+            return Math.round(p.x) + " " + Math.round(p.y);
+        }
         function places(): string {
             const d = root.desktop;
             return d ? JSON.stringify(d.debugPlaces()) : "{}";

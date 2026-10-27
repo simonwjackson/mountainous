@@ -8,6 +8,7 @@
 // scrolls; when the width runs out the space scrolls vertically.
 
 var GP = {TOP: 6, RIGHT: 8, BOTTOM: 8, LEFT: 8, GAP: 12, GAP_MIN: 6, SB: 15, TIGHT_W: 600, TIGHT_H: 400};
+var GP0 = GP;
 
 /**
  * @param {number} W the space's width
@@ -15,8 +16,15 @@ var GP = {TOP: 6, RIGHT: 8, BOTTOM: 8, LEFT: 8, GAP: 12, GAP_MIN: 6, SB: 15, TIG
  * @param {{id: string, w: number, h: number}[]} items in priority order, at
  *   their rest size (no host open, not shaded), so opening a host or using
  *   WindowShade never moves the other widgets.
+ * @param {{gp?: object, from?: 'top'|'bottom'}} opt a theme's own margins
+ *   and gaps (GP's fields, in its own unit), and the corner Clean Up starts
+ *   from: 'top' (the top right, Platinum) or 'bottom' (the bottom right,
+ *   mirrored: up a column, then the next column to the left; Win98, whose
+ *   transient windows rise from the taskbar). While the space scrolls,
+ *   'bottom' measures from the bottom of the content.
  */
 function plan(W, H, items, opt) {
+    const GP = (opt && opt.gp) || GP0;
     const sb = opt && opt.sb ? GP.SB : 0;
     const availW = Math.max(0, W - GP.LEFT - GP.RIGHT - sb);
     const availH = Math.max(0, H - GP.TOP - GP.BOTTOM);
@@ -51,11 +59,14 @@ function plan(W, H, items, opt) {
     let contentH = 0;
     for (const c of cols) contentH = Math.max(contentH, c.h);
     const scroll = contentH > availH;
-    if (scroll && !(opt && opt.sb)) return plan(W, H, items, {sb: true});
+    if (scroll && !(opt && opt.sb)) return plan(W, H, items, Object.assign({}, opt || {}, {sb: true}));
+    const bottom = !!opt && opt.from === "bottom";
+    const totalH = scroll ? contentH + GP.TOP + GP.BOTTOM : H;
     const rects = {};
     let xr = W - GP.RIGHT - sb;
     for (const c of cols) {
-        for (const i of c.items) rects[i.id] = {x: xr - i.w, y: GP.TOP + i.y, w: i.w, h: i.h};
+        for (const i of c.items) rects[i.id] = {x: xr - i.w,
+            y: bottom ? totalH - GP.BOTTOM - i.y - i.h : GP.TOP + i.y, w: i.w, h: i.h};
         xr -= c.w + gap;
     }
     return {rects: rects, cols: cols.length, gap: gap, scroll: scroll, sb: sb,

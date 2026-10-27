@@ -7,14 +7,14 @@
 // window here.
 
 // The order icons sit in, left to right; the clock follows.
-var ORDER = ["dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "bat"];
+var ORDER = ["dict", "bt", "wifi", "vol", "bri", "oci", "disk", "fleet", "builder", "ntf", "bat"];
 
 // The Super+O chord's keys (hyprland.lua topbar-access submap).
-var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", builder: "R" };
+var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R" };
 
 var LABEL = {
     start: "Start", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
-    oci: "OCI egress", disk: "Server storage", builder: "Remote builds", ntf: "Notifications",
+    oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
     bat: "Battery", clock: "Date/Time", more: "More icons", tasks: "More windows"
 };
 
@@ -119,6 +119,9 @@ function tooltip(id, d) {
     if (id === "bri") return "Brightness " + d.bri.level + "%";
     if (id === "clock") return d.clock.date;
     if (id === "dict") return d.dict.text;
+    // The fleet's summary with the problem hosts named (beszel-model.js
+    // summaryVariants), and how old it is when Beszel stopped answering.
+    if (id === "fleet") return d.fleet.summary + (d.fleet.stale ? "\n" + d.fleet.age : "");
     if (id === "builder") {
         return d.builder.tooltip.map(dots).filter(function (l) { return !/^Click /.test(l); }).join("\n");
     }
@@ -134,6 +137,7 @@ function overflowValue(id, d) {
     if (id === "bri") return d.bri.level + "%";
     if (id === "oci") return d.oci.state === "ready" ? d.oci.rows.map(function (r) { return r.value; }).join(" ") : dots(d.oci.stateText);
     if (id === "disk") return dots(d.disk.label).replace(/^Disks /, "");
+    if (id === "fleet") return d.fleet.short;
     if (id === "builder") return dots(d.builder.barText);
     if (id === "ntf") return d.ntf.view === "ready" ? notificationCount(d.ntf.count) : d.ntf.view === "offline" ? "offline" : "";
     if (id === "dict") return d.dict.text;

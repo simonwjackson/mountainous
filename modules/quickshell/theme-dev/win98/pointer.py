@@ -8,6 +8,8 @@ reads commands from a FIFO, one per line:
     move X Y        absolute position in the output's logical px
     down / up       the left button
     middle          a middle click
+    right           a right click
+    wheel N         N wheel steps (negative: up)
     quit
 
 Usage: pointer.py <fifo> <width> <height>   (needs WAYLAND_DISPLAY)
@@ -52,7 +54,7 @@ display.dispatch(block=True)
 display.roundtrip()
 pointer = found["manager"].create_virtual_pointer(found["seat"])
 display.roundtrip()
-BTN_LEFT, BTN_MIDDLE = 0x110, 0x112
+BTN_LEFT, BTN_RIGHT, BTN_MIDDLE = 0x110, 0x111, 0x112
 
 
 def now():
@@ -82,6 +84,14 @@ with open(fifo, "r") as commands:
         elif part[0] == "middle":
             button(BTN_MIDDLE, 1)
             button(BTN_MIDDLE, 0)
+        elif part[0] == "right":
+            button(BTN_RIGHT, 1)
+            button(BTN_RIGHT, 0)
+        elif part[0] == "wheel":
+            steps = int(part[1])
+            pointer.axis_source(0)
+            pointer.axis_discrete(now(), 0, 15.0 * steps, steps)
+            pointer.frame()
         display.flush()
         display.roundtrip()
 pointer.destroy()
