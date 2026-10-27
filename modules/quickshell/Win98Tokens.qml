@@ -67,10 +67,16 @@ Singleton {
             emboss: dark ? "transparent" : "#ffffff",
             win: dark ? "#1d1d1d" : "#ffffff",
             winText: dark ? "#e8e8e8" : "#000000",
-            selection: dark ? "#2f4fc7" : "#000080",
+            // Dark grey's caption is steel, not navy: Simon found the navy
+            // jarring in dark mode. The selection takes the same steel, as
+            // Windows Standard's selection takes its caption's navy. White
+            // has 12.2:1 on caption1 and 5.1:1 on caption2 (WCAG AA at both
+            // ends) and 6.4:1 on the selection. Light stays Windows Standard.
+            // docs/plans/desktop-themes.md, "Win98 dark caption".
+            selection: dark ? "#41608a" : "#000080",
             selectionText: "#ffffff",
-            caption1: "#000080",
-            caption2: "#1084d0",
+            caption1: dark ? "#26364f" : "#000080",
+            caption2: dark ? "#56708e" : "#1084d0",
             inactiveCaption1: dark ? "#2a2a2a" : "#808080",
             inactiveCaption2: dark ? "#4a4a4a" : "#c0c0c0",
             captionText: "#ffffff",

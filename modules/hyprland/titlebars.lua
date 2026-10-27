@@ -46,7 +46,8 @@ M.WIN98_PALETTES = {
     dark = {
         face = "3c3c3c", hi = "7a7a7a", li = "565656", lo = "222222", edge = "000000",
         text = "ffffff", text_off = "9a9a9a", glyph = "ececec",
-        caption1 = "000080", caption2 = "1084d0", inactive1 = "2a2a2a", inactive2 = "4a4a4a",
+        -- Steel, not navy, in dark grey (Win98Tokens.palette()).
+        caption1 = "26364f", caption2 = "56708e", inactive1 = "2a2a2a", inactive2 = "4a4a4a",
     },
 }
 
