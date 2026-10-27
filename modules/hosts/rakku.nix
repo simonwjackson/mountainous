@@ -278,6 +278,16 @@ in
           mode = "0400";
         };
 
+        # ElevenLabs and xAI API keys. No service reads them yet.
+        sops.secrets.elevenlabs-api-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+        };
+        sops.secrets.xai-api-key = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+        };
+
         assertions = [
           {
             assertion = config.system.stateVersion == "24.11";
