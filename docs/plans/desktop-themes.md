@@ -562,3 +562,55 @@ Nested Hyprland 0.56.2 inside bubblewrap under headless labwc (only `/dev/dri/re
 - 191 px at scale 1.5 (Hyprland has no such mode); one screen only, so the tag on two screens is not seen.
 - Under Win98, Super+O N opens nothing (checked); whether the N then reaches the focused window, and whether the submap ends at once, was not checked.
 - The thresholds and the glyph steps (waves at 33/66 %, rays per 12.5 %, the meter's two-pixel minimum) are guesses until Simon has used them.
+
+## Window title bars (implemented)
+
+Under Platinum every window that leaves its frame to the compositor gets a Mac OS 8 title bar and frame: a close box on the left; a zoom box and a collapse box on the right; pinstripes either side of a plain patch behind the ChicagoFLF title; a black edge and a one-hair bevel round the whole window. An inactive window's bar is flat, with a grey title and no boxes. The bars take the theme's appearance (light, dark grey, black) and follow `desktop-theme` live. Under Win98 there are none, and windows keep the session's edge and corners.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| The plugin | `modules/hyprland/hyprbars-platinum.patch` on nixpkgs' hyprbars 0.56.0: `barDeco.cpp` (boxes, stripes, title colour by focus, the client-decoration test), `frameDeco.{hpp,cpp}` (the frame, a second decoration), `main.cpp` (config values, `hl.plugin.hyprbars.refresh()`, a redraw on focus change, `add_button` replaces a box with the same icon and side) |
+| Packaging | `modules/hyprland.nix`: `packages.hyprbars-platinum`, `/etc/hypr/plugins/hyprbars-platinum.so`, the assertion that the session runs `pkgs.hyprland`, `titlebars.lua` delivered by Hjem |
+| Styling | `modules/hyprland/titlebars.lua`: reads the three theme files, `settings(state)` (pure), `apply()`, `attach(opts)` from `hyprland.lua` |
+| Following the theme | `modules/theme.nix`: every `desktop-theme` change runs `hyprctl eval '… require("titlebars").apply() …'` inside a Hyprland session |
+| Collapse | `windows collapseActive` IPC in `shell.qml`, `WindowHider.hideWindow`, `window-hide.js hideWindow` |
+| Checks | `checks.titlebars` (the patch builds; `titlebars.test.lua`: appearances, settings, attach, apply, and the palettes against `PlatinumTokens.qml`), `checks.desktop-theme` (the hook runs on every change and only then), `window-hide.test.js` (one window) |
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| The bars are drawn like the desktop's windoids (`PlatinumWindoid.qml`): a hair is `PlatinumTokens.hair` (2 device px at 1.5), boxes are an edge, a bevel and a face, stripes are light, dark, gap | One family on one screen. The spike's 1 px stripes were finer and closer to a 1997 screen; at 1.5 they would differ from every Quickshell windoid. |
+| Palettes are the windoid tokens: `menuSurface`, `bevelLight`/`bevelDark`, `raised`, `menuText`/`menuTextOff`, `menuEdge`; black takes the black bar's `barSurface`, `barText`, `barTextOff`, `ridgeLow` | `checks.titlebars` fails when a token changes and the Lua does not. Cost: the colours live twice. |
+| Black is flat: no stripes, no bevel, boxes as dim outlines | The OLED argument that made the top bar black; title bars stay on screen for hours. |
+| The window edge is drawn by the plugin, and `border_size` is 0 under Platinum | Hyprland's border is whole logical px. At 1.5 a 1 px border landed as 1 device px on some edges and 2 on others. The frame draws whole hairs outward from where the content lands. |
+| No bar on a client that asked to draw its own frame, or never asked (GTK4/libadwaita, GTK3, a normal Chromium window); decided from the client's own decoration request | The spike's plan was a hand-kept `no_bar` list of libadwaita classes. The request is what the client said, so no list drifts. Cost: such a window has no frame either; normal Chromium windows keep their own tab strip and caption. X11 windows keep stock hyprbars' rule. |
+| Collapse hides the focused window (`windows collapseActive`); its app's Show brings it back | Hyprland cannot roll a window up to its title bar (WindowShade). Hiding is the nearest thing that keeps the window. Cost: the window leaves the screen instead of leaving its title bar. The spike made it a float toggle, which matches nothing on Mac OS. |
+| A double click on the bar zooms, not collapses | Mac OS 8 shades on a double click; here that would hide the window on a stray double click. |
+| Boxes act on press, as stock hyprbars does; no pressed state is drawn | Mac OS acts on release with a sunken box. Not worth the patch size yet. |
+| Groups keep Hyprland's tab bar and get no title bar; the tab bar's indicator takes the title colours | As the spike found, two strips stack otherwise. |
+| `hl.plugin.load()` on every parse | See `docs/decisions/hyprland.md`. |
+
+### Evidence
+
+Nested Hyprland 0.56.2 under headless labwc, `eDP-1` 2880×1800 at 1.5, the worktree's real `hyprland.lua` and `titlebars.lua` with only the plugin path changed. labwc, Hyprland and every client ran in a bubblewrap namespace whose `/dev` held only `/dev/dri/renderD128`; no seat, no libinput, no `drm: Starting backend`, no `card*` open. Evidence: `/tmp/phase2/` (served at `http://100.114.19.92:8765/phase2/`).
+
+| What | Result |
+|---|---|
+| Light, dark grey, black, Win98 and back, through the same eval `desktop-theme` runs | as designed; Win98 restores `border_size` 0 and rounding 6 |
+| Hairs (`probe.py` down a bar column and along frame rows) | 2 device px each; the bar is 30 px; no gap between frame and content |
+| Zoom box, double click, close box, collapse box | maximized and back; maximized and back; the window closed; `qs -c mountainous ipc call windows collapseActive` ran |
+| Chromium `--app` (the `web-apps.nix` flags), Ghostty, FeatherPad | bar and frame |
+| gnome-text-editor, a normal Chromium window | no bar, no frame |
+| A group; fullscreen | no bar; no bar |
+| `hyprctl reload` | the plugin stays loaded once, the bars stay |
+| CPU with full redraws (`damage_tracking = 0`), 3 windows, one animating, 20 s, two runs each | Hyprland used 1.42–1.45 s with bars and 0.97–1.02 s without: about 0.4 ms of CPU per frame at 60 Hz for three bars. GPU time not measured. |
+
+### Not verified
+
+- Nothing has run on Myoko's GPU, at its 120 Hz, or under a real pointer and Kanata.
+- Scales other than 1.5. Hairs are whole device pixels at 1, 1.5 and 2 by construction; odd rungs such as 1.333 are untested.
+- Electron, X11 and GTK3 apps: none were run, so whether each gets a bar follows only from what it asks for.
+- The collapse box through the real Quickshell: the nested run recorded the IPC call; `hideWindow` is covered by `window-hide.test.js`.

@@ -30,8 +30,11 @@ Measured against Chromium 153 under Hyprland 0.56.2:
 Chromium's `AppBrowserController::ShouldUseCustomFrame()` returns `true`. An
 installed web app is the only case that builds that controller, so Chromium
 always draws its own frame for `--app-id` windows and ignores the compositor.
-Hyprland draws no title bar of its own, so with `--app` there is nothing to draw
-and the window is frameless.
+With `--app` Chromium draws no frame and asks the compositor for server-side
+decorations. Hyprland draws no title bar of its own, so under most desktop
+themes the window is frameless. Under Platinum the hyprbars-platinum plugin
+draws a Mac OS 8 title bar on it (`docs/decisions/hyprland.md`); an
+`--app-id` window keeps Chromium's frame and gets none.
 
 Upstream keeps this behaviour on purpose, to show a tamper-proof origin in the
 title bar. Chromium closed the request to change it as infeasible. There is no
