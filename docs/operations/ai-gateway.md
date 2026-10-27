@@ -129,7 +129,10 @@ step replaces the old key and base URL in each existing assistant home.
 
 The three assistant units want and start after `ai-gateway.service` when that
 feature is enabled. They retain ordering after `cliproxyapi.service` because
-the front door still needs that login keeper. Other clients remain unchanged.
+the front door still needs that login keeper. Other clients remain unchanged. B also adds those three services to the new
+key's restartUnits, beside the front door. Rotation therefore refreshes the
+server grant and the client credential copies together. No secret value changes
+in B.
 
 For B, run its focused check, the Rakku toplevel evaluation and this diff:
 
@@ -145,7 +148,9 @@ Compared with A, exactly these existing unit texts change:
 `pi-assistant-simon.service`, `pi-assistant-laure.service` and
 `pi-assistant-household.service`. No gateway, login keeper, LiteLLM, voice,
 tailnet-proxy or other client unit can change. The report also includes the
-full diff against cairn and the inherited D-Bus field described above.
+full diff against cairn and the inherited D-Bus field described above. The
+only changed secret declaration relative to A is the assistant key's
+restartUnits field. The checker permits only that exact rotation set.
 
 To roll back the client cutover, revert B and deploy that configuration with
 Simon. Keep A running while the assistants return to their old endpoint and

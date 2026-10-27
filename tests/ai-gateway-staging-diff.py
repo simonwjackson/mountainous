@@ -103,3 +103,26 @@ assert compare(production, changed, **policy)["status"] == "FAIL"
 print(
     "PASS: production-only additions and exact three-assistant unit-text cutover scope"
 )
+
+# The new grant's sole permitted declaration change in B is coordinated
+# credential rotation. No existing production secret can change.
+assistant_key = "ai-gateway-key-assistant-rakku"
+production["secrets"][assistant_key]["restartUnits"] = ["ai-gateway.service"]
+rotation = copy.deepcopy(production)
+for name in assistants:
+    rotation["unit_texts"][name + ".service"] = "after-cutover"
+rotation["secrets"][assistant_key]["restartUnits"] += [
+    name + ".service" for name in assistants
+]
+assert (
+    compare(production, rotation, **policy, assistant_rotation=True)["status"] == "PASS"
+)
+assert compare(production, rotation, **policy)["status"] == "FAIL"
+changed = copy.deepcopy(rotation)
+changed["secrets"][assistant_key]["mode"] = "0444"
+assert (
+    compare(production, changed, **policy, assistant_rotation=True)["status"] == "FAIL"
+)
+print(
+    "PASS: client key rotation is scoped to the gateway and the same three assistants"
+)

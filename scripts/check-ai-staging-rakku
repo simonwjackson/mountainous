@@ -71,6 +71,7 @@ def compare(
     tailnets=None,
     changed_services=frozenset(),
     changed_texts=frozenset(),
+    assistant_rotation=False,
 ):
     services = NEW_SERVICES if services is None else services
     secrets = NEW_SECRETS if secrets is None else secrets
@@ -101,6 +102,16 @@ def compare(
         )
         report[kind] = {"added": added, "removed": removed, "changed_fields": changed}
         permitted_changes = changed_services if kind == "services" else set()
+        assistant_key = "ai-gateway-key-assistant-rakku"
+        if (
+            kind == "secrets"
+            and assistant_rotation
+            and changed.get(assistant_key) == ["restartUnits"]
+            and set(old[assistant_key]["restartUnits"]) == {"ai-gateway.service"}
+            and set(new[assistant_key]["restartUnits"])
+            == {"ai-gateway.service"} | {name + ".service" for name in ASSISTANTS}
+        ):
+            permitted_changes = {assistant_key}
         if (
             removed
             or set(added) != set(allowed)
@@ -206,6 +217,7 @@ def main():
                 if text_changes is None
                 else text_changes
             ),
+            assistant_rotation=args.phase == "B",
         )
         old_yaml = subprocess.check_output(
             ["git", "show", f"{sha}:secrets/hosts/rakku.yaml"], text=True

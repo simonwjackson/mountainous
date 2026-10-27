@@ -42,6 +42,7 @@ in
             );
             want = ok: msg: lib.optional (!ok) "${host}: ${msg}";
             unit = name: c.systemd.services."pi-assistant-${name}";
+            gateway = c.mountainous.features.ai-gateway.enable or false;
           in
           lib.optionals (cfg != null && cfg.people != { }) (
             lib.concatMap (
@@ -57,6 +58,14 @@ in
               ++ want (!(service.environment ? ASSISTANT_HOST)) "pi-assistant-${name} sets ASSISTANT_HOST"
               ++ want (lib.elem "household" service.serviceConfig.SupplementaryGroups) "pi-${name} cannot write the notebook"
               ++ want (lib.any (lib.hasPrefix "d ${service.serviceConfig.WorkingDirectory} ") c.systemd.tmpfiles.rules) "pi-assistant-${name}'s working directory is not created before it starts"
+              ++ lib.optionals gateway (
+                want (
+                  lib.elem "ai-gateway.service" service.wants
+                  && lib.elem "ai-gateway.service" service.after
+                  && lib.elem "cliproxyapi.service" service.after
+                ) "pi-assistant-${name} must start after the front door and login keeper"
+                ++ want (lib.elem "cliproxyapi-key:${c.sops.secrets.ai-gateway-key-assistant-rakku.path}" service.serviceConfig.LoadCredential) "pi-assistant-${name} does not load its front-door key"
+              )
             ) names
             ++ want (
               (persisted.${notebookDir} or { mode = ""; }).mode == "2770"
@@ -66,6 +75,30 @@ in
               lib.length (lib.unique (map (name: (unit name).serviceConfig.User) names)) == lib.length names
             ) "two instances share a user"
             ++ want (persisted ? ${tsgoState}) "the tailnet node's identity is not persisted"
+            ++ lib.optionals gateway (
+              want (cfg.cliproxyapiPort == 8430) "assistant port does not point at the production front door"
+              ++ want (
+                cfg.cliproxyapiKeyFile == c.sops.secrets.ai-gateway-key-assistant-rakku.path
+              ) "assistant does not use its dedicated gateway grant"
+              ++ want (lib.all
+                (
+                  model: lib.elem model (builtins.head c.mountainous.features.ai-gateway.settings.gateway_keys).models
+                )
+                (
+                  [ cfg.searchModel ]
+                  ++ map (lib.removePrefix "cliproxyapi/") (
+                    lib.attrValues cfg.lanes ++ lib.concatLists (lib.attrValues cfg.laneFallbacks)
+                  )
+                )
+              ) "assistant lanes or web search request a model outside the gateway grant"
+              ++ want (
+                lib.all (
+                  name:
+                  lib.elem "pi-assistant-${name}.service" c.sops.secrets.ai-gateway-key-assistant-rakku.restartUnits
+                ) names
+                && lib.elem "ai-gateway.service" c.sops.secrets.ai-gateway-key-assistant-rakku.restartUnits
+              ) "assistant key rotation must restart the gateway and its clients"
+            )
           )
         ) self.nixosConfigurations
       );
@@ -459,11 +492,15 @@ in
             lib.nameValuePair "pi-assistant-${name}" {
               description = "Pi assistant: ${name}";
               wantedBy = [ "multi-user.target" ];
-              wants = [ "network-online.target" ];
+              wants = [
+                "network-online.target"
+              ]
+              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service";
               after = [
                 "network-online.target"
                 "cliproxyapi.service"
-              ];
+              ]
+              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service";
               environment = environmentOf name instance;
               # The application brings its own tools; the host adds the signed-in gh.
               path = lib.optional (githubOf instance) config.mountainous.github.package;

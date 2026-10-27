@@ -57,6 +57,16 @@ in
           signingPublicKey = "cliproxyapi-unzen:KgVn63py+E3v950Hko/PdGkqfeSHZjIl0h01bPWac04=";
           geminiApiKeyFile = config.sops.secrets.cliproxyapi-gemini-api-key.path;
         };
+        # Rotate the front-door grant and all three credential copies together.
+        sops.secrets.ai-gateway-key-assistant-rakku =
+          lib.mkIf config.mountainous.features.ai-gateway.enable
+            {
+              restartUnits = [
+                "pi-assistant-simon.service"
+                "pi-assistant-laure.service"
+                "pi-assistant-household.service"
+              ];
+            };
         # Nano Banana (Gemini image) key, served through CLIProxyAPI.
         sops.secrets.cliproxyapi-gemini-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
@@ -156,7 +166,9 @@ in
           # Vela's /surface link (Vela ADR 0007).
           extraWebOrigins = [ config.mountainous.features.vela.origin ];
           homePlace = "Denver|39.739|-104.985|America/Denver";
-          cliproxyapiKeyFile = config.sops.secrets.pi-assistant-cliproxyapi-key.path;
+          # Keep the compatible option name. The front door now owns this port.
+          cliproxyapiPort = 8430;
+          cliproxyapiKeyFile = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
           # The groceries app on Zao (sandbox/groceries); its copy of the token is
           # ~/.config/groceries/assistant-service-token there.
