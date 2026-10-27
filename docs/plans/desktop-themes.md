@@ -542,3 +542,23 @@ Spacing yields at 857 px, the clock leaves the centre at 679, the window title a
 | The tag shows on every screen's bar, and for a mute toggle ("--", speaker struck through) | The value is the machine's, not the screen's. Cost: two tags with two screens. |
 | Balloon Help has no balloon for » or the mountain | » lists its items with values; the Apple menu has no value. |
 | 191 px runs at scale 2 in the nested session | 191 logical px has no whole mode at 1.5 (286.5 px); Hyprland falls back to scale 1. 192 px at 1.5 stands beside it. |
+| The » menu keeps a warning value's tone, names each OCI profile, shows each control's Super+O letter, and is as wide as its rows (260–400 px) | As the mock's » menu. Its rows still use the plain icons (no meter, no fleet light); the overflow-geometry probe is unchanged. |
+
+### Evidence
+
+Nested Hyprland 0.56.2 inside bubblewrap under headless labwc (only `/dev/dri/renderD128` in their `/dev`, `SEATD_SOCK` missing, `systemd-run` stubbed), the real staged Quickshell with a `barProbe` IPC target added to the staged `shell.qml` only. The probe feeds the mock's states into the production data owners; windows, focus, Super+O and the » keys are real (virtual keyboard and pointer through Hyprland's binds). Every session: 0 `drm: Starting backend` lines and 0 `/dev/dri/card*` in the fd scan. Evidence: `/tmp/bar-quiet/` (http://100.114.19.92:8765/bar-quiet/), with each build shot beside the mock's own render at the same width, state and look in `compare/`.
+
+| Run | Result |
+|---|---|
+| light, every width (1920, 960, 640, 400, 320, 192 at 1.5; 191 at scale 2), calm, wrong, long, the volume tag, Super+O; every menu from its control and from »; Balloon Help; Super+O B W S L C D R N and F; Win98's N | 109 of 109 |
+| dark grey, the same | 107 of 107 (first run); 106 of 107 on a rerun (one » keyboard step lost: Down arrows before the menu had the keyboard) |
+| extra dark, the same | 107 of 107 |
+| QML warnings from the changed files | 0 in every run (the only warnings are the session's missing services and `systemd-notify`) |
+
+### Not verified
+
+- Nothing ran on Myoko, its GPU, Kanata or a real keyboard. The volume tag came from a changed PipeWire stand-in, not a volume key.
+- The data came from the probe, not from PipeWire, BlueZ, NetworkManager, UPower, OCI, the disk check or Beszel.
+- 191 px at scale 1.5 (Hyprland has no such mode); one screen only, so the tag on two screens is not seen.
+- Under Win98, Super+O N opens nothing (checked); whether the N then reaches the focused window, and whether the submap ends at once, was not checked.
+- The thresholds and the glyph steps (waves at 33/66 %, rays per 12.5 %, the meter's two-pixel minimum) are guesses until Simon has used them.
