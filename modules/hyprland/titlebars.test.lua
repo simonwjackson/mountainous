@@ -44,10 +44,36 @@ end
 
 -- A recording stand-in for Hyprland's hl table.
 local calls
-local function fresh_hl(loaded)
-    calls = { config = {}, load = {}, rules = {}, buttons = {}, refresh = 0 }
+local OLD_OPTIONS = {}
+for _, name in ipairs({ "enabled", "platinum", "bar_height", "bar_text_font", "bar_text_size", "bar_text_align",
+    "bar_padding", "bar_button_padding", "bar_precedence_over_border", "bar_part_of_window", "on_double_click",
+    "bar_color", "col.text", "platinum_title_inactive", "platinum_hi", "platinum_lo", "platinum_frame",
+    "platinum_box", "platinum_rule" }) do OLD_OPTIONS[name] = true end
+local WIN98_OPTIONS = { "win98", "win98_li", "win98_caption1", "win98_caption2", "win98_inactive1", "win98_inactive2", "win98_button_text" }
+local function fresh_hl(loaded, opts)
+    opts = opts or {}
+    calls = { config = {}, load = {}, rules = {}, buttons = {}, refresh = 0, queries = {}, rejected = {} }
     _G.hl = {
-        config = function(t) table.insert(calls.config, t) end,
+        config = function(t)
+            if opts.old and t.plugin and t.plugin.hyprbars then
+                for name in pairs(t.plugin.hyprbars) do
+                    if not OLD_OPTIONS[name] then
+                        table.insert(calls.rejected, name)
+                        error("old plugin rejects option " .. name)
+                    end
+                end
+            end
+            table.insert(calls.config, t)
+        end,
+        get_config = function(key)
+            table.insert(calls.queries, key)
+            local name = key:match("^plugin:hyprbars:(.+)$")
+            if opts.probe_throws then error("configuration query unavailable") end
+            if opts.old or name == opts.missing then return nil, "unknown config key" end
+            -- A supported boolean option can be false. Presence is not truthiness.
+            if name == "win98" then return false end
+            return 0
+        end,
         window_rule = function(t) table.insert(calls.rules, t) end,
         plugin = {
             load = function(path) table.insert(calls.load, path) end,
@@ -157,6 +183,51 @@ M.apply()
 local restored = calls.config[1].plugin.hyprbars
 check(restored.win98 == false and restored.bar_text_font == "ChicagoFLF" and restored.bar_height == 20,
     "switching back restores Platinum's font and geometry")
+
+-- A deployed Lua may meet the still-loaded generation-52 plugin. Reject
+-- every new option, not just win98, so attach/apply cannot hide an error.
+for _, state in ipairs({ { "win98", "light", "off" }, { "win98", "dark", "on" },
+    { "platinum", "light", "off" }, { "platinum", "dark", "off" }, { "platinum", "dark", "on" } }) do
+    write_state(table.unpack(state))
+    fresh_hl(true, { old = true })
+    local ok, err = pcall(M.attach, { border_size = 0, rounding = 6 })
+    check(ok, "old plugin attach " .. state[1] .. ": " .. tostring(err))
+    check(#calls.rejected == 0, "old plugin receives only registered options on attach")
+    local cfg = calls.config[#calls.config]
+    if state[1] == "win98" then
+        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == false, "old plugin Win98: no bars")
+        check(cfg and cfg.general and cfg.general.border_size == 0 and cfg.decoration.rounding == 6,
+            "old plugin Win98: session edge and rounding")
+        check(cfg and cfg.group and cfg.group.groupbar.col.active == "rgba(ffff0066)", "old plugin Win98: default groupbar")
+    else
+        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == true and cfg.plugin.hyprbars.win98 == nil,
+            "old plugin Platinum: enabled without the new style option")
+        check(cfg and cfg.decoration and cfg.decoration.rounding == 0, "old plugin Platinum: square")
+        check(cfg and cfg.plugin and cfg.plugin.hyprbars.bar_text_font == "ChicagoFLF" and
+            cfg.plugin.hyprbars.bar_height == 20, "old plugin Platinum: original font and height")
+    end
+    fresh_hl(true, { old = true })
+    ok, err = pcall(M.apply)
+    check(ok and err == true and #calls.rejected == 0, "old plugin apply " .. state[1] .. " is safe")
+end
+
+-- Probe failures and partial implementations must fall back without trying
+-- a configuration write. Check every new option is required by the style.
+write_state("win98", "light", "off")
+for _, name in ipairs(WIN98_OPTIONS) do
+    fresh_hl(true, { missing = name })
+    M.apply()
+    check(calls.config[1].plugin.hyprbars.enabled == false and calls.config[1].decoration.rounding == 6,
+        "missing " .. name .. " falls back to generation-52 Win98")
+end
+fresh_hl(true, { probe_throws = true })
+check(pcall(M.apply) and calls.config[1].plugin.hyprbars.enabled == false, "a guarded probe failure falls back")
+fresh_hl(true)
+hl.get_config = nil
+check(pcall(M.apply) and calls.config[1].plugin.hyprbars.enabled == false, "a missing query API falls back")
+fresh_hl(true)
+M.apply()
+check(calls.config[1].plugin.hyprbars.win98 == true, "registered false option still enables Win98 support")
 
 -- The palettes are the tokens'. A windoid's colours for light and dark
 -- grey; the black bar's for black.

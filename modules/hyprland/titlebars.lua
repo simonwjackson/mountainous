@@ -88,9 +88,11 @@ end
 
 local function rgb(hex) return "rgb(" .. hex .. ")" end
 
--- The values for one state, as a pure table, so it can be checked headless.
-function M.settings(state)
+-- The values for one state, as a pure table. Explicit false selects the
+-- generation-52 capability set; omitted defaults to the current plugin.
+function M.settings(state, win98_supported)
     local key = M.appearance(state)
+    if state.name == "win98" and win98_supported == false then key = nil end
     if not key then
         return {
             general = { border_size = M.session.border_size },
@@ -103,7 +105,6 @@ function M.settings(state)
     local p = win98 and M.WIN98_PALETTES[state.mode == "light" and "light" or "dark"] or M.PALETTES[key]
     local style = {
         platinum = true, -- shared client-decoration test and frame owner
-        win98 = win98,
         -- Win98 computes its 18-u caption plus 1-u seam per output; the
         -- config height is the caption at the default 1.5 scale.
         bar_height = win98 and 24 or 20,
@@ -118,6 +119,7 @@ function M.settings(state)
         platinum_frame = rgb(p.edge), platinum_box = rgb(win98 and p.face or p.box),
         platinum_rule = rgb(win98 and p.edge or p.rule),
     }
+    if win98_supported ~= false then style.win98 = win98 end
     if win98 then
         style.win98_li = rgb(p.li)
         style.win98_caption1 = rgb(p.caption1)
@@ -136,6 +138,21 @@ function M.settings(state)
     }
 end
 
+-- The stable plugin path can still name an older loaded library after a
+-- rebuild. hl.get_config is a read-only lookup: an unknown key returns nil
+-- plus a message, without adding a config error (unlike hl.config). Check
+-- every new option, including false-valued booleans. Do not cache absence:
+-- the first config parse can run before plugin registration.
+local function supports_win98()
+    if type(hl.get_config) ~= "function" then return false end
+    for _, name in ipairs({ "win98", "win98_li", "win98_caption1", "win98_caption2",
+        "win98_inactive1", "win98_inactive2", "win98_button_text" }) do
+        local ok, value = pcall(hl.get_config, "plugin:hyprbars:" .. name)
+        if not ok or value == nil then return false end
+    end
+    return true
+end
+
 -- Set the bars and the window frame for the theme on disk. Without the
 -- plugin (it failed to load) the windows keep the session's look.
 function M.apply()
@@ -143,7 +160,7 @@ function M.apply()
         hl.config({ general = { border_size = M.session.border_size }, decoration = { rounding = M.session.rounding } })
         return false
     end
-    hl.config(M.settings(M.state()))
+    hl.config(M.settings(M.state(), supports_win98()))
     hl.plugin.hyprbars.refresh()
     return true
 end
