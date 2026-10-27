@@ -85,6 +85,7 @@ done
 
 fail=0
 . "$here/keys.sh"
+. "$here/access.sh"
 
 # Font fallback notes are not defects; anything else from QML is.
 if grep -E "WARN|ERROR" "$work/qs.log" | grep -vE "FontLoader|Cannot load font|libEGL|MESA" | grep -q .; then

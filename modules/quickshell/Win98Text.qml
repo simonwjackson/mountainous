@@ -48,6 +48,14 @@ Item {
     readonly property int accessIndex: accessMarks ? Win98Tokens.accessIndex(text) : -1
     readonly property color shownColor: disabledLook ? tokens.gray : color
     readonly property bool truncated: main.truncated
+    // What the face draws, and where the access key's underline starts and
+    // how wide it is (logical px). The words around a marked letter keep
+    // their spaces: "Lock &Myoko" draws "Lock Myoko" and underlines the M,
+    // one space's advance after "Lock" (dev/check.sh tests it).
+    readonly property string drawnText: main.text
+    readonly property real drawnWidth: main.implicitWidth * k
+    readonly property real accessX: accessIndex >= 0 ? Win98Tokens.textWidth(plain.slice(0, accessIndex), bold, root.u) : -1
+    readonly property real accessWidth: accessIndex >= 0 ? Win98Tokens.textWidth(plain.charAt(accessIndex), false, root.u) - root.u : 0
 
     implicitWidth: main.implicitWidth * k * size
     implicitHeight: (wrap ? main.implicitHeight : Win98Tokens.lineUnits * 2) * k * size
@@ -113,9 +121,9 @@ Item {
             Rectangle {
                 required property int index
                 z: index === 1 ? -1 : 0
-                x: Win98Tokens.textWidth(root.plain.slice(0, root.accessIndex), root.bold, root.u) + (index === 1 ? root.u : 0)
+                x: root.accessX + (index === 1 ? root.u : 0)
                 y: (Win98Tokens.ascentUnits + 1) * root.u + (index === 1 ? root.u : 0)
-                width: Win98Tokens.textWidth(root.plain.charAt(root.accessIndex), false, root.u) - root.u
+                width: root.accessWidth
                 height: root.u
                 color: index === 1 ? root.tokens.emboss : root.shownColor
             }

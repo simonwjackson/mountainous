@@ -38,6 +38,17 @@ Scope {
         }
         // How far the roll-out of an open level has run, 0..1, right now.
         function reveal(level: int): string { const p = gallery.testMenu ? gallery.testMenu.panelAt(level) : null; return p ? String(p.reveal) : "none"; }
+        // A label with an access key, as Win98Text draws it (access.sh).
+        function access(label: string, bold: bool): string {
+            accessProbe.bold = bold;
+            accessProbe.text = label;
+            return JSON.stringify({ plain: accessProbe.plain, drawn: accessProbe.drawnText, index: accessProbe.accessIndex,
+                x: accessProbe.accessX, w: accessProbe.accessWidth, drawnWidth: accessProbe.drawnWidth, u: accessProbe.u,
+                prefix: Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex), bold, accessProbe.u),
+                prefixTrimmed: Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex).replace(/ +$/, ""), bold, accessProbe.u),
+                whole: Win98Tokens.textWidth(accessProbe.plain, bold, accessProbe.u),
+                squeezed: Win98Tokens.textWidth(accessProbe.plain.replace(/ /g, ""), bold, accessProbe.u) });
+        }
         function resetMenu(): string { gallery.triggeredText = ""; gallery.closedCount = 0; if (gallery.testMenu) gallery.testMenu.reset(); return gallery.menuState(); }
     }
 
@@ -113,6 +124,9 @@ Scope {
         color: Win98Tokens.desktop
         onDevicePixelRatioChanged: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
         Component.onCompleted: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
+
+        // Measured by the access IPC; never shown.
+        Win98Text { id: accessProbe; visible: false }
 
         Loader {
             id: pageLoader

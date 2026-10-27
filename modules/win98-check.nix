@@ -103,6 +103,8 @@
               pkgs.quickshell
               pkgs.labwc
               pkgs.qt6.qtdeclarative
+              # access.sh reads the gallery's JSON.
+              pkgs.python3
             ];
             QMLLINT = "${pkgs.qt6.qtdeclarative}/bin/qmllint";
             QML_PATHS = qmlPaths;
