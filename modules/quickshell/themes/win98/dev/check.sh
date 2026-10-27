@@ -41,19 +41,22 @@ export WAYLAND_DISPLAY=wayland-0
 
 stage="$work/shell"
 mkdir -p "$stage/themes/win98"
-# The control library only: the Desktop's own files import the shell's
-# shared scripts, which the gallery does not stage.
+# The control library only: the Desktop's own files (its windows and the
+# Fleet views) import the shell's shared scripts, which the gallery does
+# not stage. The theme's own policies (themes/win98/*.js) are its assets.
 library() {
   for f in "$shell_dir"/Win98*.qml; do
     case "$(basename "$f")" in
       Win98Window.qml) ;;
       Win98Desktop.qml|Win98Taskbar.qml|Win98MenuHost.qml|Win98TipWindow.qml|Win98PickerView.qml|Win98Preview.qml|Win98LogOffDialog.qml|Win98*Window.qml) continue ;;
+      Win98Fleet*.qml|Win98GlanceSpace.qml|Win98DisksAccessory.qml) continue ;;
     esac
     echo "$f"
   done
 }
 cp "$shell_dir/Theme.qml" $(library) "$here/Win98Gallery.qml" "$stage/"
 cp -r "$shell_dir/themes/win98/icons" "$stage/themes/win98/icons"
+for f in "$shell_dir"/themes/win98/*.js; do case "$f" in *.test.js) ;; *) cp "$f" "$stage/themes/win98/" ;; esac; done
 chmod -R u+w "$stage"
 cat > "$stage/shell.qml" <<'QML'
 import Quickshell
