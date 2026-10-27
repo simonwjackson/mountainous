@@ -72,8 +72,20 @@ let
             *) usage ;;
           esac
           write_extra "$value"
+          changed=1
           printf '%s\n' "$value"
         }
+
+        # The Platinum window title bars (modules/hyprland/titlebars.lua)
+        # read the same files. Ask the running Hyprland to read them again.
+        # Outside a Hyprland session, or on a host without the module, this
+        # does nothing; the next config load reads the files anyway.
+        titlebars() {
+          if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl > /dev/null; then
+            hyprctl eval 'local ok, t = pcall(require, "titlebars"); if ok then t.apply() end' > /dev/null 2>&1 || true
+          fi
+        }
+        changed=0
 
         valid_theme() {
           case "$1" in ${themeNames}) return 0 ;; *) return 1 ;; esac
@@ -121,24 +133,27 @@ let
         }
 
         case "''${1:-toggle}" in
-          dark) apply dark ;;
-          light) apply light ;;
+          dark) apply dark; changed=1 ;;
+          light) apply light; changed=1 ;;
           toggle)
             if [ "$(read_state)" = dark ]; then
               apply light
             else
               apply dark
             fi
+            changed=1
             ;;
           # Also writes the extra file, so the bar has a file to watch.
           reapply)
             write_name "$(read_name)"
             write_extra "$(read_extra)"
             apply "$(read_state)"
+            changed=1
             ;;
           set)
             if [ "$#" -ne 2 ] || ! valid_theme "$2"; then usage; fi
             write_name "$2"
+            changed=1
             printf '%s\n' "$2"
             ;;
           list) printf '%s\n' '${themeList}' ;;
@@ -155,6 +170,7 @@ let
             apply "$3"
             write_extra "$4"
             write_name "$2"
+            changed=1
             ;;
           extra) extra "''${2:-}" ;;
           status)
@@ -162,6 +178,7 @@ let
             ;;
           *) usage ;;
         esac
+        if [ "$changed" = 1 ]; then titlebars; fi
       '';
     };
 in {

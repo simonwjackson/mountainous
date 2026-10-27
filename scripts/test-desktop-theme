@@ -18,6 +18,7 @@ if [[ ${1:-} != --session ]]; then
   exit
 fi
 command_path=$2
+unset HYPRLAND_INSTANCE_SIGNATURE # the title bar hook is tested on its own below
 state="$XDG_STATE_HOME/mountainous/theme"
 extra="$XDG_STATE_HOME/mountainous/theme-extra"
 check() {
@@ -140,4 +141,35 @@ check_extra on
 "$command_path" set platinum >/dev/null
 check light prefer-light
 [[ ! -e $name.new ]]
+
+# Every change asks a running Hyprland to restyle the title bars; reads and
+# refused commands do not, and nothing is asked outside a Hyprland session.
+fake="$XDG_RUNTIME_DIR/fake-bin"
+calls="$XDG_RUNTIME_DIR/hyprctl-calls"
+mkdir -p "$fake"
+printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s"\n' "$calls" > "$fake/hyprctl"
+chmod +x "$fake/hyprctl"
+expected='eval local ok, t = pcall(require, "titlebars"); if ok then t.apply() end'
+asked() { # command... -> how many times hyprctl was asked
+  rm -f "$calls"
+  PATH="$fake:$PATH" HYPRLAND_INSTANCE_SIGNATURE=test "$command_path" "$@" > /dev/null 2>&1 || true
+  if [[ -e $calls ]]; then
+    [[ $(sort -u "$calls") == "$expected" ]] || { echo "FAIL: hyprctl got: $(<"$calls")" >&2; exit 1; }
+    wc -l < "$calls"
+  else
+    echo 0
+  fi
+}
+for change in dark light toggle reapply 'set win98' 'set platinum' 'apply platinum dark on' 'extra off' 'extra toggle' 'extra on'; do
+  # shellcheck disable=SC2086
+  [[ $(asked $change) == 1 ]] || { echo "FAIL: '$change' did not restyle the title bars" >&2; exit 1; }
+done
+for read in status 'extra status' list 'set unknown' 'apply platinum bogus on' bogus; do
+  # shellcheck disable=SC2086
+  [[ $(asked $read) == 0 ]] || { echo "FAIL: '$read' restyled the title bars" >&2; exit 1; }
+done
+rm -f "$calls"
+PATH="$fake:$PATH" "$command_path" light > /dev/null
+[[ ! -e $calls ]] || { echo 'FAIL: asked Hyprland outside a session' >&2; exit 1; }
+check light prefer-light
 echo 'DESKTOP_THEME_TESTS_PASSED' 
