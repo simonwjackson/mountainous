@@ -23,24 +23,14 @@ on Zao only.
   state and prevents use of DynamicUser with StateDirectory on this host.
   Tailnet identity state is persisted by `tailnet-names` as for its other names.
 
-## Source pin: publication blocker
+## Source pin: private Git over SSH
 
-`flake.nix` has one temporary `ai-gateway` URL:
-`git+file:///home/simonwjackson/code/sandbox/ai-gateway?ref=front-door`.
-`flake.lock` records its immutable commit. The staging layer alone consumes
-its package. Other host configurations do not consume the input, but resolving
-or updating the whole flake's inputs and evaluating Rakku's staging unit need
-this local repository. Do not push cairn with this URL.
-
-Before sharing cairn:
-
-1. Publish ai-gateway.
-2. Replace this URL.
-3. Update only its lock entry.
-4. Repeat the focused checks.
-
-The cost of this temporary arrangement is no portable full-flake
-input resolution until publication.
+The input is now `git+ssh://git@github.com/simonwjackson/ai-gateway?ref=main`,
+locked to the same tested revision. The repository is private. SSH avoids the
+GitHub API token requirement. Only enabled Rakku instances force the input.
+Other hosts passed toplevel evaluation with an unavailable input URL and
+revision. See [the production runbook](ai-gateway.md) for that proof and the
+separate production/client cutover checks.
 
 The module keeps the TOML in one `settings` attrset, generated with
 `pkgs.formats.toml`. It follows `examples/front-door.toml` at ai-gateway commit
@@ -197,8 +187,7 @@ nix build .#checks.x86_64-linux.ai-gateway-staging --no-link \
   --max-jobs 1 --cores 1 --option builders ''
 nix eval --raw .#nixosConfigurations.rakku.config.system.build.toplevel.drvPath \
   --option eval-cache false
-./scripts/check-ai-staging-rakku --base cairn --candidate HEAD \
-  --output /tmp/ai-staging-rakku-diff.txt
+# Once production is present, use the phase-A/B diff commands in ai-gateway.md.
 ```
 
 For sandbox changes, run this test on Zao before the commit:

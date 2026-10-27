@@ -16,6 +16,7 @@ services = script["NEW_SERVICES"]
 secrets = script["NEW_SECRETS"]
 before = {
     "units": ["cliproxyapi.service"],
+    "unit_texts": {"cliproxyapi.service": "production-unit-text"},
     "services": {
         "cliproxyapi": {
             "ExecStart": "/production/bin/cli-proxy-api",
@@ -27,6 +28,9 @@ before = {
 }
 after = copy.deepcopy(before)
 after["units"].extend(name + ".service" for name in services)
+after["unit_texts"].update(
+    {name + ".service": "staging-unit-text" for name in services}
+)
 after["services"].update({name: {"ExecStart": "/staging"} for name in services})
 after["secrets"].update({name: {"key": name} for name in secrets})
 after["tailnetNames"]["ai-staging"] = {"backend": "http://127.0.0.1:8420"}
@@ -48,4 +52,54 @@ changed["units"].remove("cliproxyapi.service")
 assert compare(before, changed)["status"] == "FAIL"
 print(
     "PASS: production diff guard rejects ExecStart, environment, secret, name, added/removed unit changes"
+)
+
+# The production addition cannot change even a staging unit's generated text.
+production_services = script["PRODUCTION_SERVICES"]
+production_secrets = script["PRODUCTION_SECRETS"]
+production = copy.deepcopy(after)
+production["units"].extend(name + ".service" for name in production_services)
+production["unit_texts"].update(
+    {name + ".service": "production-new" for name in production_services}
+)
+production["services"].update(
+    {name: {"ExecStart": "/new"} for name in production_services}
+)
+production["secrets"].update({name: {"key": name} for name in production_secrets})
+production["tailnetNames"]["ai"] = {"backend": "http://127.0.0.1:8430"}
+policy = {
+    "services": production_services,
+    "secrets": production_secrets,
+    "tailnets": {"ai"},
+}
+assert compare(after, production, **policy)["status"] == "PASS"
+changed = copy.deepcopy(production)
+changed["unit_texts"]["ai-gateway-staging.service"] = "unexpected staging restart"
+assert compare(after, changed, **policy)["status"] == "FAIL"
+
+# B must change exactly the three assistant texts, and no other existing unit.
+assistants = script["ASSISTANTS"]
+for name in assistants:
+    production["units"].append(name + ".service")
+    production["unit_texts"][name + ".service"] = "before-cutover"
+    production["services"][name] = {"ExecStart": "/assistant", "environment": {}}
+cutover = copy.deepcopy(production)
+for name in assistants:
+    cutover["unit_texts"][name + ".service"] = "after-cutover"
+policy = {
+    "services": set(),
+    "secrets": set(),
+    "tailnets": set(),
+    "changed_services": assistants,
+    "changed_texts": {name + ".service" for name in assistants},
+}
+assert compare(production, cutover, **policy)["status"] == "PASS"
+changed = copy.deepcopy(cutover)
+changed["unit_texts"]["ai-gateway.service"] = "unexpected"
+assert compare(production, changed, **policy)["status"] == "FAIL"
+changed = copy.deepcopy(cutover)
+changed["unit_texts"]["pi-assistant-laure.service"] = "before-cutover"
+assert compare(production, changed, **policy)["status"] == "FAIL"
+print(
+    "PASS: production-only additions and exact three-assistant unit-text cutover scope"
 )

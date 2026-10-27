@@ -9,26 +9,57 @@ import tempfile
 import time
 import tomllib
 
-proxy_path, toml_path = map(pathlib.Path, sys.argv[1:])
+proxy_path, toml_path = map(pathlib.Path, sys.argv[1:3])
+mode = sys.argv[3] if len(sys.argv) > 3 else "staging"
+assert mode in {"staging", "production"}
+production = mode == "production"
+front_port, proxy_port = (8430, 8431) if production else (8420, 8421)
+service_name = "ai-gateway" if production else "ai-gateway-staging"
+runtime = f"/run/{service_name}-egress"
 settings = tomllib.loads(toml_path.read_text())
-assert settings["listen"] == "127.0.0.1:8420"
-assert settings["egress_proxy"] == "http://127.0.0.1:8421"
+assert settings["listen"] == f"127.0.0.1:{front_port}"
+assert settings["egress_proxy"] == f"http://127.0.0.1:{proxy_port}"
 assert settings["login_keeper"]["url"] == "http://127.0.0.1:8317"
+assert settings["state_dir"] == f"/var/lib/{service_name}"
+credential_dir = f"/run/credentials/{service_name}.service"
+assert settings["login_keeper"]["key_file"] == f"{credential_dir}/login-keeper"
+assert settings["usage"]["key_file"] == f"{credential_dir}/usage"
+assert all(
+    key["key_file"].startswith(credential_dir + "/") for key in settings["gateway_keys"]
+)
 assert "cors" not in json.dumps(settings).lower()
-a, b = settings["gateway_keys"]
-assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (2, 10)
-assert set(a["dialects"]) == {
-    "codex",
-    "responses",
-    "chat_completions",
-    "messages",
-    "speech",
-    "images",
-    "systemone",
-    "models",
-    "quota",
-}
-assert "gpt-image-2" in a["models"]
+a = settings["gateway_keys"][0]
+if production:
+    assert len(settings["gateway_keys"]) == 1
+    assert a["name"] == "assistant@rakku"
+    assert a["models"] == [
+        "claude-opus-5-5",
+        "gpt-6.1-sol",
+        "gemini-3.8-flash-high",
+        "gpt-5.6-luna",
+    ]
+    assert a["dialects"] == ["codex", "models", "responses"]
+    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (0, 600)
+else:
+    assert len(settings["gateway_keys"]) == 2
+    b = settings["gateway_keys"][1]
+    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (2, 10)
+    assert set(a["dialects"]) == {
+        "codex",
+        "responses",
+        "chat_completions",
+        "messages",
+        "speech",
+        "images",
+        "systemone",
+        "models",
+        "quota",
+    }
+    assert "gpt-image-2" in a["models"]
+    assert b["models"] == ["jev"] and b["dialects"] == ["systemone"]
+    assert b["monthly_cap_usd"] == 0.01
+    charge = settings["systemone_charges"]["jev"]
+    assert 2 * charge <= b["monthly_cap_usd"] < 3 * charge
 assert "gpt-image-2" not in settings["prices"]
 assert all(model["id"] != "gpt-image-2" for model in settings["paid_models"])
 gemini_images = {
@@ -43,13 +74,9 @@ assert {model["id"] for model in settings["paid_models"]} == gemini_images
 for model in settings["paid_models"]:
     assert model["provider"] == "gemini"
     assert model["input_modalities"] == ["text", "image"]
-    assert model["id"] in a["models"]
+    assert (model["id"] in a["models"]) != production
     assert settings["prices"][model["id"]]["image_per_unit"] == 1.0
-assert b["models"] == ["jev"] and b["dialects"] == ["systemone"]
-assert b["monthly_cap_usd"] == 0.01
 assert settings["systemone_charges"] == {"jev": 0.004, "solar": 0.004}
-charge = settings["systemone_charges"]["jev"]
-assert 2 * charge <= b["monthly_cap_usd"] < 3 * charge
 for model, fixed_charge in settings["systemone_charges"].items():
     assert settings["prices"][model]["request"] == fixed_charge
 assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"}
@@ -69,7 +96,7 @@ assert set(provider_line.split()[4:]) == {
     "api.upstage.ai",
     "generativelanguage.googleapis.com",
 }
-assert "http_port 127.0.0.1:8421\n" in policy
+assert f"http_port 127.0.0.1:{proxy_port}\n" in policy
 assert [line for line in policy.splitlines() if line.startswith("http_access ")] == [
     "http_access deny !loopback_client",
     "http_access deny !connect_method",
@@ -95,8 +122,8 @@ assert {
 } <= set(private_line.split()[3:])
 assert "memory_cache_shared off\n" in policy
 assert "cache_mem 0 MB\n" in policy
-assert "cache_log /run/ai-gateway-staging-egress/cache.log\n" in policy
-assert "access_log stdio:/run/ai-gateway-staging-egress/access.log\n" in policy
+assert f"cache_log {runtime}/cache.log\n" in policy
+assert f"access_log stdio:{runtime}/access.log\n" in policy
 subprocess.run(["squid", "-k", "parse", "-f", str(proxy_path)], check=True)
 
 with tempfile.TemporaryDirectory() as tmp:
@@ -107,8 +134,7 @@ with tempfile.TemporaryDirectory() as tmp:
     hosts.write_text("127.0.0.1 api.typesafe.ai\n")
     test_config = root / "squid.conf"
     test_config.write_text(
-        policy.replace("/run/ai-gateway-staging-egress/", f"{root}/")
-        + f"\nhosts_file {hosts}\n"
+        policy.replace(f"{runtime}/", f"{root}/") + f"\nhosts_file {hosts}\n"
     )
     with (root / "squid.log").open("w+") as log:
         proxy = subprocess.Popen(
@@ -120,7 +146,9 @@ with tempfile.TemporaryDirectory() as tmp:
                     log.seek(0)
                     raise AssertionError(log.read())
                 try:
-                    with socket.create_connection(("127.0.0.1", 8421), timeout=0.1):
+                    with socket.create_connection(
+                        ("127.0.0.1", proxy_port), timeout=0.1
+                    ):
                         break
                 except OSError:
                     time.sleep(0.05)
@@ -147,7 +175,9 @@ with tempfile.TemporaryDirectory() as tmp:
                 ],
             ]
             for request in requests:
-                with socket.create_connection(("127.0.0.1", 8421), timeout=2) as conn:
+                with socket.create_connection(
+                    ("127.0.0.1", proxy_port), timeout=2
+                ) as conn:
                     conn.settimeout(3)
                     conn.sendall((request + "Connection: close\r\n\r\n").encode())
                     # Finish the response before shutdown so Squid can record
@@ -173,5 +203,5 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "example.com:443" in access_log
     assert "FATAL" not in (root / "cache.log").read_text()
     print(
-        f"PASS: generated TOML, proxy parse, {len(requests)} real denied and logged proxy requests"
+        f"PASS {mode}: generated TOML, proxy parse, {len(requests)} real denied and logged proxy requests"
     )

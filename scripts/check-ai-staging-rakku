@@ -2,7 +2,7 @@
 #!nix-shell -i python3 -p python3 nix git
 # ruff: noqa: EXE005
 # nix-shell requires its interpreter directive on the second line.
-"""Compare evaluated Rakku against cairn. Never deploy or print environment values."""
+"""Compare Rakku gateway additions and cutover scopes without printing values."""
 
 import argparse
 import json
@@ -15,6 +15,7 @@ PROJECTION = r"""system: let
   lib = system.pkgs.lib;
 in {
   units = builtins.attrNames c.systemd.units;
+  unit_texts = builtins.mapAttrs (_: unit: unit.text) c.systemd.units;
   services = builtins.mapAttrs (_: unit: {
     ExecStart = unit.serviceConfig.ExecStart or null;
     inherit (unit) environment;
@@ -37,10 +38,13 @@ NEW_SECRETS = {
     "ai-staging-login-keeper",
 }
 
+PRODUCTION_SERVICES = {"ai-gateway", "ai-gateway-egress", "tsnet-proxy-ai"}
+PRODUCTION_SECRETS = {"ai-gateway-usage", "ai-gateway-key-assistant-rakku"}
+ASSISTANTS = {"pi-assistant-simon", "pi-assistant-laure", "pi-assistant-household"}
+
 
 def evaluate(ref):
-    # Sequential evaluations keep memory bounded. Capture values for equality
-    # only. Output contains names, not environment or credential values.
+    # Sequential evaluations keep memory bounded. Values are for equality only.
     return json.loads(
         subprocess.check_output(
             [
@@ -58,14 +62,26 @@ def evaluate(ref):
     )
 
 
-def compare(before, after):
+def compare(
+    before,
+    after,
+    *,
+    services=None,
+    secrets=None,
+    tailnets=None,
+    changed_services=frozenset(),
+    changed_texts=frozenset(),
+):
+    services = NEW_SERVICES if services is None else services
+    secrets = NEW_SECRETS if secrets is None else secrets
+    tailnets = {"ai-staging"} if tailnets is None else tailnets
     report = {}
     errors = []
     for kind, allowed in [
-        ("units", {name + ".service" for name in NEW_SERVICES}),
-        ("services", NEW_SERVICES),
-        ("secrets", NEW_SECRETS),
-        ("tailnetNames", {"ai-staging"}),
+        ("units", {name + ".service" for name in services}),
+        ("services", services),
+        ("secrets", secrets),
+        ("tailnetNames", tailnets),
     ]:
         old, new = before[kind], after[kind]
         removed = sorted(set(old) - set(new))
@@ -84,49 +100,82 @@ def compare(before, after):
             }
         )
         report[kind] = {"added": added, "removed": removed, "changed_fields": changed}
-        if removed or changed or not set(added) <= allowed:
+        permitted_changes = changed_services if kind == "services" else set()
+        if (
+            removed
+            or set(added) != set(allowed)
+            or not set(changed) <= permitted_changes
+        ):
             errors.append(kind)
-        # Required additions must not silently disappear.
-        if not allowed <= set(added):
-            errors.append(f"{kind}: missing additions")
+    old, new = before["unit_texts"], after["unit_texts"]
+    text_changes = sorted(
+        name for name in set(old) & set(new) if old[name] != new[name]
+    )
+    report["unit_texts"] = {
+        "added": sorted(set(new) - set(old)),
+        "removed": sorted(set(old) - set(new)),
+        "changed": text_changes,
+    }
+    if (
+        set(text_changes) != set(changed_texts)
+        or set(old) - set(new)
+        or set(new) - set(old) != {name + ".service" for name in services}
+    ):
+        errors.append("unit_texts")
     report["status"] = "FAIL" if errors else "PASS"
     if errors:
         report["errors"] = errors
     return report
 
 
+def yaml_entries(text):
+    result = {}
+    current = None
+    for line in text.splitlines(keepends=True):
+        if line and not line[0].isspace() and ":" in line:
+            current = line.split(":", 1)[0]
+            result[current] = ""
+        if current:
+            result[current] += line
+    result.pop("sops", None)
+    return result
+
+
+def encrypted_diff(before, after, allowed):
+    old, new = yaml_entries(before), yaml_entries(after)
+    return {
+        "added": sorted(set(new) - set(old)),
+        "existing_unchanged": all(new.get(key) == value for key, value in old.items()),
+        "only_expected_additions": set(new) - set(old) <= set(allowed),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", default="cairn")
     parser.add_argument("--candidate", default="HEAD")
+    parser.add_argument("--phase", choices=["staging", "A", "B"], default="staging")
+    parser.add_argument("--staging-base", help="rebased staging commit before A")
+    parser.add_argument("--production-base", help="commit A, required for B")
     parser.add_argument("--output", default="/tmp/ai-staging-rakku-diff.txt")
     args = parser.parse_args()
+    if args.phase != "staging" and not args.staging_base:
+        parser.error("--staging-base is required for A/B")
+    if args.phase == "B" and not args.production_base:
+        parser.error("--production-base is required for B")
     root = subprocess.check_output(
         ["git", "rev-parse", "--show-toplevel"], text=True
     ).strip()
-    base = subprocess.check_output(["git", "rev-parse", args.base], text=True).strip()
-    candidate = subprocess.check_output(
-        [
-            "git",
-            "rev-parse",
-            "HEAD" if args.candidate == "working-tree" else args.candidate,
-        ],
-        text=True,
-    ).strip()
-    # Accept the current checkout only for development before its final commit.
-    target = (
-        root
-        if args.candidate == "working-tree"
-        else f"git+file://{root}?rev={candidate}"
-    )
-    before = evaluate(f"git+file://{root}?rev={base}")
-    after = evaluate(target)
-    report = {"base": base, "candidate": candidate, **compare(before, after)}
-    # Existing encrypted entries must be byte-for-byte equal. sops metadata and
-    # new entries may change; this check never decrypts or emits ciphertext.
-    old_yaml = subprocess.check_output(
-        ["git", "show", f"{base}:secrets/hosts/rakku.yaml"], text=True
-    )
+
+    def resolve(ref):
+        return subprocess.check_output(["git", "rev-parse", ref], text=True).strip()
+
+    def source(sha):
+        return f"git+file://{root}?rev={sha}"
+
+    base = resolve(args.base)
+    candidate = resolve("HEAD" if args.candidate == "working-tree" else args.candidate)
+    target = evaluate(root if args.candidate == "working-tree" else source(candidate))
     new_yaml = (
         (pathlib.Path(root) / "secrets/hosts/rakku.yaml").read_text()
         if args.candidate == "working-tree"
@@ -135,26 +184,103 @@ def main():
         )
     )
 
-    def entries(text):
-        result = {}
-        current = None
-        for line in text.splitlines(keepends=True):
-            if line and not line[0].isspace() and ":" in line:
-                current = line.split(":", 1)[0]
-                result[current] = ""
-            if current:
-                result[current] += line
-        return result
+    snapshots = {}
 
-    old_entries, new_entries = entries(old_yaml), entries(new_yaml)
-    unchanged = all(
-        new_entries.get(key) == value
-        for key, value in old_entries.items()
-        if key != "sops"
-    )
-    report["existing_encrypted_secrets_unchanged"] = unchanged
-    if not unchanged:
-        report["status"] = "FAIL"
+    def snapshot(sha):
+        if sha not in snapshots:
+            snapshots[sha] = evaluate(source(sha))
+        return snapshots[sha]
+
+    def comparison(
+        sha, services, secrets, tailnets, changed=frozenset(), text_changes=None
+    ):
+        report = compare(
+            snapshot(sha),
+            target,
+            services=services,
+            secrets=secrets,
+            tailnets=tailnets,
+            changed_services=changed,
+            changed_texts=(
+                {name + ".service" for name in changed}
+                if text_changes is None
+                else text_changes
+            ),
+        )
+        old_yaml = subprocess.check_output(
+            ["git", "show", f"{sha}:secrets/hosts/rakku.yaml"], text=True
+        )
+        report["encrypted_entries"] = encrypted_diff(old_yaml, new_yaml, secrets)
+        encrypted = report["encrypted_entries"]
+        if (
+            not encrypted["existing_unchanged"]
+            or not encrypted["only_expected_additions"]
+        ):
+            report["status"] = "FAIL"
+        report["base"] = sha
+        return report
+
+    changed = ASSISTANTS if args.phase == "B" else set()
+    if args.phase == "staging":
+        report = comparison(base, NEW_SERVICES, NEW_SECRETS, {"ai-staging"})
+    else:
+        staging_base = resolve(args.staging_base)
+        old_texts = snapshot(base)["unit_texts"]
+        stage_texts = snapshot(staging_base)["unit_texts"]
+        inherited = {
+            n
+            for n in set(old_texts) & set(stage_texts)
+            if old_texts[n] != stage_texts[n]
+        }
+
+        def without_restart_trigger(text):
+            return "\n".join(
+                line
+                for line in text.splitlines()
+                if not line.startswith("X-Restart-Triggers=")
+            )
+
+        # Reviewed, already-live staging artifact: its default shell package
+        # duplicates shadow in system.path, changing only D-Bus's reload trigger.
+        inherited_ok = inherited <= {"dbus-broker.service"} and all(
+            without_restart_trigger(old_texts[n])
+            == without_restart_trigger(stage_texts[n])
+            and target["unit_texts"][n] == stage_texts[n]
+            for n in inherited
+        )
+        report = {
+            "against_cairn": comparison(
+                base,
+                NEW_SERVICES | PRODUCTION_SERVICES,
+                NEW_SECRETS | PRODUCTION_SECRETS,
+                {"ai-staging", "ai"},
+                changed,
+                inherited | {name + ".service" for name in changed},
+            )
+        }
+        report["against_staging"] = comparison(
+            staging_base,
+            PRODUCTION_SERVICES,
+            PRODUCTION_SECRETS,
+            {"ai"},
+            changed,
+        )
+        if args.phase == "B":
+            report["against_A"] = comparison(
+                resolve(args.production_base), set(), set(), set(), ASSISTANTS
+            )
+        report["inherited_from_staging"] = {
+            "unit_texts": sorted(inherited),
+            "fields": ["X-Restart-Triggers"] if inherited else [],
+            "candidate_unchanged_from_staging": inherited_ok,
+            "status": "PASS" if inherited_ok else "FAIL",
+        }
+        report["status"] = (
+            "PASS"
+            if all(section["status"] == "PASS" for section in report.values())
+            else "FAIL"
+        )
+    report.update(candidate=candidate, phase=args.phase)
     output = json.dumps(report, indent=2) + "\n"
     pathlib.Path(args.output).write_text(output)
     print(output, end="")

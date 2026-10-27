@@ -7,10 +7,10 @@
   };
 
   inputs = {
-    # STAGING ONLY: publish this repo and replace this one URL before pushing cairn.
-    # Only Rakku's staging layer consumes the package (other host evals stay lazy).
+    # Private source: use SSH, not the token-based GitHub flake fetcher.
+    # Only enabled gateway instances on Rakku force this input.
     ai-gateway = {
-      url = "git+file:///home/simonwjackson/code/sandbox/ai-gateway?ref=front-door";
+      url = "git+ssh://git@github.com/simonwjackson/ai-gateway?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

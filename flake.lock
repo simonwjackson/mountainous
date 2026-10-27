@@ -9,16 +9,16 @@
       "locked": {
         "lastModified": 1793053078,
         "narHash": "sha256-sWQT/ZlYv10s7OcPwmxoqDcCepglbl8nM5wFmzbfFss=",
-        "ref": "front-door",
+        "ref": "main",
         "rev": "3924b6597d9ef4af515d617efe0d71bad569b38c",
         "revCount": 14,
         "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/ai-gateway"
+        "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
       "original": {
-        "ref": "front-door",
+        "ref": "main",
         "type": "git",
-        "url": "file:///home/simonwjackson/code/sandbox/ai-gateway"
+        "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       }
     },
     "airconnect-src": {

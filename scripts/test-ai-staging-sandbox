@@ -26,11 +26,6 @@ import time
 
 SUDO = "/run/wrappers/bin/sudo"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-FRONT = "ai-staging-sandbox-front.service"
-PROXY = "ai-staging-sandbox-proxy.service"
-USER = "ai-gateway-staging"
-STATE = pathlib.Path("/var/lib/ai-gateway-staging")
-RUNTIME = pathlib.Path("/run/ai-gateway-staging-egress")
 PROJECTION = """s: {
   front = s.config.systemd.services.ai-gateway-staging.serviceConfig;
   proxy = s.config.systemd.services.ai-gateway-staging-egress.serviceConfig;
@@ -99,35 +94,48 @@ def stop(name, process):
     assert process.returncode == 0, text
 
 
-def remove_runtime_symlink():
+def remove_runtime_symlink(runtime):
     # DynamicUser can leave its public symlink after removing the private dir.
-    if RUNTIME.is_symlink() and not RUNTIME.exists():
-        sudo("rm", "--", str(RUNTIME))
+    if runtime.is_symlink() and not runtime.exists():
+        sudo("rm", "--", str(runtime))
 
 
-def remove_account(remove_group):
-    sudo("userdel", USER)
-    if remove_group and not absent_account(grp, "getgrnam", USER):
-        sudo("groupdel", USER)
+def remove_account(user, remove_group):
+    sudo("userdel", user)
+    if remove_group and not absent_account(grp, "getgrnam", user):
+        sudo("groupdel", user)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--instance", choices=["staging", "production"], default="staging"
+    )
     parser.add_argument("--output", default="/tmp/ai-staging-sandbox-proof.json")
     args = parser.parse_args()
+    service = "ai-gateway" if args.instance == "production" else "ai-gateway-staging"
+    user = service
+    state = pathlib.Path(f"/var/lib/{service}")
+    runtime = pathlib.Path(f"/run/{service}-egress")
+    front_unit = f"ai-{args.instance}-sandbox-front.service"
+    proxy_unit = f"ai-{args.instance}-sandbox-proxy.service"
+    front_port, proxy_port = (
+        (8430, 8431) if args.instance == "production" else (8420, 8421)
+    )
+    projection = PROJECTION.replace("ai-gateway-staging", service)
     if socket.gethostname().split(".")[0] != "zao":
         parser.error("run this test on Zao only; never on Rakku")
     sudo("true")
-    for path in (STATE, RUNTIME):
+    for path in (state, runtime):
         if path.exists() or path.is_symlink():
             parser.error(f"refusing existing state path: {path}")
-    for name in (FRONT, PROXY):
+    for name in (front_unit, proxy_unit):
         if (
             output("systemctl", "show", name, "-p", "LoadState", "--value")
             != "not-found"
         ):
             parser.error(f"refusing existing unit: {name}")
-    for port in (8420, 8421):
+    for port in (front_port, proxy_port):
         with socket.socket() as probe:
             probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             probe.bind(("127.0.0.1", port))
@@ -139,7 +147,7 @@ def main():
             "--json",
             f"{ROOT}#nixosConfigurations.rakku",
             "--apply",
-            PROJECTION,
+            projection,
             "--option",
             "eval-cache",
             "false",
@@ -157,8 +165,8 @@ def main():
             "--option",
             "builders",
             "",
-            f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.ai-gateway-staging.configFile",
-            f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.ai-gateway-staging.egressConfigFile",
+            f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.{service}.configFile",
+            f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.{service}.egressConfigFile",
         ],
         check=True,
     )
@@ -182,13 +190,14 @@ def main():
             ],
             check=True,
         )
-    create_user = absent_account(pwd, "getpwnam", USER)
-    create_group = absent_account(grp, "getgrnam", USER)
+    create_user = absent_account(pwd, "getpwnam", user)
+    create_group = absent_account(grp, "getgrnam", user)
     if create_user != create_group:
         parser.error("refusing a partially existing staging user/group")
     processes = []
     report = {
         "host": socket.gethostname(),
+        "instance": args.instance,
         "properties_source": str(ROOT),
         "evaluated_properties_sha256": hashlib.sha256(
             json.dumps(properties, sort_keys=True).encode()
@@ -197,14 +206,14 @@ def main():
     }
     with contextlib.ExitStack() as cleanup:
         if create_user:
-            sudo("systemd-sysusers", "--inline", f'u {USER} - "Staging sandbox test"')
-            cleanup.callback(remove_account, create_group)
-        account = pwd.getpwnam(USER)
+            sudo("systemd-sysusers", "--inline", f'u {user} - "Staging sandbox test"')
+            cleanup.callback(remove_account, user, create_group)
+        account = pwd.getpwnam(user)
         assert account.pw_uid != 0 and account.pw_gid != 0
         # Reproduce Rakku's existing plain, root-owned 0700 state directory.
-        sudo("install", "-d", "-m", "0700", "-o", "root", "-g", "root", str(STATE))
-        cleanup.callback(sudo, "rm", "-r", "--", str(STATE))
-        cleanup.callback(remove_runtime_symlink)
+        sudo("install", "-d", "-m", "0700", "-o", "root", "-g", "root", str(state))
+        cleanup.callback(sudo, "rm", "-r", "--", str(state))
+        cleanup.callback(remove_runtime_symlink, runtime)
         with tempfile.TemporaryDirectory(prefix="ai-staging-sandbox-") as tmp:
             root = pathlib.Path(tmp)
             front = properties["front"].copy()
@@ -226,8 +235,8 @@ def main():
                 pathlib.Path(properties["toml"])
                 .read_text()
                 .replace(
-                    "/run/credentials/ai-gateway-staging.service/",
-                    f"/run/credentials/{FRONT}/",
+                    f"/run/credentials/{service}.service/",
+                    f"/run/credentials/{front_unit}/",
                 )
             )
             fixture = root / "sandbox.toml"
@@ -237,44 +246,46 @@ def main():
             fixture_path = output("nix-store", "--add", str(fixture))
             front_command[-1] = fixture_path
             proxy_process = start(
-                PROXY,
+                proxy_unit,
                 properties["proxy"],
                 shlex.split(properties["proxy"]["ExecStart"]),
             )
-            processes.append((PROXY, proxy_process))
-            cleanup.callback(stop, PROXY, proxy_process)
+            processes.append((proxy_unit, proxy_process))
+            cleanup.callback(stop, proxy_unit, proxy_process)
             report["proxy_status"] = request(
                 proxy_process,
-                8421,
+                proxy_port,
                 b"CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\nConnection: close\r\n\r\n",
             )
             assert report["proxy_status"] == "HTTP/1.1 403 Forbidden"
-            front_process = start(FRONT, front, front_command)
-            processes.append((FRONT, front_process))
-            cleanup.callback(stop, FRONT, front_process)
+            front_process = start(front_unit, front, front_command)
+            processes.append((front_unit, front_process))
+            cleanup.callback(stop, front_unit, front_process)
             report["front_status"] = request(
                 front_process,
-                8420,
+                front_port,
                 b"GET /v1/models HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
             )
             assert report["front_status"].split()[1] == "401"
-            owner = STATE.stat()
+            owner = state.stat()
             assert (owner.st_uid, owner.st_gid, stat.S_IMODE(owner.st_mode)) == (
                 account.pw_uid,
                 account.pw_gid,
                 0o700,
             )
-            report["state_owner_mode"] = f"{USER}:{USER} 0700"
+            report["state_owner_mode"] = f"{user}:{user} 0700"
             for _ in range(50):
-                access_log = sudo("cat", str(RUNTIME / "access.log"))
+                access_log = sudo("cat", str(runtime / "access.log"))
                 if "TCP_DENIED/403" in access_log and "example.com:443" in access_log:
                     break
                 time.sleep(0.1)
             else:
                 raise AssertionError("the refused CONNECT was not logged")
-            assert "FATAL" not in sudo("cat", str(RUNTIME / "cache.log"))
+            assert "FATAL" not in sudo("cat", str(runtime / "cache.log"))
             report["proxy_denial_logged"] = True
-            proxy_pid = output("systemctl", "show", PROXY, "-p", "MainPID", "--value")
+            proxy_pid = output(
+                "systemctl", "show", proxy_unit, "-p", "MainPID", "--value"
+            )
             mounts = sudo("cat", f"/proc/{proxy_pid}/mountinfo")
             shm = next(
                 line for line in mounts.splitlines() if line.split()[4] == "/dev/shm"
