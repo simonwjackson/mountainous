@@ -16,7 +16,18 @@ PlatinumMenuFrame {
 
     required property var bar
 
-    preferredWidth: 260
+    // Wide enough for the longest name, value and letter (the values are
+    // short now that the bar shows glyphs), from 260 to 400 px; the host
+    // caps it by the screen, and a value elides before a name does.
+    preferredWidth: {
+        let value = 0;
+        for (const id of frame.entries)
+            if (id !== "status" && id !== "retry" && id !== "dismiss")
+                value = Math.max(value, PlatinumMetrics.smallWidth(frame.bar.valueFor(id)));
+        const want = PlatinumTokens.menuTextLeft + frame.nameWidth + PlatinumTokens.menuGap + value
+            + (frame.anyKey ? PlatinumTokens.menuGap + frame.keyWidth : 0) + PlatinumTokens.menuRightInset + 2;
+        return Math.max(260, Math.min(400, PlatinumMetrics.even(want)));
+    }
     showHeader: false
     scrolls: entriesList.scrolls
 
