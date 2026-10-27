@@ -157,7 +157,7 @@ ShellRoot {
         const out = [];
         root.toplevels.forEach(function (t, i) {
             if (t.activated) return;
-            out.push({ kind: "window", label: t.title, detail: "page " + t.workspace.id, page: t.workspace.id,
+            out.push({ kind: "window", label: t.title, detail: "", page: t.workspace.id, shown: !!t.workspace.active,
                 appId: t.wayland.appId, order: i, screen: t.workspace.monitor.name, toplevel: t, entry: null });
         });
         omni.windowRows = Lanes.groupRows(out, here);

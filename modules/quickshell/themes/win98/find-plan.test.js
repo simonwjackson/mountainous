@@ -164,8 +164,11 @@ assert.equal(P.scrollFor(rows, 1, 40, 48, 1), 0, "the first selectable row start
 assert.equal(P.scrollFor(rows, 2, 40, 48, 1), 32);
 const st = P.status(rows, 1);
 assert.equal(st.count, "3 items");
-assert.equal(P.status([{ t: "item", k: "win", hint: "page 1" }], 0).count, "1 item");
-assert.equal(P.status([{ t: "item", k: "win", hint: "page 1" }], 0).detail, "Window: page 1");
+assert.equal(P.status([{ t: "item", k: "win", hint: "tablet" }], 0).count, "1 item");
+assert.equal(P.status([{ t: "item", k: "win", hint: "tablet" }], 0).detail, "Window: tablet");
+// A window on this screen has no hint (find-model.js never shows a page
+// number), so the status bar names only the kind.
+assert.equal(P.status([{ t: "item", k: "win", hint: "" }], 0).detail, "Window");
 assert.equal(P.status([{ t: "item", k: "none", dis: true }], 0).detail, "");
 
 console.log("WIN98_FIND_PLAN_PASSED");
