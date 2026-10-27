@@ -87,6 +87,7 @@
           ''
             node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
+            node ${./quickshell/page-names.test.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js}
             node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
             touch $out
@@ -220,6 +221,8 @@
         assert builtins.hasAttr (prefix + "themes/platinum/menu-models.js") files;
         assert builtins.hasAttr (prefix + "window-hide.js") files;
         assert builtins.hasAttr (prefix + "app-model.js") files;
+        assert builtins.hasAttr (prefix + "page-names.js") files;
+        assert !(builtins.hasAttr (prefix + "page-names.test.js") files);
         assert !(builtins.hasAttr (prefix + "themes/platinum/strip-plan.test.js") files);
         assert !(builtins.hasAttr (prefix + "app-model.test.js") files);
         # The Find menu (Super+P) and Go to Address, their model and plan.
