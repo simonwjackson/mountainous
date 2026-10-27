@@ -8,6 +8,8 @@ Later (2026-10-24): the `77dd2791` bevel and cast shadow were ported onto the ph
 
 ## Tandem rule and parity ledger (from 2026-10-27)
 
+**No workspace numbers are shown in either theme.** A page is named by its apps ("Beside Signal and Zed"), never by its number. See "No workspace numbers, and a steel Win98 dark caption".
+
 Platinum and Windows 98 move together. A feature lands for both themes in the same phase, or this ledger records why one theme has no counterpart. New theme work updates this table when it lands. Fleet data, launches, windows and session actions stay in the shared owners; each theme draws its own view.
 
 | Feature | Platinum | Windows 98 | Win98 counterpart |
@@ -18,7 +20,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Done | Find window above Start, IE's Open dialog (parity mock item 2; see "Find window, Open and web pages for Win98") |
-| Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption, minimize/maximize/close; shared menu IPC contract below |
+| Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption in light, steel in dark grey; minimize/maximize/close; shared menu IPC contract below |
 | Web page styling | Done (`themes/platinum/web.css`) | Done (`themes/win98/web.css`) | Win98 scroll bars and form controls; W95FA on buttons, drop-down lists and legends only |
 | Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
 | About | Done | Missing | System Properties (not mocked) |
@@ -730,7 +732,7 @@ Nested Hyprland 0.56.2 inside bubblewrap under headless labwc (only `/dev/dri/re
 
 ## Window title bars (implemented)
 
-Under Platinum every window that leaves its frame to the compositor gets a Mac OS 8 title bar and frame: a close box on the left; a zoom box and a collapse box on the right; pinstripes either side of a plain patch behind the ChicagoFLF title; a black edge and a one-hair bevel round the whole window. An inactive window's bar is flat, with a grey title and no boxes. The bars take the theme's appearance (light, dark grey, black) and follow `desktop-theme` live. Windows 98 is a second live style in the same plugin: navy or inactive grey gradient, W95FA Grid bold caption, minimize/maximize/close boxes and a raised square frame. Both appearances follow Win98Tokens. See the Win98 caption section below for the app-icon and menu integration boundary.
+Under Platinum every window that leaves its frame to the compositor gets a Mac OS 8 title bar and frame: a close box on the left; a zoom box and a collapse box on the right; pinstripes either side of a plain patch behind the ChicagoFLF title; a black edge and a one-hair bevel round the whole window. An inactive window's bar is flat, with a grey title and no boxes. The bars take the theme's appearance (light, dark grey, black) and follow `desktop-theme` live. Windows 98 is a second live style in the same plugin: navy (light) or steel (dark grey) or inactive grey gradient, W95FA Grid bold caption, minimize/maximize/close boxes and a raised square frame. Both appearances follow Win98Tokens. See the Win98 caption section below for the app-icon and menu integration boundary.
 
 ### What was built
 
@@ -938,3 +940,57 @@ CPU seconds per 20-second interval, three windows, one spinning page, full redra
 Mean Win98 extra CPU falls 66%, from 1.26 to 0.425 seconds. All six new intervals have zero cache rebuilds after warm-up; the CPU harness exits cleanly. The caption has zero changed pixels against the old renderer in a 1410×38 crop. Bevels and text strokes are whole two-pixel steps in both appearances, without blended text edges.
 
 `checks.titlebars` and Myoko toplevel evaluation pass. The private nested Hyprland passes 32 input/caption assertions, including a real title change, empty/long titles, actual narrow rungs, a classless Qt client, Alt+Space, ten live round trips and reload. DRM log/fd scans show no backend, seat, real input or `card*`; only `renderD128` is exposed. Evidence and fixture corrections: `/tmp/tandem/win98-titlebars/` (`DETAILS.md`, `logs/{final-caption,cpu-cached}.log`, `compare/`, `logs/pixels.json`). Real Quickshell menu/hide integration, Myoko's GPU, real input, other scales and X11 remain unverified. No deployment.
+
+## No workspace numbers, and a steel Win98 dark caption (2026-10-27)
+
+Two changes Simon asked for after using Win98 on Myoko. Both apply to both themes where they reach.
+
+### No workspace numbers
+
+Simon: "I don't ever want to see the number of a workspace. The dividers are great, but the numbers are irrelevant. Workspaces are ephemeral for me, not a place you go to explicitly."
+
+Page ids stay internal: they order the strip and the lists, and they go to Hyprland. No label shows one.
+
+`modules/quickshell/page-names.js` is the shared wording. Both themes import it; neither writes its own.
+
+| Function | Text |
+|---|---|
+| `listNames(names)` | "Signal", "Signal and Zed", "Signal, Zed and Ghostty", "Signal, Zed, Ghostty…" (a divider's tooltip or label) |
+| `beside(names)` | "Beside Signal and Zed" |
+| `moveBeside(names)` | "Move beside Signal and Zed" (a drag onto another page) |
+| `movePages(windows, self, ownPage, shownPage, pageIds)` | The Move to page rows |
+
+Names are app names, once each, in strip order, at most three, then "…" with no space. The Move to page rows list every page of this screen in strip order, the moving window left out of its own page's names. The window's own page is checked and disabled; it reads "On its own" when the window is alone there. An empty page that is not the window's own reads "Empty page". There is no "(showing)" marker. A separator and "New page" end the list; the new page id is still one past every page on every screen.
+
+What changed:
+
+- **Find rows (`find-model.js`, both themes).** The Windows group drops "page N". A window on another screen keeps the screen's name ("tablet"); a window on this screen has no hint, so the Win98 status bar reads "Window". Each screen's windows go page by page: the page the screen shows first, then the other pages where their most recent window falls, with a separator row between pages. A typed query keeps rank order and has no page separators. OmniBar's window rows carry `shown` (`Lanes.isShown`) and an empty `detail`, so the omni card shows no number either, and typing a number no longer finds a page.
+- **Platinum.** The Application menu's window submenus name only another screen or "hidden". The tile menu header drops the page ("GitHub, not showing"). Move to page uses `page-names.js`. A strip drag onto another page reads "Move beside …". The strip has no divider labels, so it uses no `listNames` yet.
+- **Win98 Find window.** Passes `shown` to the model. The Open dialog lists web pages (URL and title); it never showed a workspace number, so it did not change.
+- **Not here.** The Win98 taskbar bands, Move to Page menu, Start ▸ Windows and Alt+Tab belong to the `win98-taskbar-session` work, which imports `page-names.js`. `no-page-numbers.test.js` lists their three files in `PENDING` until that lands. Hyprland's notifications showed no page numbers; nothing changed there.
+
+Checks: `checks.theme-parity` runs `theme-dev/no-page-numbers.test.js`. It renders every label, hint and detail from `find-model.js`, `menu-models.js`, `strip-plan.js` and `page-names.js` for 48 windows on 12 pages and two screens, in every scope, and fails on `/\bpage\s*\d/i`. It also sweeps the shipped QML and JS for a string ending in "page " joined to a value. Against the code before this change it fails on "page 1". The per-model tests (`find-model.test.js`, `menu-models.test.js`, `strip-plan.test.js`, `page-names.test.js`) assert the same.
+
+### Win98 dark caption: steel
+
+Simon: "In dark mode, the blue title bar is a little bit jarring. Use something more dark-mode appropriate that still feels like Windows 98."
+
+Dark grey's active caption is now steel, `#26364F` → `#56708E`; light keeps Windows Standard's navy, `#000080` → `#1084D0`. The inactive caption is unchanged (`#2A2A2A` → `#4A4A4A`). The menu and list selection takes the same steel, `#41608A` (it was `#2F4FC7`), as Windows Standard's selection takes its caption's navy. The values live in `Win98Tokens.palette()` (`caption1`, `caption2`, `selection`), `titlebars.lua` (`WIN98_PALETTES.dark`) and `scripts/generate-native-themes.py` (dark `caption`, `selected`). `checks.titlebars` compares the Lua and QML palettes; `checks.native-themes` compares the native palette with the tokens. The colours still apply live through `desktop-theme` (`titlebars.apply()`), with no plugin reload.
+
+| White text on | Navy (before) | Steel |
+|---|---|---|
+| Gradient start | 16.0:1 | 12.2:1 |
+| Gradient end | 4.0:1 (below AA) | 5.1:1 |
+| Selection | 6.9:1 | 6.4:1 |
+
+Selection against the list background `#1D1D1D` is 2.6:1 (was 2.5:1), and against the face `#3C3C3C` 1.7:1 (was 1.6:1), so level bars drawn in the selection colour are no fainter. Active and inactive stay apart by hue (blue against neutral grey) and by title colour (white against `#9A9A9A`).
+
+The option sheet with five candidates and the pick: `/tmp/tandem/pages-caption/caption/` (served at `http://100.114.19.92:8765/tandem/pages-caption/caption/`). Candidates: dim navy, steel, a slate after Win98's "Slate", a dark teal after "Teal"/"Marine", and charcoal with a thin accent. The scheme names are from memory; their values are approximations, not sampled from a Win98 install. Charcoal was rejected: it is darker than the inactive caption, and its accent line needs a new plugin option.
+
+### Decisions made without asking
+
+- Page separators only for an untouched field. A typed query ranks matches; splitting them by page would move the best match away from the top.
+- Pages after the shown one are ordered by recency, not by id: the most recently used window's page comes second.
+- The omni card's window detail is empty rather than the app name; the card already heads each screen's group.
+- The selection changes with the caption, in QML, GTK, Qt and Ghostty. Level bars use the selection colour, so they change too.
+
