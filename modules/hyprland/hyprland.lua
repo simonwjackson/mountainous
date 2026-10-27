@@ -39,6 +39,12 @@ hl.env("NIXOS_OZONE_WL", "1")
 local MASTER_RATIO = 0.5
 local MASTER_SIDE  = "left"
 
+-- The window edge outside Platinum. Under the Platinum desktop theme
+-- titlebars.lua (below) gives windows a black hair and square corners
+-- instead, and puts these back for every other theme.
+local BORDER_SIZE = 0
+local ROUNDING    = 6
+
 hl.config({
     xwayland = {
         -- Prevent compositor bilinear scaling of any remaining X11 apps at
@@ -55,7 +61,7 @@ hl.config({
 
         -- Kamoi: "Windows carry no border. The black gap separates
         -- them, and the pointer says which window is live."
-        border_size = 0,
+        border_size = BORDER_SIZE,
 
         -- The whole reason for Hyprland over a scrollable compositor.
         layout = "master",
@@ -78,7 +84,7 @@ hl.config({
         -- invisible at 215 PPI, 12 reads as decorative. 6 is 9
         -- physical pixels at scale 1.5, about a millimetre: enough to
         -- look intended, not enough to notice.
-        rounding = 6,
+        rounding = ROUNDING,
         blur   = { enabled = false },
         shadow = { enabled = false },
     },
@@ -937,6 +943,19 @@ hl.bind(mod .. " + SHIFT + O", function()
     hl.dispatch(hl.dsp.dpms({ action = any_on and "off" or "on" }))
 end)
 hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
+
+--------------------------------------------------------------------
+-- Platinum window title bars. modules/hyprland.nix installs
+-- titlebars.lua and the plugin it loads; a host without them skips this.
+--------------------------------------------------------------------
+if package.searchpath("titlebars", package.path) then
+    local ok, err = pcall(function()
+        require("titlebars").attach({ border_size = BORDER_SIZE, rounding = ROUNDING })
+    end)
+    if not ok then
+        hl.notification.create({ text = "Title bars did not load: " .. tostring(err), timeout = 8000 })
+    end
+end
 
 --------------------------------------------------------------------
 -- Session restore, on hosts that install it. modules/session-restore.nix

@@ -1,0 +1,806 @@
+diff --git a/barDeco.cpp b/barDeco.cpp
+index c27653d..845803a 100644
+--- a/barDeco.cpp
++++ b/barDeco.cpp
+@@ -22,6 +22,13 @@
+ #include <hyprland/src/layout/LayoutManager.hpp>
+ #include <hyprland/src/render/OpenGL.hpp>
+ #include <hyprland/src/state/MonitorState.hpp>
++#include <hyprland/src/protocols/XDGShell.hpp>
++
++// platinum fork: what a client asked for is private protocol state.
++#define private public
++#include <hyprland/src/protocols/XDGDecoration.hpp>
++#include <hyprland/src/protocols/ServerDecorationKDE.hpp>
++#undef private
+ 
+ #include "globals.hpp"
+ #include "BarPassElement.hpp"
+@@ -224,7 +231,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
+         return;
+     }
+ 
+-    if (Desktop::focusState()->window() != PWINDOW)
++    const bool WASFOCUSED = Desktop::focusState()->window() == PWINDOW;
++    if (!WASFOCUSED)
+         Desktop::focusState()->fullWindowFocus(PWINDOW, Desktop::FOCUS_REASON_CLICK);
+ 
+     if (PWINDOW->m_isFloating)
+@@ -233,7 +241,8 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
+     info.cancelled   = true;
+     m_bCancelledDown = true;
+ 
+-    if (doButtonPress(BARPADDING, BARBUTTONPADDING, HEIGHT, COORDS, BUTTONSRIGHT))
++    // platinum fork: an inactive window draws no boxes, so a click there only activates it (Mac OS 8)
++    if ((WASFOCUSED || !g_pGlobalState->config.platinum->value()) && doButtonPress(BARPADDING, BARBUTTONPADDING, HEIGHT, COORDS, BUTTONSRIGHT))
+         return;
+ 
+     if (!ON_DOUBLE_CLICK.empty() &&
+@@ -278,6 +287,17 @@ void CHyprBar::handleMovement() {
+ 
+ bool CHyprBar::doButtonPress(Config::INTEGER barPadding, Config::INTEGER barButtonPadding, Config::INTEGER barHeight, Vector2D COORDS, const bool BUTTONSRIGHT) {
+     //check if on a button
++    if (g_pGlobalState->config.platinum->value()) {
++        for (size_t i = 0; i < g_pGlobalState->buttons.size(); ++i) {
++            const auto LB = buttonBoxLogical(i, assignedBoxGlobal().w, barHeight);
++            if (VECINRECT(COORDS, LB.x, LB.y, LB.x + LB.w, LB.y + LB.h)) {
++                g_pKeybindManager->m_dispatchers["exec"](g_pGlobalState->buttons[i].cmd);
++                return true;
++            }
++        }
++        return false;
++    }
++
+     float offset = barPadding;
+ 
+     for (auto& b : g_pGlobalState->buttons) {
+@@ -296,7 +316,6 @@ bool CHyprBar::doButtonPress(Config::INTEGER barPadding, Config::INTEGER barButt
+ }
+ 
+ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
+-    const auto COLORVAL         = g_pGlobalState->config.textColor->value();
+     const auto SIZE             = g_pGlobalState->config.barTextSize->value();
+     const auto WEIGHT           = g_pGlobalState->config.barTextWeight->value();
+     const auto FONT             = g_pGlobalState->config.barTextFont->value();
+@@ -320,7 +339,8 @@ void CHyprBar::renderBarTitle(const Vector2D& bufferSize, const float scale) {
+         return;
+     }
+ 
+-    const CHyprColor COLOR = m_bForcedTitleColor.value_or(configColor(COLORVAL));
++    const CHyprColor COLOR = titleColor();
++    m_cLastTitleColor      = COLOR;
+     m_pTextTex             = g_pHyprRenderer->renderText(m_szLastTitle, COLOR, scaledSize, false, FONT, maxWidth, WEIGHT.m_value);
+ }
+ 
+@@ -350,6 +370,18 @@ void CHyprBar::renderBarButtons(CBox* barBox, const float scale, const float a)
+     const auto visibleCount    = getVisibleButtonCount(BARBUTTONPADDING, BARPADDING, Vector2D{barBox->w, barBox->h}, scale);
+     const bool INVALIDATEICONS = m_bButtonsDirty || m_bWindowSizeChanged;
+ 
++    if (g_pGlobalState->config.platinum->value()) {
++        // Mac OS 8: an inactive window shows no boxes.
++        if (m_pWindow.lock() != Desktop::focusState()->window())
++            return;
++        for (size_t i = 0; i < visibleCount; ++i) {
++            const auto LB = buttonBoxLogical(i, barBox->w / scale, barBox->h / scale);
++            CBox       pb = {barBox->x + std::round(LB.x * scale), barBox->y + std::round(LB.y * scale), std::round(LB.w * scale), std::round(LB.h * scale)};
++            renderPlatinumButton(pb, g_pGlobalState->buttons[i].icon, scale, a);
++        }
++        return;
++    }
++
+     int        offset = BARPADDING * scale;
+     for (size_t i = 0; i < visibleCount; ++i) {
+         auto&      button           = g_pGlobalState->buttons[i];
+@@ -387,6 +419,9 @@ void CHyprBar::renderBarButtonsText(CBox* barBox, const float scale, const float
+     const auto visibleCount = getVisibleButtonCount(BARBUTTONPADDING, BARPADDING, Vector2D{barBox->w, barBox->h}, scale);
+     const auto COORDS       = cursorRelativeToBar();
+ 
++    if (g_pGlobalState->config.platinum->value())
++        return; // glyphs are drawn as rects in renderPlatinumButton
++
+     int        offset        = BARPADDING * scale;
+     float      noScaleOffset = BARPADDING;
+ 
+@@ -436,6 +471,16 @@ void CHyprBar::draw(PHLMONITOR pMonitor, const float& a) {
+         g_pDecorationPositioner->repositionDeco(this);
+     }
+ 
++    // platinum fork: a client may change its decoration mode after it maps.
++    if (validMapped(m_pWindow) && g_pGlobalState->config.platinum->value()) {
++        const bool DECORATES = platinumClientDecorates(m_pWindow.lock());
++        if (DECORATES != m_clientDecorated) {
++            m_clientDecorated = DECORATES;
++            m_hidden          = m_ruleHidden || m_clientDecorated;
++            g_pDecorationPositioner->repositionDeco(this);
++        }
++    }
++
+     if (m_hidden || !validMapped(m_pWindow) || !ENABLED)
+         return;
+ 
+@@ -538,6 +583,10 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
+     else
+         g_pHyprOpenGL->renderRect(titleBarBox, color, {.round = scaledRounding, .roundingPower = m_pWindow->roundingPower()});
+ 
++    // platinum fork: the title colour follows focus and the live palette
++    if (titleColor() != m_cLastTitleColor)
++        m_bTitleColorChanged = true;
++
+     // render title
+     if (ENABLETITLE && (m_szLastTitle != PWINDOW->m_title || m_bWindowSizeChanged || !m_pTextTex || m_pTextTex->m_texID == 0 || m_bTitleColorChanged)) {
+         m_szLastTitle = PWINDOW->m_title;
+@@ -554,6 +603,15 @@ void CHyprBar::renderPass(PHLMONITOR pMonitor, const float& a) {
+     }
+ 
+     CBox textBox = {titleBarBox.x, titleBarBox.y, (int)BARBUF.x, (int)BARBUF.y};
++
++    if (g_pGlobalState->config.platinum->value()) {
++        CBox platTitle = {};
++        if (ENABLETITLE && m_pTextTex) {
++            const auto xOff = std::round(((BARBUF.x - PWINDOW->getRealBorderSize() * pMonitor->m_scale) / 2.0 - m_pTextTex->m_size.x / 2.0));
++            platTitle       = {textBox.x + xOff, textBox.y, m_pTextTex->m_size.x, BARBUF.y};
++        }
++        renderPlatinumBar(textBox, platTitle, pMonitor->m_scale, a, PWINDOW == Desktop::focusState()->window());
++    }
+     if (ENABLETITLE && m_pTextTex) {
+         const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
+         const auto BARBUTTONPADDING = g_pGlobalState->config.barButtonPadding->value();
+@@ -649,10 +707,12 @@ void CHyprBar::updateRules() {
+ 
+     m_bForcedBarColor   = std::nullopt;
+     m_bForcedTitleColor = std::nullopt;
+-    m_hidden            = false;
++    m_ruleHidden        = false;
+ 
+     if (PWINDOW->m_ruleApplicator->m_otherProps.props.contains(g_pGlobalState->nobarRuleIdx))
+-        m_hidden = truthy(PWINDOW->m_ruleApplicator->m_otherProps.props.at(g_pGlobalState->nobarRuleIdx)->effect);
++        m_ruleHidden = truthy(PWINDOW->m_ruleApplicator->m_otherProps.props.at(g_pGlobalState->nobarRuleIdx)->effect);
++    m_clientDecorated = platinumClientDecorates(PWINDOW);
++    m_hidden          = m_ruleHidden || m_clientDecorated;
+     if (PWINDOW->m_ruleApplicator->m_otherProps.props.contains(g_pGlobalState->barColorRuleIdx))
+         m_bForcedBarColor = CHyprColor(Config::ParserUtils::parseColor(PWINDOW->m_ruleApplicator->m_otherProps.props.at(g_pGlobalState->barColorRuleIdx)->effect).value_or(0));
+     if (PWINDOW->m_ruleApplicator->m_otherProps.props.contains(g_pGlobalState->titleColorRuleIdx))
+@@ -689,3 +749,181 @@ void CHyprBar::damageOnButtonHover() {
+         offset += BARBUTTONPADDING + b.size;
+     }
+ }
++
++
++// ---------------------------------------------------------------------------
++// platinum fork
++//
++// Mac OS 8 title bars, drawn to match the desktop's own Platinum windoids
++// (modules/quickshell/PlatinumWindoid.qml in mountainous): one hair is
++// whole device pixels, the boxes are an edge, a one-hair bevel and a face,
++// and the stripes are light, dark and a gap. Colours come only from config,
++// so a palette change is a config change.
++
++int platinumHair(double scale) {
++    return std::max(1, (int)std::round(scale));
++}
++
++// A client that draws its own title bar gets none from us. Hyprland answers
++// server-side to every decoration request, so ask what the client requested:
++// xdg-decoration or KDE server-decoration with a client-side mode, or no
++// decoration object at all (GTK4/libadwaita, GTK3). X11 windows keep the
++// stock rule (m_X11DoesntWantBorders, checked when the bar is made).
++bool platinumClientDecorates(PHLWINDOW window) {
++    if (!window || !g_pGlobalState->config.platinum->value() || window->m_isX11)
++        return false;
++
++    const auto XDG      = window->m_xdgSurface.lock();
++    const auto TOPLEVEL = XDG ? XDG->m_toplevel.lock() : nullptr;
++    if (TOPLEVEL && PROTO::xdgDecoration) {
++        for (const auto& [resource, deco] : PROTO::xdgDecoration->m_decorations) {
++            if (deco && CXDGToplevelResource::fromResource(resource) == TOPLEVEL)
++                return deco->mostRecentlyRequested == ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
++        }
++    }
++
++    const auto SURFACE = window->resource();
++    if (SURFACE && PROTO::serverDecorationKDE) {
++        for (const auto& d : PROTO::serverDecorationKDE->m_decos) {
++            if (d && d->m_surf == SURFACE)
++                return d->m_mostRecentlyRequested == ORG_KDE_KWIN_SERVER_DECORATION_MODE_CLIENT;
++        }
++    }
++
++    return true;
++}
++
++bool platinumBarShown(PHLWINDOW window) {
++    for (auto& b : g_pGlobalState->bars) {
++        if (b && b->getOwner() == window)
++            return !b->isHidden();
++    }
++    return false;
++}
++
++CHyprColor CHyprBar::titleColor() {
++    const bool INACTIVE = g_pGlobalState->config.platinum->value() && m_pWindow.lock() != Desktop::focusState()->window();
++    return m_bForcedTitleColor.value_or(configColor(INACTIVE ? g_pGlobalState->config.platTitleInactive->value() : g_pGlobalState->config.textColor->value()));
++}
++
++void CHyprBar::refresh() {
++    m_bTitleColorChanged = true;
++    m_bButtonsDirty      = true;
++    damageEntire();
++}
++
++// One layout function for drawing and hit-testing. Buttons with side = "left"
++// stack from the left edge, the others from the right edge (logical px, bar-relative).
++CBox CHyprBar::buttonBoxLogical(size_t idx, double barW, double barH) {
++    const double PAD          = g_pGlobalState->config.barPadding->value();
++    const double BPAD         = g_pGlobalState->config.barButtonPadding->value();
++    const bool   RIGHTDEFAULT = g_pGlobalState->config.barButtonsAlignment->value() != "left";
++
++    double       l = PAD, r = PAD;
++    for (size_t i = 0; i <= idx && i < g_pGlobalState->buttons.size(); ++i) {
++        const auto& b     = g_pGlobalState->buttons[i];
++        const bool  RIGHT = b.side.empty() ? RIGHTDEFAULT : b.side == "right";
++        CBox        box   = {RIGHT ? barW - r - b.size : l, std::floor((barH - b.size) / 2.0), b.size, b.size};
++        if (i == idx)
++            return box;
++        (RIGHT ? r : l) += b.size + BPAD;
++    }
++    return {};
++}
++
++static void platRect(const CBox& b, CHyprColor c, float a) {
++    if (b.w <= 0 || b.h <= 0)
++        return;
++    c.a *= a;
++    g_pHyprOpenGL->renderRect(b, c, {});
++}
++
++void CHyprBar::renderPlatinumButton(const CBox& box, const std::string& kind, float scale, float a) {
++    const int        u   = platinumHair(scale);
++    const CHyprColor HI  = configColor(g_pGlobalState->config.platHi->value());
++    const CHyprColor LO  = configColor(g_pGlobalState->config.platLo->value());
++    const CHyprColor FR  = configColor(g_pGlobalState->config.platFrame->value());
++    const CHyprColor BOX = configColor(g_pGlobalState->config.platBox->value());
++
++    // PlatinumBevel, edged: the edge, then dark bottom and right, light top
++    // and left over it, then the face.
++    platRect(box, FR, a);
++    const CBox in = {box.x + u, box.y + u, box.w - 2 * u, box.h - 2 * u};
++    platRect(in, LO, a);
++    platRect({in.x, in.y, in.w - u, in.h - u}, HI, a);
++    const CBox face = {in.x + u, in.y + u, in.w - 2 * u, in.h - 2 * u};
++    platRect(face, BOX, a);
++
++    const int hairsW = std::max(0, (int)face.w / u), hairsH = std::max(0, (int)face.h / u);
++    if (kind == "zoom") {
++        // A small box in the upper left, as on Mac OS 8.
++        const int  s = std::max(2, (int)std::round(std::min(hairsW, hairsH) * 0.6)) * u;
++        const CBox g = {face.x, face.y, (double)s, (double)s};
++        platRect({g.x, g.y, g.w, (double)u}, FR, a);
++        platRect({g.x, g.y, (double)u, g.h}, FR, a);
++        platRect({g.x, g.y + g.h - u, g.w, (double)u}, FR, a);
++        platRect({g.x + g.w - u, g.y, (double)u, g.h}, FR, a);
++    } else if (kind == "collapse") {
++        // Two rules across the face, as the windoid's WindowShade box.
++        const double y = face.y + std::max(0, (hairsH - 3) / 2) * u;
++        platRect({face.x, y, face.w, (double)u}, FR, a);
++        platRect({face.x, y + 2 * u, face.w, (double)u}, FR, a);
++    }
++}
++
++void CHyprBar::renderPlatinumBar(const CBox& bar, const CBox& title, float scale, float a, bool focused) {
++    const int        u    = platinumHair(scale);
++    const CHyprColor HI   = configColor(g_pGlobalState->config.platHi->value());
++    const CHyprColor LO   = configColor(g_pGlobalState->config.platLo->value());
++    const CHyprColor RULE = configColor(g_pGlobalState->config.platRule->value());
++
++    // The title's rule, on every window.
++    platRect({bar.x, bar.y + bar.h - u, bar.w, (double)u}, RULE, a);
++
++    // Mac OS 8: an inactive window's bar is flat.
++    if (!focused)
++        return;
++
++    // The bevel's top hair. The frame draws the sides.
++    platRect({bar.x, bar.y, bar.w, (double)u}, HI, a);
++
++    // Stripes between the boxes: light, dark, gap, with at least two hairs
++    // clear above and below.
++    const double W = bar.w / scale, H = bar.h / scale;
++    const double BPAD = g_pGlobalState->config.barButtonPadding->value();
++    double       left = g_pGlobalState->config.barPadding->value(), right = W - left;
++    const auto   COUNT = getVisibleButtonCount(BPAD, g_pGlobalState->config.barPadding->value(), Vector2D{bar.w, bar.h}, scale);
++    for (size_t i = 0; i < COUNT; ++i) {
++        const auto LB = buttonBoxLogical(i, W, H);
++        if (LB.x + LB.w / 2.0 < W / 2.0)
++            left = std::max(left, LB.x + LB.w + BPAD);
++        else
++            right = std::min(right, LB.x - BPAD);
++    }
++
++    const int    innerHairs = std::max(0, (int)((bar.h - 2 * u) / u));
++    const int    stripes    = std::max(0, (innerHairs - 3) / 3);
++    if (stripes == 0)
++        return;
++    const double y0     = bar.y + u + ((innerHairs - (3 * stripes - 1)) / 2) * u;
++
++    const double x0 = bar.x + std::round(left * scale), x1 = bar.x + std::round(right * scale);
++    // A plain patch behind the title: the stripes stop short of it.
++    const double gap = std::round(4 * scale);
++    std::vector<std::pair<double, double>> runs;
++    if (title.w > 0) {
++        runs.push_back({x0, std::min(x1, title.x - gap)});
++        runs.push_back({std::max(x0, title.x + title.w + gap), x1});
++    } else
++        runs.push_back({x0, x1});
++
++    for (const auto& [rx0, rx1] : runs) {
++        if (rx1 - rx0 < u)
++            continue;
++        for (int i = 0; i < stripes; ++i) {
++            const double y = y0 + 3 * i * u;
++            platRect({rx0, y, rx1 - rx0, (double)u}, HI, a);
++            platRect({rx0, y + u, rx1 - rx0, (double)u}, LO, a);
++        }
++    }
++}
+diff --git a/barDeco.hpp b/barDeco.hpp
+index a3b4e2d..7a1e016 100644
+--- a/barDeco.hpp
++++ b/barDeco.hpp
+@@ -51,6 +51,12 @@ class CHyprBar : public IHyprWindowDecoration {
+     void                               updateRules();
+     void                               onConfigReloaded();
+ 
++    // platinum fork
++    bool                               isHidden() const {
++        return m_hidden;
++    }
++    void                               refresh();
++
+     WP<CHyprBar>                       m_self;
+ 
+   private:
+@@ -64,6 +70,8 @@ class CHyprBar : public IHyprWindowDecoration {
+ 
+     bool                       m_bWindowSizeChanged = false;
+     bool                       m_hidden             = false;
++    bool                       m_ruleHidden         = false; // platinum fork: a no_bar rule
++    bool                       m_clientDecorated    = false; // platinum fork: the client draws its own
+     bool                       m_bTitleColorChanged = false;
+     bool                       m_bButtonHovered     = false;
+     bool                       m_bLastEnabledState  = false;
+@@ -83,6 +91,13 @@ class CHyprBar : public IHyprWindowDecoration {
+     void renderBarButtonsText(CBox* barBox, const float scale, const float a);
+     void damageOnButtonHover();
+ 
++    // platinum fork
++    CHyprColor m_cLastTitleColor;
++    CHyprColor titleColor();
++    CBox buttonBoxLogical(size_t idx, double barW, double barH);
++    void renderPlatinumButton(const CBox& box, const std::string& kind, float scale, float a);
++    void renderPlatinumBar(const CBox& barBox, const CBox& titleBox, float scale, float a, bool focused);
++
+     bool inputIsValid();
+     void onMouseButton(Event::SCallbackInfo& info, IPointer::SButtonEvent e);
+     void onTouchDown(Event::SCallbackInfo& info, ITouch::SDownEvent e);
+@@ -122,3 +137,11 @@ class CHyprBar : public IHyprWindowDecoration {
+ 
+     friend class CBarPassElement;
+ };
++
++// platinum fork: one Platinum hair in device pixels, as PlatinumTokens.hair:
++// 1 at scale 1, 2 at 1.5 and 2.
++int platinumHair(double scale);
++// Whether this window shows a bar (no no_bar rule). The frame follows it.
++bool platinumBarShown(PHLWINDOW window);
++// Whether the client asked to draw its own title bar (see barDeco.cpp).
++bool platinumClientDecorates(PHLWINDOW window);
+diff --git a/frameDeco.cpp b/frameDeco.cpp
+new file mode 100644
+index 0000000..c6610ec
+--- /dev/null
++++ b/frameDeco.cpp
+@@ -0,0 +1,168 @@
++#include "frameDeco.hpp"
++#include "barDeco.hpp"
++
++#include <hyprland/src/desktop/state/FocusState.hpp>
++#include <hyprland/src/desktop/view/Window.hpp>
++#include <hyprland/src/render/OpenGL.hpp>
++#include <hyprland/src/render/Renderer.hpp>
++
++using namespace Render::GL;
++
++CPlatinumFrame::CPlatinumFrame(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow), m_pWindow(pWindow) {
++    ;
++}
++
++CPlatinumFrame::~CPlatinumFrame() {
++    std::erase(g_pGlobalState->frames, m_self);
++}
++
++bool CPlatinumFrame::shown() {
++    if (!g_pGlobalState->config.platinum->value() || !g_pGlobalState->config.enabled->value())
++        return false;
++    const auto PWINDOW = m_pWindow.lock();
++    return PWINDOW && platinumBarShown(PWINDOW);
++}
++
++SDecorationPositioningInfo CPlatinumFrame::getPositioningInfo() {
++    const auto PWINDOW  = m_pWindow.lock();
++    const auto PMONITOR = PWINDOW ? PWINDOW->m_monitor.lock() : nullptr;
++    // One hair in logical px: whole device pixels on the window's monitor.
++    const double HAIR = shown() && PMONITOR ? platinumHair(PMONITOR->m_scale) / PMONITOR->m_scale : 0.0;
++    m_lastHair        = HAIR;
++
++    SDecorationPositioningInfo info;
++    // Between the border (10000) and a bar that has precedence (10005):
++    // the border goes round the frame, the frame round the bar.
++    info.priority       = 10002;
++    info.policy         = DECORATION_POSITION_STICKY;
++    info.edges          = DECORATION_EDGE_TOP | DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT;
++    info.reserved       = true;
++    // The edge hair on every side, and a bevel hair inside it on the left,
++    // right and bottom. The bar draws the bevel's top hair itself.
++    info.desiredExtents = {Vector2D{2 * HAIR, HAIR}, Vector2D{2 * HAIR, 2 * HAIR}};
++    return info;
++}
++
++void CPlatinumFrame::onPositioningReply(const SDecorationPositioningReply& reply) {
++    m_assigned = reply.assignedGeometry;
++}
++
++void CPlatinumFrame::draw(PHLMONITOR pMonitor, float const& a) {
++    const bool SHOWN    = shown();
++    const auto PMONITOR = m_pWindow ? m_pWindow->m_monitor.lock() : nullptr;
++    const auto HAIR     = SHOWN && PMONITOR ? platinumHair(PMONITOR->m_scale) / PMONITOR->m_scale : 0.0;
++    if (SHOWN != m_lastShown || HAIR != m_lastHair) {
++        m_lastShown = SHOWN;
++        g_pDecorationPositioner->repositionDeco(this);
++    }
++
++    if (!SHOWN || !validMapped(m_pWindow))
++        return;
++
++    if (!m_pWindow->m_ruleApplicator->decorate().valueOrDefault())
++        return;
++
++    g_pHyprRenderer->m_renderPass.add(makeUnique<CPlatinumFramePassElement>(this, a));
++}
++
++static void frameRect(const CBox& b, CHyprColor c, float a) {
++    if (b.w <= 0 || b.h <= 0)
++        return;
++    c.a *= a;
++    g_pHyprOpenGL->renderRect(b, c, {});
++}
++
++void CPlatinumFrame::renderPass(PHLMONITOR pMonitor, float const& a) {
++    const auto PWINDOW = m_pWindow.lock();
++    if (!PWINDOW)
++        return;
++
++    // Draw outward from the content and the bar as they land on device
++    // pixels, not from this decoration's own box: the hairs are whole device
++    // pixels while the reserved extents are logical, so rounding the box
++    // could leave a pixel between the frame and the window.
++    const auto     PWORKSPACE = PWINDOW->m_workspace;
++    const Vector2D OFF        = -pMonitor->m_position + PWINDOW->m_floatingOffset +
++        (PWORKSPACE && !PWINDOW->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D());
++    const CBox   WB  = PWINDOW->getWindowMainSurfaceBox();
++    const double S   = pMonitor->m_scale;
++    const double BAR = g_pGlobalState->config.barHeight->value();
++    const double L = std::round((WB.x + OFF.x) * S), R = std::round((WB.x + WB.w + OFF.x) * S);
++    const double T = std::round((WB.y - BAR + OFF.y) * S), B = std::round((WB.y + WB.h + OFF.y) * S);
++    if (R - L < 1 || B - T < 1)
++        return;
++
++    const double u     = platinumHair(pMonitor->m_scale);
++    const bool FOCUSED = PWINDOW == Desktop::focusState()->window();
++    CHyprColor FACE    = CHyprColor{static_cast<uint64_t>(g_pGlobalState->config.barColor->value())};
++    FACE.a             = 1.F;
++    const auto HI      = FOCUSED ? CHyprColor{static_cast<uint64_t>(g_pGlobalState->config.platHi->value())} : FACE;
++    const auto LO      = FOCUSED ? CHyprColor{static_cast<uint64_t>(g_pGlobalState->config.platLo->value())} : FACE;
++    const auto EDGE    = CHyprColor{static_cast<uint64_t>(g_pGlobalState->config.platRule->value())};
++
++    // As PlatinumBevel: the edge, then light left first and dark bottom and
++    // right over it.
++    // The edge round the bar, the bevel hair and the content.
++    const CBox box = {L - 2 * u, T - u, R - L + 4 * u, B - T + 3 * u};
++    frameRect({box.x, box.y, box.w, u}, EDGE, a);
++    frameRect({box.x, box.y + box.h - u, box.w, u}, EDGE, a);
++    frameRect({box.x, box.y, u, box.h}, EDGE, a);
++    frameRect({box.x + box.w - u, box.y, u, box.h}, EDGE, a);
++    frameRect({L - u, T, u, B - T + u}, HI, a);
++    frameRect({L - u, B, R - L + 2 * u, u}, LO, a);
++    frameRect({R, T, u, B - T + u}, LO, a);
++}
++
++eDecorationType CPlatinumFrame::getDecorationType() {
++    return DECORATION_CUSTOM;
++}
++
++void CPlatinumFrame::updateWindow(PHLWINDOW) {
++    damageEntire();
++}
++
++void CPlatinumFrame::damageEntire() {
++    // The hairs may land a device pixel outside the reserved box.
++    g_pHyprRenderer->damageBox(assignedBoxGlobal().expand(2));
++}
++
++eDecorationLayer CPlatinumFrame::getDecorationLayer() {
++    return DECORATION_LAYER_UNDER;
++}
++
++uint64_t CPlatinumFrame::getDecorationFlags() {
++    return DECORATION_PART_OF_MAIN_WINDOW;
++}
++
++std::string CPlatinumFrame::getDisplayName() {
++    return "PlatinumFrame";
++}
++
++PHLWINDOW CPlatinumFrame::getOwner() {
++    return m_pWindow.lock();
++}
++
++CBox CPlatinumFrame::assignedBoxGlobal() {
++    if (!validMapped(m_pWindow))
++        return {};
++
++    CBox box = m_assigned;
++    box.translate(g_pDecorationPositioner->getEdgeDefinedPoint(DECORATION_EDGE_TOP | DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_RIGHT, m_pWindow.lock()));
++
++    const auto PWORKSPACE      = m_pWindow->m_workspace;
++    const auto WORKSPACEOFFSET = PWORKSPACE && !m_pWindow->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D();
++    return box.translate(WORKSPACEOFFSET);
++}
++
++CPlatinumFramePassElement::CPlatinumFramePassElement(CPlatinumFrame* deco, float a) : m_deco(deco), m_a(a) {
++    ;
++}
++
++std::vector<UP<IPassElement>> CPlatinumFramePassElement::draw() {
++    m_deco->renderPass(g_pHyprRenderer->m_renderData.pMonitor.lock(), m_a);
++    return {};
++}
++
++std::optional<CBox> CPlatinumFramePassElement::boundingBox() {
++    return m_deco->assignedBoxGlobal().translate(-g_pHyprRenderer->m_renderData.pMonitor->m_position).expand(2);
++}
+diff --git a/frameDeco.hpp b/frameDeco.hpp
+new file mode 100644
+index 0000000..e9c3f44
+--- /dev/null
++++ b/frameDeco.hpp
+@@ -0,0 +1,70 @@
++#pragma once
++
++#define WLR_USE_UNSTABLE
++
++#include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
++#include <hyprland/src/render/pass/PassElement.hpp>
++#include "globals.hpp"
++
++// platinum fork: the Mac OS 8 window frame, outside the bar, as
++// PlatinumBevel: a black edge hair all round, then a bevel hair on the left,
++// right and bottom (the bar draws the bevel's top hair). A hair is whole
++// device pixels, which Hyprland's integer border cannot be at scale 1.5, so
++// the session sets border_size 0 under Platinum. A focused window gets the
++// bevel (light left, dark right and bottom); any other window gets the flat
++// bar face. The frame exists only while the bar does: platinum on, bars
++// enabled, no no_bar rule, a client that does not draw its own.
++class CPlatinumFrame : public IHyprWindowDecoration {
++  public:
++    CPlatinumFrame(PHLWINDOW);
++    virtual ~CPlatinumFrame();
++
++    virtual SDecorationPositioningInfo getPositioningInfo();
++    virtual void                       onPositioningReply(const SDecorationPositioningReply& reply);
++    virtual void                       draw(PHLMONITOR, float const& a);
++    virtual eDecorationType            getDecorationType();
++    virtual void                       updateWindow(PHLWINDOW);
++    virtual void                       damageEntire();
++    virtual eDecorationLayer           getDecorationLayer();
++    virtual uint64_t                   getDecorationFlags();
++    virtual std::string                getDisplayName();
++
++    PHLWINDOW                          getOwner();
++    void                               renderPass(PHLMONITOR, float const& a);
++    CBox                               assignedBoxGlobal();
++
++    WP<CPlatinumFrame>                 m_self;
++
++  private:
++    bool         shown();
++
++    PHLWINDOWREF m_pWindow;
++    CBox         m_assigned;
++    bool         m_lastShown = false;
++    double       m_lastHair  = 0;
++};
++
++class CPlatinumFramePassElement : public IPassElement {
++  public:
++    CPlatinumFramePassElement(CPlatinumFrame* deco, float a);
++    virtual ~CPlatinumFramePassElement() = default;
++
++    virtual std::vector<UP<IPassElement>> draw() override;
++    virtual bool                          needsLiveBlur() override {
++        return false;
++    }
++    virtual bool needsPrecomputeBlur() override {
++        return false;
++    }
++    virtual std::optional<CBox> boundingBox() override;
++    virtual const char*         passName() override {
++        return "CPlatinumFramePassElement";
++    }
++    virtual ePassElementType type() override {
++        return EK_CUSTOM;
++    }
++
++  private:
++    CPlatinumFrame* m_deco = nullptr;
++    float           m_a    = 1.F;
++};
+diff --git a/globals.hpp b/globals.hpp
+index 0ef19ae..615d6da 100644
+--- a/globals.hpp
++++ b/globals.hpp
+@@ -18,13 +18,16 @@ struct SHyprButton {
+     float                size    = 10;
+     std::string          icon    = "";
+     SP<Render::ITexture> iconTex;
++    std::string          side    = ""; // platinum fork: "left" | "right" | "" (follow bar_buttons_alignment)
+ };
+ 
+ class CHyprBar;
++class CPlatinumFrame;
+ 
+ struct SGlobalState {
+     std::vector<SHyprButton>  buttons;
+     std::vector<WP<CHyprBar>> bars;
++    std::vector<WP<CPlatinumFrame>> frames; // platinum fork
+     uint32_t                  nobarRuleIdx      = 0;
+     uint32_t                  barColorRuleIdx   = 0;
+     uint32_t                  titleColorRuleIdx = 0;
+@@ -38,6 +41,9 @@ struct SGlobalState {
+         SP<Config::Values::CIntValue>        barButtonPadding;
+         SP<Config::Values::CBoolValue>       barBlur, barTitleEnabled, barPartOfWindow, barPrecedenceOverBorder, enabled, iconOnHover;
+         SP<Config::Values::CStringValue>     barTextFont, barTextAlign, barButtonsAlignment, onDoubleClick;
++        // platinum fork
++        SP<Config::Values::CBoolValue>       platinum;
++        SP<Config::Values::CColorValue>      platHi, platLo, platFrame, platBox, platRule, platTitleInactive;
+     } config;
+ };
+ 
+diff --git a/main.cpp b/main.cpp
+index ae9c90b..6d6e48f 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -20,6 +20,7 @@
+ #include <algorithm>
+ 
+ #include "barDeco.hpp"
++#include "frameDeco.hpp"
+ #include "globals.hpp"
+ 
+ extern "C" {
+@@ -41,9 +42,40 @@ static void onNewWindow(PHLWINDOW window) {
+         g_pGlobalState->bars.emplace_back(bar);
+         bar->m_self = bar;
+         HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(bar));
++
++        // platinum fork: the frame. It draws nothing unless platinum is on.
++        auto frame = makeUnique<CPlatinumFrame>(window);
++        g_pGlobalState->frames.emplace_back(frame);
++        frame->m_self = frame;
++        HyprlandAPI::addWindowDecoration(PHANDLE, window, std::move(frame));
+     }
+ }
+ 
++// platinum fork: redraw every bar and frame, for a focus or palette change.
++// A focus change only damages: renderPass notices a title colour change itself.
++static void refreshAll(bool palette) {
++    for (auto& b : g_pGlobalState->bars) {
++        if (!b)
++            continue;
++        if (palette)
++            b->refresh();
++        else
++            b->damageEntire();
++    }
++    for (auto& f : g_pGlobalState->frames) {
++        if (!f)
++            continue;
++        if (palette)
++            g_pDecorationPositioner->repositionDeco(f.get());
++        f->damageEntire();
++    }
++}
++
++static int luaRefresh(lua_State* L) {
++    refreshAll(true);
++    return 0;
++}
++
+ static void onPreConfigReload() {
+     g_pGlobalState->buttons.clear();
+ }
+@@ -64,6 +96,10 @@ static void onUpdateWindowRules(PHLWINDOW window) {
+         return;
+ 
+     (*BARIT)->updateRules();
++    for (auto& f : g_pGlobalState->frames) {
++        if (f && f->getOwner() == window)
++            g_pDecorationPositioner->repositionDeco(f.get());
++    }
+     window->updateWindowDecos();
+ }
+ 
+@@ -182,6 +218,20 @@ int newLuaButton(lua_State* L) {
+         button.cmd = lua_tostring(L, -1);
+     }
+ 
++    {
++        // platinum fork: optional side = "left" | "right"
++        Hyprutils::Utils::CScopeGuard x([L] { lua_pop(L, 1); });
++
++        lua_getfield(L, 1, "side");
++
++        if (lua_isstring(L, -1))
++            button.side = lua_tostring(L, -1);
++    }
++
++    // platinum fork: one button per icon and side, so adding it again
++    // (a config evaluated twice) replaces it instead of doubling it.
++    std::erase_if(g_pGlobalState->buttons, [&button](const auto& b) { return b.icon == button.icon && b.side == button.side; });
++
+     g_pGlobalState->buttons.push_back(std::move(button));
+ 
+     for (auto& b : g_pGlobalState->bars) {
+@@ -233,6 +283,21 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+     g_pGlobalState->config.iconOnHover         = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:icon_on_hover", "Whether to use an icon on hover of the buttons", false);
+     g_pGlobalState->config.onDoubleClick       = makeShared<Config::Values::CStringValue>("plugin:hyprbars:on_double_click", "Action to execute on double click of the bar", "");
+ 
++    g_pGlobalState->config.platinum  = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:platinum", "Platinum fork: square bevelled boxes, pinstripes", false);
++    g_pGlobalState->config.platHi    = makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_hi", "Platinum fork: bevel highlight", 0xffffffff);
++    g_pGlobalState->config.platLo    = makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_lo", "Platinum fork: bevel shadow", 0xff999999);
++    g_pGlobalState->config.platFrame = makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_frame", "Platinum fork: box frame", 0xff000000);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platinum);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platHi);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platLo);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platFrame);
++    g_pGlobalState->config.platBox  = makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_box", "Platinum fork: box face", 0xffe6e6e6);
++    g_pGlobalState->config.platRule = makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_rule", "Platinum fork: the rule under the title", 0xff000000);
++    g_pGlobalState->config.platTitleInactive =
++        makeShared<Config::Values::CColorValue>("plugin:hyprbars:platinum_title_inactive", "Platinum fork: an inactive window's title", 0xff8a8a8a);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platBox);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platRule);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.platTitleInactive);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barColor);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.textColor);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.inactiveButtonColor);
+@@ -254,8 +319,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+ 
+     if (Config::mgr()->type() == Config::CONFIG_LEGACY)
+         HyprlandAPI::addConfigKeyword(PHANDLE, "plugin:hyprbars:hyprbars-button", onNewButton, Hyprlang::SHandlerOptions{});
+-    else
++    else {
+         HyprlandAPI::addLuaFunction(PHANDLE, "hyprbars", "add_button", ::newLuaButton);
++        HyprlandAPI::addLuaFunction(PHANDLE, "hyprbars", "refresh", ::luaRefresh);
++    }
++    // platinum fork: an inactive bar draws differently, so a focus change redraws them.
++    static auto P6 = Event::bus()->m_events.window.active.listen([&](PHLWINDOW, Desktop::eFocusReason) { refreshAll(false); });
+     static auto P4 = Event::bus()->m_events.config.preReload.listen([&] { onPreConfigReload(); });
+     static auto P5 = Event::bus()->m_events.config.reloaded.listen([&] { onConfigReloaded(); });
+ 
+@@ -277,6 +346,7 @@ APICALL EXPORT void PLUGIN_EXIT() {
+         m->m_scheduledRecalc = true;
+ 
+     g_pHyprRenderer->m_renderPass.removeAllOfType("CBarPassElement");
++    g_pHyprRenderer->m_renderPass.removeAllOfType("CPlatinumFramePassElement");
+ 
+     Desktop::Rule::windowEffects()->unregisterEffect(g_pGlobalState->barColorRuleIdx);
+     Desktop::Rule::windowEffects()->unregisterEffect(g_pGlobalState->titleColorRuleIdx);

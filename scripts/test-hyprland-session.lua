@@ -205,6 +205,11 @@ same(first, { one = "1", two = "1", forge = "2", web = "3", herdr = "special:ter
 local page1 = r:workspace(1).list
 check(page1[1].title == "one" and page1[2].title == "two", "the page keeps its saved order after late, reversed arrival")
 check(#r.notes == 0, "a complete restore shows no notification")
+-- The title bars attach next to session restore and ask for their plugin;
+-- without it the session keeps its own edge and corners.
+check(#r.plugins == 1 and r.plugins[1] == "/etc/hypr/plugins/hyprbars-platinum.so", "the title bars ask for their plugin")
+check(r.config.general.border_size == 0 and r.config.decoration.rounding == 6, "without the plugin the windows keep the session's edge")
+check(r.config.master.orientation == "left" and r.config.general.gaps_out == 8, "the title bars keep the rest of the config")
 r:advance(30000)
 check(file() == good, "the restored desktop saves as the same snapshot")
 r.hl.dispatch(r.hl.dsp.focus({ workspace = 1 }))

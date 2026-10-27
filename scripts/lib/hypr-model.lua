@@ -4,6 +4,18 @@
 local Model = {}
 Model.__index = Model
 
+-- hl.config merges into what earlier calls set, as Hyprland does.
+local function merge(into, from)
+    for k, v in pairs(from) do
+        if type(v) == "table" then
+            if type(into[k]) ~= "table" then into[k] = {} end
+            merge(into[k], v)
+        else
+            into[k] = v
+        end
+    end
+end
+
 local function node(model, path)
     return setmetatable({}, {
         __index = function(_, key) return node(model, path == "" and key or path .. "." .. key) end,
@@ -14,7 +26,7 @@ end
 function Model.new()
     local m = setmetatable({ now = 0, seq = 0, handlers = {}, timers = {}, rules = {}, rule_by_name = {},
         binds = {}, launches = {}, notes = {}, dispatched = {}, ws = {}, windows = {},
-        monitor_rules = {}, devices = {} }, Model)
+        monitor_rules = {}, devices = {}, plugins = {} }, Model)
     -- The panel. Each monitor shows one page; m.active is the focused one.
     m.monitor = { name = "eDP-1", width = 2880, height = 1800, scale = 1.5 }
     m.monitors = { m.monitor }
@@ -51,7 +63,9 @@ function Model.new()
         end
         return rule
     end
-    hl.config = function(t) m.config = t end
+    hl.config = function(t) m.config = m.config or {}; merge(m.config, t) end
+    -- A plugin never loads here, so hl.plugin.<name> stays nil.
+    hl.plugin = { load = function(path) m.plugins[#m.plugins + 1] = path end }
     hl.bind = function(keys, handler) m.binds[keys] = handler end
     hl.define_submap = function(_, _, fn) if fn then fn() end end
     hl.exec_cmd = function(cmd) m.launches[#m.launches + 1] = cmd end

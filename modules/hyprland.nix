@@ -23,13 +23,46 @@
 #   window.resize keep_aspect_ratio  -> dsp_mouseResize, shape preserved
 #   hl.gesture fingers 2..9     config/ConfigManager.cpp handleGesture
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
-{
+let
+  # Mac OS 8 Platinum title bars: nixpkgs' hyprbars with our patch
+  # (hyprland/hyprbars-platinum.patch). The patch adds square bevelled
+  # boxes on both ends, pinstripes, the bevelled window frame, a palette
+  # set from config, and no bar on clients that draw their own. It uses
+  # Hyprland internals, so a nixpkgs Hyprland bump can break the build;
+  # that failure is the signal to rebase the patch. nixpkgs builds
+  # hyprlandPlugins against its own hyprland, so the session must run that
+  # same package (the assertion below).
+  hyprbarsPlatinum = pkgs:
+    pkgs.hyprlandPlugins.hyprbars.overrideAttrs (old: {
+      pname = "hyprbars-platinum";
+      patches = (old.patches or []) ++ [./hyprland/hyprbars-platinum.patch];
+    });
+in {
+  perSystem = {pkgs, ...}: {
+    packages.hyprbars-platinum = hyprbarsPlatinum pkgs;
+
+    # The patch applies and builds against the pinned Hyprland, and the
+    # module that styles it (titlebars.lua) keeps to its contract and to the
+    # Platinum tokens. Headless: no compositor runs.
+    checks.titlebars = pkgs.runCommand "titlebars" {
+      nativeBuildInputs = [pkgs.lua pkgs.binutils];
+      PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
+    } ''
+      nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
+      grep -q 'platinum_title_inactive' "$PLUGIN"
+      luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${./quickshell/PlatinumTokens.qml} ${./hyprland/hyprland.lua}
+      touch $out
+    '';
+  };
+
   nixos.modules.desktop = {
     config,
     pkgs,
     ...
   }: let
     hyprPkg = config.programs.hyprland.package;
+    titlebarsPlugin = hyprbarsPlatinum pkgs;
 
     # Under a Lua config, hyprctl changes shape and the legacy forms die
     # quietly. Verified on the machine:
@@ -297,6 +330,20 @@
   in {
     programs.hyprland.enable = true;
 
+    assertions = [
+      {
+        assertion = hyprPkg == pkgs.hyprland;
+        message = "hyprbars-platinum is built against pkgs.hyprland, but programs.hyprland.package is another Hyprland";
+      }
+    ];
+
+    # A stable path for hyprland/titlebars.lua to load. Hyprland loads a
+    # plugin once per path, so a config reload after a rebuild keeps the
+    # plugin already running instead of loading one built for the next
+    # Hyprland. The new build loads with the next session.
+    environment.etc."hypr/plugins/hyprbars-platinum.so".source = "${titlebarsPlugin}/lib/libhyprbars.so";
+    system.build.hyprbarsPlatinum = titlebarsPlugin;
+
     # The bridge to graphical-session.target. start-mountainous starts this one;
     # systemd pulls in graphical-session.target because this target binds to
     # it, which is legal where a manual start is not.
@@ -396,5 +443,7 @@
 
     hjem.users.simon.files.".config/hypr/hyprland.lua".source =
       ./hyprland/hyprland.lua;
+    hjem.users.simon.files.".config/hypr/titlebars.lua".source =
+      ./hyprland/titlebars.lua;
   };
 }
