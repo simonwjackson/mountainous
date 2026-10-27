@@ -1,6 +1,6 @@
 # Fleet window and the glance space
 
-Status: built on `cairn` at `37c91c12`; not deployed. Written 2026-10-24.
+Status: built on `cairn` at `37c91c12`; not deployed. Written 2026-10-24. The Windows 98 form: `docs/plans/desktop-themes.md`, "Fleet window and glance space, Windows 98".
 
 Spec: the approved mocks, `/tmp/hud-mock/` (Fleet windoid) and `/tmp/glance-mock/` (glance space; `DIRECTION.md` has the tokens and the mock's motion table). Data contract: `~/.local/share/mountainous/handoffs/beszel-quickshell-hud.md`. Simon's decision after the mocks: the bar's Fleet readout is the title of the Glance menu; the Application menu is not swapped.
 
@@ -20,9 +20,9 @@ Spec: the approved mocks, `/tmp/hud-mock/` (Fleet windoid) and `/tmp/glance-mock
 
 | Key | IPC | Platinum | Win98 |
 |---|---|---|---|
-| Super+B, Super+O then F | `qs -c mountainous ipc call fleet toggle` | Toggles the Fleet window. From the glance space it dismisses the space and opens the window. | No-op: Win98Desktop has no `toggleFleet` |
-| Super+W | `glance toggle` (also `reveal`, `hide`) | Toggles the glance space on the focused screen | No-op |
-| Super+O, then the chord | `chrome open fleet` | Opens the Glance menu | Ignored (unknown control) |
+| Super+B, Super+O then F | `qs -c mountainous ipc call fleet toggle` | Toggles the Fleet window. From the glance space it dismisses the space and opens the window. | The same, for the Win98 Fleet window above the tray; a minimized window comes back |
+| Super+W | `glance toggle` (also `reveal`, `hide`) | Toggles the glance space on the focused screen | The same, for the Win98 glance space |
+| Super+O, then the chord | `chrome open fleet` | Opens the Glance menu | Toggles the Fleet window (the tray Fleet icon's action) |
 
 Super+W and Super+B were free in `hyprland.lua` (checked against every `hl.bind`). Kanata (`modules/kanata.nix`) leaves physical W alone; physical B is dead (f24) and physical `.` types `b`, so Super+B is held Space + `.` on Simon's keyboard. Escape in the space is the `kl` chord (Escape is dead on the base layer).
 

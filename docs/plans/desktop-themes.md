@@ -15,8 +15,8 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Status controls (Bluetooth, Wi-Fi, Sound, Brightness, OCI, Disks, builder gate, Notifications, Dictation, battery, clock) | Done | Done | Tray icons and windows |
 | Theme picker | Done | Done | Display Properties |
 | Pyxamp face | Done (`platinum`) | Done (`winamp`) | Pyxamp's Winamp face |
-| Fleet window (Super+B, Super+O F) | Done | Missing | Fleet window above the tray (mock pass 2, `/tmp/win98-hud-mock/`) |
-| Glance space (Super+W) | Done | Missing | Shut Down dither, caption animation, Glance taskbar button (mock pass 2) |
+| Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
+| Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Unthemed card | Run dialog / Find window (not mocked) |
 | Window title bars | Done (hyprbars patch) | Missing | Navy caption with minimize, maximize, close (not mocked) |
 | Web page styling | Done (`themes/platinum/web.css`) | Missing | `themes/win98/web.css` |
@@ -468,6 +468,65 @@ Theme swap with the Apple menu and a cascade open, three rounds: Platinum maps `
 - `configurationRevision` was not set on the evaluating host, so About showed "Not recorded".
 
 
+
+## Fleet window and glance space, Windows 98 (implemented)
+
+Spec: the approved Win98 mock pass 2 at `/tmp/win98-hud-mock/` (`REPORT.md`, `DIRECTION.md`, `shots/`), with Simon's three defaults accepted: the checker cell is one Win98 pixel (2 device px, `Win98Dither`); details open in a Properties sheet beside the Fleet window (over it when there is no room); a click on the Glance button opens its menu and a double-click hides the space. The data, its rules and the glance layout are the shared ones (`beszel-model.js`, `panels/Beszel.qml`, `glance-plan.js`, `glance-registry.js`, `GlanceState`); only the views are Win98's.
+
+### What was built
+
+| Part | Files |
+|---|---|
+| One screen's Fleet views (the controller: window shown, minimized, Details or Large Icons, the sheet's tab) | `Win98FleetGlance.qml` |
+| The Fleet body for both hosts: View menu bar, Details with clickable headers and block bars, Large Icons with overlays and Resource Meter bars, the status bar, the View and control menus, row tooltips | `Win98FleetView.qml` |
+| The standalone window above the tray, its sheet, minimize to the taskbar | `Win98FleetWindow.qml` (layer `mountainous-fleet`) |
+| The Properties sheet: General, Performance, Services, Disks; tabs in one row that scroll with an up-down control | `Win98FleetProperties.qml`, `Win98Tabs.qml` (`singleRow`) |
+| The glance space: the Shut Down checker, Fleet and Disks from the bottom right, the caption animation | `Win98GlanceSpace.qml` (layer `mountainous-glance`), `Win98DisksAccessory.qml` |
+| New controls | `Win98HeaderView.qml`, `Win98LevelBar.qml` (`blocks`, `vertical`), `Win98HostIcon.qml`, `Win98SysmonChart.qml`, `Win98PieChart.qml`, `Win98MenuBar.qml`; `Win98Window` (minimize button, caption icon item and press); `Win98MenuPanel` (bold default item, radio dot); icons `glance.svg`, `minimize.svg`; chart, meter and pie colours in `Win98Tokens` |
+| Taskbar and tray | `Win98Taskbar.qml` (the tray Fleet icon; an extras band with the pressed Glance button and a minimized Fleet's button), `Win98MenuHost.qml` (the Glance menu, the Fleet icon's menu), `Win98Desktop.qml` (`toggleFleet`, `toggleGlance`, `showGlance`, `hideGlance`, `fleetShown`, `fleetDetailShown`) |
+| Pure policies and tests | `themes/win98/fleet-plan.js` (the width levels, the height order, Large Icons, the standalone place, the sheet's place, the caption timing), `tab-strip.js`, `host-icon.js`, `taskbar-plan.js` (extras; `fleet` after `disk` in the overflow order), `tray-model.js` (`fleet`: label, chord F, tooltip); `fleet-plan.test.js`, `taskbar-plan.test.js`; `glance-plan.js` gains `opt.gp` and `opt.from: "bottom"` (Platinum's calls are unchanged) |
+| Harness and checks | `theme-dev/win98/`: `beszel-stub.js` and `fleet-fixtures.json` (the mock's fixtures behind the real Beszel owner), `fleet.sh`, `capture-fleet.sh`, `switch.sh` (a Fleet view open before every swap), `session.sh` (`SESSION_SCALE`, and `session_stop` stops every process of the session), `pointer.py` (right click, wheel); `checks.win98-fleet`; `checks.win98-desktop` runs the new pure tests; `bar-delivery` asserts the new files |
+
+Keys and routes: Super+B and Super+O F (`fleet toggle`) toggle the window, bring a minimized one back, and from the glance space go back to the work with the window open. Super+W (`glance toggle`, `reveal`, `hide`) toggles the space. A click on the tray Fleet icon toggles the window; its right button opens Open Fleet (bold, Win+B) and Show Glance (Win+W). `chrome open fleet` toggles the window too. Beszel polls while the tray icon shows, as it does while Platinum's bar readout shows.
+
+### Decisions made without asking
+
+| Decision | Reason / cost |
+|---|---|
+| Notepad and Date/Time are not built | `glance-registry.js` lists Fleet and Disks only, so Platinum has no such accessories; the mock drew them as placeholders. The registry adds them for both themes later. |
+| The Disks accessory shows StorageHealth's findings, not a drive pie | Platinum's Disks widget shows the findings; the mock's pie had no data source (it was a placeholder). The pies are in the Properties sheet's Disks tab, from Beszel's filesystem percentages. |
+| No adapter for the SMART and service shapes in `beszel-model.js` | `beszel-status host` already reduces `list_services` to names and passes `list_smart_devices`' real fields (`smartState`, `capacityGb`); the views read those, as Platinum's do. |
+| Remembered places stay `{r, t}` in logical px in the shared `glance.json` | One file for both themes; a place dragged under Win98 is the same top-right margin under Platinum. Only Clean Up order is mirrored. Cost: a remembered place is measured from the top, not from the taskbar. |
+| The standalone window is not draggable or resizable, and ignores Platinum's saved window place | The brief places it above the tray; Platinum's `fleet {r, t, w, h}` would put it at the top right. Cost: one place only; the glance space's accessories do drag. |
+| `checks.win98-fleet` is its own attribute | `fleet.sh` takes 3 to 12 minutes here; with the existing `win98-desktop` scripts one build could pass the 15-minute step. |
+| The tray Fleet icon has no count badge | The overlay gives the tone and the tooltip names the problem hosts; the Platinum readout's count is in the tooltip and the summary. |
+| The space's front window draws the active caption whether or not the surface has the keyboard | Under Hyprland the focus grab gives it the keyboard; the caption no longer depends on it. |
+| Uptime's column holds "seen 49m ago" only when a host is down (the mock's rule) | Platinum reserves it always; that made the Win98 window 40 u wider than the mock with every host up. |
+| Column headers draw no sort mark; a second click on the sorted header goes back to name order | As the mock. |
+
+### Evidence
+
+Headless sway (pixman, no output device) in a bubblewrap namespace with no DRI node, Qt on llvmpipe (`/tmp/tandem/win98-fleet/sandbox.sh`, `env.sh`); the real `ThemeDesktop` and `Win98Desktop` over the production `Beszel` owner fed by `beszel-stub.js`. Evidence: `/tmp/tandem/win98-fleet/` (served at `http://100.114.19.92:8765/tandem/win98-fleet/`).
+
+| Run | Result |
+|---|---|
+| `checks.win98-fleet`: `fleet.sh` (behaviour, the motion's held frames, 12 fixtures, bounds at 360x640, 800x480, 1280x800, 1920x1200 at 1.5 and the 2560x1600 tablet at 2) | 140 of 140 (`nix/win98-fleet.log`) |
+| `checks.win98-desktop`: `switch.sh` with each theme's Fleet window or glance space open before each of the 20 swaps | 147 of 147: the old view is mapped before the swap, and after it only the new theme's surfaces are (no `mountainous-fleet` or `mountainous-glance` survives); `GlanceState` names no screen (`nix/win98-desktop.log`) |
+| `checks.win98-desktop`: `behaviour.sh`, `geometry.sh`, `scales.sh` with the Fleet tray icon; the pure tests | 33 of 33, 50 of 50, pass; `fleet-plan.test.js` and `taskbar-plan.test.js` pass |
+| `checks.win98-theme`, `fleet-glance-model`, `desktop-theme-shell`, `bar-delivery`; the Myoko toplevel `drvPath` | pass; evaluates (`nix/summary-1.txt`, `nix/myoko-toplevel.log`) |
+| The checker | A 200 x 200 device-px crop of the light space over the teal desktop: 20,000 black pixels and 20,000 of the desktop's own colour, nothing else (`compare/dither-histogram-light.txt`) |
+| Motion | Held frames 0 to 10 of the summon and the dismiss: captions in flight in frames 0 to 8, the windows at frame 9, the dither gone at dismiss frame 9 (`compare/motion-filmstrip-{in,out}.png`); reduced motion is the cut |
+| Screenshots | `shots/` (standalone and glance, light and dark grey, every fixture, each tab, Large Icons, minimized, the Glance menu, the empty space, remembered places, five sizes); the mock and the build side by side in `compare/` |
+| Isolation | Every session ran in a bubblewrap namespace with no DRI node in `/dev`, after the first runs also in its own PID namespace; the fd scan of a live session is `proof/scan.txt` |
+
+The build differs from the mock where the mock drew placeholders (Notepad, Date/Time, the Disks pie), where the shared model says more ("sdc failed SMART" leads unzen's reasons once its drill-down has run), and in the Glance menu's place (centred on its button, as the tray windows are).
+
+### Not verified
+
+- Nothing ran on Myoko, under Hyprland, or with a real keyboard and pointer. HyprlandFocusGrab does nothing under sway, so "a click outside dismisses the space" was checked as a click on the space's own background, and the window's on-demand focus (no keyboard until clicked) was not checked: sway focuses an on-demand layer surface when it maps.
+- Layer stacking under Hyprland: the menu host and the glance space are both Top-layer surfaces; the Glance menu over the space was seen under sway only.
+- Real Beszel data: every run used the mock's fixtures.
+- The 1.25 scale, two screens, and the dither on Myoko's OLED.
 
 ## Find menu: Platinum's Super+P (implemented)
 
