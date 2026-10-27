@@ -208,3 +208,26 @@ Deployment restarts `ai-gateway.service` to load the new config and credentials.
 Pi assistant traffic uses that front door and can be interrupted during this
 restart. No deployment is part of this change. Live provider authentication,
 paid synthesis and Rakku activation remain deployment-time checks.
+
+## Zao Pi image permission (2026-10-27)
+
+The `pi@zao` grant includes `images` for `/v1/images/generations` and
+`/v1/images/edits`. Its existing `models = [ "*" ]` already allows `gpt-image-2`.
+The USD 1/month paid cap, 1200 requests/minute limit, credential and other
+permissions stay unchanged. Other Pi hosts do not receive the image dialect.
+GPT image calls use the login keeper first. Exhausted subscription headroom can
+use the existing paid Gemini fallback within the same USD 1/month cap.
+
+The production check compares every client grant, including the Zao-only image
+permission. Run the focused production and staging checks and Rakku evaluation
+listed above. Deploy the reviewed commit on Rakku with `nixos-rebuild`, not the
+installer. The gateway restart can interrupt active assistant requests.
+
+After deployment, use the key from Zao's `~/.pi/agent/cliproxyapi.json` to request
+`gpt-image-2` through `https://ai.hummingbird-lake.ts.net/v1/images/generations`.
+Verify that the response contains image data, not `dialect_not_allowed`. Do not
+print the key or the image's base64 data. Tell Simon when this passes so Pogo!
+Pogo! agents stop using the temporary direct-proxy workaround.
+
+To roll back, revert the image-permission commit and deploy that configuration.
+The gateway returns to denying image calls for `pi@zao`; its key does not rotate.

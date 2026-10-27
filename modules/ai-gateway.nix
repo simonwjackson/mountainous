@@ -151,7 +151,8 @@ in
                   "models"
                   "responses"
                   "systemone"
-                ];
+                ]
+                ++ lib.optional (host == "zao") "images";
                 models = [ "*" ];
                 monthly_cap_usd = 1;
                 requests_per_minute = if host == "zao" then 1200 else 600;

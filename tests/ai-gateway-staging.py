@@ -58,7 +58,8 @@ if production:
         assert keys[f"pi@{host}"] == {
             "name": f"pi@{host}",
             "key_file": f"{credential_dir}/pi-{host}",
-            "dialects": ["codex", "models", "responses", "systemone"],
+            "dialects": ["codex", "models", "responses", "systemone"]
+            + (["images"] if host == "zao" else []),
             "models": ["*"],
             "monthly_cap_usd": 1,
             "requests_per_minute": 1200 if host == "zao" else 600,
