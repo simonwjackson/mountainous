@@ -4,7 +4,7 @@
 #
 #   QUICKSHELL=qs LABWC=labwc modules/quickshell/themes/win98/dev/check.sh <shell dir>
 #
-# Loads Win98Gallery.qml with only Theme.qml, the flat Win98* controls and
+# Loads Win98Gallery.qml with Theme.qml, the inert SoundEvents bus, Win98* controls and
 # the theme's assets (so the theme imports nothing else from the shell), opens every page in both
 # appearances, fails on any QML warning, then runs the Start menu's
 # keyboard checks (keys.sh). No screenshots; dev/capture.sh takes those.
@@ -54,7 +54,7 @@ library() {
     echo "$f"
   done
 }
-cp "$shell_dir/Theme.qml" $(library) "$here/Win98Gallery.qml" "$stage/"
+cp "$shell_dir/Theme.qml" "$shell_dir/SoundEvents.qml" $(library) "$here/Win98Gallery.qml" "$stage/"
 cp -r "$shell_dir/themes/win98/icons" "$stage/themes/win98/icons"
 for f in "$shell_dir"/themes/win98/*.js; do case "$f" in *.test.js) ;; *) cp "$f" "$stage/themes/win98/" ;; esac; done
 chmod -R u+w "$stage"
