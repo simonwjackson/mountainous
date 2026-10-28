@@ -10,6 +10,7 @@
     }:
     let
       desktop = self.nixosConfigurations.myoko.config;
+      quickshell = import ../lib/quickshell.nix { inherit pkgs; };
       files = desktop.hjem.users.simon.files;
       # Unit cleanup is part of recorder lifecycle: capture the evaluated policy
       # without pulling the host closure into this focused check.
@@ -105,7 +106,8 @@
       '';
       # Run the production QML with a headless software Wayland compositor.
       # The recorder and backend are real child processes with controlled exits.
-      # Two real mpv MPRIS players on a private session bus prove the media hold.
+      # Two real mpv players and a configurable Pyxamp-shaped MPRIS publisher
+      # on a private session bus prove own playback and retarget-safe media hold.
       checks.dictation-lifecycle =
         assert desktop.systemd.user.services.quickshell.serviceConfig.KillMode == "mixed";
         assert desktop.users.users.simon.uid == 1000;
@@ -117,16 +119,17 @@
           {
             nativeBuildInputs = [
               pkgs.nodejs
-              pkgs.quickshell
+              quickshell
               pkgs.labwc
               pkgs.systemd
             ];
-            QUICKSHELL = "${pkgs.quickshell}/bin/qs";
+            QUICKSHELL = "${quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
             DBUS_DAEMON = "${pkgs.dbus}/bin/dbus-daemon";
             DBUS_SESSION_CONF = "${pkgs.dbus}/share/dbus-1/session.conf";
             MPV = lib.getExe pkgs.mpv;
             MPV_MPRIS = "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
+            PYTHON = lib.getExe (pkgs.python3.withPackages (p: [ p.dbus-fast ]));
           }
           ''
             printf 'Evaluated recorder unit settings: %s\n' ${lib.escapeShellArg lifecycleUnitEvidence}

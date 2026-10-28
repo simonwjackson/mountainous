@@ -91,7 +91,8 @@ Scope {
             canPause: player.canControl && player.canPause,
             canPlay: player.canControl && player.canPlay,
             title: player.trackTitle || "",
-            artist: player.trackArtist || ""
+            artist: player.trackArtist || "",
+            trackId: player.metadata["mpris:trackid"] || ""
         };
     }
 
@@ -102,7 +103,7 @@ Scope {
     function holdMedia() {
         if (root.heldPlayers.length > 0) return;
         const held = MediaHold.toPause(root.mediaPlayers());
-        for (const player of held) player.pause();
+        for (const player of held) player.key.pause();
         root.heldPlayers = held;
         if (held.length > 0) {
             console.log("[dictation] paused " + held.map(p => p.dbusName).join(" "));
@@ -114,7 +115,7 @@ Scope {
         if (held.length === 0) return;
         root.heldPlayers = [];
         const resumed = MediaHold.toResume(held, root.mediaPlayers());
-        for (const player of resumed) player.play();
+        for (const player of resumed) player.key.play();
         console.log("[dictation] resumed " + resumed.map(p => p.dbusName).join(" ")
             + " of " + held.length);
     }

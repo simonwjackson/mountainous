@@ -1,7 +1,9 @@
 // Real Dictation.qml, real Quickshell and a software-rendered Wayland server.
 // Only the recorder/backend boundary is controlled; no QML source is changed.
 // A private session bus carries two real mpv MPRIS players: one playing, one
-// paused. A take pauses the playing one and resumes only that one.
+// paused, plus an MPRIS publisher with Pyxamp own/foreign metadata. A take
+// holds own playback, never forwards through a mirror, and cannot resume a
+// Pyxamp target that changed during capture.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -15,6 +17,7 @@ const labwc = process.env.LABWC || "labwc";
 const dbusDaemon = process.env.DBUS_DAEMON || "dbus-daemon";
 const dbusConfig = process.env.DBUS_SESSION_CONF || "/etc/dbus-1/session.conf";
 const mpv = process.env.MPV || "mpv";
+const python = process.env.PYTHON || "python3";
 const mpvMpris = process.env.MPV_MPRIS || "";
 const work = fs.mkdtempSync(path.join(os.tmpdir(), "dcl-"));
 const runtime = path.join(work, "r");
@@ -22,6 +25,13 @@ const config = path.join(work, "shell");
 const bin = path.join(work, "bin");
 for (const dir of [runtime, config, bin]) fs.mkdirSync(dir, {mode: 0o700});
 let logs = "", compositor, shell, bus;
+const pyxampControl = path.join(work, "pyxamp-control");
+const pyxampCalls = path.join(work, "pyxamp-calls");
+const ownTrackId = "/org/pyxamp/track/o6162";
+const pyxampName = "org.mpris.MediaPlayer2.pyxamp";
+function calls() {
+    return fs.existsSync(pyxampCalls) ? fs.readFileSync(pyxampCalls, "utf8").trim().split("\n").filter(Boolean) : [];
+}
 const players = [];
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const env = {
@@ -104,6 +114,7 @@ ShellRoot {
                 capture: dictation.captureState, active: dictation.activeTake ? dictation.activeTake.path : "",
                 failed: dictation.failedTake ? dictation.failedTake.path : "",
                 held: dictation.heldPlayers.length,
+                tracks: dictation.mediaPlayers().map(p => ({name: p.dbusName, trackId: p.trackId})),
                 players: Mpris.players.values.map(p => p.dbusName + "=" + MprisPlaybackState.toString(p.playbackState)).sort()});
         }
     }
@@ -118,6 +129,71 @@ ShellRoot {
             players.push(start(mpv, ["--no-config", "--ao=null", "--vo=null", "--pause=" + pause,
                 "--loop-file=inf", "--script=" + mpvMpris, "av://lavfi:sine=frequency=440"]));
         }
+        // A real MPRIS service with configurable track/status; calls are recorded
+        // even in mirror mode, so an accidental forward cannot pass unnoticed.
+        const publisher = path.join(work, "mpris-publisher.py");
+        fs.writeFileSync(publisher, String.raw`
+import asyncio, json, sys
+from dbus_fast import Variant, PropertyAccess
+from dbus_fast.aio import MessageBus
+from dbus_fast.service import ServiceInterface, dbus_property, method
+class Root(ServiceInterface):
+    def __init__(self):
+        super().__init__('org.mpris.MediaPlayer2')
+    @dbus_property(access=PropertyAccess.READ)
+    def Identity(self) -> 's': return 'Pyxamp'
+    @dbus_property(access=PropertyAccess.READ)
+    def DesktopEntry(self) -> 's': return 'pyxamp'
+class Player(ServiceInterface):
+    def __init__(self):
+        super().__init__('org.mpris.MediaPlayer2.Player')
+        self.track = '${ownTrackId}'
+        self.status = 'Playing'
+    def change(self, status):
+        self.status = status
+        self.emit_properties_changed({'PlaybackStatus': status})
+    @method()
+    def Pause(self):
+        with open(sys.argv[2], 'a') as out: out.write('Pause\n')
+        self.change('Paused')
+    @method()
+    def Play(self):
+        with open(sys.argv[2], 'a') as out: out.write('Play\n')
+        self.change('Playing')
+    @dbus_property(access=PropertyAccess.READ)
+    def PlaybackStatus(self) -> 's': return self.status
+    @dbus_property(access=PropertyAccess.READ)
+    def Metadata(self) -> 'a{sv}':
+        return {'mpris:trackid': Variant('o', self.track),
+                'xesam:title': Variant('s', 'Own song'), 'xesam:artist': Variant('as', ['Own artist'])}
+    @dbus_property(access=PropertyAccess.READ)
+    def CanControl(self) -> 'b': return True
+    @dbus_property(access=PropertyAccess.READ)
+    def CanPause(self) -> 'b': return True
+    @dbus_property(access=PropertyAccess.READ)
+    def CanPlay(self) -> 'b': return True
+async def main():
+    bus = await MessageBus().connect()
+    player = Player()
+    bus.export('/org/mpris/MediaPlayer2', Root())
+    bus.export('/org/mpris/MediaPlayer2', player)
+    await bus.request_name('${pyxampName}')
+    previous = ''
+    while True:
+        try:
+            with open(sys.argv[1]) as source: control = source.read()
+        except FileNotFoundError:
+            control = ''
+        if control and control != previous:
+            update = json.loads(control)
+            player.track = update['trackId']
+            player.change(update['state'])
+            player.emit_properties_changed({'Metadata': player.Metadata})
+            previous = control
+        await asyncio.sleep(0.02)
+asyncio.run(main())
+`);
+        players.push(start(python, [publisher, pyxampControl, pyxampCalls]));
         compositor = start(labwc, ["--config-dir", compositorConfig]);
         await until(() => fs.existsSync(path.join(runtime, "wayland-0")), "Wayland server did not start");
         shell = start(qs, ["-p", config, "--no-color"]);
@@ -125,10 +201,12 @@ ShellRoot {
         const states = s => Object.fromEntries(s.players.map(entry => entry.split("=")));
         const before = await until(() => {
             const s = snapshot();
-            return s && s.players.length === 2 && Object.values(states(s)).sort().join() === "Paused,Playing" && s;
+            return s && s.players.length === 3 && Object.values(states(s)).sort().join() === "Paused,Playing,Playing" && s;
         }, "MPRIS players did not appear");
-        const playing = Object.keys(states(before)).find(name => states(before)[name] === "Playing");
-        const paused = Object.keys(states(before)).find(name => name !== playing);
+        const playing = Object.keys(states(before)).find(name => name !== pyxampName && states(before)[name] === "Playing");
+        const paused = Object.keys(states(before)).find(name => states(before)[name] === "Paused");
+        await until(() => snapshot()?.tracks.some(p => p.name === pyxampName && p.trackId === ownTrackId),
+            "Quickshell did not expose the MPRIS object-path track id to QML as a string");
         ipc("press");
         await until(() => {
             const s = snapshot();
@@ -136,17 +214,19 @@ ShellRoot {
         }, "Recorder did not start");
         const holding = await until(() => {
             const s = snapshot();
-            return s && states(s)[playing] === "Paused" && s;
+            return s && states(s)[playing] === "Paused" && states(s)[pyxampName] === "Paused" && s;
         }, "The playing player was not paused while recording");
-        assert.equal(holding.held, 1, "only the playing player is held");
+        assert.equal(holding.held, 2, "playing foreign and Pyxamp own playback are held");
+        assert.deepEqual(calls(), ["Pause"], "own playback is paused exactly once");
         assert.equal(states(holding)[paused], "Paused");
         await wait(325); // Production rejects takes shorter than 250 ms.
         ipc("release");
         const after = await until(() => {
             const s = snapshot();
-            return s && states(s)[playing] === "Playing" && s;
+            return s && states(s)[playing] === "Playing" && states(s)[pyxampName] === "Playing" && s;
         }, "Release did not resume the held player");
         assert.equal(after.held, 0);
+        assert.deepEqual(calls(), ["Pause", "Play"], "own playback resumes exactly once");
         await wait(300);
         assert.equal(states(snapshot())[paused], "Paused", "release never plays a player the user had paused");
         const older = await until(() => {
@@ -174,7 +254,48 @@ ShellRoot {
         assert.ok(fs.existsSync(older.failed), "Dismiss did not delete the older take");
         ipc("dismiss");
         assert.equal(snapshot().state, "idle");
-        console.log("dictation-lifecycle: a take pauses only playing media and resumes only that; microphone failure has Dismiss only; Dismiss restores the older take and Retry");
+        fs.writeFileSync(env.DICTATION_TEST_MODE_FILE, "ok");
+        // While the same Pyxamp object is held, it can switch targets. Neither
+        // foreign metadata nor a new own occurrence belongs to this take.
+        async function changeTrack(trackId, state) {
+            fs.writeFileSync(pyxampControl, JSON.stringify({trackId, state}));
+            await until(() => {
+                const s = snapshot();
+                return s && s.tracks.some(p => p.name === pyxampName && p.trackId === trackId)
+                    && states(s)[pyxampName] === state;
+            }, "Pyxamp metadata did not change");
+        }
+        for (const nextTrack of ["/foreign/track", "/org/pyxamp/track/o6364"]) {
+            await changeTrack(ownTrackId, "Playing");
+            const count = calls().length;
+            ipc("press");
+            await until(() => {
+                const s = snapshot();
+                return s && s.capture === "recording" && s.active && fs.existsSync(s.active)
+                    && states(s)[pyxampName] === "Paused";
+            }, "Own playback was not held before switching tracks");
+            assert.equal(calls().length, count + 1);
+            await changeTrack(nextTrack, "Paused");
+            ipc("release");
+            await until(() => snapshot()?.capture === "idle", "Capture did not end");
+            await until(() => states(snapshot() || {players: []})[playing] === "Playing", "Foreign playback did not resume");
+            await wait(150);
+            assert.equal(states(snapshot())[pyxampName], "Paused", "release must not play a changed target");
+            assert.equal(calls().length, count + 1, "release sent no Play to a changed target");
+        }
+        await changeTrack("/foreign/track", "Playing");
+        const count = calls().length;
+        ipc("press");
+        await until(() => {
+            const s = snapshot();
+            return s && s.capture === "recording" && s.active && fs.existsSync(s.active);
+        }, "Mirror-mode take did not start");
+        assert.equal(snapshot().held, 1, "only the real foreign player is held in mirror mode");
+        ipc("release");
+        await until(() => snapshot()?.capture === "idle", "Mirror-mode take did not end");
+        await wait(150);
+        assert.equal(calls().length, count, "no commands are sent through the foreign mirror");
+        console.log("dictation-lifecycle: Pyxamp own pauses/resumes once; retargeted own and foreign mirrors receive no Play; microphone failure has Dismiss only; Dismiss restores the older take and Retry");
     } catch (error) {
         console.error(logs);
         throw error;
