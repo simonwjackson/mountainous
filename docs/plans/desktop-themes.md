@@ -1198,3 +1198,30 @@ while reporting the disconnected bus and stale native settings. Nixfmt, the
 focused CLI/native ShellCheck and the lifecycle Node parser passed. The two
 legacy capture scripts retain their pre-existing ShellCheck warnings; their
 syntax checks passed. No SSH, push or deployment ran.
+
+### Picker teardown callback lifetime (2026-10-27)
+
+The landing lifecycle run exposed an intermittent `QQmlVMEMetaObject` invalid-
+context warning. The fixture keeps Appearance open through its 20 theme swaps.
+Platinum's picker queued `revealFocused` with `Qt.callLater`; a theme swap could
+destroy its QML context before invocation. The old guard inside that function
+was too late: Qt rejected entry into the invalid context itself.
+
+Focus and geometry changes now restart one zero-interval timer owned by the
+picker. Destroying the view cancels that work. Focus reveal remains deferred
+and coalesced; no layout, palette or rollback policy changed. An owner-only
+`ThemeDesktop` rewrite still reproduced the warning and was reverted. The
+production loader and strict lifecycle warning filter are unchanged.
+
+`desktop-theme-shell` passed three consecutive real executions, including two
+forced `--rebuild` runs of the same derivation. This covers 60 theme swaps,
+three disconnected-bus rollback cases and 27 picker geometry cases per run.
+Logs: `/tmp/tandem/phase3/logs/rollback-picker-shell-{1,2,3}.log`.
+
+The focused `desktop-theme`, `native-themes` and `win98-desktop` checks also
+passed serially through the heavy guard; their logs use the same
+`rollback-picker-` prefix. Boundary lint, QML parser and whitespace checks
+passed. Standalone `qmllint` exited 0 with the same 71 metadata/unqualified
+warnings as the unmodified picker (no added warnings); the real Quickshell
+checks supply the authoritative type/runtime validation. No full flake check,
+SSH, deployment or push ran.

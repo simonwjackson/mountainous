@@ -22,14 +22,19 @@ PanelWindow {
     readonly property real labelLeft: win.plan.stackedOption ? PlatinumTokens.menuGutter : Math.min(PlatinumTokens.menuTextLeft, body.width / 3)
     readonly property real rightInset: Math.min(PlatinumTokens.menuRightInset, body.width / 6)
 
+    // Queued JS calls outlive a destroyed picker; a guard inside the
+    // callback is too late because Qt cannot enter its invalid context.
+    // This timer is cancelled with its owning view instead.
+    Timer {
+        id: focusReveal
+        interval: 0
+        onTriggered: win.revealFocused()
+    }
     function rememberFocus(item) {
         focusedControl = item;
-        Qt.callLater(revealFocused);
+        focusReveal.restart();
     }
     function revealFocused() {
-        // A theme swap can destroy the view before this delayed call runs.
-        if (typeof win.reveal !== "function")
-            return;
         const item = focusedControl;
         if (item && item.visible && item.activeFocus)
             reveal(item);
@@ -137,9 +142,9 @@ PanelWindow {
                 contentWidth: width
                 contentHeight: contents.implicitHeight
                 boundsBehavior: Flickable.StopAtBounds
-                onHeightChanged: Qt.callLater(win.revealFocused)
-                onWidthChanged: Qt.callLater(win.revealFocused)
-                onContentHeightChanged: Qt.callLater(win.revealFocused)
+                onHeightChanged: focusReveal.restart()
+                onWidthChanged: focusReveal.restart()
+                onContentHeightChanged: focusReveal.restart()
 
                 Column {
                     id: contents
