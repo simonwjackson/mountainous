@@ -12,8 +12,8 @@ import "themes/win98/tray-model.js" as Tray
 //   [Start] | ‖1 [window][window] | ‖2 [window] ... » | ‖ dictation | [» icons  4:51 PM]
 //
 // One band per page, behind a divider (etch and grip) with no number: a
-// page is named by its apps (the divider's tooltip), never numbered; the
-// page on screen has its box pressed in.
+// page is named by its apps (the divider's tooltip), never numbered. The
+// divider's head is a flat button that shows its page.
 // Window buttons carry the dock's behaviour: a click focuses, the middle
 // button closes, a drag swaps two windows on one page or moves a window to
 // another page (shell dropOnto). Layout is Plan.plan(width): readouts yield
@@ -220,9 +220,11 @@ PanelWindow {
                             visible: band.page >= 0
                             x: bar.units(13); y: bar.units(2)
                             width: bar.units(16); height: bar.units(18)
-                            readonly property bool sunk: band.showing || bar.pressed(band.pid)
+                            // Flat, as a Win98 toolbar button: raised under the
+                            // pointer, pressed while held. With no number in it a
+                            // sunken "page on screen" box said nothing.
+                            readonly property bool sunk: bar.pressed(band.pid)
                             Component.onCompleted: bar.register(band.pid, tag)
-                            Win98Dither { visible: band.showing; anchors.fill: parent }
                             Win98Bevel {
                                 anchors.fill: parent
                                 filled: false
