@@ -36,7 +36,7 @@ let
         pkgs.coreutils
         pkgs.dconf
         pkgs.glib
-        pkgs.python3
+        (pkgs.python3.withPackages (p: [ p.pygobject3 ]))
         pkgs.quickshell
         pkgs.util-linux
       ];
@@ -238,19 +238,9 @@ let
         esac
         if [ "$changed" = 1 ]; then
           titlebars
-          # Ghostty exposes the GTK application action on this session's bus.
-          # No process scan, signals, synthetic keys or window focus changes.
-          # Absent Ghostty is normal. Other GTK4 apps need a restart to reread
-          # their user CSS; named GTK3 themes follow dconf live.
-          # NameHasOwner does not auto-activate Ghostty. A theme change
-          # must never launch a terminal that the user has not opened.
-          if [ "$(gdbus call --session --dest org.freedesktop.DBus \
-              --object-path /org/freedesktop/DBus --method org.freedesktop.DBus.NameHasOwner \
-              com.mitchellh.ghostty 2>/dev/null)" = '(true,)' ]; then
-            gdbus call --session --dest com.mitchellh.ghostty \
-              --object-path /com/mitchellh/ghostty --method org.gtk.Actions.Activate \
-              reload-config '[]' '{}' > /dev/null 2>&1 || true
-          fi
+          # Unique bus connections cover default, custom-class and NON_UNIQUE
+          # applications. The helper never auto-activates a missing terminal.
+          python3 ${../scripts/reload-ghostty.py} || true
         fi
       '';
     };
@@ -322,6 +312,18 @@ in
           for config in "$native"/share/mountainous/native/*/ghostty.conf; do
             ghostty +validate-config --config-file="$config"
           done
+          touch $out
+        '';
+    checks.ghostty-reload =
+      pkgs.runCommand "ghostty-reload"
+        {
+          nativeBuildInputs = [
+            pkgs.dbus
+            (pkgs.python3.withPackages (p: [ p.pygobject3 ]))
+          ];
+        }
+        ''
+          dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- python3 ${../tests/ghostty-reload.py} ${../scripts/reload-ghostty.py}
           touch $out
         '';
     checks.desktop-theme =
