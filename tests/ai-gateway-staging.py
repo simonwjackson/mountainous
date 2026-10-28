@@ -98,7 +98,10 @@ if production:
     assert settings["providers"]["elevenlabs"] == {
         "base_url": "https://api.elevenlabs.io",
         "key_file": f"{credential_dir}/elevenlabs",
+        "prepaid": True,
     }
+    # Every production provider account is prepaid, so no key cap limits it.
+    assert all(p.get("prepaid") is True for p in settings["providers"].values())
     assert settings["prices"]["eleven_flash_v2_5"] == {
         "audio_per_million_characters": 40.0,
     }
@@ -122,6 +125,8 @@ else:
     assert b["monthly_cap_usd"] == 0.01
     charge = settings["systemone_charges"]["jev"]
     assert 2 * charge <= b["monthly_cap_usd"] < 3 * charge
+    # Staging proves the caps, so no staging provider skips them.
+    assert not any(p.get("prepaid") for p in settings["providers"].values())
 assert "gpt-image-2" not in settings["prices"]
 assert all(model["id"] != "gpt-image-2" for model in settings["paid_models"])
 gemini_images = {

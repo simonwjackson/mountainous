@@ -16,6 +16,9 @@
     solar = 0.004;
   },
   modelPrices ? { },
+  # Provider accounts that cannot bill past a prepaid balance. Their calls skip
+  # every key's monthly cap; the balance is the limit. Staging keeps its caps.
+  prepaidProviders ? [ ],
   elevenlabsSpeech ? {
     model = {
       id = "eleven_multilingual_v2";
@@ -158,7 +161,7 @@ let
     "gemini-2.5-flash-image"
   ];
   keys = gatewayKeys geminiImageModels;
-  settings = {
+  baseSettings = {
     systemone_charges = systemoneCharges;
     listen = "127.0.0.1:${toString listenPort}";
     state_dir = state;
@@ -259,6 +262,11 @@ let
         key_file = credential key.credential;
       }
     ) keys;
+  };
+  settings = baseSettings // {
+    providers = lib.mapAttrs (
+      provider: value: value // lib.optionalAttrs (lib.elem provider prepaidProviders) { prepaid = true; }
+    ) baseSettings.providers;
   };
 in
 {

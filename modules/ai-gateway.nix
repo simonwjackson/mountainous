@@ -45,6 +45,18 @@ in
             description = "AI gateway production front door";
             egressDescription = "AI gateway provider hostname allowlisting CONNECT proxy";
             tailnetDescription = "AI gateway tailnet proxy";
+            # Every paid account is prepaid with auto-recharge off (Simon,
+            # 2026-10-28), so its balance is the limit and the key caps below
+            # do not apply to them. A provider added later stays capped until
+            # it is listed here.
+            prepaidProviders = [
+              "elevenlabs"
+              "gemini"
+              "openrouter"
+              "typesafe"
+              "upstage"
+              "xai"
+            ];
             elevenlabsSpeech = {
               model = {
                 id = "eleven_flash_v2_5";
