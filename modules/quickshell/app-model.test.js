@@ -150,10 +150,18 @@ console.log("app-model: MRU, grouping, recent window, cycle order, window cycle 
 
 // A no-tab browser can have dozens of windows with the same Wayland class.
 // The Application menu groups the app, not its windows: no page may vanish.
-const chromiumPages = Array.from({length:30}, (_,i) => row("browser-"+i,"chromium-browser",i+1,{title:"Page "+i,focusHistory:i}));
-const browserMru = A.reconcile([],chromiumPages);
-const browsers = A.apps(chromiumPages,browserMru,"browser-0",{"chromium-browser":"Chromium"},{});
-assert.equal(browsers.length,1);
-assert.equal(browsers[0].count,30);
-assert.equal(new Set(browsers[0].windows.map(w=>w.address)).size,30);
-assert.equal(A.windowCycleStart(chromiumPages,browserMru).order.length,30,"Win98 cycles all browser windows, not one app group");
+for (const count of [20, 40]) {
+    // Repeated real-site titles must not merge distinct native windows.
+    const chromiumPages = Array.from({length:count}, (_,i) => row("browser-"+i,"chromium-browser",i+1,{title:"Site "+(i%5),focusHistory:i}));
+    const browserMru = A.reconcile([],chromiumPages);
+    const browsers = A.apps(chromiumPages,browserMru,"browser-0",{"chromium-browser":"Chromium"},{});
+    assert.equal(browsers.length,1);
+    assert.equal(browsers[0].count,count);
+    assert.equal(new Set(browsers[0].windows.map(w=>w.address)).size,count);
+    const cycle = A.windowCycleStart(chromiumPages,browserMru);
+    assert.equal(cycle.order.length,count,"Win98 cycles all browser windows, not one app group");
+    assert.equal(new Set(Array.from({length:count}, (_,i) => A.cycleTarget(cycle,i))).size,count,
+        "all windows remain reachable even when their titles are the same");
+    assert.equal(A.cycleStart(chromiumPages,browserMru,{}).order.length,1,
+        "Platinum's held switcher cycles apps, not forty copies of Chromium");
+}

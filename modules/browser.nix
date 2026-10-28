@@ -1,10 +1,37 @@
 # The browser spine: CDP control in QML for Ctrl+L. Chromium retains window
 # ownership and its origin/security UI. See desktop-themes/chromium-windows.md.
 { self, ... }:
+let
+  tablessPolicy = "mdndkociaebjkggmhnemegoegnbfbgoo;https://clients2.google.com/service/update2/crx";
+in
 {
   perSystem =
     { pkgs, ... }:
     {
+      checks.chromium-tabless =
+        let
+          configured =
+            enable:
+            (self.nixosConfigurations.myoko.extendModules {
+              modules = [ { mountainous.browser.tabless.enable = pkgs.lib.mkForce enable; } ];
+            }).config;
+          enabled = configured true;
+          disabled = configured false;
+          policy = builtins.fromJSON enabled.environment.etc."chromium/policies/managed/default.json".text;
+        in
+        assert policy.ExtensionInstallForcelist == [ tablessPolicy ];
+        assert
+          disabled.programs.chromium.extensions == null
+          || !(builtins.elem tablessPolicy disabled.programs.chromium.extensions);
+        assert enabled.programs.chromium.initialPrefs.vertical_tabs.enabled;
+        assert enabled.programs.chromium.initialPrefs.vertical_tabs.collapsed_state;
+        assert !enabled.programs.chromium.initialPrefs.vertical_tabs.expand_on_hover;
+        assert enabled.programs.chromium.initialPrefs.browser.custom_chrome_frame == false;
+        assert !(disabled.programs.chromium.initialPrefs ? vertical_tabs);
+        pkgs.runCommand "chromium-tabless" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+          node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
+          touch "$out"
+        '';
       checks.chromium-windows =
         let
           desktop = self.nixosConfigurations.myoko.config;
@@ -59,8 +86,18 @@
     }:
     let
       cfg = config.mountainous.browser.shellNavigation;
+      tabless = config.mountainous.browser.tabless;
     in
     {
+      options.mountainous.browser.tabless.enable = lib.mkEnableOption ''
+        Tab-less from the Chrome Web Store (one normal window per unpinned
+        new tab). Seeds collapsed vertical tabs in new profiles only. This
+        uses the same Web Store ID as a manual install, never a second
+        unpacked copy. Adoption must be confirmed on Myoko after deployment.
+        Turning this off later uninstalls that copy, even if first installed
+        by hand; reinstall it manually to return to manual management.
+        See docs/plans/desktop-themes/tabless.md for memory and navigation costs
+      '';
       options.mountainous.browser.shellNavigation.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -72,6 +109,20 @@
         '';
       };
       config = {
+        programs.chromium = lib.mkIf tabless.enable {
+          # The upstream module emits ExtensionInstallForcelist. Never load
+          # an unpacked second copy alongside Simon's existing Web Store ID.
+          extensions = [ tablessPolicy ];
+          # A first-run seed, not a policy or a live-profile rewrite. No
+          # feature switch is needed in Chromium 153 (VerticalTabsLaunch).
+          initialPrefs = lib.mkDefault {
+            vertical_tabs = {
+              enabled = true;
+              collapsed_state = true;
+              expand_on_hover = false;
+            };
+          };
+        };
         # Wrap, do not replace the profile. --remote-debugging-port=0 selects
         # a random loopback port. Both user-data roots keep their own endpoint.
         nixpkgs.overlays = lib.optional cfg.enable (
