@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793201730,
-        "narHash": "sha256-Lt2glTajTe5dfatj6Tswoz9QdE78EGK/ygV2RrNyc2Q=",
+        "lastModified": 1793202295,
+        "narHash": "sha256-PdZaJG4nrZOlydN38jWX+/vuW86W8k27kdtfXS9EPMM=",
         "ref": "main",
-        "rev": "0a40a35d66a7fd143279a8c2f1d6cf79e800a663",
-        "revCount": 19,
+        "rev": "5dc7e09ab1590979ee7c5c20be9918c9cf3892f3",
+        "revCount": 20,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
