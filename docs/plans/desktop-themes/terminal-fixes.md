@@ -6,7 +6,7 @@ phase 3 section. UI and tab-bar fonts, colours and padding are unchanged.
 
 ## Terminal faces
 
-| Theme | Terminal face | Licence and locked source | Size at scale 1.5 |
+| Theme | Terminal face | Licence and locked source | Nominal target at scale 1.5 |
 |---|---|---|---|
 | Windows 98 | Fixedsys Excelsior | Public domain / CC0; `kika/fixedsys`, `3f37fa8855bdbc542c817947ede82bef7c4049eb` | 16 pt → 32 device px em; 16 px cell; each source pixel is 2 device px |
 | Platinum | ProFontIIx Grid | MIT; Tobias Jung's `profontiix.zip`, flake-locked by content hash | 13.5 pt → 27 device px em; 18 px cell; each source pixel is 3 device px |
@@ -46,6 +46,13 @@ Hjem-delivered root still includes it. The terminal family list is reset before
 the primary and fallback faces, so reloads cannot accumulate old families.
 These two sizes target the existing scale 1.5. Other output/text scales can
 produce non-integer source pixels; they have not been claimed as grid-exact.
+
+The grid assertions above are font-space and nominal-transform checks, not
+proof of sharp GTK pixels. Pixel sampling of the real nested screenshots finds
+greyscale edge pixels at scale 1.5. Thus **perfectly sharp fractional-scale
+rendering is not verified**; the spacing fix and equal font advances are
+verified. GTK's integer backing buffer and compositor resampling are a possible
+cause, not a measured diagnosis. No Ghostty/GTK renderer patch is included.
 
 ## Ghostty live switching
 
@@ -119,3 +126,67 @@ appearance. Nix checks run through the Unzen/federation wrapper.
 
 Not verified: Myoko's GPU and real input, herdr's live server,
 other display/text scales, X11 and sandboxed/Flatpak Ghostty. The parent verifies the existing Super+T terminal after deployment.
+
+## Duplicate external outputs and unplug cleanup (follow-up)
+
+`hyprland.lua` attaches `duplicate-outputs.lua`. It mirrors later matching
+external connectors onto the first by connector-name order, comparing non-empty
+description, current width/height and refresh rate (0.01 Hz tolerance).
+**eDP-1 is excluded from both sides.**
+
+Mirroring is safer than disabling: whichever connector the hub physically wires
+to its panel still has a picture. A mirror is not a workspace destination.
+Cost: genuinely separate panels with identical descriptions and modes will also
+mirror. This rule trusts descriptions; it does not prove physical identity.
+
+Added/removed/layout-changed events defer and coalesce reconciliation. Active
+sources expose their mirror sinks; stale rules owned by this module are cleared
+on unplug or mode changes. Other manual mirrors are left alone. Hyprland
+promotes a remaining mirror when its source leaves. No state file is added.
+`checks.duplicate-outputs` tests order, three duplicates, source unplug, different
+modes/descriptions, blank descriptions and eDP-1 protection.
+
+Both themes use one filtered screen list for Desktop creation, primary-screen
+fallback and popup routing. In Hyprland it intersects Qt screens with active
+workspace destinations, excluding mirror/disabled sinks. Non-Hyprland previews
+retain their own screen lists. The same check tests this JS policy.
+
+### Existing ordinary-unplug bug, reproduced on cairn
+
+The unmodified cairn `7512e313` root and unchanged `ThemeDesktop.qml` ran in the
+nested compositor, with only an observation IPC added to the private staged
+copy. After adding and removing a normal, unmirrored `CAIRN-UNPLUG` output,
+`Quickshell.screens` dropped it, but `root.desktops` retained its name. This is
+an **existing ordinary-output unplug bug**, not a duplicate-policy regression.
+Evidence: `session/logs/cairn-normal-{connected,unplugged}.json`.
+
+`ThemeDesktop.onDesktopChanged` is not a reliable delegate teardown signal.
+The Variants delegate now unregisters in `Component.onDestruction`, retaining
+its registration name and Desktop identity. Both teardown and theme-change
+cleanup compare identity before deletion, so an old delegate cannot remove a
+newer registration under the same name. No dead QScreen reference is retained.
+
+The real follow-up capture passes source unplug, remaining-output promotion and
+ordinary output removal. Its registry contains exactly:
+
+| State | Screens and Desktop registrations |
+|---|---|
+| Mirrored | `eDP-1`, `DUP-A` |
+| Source removed | `eDP-1`, `DUP-B` |
+| Remaining output removed | `eDP-1` |
+
+The identity probe passes and leaves no entry. It is injected only into the
+private capture copy; **no `identity-probe` entry or test IPC ships**.
+`duplicate-followup-runtime.log` records both the cairn reproduction and the
+passing current behavior. `session/logs/registration-identity.txt` and the three
+`*-desktops.json` files record the results. Quickshell has no TypeError or
+ReferenceError; compositor config errors are empty. Device scans find zero
+card nodes; cleanup reports **processes left: 0**.
+
+The nested headless backend supplies empty descriptions and exposes no setter.
+Identical non-empty descriptions are therefore unit-tested, while the real
+compositor and Quickshell exercise the chosen mirror and hot-plug mechanism.
+Myoko's hub/EDID, GPU and real input still need the parent's verification.
+Staged QML type lint passes with 64 known-idiom warnings, versus 59 on cairn.
+Raw-tree lint fails to resolve existing singleton members; the same staged
+production files compile and run in real Quickshell.

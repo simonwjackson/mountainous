@@ -25,6 +25,10 @@ hl.monitor({
     scale    = "1.5",
 })
 
+-- The hub can expose the same external panel twice. Keep both wires lit,
+-- but only one desktop/workspace destination. eDP-1 is never a candidate.
+require("duplicate-outputs").attach()
+
 hl.env("XCURSOR_THEME", "Adwaita")
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")

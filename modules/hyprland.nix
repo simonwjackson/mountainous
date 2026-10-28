@@ -40,6 +40,14 @@ let
     });
 in {
   perSystem = {pkgs, ...}: {
+    checks.duplicate-outputs = pkgs.runCommand "duplicate-outputs" {
+      nativeBuildInputs = [ pkgs.lua pkgs.nodejs ];
+    } ''
+      node ${./quickshell/display-screens.test.js} ${./quickshell/display-screens.js}
+      luac -p ${./hyprland/duplicate-outputs.lua}
+      lua ${./hyprland/duplicate-outputs.test.lua} ${./hyprland/duplicate-outputs.lua}
+      touch $out
+    '';
     packages.hyprbars-platinum = hyprbarsPlatinum pkgs;
 
     # The patch applies and builds against the pinned Hyprland, and the
@@ -446,6 +454,8 @@ in {
 
     hjem.users.simon.files.".config/hypr/hyprland.lua".source =
       ./hyprland/hyprland.lua;
+    hjem.users.simon.files.".config/hypr/duplicate-outputs.lua".source =
+      ./hyprland/duplicate-outputs.lua;
     hjem.users.simon.files.".config/hypr/titlebars.lua".source =
       ./hyprland/titlebars.lua;
   };

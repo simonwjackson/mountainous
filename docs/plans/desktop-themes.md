@@ -33,6 +33,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Super+O N (Notifications) | Done | Done | The tray draws B W S L C D F R N; N opens Notifications under both themes |
 | Native apps (GTK, Qt, Ghostty) | Built (five-appearance tandem phase below) | Built (same phase) | Chicago95 GTK, Qt Windows style; terminal fonts/reload superseded by [terminal fixes](desktop-themes/terminal-fixes.md) |
 | Terminal monospace fonts and every-instance reload | Built (ProFontIIx Grid) | Built (Fixedsys Excelsior) | Grid-bold, Unicode/Nerd fallbacks; UI/tab fonts unchanged ([evidence](desktop-themes/terminal-fixes.md)) |
+| Duplicate external display outputs | Built (mirror later matching connectors) | Built (same shared rule) | eDP-1 protected; one Quickshell Desktop per workspace destination ([evidence](desktop-themes/terminal-fixes.md)) |
 | Icons, cursors, pattern | Phase 4, pending | Phase 4, pending | Win98 counterparts |
 | Menu and system sounds | Built (original CC0 set, shared hooks and saved switch) | Built (original CC0 set, same hooks/switch) | See [phase4-sound-boot](desktop-themes/phase4-sound-boot.md) |
 | Boot and shutdown | Built (fixed Platinum in initrd) | Original Win98 package built; fixed Platinum used at boot by choice (a) | No session ESP writes or switch-time rebuild; same section |
@@ -54,11 +55,11 @@ Each lands for both themes. New plan sections go in their own file under `docs/p
 | 1 | **Phase 4: icons, cursors, desktop pattern, menu sounds, boot screen** | Sounds and boot built: [part 2](desktop-themes/phase4-sound-boot.md). Icons, cursors and pattern remain separate work. |
 | 2 | **Taskbar and strip page dividers are a plain divider**, no button at all | The number went; the empty button head is still there and reads as a stray empty slot. |
 | 3 | **No soft fades.** Window and chrome motion follows the OS being mimicked | Win98: windows appear at once; minimize/restore/maximize use the caption animation; menus roll. Mac OS 8: zoom rectangles. Hyprland's default fade/pop-in goes under both themes. |
-| 4 | **Built: terminal fonts and Ghostty live switching** | ProFontIIx Grid / Fixedsys Excelsior; real grid-bold and fallbacks. Reload reaches custom and NON_UNIQUE instances. [Checks and evidence](desktop-themes/terminal-fixes.md); parent verifies Myoko. |
+| 4 | **Built: terminal fonts and Ghostty live switching** | ProFontIIx Grid / Fixedsys Excelsior; real grid-bold and fallbacks. Reload reaches custom and NON_UNIQUE instances. GTK fractional-scale sharpness is still unverified. [Checks and evidence](desktop-themes/terminal-fixes.md); parent verifies Myoko. |
 | 5 | **Chromium: every tab is a window** | No tab strip; the taskbar/Control Strip is the tab container. Explore memory cost. Supersedes the outer-chrome options B/C. |
 | 6 | **Chromium captures Ctrl+L** in normal windows | Go to Address / Open should win. PWAs already behave. |
 | 7 | **Installed PWAs keep Chromium's own title bar** | Forgerie is the exception (it launches as `--app=`). Wanted: one scalable rule for all web apps. |
-| 8 | **Duplicate display output**: DP-1 and DP-3 are the same YMK EM160TP-A at 0,-1200 | Likely the hub exposing one panel twice. Chrome is drawn on both. |
+| 8 | **Built: duplicate external outputs mirror one desktop** | Hot-plug rule matches description and mode, never touches eDP-1; Quickshell skips mirror/disabled outputs. [Checks and limits](desktop-themes/terminal-fixes.md); parent verifies the Myoko hub. |
 | 9 | Win98 caption app icons | Generic document icon today. |
 
 ## Goal

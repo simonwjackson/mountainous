@@ -9,10 +9,14 @@ import "panels"
 import "lanes.js" as Lanes
 import "app-model.js" as AppModel
 import "chrome-open.js" as ChromeOpen
+import "display-screens.js" as DisplayScreens
 
 ShellRoot {
     id: root
 
+    readonly property var desktopScreens: DisplayScreens.desktops(
+        Quickshell.screens, Hyprland.monitors.values,
+        !!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
     property var desktops: ({})
     property var pendingChrome: ({})
     Connections {
@@ -27,13 +31,17 @@ ShellRoot {
             return desktops.length > 0 ? desktops[0].diagnostics || "" : "";
         }
     }
-    function registerDesktop(screen, desktop) {
-        if (!screen) return;
+    function registerDesktop(name, desktop) {
+        if (!name) return;
         const next = Object.assign({}, root.desktops);
-        if (desktop) next[screen.name] = desktop;
-        else delete next[screen.name];
+        if (desktop) next[name] = desktop;
+        else delete next[name];
         root.desktops = next;
         Qt.callLater(root.flushChrome);
+    }
+    function unregisterDesktop(name, expected) {
+        // A replacement delegate may already own this name.
+        if (root.desktops[name] === expected) root.registerDesktop(name, null);
     }
     function revealChrome() {
         for (const desktop of Object.values(root.desktops).filter(Boolean)) desktop.reveal();
@@ -174,7 +182,7 @@ ShellRoot {
             r = root.rowFor(given);
         }
         if (!r) return;
-        const screen = Quickshell.screens.find(function (s) { return s.name === r.screen; }) || root.focusedScreen();
+        const screen = root.desktopScreens.find(function (s) { return s.name === r.screen; }) || root.focusedScreen();
         if (!screen) return;
         let gx = x, gy = y;
         if (x < 0 && y < 0) {
@@ -226,7 +234,7 @@ ShellRoot {
     function focusedScreen() {
         const monitor = Hyprland.focusedMonitor;
         if (monitor) {
-            for (const screen of Quickshell.screens) {
+            for (const screen of root.desktopScreens) {
                 if (screen.name === monitor.name) return screen;
             }
         }
@@ -234,7 +242,7 @@ ShellRoot {
     }
 
     function primaryScreen() {
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+        return root.desktopScreens.length > 0 ? root.desktopScreens[0] : null;
     }
 
     // The Platinum title bar's collapse box (modules/hyprland/titlebars.lua).
@@ -587,12 +595,15 @@ ShellRoot {
     // Per screen: the data owners, the bar that reads them, and the one
     // window that shows whichever menu is open.
     Variants {
-        model: Quickshell.screens
+        model: root.desktopScreens
 
         Scope {
             id: screenScope
 
             required property var modelData
+            property string registrationName: ""
+            property var registeredDesktop: null
+            Component.onDestruction: root.unregisterDesktop(registrationName, registeredDesktop)
 
             // The window that last had focus on this screen. The title
             // falls back to it once focus moves to another screen, so this
@@ -657,7 +668,16 @@ ShellRoot {
             ThemeDesktop {
                 screen: screenScope.modelData
                 context: screenScope.desktopContext
-                onDesktopChanged: root.registerDesktop(screen, desktop)
+                onDesktopChanged: {
+                    if (screen) screenScope.registrationName = screen.name;
+                    if (desktop) {
+                        root.registerDesktop(screenScope.registrationName, desktop);
+                        screenScope.registeredDesktop = desktop;
+                    } else {
+                        root.unregisterDesktop(screenScope.registrationName, screenScope.registeredDesktop);
+                        screenScope.registeredDesktop = null;
+                    }
+                }
             }
         }
     }
