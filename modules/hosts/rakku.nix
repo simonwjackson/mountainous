@@ -22,6 +22,7 @@ in
       "pi-assistant"
       "signal-responder"
       "vela"
+      "contacts"
       "no-builds"
     ];
     module =
@@ -195,6 +196,23 @@ in
             ];
           };
         };
+        # CardDAV service placement: https://contacts.hummingbird-lake.ts.net/.
+        mountainous.features.contacts = {
+          enable = true;
+          port = 8480;
+          tailnetName = "contacts";
+          passwordFile = config.sops.secrets.contacts-password.path;
+        };
+        # Simon adds the encrypted value before activation; root hands the
+        # service a private credential copy. No password value is in this PR.
+        sops.secrets.contacts-password = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          owner = "root";
+          group = "root";
+          mode = "0400";
+          restartUnits = [ "contacts.service" ];
+        };
+
         # Vela, the car dashboard: https://vela.hummingbird-lake.ts.net.
         # Pyxis (pyxis), Ossicle (podcasts) and voice-gateway (voice) are user
         # units on Zao, outside this flake: pyxis-tsnet, ossicle-proxy and
