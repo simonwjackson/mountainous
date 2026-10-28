@@ -24,12 +24,12 @@ PanelWindow {
     color: "transparent"
 
     // The facts, from the reader every theme's About view shares.
-    SystemFacts { id: facts; live: about.visible }
-    readonly property string host: facts.host
-    readonly property string product: facts.product
-    readonly property var version: facts.version
-    readonly property string generation: facts.generation
-    readonly property real uptime: facts.uptime
+    SystemFacts { id: systemFacts; live: about.visible }
+    readonly property string host: systemFacts.host
+    readonly property string product: systemFacts.product
+    readonly property var version: systemFacts.version
+    readonly property string generation: systemFacts.generation
+    readonly property real uptime: systemFacts.uptime
 
     function capitalised(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
     function uptimeText(seconds) {

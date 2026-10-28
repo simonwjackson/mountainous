@@ -159,7 +159,9 @@ click_at $(item 0 "Restore All Windows"); settle ''
 check 'Restore All Windows (Show All) brings every one back to its page' 'not any(t["min"] for t in T) and [t["page"] for t in T] == [1, 1, 2, 2, 3]'
 at 1500 1185; echo right >&3; sleep 0.4; settle tbmenu
 click_at $(item 0 "Find..."); settle ''
-check 'Find... opens Super+P' 'L[-1] == "omni root"'
+settle find
+check 'Find... opens Super+P (the Find window)' 'M.endswith("open=find")'
+key Escape; settle ''
 
 # ---------------------------------------------------------------- the windows menu IPC
 reset
