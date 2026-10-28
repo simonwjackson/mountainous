@@ -98,6 +98,9 @@ print("ok" if not bad and not bands and d["bands"] else "no: %s %s %s" % (bad[:5
 }
 mins() { w98 tasks | python3 -c 'import json,sys; print(" ".join(str(t["i"]) for t in json.load(sys.stdin) if t["min"]))'; }
 reset() { w98 set tb-normal >/dev/null; sleep 0.8; }
+# Open Start by its button and wait until its surface has the keyboard (a
+# loaded machine maps it a moment after MenuState opens it).
+startmenu() { click start; settle start; sleep 0.5; }
 
 # ---------------------------------------------------------------- minimize and restore
 reset
@@ -110,7 +113,7 @@ reset
 nonumbers 'the taskbar'
 tips=$(w98 strings | python3 -c 'import json,sys; print("|".join(b["tip"] for b in json.load(sys.stdin)["bands"]))')
 [ "$tips" = "Ghostty and Chromium|Signal and Zed|OBS Studio" ] && ok "each divider's tooltip names its apps ($tips)" || bad "divider tooltips: $tips"
-click start; settle start; letter w; settle start
+startmenu; letter w; settle start
 nonumbers 'Start > Windows'
 w98 menu | grep -q 'path=Windows ' && ok 'Start > Windows opens' || bad "Windows: $(w98 menu)"
 key Escape; key Escape; settle ''
@@ -217,10 +220,10 @@ check 'a commit on a minimized window restores it' 'L[-1] == "show 3 2" and not 
 
 # ---------------------------------------------------------------- Start: session
 reset
-click start; settle start; letter k; settle ''
+startmenu; letter k; settle ''
 sleep 0.3
 grep -q '^loginctl lock-session$' "$work/commands.log" && ok 'Start > Lock Myoko locks at once (stubbed)' || bad "no lock: $(cat "$work/commands.log")"
-click start; settle start; letter u; settle shutdown
+startmenu; letter u; settle shutdown
 check 'Start > Shut Down... opens Shut Down Myoko' 'M.endswith("open=shutdown")'
 nonumbers 'Shut Down Myoko'
 [ "$(w98 shutChoice)" = standby ] && ok 'it opens on Stand by the first time' || bad "first choice $(w98 shutChoice)"
@@ -237,19 +240,19 @@ click_at $(w98 at shutdown shutDownOk); settle ''
 sleep 0.3
 grep -q '^systemctl reboot$' "$work/commands.log" && ok 'OK runs Restart (stubbed)' || bad "no reboot: $(tail -3 "$work/commands.log")"
 [ "$(cat "$XDG_STATE_HOME/mountainous/win98-shut-down")" = restart ] && ok 'the choice is remembered on disk' || bad 'not remembered'
-click start; settle start; letter u; settle shutdown
+startmenu; letter u; settle shutdown
 [ "$(w98 shutChoice)" = restart ] && ok 'the dialog opens on the last choice OK'"'"'d' || bad "reopened on $(w98 shutChoice)"
 before=$(wc -l < "$work/commands.log")
 key Escape; settle ''
 [ "$(wc -l < "$work/commands.log")" = "$before" ] && ok 'Esc cancels and runs nothing' || bad 'Esc ran something'
-click start; settle start; letter u; settle shutdown; letter b; click_at $(w98 at shutdown shutDownCancel); settle ''
+startmenu; letter u; settle shutdown; letter b; click_at $(w98 at shutdown shutDownCancel); settle ''
 [ "$(wc -l < "$work/commands.log")" = "$before" ] && ok 'Cancel runs nothing and keeps the old choice' || bad 'Cancel ran something'
 [ "$(cat "$XDG_STATE_HOME/mountainous/win98-shut-down")" = restart ] && ok 'Cancel does not change the remembered choice' || bad 'Cancel changed it'
-click start; settle start; letter u; settle shutdown; letter b; key Return; settle ''; sleep 0.3
+startmenu; letter u; settle shutdown; letter b; key Return; settle ''; sleep 0.3
 grep -q '^systemctl suspend$' "$work/commands.log" && ok 'Stand by, Enter: suspends (stubbed)' || bad 'no suspend'
-click start; settle start; letter u; settle shutdown; letter l; key Return; settle ''; sleep 0.3
+startmenu; letter u; settle shutdown; letter l; key Return; settle ''; sleep 0.3
 grep -q 'hyprctl --instance 0 dispatch hl.dsp.exit()' "$work/commands.log" && ok 'Log off simon: the session exit (stubbed)' || bad 'no exit'
-click start; settle start; letter l; settle logoff
+startmenu; letter l; settle logoff
 check 'Start > Log Off simon... keeps its confirmation' 'M.endswith("open=logoff")'
 letter n; settle ''
 
@@ -264,16 +267,16 @@ key Return; settle ''
 check 'Enter closes it' 'M.endswith("open=")'
 
 # ---------------------------------------------------------------- Documents and Favorites
-click start; settle start; letter d; settle start
+startmenu; letter d; settle start
 check 'Documents opens with its first item' 'M.startswith("path=Documents cursor=Zed")'
 key Return; settle ''; sleep 0.3
 grep -q 'systemd-run --user --scope.* -- zeditor$' "$work/commands.log" && ok 'Documents > Zed launches through Launcher' || bad "no zeditor launch: $(grep systemd-run "$work/commands.log" | tail -1)"
-click start; settle start; letter v; settle start
+startmenu; letter v; settle start
 check 'Favorites lists the web apps by name' 'M.startswith("path=Favorites cursor=GitHub")'
 key Return; settle ''; sleep 0.3
 grep -q 'systemd-run .*--unit=app-webapp-github-.* -- chromium --app=https://github.com$' "$work/commands.log" && ok 'Favorites > GitHub launches the web app through Launcher' || bad "no web app launch: $(grep systemd-run "$work/commands.log" | tail -1)"
 w98 lists empty >/dev/null; sleep 0.3
-click start; settle start; letter d; settle start
+startmenu; letter d; settle start
 check 'no recent applications: Documents holds (Empty), nothing selected' 'M.startswith("path=Documents cursor=- ")'
 [ -n "$(item 1 "(Empty)")" ] && ok '(Empty) is shown' || bad 'no (Empty)'
 key Escape; key Escape; settle ''

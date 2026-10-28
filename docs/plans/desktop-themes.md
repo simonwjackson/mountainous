@@ -1308,7 +1308,16 @@ The contract grows: a Desktop may implement `windowMenu(address, x, y)` (screen-
 
 Headless sway in a bubblewrap namespace with its own PID namespace, no DRI node in `/dev`, a tmpfs over `/run/user`, `/run/dbus` and `/run/systemd`, Qt on llvmpipe; the real `ThemeDesktop` and `Win98Desktop` over the harness's windows and a `WindowHider` with `window-hide.js`'s own rules. `loginctl`, `systemctl`, `systemd-run` and `hyprctl` are logging stubs (`session.sh`). Evidence: `/tmp/tandem/win98-taskbar-session/` (http://100.114.19.92:8765/tandem/win98-taskbar-session/).
 
-RESULTS
+| Run | Result |
+|---|---|
+| `checks.win98-taskbar`: `taskbar.sh` (minimize and restore by click, the window menu and Move to, the taskbar menu, the windows menu call, held Super+Tab with stale and late messages, Lock, Shut Down Myoko, Log Off, System Properties, Documents, Favorites, (Empty), the pop-up, and no page number in eight surfaces), the pure tests, `app-model` and `window-hide` tests | 81 of 81 |
+| `checks.win98-desktop`: `behaviour.sh`, `switch.sh` (the window menu, taskbar menu, Shut Down, System Properties, the Cool Switch and the pop-up each mapped under niri before a swap, and gone after it), `geometry.sh` (32 new bounds checks at 360x640, 800x480, 1280x360 and 1920x1200), `scales.sh`, `find.sh`, the pure tests | 33, 147, 82, pass, 102 |
+| `checks.theme-parity` (no listed gaps; `no-page-numbers` with nothing pending), `win98-fleet` (140), `platinum-desktop`, `bar-delivery`, `win98-theme`, `desktop-theme-shell`, `desktop-safety`, `titlebars`; the Myoko toplevel `drvPath` | pass; evaluates |
+| Session commands | Only the stubs ran: `loginctl lock-session`, `systemctl suspend`, `systemctl reboot`, `hyprctl … hl.dsp.exit()`, and two `systemd-run` launches (`logs/taskbar-commands.log`); `/run/dbus` and `/run/systemd` were empty tmpfs mounts |
+| Isolation | No `/dev/dri` in the namespace, no card or input fd in any process, no `drm`, seat or libinput line in sway's log (`proof/scan.txt`) |
+| Screenshots | `shots/` (the mock's state names, light and dark grey, 1920x1200 and 360x800) and `compare/` (the mock beside the build) |
+
+Not in the mock: System Properties reads the sandbox host's real name and DMI product (Zao), and the band heads carry no number.
 
 ### Not verified
 
