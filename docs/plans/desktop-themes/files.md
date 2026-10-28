@@ -41,6 +41,12 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 15 | Play and read state is shown, never changed. | The service owns it. Cost: Files refreshes it. |
 | 16 | An item copied out gets a readable name from the catalog and the original extension (`01 Still Alive.flac` inside `Artist - Album`; `Blade Runner (1982).mkv`). | Titles, not storage names. Cost: naming rules per kind, including characters not allowed in file names. |
 | 17 | Sign in once per library in a themed dialog. The token goes in the desktop keyring (Secret Service). | Period behaviour. Cost: Myoko has no Secret Service provider in the flake today (no gnome-keyring, KeePassXC or oo7 found in `modules/` or `lib/`), so one must be added. |
+| 18 | A remote file opened in an app is copied to Myoko. Files watches the copy and uploads it on each save. If the host's copy changed since it was opened, Files asks before it overwrites. | Works with any app, like WinSCP and Transmit. Cost: a change on the host is caught at save time, not as it happens. |
+| 19 | Delete on an SSH host moves the file to that host's own freedesktop Trash when it is on the same disk; otherwise Files warns that the delete is permanent. The Trash lists each host's trash as its own group. | Undo for most mistakes. Cost: files on another disk (for example `/srv` on fuji) have no undo. |
+| 20 | A copy between two hosts goes through Myoko. | Needs only the keys on Myoko. Cost: slower, and Myoko's network carries the bytes twice. |
+| 21 | Transfers belong to Files, not to a window. Closing a progress window does not stop a copy. Platinum: Window ▸ Transfers. Windows 98: a tray icon while copies run. | Cost: copies with no window need a place to find and stop them. |
+| 22 | The desktop shows: the files in `~/Desktop`, this machine (Myoko's disk / My Computer), the libraries, and the Trash / Recycle Bin. SSH hosts are not on the desktop. | Owner's choice. The Connect dialog's "Show on the desktop" box is removed. |
+| 23 | Find is out of the first design. | It needs remote search and each service's search API. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
