@@ -120,7 +120,14 @@ ShellRoot {
         }
     }
 
-    readonly property bool soundEffectsActive: ThemeSounds.active
+    // Reading ThemeSounds creates the sound owner (a lazy singleton). Hjem
+    // links a new generation file by file, and the running Quickshell
+    // reloads on the first changed file, so that one reload can see this
+    // shell.qml before ThemeSounds.qml exists. Its sounds are then off
+    // until quickshell-after-hjem restarts on the complete tree. Only a
+    // missing type is tolerated: errors inside ThemeSounds still surface,
+    // and checks.bar-delivery requires the file in every generation.
+    readonly property bool soundEffectsActive: typeof ThemeSounds !== "undefined" && ThemeSounds.active
 
     // Hide and Show (Hyprland has no minimise). See WindowHider.qml.
     WindowHider { id: windowHider; rows: root.windowRows; showDelay: windowMotion.revealDelay }

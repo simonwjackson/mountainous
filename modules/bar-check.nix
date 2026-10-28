@@ -174,6 +174,7 @@
             bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > notification-schema.js
             node ${./quickshell/theme-dev/lifecycle.test.js} ${./quickshell} ${config.packages.desktop-theme}/bin/desktop-theme "$PWD/notification-schema.js"
             node ${./quickshell/theme-dev/picker-geometry.test.js} ${./quickshell} "$PWD/notification-schema.js"
+            node ${./quickshell/theme-dev/reload.test.js} ${./quickshell} ${config.packages.desktop-theme}/bin/desktop-theme "$PWD/notification-schema.js"
             touch $out
           '';
       checks.bar-delivery =
@@ -264,6 +265,10 @@
         assert builtins.hasAttr (prefix + "icons/speaker-3.svg") files;
         assert builtins.hasAttr (prefix + "icons/brightness-8.svg") files;
         assert builtins.hasAttr (prefix + "icons/cloud-meter.svg") files;
+        # shell.qml tolerates a missing ThemeSounds only during a reload of
+        # a half-linked tree; every generation must carry the sound owner.
+        assert builtins.hasAttr (prefix + "ThemeSounds.qml") files;
+        assert builtins.hasAttr (prefix + "SoundEvents.qml") files;
         # Delivery must not pass with a working manifest but unreachable bar
         # capabilities. Reuse the focused planner and real-QML probe result.
         pkgs.runCommand "bar-delivery" { } ''
