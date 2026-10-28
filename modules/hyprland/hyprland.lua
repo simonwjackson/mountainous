@@ -854,23 +854,21 @@ hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))
 -- above passes this through. Route all locks through hypridle.
 hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("loginctl lock-session"))
 
--- Kamoi's Ctrl+L shows the address bar. Here it opens the omni bar in
--- navigate mode, which is the address bar an --app window never built.
---
--- Bound conditionally on purpose: Ctrl+L belongs to whatever is
--- focused, and a terminal clears its screen with it. Only a Chromium
--- window has an address to change, and Chromium always names those
--- chrome-<host>__-Default, so the class is the test. Anything else has
--- the key handed straight back to it.
+-- Ctrl+L belongs to Go to Address / Open in Chromium, under both themes.
+-- Normal windows report chromium-browser; --app and extension popups report
+-- chrome-*. auto_consuming returns the original key to every other client
+-- (not a synthetic pass), just like the conditional Ctrl+Escape below.
 hl.bind("CTRL + L", function()
     local w = hl.get_active_window()
-    if w == nil then return end
-    if (w.class or ""):match("^chrome%-") then
-        hl.dispatch(hl.dsp.exec_cmd("qs -c mountainous ipc call omni navigate"))
-    else
-        hl.dispatch(hl.dsp.pass({ window = "address:" .. w.address }))
+    local class = w and (w.class or ""):lower() or ""
+    local normal = class == "chromium" or class == "chromium-browser"
+    if (not normal and not class:match("^chrome%-")) or
+        (normal and os.getenv("MOUNTAINOUS_BROWSER_INTEGRATION") == "0") then
+        return { ok = false }
     end
-end)
+    hl.exec_cmd("qs -c mountainous ipc call omni navigate")
+    return { ok = true }
+end, { auto_consuming = true })
 
 -- Both captures open the same Satty markup surface. The helper owns output
 -- naming, clipboard behavior, and focused-window geometry so the keybinds and

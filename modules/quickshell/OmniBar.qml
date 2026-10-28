@@ -307,8 +307,7 @@ Scope {
     function navigateTo(text) {
         const t = (text || "").trim();
         if (t === "") return;
-        CdpBrowser.navigate(root.caller, t);
-        root.dismiss();
+        if (CdpBrowser.navigate(root.caller, t)) root.dismiss();
     }
 
     //--------------------------------------------------------------

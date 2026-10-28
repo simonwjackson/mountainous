@@ -340,3 +340,6 @@ for (const c of [ctx, Object.assign({}, ctx, { windows: many })])
                 for (const text of [r.label, r.hint]) if (text) assert.doesNotMatch(text, NUMBER, scope + " " + q + ": " + text);
 
 console.log("find-model: ranking, grouping, scopes, empty, no results, recent, kinds, scrolling and caller capture passed");
+assert.deepEqual(plain(F.destination({title:"Repeated title", appName:"Chromium", isBrowser:true},null)),
+    {here:false, blocked:true, text:"Cannot identify this browser window",title:""},
+    "a disconnected or ambiguous browser must not promise a new window");

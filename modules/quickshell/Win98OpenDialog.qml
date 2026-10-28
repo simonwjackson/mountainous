@@ -54,6 +54,7 @@ FocusScope {
     readonly property string callerApp: root.caller && root.caller.wayland ? (root.caller.wayland.appId || "") : ""
     readonly property var dest: FindModel.destination(root.caller ? {
         title: root.caller.title || "",
+        isBrowser: CdpBrowser.isBrowserWindow(root.caller),
         appName: root.appName(root.callerApp)
     } : null, root.target)
     // An app id's name from its desktop entry ("Ghostty has no address").
@@ -100,7 +101,7 @@ FocusScope {
     readonly property string address: root.listOpen && root.pick >= 0 && root.shownPages[root.pick]
         ? root.shownPages[root.pick].url : field.text.trim()
     function go() {
-        if (root.address === "") return;
+        if (root.address === "" || root.dest.blocked) return;
         root.action("go", root.address);
     }
     function movePick(d) {
@@ -263,7 +264,7 @@ FocusScope {
                 x: (8 + root.bodyW) * root.u - width
                 y: root.buttonsY * root.u
                 spacing: 6 * root.u
-                Win98Button { objectName: "openOk"; text: "OK"; isDefault: true; enabled: root.address !== ""; onClicked: root.go() }
+                Win98Button { objectName: "openOk"; text: "OK"; isDefault: true; enabled: root.address !== "" && !root.dest.blocked; onClicked: root.go() }
                 Win98Button { objectName: "openCancel"; text: "Cancel"; onClicked: root.action("close", null) }
             }
         }

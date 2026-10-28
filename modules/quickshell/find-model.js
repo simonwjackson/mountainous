@@ -316,6 +316,7 @@ function addressPages(pages, text, base) {
 // (CdpBrowser.targetFor) or null; caller: { title, appName } or null.
 function destination(caller, target) {
     if (caller && target) return { here: true, text: "Opens in this window:", title: caller.title || target.title || "" };
+    if (caller && caller.isBrowser) return { here: false, blocked: true, text: "Cannot identify this browser window", title: "" };
     var why = caller && caller.appName ? " (" + caller.appName + " has no address)" : "";
     return { here: false, text: "Opens in a new window" + why, title: "" };
 }

@@ -41,6 +41,7 @@ FocusScope {
     readonly property string callerApp: root.caller && root.caller.wayland ? (root.caller.wayland.appId || "") : ""
     readonly property var dest: FindModel.destination(root.caller ? {
         title: root.caller.title || "",
+        isBrowser: CdpBrowser.isBrowserWindow(root.caller),
         appName: root.owner && typeof root.owner.appName === "function" ? root.owner.appName(root.callerApp) : root.callerApp
     } : null, root.target)
     readonly property string base: root.target ? root.target.url : ""
@@ -71,7 +72,7 @@ FocusScope {
 
     readonly property string address: root.pageIndex >= 0 && root.pages[root.pageIndex] ? root.pages[root.pageIndex].url : field.text.trim()
     function go() {
-        if (root.address === "") return;
+        if (root.address === "" || root.dest.blocked) return;
         root.action("go", root.address);
     }
     // Esc: the host closes the dialog.
@@ -326,7 +327,7 @@ FocusScope {
                     id: goButton
                     anchors.right: parent.right
                     isDefault: true
-                    enabled: root.address !== ""
+                    enabled: root.address !== "" && !root.dest.blocked
                     text: "Go"
                     fixedWidth: parent.buttonW
                     onClicked: root.go()

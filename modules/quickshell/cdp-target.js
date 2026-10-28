@@ -5,12 +5,23 @@ function hostOf(url) {
     return match ? match[1] : "";
 }
 
+function isBrowser(appId) {
+    return /^(chromium|chromium-browser)$/i.test(appId || "") || /^chrome-/.test(appId || "");
+}
+
 // Match only browser app windows. Host wins; a title tie must have exactly
 // one target whose URL history contains the app-id host. Otherwise refuse
 // to navigate rather than selecting another window by list order.
 function targetFor(pages, history, appId, title) {
     const match = /^chrome-(.+?)__-/.exec(appId || "");
-    if (!match) return null;
+    if (!match) {
+        if (!/^(chromium|chromium-browser)$/i.test(appId || "") && !/^chrome-[a-p]{32}-/.test(appId || "")) return null;
+        const plain = String(title || "").replace(/ - Chromium$/, "");
+        const candidates = pages.filter(function (page) {
+            return (!page.endpoint || page.endpoint === "normal") && plain !== "" && page.title === plain;
+        });
+        return candidates.length === 1 ? candidates[0] : null;
+    }
     const host = match[1];
     const byHost = pages.filter(function (page) { return page.host === host; });
     if (byHost.length === 1) return byHost[0];

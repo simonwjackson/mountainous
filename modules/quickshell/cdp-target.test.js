@@ -26,4 +26,13 @@ assert.equal(scope.targetFor(window("", "Shared")), null, "non-browser windows d
 assert.equal(scope.targetFor(null), null);
 root.pages = [page("a", "alpha.test", "Shared"), page("b", "alpha.test", "Shared")];
 assert.equal(scope.targetFor(window("alpha.test", "Shared")), null, "same-host title ties also fail closed");
-console.log("cdp-target: host priority, cross-host fallback, URL history and ambiguous-title safety pass");
+root.pages = [page("a", "alpha.test", "Alpha"), page("b", "beta.test", "Beta")];
+assert.equal(scope.targetFor({wayland: {appId: "chromium-browser"}, title: "Alpha - Chromium"})?.id, "a", "normal Chromium's active title selects its page");
+root.pages.push(page("c", "gamma.test", "Alpha"));
+assert.equal(scope.targetFor({wayland: {appId: "chromium-browser"}, title: "Alpha - Chromium"}), null, "normal windows with duplicate titles fail closed");
+assert.equal(scope.targetFor({wayland: {appId: "ghostty"}, title: "Beta"}), null, "a non-browser cannot claim another application's title");
+assert.equal(scope.targetFor({wayland: {appId: "chrome-ahmfndipfijlijminhiobipfjpafbndb-Default"}, title: "Beta"})?.id, "b", "an installed PWA can navigate in its original profile without losing its security frame");
+root.pages = [{...page("web", "alpha.test", "Alpha"), endpoint:"web"}, {...page("normal", "alpha.test", "Alpha"), endpoint:"normal"}];
+assert.equal(scope.targetFor({wayland:{appId:"chromium-browser"},title:"Alpha - Chromium"})?.id, "normal", "normal Chromium cannot navigate a same-title page in the separate web-app root");
+
+console.log("cdp-target: normal, popup and installed PWA matching, profile separation and ambiguous-title safety pass");

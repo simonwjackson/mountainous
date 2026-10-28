@@ -147,3 +147,13 @@ run = runCycle([{ action: "step", position: 2, seq: 31 }, { action: "cancel", po
 assert.equal(run.committed, "", "a commit older than the cancel is dropped");
 assert.equal(run.open, false);
 console.log("app-model: MRU, grouping, recent window, cycle order, window cycle and stale messages pass");
+
+// A no-tab browser can have dozens of windows with the same Wayland class.
+// The Application menu groups the app, not its windows: no page may vanish.
+const chromiumPages = Array.from({length:30}, (_,i) => row("browser-"+i,"chromium-browser",i+1,{title:"Page "+i,focusHistory:i}));
+const browserMru = A.reconcile([],chromiumPages);
+const browsers = A.apps(chromiumPages,browserMru,"browser-0",{"chromium-browser":"Chromium"},{});
+assert.equal(browsers.length,1);
+assert.equal(browsers[0].count,30);
+assert.equal(new Set(browsers[0].windows.map(w=>w.address)).size,30);
+assert.equal(A.windowCycleStart(chromiumPages,browserMru).order.length,30,"Win98 cycles all browser windows, not one app group");
