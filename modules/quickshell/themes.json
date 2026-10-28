@@ -20,7 +20,18 @@
       "extraDark": true
     },
     "qmlPrefix": "Platinum",
-    "pyxampFace": "platinum"
+    "pyxampFace": "platinum",
+    "sounds": {
+      "menuOpen": "themes/platinum/sounds/menu-open.wav",
+      "menuChoose": "themes/platinum/sounds/menu-choose.wav",
+      "alert": "themes/platinum/sounds/alert.wav",
+      "beep": "themes/platinum/sounds/alert.wav",
+      "critical": "themes/platinum/sounds/alert.wav",
+      "notification": "themes/platinum/sounds/notification.wav",
+      "emptyTrash": "themes/platinum/sounds/empty-trash.wav",
+      "minimize": "themes/platinum/sounds/minimize.wav",
+      "restore": "themes/platinum/sounds/restore.wav"
+    }
   },
   {
     "id": "win98",
@@ -43,6 +54,17 @@
       "extraDark": false
     },
     "qmlPrefix": "Win98",
-    "pyxampFace": "winamp"
+    "pyxampFace": "winamp",
+    "sounds": {
+      "menuOpen": "themes/win98/sounds/start-menu.wav",
+      "menuChoose": "themes/win98/sounds/menu-choose.wav",
+      "alert": "themes/win98/sounds/exclamation.wav",
+      "beep": "themes/win98/sounds/default-beep.wav",
+      "critical": "themes/win98/sounds/critical-stop.wav",
+      "notification": "themes/win98/sounds/asterisk.wav",
+      "emptyTrash": "themes/win98/sounds/exclamation.wav",
+      "minimize": "themes/win98/sounds/minimize.wav",
+      "restore": "themes/win98/sounds/restore.wav"
+    }
   }
 ]

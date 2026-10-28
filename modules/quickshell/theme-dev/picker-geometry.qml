@@ -12,6 +12,8 @@ ShellRoot {
         property var choices: ThemePicker.choices
         property string currentTheme: "platinum"
         property string currentMode: "dark"
+        property bool soundsEnabled: true
+        function setSounds(enabled) { soundsEnabled = enabled; }
         property bool extraDark: false
         property bool applying: false
         property string error: ""

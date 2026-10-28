@@ -64,7 +64,7 @@
             ];
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
-            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
             FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
             QML = "${pkgs.qt6.qtdeclarative}/bin/qml";
             QML_IMPORT_PATH = "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml";
@@ -159,7 +159,7 @@
               pkgs.labwc
               pkgs.bash
             ];
-            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
             FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";

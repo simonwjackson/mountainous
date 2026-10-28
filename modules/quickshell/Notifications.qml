@@ -88,6 +88,8 @@ Scope {
         const showing = event.type === "upsert" && event.fresh
             && root.popups.indexOf(event.item.id) >= 0;
         root.apply(event);
+        if (event.type === "upsert" && event.fresh)
+            SoundEvents.requested(event.item.urgency === Model.URGENCY_CRITICAL ? "critical" : "notification");
         if (showing) root.popupRefreshed(event.item.id);
     }
 

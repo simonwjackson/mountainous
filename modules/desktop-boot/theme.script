@@ -1,0 +1,45 @@
+# Original script, CC0-1.0. No animation, sleeps, or minimum display duration.
+# Password/question callbacks use a separate high-contrast line, never boot art.
+Window.SetBackgroundTopColor(0.67, 0.67, 0.67);
+Window.SetBackgroundBottomColor(0.67, 0.67, 0.67);
+if (Plymouth.GetMode() == "shutdown" || Plymouth.GetMode() == "reboot")
+    art = Image("shutdown.png");
+else
+    art = Image("boot.png");
+scale = Math.Min(1, Math.Min(Window.GetWidth() / art.GetWidth(), Window.GetHeight() / (art.GetHeight() + 120)));
+art = art.Scale(Math.Max(1, art.GetWidth() * scale), Math.Max(1, art.GetHeight() * scale));
+boot = Sprite(art);
+boot.SetPosition((Window.GetWidth() - art.GetWidth()) / 2, Math.Max(0, Window.GetHeight() / 3 - art.GetHeight() / 2), 0);
+prompt_sprite = Sprite();
+entry_sprite = Sprite();
+message_sprite = Sprite();
+
+fun line(sprite, text, y) {
+    image = Image.Text(text, 0, 0, 0, 1, "DejaVu Sans 16");
+    if (image.GetWidth() > Window.GetWidth() - 24)
+        image = image.Scale(Math.Max(1, Window.GetWidth() - 24), Math.Max(1, image.GetHeight() * (Window.GetWidth() - 24) / image.GetWidth()));
+    sprite.SetImage(image);
+    sprite.SetPosition(Math.Max(0, (Window.GetWidth() - image.GetWidth()) / 2), y, 100);
+    sprite.SetOpacity(1);
+}
+fun normal() {
+    prompt_sprite.SetOpacity(0);
+    entry_sprite.SetOpacity(0);
+}
+fun password(prompt, bullets) {
+    line(prompt_sprite, prompt, Window.GetHeight() * 0.65);
+    text = "";
+    # A bounded count; never display the secret, only length. Keep the tail
+    # readable even for a long passphrase on a small display.
+    for (i = 0; i < Math.Min(bullets, 40); i++) text += "*";
+    line(entry_sprite, text, Window.GetHeight() * 0.65 + 30);
+}
+fun question(prompt, entry) {
+    line(prompt_sprite, prompt, Window.GetHeight() * 0.65);
+    line(entry_sprite, entry, Window.GetHeight() * 0.65 + 30);
+}
+fun message(text) { line(message_sprite, text, Window.GetHeight() * 0.85); }
+Plymouth.SetDisplayNormalFunction(normal);
+Plymouth.SetDisplayPasswordFunction(password);
+Plymouth.SetDisplayQuestionFunction(question);
+Plymouth.SetMessageFunction(message);

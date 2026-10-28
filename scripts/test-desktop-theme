@@ -190,4 +190,27 @@ rm -f "$calls"
 PATH="$fake:$PATH" "$command_path" light > /dev/null
 [[ ! -e $calls ]] || { echo 'FAIL: asked Hyprland outside a session' >&2; exit 1; }
 check light prefer-light
+# Sound preference has the same locked atomic owner, defaults on, and never
+# needs a session bus, native toolkit update or compositor call.
+sounds="$XDG_STATE_HOME/mountainous/theme-sounds"
+rm -f "$sounds"
+[[ $("$command_path" sounds status) == on && ! -e $sounds ]]
+[[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/missing "$command_path" sounds off) == off ]]
+[[ $(<"$sounds") == off ]]
+"$command_path" apply win98 dark on >/dev/null
+[[ $("$command_path" sounds status) == off ]]
+"$command_path" reapply >/dev/null
+[[ $(<"$sounds") == off ]]
+"$command_path" set platinum >/dev/null
+[[ $("$command_path" sounds toggle) == on ]]
+[[ $("$command_path" sounds toggle) == off ]]
+for bad in bogus '' 'on extra'; do
+  # shellcheck disable=SC2086
+  if "$command_path" sounds $bad; then echo 'FAIL: invalid sounds argument' >&2; exit 1; fi
+done
+printf 'invalid\n' > "$sounds"
+[[ $("$command_path" sounds status) == on ]]
+rm -f "$sounds"
+"$command_path" reapply >/dev/null
+[[ $(<"$sounds") == on && ! -e $sounds.new ]]
 echo 'DESKTOP_THEME_TESTS_PASSED' 

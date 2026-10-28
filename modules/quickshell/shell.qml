@@ -108,6 +108,8 @@ ShellRoot {
         }
     }
 
+    readonly property bool soundEffectsActive: ThemeSounds.active
+
     // Hide and Show (Hyprland has no minimise). See WindowHider.qml.
     WindowHider { id: windowHider; rows: root.windowRows }
     readonly property var hider: windowHider

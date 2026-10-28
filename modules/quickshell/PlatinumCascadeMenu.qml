@@ -108,7 +108,7 @@ Item {
         if (!row || row.kind !== "item" || row.disabled) return;
         if (row.submenu && row.submenu.length > 0) { root.openCascade(level, index, true); return; }
         opener.stop();
-        if (row.action) root.activated(row);
+        if (row.action) { SoundEvents.requested("menuChoose"); root.activated(row); }
     }
     // Escape: the innermost cascade first, then the menu (the host closes it).
     function cancel() {

@@ -55,10 +55,11 @@ async function proveGeometry(width, height) {
     const window = {x: 0, y: 0, width, height};
     assert.ok(s.body.width > 0 && s.body.height > 0, `negative/empty viewport at ${width}x${height}: ${JSON.stringify(s.body)}`);
     assert.ok(inside(s.body, window), 'viewport must stay in the window');
-    const controls = s.items.filter(item => /^pickerChoice-\d+$|^pickerOption$|^pickerClose$/.test(item.name));
+    const controls = s.items.filter(item => /^pickerChoice-\d+$|^pickerOption$|^pickerSounds$|^pickerClose$/.test(item.name));
     assert.equal(controls.filter(item => /^pickerChoice-/.test(item.name)).length, s.choiceCount);
     assert.equal(controls.filter(item => item.name === 'pickerClose').length, 1, 'one reachable close control');
     assert.ok(controls.some(item => item.name === 'pickerOption'), 'extra dark must exist');
+    assert.ok(controls.some(item => item.name === 'pickerSounds'), 'interface sounds must exist');
     for (const control of controls) {
         if ((!s.closeInBody || s.thumbnails) && /^pickerChoice-/.test(control.name)) {
             assert.ok(control.height <= s.body.height, 'a choice and its label must fit before pinning decoration');
@@ -86,7 +87,7 @@ async function proveGeometry(width, height) {
         }
     }
     s = snapshot();
-    for (const label of s.items.filter(item => /^pickerChoiceLabel-|^pickerOptionLabel$|^pickerOptionMark$|^pickerError$/.test(item.name))) {
+    for (const label of s.items.filter(item => /^pickerChoiceLabel-|^pickerOptionLabel$|^pickerOptionMark$|^pickerSoundsLabel$|^pickerSoundsMark$|^pickerError$/.test(item.name))) {
         assert.ok(label.width > 0 && label.contentY >= -epsilon
             && label.contentY + label.height <= s.body.contentHeight + epsilon, 'unreachable label or option mark');
         assert.ok(label.x >= s.body.x - epsilon && label.x + label.width <= s.body.x + s.body.width + epsilon, 'clipped label');

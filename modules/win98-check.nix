@@ -13,6 +13,7 @@
         "${pkgs.quickshell}/lib/qt-6/qml"
         "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
         "${pkgs.qt6.qtbase}/lib/qt-6/qml"
+        "${pkgs.qt6.qtmultimedia}/lib/qt-6/qml"
       ];
       # A private headless sway session for the real Win98 Desktop (no
       # output device): the tools and the environment its scripts need.
@@ -44,7 +45,7 @@
             pkgs.dejavu_fonts
           ];
         };
-        QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+        QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
         WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
         WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
       };

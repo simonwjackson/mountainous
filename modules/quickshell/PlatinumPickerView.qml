@@ -286,6 +286,54 @@ PanelWindow {
                             }
                         }
                     }
+                    FocusScope {
+                        id: sounds
+                        objectName: "pickerSounds"
+                        enabled: !win.model.applying
+                        width: body.width
+                        height: Math.max(PlatinumTokens.menuLine + 4, win.plan.stackedOption ? soundsLabel.implicitHeight + soundsMark.height + 3 * win.plan.gap : soundsLabel.implicitHeight + 2 * win.plan.gap)
+                        activeFocusOnTab: enabled
+                        function toggle() {
+                            win.model.setSounds(!win.model.soundsEnabled);
+                        }
+                        onActiveFocusChanged: if (activeFocus)
+                            win.rememberFocus(sounds)
+                        Keys.onReturnPressed: toggle()
+                        Keys.onSpacePressed: toggle()
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: sounds.activeFocus
+                            color: "transparent"
+                            border.width: PlatinumTokens.hair
+                            border.color: PlatinumTokens.highlight
+                        }
+                        PlatinumCheckBox {
+                            id: soundsMark
+                            objectName: "pickerSoundsMark"
+                            x: win.plan.stackedOption ? win.labelLeft : Math.max(0, win.labelLeft - width - PlatinumTokens.menuGutter / 2)
+                            y: win.plan.stackedOption ? soundsLabel.y + soundsLabel.height + win.plan.gap : (sounds.height - height) / 2
+                            checked: win.model.soundsEnabled !== false
+                        }
+                        Text {
+                            id: soundsLabel
+                            objectName: "pickerSoundsLabel"
+                            x: win.labelLeft
+                            width: Math.max(1, parent.width - x - win.rightInset)
+                            y: win.plan.stackedOption ? win.plan.gap : (sounds.height - height) / 2
+                            text: "Interface sounds"
+                            wrapMode: Text.Wrap
+                            color: sounds.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
+                            font.family: PlatinumTokens.platinumFont
+                            font.pixelSize: PlatinumTokens.platinumText
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                sounds.forceActiveFocus();
+                                sounds.toggle();
+                            }
+                        }
+                    }
                     Text {
                         objectName: "pickerError"
                         x: win.labelLeft

@@ -98,6 +98,7 @@ FocusScope {
         const items = root.itemsAt(root.path.length);
         const it = items[index];
         if (!it || it.separator || it.enabled === false) return;
+        SoundEvents.requested("menuChoose");
         root.triggered(it, root.path.concat([index]));
         root.closed();
     }

@@ -9,6 +9,7 @@ import QtQuick
 // screen takes a click while it is open.
 PanelWindow {
     id: alert
+    Component.onCompleted: SoundEvents.requested("alert")
 
     required property var modelData
     // { title, text, button } from menu-models.js alert().

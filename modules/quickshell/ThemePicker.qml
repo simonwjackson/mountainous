@@ -11,6 +11,7 @@ Singleton {
     readonly property var themes: ThemeCatalog.themes
     readonly property string currentTheme: Theme.name
     readonly property string currentMode: Theme.mode
+    readonly property bool soundsEnabled: Theme.soundsEnabled
     readonly property bool extraDark: Theme.extraDark
     readonly property bool applying: applyProcess.running
     property string error: ""
@@ -30,6 +31,12 @@ Singleton {
         const entry = ThemeCatalog.find(theme);
         const appearance = entry ? entry.appearances.find(function (a) { return a.mode === mode; }) : null;
         return appearance ? Qt.resolvedUrl(appearance.thumbnail) : "";
+    }
+    function setSounds(enabled) {
+        if (applying) return;
+        root.error = "";
+        applyProcess.command = ["desktop-theme", "sounds", enabled ? "on" : "off"];
+        applyProcess.running = true;
     }
     function apply(theme, mode, extra) {
         const entry = ThemeCatalog.find(theme);

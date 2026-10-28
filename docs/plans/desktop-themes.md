@@ -32,7 +32,9 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Volume and brightness change tag | Done | Done | A raised box above the tray icon, the block bar and the value, 1.5 s; Platinum's arming rules |
 | Super+O N (Notifications) | Done | Done | The tray draws B W S L C D F R N; N opens Notifications under both themes |
 | Native apps (GTK, Qt, Ghostty) | Built (five-appearance tandem phase below) | Built (same phase) | Chicago95 GTK, Qt Windows style, W95FA Grid Ghostty |
-| Icons, cursors, pattern, sounds, boot | Phase 4, not started | Phase 4, not started | Win98 counterparts |
+| Icons, cursors, pattern | Phase 4, pending | Phase 4, pending | Win98 counterparts |
+| Menu and system sounds | Built (original CC0 set, shared hooks and saved switch) | Built (original CC0 set, same hooks/switch) | See [phase4-sound-boot](desktop-themes/phase4-sound-boot.md) |
+| Boot and shutdown | Built (fixed Platinum in initrd) | Original Win98 package built; fixed Platinum used at boot by choice (a) | No session ESP writes or switch-time rebuild; same section |
 | State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |
 | Verified on Myoko with real input | Yes (generations 50–52) | No (#13) | — |
 
@@ -48,7 +50,7 @@ Each lands for both themes. New plan sections go in their own file under `docs/p
 
 | # | Item | Notes |
 |---|---|---|
-| 1 | **Phase 4: icons, cursors, desktop pattern, menu sounds, boot screen** | Started 2026-10-28. |
+| 1 | **Phase 4: icons, cursors, desktop pattern, menu sounds, boot screen** | Sounds and boot built: [part 2](desktop-themes/phase4-sound-boot.md). Icons, cursors and pattern remain separate work. |
 | 2 | **Taskbar and strip page dividers are a plain divider**, no button at all | The number went; the empty button head is still there and reads as a stray empty slot. |
 | 3 | **No soft fades.** Window and chrome motion follows the OS being mimicked | Win98: windows appear at once; minimize/restore/maximize use the caption animation; menus roll. Mac OS 8: zoom rectangles. Hyprland's default fade/pop-in goes under both themes. |
 | 4 | **Terminal font**: a monospace face true to each OS | W95FA Grid and ChicagoFLF are proportional, so Ghostty spreads every cell to the widest glyph. Ghostty also seems not to follow a Platinum ↔ Win98 switch. |

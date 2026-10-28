@@ -22,6 +22,20 @@ Singleton {
 
     readonly property string extraPath: stateDir + "/mountainous/theme-extra"
 
+    readonly property string soundsPath: stateDir + "/mountainous/theme-sounds"
+    property string soundsState: "on"
+    readonly property bool soundsEnabled: soundsState !== "off"
+
+    FileView {
+        path: root.soundsPath
+        blockLoading: true
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: root.soundsState = text().trim() === "off" ? "off" : "on"
+        onLoadFailed: root.soundsState = "on"
+    }
+
     property string mode: "dark"
     readonly property bool dark: mode !== "light"
 

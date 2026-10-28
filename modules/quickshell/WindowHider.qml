@@ -56,6 +56,8 @@ Scope {
         let batch = WindowHide.command(result.moves);
         if (extra) batch = batch === "" ? extra : batch + " ; " + extra;
         if (batch !== "") Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch", batch]);
+        if (result.moves.length > 0)
+            SoundEvents.requested(typeof result.moves[0].workspace === "number" ? "restore" : "minimize");
         return result.moves.length;
     }
 

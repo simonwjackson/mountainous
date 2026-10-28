@@ -242,6 +242,14 @@ PanelWindow {
                                     onActivated: function (i) { win.schemeIndex = i; }
                                 }
                             }
+                            Win98CheckBox {
+                                objectName: "pickerSounds"
+                                width: parent.width
+                                text: "Interface s&ounds"
+                                checked: win.model.soundsEnabled !== false
+                                enabled: !win.model.applying
+                                onToggled: win.model.setSounds(!win.model.soundsEnabled)
+                            }
                             Win98Text {
                                 id: note
                                 visible: !win.dropNote || win.model.error !== ""

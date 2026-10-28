@@ -1,4 +1,4 @@
-# The three watched state files drive the bar, title bars, web and native apps.
+# The watched state files drive the bar, title bars, web and native apps.
 # Toolkit files are generated outputs, never a second preference store.
 { inputs, ... }:
 let
@@ -45,6 +45,7 @@ let
         state_file="$state_dir/theme"
         extra_file="$state_dir/theme-extra"
         name_file="$state_dir/theme-name"
+        sounds_file="$state_dir/theme-sounds"
 
         # Serialize toggles and publish only complete files.
         mkdir -p "$state_dir"
@@ -57,6 +58,7 @@ let
           printf '       desktop-theme apply <theme> dark|light on|off\n' >&2
           printf '       desktop-theme rollback <failed-theme> <fallback-theme>\n' >&2
           printf '       desktop-theme extra on|off|toggle|status\n' >&2
+          printf '       desktop-theme sounds on|off|toggle|status\n' >&2
           exit 2
         }
 
@@ -72,6 +74,27 @@ let
         write_extra() {
           printf '%s\n' "$1" > "$extra_file.new"
           mv -f "$extra_file.new" "$extra_file"
+        }
+
+        # A missing file means on; only explicit off disables the sound bank.
+        read_sounds() {
+          if [ -r "$sounds_file" ] && [ "$(tr -d '[:space:]' < "$sounds_file")" = off ]; then
+            printf off
+          else
+            printf on
+          fi
+        }
+
+        sounds() {
+          case "''${1:-}" in
+            on|off) value="$1" ;;
+            toggle) if [ "$(read_sounds)" = on ]; then value=off; else value=on; fi ;;
+            status) read_sounds; printf '\n'; return ;;
+            *) usage ;;
+          esac
+          printf '%s\n' "$value" > "$sounds_file.new"
+          mv -f "$sounds_file.new" "$sounds_file"
+          printf '%s\n' "$value"
         }
 
         extra() {
@@ -166,6 +189,7 @@ let
           # Also writes the extra file, so the bar has a file to watch.
           reapply)
             apply "$(read_state)"
+            sounds "$(read_sounds)" > /dev/null
             changed=1
             ;;
           set)
@@ -206,6 +230,7 @@ let
             changed=1
             ;;
           extra) extra "''${2:-}" ;;
+          sounds) if [ "$#" -ne 2 ]; then usage; fi; sounds "$2" ;;
           status)
             printf 'mode=%s extra=%s theme=%s\n' "$(read_state)" "$(read_extra)" "$(read_name)"
             ;;
