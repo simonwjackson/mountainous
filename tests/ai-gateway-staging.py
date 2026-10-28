@@ -82,12 +82,18 @@ if production:
     }
     assert settings["prices"]["gemini-3.1-flash-image"] == {
         "image_per_unit": 0.151,
+        "image_per_size": {"512": 0.045, "1K": 0.067, "2K": 0.101, "4K": 0.151},
         "input_per_million": 0.50,
     }
     assert settings["prices"]["gemini-3-pro-image"] == {
         "image_per_unit": 0.24,
+        "image_per_size": {"1K": 0.134, "2K": 0.134, "4K": 0.24},
         "input_per_million": 2.0,
     }
+    # A call of unknown tier pays image_per_unit; it must be the ceiling.
+    for price in settings["prices"].values():
+        if "image_per_size" in price:
+            assert price["image_per_unit"] == max(price["image_per_size"].values())
     # The only speech provider is ElevenLabs; no aliases replace voice IDs.
     assert settings["providers"]["elevenlabs"] == {
         "base_url": "https://api.elevenlabs.io",
@@ -155,7 +161,9 @@ assert set(settings["providers"]) == {"gemini", "typesafe", "upstage"} | (
     {"elevenlabs"} if production else set()
 )
 for price in settings["prices"].values():
-    assert all(value > 0 for value in price.values())
+    tiers = price.get("image_per_size", {})
+    assert all(value > 0 for value in tiers.values())
+    assert all(value > 0 for key, value in price.items() if key != "image_per_size")
 
 policy = proxy_path.read_text()
 provider_line = next(

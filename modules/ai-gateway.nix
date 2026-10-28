@@ -62,17 +62,29 @@ in
               solar = 0.0003;
             };
             modelPrices = {
-              # Google pricing updated 2026-10-26: flash $0.045/0.5K, $0.067/1K,
-              # $0.101/2K, $0.151/4K. Reserve the 4K ceiling plus $0.50/M input tokens.
-              # https://ai.google.dev/gemini-api/docs/pricing
+              # Google pricing updated 2026-10-27: flash $0.045/0.5K, $0.067/1K,
+              # $0.101/2K, $0.151/4K, plus $0.50/M input tokens. A call whose
+              # tier the front door does not know reserves the 4K ceiling.
+              # https://ai.google.dev/gemini-api/docs/pricing, checked 2026-10-28.
               "gemini-3.1-flash-image" = {
                 image_per_unit = 0.151;
+                image_per_size = {
+                  "512" = 0.045;
+                  "1K" = 0.067;
+                  "2K" = 0.101;
+                  "4K" = 0.151;
+                };
                 input_per_million = 0.50;
               };
               # Google: pro $0.134/1K or 2K, $0.24/4K, plus $2/M input tokens.
-              # https://ai.google.dev/gemini-api/docs/pricing, updated 2026-10-26.
+              # https://ai.google.dev/gemini-api/docs/pricing, checked 2026-10-28.
               "gemini-3-pro-image" = {
                 image_per_unit = 0.24;
+                image_per_size = {
+                  "1K" = 0.134;
+                  "2K" = 0.134;
+                  "4K" = 0.24;
+                };
                 input_per_million = 2.0;
               };
             };
