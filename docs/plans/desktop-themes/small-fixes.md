@@ -34,6 +34,17 @@ fix it failed with the Myoko message
 (`WARN scene: @shell.qml[7:-1]: ReferenceError: ThemeSounds is not defined`,
 log `/tmp/tandem/small-fixes/logs/reload-red-before-fix.log`).
 
+## `ThemeCatalog is not defined` where Theme.qml stands alone
+
+Phase 4 art made `Theme.choose` read `ThemeCatalog` to set the icon theme.
+The Win98 control gallery (`checks.win98-theme`) and the dictation test stage
+`Theme.qml` without the registry, so `checks.win98-theme` failed on cairn
+`8a517ae7` with `ReferenceError: ThemeCatalog is not defined`. `Theme.qml` now
+reads the catalog only when the type exists; without it there is no icon
+theme to choose. The other shared singletons read only `Theme`, which every
+harness stages. `ThemePicker` and `ThemeSounds` read `ThemeCatalog` too, but
+they are shell services that no harness stages alone.
+
 ## Phase 4 art: Chromium and web apps on the taskbar and strip
 
 **Cause.** Win98's `start-model.js` `appIcon` mapped every id or name that

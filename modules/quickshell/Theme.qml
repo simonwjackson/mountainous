@@ -80,8 +80,11 @@ Singleton {
     // Quickshell.iconPath() calls already resolve, and are cached, under
     // it. Quickshell.iconTheme comes from lib/patches/quickshell-icon-
     // theme.patch; an unpatched Quickshell keeps its startup icon theme.
+    // Theme.qml also runs without the registry: the Win98 control gallery
+    // and the dictation test stage it alone, and a reload of a half-linked
+    // tree may lack a new file. Then there is no icon theme to choose.
     function choose(id) {
-        const entry = ThemeCatalog.find(id);
+        const entry = typeof ThemeCatalog !== "undefined" ? ThemeCatalog.find(id) : null;
         if (entry && entry.art && ("iconTheme" in Quickshell)) Quickshell.iconTheme = entry.art.icons;
         root.name = id;
     }
