@@ -1,5 +1,5 @@
 // Real Dictation.qml, real Quickshell and a software-rendered Wayland server.
-// Only the recorder/backend boundary is controlled; no QML source is changed.
+// Recorder/backend processes and the publisher are configurable; production QML is unchanged.
 // A private session bus carries two real mpv MPRIS players: one playing, one
 // paused, plus an MPRIS publisher with Pyxamp own/foreign metadata. A take
 // holds own playback, never forwards through a mirror, and cannot resume a
@@ -27,6 +27,7 @@ for (const dir of [runtime, config, bin]) fs.mkdirSync(dir, {mode: 0o700});
 let logs = "", compositor, shell, bus;
 const pyxampControl = path.join(work, "pyxamp-control");
 const pyxampCalls = path.join(work, "pyxamp-calls");
+const pyxampApplied = path.join(work, "pyxamp-applied");
 const ownTrackId = "/org/pyxamp/track/o6162";
 const pyxampName = "org.mpris.MediaPlayer2.pyxamp";
 function calls() {
@@ -107,6 +108,7 @@ ShellRoot {
         target: "lifecycle"
         function press(): void { dictation.press(false); }
         function release(): void { dictation.release(); }
+        function cancel(): void { dictation.cancel(); }
         function dismiss(): void { dictation.dismissFailure(); }
         function snapshot(): string {
             return JSON.stringify({state: dictation.state, kind: dictation.failureKind,
@@ -149,19 +151,33 @@ class Player(ServiceInterface):
         super().__init__('org.mpris.MediaPlayer2.Player')
         self.track = '${ownTrackId}'
         self.status = 'Playing'
+        self.defer_pause_notification = False
+        self.pause_notification_pending = False
+    def notify_status(self):
+        # Report current native state, not the old Pause that scheduled this.
+        self.emit_properties_changed({'PlaybackStatus': self.status})
     def change(self, status):
         self.status = status
         self.emit_properties_changed({'PlaybackStatus': status})
     @method()
     def Pause(self):
         with open(sys.argv[2], 'a') as out: out.write('Pause\n')
-        self.change('Paused')
+        self.status = 'Paused'
+        if self.defer_pause_notification:
+            self.pause_notification_pending = True
+        else:
+            self.notify_status()
     @method()
     def Play(self):
         with open(sys.argv[2], 'a') as out: out.write('Play\n')
         self.change('Playing')
+        if self.pause_notification_pending:
+            self.pause_notification_pending = False
+            asyncio.get_running_loop().call_soon(self.notify_status)
     @dbus_property(access=PropertyAccess.READ)
     def PlaybackStatus(self) -> 's': return self.status
+    @dbus_property(access=PropertyAccess.READ)
+    def Position(self) -> 'x': return 0
     @dbus_property(access=PropertyAccess.READ)
     def Metadata(self) -> 'a{sv}':
         return {'mpris:trackid': Variant('o', self.track),
@@ -187,18 +203,30 @@ async def main():
         if control and control != previous:
             update = json.loads(control)
             player.track = update['trackId']
+            player.defer_pause_notification = update['deferPauseNotification']
             player.change(update['state'])
             player.emit_properties_changed({'Metadata': player.Metadata})
             previous = control
+            with open(sys.argv[3], 'w') as applied: applied.write(control)
         await asyncio.sleep(0.02)
 asyncio.run(main())
 `);
-        players.push(start(python, [publisher, pyxampControl, pyxampCalls]));
+        players.push(start(python, [publisher, pyxampControl, pyxampCalls, pyxampApplied]));
         compositor = start(labwc, ["--config-dir", compositorConfig]);
         await until(() => fs.existsSync(path.join(runtime, "wayland-0")), "Wayland server did not start");
         shell = start(qs, ["-p", config, "--no-color"]);
         await until(() => snapshot(), "Dictation shell did not start");
         const states = s => Object.fromEntries(s.players.map(entry => entry.split("=")));
+        async function changeTrack(trackId, state, deferPauseNotification = false) {
+            const control = JSON.stringify({trackId, state, deferPauseNotification});
+            fs.writeFileSync(pyxampControl, control);
+            await until(() => {
+                const s = snapshot();
+                return fs.existsSync(pyxampApplied) && fs.readFileSync(pyxampApplied, "utf8") === control
+                    && s && s.tracks.some(p => p.name === pyxampName && p.trackId === trackId)
+                    && states(s)[pyxampName] === state;
+            }, "Pyxamp metadata/configuration did not change");
+        }
         const before = await until(() => {
             const s = snapshot();
             return s && s.players.length === 3 && Object.values(states(s)).sort().join() === "Paused,Playing,Playing" && s;
@@ -235,6 +263,29 @@ asyncio.run(main())
         }, "Backend failure was not retained");
         assert.equal(older.canRetry, true);
         assert.ok(older.failed && fs.existsSync(older.failed));
+        // Native Pause lands immediately; its notification waits for native Play.
+        // Cancellation must send Play while Quickshell still caches Playing.
+        await changeTrack(ownTrackId, "Playing", true);
+        const shortTakeCalls = calls().length;
+        ipc("press");
+        await until(() => {
+            const s = snapshot();
+            return s && s.capture === "recording" && s.active && fs.existsSync(s.active)
+                && calls().length === shortTakeCalls + 1;
+        }, "Short-take recorder/native Pause did not start");
+        assert.equal(states(snapshot())[pyxampName], "Playing", "Pause notification has not updated Quickshell's cached status");
+        ipc("cancel");
+        await until(() => calls().length === shortTakeCalls + 2,
+            "Explicit Play was suppressed while Quickshell still cached Playing");
+        assert.deepEqual(calls().slice(shortTakeCalls), ["Pause", "Play"]);
+        await until(() => {
+            const s = snapshot();
+            return s && s.capture === "idle" && states(s)[playing] === "Playing"
+                && states(s)[pyxampName] === "Playing";
+        }, "Cancelled short take did not restore media");
+        assert.equal(snapshot().held, 0);
+        await changeTrack(ownTrackId, "Playing");
+        const failureCalls = calls().length;
         fs.writeFileSync(env.DICTATION_TEST_MODE_FILE, "fail");
         ipc("press");
         const microphone = await until(() => {
@@ -244,6 +295,12 @@ asyncio.run(main())
         assert.equal(microphone.text, "Microphone failed");
         assert.equal(microphone.canRetry, false, "Microphone failed offers Dismiss only, never stale Retry");
         assert.equal(microphone.failed, older.failed, "microphone failure preserves the older take");
+        await until(() => {
+            const s = snapshot();
+            return s && states(s)[playing] === "Playing" && states(s)[pyxampName] === "Playing"
+                && calls().length === failureCalls + 2;
+        }, "Immediate microphone failure did not restore held media");
+        assert.deepEqual(calls().slice(failureCalls), ["Pause", "Play"]);
         ipc("dismiss");
         const restored = snapshot();
         assert.equal(restored.state, "failed", "Dismiss brings back the older backend failure");
@@ -257,14 +314,6 @@ asyncio.run(main())
         fs.writeFileSync(env.DICTATION_TEST_MODE_FILE, "ok");
         // While the same Pyxamp object is held, it can switch targets. Neither
         // foreign metadata nor a new own occurrence belongs to this take.
-        async function changeTrack(trackId, state) {
-            fs.writeFileSync(pyxampControl, JSON.stringify({trackId, state}));
-            await until(() => {
-                const s = snapshot();
-                return s && s.tracks.some(p => p.name === pyxampName && p.trackId === trackId)
-                    && states(s)[pyxampName] === state;
-            }, "Pyxamp metadata did not change");
-        }
         for (const nextTrack of ["/foreign/track", "/org/pyxamp/track/o6364"]) {
             await changeTrack(ownTrackId, "Playing");
             const count = calls().length;
@@ -274,6 +323,7 @@ asyncio.run(main())
                 return s && s.capture === "recording" && s.active && fs.existsSync(s.active)
                     && states(s)[pyxampName] === "Paused";
             }, "Own playback was not held before switching tracks");
+            assert.equal(snapshot().held, 2, "both playing identities are held before the target changes");
             assert.equal(calls().length, count + 1);
             await changeTrack(nextTrack, "Paused");
             ipc("release");
@@ -292,10 +342,13 @@ asyncio.run(main())
         }, "Mirror-mode take did not start");
         assert.equal(snapshot().held, 1, "only the real foreign player is held in mirror mode");
         ipc("release");
-        await until(() => snapshot()?.capture === "idle", "Mirror-mode take did not end");
+        await until(() => {
+            const s = snapshot();
+            return s && s.capture === "idle" && states(s)[playing] === "Playing";
+        }, "Mirror-mode take did not restore foreign playback");
         await wait(150);
         assert.equal(calls().length, count, "no commands are sent through the foreign mirror");
-        console.log("dictation-lifecycle: Pyxamp own pauses/resumes once; retargeted own and foreign mirrors receive no Play; microphone failure has Dismiss only; Dismiss restores the older take and Retry");
+        console.log("dictation-lifecycle: short take and immediate recorder failure restore media; Pyxamp own pauses/resumes once; retargeted own and foreign mirrors receive no Play; microphone failure has Dismiss only; Dismiss restores the older take and Retry");
     } catch (error) {
         console.error(logs);
         throw error;

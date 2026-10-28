@@ -1,0 +1,39 @@
+--- a/src/services/mpris/player.cpp
++++ b/src/services/mpris/player.cpp
+@@ -321,7 +321,12 @@
+ 
+ void MprisPlayer::setPlaybackState(MprisPlaybackState::Enum playbackState) {
+ 	if (playbackState == this->bPlaybackState) return;
+-
++	this->requestPlaybackState(playbackState);
++}
++
++// Explicit commands must not depend on a cached status. A preceding command
++// may still be in flight, so suppressing Play can strand a player after Pause.
++void MprisPlayer::requestPlaybackState(MprisPlaybackState::Enum playbackState) {
+ 	switch (playbackState) {
+ 	case MprisPlaybackState::Stopped:
+ 		if (!this->bCanControl) {
+@@ -354,9 +359,9 @@
+ 	}
+ }
+ 
+-void MprisPlayer::play() { this->setPlaybackState(MprisPlaybackState::Playing); }
+-void MprisPlayer::pause() { this->setPlaybackState(MprisPlaybackState::Paused); }
+-void MprisPlayer::stop() { this->setPlaybackState(MprisPlaybackState::Stopped); }
++void MprisPlayer::play() { this->requestPlaybackState(MprisPlaybackState::Playing); }
++void MprisPlayer::pause() { this->requestPlaybackState(MprisPlaybackState::Paused); }
++void MprisPlayer::stop() { this->requestPlaybackState(MprisPlaybackState::Stopped); }
+ 
+ void MprisPlayer::togglePlaying() {
+ 	if (this->bIsPlaying) {
+--- a/src/services/mpris/player.hpp
++++ b/src/services/mpris/player.hpp
+@@ -409,6 +409,7 @@
+ 	void onSeek(qlonglong time);
+ 
+ private:
++	void requestPlaybackState(MprisPlaybackState::Enum playbackState);
+ 	void onMetadataChanged();
+ 	void onPositionUpdated();
+ 	void onPlaybackStatusUpdated();
