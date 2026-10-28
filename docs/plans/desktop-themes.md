@@ -42,6 +42,22 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 # feature         missing in  reason
 ```
 
+## Open items (from Simon's use on Myoko, 2026-10-28)
+
+Each lands for both themes. New plan sections go in their own file under `docs/plans/desktop-themes/` (so parallel branches do not conflict here); this file keeps only the ledger and this list.
+
+| # | Item | Notes |
+|---|---|---|
+| 1 | **Phase 4: icons, cursors, desktop pattern, menu sounds, boot screen** | Started 2026-10-28. |
+| 2 | **Taskbar and strip page dividers are a plain divider**, no button at all | The number went; the empty button head is still there and reads as a stray empty slot. |
+| 3 | **No soft fades.** Window and chrome motion follows the OS being mimicked | Win98: windows appear at once; minimize/restore/maximize use the caption animation; menus roll. Mac OS 8: zoom rectangles. Hyprland's default fade/pop-in goes under both themes. |
+| 4 | **Terminal font**: a monospace face true to each OS | W95FA Grid and ChicagoFLF are proportional, so Ghostty spreads every cell to the widest glyph. Ghostty also seems not to follow a Platinum ↔ Win98 switch. |
+| 5 | **Chromium: every tab is a window** | No tab strip; the taskbar/Control Strip is the tab container. Explore memory cost. Supersedes the outer-chrome options B/C. |
+| 6 | **Chromium captures Ctrl+L** in normal windows | Go to Address / Open should win. PWAs already behave. |
+| 7 | **Installed PWAs keep Chromium's own title bar** | Forgerie is the exception (it launches as `--app=`). Wanted: one scalable rule for all web apps. |
+| 8 | **Duplicate display output**: DP-1 and DP-3 are the same YMK EM160TP-A at 0,-1200 | Likely the hub exposing one panel twice. Chrome is drawn on both. |
+| 9 | Win98 caption app icons | Generic document icon today. |
+
 ## Goal
 
 Simon can switch the whole desktop chrome between a handful of themes: Mac OS 8 Platinum and Windows 98 first, more later. Each theme has its own bars, menus, controls, font and colours. The picker draws itself in the style of the current theme. A switch is live, with no restart and no logout.
