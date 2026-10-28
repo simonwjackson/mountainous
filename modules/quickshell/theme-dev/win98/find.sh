@@ -179,7 +179,14 @@ expect 'Esc closes Open' 'f["open"] == "" and not f["shown"]'
 state f-rest; key Escape; sleep 0.3
 w98 set tb-normal >/dev/null; sleep 0.8
 click_at $(w98 places | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d["start"]; print(round(p["x"]+p["w"]/2), round(1200 - d["barHeight"]/2))')
+# A pointer that jumps into a cascade the moment it opens can miss its
+# first hover (1 of 36 probe runs); a real pointer moves on. Nudge it, as
+# motion would, until the row is current, then click it.
 at $(item 0 Find); at $(item 1 Windows...)
+for nudge in 1 2 3 4 5; do
+  w98 menu | grep -q 'cursor=Windows\.\.\. ' && break
+  read -r wx wy <<< "$(item 1 Windows...)"; at $((wx + nudge)) "$wy"
+done
 click_at $(item 1 Windows...)
 expect 'Start > Find > Windows... opens Find in Windows' 'f["open"] == "find" and f["scope"] == "win"'
 key Escape; key Escape
