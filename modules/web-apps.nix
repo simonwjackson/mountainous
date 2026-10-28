@@ -38,31 +38,11 @@
       };
     in
     let
-      # One entry per app. `host` must match the URL's host exactly, because
-      # Chromium builds the window class from it.
-      webApps = {
-        reddit = {
-          name = "Reddit";
-          url = "https://www.reddit.com";
-          host = "www.reddit.com";
-          letter = "R";
-          tint = "#ff4500";
-        };
-        youtube-music = {
-          name = "YouTube Music";
-          url = "https://music.youtube.com";
-          host = "music.youtube.com";
-          letter = "M";
-          tint = "#ff0033";
-        };
-        forgerie = {
-          name = "Forgerie";
-          url = "https://forgerie.hummingbird-lake.ts.net/";
-          host = "forgerie.hummingbird-lake.ts.net";
-          letter = "F";
-          tint = "#111214";
-        };
-      };
+      # One entry per app, in web-apps.json: the desktop icon themes read it
+      # too (lib/desktop-art.nix draws each a lettermark per theme). `host`
+      # must match the URL's host exactly, because Chromium builds the window
+      # class from it.
+      webApps = builtins.fromJSON (builtins.readFile ./web-apps.json);
 
       # An entry with no Icon= makes every icon lookup fail, and the dock logs
       # the failure on each frame it repaints. The site's own favicon needs a

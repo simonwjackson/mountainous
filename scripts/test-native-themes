@@ -19,6 +19,13 @@ if [[ ${3:-} != --session ]]; then
     ln -s "$GHOSTTY_ROOT_CONFIG" "$XDG_CONFIG_HOME/ghostty/config.ghostty"
   fi
   unset DCONF_PROFILE HYPRLAND_INSTANCE_SIGNATURE GTK_THEME
+  if [[ -n ${DESKTOP_ART:-} ]]; then
+    # A recording hyprctl: desktop-theme must switch Hyprland's cursor.
+    mkdir -p "$temp/bin"
+    printf '#!%s\nprintf "%%s\\n" "$*" >> %s\n' "$(command -v bash)" "$temp/hyprctl.log" > "$temp/bin/hyprctl"
+    chmod +x "$temp/bin/hyprctl"
+    export PATH="$temp/bin:$PATH" HYPRLAND_INSTANCE_SIGNATURE=native-themes-test HYPRCTL_LOG="$temp/hyprctl.log"
+  fi
   dbus-run-session ${DBUS_SESSION_CONFIG:+--config-file="$DBUS_SESSION_CONFIG"} -- bash "$0" "$command_path" "$assets" --session
   exit
 fi
@@ -28,7 +35,7 @@ printf '/* user rule */\nlabel.user { opacity: 0.9; }\n' > "$XDG_CONFIG_HOME/gtk
 printf '[Other]\nkeep=yes\n[Fonts]\nfixed="DejaVu Sans Mono,10,-1,5,50,0,0,0,0,0"\n' > "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
 chmod 600 "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
 verify() {
-  local theme=$1 mode=$2 extra=$3 appearance=$2 font style name face
+  local theme=$1 mode=$2 extra=$3 appearance=$2 font style name face icons cursors pattern
   [[ $theme == platinum && $mode == dark && $extra == on ]] && appearance=extra
   name="Mountainous-$theme-$appearance"
   if [[ $theme == platinum ]]; then font=ChicagoFLF; style=kvantum; else font='W95FA Grid'; style=Windows; fi
@@ -79,6 +86,30 @@ verify() {
   for probe in "${NATIVE_QT5_PROBE:-}" "${NATIVE_QT6_PROBE:-}"; do
     if [[ -n $probe ]]; then "$probe" "$style" "$font" "$face"; fi
   done
+  if [[ -n ${DESKTOP_ART:-} ]]; then
+    # Icons, cursors and the desktop pattern follow the same choice.
+    icons=Mountainous-$theme cursors=Mountainous-$theme-cursors
+    [[ $(dconf read /org/gnome/desktop/interface/icon-theme) == "'$icons'" ]]
+    [[ $(dconf read /org/gnome/desktop/interface/cursor-theme) == "'$cursors'" ]]
+    [[ $(dconf read /org/gnome/desktop/interface/cursor-size) == 24 ]]
+    for version in 3 4; do
+      grep -Fx "gtk-icon-theme-name = $icons" "$XDG_CONFIG_HOME/gtk-$version.0/settings.ini"
+      grep -Fx "gtk-cursor-theme-name = $cursors" "$XDG_CONFIG_HOME/gtk-$version.0/settings.ini"
+      grep -Fx "gtk-cursor-theme-size = 24" "$XDG_CONFIG_HOME/gtk-$version.0/settings.ini"
+    done
+    for version in 5 6; do
+      grep -Fx "icon_theme = $icons" "$XDG_CONFIG_HOME/qt${version}ct/qt${version}ct.conf"
+    done
+    grep -Fx "Inherits=$cursors" "$HOME/.icons/Mountainous-cursors/index.theme"
+    test -s "$DESKTOP_ART/share/icons/$icons/index.theme"
+    test -s "$DESKTOP_ART/share/icons/$cursors/manifest.hl"
+    test -s "$DESKTOP_ART/share/icons/$cursors/cursors/default"
+    [[ $(grep -F setcursor "$HYPRCTL_LOG" | tail -n 1) == "--instance 0 setcursor $cursors 24" ]]
+    [[ $(tail -n 1 "$HYPRCTL_LOG") == "--instance 0 eval hl.config({ cursor = { invisible = false } })" ]]
+    pattern=$(node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON" --state "$XDG_STATE_HOME/mountainous")
+    [[ $pattern == "themes/$theme/patterns/$appearance.svg" ]]
+    echo "art: $theme $mode $extra -> $icons, $cursors, $pattern"
+  fi
 }
 for theme in platinum win98; do
   for mode in light dark; do

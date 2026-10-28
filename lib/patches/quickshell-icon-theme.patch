@@ -1,0 +1,74 @@
+--- a/src/core/iconimageprovider.cpp
++++ b/src/core/iconimageprovider.cpp
+@@ -10,7 +10,12 @@
+ #include <qstring.h>
+ 
+ QPixmap
+-IconImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) {
++IconImageProvider::requestPixmap(const QString& request, QSize* size, const QSize& requestedSize) {
++	// requestString() ends every id with the icon theme it was made under.
++	auto id = request;
++	auto themeIdx = id.lastIndexOf("&theme=");
++	if (themeIdx != -1) id.truncate(themeIdx);
++
+ 	QString iconName;
+ 	QString fallbackName;
+ 	QString path;
+@@ -80,5 +85,9 @@
+ 		req += "?fallback=" + fallback;
+ 	}
+ 
++	// A different theme is a different URL, so Qt's pixmap cache never
++	// answers with an icon from the theme before a QIcon::setThemeName.
++	req += "&theme=" + QIcon::themeName();
++
+ 	return req;
+ }
+--- a/src/core/qmlglobal.cpp
++++ b/src/core/qmlglobal.cpp
+@@ -218,6 +218,14 @@
+ 	QuickshellSettings::instance()->setWatchFiles(watchFiles);
+ }
+ 
++QString QuickshellGlobal::iconTheme() { return QIcon::themeName(); }
++
++void QuickshellGlobal::setIconTheme(const QString& theme) {
++	if (theme == QIcon::themeName()) return;
++	QIcon::setThemeName(theme);
++	emit this->iconThemeChanged();
++}
++
+ QString QuickshellGlobal::clipboardText() {
+ 	return static_cast<QGuiApplication*>(QGuiApplication::instance())->clipboard()->text(); // NOLINT
+ }
+--- a/src/core/qmlglobal.hpp
++++ b/src/core/qmlglobal.hpp
+@@ -138,6 +138,10 @@
+ 	///
+ 	/// > [!WARNING] Under wayland the clipboard will be empty unless a quickshell window is focused.
+ 	Q_PROPERTY(QString clipboardText READ clipboardText WRITE setClipboardText NOTIFY clipboardTextChanged);
++	/// The process-wide icon theme that @@iconPath() resolves against (Mountainous patch).
++	/// Setting it changes every later @@iconPath() URL, so an icon drawn after the
++	/// change never comes from the previous theme's pixmap cache.
++	Q_PROPERTY(QString iconTheme READ iconTheme WRITE setIconTheme NOTIFY iconThemeChanged);
+ 	/// The per-shell data directory.
+ 	///
+ 	/// Usually `~/.local/share/quickshell/by-shell/<shell-id>`
+@@ -279,6 +283,9 @@
+ 	[[nodiscard]] bool watchFiles() const;
+ 	void setWatchFiles(bool watchFiles);
+ 
++	[[nodiscard]] static QString iconTheme();
++	void setIconTheme(const QString& theme);
++
+ 	[[nodiscard]] static QString clipboardText();
+ 	static void setClipboardText(const QString& text);
+ 
+@@ -302,6 +309,7 @@
+ 	void workingDirectoryChanged();
+ 	void watchFilesChanged();
+ 	void clipboardTextChanged();
++	void iconThemeChanged();
+ 
+ private slots:
+ 	void onClipboardChanged(QClipboard::Mode mode);

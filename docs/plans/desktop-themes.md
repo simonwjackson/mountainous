@@ -35,7 +35,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Native apps (GTK, Qt, Ghostty) | Built (five-appearance tandem phase below) | Built (same phase) | Chicago95 GTK, Qt Windows style; terminal fonts/reload superseded by [terminal fixes](desktop-themes/terminal-fixes.md) |
 | Terminal monospace fonts and every-instance reload | Built (ProFontIIx Grid) | Built (Fixedsys Excelsior) | Grid-bold, Unicode/Nerd fallbacks; UI/tab fonts unchanged ([evidence](desktop-themes/terminal-fixes.md)) |
 | Duplicate external display outputs | Built (mirror later matching connectors) | Built (same shared rule) | eDP-1 protected; one Quickshell Desktop per workspace destination ([evidence](desktop-themes/terminal-fixes.md)) |
-| Icons, cursors, pattern | Phase 4, pending | Phase 4, pending | Win98 counterparts |
+| Icons, cursors, pattern | Built (Chi-Nata + drawn app cubes, Retrosmart cursors, lattice pattern) | Built (Chicago95 icons and cursors, teal desktop) | Teal-grey desktop in dark grey; see [phase4-art](desktop-themes/phase4-art.md) |
 | Menu and system sounds | Built (original CC0 set, shared hooks and saved switch) | Built (original CC0 set, same hooks/switch) | See [phase4-sound-boot](desktop-themes/phase4-sound-boot.md) |
 | Boot and shutdown | Built (fixed Platinum in initrd) | Original Win98 package built; fixed Platinum used at boot by choice (a) | No session ESP writes or switch-time rebuild; same section |
 | State board, golden images, web drift check | Phase 5, not started | Phase 5, not started | Same checks, both themes |

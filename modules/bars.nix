@@ -28,6 +28,9 @@
     }:
     let
       userRuntimeDir = "/run/user/${toString config.users.users.simon.uid}";
+      # Quickshell with a runtime icon-theme setter (lib/quickshell.nix):
+      # the bars' app icons follow the desktop theme's icon theme live.
+      quickshell = import ../lib/quickshell.nix { inherit pkgs; };
       runtimeOverride =
         (config.systemd.globalEnvironment // config.systemd.user.services.quickshell.environment)
         .XDG_RUNTIME_DIR or null;
@@ -50,7 +53,7 @@
       ];
 
       environment.systemPackages = [
-        pkgs.quickshell
+        quickshell
         ociEgress
       ];
 
@@ -101,7 +104,7 @@
         ];
 
         serviceConfig = {
-          ExecStart = "${pkgs.quickshell}/bin/qs -c mountainous";
+          ExecStart = "${quickshell}/bin/qs -c mountainous";
           Restart = "on-failure";
           RestartSec = 2;
           Slice = "session.slice";

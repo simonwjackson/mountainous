@@ -29,7 +29,28 @@ hl.monitor({
 -- but only one desktop/workspace destination. eDP-1 is never a candidate.
 require("duplicate-outputs").attach()
 
-hl.env("XCURSOR_THEME", "Adwaita")
+-- The pointer follows the desktop theme (modules/desktop-art.nix).
+-- desktop-theme writes ~/.icons/Mountainous-cursors, a theme that only
+-- inherits the current one, and runs `setcursor` on a switch. XCursor
+-- clients name the stable alias, so even a process started before the
+-- last switch loads the current cursors. Hyprland's own hyprcursor needs
+-- the real name at login; it is read back from the alias.
+local function cursor_theme()
+    local file = io.open((os.getenv("HOME") or "") .. "/.icons/Mountainous-cursors/index.theme", "r")
+    if file then
+        for line in file:lines() do
+            local name = line:match("^Inherits=(%S+)")
+            if name then
+                file:close()
+                return name
+            end
+        end
+        file:close()
+    end
+    return "Mountainous-platinum-cursors"
+end
+hl.env("XCURSOR_THEME", "Mountainous-cursors")
+hl.env("HYPRCURSOR_THEME", cursor_theme())
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XDG_SESSION_TYPE", "wayland")
@@ -100,6 +121,9 @@ hl.config({
         -- protocol. Hyprland handles that request with CWindow::activate(),
         -- which otherwise warps the pointer to the activated window's centre.
         no_warps = true,
+        -- desktop-theme owns the GNOME cursor-theme key; Hyprland would
+        -- write the XCursor alias's name there on every load.
+        sync_gsettings_theme = false,
     },
 
     master = {

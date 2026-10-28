@@ -1,0 +1,23 @@
+{
+  "reddit": {
+    "name": "Reddit",
+    "url": "https://www.reddit.com",
+    "host": "www.reddit.com",
+    "letter": "R",
+    "tint": "#ff4500"
+  },
+  "youtube-music": {
+    "name": "YouTube Music",
+    "url": "https://music.youtube.com",
+    "host": "music.youtube.com",
+    "letter": "M",
+    "tint": "#ff0033"
+  },
+  "forgerie": {
+    "name": "Forgerie",
+    "url": "https://forgerie.hummingbird-lake.ts.net/",
+    "host": "forgerie.hummingbird-lake.ts.net",
+    "letter": "F",
+    "tint": "#111214"
+  }
+}

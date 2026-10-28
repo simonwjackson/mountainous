@@ -31,6 +31,17 @@
       "emptyTrash": "themes/platinum/sounds/empty-trash.wav",
       "minimize": "themes/platinum/sounds/minimize.wav",
       "restore": "themes/platinum/sounds/restore.wav"
+    },
+    "art": {
+      "icons": "Mountainous-platinum",
+      "cursors": "Mountainous-platinum-cursors",
+      "cursorSize": 24,
+      "patternCell": 3,
+      "patterns": {
+        "light": "themes/platinum/patterns/light.svg",
+        "dark": "themes/platinum/patterns/dark.svg",
+        "extra": "themes/platinum/patterns/extra.svg"
+      }
     }
   },
   {
@@ -65,6 +76,16 @@
       "emptyTrash": "themes/win98/sounds/exclamation.wav",
       "minimize": "themes/win98/sounds/minimize.wav",
       "restore": "themes/win98/sounds/restore.wav"
+    },
+    "art": {
+      "icons": "Mountainous-win98",
+      "cursors": "Mountainous-win98-cursors",
+      "cursorSize": 24,
+      "patternCell": 2,
+      "patterns": {
+        "light": "themes/win98/patterns/light.svg",
+        "dark": "themes/win98/patterns/dark.svg"
+      }
     }
   }
 ]

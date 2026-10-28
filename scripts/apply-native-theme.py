@@ -68,7 +68,21 @@ def ini(path, section, values, defaults=None, space_around_delimiters=True):
     atomic(path, content.getvalue())
 
 
-def apply(root, theme, mode, extra):
+def cursor_alias(name):
+    """~/.icons/Mountainous-cursors inherits the current cursor theme.
+
+    hyprland.lua exports XCURSOR_THEME=Mountainous-cursors, so a client that
+    loads XCursor files itself (XWayland, a toolkit without the cursor
+    shape protocol) gets the current theme even when its environment is
+    older than the last switch. NixOS's XCURSOR_PATH searches ~/.icons.
+    """
+    atomic(
+        Path.home() / ".icons/Mountainous-cursors/index.theme",
+        f"[Icon Theme]\nName=Mountainous cursors\nComment=The desktop theme's cursors (desktop-theme)\nInherits={name}\n",
+    )
+
+
+def apply(root, theme, mode, extra, art=None):
     appearance = (
         "extra" if theme == "platinum" and mode == "dark" and extra == "on" else mode
     )
@@ -81,6 +95,11 @@ def apply(root, theme, mode, extra):
     config = config_home if config_home.is_absolute() else Path.home() / ".config"
     name, font = palette["name"], palette["font"]
     assets = root / "share/mountainous/native" / key
+    names = {}
+    if art is not None:
+        names = json.loads(
+            (art / "share/mountainous/desktop-art/manifest.json").read_text()
+        )[theme]
     for entry in manifest.values():
         if entry["style"] == "kvantum":
             theme_link(
@@ -97,7 +116,16 @@ def apply(root, theme, mode, extra):
                 "gtk-application-prefer-dark-theme": "false"
                 if mode == "light"
                 else "true",
-            },
+            }
+            | (
+                {
+                    "gtk-icon-theme-name": names["icons"],
+                    "gtk-cursor-theme-name": names["cursors"],
+                    "gtk-cursor-theme-size": str(names["cursorSize"]),
+                }
+                if names
+                else {}
+            ),
         )
     css = config / "gtk-4.0/gtk.css"
     previous = css.read_text() if css.exists() else ""
@@ -126,7 +154,8 @@ def apply(root, theme, mode, extra):
                 "style": palette["style"],
                 "custom_palette": "true",
                 "color_scheme_path": str(assets / "qt-colors.conf"),
-            },
+            }
+            | ({"icon_theme": names["icons"]} if names else {}),
         )
         ini(
             config / f"qt{version}ct/qt{version}ct.conf",
@@ -140,6 +169,8 @@ def apply(root, theme, mode, extra):
     kvantum = name if theme == "platinum" else "Mountainous-platinum-light"
     ini(config / "Kvantum/kvantum.kvconfig", "General", {"theme": kvantum})
     atomic(config / "ghostty/mountainous.conf", (assets / "ghostty.conf").read_text())
+    if names:
+        cursor_alias(names["cursors"])
     # Myoko's Qt Widgets app ships its own Yami stylesheet, which masks the
     # platform style. System is OBS's built-in opt-in to native widgets.
     # OBS reads this at startup; an already running OBS needs a restart.
@@ -158,5 +189,6 @@ if __name__ == "__main__":
     parser.add_argument("theme", choices=("platinum", "win98"))
     parser.add_argument("mode", choices=("light", "dark"))
     parser.add_argument("extra", choices=("on", "off"))
+    parser.add_argument("--art", type=Path, help="the desktop-art package")
     args = parser.parse_args()
-    apply(args.root, args.theme, args.mode, args.extra)
+    apply(args.root, args.theme, args.mode, args.extra, args.art)

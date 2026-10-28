@@ -160,20 +160,27 @@ for fallback in unknown '../platinum' ''; do
 done
 "$command_path" set platinum >/dev/null
 
-# Every change asks a running Hyprland to restyle the title bars; reads and
-# refused commands do not, and nothing is asked outside a Hyprland session.
+# Every change asks a running Hyprland to restyle the title bars and to load
+# the theme's cursors; reads and refused commands do not, and nothing is
+# asked outside a Hyprland session.
 fake="$XDG_RUNTIME_DIR/fake-bin"
 calls="$XDG_RUNTIME_DIR/hyprctl-calls"
 mkdir -p "$fake"
 printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s"\n' "$calls" > "$fake/hyprctl"
 chmod +x "$fake/hyprctl"
 expected='--instance 0 eval local ok, t = pcall(require, "titlebars"); if ok then t.apply() end'
-asked() { # command... -> how many times hyprctl was asked
+asked() { # command... -> how many times hyprctl was asked to restyle
   rm -f "$calls"
   PATH="$fake:$PATH" HYPRLAND_INSTANCE_SIGNATURE=test "$command_path" "$@" > /dev/null 2>&1 || true
   if [[ -e $calls ]]; then
-    [[ $(sort -u "$calls") == "$expected" ]] || { echo "FAIL: hyprctl got: $(<"$calls")" >&2; exit 1; }
-    wc -l < "$calls"
+    theme=$("$command_path" status | sed 's/.*theme=//')
+    cursor="--instance 0 setcursor Mountainous-$theme-cursors 24"
+    # Title bars first, then the cursor of the theme now in effect, then
+    # the pointer hidden and shown again so Hyprland redraws it.
+    hide='--instance 0 eval hl.config({ cursor = { invisible = true } })'
+    show='--instance 0 eval hl.config({ cursor = { invisible = false } })'
+    [[ $(printf '%s\n%s\n%s\n%s' "$expected" "$cursor" "$hide" "$show") == "$(<"$calls")" ]] || { echo "FAIL: hyprctl got: $(<"$calls")" >&2; exit 1; }
+    grep -cxF -- "$expected" "$calls"
   else
     echo 0
   fi

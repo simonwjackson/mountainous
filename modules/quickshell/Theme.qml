@@ -71,9 +71,22 @@ Singleton {
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
-        onLoaded: root.name = ThemeCatalog.find(text().trim()) ? text().trim() : "platinum"
-        onLoadFailed: root.name = "platinum"
+        onLoaded: root.choose(ThemeCatalog.find(text().trim()) ? text().trim() : "platinum")
+        onLoadFailed: root.choose("platinum")
     }
+
+    // The theme's icons (themes.json "art.icons") become the process-wide
+    // icon theme before the name changes, so the next Desktop's
+    // Quickshell.iconPath() calls already resolve, and are cached, under
+    // it. Quickshell.iconTheme comes from lib/patches/quickshell-icon-
+    // theme.patch; an unpatched Quickshell keeps its startup icon theme.
+    function choose(id) {
+        const entry = ThemeCatalog.find(id);
+        if (entry && entry.art && ("iconTheme" in Quickshell)) Quickshell.iconTheme = entry.art.icons;
+        root.name = id;
+    }
+    readonly property string iconTheme: ("iconTheme" in Quickshell) ? Quickshell.iconTheme : ""
+    Component.onCompleted: root.choose(root.name)
 
     // The active Desktop may append diagnostic words, not shared tokens.
     property string chromeStatus: ""
@@ -84,7 +97,8 @@ Singleton {
         target: "theme"
         function current(): string {
             return root.mode + " " + root.bgBase + " " + root.bgVeil
-                + " extra=" + root.extraState + root.chromeStatus + " theme=" + root.name;
+                + " extra=" + root.extraState + root.chromeStatus + " theme=" + root.name
+                + " icons=" + root.iconTheme;
         }
     }
 

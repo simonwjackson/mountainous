@@ -18,6 +18,13 @@ let
   qtPlatformTheme = "qt5ct:mountainous";
   themeNames = builtins.concatStringsSep "|" (map (theme: theme.id) themes);
   themeList = builtins.concatStringsSep "\n" (map (theme: "${theme.id}\t${theme.label}") themes);
+  # Each theme's icon and cursor themes (themes.json "art"), as shell cases.
+  artCases = builtins.concatStringsSep "\n" (
+    map (
+      theme:
+      "${theme.id}) icons=${theme.art.icons}; cursors=${theme.art.cursors}; cursor_size=${toString theme.art.cursorSize} ;;"
+    ) themes
+  );
   ghosttyRootConfig =
     pkgs:
     pkgs.writeText "ghostty-config" ''
@@ -29,6 +36,7 @@ let
     assert validFaces themes;
     let
       nativeThemes = import ../lib/native-themes.nix { inherit pkgs inputs; };
+      desktopArt = import ../lib/desktop-art.nix { inherit pkgs inputs; };
     in
     pkgs.writeShellApplication {
       name = "desktop-theme";
@@ -124,6 +132,29 @@ let
             hyprctl --instance 0 eval 'local ok, t = pcall(require, "titlebars"); if ok then t.apply() end' > /dev/null 2>&1 || true
           fi
         }
+        # Sets icons, cursors and cursor_size for a theme (themes.json "art").
+        art_names() {
+          case "$1" in
+        ${artCases}
+          esac
+        }
+
+        # Hyprland draws the pointer for every client that uses the cursor
+        # shape protocol (GTK4, Qt 6, Chromium). setcursor switches it live;
+        # hyprland.lua reads the same choice at login. Hyprland 0.56 redraws
+        # the pointer only when its shape name changes, so it is hidden for
+        # one cursor tick (500 ms): showing it again reloads the current
+        # shape from the new theme. Never left hidden: both calls run here.
+        cursors() {
+          if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl > /dev/null; then
+            art_names "$(read_name)"
+            if hyprctl --instance 0 setcursor "$cursors" "$cursor_size" > /dev/null 2>&1; then
+              hyprctl --instance 0 eval 'hl.config({ cursor = { invisible = true } })' > /dev/null 2>&1 || true
+              sleep 0.6
+              hyprctl --instance 0 eval 'hl.config({ cursor = { invisible = false } })' > /dev/null 2>&1 || true
+            fi
+          fi
+        }
         changed=0
 
         valid_theme() {
@@ -162,7 +193,11 @@ let
           dconf write /org/gnome/desktop/interface/color-scheme "'$scheme'" || return
           dconf write /org/gnome/desktop/interface/gtk-theme "'$gtk_theme'" || return
           dconf write /org/gnome/desktop/interface/font-name "'$font 12'" || return
-          python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value"
+          art_names "$name"
+          dconf write /org/gnome/desktop/interface/icon-theme "'$icons'" || return
+          dconf write /org/gnome/desktop/interface/cursor-theme "'$cursors'" || return
+          dconf write /org/gnome/desktop/interface/cursor-size "$cursor_size" || return
+          python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value" --art ${desktopArt}
         }
 
         apply() {
@@ -238,6 +273,7 @@ let
         esac
         if [ "$changed" = 1 ]; then
           titlebars
+          cursors
           # Unique bus connections cover default, custom-class and NON_UNIQUE
           # applications. The helper never auto-activates a missing terminal.
           python3 ${../scripts/reload-ghostty.py} || true
@@ -284,8 +320,15 @@ in
             pkgs.qt6Packages.qt6ct
             pkgs.libsForQt5.qtstyleplugin-kvantum
             pkgs.qt6Packages.qtstyleplugin-kvantum
+            pkgs.nodejs
           ];
           DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+          # Phase 4: icons, cursors and the desktop pattern, asserted after
+          # every set, toggle and reapply in scripts/test-native-themes.
+          DESKTOP_ART = import ../lib/desktop-art.nix { inherit pkgs inputs; };
+          DESKTOP_PATTERN_TEST = "${./quickshell}/desktop-art.test.js";
+          DESKTOP_PATTERN_JS = "${./quickshell}/desktop-art.js";
+          THEMES_JSON = "${./quickshell}/themes.json";
           FONTCONFIG_FILE = pkgs.makeFontsConf {
             fontDirectories = [
               config.packages.chicagoflf
@@ -307,6 +350,8 @@ in
           }
           native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
           python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${./quickshell} "$native"
+          python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON"
+          node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
           export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
           mkdir -p "$HOME"
           for config in "$native"/share/mountainous/native/*/ghostty.conf; do

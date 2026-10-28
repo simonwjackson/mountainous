@@ -123,6 +123,22 @@
         "url": "https://raw.githubusercontent.com/korri-os/korri/e6902f0f3c7c2081db033b31c4cd6557b254537a/nix/cache/github-cache.py"
       }
     },
+    "chi-nata-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1716214643,
+        "narHash": "sha256-2LlXJ4LtiyiN0vRtQvqTsCBcMDit/UfNa1x/DfKhJWs=",
+        "owner": "DawnVespero",
+        "repo": "Chi-Nata",
+        "rev": "8c5e6e647dbd47910f3c8b2a4ac27c4c65134b80",
+        "type": "github"
+      },
+      "original": {
+        "owner": "DawnVespero",
+        "repo": "Chi-Nata",
+        "type": "github"
+      }
+    },
     "chicago95-src": {
       "flake": false,
       "locked": {
@@ -858,11 +874,28 @@
         "url": "https://github.com/Dingo-Shenanigans/ReSkate/releases/download/v2.0.7/ReSkate-2.0.7.zip"
       }
     },
+    "retrosmart-cursors-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789410252,
+        "narHash": "sha256-X7F8DQt3BesAdL9nBjxEUY5O5LHAs9B2uKPzJsIfAUQ=",
+        "owner": "mdomlop",
+        "repo": "retrosmart-x11-cursors",
+        "rev": "768e207ce072945a7eba9caddc71f235b2036281",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mdomlop",
+        "repo": "retrosmart-x11-cursors",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "ai-gateway": "ai-gateway",
         "airconnect-src": "airconnect-src",
         "beszel-mcp": "beszel-mcp",
+        "chi-nata-src": "chi-nata-src",
         "chicago95-src": "chicago95-src",
         "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
@@ -890,6 +923,7 @@
         "platinum-kvantum-src": "platinum-kvantum-src",
         "profont-src": "profont-src",
         "pyxamp": "pyxamp",
+        "retrosmart-cursors-src": "retrosmart-cursors-src",
         "sops-nix": "sops-nix",
         "vela": "vela",
         "w95fa-src": "w95fa-src"

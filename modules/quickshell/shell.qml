@@ -701,6 +701,9 @@ ShellRoot {
                     }
                 }
             }
+
+            // The desktop pattern under everything, for both themes.
+            DesktopPattern { screen: screenScope.modelData }
         }
     }
 

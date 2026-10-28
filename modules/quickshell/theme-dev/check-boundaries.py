@@ -28,6 +28,17 @@ for theme in registry:
         assert contract in desktop, (name, contract)
     assert theme['appearances'] and {a['mode'] for a in theme['appearances']} <= {'dark', 'light'}
     assert isinstance(theme['options']['extraDark'], bool)
+    # Phase 4 art: icon and cursor theme names (lib/desktop-art.nix builds
+    # them) and one pattern tile per appearance, Extra dark included.
+    art = theme['art']
+    assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', art['icons']), (name, 'art.icons')
+    assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', art['cursors']), (name, 'art.cursors')
+    assert isinstance(art['cursorSize'], int) and art['cursorSize'] > 0, (name, 'art.cursorSize')
+    assert art['patternCell'] in (1, 2, 3, 4), (name, 'art.patternCell')
+    looks = {a['mode'] for a in theme['appearances']} | ({'extra'} if theme['options']['extraDark'] else set())
+    assert set(art['patterns']) == looks, (name, 'art.patterns')
+    for file in art['patterns'].values():
+        assert file.startswith(f'themes/{name}/') and (root / file).is_file(), file
 
 # The flat prefix fallback avoids Quickshell 0.3.1's dynamic directory-scan
 # limitation. Asset and policy subfolders remain owned by their theme ID.

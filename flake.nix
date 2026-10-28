@@ -49,6 +49,17 @@
       url = "github:kdha200501/Mac9KvantumClassic";
       flake = false;
     };
+    # Platinum icons: Chi-Nata, CC BY-SA 4.0 (LICENSE in the repo). Some
+    # icons start from Mac OS originals; they stay in this input.
+    chi-nata-src = {
+      url = "github:DawnVespero/Chi-Nata";
+      flake = false;
+    };
+    # Platinum cursors: Retrosmart X11 cursors, GPL-3.0 (LICENSE, COPYING).
+    retrosmart-cursors-src = {
+      url = "github:mdomlop/retrosmart-x11-cursors";
+      flake = false;
+    };
 
     # ChicagoFLF 2.1: the font and README declare it Public Domain.
     chicagoflf-src = {
