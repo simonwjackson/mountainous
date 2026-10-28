@@ -64,15 +64,18 @@ right() { at $(centre "$1"); echo right >&3; sleep 0.35; }
 settle() { for _ in $(seq 30); do w98 menu | grep -q "open=$1\$" && break; sleep 0.1; done; sleep 0.2; }
 item() { local r=""; for _ in $(seq 20); do r=$(w98 item "$1" "$2"); [ -n "$r" ] && break; sleep 0.1; done; echo "$r"; }
 key() { wtype -k "$1"; sleep 0.25; }
-# Click a cascade row. A pointer that jumps into a cascade the moment it
-# opens can miss its first hover; nudge it, as real motion would, until the
-# row is current, then click it.
-pick() {  # pick <level> <row text>
+# Click a cascade row. A cascade can come up dead to a pointer that jumps
+# into it (no hover, no press; seen 1 to 2 times in 100, also before this
+# work); re-open it (hover another top row, then the parent) until its row
+# takes the hover, at most three times, and say so.
+pick() {  # pick <parent row> <other top row> <row text>
   local x y n
-  read -r x y <<< "$(item "$1" "$2")"; at "$x" "$y"
-  for n in 1 2 3 4 5; do
-    w98 menu | grep -qF "cursor=$2 " && break
-    at $((x + n)) "$y"
+  for n in 1 2 3; do
+    at $(item 0 "$1")
+    read -r x y <<< "$(item 1 "$3")"; at "$x" "$y"; at $((x + 2)) "$y"
+    w98 menu | grep -qF "cursor=$3 " && break
+    echo "NOTE the $1 cascade re-opened before it took the hover"
+    at $(item 0 "$2")
   done
   click_at "$x" "$y"
 }
@@ -138,12 +141,12 @@ at $(item 0 "Move to"); check 'Move to cascades' 'M.startswith("path=Move to ")'
 nonumbers 'the window menu and Move to'
 [ -n "$(item 1 "Beside Ghostty and Chromium")" ] && [ -n "$(item 1 "Beside Zed")" ] && [ -n "$(item 1 "New page")" ] \
   && ok 'Move to names each page by its other apps, then New page' || bad 'Move to rows'
-pick 1 "Beside OBS Studio";  settle ''
+pick "Move to" Minimize "Beside OBS Studio";  settle ''
 check 'Move to > Beside OBS Studio moves the window, the menu closes' 'L[-1] == "move 2 3" and M.endswith("open=")'
 right win1; settle winmenu; letter n; settle ''
 check 'Mi&nimize from the window menu' 'T[1]["min"] and L[-1] == "hide 1"'
 right win1; settle winmenu
-at $(item 0 "Move to"); pick 1 "Beside Zed"; settle ''
+pick "Move to" Minimize "Beside Zed"; settle ''
 check 'Move to on a minimized window changes only its home' 'L[-1] == "home 1 2" and [t for t in T if t["i"] == 1][0]["page"] == 2 and [t for t in T if t["i"] == 1][0]["min"]'
 right win1; settle winmenu; letter r; settle ''
 check 'Restore from the window menu: back on its new home page' 'L[-1] == "show 1 2" and not [t for t in T if t["i"] == 1][0]["min"]'
@@ -269,7 +272,7 @@ check 'Start > Log Off simon... keeps its confirmation' 'M.endswith("open=logoff
 letter n; settle ''
 
 # ---------------------------------------------------------------- System Properties
-click start; settle start; at $(item 0 Settings); pick 1 System...; settle sysprops
+click start; settle start; pick Settings Programs System...; settle sysprops
 check 'Start > Settings > System... opens System Properties' 'M.endswith("open=sysprops")'
 w98 geometry | python3 -c '
 import json,sys; g=json.load(sys.stdin); w=g["window"]

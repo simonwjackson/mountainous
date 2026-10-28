@@ -179,14 +179,21 @@ expect 'Esc closes Open' 'f["open"] == "" and not f["shown"]'
 state f-rest; key Escape; sleep 0.3
 w98 set tb-normal >/dev/null; sleep 0.8
 click_at $(w98 places | python3 -c 'import json,sys; d=json.load(sys.stdin); p=d["start"]; print(round(p["x"]+p["w"]/2), round(1200 - d["barHeight"]/2))')
-# A pointer that jumps into a cascade the moment it opens can miss its
-# first hover (1 of 36 probe runs); a real pointer moves on. Nudge it, as
-# motion would, until the row is current, then click it.
-at $(item 0 Find); at $(item 1 Windows...)
-for nudge in 1 2 3 4 5; do
+# A cascade can come up dead to a pointer that jumps into it: no hover
+# and no press reach it, so the click falls through and closes Start (2 of
+# 100 sandboxed trials here, 1 of 100 on cairn 7ad70a20 before this branch;
+# a real pointer was not tried). Re-open the cascade (another row, then
+# Find) until its row takes the hover, at most three times, and say so.
+retried=0
+for attempt in 1 2 3; do
+  at $(item 0 Find)
+  read -r wx wy <<< "$(item 1 Windows...)"; at "$wx" "$wy"
+  at $((wx + 2)) "$wy"
   w98 menu | grep -q 'cursor=Windows\.\.\. ' && break
-  read -r wx wy <<< "$(item 1 Windows...)"; at $((wx + nudge)) "$wy"
+  retried=$attempt
+  at $(item 0 Settings)
 done
+[ "$retried" = 0 ] || echo "NOTE Start > Find cascade re-opened $retried time(s) before it took the hover"
 click_at $(item 1 Windows...)
 expect 'Start > Find > Windows... opens Find in Windows' 'f["open"] == "find" and f["scope"] == "win"'
 key Escape; key Escape
