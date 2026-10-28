@@ -111,12 +111,18 @@ PanelWindow {
         }
     }
 
+    Timer {
+        id: focusRestore
+        interval: 0
+        onTriggered: view.forceActiveFocus()
+    }
+
     Loader {
         id: sheet
         objectName: "fleetSheet"
         active: win.openHost !== null && win.wanted
         // A closed sheet gives the keyboard back to the list, once it is gone.
-        onActiveChanged: if (!active) Qt.callLater(function () { view.forceActiveFocus(); })
+        onActiveChanged: if (!active) focusRestore.restart()
         readonly property var place: Plan.sheetRect(win.rect, win.area)
         x: place.x * win.u
         y: place.y * win.u

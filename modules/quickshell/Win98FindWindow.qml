@@ -70,12 +70,17 @@ FocusScope {
     property int current: -1
     property bool moved: false
     property string rowsKey: ""
+    Timer {
+        id: selectionReveal
+        interval: 0
+        onTriggered: root.reveal()
+    }
     onRowsChanged: {
         const key = root.scope + "\u0000" + root.query;
         if (key !== root.rowsKey) { root.rowsKey = key; root.moved = false; list.contentY = 0; root.tipIndex = -1; }
         // Read here, not from a binding on rows: a binding may not have run yet.
         if (!root.moved || !FindModel.selectable(root.rows[root.current])) root.current = FindModel.firstSelectable(root.rows);
-        Qt.callLater(root.reveal);
+        selectionReveal.restart();
     }
     Component.onCompleted: {
         field.text = root.query;
@@ -239,7 +244,12 @@ FocusScope {
     // reads it once more on the next turn of the event loop.
     function origin(item, ...depends) { return item.mapToItem(root, 0, 0); }
     property int layoutTick: 0
-    function settle() { Qt.callLater(function () { root.layoutTick++; }); }
+    Timer {
+        id: layoutSettle
+        interval: 0
+        onTriggered: root.layoutTick++
+    }
+    function settle() { layoutSettle.restart(); }
     onTipIndexChanged: root.settle()
     onPlanChanged: root.settle()
     onHeightChanged: root.settle()
@@ -398,6 +408,10 @@ FocusScope {
                     height: root.plan.list * root.u
                     contentWidth: width
                     contentHeight: root.contentU * root.u
+                    // Mapping can settle the scale/viewport after selection.
+                    // Reveal against those final bounds, not just new rows.
+                    onHeightChanged: selectionReveal.restart()
+                    onContentHeightChanged: selectionReveal.restart()
                     interactive: false
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds

@@ -36,13 +36,18 @@ Win98Window {
     // the window's own height, so a binding would loop. The sum is a fixed
     // point (what the list gives up, it adds back).
     property real natural: 0
+    Timer {
+        id: naturalMeasure
+        interval: 0
+        onTriggered: root.measureNatural()
+    }
     function measureNatural() { root.natural = implicitHeight + (well.visible ? listNatural - well.height : 0)
         + (hintArea.visible || !ready ? 0 : hint.height + 8 * u); }
     Connections {
         target: root
-        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+        function onImplicitHeightChanged() { naturalMeasure.restart(); }
     }
-    Component.onCompleted: Qt.callLater(root.measureNatural)
+    Component.onCompleted: naturalMeasure.restart()
     readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
     readonly property bool dropStatus: squeeze > (well.visible ? listNatural - listMin : 0) + 0.5
     readonly property real listHeight: Math.max(listMin, Math.floor((listNatural - squeeze) / u) * u)

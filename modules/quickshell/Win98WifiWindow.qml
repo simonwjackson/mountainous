@@ -33,12 +33,17 @@ Win98Window {
     // the window's own height, so a binding would loop. The sum is a fixed
     // point (what the list gives up, it adds back).
     property real natural: 0
+    Timer {
+        id: naturalMeasure
+        interval: 0
+        onTriggered: root.measureNatural()
+    }
     function measureNatural() { root.natural = implicitHeight + (listNatural - list.height) + (statusArea.visible ? 0 : statusBar.height + 8 * u); }
     Connections {
         target: root
-        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+        function onImplicitHeightChanged() { naturalMeasure.restart(); }
     }
-    Component.onCompleted: Qt.callLater(root.measureNatural)
+    Component.onCompleted: naturalMeasure.restart()
     readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
     readonly property bool dropStatus: squeeze > listNatural - listMin + 0.5
     readonly property real listHeight: Math.max(listMin, Math.floor((listNatural - squeeze) / u) * u)
@@ -61,13 +66,18 @@ Win98Window {
     function toggleScan() { if (root.device && root.panel.radioEnabled) root.device.scannerEnabled = !root.device.scannerEnabled; }
     function submit() { root.panel.submitPassword(password.text); }
 
+    Timer {
+        id: passwordFocus
+        interval: 0
+        onTriggered: password.forceActiveFocus()
+    }
     Connections {
         target: root.panel
         function onPasswordNetworkChanged(): void {
             if (root.panel.passwordNetwork) {
                 const i = root.panel.networks.indexOf(root.panel.passwordNetwork);
                 if (i >= 0) list.currentIndex = i;
-                Qt.callLater(function () { password.forceActiveFocus(); });
+                passwordFocus.restart();
             } else {
                 password.text = "";
                 list.forceActiveFocus();

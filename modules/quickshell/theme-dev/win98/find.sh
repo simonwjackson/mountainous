@@ -199,7 +199,7 @@ sleep 1
 expect 'back under Win98: one claim, Win98s' 'f["views"] == 1 and f["claimed"]'
 logged 'the log shows the release' 'omni release'
 
-if grep -E "WARN scene|TypeError|ReferenceError" "$work/1920x1200/qs.log" >&2; then echo "FAIL QML warnings" >&2; fail=1; fi
+if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError" "$work/1920x1200/qs.log" >&2; then echo "FAIL QML warnings" >&2; fail=1; fi
 echo quit >&3 || true
 exec 3>&-
 session_stop
@@ -253,7 +253,7 @@ for size in 1920x1200 1280x360 1280x300 640x360 360x640 360x800; do
     'all(inwin(n) for n in ("openField", "openOk", "openCancel"))'
   state a-list
   check "Open at ${size}: its list inside the screen, clear of the taskbar" 'ins(P.get("openList"), y1=H - B)'
-  if grep -E "WARN scene|TypeError|ReferenceError" "$work/${size}/qs.log" >&2; then echo "FAIL QML warnings at $size" >&2; fail=1; fi
+  if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError" "$work/${size}/qs.log" >&2; then echo "FAIL QML warnings at $size" >&2; fail=1; fi
   session_stop
 done
 

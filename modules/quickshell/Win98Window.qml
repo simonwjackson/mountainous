@@ -63,10 +63,15 @@ FocusScope {
     height: availableHeight > 0 ? Math.min(implicitHeight, Math.floor(availableHeight / u) * u) : implicitHeight
 
     // Keep the focused control in view while the body scrolls.
+    Timer {
+        id: focusReveal
+        interval: 0
+        onTriggered: root.revealFocus()
+    }
     Connections {
         target: root.Window.window
         ignoreUnknownSignals: true
-        function onActiveFocusItemChanged() { Qt.callLater(root.revealFocus); }
+        function onActiveFocusItemChanged() { focusReveal.restart(); }
     }
     function revealFocus() {
         const item = root.Window.activeFocusItem;

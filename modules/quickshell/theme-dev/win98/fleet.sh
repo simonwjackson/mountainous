@@ -206,7 +206,7 @@ for fx in live healthy unzen-problem vm-no-sensor desktop-down server-down rakku
 done
 w98 fleetFixture unzen-problem >/dev/null; sleep 1
 
-if grep -E "WARN scene|TypeError|ReferenceError" "$work/1920x1200/qs.log" >&2; then bad "QML warnings in the behaviour run"; else ok "no QML warnings in the behaviour run"; fi
+if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError" "$work/1920x1200/qs.log" >&2; then bad "QML warnings in the behaviour run"; else ok "no QML warnings in the behaviour run"; fi
 echo quit >&3 2>/dev/null || true
 session_stop
 trap - EXIT
@@ -243,7 +243,7 @@ for spec in 360x640:1.5 800x480:1.5 1280x800:1.5 1920x1200:1.5 1280x800:2; do
     w98 fleetCall toggleGlance >/dev/null; sleep 0.5
   done
   check "$label: the taskbar plan still fits with the Fleet icon" 'f["plan"]["fits"]'
-  if grep -E "WARN scene|TypeError|ReferenceError" "$work/$w"x"$h/qs.log" >&2; then bad "$label: QML warnings"; else ok "$label: no QML warnings"; fi
+  if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError" "$work/$w"x"$h/qs.log" >&2; then bad "$label: QML warnings"; else ok "$label: no QML warnings"; fi
   session_stop
 done
 

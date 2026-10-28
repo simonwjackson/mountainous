@@ -49,6 +49,11 @@ Scope {
     // The service changed: open or close the window on the next turn of the
     // event loop, once the service's own change has finished.
     property bool syncing: false
+    Timer {
+        id: omniSync
+        interval: 0
+        onTriggered: view.sync()
+    }
     function sync() {
         const name = view.want();
         view.syncing = true;
@@ -66,9 +71,9 @@ Scope {
     Connections {
         target: view.omni
         ignoreUnknownSignals: true
-        function onShownChanged() { Qt.callLater(view.sync); }
-        function onModeChanged() { Qt.callLater(view.sync); }
-        function onScreenChanged() { Qt.callLater(view.sync); }
+        function onShownChanged() { omniSync.restart(); }
+        function onModeChanged() { omniSync.restart(); }
+        function onScreenChanged() { omniSync.restart(); }
     }
     // Another menu, or a click outside, closed the window: the service
     // closes with it.
@@ -84,7 +89,20 @@ Scope {
     // A chosen row or a request from the window, run on the next turn of
     // the event loop: the window that emitted it may be replaced (Find →
     // Open) or closed by what it runs.
-    function findAction(kind, arg) { Qt.callLater(view.perform, kind, arg); }
+    Timer {
+        id: actionDispatch
+        interval: 0
+        property var pending: null
+        onTriggered: {
+            const action = actionDispatch.pending;
+            actionDispatch.pending = null;
+            view.perform(action.kind, action.arg);
+        }
+    }
+    function findAction(kind, arg) {
+        actionDispatch.pending = {kind: kind, arg: arg};
+        actionDispatch.restart();
+    }
     function perform(kind, arg) {
         const o = view.omni;
         if (!o) return;

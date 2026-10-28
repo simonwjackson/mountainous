@@ -35,6 +35,12 @@ Item {
     implicitWidth: Win98Tokens.ceilU(Win98Tokens.widest(panes, false, root.u), root.u) + 8 * u
     implicitHeight: tallest + 4 * u
 
+    Timer {
+        id: heightMeasure
+        interval: 0
+        onTriggered: root.measure()
+    }
+
     Row {
         spacing: root.gap
         Repeater {
@@ -65,8 +71,8 @@ Item {
                     wrap: true
                     lineUnits: 14
                     maximumLineCount: root.maximumLineCount
-                    onImplicitHeightChanged: Qt.callLater(root.measure)
-                    Component.onCompleted: Qt.callLater(root.measure)
+                    onImplicitHeightChanged: heightMeasure.restart()
+                    Component.onCompleted: heightMeasure.restart()
                 }
             }
         }
@@ -75,7 +81,7 @@ Item {
     // The unit settles after the window maps (its scale arrives late), and
     // a text's height can change before this item's unit has: measure
     // again, once both are current.
-    onUChanged: Qt.callLater(root.measure)
+    onUChanged: heightMeasure.restart()
     function measure() {
         let h = root.lineHeight;
         for (let i = 0; i < repeater.count; i++) {

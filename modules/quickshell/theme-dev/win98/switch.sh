@@ -120,7 +120,7 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
   expect "round $round platinum: no Fleet view carried over" "$(w98 fleet | python3 -c 'import json,sys; f=json.load(sys.stdin); print(f["glanceScreen"] + "|" + f["fleetScreen"])')" "|"
   w98 closeAll >/dev/null
 done
-if grep -E "WARN scene|TypeError|ReferenceError|Failed to load" "$work/run1/qs.log" >&2; then bad "QML warnings in 20 switches"; else ok "no QML warnings in 20 switches"; fi
+if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError|Failed to load" "$work/run1/qs.log" >&2; then bad "QML warnings in 20 switches"; else ok "no QML warnings in 20 switches"; fi
 grep -q "Desktop theme could not load" "$work/run1/commands.log" 2>/dev/null && bad "a notification during good switches" || ok "no failure notification"
 session_stop
 
@@ -170,7 +170,7 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
   assert_layers "niri round $round win98 -> platinum (a $what was open)" platinum "$p"
   w98 closeAll >/dev/null; sleep 0.3
 done
-if grep -E "WARN scene|TypeError|ReferenceError|Failed to load" "$work/run2/qs.log" >&2; then bad "QML warnings under niri"; else ok "no QML warnings under niri"; fi
+if grep -E "WARN scene|QQmlVMEMetaObject|TypeError|ReferenceError|Failed to load" "$work/run2/qs.log" >&2; then bad "QML warnings under niri"; else ok "no QML warnings under niri"; fi
 session_stop
 
 # ---------------------------------------------------------------- broken

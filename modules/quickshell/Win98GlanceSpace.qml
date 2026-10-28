@@ -81,6 +81,17 @@ PanelWindow {
         return p ? { x: p.x, y: y, w: p.w, h: space.units(22) } : { x: space.fullW - space.units(100), y: y, w: space.units(90), h: space.units(22) };
     }
 
+    Timer {
+        id: scrollSettle
+        interval: 0
+        onTriggered: space.settleScroll()
+    }
+    Timer {
+        id: frontFocus
+        interval: 0
+        onTriggered: space.focusFront()
+    }
+
     function summon() {
         space.dir = "in";
         space.t0 = Date.now();
@@ -89,8 +100,8 @@ PanelWindow {
         MenuState.close();
         if (space.front === "" || space.planIds.indexOf(space.front) < 0) space.front = space.planIds.length ? space.planIds[0] : "";
         space.scrollToBottom = true;
-        Qt.callLater(space.settleScroll);
-        Qt.callLater(space.focusFront);
+        scrollSettle.restart();
+        frontFocus.restart();
         if (space.frame.done) space.phase = "shown";
     }
     function dismiss() {
@@ -261,8 +272,8 @@ PanelWindow {
             width: space.spaceW - space.units(space.plan.sb)
             height: space.spaceH
             contentHeight: space.plan.scroll ? space.units(space.plan.contentH) : height
-            onContentHeightChanged: Qt.callLater(space.settleScroll)
-            onHeightChanged: Qt.callLater(space.settleScroll)
+            onContentHeightChanged: scrollSettle.restart()
+            onHeightChanged: scrollSettle.restart()
             // The reader moved it (the scroll bar, the wheel): it stays put.
             onContentYChanged: if (!space.settling && contentY < contentHeight - height - 1) space.scrollToBottom = false
             interactive: false
@@ -417,7 +428,7 @@ PanelWindow {
                 x: fleetAcc.x / space.u, y: (fleetAcc.y - scroller.contentY) / space.u, w: fleetAcc.width / space.u, h: fleetAcc.height / space.u
             }, { x: Plan.GP.LEFT, y: Plan.GP.TOP, w: space.wU - Plan.GP.LEFT - Plan.GP.RIGHT, h: space.hU - Plan.GP.TOP - Plan.GP.BOTTOM }) : null
             active: openHost !== null && space.frame.widgets && space.phase !== "hidden"
-            onActiveChanged: if (!active && space.phase === "shown") Qt.callLater(space.focusFront)
+            onActiveChanged: if (!active && space.phase === "shown") frontFocus.restart()
             visible: space.frame.widgets
             z: 3
             x: place ? space.units(place.x) : 0

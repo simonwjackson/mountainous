@@ -29,12 +29,17 @@ Win98Window {
     // the window's own height, so a binding would loop. The sum is a fixed
     // point (what the list gives up, it adds back).
     property real natural: 0
+    Timer {
+        id: naturalMeasure
+        interval: 0
+        onTriggered: root.measureNatural()
+    }
     function measureNatural() { root.natural = implicitHeight + (5 - visibleRows) * 16 * u + (statusArea.visible ? 0 : 26 * u); }
     Connections {
         target: root
-        function onImplicitHeightChanged() { Qt.callLater(root.measureNatural); }
+        function onImplicitHeightChanged() { naturalMeasure.restart(); }
     }
-    Component.onCompleted: Qt.callLater(root.measureNatural)
+    Component.onCompleted: naturalMeasure.restart()
     readonly property real squeeze: availableHeight > 0 ? Math.max(0, natural - availableHeight) : 0
     readonly property int visibleRows: Math.max(2, 5 - Math.ceil(squeeze / (16 * u) - 1e-6))
     readonly property bool dropStatus: squeeze > 3 * 16 * u + 0.5

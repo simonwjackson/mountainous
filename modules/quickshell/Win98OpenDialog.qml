@@ -78,7 +78,12 @@ FocusScope {
         }
     }
     Component.onCompleted: prefill()
-    onBaseChanged: Qt.callLater(root.prefill)
+    Timer {
+        id: addressPrefill
+        interval: 0
+        onTriggered: root.prefill()
+    }
+    onBaseChanged: addressPrefill.restart()
     Connections {
         target: field.input
         function onTextEdited() {
@@ -138,7 +143,12 @@ FocusScope {
     // reads it once more on the next turn of the event loop.
     function origin(item, ...depends) { return item.mapToItem(root, 0, 0); }
     property int layoutTick: 0
-    function settle() { Qt.callLater(function () { root.layoutTick++; }); }
+    Timer {
+        id: layoutSettle
+        interval: 0
+        onTriggered: root.layoutTick++
+    }
+    function settle() { layoutSettle.restart(); }
     onListOpenChanged: root.settle()
     onPlanChanged: root.settle()
     onHeightChanged: root.settle()

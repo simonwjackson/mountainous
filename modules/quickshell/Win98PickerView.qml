@@ -81,23 +81,33 @@ PanelWindow {
     // the window's own height, so a binding would loop. The sum is a fixed
     // point (what the list gives up, it adds back).
     property real natural: 0
+    Timer {
+        id: naturalMeasure
+        interval: 0
+        onTriggered: win.measureNatural()
+    }
     function measureNatural() { win.natural = dialog.implicitHeight + (previewNatural - preview.height)
         + (note.visible ? 0 : note.height + 8 * win.u); }
     Connections {
         target: dialog
-        function onImplicitHeightChanged() { Qt.callLater(win.measureNatural); }
+        function onImplicitHeightChanged() { naturalMeasure.restart(); }
     }
-    Component.onCompleted: Qt.callLater(win.measureNatural)
+    Component.onCompleted: naturalMeasure.restart()
     readonly property real squeeze: Math.max(0, natural - win.area)
     readonly property real previewHeight: {
         const h = Math.floor((previewNatural - squeeze) / win.u) * win.u;
         return h >= 40 * win.u ? h : 0;
     }
     readonly property bool dropNote: squeeze > previewNatural + 0.5
+    Timer {
+        id: focusReveal
+        interval: 0
+        onTriggered: win.revealFocus()
+    }
     Connections {
         target: dialog.Window.window
         ignoreUnknownSignals: true
-        function onActiveFocusItemChanged() { Qt.callLater(win.revealFocus); }
+        function onActiveFocusItemChanged() { focusReveal.restart(); }
     }
     function revealFocus() {
         const item = dialog.Window.activeFocusItem;

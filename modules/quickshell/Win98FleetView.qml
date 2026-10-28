@@ -101,7 +101,12 @@ FocusScope {
     readonly property real planUnits: frameHeight >= 0 ? Math.round(frameHeight / u)
         : maxFrameHeight >= 0 && naturalUnits * u > maxFrameHeight + 0.5 ? Math.floor(maxFrameHeight / u) : -1
     readonly property var plan: Plan.plan(fw, planUnits >= 0 ? planUnits : null, measures, planOpt)
-    onPlanChanged: if (icons) Qt.callLater(function () { view.iconsScroll = view.plan.scrolls; })
+    Timer {
+        id: iconsSettle
+        interval: 0
+        onTriggered: view.iconsScroll = view.plan.scrolls
+    }
+    onPlanChanged: if (icons) iconsSettle.restart()
 
     // ---------------------------------------------------------- rows
     readonly property var rows: Model.sortHosts(fleet.hosts, panel.sort)
@@ -157,12 +162,19 @@ FocusScope {
     readonly property real restHeight: (chromeH + bodyUnits) * u
 
     // ---------------------------------------------------------- keys
+    Timer {
+        id: selectionReveal
+        interval: 0
+        property string selectedName: ""
+        onTriggered: view.reveal(selectionReveal.selectedName)
+    }
     function move(step) {
         const names = rowNames;
         if (!names.length) return;
         const i = names.indexOf(panel.selected);
         panel.selected = names[Math.max(0, Math.min(names.length - 1, i < 0 ? 0 : i + step))];
-        Qt.callLater(view.reveal, panel.selected);
+        selectionReveal.selectedName = panel.selected;
+        selectionReveal.restart();
     }
     function reveal(name) {
         const i = rowNames.indexOf(name);

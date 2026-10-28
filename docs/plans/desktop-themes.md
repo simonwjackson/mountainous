@@ -1225,3 +1225,39 @@ passed. Standalone `qmllint` exited 0 with the same 71 metadata/unqualified
 warnings as the unmodified picker (no added warnings); the real Quickshell
 checks supply the authoritative type/runtime validation. No full flake check,
 SSH, deployment or push ran.
+
+### Win98 view-owned deferred work (2026-10-27)
+
+The Win98 follow-up replaces 36 `Qt.callLater` sites in 15 view files with
+22 zero-interval owner timers. This covers the picker, tray windows and frame,
+status bars, Find/Open, the omni view, Fleet and glance. Destroying a view now
+cancels its pending measure, layout, focus or action callback. Calls on shared
+singletons remain unchanged. The Desktop, taskbar, menu host and Start model
+are deliberately outside this change.
+
+Each operation coalesces pending work until the timer tick. Fleet's reveal
+keeps the selected-name argument; omni actions keep the last argument pair
+and release it before dispatch. The omni action timer belongs to the Desktop's
+view scope, not the Find/Open window it may close. Cost: work can wait until
+the next timer/animation tick rather than the next JS event-loop turn.
+
+The Find reveal timer also follows viewport/content-height changes: output
+mapping can settle those bounds after selection has moved. This preserves
+the selected-row visibility contract without changing the layout arithmetic.
+The switch, Fleet and Find warning scans now reject `QQmlVMEMetaObject` too;
+the shared lifecycle warning filter remains unchanged.
+
+Validation: the final `win98-desktop`, `win98-fleet` and `desktop-theme-shell`
+checks passed serially through `/tmp/phase1/heavy.sh`. Desktop includes 147
+switch checks and 102 Find checks; Fleet passed 140 checks. Fleet needed one
+retry: the first final run failed only `fixture stale reaches its state`
+(139/140), without a QML warning. This fixture timing remains a follow-up.
+The focused Find repeat also passed all 102 checks after viewport
+reconciliation. Pinned base `a560dcdd` had independently failed Start > Find
+and short-viewport selection checks before this change.
+
+Project qmllint is clean for all 61 Win98 files; parser checks for the 15
+changed QML files, boundary lint, Bash syntax and whitespace checks passed.
+Evidence: `/tmp/tandem/phase3/logs/win98-timer-final-*.log`,
+`win98-timer-find-reconcile.log`, `win98-timer-desktop-baseline.log` and
+`win98-timer-lint.log`. No full flake check, SSH, deploy or push ran.
