@@ -14,6 +14,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Private CardDAV service; same SSH fetch path as ai-gateway.
+    contacts = {
+      url = "git+ssh://git@github.com/simonwjackson/contacts?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     pi.url = "github:lukasl-dev/pi.nix";
     pi-cliproxyapi-provider = {
       url = "github:router-for-me/pi-cliproxyapi-provider";

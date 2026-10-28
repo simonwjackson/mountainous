@@ -152,6 +152,28 @@
         "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
       }
     },
+    "contacts": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "proseql": "proseql"
+      },
+      "locked": {
+        "lastModified": 1793150102,
+        "narHash": "sha256-3nYPHHK4qC2x4gJbllVgFM+wAcLLi5miBImB4FGUfW0=",
+        "ref": "main",
+        "rev": "afc3f3b9b1a03913d6db1530c88a13863fa20966",
+        "revCount": 20,
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/contacts"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/contacts"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1785284101,
@@ -450,7 +472,7 @@
         "flake-utils": "flake-utils_2",
         "inputplumber-nixpkgs": "inputplumber-nixpkgs",
         "nixpkgs": "nixpkgs",
-        "proseql": "proseql",
+        "proseql": "proseql_2",
         "rust-overlay": "rust-overlay"
       },
       "locked": {
@@ -783,6 +805,23 @@
     "proseql": {
       "flake": false,
       "locked": {
+        "lastModified": 1793134376,
+        "narHash": "sha256-lJDIh5wWAYhEjdwW+BLJsSYH37tbEwQd8/UpgSCWlXQ=",
+        "owner": "simonwjackson",
+        "repo": "proseql",
+        "rev": "4a7893f3701d2bbe96e7a6483462304876e065c6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "repo": "proseql",
+        "rev": "4a7893f3701d2bbe96e7a6483462304876e065c6",
+        "type": "github"
+      }
+    },
+    "proseql_2": {
+      "flake": false,
+      "locked": {
         "lastModified": 1785529631,
         "narHash": "sha256-lCNAutPfiqWtwjy5wSYLi+kDSRKdBRBGRAb+H2WUtAg=",
         "owner": "simonwjackson",
@@ -837,6 +876,7 @@
         "beszel-mcp": "beszel-mcp",
         "chicago95-src": "chicago95-src",
         "chicagoflf-src": "chicagoflf-src",
+        "contacts": "contacts",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
         "flake-parts": "flake-parts",
