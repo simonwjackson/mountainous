@@ -56,6 +56,8 @@ in
           deployPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIGFCc1rafaJq+i2sfHq2RiZdxGMfk/HeNHwKBzGyS7Q cliproxyapi-updater@unzen";
           signingPublicKey = "cliproxyapi-unzen:KgVn63py+E3v950Hko/PdGkqfeSHZjIl0h01bPWac04=";
           geminiApiKeyFile = config.sops.secrets.cliproxyapi-gemini-api-key.path;
+          # The front door's key; the quota router reads the plan's credits with it.
+          elevenlabsApiKeyFile = config.sops.secrets.elevenlabs-api-key.path;
         };
         # Rotate the front-door grant and all three credential copies together.
         sops.secrets.ai-gateway-key-assistant-rakku =
@@ -284,7 +286,8 @@ in
           mode = "0400";
         };
 
-        # ai-gateway.service reads the ElevenLabs API key through LoadCredential.
+        # ai-gateway.service and cliproxyapi-quota-router.service read the
+        # ElevenLabs API key through LoadCredential.
         sops.secrets.elevenlabs-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
