@@ -57,6 +57,8 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 31 | Library credentials come from the same sops secrets as Pyxamp (`modules/pyxamp.nix`, `secrets/desktop/<host>.yaml`): a Pyxis token, a Jellyfin API key, none for Ossicle and Comics. A library without its secret does not appear. There is no sign-in dialog. **Replaces decision 17.** | New evidence: Pyxamp already does this, and Myoko has no Secret Service keyring. Cost: a library is added in Nix, not in the app. |
 | 32 | Files has its own repository and comes into mountainous as a flake input, like Pyxamp. Its name is Files. | Matches Pyxamp and the flake rule for outside sources. |
 | 33 | The first working build covers local files and SSH hosts in both themes: browse, open, copy, transfers, host keys, Trash. Libraries and desktop icons come next. | The owner's first ask. Libraries wait on the Comics change and the client code question. |
+| 34 | Files is built on one kit that all of the owner's own themed apps share: the Platinum and Windows 98 drawing and tokens, the service-and-window pattern, and the library clients. Third-party apps keep the native toolkit themes for now and get their own focus later. | The owner wants the best systemic approach as more apps arrive. Cost: the kit is a product of its own; the shell and Pyxamp move onto it. The stack is chosen after the shared-import spike (`/tmp/theme-kit-spike/`). |
+| 35 | The kit must cover the controls for the next apps: control panels and settings, media players and remotes, chat, mail and notifications, fleet and host tools. | Owner's list. Viewers, editors and terminal-like apps are not planned. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
