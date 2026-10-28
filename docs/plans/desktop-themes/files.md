@@ -81,6 +81,16 @@ Consequences, not yet decided: Comics cannot hand over an item as a file until i
 
 Notes: `/tmp/ui-stack/notes.md`.
 
+### Shared theme files spike (2026-10-28, `/tmp/theme-kit-spike/`)
+
+- A separate Quickshell config **can** use the shell's own theme files without copies. The way that works is a symlink inside the app's config folder (`app/kit -> modules/quickshell`) and `import "kit"` (or `import "kit" as Kit`). Quickshell then makes a qmldir for `kit/` with all 18 singletons. Absolute-path imports, `file:///` imports and `../` paths fail. A Nix-built `Mountainous.Theme` module on `QML2_IMPORT_PATH` also works, with identical pixels.
+- A theme switch reaches the app in a median of 15 ms (6–72 ms over 10 switches). Importing the whole shell folder adds about 31 MB (145 → 176 MB).
+- Five shell files read files through `Quickshell.shellPath(...)`, which points at the app's folder: `ThemeCatalog`, `PlatinumIconStore`, `Win98IconStore`, `DesktopPattern`, `WebTheme`. Replacing it with `Qt.resolvedUrl(...)` fixes this (`/tmp/theme-kit-spike/shellpath-fix.diff`). The shell's lifecycle test has not run with that fix.
+- Each app sets `PlatinumTokens.pixelRatio` itself, and needs qtwebsockets on `QML2_IMPORT_PATH` (because of `CdpBrowser`).
+- The shell must not import the shared module as well as its own files: that gives two copies of each singleton.
+- Item 4 of the QML structure (no subfolders, no root qmldir) still holds, and now has a cause: Quickshell makes a qmldir only for folders reached by a static import from `shell.qml`. A static `import "sub"` makes later dynamic loads from `sub/` work.
+- Pyxamp's "cannot import the bar's files" was untried, not a real limit.
+
 ## Open questions
 
 Tracked in the interview; this list moves into the decisions table as each one settles.
