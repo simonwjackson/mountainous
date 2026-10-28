@@ -59,6 +59,16 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 
 Consequences, not yet decided: Comics cannot hand over an item as a file until it serves the original archive. Ossicle and Comics enforce same-origin, so a native client may be refused. Three of four libraries do not report sizes, so the Size column is often empty. Sources: `pyxis/contracts/generated/pyxis.ts`, `pyxis/services/pyxis/src/stream/mod.rs`, `ossicle/services/ossicle/src/api.rs`, `comics/services/comics/src/api.rs`, `modules/media-jellyfin.nix`.
 
+## UI stack findings (recon 2026-10-28, not yet decided)
+
+- Quickshell 0.3.1 `FloatingWindow` is an ordinary toplevel that Hyprland manages (`src/window/floatingwindow.hpp`). Its app_id is per process, so Files would run as its own instance (`qs -c files`), as Pyxamp does (Pyxamp ADR 0005).
+- Rust and Quickshell have no direct binding. Pyxamp's pattern works: a Rust process for the logic and a Unix socket carrying JSON lines to `Quickshell.Io.Socket`. `qs ipc` arguments are too small for file lists and fit only triggers.
+- 80 of the 128 `Platinum*`/`Win98*` files import `Quickshell`, which is compiled into the `qs` binary. A cxx-qt app could not load them without a stand-in `Quickshell` module. Only a Quickshell UI reuses the shell's own files and the live switch unchanged, and only if Nix delivers the same files into both configs (untested; Pyxamp copied them instead, and the copies drift).
+- gtk-rs gets the generated GTK themes for free but not the QML drawing. Slint and iced redraw every control.
+- Desktop icons: `DesktopPattern.qml` could draw them, fed over the same socket. Today it takes no input (`mask: Region {}`).
+
+Notes: `/tmp/ui-stack/notes.md`.
+
 ## Open questions
 
 Tracked in the interview; this list moves into the decisions table as each one settles.
