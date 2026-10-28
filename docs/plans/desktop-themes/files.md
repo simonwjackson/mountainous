@@ -34,6 +34,13 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 8 | An item behaves as a file. Files does not play or read it. Opening goes through the desktop's normal file handling. | Files stays a file manager; the desktop's handlers decide. |
 | 9 | Icons: the service's artwork where its API offers it, or art that Files can generate; otherwise the theme's system icons. | Owner's rule. |
 | 10 | Platinum's app menus go in the top bar only if a systemic mechanism works for every toolkit without patching each app. Otherwise menus stay inside the window. | Owner's rule. Feasibility on Hyprland is being researched. |
+| 11 | Libraries are read-only: browse, open, copy out. No import, rename or delete. | Each service keeps sole control of its catalog. Write actions can come later, one service at a time. |
+| 12 | Opening an item follows its handler's `.desktop` entry: a stream URL when the handler takes URLs (`%u`/`%U`), otherwise a download into a size-limited cache and the local path (`%f`/`%F`). | The standard freedesktop rule, so no app needs special support. Cost: two paths and a cache. |
+| 13 | A library's folders mirror the service's own top-level sections. | You see what each service calls things. Cost: every library has its own shape. |
+| 14 | List view uses columns that fit the kind of item, plus Size where known. | Music: Name, Artist, Album, Time, Size. Episodes: Name, Show, Date, Time, Played. Movies: Name, Year, Time, Size. Comics: Name, Series, Pages, Size. Cost: a column set per kind, in both themes. |
+| 15 | Play and read state is shown, never changed. | The service owns it. Cost: Files refreshes it. |
+| 16 | An item copied out gets a readable name from the catalog and the original extension (`01 Still Alive.flac` inside `Artist - Album`; `Blade Runner (1982).mkv`). | Titles, not storage names. Cost: naming rules per kind, including characters not allowed in file names. |
+| 17 | Sign in once per library in a themed dialog. The token goes in the desktop keyring (Secret Service). | Period behaviour. Cost: Myoko has no Secret Service provider in the flake today (no gnome-keyring, KeePassXC or oo7 found in `modules/` or `lib/`), so one must be added. |
 
 ## Open questions
 
