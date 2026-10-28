@@ -47,6 +47,12 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 21 | Transfers belong to Files, not to a window. Closing a progress window does not stop a copy. Platinum: Window ▸ Transfers. Windows 98: a tray icon while copies run. | Cost: copies with no window need a place to find and stop them. |
 | 22 | The desktop shows: the files in `~/Desktop`, this machine (Myoko's disk / My Computer), the libraries, and the Trash / Recycle Bin. SSH hosts are not on the desktop. | Owner's choice. The Connect dialog's "Show on the desktop" box is removed. |
 | 23 | Find is out of the first design. | It needs remote search and each service's search API. |
+| 24 | One "SSH Hosts" folder on the desktop in both themes (Network Neighborhood under Windows 98). Every host is inside it, with its state. | One icon instead of one per host. |
+| 25 | Comics gets an "original file" download with Range support in its own server. Until then, Comics items are greyed out with "Not available as a file". | Keeps the rule that an item is a file. Cost: work in `~/code/sandbox/comics`. |
+| 26 | Size shows "--" where a service does not report it. Each service gains a size field later. | Honest. Cost: no size sort and no copy total for those libraries yet. |
+| 27 | Every folder remembers its window position, size, view and sort, in both themes, for local, SSH and library folders. A remembered window that no longer fits is moved back on screen. | The Platinum spatial Finder; Windows 98's per-folder view setting. |
+| 28 | Desktop icons are placed freely and remembered, with Clean Up (Platinum) and Arrange Icons (Windows 98). Icons that fall off screen after a display change come back. | Period behaviour. |
+| 29 | Other disks and USB drives: a desktop volume per mounted disk under Platinum, inside My Computer under Windows 98, both with Eject. | Each theme follows its OS. Cost: mount watching through udisks2 and safe unmount. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
