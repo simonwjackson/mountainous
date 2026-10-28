@@ -44,19 +44,19 @@ display mode exists, but it applies to Isolated Web Apps only, not to ordinary
 installed PWAs.
 
 ### The rule
-Declare each web app in `modules/web-apps.nix`. Do not install the same site as
-a PWA through Chromium. A Chromium-installed PWA is also invisible to the CDP
-spine, because it runs in the default Chromium profile, not in the shared
-`mountainous/browser` profile that `CdpBrowser.qml` reads.
+New declared web apps live in `modules/web-apps.nix`. Existing installed PWAs
+are not automatically converted or uninstalled. Do not delete their launchers
+merely to remove their title bars: generic `--app` windows lose native origin
+chrome and installed-app integration.
 
-If a PWA was installed by mistake, remove its launcher:
-
-```
-rm ~/.local/share/applications/chrome-<app-id>-Default.desktop
-```
-
-The site's cookies and storage in the default profile stay. Chromium offers the
-Install button again on the next visit, so the removal is repeatable.
+As of 2026-10-28, `CdpBrowser.qml` also reads normal Chromium's own Default-root
+CDP endpoint. It can navigate a uniquely identifiable installed PWA without
+moving its cookies into `mountainous/browser`. This does not change its frame.
+The no-tab extension, native-popup bridge, memory measurements, scalable PWA
+conversion boundary and one-option rollback are recorded in
+[`chromium-windows.md`](../plans/desktop-themes/chromium-windows.md). Both profile
+roots remain separate. No launcher conversion is enabled while origin and
+live-tab promotion remain blocked.
 
 ## Single CDP Endpoint and Flag Inheritance
 All web-app launches route through `web-app`:
