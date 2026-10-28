@@ -187,6 +187,9 @@ The nested headless backend supplies empty descriptions and exposes no setter.
 Identical non-empty descriptions are therefore unit-tested, while the real
 compositor and Quickshell exercise the chosen mirror and hot-plug mechanism.
 Myoko's hub/EDID, GPU and real input still need the parent's verification.
-Staged QML type lint passes with 64 known-idiom warnings, versus 59 on cairn.
-Raw-tree lint fails to resolve existing singleton members; the same staged
-production files compile and run in real Quickshell.
+Before rebasing, the symlink staging form of QML lint passed with 64
+known-idiom warnings, versus 59 on cairn. After rebasing onto `59d68d31`,
+full-copy staging reports the same 22 missing-member warnings as that baseline
+(`MenuState`, `ThemePicker`, `GlanceState`, `ThemeSounds`), with **zero added
+type warnings**. Raw-tree lint has the same singleton-resolution limitation.
+Real Quickshell runs the changed lifecycle without TypeError or ReferenceError.
