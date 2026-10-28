@@ -6,6 +6,7 @@ import QtQuick
 import QtQuick.Layouts
 import "lanes.js" as Lanes
 import "app-model.js" as AppModel
+import "app-icon.js" as AppIcon
 import "themes/platinum/menu-models.js" as Menus
 import "themes/platinum/strip-plan.js" as StripPlan
 import "find-model.js" as FindModel
@@ -53,12 +54,14 @@ Scope {
     // An app id's desktop entry gives its name and icon (a window class is
     // not an icon name: Chromium's class is chromium-browser, its icon
     // chromium; a --app web app's class is chrome-<host>__-Default).
+    // app-icon.js turns Chromium and web-app classes into the art
+    // package's browser icon and lettermarks, for both themes.
     function entryFor(appId) {
         DesktopEntries.applications.values;
         return appId ? DesktopEntries.heuristicLookup(appId) : null;
     }
     function appName(appId) { const e = desktop.entryFor(appId); return e && e.name ? e.name : appId; }
-    function appIcon(appId) { const e = desktop.entryFor(appId); return e && e.icon ? e.icon : appId; }
+    function appIcon(appId) { const e = desktop.entryFor(appId); return AppIcon.themeName(appId, e && e.icon ? e.icon : ""); }
     readonly property var appNames: {
         const out = {};
         for (const r of desktop.rows) if (r.appId && !(r.appId in out)) out[r.appId] = desktop.appName(r.appId);

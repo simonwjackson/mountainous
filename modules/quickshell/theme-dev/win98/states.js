@@ -133,6 +133,17 @@ st(1, 'tb-attention-on', 'A window wants attention: flash, lit frame (no code ru
 st(1, 'tb-attention-off', 'A window wants attention: flash, dark frame', d => { d.windows[3].urgent = true; }, { flash: 'off' });
 st(1, 'tb-drag', 'A window dragged onto page 2 (dropOnto)', null, { drag: 1 });
 st(1, 'tb-chord', 'SUPER+O: each tray icon shows its key', d => { d.chord = true; });
+// Not the mock's: Chromium by both classes, a declared --app web app, two
+// installed PWAs, an unknown site, and Ghostty, by real window class
+// (app-icons.sh, app-icon.js).
+st(1, 'tb-web', 'Chromium, web apps and PWAs: the icon theme draws them', d => { d.windows = [
+  { app: 'Chromium', appId: 'chromium-browser', title: 'Windows 98 - Wikipedia - Chromium', page: 1, focused: true },
+  { app: 'Chromium', appId: 'chromium', title: 'New Tab - Chromium', page: 1 },
+  { app: 'Reddit', appId: 'chrome-www.reddit.com__-Default', title: 'Reddit', page: 1 },
+  { app: 'Jellyfin', appId: 'chrome-lneafpomhdmfgkblnkjeglpppndalpik-Default', title: 'Jellyfin', page: 1 },
+  { app: 'Microsoft Teams', appId: 'chrome-ompifgpmddkgmclendfeacglnodjjndh-Default', title: 'Microsoft Teams', page: 1 },
+  { app: 'Example', appId: 'chrome-example.org__-Default', title: 'Example Domain', page: 1 },
+  { app: 'Ghostty', icon: 'term', title: 'simon@myoko: ~', page: 1 }]; });
 st(1, 'dict-recording', 'Dictation: Recording', d => { d.dict = { state: 'recording', backend: '', queue: 1 }; });
 st(1, 'dict-working', 'Dictation: Working · Groq', d => { d.dict = { state: 'working', backend: 'groq', queue: 1 }; });
 st(1, 'dict-queued', 'Dictation: Working · Zao · 3 takes', d => { d.dict = { state: 'working', backend: 'zao', queue: 3 }; });

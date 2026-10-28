@@ -3,6 +3,7 @@ import Quickshell.Widgets
 import Quickshell.Services.UPower
 import QtQuick
 import "bar-plan.js" as BarPlan
+import "app-icon.js" as AppIcon
 import "battery.js" as BatteryRule
 import "oci-model.js" as OciModel
 import "notification-model.js" as NotificationModel
@@ -254,7 +255,7 @@ PanelWindow {
         return appId !== "" ? DesktopEntries.heuristicLookup(appId) : null;
     }
     readonly property string appName: appEntry && appEntry.name ? appEntry.name : appId
-    readonly property string appIcon: appEntry && appEntry.icon ? appEntry.icon : appId
+    readonly property string appIcon: AppIcon.themeName(appId, appEntry && appEntry.icon ? appEntry.icon : "")
 
     readonly property string title: frontWindow ? (frontWindow.title || "") : ""
     // The title already names the app ("Forgerie" in "Forgerie"): the
@@ -1047,7 +1048,7 @@ PanelWindow {
                 anchors.fill: parent
                 implicitSize: 16
                 visible: bar.appId !== ""
-                source: bar.appId !== "" && bar.appIcon !== "" ? Quickshell.iconPath(bar.appIcon, "application-x-executable") : ""
+                source: bar.appId !== "" && bar.appIcon !== "" ? Quickshell.iconPath(bar.appIcon, AppIcon.fallback(bar.appIcon)) : ""
             }
 
             Text {

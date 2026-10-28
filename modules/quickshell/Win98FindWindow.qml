@@ -7,6 +7,7 @@ import "lanes.js" as Lanes
 import "find-model.js" as FindModel
 import "themes/win98/find-plan.js" as Plan
 import "themes/win98/start-model.js" as StartModel
+import "app-icon.js" as AppIcon
 
 // Win98's Find window: Super+P, F1, Start ▸ Find and Start ▸ Run… open it
 // above the Start button. It is the Win98 view of the omni service
@@ -590,7 +591,7 @@ FocusScope {
             const id = rowItem.row.icon || "";
             if (id === "") return "";
             const e = rowItem.kind === "win" ? DesktopEntries.heuristicLookup(id) : null;
-            return Quickshell.iconPath(e && e.icon ? e.icon : id, true);
+            return Quickshell.iconPath(AppIcon.themeName(rowItem.kind === "win" ? id : "", e && e.icon ? e.icon : id), true);
         }
         readonly property color ink: rowItem.lit ? Win98Tokens.selectionText : rowItem.row.dis ? Win98Tokens.gray : Win98Tokens.winText
         height: Plan.rowHeight(rowItem.row) * root.u

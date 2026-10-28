@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
+import "app-icon.js" as AppIcon
 
 // An app's icon from the icon theme. Inactive (a window on a page the
 // screen is not showing, a hidden app) draws Platinum's disabled look: the
@@ -31,7 +32,7 @@ Item {
         implicitSize: root.size
         visible: false
         layer.enabled: true
-        source: root.name === "" ? "" : Quickshell.iconPath(root.name, "application-x-executable")
+        source: root.name === "" ? "" : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))
     }
 
     MultiEffect {

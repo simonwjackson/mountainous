@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """The desktop-art package: icon and cursor themes for both desktop themes.
 
-usage: desktop-art.py <desktop-art package> <themes.json>
+usage: desktop-art.py <desktop-art package> <themes.json> <web-apps.json> <web-app-pwas.json>
 
 Checks what desktop-theme names exists and is whole: every index directory,
 every link, every PNG; Myoko's apps resolve in both icon themes through
-their Inherits chains to a themed icon (never to hicolor); every cursor
+their Inherits chains to a themed icon (never to hicolor), and so do the
+window classes of Chromium's web apps and installed PWAs (app-icon.js asks
+for the class), each to its own lettermark; every cursor
 shape exists as XCursor and hyprcursor, at whole multiples of the 1x art,
 and Hyprland's request at scale 1.5 (24 x 1.5 = 36) picks the 2x image.
 """
@@ -21,6 +23,11 @@ from PIL import Image
 
 art = Path(sys.argv[1])
 registry = {t["id"]: t["art"] for t in json.loads(Path(sys.argv[2]).read_text())}
+web_apps = json.loads(Path(sys.argv[3]).read_text())
+pwas = json.loads(Path(sys.argv[4]).read_text())
+# Each lettermark and the window class that asks for it (app-icon.js).
+marks = {f"webapp-{k}": f"chrome-{a['host']}__-Default" for k, a in web_apps.items()}
+marks.update({f"webapp-{k}": f"chrome-{a['appId']}-Default" for k, a in pwas.items()})
 icons = art / "share/icons"
 manifest = json.loads((art / "share/mountainous/desktop-art/manifest.json").read_text())
 failures = []
@@ -93,9 +100,9 @@ for theme_id, entry in registry.items():
         "com.obsproject.Studio",
         "signal-desktop",
         "obsidian",
-        "webapp-reddit",
-        "webapp-youtube-music",
-        "webapp-forgerie",
+        "chromium-browser",
+        *marks,
+        *marks.values(),
         "application-x-executable",
         "folder",
         "text-x-generic",
@@ -104,6 +111,17 @@ for theme_id, entry in registry.items():
         check(
             found is not None and found[0] != "hicolor", f"{theme}: {name} -> {found}"
         )
+
+    # A class finds the same image as its lettermark, and lettermarks differ.
+    for mark, window_class in marks.items():
+        a, b = lookup(theme, mark), lookup(theme, window_class)
+        check(
+            a and b and a[1].resolve() == b[1].resolve(),
+            f"{theme}: {window_class} is not {mark}",
+        )
+    drawn = [lookup(theme, mark) for mark in marks]
+    drawn = [found[1].read_bytes() for found in drawn if found]
+    check(len(set(drawn)) == len(marks), f"{theme}: two web apps share a lettermark")
 
 # Chicago95's icon theme is copied without its SVG tracings, so lookups
 # between PNG sizes scale pixel art instead of resampling a tracing, and the

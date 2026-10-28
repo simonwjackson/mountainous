@@ -617,6 +617,8 @@ def platinum_icons(out, name, chi_nata, web_apps, font):
             lettermark_platinum(app["letter"], app["tint"], font),
             apps / f"webapp-{app_id}.png",
         )
+        for window_class in app["classes"]:
+            link(f"webapp-{app_id}.png", apps / f"{window_class}.png")
     for size in ("32x32", "256x256"):
         for context in PLATINUM_CONTEXTS:
             if (theme / size / context).is_dir():
@@ -702,6 +704,11 @@ def win98_icons(out, name, chicago, web_apps, font):
                 lettermark_win98(app["letter"], app["tint"], font, size),
                 theme / "apps" / str(size) / f"webapp-{app_id}.png",
             )
+            for window_class in app["classes"]:
+                link(
+                    f"webapp-{app_id}.png",
+                    theme / "apps" / str(size) / f"{window_class}.png",
+                )
             directories.add((f"apps/{size}", size, "Applications"))
     index_theme(
         theme,
@@ -710,6 +717,24 @@ def win98_icons(out, name, chicago, web_apps, font):
         "Chicago95,hicolor",
         sorted(directories),
     )
+
+
+def lettermarks(declared, pwas):
+    """Every web app's lettermark, webapp-<id>, with the window classes that
+    draw it (app-icon.js): chrome-<host>__-Default for a declared --app web
+    app (modules/web-apps.json), chrome-<app id>-Default for a PWA that
+    Chromium installed (modules/web-app-pwas.json)."""
+    both = set(declared) & set(pwas)
+    if both:
+        raise SystemExit(f"web app ids in both lists: {sorted(both)}")
+    marks = {}
+    for app_id, app in declared.items():
+        marks[app_id] = dict(app, classes=[f"chrome-{app['host']}__-Default"])
+    for app_id, app in pwas.items():
+        if not re.fullmatch(r"[a-p]{32}", app["appId"]):
+            raise SystemExit(f"{app_id}: not a Chromium app id: {app['appId']}")
+        marks[app_id] = dict(app, classes=[f"chrome-{app['appId']}-Default"])
+    return marks
 
 
 def index_theme(theme, label, comment, inherits, directories):
@@ -741,6 +766,7 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--web-apps", type=Path, required=True)
+    parser.add_argument("--pwas", type=Path, required=True)
     parser.add_argument("--chicago", type=Path, required=True)
     parser.add_argument("--chi-nata", type=Path, required=True)
     parser.add_argument("--retrosmart", type=Path, required=True)
@@ -751,7 +777,9 @@ def main():
     registry = {
         theme["id"]: theme["art"] for theme in json.loads(args.registry.read_text())
     }
-    web_apps = json.loads(args.web_apps.read_text())
+    web_apps = lettermarks(
+        json.loads(args.web_apps.read_text()), json.loads(args.pwas.read_text())
+    )
     out = args.out
     platinum, win98 = registry["platinum"], registry["win98"]
     platinum_icons(out, platinum["icons"], args.chi_nata, web_apps, args.platinum_font)

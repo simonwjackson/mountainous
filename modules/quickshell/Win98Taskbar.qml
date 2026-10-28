@@ -6,6 +6,7 @@ import Quickshell.Widgets
 import QtQuick
 import "themes/win98/taskbar-plan.js" as Plan
 import "themes/win98/tray-model.js" as Tray
+import "app-icon.js" as AppIcon
 
 // The Win98 taskbar: 28 u at the bottom edge, which it reserves.
 //
@@ -541,7 +542,8 @@ PanelWindow {
                         const id = bar.desktop.appIdOf(tb.toplevel);
                         if (id === "") return "";
                         const e = DesktopEntries.heuristicLookup(id);
-                        return Quickshell.iconPath(e && e.icon ? e.icon : id, "application-x-executable");
+                        const name = AppIcon.themeName(id, e && e.icon ? e.icon : "");
+                        return Quickshell.iconPath(name, AppIcon.fallback(name));
                     }
                 }
             }

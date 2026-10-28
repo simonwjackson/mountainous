@@ -4,13 +4,16 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const load = (file) => {
-    const ctx = {};
-    vm.runInNewContext(fs.readFileSync(file, 'utf8').replace(/^\.pragma library\s*$/m, ''), ctx);
+const path = require('node:path');
+// start-model.js .imports ../../app-icon.js as AppIcon, as QML does.
+const load = (file, ctx = {}) => {
+    vm.runInNewContext(fs.readFileSync(file, 'utf8').replace(/^\.pragma library\s*$/m, '')
+        .replace(/^\.import "\.\.\/\.\.\/app-icon\.js" as AppIcon\s*$/m, ''), ctx);
     return ctx;
 };
 const T = load(process.argv[2] || __dirname + '/tray-model.js');
-const S = load(process.argv[3] || __dirname + '/start-model.js');
+const startModel = process.argv[3] || __dirname + '/start-model.js';
+const S = load(startModel, { AppIcon: load(path.join(path.dirname(startModel), '../../app-icon.js')) });
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 // ---- icons
@@ -85,7 +88,15 @@ const apps = [
 const p = plain(S.programs(apps));
 assert.deepEqual(p.map(f => f.text), ['Development', 'Internet', 'Other']);
 assert.deepEqual(p[1].submenu.map(a => a.text), ['Chromium', 'Signal']);
-assert.equal(p[1].submenu[0].icon, 'chromium');
+// Chromium and its web apps draw the icon theme's art (Chicago95's browser,
+// the lettermarks), never the set's own Chromium logo.
+assert.equal(p[1].submenu[0].icon, 'theme:chromium');
+assert.equal(S.appIcon('chromium-browser', ''), 'theme:chromium');
+assert.equal(S.appIcon('chromium', ''), 'theme:chromium');
+assert.equal(S.appIcon('chrome-www.reddit.com__-Default', ''), 'theme:chrome-www.reddit.com__-Default');
+assert.equal(S.appIcon('chrome-lneafpomhdmfgkblnkjeglpppndalpik-Default', 'Jellyfin'), 'theme:chrome-lneafpomhdmfgkblnkjeglpppndalpik-Default');
+assert.equal(S.appIcon('', 'Chromium'), '', 'a name alone is not a browser');
+assert.equal(S.appIcon('com.mitchellh.ghostty', 'Ghostty'), 'term');
 assert.equal(S.appIcon('md.obsidian.Obsidian', 'Obsidian'), '');
 assert.equal(S.appIcon('com.obsproject.Studio', 'OBS Studio'), 'obs');
 assert.equal(p[2].submenu[0].text, 'Rock && Roll', 'data never carries an access key');

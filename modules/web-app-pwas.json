@@ -1,0 +1,58 @@
+{
+  "assistant": {
+    "name": "Assistant",
+    "appId": "ahmfndipfijlijminhiobipfjpafbndb",
+    "url": "https://assistant.hummingbird-lake.ts.net/",
+    "letter": "A",
+    "tint": "#3b5bdb"
+  },
+  "caliper": {
+    "name": "Caliper",
+    "appId": "ephhkmeofmgblgjpkjnfjjlbojfjlcah",
+    "url": "https://caliper.hummingbird-lake.ts.net/__caliper/",
+    "letter": "C",
+    "tint": "#0b7a75"
+  },
+  "groceries": {
+    "name": "Household groceries",
+    "appId": "gehcogodmjijngibdplkjhkdjpkccahb",
+    "url": "https://groceries.hummingbird-lake.ts.net/",
+    "letter": "G",
+    "tint": "#2f8f3a"
+  },
+  "pyxis": {
+    "name": "Pyxis",
+    "appId": "ghklfalheoohfhobcjmoijclhibhcehj",
+    "url": "https://pyxis.hummingbird-lake.ts.net/",
+    "letter": "P",
+    "tint": "#7048e8"
+  },
+  "append": {
+    "name": "append",
+    "appId": "kgbpjefoeahnljaodhdhocnlefgggebf",
+    "url": "https://knowledge.hummingbird-lake.ts.net/",
+    "letter": "a",
+    "tint": "#c2410c"
+  },
+  "jellyfin": {
+    "name": "Jellyfin",
+    "appId": "lneafpomhdmfgkblnkjeglpppndalpik",
+    "url": "https://watch.hummingbird-lake.ts.net/web/index.html#/home",
+    "letter": "J",
+    "tint": "#0089c2"
+  },
+  "teams": {
+    "name": "Microsoft Teams",
+    "appId": "ompifgpmddkgmclendfeacglnodjjndh",
+    "url": "https://teams.cloud.microsoft/?clientType=pwa",
+    "letter": "T",
+    "tint": "#4b53bc"
+  },
+  "pace": {
+    "name": "Pace Goal Tracker",
+    "appId": "pbdginngdcogphkbiafcmdmgkbfpmoah",
+    "url": "https://pace.hummingbird-lake.ts.net/",
+    "letter": "P",
+    "tint": "#d6336c"
+  }
+}

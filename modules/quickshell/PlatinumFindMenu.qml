@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Window
 import "lanes.js" as Lanes
 import "find-model.js" as FindModel
+import "app-icon.js" as AppIcon
 import "themes/platinum/find-plan.js" as FindPlan
 
 // The Find menu: Super+P, F1 and Apple menu ▸ Find… drop it from the
@@ -52,9 +53,11 @@ FocusScope {
         screenLabel: Lanes.screenLabel,
         apps: (root.omni.appRows || []).map(function (a) {
             return { label: a.label, id: a.entry && a.entry.id ? a.entry.id : "", generic: a.detail || "",
-                     icon: a.entry && a.entry.icon ? a.entry.icon : "", ref: a };
+                     icon: a.entry && a.entry.icon ? AppIcon.themeName(a.entry.id, a.entry.icon) : "", ref: a };
         }),
-        recent: Launcher.recent,
+        recent: Launcher.recent.map(function (r) {
+            return r.icon ? Object.assign({}, r, { icon: AppIcon.themeName(r.id, r.icon) }) : r;
+        }),
         commands: root.omni.commandRows || []
     })
     readonly property var rows: FindModel.findRows(root.scope, root.query, root.ctx)
@@ -552,7 +555,7 @@ FocusScope {
             x: 3 + root.hair
             anchors.verticalCenter: parent.verticalCenter
             implicitSize: 16
-            source: visible ? Quickshell.iconPath(rowItem.row.icon, "application-x-executable") : ""
+            source: visible ? Quickshell.iconPath(rowItem.row.icon, AppIcon.fallback(rowItem.row.icon)) : ""
         }
         Text {
             id: label

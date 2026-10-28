@@ -69,12 +69,14 @@ export WAYLAND_DISPLAY="$sock"
 
 # The shell root, as the theme loader will see it: Theme.qml and the flat
 # Win98*.qml files at the top, the theme's assets under themes/win98. Only
-# Theme.qml and the inert semantic sound bus are staged beside them.
+# Theme.qml, the inert semantic sound bus and the pure app-icon.js
+# (Win98Icon's icon-theme fallback) are staged beside them.
 # No playback subscriber is loaded. A shell.qml loads only the gallery.
 stage="$work/shell"
 mkdir -p "$stage/themes/win98"
 ln -s "$shell_dir/Theme.qml" "$stage/Theme.qml"
 ln -s "$shell_dir/SoundEvents.qml" "$stage/SoundEvents.qml"
+ln -s "$shell_dir/app-icon.js" "$stage/app-icon.js"
 for f in "$shell_dir"/Win98*.qml; do
   case "$(basename "$f")" in
     Win98Window.qml) ;;

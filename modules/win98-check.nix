@@ -116,6 +116,33 @@
         bash ${quickshell}/theme-dev/win98/taskbar.sh ${quickshell} $TMPDIR/taskbar
         touch $out
       '';
+      # Chromium and its web apps draw the Phase 4 icon set in both themes
+      # (app-icon.js): the Win98 taskbar and the Platinum Control Strip with
+      # the patched Quickshell and the art package, and no fallthrough to
+      # Chromium's logo or a PWA's own icon. The crops are the output.
+      checks.app-icons =
+        pkgs.runCommand "app-icons"
+          (
+            sessionEnv
+            // {
+              nativeBuildInputs = [
+                config.packages.quickshell-mountainous
+                (pkgs.python3.withPackages (p: [
+                  p.pillow
+                  p.pywayland
+                ]))
+              ]
+              ++ sessionEnv.nativeBuildInputs;
+              XDG_DATA_DIRS = "${config.packages.desktop-art}/share:${pkgs.hicolor-icon-theme}/share";
+            }
+          )
+          ''
+            export HOME=$TMPDIR
+            node ${quickshell}/app-icon.test.js ${quickshell} ${./web-apps.json} ${./web-app-pwas.json}
+            bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+            export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+            bash ${quickshell}/theme-dev/win98/app-icons.sh ${quickshell} $TMPDIR/app-icons $out
+          '';
       checks.win98-theme =
         pkgs.runCommand "win98-theme"
           {

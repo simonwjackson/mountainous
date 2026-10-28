@@ -18,6 +18,7 @@ pkgs.stdenvNoCC.mkDerivation {
     python3 ${../scripts/generate-desktop-art.py} --out "$out" \
       --registry ${../modules/quickshell/themes.json} \
       --web-apps ${../modules/web-apps.json} \
+      --pwas ${../modules/web-app-pwas.json} \
       --chicago ${inputs.chicago95-src} \
       --chi-nata ${inputs.chi-nata-src} \
       --retrosmart ${inputs.retrosmart-cursors-src} \

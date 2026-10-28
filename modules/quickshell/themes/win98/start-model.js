@@ -1,4 +1,5 @@
 .pragma library
+.import "../../app-icon.js" as AppIcon
 // The Win98 Start menu's lists, as pure functions over plain values. The
 // Desktop passes DesktopEntries, the screen's windows and the omni bar's
 // command rows; the menu (Win98Menu) draws what these return.
@@ -20,14 +21,18 @@ var FOLDERS = [
 ];
 var OTHER = "Other";
 
-// The Win98 icon for an app, when the set has one; "" otherwise.
 // Data never carries access keys: a literal "&" is written "&&".
 function literal(s) { return String(s).replace(/&/g, "&&"); }
 
+// The Win98 icon for an app, when the set has one; "" otherwise. Chromium
+// and its web apps (by window class or desktop entry id) draw the icon
+// theme's art instead, "theme:<name>" (Win98Icon): Chicago95's browser and
+// the web apps' lettermarks (app-icon.js), never Chromium's own logo.
 function appIcon(id, name) {
+    var art = AppIcon.special(id, "");
+    if (art !== "") return "theme:" + art;
     var s = ((id || "") + " " + (name || "")).toLowerCase();
     if (/ghostty|foot|kitty|alacritty|terminal|htop|btop/.test(s)) return "term";
-    if (/chrom/.test(s)) return "chromium";
     if (/firefox/.test(s)) return "firefox";
     if (/signal/.test(s)) return "signal";
     if (/(^|[ .])zed/.test(s)) return "zed";

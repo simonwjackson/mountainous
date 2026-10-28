@@ -91,6 +91,7 @@
             node ${./quickshell/page-names.test.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
+            node ${./quickshell/app-icon.test.js} ${./quickshell} ${./web-apps.json} ${./web-app-pwas.json}
             touch $out
           '';
       # The Platinum Find menu and Go to Address (Super+P): the rows, ranking,
@@ -267,8 +268,11 @@
         assert builtins.hasAttr (prefix + "icons/cloud-meter.svg") files;
         # shell.qml tolerates a missing ThemeSounds only during a reload of
         # a half-linked tree; every generation must carry the sound owner.
+        # app-icon.js: both themes' icon names for Chromium and web apps.
         assert builtins.hasAttr (prefix + "ThemeSounds.qml") files;
         assert builtins.hasAttr (prefix + "SoundEvents.qml") files;
+        assert builtins.hasAttr (prefix + "app-icon.js") files;
+        assert !(builtins.hasAttr (prefix + "app-icon.test.js") files);
         # Delivery must not pass with a working manifest but unreachable bar
         # capabilities. Reuse the focused planner and real-QML probe result.
         pkgs.runCommand "bar-delivery" { } ''

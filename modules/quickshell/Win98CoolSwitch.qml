@@ -6,6 +6,7 @@ import Quickshell.Widgets
 import QtQuick
 import "themes/win98/task-model.js" as TaskModel
 import "themes/win98/start-model.js" as StartModel
+import "app-icon.js" as AppIcon
 
 // Held Super+Tab: Win98's Alt+Tab "Cool Switch" box over the windows. A
 // raised grey box in the middle of the screen above the taskbar, each
@@ -111,7 +112,8 @@ Scope {
                                 source: {
                                     if (cell.modelData.icon !== "" || cell.modelData.appId === "") return "";
                                     const e = DesktopEntries.heuristicLookup(cell.modelData.appId);
-                                    return Quickshell.iconPath(e && e.icon ? e.icon : cell.modelData.appId, "application-x-executable");
+                                    const name = AppIcon.themeName(cell.modelData.appId, e && e.icon ? e.icon : "");
+                                    return Quickshell.iconPath(name, AppIcon.fallback(name));
                                 }
                             }
                         }

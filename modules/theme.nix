@@ -351,7 +351,7 @@ in
           }
           native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
           python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${./quickshell} "$native"
-          python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON"
+          python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON" ${./web-apps.json} ${./web-app-pwas.json}
           node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
           export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
           mkdir -p "$HOME"
