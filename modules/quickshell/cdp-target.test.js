@@ -36,6 +36,40 @@ root.pages = [{...page("web", "alpha.test", "Alpha"), endpoint:"web"}, {...page(
 assert.equal(scope.targetFor({wayland:{appId:"chromium-browser"},title:"Alpha - Chromium"})?.id, "normal", "normal Chromium cannot navigate a same-title page in the separate web-app root");
 
 
+// Actual /json/list titles and native titles from the Tab-less survey.
+const realTitles = [
+    ["nixos.org", "Nix &amp; NixOS | Reproducible builds and deployments", "Nix & NixOS | Reproducible builds and deployments"],
+    ["nixos.org", "Download | Nix &amp; NixOS", "Download | Nix & NixOS"],
+    ["github.com", "GitHub - NixOS/nixpkgs: Nix Packages collection &amp; NixOS · GitHub", "GitHub - NixOS/nixpkgs: Nix Packages collection & NixOS · GitHub"]
+];
+const entityTitles = [
+    ...realTitles,
+    ["entities.test", "Named &amp; &lt; &gt; &quot; &#39; &apos; &nbsp;", "Named & < > \" ' ' \u00a0"],
+    ["entities.test", "Decimal &#38; &#60; &#62; &#34; &#39; &#160; &#128640;", "Decimal & < > \" ' \u00a0 🚀"],
+    ["entities.test", "Hex &#x26; &#X3c; &#x3E; &#x22; &#x27; &#xa0; &#x1f680;", "Hex & < > \" ' \u00a0 🚀"],
+    // A real document.title containing literal &amp; comes back as &amp;amp;
+    // from /json/list. Decode once, and never decode the native title.
+    ["entities.test", "Literal &amp;amp; &amp;#39; &amp;#x26;", "Literal &amp; &#39; &#x26;"],
+    ["entities.test", "Unknown &unknown; incomplete &amp invalid &#0; &#x110000; &#xD800;", "Unknown &unknown; incomplete &amp invalid &#0; &#x110000; &#xD800;"]
+];
+for (const [host, encoded, native] of entityTitles) {
+    for (const appId of ["chromium-browser", "chromium", "chrome-ahmfndipfijlijminhiobipfjpafbndb-Default", "chrome-original.test__-Default"]) {
+        const endpoint = appId === "chrome-original.test__-Default" ? "web" : "normal";
+        root.navigationHistory = {};
+        root.pages = [{...page("encoded", host, encoded), endpoint}, {...page("other", "other.test", "Other"), endpoint}];
+        const title = /^(chromium|chromium-browser)$/.test(appId) ? native + " - Chromium" : native;
+        assert.equal(scope.targetFor({wayland: {appId}, title})?.id, "encoded", `${appId} matches the decoded CDP title: ${native}`);
+        assert.equal(root.pages[0].title, encoded, "matching does not mutate the CDP title");
+        root.pages.push({...page("duplicate", "duplicate.test", native.replace(/&/g, "&#38;")), endpoint});
+        assert.equal(scope.targetFor({wayland: {appId}, title}), null, `${appId} refuses duplicate titles after decoding: ${native}`);
+    }
+}
+root.pages = [page("literal", "entities.test", "Literal &amp;amp;")];
+assert.equal(scope.targetFor({wayland: {appId: "chromium-browser"}, title: "Literal & - Chromium"}), null,
+    "a literal entity must not be decoded twice into another window's title");
+root.pages = [page("encoded", "original.test", "A &amp; B"), page("decoded", "original.test", "A & B")];
+assert.equal(scope.targetFor(window("original.test", "A & B")), null, "same-host duplicates after decoding also fail closed");
+
 // With no endpoint, the preview harness's explicit page fixture stays intact.
 vm.runInNewContext(qml.slice(qml.indexOf("function publishPages("), qml.indexOf("// ACTIVE WINDOW")), scope);
 root.endpointPages = {};
@@ -67,4 +101,4 @@ socket.active = false;
 statusChanged(events.Closed);
 assert.equal(root.pendingNav.id,"next-target","intentional reset does not cancel a new request");
 
-console.log("cdp-target: window matching, profile separation, ambiguous titles, previews and disconnect recovery pass");
+console.log("cdp-target: window matching, single-pass HTML entities, profile separation, ambiguous titles, previews and disconnect recovery pass");
