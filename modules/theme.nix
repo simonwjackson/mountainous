@@ -45,7 +45,8 @@ let
         pkgs.dconf
         pkgs.glib
         (pkgs.python3.withPackages (p: [ p.pygobject3 ]))
-        pkgs.quickshell
+        # The session's Quickshell (lib/quickshell.nix), so Myoko carries one.
+        (import ../lib/quickshell.nix { inherit pkgs; })
         pkgs.util-linux
       ];
       text = ''
