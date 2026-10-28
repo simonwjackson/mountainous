@@ -21,6 +21,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Done | Find window above Start, IE's Open dialog (parity mock item 2; see "Find window, Open and web pages for Win98") |
 | Window title bars | Done (hyprbars patch) | Done (caption; app icons and menu consumer pending) | Navy caption in light, steel in dark grey; minimize/maximize/close; shared menu IPC contract below |
+| Chromium normal-window frame | Phase A (system frame, Chromium tabs) | Phase A (same) | Shared preference, GTK paint; outer-chrome roadmap below |
 | Web page styling | Done (`themes/platinum/web.css`) | Done (`themes/win98/web.css`) | Win98 scroll bars and form controls; W95FA on buttons, drop-down lists and legends only |
 | Session commands with confirmation | Done (Lock, Sleep, Log Out, Restart, Shut Down) | Log Off only | Shut Down Windows dialog (not mocked) |
 | About | Done | Missing | System Properties (not mocked) |
@@ -753,7 +754,7 @@ Under Platinum every window that leaves its frame to the compositor gets a Mac O
 | Palettes are the windoid tokens: `menuSurface`, `bevelLight`/`bevelDark`, `raised`, `menuText`/`menuTextOff`, `menuEdge`; black takes the black bar's `barSurface`, `barText`, `barTextOff`, `ridgeLow` | `checks.titlebars` fails when a token changes and the Lua does not. Cost: the colours live twice. |
 | Black is flat: no stripes, no bevel, boxes as dim outlines | The OLED argument that made the top bar black; title bars stay on screen for hours. |
 | The window edge is drawn by the plugin, and `border_size` is 0 under Platinum | Hyprland's border is whole logical px. At 1.5 a 1 px border landed as 1 device px on some edges and 2 on others. The frame draws whole hairs outward from where the content lands. |
-| No bar on a client that asked to draw its own frame, or never asked (GTK4/libadwaita, GTK3, a normal Chromium window); decided from the client's own decoration request | The spike's plan was a hand-kept `no_bar` list of libadwaita classes. The request is what the client said, so no list drifts. Cost: such a window has no frame either; normal Chromium windows keep their own tab strip and caption. X11 windows keep stock hyprbars' rule. |
+| No bar on a client that asked to draw its own frame, or never asked (GTK4/libadwaita, GTK3, Chromium with its custom frame enabled); decided from the client's own decoration request | The spike's plan was a hand-kept `no_bar` list of libadwaita classes. The request is what the client said, so no list drifts. Phase A below now asks for SSD on normal Chromium windows; they get our caption and keep native browser tabs. X11 windows keep stock hyprbars' rule. |
 | Collapse hides the focused window (`windows collapseActive`); its app's Show brings it back | Hyprland cannot roll a window up to its title bar (WindowShade). Hiding is the nearest thing that keeps the window. Cost: the window leaves the screen instead of leaving its title bar. The spike made it a float toggle, which matches nothing on Mac OS. |
 | A double click on the bar zooms, not collapses | Mac OS 8 shades on a double click; here that would hide the window on a stray double click. |
 | Both themes now act on release, draw a sunken box while held, and cancel when released off that box | Shared capture handling closes the old Platinum parity gap. Cost: another input state in the patch; a live theme change cancels that state. |
@@ -1006,3 +1007,161 @@ Evidence: `/tmp/tandem/pages-caption/` (served at `http://100.114.19.92:8765/tan
 - Nothing ran on Myoko, its GPU or real input.
 - The GTK, Qt and Ghostty dark Win98 appearances were checked by `checks.native-themes` (palette agreement), not by a screenshot.
 - The Win98 taskbar, Move to Page, Start ▸ Windows and Alt+Tab still show page numbers until `win98-taskbar-session` lands; the shots show its taskbar numbers unchanged.
+## Chromium outer chrome: Phase A and next phases
+
+Simon wants "completely our own outer chrome". Phase A delegates normal
+Chromium's caption and outer frame to the existing patched hyprbars. It does
+not replace the browser's tabs, navigation toolbar, menus or settings. Cost: one
+extra caption row above the native tab strip.
+Configuration, migration safety and pinned sources are in
+[`web-apps.md`](../decisions/web-apps.md#normal-browser-windows-phase-a-2026-10-27).
+
+### Phase A: bounded frame integration
+
+`modules/chromium-frame.nix` seeds the first profile in new Chromium user-data
+roots with system frames and GTK theme mode. A pre-compositor login service
+changes only the frame preference in stopped existing profiles, in both known
+Chromium user-data roots. It skips roots with a live local Chromium lock or a
+foreign/unknown lock, preserves
+unrelated data and permissions, and keeps one original backup. Stale local
+locks (dead PID or a PID reused by another program) do not block migration and
+remain untouched for Chromium to clean up. Existing theme choices remain;
+select **Use GTK** in Chromium's Appearance settings to opt into the native
+palette. `desktop-theme` remains the
+only appearance owner. No Chromium theme extension is generated in this phase.
+
+`checks.chromium-frame` checks Myoko's module wiring, the packaged CLI and private
+profile migration: preservation, backup, idempotence, permissions, missing roots,
+multiple profiles, malformed files, live Chromium locks, stale local locks,
+foreign-host locks and unknown lock formats.
+
+Evidence: `/tmp/tandem/chromium-frame/`, served at
+<http://100.114.19.92:8765/tandem/chromium-frame/>. No deployment, SSH or real
+Chromium profile was used. Myoko's actual GPU, input devices and live profile
+remain untested.
+
+#### Verified frame behaviour
+
+The real Myoko package, Chromium **153.0.8010.52**, ran under nested Hyprland
+**0.56.2**, with the current patched plugin, at 2880×1800 / scale 1.5. The harness
+asserts the saved theme name and `plugin:hyprbars:win98` before every capture and
+input assertion: false for Platinum, true for Win98. It never contacts the real
+Hyprland instance.
+
+| Behaviour | Platinum | Windows 98 |
+|---|---|---|
+| Normal browser at startup with `custom_chrome_frame=false` | Our striped caption/frame | Our navy caption/frame |
+| Chromium window controls in the tab strip | None; tab close buttons remain | Same; no duplicate minimize/maximize/close |
+| Caption maximize / restore | Pass, real pointer clicks, modes 1 → 0 | Pass, including Restore glyph |
+| Chromium F11 / F11 | Fullscreen mode 2, no caption or browser toolbar; returns to mode 0 | Same |
+| Floating caption drag | (160,180) → (250,250) | Same |
+| Floating drag from empty tab-strip area | (250,250) → (300,290) | Same |
+| First-run initial preferences | Actual patched `/etc/chromium/initial_preferences` seeds frame=false and GTK=1 in a fresh profile | Same package-wide seed |
+
+`logs/runtime-5.log` records **15 passing assertions, zero failures**. The
+private running-profile preflight also logs that it defers the locked root.
+`logs/check-lock.log` and `check-lock-output.log` record the review follow-up's
+passing Nix check and 12 migration tests, after rebasing onto `cairn` at
+`2d713979`. The original blanket lock check could skip logout-killed Chromium
+profiles forever; the follow-up verifies dead PIDs, reused PIDs and live local
+Chromium processes without deleting any lock. Ruff, Python compilation, the new module's Nixfmt
+check and `git diff --check` pass.
+
+The protocol log records an explicit SSD request (`set_mode(2)`) at startup.
+The in-process preference observer exists, but the private false → true → false
+CDP roundtrip did **not** fully restore our caption: the second false removed
+Chromium's close button without issuing another SSD request. Restart is the
+verified path. No live CDP preference automation ships.
+
+The harness corrections matter: its first Win98-labelled image still showed
+Platinum because `HYPRLAND_INSTANCE_SIGNATURE` was missing and the theme hook
+correctly skipped the compositor. That image is archived under `failed-harness`,
+not used as final evidence. A drag needs a threshold motion **and** a subsequent
+motion; the original one-motion fixture started a drag without moving it. The
+final run uses real two-motion gestures and prints the step, option and full
+window state on failure. The private bus needs dconf's service directory; GTK
+also needs the session's dconf GIO backend, not just a working dconf CLI.
+
+`logs/drm-proof.txt` records zero card-node FDs. Both compositors and clients run
+in a `/dev` namespace with only `renderD128`, no card or real input nodes.
+`AQ_DRM_DEVICES` and `SEATD_SOCK` name nonexistent paths. The Hyprland log has no
+DRM backend, seat or libinput startup. `logs/cleanup.log`: **processes left: 0**. A final independent scan of both
+private-runtime environments and evidence-path command lines also finds zero
+processes (`logs/process-scan.json`).
+Tab tear-out/rejoin, X11, scales other than 1.5 and real Quickshell minimize/menu
+integration were not retested in this phase.
+
+#### GTK tab strip: measured result
+
+GTK mode does improve the existing strip without a theme extension. It uses
+Chromium's GTK3 **3.24.52** backend with dconf. The private harness must carry
+Myoko's `GIO_EXTRA_MODULES` from the NixOS Wayland/dconf module; otherwise GTK
+uses default settings even though `dconf write` succeeds. `logs/gtk-libraries.txt`
+records the loaded GTK3 library and `libdconfsettings.so`. `logs/gtk-mode-pref.json`
+records system theme 1 after the real Settings **Use GTK** action.
+
+All five palettes changed live in browser PID **3144025**. A sample in the empty
+tab-strip background at device (1800,80) is below (`logs/gtk-colours.txt`). This
+is measured browser paint, not the compositor caption or a token definition.
+
+| Appearance | Browser strip RGB | Screenshot crop |
+|---|---|---|
+| Platinum light | 220,220,220 | [Platinum light](http://100.114.19.92:8765/tandem/chromium-frame/gtk-platinum-light-off-chrome.png) |
+| Win98 light | 192,192,192 | [Win98 light, live switch](http://100.114.19.92:8765/tandem/chromium-frame/gtk-win98-light-off-chrome.png) |
+| Win98 dark | 60,60,60 | [Win98 dark](http://100.114.19.92:8765/tandem/chromium-frame/gtk-win98-dark-off-chrome.png) |
+| Platinum dark grey | 58,58,58 | `gtk-platinum-dark-off.png` |
+| Platinum extra black | 0,0,0 | [Platinum black](http://100.114.19.92:8765/tandem/chromium-frame/gtk-platinum-dark-on-chrome.png) |
+
+The colours follow `desktop-theme` live. The tab glyphs retained the startup
+font across a live Platinum ↔ Win98 switch; restart Chromium for the other
+family's font. A fresh Win98 process does pick up W95FA Grid: [Win98 light
+startup](http://100.114.19.92:8765/tandem/chromium-frame/gtk-win98-light-startup-chrome.png)
+and [Win98 dark](http://100.114.19.92:8765/tandem/chromium-frame/gtk-win98-dark-startup-chrome.png).
+`logs/gtk-font.log` verifies the Win98 option for both; its cleanup also reports
+zero processes. The strip, rounded tabs, toolbar geometry and icons are still
+Chromium's, not GTK widgets or historical OS controls. This is a native palette
+and startup font, **not** a complete Platinum/Win98 browser. A generated theme
+extension would add controlled paint/images, not replace that geometry or fix
+font caching; estimate **1–3 days** for five manifests, reproducible loading,
+live-switch handling and checks. GTK is the lower-cost choice for Phase A.
+A design engineer should review the remaining geometry, font and icon gaps.
+
+`logs/gtk.log` records a complete five-appearance run and a fresh-process black
+capture. `logs/gtk-pids.json` proves one PID for the five live captures and a new
+PID after restart. `logs/gtk-drm-proof.txt` has zero card-node FDs, and
+`logs/gtk-cleanup.log` reports **processes left: 0**. The full GTK captures contain
+a test-only DNS-blocking flag banner; the linked crops focus on the caption,
+tabs and toolbar. That flag is not shipped.
+
+### Next phases: options and costs
+
+These are planning estimates, not commitments. Each option retains Phase A as
+the fallback. Do not replace the daily browser before a private-profile trial.
+
+| Option | Work estimate | Main risk / maintenance cost | What Simon loses |
+|---|---|---|---|
+| Keep Chromium's tabs, theme their paint | 1–3 days for generated theme manifests, pinned loading and five-appearance checks | Theme `colors`/`images` can repaint, not change tab geometry or toolbar ownership; live extension swaps need a supported installation/update path | The ideal: Chromium still owns most browser chrome |
+| `--app` page windows, Hyprland groups as tabs | 3–7 days for a prototype; 1–2 weeks for restore, popups, focus and input tests | Group membership is not Chromium tab state. Existing `CdpBrowser.adopt` closes opener targets and relaunches URLs: unsafe for stateful popups. Must fix target/window identity before expanding it | Native tab search, tab groups, pinned tabs, drag-between-windows, standard browser toolbar and extension buttons unless rebuilt |
+| `--app` or kiosk Chromium plus Quickshell tabs/address bar over CDP | 1–2 weeks for an isolated prototype; 4–8 weeks for daily-use parity | Must map targets to windows, handle crashes, history, downloads, permissions, security/origin UI and popup routing. Kiosk hides escape/navigation affordances. CDP is a privileged local control endpoint, not a stable public browser-shell API | Existing tab UX, browser toolbar, built-in accessibility and extension UI until replaced; kiosk also loses ordinary window behaviour |
+| WebKitGTK browser shell | 6–12+ weeks for daily-use basics | New engine integration, security updates, auth/DRM/site compatibility, permissions, downloads and accessibility become our responsibility | Chromium extensions, profile/session compatibility, some sites and media support |
+| Qt WebEngine browser shell | 6–12+ weeks for daily-use basics | Separate embedded Chromium lifecycle, Qt packaging, security release lag and DRM/site testing; QML UI still needs complete browser semantics | Chromium profile reuse, normal Chrome extension ecosystem and ready-made browser UI |
+
+**Recommendation:** keep Phase A for normal browsing. Build the `--app` plus
+Hyprland-group path next, behind a separate launcher and private profile. It
+matches the current one-page/one-window model and keeps Chromium's renderer,
+cookies and DevTools without taking on a whole embedded browser. Its first
+milestone must keep live pages, not close and recreate a URL to imitate a tab.
+
+| Phase | Deliverable | Exit criteria / fallback |
+|---|---|---|
+| A (this branch) | Our caption/frame; GTK paint where selected; native Chromium tabs retained | Both themes, maximize/restore, F11, caption dragging, safe migration and reproducible Nix check. No live-profile edit in tests |
+| B (prototype only) | Two `--app` windows as a Hyprland group; shared target/window registry in the existing CDP owner | Duplicate same-host pages, navigation, authentication popup, window.open, detach/regroup, close/restore and browser restart preserve state. Keep ordinary Chromium one action away |
+| C (design then build) | Our group strip and address/security surface, both themes together | Design engineer specifies tab overflow, keyboard/focus, title/origin distinction and permission/download affordances. Existing controls stay reachable in narrow tiles. Fix the current group rule (no caption) before claiming our own full outer chrome |
+| D (trial) | Optional Quickshell/CDP shell if group tabs prove too limiting | Weeks of opt-in daily use, accessibility and failure/recovery tests, threat review of CDP. Keep Chromium settings/DevTools and normal-browser escape hatch |
+| E (only if needed) | Evaluate WebKitGTK/Qt WebEngine with a fixed site/media/auth matrix | Switch engine only if Chromium/CDP limits block a concrete requirement. Profile export/rollback and security-update ownership come first |
+
+A generated Chromium theme is a lower-cost cosmetic alternative to B, not a
+route to complete ownership. Theme manifest documentation:
+<https://developer.chrome.com/docs/extensions/develop/ui/themes>. It can reuse
+our existing tokens; it cannot turn modern rounded tabs into our caption or
+replace Chrome's navigation controls. A design engineer must review that gap.

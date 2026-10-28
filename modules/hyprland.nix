@@ -287,6 +287,10 @@ in {
         # failed, so clear the slate before the new session begins.
         systemctl --user reset-failed || true
 
+        # Chromium owns Preferences while it runs. Migrate stopped profiles
+        # before Hyprland's session restore or the shell can launch a browser.
+        systemctl --user start chromium-frame.service || true
+
         # tuigreet runs on tty1 and sets XDG_SESSION_TYPE=tty.
         # Ensure graphical applications and Ozone pick native Wayland.
         export XDG_SESSION_TYPE=wayland
