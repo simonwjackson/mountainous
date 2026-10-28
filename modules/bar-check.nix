@@ -219,7 +219,6 @@
         assert builtins.hasAttr (prefix + "Win98CoolSwitch.qml") files;
         assert builtins.hasAttr (prefix + "Win98VolumePopup.qml") files;
         assert builtins.hasAttr (prefix + "SystemFacts.qml") files;
-        assert builtins.hasAttr (prefix + "page-names-temporary.js") files;
         assert builtins.hasAttr (prefix + "themes/win98/task-model.js") files;
         assert builtins.hasAttr (prefix + "themes/win98/session-model.js") files;
         assert builtins.hasAttr (prefix + "themes/win98/icons/computer.svg") files;

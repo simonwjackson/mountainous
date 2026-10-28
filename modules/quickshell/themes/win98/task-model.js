@@ -50,53 +50,21 @@ function lane(rows, hidden, screen, opts) {
 }
 
 // Pages are never numbered on screen (Simon: pages are ephemeral, not
-// places); a page is named by the apps on it. names(page, exceptAddress):
-// the app names on a page, left to right; label: page-names.js pageLabel.
+// places); a page is named by the apps on it, in the shared wording of
+// page-names.js (listNames, beside, movePages), which the Desktop calls.
 
-// The app names on one page of the lane, left to right, without one window.
-function pageApps(entries, page, appName, exceptAddress) {
-    var out = [];
-    for (var i = 0; i < (entries || []).length; i++) {
-        var e = entries[i];
-        if (e.home !== page || (exceptAddress && key(e.row.address) === key(exceptAddress))) continue;
-        out.push(appName ? appName(e.row.appId) : e.row.appId);
-    }
-    return out;
-}
-
-// Move to ▸: every page on this screen in order (its windows' home pages
-// and the page it shows), each named by the apps on it without the window
-// being moved; the window's own page checked and disabled ("On its own"
-// when it is alone there); an empty page "Empty page"; then New Page,
-// numbered after every page on every screen (Hyprland numbers pages
-// globally; the number never shows).
-// o: { entries (lane), address, page (the window's), shownPage, pageIds,
-//      appName (id -> name), label (pageLabel) }
-function movePages(o) {
-    var seen = {}, pages = [];
-    var add = function (p) { if (p > 0 && !seen[p]) { seen[p] = true; pages.push(p); } };
-    for (var i = 0; i < (o.entries || []).length; i++) add(o.entries[i].home);
-    add(o.shownPage);
-    pages.sort(function (a, b) { return a - b; });
-    var top = 0;
-    for (var j = 0; j < (o.pageIds || []).length; j++) if (o.pageIds[j] > top) top = o.pageIds[j];
-    for (var k = 0; k < pages.length; k++) if (pages[k] > top) top = pages[k];
-    var label = o.label || function (n) { return n.join(", "); };
-    return {
-        pages: pages.map(function (p) {
-            var names = pageApps(o.entries, p, o.appName, o.address);
-            var current = p === o.page;
-            var text = names.length ? label(names) : current ? "On its own" : "Empty page";
-            return { page: p, current: current, label: text };
-        }),
-        newPage: top + 1
-    };
+// One screen's lane as page-names.js reads it: [{ page, name, address }]
+// in strip order. appName: app id -> its name.
+function pageWindows(entries, appName) {
+    return (entries || []).map(function (e) {
+        return { page: e.home, name: appName ? appName(e.row.appId) : e.row.appId, address: key(e.row.address) };
+    });
 }
 
 // The window menu: a taskbar button's right click, the caption icon and
 // Alt+Space (windows menu IPC). Win98's system menu less Move and Size
 // (Hyprland tiles), plus Move to ▸. o: { minimized, maximized,
-// move (movePages) }. Each item's act names the Desktop's action. Page
+// move (page-names.js movePages) }. Each item's act names the Desktop's action. Page
 // labels are data: a literal "&" stays one.
 function windowMenu(o) {
     var m = o.move || { pages: [], newPage: 1 };
@@ -104,7 +72,7 @@ function windowMenu(o) {
         return { text: String(p.label).replace(/&/g, "&&"), checked: p.current, enabled: !p.current, act: "move", page: p.page };
     });
     if (sub.length) sub.push({ separator: true });
-    sub.push({ text: "&New Page", act: "move", page: m.newPage });
+    sub.push({ text: "&New page", act: "move", page: m.newPage });
     return [
         { text: "&Restore", icon: "restore", enabled: !!(o.minimized || o.maximized), act: "restore" },
         { text: "&Move to", submenu: sub },

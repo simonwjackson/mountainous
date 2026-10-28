@@ -75,7 +75,7 @@
               ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
             node ${quickshell}/themes/win98/find-plan.test.js ${quickshell}/themes/win98/find-plan.js
             node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
-              ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names-temporary.js
+              ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
             bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
@@ -106,7 +106,7 @@
       checks.win98-taskbar = pkgs.runCommand "win98-taskbar" sessionEnv ''
         export HOME=$TMPDIR
         node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
-          ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names-temporary.js
+          ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
         node ${quickshell}/app-model.test.js ${quickshell}/app-model.js
         node ${quickshell}/window-hide.test.js ${quickshell}/window-hide.js
         bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js

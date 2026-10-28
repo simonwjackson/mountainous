@@ -81,11 +81,7 @@ assert.deepEqual(bad, [], "a rendered label shows a page number");
 // ---------------------------------------------------------------- 2. the sources
 // Owned by win98-taskbar-session (the taskbar, Move to Page, Start ▸ Windows,
 // Alt+Tab). Remove a line when that work lands; a clean listed file fails.
-const PENDING = new Set([
-    "Win98Desktop.qml",
-    "Win98MenuHost.qml",
-    "themes/win98/start-model.js",
-]);
+const PENDING = new Set([]);
 // A string that ends in "page " or "Page " and is followed by + or ${}:
 // a page number about to be shown.
 const BUILD = /(["'`])[^"'`\n]*\b[Pp]age \1\s*\+|`[^`\n]*\b[Pp]age \$\{/;

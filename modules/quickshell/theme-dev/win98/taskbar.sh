@@ -121,8 +121,8 @@ right win2; settle winmenu
 check 'a right click on a button opens its window menu' 'M.endswith("open=winmenu")'
 at $(item 0 "Move to"); check 'Move to cascades' 'M.startswith("path=Move to ")'
 nonumbers 'the window menu and Move to'
-[ -n "$(item 1 "Beside Ghostty and Chromium")" ] && [ -n "$(item 1 "Beside Zed")" ] && [ -n "$(item 1 "New Page")" ] \
-  && ok 'Move to names each page by its other apps, then New Page' || bad 'Move to rows'
+[ -n "$(item 1 "Beside Ghostty and Chromium")" ] && [ -n "$(item 1 "Beside Zed")" ] && [ -n "$(item 1 "New page")" ] \
+  && ok 'Move to names each page by its other apps, then New page' || bad 'Move to rows'
 click_at $(item 1 "Beside OBS Studio");  settle ''
 check 'Move to > Beside OBS Studio moves the window, the menu closes' 'L[-1] == "move 2 3" and M.endswith("open=")'
 right win1; settle winmenu; letter n; settle ''

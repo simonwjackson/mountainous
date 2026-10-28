@@ -2,7 +2,7 @@
 // (minimized windows keep their button), the window and taskbar menus, the
 // Cool Switch box, the Shut Down choices, System Properties' facts and the
 // volume pop-up.
-// Run: node task-model.test.js task-model.js session-model.js ../../page-names-temporary.js
+// Run: node task-model.test.js task-model.js session-model.js ../../page-names.js
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
@@ -13,7 +13,7 @@ const load = (file) => {
 };
 const M = load(process.argv[2] || __dirname + '/task-model.js');
 const S = load(process.argv[3] || __dirname + '/session-model.js');
-const N = load(process.argv[4] || __dirname + '/../../page-names-temporary.js');
+const N = load(process.argv[4] || __dirname + '/../../page-names.js');
 const plain = (v) => JSON.parse(JSON.stringify(v));
 const deq = (a, b, m) => assert.deepEqual(plain(a), plain(b), m);
 
@@ -65,38 +65,34 @@ assert.equal(ml.length, 60);
 for (let i = 1; i < ml.length; i++) assert.ok(ml[i - 1].home <= ml[i].home);
 assert.equal(ml.filter((e) => e.minimized).length, 20);
 
-// ---- page names (the temporary copy of page-names.js): never numbers
-deq(N.listNames(['Signal']), 'Signal');
-deq(N.listNames(['Signal', 'Zed']), 'Signal and Zed');
+// ---- page names (page-names.js): never numbers
 deq(N.listNames(['Signal', 'Zed', 'Signal', 'Ghostty']), 'Signal, Zed and Ghostty', 'repeats dropped, order kept');
-deq(N.listNames(['Signal', 'Zed', 'Ghostty', 'OBS']), 'Signal, Zed, Ghostty\u2026');
-deq(N.listNames([]), '');
-deq(N.pageLabel(['Signal', 'Zed']), 'Beside Signal and Zed');
-deq(N.pageLabel([]), '');
+deq(N.beside(['Signal', 'Zed']), 'Beside Signal and Zed');
 
-// ---- Move to ▸: every page on this screen, named by its apps without
-// the window being moved; its own page checked and grey; New Page
+// ---- Move to ▸ over the lane: every page on this screen, named by its
+// apps without the window being moved; its own page checked and grey
 const NAMES = { term: 'Ghostty', zed: 'Zed', chromium: 'Chromium', signal: 'Signal', obs: 'OBS Studio', tx: 'Transmission' };
 const appName = (id) => NAMES[id] || id;
-let mp = M.movePages({ entries: lane, address: 'a3', page: 2, shownPage: 1, pageIds: [1, 2, 3, 7], appName, label: N.pageLabel });
+const pw = M.pageWindows(lane, appName);
+deq(pw.map((w) => [w.page, w.name, w.address]), [[1, 'Ghostty', 'a1'], [1, 'Signal', 'a4'], [1, 'OBS Studio', 'c1'],
+    [2, 'Zed', 'a2'], [2, 'Chromium', 'a3'], [3, 'Transmission', 'd1']], 'minimized windows count on their home page');
+let mp = N.movePages(pw, 'a3', 2, 1, [1, 2, 3, 7]);
 deq(mp, { pages: [
     { page: 1, current: false, label: 'Beside Ghostty, Signal and OBS Studio' },
     { page: 2, current: true, label: 'Beside Zed' },
     { page: 3, current: false, label: 'Beside Transmission' }], newPage: 8 });
-mp = M.movePages({ entries: lane, address: 'd1', page: 3, shownPage: 5, pageIds: [], appName, label: N.pageLabel });
-deq(mp.pages.map((p) => p.label), ['Beside Ghostty, Signal and OBS Studio', 'Beside Zed and Chromium', 'On its own', 'Empty page'],
-    'alone on its page: On its own; the shown page with no windows: Empty page');
-deq(mp.newPage, 6);
-deq(M.movePages({ entries: [], page: -1, shownPage: 4 }).pages, [{ page: 4, current: false, label: 'Empty page' }]);
+mp = N.movePages(pw, 'd1', 3, 5, []);
+deq(mp.pages.map((p) => p.label), ['Beside Ghostty, Signal and OBS Studio', 'Beside Zed and Chromium', 'On its own', 'Empty page']);
+deq(N.listNames(N.namesOn(pw, 2, '')), 'Zed and Chromium', "a divider's tooltip: the band's apps");
 
 // ---- the window menu
 const plainText = (t) => t.replace(/&(&?)/g, (m, lit) => lit ? '&' : '');
-const move = M.movePages({ entries: lane, address: 'a3', page: 2, shownPage: 1, pageIds: [1, 2, 3, 7], appName, label: N.pageLabel });
+const move = N.movePages(pw, 'a3', 2, 1, [1, 2, 3, 7]);
 let wm = plain(M.windowMenu({ minimized: false, maximized: false, move }));
 deq(wm.map((i) => i.separator ? '-' : plainText(i.text)), ['Restore', 'Move to', 'Minimize', 'Maximize', '-', 'Close']);
 deq(wm.map((i) => i.enabled !== false), [false, true, true, true, true, true], 'a normal window: Restore is grey');
 deq(wm[1].submenu.map((i) => i.separator ? '-' : plainText(i.text)),
-    ['Beside Ghostty, Signal and OBS Studio', 'Beside Zed', 'Beside Transmission', '-', 'New Page']);
+    ['Beside Ghostty, Signal and OBS Studio', 'Beside Zed', 'Beside Transmission', '-', 'New page']);
 deq([wm[1].submenu[1].checked, wm[1].submenu[1].enabled], [true, false], 'its own page is checked and grey');
 deq([wm[1].submenu[4].act, wm[1].submenu[4].page], ['move', 8]);
 deq([wm[5].bold, wm[5].shortcut, wm[5].act], [true, 'Alt+F4', 'close'], 'Close is the default item');
@@ -107,18 +103,16 @@ deq(wm.map((i) => i.enabled !== false), [true, true, false, true, true, true], '
 wm = plain(M.windowMenu({ minimized: false, maximized: true, move }));
 deq(wm.map((i) => i.enabled !== false), [true, true, true, false, true, true], 'maximized: Restore on, Maximize grey');
 wm = plain(M.windowMenu({}));
-deq(wm[1].submenu.map((i) => plainText(i.text)), ['New Page'], 'no pages known: New Page alone');
+deq(wm[1].submenu.map((i) => plainText(i.text)), ['New page'], 'no pages known: New page alone');
 // No page number in any menu text, at any size of lane.
 for (const l of [lane, ml, []]) {
-    const m = M.movePages({ entries: l, address: 'm3', page: 1, shownPage: 1, pageIds: [1, 2, 9, 40], appName, label: N.pageLabel });
+    const m = N.movePages(M.pageWindows(l, appName), 'm3', 1, 1, [1, 2, 9, 40]);
     const text = JSON.stringify(plain(M.windowMenu({ move: m })).map((i) => [i.text, (i.submenu || []).map((x) => x.text)]));
     assert.ok(!/\bpage\s*\d/i.test(text) && !/\d/.test(text.replace(/Alt\+F4/g, '')), text);
 }
 // Access keys are unique per level.
 const keysOf = (items) => items.filter((i) => !i.separator && /&[^&]/.test(i.text)).map((i) => /&([^&])/.exec(i.text)[1].toLowerCase());
 assert.equal(new Set(keysOf(wm)).size, 5);
-// The taskbar dividers' tooltips: the band's apps, no "Beside", no number.
-deq(N.listNames(M.pageApps(lane, 2, appName, '')), 'Zed and Chromium');
 
 // ---- the taskbar menu
 let tm = plain(M.taskbarMenu({ shown: 3, others: 2, hidden: 0 }));

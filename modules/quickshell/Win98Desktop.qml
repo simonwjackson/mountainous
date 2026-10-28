@@ -16,8 +16,7 @@ import "themes/win98/host-icon.js" as HostIcon
 import "themes/win98/task-model.js" as TaskModel
 import "themes/win98/session-model.js" as Session
 import "beszel-model.js" as FleetModel
-// TEMPORARY: pages-caption's page-names.js once it lands (see the file).
-import "page-names-temporary.js" as PageNames
+import "page-names.js" as PageNames
 import "glance-registry.js" as GlanceRegistry
 
 // One screen's Windows 98 chrome: one bottom taskbar (Start, a band per
@@ -235,7 +234,7 @@ Scope {
     }
     // A band's apps, left to right ("Signal and Zed"): its divider's tooltip.
     function bandNames(page) {
-        return PageNames.listNames(TaskModel.pageApps(desktop.laneEntries, page, desktop.appName, ""));
+        return PageNames.listNames(PageNames.namesOn(TaskModel.pageWindows(desktop.laneEntries, desktop.appName), page, ""));
     }
     function appIdOf(t) {
         const wl = t ? t.wayland : null;
@@ -454,7 +453,7 @@ Scope {
         else if (item.action === "restorefleet") fleetGlance.restore();
         else if (item.action === "logoff") desktop.openMenu("logoff", false);
         else if (item.action === "shutdown") desktop.openShutDown();
-        else if (item.action === "lock") Qt.callLater(desktop.runSession, "lock");
+        else if (item.action === "lock") desktop.sessionLater("lock");
     }
     function logOff() {
         MenuState.close();
@@ -520,7 +519,31 @@ Scope {
         MenuState.close();
         if (!c) return;
         shutFile.setText(c.id + "\n");
-        Qt.callLater(desktop.runSession, c.what);
+        desktop.sessionLater(c.what);
+    }
+    // Session and menu actions run once the menu or dialog that chose them
+    // is gone, from timers this Desktop owns: a theme swap that destroys
+    // the Desktop cancels them (never Qt.callLater into a view that can go).
+    Timer {
+        id: sessionDispatch
+        interval: 0
+        property string pending: ""
+        onTriggered: {
+            const what = sessionDispatch.pending;
+            sessionDispatch.pending = "";
+            if (what !== "") desktop.runSession(what);
+        }
+    }
+    function sessionLater(what) { sessionDispatch.pending = what; sessionDispatch.restart(); }
+    Timer {
+        id: menuDispatch
+        interval: 0
+        property var pending: null
+        onTriggered: {
+            const a = menuDispatch.pending;
+            menuDispatch.pending = null;
+            if (a) desktop.perform(a.act, a.page, a.address);
+        }
     }
 
     //------------------------------------------------------------------
@@ -546,8 +569,8 @@ Scope {
         return TaskModel.windowMenu({
             minimized: minimized,
             maximized: !minimized && desktop.fullscreenOf(r) > 0,
-            move: TaskModel.movePages({ entries: desktop.laneEntries, address: r.address, page: page, shownPage: desktop.shownPage,
-                pageIds: typeof shell.pageIds === "function" ? shell.pageIds() : [], appName: desktop.appName, label: PageNames.pageLabel })
+            move: PageNames.movePages(TaskModel.pageWindows(desktop.laneEntries, desktop.appName), r.address, page, desktop.shownPage,
+                typeof shell.pageIds === "function" ? shell.pageIds() : [])
         });
     }
     // The windows IPC (shell.qml: a caption's icon, Alt+Space) and a
@@ -583,7 +606,8 @@ Scope {
     function runMenu(item) {
         MenuState.close();
         if (!item || !item.act) return;
-        Qt.callLater(desktop.perform, item.act, item.page || 0, desktop.menuAddress);
+        menuDispatch.pending = { act: item.act, page: item.page || 0, address: desktop.menuAddress };
+        menuDispatch.restart();
     }
     function perform(act, page, address) {
         const r = desktop.rowFor(address);
