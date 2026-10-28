@@ -35,4 +35,36 @@ assert.equal(scope.targetFor({wayland: {appId: "chrome-ahmfndipfijlijminhiobipfj
 root.pages = [{...page("web", "alpha.test", "Alpha"), endpoint:"web"}, {...page("normal", "alpha.test", "Alpha"), endpoint:"normal"}];
 assert.equal(scope.targetFor({wayland:{appId:"chromium-browser"},title:"Alpha - Chromium"})?.id, "normal", "normal Chromium cannot navigate a same-title page in the separate web-app root");
 
-console.log("cdp-target: normal, popup and installed PWA matching, profile separation and ambiguous-title safety pass");
+
+// With no endpoint, the preview harness's explicit page fixture stays intact.
+vm.runInNewContext(qml.slice(qml.indexOf("function publishPages("), qml.indexOf("// ACTIVE WINDOW")), scope);
+root.endpointPages = {};
+const fixturePages = root.pages;
+scope.refreshEndpoint("normal",0);
+assert.equal(root.pages,fixturePages);
+root.publishPages = scope.publishPages;
+root.publishPages("normal",[{id:"previous-browser-page"}]);
+scope.refreshEndpoint("normal",0);
+assert.equal(root.pages.length,0,"a previously live endpoint is cleared when its port vanishes");
+root.pages = [
+    {...page("web-root", "beta.test", "Alpha"), endpoint:"web"},
+    {...page("normal-root", "alpha.test", "Different"), endpoint:"normal"}
+];
+assert.equal(scope.targetFor(window("alpha.test","Alpha"))?.id,"web-root",
+    "a declared web app must not navigate the normal-profile target with its original host");
+// A peer disconnect must release the navigation gate so a restarted browser
+// can accept the next address. Intentional socket resets must not cancel it.
+const statusBody = qml.match(/onStatusChanged:\s*function\(status\)\s*({[\s\S]*?})\s*onTextMessageReceived:/)[1];
+const socket = {active:true,sendTextMessage() {}};
+const events = {Open:1,Error:2,Closed:3};
+root.log = () => {};
+const statusChanged = vm.runInNewContext("(function(status)"+statusBody+")",{root,pageSock:socket,WebSocket:events});
+root.pendingNav = {id:"closed-target",url:"https://example.net/"};
+statusChanged(events.Closed);
+assert.equal(root.pendingNav,null,"peer closure releases an in-flight navigation");
+root.pendingNav = {id:"next-target",url:"https://example.net/"};
+socket.active = false;
+statusChanged(events.Closed);
+assert.equal(root.pendingNav.id,"next-target","intentional reset does not cancel a new request");
+
+console.log("cdp-target: window matching, profile separation, ambiguous titles, previews and disconnect recovery pass");

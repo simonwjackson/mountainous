@@ -53,7 +53,7 @@ Singleton {
                 if (!Number.isInteger(n) || n <= 0 || n > 65535) {
                     root.port = 0;
                     root.live = false;
-                    root.publishPages("web", []);
+                    if (root.endpointPages.web) root.publishPages("web", []);
                     return;
                 }
                 if (n !== root.port) {
@@ -117,7 +117,10 @@ Singleton {
     }
 
     function refreshEndpoint(endpoint, port) {
-        if (port <= 0) { root.publishPages(endpoint, []); return; }
+        if (port <= 0) {
+            if (root.endpointPages[endpoint]) root.publishPages(endpoint, []);
+            return;
+        }
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== XMLHttpRequest.DONE) return;
@@ -197,8 +200,8 @@ Singleton {
             return true;
         }
 
-        root.pendingNav = { id: t.id, ws: t.ws, url: target };
         pageSock.active = false;
+        root.pendingNav = { id: t.id, ws: t.ws, url: target };
         pageSock.url = t.ws;
         pageSock.active = true;
         return true;
@@ -214,8 +217,9 @@ Singleton {
                     method: "Page.navigate",
                     params: { url: root.pendingNav.url }
                 }));
-            } else if (status === WebSocket.Error) {
-                root.lastError = "page socket: " + pageSock.errorString;
+            } else if (status === WebSocket.Error || (status === WebSocket.Closed && pageSock.active && root.pendingNav)) {
+                root.lastError = status === WebSocket.Error
+                    ? "page socket: " + pageSock.errorString : "page socket closed before navigation completed";
                 root.log(root.lastError);
                 root.pendingNav = null;
             }

@@ -23,9 +23,12 @@ function targetFor(pages, history, appId, title) {
         return candidates.length === 1 ? candidates[0] : null;
     }
     const host = match[1];
-    const byHost = pages.filter(function (page) { return page.host === host; });
+    // URL-named app classes are the declared web-app root. Adding normal
+    // Chromium's endpoint must not make its same-host page win this match.
+    const appPages = pages.filter(function (page) { return !page.endpoint || page.endpoint === "web"; });
+    const byHost = appPages.filter(function (page) { return page.host === host; });
     if (byHost.length === 1) return byHost[0];
-    const candidates = (byHost.length ? byHost : pages).filter(function (page) {
+    const candidates = (byHost.length ? byHost : appPages).filter(function (page) {
         return title !== "" && page.title === title;
     });
     if (candidates.length === 1) return candidates[0];

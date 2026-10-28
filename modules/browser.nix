@@ -9,8 +9,9 @@
         let
           desktop = self.nixosConfigurations.myoko.config;
         in
-        assert desktop.mountainous.browser.shellNavigation.enable;
-        assert desktop.systemd.user.services.quickshell.environment.MOUNTAINOUS_BROWSER_INTEGRATION == "1";
+        assert
+          desktop.systemd.user.services.quickshell.environment.MOUNTAINOUS_BROWSER_INTEGRATION
+          == (if desktop.mountainous.browser.shellNavigation.enable then "1" else "0");
         pkgs.runCommand "chromium-windows"
           {
             nativeBuildInputs = [
@@ -22,6 +23,7 @@
             QUICKSHELL_LINT_QT = pkgs.qt6.qtdeclarative;
             QUICKSHELL_LINT_QTBASE = pkgs.qt6.qtbase;
             QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            EXPECTED_NAVIGATION = if desktop.mountainous.browser.shellNavigation.enable then "1" else "0";
             CHROMIUM = "${self.nixosConfigurations.myoko.pkgs.chromium}/bin/chromium";
           }
           ''
@@ -29,7 +31,11 @@
             node ${./quickshell/cdp-target.test.js} ${./quickshell}
             node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
-            grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
+            if [ "$EXPECTED_NAVIGATION" = 1 ]; then
+              grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
+            else
+              ! grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
+            fi
             # Quickshell discovers pragma Singleton itself; qmllint needs an
             # explicit complete index. This index is test-only, never delivered.
             cp -R ${./quickshell} qml
