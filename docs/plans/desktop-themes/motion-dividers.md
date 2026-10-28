@@ -116,6 +116,22 @@ Served at http://100.114.19.92:8765/tandem/motion-dividers/ (`/tmp/tandem/motion
 
 Each filmstrip is eleven cells: before, frames 0 to 8 (0 to 133 ms, held with the harness's motion hold), after. They come from the real Desktops' motion layers in the Win98 harness (`theme-dev/win98/capture-motion.sh`, headless sway, pixman, llvmpipe), with a stand-in app window under the chrome; the harness sends the events WindowMotion would.
 
+## Checks
+
+Run on Unzen (`/tmp/tandem/remote-check.sh`), on the branch rebased onto `cairn` at dd716cdf (code commit 8220bcb8):
+
+| Check | Result |
+|---|---|
+| `titlebars` (motion per theme, apply with and without the plugin, a rejected leaf, `hyprland.lua`'s values) | pass |
+| `theme-parity` (with `no-page-numbers.test.js`: no page head, dividers are a groove) | pass |
+| `platinum-desktop` (with `window-motion.test.js`), `bar-delivery` (the new files delivered, the test not) | pass |
+| `win98-desktop` (`taskbar-plan.test.js`; `switch.sh` 20 swaps; `geometry.sh`: dividers inside the task area, never over a button, no page place) | pass |
+| `win98-taskbar` (two dividers between three pages, each a groove in the gap; no head, no keyboard stop; no page number) | pass (one earlier run failed "(Empty) is shown" in Documents, untouched by this work; the re-run passed) |
+| `win98-theme`, `win98-fleet`, `desktop-theme-shell` (restart and rollback), `desktop-safety`, `bar-shadow` | pass |
+| The Myoko toplevel `drvPath` | evaluates |
+
+The minimize and restore sounds (phase 4) still play when the request is made, so a sound starts with its motion.
+
 ## Not verified
 
 - On Myoko under Hyprland: the live `hl.animation` calls through `hyprctl eval`, the first frame's alignment with the real hyprbars caption (the code puts the caption one seam above Hyprland's `at`), and a maximize's event-to-refresh latency. The harness has no Hyprland.
