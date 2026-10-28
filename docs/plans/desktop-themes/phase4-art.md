@@ -47,7 +47,7 @@ Each shape is written once per cursor-shape-v1 name, with every legacy X11 name 
 - **hyprcursor (what Hyprland draws):** images of 32, 64, 96 and 128 px (1x to 4x), `resize_algorithm = nearest`, `nominal_size = 0.5625`. Hyprland asks for `size × scale` = 24 × 1.5 = 36 and draws the image 1:1 on device pixels; `round(36 / 0.5625)` = 64, the 2x image. **At scale 1.5 one art pixel is 2 device pixels** (Retrosmart's arrow is 17 art px = 34 device px, about 4 mm on Myoko's 215 ppi panel; Chicago95's is 19 = 38). That is the Win98 theme's own unit (1 u = 2 device px). Scales 2.25 and 3 are exact too (3x, 4x).
 - **XCursor (clients that draw their own pointer):** nominal 24 → 1x, 36 → 2x, 48 → 2x, 72 → 3x.
 
-Live switching: `desktop-theme` runs `hyprctl --instance 0 setcursor <theme> 24`, writes the GNOME `cursor-theme`/`cursor-size` keys, GTK's `gtk-cursor-theme-*`, and `~/.icons/Mountainous-cursors/index.theme` (`Inherits=<theme>`). GTK 4, Qt 6 and Chromium ask the compositor for a cursor shape, so Hyprland's switch reaches them at once. GTK 3 reloads from the GNOME key. A client that loads XCursor files itself reads `XCURSOR_THEME=Mountainous-cursors`, a stable name, so even a process whose environment predates the switch gets the current cursors the next time it loads them.
+Live switching: `desktop-theme` runs `hyprctl --instance 0 setcursor <theme> 24` and then hides the pointer for one cursor tick (Hyprland 0.56 redraws it only when the shape name changes; showing it again reloads the shape from the new theme, about 0.6 s). It also writes the GNOME `cursor-theme`/`cursor-size` keys, GTK's `gtk-cursor-theme-*`, and `~/.icons/Mountainous-cursors/index.theme` (`Inherits=<theme>`). GTK 4, Qt 6 and Chromium ask the compositor for a cursor shape, so Hyprland's switch reaches them at once. GTK 3 reloads from the GNOME key. A client that loads XCursor files itself reads `XCURSOR_THEME=Mountainous-cursors`, a stable name, so even a process whose environment predates the switch gets the current cursors the next time it loads them.
 
 ### Desktop pattern
 
@@ -64,7 +64,7 @@ A tile is an 8 × 8 SVG. `desktop-art.js` `tile(base, dpr)` grows the cell to th
 |---|---|---|---|
 | Quickshell bars, menus, Find, Start | Live: the new Desktop is built after `Quickshell.iconTheme` changes, and its URLs are new | Compositor | Live (same surface, new tile) |
 | Shared surfaces that outlive a swap (omni card, notification popups) | On their next icon request | Compositor | — |
-| Hyprland | — | Live (`setcursor`) | — |
+| Hyprland | — | Live (`setcursor`, then the pointer is hidden for one 500 ms tick and redrawn from the new theme) | — |
 | GTK 3 (file chooser portal) | Live (GNOME `icon-theme` key through dconf) | Live (GNOME `cursor-theme` key) | — |
 | GTK 4 / libadwaita (Ghostty) | Live (GNOME key) | Compositor | — |
 | Qt 6 / Qt 5 (OBS) | qt6ct/qt5ct reread their file 3 s after a change and reload the icon theme; app-owned icons (OBS's bundled ones) stay | Compositor | — |
@@ -82,6 +82,8 @@ A tile is an 8 × 8 SVG. `desktop-art.js` `tile(base, dpr)` grows the cell to th
 | Win98 substitutes from Chicago95 (Notepad for Zed, the messenger flower for Signal, the projector for OBS, a note for Obsidian) | Same reason; everything stays in the 98 idiom |
 | 2 device pixels per cursor pixel at 1.5 | Whole pixels at Myoko's only scale and the size of a Win98 unit. 3 (the "72 dpi" size) made a 51 px arrow. Cost: at scale 1 or 2 hyprcursor resamples the nearest image with nearest neighbour, so some art pixels are uneven there |
 | A shared background surface in `shell.qml`, not one per Desktop | One surface that never remaps; no layer-count changes for the switch tests. Cost: the pattern is chosen from the registry, not drawn by theme QML |
+| Hide the pointer for one 500 ms cursor tick after `setcursor` | Measured: Hyprland 0.56 keeps the old image until the shape name changes (`IHyprRenderer::setCursorFromName` returns early). Hiding and showing forces a redraw from the new theme. Cost: the pointer blinks out for up to a second on a theme switch, and `desktop-theme` takes 0.6 s longer. Both calls run in the same command, so it is never left hidden |
+| Win98 `grab`/`grabbing` use Move, not Chicago95's choice | Chicago95 maps them to its copy arrow; Windows 98 dragged with the four-way Move |
 | `~/.icons/Mountainous-cursors` alias | NixOS's `XCURSOR_PATH` starts with `~/.icons`; an alias makes the environment stable across switches. Cost: one more generated file under the user's home |
 | Web-app list moved to `modules/web-apps.json` | The generator reads it; `web-apps.nix` reads the same file. No behaviour change |
 
@@ -100,4 +102,38 @@ The originals (cubes, lettermarks, patterns) are this repository's own work. No 
 
 ## Evidence
 
-See "Evidence" below the sheets: `/tmp/tandem/phase4-art/` (http://100.114.19.92:8765/tandem/phase4-art/).
+`/tmp/tandem/phase4-art/` (http://100.114.19.92:8765/tandem/phase4-art/): `index.html` and one sheet per appearance (`platinum-light.png`, `platinum-dark.png`, `platinum-extra.png`, `win98-light.png`, `win98-dark.png`). Each shows the desktop pattern with the live pointer (300 % zoom), the glance checker over the pattern, the GTK3 file chooser, the Apple menu or Start menu, Find with app icons, the Control Strip or taskbar, and the cursor set at 300 % of what Hyprland draws at 1.5.
+
+The capture is a private nested Hyprland 0.56.2 (headless labwc, bubblewrap with only `/dev/dri/renderD128`, `AQ_DRM_DEVICES` and `SEATD_SOCK` pointing at missing paths) at 2880×1800, scale 1.5, with the patched Quickshell, the hyprbars plugin, xdg-desktop-portal-gtk's file chooser and Ghostty. The file chooser and Ghostty keep one process through all five appearances; the switch is `desktop-theme apply`. Chromium, Zed, Signal, Obsidian, OBS and the Reddit web app are labelled GTK3 fixture windows that only carry those apps' app ids. `logs/drm-proof.log`: 0 card nodes; `logs/cleanup.log`: **processes left: 0**.
+
+| Measured in the captures | Result |
+|---|---|
+| Pattern: a 500 × 300 device-px desktop crop against the tile tiled from the screen origin | 0 pixels off, all five appearances |
+| Glance checker over the pattern (Platinum light/dark, Win98 light/dark) | 75 000 black, 75 000 pattern, 0 blended pixels each; Extra dark is solid black by design |
+| Pointer drawn by Hyprland | Platinum 22 × 34 device px (Retrosmart's 11 × 17 at 2×), Win98 22 × 38 (Chicago95's 11 × 19 at 2×); no 2 × 2 block mixes colours |
+| Settings after each switch (`logs/*-settings.txt`) | dconf `icon-theme`, `cursor-theme`, `cursor-size`; GTK `settings.ini`; qt6ct `icon_theme`; the `Mountainous-cursors` alias: all name the theme's art |
+| Quickshell (`logs/*-chrome.txt`) | `icons=Mountainous-platinum` / `icons=Mountainous-win98`: the patched `Quickshell.iconTheme` follows the switch |
+
+The probe shots (`shots/probe-*.png`) record why `desktop-theme` hides the pointer for one tick: after `setcursor` alone the old image stays; after the hide and show, a test theme's 64 px image is drawn 1:1.
+
+Closure estimate for Myoko (`closure.json`): **+17.1 MiB** NAR, one path (`desktop-art`, self-contained). The patched Quickshell replaces the upstream build (+688 bytes), and `desktop-theme`'s `qs` uses the same build, so Myoko carries one Quickshell 0.3.1 (checked in the toplevel's derivation closure). Linking Chicago95 from its source instead of copying would have added 82.8 MiB. This is a package-graph estimate, not a built-system delta.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `checks.native-themes` (29 CLI states with icon, cursor and pattern assertions; `tests/desktop-art.py`; `desktop-art.test.js`) | Passed on Unzen |
+| `checks.desktop-theme` (the hyprctl call sequence) | Passed |
+| `checks.bar-delivery`, `checks.theme-parity`, `checks.desktop-theme-shell`, `checks.titlebars` | Passed |
+| Myoko toplevel `drvPath` | Evaluates |
+| Ruff, Nixfmt (new files), ShellCheck (changed scripts), `luac -p`, `check-boundaries.py` | Pass |
+
+## Not verified
+
+- Nothing ran on Myoko, its GPU or real input. The pointer was moved with Hyprland's own dispatcher, not a mouse.
+- GTK 3's own cursor drawing (if a GTK 3 app does not use the cursor-shape protocol): XCursor at 48 nominal is the 2x image, which a scale-2 GTK 3 surface shows at 0.75 on a 1.5 display, so it is resampled.
+- Qt apps' live icon change after qt6ct's 3 s reload (OBS was not run in this capture; phase 3 found OBS keeps its bundled icons).
+- Chromium's own UI and its cursor (Chromium was not run; it uses the cursor-shape protocol, so Hyprland draws its pointer).
+- The tablet (SUNSHINE output at a computed scale) and scales other than 1.5: hyprcursor resamples with nearest neighbour there.
+- Apps not on Myoko's list fall back to their own hicolor icon in both themes (the strip's gear for the portal is Adwaita's).
+- No artwork-rights review beyond the upstream licence files.
