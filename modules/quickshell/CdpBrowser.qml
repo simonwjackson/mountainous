@@ -65,6 +65,7 @@ Singleton {
                 // without hammering a live one.
                 if (!root.live) {
                     root.refresh();
+                    browserSock.reconnect();
                 }
             }
         }
@@ -244,9 +245,107 @@ Singleton {
         }
     }
 
-    // Window ownership belongs to Chromium. In particular, never close an
-    // opener target and relaunch its URL: that destroys OAuth/window.open
-    // state. The no-tab prototype stays disabled until it retains origin UI.
+    //--------------------------------------------------------------
+    // ENFORCEMENT: one page, one window
+    //--------------------------------------------------------------
+    WebSocket {
+        id: browserSock
+        active: false
+
+        function reconnect() {
+            if (root.port <= 0) return;
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== XMLHttpRequest.DONE) return;
+                if (xhr.status !== 200) return;
+                try {
+                    const v = JSON.parse(xhr.responseText);
+                    browserSock.active = false;
+                    browserSock.url = v.webSocketDebuggerUrl;
+                    browserSock.active = true;
+                } catch (e) { root.lastError = "" + e; }
+            };
+            xhr.open("GET", "http://127.0.0.1:" + root.port + "/json/version");
+            xhr.send();
+        }
+
+        onStatusChanged: {
+            if (status === WebSocket.Open) {
+                root.live = true;
+                root.log("browser socket open");
+                browserSock.sendTextMessage(JSON.stringify({
+                    id: 1,
+                    method: "Target.setDiscoverTargets",
+                    params: { discover: true }
+                }));
+            } else if (status === WebSocket.Closed || status === WebSocket.Error) {
+                root.live = false;
+            }
+        }
+
+        onTextMessageReceived: function (msg) {
+            let m;
+            try { m = JSON.parse(msg); } catch (e) { return; }
+            if (m.method !== "Target.targetCreated") return;
+
+            const info = m.params ? m.params.targetInfo : null;
+            if (!info || info.type !== "page") return;
+
+            // A target with no openerId came from a fresh `web-app`
+            // launch and already owns a window. One WITH an openerId was
+            // opened by another page, which is the case Chromium fails
+            // to give a Wayland surface.
+            if (!info.openerId) { root.refresh(); return; }
+
+            root.log("stray target from opener " + info.openerId + ": " + info.url);
+            root.adopt(info.targetId, info.url);
+        }
+    }
+
+    function adopt(targetId, url) {
+        // about:blank first, then a real url: window.open often creates
+        // the target before navigating it. Re-read shortly after.
+        if (!url || url === "" || url === "about:blank") {
+            adoptTimer.pendingId = targetId;
+            adoptTimer.restart();
+            return;
+        }
+        const xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return;
+            Launcher.launch(["web-app", url], {id: url, name: url, icon: "chromium", kind: "webapp"});
+            root.refresh();
+        };
+        xhr.open("GET", "http://127.0.0.1:" + root.port + "/json/close/" + targetId);
+        xhr.send();
+    }
+
+    Timer {
+        id: adoptTimer
+        property string pendingId: ""
+        interval: 700
+        onTriggered: {
+            const want = adoptTimer.pendingId;
+            adoptTimer.pendingId = "";
+            if (want === "") return;
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState !== XMLHttpRequest.DONE) return;
+                if (xhr.status !== 200) return;
+                try {
+                    const all = JSON.parse(xhr.responseText);
+                    for (const t of all) {
+                        if (t.id === want && t.url && t.url !== "about:blank") {
+                            root.adopt(want, t.url);
+                            return;
+                        }
+                    }
+                } catch (e) { /* target vanished on its own */ }
+            };
+            xhr.open("GET", "http://127.0.0.1:" + root.port + "/json/list");
+            xhr.send();
+        }
+    }
 
     // Keep the page list warm so targetFor() is answering from fresh
     // data when the omni bar opens.

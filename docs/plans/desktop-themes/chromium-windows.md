@@ -36,10 +36,13 @@ Myoko desktop-entry inventory; this worker did not SSH to Myoko.
   window”** in the existing destination readout. Go/OK is disabled. It does
   not claim to open a replacement window. This is shared model behavior;
   neither theme gets new layout or styling.
-- The old opener handler which closed a live target and relaunched its URL is
-  removed. It could destroy form state and OAuth/window.opener relationships.
-  Chromium now owns those targets. This is not a promise that an app-mode
-  background tab will acquire a Wayland window; that remains a no-tab blocker.
+- The legacy shared-root opener handler is **unchanged**, at the supervisor's
+  request. It closes a stray target and relaunches its URL as `web-app` because
+  some app-mode targets otherwise have no visible Wayland surface. It can lose
+  form state and OAuth/window.opener relationships. This is an existing risk,
+  not a safe promotion mechanism and not expanded to normal Chromium. Removing
+  it now would introduce an unverified visible-link regression. A replacement
+  remains part of the blocked no-tab work.
 
 ### Limits and security cost
 
@@ -82,8 +85,8 @@ The private MV3 prototype uses `tabs.onCreated`, a startup query, and
 it does not close a target and reopen its URL. The memory run converted 5, 15
 and 30 pages into exactly 5, 15 and 30 windows. It retained one browser and one
 GPU-process per profile. The separate prototype also tried a normal extension
-bridge page which called `window.open` and moved the original tab into its
-child, then removed the bridge.
+bridge page which called `window.open` and attempted to move the original tab
+into its child. That move was rejected.
 
 **The direct extension popup hides the origin. The native bridge keeps its
 location/security strip, but cannot accept the live tab.** Both are rejected,
@@ -175,13 +178,18 @@ the origin problem. The private PWA probe and supplied inventory are below.
 
 ### (c) Other paths
 
-| Path | Cost / decision |
-|---|---|
-| One tab per **normal** window | Keeps native origin/security UI and Memory Saver's active-tab protection, but still draws Chromium's tab strip. Not the requested result |
-| Native `window.open` popup | Keeps native location/security UI. The bridge creates it, but `tabs.move` rejects the native popup destination. No safe public-API live-tab promotion path was established |
-| Chromium patch | A change to app-popup location-bar selection could preserve its tamper-resistant chrome. It brings Chromium build/update ownership; no Chromium rebuild was attempted |
-| Trusted shell security surface | Needs exact target/window identity, browser-sourced security state and design work. Not built without a design engineer |
-| New embedded browser | WebKitGTK/Qt WebEngine still require security, permissions, downloads, sessions, accessibility and engine update ownership. No reason to accept that cost for this prototype |
+The estimates below are engineering opinion, not measured delivery times or
+commitments. Each assumes an opt-in private-profile trial first.
+
+| Route | Estimated prototype cost | What it does not solve / risk |
+|---|---|---|
+| Trusted shell security surface fed by CDP | 2–4 weeks, including a design engineer and exact window/target registry; 4–8 weeks for a daily-use trial | Own loading/disconnect/certificate/fullscreen states, permissions and accessibility. A title is not identity. Memory Saver's active-tab protection still needs a separate policy |
+| `chrome.tabs.onCreated` → native host/shell launches `--app=url`, then closes the original | 2–5 days for a restricted Default-profile experiment; longer for multi-profile routing and restore | Loses live renderer state, POST data, history, opener/named-window relationships, transient activation and OAuth nonces. Must retain the exact original profile/cookies. Generic app windows still lack origin UI; **not enabled** |
+| `--app` windows plus Hyprland groups | 3–7 days for a visible trial; 1–2 weeks for restore, popup, detach/regroup coverage | Group membership is not browser-tab state. Still needs state-preserving promotion and safe origin UI. Hiding individual windows in groups also conflicts with the dock-as-tab-container goal |
+| Small Chromium patch to retain native popup location/security UI | 1–3 days for a patch/rebuild prototype, plus large builds and validation at every Chromium update | Could change the app-popup location-bar branch or allow moves into native popups. The fleet takes ownership of a Chromium patch/build; memory, restore, extensions and installed-PWA routing remain. No Chromium rebuild was attempted |
+| One tab per **normal** window | 1–3 days for a restricted extension trial | Keeps native security UI but keeps the tab strip too. Every sole tab remains active/protected from ordinary Memory Saver. Not the requested appearance |
+| Native `window.open` popup bridge | Tested here; no working promotion route | Creates the native security row, but `tabs.move` rejects its popup destination. Reopening a URL rather than moving the tab has the state-loss risks above |
+| New WebKitGTK/Qt WebEngine shell | 6–12+ weeks for daily-use basics | Own security, permissions, downloads, sessions, accessibility, engine updates and site/media compatibility. Chromium profile/extension parity is not automatic |
 
 This supersedes the old B/C recommendation to imitate tabs with Hyprland groups.
 The requested unit is the window itself; compositor tab groups are not needed.
@@ -349,6 +357,10 @@ or installed-app parity.
 | Manifest scope / app routing | Installed-app routing is not the generic `--app` contract |
 | Origin/security title bar | Lost; this blocks enabling the rewrite without a safe replacement |
 
+**The automatic PWA-to-`--app` conversion is not implemented or shipped.**
+The private launch/cookie/registrar prototype is tested; a reversible launcher
+adapter and protocol semantics are not. The eight installed apps' real start
+URLs remain unknown, not guessed. There is no speculative URL list to approve.
 No installed PWA was uninstalled, no launcher was overwritten, and Simon keeps
 his existing logins. Open item 7 remains blocked, rather than calling unsafe
 origin removal a scalable fix. The shell can now navigate an identifiable
