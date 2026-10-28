@@ -59,6 +59,8 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 33 | The first working build covers local files and SSH hosts in both themes: browse, open, copy, transfers, host keys, Trash. Libraries and desktop icons come next. | The owner's first ask. Libraries wait on the Comics change and the client code question. |
 | 34 | Files is built on one kit that all of the owner's own themed apps share: the Platinum and Windows 98 drawing and tokens, the service-and-window pattern, and the library clients. Third-party apps keep the native toolkit themes for now and get their own focus later. | The owner wants the best systemic approach as more apps arrive. Cost: the kit is a product of its own; the shell and Pyxamp move onto it. The stack is chosen after the shared-import spike (`/tmp/theme-kit-spike/`). |
 | 35 | The kit must cover the controls for the next apps: control panels and settings, media players and remotes, chat, mail and notifications, fleet and host tools. | Owner's list. Viewers, editors and terminal-like apps are not planned. |
+| 36 | The kit's Rust parts (service skeleton: socket, protocol, systemd unit; library clients for Pyxis, Ossicle, Jellyfin, Comics) live in their own repository of crates, used by Files and Pyxamp. Pyxamp's clients move there. | One client per service. Cost: a third repository and a Pyxamp refactor. |
+| 37 | Pyxamp moves onto the kit first, before Files. | A known app proves the kit early. Cost: Files waits for that move. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
