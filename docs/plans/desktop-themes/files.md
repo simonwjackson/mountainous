@@ -42,6 +42,17 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 16 | An item copied out gets a readable name from the catalog and the original extension (`01 Still Alive.flac` inside `Artist - Album`; `Blade Runner (1982).mkv`). | Titles, not storage names. Cost: naming rules per kind, including characters not allowed in file names. |
 | 17 | Sign in once per library in a themed dialog. The token goes in the desktop keyring (Secret Service). | Period behaviour. Cost: Myoko has no Secret Service provider in the flake today (no gnome-keyring, KeePassXC or oo7 found in `modules/` or `lib/`), so one must be added. |
 
+## What the library APIs offer today (recon 2026-10-28)
+
+| Library | Reached at | Sign-in | Browse | Original bytes | Size in API | Artwork |
+|---|---|---|---|---|---|---|
+| Pyxis | `https://pyxis.<tailnet>` | Bearer token plus `x-pyxis-contract` header | Groups/tags, Albums, Playlists (no Artists list) | `GET /stream/:track_id`, Range | No | `artworkUrl` per album and track |
+| Ossicle | `https://podcasts.<tailnet>` | None: tailnet identity, same-origin checks | Podcasts ▸ Episodes; recent episodes | `GET /audio/:id`, `/video/:id`, Range | No | `GET /covers/:podcast_id` |
+| Comics | `https://reader.<tailnet>` | None: tailnet identity, strict same-origin | Books, Series ▸ Issues | **No.** Only page JPEGs, EPUB parts and narration audio | No | First page image |
+| Jellyfin | `https://watch.<tailnet>` | Jellyfin token | Views ▸ Movies, Shows ▸ Seasons ▸ Episodes, Collections | `/Items/{id}/Download`, Range | Yes | `/Items/{id}/Images/{type}`, sized |
+
+Consequences, not yet decided: Comics cannot hand over an item as a file until it serves the original archive. Ossicle and Comics enforce same-origin, so a native client may be refused. Three of four libraries do not report sizes, so the Size column is often empty. Sources: `pyxis/contracts/generated/pyxis.ts`, `pyxis/services/pyxis/src/stream/mod.rs`, `ossicle/services/ossicle/src/api.rs`, `comics/services/comics/src/api.rs`, `modules/media-jellyfin.nix`.
+
 ## Open questions
 
 Tracked in the interview; this list moves into the decisions table as each one settles.
