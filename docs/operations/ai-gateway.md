@@ -216,7 +216,8 @@ The `pi@zao` grant includes `images` for `/v1/images/generations` and
 The USD 1/month paid cap, 1200 requests/minute limit, credential and other
 permissions stay unchanged. Other Pi hosts do not receive the image dialect.
 GPT image calls use the login keeper first. Exhausted subscription headroom can
-use the existing paid Gemini fallback within the same USD 1/month cap.
+use the existing paid Gemini fallback. Since 2026-10-28 Gemini is prepaid, so
+the cap no longer limits these calls (see "Prepaid provider accounts").
 
 The production check compares every client grant, including the Zao-only image
 permission. Run the focused production and staging checks and Rakku evaluation
@@ -231,3 +232,23 @@ Pogo! agents stop using the temporary direct-proxy workaround.
 
 To roll back, revert the image-permission commit and deploy that configuration.
 The gateway returns to denying image calls for `pi@zao`; its key does not rotate.
+
+## Prepaid provider accounts (2026-10-28)
+
+Every paid provider account (Gemini, OpenRouter, xAI, ElevenLabs, Typesafe and
+Upstage) is prepaid with auto-recharge off. Its balance is the real limit, and
+Simon refills it by hand. Production therefore marks each of them
+`prepaid = true` (`prepaidProviders` in `modules/ai-gateway.nix`). A paid call
+to a prepaid provider skips the key's `monthly_cap_usd`, and its spend does not
+count toward that cap. Rate limits stay. `/usage` still records every call;
+`monthly_capped_spend_usd` shows only the spend that counts toward the cap.
+
+The key caps in this file stay in the config. They now apply only to a provider
+that is not listed as prepaid, so a provider added later is capped until it is
+listed. Staging lists no prepaid provider, so its cap checks still run.
+
+Cost: no key has a dollar limit at a prepaid provider. One looping client can
+spend a whole balance, and every other key that uses that provider (korri,
+voice, the assistant) then fails until the refill. Before you list a new
+provider as prepaid, confirm that its account cannot bill a card after use or
+top itself up.
