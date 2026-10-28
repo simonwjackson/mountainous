@@ -1,0 +1,17 @@
+--- a/src/services/mpris/player.cpp
++++ b/src/services/mpris/player.cpp
+@@ -312,7 +312,13 @@
+ 		this->pPosition.requestUpdate();
+ 	}
+ 
+-	this->bMetadata = this->bpMetadata.value();
++	// QML cannot read a QDBusObjectPath from the raw metadata map. Publish
++	// the same path string used above for track identity, not an opaque value.
++	auto metadata = this->bpMetadata.value();
++	if (trackidVariant.isValid()) {
++		metadata.insert("mpris:trackid", trackId);
++	}
++	this->bMetadata = metadata;
+ 
+ 	Qt::endPropertyUpdateGroup();
+ 
