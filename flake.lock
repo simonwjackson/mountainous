@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793202295,
-        "narHash": "sha256-PdZaJG4nrZOlydN38jWX+/vuW86W8k27kdtfXS9EPMM=",
+        "lastModified": 1793075428,
+        "narHash": "sha256-QLuOQ6vV1MzUWNwZuio3CtWn4Vie9vf20i/acRTRFsg=",
         "ref": "main",
-        "rev": "5dc7e09ab1590979ee7c5c20be9918c9cf3892f3",
-        "revCount": 20,
+        "rev": "a9bcaab0957f628f42faab0fa381e27995713fac",
+        "revCount": 17,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
@@ -206,6 +206,22 @@
       "original": {
         "owner": "nix-community",
         "repo": "disko",
+        "type": "github"
+      }
+    },
+    "fixedsys-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1771601871,
+        "narHash": "sha256-q+doW3mzAx6n1aE61FLrtkKNOtZdU6DBMW1QsTFf910=",
+        "owner": "kika",
+        "repo": "fixedsys",
+        "rev": "3f37fa8855bdbc542c817947ede82bef7c4049eb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kika",
+        "repo": "fixedsys",
         "type": "github"
       }
     },
@@ -780,6 +796,18 @@
         "type": "github"
       }
     },
+    "profont-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-ihSx7j4CXNZyEbo3Aiq05LN6jD6TT3qHMaLGkMnKR2M=",
+        "type": "file",
+        "url": "https://tobiasjung.name/downloadfile.php?file=profontiix.zip"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://tobiasjung.name/downloadfile.php?file=profontiix.zip"
+      }
+    },
     "proseql": {
       "flake": false,
       "locked": {
@@ -839,6 +867,7 @@
         "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
+        "fixedsys-src": "fixedsys-src",
         "flake-parts": "flake-parts",
         "gomod2nix-rakku": "gomod2nix-rakku",
         "herdr-bin-aarch64": "herdr-bin-aarch64",
@@ -859,6 +888,7 @@
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
         "platinum-gtk-src": "platinum-gtk-src",
         "platinum-kvantum-src": "platinum-kvantum-src",
+        "profont-src": "profont-src",
         "pyxamp": "pyxamp",
         "sops-nix": "sops-nix",
         "vela": "vela",

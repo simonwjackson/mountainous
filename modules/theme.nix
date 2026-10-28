@@ -300,6 +300,9 @@ in
             fontDirectories = [
               config.packages.chicagoflf
               config.packages.w95fa-grid
+              config.packages.terminal-fonts
+              pkgs.dejavu_fonts
+              pkgs.nerd-fonts.symbols-only
             ];
           };
           GHOSTTY_ROOT_CONFIG = ghosttyRootConfig pkgs;

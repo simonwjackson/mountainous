@@ -628,8 +628,19 @@ def generate(out, mac, chicago, kvantum):
             (
                 assets / "ghostty.conf"
             ).write_text(f"""# Generated {name}; desktop-theme owns this include.
-font-family = {variants["font"]}
-font-size = 12
+# Reset repeatable families on reload; UI/tab fonts remain in ghostty.css.
+font-family =
+font-family = {"ProFontIIx Grid" if theme == "platinum" else "Fixedsys Excelsior"}
+font-family = DejaVu Sans Mono
+font-family = Symbols Nerd Font Mono
+font-size = {13.5 if theme == "platinum" else 16}
+# Real grid-bold faces keep the advance; italic is not a historical pixel face.
+font-synthetic-style = false
+font-feature = -liga
+font-feature = -dlig
+font-codepoint-map = U+E000-U+F8FF=Symbols Nerd Font Mono
+font-codepoint-map = U+F0000-U+FFFFD=Symbols Nerd Font Mono
+font-codepoint-map = U+100000-U+10FFFD=Symbols Nerd Font Mono
 window-padding-x = 8
 window-padding-y = 6
 window-theme = {"light" if appearance == "light" else "dark"}

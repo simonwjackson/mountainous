@@ -60,12 +60,18 @@ verify() {
   for variant in light dark extra; do
     [[ $(readlink "$XDG_CONFIG_HOME/Kvantum/Mountainous-platinum-$variant") == "$assets/share/Kvantum/Mountainous-platinum-$variant" ]]
   done
-  grep -F "font-family = $font" "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  local terminal_font
+  if [[ $theme == platinum ]]; then terminal_font='ProFontIIx Grid'; else terminal_font='Fixedsys Excelsior'; fi
+  grep -F "font-family = $terminal_font" "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  grep -Fx 'font-family = DejaVu Sans Mono' "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  grep -Fx 'font-family = Symbols Nerd Font Mono' "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  grep -Fx 'font-synthetic-style = false' "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
+  grep -Fx 'font-family =' "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
   if [[ -n ${GHOSTTY_ROOT_CONFIG:-} ]]; then
     # Read the exact Hjem-delivered root through its real symlink. Checking
     # the generated include alone would miss relative include-path errors.
     parsed=$(ghostty +show-config)
-    grep -F "font-family = $font" <<< "$parsed"
+    grep -F "font-family = $terminal_font" <<< "$parsed"
   fi
   grep -F "gtk-custom-css = $assets/share/mountainous/native/$theme-$appearance/ghostty.css" "$XDG_CONFIG_HOME/ghostty/mountainous.conf"
   face=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))[sys.argv[2]]["face"])' "$assets/share/mountainous/native/manifest.json" "$theme-$appearance")

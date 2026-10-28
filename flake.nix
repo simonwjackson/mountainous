@@ -64,6 +64,16 @@
       flake = false;
     };
 
+    # Terminal-only faces. UI text continues to use ChicagoFLF / W95FA Grid.
+    fixedsys-src = {
+      url = "github:kika/fixedsys";
+      flake = false;
+    };
+    profont-src = {
+      url = "https://tobiasjung.name/downloadfile.php?file=profontiix.zip";
+      flake = false;
+    };
+
     # Keep its package pin: following ours would change the signed cache path.
     nix-extras.url = "github:simonwjackson/nix-extras";
 
