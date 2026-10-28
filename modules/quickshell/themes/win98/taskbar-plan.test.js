@@ -128,14 +128,28 @@ assert.ok(r.tray.includes('dict'));
 assert.equal(P.trayWidth(''), 20);
 assert.equal(P.trayWidth('99+'), 28);
 
-// 0 and 1 windows; 22 windows on 6 pages.
+// Page dividers: the first band follows Start after one gap; every later
+// band starts with the 2-u groove and one gap. Nothing else: no head
+// button, no slot. One page costs nothing fixed; each more page 5 u.
+eq(p.groups.map(g => [g.divider, g.head]), [[false, 3], [true, 5], [true, 5]]);
+assert.equal(P.SEP, 2);
+assert.equal(P.TAG, undefined, 'no page head');
+const onePage = P.plan(1440, input([{ page: 1, focused: true }, { page: 1 }]));
+const twoPages = P.plan(1440, input([{ page: 1, focused: true }, { page: 2 }]));
+assert.equal(onePage.boxes.used, 2 * (onePage.bw + 3), 'one page: only the buttons and their gaps');
+assert.equal(twoPages.boxes.used, 2 * (twoPages.bw + 3) + 5, 'a divider is the groove and one gap');
+
+// 0 and 1 windows; 24 windows on 6 pages (22 still keep 47-u titles now
+// that a page divider is 5 u, not a 31-u head).
 assert.equal(P.plan(1440, input([])).groups.length, 0);
 assert.equal(P.plan(1440, input([{ page: 1, focused: true }])).bw, 160);
-const huge = Array.from({ length: 22 }, (_, i) => ({ page: 1 + Math.floor(i / 4), focused: i === 0 }));
+const huge = Array.from({ length: 24 }, (_, i) => ({ page: 1 + Math.floor(i / 4), focused: i === 0 }));
 const h = P.plan(1440, input(huge));
-assert.ok(h.icons, 'titles give way to icons with 22 windows');
+assert.ok(h.icons, 'titles give way to icons with 24 windows');
 assert.equal(h.taskOut.length, 0);
 eq(P.overflowWindows(huge, [9, 2, 20]), [2, 9, 20]);
+const h22 = P.plan(1440, input(huge.slice(0, 22)));
+assert.ok(!h22.icons && h22.bw >= 46, '22 windows on 6 pages keep their titles');
 
 // The Fleet tray icon and the two extras (the Glance button, a minimized
 // Fleet window): every width from 1440 u down keeps the plan fitting, the

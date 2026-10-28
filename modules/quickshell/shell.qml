@@ -99,6 +99,10 @@ ShellRoot {
             screen: Lanes.screenOf(t),
             x: at ? at[0] : undefined,
             y: at ? at[1] : undefined,
+            w: o.size && o.size.length === 2 ? o.size[0] : undefined,
+            h: o.size && o.size.length === 2 ? o.size[1] : undefined,
+            fullscreen: typeof o.fullscreen === "number" ? o.fullscreen : 0,
+            active: !!t.activated,
             focusHistory: typeof o.focusHistoryID === "number" ? o.focusHistoryID : -1,
             toplevel: t
         };
@@ -119,8 +123,13 @@ ShellRoot {
     readonly property bool soundEffectsActive: ThemeSounds.active
 
     // Hide and Show (Hyprland has no minimise). See WindowHider.qml.
-    WindowHider { id: windowHider; rows: root.windowRows }
+    WindowHider { id: windowHider; rows: root.windowRows; showDelay: windowMotion.revealDelay }
     readonly property var hider: windowHider
+
+    // Window motion events for the themes' motion layers: minimize, restore,
+    // open, close, maximize. See WindowMotion.qml and window-motion.js.
+    WindowMotion { id: windowMotion; rows: root.windowRows; hider: windowHider }
+    readonly property var motion: windowMotion
 
     function rowFor(address) {
         const k = AppModel.key(address);
@@ -257,6 +266,18 @@ ShellRoot {
         // A Win98 caption's icon and Alt+Space (hyprbars, hyprland.lua):
         // the window menu at x, y. See windowMenu above.
         function menu(address: string, x: int, y: int): void { root.windowMenu(address, x, y); }
+    }
+
+    // Review tools for window motion: hold every move at ms (-1 runs
+    // again), play it n times slower.
+    IpcHandler {
+        target: "motion"
+        function seek(ms: int): void { windowMotion.held = Math.max(-1, ms); }
+        function slow(factor: int): void { windowMotion.slow = Math.max(1, factor); }
+        function current(): string {
+            return "theme=" + windowMotion.theme + " motion=" + (windowMotion.reduced ? "reduced" : "full")
+                + " held=" + windowMotion.held + " slow=" + windowMotion.slow + " delay=" + windowMotion.revealDelay;
+        }
     }
 
     IpcHandler {
@@ -479,6 +500,7 @@ ShellRoot {
         target: Hyprland
 
         function onRawEvent(event) {
+            windowMotion.event(event.name, event.data);
             if (event.name === "closewindow" || event.name === "activewindowv2"
                 || event.name === "changefloatingmode" || event.name === "fullscreen") {
                 positionRefresh.restart();

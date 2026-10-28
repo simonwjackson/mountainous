@@ -110,6 +110,7 @@
           ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
         node ${quickshell}/app-model.test.js ${quickshell}/app-model.js
         node ${quickshell}/window-hide.test.js ${quickshell}/window-hide.js
+        node ${quickshell}/window-motion.test.js ${quickshell}/window-motion.js ${quickshell}/glance-plan.js
         bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
         export SESSION_SCHEMA=$TMPDIR/notification-schema.js
         bash ${quickshell}/theme-dev/win98/taskbar.sh ${quickshell} $TMPDIR/taskbar

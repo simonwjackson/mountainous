@@ -521,9 +521,19 @@ Scope {
 
     // The Control Strip, in place of the dock.
     PlatinumControlStrip {
+        id: controlStrip
         modelData: desktop.screen
         shell: desktop.context.shell
         owner: desktop
         visible: desktop.active && desktop.context.shell.chromeVisible
+    }
+
+    // The Finder's zoom rects for windows: open, close, collapse (hide) and
+    // show, to and from the window's Control Strip tile.
+    readonly property var motionLayer: motionLayerItem
+    PlatinumMotionLayer {
+        id: motionLayerItem
+        desktop: desktop
+        strip: controlStrip
     }
 }

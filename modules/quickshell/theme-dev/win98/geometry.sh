@@ -51,7 +51,11 @@ session() {  # session <logical W> <logical H>
 # The bar: every control inside it, in order; window buttons inside their band.
 BAR='all(insx(p) for k, p in g["places"].items() if isinstance(p, dict) and "w" in p and k != "tasksArea") \
  and all(p["x"] + p["w"] <= g["places"]["tasksArea"]["x"] + g["places"]["tasksArea"]["w"] + e \
-         for k, p in g["places"].items() if k.startswith("win") or k.startswith("page") or k == "tasks") \
+         for k, p in g["places"].items() if k.startswith("win") or k == "tasks") \
+ and not any(k.startswith("page") for k in g["places"]) \
+ and all(v["x"] >= g["places"]["tasksArea"]["x"] - e and v["x"] + v["w"] <= g["places"]["tasksArea"]["x"] + g["places"]["tasksArea"]["w"] + e \
+         and not any(p["x"] < v["x"] + v["w"] - e and v["x"] < p["x"] + p["w"] - e for k, p in g["places"].items() if k.startswith("win")) \
+         for v in g["places"].get("dividers", [])) \
  and g["plan"]["fits"] == (W * 0.75 >= 28)'
 for size in 1920x1200 600x600 320x600 160x600 80x600 56x600 40x600; do
   w=${size%x*}; h=${size#*x}

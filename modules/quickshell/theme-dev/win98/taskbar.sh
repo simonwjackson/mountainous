@@ -11,8 +11,9 @@
 #   - a button's right click: Restore, Move to, Minimize, Maximize, Close;
 #     Move to names each page by its apps (never a number) and, on a
 #     minimized window, changes its home only;
-#   - no page number anywhere: drawn strings, menu rows, tooltips, and no
-#     text on a band's divider (its tooltip names the band's apps);
+#   - no page number anywhere: drawn strings, menu rows, tooltips; a page
+#     divider is a plain groove: no head, no tooltip, no keyboard stop and
+#     no text on it;
 #   - the taskbar's own right click: Minimize All, Minimize Other, Restore
 #     All, Find...;
 #   - the windows menu IPC: an address or the focused window, at a point or
@@ -100,15 +101,15 @@ EOF
   if [ "$out" = ok ]; then ok "$1"; else bad "$1 -> $out"; fi
 }
 # Pages are never numbered (Simon): no drawn string, menu row or tooltip
-# says "page 3", and no text is drawn on a page band's divider.
+# says "page 3", no page has a head, and no text is drawn on a divider.
 nonumbers() {
   local out
   out=$(w98 strings | python3 -c '
 import json, re, sys
 d = json.load(sys.stdin)
 bad = [t for t in d["drawn"] + d["tips"] if re.search(r"\bpage\s*\d", t, re.I)]
-bands = [b for b in d["bands"] if b["text"] or re.fullmatch(r"\s*\d+\s*", b["tip"] or "")]
-print("ok" if not bad and not bands and d["bands"] else "no: %s %s %s" % (bad[:5], bands[:3], len(d["bands"])))')
+marked = [v for v in d["dividers"] if v["text"]]
+print("ok" if not bad and not d["pages"] and not marked else "no: %s %s %s" % (bad[:5], d["pages"][:3], marked[:3]))')
   if [ "$out" = ok ]; then ok "$1: no page number drawn"; else bad "$1: $out"; fi
 }
 mins() { w98 tasks | python3 -c 'import json,sys; print(" ".join(str(t["i"]) for t in json.load(sys.stdin) if t["min"]))'; }
@@ -126,8 +127,24 @@ click win0;  check 'a click on a minimized button restores it, focused' 'not T[0
 click win1;  check 'a click on another button brings it forward' 'T[1]["active"] and not T[1]["min"] and "activate 1" in L'
 reset
 nonumbers 'the taskbar'
-tips=$(w98 strings | python3 -c 'import json,sys; print("|".join(b["tip"] for b in json.load(sys.stdin)["bands"]))')
-[ "$tips" = "Ghostty and Chromium|Signal and Zed|OBS Studio" ] && ok "each divider's tooltip names its apps ($tips)" || bad "divider tooltips: $tips"
+# Three pages: two dividers, each a 2-u groove in the gap between two
+# pages' buttons (3 u, the groove, 3 u). Drawn only: no place (so no
+# click, hover or tooltip) and no stop in the taskbar's keyboard order.
+divs=$(w98 places | python3 -c '
+import json, sys
+g = json.load(sys.stdin)
+u, e = 2 / g["dpr"], 0.01
+wins = [p for k, p in g.items() if k.startswith("win") and isinstance(p, dict)]
+def groove(v):
+    before = any(abs(p["x"] + p["w"] + 3 * u - v["x"]) < e for p in wins)
+    after = any(abs(v["x"] + v["w"] + 3 * u - p["x"]) < e for p in wins)
+    return abs(v["w"] - 2 * u) < e and before and after
+d = g["dividers"]
+order = g["focusOrder"]
+ok = len(d) == 2 and all(groove(v) for v in d) and not any(k.startswith("page") for k in g) \
+    and not any(k.startswith("page") for k in order) and order[:6] == ["start", "win0", "win1", "win2", "win3", "win4"]
+print("ok" if ok else "no: %s %s" % (json.dumps(d), order))')
+[ "$divs" = ok ] && ok "two dividers between three pages: a groove in the gap, no head, no keyboard stop" || bad "dividers: $divs"
 startmenu; letter w; settle start
 nonumbers 'Start > Windows'
 w98 menu | grep -q 'path=Windows ' && ok 'Start > Windows opens' || bad "Windows: $(w98 menu)"

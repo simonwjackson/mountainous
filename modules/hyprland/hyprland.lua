@@ -149,6 +149,9 @@ hl.config({
     },
 })
 
+-- The session's motion. Under the Platinum and Windows 98 desktop themes
+-- titlebars.lua (below) turns windows, fade and layers off on every parse
+-- and theme change: those OSes cut, and the shell draws their own motion.
 hl.curve("quick", { type = "bezier", points = { {0.15, 0}, {0.1, 1} } })
 hl.animation({ leaf = "windows",    enabled = true, speed = 4, bezier = "quick" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "quick" })

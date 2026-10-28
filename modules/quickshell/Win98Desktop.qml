@@ -232,10 +232,6 @@ Scope {
         const e = DesktopEntries.heuristicLookup(appId);
         return e && e.name ? e.name : appId;
     }
-    // A band's apps, left to right ("Signal and Zed"): its divider's tooltip.
-    function bandNames(page) {
-        return PageNames.listNames(PageNames.namesOn(TaskModel.pageWindows(desktop.laneEntries, desktop.appName), page, ""));
-    }
     function appIdOf(t) {
         const wl = t ? t.wayland : null;
         return wl && wl.appId ? wl.appId : "";
@@ -284,12 +280,6 @@ Scope {
     }
     readonly property string maximizeLua: 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })'
     readonly property string fullscreenLua: 'hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" })'
-    // A click on a page number shows that page.
-    function showPage(page) {
-        if (shell.showPage) { shell.showPage(page); return; }
-        Quickshell.execDetached(["hyprctl", "--instance", "0", "dispatch",
-            "hl.dsp.focus({ workspace = " + page + " })"]);
-    }
 
     //------------------------------------------------------------------
     // The tray's data, from the shared owners
@@ -395,7 +385,6 @@ Scope {
             const t = desktop.lane[Number(id.slice(3))];
             return t ? (t.title || "(untitled)") : "";
         }
-        if (id.indexOf("page") === 0) return desktop.bandNames(Number(id.slice(4)));
         return Tray.tooltip(id, desktop.trayData);
     }
 
@@ -733,6 +722,8 @@ Scope {
             if (p) out[id] = p;
         }
         out.tasksArea = taskbar.tasksArea;
+        out.dividers = taskbar.dividers();
+        out.focusOrder = menuHost.focusOrder;
         out.barHeight = taskbar.barHeight;
         out.width = taskbar.width;
         out.height = taskbar.height;
@@ -836,6 +827,14 @@ Scope {
     // A volume or brightness change.
     Win98VolumePopup {
         id: volumePopup
+        desktop: desktop
+        taskbar: taskbar
+    }
+
+    // Win98's caption animation for windows: minimize, restore, maximize.
+    readonly property var motionLayer: motionLayerItem
+    Win98MotionLayer {
+        id: motionLayerItem
         desktop: desktop
         taskbar: taskbar
     }

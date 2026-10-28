@@ -86,6 +86,7 @@
         pkgs.runCommand "platinum-desktop" { nativeBuildInputs = [ pkgs.nodejs ]; }
           ''
             node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
+            node ${./quickshell/window-motion.test.js} ${./quickshell/window-motion.js} ${./quickshell/glance-plan.js}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             node ${./quickshell/page-names.test.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js} ${./quickshell/page-names.js}
@@ -229,6 +230,13 @@
         assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;
         assert builtins.hasAttr (prefix + "PlatinumCascadeMenu.qml") files;
         assert builtins.hasAttr (prefix + "WindowHider.qml") files;
+        # Window motion: the shared events, the overlay, each theme's move.
+        assert builtins.hasAttr (prefix + "WindowMotion.qml") files;
+        assert builtins.hasAttr (prefix + "MotionLayer.qml") files;
+        assert builtins.hasAttr (prefix + "Win98MotionLayer.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumMotionLayer.qml") files;
+        assert builtins.hasAttr (prefix + "window-motion.js") files;
+        assert !(builtins.hasAttr (prefix + "window-motion.test.js") files);
         assert builtins.hasAttr (prefix + "themes/platinum/strip-plan.js") files;
         assert builtins.hasAttr (prefix + "themes/platinum/menu-models.js") files;
         assert builtins.hasAttr (prefix + "window-hide.js") files;

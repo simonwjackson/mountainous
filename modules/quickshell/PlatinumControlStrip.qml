@@ -86,6 +86,29 @@ PanelWindow {
     readonly property int focusedIndex: strip.lane.findIndex(function (t) { return t && t.activated; })
     onFocusedIndexChanged: if (focusedIndex >= 0) Qt.callLater(strip.reveal, focusedIndex)
 
+    // ------------------------------------------------------------ places
+    // Each tile in the screen's logical px, by window address: where the
+    // window motion's zoom rects start and end (PlatinumMotionLayer). A
+    // tile scrolled out of the track stands at its nearer end; a collapsed
+    // strip's tiles at its tab. tail: where the next tile goes.
+    readonly property real screenTop: (strip.modelData ? strip.modelData.height : strip.height) - strip.height + body.y
+    readonly property var tiles: {
+        const out = {};
+        const y = strip.screenTop + PlatinumTokens.snap((StripPlan.HEIGHT - 30) / 2);
+        for (const s of strip.layout.slots) {
+            if (s.kind !== "tile") continue;
+            const r = strip.rows[s.index];
+            if (!r || !r.address) continue;
+            if (strip.collapsed) { out[r.address] = { x: 0, y: strip.screenTop, w: StripPlan.TAB, h: StripPlan.HEIGHT }; continue; }
+            const x = track.x + s.x - strip.shownScroll;
+            out[r.address] = { x: Math.max(track.x, Math.min(track.x + track.width - 30, x)), y: y, w: 30, h: 30 };
+        }
+        return out;
+    }
+    readonly property var tail: strip.collapsed ? { x: 0, y: strip.screenTop, w: StripPlan.TAB, h: StripPlan.HEIGHT }
+        : { x: Math.max(track.x, Math.min(track.x + track.width - 30, track.x + strip.layout.content - strip.shownScroll)),
+            y: strip.screenTop + PlatinumTokens.snap((StripPlan.HEIGHT - 30) / 2), w: 30, h: 30 }
+
     // ------------------------------------------------------------ drag
     property int dragFrom: -1
     property int dragOver: -1

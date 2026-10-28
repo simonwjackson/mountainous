@@ -27,6 +27,11 @@
 // of the full structure (icons only once titles go); in the compact and
 // start structures they move into the same menu as the windows.
 //
+// Pages: the first page's buttons follow Start after one gap; each later
+// page starts with a divider, Win98's etched groove between toolbar groups
+// (SEP, 2 u), and one gap. A divider is drawn only: no button, no click
+// target, no number (a page is named by its apps, never numbered).
+//
 // The plan fits at every width from MIN_WIDTH (28 u, 37.3 logical px at
 // scale 1.5) up. Below that only Start remains, as wide as the bar allows;
 // everything is still reachable through it.
@@ -34,7 +39,7 @@
 var START_ICON = 24;
 var BAND = 12;
 var CHEV = 12;
-var TAG = 16;
+var SEP = 2;
 var TICON = 20;
 var TBTN_MAX = 160;
 var TBTN_MIN = 72;
@@ -145,6 +150,8 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
     var groups = pages.map(function (p) {
         return { page: p, windows: shown.filter(function (w) { return w.page === p; }).map(function (w) { return w.i; }) };
     }).filter(function (g) { return g.windows.length > 0; });
+    // Where each band's buttons start, after its divider (none on the first).
+    groups.forEach(function (g, k) { g.divider = k > 0; g.head = k > 0 ? SEP + GAP : GAP; });
     var tasksChevron = outW.length > 0 && structure === "full";
     var extras = input.extras || [];
     var extraW = {};
@@ -156,7 +163,8 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
             extrasW += extraW[x.id] + GAP;
         });
     }
-    var taskFixed = groups.length * (BAND + TAG + GAP) + (tasksChevron ? CHEV + GAP : 0) + extrasW;
+    // The first band's gap is the one after Start (in avail below).
+    var taskFixed = Math.max(0, groups.length - 1) * (SEP + GAP) + (tasksChevron ? CHEV + GAP : 0) + extrasW;
     var n = shown.length;
     var perBtn = has("titles") ? TBTN_ICON : TBTN_MIN;
     // Start alone: 2 u each side while there is room, then less.

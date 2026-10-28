@@ -49,7 +49,7 @@ library() {
     case "$(basename "$f")" in
       Win98Window.qml) ;;
       Win98Desktop.qml|Win98Taskbar.qml|Win98MenuHost.qml|Win98TipWindow.qml|Win98PickerView.qml|Win98Preview.qml|Win98LogOffDialog.qml|Win98OmniView.qml|Win98OpenDialog.qml|Win98*Window.qml) continue ;;
-      Win98Fleet*.qml|Win98GlanceSpace.qml|Win98DisksAccessory.qml) continue ;;
+      Win98Fleet*.qml|Win98GlanceSpace.qml|Win98DisksAccessory.qml|Win98MotionLayer.qml) continue ;;
     esac
     echo "$f"
   done

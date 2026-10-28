@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Bluetooth
 import Quickshell.Networking
+import Quickshell.Wayland
 import QtQuick
 import "panels"
 import "lanes.js" as Lanes
@@ -45,7 +46,6 @@ ShellRoot {
         function windowsOn(screen) { return Lanes.windowsOn(root.toplevels, screen ? screen.name : ""); }
         function pageOf(t) { return Lanes.pageOf(t); }
         function dropOnto(windows, from, to) { root.note("drop " + from + " " + to); }
-        function showPage(page) { root.note("page " + page); }
         function openMenu(name, screen) { MenuState.open(name, screen, -1); }
         function toggleMenu(name, screen) { MenuState.toggle(name, screen, -1); }
         function closeMenu(name) { if (MenuState.current === name) MenuState.close(); }
@@ -54,13 +54,79 @@ ShellRoot {
         readonly property var windowRows: root.toplevels.map(function (t) { return root.rowOf(t); })
         readonly property var mru: root.mru
         readonly property var hider: hiderStub
+        readonly property var motion: motionStub
         function addressOf(t) { return t && t.lastIpcObject ? t.lastIpcObject.address : ""; }
+        function rowOf(t) { return root.rowOf(t); }
         function rowFor(address) { const k = AppModel.key(address); return windowRows.find(function (r) { return r.address === k; }) || null; }
         function activate(address) { const i = root.indexOf(address); if (i >= 0) { root.focus(i); root.note("activate " + i); } }
         function closeWindow(address) { const i = root.indexOf(address); if (i >= 0) root.note("close " + i); }
         function moveToPage(address, page) { const i = root.indexOf(address); if (i < 0) return; root.note("move " + i + " " + page); const t = root.toplevels[i]; t.workspace = root.pageWs(page, t.workspace && t.workspace.monitor ? t.workspace.monitor.name : ""); }
         function pageIds() { return root.toplevels.map(function (t) { return t.workspace ? t.workspace.id : -1; }).filter(function (id) { return id > 0; }); }
         function shownPageOn(name) { return root.dd.showingPage; }
+    }
+
+    // ---- WindowMotion's public shape: the motion IPC below sends its events.
+    QtObject {
+        id: motionStub
+        signal requested(var e)
+        property real held: -1
+        property real slow: 1
+    }
+    // A stand-in app window under the chrome, for the motion captures: a
+    // Win98 window or a Platinum one at a client rect (Hyprland's at/size).
+    property var fakeWindow: null
+    PanelWindow {
+        id: fakeWin
+        readonly property real u: Win98Tokens.unitFor(fakeWin)
+        readonly property var f: root.fakeWindow
+        readonly property bool win98: Theme.name === "win98"
+        // The frame around the client: Win98's 3-u frame and 18-u caption
+        // with its seam, Platinum's 20-px title bar.
+        readonly property var frame: !f ? null : win98
+            ? { x: f.rect[0] - 3 * u, y: f.rect[1] - 22 * u, w: f.rect[2] + 6 * u, h: f.rect[3] + 25 * u }
+            : { x: f.rect[0], y: f.rect[1] - 20, w: f.rect[2], h: f.rect[3] + 20 }
+        screen: root.screen0
+        visible: !!f
+        anchors { top: true; bottom: true; left: true; right: true }
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Bottom
+        WlrLayershell.namespace: "harness-app"
+        color: "transparent"
+        mask: Region {}
+        Win98Window {
+            visible: fakeWin.win98 && !!fakeWin.frame
+            x: fakeWin.frame ? fakeWin.frame.x : 0
+            y: fakeWin.frame ? fakeWin.frame.y : 0
+            width: fakeWin.frame ? fakeWin.frame.w : 0
+            height: fakeWin.frame ? fakeWin.frame.h : 0
+            title: fakeWin.f ? fakeWin.f.title : ""
+            active: !!fakeWin.f && fakeWin.f.active !== false
+            margins: false
+            Rectangle { width: parent ? parent.width : 0; height: parent ? parent.height : 0; color: Win98Tokens.win }
+        }
+        Rectangle {
+            visible: !fakeWin.win98 && !!fakeWin.frame
+            x: fakeWin.frame ? fakeWin.frame.x : 0
+            y: fakeWin.frame ? fakeWin.frame.y : 0
+            width: fakeWin.frame ? fakeWin.frame.w : 0
+            height: fakeWin.frame ? fakeWin.frame.h : 0
+            color: "#ffffff"
+            border.width: PlatinumTokens.hair
+            border.color: "#000000"
+            Rectangle {
+                width: parent.width; height: 20
+                color: PlatinumTokens.menuSurface
+                border.width: PlatinumTokens.hair
+                border.color: "#000000"
+                Text {
+                    anchors.centerIn: parent
+                    text: fakeWin.f ? fakeWin.f.title : ""
+                    color: PlatinumTokens.menuText
+                    font.family: PlatinumTokens.platinumFont
+                    font.pixelSize: PlatinumTokens.platinumSmall
+                }
+            }
+        }
     }
 
     // ---- WindowHider's public shape, with window-hide.js's own rules; its
@@ -911,10 +977,28 @@ ShellRoot {
             return "ok";
         }
         function reduced(on: bool): string { Win98Tokens.reducedMotion = on; return String(Win98Tokens.reducedMotion); }
+        // Window motion (WindowMotion's events), for the motion captures:
+        // {"kind", "index" (a fixture window), "rect": [x, y, w, h], "to": [...]}.
+        function motion(json: string): string {
+            const a = JSON.parse(json);
+            const t = root.toplevels[a.index];
+            const r = function (v) { return v ? { x: v[0], y: v[1], w: v[2], h: v[3] } : null; };
+            const e = { kind: a.kind, address: t ? AppModel.key(t.lastIpcObject.address) : "", screen: root.screen0.name,
+                rect: r(a.rect), to: r(a.to), title: a.title || (t ? t.title : ""), appId: "", active: a.active !== false, theme: Theme.name };
+            motionStub.requested(e);
+            return JSON.stringify(e);
+        }
+        function motionHold(ms: int): string { motionStub.held = ms; return String(ms); }
+        function motionDebug(): string {
+            const m = root.desktop ? root.desktop.motionLayer : null;
+            return JSON.stringify(m ? { visible: m.visible, flights: m.debug() } : null);
+        }
+        // The stand-in app window: {"rect": [x, y, w, h], "title", "active"}, or "" for none.
+        function app(json: string): string { root.fakeWindow = json === "" ? null : JSON.parse(json); return json; }
         // Every string the Win98 Desktop draws now (the taskbar, the open
         // menu or window and its whole model, the Shut Down dialog, the Cool
-        // Switch, the pop-up, every taskbar control's tooltip), and the text
-        // drawn inside each page band's divider (which must be none).
+        // Switch, the pop-up, every taskbar control's tooltip), any page head
+        // (there must be none) and the text drawn on each page divider (none).
         function strings(): string {
             const d = root.desktop;
             if (!d) return "{}";
@@ -941,25 +1025,25 @@ ShellRoot {
             const tips = [];
             for (const id in places) if (/^(win|page)\d|^[a-z]+$/.test(id) && typeof places[id] === "object" && "w" in places[id]) tips.push(d.tooltip(id));
             const tb = d.taskbarItem;
-            const bandText = [];
-            for (const id in places) {
-                if (id.indexOf("page") !== 0 || typeof places[id] !== "object") continue;
-                // Text drawn over the divider's box, from the taskbar's items.
-                const p = places[id];
+            // Page heads must be gone: no place, so no hit target or tooltip.
+            const pages = Object.keys(places).filter(function (id) { return /^page/.test(id); });
+            // Text drawn over a page divider, from the taskbar's items.
+            const dividers = [];
+            for (const p of places.dividers || []) {
                 const inBox = [];
                 const look = function (item) {
                     if (!item) return;
                     if (item.plain !== undefined && item.visible !== false && item.plain !== "") {
                         const q = item.mapToItem(null, 0, 0);
                         const top = tb.mapToItem(null, 0, 0);
-                        if (q.x + item.width > p.x - 0.5 && q.x < p.x + p.w + 0.5 && q.y >= top.y + tb.height - places.barHeight - 0.5) inBox.push(item.plain);
+                        if (q.x + item.width > p.x + 0.5 && q.x < p.x + p.w - 0.5 && q.y >= top.y + tb.height - places.barHeight - 0.5) inBox.push(item.plain);
                     }
                     for (let i = 0; i < item.children.length; i++) look(item.children[i]);
                 };
                 look(tb);
-                bandText.push({ id: id, tip: d.tooltip(id), text: inBox });
+                dividers.push({ x: p.x, w: p.w, text: inBox });
             }
-            return JSON.stringify({ drawn: out, tips: tips, bands: bandText });
+            return JSON.stringify({ drawn: out, tips: tips, pages: pages, dividers: dividers });
         }
         function shutChoice(): string { return root.desktop ? root.desktop.shutChoice : ""; }
         // The items under a point of the open menu's window, top first (development).

@@ -105,4 +105,22 @@ for (const rel of files(dir, "")) {
     for (const [n, l] of hits) offenders.push(rel + ":" + n + ": " + l.trim());
 }
 assert.deepEqual(offenders, [], "a shipped file builds a page-number label");
+// ---------------------------------------------------------------- 3. the dividers
+// A page is never a control, so it has nothing to number: the Win98
+// taskbar's divider is a groove with no head (no place, no tooltip, no
+// keyboard stop, no click), and the Control Strip's page slot is a groove.
+const src = (rel) => fs.readFileSync(path.join(dir, rel), "utf8");
+const P = load("themes/win98/taskbar-plan.js");
+assert.equal(P.TAG, undefined, "the taskbar plan has no page head");
+const tp = P.plan(1440, { windows: [{ page: 1, focused: true }, { page: 2 }, { page: 5 }], showingPage: 1,
+    tray: [], clock: { time: "4:51", ampm: "PM" }, dict: { visible: false }, measure: (t) => String(t).length * 6 });
+assert.equal(JSON.stringify(tp.groups.map((g) => [g.divider, g.head])), "[[false,3],[true,5],[true,5]]", "dividers are a groove and a gap");
+for (const rel of ["Win98Taskbar.qml", "Win98MenuHost.qml", "Win98Desktop.qml"]) {
+    const text = src(rel);
+    assert.ok(!/["']page["']\s*\+/.test(text), rel + " builds no page control id");
+    assert.ok(!/showPage/.test(text), rel + " has no page click");
+}
+const slots = S.slots(S.order(windows.filter((w) => w.screen === "eDP-1")));
+assert.ok(slots.slots.filter((x) => x.kind !== "tile").every((x) => x.kind === "groove"), "the Control Strip's page slots are grooves");
+
 console.log("NO_PAGE_NUMBERS_PASSED strings=" + seen.length + " pending=" + PENDING.size);

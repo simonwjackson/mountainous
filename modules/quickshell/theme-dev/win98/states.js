@@ -140,7 +140,7 @@ st(1, 'dict-failed', 'Dictation failed · Groq: Retry and Dismiss', d => { d.dic
 st(1, 'dict-micfail', 'Microphone failed: Dismiss only', d => { d.dict = { state: 'failed', backend: '', queue: 0, failureKind: 'recorder', canRetry: false }; });
 
 // 2. Every control: rest, hover, open or pressed, keyboard focus
-const CONTROLS = [['start', 'Start button'], ['win1', 'Window button'], ['page2', 'Page number'], ['dict', 'Dictation'], ['bt', 'Bluetooth'], ['wifi', 'Wi-Fi'], ['vol', 'Sound'], ['bri', 'Brightness'],
+const CONTROLS = [['start', 'Start button'], ['win1', 'Window button'], ['dict', 'Dictation'], ['bt', 'Bluetooth'], ['wifi', 'Wi-Fi'], ['vol', 'Sound'], ['bri', 'Brightness'],
   ['oci', 'OCI egress'], ['disk', 'Server storage'], ['builder', 'Remote builds'], ['ntf', 'Notifications'], ['bat', 'Battery'], ['clock', 'Clock'], ['tasks', 'Windows » (600 px)'], ['more', 'Tray » (400 px)']];
 const MENU_OF = { start: 'start', dict: 'dict', bt: 'bt', wifi: 'wifi', vol: 'vol', bri: 'bri', oci: 'oci', disk: 'disk', builder: 'builder', ntf: 'ntf', clock: 'clock', tasks: 'tasks', more: 'more' };
 for (const [c, name] of CONTROLS) for (const k of ['rest', 'hover', 'open', 'focus']) {

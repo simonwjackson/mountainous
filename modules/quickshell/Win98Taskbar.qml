@@ -9,11 +9,12 @@ import "themes/win98/tray-model.js" as Tray
 
 // The Win98 taskbar: 28 u at the bottom edge, which it reserves.
 //
-//   [Start] | ‖1 [window][window] | ‖2 [window] ... » | ‖ dictation | [» icons  4:51 PM]
+//   [Start] [window][window] | [window] ... » | ‖ dictation | [» icons  4:51 PM]
 //
-// One band per page, behind a divider (etch and grip) with no number: a
-// page is named by its apps (the divider's tooltip), never numbered. The
-// divider's head is a flat button that shows its page.
+// One band per page. Between two pages stands a divider: Win98's etched
+// groove between toolbar groups (2 u), drawn only, with no button, hover,
+// tooltip or number. A page is named by its apps (Start ▸ Windows, Move
+// to), never numbered; a window button switches to its page.
 // Window buttons carry the dock's behaviour: a click focuses, the middle
 // button closes, a drag swaps two windows on one page or moves a window to
 // another page (shell dropOnto). Layout is Plan.plan(width): readouts yield
@@ -76,6 +77,17 @@ PanelWindow {
 
     // The window buttons' band, for the geometry checks.
     readonly property var tasksArea: ({ x: tasks.x, w: tasks.width })
+    // The page dividers in bar coordinates, for the checks: { x, w } each.
+    // They are drawn only, so they are not in places (no hit target).
+    function dividers() {
+        const out = [];
+        let x = tasks.x;
+        for (const g of bar.plan.groups) {
+            if (g.divider) out.push({ x: x, w: bar.units(2) });
+            x += bar.units(g.head) + g.windows.length * (bar.units(bar.plan.bw) + bar.units(3));
+        }
+        return out;
+    }
     function overflowed(id) { return bar.plan.trayOut.indexOf(id) >= 0; }
 
     // Where each control is, in bar coordinates, for placing its window and
@@ -198,60 +210,21 @@ PanelWindow {
                 height: parent.height
 
                 Repeater {
-                    // An empty bar keeps its band's grip, as Win98's did; the
-                    // compact structures have no bands at all.
-                    model: bar.plan.groups.length > 0 ? bar.plan.groups
-                        : bar.plan.structure === "full" ? [{ page: -1, windows: [] }] : []
+                    // An empty bar has no bands: no grip, no empty slot.
+                    model: bar.plan.groups
 
                     Item {
                         id: band
                         required property var modelData
                         readonly property int page: modelData.page
-                        readonly property bool showing: page === bar.desktop.showingPage
-                        readonly property string pid: "page" + page
-                        width: page < 0 ? bar.units(13) : bar.units(32) + modelData.windows.length * (bar.units(bar.plan.bw) + bar.units(3))
+                        // The buttons start after the band's head: one gap after
+                        // Start, or a divider and one gap (taskbar-plan.js).
+                        readonly property real head: bar.units(modelData.head)
+                        width: head + modelData.windows.length * (bar.units(bar.plan.bw) + bar.units(3))
                         height: bar.units(22)
 
-                        Etch { x: bar.units(2) }
-                        Grip { x: bar.units(7) }
-
-                        Item {
-                            id: tag
-                            visible: band.page >= 0
-                            x: bar.units(13); y: bar.units(2)
-                            width: bar.units(16); height: bar.units(18)
-                            // Flat, as a Win98 toolbar button: raised under the
-                            // pointer, pressed while held. With no number in it a
-                            // sunken "page on screen" box said nothing.
-                            readonly property bool sunk: bar.pressed(band.pid)
-                            Component.onCompleted: bar.register(band.pid, tag)
-                            Win98Bevel {
-                                anchors.fill: parent
-                                filled: false
-                                visible: tag.sunk || bar.hovered(band.pid)
-                                variant: tag.sunk ? "thinSunken" : "thinRaised"
-                            }
-                            Win98FocusRect {
-                                visible: bar.focused(band.pid)
-                                x: bar.units(2); y: bar.units(2)
-                                width: parent.width - bar.units(4); height: parent.height - bar.units(4)
-                            }
-                            // The band's head (the divider's etch, its grip and this
-                            // box) shows the page; its tooltip names the band's apps.
-                            // Pages carry no number (Simon: they are ephemeral).
-                            MouseArea {
-                                x: -bar.units(11)
-                                width: parent.width + bar.units(11)
-                                height: parent.height
-                                hoverEnabled: true
-                                onEntered: bar.hoverIn(band.pid)
-                                onExited: bar.hoverOut(band.pid)
-                                onPressed: { bar.pressId = band.pid; bar.desktop.tipId = ""; }
-                                onReleased: bar.pressId = ""
-                                onCanceled: bar.pressId = ""
-                                onClicked: bar.desktop.showPage(band.page)
-                            }
-                        }
+                        // The divider between this page and the one before.
+                        Etch { visible: band.modelData.divider; x: 0 }
 
                         Repeater {
                             model: band.modelData.windows
@@ -260,7 +233,7 @@ PanelWindow {
                                 required property int modelData
                                 required property int index
                                 index_: modelData
-                                x: bar.units(32) + index * (bar.units(bar.plan.bw) + bar.units(3))
+                                x: band.head + index * (bar.units(bar.plan.bw) + bar.units(3))
                             }
                         }
                     }

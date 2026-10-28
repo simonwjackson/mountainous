@@ -52,8 +52,12 @@ for _, name in ipairs({ "enabled", "platinum", "bar_height", "bar_text_font", "b
 local WIN98_OPTIONS = { "win98", "win98_li", "win98_caption1", "win98_caption2", "win98_inactive1", "win98_inactive2", "win98_button_text" }
 local function fresh_hl(loaded, opts)
     opts = opts or {}
-    calls = { config = {}, load = {}, rules = {}, buttons = {}, refresh = 0, queries = {}, rejected = {} }
+    calls = { config = {}, load = {}, rules = {}, buttons = {}, refresh = 0, queries = {}, rejected = {}, animation = {} }
     _G.hl = {
+        animation = not opts.no_animation and function(t)
+            if opts.reject_leaf == t.leaf then error("no such animation leaf") end
+            table.insert(calls.animation, t)
+        end or nil,
         config = function(t)
             if opts.old and t.plugin and t.plugin.hyprbars then
                 for name in pairs(t.plugin.hyprbars) do
@@ -229,6 +233,42 @@ fresh_hl(true)
 M.apply()
 check(calls.config[1].plugin.hyprbars.win98 == true, "registered false option still enables Win98 support")
 
+-- Motion: both themes cut windows, fades and layers; any other theme gets
+-- the session's values back. apply() sets it with or without the plugin.
+local function leaves(list)
+    local out = {}
+    for _, a in ipairs(list) do out[a.leaf] = a end
+    return out
+end
+for _, name in ipairs({ "platinum", "win98" }) do
+    local m = leaves(M.motion({ name = name, mode = "dark", extra = false }))
+    for _, leaf in ipairs({ "windows", "fade", "layers" }) do
+        check(m[leaf] and m[leaf].enabled == false, name .. ": " .. leaf .. " animation off")
+    end
+    check(m.workspaces == nil, name .. ": page slides keep the session's value")
+end
+local back = leaves(M.motion({ name = "unknown", mode = "dark", extra = false }))
+check(back.windows.enabled and back.windows.speed == 4 and back.windows.bezier == "quick", "unknown theme: session windows")
+check(back.fade.enabled and back.fade.speed == 4 and back.fade.bezier == "quick", "unknown theme: session fade")
+check(back.layers.enabled and back.layers.speed == 8 and back.layers.bezier == "default", "unknown theme: Hyprland's layers")
+write_state("win98", "light", "off")
+fresh_hl(false)
+M.apply()
+check(#calls.animation == 3 and leaves(calls.animation).layers.enabled == false, "apply without the plugin still cuts the motion")
+write_state("platinum", "dark", "off")
+fresh_hl(true)
+M.apply()
+check(#calls.animation == 3 and leaves(calls.animation).fade.enabled == false, "apply with the plugin cuts the motion")
+write_state("unknown", "dark", "off")
+fresh_hl(true)
+M.apply()
+check(leaves(calls.animation).windows.enabled == true, "apply for another theme puts the session's motion back")
+write_state("win98", "dark", "off")
+fresh_hl(true, { reject_leaf = "layers" })
+check(M.apply_motion() == false and #calls.animation == 2, "a rejected leaf does not stop the others")
+fresh_hl(true, { no_animation = true })
+check(pcall(M.apply) and M.apply_motion() == false, "no hl.animation: apply still sets the bars")
+
 -- The palettes are the tokens'. A windoid's colours for light and dark
 -- grey; the black bar's for black.
 local qml = read_file(tokens_path)
@@ -289,6 +329,18 @@ check(hypr:find('require("titlebars").attach({ border_size = BORDER_SIZE, roundi
 check(hypr:find("border_size = BORDER_SIZE,", 1, true) ~= nil and hypr:find("rounding = ROUNDING,", 1, true) ~= nil,
     "hyprland.lua's config uses the same edge")
 
+for leaf, v in pairs({ windows = M.SESSION_MOTION.windows, fade = M.SESSION_MOTION.fade }) do
+    local found = false
+    for l in hypr:gmatch("[^\n]+") do
+        if l:find('hl.animation({ leaf = "' .. leaf .. '",', 1, true) == 1 then
+            found = l:gsub("%s+", " ") == 'hl.animation({ leaf = "' .. leaf .. '", enabled = true, speed = '
+                .. v.speed .. ', bezier = "' .. v.bezier .. '" })'
+        end
+    end
+    check(found, "hyprland.lua's " .. leaf .. " motion is SESSION_MOTION's")
+end
+check(hypr:find('leaf = "layers"', 1, true) == nil, "hyprland.lua leaves layers to Hyprland's global (SESSION_MOTION.layers)")
+
 check(hypr:find('hl.bind("ALT + Space"', 1, true) ~= nil and
     hypr:find("windows menu '' -1 -1", 1, true) ~= nil, "Alt+Space routes to the shared window menu")
 
@@ -297,4 +349,4 @@ if failures > 0 then
     io.stderr:write(failures .. " titlebars check(s) failed\n")
     os.exit(1)
 end
-print("titlebars: appearances, settings, attach, apply, tokens pass")
+print("titlebars: appearances, settings, motion, attach, apply, tokens pass")

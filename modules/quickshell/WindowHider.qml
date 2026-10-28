@@ -19,6 +19,13 @@ Scope {
     readonly property var hiddenApps: WindowHide.hiddenApps(hider.rows)
     readonly property int hiddenCount: WindowHide.hiddenRows(hider.rows).length
 
+    // A batch about to run: window-hide.js moves, the state before it, and
+    // the address it focuses ("" for none). WindowMotion draws from it.
+    signal moving(var moves, var state, string focus)
+    // How long a show waits before its windows move back (WindowMotion's
+    // revealDelay: the restore motion lands first). Hides never wait.
+    property int showDelay: 0
+
     readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mountainous"
 
     FileView {
@@ -50,15 +57,39 @@ Scope {
         file.setText(WindowHide.serialize(hider.state));
     }
 
-    function run(result, extra) {
+    function run(result, extra, focus) {
+        const shows = result.moves.some(function (m) { return typeof m.workspace === "number"; });
+        hider.moving(result.moves, hider.state, focus ? WindowHide.key(focus) : "");
         hider.state = result.state;
         hider.save();
         let batch = WindowHide.command(result.moves);
         if (extra) batch = batch === "" ? extra : batch + " ; " + extra;
-        if (batch !== "") Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch", batch]);
         if (result.moves.length > 0)
             SoundEvents.requested(typeof result.moves[0].workspace === "number" ? "restore" : "minimize");
+        if (batch === "") return result.moves.length;
+        // Batches keep their order: a waiting show goes before anything new.
+        if (!(shows && hider.showDelay > 0)) hider.flush();
+        if (shows && hider.showDelay > 0) {
+            later.batches = later.batches.concat([batch]);
+            if (!later.running) later.start();
+        } else {
+            Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch", batch]);
+        }
         return result.moves.length;
+    }
+    // Shows that wait for their motion. A restart while one waits leaves the
+    // window hidden with no entry; reconcile adopts it, and Show still works.
+    Timer {
+        id: later
+        interval: hider.showDelay
+        property var batches: []
+        onTriggered: hider.flush()
+    }
+    function flush() {
+        later.stop();
+        const all = later.batches;
+        later.batches = [];
+        for (const b of all) Quickshell.execDetached(["hyprctl", "--instance", "0", "--batch", b]);
     }
 
     function hideApp(appId) {
@@ -82,7 +113,7 @@ Scope {
     // it has arrived.
     function showApp(appId, fallbackPage, focusAddress) {
         const focus = focusAddress ? 'dispatch hl.dsp.focus({ window = "address:0x' + WindowHide.key(focusAddress) + '" })' : "";
-        return hider.run(WindowHide.showApp(hider.state, hider.rows, appId, fallbackPage), focus);
+        return hider.run(WindowHide.showApp(hider.state, hider.rows, appId, fallbackPage), focus, focusAddress || "");
     }
 
     function showAll(fallbackPage) {
@@ -102,7 +133,7 @@ Scope {
         if (!address) return 0;
         let f = focus ? 'dispatch hl.dsp.focus({ window = "address:0x' + WindowHide.key(address) + '" })' : "";
         if (after) f = f === "" ? "dispatch " + after : f + " ; dispatch " + after;
-        return hider.run(WindowHide.showWindow(hider.state, hider.rows, address, fallbackPage), f);
+        return hider.run(WindowHide.showWindow(hider.state, hider.rows, address, fallbackPage), f, focus ? address : "");
     }
     function setHome(address, page) {
         hider.state = WindowHide.setHome(hider.state, hider.rows, address, page);

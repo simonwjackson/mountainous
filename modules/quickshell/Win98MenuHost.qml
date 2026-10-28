@@ -38,10 +38,8 @@ Scope {
     // The taskbar's controls in keyboard order.
     readonly property var focusOrder: {
         const p = host.taskbar.plan, out = ["start"];
-        for (const g of p.groups) {
-            out.push("page" + g.page);
-            for (const i of g.windows) out.push("win" + i);
-        }
+        // Page dividers are drawn only: the keyboard steps over them.
+        for (const g of p.groups) for (const i of g.windows) out.push("win" + i);
         if (p.tasksChevron) out.push("tasks");
         if (p.chevron) out.push("more");
         if (p.structure !== "start") for (const id of p.tray) if (id !== "bat") out.push(id);
@@ -56,7 +54,6 @@ Scope {
         const id = desktop.taskbarFocus;
         desktop.taskbarFocus = "";
         if (id.indexOf("win") === 0) desktop.clickWindow(desktop.lane[Number(id.slice(3))]);
-        else if (id.indexOf("page") === 0) desktop.showPage(Number(id.slice(4)));
         else desktop.openMenu(id, true);
     }
     // Shift+F10 or the Menu key: the focused window button's window menu,

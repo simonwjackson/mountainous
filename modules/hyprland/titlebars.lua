@@ -4,7 +4,8 @@
 -- hyprland.lua, which attaches it.
 --
 -- One plugin draws both desktop themes. Settings follow the three state
--- files on every parse and desktop-theme change. Unknown themes keep the
+-- files on every parse and desktop-theme change, and so does each theme's
+-- window motion (M.motion: Hyprland's animations). Unknown themes keep the
 -- session's edge and corners. Both supported themes use square frames.
 -- apply() only sets values. The buttons and rules are made once per config
 -- load in attach(), because a config reload clears them and eval does not.
@@ -60,6 +61,24 @@ M.session = { border_size = 0, rounding = 6 }
 -- Hyprland 0.56.2's own groupbar values (config/values/ConfigValues.cpp),
 -- put back when the theme has no bars.
 M.GROUPBAR_DEFAULT = { rounding = 1, col = { active = "rgba(ffff0066)", inactive = "rgba(77770066)" } }
+
+-- Window and layer motion. Neither Mac OS 8 nor Windows 98 faded or
+-- popped a window: a window appeared and went at once, and the shell
+-- draws the OS's own motion over it (Win98's caption animation, the
+-- Finder's zoom rectangles; modules/quickshell/WindowMotion.qml and each
+-- theme's motion layer). Under both themes Hyprland's window, fade and
+-- layer animations are off, so windows, Quickshell's menus, tray windows,
+-- dialogs and tooltips (all layer surfaces) and popups cut. Page switches
+-- (workspaces) keep the session's slide: neither OS had pages.
+M.MOTION_LEAVES = { "windows", "fade", "layers" }
+-- hyprland.lua's own values for the first two (its hl.animation lines;
+-- checks.titlebars compares them), and Hyprland's global for layers,
+-- which hyprland.lua leaves to inherit. Put back for any other theme.
+M.SESSION_MOTION = {
+    windows = { enabled = true, speed = 4, bezier = "quick" },
+    fade = { enabled = true, speed = 4, bezier = "quick" },
+    layers = { enabled = true, speed = 8, bezier = "default" },
+}
 
 local function read(name)
     local dir = os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")
@@ -139,6 +158,32 @@ function M.settings(state, win98_supported)
     }
 end
 
+-- The hl.animation calls for a state, as a pure list.
+function M.motion(state)
+    local themed = state.name == "platinum" or state.name == "win98"
+    local out = {}
+    for _, leaf in ipairs(M.MOTION_LEAVES) do
+        local a = { leaf = leaf, enabled = false }
+        if not themed then
+            local v = M.SESSION_MOTION[leaf]
+            a = { leaf = leaf, enabled = v.enabled, speed = v.speed, bezier = v.bezier }
+        end
+        table.insert(out, a)
+    end
+    return out
+end
+
+-- Set the motion for the theme on disk. A leaf Hyprland rejects keeps
+-- its value; the others still apply.
+function M.apply_motion()
+    if type(hl.animation) ~= "function" then return false end
+    local ok_all = true
+    for _, a in ipairs(M.motion(M.state())) do
+        if not pcall(hl.animation, a) then ok_all = false end
+    end
+    return ok_all
+end
+
 -- The stable plugin path can still name an older loaded library after a
 -- rebuild. hl.get_config is a read-only lookup: an unknown key returns nil
 -- plus a message, without adding a config error (unlike hl.config). Check
@@ -154,9 +199,12 @@ local function supports_win98()
     return true
 end
 
--- Set the bars and the window frame for the theme on disk. Without the
--- plugin (it failed to load) the windows keep the session's look.
+-- Set the motion, the bars and the window frame for the theme on disk.
+-- Without the plugin (it failed to load) the windows keep the session's
+-- look; the motion follows the theme either way.
 function M.apply()
+    -- Motion first: it needs no plugin.
+    M.apply_motion()
     if not hl.plugin.hyprbars then
         hl.config({ general = { border_size = M.session.border_size }, decoration = { rounding = M.session.rounding } })
         return false

@@ -20,6 +20,7 @@ Platinum and Windows 98 move together. A feature lands for both themes in the sa
 | Fleet window (Super+B, Super+O F) | Done | Done | Fleet window above the tray, tray Fleet icon, Properties sheet (see "Fleet window and glance space, Windows 98") |
 | Glance space (Super+W) | Done | Done | Shut Down checker, caption animation, Glance taskbar button (same section) |
 | Find menu and Go to Address (Super+P, Ctrl+L) | Done | Done | Find window above Start, IE's Open dialog (parity mock item 2; see "Find window, Open and web pages for Win98") |
+| Window motion (no fades) | Done (zoom rects: open, close, hide, show) | Done | Caption animation: minimize, restore, maximize; windows, dialogs and tooltips at once; menus roll (see [motion-dividers.md](desktop-themes/motion-dividers.md)) |
 | Window title bars | Done (hyprbars patch) | Done (caption; app icons pending) | Navy caption in light, steel in dark grey; minimize/maximize/close; the caption icon and Alt+Space open the window menu through `windows menu` (see "Windows 98 taskbar and session parity") |
 | Chromium normal-window frame | Phase A (system frame, Chromium tabs) | Phase A (same) | Shared preference, GTK paint; outer-chrome roadmap below |
 | Web page styling | Done (`themes/platinum/web.css`) | Done (`themes/win98/web.css`) | Win98 scroll bars and form controls; W95FA on buttons, drop-down lists and legends only |
@@ -53,8 +54,8 @@ Each lands for both themes. New plan sections go in their own file under `docs/p
 | # | Item | Notes |
 |---|---|---|
 | 1 | **Phase 4: icons, cursors, desktop pattern, menu sounds, boot screen** | Sounds and boot built: [part 2](desktop-themes/phase4-sound-boot.md). Icons, cursors and pattern remain separate work. |
-| 2 | **Taskbar and strip page dividers are a plain divider**, no button at all | The number went; the empty button head is still there and reads as a stray empty slot. |
-| 3 | **No soft fades.** Window and chrome motion follows the OS being mimicked | Win98: windows appear at once; minimize/restore/maximize use the caption animation; menus roll. Mac OS 8: zoom rectangles. Hyprland's default fade/pop-in goes under both themes. |
+| 2 | ~~**Taskbar and strip page dividers are a plain divider**, no button at all~~ **Done** | Win98: a 2-u etched groove between pages, no head, tooltip or keyboard stop; the strip already had only its groove. See [motion-dividers.md](desktop-themes/motion-dividers.md). |
+| 3 | ~~**No soft fades.** Window and chrome motion follows the OS being mimicked~~ **Done** | Hyprland's window, fade and layer animations off under both themes (live, `titlebars.lua`); Win98 caption animation for minimize/restore/maximize, Platinum zoom rects for open/close/hide/show. See [motion-dividers.md](desktop-themes/motion-dividers.md). |
 | 4 | **Built: terminal fonts and Ghostty live switching** | ProFontIIx Grid / Fixedsys Excelsior; real grid-bold and fallbacks. Reload reaches custom and NON_UNIQUE instances. GTK fractional-scale sharpness is still unverified. [Checks and evidence](desktop-themes/terminal-fixes.md); parent verifies Myoko. |
 | 5 | **Chromium: every tab is a window** | No tab strip; the taskbar/Control Strip is the tab container. Explore memory cost. Supersedes the outer-chrome options B/C. |
 | 6 | **Chromium captures Ctrl+L** in normal windows | Go to Address / Open should win. PWAs already behave. |
