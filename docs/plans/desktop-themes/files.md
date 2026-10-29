@@ -65,7 +65,7 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 39 | The kit is curated, not the shell's whole folder: Theme, tokens and shared controls, with no Quickshell imports. The shell imports it too, so there is one copy. | Required by decision 38. Closes the unanswered question about importing the whole folder. |
 | 40 | The QML kit lives in the kit repository, beside its Rust crates. Mountainous, Files and Pyxamp all take it as a flake input. | One version for the whole kit; dependencies run one way. Cost: a shell theme change is a kit change plus an input bump, and the parity check must read the kit. |
 | 41 | The shell draws the desktop icons with the kit, on its desktop surface. Files supplies the list and handles open, move and drop over a socket. | The desktop stays with the shell and survives a Files restart. Cost: a small shell–Files protocol; the desktop surface takes input. |
-| 42 | The kit is named after a mountain, like the hosts: **Hotaka** (repository `hotaka`, QML module `Hotaka`, crates `hotaka-*`). | Owner chose the style; the name is my pick ("Kamoi" is taken, "Tateyama" is close to host `tate`). Cheap to rename before the repository exists. |
+| 42 | The kit is named **Hensou** (変装, "disguise": one set of apps that puts on Platinum or Windows 98). Repository `hensou`, QML module `Hensou`, crates `hensou-*`. | Owner chose it after a collision check (crates.io, PyPI, npm, nixpkgs, GitHub, web; `/tmp/name-check/check.sh`): no software product or company found. Rejected for collisions: Henge (HENNGE, a listed Tokyo software company), Bakeru (a Steam game), Henshin (Eclipse Henshin), Mujina, Kawari, Utsuroi, Tanuki, Kitsune, Ruten, Kisekae, Irokae. Replaces the earlier pick, Hensou. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
@@ -147,7 +147,7 @@ None in the design interview (2026-10-28). Implementation unknowns: a menu host 
 
 Can Slint draw the shell too (research, 2026-10-28)? **Not in 2026.** Slint has no official layer-shell support (discussions #1765, #6910). Community platform shims (`spell-framework`, `layer-shika`) are alpha, and no production Slint shell exists. So with E the shell stays on QML and each theme lives in two copies for the foreseeable future. Also relevant to apps: Slint's built-in `PopupWindow` draws inside the window, so menus near a window edge are clipped unless custom Wayland popup code is added.
 
-The owner may want some apps on Android too, from the same Rust code, starting with a Rust client for Forgerie (today a browser app). Dioxus is the candidate he named. This may reopen decision 38 for apps that must run on a phone. Research on Dioxus, cxx-qt, Slint and Tauri on Android is running. Step 1 waits until this settles, because it decides what Hotaka's drawing is written in.
+The owner may want some apps on Android too, from the same Rust code, starting with a Rust client for Forgerie (today a browser app). Dioxus is the candidate he named. This may reopen decision 38 for apps that must run on a phone. Research on Dioxus, cxx-qt, Slint and Tauri on Android is running. Step 1 waits until this settles, because it decides what Hensou's drawing is written in.
 
 Research result (2026-10-28):
 
@@ -166,8 +166,8 @@ My checks: the QML kit already snaps bevels to device pixels at 1.5 (the shell d
 
 ## Order of work
 
-1. Hotaka: create the repository; move the shared QML out of the shell, Quickshell-free; move Pyxamp's library clients into crates; the shell imports Hotaka.
-2. Pyxamp moves its face onto Hotaka (decision 37).
+1. Hensou: create the repository; move the shared QML out of the shell, Quickshell-free; move Pyxamp's library clients into crates; the shell imports Hensou.
+2. Pyxamp moves its face onto Hensou (decision 37).
 3. Comics serves original files (decision 25), in parallel.
 4. Files, first build: local files and SSH hosts in both themes (decision 33).
 5. Then libraries, then desktop icons.
