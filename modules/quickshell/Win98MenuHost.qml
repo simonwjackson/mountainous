@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -30,7 +31,7 @@ Scope {
     required property var taskbar
     property bool enabled: true
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Kit.Win98Tokens.unitFor(host.taskbar)
     readonly property string current: desktop.openId
     // The Shut Down dialog has a surface of its own (Win98ShutDownScreen).
     readonly property bool menuShown: host.enabled && current !== "" && current !== "shutdown"
@@ -79,7 +80,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Win98Tokens.unitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(host.taskbar)nitFor(win)
 
             screen: host.desktop.screen
             anchors { top: true; bottom: true; left: true; right: true }
@@ -177,16 +178,16 @@ Scope {
                         if (loader.findItem) return loader.findItem.placeX;
                         if (loader.dialogItem) return loader.dialogItem.placeX;
                         if (host.current === "start") return 2 * win.u;
-                        if (loader.centred) return Win98Tokens.snap(win.width / 2 - w / 2, win.u);
-                        if (loader.atPoint) return Math.max(0, Math.min(Win98Tokens.snap(host.desktop.menuPoint.x, win.u), win.width - w));
+                        if (loader.centred) return Kit.Win98Tokens.snap(win.width / 2 - w / 2, win.u);
+                        if (loader.atPoint) return Math.max(0, Math.min(Kit.Win98Tokens.snap(host.desktop.menuPoint.x, win.u), win.width - w));
                         const centre = loader.anchor ? loader.anchor.x + loader.anchor.w / 2 : win.width;
-                        return Math.max(2 * win.u, Math.min(Win98Tokens.snap(centre - w / 2, win.u), win.width - w - 2 * win.u));
+                        return Math.max(2 * win.u, Math.min(Kit.Win98Tokens.snap(centre - w / 2, win.u), win.width - w - 2 * win.u));
                     }
                     y: {
                         if (loader.findItem) return loader.findItem.placeY;
                         if (loader.dialogItem) return loader.dialogItem.placeY;
-                        if (loader.centred) return Math.max(0, Win98Tokens.snap(win.barTop / 2 - h / 2, win.u));
-                        if (loader.atPoint) return Math.max(0, Math.min(Win98Tokens.snap(host.desktop.menuPoint.y, win.u), win.barTop - h));
+                        if (loader.centred) return Math.max(0, Kit.Win98Tokens.snap(win.barTop / 2 - h / 2, win.u));
+                        if (loader.atPoint) return Math.max(0, Math.min(Kit.Win98Tokens.snap(host.desktop.menuPoint.y, win.u), win.barTop - h));
                         return Math.max(0, win.barTop - h + (loader.isMenu ? 2 * win.u : 0));
                     }
                     onLoaded: (item as Item).forceActiveFocus()

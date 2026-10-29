@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 import "page-layout-model.js" as Model
@@ -30,7 +31,7 @@ PlatinumMenuFrame {
     // screen's default; a floating page greys both rows instead.
     readonly property bool capDiffers: frame.onPage && !frame.floating && panel.page.cap !== panel.def.cap
     readonly property bool gapDiffers: frame.onPage && !frame.floating && panel.shownGap !== panel.def.gap
-    readonly property real defaultButtonW: PlatinumMetrics.buttonWidth(["Use Default", "Reset All"])
+    readonly property real defaultButtonW: Kit.PlatinumMetrics.buttonWidth(["Use Default", "Reset All"])
     // The narrowest a note may wrap to beside its button.
     readonly property real noteMin: 96
 
@@ -78,23 +79,23 @@ PlatinumMenuFrame {
         property string text: ""
         property string keys: ""
         property bool off: false
-        readonly property real room: width - PlatinumTokens.menuTextLeft - frame.rightInset
+        readonly property real room: width - Kit.PlatinumTokens.menuTextLeft - frame.rightInset
         readonly property bool keyFits: keys !== ""
-            && labelText.implicitWidth + PlatinumTokens.menuGap + keyText.implicitWidth <= room
+            && labelText.implicitWidth + Kit.PlatinumTokens.menuGap + keyText.implicitWidth <= room
         Layout.fillWidth: true
-        implicitHeight: PlatinumTokens.menuLine
+        implicitHeight: Kit.PlatinumTokens.menuLine
 
         Text {
             id: labelText
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(0, Math.min(implicitWidth, labelRow.room))
             elide: Text.ElideRight
             text: labelRow.text
-            color: labelRow.off ? PlatinumTokens.menuTextOff : PlatinumTokens.menuText
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumText
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: labelRow.off ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuText
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumText
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
 
         Text {
@@ -104,10 +105,10 @@ PlatinumMenuFrame {
             anchors.rightMargin: frame.rightInset
             anchors.verticalCenter: parent.verticalCenter
             text: labelRow.keys
-            color: labelRow.off ? PlatinumTokens.menuTextOff : PlatinumTokens.menuTextSecondary
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumHint
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: labelRow.off ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuTextSecondary
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumHint
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
@@ -119,27 +120,27 @@ PlatinumMenuFrame {
         property string text: ""
         property string action: ""
         property bool showAction: true
-        property color color: PlatinumTokens.menuTextSecondary
+        property color color: Kit.PlatinumTokens.menuTextSecondary
         signal clicked
-        readonly property real room: width - PlatinumTokens.menuTextLeft - frame.rightInset
-        readonly property bool stacked: noteButton.visible && room - noteButton.width - PlatinumTokens.menuGap < frame.noteMin
+        readonly property real room: width - Kit.PlatinumTokens.menuTextLeft - frame.rightInset
+        readonly property bool stacked: noteButton.visible && room - noteButton.width - Kit.PlatinumTokens.menuGap < frame.noteMin
         Layout.fillWidth: true
         implicitHeight: stacked ? note.implicitHeight + 4 + noteButton.implicitHeight + 4
             : Math.max(22, note.implicitHeight + 4, noteButton.visible ? noteButton.implicitHeight + 4 : 0)
 
         Text {
             id: note
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             y: noteRow.stacked ? 2 : (noteRow.height - height) / 2
             width: Math.max(0, noteRow.room
-                - (noteButton.visible && !noteRow.stacked ? noteButton.width + PlatinumTokens.menuGap : 0))
+                - (noteButton.visible && !noteRow.stacked ? noteButton.width + Kit.PlatinumTokens.menuGap : 0))
             wrapMode: Text.Wrap
             textFormat: Text.PlainText
             text: noteRow.text
             color: noteRow.color
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             lineHeight: 1.15
         }
 
@@ -169,7 +170,7 @@ PlatinumMenuFrame {
         PlatinumBevel {
             anchors.fill: parent
             sunken: capButton.down
-            color: capButton.down ? PlatinumTokens.well : PlatinumTokens.raised
+            color: capButton.down ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
         }
 
         Grid {
@@ -183,8 +184,8 @@ PlatinumMenuFrame {
                 width: 30
                 height: 20
                 name: "layout-cap-" + capButton.count
-                color: capButton.usable ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                knock: capButton.chosen && capButton.usable ? PlatinumTokens.highlight : PlatinumTokens.raised
+                color: capButton.usable ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                knock: capButton.chosen && capButton.usable ? Kit.PlatinumTokens.highlight : Kit.PlatinumTokens.raised
             }
 
             Text {
@@ -192,10 +193,10 @@ PlatinumMenuFrame {
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 text: panel.word(capButton.count)
-                color: capButton.usable ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: capButton.usable ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
 
@@ -272,9 +273,9 @@ PlatinumMenuFrame {
                     id: caps
                     Layout.fillWidth: true
                     readonly property real gap: 8
-                    readonly property real room: width - PlatinumTokens.menuTextLeft - frame.rightInset
+                    readonly property real room: width - Kit.PlatinumTokens.menuTextLeft - frame.rightInset
                     readonly property real cell: (room - 2 * gap) / 3
-                    readonly property bool column: cell < PlatinumMetrics.smallWidest(["Three"]) + 12
+                    readonly property bool column: cell < Kit.PlatinumMetrics.smallWidest(["Three"]) + 12
                     implicitHeight: column ? 3 * 30 + 2 * 4 + 6 : 52 + 6
 
                     Repeater {
@@ -284,7 +285,7 @@ PlatinumMenuFrame {
                             required property int modelData
                             count: modelData
                             inline: caps.column
-                            x: PlatinumTokens.menuTextLeft + (caps.column ? 0 : (modelData - 1) * (caps.cell + caps.gap))
+                            x: Kit.PlatinumTokens.menuTextLeft + (caps.column ? 0 : (modelData - 1) * (caps.cell + caps.gap))
                             y: 2 + (caps.column ? (modelData - 1) * 34 : 0)
                             width: caps.column ? caps.room : caps.cell
                             height: caps.column ? 30 : 52
@@ -296,7 +297,7 @@ PlatinumMenuFrame {
                     text: frame.floating ? Model.capNote(frame.shown)
                         : frame.onPage ? panel.capNote()
                         : "Super+1 2 3 change only the current page."
-                    color: frame.floating ? PlatinumTokens.menuTextOff : PlatinumTokens.menuTextSecondary
+                    color: frame.floating ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuTextSecondary
                 }
 
                 NoteRow {
@@ -319,7 +320,7 @@ PlatinumMenuFrame {
                     rightInset: frame.rightInset
                     enabled: frame.live && !frame.floating
                     dimmed: frame.floating || !frame.live
-                    valueWidth: PlatinumMetrics.widest([PlatinumMetrics.digits(2) + " px"])
+                    valueWidth: Kit.PlatinumMetrics.widest([Kit.PlatinumMetrics.digits(2) + " px"])
                     ratio: panel.gapMax > 0 ? panel.shownGap / panel.gapMax : 0
                     valueText: panel.shownGap + " px"
                     onMoved: function (ratio) { panel.setGap(ratio * panel.gapMax); }
@@ -337,25 +338,25 @@ PlatinumMenuFrame {
                     Text {
                         x: gapSlider.trackX
                         text: "None"
-                        color: frame.floating ? PlatinumTokens.menuTextOff : PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumHint
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: frame.floating ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumHint
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     Text {
                         x: gapSlider.trackX + gapSlider.trackWidth - implicitWidth
                         text: String(panel.gapMax)
-                        color: frame.floating ? PlatinumTokens.menuTextOff : PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumHint
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: frame.floating ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumHint
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
 
                 NoteRow {
                     visible: frame.floating
                     text: "Gaps apply to tiled windows."
-                    color: PlatinumTokens.menuTextOff
+                    color: Kit.PlatinumTokens.menuTextOff
                 }
 
                 NoteRow {
@@ -376,13 +377,13 @@ PlatinumMenuFrame {
 
                     Text {
                         // The key is a readout: it goes before the label is cut.
-                        visible: zenRow.width - PlatinumTokens.menuTextLeft - frame.rightInset
-                            - PlatinumMetrics.width("Zen margins") - PlatinumTokens.menuGap >= implicitWidth
+                        visible: zenRow.width - Kit.PlatinumTokens.menuTextLeft - frame.rightInset
+                            - Kit.PlatinumMetrics.width("Zen margins") - Kit.PlatinumTokens.menuGap >= implicitWidth
                         text: "Super+Shift+M"
-                        color: PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumHint
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumHint
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
 
@@ -391,7 +392,7 @@ PlatinumMenuFrame {
                 NoteRow {
                     visible: !frame.onPage && panel.ownCount > 0
                     text: panel.ownCount === 1 ? "1 page differs from this." : panel.ownCount + " pages differ from this."
-                    color: PlatinumTokens.menuText
+                    color: Kit.PlatinumTokens.menuText
                     action: "Reset All"
                     onClicked: panel.resetPages()
                 }

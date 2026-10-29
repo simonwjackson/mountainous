@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
@@ -40,7 +41,7 @@ FocusScope {
     // A row was chosen, or a request ("address", "close") made.
     signal action(string kind, var arg)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property var plan: Plan.findPlan(Math.floor(root.areaWidth / root.u + 1e-6), Math.floor(root.areaHeight / root.u + 1e-6))
     readonly property real placeX: root.plan.x * root.u
     readonly property real placeY: root.plan.y * root.u
@@ -218,7 +219,7 @@ FocusScope {
     function lines(text, room) {
         const out = [];
         let line = "";
-        const fits = function (t) { return Win98Tokens.textWidth(t, false, root.u) <= room; };
+        const fits = function (t) { return Kit.Win98Tokens.textWidth(t, false, root.u) <= room; };
         for (const word of String(text).split(" ")) {
             const next = line === "" ? word : line + " " + word;
             if (fits(next)) { line = next; continue; }
@@ -256,23 +257,23 @@ FocusScope {
     onHeightChanged: root.settle()
 
     // ------------------------------------------------------------ geometry (units)
-    readonly property real bodyW: root.plan.width - 2 * Win98Tokens.frame - 12
-    readonly property real buttonW: Win98Tokens.buttonMinWidth
+    readonly property real bodyW: root.plan.width - 2 * Kit.Win98Tokens.frame - 12
+    readonly property real buttonW: Kit.Win98Tokens.buttonMinWidth
     readonly property real critW: root.plan.inline ? root.bodyW - 2 * root.buttonW - 12
         : root.plan.buttonColumn ? root.bodyW - root.buttonW - 6 : root.bodyW
     readonly property real critH: root.plan.criteria
     // Each criteria row's height, and the field's place in it (centred).
     readonly property real critRow: root.plan.inline ? root.plan.criteria : (root.plan.criteria - 4) / 2
-    readonly property real critPad: Math.floor((root.critRow - Win98Tokens.fieldHeight) / 2)
+    readonly property real critPad: Math.floor((root.critRow - Kit.Win98Tokens.fieldHeight) / 2)
     readonly property real listY: 6 + root.critH + 6
     readonly property real listH: root.plan.list + 4 + 17
     readonly property real contentU: Plan.contentHeight(root.rows)
     readonly property bool scrolls: root.contentU > root.plan.list
-    readonly property real listInner: root.bodyW - 4 - (root.scrolls ? Win98Tokens.scrollBar : 0)
+    readonly property real listInner: root.bodyW - 4 - (root.scrolls ? Kit.Win98Tokens.scrollBar : 0)
     readonly property real detailW: Math.round(root.listInner * root.plan.detail)
     readonly property real statusY: root.listY + root.listH + 8
-    readonly property real buttonRowY: root.statusY + (root.plan.status ? Win98Tokens.statusPane + 6 : -2)
-    readonly property real bodyH: root.plan.natural - 2 * Win98Tokens.frame - Win98Tokens.captionHeight - 1
+    readonly property real buttonRowY: root.statusY + (root.plan.status ? Kit.Win98Tokens.statusPane + 6 : -2)
+    readonly property real bodyH: root.plan.natural - 2 * Kit.Win98Tokens.frame - Kit.Win98Tokens.captionHeight - 1
 
     width: root.plan.width * root.u
     height: frame.height
@@ -303,7 +304,7 @@ FocusScope {
 
                 Win98Text {
                     id: namedLabel
-                    y: root.critPad * root.u + Win98Tokens.snap((Win98Tokens.fieldHeight * root.u - height) / 2, root.u)
+                    y: root.critPad * root.u + Kit.Win98Tokens.snap((Kit.Win98Tokens.fieldHeight * root.u - height) / 2, root.u)
                     text: "&Named:"
                 }
                 Win98TextField {
@@ -319,7 +320,7 @@ FocusScope {
                 Win98Text {
                     id: lookLabel
                     x: root.plan.inline ? criteria.width - 150 * root.u : 0
-                    y: (root.plan.inline ? root.critPad : root.critRow + 4 + root.critPad) * root.u + Win98Tokens.snap((Win98Tokens.fieldHeight * root.u - height) / 2, root.u)
+                    y: (root.plan.inline ? root.critPad : root.critRow + 4 + root.critPad) * root.u + Kit.Win98Tokens.snap((Kit.Win98Tokens.fieldHeight * root.u - height) / 2, root.u)
                     text: "&Look in:"
                 }
                 Item {
@@ -328,14 +329,14 @@ FocusScope {
                     x: root.plan.inline ? lookLabel.x + lookLabel.implicitWidth + 4 * root.u : 48 * root.u
                     y: (root.plan.inline ? root.critPad : root.critRow + 4 + root.critPad) * root.u
                     width: criteria.width - x
-                    height: Win98Tokens.fieldHeight * root.u
-                    Win98Bevel { anchors.fill: parent; variant: "field"; color: Win98Tokens.win }
+                    height: Kit.Win98Tokens.fieldHeight * root.u
+                    Win98Bevel { anchors.fill: parent; variant: "field"; color: Kit.Win98Tokens.win }
                     Win98Text {
                         x: 4 * root.u; y: 4 * root.u
                         width: Math.max(0, combo.width - 24 * root.u)
                         text: FindModel.scopeLabel(root.scope)
                         accessMarks: false
-                        color: Win98Tokens.winText
+                        color: Kit.Win98Tokens.winText
                     }
                     Item {
                         id: dropButton
@@ -346,8 +347,8 @@ FocusScope {
                         Win98Bevel { anchors.fill: parent; variant: root.dropOpen ? "flatPressed" : "button" }
                         Win98Icon {
                             name: "arrow-down"
-                            x: Win98Tokens.snap((dropButton.width - width) / 2, root.u) + (root.dropOpen ? root.u : 0)
-                            y: Win98Tokens.snap((dropButton.height - height) / 2, root.u) + (root.dropOpen ? root.u : 0)
+                            x: Kit.Win98Tokens.snap((dropButton.width - width) / 2, root.u) + (root.dropOpen ? root.u : 0)
+                            y: Kit.Win98Tokens.snap((dropButton.height - height) / 2, root.u) + (root.dropOpen ? root.u : 0)
                         }
                     }
                     MouseArea {
@@ -393,7 +394,7 @@ FocusScope {
                 y: root.listY * root.u
                 width: root.bodyW * root.u
                 height: root.listH * root.u
-                Win98Bevel { anchors.fill: parent; variant: "field"; color: Win98Tokens.win }
+                Win98Bevel { anchors.fill: parent; variant: "field"; color: Kit.Win98Tokens.win }
 
                 Row {
                     x: 2 * root.u; y: 2 * root.u
@@ -493,7 +494,7 @@ FocusScope {
         y: drop.place.y * root.u - root.placeY
         width: drop.place.width * root.u
         height: dropColumn.height + 2 * root.u
-        Rectangle { anchors.fill: parent; color: Win98Tokens.win; border.width: root.u; border.color: Win98Tokens.dk }
+        Rectangle { anchors.fill: parent; color: Kit.Win98Tokens.win; border.width: root.u; border.color: Kit.Win98Tokens.dk }
         Column {
             id: dropColumn
             x: root.u; y: root.u
@@ -507,25 +508,25 @@ FocusScope {
                     readonly property bool lit: index === root.dropIndex && !!modelData.id
                     width: dropColumn.width
                     height: (modelData.id ? 16 : 6) * root.u
-                    Rectangle { visible: !dropRow.modelData.id; x: 2 * root.u; y: 2 * root.u; width: parent.width - 4 * root.u; height: root.u; color: Win98Tokens.gray }
-                    Rectangle { visible: dropRow.lit; anchors.fill: parent; color: Win98Tokens.selection }
+                    Rectangle { visible: !dropRow.modelData.id; x: 2 * root.u; y: 2 * root.u; width: parent.width - 4 * root.u; height: root.u; color: Kit.Win98Tokens.gray }
+                    Rectangle { visible: dropRow.lit; anchors.fill: parent; color: Kit.Win98Tokens.selection }
                     Win98Text {
                         visible: !!dropRow.modelData.id
-                        x: 3 * root.u; y: Win98Tokens.snap((dropRow.height - height) / 2, root.u)
+                        x: 3 * root.u; y: Kit.Win98Tokens.snap((dropRow.height - height) / 2, root.u)
                         width: Math.max(0, Math.min(implicitWidth, keyText.x - 6 * root.u - x))
                         text: dropRow.modelData.label || ""
                         accessMarks: false
-                        color: dropRow.lit ? Win98Tokens.selectionText : Win98Tokens.winText
+                        color: dropRow.lit ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
                     }
                     Win98Text {
                         id: keyText
                         visible: !!dropRow.modelData.id
                         x: dropRow.width - 3 * root.u - width
-                        y: Win98Tokens.snap((dropRow.height - height) / 2, root.u)
+                        y: Kit.Win98Tokens.snap((dropRow.height - height) / 2, root.u)
                         width: implicitWidth
                         text: dropRow.modelData.key || ""
                         accessMarks: false
-                        color: dropRow.lit ? Win98Tokens.selectionText : Win98Tokens.gray
+                        color: dropRow.lit ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.gray
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -593,33 +594,33 @@ FocusScope {
             const e = rowItem.kind === "win" ? DesktopEntries.heuristicLookup(id) : null;
             return Quickshell.iconPath(AppIcon.themeName(rowItem.kind === "win" ? id : "", e && e.icon ? e.icon : id), true);
         }
-        readonly property color ink: rowItem.lit ? Win98Tokens.selectionText : rowItem.row.dis ? Win98Tokens.gray : Win98Tokens.winText
+        readonly property color ink: rowItem.lit ? Kit.Win98Tokens.selectionText : rowItem.row.dis ? Kit.Win98Tokens.gray : Kit.Win98Tokens.winText
         height: Plan.rowHeight(rowItem.row) * root.u
 
-        Rectangle { visible: rowItem.row.t === "head"; anchors.fill: parent; color: Win98Tokens.face }
-        Rectangle { visible: rowItem.lit; anchors.fill: parent; color: Win98Tokens.selection }
-        Rectangle { visible: rowItem.row.t === "sep"; x: 2 * root.u; y: 3 * root.u; width: parent.width - 4 * root.u; height: root.u; color: Win98Tokens.gray }
+        Rectangle { visible: rowItem.row.t === "head"; anchors.fill: parent; color: Kit.Win98Tokens.face }
+        Rectangle { visible: rowItem.lit; anchors.fill: parent; color: Kit.Win98Tokens.selection }
+        Rectangle { visible: rowItem.row.t === "sep"; x: 2 * root.u; y: 3 * root.u; width: parent.width - 4 * root.u; height: root.u; color: Kit.Win98Tokens.gray }
 
         Win98Text {
             id: headText
             visible: rowItem.row.t === "head"
             x: 2 * root.u
-            y: Win98Tokens.snap((rowItem.height - height) / 2, root.u)
+            y: Kit.Win98Tokens.snap((rowItem.height - height) / 2, root.u)
             width: Math.max(0, Math.min(implicitWidth, rowItem.width - 4 * root.u))
             text: rowItem.row.t === "head" ? rowItem.row.label || "" : ""
             accessMarks: false
             bold: true
-            color: Win98Tokens.text
+            color: Kit.Win98Tokens.text
         }
         // The etched rule after the group's name.
         Item {
             visible: rowItem.row.t === "head"
             x: headText.x + headText.width + 4 * root.u
-            y: Win98Tokens.snap(rowItem.height / 2, root.u) - root.u
+            y: Kit.Win98Tokens.snap(rowItem.height / 2, root.u) - root.u
             width: Math.max(0, rowItem.width - x - 2 * root.u)
             height: 2 * root.u
-            Rectangle { width: parent.width; height: root.u; color: Win98Tokens.sh }
-            Rectangle { y: root.u; width: parent.width; height: root.u; color: Win98Tokens.hi }
+            Rectangle { width: parent.width; height: root.u; color: Kit.Win98Tokens.sh }
+            Rectangle { y: root.u; width: parent.width; height: root.u; color: Kit.Win98Tokens.hi }
         }
 
         Item {
@@ -645,7 +646,7 @@ FocusScope {
             id: nameText
             visible: rowItem.isItem
             x: (rowItem.kind === "none" ? 2 : 22) * root.u
-            y: Win98Tokens.snap((rowItem.height - height) / 2, root.u)
+            y: Kit.Win98Tokens.snap((rowItem.height - height) / 2, root.u)
             width: Math.max(0, rowItem.width - x - (root.detailW > 0 ? root.detailW : 2) * root.u)
             text: rowItem.isItem ? rowItem.row.label || "" : ""
             accessMarks: false
@@ -658,12 +659,12 @@ FocusScope {
             width: Math.max(0, root.detailW * root.u - 8 * root.u)
             text: rowItem.isItem ? rowItem.row.hint || "" : ""
             accessMarks: false
-            color: rowItem.lit ? Win98Tokens.selectionText : Win98Tokens.gray
+            color: rowItem.lit ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.gray
         }
         Win98FocusRect {
             visible: rowItem.lit
             anchors.fill: parent
-            color: Win98Tokens.selectionText
+            color: Kit.Win98Tokens.selectionText
         }
     }
 }

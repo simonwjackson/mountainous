@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 
 // The drive pie from a Win98 disk's Properties: a tilted disc, used in
@@ -17,7 +18,7 @@ Win98Svg {
         const p = Math.max(0, Math.min(100, isNaN(root.percent) ? 0 : root.percent));
         const rx = 20, ry = 10, cx = 21, cy = 11, dep = 4, a = p / 100 * 2 * Math.PI;
         const ex = cx + rx * Math.sin(a), ey = cy - ry * Math.cos(a), large = a > Math.PI ? 1 : 0;
-        const T = Win98Tokens;
+        const T = Kit.Win98Tokens;
         const U = String(root.stale ? T.gray : T.pieUsed), US = String(root.stale ? T.sh : T.pieUsedSide);
         const F = String(root.stale ? T.face : T.pieFree), FS = String(root.stale ? T.sh : T.pieFreeSide);
         const used = p >= 100 ? '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="' + U + '"/>'

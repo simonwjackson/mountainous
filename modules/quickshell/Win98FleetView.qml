@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "beszel-model.js" as Model
@@ -43,13 +44,13 @@ FocusScope {
     signal minimizeRequested
     signal hostOpened(string name)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     function units(n) { return n * view.u; }
-    function mu(s, bold) { return Math.ceil(Win98Tokens.textWidth(s, !!bold, view.u) / view.u - 1e-6); }
+    function mu(s, bold) { return Math.ceil(Kit.Win98Tokens.textWidth(s, !!bold, view.u) / view.u - 1e-6); }
 
     // The window around this body, in units: frame and caption (Win98Window).
-    readonly property int chromeW: 2 * Win98Tokens.frame
-    readonly property int chromeH: Win98Tokens.frame + Win98Tokens.captionHeight + 1 + Win98Tokens.frame
+    readonly property int chromeW: 2 * Kit.Win98Tokens.frame
+    readonly property int chromeH: Kit.Win98Tokens.frame + Kit.Win98Tokens.captionHeight + 1 + Kit.Win98Tokens.frame
 
     readonly property var fleet: panel.fleet
     readonly property bool ready: fleet.state === "ready" && fleet.hosts.length > 0
@@ -134,9 +135,9 @@ FocusScope {
         return Plan.fit(Model.summaryVariants(view.fleet, true, "Fleet: "), roomUnits, function (s) { return view.mu(s, true); });
     }
     function toneColor(tone, selected) {
-        if (selected) return Win98Tokens.selectionText;
-        return tone === "danger" ? Win98Tokens.danger : tone === "warning" ? Win98Tokens.warning
-            : tone === "muted" || tone === "stale" ? Win98Tokens.gray : Win98Tokens.winText;
+        if (selected) return Kit.Win98Tokens.selectionText;
+        return tone === "danger" ? Kit.Win98Tokens.danger : tone === "warning" ? Kit.Win98Tokens.warning
+            : tone === "muted" || tone === "stale" ? Kit.Win98Tokens.gray : Kit.Win98Tokens.winText;
     }
     function clock(ms) {
         if (!(ms > 0)) return "--";
@@ -216,7 +217,7 @@ FocusScope {
     function openControlMenu(win) {
         if (view.menuOpen === "control") { view.menuOpen = ""; return; }
         const f = win && win.frame !== undefined ? win.frame : 0;
-        const p = win && view.menuLayer ? win.mapToItem(view.menuLayer, f + view.units(3), f + view.units(Win98Tokens.captionHeight + 1)) : Qt.point(0, 0);
+        const p = win && view.menuLayer ? win.mapToItem(view.menuLayer, f + view.units(3), f + view.units(Kit.Win98Tokens.captionHeight + 1)) : Qt.point(0, 0);
         view.openMenu("control", p);
     }
     function run(act) {
@@ -267,7 +268,7 @@ FocusScope {
         width: parent.width - view.units(4)
         height: view.units(4 + view.headH + view.listUnits)
         variant: "field"
-        color: Win98Tokens.win
+        color: Kit.Win98Tokens.win
 
         Win98HeaderView {
             id: headers
@@ -312,7 +313,7 @@ FocusScope {
                 visible: view.panel.stale && view.ready
                 width: list.width
                 height: Math.max(list.height, list.contentHeight)
-                color: Win98Tokens.face
+                color: Kit.Win98Tokens.face
             }
 
             // Details: one row per host.
@@ -362,7 +363,7 @@ FocusScope {
                     wrap: true
                     bold: true
                     accessMarks: false
-                    color: Win98Tokens.winText
+                    color: Kit.Win98Tokens.winText
                     text: view.fleet.state === "loading" ? "Asking Beszel..."
                         : view.fleet.state === "unavailable" ? "Beszel is not reachable"
                         : view.fleet.state === "error" ? "Beszel answered with an error" : "Beszel lists no hosts"
@@ -371,7 +372,7 @@ FocusScope {
                     width: parent.width
                     wrap: true
                     accessMarks: false
-                    color: Win98Tokens.winText
+                    color: Kit.Win98Tokens.winText
                     text: view.fleet.state === "loading" ? "One list_systems call to the Beszel hub on rakku. It usually answers in under a second."
                         : view.fleet.state === "unavailable" ? (view.panel.enabled
                             ? "Its hub runs on rakku, so rakku may be down. Without the hub there is no fleet data. The window tries again every minute."
@@ -411,7 +412,7 @@ FocusScope {
             : view.fleet.state === "ready" ? "Updated " + view.clock(view.panel.sampledAt)
             : view.fleet.state === "loading" ? "" : "Tries again every minute"
         readonly property real inner: width
-        readonly property real ageW: status.age === "" ? 0 : Math.min(view.units(view.mu(status.age) + 10), Win98Tokens.snap(inner * 0.45, view.u))
+        readonly property real ageW: status.age === "" ? 0 : Math.min(view.units(view.mu(status.age) + 10), Kit.Win98Tokens.snap(inner * 0.45, view.u))
         readonly property string staleText: view.panel.stale
             ? Plan.fit(["Last update " + Model.ago(view.now - view.panel.sampledAt), Model.ago(view.now - view.panel.sampledAt)],
                 Math.floor(inner * 0.3 / view.u), function (s) { return view.mu(s); }) : ""
@@ -457,8 +458,8 @@ FocusScope {
             width: Math.max(0, Math.min(implicitWidth, pane.width - view.units(8)))
             text: pane.text
             accessMarks: false
-            color: pane.tone === "danger" ? Win98Tokens.danger : pane.tone === "warning" ? Win98Tokens.warning
-                : pane.tone === "muted" ? Win98Tokens.gray : Win98Tokens.text
+            color: pane.tone === "danger" ? Kit.Win98Tokens.danger : pane.tone === "warning" ? Kit.Win98Tokens.warning
+                : pane.tone === "muted" ? Kit.Win98Tokens.gray : Kit.Win98Tokens.text
         }
     }
 
@@ -477,11 +478,11 @@ FocusScope {
         // colours its name and its reason.
         function ink(tone) { return view.toneColor(row.stale && tone === "normal" ? "stale" : tone, row.selected); }
 
-        Rectangle { anchors.fill: parent; color: row.selected ? Win98Tokens.selection : "transparent" }
+        Rectangle { anchors.fill: parent; color: row.selected ? Kit.Win98Tokens.selection : "transparent" }
         Win98FocusRect {
             visible: row.selected && view.active
             anchors.fill: parent
-            color: Win98Tokens.selectionText
+            color: Kit.Win98Tokens.selectionText
         }
         MouseArea {
             anchors.fill: parent
@@ -497,18 +498,18 @@ FocusScope {
             height: row.height
             Win98HostIcon {
                 x: view.units(view.plan.pad)
-                y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                 hostStatus: row.hv ? row.hv.status : "up"
                 tone: row.hv ? row.hv.tone : "normal"
             }
             Win98Text {
                 x: view.units(view.plan.pad + 16 + 3 + 1)
-                y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                 width: Math.max(0, Math.min(implicitWidth, nameCell.width - x - view.units(view.plan.pad)))
                 text: row.hv ? row.hv.name : ""
                 accessMarks: false
                 color: row.hv && row.hv.status !== "up" && row.hv.tone === "muted" && !row.selected
-                    ? Win98Tokens.gray : row.ink(row.hv ? row.hv.tone : "normal")
+                    ? Kit.Win98Tokens.gray : row.ink(row.hv ? row.hv.tone : "normal")
             }
         }
 
@@ -541,16 +542,16 @@ FocusScope {
                     spacing: view.units(3)
                     Win98Text {
                         visible: cell.modelData === "disk" && cell.bar && !!cell.hv && cell.hv.trusted && cell.hv.disk.fs !== "/"
-                        y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                        y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                         width: visible ? Math.min(implicitWidth, view.units(Plan.C.FS_MAX)) : 0
                         text: cell.hv ? cell.hv.disk.fs : ""
                         accessMarks: false
-                        color: row.selected ? Win98Tokens.selectionText : Win98Tokens.gray
+                        color: row.selected ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.gray
                     }
                     Win98LevelBar {
                         visible: cell.bar
                         blocks: true
-                        y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                        y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                         width: view.units(row.level.bar)
                         height: view.units(10)
                         value: cell.metric && cell.metric.pct !== null ? cell.metric.pct / 100 : NaN
@@ -559,7 +560,7 @@ FocusScope {
                         onSelection: row.selected
                     }
                     Win98Text {
-                        y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                        y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                         width: Math.max(implicitWidth, view.units(view.measures.pctW))
                         horizontalAlignment: Text.AlignRight
                         text: cell.metric ? Model.fmtPct(cell.metric.pct) : "--"
@@ -580,7 +581,7 @@ FocusScope {
                     visible: !cell.metricCol && cell.hv !== null
                     readonly property real room: Math.max(0, cell.inner)
                     x: cell.modelData === "why" ? view.units(view.plan.pad) : cell.width - view.units(view.plan.pad) - width
-                    y: Win98Tokens.snap((row.height - height) / 2, view.u)
+                    y: Kit.Win98Tokens.snap((row.height - height) / 2, view.u)
                     width: Math.min(implicitWidth, room)
                     accessMarks: false
                     text: {
@@ -606,7 +607,7 @@ FocusScope {
                     }
                     color: {
                         const v = cell.hv;
-                        if (!v) return Win98Tokens.winText;
+                        if (!v) return Kit.Win98Tokens.winText;
                         switch (cell.modelData) {
                         case "temp": return row.ink(row.stale ? "normal" : v.temp.tone);
                         case "failed": return row.ink(!row.stale && v.failed.n > 0 ? "danger" : "normal");
@@ -642,7 +643,7 @@ FocusScope {
         }
         Row {
             id: art
-            x: Win98Tokens.snap((cellItem.width - width) / 2, view.u)
+            x: Kit.Win98Tokens.snap((cellItem.width - width) / 2, view.u)
             y: view.units(3)
             height: view.units(32)
             spacing: view.units(3)
@@ -675,12 +676,12 @@ FocusScope {
         Item {
             id: label
             readonly property real w: Math.min(nameText.implicitWidth + view.units(4), cellItem.width)
-            x: Win98Tokens.snap((cellItem.width - w) / 2, view.u)
+            x: Kit.Win98Tokens.snap((cellItem.width - w) / 2, view.u)
             y: art.y + art.height + view.units(3)
             width: w
             height: view.units(13)
-            Rectangle { anchors.fill: parent; color: cellItem.selected ? Win98Tokens.selection : "transparent" }
-            Win98FocusRect { visible: cellItem.selected && view.active; anchors.fill: parent; color: Win98Tokens.selectionText }
+            Rectangle { anchors.fill: parent; color: cellItem.selected ? Kit.Win98Tokens.selection : "transparent" }
+            Win98FocusRect { visible: cellItem.selected && view.active; anchors.fill: parent; color: Kit.Win98Tokens.selectionText }
             Win98Text {
                 id: nameText
                 x: view.units(2)
@@ -692,7 +693,7 @@ FocusScope {
         }
         Win98Text {
             visible: cellItem.topReason !== null
-            x: Win98Tokens.snap((cellItem.width - width) / 2, view.u)
+            x: Kit.Win98Tokens.snap((cellItem.width - width) / 2, view.u)
             y: label.y + label.height
             width: Math.min(implicitWidth, cellItem.width - view.units(4))
             text: cellItem.topReason ? cellItem.topReason.short : ""
@@ -716,8 +717,8 @@ FocusScope {
         onTriggered: {
             if (!view.tipItem || view.menuOpen !== "" || !view.menuLayer) return;
             const p = view.tipItem.mapToItem(view.menuLayer, view.units(20), view.tipItem.height + view.units(2));
-            tip.x = Math.max(0, Math.min(Win98Tokens.snap(p.x, view.u), view.menuLayer.width - tip.width));
-            tip.y = Math.min(Win98Tokens.snap(p.y, view.u), view.menuLayer.height - tip.height);
+            tip.x = Math.max(0, Math.min(Kit.Win98Tokens.snap(p.x, view.u), view.menuLayer.width - tip.width));
+            tip.y = Math.min(Kit.Win98Tokens.snap(p.y, view.u), view.menuLayer.height - tip.height);
             tip.visible = true;
         }
     }

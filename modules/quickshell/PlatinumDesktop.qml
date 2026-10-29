@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -18,8 +19,8 @@ Scope {
     required property var context
     required property var theme
     property bool active: false
-    readonly property string diagnostics: " bar=" + PlatinumTokens.barSurface
-        + " rule=" + (PlatinumTokens.barRuled ? PlatinumTokens.barRule : "none")
+    readonly property string diagnostics: " bar=" + Kit.PlatinumTokens.barSurface
+        + " rule=" + (Kit.PlatinumTokens.barRuled ? Kit.PlatinumTokens.barRule : "none")
 
     function reveal() {
         context.shell.chromeVisible = true;

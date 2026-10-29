@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "oci-model.js" as OciModel
 
@@ -54,7 +55,7 @@ Win98Window {
             wrap: true
             text: root.panel.stateText.replace(/\u2026/g, "...") + ". Quota 10240 GB per profile."
             accessMarks: false
-            color: root.panel.state === "error" ? Win98Tokens.warning : Win98Tokens.text
+            color: root.panel.state === "error" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.text
         }
 
         Win98Bevel {
@@ -62,7 +63,7 @@ Win98Window {
             width: parent.width
             height: (17 + root.visibleRows * 16 + 6 + (root.narrow ? 16 : 0)) * root.u
             variant: "field"
-            color: Win98Tokens.win
+            color: Kit.Win98Tokens.win
 
             Flickable {
                 id: table
@@ -100,10 +101,10 @@ Win98Window {
                                     required property int index
                                     readonly property var rule: OciModel.rowRule(modelData)
                                     readonly property bool selected: index === 0
-                                    readonly property color ink: selected ? Win98Tokens.selectionText : Win98Tokens.winText
+                                    readonly property color ink: selected ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
                                     width: root.tableWidth
                                     height: 16 * root.u
-                                    color: selected ? Win98Tokens.selection : "transparent"
+                                    color: selected ? Kit.Win98Tokens.selection : "transparent"
                                     Cell { x: 3 * root.u; width: 93 * root.u; text: r.modelData.name; color: r.ink }
                                     Cell { x: 96 * root.u; width: 88 * root.u; text: r.modelData.used; alignRight: true; color: r.ink }
                                     Cell { x: 184 * root.u; width: 104 * root.u; text: r.modelData.projected; alignRight: true; color: r.ink }
@@ -112,8 +113,8 @@ Win98Window {
                                         width: r.width - 288 * root.u - 5 * root.u
                                         text: r.rule.value
                                         alignRight: true
-                                        color: r.selected ? r.ink : r.rule.tone === "danger" ? Win98Tokens.danger
-                                            : r.rule.tone === "warning" ? Win98Tokens.warning : Win98Tokens.winText
+                                        color: r.selected ? r.ink : r.rule.tone === "danger" ? Kit.Win98Tokens.danger
+                                            : r.rule.tone === "warning" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.winText
                                     }
                                 }
                             }
@@ -125,7 +126,7 @@ Win98Window {
                                     x: 3 * root.u
                                     width: parent.width
                                     text: root.panel.state === "loading" ? "Loading..." : "No profiles"
-                                    color: Win98Tokens.gray
+                                    color: Kit.Win98Tokens.gray
                                 }
                             }
                         }
@@ -183,11 +184,11 @@ Win98Window {
         id: c
         property string text: ""
         property bool alignRight: false
-        property color color: Win98Tokens.winText
+        property color color: Kit.Win98Tokens.winText
         height: 16 * root.u
         Win98Text {
             x: c.alignRight ? c.width - width : 0
-            y: Win98Tokens.snap((c.height - height) / 2, root.u)
+            y: Kit.Win98Tokens.snap((c.height - height) / 2, root.u)
             width: Math.min(implicitWidth, c.width)
             text: c.text
             accessMarks: false

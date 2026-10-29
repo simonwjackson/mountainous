@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -12,18 +13,18 @@ Item {
     property string text: ""
     property real maxWidthUnits: 400
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property var lines: text.split("\n")
-    readonly property real textWidth: Math.min(maxWidthUnits * u, Win98Tokens.ceilU(Win98Tokens.widest(lines, false, root.u), root.u))
+    readonly property real textWidth: Math.min(maxWidthUnits * u, Kit.Win98Tokens.ceilU(Kit.Win98Tokens.widest(lines, false, root.u), root.u))
 
     implicitWidth: textWidth + 8 * u
-    implicitHeight: lines.length * (Win98Tokens.lineUnits * root.u) + 4 * u
+    implicitHeight: lines.length * (Kit.Win98Tokens.lineUnits * root.u) + 4 * u
 
     Rectangle {
         anchors.fill: parent
-        color: Win98Tokens.tip
+        color: Kit.Win98Tokens.tip
         border.width: root.u
-        border.color: Win98Tokens.tipEdge
+        border.color: Kit.Win98Tokens.tipEdge
     }
     Column {
         x: 4 * root.u; y: 2 * root.u
@@ -34,7 +35,7 @@ Item {
                 width: Math.min(implicitWidth, root.width - 8 * root.u)
                 text: modelData
                 accessMarks: false
-                color: Win98Tokens.tipText
+                color: Kit.Win98Tokens.tipText
             }
         }
     }

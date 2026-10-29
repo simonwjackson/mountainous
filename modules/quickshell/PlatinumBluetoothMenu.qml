@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Bluetooth
 import QtQuick
@@ -16,7 +17,7 @@ PlatinumMenuFrame {
 
     // Every action button has one width, so the column of
     // Connect / Disconnect / Pair ends and starts on one line.
-    readonly property real actionWidth: PlatinumMetrics.buttonWidth(["Pair", "Connect", "Disconnect", "Cancel"])
+    readonly property real actionWidth: Kit.PlatinumMetrics.buttonWidth(["Pair", "Connect", "Disconnect", "Cancel"])
 
     PlatinumMenuCheckRow {
         text: "On"
@@ -87,7 +88,7 @@ PlatinumMenuFrame {
                 parts.push(modelData.address);
                 return parts.join(" · ");
             }
-            detailColor: deviceRow.pairFailed ? PlatinumTokens.menuDanger : PlatinumTokens.menuTextSecondary
+            detailColor: deviceRow.pairFailed ? Kit.PlatinumTokens.menuDanger : Kit.PlatinumTokens.menuTextSecondary
             onEntered: devices.currentIndex = index
 
             property bool pairRequested: false
@@ -138,8 +139,8 @@ PlatinumMenuFrame {
             // The forget slot stays when empty, so every action
             // button ends on the same right edge.
             Item {
-                width: PlatinumTokens.menuButtonHeight
-                height: PlatinumTokens.menuButtonHeight
+                width: Kit.PlatinumTokens.menuButtonHeight
+                height: Kit.PlatinumTokens.menuButtonHeight
                 PlatinumButton {
                     anchors.fill: parent
                     visible: deviceRow.modelData.paired && !deviceRow.modelData.pairing

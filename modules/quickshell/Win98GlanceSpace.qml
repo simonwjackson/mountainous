@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -52,7 +53,7 @@ PanelWindow {
     WlrLayershell.namespace: "mountainous-glance"
     WlrLayershell.layer: WlrLayer.Top
 
-    readonly property real u: Win98Tokens.unitFor(space)
+    readonly property real u: Kit.Win98Tokens.unitFor(space)
     function units(n) { return n * space.u; }
     // Before the first show the window has no size yet; the screen does.
     readonly property real fullW: width > 0 ? width : (screen ? screen.width : 1920)
@@ -334,7 +335,7 @@ PanelWindow {
                         x: win.frame
                         y: win.frame
                         width: win.width - 2 * win.frame
-                        height: space.units(Win98Tokens.captionHeight)
+                        height: space.units(Kit.Win98Tokens.captionHeight)
                         enabled: acc.modelData !== "empty"
                         property point last
                         preventStealing: true
@@ -457,20 +458,20 @@ PanelWindow {
                 required property string modelData
                 readonly property var acc: space.items[modelData] || null
                 readonly property var target: acc ? {
-                    x: acc.x + space.units(Win98Tokens.frame), y: acc.y - scroller.contentY + space.units(Win98Tokens.frame),
-                    w: acc.width - space.units(2 * Win98Tokens.frame), h: space.units(Win98Tokens.captionHeight)
+                    x: acc.x + space.units(Kit.Win98Tokens.frame), y: acc.y - scroller.contentY + space.units(Kit.Win98Tokens.frame),
+                    w: acc.width - space.units(2 * Kit.Win98Tokens.frame), h: space.units(Kit.Win98Tokens.captionHeight)
                 } : ({ x: 0, y: 0, w: 0, h: 0 })
                 readonly property var r: Plan.captionRect(space.originRect(), target, space.captionAt === null ? 0 : space.captionAt)
                 z: 6
-                x: Win98Tokens.snap(r.x, space.u)
-                y: Win98Tokens.snap(r.y, space.u)
-                width: Math.max(space.u, Win98Tokens.snap(r.w, space.u))
-                height: Math.max(space.u, Win98Tokens.snap(r.h, space.u))
+                x: Kit.Win98Tokens.snap(r.x, space.u)
+                y: Kit.Win98Tokens.snap(r.y, space.u)
+                width: Math.max(space.u, Kit.Win98Tokens.snap(r.w, space.u))
+                height: Math.max(space.u, Kit.Win98Tokens.snap(r.h, space.u))
                 clip: true
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: Win98Tokens.caption1 }
-                    GradientStop { position: 1; color: Win98Tokens.caption2 }
+                    GradientStop { position: 0; color: Kit.Win98Tokens.caption1 }
+                    GradientStop { position: 1; color: Kit.Win98Tokens.caption2 }
                 }
                 Win98Text {
                     x: space.units(3 + 16 + 3)
@@ -478,7 +479,7 @@ PanelWindow {
                     text: fly.modelData === "empty" ? "Glance" : Registry.label(fly.modelData)
                     accessMarks: false
                     bold: true
-                    color: Win98Tokens.captionText
+                    color: Kit.Win98Tokens.captionText
                 }
             }
         }
@@ -546,8 +547,8 @@ PanelWindow {
             id: empty
             signal escapePressed
             readonly property real naturalWidth: space.units(230)
-            readonly property real restHeight: space.units(Win98Tokens.frame + Win98Tokens.captionHeight + 1 + Win98Tokens.frame + 6 + 8) + column.implicitHeight
-            implicitWidth: space.units(230 - 2 * Win98Tokens.frame - 16)
+            readonly property real restHeight: space.units(Kit.Win98Tokens.frame + Kit.Win98Tokens.captionHeight + 1 + Kit.Win98Tokens.frame + 6 + 8) + column.implicitHeight
+            implicitWidth: space.units(230 - 2 * Kit.Win98Tokens.frame - 16)
             implicitHeight: column.implicitHeight
             Keys.onPressed: function (event) { if (event.key === Qt.Key_Escape) { empty.escapePressed(); event.accepted = true; } }
             Column {

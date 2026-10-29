@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
@@ -47,8 +48,8 @@ PanelWindow {
     WlrLayershell.namespace: "mountainous-glance"
     WlrLayershell.layer: WlrLayer.Top
 
-    readonly property real barH: PlatinumTokens.barHeight
-    readonly property real dpr: devicePixelRatio > 0 ? devicePixelRatio : PlatinumTokens.pixelRatio
+    readonly property real barH: Kit.PlatinumTokens.barHeight
+    readonly property real dpr: devicePixelRatio > 0 ? devicePixelRatio : (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
     function snap(v) { return Math.round(v * space.dpr) / space.dpr; }
     // Before the first show the window has no size yet; the screen does.
     readonly property real spaceW: width > 0 ? width : (screen ? screen.width : 1920)
@@ -256,7 +257,7 @@ PanelWindow {
                     readonly property var content: loader.item
                     // Planned at rest (no host open, not shaded), so opening a
                     // host never moves the other widgets.
-                    readonly property real restW: PlatinumMetrics.even(content ? content.naturalWidth : 300)
+                    readonly property real restW: Kit.PlatinumMetrics.even(content ? content.naturalWidth : 300)
                     readonly property real restH: chromeHeight + (content ? content.restBodyHeight : 80)
                     // A widget that grows (an open host) grows down over the
                     // ones below, and stops at the space's edge; while the
@@ -275,7 +276,7 @@ PanelWindow {
                     title: modelData === "empty" ? "Glance"
                         : isFleet && content && (shaded || content.summaryInTitle) ? content.titleText(Math.max(0, width - 80))
                         : Registry.label(modelData)
-                    titleColor: isFleet && content && (shaded || content.summaryInTitle) ? content.toneColor(content.summaryTone) : PlatinumTokens.menuText
+                    titleColor: isFleet && content && (shaded || content.summaryInTitle) ? content.toneColor(content.summaryTone) : Kit.PlatinumTokens.menuText
                     lightShape: isFleet && content && (shaded || content.summaryInTitle) ? content.lightShape : ""
                     lightTone: isFleet && content ? content.lightTone : "normal"
                     bodyHeight: content ? content.bodyHeight : 0
@@ -349,19 +350,19 @@ PanelWindow {
                         readonly property var r: GlancePlan.between(space.origin, trail.target, modelData)
                         x: space.snap(r.x)
                         y: space.snap(r.y)
-                        width: space.snap(Math.max(2 * PlatinumTokens.hair, r.w))
-                        height: space.snap(Math.max(2 * PlatinumTokens.hair, r.h))
+                        width: space.snap(Math.max(2 * Kit.PlatinumTokens.hairFor(QsWindow.window), r.w))
+                        height: space.snap(Math.max(2 * Kit.PlatinumTokens.hairFor(QsWindow.window), r.h))
                         Rectangle {
                             anchors.fill: parent
                             color: "transparent"
-                            border.width: PlatinumTokens.hair
+                            border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
                             border.color: PlatinumGlanceTokens.zoomOuter
                         }
                         Rectangle {
                             anchors.fill: parent
-                            anchors.margins: PlatinumTokens.hair
+                            anchors.margins: Kit.PlatinumTokens.hairFor(QsWindow.window)
                             color: "transparent"
-                            border.width: PlatinumTokens.hair
+                            border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
                             border.color: PlatinumGlanceTokens.zoomInner
                         }
                     }
@@ -406,20 +407,20 @@ PanelWindow {
                     width: parent.width
                     wrapMode: Text.Wrap
                     text: "No glance widgets are on"
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Text {
                     width: parent.width
                     wrapMode: Text.Wrap
                     lineHeight: 1.2
                     text: "Choose them in the Glance menu: click the Fleet light in the menu bar."
-                    color: PlatinumTokens.menuTextSecondary
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuTextSecondary
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumButton {
                     visible: space.beszel !== null

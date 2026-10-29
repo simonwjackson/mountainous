@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "themes/win98/tray-model.js" as Tray
@@ -15,12 +16,12 @@ FocusScope {
     required property var panel          // panels/StorageHealth.qml
     signal escapePressed
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     function units(n) { return n * view.u; }
 
     // The window's own width at rest, in logical px (230 u, the mock's).
     readonly property real naturalWidth: units(230)
-    readonly property int chromeH: Win98Tokens.frame + Win98Tokens.captionHeight + 1 + Win98Tokens.frame
+    readonly property int chromeH: Kit.Win98Tokens.frame + Kit.Win98Tokens.captionHeight + 1 + Kit.Win98Tokens.frame
 
     readonly property var rows: {
         const out = [];
@@ -43,8 +44,8 @@ FocusScope {
     readonly property string tone: !view.panel.enabled ? "muted" : view.panel.tone === "quiet" ? "normal" : view.panel.tone
     function levelTone(level) { return level === "bad" ? "danger" : level === "ok" ? "normal" : "warning"; }
     function ink(tone) {
-        return tone === "danger" ? Win98Tokens.danger : tone === "warning" ? Win98Tokens.warning
-            : tone === "muted" ? Win98Tokens.gray : Win98Tokens.text;
+        return tone === "danger" ? Kit.Win98Tokens.danger : tone === "warning" ? Kit.Win98Tokens.warning
+            : tone === "muted" ? Kit.Win98Tokens.gray : Kit.Win98Tokens.text;
     }
 
     // Heights in logical px: the summary, the list (its rows' natural
@@ -54,7 +55,7 @@ FocusScope {
     property real maxFrameHeight: -1
     readonly property real fixedH: units(chromeH) + headH + units(4 + 22)
     readonly property real listH: maxFrameHeight >= 0 ? Math.max(units(22), Math.min(listNatural, maxFrameHeight - fixedH)) : listNatural
-    implicitWidth: naturalWidth - units(2 * Win98Tokens.frame)
+    implicitWidth: naturalWidth - units(2 * Kit.Win98Tokens.frame)
     implicitHeight: headH + listH + units(2 + 22)
     readonly property real restHeight: units(chromeH) + headH + listNatural + units(2 + 22)
 
@@ -85,7 +86,7 @@ FocusScope {
         width: parent.width - view.units(4)
         height: view.listH
         variant: "field"
-        color: Win98Tokens.win
+        color: Kit.Win98Tokens.win
 
         Flickable {
             id: list
@@ -110,7 +111,7 @@ FocusScope {
                     width: parent.width - view.units(8)
                     wrap: true
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                     text: !view.panel.enabled ? "This desktop does not run the storage checks."
                         : view.panel.state === "loading" ? "Asking each server over SSH." : "Nothing to show yet."
                 }
@@ -133,7 +134,7 @@ FocusScope {
                             width: view.units(46)
                             text: finding.modelData.host
                             accessMarks: false
-                            color: finding.modelData.level === "ok" ? Win98Tokens.winText : view.ink(view.levelTone(finding.modelData.level))
+                            color: finding.modelData.level === "ok" ? Kit.Win98Tokens.winText : view.ink(view.levelTone(finding.modelData.level))
                         }
                         Win98Text {
                             id: message
@@ -143,7 +144,7 @@ FocusScope {
                             wrap: true
                             accessMarks: false
                             text: finding.modelData.message
-                            color: finding.modelData.level === "ok" ? Win98Tokens.gray : Win98Tokens.winText
+                            color: finding.modelData.level === "ok" ? Kit.Win98Tokens.gray : Kit.Win98Tokens.winText
                         }
                     }
                 }
@@ -171,7 +172,7 @@ FocusScope {
             width: Math.min(implicitWidth, parent.width - view.units(8))
             text: (view.panel.enabled ? view.panel.statusText : "Same data as the Server storage window").replace(/\u2026/g, "...")
             accessMarks: false
-            color: view.panel.state === "error" || view.panel.state === "stale" ? Win98Tokens.warning : Win98Tokens.gray
+            color: view.panel.state === "error" || view.panel.state === "stale" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.gray
         }
     }
 }

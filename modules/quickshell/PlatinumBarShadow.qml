@@ -1,9 +1,10 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
 
 // The short shadow that the light and grey Platinum bars cast on what
-// lies under them: PlatinumTokens.barShadowHeight logical px, from 25%
+// lies under them: Kit.PlatinumTokens.barShadowHeight logical px, from 25%
 // black to clear.
 //
 // It is a window of its own, directly under the bar, because the bar's
@@ -22,13 +23,13 @@ PanelWindow {
 
     // The PlatinumTopBar this shadow belongs to.
     required property var bar
-    readonly property bool painted: PlatinumTokens.barRaised
+    readonly property bool painted: Kit.PlatinumTokens.barRaised
 
     screen: bar.screen
     visible: bar.visible
     anchors { top: true; left: true; right: true }
-    margins.top: PlatinumTokens.barHeight
-    implicitHeight: PlatinumTokens.barShadowHeight
+    margins.top: Kit.PlatinumTokens.barHeight
+    implicitHeight: Kit.PlatinumTokens.barShadowHeight
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "mountainous-bar-shadow"
@@ -38,7 +39,7 @@ PanelWindow {
         visible: root.painted
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0; color: PlatinumTokens.barShadowTop }
+            GradientStop { position: 0; color: Kit.PlatinumTokens.barShadowTop }
             GradientStop { position: 1; color: "#00000000" }
         }
     }

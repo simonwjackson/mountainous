@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Shapes
 
@@ -12,7 +14,7 @@ Item {
 
     implicitHeight: 26
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real ceiling: root.max > 0 ? root.max
         : Math.max(0.0001, Math.max.apply(null, (root.values.length ? root.values : [0])))
     readonly property color line: tone === "danger" ? PlatinumGlanceTokens.barDanger
@@ -23,10 +25,10 @@ Item {
         anchors.fill: parent
         color: PlatinumGlanceTokens.barEmpty
         border.width: root.h
-        border.color: PlatinumTokens.menuEdge
+        border.color: Kit.PlatinumTokens.menuEdge
     }
-    Rectangle { x: root.h; y: root.h; width: parent.width - 2 * root.h; height: root.h; color: PlatinumTokens.bevelDark }
-    Rectangle { x: root.h; y: root.h; width: root.h; height: parent.height - 2 * root.h; color: PlatinumTokens.bevelDark }
+    Rectangle { x: root.h; y: root.h; width: parent.width - 2 * root.h; height: root.h; color: Kit.PlatinumTokens.bevelDark }
+    Rectangle { x: root.h; y: root.h; width: root.h; height: parent.height - 2 * root.h; color: Kit.PlatinumTokens.bevelDark }
 
     Item {
         id: plot

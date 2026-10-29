@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.UPower
@@ -69,11 +70,10 @@ PanelWindow {
     }
 
     anchors { top: true; left: true; right: true }
-    implicitHeight: PlatinumTokens.barHeight
+    implicitHeight: Kit.PlatinumTokens.barHeight
     color: "transparent"
 
-    onDevicePixelRatioChanged: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
-    Component.onCompleted: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
+
 
     readonly property bool menuHere: MenuState.current !== "" && MenuState.screen === bar.modelData
     // Where the front window's title box starts (Go to Address's left edge).
@@ -302,12 +302,12 @@ PanelWindow {
         k.push(["Esc", "cancel"]);
         return k;
     }
-    function chordCapWidth(key) { return Math.max(18, PlatinumMetrics.smallWidth(key) + 8); }
+    function chordCapWidth(key) { return Math.max(18, Kit.PlatinumMetrics.smallWidth(key) + 8); }
     // The chord row: 10 px, then per key its cap and 6 px, and with names
     // the name and 14 px.
     readonly property real chordNamedW: {
         let w = 10;
-        for (const k of chordKeys) w += chordCapWidth(k[0]) + 6 + PlatinumMetrics.width(k[1]) + 14;
+        for (const k of chordKeys) w += chordCapWidth(k[0]) + 6 + Kit.PlatinumMetrics.width(k[1]) + 14;
         return w;
     }
     readonly property real chordCapsW: {
@@ -322,11 +322,11 @@ PanelWindow {
     // Raw content widths, as bar-plan.js wants them: an icon alone, a
     // readout's text box alone. The planner adds every pad and every gap
     // (the 6 px between icon and readout included), so none is counted here.
-    readonly property real clockTimeW: PlatinumMetrics.widest(["12:" + PlatinumMetrics.digits(2),
-        "10:" + PlatinumMetrics.digits(2), PlatinumMetrics.digits(1) + ":" + PlatinumMetrics.digits(2)])
+    readonly property real clockTimeW: Kit.PlatinumMetrics.widest(["12:" + Kit.PlatinumMetrics.digits(2),
+        "10:" + Kit.PlatinumMetrics.digits(2), Kit.PlatinumMetrics.digits(1) + ":" + Kit.PlatinumMetrics.digits(2)])
     // Retry and Dismiss share one width. Their group is the buttons and
     // the gap between them, nothing before.
-    readonly property real dictationButtonW: PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
+    readonly property real dictationButtonW: Kit.PlatinumMetrics.buttonWidth(["Retry", "Dismiss"])
     readonly property bool dictationFailed: dictation.barVisible && dictation.state === "failed"
     readonly property real dictationActionsW: !dictationFailed ? 0
         : dictation.canRetry ? 2 * dictationButtonW + inGap : dictationButtonW
@@ -342,14 +342,14 @@ PanelWindow {
     // and the plan must never see a full readout narrower than its compact
     // one. A number's box holds its digits at the widest digit's width.
     readonly property string ociName: ociAlarm ? ociWorst.name + ":" : ""
-    readonly property real ociReadoutW: ociAlarm ? PlatinumMetrics.width(ociName) + PlatinumMetrics.digitBox(ociWorst.value) : 0
+    readonly property real ociReadoutW: ociAlarm ? Kit.PlatinumMetrics.width(ociName) + Kit.PlatinumMetrics.digitBox(ociWorst.value) : 0
     readonly property string diskWord: diskCounting ? (storage.issues.length === 1 ? " issue" : " issues")
         : storage.state === "error" ? "!" : storage.state === "stale" ? "stale" : ""
-    readonly property real diskCountW: diskCounting ? PlatinumMetrics.digitBox(storage.issues.length) : 0
-    readonly property real diskReadoutW: diskCountW + (diskWord !== "" ? PlatinumMetrics.width(diskWord) : 0)
-    readonly property real fleetReadoutW: fleetReadout.text !== "" ? PlatinumMetrics.digitBox(fleetReadout.text) : 0
-    readonly property real ntfReadoutW: !ntfAlarm ? 0 : (ntfNumber !== "" ? PlatinumMetrics.digitBox(ntfNumber) : 0)
-        + (ntfSuffix !== "" ? PlatinumMetrics.width(ntfSuffix) : 0)
+    readonly property real diskCountW: diskCounting ? Kit.PlatinumMetrics.digitBox(storage.issues.length) : 0
+    readonly property real diskReadoutW: diskCountW + (diskWord !== "" ? Kit.PlatinumMetrics.width(diskWord) : 0)
+    readonly property real fleetReadoutW: fleetReadout.text !== "" ? Kit.PlatinumMetrics.digitBox(fleetReadout.text) : 0
+    readonly property real ntfReadoutW: !ntfAlarm ? 0 : (ntfNumber !== "" ? Kit.PlatinumMetrics.digitBox(ntfNumber) : 0)
+        + (ntfSuffix !== "" ? Kit.PlatinumMetrics.width(ntfSuffix) : 0)
     readonly property bool ntfShowsReadout: ntfAlarm && plan.show.ntfCount !== false && ntfReadoutW > 0
     readonly property string batteryText: battery.percent + "%"
 
@@ -358,7 +358,7 @@ PanelWindow {
             layoutPresent ? { id: "layout", iconWidth: 16, readoutWidth: 0 } : null,
             btPresent ? { id: "bt", iconWidth: 16, readoutWidth: 0 } : null,
             // The "!" of a radio with no network never yields.
-            wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: wifiDown ? PlatinumMetrics.width("!") : 0 } : null,
+            wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: wifiDown ? Kit.PlatinumMetrics.width("!") : 0 } : null,
             volPresent ? { id: "vol", iconWidth: 16, readoutWidth: 0 } : null,
             brightness.available ? { id: "bri", iconWidth: 16, readoutWidth: 0 } : null,
             oci.enabled ? { id: "oci", iconWidth: 22, readoutWidth: ociReadoutW } : null,
@@ -369,26 +369,26 @@ PanelWindow {
             builderPresent ? { id: "builder", iconWidth: 16, readoutWidth: builderControl.fullWidth, compactReadoutWidth: 0 } : null,
             // Offline keeps a "!" once the words yield.
             { id: "ntf", iconWidth: 16, readoutWidth: ntfReadoutW,
-                compactReadoutWidth: ntfOffline ? Math.min(PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
+                compactReadoutWidth: ntfOffline ? Math.min(Kit.PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
         ].filter(function (c) { return c !== null; }),
         markWidth: 20,
         // The title box draws 8 px either side of its text. While dictation
         // shows, the title is its dot and status text and ends at the
         // text; Retry and Dismiss are dictationActionsWidth, and the
         // planner adds the 6 px before them.
-        titleWidth: dictation.barVisible ? 8 + 8 + 8 + PlatinumMetrics.width(dictationText)
-            : title !== "" ? PlatinumMetrics.width(title) + 16 : 0,
+        titleWidth: dictation.barVisible ? 8 + 8 + 8 + Kit.PlatinumMetrics.width(dictationText)
+            : title !== "" ? Kit.PlatinumMetrics.width(title) + 16 : 0,
         titleMinWidth: dictation.barVisible ? 8 + 8 + 8 + 60 : 96,
         dictationActionsWidth: dictationActionsW,
         clockWidth: clockTimeW,
         chordWidth: chordVisible ? chordNamedW : 0,
         chordCompactWidth: chordVisible ? chordCapsW : 0,
         batteryWidth: battery.present ? 18 : 0,
-        batteryReadoutWidth: battery.present && batteryAlarm ? PlatinumMetrics.digitBox(batteryText) : 0,
+        batteryReadoutWidth: battery.present && batteryAlarm ? Kit.PlatinumMetrics.digitBox(batteryText) : 0,
         // Keep the Application menu reachable, even with no front app:
         // it is where Show All lives. Only tiny bars move it into ».
         appIconWidth: 16,
-        appNameWidth: appId !== "" && !titleNamesApp ? PlatinumMetrics.width(appName) : 0,
+        appNameWidth: appId !== "" && !titleNamesApp ? Kit.PlatinumMetrics.width(appName) : 0,
         overflowWidth: 16
     })
 
@@ -478,7 +478,7 @@ PanelWindow {
     Rectangle {
         id: surface
         anchors.fill: parent
-        color: PlatinumTokens.barSurface
+        color: Kit.PlatinumTokens.barSurface
 
         // A press on the bar outside a control closes an open menu.
         MouseArea {
@@ -490,30 +490,30 @@ PanelWindow {
         // highlight hair on top, one shade hair just above the rule. The
         // shadow under the bar is PlatinumBarShadow, a window of its own.
         Rectangle {
-            visible: PlatinumTokens.barRaised
+            visible: Kit.PlatinumTokens.barRaised
             anchors.left: parent.left
             anchors.right: parent.right
             y: 0
-            height: PlatinumTokens.hair
-            color: PlatinumTokens.barBevelLight
+            height: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            color: Kit.PlatinumTokens.barBevelLight
         }
         Rectangle {
-            visible: PlatinumTokens.barRaised
+            visible: Kit.PlatinumTokens.barRaised
             anchors.left: parent.left
             anchors.right: parent.right
-            y: parent.height - 2 * PlatinumTokens.hair
-            height: PlatinumTokens.hair
-            color: PlatinumTokens.barBevelDark
+            y: parent.height - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+            height: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            color: Kit.PlatinumTokens.barBevelDark
         }
 
         // The rule. Extra dark draws none: the black bar meets the windows.
         Rectangle {
-            visible: PlatinumTokens.barRuled
+            visible: Kit.PlatinumTokens.barRuled
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: PlatinumTokens.hair
-            color: PlatinumTokens.barRule
+            height: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            color: Kit.PlatinumTokens.barRule
         }
     }
 
@@ -569,7 +569,7 @@ PanelWindow {
         // The plan's gap between the mark and the title: 2 px, or 0 once
         // spacing has yielded.
         x: markControl.x + markControl.width + bar.plan.gap
-        height: PlatinumTokens.barHeight - PlatinumTokens.hair
+        height: Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window)
         // The plan's budget for the whole left group, less the mark.
         width: Math.max(0, bar.plan.leftMax - x)
 
@@ -589,10 +589,10 @@ PanelWindow {
                 elide: Text.ElideRight
                 // Underlined while Go to Address acts on this window.
                 font.underline: bar.isOpen("address")
-                color: bar.isOpen("address") ? PlatinumTokens.barText : PlatinumTokens.barTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: bar.isOpen("address") ? Kit.PlatinumTokens.barText : Kit.PlatinumTokens.barTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
 
@@ -614,7 +614,7 @@ PanelWindow {
                 radius: 4
                 // Recording and failure are the danger tone. Working is a
                 // status at rest, so it takes the text colour.
-                color: bar.dictation.state === "working" ? PlatinumTokens.barText : PlatinumTokens.barDanger
+                color: bar.dictation.state === "working" ? Kit.PlatinumTokens.barText : Kit.PlatinumTokens.barDanger
             }
 
             Text {
@@ -628,10 +628,10 @@ PanelWindow {
                 text: bar.dictationText
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
-                color: bar.dictation.state === "failed" ? PlatinumTokens.barDanger : PlatinumTokens.barText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: bar.dictation.state === "failed" ? Kit.PlatinumTokens.barDanger : Kit.PlatinumTokens.barText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Row {
@@ -678,16 +678,16 @@ PanelWindow {
             horizontalAlignment: Text.AlignHCenter
             text: bar.clockTime(bar.now)
             color: clockTitle.fg
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumText
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumText
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
     ClockTitle {
         id: clockCentre
         visible: !bar.chordVisible && bar.plan.centred && bar.plan.show.clock !== false
-        x: PlatinumMetrics.even(bar.width / 2 - width / 2)
+        x: Kit.PlatinumMetrics.even(bar.width / 2 - width / 2)
     }
 
     // The Super+O chord: each key as a key cap, then what it opens. It
@@ -700,8 +700,8 @@ PanelWindow {
         visible: bar.chordVisible && bar.plan.show.chord !== false
         readonly property bool compact: !bar.plan.show.chordNames
         x: bar.plan.chordPlace === "right" ? rightGroup.x + chordSlot.x
-            : PlatinumMetrics.even(bar.width / 2 - width / 2)
-        height: PlatinumTokens.barHeight - PlatinumTokens.hair
+            : Kit.PlatinumMetrics.even(bar.width / 2 - width / 2)
+        height: Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window)
         spacing: 0
 
         Item { width: 10; height: 1 }
@@ -722,15 +722,15 @@ PanelWindow {
                     height: 18
                     radius: 3
                     color: "transparent"
-                    border.width: PlatinumTokens.hair
-                    border.color: PlatinumTokens.barText
+                    border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
+                    border.color: Kit.PlatinumTokens.barText
 
                     Text {
                         anchors.centerIn: parent
                         text: modelData[0]
-                        color: PlatinumTokens.barText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
+                        color: Kit.PlatinumTokens.barText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
                     }
                 }
 
@@ -738,10 +738,10 @@ PanelWindow {
                     visible: !chord.compact
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData[1]
-                    color: PlatinumTokens.barText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.barText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
             }
         }
@@ -752,7 +752,7 @@ PanelWindow {
         id: rightGroup
         anchors.right: parent.right
         anchors.rightMargin: bar.plan.edge === undefined ? 6 : bar.plan.edge
-        height: PlatinumTokens.barHeight - PlatinumTokens.hair
+        height: Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window)
         spacing: bar.plan.gap
         layoutDirection: Qt.LeftToRight
 
@@ -792,7 +792,7 @@ PanelWindow {
             pad: bar.pad
             icon: "bluetooth"
             slashed: !bar.btOn
-            tone: PlatinumTokens.barTone(bar.btTone)
+            tone: Kit.PlatinumTokens.barTone(bar.btTone)
         }
 
         PlatinumBarControl {
@@ -804,14 +804,14 @@ PanelWindow {
             pad: bar.pad
             icon: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel
             slashed: bar.wifiRadioOff
-            tone: PlatinumTokens.barTone(bar.wifiDown ? "warning" : "normal")
+            tone: Kit.PlatinumTokens.barTone(bar.wifiDown ? "warning" : "normal")
 
             Text {
                 visible: bar.wifiDown
                 text: "!"
                 color: wifiControl.fg
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
             }
         }
 
@@ -850,12 +850,12 @@ PanelWindow {
             pad: bar.pad
             icon: "cloud-meter"
             iconWidth: 22
-            tone: PlatinumTokens.barTone(bar.oci.tone)
+            tone: Kit.PlatinumTokens.barTone(bar.oci.tone)
 
             // The meter's fill, inside the icon's well (x 18-20, y 5.33-12),
             // in whole device pixels: at least two once there is any use.
             iconExtras: Rectangle {
-                readonly property real dpr: PlatinumTokens.pixelRatio
+                readonly property real dpr: (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
                 readonly property real inner: 20 / 3
                 readonly property int device: bar.ociFraction > 0
                     ? Math.max(2, Math.round(inner * dpr * bar.ociFraction)) : 0
@@ -871,15 +871,15 @@ PanelWindow {
 
                 Text {
                     text: bar.ociName
-                    color: ociControl.inverted ? ociControl.fg : PlatinumTokens.barText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: ociControl.inverted ? ociControl.fg : Kit.PlatinumTokens.barText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumBarNumber {
                     byDigits: true
                     text: bar.ociWorst ? bar.ociWorst.value : ""
-                    tone: ociControl.inverted ? ociControl.fg : PlatinumTokens.barTone(bar.ociWorst ? bar.ociWorst.tone : "normal")
+                    tone: ociControl.inverted ? ociControl.fg : Kit.PlatinumTokens.barTone(bar.ociWorst ? bar.ociWorst.tone : "normal")
                 }
             }
         }
@@ -894,7 +894,7 @@ PanelWindow {
             open: bar.isOpen("disk")
             pad: bar.pad
             icon: "disk"
-            tone: PlatinumTokens.barTone(bar.storage.tone)
+            tone: Kit.PlatinumTokens.barTone(bar.storage.tone)
 
             Row {
                 visible: bar.diskReadoutW > 0 && (bar.plan.show.diskLabel !== false || bar.diskCounting)
@@ -910,9 +910,9 @@ PanelWindow {
                     visible: bar.plan.show.diskLabel !== false && bar.diskWord !== ""
                     text: bar.diskWord
                     color: diskControl.fg
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
             }
         }
@@ -929,7 +929,7 @@ PanelWindow {
             icon: ""
             iconWidth: 12
             iconHeight: 12
-            tone: PlatinumTokens.barTone(bar.fleetReadout.tone)
+            tone: Kit.PlatinumTokens.barTone(bar.fleetReadout.tone)
 
             iconExtras: PlatinumStatusLight {
                 anchors.fill: parent
@@ -965,8 +965,8 @@ PanelWindow {
             open: bar.isOpen("ntf")
             pad: bar.pad
             icon: "bell"
-            tone: ({ danger: PlatinumTokens.barDanger, warning: PlatinumTokens.barWarning,
-                     muted: PlatinumTokens.barTextOff })[bar.ntfTone] || PlatinumTokens.barText
+            tone: ({ danger: Kit.PlatinumTokens.barDanger, warning: Kit.PlatinumTokens.barWarning,
+                     muted: Kit.PlatinumTokens.barTextOff })[bar.ntfTone] || Kit.PlatinumTokens.barText
 
             Row {
                 visible: bar.ntfShowsReadout
@@ -985,9 +985,9 @@ PanelWindow {
                     visible: text !== ""
                     text: bar.ntfSuffix
                     color: ntfControl.fg
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
             }
 
@@ -995,8 +995,8 @@ PanelWindow {
                 visible: bar.plan.show.ntfCount === false && bar.ntfOffline
                 text: "!"
                 color: ntfControl.fg
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
             }
 
             iconExtras: PlatinumBarBadge {
@@ -1018,7 +1018,7 @@ PanelWindow {
             open: bar.isOpen("more") || (bar.menuHere && bar.plan.overflow.indexOf(MenuState.current) >= 0)
             pad: bar.pad
             icon: "more"
-            tone: PlatinumTokens.barTone(bar.moreTone)
+            tone: Kit.PlatinumTokens.barTone(bar.moreTone)
         }
 
         // The battery: its fill is the level. The percent comes onto the
@@ -1032,7 +1032,7 @@ PanelWindow {
             pad: bar.pad
             icon: "battery"
             iconWidth: 18
-            tone: PlatinumTokens.barTone(bar.batteryRule.tone)
+            tone: Kit.PlatinumTokens.barTone(bar.batteryRule.tone)
 
             iconExtras: [
                 Rectangle {
@@ -1085,9 +1085,9 @@ PanelWindow {
                 text: bar.appName
                 textFormat: Text.PlainText
                 color: appControl.fg
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }

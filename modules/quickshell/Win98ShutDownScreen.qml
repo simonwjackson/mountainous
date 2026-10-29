@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -36,7 +37,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Win98Tokens.unitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(win)
             readonly property var plan: Session.shutPlan(Math.floor(win.width / win.u))
             readonly property var choices: host.desktop.shutChoices
             readonly property var current: choices.find(function (c) { return c.id === host.desktop.shutChoice; }) || choices[0]
@@ -79,8 +80,8 @@ Scope {
                 title: host.desktop.hostLabel === "" ? "Shut Down" : "Shut Down " + host.desktop.hostLabel
                 width: win.plan.width * win.u
                 availableHeight: win.height - 4 * win.u
-                x: Win98Tokens.half((win.width - width) / 2, win.u)
-                y: Math.max(2 * win.u, Win98Tokens.snap((win.height - height) / 2, win.u))
+                x: Kit.Win98Tokens.half((win.width - width) / 2, win.u)
+                y: Math.max(2 * win.u, Kit.Win98Tokens.snap((win.height - height) / 2, win.u))
                 margins: false
                 focus: true
                 onCloseClicked: win.cancel()
@@ -95,7 +96,7 @@ Scope {
                     }
                     else {
                         const ch = (event.text || "").toLowerCase();
-                        const hit = ch !== "" ? win.choices.find(function (c) { return Win98Tokens.accessKey(c.text) === ch; }) : null;
+                        const hit = ch !== "" ? win.choices.find(function (c) { return Kit.Win98Tokens.accessKey(c.text) === ch; }) : null;
                         if (!hit) return;
                         host.desktop.shutChoice = hit.id;
                     }
@@ -108,7 +109,7 @@ Scope {
                     width: dialog.bodyWidth - 20 * win.u
                     // 10 u in, the icon or the question and choices, 10 u, the buttons, 8 u out.
                     implicitHeight: 10 * win.u + Math.max(win.plan.icon ? 32 * win.u : 0, column.implicitHeight) + 10 * win.u
-                        + Win98Tokens.buttonHeight * win.u + 8 * win.u
+                        + Kit.Win98Tokens.buttonHeight * win.u + 8 * win.u
 
                     Win98Icon {
                         visible: win.plan.icon
@@ -153,12 +154,12 @@ Scope {
                             wrap: true
                             text: win.current.closes ? Session.WARNING : " "
                             accessMarks: false
-                            color: Win98Tokens.danger
+                            color: Kit.Win98Tokens.danger
                         }
                     }
                     Row {
                         x: body.width - width
-                        y: body.implicitHeight - 8 * win.u - Win98Tokens.buttonHeight * win.u
+                        y: body.implicitHeight - 8 * win.u - Kit.Win98Tokens.buttonHeight * win.u
                         spacing: 6 * win.u
                         Win98Button { id: okButton; objectName: "shutDownOk"; text: "OK"; isDefault: true; onClicked: win.ok() }
                         Win98Button { id: cancelButton; objectName: "shutDownCancel"; text: "Cancel"; onClicked: win.cancel() }

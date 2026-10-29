@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "beszel-model.js" as Model
@@ -37,8 +38,8 @@ Win98Window {
 
     function units(n) { return n * root.u; }
     function toneInk(tone) {
-        return tone === "danger" ? Win98Tokens.danger : tone === "warning" ? Win98Tokens.warning
-            : tone === "muted" ? Win98Tokens.gray : Win98Tokens.text;
+        return tone === "danger" ? Kit.Win98Tokens.danger : tone === "warning" ? Kit.Win98Tokens.warning
+            : tone === "muted" ? Kit.Win98Tokens.gray : Kit.Win98Tokens.text;
     }
     function clock(ms) {
         if (!isFinite(ms)) return "--";
@@ -158,7 +159,7 @@ Win98Window {
             anchors.fill: parent
             color: "transparent"
             border.width: root.u
-            border.color: note.danger ? Win98Tokens.danger : Win98Tokens.gray
+            border.color: note.danger ? Kit.Win98Tokens.danger : Kit.Win98Tokens.gray
         }
         Win98HostIcon {
             x: root.units(6); y: root.units(4)
@@ -173,14 +174,14 @@ Win98Window {
             wrap: true
             accessMarks: false
             text: note.text
-            color: note.danger ? Win98Tokens.danger : Win98Tokens.text
+            color: note.danger ? Kit.Win98Tokens.danger : Kit.Win98Tokens.text
         }
     }
     component Etch: Item {
         width: parent ? parent.width : 0
         height: root.units(2)
-        Rectangle { width: parent.width; height: root.u; color: Win98Tokens.sh }
-        Rectangle { y: root.u; width: parent.width; height: root.u; color: Win98Tokens.hi }
+        Rectangle { width: parent.width; height: root.u; color: Kit.Win98Tokens.sh }
+        Rectangle { y: root.u; width: parent.width; height: root.u; color: Kit.Win98Tokens.hi }
     }
 
     // General: the host, its status and its system facts.
@@ -190,7 +191,7 @@ Win98Window {
             id: general
             spacing: root.units(6)
             readonly property bool narrow: width < root.units(200)
-            readonly property real keyW: Win98Tokens.ceilU(Win98Tokens.widest(["Filesystems:"], false, root.u), root.u)
+            readonly property real keyW: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.widest(["Filesystems:"], false, root.u), root.u)
             readonly property var host: root.hv.host
             readonly property var pairs: {
                 const v = root.hv, h = v.host;
@@ -216,7 +217,7 @@ Win98Window {
                     Win98Text {
                         text: root.hv.status.charAt(0).toUpperCase() + root.hv.status.slice(1)
                         accessMarks: false
-                        color: Win98Tokens.gray
+                        color: Kit.Win98Tokens.gray
                     }
                 }
             }
@@ -235,7 +236,7 @@ Win98Window {
                         id: key
                         text: pair.modelData[0] + ":"
                         accessMarks: false
-                        color: general.narrow ? Win98Tokens.gray : Win98Tokens.text
+                        color: general.narrow ? Kit.Win98Tokens.gray : Kit.Win98Tokens.text
                     }
                     Win98Text {
                         id: value
@@ -245,7 +246,7 @@ Win98Window {
                         wrap: true
                         accessMarks: false
                         text: pair.modelData[1]
-                        color: pair.untrusted ? Win98Tokens.gray : pair.modelData[2] ? root.toneInk(pair.modelData[2]) : Win98Tokens.text
+                        color: pair.untrusted ? Kit.Win98Tokens.gray : pair.modelData[2] ? root.toneInk(pair.modelData[2]) : Kit.Win98Tokens.text
                     }
                 }
             }
@@ -260,13 +261,13 @@ Win98Window {
             spacing: root.units(3)
             readonly property real chartH: Math.max(18, Math.min(40, Math.floor((sheet.height / root.u - (perfNote.visible ? 60 : 0) - 4 * 34) / 4)))
             DownNote { id: perfNote }
-            Label { visible: !root.loaded; text: root.missing; color: Win98Tokens.gray }
+            Label { visible: !root.loaded; text: root.missing; color: Kit.Win98Tokens.gray }
             Repeater {
                 model: root.loaded ? [
-                    { label: "CPU", key: "cpu", max: 100, color: Win98Tokens.chartCpu, tone: "normal" },
-                    { label: "Memory", key: "mem", max: 100, color: Win98Tokens.chartMem, tone: "normal" },
-                    { label: "Disk", key: "disk", max: 100, color: Win98Tokens.chartDisk, tone: root.hv.disk.fs === "/" ? root.hv.disk.tone : "normal" },
-                    { label: "Network", key: "net", max: 0, color: Win98Tokens.chartNet, tone: "normal" }
+                    { label: "CPU", key: "cpu", max: 100, color: Kit.Win98Tokens.chartCpu, tone: "normal" },
+                    { label: "Memory", key: "mem", max: 100, color: Kit.Win98Tokens.chartMem, tone: "normal" },
+                    { label: "Disk", key: "disk", max: 100, color: Kit.Win98Tokens.chartDisk, tone: root.hv.disk.fs === "/" ? root.hv.disk.tone : "normal" },
+                    { label: "Network", key: "net", max: 0, color: Kit.Win98Tokens.chartNet, tone: "normal" }
                 ] : []
                 Item {
                     id: spark
@@ -284,7 +285,7 @@ Win98Window {
                             width: labels.width
                             wrap: true
                             accessMarks: false
-                            color: Win98Tokens.gray
+                            color: Kit.Win98Tokens.gray
                             text: (spark.s.now === null ? "--" : spark.fmt(spark.s.now)) + " now"
                         }
                     }
@@ -296,15 +297,15 @@ Win98Window {
                         values: spark.s.values
                         max: spark.modelData.max
                         stale: !root.hv.trusted
-                        lineColor: spark.modelData.tone === "danger" ? Win98Tokens.meterDanger
-                            : spark.modelData.tone === "warning" ? Win98Tokens.meterWarn : spark.modelData.color
+                        lineColor: spark.modelData.tone === "danger" ? Kit.Win98Tokens.meterDanger
+                            : spark.modelData.tone === "warning" ? Kit.Win98Tokens.meterWarn : spark.modelData.color
                     }
                     Win98Text {
                         x: chart.x
                         y: chart.height
                         text: "1 h ago"
                         accessMarks: false
-                        color: Win98Tokens.gray
+                        color: Kit.Win98Tokens.gray
                     }
                     Win98Text {
                         x: chart.x + chart.width - width
@@ -312,7 +313,7 @@ Win98Window {
                         visible: spark.s.values.length > 0
                         text: "max " + spark.fmt(spark.s.max)
                         accessMarks: false
-                        color: Win98Tokens.gray
+                        color: Kit.Win98Tokens.gray
                     }
                 }
             }
@@ -333,7 +334,7 @@ Win98Window {
                 width: services.width
                 wrap: true
                 accessMarks: false
-                color: root.hv.trusted && root.hv.failed.n > 0 ? Win98Tokens.danger : Win98Tokens.text
+                color: root.hv.trusted && root.hv.failed.n > 0 ? Kit.Win98Tokens.danger : Kit.Win98Tokens.text
                 text: !root.hv.trusted || !(root.hv.failed.n > 0) ? "Failed units"
                     : root.hv.failed.n + (root.hv.failed.n === 1 ? " failed unit" : " failed units") + " of " + (root.hv.failed.total === null ? "--" : root.hv.failed.total)
             }
@@ -342,7 +343,7 @@ Win98Window {
                 width: services.width
                 height: root.units(Math.max(60, 17 + 4 + Math.max(1, services.units.length) * 16 + 4))
                 variant: "field"
-                color: Win98Tokens.win
+                color: Kit.Win98Tokens.win
                 Win98HeaderView {
                     visible: services.units.length > 0
                     x: root.units(2); y: root.units(2)
@@ -364,7 +365,7 @@ Win98Window {
                             objectName: "unit-" + index
                             width: parent.width
                             height: root.units(16)
-                            color: on ? Win98Tokens.selection : "transparent"
+                            color: on ? Kit.Win98Tokens.selection : "transparent"
                             Win98Icon { x: root.units(3); y: root.units(2); name: "bad" }
                             Win98Text {
                                 x: root.units(3 + 12 + 3)
@@ -372,7 +373,7 @@ Win98Window {
                                 width: Math.min(implicitWidth, unitRow.width - x - root.units(2))
                                 text: unitRow.modelData
                                 accessMarks: false
-                                color: unitRow.on ? Win98Tokens.selectionText : Win98Tokens.danger
+                                color: unitRow.on ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.danger
                             }
                             MouseArea { anchors.fill: parent; onClicked: services.chosen = unitRow.index }
                         }
@@ -384,7 +385,7 @@ Win98Window {
                         width: parent.width - root.units(12)
                         wrap: true
                         accessMarks: false
-                        color: root.hv.trusted && root.hv.failed.n > 0 ? Win98Tokens.danger : Win98Tokens.gray
+                        color: root.hv.trusted && root.hv.failed.n > 0 ? Kit.Win98Tokens.danger : Kit.Win98Tokens.gray
                         text: !root.hv.trusted ? "Unknown while " + root.hv.status
                             : root.hv.failed.n > 0 ? root.hv.failed.n + " failed. " + (root.loaded ? "Beszel did not list them." : "Loading names...")
                             : "None of " + (root.hv.failed.total === null ? "--" : root.hv.failed.total) + " units"
@@ -395,7 +396,7 @@ Win98Window {
                 width: services.width
                 wrap: true
                 accessMarks: false
-                color: services.chosen >= 0 ? Win98Tokens.text : Win98Tokens.gray
+                color: services.chosen >= 0 ? Kit.Win98Tokens.text : Kit.Win98Tokens.gray
                 text: services.chosen >= 0 && services.units[services.chosen] ? services.units[services.chosen]
                     : services.units.length ? "Click a unit to read its full name." : "From list_services, state Failed."
             }
@@ -426,7 +427,7 @@ Win98Window {
                             Win98Text {
                                 text: Model.fmtPct(pie.modelData.pct) + " used"
                                 accessMarks: false
-                                color: !root.hv.trusted ? Win98Tokens.gray : root.toneInk(Model.fsTone(pie.modelData.pct))
+                                color: !root.hv.trusted ? Kit.Win98Tokens.gray : root.toneInk(Model.fsTone(pie.modelData.pct))
                             }
                         }
                     }
@@ -435,7 +436,7 @@ Win98Window {
             Row {
                 spacing: root.units(8)
                 Repeater {
-                    model: [["Used", Win98Tokens.pieUsed], ["Free", Win98Tokens.pieFree]]
+                    model: [["Used", Kit.Win98Tokens.pieUsed], ["Free", Kit.Win98Tokens.pieFree]]
                     Row {
                         id: swatch
                         required property var modelData
@@ -445,7 +446,7 @@ Win98Window {
                             width: root.units(9); height: root.units(9)
                             color: swatch.modelData[1]
                             border.width: root.u
-                            border.color: Win98Tokens.dk
+                            border.color: Kit.Win98Tokens.dk
                         }
                         Win98Text { text: swatch.modelData[0]; accessMarks: false }
                     }
@@ -458,7 +459,7 @@ Win98Window {
                 width: disks.width
                 height: root.units(4 + (disks.smart.length ? 17 + disks.smart.length * 30 : 30))
                 variant: "field"
-                color: Win98Tokens.win
+                color: Kit.Win98Tokens.win
                 readonly property real cw: width - root.units(4)
                 Win98HeaderView {
                     visible: disks.smart.length > 0
@@ -478,7 +479,7 @@ Win98Window {
                     width: smartWell.cw - root.units(8)
                     wrap: true
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                     text: !root.loaded ? root.missing : "No SMART data"
                 }
                 Column {
@@ -501,21 +502,21 @@ Win98Window {
                                 width: Math.min(implicitWidth, root.units(62) - x)
                                 text: String(drive.modelData.name || "").replace(/^\/dev\//, "")
                                 accessMarks: false
-                                color: Win98Tokens.winText
+                                color: Kit.Win98Tokens.winText
                             }
                             Win98Text {
                                 x: root.units(62 + 3)
                                 y: root.units(1)
                                 text: drive.verdict
                                 accessMarks: false
-                                color: drive.verdict === "Failed" ? Win98Tokens.danger : drive.verdict === "Passed" ? Win98Tokens.winText : Win98Tokens.gray
+                                color: drive.verdict === "Failed" ? Kit.Win98Tokens.danger : drive.verdict === "Passed" ? Kit.Win98Tokens.winText : Kit.Win98Tokens.gray
                             }
                             Win98Text {
                                 x: drive.width - root.units(66 + 4) - width
                                 y: root.units(1)
                                 text: typeof drive.modelData.temperatureC === "number" && drive.modelData.temperatureC > 0 ? Math.round(drive.modelData.temperatureC) + "°" : "--"
                                 accessMarks: false
-                                color: Win98Tokens.winText
+                                color: Kit.Win98Tokens.winText
                             }
                             Win98Text {
                                 x: drive.width - root.units(4) - width
@@ -523,7 +524,7 @@ Win98Window {
                                 text: typeof drive.modelData.powerOnHours === "number" && drive.modelData.powerOnHours > 0
                                     ? drive.modelData.powerOnHours.toLocaleString(Qt.locale("en_US"), "f", 0) + " h" : "--"
                                 accessMarks: false
-                                color: Win98Tokens.winText
+                                color: Kit.Win98Tokens.winText
                             }
                             Win98Text {
                                 x: root.units(62 + 3)
@@ -531,7 +532,7 @@ Win98Window {
                                 width: Math.min(implicitWidth, drive.width - x - root.units(4))
                                 text: [drive.modelData.model || "", root.capacity(drive.modelData.capacityGb)].filter(function (s) { return s !== ""; }).join(", ")
                                 accessMarks: false
-                                color: Win98Tokens.gray
+                                color: Kit.Win98Tokens.gray
                             }
                         }
                     }

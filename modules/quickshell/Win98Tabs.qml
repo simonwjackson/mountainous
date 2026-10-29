@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "themes/win98/tab-strip.js" as TabStrip
@@ -39,10 +40,10 @@ FocusScope {
 
     signal selected(int index)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property real strip: singleRow ? 24 * u : 24 * u + (rows.length - 1) * 20 * u
     readonly property Item first: sheetBody.children.length > 0 ? sheetBody.children[0] : null
-    readonly property var tabWidths: tabs.map(t => Win98Tokens.ceilU(Win98Tokens.textWidth(Win98Tokens.plainText(t), false, root.u), root.u) + 14 * u)
+    readonly property var tabWidths: tabs.map(t => Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth(Kit.Win98Tokens.plainText(t), false, root.u), root.u) + 14 * u)
     // Each tab's left edge in the row: 2 u in, every tab 1 u over the last,
     // except the one after the current tab.
     // One row: which tabs show (all of them while they fit).
@@ -87,7 +88,7 @@ FocusScope {
         const extra = Math.max(0, avail - total);
         let x = 2 * u;
         for (const j of row) {
-            const share = Win98Tokens.snap(extra / row.length, u);
+            const share = Kit.Win98Tokens.snap(extra / row.length, u);
             const w = Math.min(avail, tabWidths[j] + share);
             if (j === i) return { row: ri, x: x, w: w };
             x += w - u;
@@ -151,15 +152,15 @@ FocusScope {
             clip: root.scrolled && width < w
             // Face, then the edge pixel by pixel: the 2-u corners are cut
             // with one diagonal unit each, as Win98 drew them.
-            Rectangle { x: 2 * root.u; y: 0; width: tab.w - 4 * root.u; height: root.u; color: Win98Tokens.hi }
-            Rectangle { x: root.u; y: root.u; width: root.u; height: root.u; color: Win98Tokens.hi }
-            Rectangle { x: 0; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Win98Tokens.hi }
-            Rectangle { x: 2 * root.u; y: root.u; width: tab.w - 4 * root.u; height: root.u; color: Win98Tokens.li }
-            Rectangle { x: root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Win98Tokens.li }
-            Rectangle { x: 2 * root.u; y: 2 * root.u; width: tab.w - 4 * root.u; height: tab.h - 2 * root.u; color: Win98Tokens.face }
-            Rectangle { x: tab.w - 2 * root.u; y: root.u; width: root.u; height: root.u; color: Win98Tokens.dk }
-            Rectangle { x: tab.w - root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Win98Tokens.dk }
-            Rectangle { x: tab.w - 2 * root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Win98Tokens.sh }
+            Rectangle { x: 2 * root.u; y: 0; width: tab.w - 4 * root.u; height: root.u; color: Kit.Win98Tokens.hi }
+            Rectangle { x: root.u; y: root.u; width: root.u; height: root.u; color: Kit.Win98Tokens.hi }
+            Rectangle { x: 0; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Kit.Win98Tokens.hi }
+            Rectangle { x: 2 * root.u; y: root.u; width: tab.w - 4 * root.u; height: root.u; color: Kit.Win98Tokens.li }
+            Rectangle { x: root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Kit.Win98Tokens.li }
+            Rectangle { x: 2 * root.u; y: 2 * root.u; width: tab.w - 4 * root.u; height: tab.h - 2 * root.u; color: Kit.Win98Tokens.face }
+            Rectangle { x: tab.w - 2 * root.u; y: root.u; width: root.u; height: root.u; color: Kit.Win98Tokens.dk }
+            Rectangle { x: tab.w - root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Kit.Win98Tokens.dk }
+            Rectangle { x: tab.w - 2 * root.u; y: 2 * root.u; width: root.u; height: tab.h - 2 * root.u; color: Kit.Win98Tokens.sh }
 
             Win98Text {
                 id: tabLabel
@@ -203,9 +204,9 @@ FocusScope {
                 Win98Bevel { anchors.fill: parent; variant: arrow.down ? "pressed" : "button" }
                 Win98Icon {
                     name: arrow.modelData < 0 ? "arrow-left" : "arrow-right"
-                    color: arrow.can ? Win98Tokens.text : Win98Tokens.gray
-                    x: Win98Tokens.snap((arrow.width - width) / 2, root.u) + (arrow.down ? root.u : 0)
-                    y: Win98Tokens.snap((arrow.height - height) / 2, root.u) + (arrow.down ? root.u : 0)
+                    color: arrow.can ? Kit.Win98Tokens.text : Kit.Win98Tokens.gray
+                    x: Kit.Win98Tokens.snap((arrow.width - width) / 2, root.u) + (arrow.down ? root.u : 0)
+                    y: Kit.Win98Tokens.snap((arrow.height - height) / 2, root.u) + (arrow.down ? root.u : 0)
                 }
                 MouseArea {
                     id: area

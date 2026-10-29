@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 import "glance-registry.js" as Registry
@@ -16,9 +17,9 @@ PlatinumMenuFrame {
     preferredWidth: 300
     title: "Glance"
     detail: frame.beszel ? Model.summaryVariants(frame.beszel.fleet, true, "Fleet: ")[0] : ""
-    detailColor: !frame.beszel || frame.beszel.fleet.state !== "ready" ? PlatinumTokens.menuTextSecondary
-        : frame.beszel.fleet.problems.some(function (v) { return v.tone === "danger"; }) ? PlatinumTokens.menuDanger
-        : frame.beszel.fleet.problems.length ? PlatinumTokens.menuWarning : PlatinumTokens.menuTextSecondary
+    detailColor: !frame.beszel || frame.beszel.fleet.state !== "ready" ? Kit.PlatinumTokens.menuTextSecondary
+        : frame.beszel.fleet.problems.some(function (v) { return v.tone === "danger"; }) ? Kit.PlatinumTokens.menuDanger
+        : frame.beszel.fleet.problems.length ? Kit.PlatinumTokens.menuWarning : Kit.PlatinumTokens.menuTextSecondary
 
     readonly property bool glanceShown: GlanceState.glanceScreen === frame.desktop.screen
     readonly property bool fleetShown: GlanceState.fleetScreen === frame.desktop.screen
@@ -80,7 +81,7 @@ PlatinumMenuFrame {
         readonly property bool isWidget: modelData.widget !== undefined
         // The first widget check starts a group: an etched rule and a label.
         readonly property bool opensGroup: isWidget && index > 0 && frame.entries[index - 1].widget === undefined
-        readonly property real lineH: PlatinumTokens.menuLine + 2
+        readonly property real lineH: Kit.PlatinumTokens.menuLine + 2
         readonly property real groupH: opensGroup ? separator.implicitHeight + section.implicitHeight : 0
         Layout.fillWidth: true
         Layout.preferredHeight: lineH + groupH
@@ -95,7 +96,7 @@ PlatinumMenuFrame {
             id: section
             visible: entry.opensGroup
             y: separator.implicitHeight
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             width: parent.width - x - frame.rightInset
             text: "Glance widgets"
         }
@@ -109,25 +110,25 @@ PlatinumMenuFrame {
             Rectangle {
                 anchors.fill: parent
                 visible: entry.selected
-                color: PlatinumTokens.highlight
+                color: Kit.PlatinumTokens.highlight
             }
             PlatinumCheckBox {
                 visible: entry.isWidget
-                x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+                x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
                 anchors.verticalCenter: parent.verticalCenter
                 checked: entry.isWidget && GlanceState.enabled(entry.modelData.widget)
                 down: area.pressed
             }
             Text {
-                x: PlatinumTokens.menuTextLeft
+                x: Kit.PlatinumTokens.menuTextLeft
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, (keyText.visible ? keyText.x - PlatinumTokens.menuGap : parent.width - frame.rightInset) - x)
+                width: Math.max(0, (keyText.visible ? keyText.x - Kit.PlatinumTokens.menuGap : parent.width - frame.rightInset) - x)
                 elide: Text.ElideRight
                 text: entry.modelData.label
-                color: entry.selected ? PlatinumTokens.highlightText : entry.modelData.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: entry.selected ? Kit.PlatinumTokens.highlightText : entry.modelData.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
             Text {
                 id: keyText
@@ -136,10 +137,10 @@ PlatinumMenuFrame {
                 anchors.rightMargin: frame.rightInset
                 anchors.verticalCenter: parent.verticalCenter
                 text: entry.modelData.key
-                color: entry.selected ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: entry.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
             MouseArea {
                 id: area

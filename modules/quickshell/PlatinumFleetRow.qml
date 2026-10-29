@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import "beszel-model.js" as Model
 import "fleet-plan.js" as Plan
@@ -15,7 +17,7 @@ Item {
     property bool focusRing: false
     signal clicked
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property bool selected: hv !== null && panel.selected === hv.name
     readonly property bool open: hv !== null && panel.expanded === hv.name
     readonly property var level: Plan.LEVELS[plan.level]
@@ -24,16 +26,16 @@ Item {
     height: plan.rowH
 
     function color(tone) {
-        if (row.selected) return PlatinumTokens.highlightText;
-        return tone === "danger" ? PlatinumTokens.menuDanger : tone === "warning" ? PlatinumTokens.menuWarning
-            : tone === "muted" || tone === "quiet" ? PlatinumTokens.menuTextSecondary
-            : tone === "stale" ? PlatinumTokens.menuTextOff : PlatinumTokens.menuText;
+        if (row.selected) return Kit.PlatinumTokens.highlightText;
+        return tone === "danger" ? Kit.PlatinumTokens.menuDanger : tone === "warning" ? Kit.PlatinumTokens.menuWarning
+            : tone === "muted" || tone === "quiet" ? Kit.PlatinumTokens.menuTextSecondary
+            : tone === "stale" ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuText;
     }
     function valueTone(tone) { return row.stale ? "stale" : tone; }
 
     Rectangle {
         anchors.fill: parent
-        color: row.selected ? PlatinumTokens.highlight : "transparent"
+        color: row.selected ? Kit.PlatinumTokens.highlight : "transparent"
     }
     // The sorted column keeps its tint under the row.
     Rectangle {
@@ -51,7 +53,7 @@ Item {
         anchors.fill: parent
         color: "transparent"
         border.width: row.h
-        border.color: PlatinumTokens.highlightText
+        border.color: Kit.PlatinumTokens.highlightText
     }
 
     MouseArea {
@@ -61,16 +63,16 @@ Item {
 
     FontMetrics {
         id: fsMetrics
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumHint
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumHint
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     TextMetrics {
         id: valueBox
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         text: "100%"
     }
 
@@ -78,9 +80,9 @@ Item {
         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
         textFormat: Text.PlainText
         elide: Text.ElideRight
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     Row {
@@ -95,9 +97,9 @@ Item {
                 width: 10
                 height: 10
                 smooth: true
-                sourceSize.width: Math.ceil(width * PlatinumTokens.pixelRatio)
-                sourceSize.height: Math.ceil(height * PlatinumTokens.pixelRatio)
-                readonly property color ink: row.selected ? PlatinumTokens.highlightText : PlatinumTokens.menuText
+                sourceSize.width: Math.ceil(width * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5))
+                sourceSize.height: Math.ceil(height * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5))
+                readonly property color ink: row.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
                 source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path fill="'
                     + ink + '" d="' + (row.open ? "M1 2.5 L9 2.5 L5 8.5 Z" : "M2.5 1 L8.5 5 L2.5 9 Z") + '"/></svg>')
             }
@@ -124,9 +126,9 @@ Item {
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
                 color: row.color(row.hv ? row.hv.tone : "normal")
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
 
@@ -158,10 +160,10 @@ Item {
                         elide: Text.ElideRight
                         text: cell.hv ? cell.hv.disk.fs : ""
                         textFormat: Text.PlainText
-                        color: row.selected ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumHint
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: row.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumHint
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     PlatinumProgressBar {
                         visible: cell.bar
@@ -201,7 +203,7 @@ Item {
                         for (const v of variants) if (whyMetrics.advanceWidth(v) <= cell.inner) return v;
                         return topReason.short;
                     }
-                    FontMetrics { id: whyMetrics; font.family: PlatinumTokens.platinumFont; font.pixelSize: PlatinumTokens.platinumSmall; font.letterSpacing: PlatinumTokens.platinumTracking }
+                    FontMetrics { id: whyMetrics; font.family: Kit.PlatinumTokens.platinumFont; font.pixelSize: Kit.PlatinumTokens.platinumSmall; font.letterSpacing: Kit.PlatinumTokens.platinumTracking }
                     text: {
                         const v = cell.hv;
                         if (!v) return "";
@@ -220,7 +222,7 @@ Item {
                     }
                     color: {
                         const v = cell.hv;
-                        if (!v) return PlatinumTokens.menuText;
+                        if (!v) return Kit.PlatinumTokens.menuText;
                         switch (cell.modelData) {
                         case "temp": return row.color(row.valueTone(v.temp.tone));
                         case "failed": return row.color(row.stale ? "stale" : v.failed.n > 0 ? "danger" : "quiet");

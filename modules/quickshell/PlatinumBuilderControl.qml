@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 import "builder-gate.js" as Gate
 
@@ -27,22 +28,22 @@ PlatinumBarControl {
     menu: "builder"
     icon: "builder"
     slashed: Gate.mark(sample, pending) === "off"
-    tone: PlatinumTokens.barTone(gateTone === "warning" ? "warning" : gateTone === "muted" ? "muted" : "normal")
+    tone: Kit.PlatinumTokens.barTone(gateTone === "warning" ? "warning" : gateTone === "muted" ? "muted" : "normal")
 
     // The bar's words: the full state for Balloon Help and », and the
     // warning words the bar shows while an action failed.
     readonly property string fullText: Gate.barText(sample, pending, actionError, "wide")
     readonly property string warnText: gateTone === "warning" ? fullText : ""
-    readonly property real fullWidth: warnText === "" ? 0 : PlatinumMetrics.width(warnText)
+    readonly property real fullWidth: warnText === "" ? 0 : Kit.PlatinumMetrics.width(warnText)
 
     Text {
         visible: root.showLabel && root.warnText !== ""
         text: root.warnText
         textFormat: Text.PlainText
         color: root.fg
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumText
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumText
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     // Builds are running: the badge the bell uses, on the hammer's head.

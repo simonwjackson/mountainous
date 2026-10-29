@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -29,18 +30,18 @@ PanelWindow {
     screen: bar.screen
     visible: bar.visible && (tagShown || balloonShown)
     anchors { top: true; left: true; right: true }
-    margins.top: PlatinumTokens.barHeight
-    implicitHeight: Math.max(tag.y + tag.height, balloon.y + balloon.height) + 2 * PlatinumTokens.hair
+    margins.top: Kit.PlatinumTokens.barHeight
+    implicitHeight: Math.max(tag.y + tag.height, balloon.y + balloon.height) + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "mountainous-bar-help"
     mask: Region { width: 0; height: 0 }
 
-    readonly property real hair: PlatinumTokens.hair
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
 
     // ---------------------------------------------------------- the tag
     readonly property bool tagVol: bar.tagId === "vol"
-    readonly property real numberW: PlatinumMetrics.widest(["100", PlatinumMetrics.digits(2)])
+    readonly property real numberW: Kit.PlatinumMetrics.widest(["100", Kit.PlatinumMetrics.digits(2)])
     readonly property var tagAnchor: bar.tagId !== "" ? bar.controlRect(bar.tagId) : null
     readonly property var tagPlan: tagAnchor ? BarPlan.tagPlan(bar.width, tagAnchor.x, tagAnchor.w, numberW)
         : ({show: false, x: 0, width: 0, well: 0})
@@ -60,11 +61,11 @@ PanelWindow {
             y: root.hair
             width: parent.width
             height: parent.height
-            color: PlatinumTokens.menuShadow
+            color: Kit.PlatinumTokens.menuShadow
         }
         PlatinumBevel {
             anchors.fill: parent
-            color: PlatinumTokens.menuSurface
+            color: Kit.PlatinumTokens.menuSurface
         }
 
         Row {
@@ -79,15 +80,15 @@ PanelWindow {
                 PlatinumIcon {
                     anchors.fill: parent
                     name: root.tagVol ? root.bar.volIcon : root.bar.briIcon
-                    color: PlatinumTokens.menuText
-                    knock: PlatinumTokens.menuSurface
+                    color: Kit.PlatinumTokens.menuText
+                    knock: Kit.PlatinumTokens.menuSurface
                 }
                 PlatinumIcon {
                     visible: root.tagVol && root.bar.sound.muted
                     anchors.fill: parent
                     name: "slash"
-                    color: PlatinumTokens.menuText
-                    knock: PlatinumTokens.menuSurface
+                    color: Kit.PlatinumTokens.menuText
+                    knock: Kit.PlatinumTokens.menuSurface
                 }
             }
 
@@ -97,26 +98,26 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.tagPlan.well
                 height: 10
-                color: PlatinumTokens.well
+                color: Kit.PlatinumTokens.well
 
-                Rectangle { width: parent.width; height: root.hair; color: PlatinumTokens.bevelDark }
-                Rectangle { width: root.hair; height: parent.height; color: PlatinumTokens.bevelDark }
-                Rectangle { y: parent.height - root.hair; width: parent.width; height: root.hair; color: PlatinumTokens.bevelLight }
-                Rectangle { x: parent.width - root.hair; width: root.hair; height: parent.height; color: PlatinumTokens.bevelLight }
+                Rectangle { width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelDark }
+                Rectangle { width: root.hair; height: parent.height; color: Kit.PlatinumTokens.bevelDark }
+                Rectangle { y: parent.height - root.hair; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelLight }
+                Rectangle { x: parent.width - root.hair; width: root.hair; height: parent.height; color: Kit.PlatinumTokens.bevelLight }
                 Rectangle {
                     x: root.hair
                     y: root.hair
                     height: parent.height - 2 * root.hair
-                    width: PlatinumTokens.snap((parent.width - 2 * root.hair) * root.tagValue / 100)
-                    color: PlatinumTokens.highlight
+                    width: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.width - 2 * root.hair) * root.tagValue / 100)
+                    color: Kit.PlatinumTokens.highlight
                 }
             }
 
             PlatinumBarNumber {
                 anchors.verticalCenter: parent.verticalCenter
-                widest: ["100", PlatinumMetrics.digits(2)]
+                widest: ["100", Kit.PlatinumMetrics.digits(2)]
                 text: root.tagVol && root.bar.sound.muted ? "--" : String(root.tagValue)
-                tone: PlatinumTokens.menuText
+                tone: Kit.PlatinumTokens.menuText
             }
         }
     }
@@ -124,7 +125,7 @@ PanelWindow {
     // ---------------------------------------------------------- the balloon
     readonly property var balloonAnchor: bar.balloonId !== "" ? bar.controlRect(bar.balloonId) : null
     readonly property var balloonPlan: balloonAnchor ? BarPlan.balloonPlan(bar.width, balloonAnchor.x, balloonAnchor.w,
-            PlatinumMetrics.smallWidth(bar.balloonText) + 24 + 2)
+            Kit.PlatinumMetrics.smallWidth(bar.balloonText) + 24 + 2)
         : ({x: 0, width: 0, tail: 0})
 
     Item {
@@ -141,14 +142,14 @@ PanelWindow {
             width: parent.width
             height: parent.height
             radius: 10
-            color: PlatinumTokens.menuShadow
+            color: Kit.PlatinumTokens.menuShadow
         }
         Rectangle {
             anchors.fill: parent
             radius: 10
-            color: PlatinumTokens.balloon
+            color: Kit.PlatinumTokens.balloon
             border.width: root.hair
-            border.color: PlatinumTokens.menuEdge
+            border.color: Kit.PlatinumTokens.menuEdge
         }
         // The tail, up to the title: a wedge that leans left.
         Canvas {
@@ -157,8 +158,8 @@ PanelWindow {
             y: -12 + root.hair
             width: 16
             height: 12
-            property color fill: PlatinumTokens.balloon
-            property color edge: PlatinumTokens.menuEdge
+            property color fill: Kit.PlatinumTokens.balloon
+            property color edge: Kit.PlatinumTokens.menuEdge
             property real line: root.hair
             onFillChanged: requestPaint()
             onEdgeChanged: requestPaint()
@@ -192,10 +193,10 @@ PanelWindow {
             wrapMode: Text.Wrap
             lineHeight: 1.3
             textFormat: Text.PlainText
-            color: PlatinumTokens.menuText
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: Kit.PlatinumTokens.menuText
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 }

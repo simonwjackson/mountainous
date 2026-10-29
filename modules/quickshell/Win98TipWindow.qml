@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -14,7 +15,7 @@ Scope {
     required property var desktop
     required property var taskbar
 
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Kit.Win98Tokens.u
     readonly property var preview: desktop.preview || ({})
     readonly property string tipId: preview.tip !== undefined ? preview.tip : desktop.tipId
     readonly property bool shown: desktop.active && desktop.shell.chromeVisible && tipId !== "" && desktop.openId === ""
@@ -25,7 +26,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Win98Tokens.unitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(win)
             screen: host.desktop.screen
             anchors { top: true; bottom: true; left: true; right: true }
             exclusionMode: ExclusionMode.Ignore

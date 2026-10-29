@@ -3,6 +3,7 @@
 // approved mock's state catalogue instead of D-Bus, PipeWire and Hyprland.
 // Staged as shell.qml in a copy of modules/quickshell; win98-dev/ holds
 // this folder. See capture.sh and behaviour.test.js.
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import Quickshell.Bluetooth
@@ -77,7 +78,7 @@ ShellRoot {
     property var fakeWindow: null
     PanelWindow {
         id: fakeWin
-        readonly property real u: Win98Tokens.unitFor(fakeWin)
+        readonly property real u: Kit.Win98Tokens.unitFor(fakeWin)
         readonly property var f: root.fakeWindow
         readonly property bool win98: Theme.name === "win98"
         // The frame around the client: Win98's 3-u frame and 18-u caption
@@ -102,7 +103,7 @@ ShellRoot {
             title: fakeWin.f ? fakeWin.f.title : ""
             active: !!fakeWin.f && fakeWin.f.active !== false
             margins: false
-            Rectangle { width: parent ? parent.width : 0; height: parent ? parent.height : 0; color: Win98Tokens.win }
+            Rectangle { width: parent ? parent.width : 0; height: parent ? parent.height : 0; color: Kit.Win98Tokens.win }
         }
         Rectangle {
             visible: !fakeWin.win98 && !!fakeWin.frame
@@ -111,19 +112,19 @@ ShellRoot {
             width: fakeWin.frame ? fakeWin.frame.w : 0
             height: fakeWin.frame ? fakeWin.frame.h : 0
             color: "#ffffff"
-            border.width: PlatinumTokens.hair
+            border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
             border.color: "#000000"
             Rectangle {
                 width: parent.width; height: 20
-                color: PlatinumTokens.menuSurface
-                border.width: PlatinumTokens.hair
+                color: Kit.PlatinumTokens.menuSurface
+                border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
                 border.color: "#000000"
                 Text {
                     anchors.centerIn: parent
                     text: fakeWin.f ? fakeWin.f.title : ""
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
                 }
             }
         }
@@ -687,7 +688,7 @@ ShellRoot {
     IpcHandler {
         target: "w98"
         function set(id: string): string { if (root.stateId === id) Qt.callLater(root.apply); else root.stateId = id; return id; }
-        function theme(mode: string): void { Theme.mode = mode; }
+        function theme(mode: string): void { Kit.Theme.mode = mode; }
         function current(): string {
             const d = root.desktop;
             const p = root.st.p || {};
@@ -702,8 +703,8 @@ ShellRoot {
             if (!m || m.path === undefined) return "path= cursor=- open=" + MenuState.current;
             const names = [];
             let items = m.model;
-            for (const i of m.path) { names.push(Win98Tokens.plainText(items[i].text)); items = items[i].submenu || []; }
-            const cur = m.cursor >= 0 && items[m.cursor] ? Win98Tokens.plainText(items[m.cursor].text) : "-";
+            for (const i of m.path) { names.push(Kit.Win98Tokens.plainText(items[i].text)); items = items[i].submenu || []; }
+            const cur = m.cursor >= 0 && items[m.cursor] ? Kit.Win98Tokens.plainText(items[m.cursor].text) : "-";
             return "path=" + names.join("/") + " cursor=" + cur + " open=" + MenuState.current;
         }
         // The centre of a Start menu row, in screen logical px: "level text".
@@ -711,7 +712,7 @@ ShellRoot {
             const m = root.desktop ? root.desktop.openItem : null;
             const panel = m && m.panelAt ? m.panelAt(level) : null;
             if (!panel) return "";
-            const i = panel.items.findIndex(function (it) { return it.text && Win98Tokens.plainText(it.text) === text; });
+            const i = panel.items.findIndex(function (it) { return it.text && Kit.Win98Tokens.plainText(it.text) === text; });
             if (i < 0) return "";
             const p = panel.mapToItem(null, panel.rowX(i) + panel.columnWidth / 2, panel.rowY(i) + panel.rowH / 2);
             return Math.round(p.x) + " " + Math.round(p.y);
@@ -867,7 +868,7 @@ ShellRoot {
                 name = rowText;
                 const panel = it.panelAt ? it.panelAt(0) : null;
                 if (!panel) return "";
-                const i = panel.items.findIndex(function (x) { return x.text && Win98Tokens.plainText(x.text) === name; });
+                const i = panel.items.findIndex(function (x) { return x.text && Kit.Win98Tokens.plainText(x.text) === name; });
                 if (i < 0) return "";
                 const p = panel.mapToItem(null, panel.rowX(i) + panel.columnWidth / 2, panel.rowY(i) + panel.rowH / 2);
                 return Math.round(p.x) + " " + Math.round(p.y);
@@ -951,7 +952,7 @@ ShellRoot {
             d.windowMenu(r.address, x < 0 && y < 0 ? r.x : x, x < 0 && y < 0 ? r.y : y);
             return "ok " + r.address;
         }
-        function taskbarMenu(x: int): string { if (root.desktop) root.desktop.taskbarMenu(x, root.screen0.height - 28 * Win98Tokens.u); return MenuState.current; }
+        function taskbarMenu(x: int): string { if (root.desktop) root.desktop.taskbarMenu(x, root.screen0.height - 28 * Kit.Win98Tokens.u); return MenuState.current; }
         // shell.qml cycleChrome: numbered messages, stale ones dropped.
         function cycle(action: string, position: int, seqText: string): string {
             const seq = Number(seqText);
@@ -1009,7 +1010,7 @@ ShellRoot {
             m.setState([index], 0);
             return "ok";
         }
-        function reduced(on: bool): string { Win98Tokens.reducedMotion = on; return String(Win98Tokens.reducedMotion); }
+        function reduced(on: bool): string { Kit.Win98Tokens.reducedMotion = on; return String(Kit.Win98Tokens.reducedMotion); }
         // Window motion (WindowMotion's events), for the motion captures:
         // {"kind", "index" (a fixture window), "rect": [x, y, w, h], "to": [...]}.
         function motion(json: string): string {
@@ -1045,7 +1046,7 @@ ShellRoot {
             const model = function (items) {
                 for (const it of items || []) {
                     if (!it || it.separator) continue;
-                    out.push(Win98Tokens.plainText(it.text || ""));
+                    out.push(Kit.Win98Tokens.plainText(it.text || ""));
                     if (it.shortcut) out.push(it.shortcut);
                     model(it.submenu);
                 }

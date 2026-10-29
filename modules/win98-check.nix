@@ -3,7 +3,7 @@
 # test gallery under a real headless Quickshell, every page in both
 # appearances, with the Start menu's keyboard and roll-out checks. The
 # gallery and its scripts are not delivered; see themes/win98/dev/.
-{ ... }:
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, config, ... }:
@@ -45,7 +45,7 @@
             pkgs.dejavu_fonts
           ];
         };
-        QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+        QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
         WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
         WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
       };

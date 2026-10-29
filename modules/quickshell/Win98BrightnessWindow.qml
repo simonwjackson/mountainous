@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 
 // Brightness as a Win98 window: one trackbar for every screen that follows
@@ -41,7 +42,7 @@ Win98Window {
             }
             Win98Text {
                 x: parent.width - width
-                y: Win98Tokens.snap((parent.height - height) / 2, root.u)
+                y: Kit.Win98Tokens.snap((parent.height - height) / 2, root.u)
                 text: root.level >= 0 ? root.level + "%" : "--"
                 accessMarks: false
             }
@@ -64,7 +65,7 @@ Win98Window {
                         required property var modelData
                         iconName: "display"
                         title: modelData.label
-                        titleColor: modelData.follows ? Win98Tokens.winText : Win98Tokens.gray
+                        titleColor: modelData.follows ? Kit.Win98Tokens.winText : Kit.Win98Tokens.gray
                         detail: modelData.follows ? modelData.detail : "Keeps its own brightness"
                         trailing: modelData.follows ? "dot" : "ring"
                     }
@@ -76,7 +77,7 @@ Win98Window {
                     wrap: true
                     text: "No screen here can change its brightness."
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                 }
             }
         }

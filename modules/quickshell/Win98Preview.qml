@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -10,9 +11,9 @@ import QtQuick
 Item {
     id: root
 
-    property var scheme: Win98Tokens.current
+    property var scheme: Kit.Win98Tokens.current
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property var p: scheme
 
     Win98Window {
@@ -36,7 +37,7 @@ Item {
                     Rectangle {
                         id: word
                         required property string modelData
-                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false, root.u), root.u) + 12 * root.u
+                        width: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth(modelData, false, root.u), root.u) + 12 * root.u
                         height: 17 * root.u
                         color: modelData === "Selected" ? root.p.selection : "transparent"
                         Win98Text {
@@ -76,7 +77,7 @@ Item {
                 Win98Text { x: 6 * root.u; y: 3 * root.u; text: "Message Text"; accessMarks: false; color: root.p.text }
             }
             Win98Button {
-                x: Win98Tokens.snap((144 * root.u - width) / 2, root.u)
+                x: Kit.Win98Tokens.snap((144 * root.u - width) / 2, root.u)
                 widthUnits: 50; small: true; height: 18 * root.u
                 text: "OK"
                 scheme: root.p

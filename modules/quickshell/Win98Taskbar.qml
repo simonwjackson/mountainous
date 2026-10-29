@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
@@ -29,7 +30,7 @@ PanelWindow {
     required property var desktop
     screen: desktop.screen
 
-    readonly property real u: Win98Tokens.unitFor(bar)
+    readonly property real u: Kit.Win98Tokens.unitFor(bar)
     readonly property real barHeight: 28 * u
     readonly property real headroom: 16 * u
     readonly property real faceY: face.y
@@ -60,7 +61,7 @@ PanelWindow {
     // pixels, as the approved mock's canvas measured (a width just over a
     // whole pixel, rounded up). The plan yields at the mock's widths, and
     // every estimate errs one unit wide.
-    function m(text, bold) { return Math.floor(Win98Tokens.textWidth(text, bold, bar.u) / bar.u + 1e-6) + 1; }
+    function m(text, bold) { return Math.floor(Kit.Win98Tokens.textWidth(text, bold, bar.u) / bar.u + 1e-6) + 1; }
 
     readonly property var lane: bar.desktop.lane
     readonly property var dict: bar.desktop.dictation
@@ -156,9 +157,9 @@ PanelWindow {
         width: bar.width
         height: bar.barHeight
 
-        Rectangle { anchors.fill: parent; color: Win98Tokens.face }
-        Rectangle { width: parent.width; height: bar.u; color: Win98Tokens.li }
-        Rectangle { y: bar.u; width: parent.width; height: bar.u; color: Win98Tokens.hi }
+        Rectangle { anchors.fill: parent; color: Kit.Win98Tokens.face }
+        Rectangle { width: parent.width; height: bar.u; color: Kit.Win98Tokens.li }
+        Rectangle { y: bar.u; width: parent.width; height: bar.u; color: Kit.Win98Tokens.hi }
 
         // A right click where no control takes it: the taskbar's own menu
         // (Minimize All, Minimize Other, Restore All, Find...), from the
@@ -322,7 +323,7 @@ PanelWindow {
                 down: bar.pressed("fleetbutton")
                 hostLook: bar.desktop.fleetLook
                 label: bar.plan.icons || bar.plan.steps.indexOf("titles") >= 0 ? "" : bar.desktop.fleetButtonText
-                labelColor: Win98Tokens.tone(bar.desktop.fleetLook.tone === "muted" ? "normal" : bar.desktop.fleetLook.tone)
+                labelColor: Kit.Win98Tokens.tone(bar.desktop.fleetLook.tone === "muted" ? "normal" : bar.desktop.fleetLook.tone)
                 focusRing: bar.focused("fleetbutton")
                 Component.onCompleted: bar.register("fleetbutton", fb)
                 Component.onDestruction: if (bar.places.fleetbutton === fb) bar.register("fleetbutton", null)
@@ -355,10 +356,10 @@ PanelWindow {
                 id: dictLabel
                 visible: bar.plan.dictTextShow
                 x: bar.units(13)
-                y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
+                y: Kit.Win98Tokens.snap((parent.height - height) / 2, bar.u)
                 text: bar.desktop.dictText
                 accessMarks: false
-                color: bar.dictFailed ? Win98Tokens.danger : Win98Tokens.text
+                color: bar.dictFailed ? Kit.Win98Tokens.danger : Kit.Win98Tokens.text
             }
             Win98Button {
                 id: retry
@@ -385,7 +386,7 @@ PanelWindow {
             id: trayBox
             visible: bar.plan.structure !== "start"
             readonly property real clockW: bar.plan.clockOut ? 0
-                : bar.units(6 + 5) + Win98Tokens.ceilU(Win98Tokens.textWidth(bar.plan.clockText, false, bar.u), bar.u)
+                : bar.units(6 + 5) + Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth(bar.plan.clockText, false, bar.u), bar.u)
             x: bar.width - bar.units(2) - width
             y: bar.units(4)
             height: bar.units(22)
@@ -431,7 +432,7 @@ PanelWindow {
                 }
                 Win98Text {
                     x: bar.units(6)
-                    y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
+                    y: Kit.Win98Tokens.snap((parent.height - height) / 2, bar.u)
                     text: bar.plan.clockText
                     accessMarks: false
                 }
@@ -458,7 +459,7 @@ PanelWindow {
         id: ghost
         visible: bar.dragIndex >= 0 && bar.dropIndex >= 0 && bar.dropIndex !== bar.dragIndex
         readonly property var target: visible ? bar.placeOf("win" + bar.dropIndex) : null
-        x: bar.preview.drag && target ? target.x + bar.units(7) : Win98Tokens.snap(bar.dragX - width / 2, bar.u)
+        x: bar.preview.drag && target ? target.x + bar.units(7) : Kit.Win98Tokens.snap(bar.dragX - width / 2, bar.u)
         y: face.y + bar.units(4) - bar.units(14)
         width: bar.units(bar.plan.bw)
         height: bar.units(22)
@@ -481,8 +482,8 @@ PanelWindow {
     component Etch: Item {
         y: bar.u
         width: bar.units(2); height: bar.units(20)
-        Rectangle { width: bar.u; height: parent.height; color: Win98Tokens.sh }
-        Rectangle { x: bar.u; width: bar.u; height: parent.height; color: Win98Tokens.hi }
+        Rectangle { width: bar.u; height: parent.height; color: Kit.Win98Tokens.sh }
+        Rectangle { x: bar.u; width: bar.u; height: parent.height; color: Kit.Win98Tokens.hi }
     }
     component Grip: Win98Bevel {
         y: bar.u
@@ -504,13 +505,13 @@ PanelWindow {
         // A Fleet host icon instead ({ status, tone }).
         property var hostLook: null
         property string label: ""
-        property color labelColor: Win98Tokens.text
+        property color labelColor: Kit.Win98Tokens.text
         property bool bold: false
         property real padLeft: 3
         property real padRight: 4
         height: bar.units(22)
 
-        Rectangle { anchors.fill: parent; color: tb.lit ? Win98Tokens.selection : Win98Tokens.face }
+        Rectangle { anchors.fill: parent; color: tb.lit ? Kit.Win98Tokens.selection : Kit.Win98Tokens.face }
         Win98Dither { visible: tb.dither && !tb.lit; anchors.fill: parent }
         Win98Bevel { anchors.fill: parent; filled: false; variant: tb.down ? "pressed" : "button" }
         Row {
@@ -525,17 +526,17 @@ PanelWindow {
                 Win98Icon {
                     visible: tb.iconName !== ""
                     name: tb.iconName
-                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
+                    y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
                 Win98HostIcon {
                     visible: tb.hostLook !== null
                     hostStatus: tb.hostLook ? tb.hostLook.status : "up"
                     tone: tb.hostLook ? tb.hostLook.tone : "normal"
-                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
+                    y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
                 IconImage {
                     visible: tb.iconName === "" && tb.hostLook === null && source !== ""
-                    y: Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
+                    y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                     implicitSize: bar.units(16)
                     source: {
                         if (tb.iconName !== "" || tb.hostLook !== null || !tb.toplevel) return "";
@@ -549,12 +550,12 @@ PanelWindow {
             }
             Win98Text {
                 visible: tb.label !== ""
-                y: Win98Tokens.snap((parent.height - height) / 2, bar.u)
+                y: Kit.Win98Tokens.snap((parent.height - height) / 2, bar.u)
                 width: Math.max(0, Math.min(implicitWidth, tb.width - bar.units(tb.padLeft + 16 + 3 + tb.padRight)))
                 text: tb.label
                 accessMarks: false
                 bold: tb.bold
-                color: tb.lit ? Win98Tokens.selectionText : tb.labelColor
+                color: tb.lit ? Kit.Win98Tokens.selectionText : tb.labelColor
             }
         }
         Win98FocusRect {
@@ -604,9 +605,9 @@ PanelWindow {
             x: -bar.units(3)
             width: bar.units(2); height: parent.height
             z: 2
-            Rectangle { anchors.fill: parent; color: Win98Tokens.text }
-            Rectangle { x: -bar.units(2); width: bar.units(6); height: bar.units(2); color: Win98Tokens.text }
-            Rectangle { x: -bar.units(2); y: parent.height - bar.units(2); width: bar.units(6); height: bar.units(2); color: Win98Tokens.text }
+            Rectangle { anchors.fill: parent; color: Kit.Win98Tokens.text }
+            Rectangle { x: -bar.units(2); width: bar.units(6); height: bar.units(2); color: Kit.Win98Tokens.text }
+            Rectangle { x: -bar.units(2); y: parent.height - bar.units(2); width: bar.units(6); height: bar.units(2); color: Kit.Win98Tokens.text }
         }
 
         MouseArea {
@@ -684,8 +685,8 @@ PanelWindow {
         }
         Win98Icon {
             name: "chevron"
-            x: Win98Tokens.half((ch.width - width) / 2, bar.u)
-            y: Win98Tokens.snap((ch.height - height) / 2, bar.u)
+            x: Kit.Win98Tokens.half((ch.width - width) / 2, bar.u)
+            y: Kit.Win98Tokens.snap((ch.height - height) / 2, bar.u)
         }
         Win98FocusRect {
             visible: bar.focused(ch.cid)
@@ -747,15 +748,15 @@ PanelWindow {
             visible: bar.desktop.shell.chromeAccessVisible && Tray.CHORD[ti.tid] !== undefined
             x: bar.units(5); y: -bar.units(14)
             width: bar.units(9); height: bar.units(11)
-            color: Win98Tokens.tip
+            color: Kit.Win98Tokens.tip
             border.width: bar.u
-            border.color: Win98Tokens.dk
+            border.color: Kit.Win98Tokens.dk
             Win98Text {
-                x: Win98Tokens.half((parent.width - width) / 2, bar.u)
+                x: Kit.Win98Tokens.half((parent.width - width) / 2, bar.u)
                 y: -bar.u
                 text: Tray.CHORD[ti.tid] || ""
                 accessMarks: false
-                color: Win98Tokens.tipText
+                color: Kit.Win98Tokens.tipText
             }
         }
         Win98FocusRect {

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -14,12 +15,12 @@ PlatinumMenuFrame {
     preferredWidth: 440
     title: panel.view.kind === "ready" ? "Notifications  " + panel.service.count : "Notifications"
     detail: panel.badge.kind === "none" ? "" : panel.badge.text
-    detailColor: frame.warnBadge ? PlatinumTokens.menuWarning : PlatinumTokens.menuTextSecondary
+    detailColor: frame.warnBadge ? Kit.PlatinumTokens.menuWarning : Kit.PlatinumTokens.menuTextSecondary
     scrolls: list.scrolls
 
     headerTrailing: PlatinumButton {
         text: frame.menuWidth >= 300 ? "Dismiss all" : "All"
-        fixedWidth: PlatinumMetrics.buttonWidth(["Dismiss all"])
+        fixedWidth: Kit.PlatinumMetrics.buttonWidth(["Dismiss all"])
         enabled: panel.view.kind === "ready"
         onClicked: panel.service.dismissAll()
     }
@@ -242,11 +243,11 @@ PlatinumMenuFrame {
         property string detail: ""
         property bool warn: false
         property string actionText: ""
-        property real rightInset: PlatinumTokens.menuRightInset
+        property real rightInset: Kit.PlatinumTokens.menuRightInset
         signal actionClicked
 
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         Layout.topMargin: 8
         Layout.bottomMargin: 8
@@ -256,10 +257,10 @@ PlatinumMenuFrame {
             Layout.fillWidth: true
             text: message.title
             wrapMode: Text.Wrap
-            color: message.warn ? PlatinumTokens.menuWarning : PlatinumTokens.menuText
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumText
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: message.warn ? Kit.PlatinumTokens.menuWarning : Kit.PlatinumTokens.menuText
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumText
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
 
         Text {
@@ -267,10 +268,10 @@ PlatinumMenuFrame {
             text: message.detail
             textFormat: Text.PlainText
             wrapMode: Text.Wrap
-            color: PlatinumTokens.menuTextSecondary
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: Kit.PlatinumTokens.menuTextSecondary
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             lineHeight: 1.2
         }
 

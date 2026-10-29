@@ -34,7 +34,15 @@ async function until(predicate,label) {
 }
 function snapshot() {
     const r=spawnSync(qs,['-p',config,'ipc','call','test','snapshot'],{env,encoding:'utf8',timeout:2000});
-    try{return JSON.parse(r.stdout);}catch{return {};}
+    try {
+        const value = JSON.parse(r.stdout);
+        assert.equal(value.theme, value.sharedName, 'host forwards the one Hensou Theme');
+        assert.equal(value.hostWatcher, true, 'shell Theme is the persistence/sound adapter');
+        return value;
+    } catch(error) {
+        if (error.code === 'ERR_ASSERTION') throw error;
+        return {};
+    }
 }
 function write(name) {
     fs.writeFileSync(path.join(state,'theme-name.new'),name+'\n');
@@ -74,6 +82,7 @@ async function stop(child) {
         fs.symlinkSync(desktopTheme,path.join(bin,'desktop-theme'));
         fs.writeFileSync(path.join(bin,'notify-send'),'#!/bin/sh\nprintf "%s\\n" "$@" >> "'+temp+'/notification"\n',{mode:0o755});
         fs.writeFileSync(path.join(config,'shell.qml'),`
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -101,6 +110,9 @@ ShellRoot {
             catch (error) { return "rejected: " + error + " / " + error.stack; }
         }
         function snapshot(): string { return JSON.stringify({
+            sharedName: Kit.Theme.name,
+            hostWatcher: Theme.namePath !== undefined && Theme.soundsEnabled !== undefined
+                && Theme.chromeStatus !== undefined && Theme.choose !== undefined,
             theme: Theme.name, current: loader.currentName, ready: !!loader.desktop,
             active: loader.desktop ? loader.desktop.active : false,
             same: loader.desktop === root.original, failures: root.failures,

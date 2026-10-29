@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 
 // System Monitor's chart, for the Fleet Properties sheet: a white sunken
@@ -11,11 +12,11 @@ Win98Bevel {
 
     property var values: []
     property real max: 100
-    property color lineColor: Win98Tokens.chartCpu
+    property color lineColor: Kit.Win98Tokens.chartCpu
     property bool stale: false
 
     variant: "field"
-    color: Win98Tokens.win
+    color: Kit.Win98Tokens.win
     implicitWidth: 120 * u
     implicitHeight: 30 * u
 
@@ -45,9 +46,9 @@ Win98Bevel {
                 const y = (1 - Math.min(v[i], root.scaleTop) / root.scaleTop) * (ih - 1);
                 d += (i ? " L" : "M") + (x + 0.5).toFixed(2) + " " + (y + 0.5).toFixed(2);
             }
-            const ink = root.stale ? String(Win98Tokens.gray) : String(root.lineColor);
+            const ink = root.stale ? String(Kit.Win98Tokens.gray) : String(root.lineColor);
             return '<svg xmlns="http://www.w3.org/2000/svg" width="' + iw + '" height="' + ih + '" viewBox="0 0 ' + iw + ' ' + ih + '">'
-                + '<g fill="' + String(Win98Tokens.chartGrid) + '" shape-rendering="crispEdges">' + grid + '</g>'
+                + '<g fill="' + String(Kit.Win98Tokens.chartGrid) + '" shape-rendering="crispEdges">' + grid + '</g>'
                 + (v.length > 1 ? '<path d="' + d + '" fill="none" stroke="' + ink + '" stroke-width="1"/>' : '')
                 + '</svg>';
         }

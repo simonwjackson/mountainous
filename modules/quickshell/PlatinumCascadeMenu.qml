@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Window
 import "themes/platinum/menu-models.js" as Menus
@@ -28,7 +30,7 @@ Item {
     signal closeRequested
     signal activated(var row)
 
-    readonly property real hair: PlatinumTokens.hair
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
     // levelRows[k] are the rows of panel k; selections[k] its selected row.
     // Panel k + 1 is the cascade of panel k's selected row. The two are kept
     // apart so moving the selection never rebuilds a panel's rows (which
@@ -160,7 +162,7 @@ Item {
     readonly property real originY: parent ? parent.y : 0
     readonly property real areaWidth: root.Window.width > 0 ? root.Window.width : 1920
     readonly property real areaHeight: root.Window.height > 0 ? root.Window.height : 1200
-    readonly property real topLimit: PlatinumTokens.barHeight - PlatinumTokens.hair
+    readonly property real topLimit: Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window)
 
     // Every panel lives in one item as large as the window, so a cascade
     // beside the first panel is inside its parent's bounds.
@@ -223,26 +225,26 @@ Item {
         readonly property bool iconColumn: rows.some(function (r) { return r.kind === "item" && (r.icon || r.app || r.spacer); })
         // As the mock: gutter 30, gap 8, a 16 px icon pulled 4 px into the
         // gap, gap 8.
-        readonly property real labelX: iconColumn ? 58 : PlatinumTokens.menuTextLeft + PlatinumTokens.menuGap
+        readonly property real labelX: iconColumn ? 58 : Kit.PlatinumTokens.menuTextLeft + Kit.PlatinumTokens.menuGap
         // Each row needs its label and its trailing marks (count, hint, ▸);
         // the panel is as wide as its widest row, as a Mac OS menu is.
         function trailOf(r) {
             let t = 0;
-            if (r.count) t += PlatinumMetrics.smallWidth(String(r.count)) + PlatinumTokens.menuGap;
-            if (r.hint) t += PlatinumMetrics.smallWidth(r.hint) + PlatinumTokens.menuGap;
-            if (r.submenu) t += 7 + PlatinumTokens.menuGap;
+            if (r.count) t += Kit.PlatinumMetrics.smallWidth(String(r.count)) + Kit.PlatinumTokens.menuGap;
+            if (r.hint) t += Kit.PlatinumMetrics.smallWidth(r.hint) + Kit.PlatinumTokens.menuGap;
+            if (r.submenu) t += 7 + Kit.PlatinumTokens.menuGap;
             return t;
         }
         readonly property real naturalWidth: {
             let w = 200;
             for (const r of rows) {
                 if (r.kind === "item")
-                    w = Math.max(w, labelX + PlatinumMetrics.width(r.label || "") + PlatinumTokens.menuGap + trailOf(r)
-                        + PlatinumTokens.menuRightInset + 2 * root.hair);
+                    w = Math.max(w, labelX + Kit.PlatinumMetrics.width(r.label || "") + Kit.PlatinumTokens.menuGap + trailOf(r)
+                        + Kit.PlatinumTokens.menuRightInset + 2 * root.hair);
                 else if (r.kind === "header")
-                    w = Math.max(w, Math.min(340, 36 + PlatinumMetrics.width(r.label || "") + PlatinumTokens.menuRightInset));
+                    w = Math.max(w, Math.min(340, 36 + Kit.PlatinumMetrics.width(r.label || "") + Kit.PlatinumTokens.menuRightInset));
             }
-            return PlatinumMetrics.even(w);
+            return Kit.PlatinumMetrics.even(w);
         }
         readonly property real contentHeight: {
             let h = 0;
@@ -257,10 +259,10 @@ Item {
             if (!r) return 0;
             if (r.kind === "separator") return 4 + 2 * root.hair + 5;
             if (r.kind === "header") return headerHeight(r);
-            return PlatinumTokens.menuLine;
+            return Kit.PlatinumTokens.menuLine;
         }
         function headerHeight(r) {
-            const lines = PlatinumMetrics.width(r.label || "") > panel.width - 48 ? 2 : 1;
+            const lines = Kit.PlatinumMetrics.width(r.label || "") > panel.width - 48 ? 2 : 1;
             return 8 + lines * 18 + (r.detail ? 16 : 0) + 4;
         }
         // A row's top edge inside the panel, as drawn (after scrolling).
@@ -276,18 +278,18 @@ Item {
             y: 2 * root.hair
             width: parent.width
             height: parent.height
-            color: PlatinumTokens.menuShadow
+            color: Kit.PlatinumTokens.menuShadow
         }
         PlatinumBevel {
             anchors.fill: parent
-            color: PlatinumTokens.menuSurface
+            color: Kit.PlatinumTokens.menuSurface
         }
 
         Flickable {
             id: list
             x: root.hair
             y: root.hair + 4
-            width: panel.width - 2 * root.hair - (panel.scrolls ? PlatinumTokens.menuScrollBar : 0)
+            width: panel.width - 2 * root.hair - (panel.scrolls ? Kit.PlatinumTokens.menuScrollBar : 0)
             height: panel.height - 2 * root.hair - 4 - 5
             contentHeight: panel.contentHeight
             clip: panel.scrolls
@@ -329,7 +331,7 @@ Item {
         // Clicks inside a panel stay inside it.
         MouseArea {
             anchors.fill: parent
-            anchors.rightMargin: panel.scrolls ? PlatinumTokens.menuScrollBar + root.hair : 0
+            anchors.rightMargin: panel.scrolls ? Kit.PlatinumTokens.menuScrollBar + root.hair : 0
             hoverEnabled: true
             acceptedButtons: Qt.AllButtons
             onWheel: function (w) { w.accepted = false; }
@@ -368,19 +370,19 @@ Item {
         readonly property bool isItem: row.kind === "item"
         readonly property bool lit: isItem && !row.disabled
             && (owner.selected === rowIndex || (owner.level === 0 && row.highlight === true && owner.selected < 0))
-        readonly property color fg: row.disabled ? PlatinumTokens.menuTextOff : lit ? PlatinumTokens.highlightText : PlatinumTokens.menuText
-        readonly property color fg2: row.disabled ? PlatinumTokens.menuTextOff : lit ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
+        readonly property color fg: row.disabled ? Kit.PlatinumTokens.menuTextOff : lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
+        readonly property color fg2: row.disabled ? Kit.PlatinumTokens.menuTextOff : lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
 
         // A separator: an etched rule, dark over light.
         Rectangle {
             visible: rowItem.row.kind === "separator"
             y: 4; width: parent.width; height: root.hair
-            color: PlatinumTokens.bevelDark
+            color: Kit.PlatinumTokens.bevelDark
         }
         Rectangle {
             visible: rowItem.row.kind === "separator"
             y: 4 + root.hair; width: parent.width; height: root.hair
-            color: PlatinumTokens.bevelLight
+            color: Kit.PlatinumTokens.bevelLight
         }
 
         // A header: the window a tile's menu is about, with its icon.
@@ -392,11 +394,11 @@ Item {
                 size: 20
                 name: rowItem.row.app || ""
                 visible: name !== ""
-                surface: PlatinumTokens.menuSurface
+                surface: Kit.PlatinumTokens.menuSurface
             }
             Column {
                 x: 36; y: 4
-                width: parent.width - x - PlatinumTokens.menuRightInset
+                width: parent.width - x - Kit.PlatinumTokens.menuRightInset
                 spacing: 2
                 Text {
                     width: parent.width
@@ -406,10 +408,10 @@ Item {
                     maximumLineCount: 2
                     elide: Text.ElideRight
                     lineHeight: 1.1
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Text {
                     visible: text !== ""
@@ -417,10 +419,10 @@ Item {
                     text: rowItem.row.detail || ""
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
-                    color: PlatinumTokens.menuTextSecondary
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuTextSecondary
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
             }
         }
@@ -433,11 +435,11 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 visible: rowItem.lit
-                color: PlatinumTokens.highlight
+                color: Kit.PlatinumTokens.highlight
             }
             PlatinumIcon {
                 visible: rowItem.row.check === true
-                x: (PlatinumTokens.menuTextLeft - width) / 2 - 2
+                x: (Kit.PlatinumTokens.menuTextLeft - width) / 2 - 2
                 anchors.verticalCenter: parent.verticalCenter
                 name: "check"
                 size: 12
@@ -450,7 +452,7 @@ Item {
                 name: rowItem.row.icon || ""
                 size: 16
                 color: rowItem.fg
-                knock: rowItem.lit ? PlatinumTokens.highlight : PlatinumTokens.menuSurface
+                knock: rowItem.lit ? Kit.PlatinumTokens.highlight : Kit.PlatinumTokens.menuSurface
             }
             PlatinumAppIcon {
                 visible: !rowItem.row.icon && !!rowItem.row.app
@@ -459,43 +461,43 @@ Item {
                 size: 16
                 name: rowItem.row.app || ""
                 inactive: rowItem.row.dim === true
-                surface: rowItem.lit ? PlatinumTokens.highlight : PlatinumTokens.menuSurface
+                surface: rowItem.lit ? Kit.PlatinumTokens.highlight : Kit.PlatinumTokens.menuSurface
             }
             Text {
                 x: owner.labelX
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, trail.x - x - PlatinumTokens.menuGap)
+                width: Math.max(0, trail.x - x - Kit.PlatinumTokens.menuGap)
                 text: rowItem.row.label || ""
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
                 color: rowItem.fg
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
             Row {
                 id: trail
                 anchors.right: parent.right
-                anchors.rightMargin: PlatinumTokens.menuRightInset - 4
+                anchors.rightMargin: Kit.PlatinumTokens.menuRightInset - 4
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: PlatinumTokens.menuGap
+                spacing: Kit.PlatinumTokens.menuGap
                 Text {
                     visible: !!rowItem.row.count
                     anchors.verticalCenter: parent.verticalCenter
                     text: String(rowItem.row.count || "")
                     color: rowItem.fg2
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Text {
                     visible: !!rowItem.row.hint
                     anchors.verticalCenter: parent.verticalCenter
                     text: rowItem.row.hint || ""
                     color: rowItem.fg2
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumIcon {
                     visible: !!rowItem.row.submenu

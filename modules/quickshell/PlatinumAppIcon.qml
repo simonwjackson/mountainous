@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
@@ -16,12 +17,12 @@ Item {
     property real size: 20
     property bool inactive: false
     // The surface the icon sits on: the checker's colour.
-    property color surface: PlatinumTokens.stripSurface
+    property color surface: Kit.PlatinumTokens.stripSurface
 
     implicitWidth: size
     implicitHeight: size
 
-    readonly property int physical: Math.max(1, Math.round(size * PlatinumTokens.pixelRatio))
+    readonly property int physical: Math.max(1, Math.round(size * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)))
 
     // The icon is always drawn through the effect, so becoming inactive
     // (a page change) only changes the effect's numbers. Toggling the

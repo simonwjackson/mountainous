@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // A Mac OS 8 utility window (a windoid): a black edge and a one-rule bevel,
@@ -10,7 +12,7 @@ Item {
     id: root
 
     property string title: ""
-    property color titleColor: PlatinumTokens.menuText
+    property color titleColor: Kit.PlatinumTokens.menuText
     // A status light before the title (the Fleet summary when shaded).
     property string lightShape: ""
     property string lightTone: "normal"
@@ -29,7 +31,7 @@ Item {
     signal dragFinished
     signal activated
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real titleHeight: PlatinumGlanceTokens.titleHeight
     // Everything that is not body: edges, bevel, title, the title's rule.
     readonly property real chromeHeight: 4 * h + titleHeight + (shaded ? 0 : h)
@@ -50,12 +52,12 @@ Item {
         y: root.h
         width: parent.width
         height: parent.height
-        color: PlatinumTokens.menuShadow
+        color: Kit.PlatinumTokens.menuShadow
     }
 
     PlatinumBevel {
         anchors.fill: parent
-        color: PlatinumTokens.menuSurface
+        color: Kit.PlatinumTokens.menuSurface
     }
 
     Item {
@@ -85,7 +87,7 @@ Item {
             height: PlatinumGlanceTokens.boxSize
             anchors.verticalCenter: parent.verticalCenter
             sunken: held
-            color: held ? PlatinumTokens.well : PlatinumTokens.raised
+            color: held ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
         }
 
         component Stripes: Item {
@@ -99,8 +101,8 @@ Item {
                     width: parent.width
                     y: index * 3 * root.h
                     height: 2 * root.h
-                    Rectangle { width: parent.width; height: root.h; color: PlatinumTokens.bevelLight }
-                    Rectangle { y: root.h; width: parent.width; height: root.h; color: PlatinumTokens.bevelDark }
+                    Rectangle { width: parent.width; height: root.h; color: Kit.PlatinumTokens.bevelLight }
+                    Rectangle { y: root.h; width: parent.width; height: root.h; color: Kit.PlatinumTokens.bevelDark }
                 }
             }
         }
@@ -125,8 +127,8 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 4
             held: shadeArea.pressed && shadeArea.containsMouse
-            Rectangle { x: 2 * root.h; y: 3 * root.h; width: parent.width - 4 * root.h; height: root.h; color: PlatinumTokens.menuEdge }
-            Rectangle { x: 2 * root.h; y: 5 * root.h; width: parent.width - 4 * root.h; height: root.h; color: PlatinumTokens.menuEdge }
+            Rectangle { x: 2 * root.h; y: 3 * root.h; width: parent.width - 4 * root.h; height: root.h; color: Kit.PlatinumTokens.menuEdge }
+            Rectangle { x: 2 * root.h; y: 5 * root.h; width: parent.width - 4 * root.h; height: root.h; color: Kit.PlatinumTokens.menuEdge }
             MouseArea {
                 id: shadeArea
                 anchors.fill: parent
@@ -168,9 +170,9 @@ Item {
                 textFormat: Text.PlainText
                 elide: Text.ElideRight
                 color: root.titleColor
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
 
@@ -187,7 +189,7 @@ Item {
         y: titleBar.y + titleBar.height
         width: parent.width - 4 * root.h
         height: root.h
-        color: PlatinumTokens.menuEdge
+        color: Kit.PlatinumTokens.menuEdge
     }
 
     Item {

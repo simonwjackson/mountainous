@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -24,7 +25,7 @@ PanelWindow {
     readonly property var saved: Object.assign({}, GlanceState.saved.fleet, live)
     readonly property real screenW: screen ? screen.width : 1920
     readonly property real screenH: screen ? screen.height : 1200
-    readonly property real topOffset: PlatinumTokens.barHeight + (saved.t !== undefined ? saved.t : 6)
+    readonly property real topOffset: Kit.PlatinumTokens.barHeight + (saved.t !== undefined ? saved.t : 6)
     // Room below: the dock's 44 px and its margins stay clear.
     readonly property real availH: Math.max(windoid.chromeHeight + 40, screenH - topOffset - 58)
     readonly property real frameW: Math.max(150, Math.min(saved.w !== undefined ? saved.w : view.naturalWidth, screenW - 8))
@@ -33,11 +34,11 @@ PanelWindow {
 
     anchors { top: true; right: true }
     margins {
-        top: Math.max(PlatinumTokens.barHeight, Math.min(win.topOffset, win.screenH - 20))
+        top: Math.max(Kit.PlatinumTokens.barHeight, Math.min(win.topOffset, win.screenH - 20))
         right: Math.max(0, Math.min(saved.r !== undefined ? saved.r : 8, win.screenW - win.frameW))
     }
-    implicitWidth: Math.ceil(frameW + PlatinumTokens.hair)
-    implicitHeight: Math.ceil(windoid.height + PlatinumTokens.hair)
+    implicitWidth: Math.ceil(frameW + Kit.PlatinumTokens.hairFor(QsWindow.window))
+    implicitHeight: Math.ceil(windoid.height + Kit.PlatinumTokens.hairFor(QsWindow.window))
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "mountainous-fleet"
@@ -55,7 +56,7 @@ PanelWindow {
         width: win.frameW
         shaded: win.saved.shaded === true
         title: shaded || view.summaryInTitle ? view.titleText(Math.max(0, width - 80)) : "Fleet"
-        titleColor: shaded || view.summaryInTitle ? view.toneColor(view.summaryTone) : PlatinumTokens.menuText
+        titleColor: shaded || view.summaryInTitle ? view.toneColor(view.summaryTone) : Kit.PlatinumTokens.menuText
         lightShape: shaded || view.summaryInTitle ? view.lightShape : ""
         lightTone: view.lightTone
         front: true
@@ -64,7 +65,7 @@ PanelWindow {
         onShadeClicked: GlanceState.setFleet({shaded: !shaded})
         onDragged: function (dx, dy) {
             const r = win.margins.right - dx;
-            const t = win.margins.top + dy - PlatinumTokens.barHeight;
+            const t = win.margins.top + dy - Kit.PlatinumTokens.barHeight;
             win.live = Object.assign({}, win.live, {r: Math.round(Math.max(0, r)), t: Math.round(Math.max(0, t))});
         }
         onDragFinished: win.commit()

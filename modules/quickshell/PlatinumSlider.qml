@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 
@@ -14,14 +16,14 @@ Item {
     property string icon: ""
     property bool dimmed: false     // muted: the fill goes grey
     property bool hasValue: true
-    property real rightInset: PlatinumTokens.menuRightInset
+    property real rightInset: Kit.PlatinumTokens.menuRightInset
     readonly property bool dragging: area.pressed
     signal moved(real ratio)
     signal released
 
     // The value's box: wide enough for its widest value, so the track
     // never moves. A slider with other values ("48 px") passes its own.
-    property real valueWidth: PlatinumMetrics.widest(["100%", "--"])
+    property real valueWidth: Kit.PlatinumMetrics.widest(["100%", "--"])
     // The track's place in the slider, for a scale drawn under it.
     readonly property real trackX: track.x
     readonly property real trackWidth: track.width
@@ -31,33 +33,33 @@ Item {
 
     PlatinumIcon {
         visible: root.icon !== ""
-        x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+        x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         name: root.icon
         size: 14
-        color: PlatinumTokens.menuText
+        color: Kit.PlatinumTokens.menuText
     }
 
     Item {
         id: track
-        x: PlatinumTokens.menuTextLeft
+        x: Kit.PlatinumTokens.menuTextLeft
         anchors.verticalCenter: parent.verticalCenter
-        width: root.width - PlatinumTokens.menuTextLeft - root.rightInset - root.valueWidth - PlatinumTokens.menuGap
+        width: root.width - Kit.PlatinumTokens.menuTextLeft - root.rightInset - root.valueWidth - Kit.PlatinumTokens.menuGap
         height: 10
 
         PlatinumBevel {
             anchors.fill: parent
             sunken: true
             edged: false
-            color: PlatinumTokens.well
+            color: Kit.PlatinumTokens.well
         }
 
         Rectangle {
-            x: PlatinumTokens.hair
-            y: PlatinumTokens.hair
-            height: parent.height - 2 * PlatinumTokens.hair
-            width: Math.max(0, (parent.width - 2 * PlatinumTokens.hair) * Math.min(1, Math.max(0, root.ratio)))
-            color: root.dimmed ? PlatinumTokens.menuTextOff : PlatinumTokens.highlight
+            x: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            y: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            height: parent.height - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+            width: Math.max(0, (parent.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)) * Math.min(1, Math.max(0, root.ratio)))
+            color: root.dimmed ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.highlight
         }
 
         PlatinumBevel {
@@ -67,14 +69,14 @@ Item {
             height: 20
             anchors.verticalCenter: parent.verticalCenter
             x: Math.round(parent.width * Math.min(1, Math.max(0, root.ratio)) - width / 2)
-            color: root.dragging ? PlatinumTokens.well : PlatinumTokens.raised
+            color: root.dragging ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
 
             PlatinumIcon {
                 anchors.centerIn: parent
                 name: "grip"
                 width: 6
                 height: 4
-                color: PlatinumTokens.bevelDark
+                color: Kit.PlatinumTokens.bevelDark
             }
         }
 
@@ -106,9 +108,9 @@ Item {
         width: root.valueWidth
         horizontalAlignment: Text.AlignRight
         text: root.valueText
-        color: root.dimmed ? PlatinumTokens.menuTextOff : PlatinumTokens.menuText
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumText
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: root.dimmed ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.menuText
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumText
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 }

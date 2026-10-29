@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell.Bluetooth
 import QtQuick
 
@@ -108,7 +109,7 @@ Win98Window {
                         iconName: modelData.connected ? "bluetooth-on" : "bluetooth-off"
                         title: modelData.name || modelData.address
                         bold: modelData.connected
-                        detailColor: pairFailed && !selected ? Win98Tokens.danger : Win98Tokens.gray
+                        detailColor: pairFailed && !selected ? Kit.Win98Tokens.danger : Kit.Win98Tokens.gray
                         detail: {
                             const parts = [];
                             if (dev.pairFailed) parts.push("Pairing failed");

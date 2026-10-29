@@ -2,6 +2,7 @@
 # type, scroll bars and form controls. Quickshell's WebTheme.qml delivers
 # themes/<id>/web.css over CDP; bars.nix already delivers the QML, the
 # scripts and the theme folder. See docs/decisions/web-theme.md.
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, config, ... }:
@@ -18,7 +19,7 @@
             ];
           }
           ''
-            node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
+            HENSOU_QML_ROOT=${inputs.hensou}/kit/qml node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
             export HOME="$TMPDIR" XDG_CACHE_HOME="$TMPDIR/cache"
             test "$(fc-scan --format '%{family[0]}' ${pkgs.public-sans}/share/fonts/truetype/PublicSans-Regular.ttf)" = "Public Sans"
             test "$(fc-scan --format '%{family[0]}' ${config.packages.w95fa-grid}/share/fonts/truetype/W95FAGrid.ttf)" = "W95FA Grid"

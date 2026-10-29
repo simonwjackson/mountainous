@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "themes/win98/session-model.js" as Session
 
@@ -33,7 +34,7 @@ Win98Window {
         id: body
         x: 8 * root.u
         width: root.bodyWidth - 16 * root.u
-        implicitHeight: 8 * root.u + tabs.height + 8 * root.u + Win98Tokens.buttonHeight * root.u + 8 * root.u
+        implicitHeight: 8 * root.u + tabs.height + 8 * root.u + Kit.Win98Tokens.buttonHeight * root.u + 8 * root.u
 
         Win98Tabs {
             id: tabs
@@ -58,7 +59,7 @@ Win98Window {
                 Win98Icon {
                     id: picture
                     visible: root.plan.picture
-                    x: root.plan.stack ? Win98Tokens.half((sheet.width - width) / 2, root.u) : 0
+                    x: root.plan.stack ? Kit.Win98Tokens.half((sheet.width - width) / 2, root.u) : 0
                     name: "system"
                 }
                 Column {

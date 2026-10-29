@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "themes/win98/session-model.js" as Session
 import "themes/win98/tray-model.js" as Tray
@@ -61,7 +62,7 @@ Win98Window {
     // bar, then shorter (the bar wraps either to two lines before it elides).
     readonly property string hintsFull: "Win+F float \u00b7 Win+1, 2, 3 windows \u00b7 Win+Shift+[ ] gap"
     readonly property string hintsShort: "Win+F \u00b7 Win+1 2 3 \u00b7 Win+Shift+[ ]"
-    readonly property string hints: Win98Tokens.textWidth(hintsFull, false, u) + 8 * u <= width - 24 * u ? hintsFull : hintsShort
+    readonly property string hints: Kit.Win98Tokens.textWidth(hintsFull, false, u) + 8 * u <= width - 24 * u ? hintsFull : hintsShort
 
     // The natural height (units) with nothing yielded. Measured after
     // layout settles, not bound, as the Sound window does: what the steps
@@ -117,7 +118,7 @@ Win98Window {
     function pagesDiffer(n) { return n === 1 ? "1 page differs from this." : n + " pages differ from this."; }
     // A group's title keeps its key while it fits.
     function titled(full, short, width) {
-        return Win98Tokens.textWidth(Win98Tokens.plainText(full), false, root.u) + 16 * root.u <= width ? full : short;
+        return Kit.Win98Tokens.textWidth(Kit.Win98Tokens.plainText(full), false, root.u) + 16 * root.u <= width ? full : short;
     }
 
     Item {
@@ -262,10 +263,10 @@ Win98Window {
                                 Win98Bevel {
                                     id: valueBox
                                     x: parent.width - width
-                                    width: Math.max(44 * root.u, Win98Tokens.ceilU(valueText.implicitWidth, root.u) + 8 * root.u)
-                                    height: Win98Tokens.fieldHeight * root.u
+                                    width: Math.max(44 * root.u, Kit.Win98Tokens.ceilU(valueText.implicitWidth, root.u) + 8 * root.u)
+                                    height: Kit.Win98Tokens.fieldHeight * root.u
                                     variant: "field"
-                                    color: root.floating ? Win98Tokens.face : Win98Tokens.win
+                                    color: root.floating ? Kit.Win98Tokens.face : Kit.Win98Tokens.win
                                     Win98Text {
                                         id: valueText
                                         objectName: "layoutGapValue"
@@ -273,7 +274,7 @@ Win98Window {
                                         y: 4 * root.u
                                         text: root.layout.shownGap + " px"
                                         accessMarks: false
-                                        color: Win98Tokens.winText
+                                        color: Kit.Win98Tokens.winText
                                         disabledLook: root.floating
                                     }
                                 }
@@ -312,7 +313,7 @@ Win98Window {
                                 objectName: "layoutZen"
                                 width: Math.min(implicitWidth, parent.width)
                                 text: zenFits ? "&Zen margins (Win+Shift+M)" : "&Zen margins"
-                                readonly property bool zenFits: Win98Tokens.textWidth("Zen margins (Win+Shift+M)", false, root.u) + 18 * root.u <= parent.width
+                                readonly property bool zenFits: Kit.Win98Tokens.textWidth("Zen margins (Win+Shift+M)", false, root.u) + 18 * root.u <= parent.width
                                 checked: root.page.zen
                                 enabled: !root.floating
                                 onToggled: root.layout.toggleZen()
@@ -358,7 +359,7 @@ Win98Window {
         objectName: "layoutCap" + n
         height: (root.plan.flat ? 24 : 46) * root.u
 
-        Rectangle { anchors.fill: parent; color: Win98Tokens.face }
+        Rectangle { anchors.fill: parent; color: Kit.Win98Tokens.face }
         Win98Dither {
             visible: cap.selected
             x: 2 * root.u; y: 2 * root.u
@@ -376,8 +377,8 @@ Win98Window {
             spacing: (root.plan.flat ? 4 : 5) * root.u
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
-            x: Win98Tokens.snap((cap.width - width) / 2, root.u) + (cap.down ? root.u : 0)
-            y: Win98Tokens.snap((cap.height - height) / 2, root.u) + (cap.down ? root.u : 0)
+            x: Kit.Win98Tokens.snap((cap.width - width) / 2, root.u) + (cap.down ? root.u : 0)
+            y: Kit.Win98Tokens.snap((cap.height - height) / 2, root.u) + (cap.down ? root.u : 0)
             Win98Icon {
                 visible: root.plan.picto
                 name: "layout-picto-" + cap.n + (cap.live ? "" : "-off")
@@ -407,10 +408,10 @@ Win98Window {
         property string buttonName: ""
         signal clicked
         width: parent ? parent.width : 0
-        height: Math.max(Win98Tokens.buttonHeight * root.u, Win98Tokens.ceilU(note.implicitHeight, root.u))
+        height: Math.max(Kit.Win98Tokens.buttonHeight * root.u, Kit.Win98Tokens.ceilU(note.implicitHeight, root.u))
         Win98Text {
             id: note
-            y: Win98Tokens.snap((row.height - Win98Tokens.ceilU(implicitHeight, root.u)) / 2, root.u)
+            y: Kit.Win98Tokens.snap((row.height - Kit.Win98Tokens.ceilU(implicitHeight, root.u)) / 2, root.u)
             width: Math.max(0, row.width - push.width - 6 * root.u)
             wrap: true
             lineUnits: 15
@@ -421,7 +422,7 @@ Win98Window {
             id: push
             objectName: row.buttonName
             x: row.width - width
-            y: Win98Tokens.snap((row.height - height) / 2, root.u)
+            y: Kit.Win98Tokens.snap((row.height - height) / 2, root.u)
             text: row.button
             onClicked: row.clicked()
         }

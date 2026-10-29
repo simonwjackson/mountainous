@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 
 // Dictation as a Win98 window: what the recorder is doing, and Retry and
@@ -22,11 +23,11 @@ Win98Window {
             spacing: 6 * root.u
             Win98Icon { name: root.failed ? "mic-failed" : root.dictation.state === "working" ? "mic-working" : "mic-recording" }
             Win98Text {
-                y: Win98Tokens.snap((16 * root.u - height) / 2, root.u)
+                y: Kit.Win98Tokens.snap((16 * root.u - height) / 2, root.u)
                 text: root.text
                 accessMarks: false
                 bold: true
-                color: root.failed ? Win98Tokens.danger : Win98Tokens.text
+                color: root.failed ? Kit.Win98Tokens.danger : Kit.Win98Tokens.text
             }
         }
         Item {
@@ -59,7 +60,7 @@ Win98Window {
             wrap: true
             text: "The taskbar shows the take while it records."
             accessMarks: false
-            color: Win98Tokens.gray
+            color: Kit.Win98Tokens.gray
         }
     }
 

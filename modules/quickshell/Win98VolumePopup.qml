@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -30,7 +31,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Win98Tokens.unitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(win)
             readonly property var place: host.taskbar.placeOf(host.kind)
                 || host.taskbar.placeOf("more") || host.taskbar.placeOf("start")
             readonly property var plan: Session.popupPlan(Math.floor(win.width / win.u),
@@ -65,14 +66,14 @@ Scope {
                 Win98Text {
                     visible: win.plan.label
                     x: icon.x + 16 * win.u + 6 * win.u
-                    y: icon.y + Win98Tokens.snap((16 * win.u - height) / 2, win.u)
+                    y: icon.y + Kit.Win98Tokens.snap((16 * win.u - height) / 2, win.u)
                     text: win.words.label
                     accessMarks: false
                 }
                 Win98Text {
                     objectName: "volumePopupValue"
                     x: box.width - 6 * win.u - width
-                    y: icon.y + Win98Tokens.snap((16 * win.u - height) / 2, win.u)
+                    y: icon.y + Kit.Win98Tokens.snap((16 * win.u - height) / 2, win.u)
                     text: win.words.value
                     accessMarks: false
                 }

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -15,7 +16,7 @@ PlatinumMenuFrame {
 
     headerTrailing: PlatinumButton {
         text: panel.checking ? "Checking" : "Check now"
-        fixedWidth: PlatinumMetrics.buttonWidth(["Check now", "Checking"])
+        fixedWidth: Kit.PlatinumMetrics.buttonWidth(["Check now", "Checking"])
         enabled: !panel.checking
         onClicked: panel.refresh()
     }
@@ -26,7 +27,7 @@ PlatinumMenuFrame {
         rightInset: frame.rightInset
         text: panel.statusText
         color: panel.state === "error" || panel.state === "stale"
-            ? PlatinumTokens.menuWarning : PlatinumTokens.menuTextSecondary
+            ? Kit.PlatinumTokens.menuWarning : Kit.PlatinumTokens.menuTextSecondary
         bottomPadding: 4
     }
 
@@ -43,7 +44,7 @@ PlatinumMenuFrame {
         view.section.delegate: PlatinumMenuParts.Section {
             required property string section
             width: ListView.view.width
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             rightInset: frame.rightInset
             topPadding: 6
             text: section
@@ -57,7 +58,7 @@ PlatinumMenuFrame {
             height: findingText.implicitHeight + 6
 
             PlatinumIcon {
-                x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+                x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
                 y: 3 + (16 - height) / 2
                 name: finding.level === "ok" ? "check" : finding.level === "bad" ? "dot" : "ring"
                 size: 10
@@ -66,16 +67,16 @@ PlatinumMenuFrame {
 
             Text {
                 id: findingText
-                x: PlatinumTokens.menuTextLeft
+                x: Kit.PlatinumTokens.menuTextLeft
                 y: 3
                 width: parent.width - x - frame.rightInset
                 text: finding.message
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
                 color: frame.levelColor(finding.level)
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 lineHeight: 1.15
             }
         }
@@ -86,7 +87,7 @@ PlatinumMenuFrame {
         text: "Esc or click outside to close"
     }
     function levelColor(level) {
-        return level === "bad" ? PlatinumTokens.menuDanger
-            : level === "ok" ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuWarning;
+        return level === "bad" ? Kit.PlatinumTokens.menuDanger
+            : level === "ok" ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuWarning;
     }
 }

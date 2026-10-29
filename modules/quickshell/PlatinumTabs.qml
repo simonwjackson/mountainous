@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 
@@ -10,10 +12,10 @@ Item {
     // [{key, label, icon?}]; an icon (a mark in icons/) stands before its label.
     property var model: []
     property string current: ""
-    property real rightInset: PlatinumTokens.menuRightInset
+    property real rightInset: Kit.PlatinumTokens.menuRightInset
     // The strip's height, and the label size: a segmented control (Tiled,
     // Floating) is a little taller than the tabs.
-    property real stripHeight: PlatinumTokens.menuButtonHeight
+    property real stripHeight: Kit.PlatinumTokens.menuButtonHeight
     signal selected(string key)
 
     Layout.fillWidth: true
@@ -21,9 +23,9 @@ Item {
 
     Item {
         id: strip
-        x: PlatinumTokens.menuTextLeft
+        x: Kit.PlatinumTokens.menuTextLeft
         y: 2
-        width: root.width - PlatinumTokens.menuTextLeft - root.rightInset
+        width: root.width - Kit.PlatinumTokens.menuTextLeft - root.rightInset
         height: root.stripHeight
 
         Repeater {
@@ -39,13 +41,13 @@ Item {
                 // what is left, so the strip ends on the grid's right edge.
                 readonly property real step: Math.round(strip.width / root.model.length)
                 x: index * step
-                width: index < root.model.length - 1 ? step + PlatinumTokens.hair : strip.width - x
+                width: index < root.model.length - 1 ? step + Kit.PlatinumTokens.hairFor(QsWindow.window) : strip.width - x
                 height: strip.height
 
                 PlatinumBevel {
                     anchors.fill: parent
                     sunken: tab.active || area.pressed
-                    color: tab.active || area.pressed ? PlatinumTokens.well : PlatinumTokens.raised
+                    color: tab.active || area.pressed ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
                 }
 
                 Row {
@@ -70,10 +72,10 @@ Item {
                         width: Math.max(0, Math.min(implicitWidth, room))
                         elide: Text.ElideRight
                         text: tab.modelData.label
-                        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: root.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
 

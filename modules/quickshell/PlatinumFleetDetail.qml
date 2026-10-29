@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import "beszel-model.js" as Model
 
@@ -12,13 +14,13 @@ Item {
     property real now: Date.now()
     property real leftInset: 10
     readonly property bool wide: width >= 520
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
 
-    implicitHeight: PlatinumMetrics.even(content.implicitHeight + 8 + 10 + 2 * h)
+    implicitHeight: Kit.PlatinumMetrics.even(content.implicitHeight + 8 + 10 + 2 * h)
 
     function toneColor(tone) {
-        return tone === "danger" ? PlatinumTokens.menuDanger : tone === "warning" ? PlatinumTokens.menuWarning
-            : tone === "muted" || tone === "quiet" ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText;
+        return tone === "danger" ? Kit.PlatinumTokens.menuDanger : tone === "warning" ? Kit.PlatinumTokens.menuWarning
+            : tone === "muted" || tone === "quiet" ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuText;
     }
     function clock(ms) {
         if (!isFinite(ms)) return "--";
@@ -38,31 +40,31 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: PlatinumGlanceTokens.listSorted
-        Rectangle { width: parent.width; height: root.h; color: PlatinumTokens.bevelDark }
-        Rectangle { y: parent.height - root.h; width: parent.width; height: root.h; color: PlatinumTokens.bevelDark }
+        Rectangle { width: parent.width; height: root.h; color: Kit.PlatinumTokens.bevelDark }
+        Rectangle { y: parent.height - root.h; width: parent.width; height: root.h; color: Kit.PlatinumTokens.bevelDark }
     }
 
     component Heading: Text {
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuTextSecondary
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuTextSecondary
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         bottomPadding: 3
     }
     component Small: Text {
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuText
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuText
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
     component Tiny: Text {
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuTextSecondary
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumHint
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuTextSecondary
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumHint
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     // One sparkline: its label and current value, the well, its axis.
@@ -113,7 +115,7 @@ Item {
         default property alias value: valueBox.data
         width: parent ? parent.width : 0
         implicitHeight: Math.max(labelText.implicitHeight, valueBox.childrenRect.height)
-        Small { id: labelText; width: root.kvLabel; text: pair.label; color: PlatinumTokens.menuTextSecondary }
+        Small { id: labelText; width: root.kvLabel; text: pair.label; color: Kit.PlatinumTokens.menuTextSecondary }
         Item {
             id: valueBox
             x: root.kvLabel + 10
@@ -124,9 +126,9 @@ Item {
     readonly property real kvLabel: kvMetrics.advanceWidth("Filesystems") + 2
     FontMetrics {
         id: kvMetrics
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     Component {
@@ -138,7 +140,7 @@ Item {
                 visible: !root.loaded
                 width: parent.width
                 wrapMode: Text.Wrap
-                color: PlatinumTokens.menuTextSecondary
+                color: Kit.PlatinumTokens.menuTextSecondary
                 text: root.missing
             }
             Spark { visible: root.loaded; label: "CPU"; key: "cpu" }
@@ -159,7 +161,7 @@ Item {
                 wrapMode: Text.Wrap
                 readonly property var units: root.loaded && Array.isArray(root.detail.failed) ? root.detail.failed : null
                 color: !root.hv.trusted || (units && units.length === 0) || (!units && !(root.hv.failed.n > 0))
-                    ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuDanger
+                    ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuDanger
                 text: !root.hv.trusted ? "Unknown while " + root.hv.status
                     : units && units.length > 0 ? ""
                     : root.hv.failed.n > 0 ? root.hv.failed.n + " failed. " + (root.loaded ? "Beszel did not list them." : "Loading names…")
@@ -175,14 +177,14 @@ Item {
                         x: 0
                         y: (unitText.font.pixelSize - 6) / 2 + 2
                         width: 6; height: 6; radius: 3
-                        color: PlatinumTokens.menuDanger
+                        color: Kit.PlatinumTokens.menuDanger
                     }
                     Small {
                         id: unitText
                         x: 12
                         width: parent.width - 12
                         wrapMode: Text.WrapAnywhere
-                        color: PlatinumTokens.menuDanger
+                        color: Kit.PlatinumTokens.menuDanger
                         text: modelData
                     }
                 }
@@ -210,7 +212,7 @@ Item {
                     }
                 }
             }
-            Pair { label: "Uptime"; Small { width: parent.width; wrapMode: Text.Wrap; text: root.hv.uptime || "--"; color: root.hv.trusted ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff } }
+            Pair { label: "Uptime"; Small { width: parent.width; wrapMode: Text.Wrap; text: root.hv.uptime || "--"; color: root.hv.trusted ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff } }
             Pair {
                 label: "Seen"
                 visible: !root.hv.trusted
@@ -222,12 +224,12 @@ Item {
                     width: parent.width
                     wrapMode: Text.Wrap
                     text: root.hv.temp.noSensor ? "No sensor (VM)" : Model.fmtTemp(root.hv.temp.c, true)
-                    color: !root.hv.trusted ? PlatinumTokens.menuTextOff : root.toneColor(root.hv.temp.tone)
+                    color: !root.hv.trusted ? Kit.PlatinumTokens.menuTextOff : root.toneColor(root.hv.temp.tone)
                 }
             }
             Pair {
                 label: "CPU now"
-                Small { text: Model.fmtPct(root.hv.cpu.pct) + ", memory " + Model.fmtPct(root.hv.mem.pct); color: root.hv.trusted ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff }
+                Small { text: Model.fmtPct(root.hv.cpu.pct) + ", memory " + Model.fmtPct(root.hv.mem.pct); color: root.hv.trusted ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff }
             }
             Pair {
                 label: "Filesystems"
@@ -239,7 +241,7 @@ Item {
                             required property var modelData
                             required property int index
                             text: modelData.name + " " + Model.fmtPct(modelData.pct) + (index < root.hv.fss.length - 1 ? ", " : "")
-                            color: !root.hv.trusted ? PlatinumTokens.menuTextOff
+                            color: !root.hv.trusted ? Kit.PlatinumTokens.menuTextOff
                                 : root.toneColor(modelData.pct >= 95 ? "danger" : modelData.pct >= 85 ? "warning" : "normal")
                         }
                     }
@@ -277,7 +279,7 @@ Item {
                 visible: !root.loaded || !Array.isArray(root.detail.smart) || root.detail.smart.length === 0
                 width: parent.width
                 wrapMode: Text.Wrap
-                color: PlatinumTokens.menuTextSecondary
+                color: Kit.PlatinumTokens.menuTextSecondary
                 text: !root.loaded ? root.missing : "No SMART data"
             }
             Repeater {
@@ -294,8 +296,8 @@ Item {
                         Small {
                             x: Math.max(diskName.width + 8, parent.width * 0.3)
                             text: parent.parent.verdict
-                            color: parent.parent.verdict === "Failed" ? PlatinumTokens.menuDanger
-                                : parent.parent.verdict === "Passed" ? PlatinumTokens.menuText : PlatinumTokens.menuTextSecondary
+                            color: parent.parent.verdict === "Failed" ? Kit.PlatinumTokens.menuDanger
+                                : parent.parent.verdict === "Passed" ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextSecondary
                         }
                         Small {
                             anchors.right: parent.right
@@ -326,7 +328,7 @@ Item {
             width: parent.width
             wrapMode: Text.Wrap
             lineHeight: 1.2
-            color: root.hv.status === "down" ? root.toneColor(root.hv.tone) : PlatinumTokens.menuTextSecondary
+            color: root.hv.status === "down" ? root.toneColor(root.hv.tone) : Kit.PlatinumTokens.menuTextSecondary
             text: root.hv.status === "down"
                 ? "Down. Last seen at " + root.clock(root.hv.seen) + ", " + Model.ago(root.now - root.hv.seen)
                     + ". The values below are from then and may be wrong."

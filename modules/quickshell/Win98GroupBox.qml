@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -9,13 +10,13 @@ Item {
     id: root
 
     property string title: ""
-    property color titleColor: Win98Tokens.text
+    property color titleColor: Kit.Win98Tokens.text
     property bool titleDisabled: false
     default property alias content: body.data
     property real padUnits: 7
     property real topUnits: 10
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     // The title's line box sits across the frame's top line.
     readonly property real frameTop: 7 * u
     readonly property Item first: body.children.length > 0 ? body.children[0] : null
@@ -36,7 +37,7 @@ Item {
         y: 0
         width: label.width + 4 * root.u
         height: label.height
-        color: Win98Tokens.face
+        color: Kit.Win98Tokens.face
     }
     Win98Text {
         id: label

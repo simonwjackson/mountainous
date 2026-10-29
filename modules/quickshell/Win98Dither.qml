@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 
 // Win98's 50% dither: every other unit in color, the rest transparent, so
@@ -6,7 +7,7 @@ import QtQuick
 Win98Svg {
     id: root
 
-    property color color: Win98Tokens.dither
+    property color color: Kit.Win98Tokens.dither
     property int phase: 0
 
     readonly property int cols: Math.max(1, Math.round(width / root.u))

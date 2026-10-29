@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "window-motion.js" as Motion
 
@@ -16,15 +17,15 @@ MotionLayer {
     required property var taskbar
 
     theme: "win98"
-    reduced: GlanceState.reducedMotion || Win98Tokens.reducedMotion
+    reduced: GlanceState.reducedMotion || Kit.Win98Tokens.reducedMotion
     endpoints: function (e) { return overlay.ends(e); }
 
     // 1 u is two physical px, at the taskbar's scale (always mapped while
     // its window buttons are there to fly to).
-    dpr: taskbar.devicePixelRatio > 0 ? taskbar.devicePixelRatio : Win98Tokens.pixelRatio
+    dpr: taskbar.devicePixelRatio > 0 ? taskbar.devicePixelRatio : Kit.Win98Tokens.pixelRatio
     readonly property real u: 2 / overlay.dpr
     function units(n) { return n * overlay.u; }
-    readonly property real captionH: overlay.units(Win98Tokens.captionHeight)
+    readonly property real captionH: overlay.units(Kit.Win98Tokens.captionHeight)
     // The caption sits a seam above the client (hyprbars-platinum).
     function caption(rect) {
         const r = Motion.captionOf(Motion.local(rect, overlay.desktop.screen), overlay.captionH + overlay.u);
@@ -66,15 +67,15 @@ MotionLayer {
                 Rectangle {
                     id: bar
                     required property var modelData
-                    x: Win98Tokens.snap(modelData.x, overlay.u)
-                    y: Win98Tokens.snap(modelData.y, overlay.u)
-                    width: Math.max(overlay.u, Win98Tokens.snap(modelData.w, overlay.u))
-                    height: Math.max(overlay.u, Win98Tokens.snap(modelData.h, overlay.u))
+                    x: Kit.Win98Tokens.snap(modelData.x, overlay.u)
+                    y: Kit.Win98Tokens.snap(modelData.y, overlay.u)
+                    width: Math.max(overlay.u, Kit.Win98Tokens.snap(modelData.w, overlay.u))
+                    height: Math.max(overlay.u, Kit.Win98Tokens.snap(modelData.h, overlay.u))
                     clip: true
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0; color: flight.modelData.active ? Win98Tokens.caption1 : Win98Tokens.inactiveCaption1 }
-                        GradientStop { position: 1; color: flight.modelData.active ? Win98Tokens.caption2 : Win98Tokens.inactiveCaption2 }
+                        GradientStop { position: 0; color: flight.modelData.active ? Kit.Win98Tokens.caption1 : Kit.Win98Tokens.inactiveCaption1 }
+                        GradientStop { position: 1; color: flight.modelData.active ? Kit.Win98Tokens.caption2 : Kit.Win98Tokens.inactiveCaption2 }
                     }
                     Win98Text {
                         x: overlay.units(3 + 16 + 3)
@@ -83,7 +84,7 @@ MotionLayer {
                         text: flight.modelData.title
                         accessMarks: false
                         bold: true
-                        color: flight.modelData.active ? Win98Tokens.captionText : Win98Tokens.inactiveCaptionText
+                        color: flight.modelData.active ? Kit.Win98Tokens.captionText : Kit.Win98Tokens.inactiveCaptionText
                     }
                 }
             }

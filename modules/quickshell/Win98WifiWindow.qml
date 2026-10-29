@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell.Networking
 import QtQuick
 
@@ -160,7 +161,7 @@ Win98Window {
                         anchors.fill: parent
                         color: "transparent"
                         border.width: root.u
-                        border.color: Win98Tokens.danger
+                        border.color: Kit.Win98Tokens.danger
                     }
                     Win98Text {
                         id: failText
@@ -169,7 +170,7 @@ Win98Window {
                         wrap: true
                         text: root.panel.failureMessage
                         accessMarks: false
-                        color: Win98Tokens.danger
+                        color: Kit.Win98Tokens.danger
                     }
                 }
                 Item {

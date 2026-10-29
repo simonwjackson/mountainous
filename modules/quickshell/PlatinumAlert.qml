@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -36,7 +37,7 @@ PanelWindow {
     PlatinumDialogFrame {
         id: frame
         x: Math.max(4, Math.min(24, alert.width - width - 4))
-        y: Math.max(4, Math.min(PlatinumTokens.barHeight + 22, alert.height - height - 4))
+        y: Math.max(4, Math.min(Kit.PlatinumTokens.barHeight + 22, alert.height - height - 4))
         width: Math.min(implicitWidth, alert.width - 8)
         closable: false
         focus: true
@@ -76,20 +77,20 @@ PanelWindow {
                     Text {
                         width: parent.width
                         text: alert.spec ? alert.spec.title : ""
-                        color: PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumText
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumText
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     Text {
                         width: parent.width
                         text: alert.spec ? alert.spec.text : ""
                         wrapMode: Text.Wrap
                         lineHeight: 1.2
-                        color: PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
             }
@@ -98,7 +99,7 @@ PanelWindow {
             Item {
                 width: parent.width
                 height: buttons.height
-                readonly property real buttonWidth: PlatinumMetrics.buttonWidth(["Cancel", alert.spec ? alert.spec.button : ""])
+                readonly property real buttonWidth: Kit.PlatinumMetrics.buttonWidth(["Cancel", alert.spec ? alert.spec.button : ""])
                 Row {
                     id: buttons
                     anchors.right: parent.right

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -14,7 +15,7 @@ PlatinumMenuFrame {
     detail: panel.stateText
     scrolls: profiles.scrolls
 
-    readonly property real valueWidth: PlatinumMetrics.widest(["100.0%", "Failed"])
+    readonly property real valueWidth: Kit.PlatinumMetrics.widest(["100.0%", "Failed"])
 
     // Profiles scroll: a tenancy with many no longer clips.
     PlatinumMenuList {
@@ -31,17 +32,17 @@ PlatinumMenuFrame {
             name: rule.name
             detail: rule.failed ? "Usage request failed"
                 : modelData.used + " GB / 10240 GB · projected " + modelData.projected + " GB"
-            detailColor: rule.failed ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuTextSecondary
+            detailColor: rule.failed ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuTextSecondary
 
             // The profile's own tone, on its own value.
             Text {
                 width: frame.valueWidth
                 horizontalAlignment: Text.AlignRight
                 text: profileRow.rule.value
-                color: PlatinumTokens.menuTone(profileRow.rule.tone)
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTone(profileRow.rule.tone)
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }

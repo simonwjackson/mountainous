@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // Mac OS 8's indeterminate progress bar, the barber pole: diagonal stripes
@@ -6,14 +8,14 @@ import QtQuick
 Item {
     id: root
     implicitHeight: 11
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real tile: 16
 
     Rectangle {
         anchors.fill: parent
         color: PlatinumGlanceTokens.barFill
         border.width: root.h
-        border.color: PlatinumTokens.menuEdge
+        border.color: Kit.PlatinumTokens.menuEdge
     }
     Item {
         x: root.h

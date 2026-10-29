@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // The glance space's Disks widget: the shared StorageHealth owner's
@@ -12,7 +14,7 @@ FocusScope {
     property real frameChromeHeight: 16 + 5 * h
     signal escapePressed
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real infoH: 24
     readonly property real footH: h + 15
     readonly property real naturalWidth: 300
@@ -39,8 +41,8 @@ FocusScope {
     readonly property string tone: !view.panel.enabled ? "muted" : view.panel.tone === "quiet" ? "normal" : view.panel.tone
     function levelTone(level) { return level === "bad" ? "danger" : level === "ok" ? "normal" : "warning"; }
     function toneColor(tone) {
-        return tone === "danger" ? PlatinumTokens.menuDanger : tone === "warning" ? PlatinumTokens.menuWarning
-            : tone === "muted" ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText;
+        return tone === "danger" ? Kit.PlatinumTokens.menuDanger : tone === "warning" ? Kit.PlatinumTokens.menuWarning
+            : tone === "muted" ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuText;
     }
 
     readonly property real listContentH: Math.max(rowsColumn.implicitHeight, 22)
@@ -61,8 +63,8 @@ FocusScope {
         id: info
         width: parent.width
         height: view.infoH
-        Rectangle { width: parent.width; height: view.h; color: PlatinumTokens.bevelLight }
-        Rectangle { y: parent.height - view.h; width: parent.width; height: view.h; color: PlatinumTokens.bevelDark }
+        Rectangle { width: parent.width; height: view.h; color: Kit.PlatinumTokens.bevelLight }
+        Rectangle { y: parent.height - view.h; width: parent.width; height: view.h; color: Kit.PlatinumTokens.bevelDark }
         PlatinumStatusLight {
             id: light
             x: 8
@@ -78,13 +80,13 @@ FocusScope {
             text: view.summary
             textFormat: Text.PlainText
             color: view.toneColor(view.tone === "normal" ? "normal" : view.tone)
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
-    Rectangle { y: view.infoH; width: parent.width; height: view.h; color: PlatinumTokens.menuEdge }
+    Rectangle { y: view.infoH; width: parent.width; height: view.h; color: Kit.PlatinumTokens.menuEdge }
 
     Rectangle {
         y: view.infoH + view.h
@@ -118,10 +120,10 @@ FocusScope {
                 wrapMode: Text.Wrap
                 text: !view.panel.enabled ? "This desktop does not run the storage checks."
                     : view.panel.state === "loading" ? "Asking each server over SSH." : "Nothing to show yet."
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Repeater {
@@ -129,7 +131,7 @@ FocusScope {
                 Item {
                     required property var modelData
                     width: rowsColumn.width
-                    height: PlatinumMetrics.even(Math.max(22, line.implicitHeight + 8))
+                    height: Kit.PlatinumMetrics.even(Math.max(22, line.implicitHeight + 8))
                     PlatinumStatusLight {
                         x: 6 + (20 - width) / 2
                         y: (22 - height) / 2
@@ -148,10 +150,10 @@ FocusScope {
                         function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
                         text: '<font color="' + view.toneColor(modelData.level === "ok" ? "muted" : view.levelTone(modelData.level))
                             + '">' + esc(modelData.host) + '</font> ' + esc(modelData.message)
-                        color: modelData.level === "ok" ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: modelData.level === "ok" ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                         lineHeight: 1.1
                     }
                 }
@@ -171,17 +173,17 @@ FocusScope {
         y: view.infoH + view.h + view.listH
         width: parent.width
         height: view.footH
-        Rectangle { width: parent.width; height: view.h; color: PlatinumTokens.menuEdge }
+        Rectangle { width: parent.width; height: view.h; color: Kit.PlatinumTokens.menuEdge }
         Text {
             x: 8
             y: view.h + (15 - height) / 2
             width: parent.width - 16
             elide: Text.ElideRight
             text: view.panel.enabled ? view.panel.statusText : "Same data as the Disks menu"
-            color: view.panel.state === "error" || view.panel.state === "stale" ? PlatinumTokens.menuWarning : PlatinumTokens.menuTextSecondary
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumHint
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: view.panel.state === "error" || view.panel.state === "stale" ? Kit.PlatinumTokens.menuWarning : Kit.PlatinumTokens.menuTextSecondary
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumHint
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 }

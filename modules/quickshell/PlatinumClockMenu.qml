@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -7,7 +8,7 @@ import QtQuick.Layouts
 // one click away here.
 //
 // "Extra dark" turns the bar black in dark mode. The desktop-theme command
-// owns the choice and PlatinumTokens.qml reads it back, so the check box shows what
+// owns the choice and Kit.PlatinumTokens.qml reads it back, so the check box shows what
 // is stored, not what was clicked. In light mode the row stays, disabled,
 // and says why.
 PlatinumMenuFrame {
@@ -19,10 +20,10 @@ PlatinumMenuFrame {
         if (Theme.dark) Quickshell.execDetached(["desktop-theme", "extra", "toggle"]);
     }
 
-    readonly property real keyWidth: PlatinumMetrics.smallWidth("E")
+    readonly property real keyWidth: Kit.PlatinumMetrics.smallWidth("E")
 
-    preferredWidth: Math.max(220, PlatinumMetrics.even(PlatinumTokens.menuTextLeft
-        + PlatinumMetrics.width(frame.title) + PlatinumTokens.menuGap + 16 + PlatinumTokens.menuRightInset + 4))
+    preferredWidth: Math.max(220, Kit.PlatinumMetrics.even(Kit.PlatinumTokens.menuTextLeft
+        + Kit.PlatinumMetrics.width(frame.title) + Kit.PlatinumTokens.menuGap + 16 + Kit.PlatinumTokens.menuRightInset + 4))
     title: Qt.formatDate(frame.now, "dddd, MMMM d, yyyy")
     detail: {
         const hour = frame.now.getHours() % 12 || 12;
@@ -43,9 +44,9 @@ PlatinumMenuFrame {
             width: frame.keyWidth
             horizontalAlignment: Text.AlignRight
             text: "E"
-            color: Theme.dark ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuTextOff
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
+            color: Theme.dark ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuTextOff
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
         }
     }
 
@@ -56,9 +57,9 @@ PlatinumMenuFrame {
     }
 
     PlatinumButton {
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: frame.rightInset
-        Layout.topMargin: PlatinumTokens.menuGap
+        Layout.topMargin: Kit.PlatinumTokens.menuGap
         text: "Desktop theme…"
         onClicked: { const screen = MenuState.screen; MenuState.close(); ThemePicker.open(screen); }
     }

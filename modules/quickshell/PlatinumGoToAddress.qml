@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
@@ -26,12 +27,12 @@ FocusScope {
     property real menuWidth: 0
     property real maxHeight: 600
     readonly property real placeX: root.plan.x
-    readonly property real topGap: root.plan.y - (PlatinumTokens.barHeight - PlatinumTokens.hair)
+    readonly property real topGap: root.plan.y - (Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window))
     signal closeRequested
     // "go" with the address, or "find" (Backspace on an empty field).
     signal action(string kind, var arg)
 
-    readonly property real hair: PlatinumTokens.hair
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real areaWidth: root.Window.width > 0 ? root.Window.width : 1920
     readonly property real areaHeight: root.Window.height > 0 ? root.Window.height : 1200
     readonly property var plan: FindPlan.addrPlan(root.areaWidth, root.areaHeight, root.titleX)
@@ -120,7 +121,7 @@ FocusScope {
         title: "Go to Address"
         closable: false
         padding: 0
-        implicitHeight: titleHeight + body.implicitHeight + 2 * PlatinumTokens.hair
+        implicitHeight: titleHeight + body.implicitHeight + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
 
         Column {
             id: body
@@ -139,10 +140,10 @@ FocusScope {
                     id: addrLabel
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Address:"
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
                     font.pixelSize: 13
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumTextField {
                     id: field
@@ -170,10 +171,10 @@ FocusScope {
                     text: root.dest.text
                     textFormat: Text.PlainText
                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                    color: PlatinumTokens.menuTextSecondary
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuTextSecondary
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Row {
                     visible: root.dest.here
@@ -196,10 +197,10 @@ FocusScope {
                         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                         maximumLineCount: 2
                         elide: Text.ElideRight
-                        color: PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
             }
@@ -214,20 +215,20 @@ FocusScope {
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                 maximumLineCount: 3
                 elide: Text.ElideRight
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Text {
                 visible: root.plan.listRows > 0
                 x: 14
                 text: CdpBrowser.pages.length === 0 ? "Open pages: none" : root.pages.length === 0 ? "Open pages: none match" : "Open pages"
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             // The open pages: a Platinum list box.
@@ -241,15 +242,15 @@ FocusScope {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: PlatinumTokens.list
+                    color: Kit.PlatinumTokens.list
                     border.width: root.hair
-                    border.color: PlatinumTokens.menuEdge
+                    border.color: Kit.PlatinumTokens.menuEdge
                 }
                 Flickable {
                     id: pageList
                     x: root.hair
                     y: root.hair
-                    width: parent.width - 2 * root.hair - (listBox.scrolls ? PlatinumTokens.menuScrollBar : 0)
+                    width: parent.width - 2 * root.hair - (listBox.scrolls ? Kit.PlatinumTokens.menuScrollBar : 0)
                     height: parent.height - 2 * root.hair
                     contentHeight: root.pages.length * 20
                     clip: true
@@ -265,7 +266,7 @@ FocusScope {
                                 readonly property bool lit: index === root.pageIndex
                                 width: pageList.width
                                 height: 20
-                                Rectangle { visible: pageRow.lit; anchors.fill: parent; color: PlatinumTokens.highlight }
+                                Rectangle { visible: pageRow.lit; anchors.fill: parent; color: Kit.PlatinumTokens.highlight }
                                 IconImage {
                                     x: 6
                                     anchors.verticalCenter: parent.verticalCenter
@@ -279,10 +280,10 @@ FocusScope {
                                     text: pageRow.modelData.title || pageRow.modelData.url
                                     textFormat: Text.PlainText
                                     elide: Text.ElideRight
-                                    color: pageRow.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuText
-                                    font.family: PlatinumTokens.platinumFont
-                                    font.pixelSize: PlatinumTokens.platinumSmall
-                                    font.letterSpacing: PlatinumTokens.platinumTracking
+                                    color: pageRow.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
+                                    font.family: Kit.PlatinumTokens.platinumFont
+                                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                                 }
                                 Text {
                                     id: hostText
@@ -293,10 +294,10 @@ FocusScope {
                                     text: pageRow.modelData.host || ""
                                     textFormat: Text.PlainText
                                     elide: Text.ElideRight
-                                    color: pageRow.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
-                                    font.family: PlatinumTokens.platinumFont
-                                    font.pixelSize: PlatinumTokens.platinumSmall
-                                    font.letterSpacing: PlatinumTokens.platinumTracking
+                                    color: pageRow.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
+                                    font.family: Kit.PlatinumTokens.platinumFont
+                                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                                 }
                                 MouseArea {
                                     anchors.fill: parent
@@ -322,7 +323,7 @@ FocusScope {
                 x: 14
                 width: parent.width - 28
                 height: goButton.height
-                readonly property real buttonW: PlatinumMetrics.buttonWidth(["Cancel", "Go"]) + 12
+                readonly property real buttonW: Kit.PlatinumMetrics.buttonWidth(["Cancel", "Go"]) + 12
                 PlatinumButton {
                     id: goButton
                     anchors.right: parent.right

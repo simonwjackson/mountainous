@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -34,8 +35,8 @@ PanelWindow {
     color: "transparent"
     mask: Region { item: body }
 
-    readonly property real hair: PlatinumTokens.hair
-    readonly property bool bevelled: PlatinumTokens.stripBevelled
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
+    readonly property bool bevelled: Kit.PlatinumTokens.stripBevelled
     readonly property string screenName: modelData ? modelData.name : ""
 
     // ------------------------------------------------------------ model
@@ -48,7 +49,7 @@ PanelWindow {
     }
     readonly property var lane: rows.map(function (r) { return r.toplevel; })
     readonly property var layout: StripPlan.slots(rows)
-    readonly property real emptyWidth: PlatinumMetrics.smallWidth("No windows") + 20
+    readonly property real emptyWidth: Kit.PlatinumMetrics.smallWidth("No windows") + 20
     readonly property var plan: StripPlan.plan(strip.width, layout.content, saved.length, emptyWidth)
 
     // ------------------------------------------------------------ saved state
@@ -94,7 +95,7 @@ PanelWindow {
     readonly property real screenTop: (strip.modelData ? strip.modelData.height : strip.height) - strip.height + body.y
     readonly property var tiles: {
         const out = {};
-        const y = strip.screenTop + PlatinumTokens.snap((StripPlan.HEIGHT - 30) / 2);
+        const y = strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - 30) / 2);
         for (const s of strip.layout.slots) {
             if (s.kind !== "tile") continue;
             const r = strip.rows[s.index];
@@ -107,7 +108,7 @@ PanelWindow {
     }
     readonly property var tail: strip.collapsed ? { x: 0, y: strip.screenTop, w: StripPlan.TAB, h: StripPlan.HEIGHT }
         : { x: Math.max(track.x, Math.min(track.x + track.width - 30, track.x + strip.layout.content - strip.shownScroll)),
-            y: strip.screenTop + PlatinumTokens.snap((StripPlan.HEIGHT - 30) / 2), w: 30, h: 30 }
+            y: strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - 30) / 2), w: 30, h: 30 }
 
     // ------------------------------------------------------------ drag
     property int dragFrom: -1
@@ -134,9 +135,9 @@ PanelWindow {
             visible: !strip.collapsed
             width: parent.width - StripPlan.TAB
             height: parent.height
-            color: PlatinumTokens.stripSurface
-            Rectangle { width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
-            Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
+            color: Kit.PlatinumTokens.stripSurface
+            Rectangle { width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
+            Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
         }
 
         // The cap: collapses the strip.
@@ -166,7 +167,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: 6; height: 9
                 name: "scroll-left"
-                color: strip.shownScroll <= 0 ? PlatinumTokens.barTextOff : PlatinumTokens.barText
+                color: strip.shownScroll <= 0 ? Kit.PlatinumTokens.barTextOff : Kit.PlatinumTokens.barText
             }
             MouseArea {
                 id: leftArea
@@ -185,8 +186,8 @@ PanelWindow {
             clip: true
 
             // The track's own bevel: a light hair on top, a dark one below.
-            Rectangle { visible: strip.bevelled; y: strip.hair; width: parent.width; height: strip.hair; color: PlatinumTokens.bevelLight }
-            Rectangle { visible: strip.bevelled; y: parent.height - 2 * strip.hair; width: parent.width; height: strip.hair; color: PlatinumTokens.bevelDark }
+            Rectangle { visible: strip.bevelled; y: strip.hair; width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.bevelLight }
+            Rectangle { visible: strip.bevelled; y: parent.height - 2 * strip.hair; width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.bevelDark }
 
             Text {
                 visible: strip.plan.empty
@@ -195,10 +196,10 @@ PanelWindow {
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 text: "No windows"
-                color: PlatinumTokens.barTextOff
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.barTextOff
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Item {
@@ -207,7 +208,7 @@ PanelWindow {
                 width: Math.max(strip.layout.content, 1)
                 height: parent.height
                 Behavior on x {
-                    enabled: !PlatinumTokens.reducedMotion
+                    enabled: !Kit.PlatinumTokens.reducedMotion
                     NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
                 }
 
@@ -220,8 +221,8 @@ PanelWindow {
                         readonly property bool isTile: modelData.kind === "tile"
                         readonly property int tileIndex: isTile ? modelData.index : -1
                         readonly property var row: isTile ? strip.rows[modelData.index] : null
-                        x: PlatinumTokens.snap(modelData.x)
-                        y: PlatinumTokens.snap((parent.height - 30) / 2)
+                        x: Kit.PlatinumTokens.snapFor(QsWindow.window, modelData.x)
+                        y: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.height - 30) / 2)
                         width: modelData.w
                         height: 30
 
@@ -230,14 +231,14 @@ PanelWindow {
                             visible: !slot.isTile
                             anchors.fill: parent
                             Rectangle {
-                                x: PlatinumTokens.snap((parent.width - 2 * strip.hair) / 2)
+                                x: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.width - 2 * strip.hair) / 2)
                                 y: 4; width: strip.hair; height: 22
-                                color: PlatinumTokens.grooveLow
+                                color: Kit.PlatinumTokens.grooveLow
                             }
                             Rectangle {
-                                x: PlatinumTokens.snap((parent.width - 2 * strip.hair) / 2) + strip.hair
+                                x: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.width - 2 * strip.hair) / 2) + strip.hair
                                 y: 4; width: strip.hair; height: 22
-                                color: PlatinumTokens.grooveHigh
+                                color: Kit.PlatinumTokens.grooveHigh
                             }
                         }
 
@@ -324,7 +325,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: 6; height: 9
                 name: "scroll-right"
-                color: strip.shownScroll >= strip.plan.maxScroll ? PlatinumTokens.barTextOff : PlatinumTokens.barText
+                color: strip.shownScroll >= strip.plan.maxScroll ? Kit.PlatinumTokens.barTextOff : Kit.PlatinumTokens.barText
             }
             MouseArea {
                 id: rightArea
@@ -344,30 +345,30 @@ PanelWindow {
             Rectangle {
                 anchors.fill: parent
                 radius: 9
-                color: tabArea.pressed && !tabArea.resizing ? PlatinumTokens.tileSunk : PlatinumTokens.stripSurface
+                color: tabArea.pressed && !tabArea.resizing ? Kit.PlatinumTokens.tileSunk : Kit.PlatinumTokens.stripSurface
                 border.width: strip.hair
-                border.color: PlatinumTokens.stripEdge
+                border.color: Kit.PlatinumTokens.stripEdge
                 // Square off the left side, which meets the strip.
                 Rectangle {
                     width: parent.width / 2
                     height: parent.height
                     color: parent.color
-                    Rectangle { width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
-                    Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
-                    Rectangle { visible: strip.collapsed; width: strip.hair; height: parent.height; color: PlatinumTokens.stripEdge }
-                    Rectangle { visible: !strip.collapsed; width: strip.hair; height: parent.height; color: PlatinumTokens.stripEdge }
+                    Rectangle { width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
+                    Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
+                    Rectangle { visible: strip.collapsed; width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.stripEdge }
+                    Rectangle { visible: !strip.collapsed; width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.stripEdge }
                 }
                 Rectangle {
                     visible: strip.bevelled
                     x: strip.hair * 2; y: strip.hair
                     width: parent.width - 9 - x; height: strip.hair
-                    color: tabArea.pressed && !tabArea.resizing ? PlatinumTokens.bevelDark : PlatinumTokens.bevelLight
+                    color: tabArea.pressed && !tabArea.resizing ? Kit.PlatinumTokens.bevelDark : Kit.PlatinumTokens.bevelLight
                 }
                 Rectangle {
                     visible: strip.bevelled
                     x: strip.hair * 2; y: parent.height - 2 * strip.hair
                     width: parent.width - 9 - x; height: strip.hair
-                    color: tabArea.pressed && !tabArea.resizing ? PlatinumTokens.bevelLight : PlatinumTokens.bevelDark
+                    color: tabArea.pressed && !tabArea.resizing ? Kit.PlatinumTokens.bevelLight : Kit.PlatinumTokens.bevelDark
                 }
             }
             Ridges { count: 3; anchors.centerIn: parent; anchors.horizontalCenterOffset: -1 }
@@ -410,7 +411,7 @@ PanelWindow {
         width: 30; height: 30
         color: "transparent"
         border.width: strip.hair
-        border.color: PlatinumTokens.barText
+        border.color: Kit.PlatinumTokens.barText
         opacity: 0.9
         PlatinumAppIcon {
             anchors.centerIn: parent
@@ -427,23 +428,23 @@ PanelWindow {
         y: body.y + 3 - 30
         width: dropText.implicitWidth + 16
         height: dropText.implicitHeight + 6
-        color: PlatinumTokens.menuSurface
+        color: Kit.PlatinumTokens.menuSurface
         border.width: strip.hair
-        border.color: PlatinumTokens.menuEdge
+        border.color: Kit.PlatinumTokens.menuEdge
         Rectangle {
             z: -1
             x: 2 * strip.hair; y: 2 * strip.hair
             width: parent.width; height: parent.height
-            color: PlatinumTokens.menuShadow
+            color: Kit.PlatinumTokens.menuShadow
         }
         Text {
             id: dropText
             anchors.centerIn: parent
             text: strip.dropInfo.label
-            color: PlatinumTokens.menuText
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: Kit.PlatinumTokens.menuText
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
@@ -456,21 +457,21 @@ PanelWindow {
         property bool leftEdge: false
         Rectangle {
             anchors.fill: parent
-            color: parent.pressed ? PlatinumTokens.tileSunk : PlatinumTokens.stripSurface
+            color: parent.pressed ? Kit.PlatinumTokens.tileSunk : Kit.PlatinumTokens.stripSurface
         }
         Rectangle { visible: strip.bevelled; y: strip.hair; width: parent.width; height: strip.hair
-            color: parent.pressed ? PlatinumTokens.bevelDark : PlatinumTokens.bevelLight }
+            color: parent.pressed ? Kit.PlatinumTokens.bevelDark : Kit.PlatinumTokens.bevelLight }
         Rectangle { visible: strip.bevelled && parent.leftEdge; x: strip.hair; y: strip.hair; width: strip.hair; height: parent.height - 2 * strip.hair
-            color: parent.pressed ? PlatinumTokens.bevelDark : PlatinumTokens.bevelLight }
+            color: parent.pressed ? Kit.PlatinumTokens.bevelDark : Kit.PlatinumTokens.bevelLight }
         Rectangle { visible: strip.bevelled; y: parent.height - 2 * strip.hair; width: parent.width; height: strip.hair
-            color: parent.pressed ? PlatinumTokens.bevelLight : PlatinumTokens.bevelDark }
+            color: parent.pressed ? Kit.PlatinumTokens.bevelLight : Kit.PlatinumTokens.bevelDark }
         Rectangle { visible: strip.bevelled && parent.rightEdge; x: parent.width - 2 * strip.hair; y: strip.hair; width: strip.hair; height: parent.height - 2 * strip.hair
-            color: parent.pressed ? PlatinumTokens.bevelLight : PlatinumTokens.bevelDark }
+            color: parent.pressed ? Kit.PlatinumTokens.bevelLight : Kit.PlatinumTokens.bevelDark }
         // The black edge between this piece and the track.
-        Rectangle { visible: parent.rightEdge; x: parent.width - strip.hair; width: strip.hair; height: parent.height; color: PlatinumTokens.stripEdge }
-        Rectangle { visible: parent.leftEdge; width: strip.hair; height: parent.height; color: PlatinumTokens.stripEdge }
-        Rectangle { width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
-        Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: PlatinumTokens.stripEdge }
+        Rectangle { visible: parent.rightEdge; x: parent.width - strip.hair; width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.stripEdge }
+        Rectangle { visible: parent.leftEdge; width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.stripEdge }
+        Rectangle { width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
+        Rectangle { y: parent.height - strip.hair; width: parent.width; height: strip.hair; color: Kit.PlatinumTokens.stripEdge }
     }
 
     // The grip ridges on the cap and the tab: dark hair, light hair beside.
@@ -482,8 +483,8 @@ PanelWindow {
             model: parent.count
             Row {
                 height: parent.height
-                Rectangle { width: strip.hair; height: parent.height; color: PlatinumTokens.ridgeLow }
-                Rectangle { width: strip.hair; height: parent.height; color: PlatinumTokens.ridgeHigh }
+                Rectangle { width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.ridgeLow }
+                Rectangle { width: strip.hair; height: parent.height; color: Kit.PlatinumTokens.ridgeHigh }
             }
         }
     }

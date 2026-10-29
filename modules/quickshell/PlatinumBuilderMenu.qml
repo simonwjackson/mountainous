@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -15,9 +16,9 @@ PlatinumMenuFrame {
     readonly property var toggle: panel.action("toggle")
     readonly property var others: panel.actionList.filter(function (a) { return a.id !== "toggle"; })
     // "Use default" and "Stop" are one role: one width.
-    readonly property real buttonWidth: PlatinumMetrics.buttonWidth(frame.others.map(function (a) { return a.label; })
+    readonly property real buttonWidth: Kit.PlatinumMetrics.buttonWidth(frame.others.map(function (a) { return a.label; })
         .concat(["Use default (off)", "Stop 88 builds"]))
-    readonly property real keyWidth: PlatinumMetrics.widest(["T", "D", "X", "W"])
+    readonly property real keyWidth: Kit.PlatinumMetrics.widest(["T", "D", "X", "W"])
     readonly property string why: panel.actionList.filter(function (a) {
         return !a.enabled && a.detail !== "";
     }).map(function (a) { return a.detail + "."; }).join(" ")
@@ -33,16 +34,16 @@ PlatinumMenuFrame {
 
         PlatinumIcon {
             visible: frame.markName !== "none"
-            x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+            x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
             y: (headlineText.height - height) / 2
             name: frame.markName === "on" ? "dot" : "ring"
             size: 12
-            color: frame.markName === "on" ? PlatinumTokens.menuText : PlatinumTokens.menuTextSecondary
+            color: frame.markName === "on" ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextSecondary
         }
 
         Column {
             id: stateColumn
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             width: parent.width - x - frame.rightInset
             spacing: 3
 
@@ -51,10 +52,10 @@ PlatinumMenuFrame {
                 width: parent.width
                 text: Gate.headline(frame.sample, frame.pending)
                 wrapMode: Text.Wrap
-                color: PlatinumTokens.menuText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Text {
@@ -62,10 +63,10 @@ PlatinumMenuFrame {
                 visible: text !== ""
                 text: Gate.reasonText(frame.sample)
                 wrapMode: Text.Wrap
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 lineHeight: 1.15
             }
 
@@ -74,10 +75,10 @@ PlatinumMenuFrame {
                 visible: text !== ""
                 text: Gate.runningNote(frame.sample)
                 wrapMode: Text.Wrap
-                color: PlatinumTokens.menuWarning
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuWarning
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 lineHeight: 1.15
             }
         }
@@ -94,13 +95,13 @@ PlatinumMenuFrame {
             implicitHeight: 20
 
             Text {
-                x: PlatinumTokens.menuTextLeft
+                x: Kit.PlatinumTokens.menuTextLeft
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.label
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Text {
@@ -108,10 +109,10 @@ PlatinumMenuFrame {
                 anchors.rightMargin: frame.rightInset
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.value
-                color: PlatinumTokens.menuText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }
@@ -123,23 +124,23 @@ PlatinumMenuFrame {
         id: toggleRow
         readonly property bool focused: panel.keyboardUsed && panel.focusId === "toggle"
         Layout.fillWidth: true
-        implicitHeight: PlatinumTokens.menuLine + 4
+        implicitHeight: Kit.PlatinumTokens.menuLine + 4
         enabled: frame.toggle.enabled
 
         Rectangle {
             visible: toggleRow.focused
-            x: PlatinumTokens.menuGutter - 2
+            x: Kit.PlatinumTokens.menuGutter - 2
             width: toggleLabel.x + toggleLabel.width + 6 - x
             height: parent.height - 4
             y: 2
             color: "transparent"
-            border.width: 2 * PlatinumTokens.hair
-            border.color: PlatinumTokens.highlight
+            border.width: 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+            border.color: Kit.PlatinumTokens.highlight
         }
 
         PlatinumCheckBox {
             id: toggleBox
-            x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+            x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
             anchors.verticalCenter: parent.verticalCenter
             checked: frame.toggle.checked
             enabled: frame.toggle.enabled
@@ -148,13 +149,13 @@ PlatinumMenuFrame {
 
         Text {
             id: toggleLabel
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             anchors.verticalCenter: parent.verticalCenter
             text: frame.toggle.label
-            color: frame.toggle.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumText
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: frame.toggle.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumText
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
 
         Text {
@@ -164,9 +165,9 @@ PlatinumMenuFrame {
             width: frame.keyWidth
             horizontalAlignment: Text.AlignRight
             text: frame.toggle.key
-            color: frame.toggle.enabled ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuTextOff
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
+            color: frame.toggle.enabled ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuTextOff
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
         }
 
         MouseArea {
@@ -189,10 +190,10 @@ PlatinumMenuFrame {
         Item {
             required property var modelData
             Layout.fillWidth: true
-            implicitHeight: PlatinumTokens.menuButtonHeight + 8
+            implicitHeight: Kit.PlatinumTokens.menuButtonHeight + 8
 
             PlatinumButton {
-                x: PlatinumTokens.menuTextLeft
+                x: Kit.PlatinumTokens.menuTextLeft
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.label
                 fixedWidth: frame.buttonWidth
@@ -211,9 +212,9 @@ PlatinumMenuFrame {
                 width: frame.keyWidth
                 horizontalAlignment: Text.AlignRight
                 text: modelData.key
-                color: modelData.enabled ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuTextOff
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
+                color: modelData.enabled ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuTextOff
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
             }
         }
     }
@@ -231,7 +232,7 @@ PlatinumMenuFrame {
         visible: panel.gate.actionError !== null
         rightInset: frame.rightInset
         text: Gate.actionErrorText(panel.gate.actionError)
-        color: PlatinumTokens.menuWarning
+        color: Kit.PlatinumTokens.menuWarning
     }
 
     PlatinumMenuParts.Hint {

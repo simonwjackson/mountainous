@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -17,8 +18,8 @@ PanelWindow {
     anchors { top: true; left: true }
     margins { top: 22; left: 24 }
     // Room for the windoid's hard shadow, one rule down and right.
-    implicitWidth: Math.min(frame.implicitWidth, (modelData ? modelData.width : 1920) - 32) + 2 * PlatinumTokens.hair
-    implicitHeight: frame.implicitHeight + 2 * PlatinumTokens.hair
+    implicitWidth: Math.min(frame.implicitWidth, (modelData ? modelData.width : 1920) - 32) + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+    implicitHeight: frame.implicitHeight + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
     exclusionMode: ExclusionMode.Normal
     focusable: true
     color: "transparent"
@@ -49,8 +50,8 @@ PanelWindow {
 
     PlatinumDialogFrame {
         id: frame
-        width: about.width - 2 * PlatinumTokens.hair
-        height: about.height - 2 * PlatinumTokens.hair
+        width: about.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+        height: about.height - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
         title: "About " + (about.capitalised(about.host) || "This Computer")
         onCloseRequested: about.closeRequested()
         focus: true
@@ -66,27 +67,27 @@ PanelWindow {
                     width: 54
                     height: 48
                     name: "mark"
-                    color: PlatinumTokens.menuText
-                    knock: PlatinumTokens.menuSurface
+                    color: Kit.PlatinumTokens.menuText
+                    knock: Kit.PlatinumTokens.menuSurface
                 }
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
                     Text {
                         text: about.capitalised(about.host) || "This Computer"
-                        color: PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
+                        color: Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
                         font.pixelSize: 18
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     Text {
                         visible: about.product !== ""
                         text: about.product
                         textFormat: Text.PlainText
-                        color: PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
             }
@@ -96,7 +97,7 @@ PanelWindow {
                 columns: 2
                 columnSpacing: 14
                 rowSpacing: 5
-                readonly property real keyWidth: PlatinumMetrics.smallWidest(["Revision", "Uptime", "NixOS", "Host"])
+                readonly property real keyWidth: Kit.PlatinumMetrics.smallWidest(["Revision", "Uptime", "NixOS", "Host"])
                 Repeater {
                     model: about.lines.length * 2
                     Text {
@@ -107,10 +108,10 @@ PanelWindow {
                         text: isKey ? line[0] : line[1]
                         textFormat: Text.PlainText
                         wrapMode: isKey ? Text.NoWrap : Text.WrapAnywhere
-                        color: isKey ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: isKey ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                 }
             }

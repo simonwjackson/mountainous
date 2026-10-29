@@ -7,6 +7,12 @@
   };
 
   inputs = {
+    # Shared plain Qt Quick drawing. The shell owns persistence and surfaces.
+    hensou = {
+      url = "git+ssh://git@github.com/hensou-desktop/hensou?ref=main";
+      flake = false;
+    };
+
     # Private source: use SSH, not the token-based GitHub flake fetcher.
     # Only enabled gateway instances on Rakku force this input.
     ai-gateway = {

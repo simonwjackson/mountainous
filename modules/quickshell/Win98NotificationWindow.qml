@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "notification-model.js" as Model
@@ -90,7 +91,7 @@ Win98Window {
                 text: root.panel.badge.kind !== "none" ? root.panel.badge.text
                     : root.ready ? "From this desktop and your other devices" : ""
                 accessMarks: false
-                color: root.panel.badge.kind !== "none" ? Win98Tokens.warning : Win98Tokens.gray
+                color: root.panel.badge.kind !== "none" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.gray
             }
             Win98Button {
                 id: all
@@ -108,7 +109,7 @@ Win98Window {
             wrap: true
             text: root.panel.badge.detail || ""
             accessMarks: false
-            color: Win98Tokens.warning
+            color: Kit.Win98Tokens.warning
         }
 
         // offline, connecting, empty
@@ -121,7 +122,7 @@ Win98Window {
                 y: -3 * root.u
                 width: parent.width
                 title: root.kind === "offline" ? "Notifications offline" : root.kind === "connecting" ? "Connecting to notifyd" : "No notifications"
-                titleColor: root.kind === "offline" ? Win98Tokens.warning : Win98Tokens.text
+                titleColor: root.kind === "offline" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.text
                 Column {
                     width: body.width - 14 * root.u
                     spacing: 5 * root.u
@@ -221,8 +222,8 @@ Win98Window {
         height: content.height + (index > 0 ? 7 : 5) * root.u + 6 * root.u
 
         // The etched line between cards.
-        Rectangle { visible: card.index > 0; width: parent.width; height: root.u; color: Win98Tokens.sh }
-        Rectangle { visible: card.index > 0; y: root.u; width: parent.width; height: root.u; color: Win98Tokens.hi }
+        Rectangle { visible: card.index > 0; width: parent.width; height: root.u; color: Kit.Win98Tokens.sh }
+        Rectangle { visible: card.index > 0; y: root.u; width: parent.width; height: root.u; color: Kit.Win98Tokens.hi }
 
         Win98FocusRect {
             visible: card.selected
@@ -242,8 +243,8 @@ Win98Window {
             width: 20 * root.u; height: 20 * root.u
             color: ["#008080", "#800080", "#000080", "#808000"][Math.max(0, card.index || 0) % 4]
             Win98Text {
-                x: Win98Tokens.half((parent.width - width) / 2, root.u)
-                y: Win98Tokens.snap((parent.height - height) / 2, root.u)
+                x: Kit.Win98Tokens.half((parent.width - width) / 2, root.u)
+                y: Kit.Win98Tokens.snap((parent.height - height) / 2, root.u)
                 text: Model.appLabel(card.item).charAt(0).toUpperCase()
                 accessMarks: false
                 color: "#ffffff"
@@ -261,7 +262,7 @@ Win98Window {
                     width: Math.max(0, Math.min(implicitWidth, meta.x - 6 * root.u))
                     text: Model.appLabel(card.item)
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                 }
                 Win98Text {
                     id: meta
@@ -269,7 +270,7 @@ Win98Window {
                     text: [Model.originLabel(card.item), Model.relativeTime(card.item.updated, root.now.getTime(), Model.localOffsetMinutes(root.now.getTime()))]
                         .filter(function (s) { return s !== ""; }).join(" ")
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                 }
                 Item {
                     id: close
@@ -278,8 +279,8 @@ Win98Window {
                     Win98Bevel { anchors.fill: parent; variant: closeArea.pressed ? "pressed" : "button" }
                     Win98Icon {
                         name: "close"
-                        x: Win98Tokens.half((close.width - width) / 2, root.u) + (closeArea.pressed ? root.u : 0)
-                        y: Win98Tokens.snap((close.height - height) / 2, root.u) + (closeArea.pressed ? root.u : 0)
+                        x: Kit.Win98Tokens.half((close.width - width) / 2, root.u) + (closeArea.pressed ? root.u : 0)
+                        y: Kit.Win98Tokens.snap((close.height - height) / 2, root.u) + (closeArea.pressed ? root.u : 0)
                     }
                     MouseArea { id: closeArea; anchors.fill: parent; onClicked: root.service.dismiss(card.item.id) }
                 }
@@ -298,7 +299,7 @@ Win98Window {
                     source: card.image.kind === "some" ? card.image.value : ""
                     sourceSize.width: 96
                     sourceSize.height: 72
-                    Rectangle { anchors.fill: parent; color: "transparent"; border.width: root.u; border.color: Win98Tokens.dk }
+                    Rectangle { anchors.fill: parent; color: "transparent"; border.width: root.u; border.color: Kit.Win98Tokens.dk }
                 }
                 Column {
                     id: words
@@ -310,7 +311,7 @@ Win98Window {
                         text: Model.headline(card.item)
                         accessMarks: false
                         bold: true
-                        color: card.critical ? Win98Tokens.danger : Win98Tokens.text
+                        color: card.critical ? Kit.Win98Tokens.danger : Kit.Win98Tokens.text
                     }
                     Win98Text {
                         visible: card.item.body !== ""
@@ -322,15 +323,15 @@ Win98Window {
                     }
                 }
             }
-            Tag { visible: card.critical; text: "Urgent, stays until dismissed"; color: Win98Tokens.danger }
-            Tag { visible: card.item.local_only === true; text: Model.localOnlyLabel(card.item) + ", not synced"; color: Win98Tokens.gray }
+            Tag { visible: card.critical; text: "Urgent, stays until dismissed"; color: Kit.Win98Tokens.danger }
+            Tag { visible: card.item.local_only === true; text: Model.localOnlyLabel(card.item) + ", not synced"; color: Kit.Win98Tokens.gray }
             Win98Text {
                 visible: !card.item.sender_alive && card.item.actions.length > 0
                 width: parent.width
                 wrap: true
                 text: "The app that sent this has closed. Its buttons no longer work."
                 accessMarks: false
-                color: Win98Tokens.gray
+                color: Kit.Win98Tokens.gray
             }
             Item {
                 visible: card.item.actions.length > 0
@@ -360,7 +361,7 @@ Win98Window {
     component Tag: Item {
         id: tag
         property string text: ""
-        property color color: Win98Tokens.text
+        property color color: Kit.Win98Tokens.text
         width: label.width + 8 * root.u
         height: visible ? 13 * root.u : 0
         Rectangle { anchors.fill: parent; color: "transparent"; border.width: root.u; border.color: tag.color }

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -14,10 +15,10 @@ Item {
     property var panes: []             // strings; "&" is literal
     property int maximumLineCount: 2
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property real gap: 2 * u
     readonly property real firstWidth: panes.length > 1
-        ? Math.min(Win98Tokens.snap(width * 0.45, root.u), Win98Tokens.ceilU(Win98Tokens.textWidth(panes[0], false, root.u), root.u) + 8 * u)
+        ? Math.min(Kit.Win98Tokens.snap(width * 0.45, root.u), Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth(panes[0], false, root.u), root.u) + 8 * u)
         : width
     readonly property real restWidth: panes.length > 1
         ? Math.floor((width - firstWidth - gap * (panes.length - 1)) / (panes.length - 1) / u) * u : 0
@@ -32,7 +33,7 @@ Item {
     readonly property real lineHeight: 14 * u
     property real tallest: lineHeight
 
-    implicitWidth: Win98Tokens.ceilU(Win98Tokens.widest(panes, false, root.u), root.u) + 8 * u
+    implicitWidth: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.widest(panes, false, root.u), root.u) + 8 * u
     implicitHeight: tallest + 4 * u
 
     Timer {
@@ -64,7 +65,7 @@ Item {
                     x: 4 * root.u
                     // 2 u padding; a shorter pane centres its text, as the
                     // mock's flex panes do. The half unit of leading rounds away.
-                    y: Math.max(2 * root.u, Win98Tokens.snap((pane.height - Win98Tokens.ceilU(implicitHeight, root.u)) / 2, root.u))
+                    y: Math.max(2 * root.u, Kit.Win98Tokens.snap((pane.height - Kit.Win98Tokens.ceilU(implicitHeight, root.u)) / 2, root.u))
                     width: pane.width - 8 * root.u
                     text: pane.modelData
                     accessMarks: false
@@ -86,7 +87,7 @@ Item {
         let h = root.lineHeight;
         for (let i = 0; i < repeater.count; i++) {
             const item = repeater.itemAt(i);
-            if (item && item.children[1]) h = Math.max(h, Win98Tokens.ceilU(item.children[1].implicitHeight, root.u));
+            if (item && item.children[1]) h = Math.max(h, Kit.Win98Tokens.ceilU(item.children[1].implicitHeight, root.u));
         }
         root.tallest = h;
     }

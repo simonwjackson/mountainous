@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -42,9 +43,9 @@ Scope {
             // Input everywhere but the bar.
             mask: Region {
                 x: 0
-                y: PlatinumTokens.barHeight
+                y: Kit.PlatinumTokens.barHeight
                 width: win.width
-                height: Math.max(0, win.height - PlatinumTokens.barHeight)
+                height: Math.max(0, win.height - Kit.PlatinumTokens.barHeight)
             }
 
             // A window outlives its menu for a moment (LazyLoader deletes it
@@ -97,8 +98,8 @@ Scope {
                 // A dialog that hangs a little under the bar (Go to Address)
                 // gives its gap; one that places itself gives its x.
                 y: win.bottomY >= 0
-                    ? Math.max(PlatinumTokens.barHeight - PlatinumTokens.hair, win.bottomY - (item ? item.height : 0))
-                    : PlatinumTokens.barHeight - PlatinumTokens.hair + (item && item.topGap > 0 ? item.topGap : 0)
+                    ? Math.max(Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window), win.bottomY - (item ? item.height : 0))
+                    : Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window) + (item && item.topGap > 0 ? item.topGap : 0)
                 x: {
                     const w = item ? item.width : 0;
                     const edge = 4;
@@ -112,7 +113,7 @@ Scope {
                 onLoaded: {
                     const menu = item;
                     menu.maxHeight = Qt.binding(function () {
-                        return win.bottomY >= 0 ? win.bottomY - PlatinumTokens.barHeight - 8 : win.height - loader.y - 12;
+                        return win.bottomY >= 0 ? win.bottomY - Kit.PlatinumTokens.barHeight - 8 : win.height - loader.y - 12;
                     });
                     menu.menuWidth = Qt.binding(function () {
                         return Math.min(menu.preferredWidth || 360, win.width - 8);

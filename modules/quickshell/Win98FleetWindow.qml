@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -27,7 +28,7 @@ PanelWindow {
     required property var panel
 
     readonly property bool wanted: controller.windowShown && !controller.minimized
-    readonly property real u: Win98Tokens.unitFor(win)
+    readonly property real u: Kit.Win98Tokens.unitFor(win)
     screen: desktop.screen
     visible: wanted
 

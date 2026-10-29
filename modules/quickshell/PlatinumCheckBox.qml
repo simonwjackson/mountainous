@@ -1,31 +1,12 @@
 import QtQuick
+import Quickshell
+import Hensou as Kit
+import "app-icon.js" as AppIcon
 
-// A Platinum check box: a sunken well with a black edge and a check mark.
-// The box sits centred in the menu gutter (PlatinumMenuCheckRow), so its label
-// starts on the text edge like every other row.
-Item {
-    id: root
-
-    property bool checked: false
-    property bool down: false
-    signal toggled(bool checked)
-
-    implicitWidth: 14
-    implicitHeight: 14
-
-    PlatinumBevel {
-        anchors.fill: parent
-        sunken: true
-        color: root.down ? PlatinumTokens.bevelDark : PlatinumTokens.well
-        lightColor: PlatinumTokens.bevelLight
-        darkColor: PlatinumTokens.bevelDark
-    }
-
-    PlatinumIcon {
-        anchors.centerIn: parent
-        visible: root.checked
-        name: "check"
-        size: 10
-        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-    }
+// Flat host adapter: shared drawing, actual QsWindow scale, shell icon lookup.
+Kit.PlatinumCheckBox {
+    readonly property real hensouDevicePixelRatio: QsWindow.window && QsWindow.window.devicePixelRatio > 0
+        ? QsWindow.window.devicePixelRatio : 1.5
+    readonly property var hensouIconResolver: name => Quickshell.iconPath(name, AppIcon.fallback(name))
+    interactive: false
 }

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import "../panels"
 import ".."
@@ -28,7 +29,6 @@ Scope {
         implicitWidth: menu.item ? menu.item.width + 2 : 400
         implicitHeight: menu.item ? menu.item.height + 2 : 100
 
-        onDevicePixelRatioChanged: if (devicePixelRatio > 0) PlatinumTokens.pixelRatio = devicePixelRatio
 
         Loader {
             id: menu

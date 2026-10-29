@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 import "themes/win98/host-icon.js" as HostIcon
 
@@ -16,5 +17,5 @@ Win98Svg {
 
     width: size * root.u
     height: size * root.u
-    svg: HostIcon.svg(root.hostStatus, root.tone, root.size, root.selected, { selection: String(Win98Tokens.selection) })
+    svg: HostIcon.svg(root.hostStatus, root.tone, root.size, root.selected, { selection: String(Kit.Win98Tokens.selection) })
 }

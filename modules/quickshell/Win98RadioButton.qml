@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -16,11 +17,11 @@ FocusScope {
 
     signal clicked
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property bool pressing: showPressed || (area.pressed && area.containsMouse)
 
-    implicitWidth: Win98Tokens.radio * u + (text !== "" ? 5 * u + label.implicitWidth : 0)
-    implicitHeight: Win98Tokens.checkBox * u
+    implicitWidth: Kit.Win98Tokens.radio * u + (text !== "" ? 5 * u + label.implicitWidth : 0)
+    implicitHeight: Kit.Win98Tokens.checkBox * u
     activeFocusOnTab: enabled
 
     Keys.onPressed: event => {
@@ -39,11 +40,11 @@ FocusScope {
 
     Win98Svg {
         id: circle
-        y: Win98Tokens.snap((root.height - height) / 2, root.u)
-        width: Win98Tokens.radio * root.u
+        y: Kit.Win98Tokens.snap((root.height - height) / 2, root.u)
+        width: Kit.Win98Tokens.radio * root.u
         height: width
         svg: {
-            const T = Win98Tokens;
+            const T = Kit.Win98Tokens;
             const well = root.enabled && !root.pressing ? T.win : T.face;
             const dot = root.enabled ? T.winText : T.gray;
             let s = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" shape-rendering="crispEdges">';

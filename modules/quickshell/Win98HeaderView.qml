@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -20,7 +21,7 @@ Item {
     property string showPressed: ""
     signal clicked(string sortKey)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     implicitHeight: 17 * u
 
     Row {

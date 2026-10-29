@@ -1,9 +1,10 @@
 pragma Singleton
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
-// The Fleet views' and the glance space's own tokens, beside PlatinumTokens
+// The Fleet views' and the glance space's own tokens, beside Kit.PlatinumTokens
 // (which they reuse for the window frame, text, bevels and the highlight).
 // Values are the approved mocks' (/tmp/hud-mock, /tmp/glance-mock
 // DIRECTION.md). The windoids are dark grey in Extra dark, as the menus

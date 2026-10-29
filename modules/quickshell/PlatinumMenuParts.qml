@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 
@@ -8,71 +10,71 @@ QtObject {
     // An etched rule: dark over light, as Platinum draws a divider.
     component Separator: Item {
         Layout.fillWidth: true
-        implicitHeight: 4 + 2 * PlatinumTokens.hair + 6
+        implicitHeight: 4 + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window) + 6
 
         Rectangle {
-            x: PlatinumTokens.hair
+            x: Kit.PlatinumTokens.hairFor(QsWindow.window)
             y: 4
-            width: parent.width - 2 * PlatinumTokens.hair
-            height: PlatinumTokens.hair
-            color: PlatinumTokens.bevelDark
+            width: parent.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+            height: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            color: Kit.PlatinumTokens.bevelDark
         }
         Rectangle {
-            x: PlatinumTokens.hair
-            y: 4 + PlatinumTokens.hair
-            width: parent.width - 2 * PlatinumTokens.hair
-            height: PlatinumTokens.hair
-            color: PlatinumTokens.bevelLight
+            x: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            y: 4 + Kit.PlatinumTokens.hairFor(QsWindow.window)
+            width: parent.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+            height: Kit.PlatinumTokens.hairFor(QsWindow.window)
+            color: Kit.PlatinumTokens.bevelLight
         }
     }
 
     // A section label, such as DEVICES or a host name.
     component Section: Text {
-        property real rightInset: PlatinumTokens.menuRightInset
+        property real rightInset: Kit.PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 2
         bottomPadding: 4
         elide: Text.ElideRight
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuTextSecondary
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuTextSecondary
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     // One line of plain text on the grid, with an optional colour.
     component Line: Text {
-        property real rightInset: PlatinumTokens.menuRightInset
+        property real rightInset: Kit.PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 2
         bottomPadding: 2
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuTextSecondary
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuTextSecondary
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         lineHeight: 1.15
     }
 
     // What an empty list says, and what to do about it.
     component Empty: Text {
-        property real rightInset: PlatinumTokens.menuRightInset
+        property real rightInset: Kit.PlatinumTokens.menuRightInset
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         topPadding: 12
         bottomPadding: 12
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
-        color: PlatinumTokens.menuTextSecondary
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: Kit.PlatinumTokens.menuTextSecondary
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         lineHeight: 1.2
     }
 
@@ -81,7 +83,7 @@ QtObject {
     component Hint: Flow {
         id: hint
         property string text: ""
-        property real rightInset: PlatinumTokens.menuRightInset
+        property real rightInset: Kit.PlatinumTokens.menuRightInset
         // The space between words. A long hint that must hold one line
         // (the Layout menu's footer) passes the face's own space width.
         property real wordSpacing: 5
@@ -94,7 +96,7 @@ QtObject {
             return out;
         }
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: rightInset
         Layout.topMargin: 6
         spacing: 0
@@ -124,10 +126,10 @@ QtObject {
                             visible: !parent.arrow
                             anchors.verticalCenter: parent.verticalCenter
                             text: parent.modelData
-                            color: PlatinumTokens.menuTextSecondary
-                            font.family: PlatinumTokens.platinumFont
-                            font.pixelSize: PlatinumTokens.platinumHint
-                            font.letterSpacing: PlatinumTokens.platinumTracking
+                            color: Kit.PlatinumTokens.menuTextSecondary
+                            font.family: Kit.PlatinumTokens.platinumFont
+                            font.pixelSize: Kit.PlatinumTokens.platinumHint
+                            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                         }
 
                         PlatinumIcon {
@@ -136,7 +138,7 @@ QtObject {
                             name: "arrow"
                             width: 9
                             height: 10
-                            color: PlatinumTokens.menuTextSecondary
+                            color: Kit.PlatinumTokens.menuTextSecondary
                             rotation: ({"↑": 0, "→": 90, "↓": 180, "←": 270})[parent.modelData] || 0
                         }
                     }

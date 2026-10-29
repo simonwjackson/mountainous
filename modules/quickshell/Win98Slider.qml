@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -30,7 +31,7 @@ FocusScope {
 
     signal moved(real value)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property bool vertical: orientation === Qt.Vertical
     // Length along the travel, in whole units.
     readonly property int span: Math.max(12, Math.round((vertical ? height : width) / u))
@@ -59,7 +60,7 @@ FocusScope {
 
     Win98Bevel {
         variant: "channel"
-        color: Win98Tokens.win
+        color: Kit.Win98Tokens.win
         opacity: root.enabled ? 1 : 0.5
         x: root.vertical ? 13 * root.u : 0
         y: root.vertical ? 0 : 8 * root.u
@@ -81,7 +82,7 @@ FocusScope {
                 y: root.vertical ? tick.at * root.u : 23 * root.u
                 width: root.vertical ? tick.len : root.u
                 height: root.vertical ? root.u : tick.len
-                color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
+                color: root.enabled ? Kit.Win98Tokens.text : Kit.Win98Tokens.gray
             }
             Rectangle {
                 visible: root.vertical
@@ -89,7 +90,7 @@ FocusScope {
                 y: tick.at * root.u
                 width: tick.len
                 height: root.u
-                color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
+                color: root.enabled ? Kit.Win98Tokens.text : Kit.Win98Tokens.gray
             }
         }
     }
@@ -112,7 +113,7 @@ FocusScope {
         width: 11 * root.u
         height: 21 * root.u
         svg: {
-            const T = Win98Tokens;
+            const T = Kit.Win98Tokens;
             const r = (x, y, w, h, c) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"/>';
             let s = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="21" viewBox="0 0 11 21" shape-rendering="crispEdges">';
             s += r(0, 0, 11, 17, T.face);

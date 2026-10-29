@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 
 // Server storage as a Win98 tree view: each host, then its findings with
@@ -58,12 +59,12 @@ Win98Window {
             height: Math.max(21 * root.u, status.height)
             Win98Text {
                 id: status
-                y: Math.max(0, Win98Tokens.snap((21 * root.u - height) / 2, root.u))
+                y: Math.max(0, Kit.Win98Tokens.snap((21 * root.u - height) / 2, root.u))
                 width: parent.width - check.width - 6 * root.u
                 wrap: true
                 text: root.panel.statusText.replace(/\u2026/g, "...")
                 accessMarks: false
-                color: root.panel.state === "error" || root.panel.state === "stale" ? Win98Tokens.warning : Win98Tokens.text
+                color: root.panel.state === "error" || root.panel.state === "stale" ? Kit.Win98Tokens.warning : Kit.Win98Tokens.text
             }
             Win98Button {
                 id: check
@@ -81,7 +82,7 @@ Win98Window {
             width: parent.width
             height: root.listHeight
             variant: "field"
-            color: Win98Tokens.win
+            color: Kit.Win98Tokens.win
             Flickable {
                 id: tree
                 x: 2 * root.u; y: 2 * root.u
@@ -104,17 +105,17 @@ Win98Window {
                             // [−] host
                             Rectangle {
                                 visible: line.host
-                                x: 3 * root.u; y: Win98Tokens.snap((line.height - height) / 2, root.u)
+                                x: 3 * root.u; y: Kit.Win98Tokens.snap((line.height - height) / 2, root.u)
                                 width: 9 * root.u; height: 9 * root.u
-                                color: Win98Tokens.win
+                                color: Kit.Win98Tokens.win
                                 border.width: root.u
-                                border.color: Win98Tokens.gray
-                                Rectangle { x: 2 * root.u; y: 4 * root.u; width: 5 * root.u; height: root.u; color: Win98Tokens.winText }
+                                border.color: Kit.Win98Tokens.gray
+                                Rectangle { x: 2 * root.u; y: 4 * root.u; width: 5 * root.u; height: root.u; color: Kit.Win98Tokens.winText }
                             }
                             Win98Icon {
                                 visible: line.host
                                 name: "host"
-                                x: 16 * root.u; y: Win98Tokens.snap((line.height - height) / 2, root.u)
+                                x: 16 * root.u; y: Kit.Win98Tokens.snap((line.height - height) / 2, root.u)
                             }
                             Win98Icon {
                                 visible: !line.host
@@ -124,13 +125,13 @@ Win98Window {
                             Win98Text {
                                 id: msg
                                 x: line.host ? 36 * root.u : 34 * root.u
-                                y: line.host ? Win98Tokens.snap((line.height - height) / 2, root.u) : root.u
+                                y: line.host ? Kit.Win98Tokens.snap((line.height - height) / 2, root.u) : root.u
                                 width: line.host ? Math.min(implicitWidth, line.width - x) : line.width - x - 3 * root.u
                                 wrap: !line.host
                                 text: line.modelData.text
                                 accessMarks: false
-                                color: line.host ? Win98Tokens.winText : line.modelData.level === "bad" ? Win98Tokens.danger
-                                    : line.modelData.level === "ok" ? Win98Tokens.winText : Win98Tokens.warning
+                                color: line.host ? Kit.Win98Tokens.winText : line.modelData.level === "bad" ? Kit.Win98Tokens.danger
+                                    : line.modelData.level === "ok" ? Kit.Win98Tokens.winText : Kit.Win98Tokens.warning
                             }
                         }
                     }

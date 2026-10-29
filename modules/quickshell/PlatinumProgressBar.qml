@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // A Mac OS 8 progress bar as a readout: a black hair frame, a sunken empty
@@ -15,12 +17,12 @@ Item {
     implicitWidth: 56
     implicitHeight: 9
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real fraction: typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(100, value)) / 100 : 0
-    readonly property color fill: stale || !(typeof value === "number" && isFinite(value)) ? PlatinumTokens.menuTextOff
+    readonly property color fill: stale || !(typeof value === "number" && isFinite(value)) ? Kit.PlatinumTokens.menuTextOff
         : tone === "danger" ? PlatinumGlanceTokens.barDanger
         : tone === "warning" ? PlatinumGlanceTokens.barWarning : PlatinumGlanceTokens.barFill
-    readonly property color fillHi: stale ? PlatinumTokens.menuTextOff
+    readonly property color fillHi: stale ? Kit.PlatinumTokens.menuTextOff
         : tone === "danger" ? PlatinumGlanceTokens.barDangerHi
         : tone === "warning" ? PlatinumGlanceTokens.barWarningHi : PlatinumGlanceTokens.barFillHi
 
@@ -28,11 +30,11 @@ Item {
         anchors.fill: parent
         color: PlatinumGlanceTokens.barEmpty
         border.width: root.h
-        border.color: root.selected ? PlatinumTokens.highlightText : PlatinumTokens.menuEdge
+        border.color: root.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuEdge
     }
     // The sunken empty part's shade.
-    Rectangle { x: root.h; y: root.h; width: parent.width - 2 * root.h; height: root.h; color: PlatinumTokens.bevelDark }
-    Rectangle { x: root.h; y: root.h; width: root.h; height: parent.height - 2 * root.h; color: PlatinumTokens.bevelDark }
+    Rectangle { x: root.h; y: root.h; width: parent.width - 2 * root.h; height: root.h; color: Kit.PlatinumTokens.bevelDark }
+    Rectangle { x: root.h; y: root.h; width: root.h; height: parent.height - 2 * root.h; color: Kit.PlatinumTokens.bevelDark }
 
     Item {
         id: fillBox

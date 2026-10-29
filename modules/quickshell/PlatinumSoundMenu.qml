@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
@@ -24,7 +25,7 @@ PlatinumMenuFrame {
     }
     readonly property bool selectedMuted: frame.selected !== null && frame.selected.audio
         ? frame.selected.audio.muted : false
-    readonly property real levelWidth: PlatinumMetrics.smallWidest(["100%", "mute"])
+    readonly property real levelWidth: Kit.PlatinumMetrics.smallWidest(["100%", "mute"])
 
     function switchSection() {
         panel.section = panel.section === "outputs" ? "inputs" : "outputs";
@@ -112,7 +113,7 @@ PlatinumMenuFrame {
 
             width: ListView.view.width
             rightInset: frame.rightInset
-            rowHeight: PlatinumTokens.menuRow
+            rowHeight: Kit.PlatinumTokens.menuRow
             selected: ListView.isCurrentItem
             mark: panel.isDefault(modelData) ? "dot" : "ring"
             markDim: !panel.isDefault(modelData)
@@ -123,12 +124,12 @@ PlatinumMenuFrame {
             below: Rectangle {
                 width: parent.width
                 height: 4
-                color: deviceRow.selected ? Qt.darker(PlatinumTokens.highlight, 1.4) : PlatinumTokens.well
+                color: deviceRow.selected ? Qt.darker(Kit.PlatinumTokens.highlight, 1.4) : Kit.PlatinumTokens.well
                 Rectangle {
                     width: Math.round(parent.width * Math.min(1, Math.max(0, deviceRow.level)))
                     height: parent.height
-                    color: deviceRow.selected ? PlatinumTokens.highlightText
-                        : deviceRow.rowMuted ? PlatinumTokens.menuTextOff : PlatinumTokens.highlight
+                    color: deviceRow.selected ? Kit.PlatinumTokens.highlightText
+                        : deviceRow.rowMuted ? Kit.PlatinumTokens.menuTextOff : Kit.PlatinumTokens.highlight
                 }
             }
 
@@ -137,9 +138,9 @@ PlatinumMenuFrame {
                 horizontalAlignment: Text.AlignRight
                 text: deviceRow.rowMuted ? "mute" : Math.round(deviceRow.level * 100) + "%"
                 color: deviceRow.fg2
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }

@@ -1,5 +1,7 @@
 pragma ComponentBehavior: Bound
 
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import "window-motion.js" as Motion
 
@@ -14,13 +16,13 @@ MotionLayer {
     required property var strip
 
     theme: "platinum"
-    reduced: GlanceState.reducedMotion || PlatinumTokens.reducedMotion
+    reduced: GlanceState.reducedMotion || Kit.PlatinumTokens.reducedMotion
     endpoints: function (e) { return overlay.ends(e); }
 
     // The window's title bar (hyprbars-platinum, bar_height).
     readonly property real titleBar: 20
     // The top bar keeps the tokens' scale current.
-    dpr: PlatinumTokens.pixelRatio
+    dpr: (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
     function snap(v) { return Math.round(v * overlay.dpr) / overlay.dpr; }
 
     // The tiles as they were one change ago: a closed window's tile has
@@ -70,19 +72,19 @@ MotionLayer {
                     required property var modelData
                     x: overlay.snap(modelData.x)
                     y: overlay.snap(modelData.y)
-                    width: overlay.snap(Math.max(2 * PlatinumTokens.hair, modelData.w))
-                    height: overlay.snap(Math.max(2 * PlatinumTokens.hair, modelData.h))
+                    width: overlay.snap(Math.max(2 * Kit.PlatinumTokens.hairFor(QsWindow.window), modelData.w))
+                    height: overlay.snap(Math.max(2 * Kit.PlatinumTokens.hairFor(QsWindow.window), modelData.h))
                     Rectangle {
                         anchors.fill: parent
                         color: "transparent"
-                        border.width: PlatinumTokens.hair
+                        border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
                         border.color: PlatinumGlanceTokens.zoomOuter
                     }
                     Rectangle {
                         anchors.fill: parent
-                        anchors.margins: PlatinumTokens.hair
+                        anchors.margins: Kit.PlatinumTokens.hairFor(QsWindow.window)
                         color: "transparent"
-                        border.width: PlatinumTokens.hair
+                        border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
                         border.color: PlatinumGlanceTokens.zoomInner
                     }
                 }

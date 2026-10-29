@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -27,14 +28,14 @@ FocusScope {
 
     signal activated(int index)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     readonly property bool focusShown: enabled && (showFocus || activeFocus)
     property int highlighted: currentIndex
     readonly property real rowHeight: 15 * u
     readonly property real listRow: 17 * u
 
-    implicitWidth: Win98Tokens.ceilU(Win98Tokens.widest(model, false, root.u), root.u) + 4 * u + 23 * u + 4 * u
-    implicitHeight: Win98Tokens.fieldHeight * u
+    implicitWidth: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.widest(model, false, root.u), root.u) + 4 * u + 23 * u + 4 * u
+    implicitHeight: Kit.Win98Tokens.fieldHeight * u
     activeFocusOnTab: enabled
 
     onOpenChanged: {
@@ -53,8 +54,8 @@ FocusScope {
         if (!host) return;
         list.parent = host;
         const p = root.mapToItem(host, 0, root.height);
-        list.x = Win98Tokens.snap(p.x, root.u);
-        list.y = Win98Tokens.snap(p.y, root.u);
+        list.x = Kit.Win98Tokens.snap(p.x, root.u);
+        list.y = Kit.Win98Tokens.snap(p.y, root.u);
     }
 
     Keys.onPressed: event => {
@@ -77,7 +78,7 @@ FocusScope {
     Win98Bevel {
         anchors.fill: parent
         variant: "field"
-        color: root.enabled ? Win98Tokens.win : Win98Tokens.face
+        color: root.enabled ? Kit.Win98Tokens.win : Kit.Win98Tokens.face
     }
 
     // The value box: 3 u in, up to the button.
@@ -86,20 +87,20 @@ FocusScope {
         x: 3 * root.u; y: 3 * root.u
         width: root.width - 3 * root.u - 2 * root.u - 16 * root.u - 2 * root.u
         height: root.rowHeight
-        color: root.focusShown ? Win98Tokens.selection : "transparent"
+        color: root.focusShown ? Kit.Win98Tokens.selection : "transparent"
 
         Win98Text {
             x: 2 * root.u; y: root.u
             width: valueBox.width - 4 * root.u
             text: root.model.length > root.currentIndex && root.currentIndex >= 0 ? root.model[root.currentIndex] : ""
             accessMarks: false
-            color: root.focusShown ? Win98Tokens.selectionText : Win98Tokens.winText
+            color: root.focusShown ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
             disabledLook: !root.enabled
         }
         Win98FocusRect {
             visible: root.focusShown
             anchors.fill: parent
-            color: Win98Tokens.selectionText
+            color: Kit.Win98Tokens.selectionText
         }
     }
 
@@ -115,9 +116,9 @@ FocusScope {
         }
         Win98Icon {
             name: "arrow-down"
-            color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
-            x: Win98Tokens.snap((button.width - width) / 2, root.u) + (root.open ? root.u : 0)
-            y: Win98Tokens.snap((button.height - height) / 2, root.u) + (root.open ? root.u : 0)
+            color: root.enabled ? Kit.Win98Tokens.text : Kit.Win98Tokens.gray
+            x: Kit.Win98Tokens.snap((button.width - width) / 2, root.u) + (root.open ? root.u : 0)
+            y: Kit.Win98Tokens.snap((button.height - height) / 2, root.u) + (root.open ? root.u : 0)
         }
     }
 
@@ -136,9 +137,9 @@ FocusScope {
 
         Rectangle {
             anchors.fill: parent
-            color: Win98Tokens.win
+            color: Kit.Win98Tokens.win
             border.width: root.u
-            border.color: Win98Tokens.dk
+            border.color: Kit.Win98Tokens.dk
         }
         Column {
             x: root.u; y: root.u
@@ -150,13 +151,13 @@ FocusScope {
                     required property int index
                     width: list.width - 2 * root.u
                     height: root.listRow
-                    color: index === root.highlighted ? Win98Tokens.selection : "transparent"
+                    color: index === root.highlighted ? Kit.Win98Tokens.selection : "transparent"
                     Win98Text {
                         x: 4 * root.u; y: root.u
                         width: row.width - 8 * root.u
                         text: row.modelData
                         accessMarks: false
-                        color: row.index === root.highlighted ? Win98Tokens.selectionText : Win98Tokens.winText
+                        color: row.index === root.highlighted ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
                     }
                     MouseArea {
                         anchors.fill: parent

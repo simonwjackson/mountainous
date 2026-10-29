@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
@@ -32,7 +33,7 @@ FocusScope {
     // A row was chosen, or a request ("address") made; the Desktop runs it.
     signal action(string kind, var arg)
 
-    readonly property real hair: PlatinumTokens.hair
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property real originX: parent ? parent.x : 0
     readonly property real areaWidth: root.Window.width > 0 ? root.Window.width : 1920
     readonly property real areaHeight: root.Window.height > 0 ? root.Window.height : 1200
@@ -205,11 +206,11 @@ FocusScope {
             y: 2 * root.hair
             width: parent.width
             height: parent.height
-            color: PlatinumTokens.menuShadow
+            color: Kit.PlatinumTokens.menuShadow
         }
         PlatinumBevel {
             anchors.fill: parent
-            color: PlatinumTokens.menuSurface
+            color: Kit.PlatinumTokens.menuSurface
         }
         // Clicks inside the menu stay inside it.
         MouseArea {
@@ -230,7 +231,7 @@ FocusScope {
                 id: popButton
                 visible: root.plan.popup
                 anchors.verticalCenter: parent.verticalCenter
-                width: visible ? PlatinumMetrics.even(8 + popLabel.implicitWidth + 5 + root.hair + 4 + 7 + 5) : 0
+                width: visible ? Kit.PlatinumMetrics.even(8 + popLabel.implicitWidth + 5 + root.hair + 4 + 7 + 5) : 0
                 height: 22
                 readonly property bool down: popArea.pressed || root.popupOpen
 
@@ -238,7 +239,7 @@ FocusScope {
                     anchors.fill: parent
                     radius: 3
                     sunken: popButton.down
-                    color: popButton.down ? PlatinumTokens.well : PlatinumTokens.raised
+                    color: popButton.down ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
                 }
                 Text {
                     id: popLabel
@@ -246,17 +247,17 @@ FocusScope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: FindModel.scopeLabel(root.scope)
                     textFormat: Text.PlainText
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Rectangle {
                     x: popLabel.x + popLabel.implicitWidth + 5
                     y: root.hair
                     width: root.hair
                     height: parent.height - 2 * root.hair
-                    color: PlatinumTokens.bevelDark
+                    color: Kit.PlatinumTokens.bevelDark
                 }
                 PlatinumIcon {
                     x: popLabel.x + popLabel.implicitWidth + 5 + root.hair + 4
@@ -264,7 +265,7 @@ FocusScope {
                     width: 7
                     height: 11
                     name: "popup"
-                    color: PlatinumTokens.menuText
+                    color: Kit.PlatinumTokens.menuText
                 }
                 MouseArea {
                     id: popArea
@@ -281,10 +282,10 @@ FocusScope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: FindModel.scopeLabel(root.scope) + ":"
                 textFormat: Text.PlainText
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             PlatinumTextField {
@@ -302,12 +303,12 @@ FocusScope {
         Rectangle {
             x: root.hair; y: root.hair + root.headerHeight
             width: frame.width - 2 * root.hair; height: root.hair
-            color: PlatinumTokens.bevelDark
+            color: Kit.PlatinumTokens.bevelDark
         }
         Rectangle {
             x: root.hair; y: root.hair + root.headerHeight + root.hair
             width: frame.width - 2 * root.hair; height: root.hair
-            color: PlatinumTokens.bevelLight
+            color: Kit.PlatinumTokens.bevelLight
         }
 
         Item {
@@ -393,11 +394,11 @@ FocusScope {
         z: 5
         x: header.x
         y: header.y + header.height + 2
-        width: PlatinumMetrics.even(Math.max(200, 30 + PlatinumMetrics.width("Go to Address…") + 24 + PlatinumMetrics.smallWidth("Ctrl+L") + 12))
+        width: Kit.PlatinumMetrics.even(Math.max(200, 30 + Kit.PlatinumMetrics.width("Go to Address…") + 24 + Kit.PlatinumMetrics.smallWidth("Ctrl+L") + 12))
         height: popupColumn.height + 4 + 5 + 2 * root.hair
 
-        Rectangle { x: 2 * root.hair; y: 2 * root.hair; width: parent.width; height: parent.height; color: PlatinumTokens.menuShadow }
-        PlatinumBevel { anchors.fill: parent; color: PlatinumTokens.menuSurface }
+        Rectangle { x: 2 * root.hair; y: 2 * root.hair; width: parent.width; height: parent.height; color: Kit.PlatinumTokens.menuShadow }
+        PlatinumBevel { anchors.fill: parent; color: Kit.PlatinumTokens.menuSurface }
         Column {
             id: popupColumn
             x: root.hair
@@ -412,26 +413,26 @@ FocusScope {
                     readonly property bool lit: modelData.id !== "" && index === root.popupIndex
                     width: popupColumn.width
                     height: modelData.id === "" ? FindModel.SEP : FindModel.ROW
-                    Rectangle { visible: popRow.modelData.id === ""; y: 3; width: parent.width; height: root.hair; color: PlatinumTokens.bevelDark }
-                    Rectangle { visible: popRow.modelData.id === ""; y: 3 + root.hair; width: parent.width; height: root.hair; color: PlatinumTokens.bevelLight }
-                    Rectangle { visible: popRow.lit; anchors.fill: parent; color: PlatinumTokens.highlight }
+                    Rectangle { visible: popRow.modelData.id === ""; y: 3; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelDark }
+                    Rectangle { visible: popRow.modelData.id === ""; y: 3 + root.hair; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelLight }
+                    Rectangle { visible: popRow.lit; anchors.fill: parent; color: Kit.PlatinumTokens.highlight }
                     PlatinumIcon {
                         visible: popRow.modelData.id === root.scope
                         x: 9
                         anchors.verticalCenter: parent.verticalCenter
                         name: "check"
                         size: 12
-                        color: popRow.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuText
+                        color: popRow.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
                     }
                     Text {
                         visible: popRow.modelData.id !== ""
                         x: 30
                         anchors.verticalCenter: parent.verticalCenter
                         text: popRow.modelData.label || ""
-                        color: popRow.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuText
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumText
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: popRow.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumText
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     Text {
                         visible: popRow.modelData.id !== ""
@@ -439,10 +440,10 @@ FocusScope {
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
                         text: popRow.modelData.key || ""
-                        color: popRow.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
-                        font.letterSpacing: PlatinumTokens.platinumTracking
+                        color: popRow.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -474,9 +475,9 @@ FocusScope {
         Rectangle {
             anchors.fill: parent
             radius: 8
-            color: PlatinumTokens.balloon
+            color: Kit.PlatinumTokens.balloon
             border.width: root.hair
-            border.color: PlatinumTokens.menuEdge
+            border.color: Kit.PlatinumTokens.menuEdge
         }
         // The tail, pointing at the row.
         Canvas {
@@ -485,8 +486,8 @@ FocusScope {
             height: 12
             x: balloon.beside ? -width + root.hair : 18
             y: balloon.beside ? 8 : -height + root.hair
-            property color fill: PlatinumTokens.balloon
-            property color edge: PlatinumTokens.menuEdge
+            property color fill: Kit.PlatinumTokens.balloon
+            property color edge: Kit.PlatinumTokens.menuEdge
             property bool beside: balloon.beside
             onFillChanged: requestPaint()
             onBesideChanged: requestPaint()
@@ -514,10 +515,10 @@ FocusScope {
                 text: balloon.row ? balloon.row.label || "" : ""
                 textFormat: Text.PlainText
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                color: PlatinumTokens.menuText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
             Text {
                 visible: text !== ""
@@ -525,10 +526,10 @@ FocusScope {
                 text: balloon.row ? balloon.row.hint || "" : ""
                 textFormat: Text.PlainText
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                color: PlatinumTokens.menuTextSecondary
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumHint
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuTextSecondary
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumHint
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }
@@ -542,13 +543,13 @@ FocusScope {
         property bool lit: false
         readonly property bool isItem: row.t === "item"
         readonly property bool cut: label.truncated
-        readonly property color fg: row.t === "head" || row.dis ? PlatinumTokens.menuTextOff
-            : lit ? PlatinumTokens.highlightText : PlatinumTokens.menuText
+        readonly property color fg: row.t === "head" || row.dis ? Kit.PlatinumTokens.menuTextOff
+            : lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
         height: FindModel.rowHeight(row)
 
-        Rectangle { visible: rowItem.row.t === "sep"; y: 3; width: parent.width; height: root.hair; color: PlatinumTokens.bevelDark }
-        Rectangle { visible: rowItem.row.t === "sep"; y: 3 + root.hair; width: parent.width; height: root.hair; color: PlatinumTokens.bevelLight }
-        Rectangle { visible: rowItem.lit; anchors.fill: parent; color: PlatinumTokens.highlight }
+        Rectangle { visible: rowItem.row.t === "sep"; y: 3; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelDark }
+        Rectangle { visible: rowItem.row.t === "sep"; y: 3 + root.hair; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelLight }
+        Rectangle { visible: rowItem.lit; anchors.fill: parent; color: Kit.PlatinumTokens.highlight }
 
         IconImage {
             visible: rowItem.isItem && !!rowItem.row.icon && (rowItem.row.k === "win" || rowItem.row.k === "app" || rowItem.row.k === "recent")
@@ -562,14 +563,14 @@ FocusScope {
             visible: rowItem.row.t !== "sep"
             x: 30 + root.hair
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(0, (hint.visible ? hint.x - PlatinumTokens.menuGap : rowItem.width - PlatinumTokens.menuRightInset) - x)
+            width: Math.max(0, (hint.visible ? hint.x - Kit.PlatinumTokens.menuGap : rowItem.width - Kit.PlatinumTokens.menuRightInset) - x)
             text: rowItem.row.label || ""
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: rowItem.fg
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: rowItem.row.t === "head" ? PlatinumTokens.platinumSmall : PlatinumTokens.platinumText
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: rowItem.row.t === "head" ? Kit.PlatinumTokens.platinumSmall : Kit.PlatinumTokens.platinumText
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
         // The hint is a readout: it keeps its share of the row and gives way
         // before the label does (find-plan.js); it still matches a search.
@@ -577,17 +578,17 @@ FocusScope {
             id: hint
             visible: rowItem.isItem && !!rowItem.row.hint && root.plan.hintShare > 0
             anchors.right: parent.right
-            anchors.rightMargin: PlatinumTokens.menuRightInset + root.hair
+            anchors.rightMargin: Kit.PlatinumTokens.menuRightInset + root.hair
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(implicitWidth, rowItem.width * root.plan.hintShare)
             horizontalAlignment: Text.AlignRight
             text: rowItem.row.hint || ""
             textFormat: Text.PlainText
             elide: Text.ElideRight
-            color: rowItem.row.dis ? PlatinumTokens.menuTextOff : rowItem.lit ? PlatinumTokens.highlightText : PlatinumTokens.menuTextSecondary
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: rowItem.row.dis ? Kit.PlatinumTokens.menuTextOff : rowItem.lit ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuTextSecondary
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
@@ -600,13 +601,13 @@ FocusScope {
         width: viewport.width
         height: root.band
         y: up ? 0 : viewport.height - height
-        Rectangle { anchors.fill: parent; color: PlatinumTokens.menuSurface }
+        Rectangle { anchors.fill: parent; color: Kit.PlatinumTokens.menuSurface }
         PlatinumIcon {
             anchors.centerIn: parent
             width: 11
             height: 6
             name: bandItem.up ? "band-up" : "band-down"
-            color: PlatinumTokens.menuText
+            color: Kit.PlatinumTokens.menuText
         }
         MouseArea {
             id: bandArea

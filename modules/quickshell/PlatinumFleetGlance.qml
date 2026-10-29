@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -51,7 +52,7 @@ Scope {
     // » when it overflowed.
     function readoutRect() {
         const r = root.bar.controlRect ? root.bar.controlRect("fleet") : null;
-        return r ? {x: r.x, y: 0, w: r.w, h: PlatinumTokens.barHeight} : null;
+        return r ? {x: r.x, y: 0, w: r.w, h: Kit.PlatinumTokens.barHeight} : null;
     }
 
     property bool wasActive: false

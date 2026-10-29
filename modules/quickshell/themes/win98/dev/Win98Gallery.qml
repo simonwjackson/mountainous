@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -14,7 +15,7 @@ Scope {
     id: gallery
 
     property string page: "controls"
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Kit.Win98Tokens.u
 
     FontLoader {
         source: "file://" + (Quickshell.env("WIN98_FONT") || "/tmp/win98-mock/fonts/W95FAGrid.ttf")
@@ -23,8 +24,8 @@ Scope {
     IpcHandler {
         target: "win98gallery"
         function page(name: string): string { gallery.page = name; return name; }
-        function ready(): string { return gallery.page + " dpr=" + (2 / gallery.u) + " dark=" + Win98Tokens.dark; }
-        function motion(reduced: bool): string { Win98Tokens.reducedMotion = reduced; return String(Win98Tokens.reducedMotion); }
+        function ready(): string { return gallery.page + " dpr=" + (2 / gallery.u) + " dark=" + Kit.Win98Tokens.dark; }
+        function motion(reduced: bool): string { Kit.Win98Tokens.reducedMotion = reduced; return String(Kit.Win98Tokens.reducedMotion); }
         // The live test menu (page "keys"): send a key, read the state back.
         function key(name: string): string { return gallery.menuKey(name); }
         function menu(): string { return gallery.menuState(); }
@@ -44,10 +45,10 @@ Scope {
             accessProbe.text = label;
             return JSON.stringify({ plain: accessProbe.plain, drawn: accessProbe.drawnText, index: accessProbe.accessIndex,
                 x: accessProbe.accessX, w: accessProbe.accessWidth, drawnWidth: accessProbe.drawnWidth, u: accessProbe.u,
-                prefix: Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex), bold, accessProbe.u),
-                prefixTrimmed: Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex).replace(/ +$/, ""), bold, accessProbe.u),
-                whole: Win98Tokens.textWidth(accessProbe.plain, bold, accessProbe.u),
-                squeezed: Win98Tokens.textWidth(accessProbe.plain.replace(/ /g, ""), bold, accessProbe.u) });
+                prefix: Kit.Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex), bold, accessProbe.u),
+                prefixTrimmed: Kit.Win98Tokens.textWidth(accessProbe.plain.slice(0, accessProbe.accessIndex).replace(/ +$/, ""), bold, accessProbe.u),
+                whole: Kit.Win98Tokens.textWidth(accessProbe.plain, bold, accessProbe.u),
+                squeezed: Kit.Win98Tokens.textWidth(accessProbe.plain.replace(/ /g, ""), bold, accessProbe.u) });
         }
         function resetMenu(): string { gallery.triggeredText = ""; gallery.closedCount = 0; if (gallery.testMenu) gallery.testMenu.reset(); return gallery.menuState(); }
     }
@@ -67,8 +68,8 @@ Scope {
         // Names, not indices: path=Programs/Internet cursor=Signal.
         const names = [];
         let items = testMenu.model;
-        for (const i of testMenu.path) { names.push(Win98Tokens.plainText(items[i].text)); items = items[i].submenu; }
-        const cur = testMenu.cursor >= 0 && items[testMenu.cursor] ? Win98Tokens.plainText(items[testMenu.cursor].text) : "-";
+        for (const i of testMenu.path) { names.push(Kit.Win98Tokens.plainText(items[i].text)); items = items[i].submenu; }
+        const cur = testMenu.cursor >= 0 && items[testMenu.cursor] ? Kit.Win98Tokens.plainText(items[testMenu.cursor].text) : "-";
         return "path=" + names.join("/") + " cursor=" + cur + " triggered=" + (triggeredText || "-") + " closed=" + closedCount;
     }
 
@@ -121,9 +122,9 @@ Scope {
         id: win
         anchors { top: true; left: true; right: true; bottom: true }
         exclusionMode: ExclusionMode.Ignore
-        color: Win98Tokens.desktop
-        onDevicePixelRatioChanged: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
-        Component.onCompleted: if (devicePixelRatio > 0) Win98Tokens.pixelRatio = devicePixelRatio
+        color: Kit.Win98Tokens.desktop
+
+
 
         // Measured by the access IPC; never shown.
         Win98Text { id: accessProbe; visible: false }
@@ -143,10 +144,10 @@ Scope {
     component Spec: Column {
         property string label: ""
         spacing: 4 * gallery.u
-        Win98Text { text: parent.label; accessMarks: false; color: Win98Tokens.gray }
+        Win98Text { text: parent.label; accessMarks: false; color: Kit.Win98Tokens.gray }
     }
     component Heading: Win98Text { accessMarks: false; bold: true }
-    component Page: Rectangle { color: Win98Tokens.face }
+    component Page: Rectangle { color: Kit.Win98Tokens.face }
 
     // ================================================================ text
     // The mock's shots/w95fa-grid-proof.png, rebuilt: regular, drawn bold,
@@ -162,7 +163,7 @@ Scope {
                 Win98Text { text: "Bold: Start   Display Properties   simon@myoko"; accessMarks: false; bold: true }
                 Rectangle {
                     width: 800 * gallery.u; height: 60 * gallery.u
-                    color: Win98Tokens.caption1
+                    color: Kit.Win98Tokens.caption1
                     Column {
                         x: 6 * gallery.u; y: 4 * gallery.u
                         spacing: 4 * gallery.u
@@ -179,13 +180,13 @@ Scope {
                 }
                 Rectangle {
                     width: 200 * gallery.u; height: 30 * gallery.u
-                    color: Win98Tokens.win
-                    Win98Text { x: 4 * gallery.u; y: 4 * gallery.u; text: "Window text on the field colour"; accessMarks: false; color: Win98Tokens.winText }
+                    color: Kit.Win98Tokens.win
+                    Win98Text { x: 4 * gallery.u; y: 4 * gallery.u; text: "Window text on the field colour"; accessMarks: false; color: Kit.Win98Tokens.winText }
                 }
                 Rectangle {
                     width: 200 * gallery.u; height: 17 * gallery.u
-                    color: Win98Tokens.selection
-                    Win98Text { x: 4 * gallery.u; y: 2 * gallery.u; text: "Selected text"; accessMarks: false; color: Win98Tokens.selectionText }
+                    color: Kit.Win98Tokens.selection
+                    Win98Text { x: 4 * gallery.u; y: 2 * gallery.u; text: "Selected text"; accessMarks: false; color: Kit.Win98Tokens.selectionText }
                 }
             }
         }
@@ -325,7 +326,7 @@ Scope {
                         Win98LevelBar { width: 80 * gallery.u; value: 0.35; muted: true }
                         Rectangle {
                             width: 90 * gallery.u; height: 10 * gallery.u
-                            color: Win98Tokens.selection
+                            color: Kit.Win98Tokens.selection
                             Win98LevelBar { x: 5 * gallery.u; y: 3 * gallery.u; width: 80 * gallery.u; value: 0.42; onSelection: true }
                         }
                     }
@@ -392,7 +393,7 @@ Scope {
                             title: "Devices (scanning)"
                             width: 200 * gallery.u
                             height: 60 * gallery.u
-                            Win98Text { text: "Looking for devices..."; accessMarks: false; color: Win98Tokens.gray }
+                            Win98Text { text: "Looking for devices..."; accessMarks: false; color: Kit.Win98Tokens.gray }
                         }
                         Win98GroupBox {
                             title: "A group title longer than its box"
@@ -480,7 +481,7 @@ Scope {
                             Win98Text { y: 5.5 * gallery.u; text: "Are you sure you want to log off?"; accessMarks: false }
                         }
                         Row {
-                            x: Win98Tokens.snap((276 * gallery.u - width) / 2, gallery.u)
+                            x: Kit.Win98Tokens.snap((276 * gallery.u - width) / 2, gallery.u)
                             spacing: 6 * gallery.u
                             Win98Button { text: "&Yes"; isDefault: true; showFocus: true }
                             Win98Button { text: "&No" }
@@ -506,17 +507,17 @@ Scope {
                         Item {
                             width: parent.width; height: 13 * gallery.u
                             Win98CheckBox { text: "Accep&t builds"; checked: true; showFocus: true }
-                            Win98Text { x: parent.width - width; text: "T"; accessMarks: false; color: Win98Tokens.gray }
+                            Win98Text { x: parent.width - width; text: "T"; accessMarks: false; color: Kit.Win98Tokens.gray }
                         }
                         Item {
                             width: parent.width; height: 21 * gallery.u
                             Win98Button { text: "Use &default (on)"; small: true; widthUnits: 150 }
-                            Win98Text { x: parent.width - width; y: 4 * gallery.u; text: "D"; accessMarks: false; color: Win98Tokens.gray }
+                            Win98Text { x: parent.width - width; y: 4 * gallery.u; text: "D"; accessMarks: false; color: Kit.Win98Tokens.gray }
                         }
                         Item {
                             width: parent.width; height: 21 * gallery.u
                             Win98Button { text: "Stop builds"; small: true; widthUnits: 150; enabled: false }
-                            Win98Text { x: parent.width - width; y: 4 * gallery.u; text: "X"; accessMarks: false; color: Win98Tokens.gray }
+                            Win98Text { x: parent.width - width; y: 4 * gallery.u; text: "X"; accessMarks: false; color: Kit.Win98Tokens.gray }
                         }
                         Win98StatusBar { width: parent.width; panes: ["Tab move \u00b7 Enter choose \u00b7 Esc close"] }
                     }
@@ -607,7 +608,7 @@ Scope {
                 bandText: "Kamoi"
                 bandSubText: "Myoko"
                 bounds: keysRoot
-                onTriggered: item => gallery.triggeredText = Win98Tokens.plainText(item.text)
+                onTriggered: item => gallery.triggeredText = Kit.Win98Tokens.plainText(item.text)
                 onClosed: gallery.closedCount++
                 Component.onCompleted: gallery.testMenu = live
                 Component.onDestruction: if (gallery.testMenu === live) gallery.testMenu = null
@@ -657,7 +658,7 @@ Scope {
                             detail: modelData.detail
                             bold: modelData.on
                             iconName: modelData.on ? "bluetooth-on" : "bluetooth-off"
-                            detailColor: modelData.failed ? Win98Tokens.danger : Win98Tokens.gray
+                            detailColor: modelData.failed ? Kit.Win98Tokens.danger : Kit.Win98Tokens.gray
                         }
                     }
                 }
@@ -724,30 +725,30 @@ Scope {
                 x: 8 * gallery.u; y: 8 * gallery.u
                 spacing: 10 * gallery.u
                 Repeater {
-                    model: [Win98Tokens.face, Win98Tokens.win]
+                    model: [Kit.Win98Tokens.face, Kit.Win98Tokens.win]
                     Flow {
                         id: iconFlow
                         required property color modelData
                         width: 1420 * gallery.u
                         spacing: 4 * gallery.u
                         Repeater {
-                            model: Win98IconStore.names
+                            model: Kit.Win98IconStore.names
                             Rectangle {
                                 id: cell
                                 required property string modelData
                                 width: 60 * gallery.u; height: 44 * gallery.u
                                 color: iconFlow.modelData
                                 Win98Icon {
-                                    x: Win98Tokens.snap((cell.width - width) / 2, gallery.u); y: 4 * gallery.u
+                                    x: Kit.Win98Tokens.snap((cell.width - width) / 2, gallery.u); y: 4 * gallery.u
                                     name: cell.modelData
-                                    color: iconFlow.modelData === Win98Tokens.win ? Win98Tokens.winText : Win98Tokens.text
+                                    color: iconFlow.modelData === Kit.Win98Tokens.win ? Kit.Win98Tokens.winText : Kit.Win98Tokens.text
                                     level: cell.modelData.startsWith("battery") ? 0.62 : undefined
                                 }
                                 Win98Text {
                                     x: 2 * gallery.u; y: 29 * gallery.u
                                     width: cell.width - 4 * gallery.u
                                     text: cell.modelData; accessMarks: false
-                                    color: Win98Tokens.gray
+                                    color: Kit.Win98Tokens.gray
                                 }
                             }
                         }
@@ -756,7 +757,7 @@ Scope {
                 // The tray, as the taskbar will hold it.
                 Rectangle {
                     width: 330 * gallery.u; height: 28 * gallery.u
-                    color: Win98Tokens.face
+                    color: Kit.Win98Tokens.face
                     Win98Bevel {
                         x: 4 * gallery.u; y: 3 * gallery.u
                         width: trayRow.width + 5 * gallery.u + clock.width + 11 * gallery.u
@@ -821,7 +822,7 @@ Scope {
                             title: modelData[0]
                             value: modelData[1]
                             valueUnits: 70
-                            titleColor: /^-[0-9]/.test(modelData[1]) ? Win98Tokens.danger : Win98Tokens.winText
+                            titleColor: /^-[0-9]/.test(modelData[1]) ? Kit.Win98Tokens.danger : Kit.Win98Tokens.winText
                         }
                     }
                 }
@@ -899,8 +900,8 @@ Scope {
                                     width: 72 * gallery.u
                                     spacing: 5 * gallery.u
                                     Win98Slider { x: 21 * gallery.u; orientation: Qt.Vertical; height: 100 * gallery.u; value: 0.42 }
-                                    Win98Text { x: Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "42%"; accessMarks: false }
-                                    Win98CheckBox { x: Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "&Mute" }
+                                    Win98Text { x: Kit.Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "42%"; accessMarks: false }
+                                    Win98CheckBox { x: Kit.Win98Tokens.snap((72 * gallery.u - width) / 2, gallery.u); text: "&Mute" }
                                 }
                             }
                             Column {
@@ -980,7 +981,7 @@ Scope {
                                 Win98Bevel {
                                     width: parent.width; height: 150 * gallery.u
                                     variant: "field"
-                                    color: Win98Tokens.desktop
+                                    color: Kit.Win98Tokens.desktop
                                     Win98Window {
                                         x: 12 * gallery.u; y: 8 * gallery.u
                                         width: 220 * gallery.u; height: 70 * gallery.u
@@ -1000,22 +1001,22 @@ Scope {
                                                     Rectangle {
                                                         id: word
                                                         required property string modelData
-                                                        width: Win98Tokens.ceilU(Win98Tokens.textWidth(modelData, false, gallery.u), gallery.u) + 12 * gallery.u
+                                                        width: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth(modelData, false, gallery.u), gallery.u) + 12 * gallery.u
                                                         height: 17 * gallery.u
-                                                        color: modelData === "Selected" ? Win98Tokens.selection : "transparent"
+                                                        color: modelData === "Selected" ? Kit.Win98Tokens.selection : "transparent"
                                                         Win98Text {
                                                             x: 6 * gallery.u; y: 2 * gallery.u
                                                             text: word.modelData; accessMarks: false
                                                             disabledLook: word.modelData === "Disabled"
-                                                            color: word.modelData === "Selected" ? Win98Tokens.selectionText : Win98Tokens.text
+                                                            color: word.modelData === "Selected" ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.text
                                                         }
                                                     }
                                                 }
                                             }
                                             Win98Bevel {
                                                 width: 234 * gallery.u; height: 34 * gallery.u
-                                                variant: "field"; color: Win98Tokens.win
-                                                Win98Text { x: 5 * gallery.u; y: 3 * gallery.u; text: "Window Text"; accessMarks: false; color: Win98Tokens.winText }
+                                                variant: "field"; color: Kit.Win98Tokens.win
+                                                Win98Text { x: 5 * gallery.u; y: 3 * gallery.u; text: "Window Text"; accessMarks: false; color: Kit.Win98Tokens.winText }
                                             }
                                         }
                                     }
@@ -1023,8 +1024,8 @@ Scope {
                                     Rectangle {
                                         x: 2 * gallery.u; y: parent.height - 14 * gallery.u
                                         width: parent.width - 4 * gallery.u; height: 12 * gallery.u
-                                        color: Win98Tokens.face
-                                        Rectangle { width: parent.width; height: gallery.u; color: Win98Tokens.hi }
+                                        color: Kit.Win98Tokens.face
+                                        Rectangle { width: parent.width; height: gallery.u; color: Kit.Win98Tokens.hi }
                                         Win98Bevel { x: 2 * gallery.u; y: 2 * gallery.u; width: 26 * gallery.u; height: 9 * gallery.u }
                                     }
                                     Win98Window {
@@ -1037,7 +1038,7 @@ Scope {
                                                 width: 144 * gallery.u; height: 19 * gallery.u
                                                 Win98Text { x: 6 * gallery.u; y: 3 * gallery.u; text: "Message Text"; accessMarks: false }
                                             }
-                                            Win98Button { x: Win98Tokens.snap((144 * gallery.u - width) / 2, gallery.u); widthUnits: 50; small: true; height: 18 * gallery.u; text: "OK" }
+                                            Win98Button { x: Kit.Win98Tokens.snap((144 * gallery.u - width) / 2, gallery.u); widthUnits: 50; small: true; height: 18 * gallery.u; text: "OK" }
                                         }
                                     }
                                 }
@@ -1049,13 +1050,13 @@ Scope {
                                 Row {
                                     spacing: 6 * gallery.u
                                     Win98Text { width: 56 * gallery.u; y: 4 * gallery.u; text: "&Scheme:" }
-                                    Win98ComboBox { width: sheetCol.width - 62 * gallery.u; model: ["Windows Standard", "Dark grey"]; currentIndex: Win98Tokens.dark ? 1 : 0 }
+                                    Win98ComboBox { width: sheetCol.width - 62 * gallery.u; model: ["Windows Standard", "Dark grey"]; currentIndex: Kit.Win98Tokens.dark ? 1 : 0 }
                                 }
                                 Win98Text {
                                     width: parent.width
                                     wrap: true
                                     accessMarks: false
-                                    color: Win98Tokens.gray
+                                    color: Kit.Win98Tokens.gray
                                     text: "A theme sets the bars, the menus and the font. A scheme sets the colours. Each theme has its own schemes."
                                 }
                             }

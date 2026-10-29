@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 
 // Sound, read as the Win98 tray volume popup beside a property sheet: a
@@ -102,13 +103,13 @@ Win98Window {
                             width: 72 * root.u
                             height: 13 * root.u
                             Win98Text {
-                                x: Win98Tokens.half((72 * root.u - width) / 2, root.u)
+                                x: Kit.Win98Tokens.half((72 * root.u - width) / 2, root.u)
                                 text: !root.hasAudio || root.muted ? "--" : Math.round(root.volume * 100) + "%"
                                 accessMarks: false
                             }
                         }
                         Win98CheckBox {
-                            x: Win98Tokens.half((72 * root.u - width) / 2, root.u)
+                            x: Kit.Win98Tokens.half((72 * root.u - width) / 2, root.u)
                             text: "&Mute"
                             enabled: root.hasAudio
                             checked: root.muted

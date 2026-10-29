@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // One window on the Control Strip: a square Platinum module.
@@ -22,8 +24,8 @@ Item {
     property bool source: false
     property bool target: false
 
-    readonly property real hair: PlatinumTokens.hair
-    readonly property bool black: !PlatinumTokens.stripBevelled
+    readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
+    readonly property bool black: !Kit.PlatinumTokens.stripBevelled
     readonly property bool sunk: focused && !menuOpen && !source
 
     width: 30
@@ -33,19 +35,19 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: !tile.source
-        color: tile.menuOpen ? PlatinumTokens.highlight
-            : tile.sunk ? PlatinumTokens.tileSunk
-            : tile.shown && !tile.black ? PlatinumTokens.tile : "transparent"
+        color: tile.menuOpen ? Kit.PlatinumTokens.highlight
+            : tile.sunk ? Kit.PlatinumTokens.tileSunk
+            : tile.shown && !tile.black ? Kit.PlatinumTokens.tile : "transparent"
         border.width: tile.menuOpen || (tile.sunk && tile.black) ? tile.hair : 0
-        border.color: tile.menuOpen ? PlatinumTokens.stripEdge : PlatinumTokens.tileSunkEdge
+        border.color: tile.menuOpen ? Kit.PlatinumTokens.stripEdge : Kit.PlatinumTokens.tileSunkEdge
     }
 
     // The bevel: raised on the shown page, sunken for the focused window.
     Item {
         anchors.fill: parent
         visible: !tile.black && !tile.source && !tile.menuOpen && (tile.shown || tile.sunk)
-        readonly property color lightEdge: tile.sunk ? PlatinumTokens.bevelDark : PlatinumTokens.bevelLight
-        readonly property color darkEdge: tile.sunk ? PlatinumTokens.bevelLight : PlatinumTokens.bevelDark
+        readonly property color lightEdge: tile.sunk ? Kit.PlatinumTokens.bevelDark : Kit.PlatinumTokens.bevelLight
+        readonly property color darkEdge: tile.sunk ? Kit.PlatinumTokens.bevelLight : Kit.PlatinumTokens.bevelDark
         Rectangle { x: 0; y: 0; width: parent.width; height: tile.hair; color: parent.lightEdge }
         Rectangle { x: 0; y: 0; width: tile.hair; height: parent.height; color: parent.lightEdge }
         Rectangle { x: 0; y: parent.height - tile.hair; width: parent.width; height: tile.hair; color: parent.darkEdge }
@@ -57,12 +59,12 @@ Item {
     PlatinumAppIcon {
         id: image
         visible: !tile.source && tile.icon !== ""
-        x: PlatinumTokens.snap(3) + (tile.sunk ? 1 / PlatinumTokens.pixelRatio : 0)
-        y: PlatinumTokens.snap(5) + (tile.sunk ? 1 / PlatinumTokens.pixelRatio : 0)
+        x: Kit.PlatinumTokens.snapFor(QsWindow.window, 3) + (tile.sunk ? 1 / (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5) : 0)
+        y: Kit.PlatinumTokens.snapFor(QsWindow.window, 5) + (tile.sunk ? 1 / (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5) : 0)
         size: 20
         name: tile.icon
         inactive: !tile.shown
-        surface: PlatinumTokens.stripSurface
+        surface: Kit.PlatinumTokens.stripSurface
     }
 
     // Until the app id arrives, the title's first letter.
@@ -72,9 +74,9 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         text: tile.letter
-        color: tile.shown ? PlatinumTokens.barText : PlatinumTokens.barTextOff
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumSmall
+        color: tile.shown ? Kit.PlatinumTokens.barText : Kit.PlatinumTokens.barTextOff
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumSmall
     }
 
     PlatinumIcon {
@@ -84,7 +86,7 @@ Item {
         width: 7
         height: 5
         name: "pop"
-        color: tile.menuOpen ? PlatinumTokens.highlightText : tile.shown ? PlatinumTokens.barText : PlatinumTokens.barTextOff
+        color: tile.menuOpen ? Kit.PlatinumTokens.highlightText : tile.shown ? Kit.PlatinumTokens.barText : Kit.PlatinumTokens.barTextOff
     }
 
     // The dragged tile's slot: a dotted outline.
@@ -95,7 +97,7 @@ Item {
         onPaint: {
             const c = getContext("2d");
             c.reset();
-            c.strokeStyle = String(PlatinumTokens.barTextSecondary);
+            c.strokeStyle = String(Kit.PlatinumTokens.barTextSecondary);
             c.lineWidth = tile.hair;
             c.setLineDash([1.5, 1.5]);
             c.strokeRect(2 + tile.hair / 2, 2 + tile.hair / 2, width - 4 - tile.hair, height - 4 - tile.hair);
@@ -108,6 +110,6 @@ Item {
         visible: tile.target
         color: "transparent"
         border.width: 2 * tile.hair
-        border.color: PlatinumTokens.highlight
+        border.color: Kit.PlatinumTokens.highlight
     }
 }

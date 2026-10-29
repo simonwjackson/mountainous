@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -22,7 +23,7 @@ import QtQuick
 //                  only one item has it, open it (submenu) or trigger it
 //
 // Roll-out: the top level rolls `roll` ("up" for the Start menu), each
-// submenu rolls right, 120 ms, none under Win98Tokens.reducedMotion or
+// submenu rolls right, 120 ms, none under Kit.Win98Tokens.reducedMotion or
 // when animate is false. The cascade stays inside `bounds` (default: the
 // parent): a submenu that would leave on the right opens to the left.
 FocusScope {
@@ -45,7 +46,7 @@ FocusScope {
     signal triggered(var item, var indices)
     signal closed
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     // Where the menu stands in its bounds. mapToItem is not a binding, so
     // this reads the positions it depends on (the menu's and its parent's),
     // and a host that places the menu after creating it moves the cascade.
@@ -127,7 +128,7 @@ FocusScope {
             root.sync(false);
         } else if (text && text.length === 1 && /\S/.test(text)) {
             const ch = text.toLowerCase();
-            const hits = nav.filter(i => Win98Tokens.accessKey(items[i].text || "") === ch);
+            const hits = nav.filter(i => Kit.Win98Tokens.accessKey(items[i].text || "") === ch);
             if (!hits.length) return false;
             const next = hits.find(i => i > root.cursor);
             root.cursor = next !== undefined ? next : hits[0];

@@ -321,7 +321,7 @@ assert.doesNotMatch(win98Css, /font-size:(?! var\(--mtn-ui-size\))/, "win98: no 
 assert.equal(base["--mtn-bar"], "calc(16 * var(--mtn-u))");
 assert.match(win98.levels.scrollbars, /::-webkit-scrollbar \{ width: var\(--mtn-bar\); height: var\(--mtn-bar\);/);
 // The colours are Win98Tokens.qml's, both schemes.
-const qmlTokens = fs.readFileSync(path.join(root, "Win98Tokens.qml"), "utf8");
+const qmlTokens = fs.readFileSync(path.join(process.env.HENSOU_QML_ROOT, "Hensou/Win98Tokens.qml"), "utf8");
 const palette = (dark) => {
     const out = {};
     for (const m of qmlTokens.matchAll(/^\s*(\w+): (?:dark \? "(#[0-9a-f]{6})" : "(#[0-9a-f]{6})"|"(#[0-9a-f]{6})"),?$/gm)) out[m[1]] = m[4] || (dark ? m[2] : m[3]);

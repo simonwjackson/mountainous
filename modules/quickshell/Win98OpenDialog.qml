@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "find-model.js" as FindModel
@@ -33,7 +34,7 @@ FocusScope {
     // "go" with the address, "find" (Backspace on an empty field), "close".
     signal action(string kind, var arg)
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
 
     readonly property var caller: root.omni.caller || null
     // The caller's rectangle on this screen, in units, from Hyprland's last
@@ -159,12 +160,12 @@ FocusScope {
     implicitHeight: height
 
     // Units inside the body: 8 u of padding.
-    readonly property real bodyW: root.plan.width - 2 * Win98Tokens.frame - 16
-    readonly property real labelW: Win98Tokens.ceilU(Win98Tokens.textWidth("Open:", false, root.u), root.u) / root.u
+    readonly property real bodyW: root.plan.width - 2 * Kit.Win98Tokens.frame - 16
+    readonly property real labelW: Kit.Win98Tokens.ceilU(Kit.Win98Tokens.textWidth("Open:", false, root.u), root.u) / root.u
     readonly property real fieldX: root.plan.labelAbove ? 0 : root.labelW + 6
     readonly property real introH: root.plan.intro ? 34 + 8 : 0
     readonly property real fieldY: 8 + root.introH + (root.plan.labelAbove ? 15 : 0)
-    readonly property real destY: root.fieldY + Win98Tokens.fieldHeight + 6
+    readonly property real destY: root.fieldY + Kit.Win98Tokens.fieldHeight + 6
     readonly property real buttonsY: root.destY + 28 + 8
 
     Win98Window {
@@ -180,7 +181,7 @@ FocusScope {
         Item {
             id: body
             width: frame.bodyWidth
-            implicitHeight: (root.buttonsY + Win98Tokens.buttonHeight + 8) * root.u
+            implicitHeight: (root.buttonsY + Kit.Win98Tokens.buttonHeight + 8) * root.u
 
             // The globe and what the dialog is for.
             Item {
@@ -225,8 +226,8 @@ FocusScope {
                     Win98Bevel { anchors.fill: parent; variant: root.listOpen ? "flatPressed" : "button" }
                     Win98Icon {
                         name: "arrow-down"
-                        x: Win98Tokens.snap((dropButton.width - width) / 2, root.u) + (root.listOpen ? root.u : 0)
-                        y: Win98Tokens.snap((dropButton.height - height) / 2, root.u) + (root.listOpen ? root.u : 0)
+                        x: Kit.Win98Tokens.snap((dropButton.width - width) / 2, root.u) + (root.listOpen ? root.u : 0)
+                        y: Kit.Win98Tokens.snap((dropButton.height - height) / 2, root.u) + (root.listOpen ? root.u : 0)
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -286,19 +287,19 @@ FocusScope {
         width: drop.place.width * root.u
         height: drop.place.height * root.u
         readonly property bool scrolls: root.shownPages.length * 16 * root.u > pageList.height + 0.5
-        Rectangle { anchors.fill: parent; color: Win98Tokens.win; border.width: root.u; border.color: Win98Tokens.dk }
+        Rectangle { anchors.fill: parent; color: Kit.Win98Tokens.win; border.width: root.u; border.color: Kit.Win98Tokens.dk }
         Win98Text {
             visible: root.shownPages.length === 0
             x: 4 * root.u; y: 2 * root.u
             width: drop.width - 8 * root.u
             text: root.pages.length === 0 ? "No open pages" : "No open page matches"
             accessMarks: false
-            color: Win98Tokens.gray
+            color: Kit.Win98Tokens.gray
         }
         Flickable {
             id: pageList
             x: 2 * root.u; y: 2 * root.u
-            width: drop.width - 4 * root.u - (drop.scrolls ? Win98Tokens.scrollBar * root.u : 0)
+            width: drop.width - 4 * root.u - (drop.scrolls ? Kit.Win98Tokens.scrollBar * root.u : 0)
             height: drop.height - 4 * root.u
             contentHeight: root.shownPages.length * 16 * root.u
             interactive: false
@@ -314,21 +315,21 @@ FocusScope {
                         readonly property bool lit: index === root.pick
                         width: pageList.width
                         height: 16 * root.u
-                        Rectangle { visible: pageRow.lit; anchors.fill: parent; color: Win98Tokens.selection }
+                        Rectangle { visible: pageRow.lit; anchors.fill: parent; color: Kit.Win98Tokens.selection }
                         Win98Text {
                             id: urlText
                             x: 3 * root.u; y: root.u
                             width: Math.min(implicitWidth, pageRow.width * 0.6)
                             text: String(pageRow.modelData.url || "").replace(/^https:\/\//, "")
                             accessMarks: false
-                            color: pageRow.lit ? Win98Tokens.selectionText : Win98Tokens.winText
+                            color: pageRow.lit ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
                         }
                         Win98Text {
                             x: urlText.x + urlText.width + 6 * root.u; y: root.u
                             width: Math.max(0, pageRow.width - x - 3 * root.u)
                             text: pageRow.modelData.title || ""
                             accessMarks: false
-                            color: pageRow.lit ? Win98Tokens.selectionText : Win98Tokens.gray
+                            color: pageRow.lit ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.gray
                         }
                         MouseArea {
                             anchors.fill: parent

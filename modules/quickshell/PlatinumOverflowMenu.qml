@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 
 // The » menu: what a narrow bar could not hold, by name, with what each
@@ -23,10 +24,10 @@ PlatinumMenuFrame {
         let value = 0;
         for (const id of frame.entries)
             if (id !== "status" && id !== "retry" && id !== "dismiss")
-                value = Math.max(value, PlatinumMetrics.smallWidth(frame.bar.valueFor(id)));
-        const want = PlatinumTokens.menuTextLeft + frame.nameWidth + PlatinumTokens.menuGap + value
-            + (frame.anyKey ? PlatinumTokens.menuGap + frame.keyWidth : 0) + PlatinumTokens.menuRightInset + 2;
-        return Math.max(260, Math.min(400, PlatinumMetrics.even(want)));
+                value = Math.max(value, Kit.PlatinumMetrics.smallWidth(frame.bar.valueFor(id)));
+        const want = Kit.PlatinumTokens.menuTextLeft + frame.nameWidth + Kit.PlatinumTokens.menuGap + value
+            + (frame.anyKey ? Kit.PlatinumTokens.menuGap + frame.keyWidth : 0) + Kit.PlatinumTokens.menuRightInset + 2;
+        return Math.max(260, Math.min(400, Kit.PlatinumMetrics.even(want)));
     }
     showHeader: false
     scrolls: entriesList.scrolls
@@ -57,17 +58,17 @@ PlatinumMenuFrame {
     }
     // Each control's Super+O letter, on the right edge, as in the mock.
     readonly property var keys: ({ layout: "Y", bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" })
-    readonly property real keyWidth: PlatinumMetrics.smallWidest(["Y", "B", "W", "S", "L", "C", "D", "F", "R", "N"])
+    readonly property real keyWidth: Kit.PlatinumMetrics.smallWidest(["Y", "B", "W", "S", "L", "C", "D", "F", "R", "N"])
     readonly property bool anyKey: frame.entries.some(function (id) { return frame.keys[id] !== undefined; })
     // A value in a warning or danger tone keeps that tone here, as on the bar.
     function valueColor(id) {
         const t = typeof frame.bar.toneOf === "function" ? frame.bar.toneOf(id) : "normal";
-        return t === "danger" || t === "warning" ? PlatinumTokens.menuTone(t) : PlatinumTokens.menuTextSecondary;
+        return t === "danger" || t === "warning" ? Kit.PlatinumTokens.menuTone(t) : Kit.PlatinumTokens.menuTextSecondary;
     }
     readonly property real nameWidth: {
         let w = 0;
         for (const id of frame.entries)
-            if (id !== "status") w = Math.max(w, PlatinumMetrics.width(frame.labels[id] || id));
+            if (id !== "status") w = Math.max(w, Kit.PlatinumMetrics.width(frame.labels[id] || id));
         return w;
     }
 
@@ -98,7 +99,7 @@ PlatinumMenuFrame {
             id: row
             required property string modelData
             width: ListView.view.width
-            rowHeight: PlatinumTokens.menuLine + 4
+            rowHeight: Kit.PlatinumTokens.menuLine + 4
             rightInset: frame.rightInset
             readonly property bool action: modelData === "retry" || modelData === "dismiss"
             readonly property bool status: modelData === "status"
@@ -106,24 +107,24 @@ PlatinumMenuFrame {
             selected: (hover.hovered || ListView.isCurrentItem) && !readout
             mark: action || status ? "" : frame.bar.iconFor(modelData)
             name: status ? frame.bar.dictationText : frame.labels[modelData] || modelData
-            nameColor: status ? PlatinumTokens.menuDanger : PlatinumTokens.menuText
+            nameColor: status ? Kit.PlatinumTokens.menuDanger : Kit.PlatinumTokens.menuText
             onClicked: if (!readout) frame.run(modelData)
 
             HoverHandler { id: hover }
 
             Text {
-                readonly property real room: row.width - PlatinumTokens.menuTextLeft - row.rightInset
-                    - PlatinumTokens.menuGap - frame.nameWidth
-                    - (frame.anyKey && !row.status && !row.action ? frame.keyWidth + PlatinumTokens.menuGap : 0)
+                readonly property real room: row.width - Kit.PlatinumTokens.menuTextLeft - row.rightInset
+                    - Kit.PlatinumTokens.menuGap - frame.nameWidth
+                    - (frame.anyKey && !row.status && !row.action ? frame.keyWidth + Kit.PlatinumTokens.menuGap : 0)
                 width: Math.max(0, Math.min(implicitWidth, room))
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
                 text: row.action || row.status ? "" : frame.bar.valueFor(row.modelData)
                 color: row.selected ? row.fg2 : frame.valueColor(row.modelData)
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
 
             Text {
@@ -132,9 +133,9 @@ PlatinumMenuFrame {
                 horizontalAlignment: Text.AlignRight
                 text: frame.keys[row.modelData] || ""
                 color: row.fg2
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }

@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 import "beszel-model.js" as Model
 import "fleet-plan.js" as Plan
@@ -30,14 +32,14 @@ FocusScope {
     signal grown(real dx, real dy)
     signal growFinished
 
-    readonly property real h: PlatinumTokens.hair
+    readonly property real h: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property var fleet: panel.fleet
     readonly property bool ready: fleet.state === "ready" && fleet.hosts.length > 0
 
     // ---------------------------------------------------------- measures
-    FontMetrics { id: f14; font.family: PlatinumTokens.platinumFont; font.pixelSize: PlatinumTokens.platinumText; font.letterSpacing: PlatinumTokens.platinumTracking }
-    FontMetrics { id: f12; font.family: PlatinumTokens.platinumFont; font.pixelSize: PlatinumTokens.platinumSmall; font.letterSpacing: PlatinumTokens.platinumTracking }
-    FontMetrics { id: f11; font.family: PlatinumTokens.platinumFont; font.pixelSize: PlatinumTokens.platinumHint; font.letterSpacing: PlatinumTokens.platinumTracking }
+    FontMetrics { id: f14; font.family: Kit.PlatinumTokens.platinumFont; font.pixelSize: Kit.PlatinumTokens.platinumText; font.letterSpacing: Kit.PlatinumTokens.platinumTracking }
+    FontMetrics { id: f12; font.family: Kit.PlatinumTokens.platinumFont; font.pixelSize: Kit.PlatinumTokens.platinumSmall; font.letterSpacing: Kit.PlatinumTokens.platinumTracking }
+    FontMetrics { id: f11; font.family: Kit.PlatinumTokens.platinumFont; font.pixelSize: Kit.PlatinumTokens.platinumHint; font.letterSpacing: Kit.PlatinumTokens.platinumTracking }
     function w14(s) { return Math.ceil(f14.advanceWidth(s)); }
     function w12(s) { return Math.ceil(f12.advanceWidth(s)); }
     function w11(s) { return Math.ceil(f11.advanceWidth(s)); }
@@ -117,8 +119,8 @@ FocusScope {
         return Plan.fit(Model.summaryVariants(fleet, true, "Fleet: "), room, function (s) { return w12(s); });
     }
     function toneColor(tone) {
-        return tone === "danger" ? PlatinumTokens.menuDanger : tone === "warning" ? PlatinumTokens.menuWarning
-            : tone === "muted" || tone === "quiet" ? PlatinumTokens.menuTextSecondary : PlatinumTokens.menuText;
+        return tone === "danger" ? Kit.PlatinumTokens.menuDanger : tone === "warning" ? Kit.PlatinumTokens.menuWarning
+            : tone === "muted" || tone === "quiet" ? Kit.PlatinumTokens.menuTextSecondary : Kit.PlatinumTokens.menuText;
     }
     function clock(ms) {
         if (!(ms > 0)) return "--";
@@ -184,8 +186,8 @@ FocusScope {
         visible: !view.plan.infoInTitle
         width: parent.width
         height: view.infoH
-        Rectangle { width: parent.width; height: view.h; color: PlatinumTokens.bevelLight }
-        Rectangle { y: parent.height - view.h; width: parent.width; height: view.h; color: PlatinumTokens.bevelDark }
+        Rectangle { width: parent.width; height: view.h; color: Kit.PlatinumTokens.bevelLight }
+        Rectangle { y: parent.height - view.h; width: parent.width; height: view.h; color: Kit.PlatinumTokens.bevelDark }
 
         PlatinumStatusLight {
             id: infoLight
@@ -204,9 +206,9 @@ FocusScope {
             textFormat: Text.PlainText
             elide: Text.ElideRight
             color: view.toneColor(view.summaryTone)
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
         // The last refreshes failed: a sunken badge says how old the values are.
         PlatinumBevel {
@@ -214,7 +216,7 @@ FocusScope {
             visible: view.panel.stale && width > 24
             sunken: true
             edged: false
-            color: PlatinumTokens.well
+            color: Kit.PlatinumTokens.well
             anchors.right: parent.right
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
@@ -226,10 +228,10 @@ FocusScope {
                 width: Math.min(implicitWidth, parent.width - 12)
                 elide: Text.ElideRight
                 text: "Last update " + Model.ago(view.now - view.panel.sampledAt)
-                color: PlatinumTokens.menuText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumHint
-                font.letterSpacing: PlatinumTokens.platinumTracking
+                color: Kit.PlatinumTokens.menuText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumHint
+                font.letterSpacing: Kit.PlatinumTokens.platinumTracking
             }
         }
     }
@@ -240,7 +242,7 @@ FocusScope {
         y: view.infoH
         width: parent.width
         height: view.colsH + view.listH
-        Rectangle { width: parent.width; height: view.h; color: PlatinumTokens.menuEdge }
+        Rectangle { width: parent.width; height: view.h; color: Kit.PlatinumTokens.menuEdge }
         Rectangle { y: view.colsH; width: parent.width; height: view.listH; color: PlatinumGlanceTokens.listSurface }
 
         // Column headers: raised buttons; the sorted one sinks.
@@ -259,7 +261,7 @@ FocusScope {
                 height: Plan.C.COLH - view.h
                 edged: false
                 sunken: sorted || area.pressed
-                color: sorted || area.pressed ? PlatinumTokens.well : PlatinumTokens.menuSurface
+                color: sorted || area.pressed ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.menuSurface
                 default property alias extra: extraBox.data
                 Text {
                     visible: head.label !== ""
@@ -268,10 +270,10 @@ FocusScope {
                     anchors.verticalCenter: parent.verticalCenter
                     elide: Text.ElideRight
                     text: head.label
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 Item { id: extraBox; anchors.fill: parent }
                 MouseArea {
@@ -301,7 +303,7 @@ FocusScope {
             }
             Head { width: view.plan.sb; visible: view.plan.sb > 0 }
         }
-        Rectangle { y: view.colsH - view.h; width: parent.width; height: view.h; color: PlatinumTokens.menuEdge }
+        Rectangle { y: view.colsH - view.h; width: parent.width; height: view.h; color: Kit.PlatinumTokens.menuEdge }
 
         Flickable {
             id: list
@@ -377,10 +379,10 @@ FocusScope {
                     wrapMode: Text.Wrap
                     text: view.fleet.state === "unavailable" ? "Beszel is not reachable"
                         : view.fleet.state === "error" ? "Beszel answered with an error" : "Beszel lists no hosts"
-                    color: PlatinumTokens.menuText
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumText
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuText
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumText
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumBarberPole {
                     visible: view.fleet.state === "loading"
@@ -396,15 +398,15 @@ FocusScope {
                             : "This desktop has no Beszel token, so there is no fleet data.")
                         : view.fleet.state === "error" ? "The list_systems call returned an error instead of the fleet. The window tries again every minute."
                         : "Add a system in Beszel, and it appears here at its first report."
-                    color: PlatinumTokens.menuTextSecondary
-                    font.family: PlatinumTokens.platinumFont
-                    font.pixelSize: PlatinumTokens.platinumSmall
-                    font.letterSpacing: PlatinumTokens.platinumTracking
+                    color: Kit.PlatinumTokens.menuTextSecondary
+                    font.family: Kit.PlatinumTokens.platinumFont
+                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
+                    font.letterSpacing: Kit.PlatinumTokens.platinumTracking
                 }
                 PlatinumButton {
                     visible: (view.fleet.state === "unavailable" && view.panel.enabled) || view.fleet.state === "error"
                     text: view.panel.refreshing ? "Trying…" : "Try again"
-                    fixedWidth: PlatinumMetrics.buttonWidth(["Try again", "Trying…"])
+                    fixedWidth: Kit.PlatinumMetrics.buttonWidth(["Try again", "Trying…"])
                     enabled: !view.panel.refreshing
                     onClicked: view.panel.refresh()
                 }
@@ -426,7 +428,7 @@ FocusScope {
         y: body.y + body.height
         width: parent.width
         height: view.footH
-        Rectangle { width: parent.width; height: view.h; color: PlatinumTokens.menuEdge }
+        Rectangle { width: parent.width; height: view.h; color: Kit.PlatinumTokens.menuEdge }
         Text {
             x: 8
             y: view.h + (Plan.C.FOOT - height) / 2
@@ -437,10 +439,10 @@ FocusScope {
                 : view.ready || (view.fleet.state === "ready") ? "Updated " + view.clock(view.panel.sampledAt)
                 : view.fleet.state === "loading" ? ""
                 : "Tries again every minute"
-            color: PlatinumTokens.menuTextSecondary
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumHint
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: Kit.PlatinumTokens.menuTextSecondary
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumHint
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
         // The grow box: drag to resize the Fleet window.
         Item {
@@ -450,16 +452,16 @@ FocusScope {
             height: Plan.C.FOOT
             y: view.h
             anchors.right: parent.right
-            Rectangle { width: view.h; height: parent.height; color: PlatinumTokens.menuEdge }
+            Rectangle { width: view.h; height: parent.height; color: Kit.PlatinumTokens.menuEdge }
             Rectangle {
                 x: parent.width - 3 - width; y: parent.height - 3 - height
                 width: 7; height: 7; color: "transparent"
-                border.width: view.h; border.color: PlatinumTokens.menuTextSecondary
+                border.width: view.h; border.color: Kit.PlatinumTokens.menuTextSecondary
             }
             Rectangle {
                 x: parent.width - 6 - width; y: parent.height - 6 - height
-                width: 4; height: 4; color: PlatinumTokens.menuSurface
-                border.width: view.h; border.color: PlatinumTokens.menuTextSecondary
+                width: 4; height: 4; color: Kit.PlatinumTokens.menuSurface
+                border.width: view.h; border.color: Kit.PlatinumTokens.menuTextSecondary
             }
             MouseArea {
                 anchors.fill: parent

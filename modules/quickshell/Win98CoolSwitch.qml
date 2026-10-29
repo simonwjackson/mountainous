@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
@@ -49,7 +50,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Win98Tokens.unitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(win)
             readonly property real area: win.height - host.taskbar.barHeight
             readonly property var plan: TaskModel.coolPlan(host.items.length, host.current,
                 Math.floor(win.width / win.u), Math.floor(win.area / win.u))
@@ -69,8 +70,8 @@ Scope {
                 objectName: "coolSwitch"
                 width: win.plan.width * win.u
                 height: win.plan.height * win.u
-                x: Win98Tokens.half((win.width - width) / 2, win.u)
-                y: Math.max(2 * win.u, Win98Tokens.snap((win.area - height) / 2, win.u))
+                x: Kit.Win98Tokens.half((win.width - width) / 2, win.u)
+                y: Math.max(2 * win.u, Kit.Win98Tokens.snap((win.area - height) / 2, win.u))
 
                 Win98Bevel { anchors.fill: parent; variant: "window" }
 
@@ -95,20 +96,20 @@ Scope {
                                 width: 39 * win.u; height: 39 * win.u
                                 color: "transparent"
                                 border.width: 2 * win.u
-                                border.color: Win98Tokens.text
+                                border.color: Kit.Win98Tokens.text
                             }
                             Win98Icon {
                                 visible: cell.modelData.icon !== ""
                                 name: cell.modelData.icon
                                 size: 32
-                                x: Win98Tokens.snap((cell.width - width) / 2, win.u)
-                                y: Win98Tokens.snap((cell.height - height) / 2, win.u)
+                                x: Kit.Win98Tokens.snap((cell.width - width) / 2, win.u)
+                                y: Kit.Win98Tokens.snap((cell.height - height) / 2, win.u)
                             }
                             IconImage {
                                 visible: cell.modelData.icon === ""
                                 implicitSize: 32 * win.u
-                                x: Win98Tokens.snap((cell.width - width) / 2, win.u)
-                                y: Win98Tokens.snap((cell.height - height) / 2, win.u)
+                                x: Kit.Win98Tokens.snap((cell.width - width) / 2, win.u)
+                                y: Kit.Win98Tokens.snap((cell.height - height) / 2, win.u)
                                 source: {
                                     if (cell.modelData.icon !== "" || cell.modelData.appId === "") return "";
                                     const e = DesktopEntries.heuristicLookup(cell.modelData.appId);
@@ -127,7 +128,7 @@ Scope {
                     width: box.width - 16 * win.u
                     text: TaskModel.moreText(win.plan.above, win.plan.below)
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                 }
                 Item {
                     x: 8 * win.u
@@ -138,8 +139,8 @@ Scope {
                     Win98Text {
                         objectName: "coolSwitchTitle"
                         readonly property var it: host.items[host.current] || null
-                        x: Win98Tokens.half(Math.max(4 * win.u, (parent.width - width) / 2), win.u)
-                        y: Win98Tokens.snap((parent.height - height) / 2, win.u)
+                        x: Kit.Win98Tokens.half(Math.max(4 * win.u, (parent.width - width) / 2), win.u)
+                        y: Kit.Win98Tokens.snap((parent.height - height) / 2, win.u)
                         width: Math.min(implicitWidth, parent.width - 8 * win.u)
                         text: it ? it.title + (it.minimized ? " (minimized)" : "") : ""
                         accessMarks: false

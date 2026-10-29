@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Networking
 import QtQuick
@@ -13,7 +14,7 @@ PlatinumMenuFrame {
     detail: panel.statusText
     scrolls: networks.scrolls
 
-    readonly property real actionWidth: PlatinumMetrics.buttonWidth(["Connect", "Disconnect", "Set up", "Working"])
+    readonly property real actionWidth: Kit.PlatinumMetrics.buttonWidth(["Connect", "Disconnect", "Set up", "Working"])
     readonly property bool asking: panel.passwordNetwork !== null
 
     // Escape leaves the password field before it closes the menu.
@@ -136,7 +137,7 @@ PlatinumMenuFrame {
 
             Item {
                 width: 14
-                height: PlatinumTokens.menuButtonHeight
+                height: Kit.PlatinumTokens.menuButtonHeight
                 PlatinumIcon {
                     anchors.centerIn: parent
                     visible: networkRow.modelData.security !== WifiSecurityType.Open
@@ -148,8 +149,8 @@ PlatinumMenuFrame {
             }
 
             Item {
-                width: PlatinumTokens.menuButtonHeight
-                height: PlatinumTokens.menuButtonHeight
+                width: Kit.PlatinumTokens.menuButtonHeight
+                height: Kit.PlatinumTokens.menuButtonHeight
                 PlatinumButton {
                     anchors.fill: parent
                     visible: networkRow.modelData.known && !networkRow.modelData.stateChanging
@@ -171,13 +172,13 @@ PlatinumMenuFrame {
     Rectangle {
         visible: panel.failureMessage !== ""
         Layout.fillWidth: true
-        Layout.leftMargin: PlatinumTokens.menuTextLeft
+        Layout.leftMargin: Kit.PlatinumTokens.menuTextLeft
         Layout.rightMargin: frame.rightInset
         Layout.topMargin: 4
         implicitHeight: failureText.implicitHeight + 10
         color: "transparent"
-        border.width: PlatinumTokens.hair
-        border.color: PlatinumTokens.menuDanger
+        border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
+        border.color: Kit.PlatinumTokens.menuDanger
 
         Text {
             id: failureText
@@ -186,10 +187,10 @@ PlatinumMenuFrame {
             anchors.verticalCenter: parent.verticalCenter
             text: panel.failureMessage
             wrapMode: Text.Wrap
-            color: PlatinumTokens.menuDanger
-            font.family: PlatinumTokens.platinumFont
-            font.pixelSize: PlatinumTokens.platinumSmall
-            font.letterSpacing: PlatinumTokens.platinumTracking
+            color: Kit.PlatinumTokens.menuDanger
+            font.family: Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Kit.PlatinumTokens.platinumSmall
+            font.letterSpacing: Kit.PlatinumTokens.platinumTracking
         }
     }
 
@@ -202,13 +203,13 @@ PlatinumMenuFrame {
         implicitHeight: 30
 
         PlatinumBevel {
-            x: PlatinumTokens.menuTextLeft
+            x: Kit.PlatinumTokens.menuTextLeft
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - x - frame.rightInset - frame.actionWidth - PlatinumTokens.menuGap
+            width: parent.width - x - frame.rightInset - frame.actionWidth - Kit.PlatinumTokens.menuGap
             height: 24
             sunken: true
             edged: false
-            color: PlatinumTokens.well
+            color: Kit.PlatinumTokens.well
 
             Text {
                 anchors.left: parent.left
@@ -219,9 +220,9 @@ PlatinumMenuFrame {
                 visible: passwordInput.text === ""
                 text: panel.passwordNetwork ? "Password for " + panel.passwordNetwork.name : "Password"
                 elide: Text.ElideRight
-                color: PlatinumTokens.menuTextOff
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
+                color: Kit.PlatinumTokens.menuTextOff
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
             }
 
             TextInput {
@@ -231,11 +232,11 @@ PlatinumMenuFrame {
                 anchors.rightMargin: 8
                 verticalAlignment: TextInput.AlignVCenter
                 echoMode: TextInput.Password
-                color: PlatinumTokens.menuText
-                selectionColor: PlatinumTokens.highlight
-                selectedTextColor: PlatinumTokens.highlightText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumSmall
+                color: Kit.PlatinumTokens.menuText
+                selectionColor: Kit.PlatinumTokens.highlight
+                selectedTextColor: Kit.PlatinumTokens.highlightText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumSmall
                 Keys.onReturnPressed: frame.submit()
                 Keys.onEnterPressed: frame.submit()
             }
@@ -247,7 +248,7 @@ PlatinumMenuFrame {
             anchors.verticalCenter: parent.verticalCenter
             text: "Connect"
             isDefault: true
-            fixedWidth: frame.actionWidth - 4 * PlatinumTokens.hair
+            fixedWidth: frame.actionWidth - 4 * Kit.PlatinumTokens.hairFor(QsWindow.window)
             enabled: passwordInput.text.length > 0
             onClicked: frame.submit()
         }

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -23,7 +24,7 @@ Image {
     property real drawHeight: height
 
     readonly property real dpr: QsWindow.window && QsWindow.window.devicePixelRatio > 0
-        ? QsWindow.window.devicePixelRatio : PlatinumTokens.pixelRatio
+        ? QsWindow.window.devicePixelRatio : (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
     readonly property int pw: Math.max(1, Math.round(drawWidth * dpr))
     readonly property int ph: Math.max(1, Math.round(drawHeight * dpr))
     readonly property int period: 2 * Math.max(1, cell)

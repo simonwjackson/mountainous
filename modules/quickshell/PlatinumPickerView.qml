@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 import "themes/platinum/picker-plan.js" as PickerPlan
@@ -19,8 +20,8 @@ PanelWindow {
     color: "transparent"
     readonly property var plan: PickerPlan.plan(width, height)
     property var focusedControl: null
-    readonly property real labelLeft: win.plan.stackedOption ? PlatinumTokens.menuGutter : Math.min(PlatinumTokens.menuTextLeft, body.width / 3)
-    readonly property real rightInset: Math.min(PlatinumTokens.menuRightInset, body.width / 6)
+    readonly property real labelLeft: win.plan.stackedOption ? Kit.PlatinumTokens.menuGutter : Math.min(Kit.PlatinumTokens.menuTextLeft, body.width / 3)
+    readonly property real rightInset: Math.min(Kit.PlatinumTokens.menuRightInset, body.width / 6)
 
     // Queued JS calls outlive a destroyed picker; a guard inside the
     // callback is too late because Qt cannot enter its invalid context.
@@ -59,10 +60,10 @@ PanelWindow {
         id: panel
         objectName: "pickerPanel"
         x: Math.max(0, Math.min(24, Math.floor((parent.width - width) / 2)))
-        y: Math.max(0, Math.min(PlatinumTokens.barHeight + 22, Math.floor((parent.height - height) / 2)))
+        y: Math.max(0, Math.min(Kit.PlatinumTokens.barHeight + 22, Math.floor((parent.height - height) / 2)))
         width: win.plan.width
         height: win.plan.height
-        color: PlatinumTokens.menuSurface
+        color: Kit.PlatinumTokens.menuSurface
         MouseArea {
             anchors.fill: parent
         }
@@ -83,9 +84,9 @@ PanelWindow {
                 visible: win.plan.thumbnails
                 anchors.centerIn: parent
                 text: "Appearance"
-                color: PlatinumTokens.menuText
-                font.family: PlatinumTokens.platinumFont
-                font.pixelSize: PlatinumTokens.platinumText
+                color: Kit.PlatinumTokens.menuText
+                font.family: Kit.PlatinumTokens.platinumFont
+                font.pixelSize: Kit.PlatinumTokens.platinumText
             }
             TitleStripes {
                 visible: title.visible
@@ -123,12 +124,12 @@ PanelWindow {
             y: win.plan.padding + (header.visible ? header.height + win.plan.gap : 0) + (tabs.visible ? tabs.height + win.plan.gap : 0)
             width: header.width
             height: Math.max(1, panel.height - y - win.plan.padding)
-            readonly property real barWidth: Math.min(PlatinumTokens.menuScrollBar, Math.max(0, width - 1))
-            readonly property real inset: Math.min(PlatinumTokens.menuGutter, (width - barWidth) / 4, height / 6)
+            readonly property real barWidth: Math.min(Kit.PlatinumTokens.menuScrollBar, Math.max(0, width - 1))
+            readonly property real inset: Math.min(Kit.PlatinumTokens.menuGutter, (width - barWidth) / 4, height / 6)
             PlatinumBevel {
                 anchors.fill: parent
                 sunken: true
-                color: PlatinumTokens.well
+                color: Kit.PlatinumTokens.well
             }
 
             Flickable {
@@ -172,7 +173,7 @@ PanelWindow {
                                 required property int index
                                 readonly property bool selected: win.model.currentTheme === modelData.theme && win.model.currentMode === modelData.mode
                                 width: (body.width - (grid.columns - 1) * grid.spacing) / grid.columns
-                                height: Math.max(PlatinumTokens.menuRow, label.y + label.implicitHeight + win.plan.gap)
+                                height: Math.max(Kit.PlatinumTokens.menuRow, label.y + label.implicitHeight + win.plan.gap)
                                 activeFocusOnTab: true
                                 Component.onCompleted: if (index === 0)
                                     forceActiveFocus()
@@ -186,9 +187,9 @@ PanelWindow {
                                 Rectangle {
                                     anchors.fill: parent
                                     visible: !win.plan.thumbnails
-                                    color: choice.selected ? PlatinumTokens.highlight : "transparent"
-                                    border.width: choice.activeFocus ? PlatinumTokens.hair : 0
-                                    border.color: PlatinumTokens.highlightText
+                                    color: choice.selected ? Kit.PlatinumTokens.highlight : "transparent"
+                                    border.width: choice.activeFocus ? Kit.PlatinumTokens.hairFor(QsWindow.window) : 0
+                                    border.color: Kit.PlatinumTokens.highlightText
                                 }
                                 Rectangle {
                                     id: preview
@@ -198,9 +199,9 @@ PanelWindow {
                                     y: win.plan.gap
                                     width: Math.max(1, parent.width - 2 * win.plan.gap)
                                     height: visible ? Math.min(112, width * 0.625) : 0
-                                    color: PlatinumTokens.menuEdge
+                                    color: Kit.PlatinumTokens.menuEdge
                                     border.width: choice.selected || choice.activeFocus ? 3 : 1
-                                    border.color: choice.selected || choice.activeFocus ? PlatinumTokens.highlight : PlatinumTokens.menuEdge
+                                    border.color: choice.selected || choice.activeFocus ? Kit.PlatinumTokens.highlight : Kit.PlatinumTokens.menuEdge
                                     Image {
                                         anchors.fill: parent
                                         anchors.margins: 3
@@ -217,12 +218,12 @@ PanelWindow {
                                     text: choice.modelData.label + "\n" + choice.modelData.appearance
                                     horizontalAlignment: win.plan.thumbnails ? Text.AlignHCenter : Text.AlignLeft
                                     wrapMode: Text.Wrap
-                                    color: choice.selected ? PlatinumTokens.highlightText : PlatinumTokens.menuText
-                                    font.family: PlatinumTokens.platinumFont
-                                    font.pixelSize: PlatinumTokens.platinumSmall
+                                    color: choice.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
+                                    font.family: Kit.PlatinumTokens.platinumFont
+                                    font.pixelSize: Kit.PlatinumTokens.platinumSmall
                                     Rectangle {
                                         anchors.fill: parent
-                                        color: PlatinumTokens.highlight
+                                        color: Kit.PlatinumTokens.highlight
                                         z: -1
                                         visible: choice.selected && win.plan.thumbnails
                                     }
@@ -243,7 +244,7 @@ PanelWindow {
                         visible: !!ThemeCatalog.find(win.model.currentTheme) && ThemeCatalog.find(win.model.currentTheme).options.extraDark
                         enabled: win.model.currentMode === "dark" && !win.model.applying
                         width: body.width
-                        height: Math.max(PlatinumTokens.menuLine + 4, win.plan.stackedOption ? extraLabel.implicitHeight + extraMark.height + 3 * win.plan.gap : extraLabel.implicitHeight + 2 * win.plan.gap)
+                        height: Math.max(Kit.PlatinumTokens.menuLine + 4, win.plan.stackedOption ? extraLabel.implicitHeight + extraMark.height + 3 * win.plan.gap : extraLabel.implicitHeight + 2 * win.plan.gap)
                         activeFocusOnTab: enabled
                         function toggle() {
                             win.model.apply(win.model.currentTheme, win.model.currentMode, !win.model.extraDark);
@@ -256,13 +257,13 @@ PanelWindow {
                             anchors.fill: parent
                             visible: extra.activeFocus
                             color: "transparent"
-                            border.width: PlatinumTokens.hair
-                            border.color: PlatinumTokens.highlight
+                            border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
+                            border.color: Kit.PlatinumTokens.highlight
                         }
                         PlatinumCheckBox {
                             id: extraMark
                             objectName: "pickerOptionMark"
-                            x: win.plan.stackedOption ? win.labelLeft : Math.max(0, win.labelLeft - width - PlatinumTokens.menuGutter / 2)
+                            x: win.plan.stackedOption ? win.labelLeft : Math.max(0, win.labelLeft - width - Kit.PlatinumTokens.menuGutter / 2)
                             y: win.plan.stackedOption ? extraLabel.y + extraLabel.height + win.plan.gap : (extra.height - height) / 2
                             checked: win.model.extraDark
                         }
@@ -274,9 +275,9 @@ PanelWindow {
                             y: win.plan.stackedOption ? win.plan.gap : (extra.height - height) / 2
                             text: "Extra dark"
                             wrapMode: Text.Wrap
-                            color: extra.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                            font.family: PlatinumTokens.platinumFont
-                            font.pixelSize: PlatinumTokens.platinumText
+                            color: extra.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                            font.family: Kit.PlatinumTokens.platinumFont
+                            font.pixelSize: Kit.PlatinumTokens.platinumText
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -291,7 +292,7 @@ PanelWindow {
                         objectName: "pickerSounds"
                         enabled: !win.model.applying
                         width: body.width
-                        height: Math.max(PlatinumTokens.menuLine + 4, win.plan.stackedOption ? soundsLabel.implicitHeight + soundsMark.height + 3 * win.plan.gap : soundsLabel.implicitHeight + 2 * win.plan.gap)
+                        height: Math.max(Kit.PlatinumTokens.menuLine + 4, win.plan.stackedOption ? soundsLabel.implicitHeight + soundsMark.height + 3 * win.plan.gap : soundsLabel.implicitHeight + 2 * win.plan.gap)
                         activeFocusOnTab: enabled
                         function toggle() {
                             win.model.setSounds(!win.model.soundsEnabled);
@@ -304,13 +305,13 @@ PanelWindow {
                             anchors.fill: parent
                             visible: sounds.activeFocus
                             color: "transparent"
-                            border.width: PlatinumTokens.hair
-                            border.color: PlatinumTokens.highlight
+                            border.width: Kit.PlatinumTokens.hairFor(QsWindow.window)
+                            border.color: Kit.PlatinumTokens.highlight
                         }
                         PlatinumCheckBox {
                             id: soundsMark
                             objectName: "pickerSoundsMark"
-                            x: win.plan.stackedOption ? win.labelLeft : Math.max(0, win.labelLeft - width - PlatinumTokens.menuGutter / 2)
+                            x: win.plan.stackedOption ? win.labelLeft : Math.max(0, win.labelLeft - width - Kit.PlatinumTokens.menuGutter / 2)
                             y: win.plan.stackedOption ? soundsLabel.y + soundsLabel.height + win.plan.gap : (sounds.height - height) / 2
                             checked: win.model.soundsEnabled !== false
                         }
@@ -322,9 +323,9 @@ PanelWindow {
                             y: win.plan.stackedOption ? win.plan.gap : (sounds.height - height) / 2
                             text: "Interface sounds"
                             wrapMode: Text.Wrap
-                            color: sounds.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-                            font.family: PlatinumTokens.platinumFont
-                            font.pixelSize: PlatinumTokens.platinumText
+                            color: sounds.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+                            font.family: Kit.PlatinumTokens.platinumFont
+                            font.pixelSize: Kit.PlatinumTokens.platinumText
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -341,9 +342,9 @@ PanelWindow {
                         visible: win.model.error !== "" || win.model.choices.length === 0
                         text: win.model.error || "No desktop themes are installed."
                         wrapMode: Text.Wrap
-                        color: PlatinumTokens.menuDanger
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
+                        color: Kit.PlatinumTokens.menuDanger
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
                     }
                     Text {
                         x: win.labelLeft
@@ -351,9 +352,9 @@ PanelWindow {
                         visible: win.plan.showNote
                         text: "Click a theme to use it. Changes apply at once."
                         wrapMode: Text.Wrap
-                        color: PlatinumTokens.menuTextSecondary
-                        font.family: PlatinumTokens.platinumFont
-                        font.pixelSize: PlatinumTokens.platinumSmall
+                        color: Kit.PlatinumTokens.menuTextSecondary
+                        font.family: Kit.PlatinumTokens.platinumFont
+                        font.pixelSize: Kit.PlatinumTokens.platinumSmall
                     }
                 }
             }
@@ -394,12 +395,12 @@ PanelWindow {
                 Rectangle {
                     width: parent.width
                     height: 1
-                    color: PlatinumTokens.bevelLight
+                    color: Kit.PlatinumTokens.bevelLight
                     Rectangle {
                         y: 1
                         width: parent.width
                         height: 1
-                        color: PlatinumTokens.bevelDark
+                        color: Kit.PlatinumTokens.bevelDark
                     }
                 }
             }

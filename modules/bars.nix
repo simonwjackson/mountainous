@@ -5,6 +5,7 @@
 # Each screen gets its own pair, and each pair shows only that screen's
 # windows. See quickshell/lanes.js.
 # Meta+I toggles both for immersive browsing.
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, ... }:
@@ -93,6 +94,7 @@
           # Pin the platform plugin so Qt never guesses xcb before WAYLAND_DISPLAY
           # reaches the unit.
           QT_QPA_PLATFORM = "wayland";
+          QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml";
           OCI_EGRESS_ENABLED = "1";
         };
 

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -19,7 +20,7 @@ Item {
     signal opened(string id, real x, real w)
     signal closed
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
     implicitHeight: 18 * u
     implicitWidth: titles.width
 

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import QtQuick
 
@@ -11,7 +12,7 @@ FocusScope {
 
     property string iconName: ""
     property string text: ""
-    property color iconColor: Win98Tokens.text
+    property color iconColor: Kit.Win98Tokens.text
     property bool tray: false
     property bool checked: false        // latched
     property bool open: false           // its window or menu is open
@@ -22,14 +23,14 @@ FocusScope {
 
     signal clicked
 
-    readonly property real u: Win98Tokens.unitFor(QsWindow.window)
-    readonly property real side: (tray ? Win98Tokens.trayButton : Win98Tokens.toolButton) * u
+    readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
+    readonly property real side: (tray ? Kit.Win98Tokens.trayButton : Kit.Win98Tokens.toolButton) * u
     readonly property bool hovered: showHover || area.containsMouse
     readonly property bool pressing: showPressed || (area.pressed && area.containsMouse)
     readonly property bool sunken: pressing || open || checked
 
     implicitWidth: text === "" ? side
-        : Win98Tokens.ceilU((iconName !== "" ? 16 * u + 3 * u : 0) + Win98Tokens.textWidth(Win98Tokens.plainText(text), false, root.u), root.u) + 7 * u
+        : Kit.Win98Tokens.ceilU((iconName !== "" ? 16 * u + 3 * u : 0) + Kit.Win98Tokens.textWidth(Kit.Win98Tokens.plainText(text), false, root.u), root.u) + 7 * u
     implicitHeight: side
     activeFocusOnTab: enabled
 
@@ -42,7 +43,7 @@ FocusScope {
 
     Rectangle {
         anchors.fill: parent
-        color: Win98Tokens.face
+        color: Kit.Win98Tokens.face
     }
     Win98Dither {
         visible: root.checked && !root.open && !root.pressing
@@ -58,18 +59,18 @@ FocusScope {
 
     Row {
         spacing: 3 * root.u
-        x: (root.text === "" ? Win98Tokens.snap((root.width - width) / 2, root.u) : 3 * root.u) + (root.pressing ? root.u : 0)
-        y: Win98Tokens.snap((root.height - height) / 2, root.u) + (root.pressing ? root.u : 0)
+        x: (root.text === "" ? Kit.Win98Tokens.snap((root.width - width) / 2, root.u) : 3 * root.u) + (root.pressing ? root.u : 0)
+        y: Kit.Win98Tokens.snap((root.height - height) / 2, root.u) + (root.pressing ? root.u : 0)
 
         Win98Icon {
             visible: root.iconName !== ""
             name: root.iconName
-            color: root.enabled ? root.iconColor : Win98Tokens.gray
+            color: root.enabled ? root.iconColor : Kit.Win98Tokens.gray
             opacity: root.enabled ? 1 : 0.5
         }
         Win98Text {
             visible: root.text !== ""
-            y: Win98Tokens.snap((root.height - height) / 2, root.u) - parent.y + (root.pressing ? root.u : 0)
+            y: Kit.Win98Tokens.snap((root.height - height) / 2, root.u) - parent.y + (root.pressing ? root.u : 0)
             text: root.text
             disabledLook: !root.enabled
             width: Math.min(implicitWidth, root.width - 7 * root.u - (root.iconName !== "" ? 19 * root.u : 0))

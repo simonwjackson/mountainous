@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
@@ -34,10 +35,10 @@ Scope {
     required property var context
     required property var theme
     property bool active: false
-    readonly property string diagnostics: " bar=" + Win98Tokens.face + " edge=bottom"
+    readonly property string diagnostics: " bar=" + Kit.Win98Tokens.face + " edge=bottom"
 
     readonly property var shell: context.shell
-    readonly property real u: Win98Tokens.u
+    readonly property real u: Kit.Win98Tokens.unitFor(taskbar)
 
     //------------------------------------------------------------------
     // The Desktop contract (ThemeDesktop, the chrome IPC)

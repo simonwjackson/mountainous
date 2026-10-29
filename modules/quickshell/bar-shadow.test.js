@@ -12,7 +12,7 @@ const {spawn, spawnSync} = require("node:child_process");
 
 const source = process.argv[2] || __dirname;
 // The shadow, its tokens, and the shared Theme with the registry it reads.
-const files = ["PlatinumBarShadow.qml", "PlatinumTokens.qml", "Theme.qml", "ThemeCatalog.qml", "themes.json"];
+const files = ["PlatinumBarShadow.qml", "Theme.qml", "ThemeCatalog.qml", "themes.json"];
 const qs = process.env.QUICKSHELL || "qs";
 const labwc = process.env.LABWC || "labwc";
 const work = fs.mkdtempSync(path.join(os.tmpdir(), "bsh-"));
@@ -76,6 +76,7 @@ async function main() {
         // A stand-in for PlatinumTopBar: the shadow reads only its screen
         // and whether it is shown.
         fs.writeFileSync(path.join(config, "shell.qml"), `
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -99,7 +100,7 @@ ShellRoot {
                 anchors: [shadow.anchors.top, shadow.anchors.left, shadow.anchors.right, shadow.anchors.bottom],
                 mask: shadow.mask ? [shadow.mask.width, shadow.mask.height] : null,
                 namespace: shadow.WlrLayershell.namespace,
-                topColor: String(PlatinumTokens.barShadowTop)
+                topColor: String(Kit.PlatinumTokens.barShadowTop)
             });
         }
     }

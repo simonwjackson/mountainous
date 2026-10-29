@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -24,7 +25,7 @@ PanelWindow {
 
     required property var model
 
-    readonly property real u: Win98Tokens.unitFor(win)
+    readonly property real u: Kit.Win98Tokens.unitFor(win)
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
@@ -143,8 +144,8 @@ PanelWindow {
         id: dialog
         objectName: "pickerDialog"
         width: Math.min(410 * win.u, win.width - 4 * win.u)
-        x: Win98Tokens.half((win.width - width) / 2, win.u)
-        y: Math.max(0, Win98Tokens.snap(win.area / 2 - height / 2, win.u))
+        x: Kit.Win98Tokens.half((win.width - width) / 2, win.u)
+        y: Math.max(0, Kit.Win98Tokens.snap(win.area / 2 - height / 2, win.u))
         title: "Display Properties"
         showHelp: true
         margins: false
@@ -192,14 +193,14 @@ PanelWindow {
                                 height: win.previewHeight
                                 variant: "field"
                                 clip: true
-                                color: win.theme && win.theme.id === "win98" ? Win98Tokens.palette(win.scheme && win.scheme.mode === "dark").desktop : "#000000"
+                                color: win.theme && win.theme.id === "win98" ? Kit.Win98Tokens.palette(win.scheme && win.scheme.mode === "dark").desktop : "#000000"
 
                                 Win98Preview {
                                     visible: !!win.theme && win.theme.id === "win98"
                                     x: 2 * win.u; y: 2 * win.u
                                     width: parent.width - 4 * win.u
                                     height: parent.height - 4 * win.u
-                                    scheme: Win98Tokens.palette(!!win.scheme && win.scheme.mode === "dark")
+                                    scheme: Kit.Win98Tokens.palette(!!win.scheme && win.scheme.mode === "dark")
                                 }
                                 Image {
                                     visible: !!win.theme && win.theme.id !== "win98"
@@ -256,7 +257,7 @@ PanelWindow {
                                 width: parent.width
                                 wrap: true
                                 accessMarks: false
-                                color: win.model.error !== "" ? Win98Tokens.danger : Win98Tokens.gray
+                                color: win.model.error !== "" ? Kit.Win98Tokens.danger : Kit.Win98Tokens.gray
                                 text: win.model.error !== "" ? win.model.error
                                     : "A theme sets the bars, the menus and the font. A scheme sets the colours. Each theme has its own schemes."
                             }

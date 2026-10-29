@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "builder-gate.js" as Gate
 
@@ -79,7 +80,7 @@ Win98Window {
                     wrap: true
                     text: root.note
                     accessMarks: false
-                    color: Win98Tokens.warning
+                    color: Kit.Win98Tokens.warning
                 }
             }
         }
@@ -102,7 +103,7 @@ Win98Window {
                             required property var modelData
                             width: parent.width
                             height: 13 * root.u
-                            Win98Text { text: parent.modelData.label; accessMarks: false; color: Win98Tokens.gray }
+                            Win98Text { text: parent.modelData.label; accessMarks: false; color: Kit.Win98Tokens.gray }
                             Win98Text { x: parent.width - width; text: parent.modelData.value; accessMarks: false }
                         }
                     }
@@ -127,7 +128,7 @@ Win98Window {
                 showFocus: root.ring && root.panel.focusId === "toggle"
                 onToggled: root.panel.byKey("toggle")
             }
-            Win98Text { x: parent.width - width; text: root.toggle.key; accessMarks: false; color: Win98Tokens.gray }
+            Win98Text { x: parent.width - width; text: root.toggle.key; accessMarks: false; color: Kit.Win98Tokens.gray }
         }
         Repeater {
             model: root.others
@@ -149,7 +150,7 @@ Win98Window {
                     y: 4 * root.u
                     text: act.modelData.key
                     accessMarks: false
-                    color: Win98Tokens.gray
+                    color: Kit.Win98Tokens.gray
                 }
             }
         }
@@ -160,7 +161,7 @@ Win98Window {
             wrap: true
             text: root.why
             accessMarks: false
-            color: Win98Tokens.gray
+            color: Kit.Win98Tokens.gray
         }
 
         Item {
@@ -171,7 +172,7 @@ Win98Window {
                 anchors.fill: parent
                 color: "transparent"
                 border.width: root.u
-                border.color: Win98Tokens.warning
+                border.color: Kit.Win98Tokens.warning
             }
             Win98Text {
                 id: failText
@@ -180,7 +181,7 @@ Win98Window {
                 wrap: true
                 text: Gate.actionErrorText(root.gate.actionError)
                 accessMarks: false
-                color: Win98Tokens.warning
+                color: Kit.Win98Tokens.warning
             }
         }
 

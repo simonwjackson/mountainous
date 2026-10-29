@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 
+import Hensou as Kit
 import QtQuick
 import "themes/win98/tray-model.js" as Tray
 
@@ -37,7 +38,7 @@ Win98Window {
                     height: grid.height + 4 * root.u
                                 implicitHeight: height
                     variant: "field"
-                    color: Win98Tokens.win
+                    color: Kit.Win98Tokens.win
                     Grid {
                         id: grid
                         x: 2 * root.u; y: 2 * root.u
@@ -47,11 +48,11 @@ Win98Window {
                             Rectangle {
                                 required property string modelData
                                 width: 22 * root.u; height: 15 * root.u
-                                color: Win98Tokens.dark ? "#2a2a2a" : Win98Tokens.sh
+                                color: Kit.Win98Tokens.dark ? "#2a2a2a" : Kit.Win98Tokens.sh
                                 Win98Text {
-                                    x: Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
+                                    x: Kit.Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
                                     text: parent.modelData; accessMarks: false
-                                    color: Win98Tokens.dark ? "#dddddd" : Win98Tokens.hi
+                                    color: Kit.Win98Tokens.dark ? "#dddddd" : Kit.Win98Tokens.hi
                                 }
                             }
                         }
@@ -65,11 +66,11 @@ Win98Window {
                                 required property int index
                                 readonly property bool today: index + 1 === root.now.getDate()
                                 width: 22 * root.u; height: 15 * root.u
-                                color: today ? Win98Tokens.selection : "transparent"
+                                color: today ? Kit.Win98Tokens.selection : "transparent"
                                 Win98Text {
-                                    x: Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
+                                    x: Kit.Win98Tokens.half((parent.width - width) / 2, root.u); y: root.u
                                     text: String(parent.index + 1); accessMarks: false
-                                    color: parent.today ? Win98Tokens.selectionText : Win98Tokens.winText
+                                    color: parent.today ? Kit.Win98Tokens.selectionText : Kit.Win98Tokens.winText
                                 }
                             }
                         }

@@ -1,3 +1,4 @@
+import Hensou as Kit
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -49,7 +50,7 @@ PlatinumMenuFrame {
             mark: modelData.follows ? "dot" : "ring"
             markDim: !modelData.follows
             name: modelData.label
-            nameColor: modelData.follows ? PlatinumTokens.menuText : PlatinumTokens.menuTextSecondary
+            nameColor: modelData.follows ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextSecondary
             // Why a screen does not follow is the one fact a user
             // can act on.
             detail: modelData.follows ? modelData.detail : "Keeps its own brightness"

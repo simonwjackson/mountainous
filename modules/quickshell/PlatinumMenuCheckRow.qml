@@ -1,3 +1,4 @@
+import Hensou as Kit
 import QtQuick
 import QtQuick.Layouts
 
@@ -9,13 +10,13 @@ Item {
 
     property string text: ""
     property bool checked: false
-    property real rightInset: PlatinumTokens.menuRightInset
+    property real rightInset: Kit.PlatinumTokens.menuRightInset
     default property alias trailing: trailingRow.data
     signal toggled(bool checked)
 
     Layout.fillWidth: true
-    implicitHeight: PlatinumTokens.menuLine + 4
-    implicitWidth: PlatinumTokens.menuTextLeft + label.implicitWidth + rightInset
+    implicitHeight: Kit.PlatinumTokens.menuLine + 4
+    implicitWidth: Kit.PlatinumTokens.menuTextLeft + label.implicitWidth + rightInset
 
     MouseArea {
         x: 0
@@ -30,7 +31,7 @@ Item {
 
     PlatinumCheckBox {
         id: box
-        x: PlatinumTokens.menuGutter + (PlatinumTokens.menuGutterWidth - width) / 2
+        x: Kit.PlatinumTokens.menuGutter + (Kit.PlatinumTokens.menuGutterWidth - width) / 2
         anchors.verticalCenter: parent.verticalCenter
         checked: root.checked
         enabled: root.enabled
@@ -38,13 +39,13 @@ Item {
 
     Text {
         id: label
-        x: PlatinumTokens.menuTextLeft
+        x: Kit.PlatinumTokens.menuTextLeft
         anchors.verticalCenter: parent.verticalCenter
         text: root.text
-        color: root.enabled ? PlatinumTokens.menuText : PlatinumTokens.menuTextOff
-        font.family: PlatinumTokens.platinumFont
-        font.pixelSize: PlatinumTokens.platinumText
-        font.letterSpacing: PlatinumTokens.platinumTracking
+        color: root.enabled ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.menuTextOff
+        font.family: Kit.PlatinumTokens.platinumFont
+        font.pixelSize: Kit.PlatinumTokens.platinumText
+        font.letterSpacing: Kit.PlatinumTokens.platinumTracking
     }
 
     Row {
@@ -52,6 +53,6 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: root.rightInset
         anchors.verticalCenter: parent.verticalCenter
-        spacing: PlatinumTokens.menuGap
+        spacing: Kit.PlatinumTokens.menuGap
     }
 }

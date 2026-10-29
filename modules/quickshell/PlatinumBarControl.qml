@@ -1,3 +1,5 @@
+import Quickshell
+import Hensou as Kit
 import QtQuick
 
 // One title on the top bar: an icon and an optional readout, with three
@@ -19,7 +21,7 @@ Item {
     property real iconWidth: 16
     property real iconHeight: 16
     property bool slashed: false
-    property color tone: PlatinumTokens.barText
+    property color tone: Kit.PlatinumTokens.barText
     property real pad: 8
     property bool hoverable: true
     default property alias readout: readoutRow.data
@@ -34,19 +36,19 @@ Item {
     readonly property bool held: area.pressed
     readonly property bool inverted: open || (held && menu === "")
     // Colours for children: the readout follows the inversion.
-    readonly property color fg: inverted ? PlatinumTokens.highlightText : tone
-    readonly property color bg: inverted ? PlatinumTokens.highlight
-        : hovered && hoverable ? Qt.tint(PlatinumTokens.barSurface, PlatinumTokens.barHover) : PlatinumTokens.barSurface
+    readonly property color fg: inverted ? Kit.PlatinumTokens.highlightText : tone
+    readonly property color bg: inverted ? Kit.PlatinumTokens.highlight
+        : hovered && hoverable ? Qt.tint(Kit.PlatinumTokens.barSurface, Kit.PlatinumTokens.barHover) : Kit.PlatinumTokens.barSurface
 
-    implicitWidth: PlatinumMetrics.even(pad * 2 + content.implicitWidth)
-    implicitHeight: PlatinumTokens.barHeight - PlatinumTokens.hair
+    implicitWidth: Kit.PlatinumMetrics.even(pad * 2 + content.implicitWidth)
+    implicitHeight: Kit.PlatinumTokens.barHeight - Kit.PlatinumTokens.hairFor(QsWindow.window)
 
     // Hover lays a translucent tint over the bar instead of a flat fill,
     // so the bevel under the title still shows. Where the bar is flat it
     // gives the colour the old Qt.tint fill gave.
     Rectangle {
         anchors.fill: parent
-        color: root.inverted ? root.bg : root.hovered && root.hoverable ? PlatinumTokens.barHover : "transparent"
+        color: root.inverted ? root.bg : root.hovered && root.hoverable ? Kit.PlatinumTokens.barHover : "transparent"
     }
 
     Row {
