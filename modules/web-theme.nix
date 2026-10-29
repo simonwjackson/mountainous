@@ -19,7 +19,9 @@
             ];
           }
           ''
-            HENSOU_QML_ROOT=${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
+            HENSOU_QML_ROOT=${
+              inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+            }/lib/qt-6/qml node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
             export HOME="$TMPDIR" XDG_CACHE_HOME="$TMPDIR/cache"
             test "$(fc-scan --format '%{family[0]}' ${pkgs.public-sans}/share/fonts/truetype/PublicSans-Regular.ttf)" = "Public Sans"
             test "$(fc-scan --format '%{family[0]}' ${config.packages.w95fa-grid}/share/fonts/truetype/W95FAGrid.ttf)" = "W95FA Grid"

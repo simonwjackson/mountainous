@@ -46,7 +46,9 @@
             pkgs.dejavu_fonts
           ];
         };
-        QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+        QML2_IMPORT_PATH = "${
+          inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+        }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
         WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
         WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
       };
@@ -67,26 +69,24 @@
       # checks those from 360x640 up. find.sh checks the Find window
       # (Super+P) and IE's Open dialog (Ctrl+L): keys, pointer, the omni
       # claim, and their bounds from 1920x1200 down to 360x640.
-      checks.win98-desktop =
-        pkgs.runCommand "win98-desktop" sessionEnv
-          ''
-            export HOME=$TMPDIR
-            node ${quickshell}/themes/win98/taskbar-plan.test.js ${quickshell}/themes/win98/taskbar-plan.js
-            node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js
-            node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
-              ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
-            node ${quickshell}/themes/win98/find-plan.test.js ${quickshell}/themes/win98/find-plan.js
-            node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
-              ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
-            bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
-            export SESSION_SCHEMA=$TMPDIR/notification-schema.js
-            bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
-            bash ${quickshell}/theme-dev/win98/switch.sh ${quickshell} $TMPDIR/switch
-            bash ${quickshell}/theme-dev/win98/geometry.sh ${quickshell} $TMPDIR/geometry
-            bash ${quickshell}/theme-dev/win98/scales.sh ${quickshell} $TMPDIR/scales
-            bash ${quickshell}/theme-dev/win98/find.sh ${quickshell} $TMPDIR/find
-            touch $out
-          '';
+      checks.win98-desktop = pkgs.runCommand "win98-desktop" sessionEnv ''
+        export HOME=$TMPDIR
+        node ${quickshell}/themes/win98/taskbar-plan.test.js ${quickshell}/themes/win98/taskbar-plan.js
+        node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js
+        node ${quickshell}/themes/win98/fleet-plan.test.js ${quickshell}/themes/win98/fleet-plan.js ${quickshell}/glance-plan.js \
+          ${quickshell}/themes/win98/tab-strip.js ${quickshell}/themes/win98/host-icon.js
+        node ${quickshell}/themes/win98/find-plan.test.js ${quickshell}/themes/win98/find-plan.js
+        node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
+          ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
+        bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+        export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+        bash ${quickshell}/theme-dev/win98/behaviour.sh ${quickshell} $TMPDIR/behaviour
+        bash ${quickshell}/theme-dev/win98/switch.sh ${quickshell} $TMPDIR/switch
+        bash ${quickshell}/theme-dev/win98/geometry.sh ${quickshell} $TMPDIR/geometry
+        bash ${quickshell}/theme-dev/win98/scales.sh ${quickshell} $TMPDIR/scales
+        bash ${quickshell}/theme-dev/win98/find.sh ${quickshell} $TMPDIR/find
+        touch $out
+      '';
       # The Win98 Fleet window and glance space in the same session: fleet.sh
       # (behaviour, motion, every fixture, and the bounds from 360x640 to the
       # 2560x1600 tablet). Its own attribute, so each build stays short.
@@ -157,7 +157,9 @@
               # access.sh reads the gallery's JSON.
               pkgs.python3
             ];
-            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
+            QML2_IMPORT_PATH = "${
+              inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+            }/lib/qt-6/qml";
             QMLLINT = "${pkgs.qt6.qtdeclarative}/bin/qmllint";
             QML_PATHS = qmlPaths;
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";

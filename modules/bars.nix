@@ -94,7 +94,9 @@
           # Pin the platform plugin so Qt never guesses xcb before WAYLAND_DISPLAY
           # reaches the unit.
           QT_QPA_PLATFORM = "wayland";
-          QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+          QML2_IMPORT_PATH = "${
+            inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+          }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
           OCI_EGRESS_ENABLED = "1";
         };
 
