@@ -101,6 +101,20 @@ The owner keeps all three stacks open: A (Rust service + Quickshell window), B (
 - A cxx-qt spike (`/tmp/cxxqt-spike/`).
 - A source-based review of Quickshell's limits for apps: windows, menus, text and IME, clipboard and drag and drop, accessibility, lists, D-Bus and portals, hot reload, stability.
 
+### Benchmark results (2026-10-28, `/tmp/stack-bench/`, loaded machine: read as relative)
+
+| Median | A: Quickshell window | B: cxx-qt | C: gtk4-rs |
+|---|---|---|---|
+| Cold start to rows (ms) | 995 | 1311 | 2992 |
+| Memory, PSS (MiB) | 144 | 128 | 160 |
+| Scroll p50 / p95 / p99 (ms) | 16.1 / 18.0 / 24.1 | 16.1 / 18.1 / 23.4 | 16.8 / 31.7 / 145 |
+| Dropped frames (of about 610) | 8 | 7 | 130 |
+| Theme switch (ms) | 44 | 14 | 198 |
+| Row update p95 (ms) | 4.1 | 6.5 | 103 |
+| Idle CPU | 0 % | 0 % | 0 % |
+
+A and B draw identical pixels (differences of 1/255 on glyph edges). C gets the colours, font and selection right, but rows are 36 px against 24, columns use one font size, headers look disabled, and the scroll bar differs. C's cold start is mostly Vulkan start-up (0.38 s with `GSK_RENDERER=gl`, one probe). A spends 0.5–1.2 s loading the whole shell folder. B needs the shell's kit made Quickshell-free: tokens as `QtObject`, theme file watching moved out of `Theme.qml`, icons read without `FileView`, a per-window replacement for `QsWindow.window` in 36 files (the spike's `Screen` swap is wrong at scale 1.5), and a new menu host, because the shell's menus are layer-shell `PanelWindow`s, not `PopupWindow`s (2–3 days, estimate). cxx-qt's first build took 941 s; it needs Qt merged into one prefix. Evidence: `results-{A,B,C}.md`, `/tmp/cxxqt-spike/kit-edits.diff`.
+
 ### Quickshell as an app platform: review (2026-10-28)
 
 Upstream says Quickshell targets shell parts (bars, lock screens, widgets), not application windows, and promises no API stability before 1.0. Findings, with my checks:
