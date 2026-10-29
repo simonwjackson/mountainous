@@ -37,6 +37,7 @@ function snapshot() {
     try {
         const value = JSON.parse(r.stdout);
         assert.equal(value.theme, value.sharedName, 'host forwards the one Hensou Theme');
+        assert.equal(value.mode, value.sharedMode, 'palette and host share the same mode');
         assert.equal(value.hostWatcher, true, 'shell Theme is the persistence/sound adapter');
         return value;
     } catch(error) {
@@ -111,6 +112,9 @@ ShellRoot {
         }
         function snapshot(): string { return JSON.stringify({
             sharedName: Kit.Theme.name,
+            mode: Theme.mode, sharedMode: Kit.Theme.mode,
+            extra: Theme.extraState, sounds: Theme.soundsEnabled,
+            palette: String(Kit.PlatinumTokens.menuSurface),
             hostWatcher: Theme.namePath !== undefined && Theme.soundsEnabled !== undefined
                 && Theme.chromeStatus !== undefined && Theme.choose !== undefined,
             theme: Theme.name, current: loader.currentName, ready: !!loader.desktop,
@@ -127,6 +131,35 @@ ShellRoot {
         await until(()=>fs.existsSync(path.join(runtime,'wayland-0')),'Wayland socket');
         shell=start(qs,['-p',config]);
         await until(()=>snapshot().active,'initial Desktop');
+        // Missing startup files retain the original dark/off/on defaults.
+        assert.equal(snapshot().mode, 'dark');
+        assert.equal(snapshot().extra, 'off');
+        assert.equal(snapshot().sounds, true);
+        function replaceState(name, value) {
+            const target = path.join(state, name);
+            const temporary = target + '.probe-' + process.pid;
+            fs.writeFileSync(temporary, value + '\n');
+            fs.renameSync(temporary, target);
+        }
+        replaceState('theme', 'light');
+        await until(()=>snapshot().mode === 'light' && snapshot().palette === '#dddddd', 'shared light palette');
+        replaceState('theme', 'transient-invalid');
+        await wait(100);
+        assert.equal(snapshot().mode, 'light', 'malformed mode retains the last usable palette');
+        fs.unlinkSync(path.join(state, 'theme'));
+        await wait(100);
+        assert.equal(snapshot().mode, 'light', 'missing mode during a live session retains the palette');
+        replaceState('theme', 'dark');
+        await until(()=>snapshot().mode === 'dark' && snapshot().palette === '#3a3a3a', 'shared dark palette');
+        replaceState('theme-extra', 'on');
+        await until(()=>snapshot().extra === 'on', 'stored extra dark');
+        replaceState('theme-extra', 'invalid');
+        await until(()=>snapshot().extra === 'off', 'invalid extra dark falls back off');
+        replaceState('theme-sounds', 'off');
+        await until(()=>snapshot().sounds === false, 'host sounds off');
+        fs.unlinkSync(path.join(state, 'theme-sounds'));
+        await until(()=>snapshot().sounds === true, 'missing sounds falls back on');
+        console.log('HENSOU_HOST_STATE_PASSED: shared identity, defaults, valid/invalid/missing and atomic replacement');
         const refused = spawnSync(desktopTheme, ['set', 'win98'], {env, encoding:'utf8', timeout:3000});
         assert.equal(refused.status, 1, 'ordinary changes must report the disconnected bus: ' + refused.stderr);
         assert.equal(fs.readFileSync(path.join(state,'theme-name'),'utf8').trim(),'platinum');
