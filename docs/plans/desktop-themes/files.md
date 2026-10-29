@@ -145,6 +145,17 @@ None in the design interview (2026-10-28). Implementation unknowns: a menu host 
 
 The owner may want some apps on Android too, from the same Rust code, starting with a Rust client for Forgerie (today a browser app). Dioxus is the candidate he named. This may reopen decision 38 for apps that must run on a phone. Research on Dioxus, cxx-qt, Slint and Tauri on Android is running. Step 1 waits until this settles, because it decides what Hotaka's drawing is written in.
 
+Research result (2026-10-28):
+
+| Stack | Linux desktop | Android | Nix toolchain | Theme kit |
+|---|---|---|---|---|
+| cxx-qt 0.10 | Qt Quick (chosen, decision 38) | Not tested or supported by KDAB | No Qt 6 for Android in nixpkgs; needs an FHS environment or a source build | Reuses the QML kit (after the Quickshell-free refactor) |
+| Dioxus 0.7 | WebKitGTK webview; native Blitz renderer is beta | Android WebView, experimental; no notification, background, file-picker or back-button APIs without Kotlin/JNI | `androidenv` + Gradle | Port to CSS |
+| Tauri 2 | WebKitGTK webview | Stable, with official plugins (notifications, files, deep links, back button) | `androidenv` + Gradle | Port to CSS |
+| Slint 1.18 | Native (Skia/FemtoVG) | Supported since 1.5 | `androidenv` + `cargo-apk` | Redraw in `.slint`; has physical-pixel units (`phx`) for exact bevels |
+
+My checks: the QML kit already snaps bevels to device pixels at 1.5 (the shell does it today), so the research's "QML needs pixelAligned or 9-patches" does not apply. "100% reuse" for cxx-qt is too strong: it reuses the kit after the Quickshell-free refactor. The CSS route is not new ground: the mocks and `themes/*/web.css` already draw both themes in CSS, but not yet at the shell's fidelity. Webview performance on the 10,000-row workload is not measured.
+
 ## Order of work
 
 1. Hotaka: create the repository; move the shared QML out of the shell, Quickshell-free; move Pyxamp's library clients into crates; the shell imports Hotaka.
