@@ -143,6 +143,8 @@ None in the design interview (2026-10-28). Implementation unknowns: a menu host 
 
 ### New requirement under review (2026-10-28): Android
 
+**Dropped later the same day: no Android builds.** The stack choice is desktop-only again, between B (cxx-qt) and E (Slint). Kept below for the record.
+
 The owner may want some apps on Android too, from the same Rust code, starting with a Rust client for Forgerie (today a browser app). Dioxus is the candidate he named. This may reopen decision 38 for apps that must run on a phone. Research on Dioxus, cxx-qt, Slint and Tauri on Android is running. Step 1 waits until this settles, because it decides what Hotaka's drawing is written in.
 
 Research result (2026-10-28):
