@@ -10,7 +10,7 @@
     let
       quickshell = ./quickshell;
       qmlPaths = builtins.concatStringsSep ":" [
-        "${inputs.hensou}/kit/qml"
+        "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml"
         "${pkgs.quickshell}/lib/qt-6/qml"
         "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
         "${pkgs.qt6.qtbase}/lib/qt-6/qml"
@@ -46,7 +46,7 @@
             pkgs.dejavu_fonts
           ];
         };
-        QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+        QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
         WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
         WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
       };
@@ -157,7 +157,7 @@
               # access.sh reads the gallery's JSON.
               pkgs.python3
             ];
-            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml";
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
             QMLLINT = "${pkgs.qt6.qtdeclarative}/bin/qmllint";
             QML_PATHS = qmlPaths;
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";

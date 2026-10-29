@@ -10,7 +10,7 @@
     # Shared plain Qt Quick drawing. The shell owns persistence and surfaces.
     hensou = {
       url = "git+ssh://git@github.com/hensou-desktop/hensou?ref=main";
-      flake = false;
+      # Keep the kit's tested Qt/font nixpkgs pin, independently of fleet hosts.
     };
 
     # Private source: use SSH, not the token-based GitHub flake fetcher.

@@ -65,8 +65,8 @@
             ];
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
-            HENSOU_QML_ROOT = "${inputs.hensou}/kit/qml";
-            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+            HENSOU_QML_ROOT = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
             FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
             QML = "${pkgs.qt6.qtdeclarative}/bin/qml";
             QML_IMPORT_PATH = "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml";
@@ -125,10 +125,10 @@
               pkgs.labwc
               pkgs.systemd
             ];
-            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml";
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
             QUICKSHELL = "${quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
-            HENSOU_QML_ROOT = "${inputs.hensou}/kit/qml";
+            HENSOU_QML_ROOT = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
             DBUS_DAEMON = "${pkgs.dbus}/bin/dbus-daemon";
             DBUS_SESSION_CONF = "${pkgs.dbus}/share/dbus-1/session.conf";
             MPV = lib.getExe pkgs.mpv;
@@ -151,10 +151,10 @@
               pkgs.quickshell
               pkgs.labwc
             ];
-            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml";
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
-            HENSOU_QML_ROOT = "${inputs.hensou}/kit/qml";
+            HENSOU_QML_ROOT = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
           }
           ''
             node ${./quickshell/bar-shadow.test.js} ${./quickshell}
@@ -170,11 +170,11 @@
               pkgs.labwc
               pkgs.bash
             ];
-            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
             FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
             LABWC = "${pkgs.labwc}/bin/labwc";
-            HENSOU_QML_ROOT = "${inputs.hensou}/kit/qml";
+            HENSOU_QML_ROOT = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
           }
           ''
             node ${./quickshell/chrome-open.test.js} ${./quickshell}
@@ -194,7 +194,7 @@
         assert !(builtins.hasAttr (prefix + "PlatinumTokens.qml") files);
         assert !(builtins.hasAttr (prefix + "Win98Tokens.qml") files);
         assert desktop.systemd.user.services.quickshell.environment.QML2_IMPORT_PATH
-          == "${inputs.hensou}/kit/qml";
+          == "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
         assert noDevelopment;
         assert builtins.hasAttr (prefix + "PlatinumDesktop.qml") files;
         assert builtins.hasAttr (prefix + "themes/platinum/previews/light.png") files;

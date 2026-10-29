@@ -26,52 +26,11 @@ let
         mit
       ];
     };
-  chicagoflf =
-    pkgs:
-    pkgs.stdenvNoCC.mkDerivation {
-      pname = "chicagoflf";
-      version = "2.1";
-      src = inputs.chicagoflf-src;
-      dontBuild = true;
-      installPhase = ''
-        runHook preInstall
-        install -Dm644 ChicagoFLF.ttf "$out/share/fonts/truetype/ChicagoFLF.ttf"
-        install -Dm644 README.ChicagoFLF "$out/share/doc/chicagoflf/README.ChicagoFLF"
-        runHook postInstall
-      '';
-      meta = {
-        description = "ChicagoFLF classic Macintosh outline font";
-        homepage = "https://fontlibrary.org/en/font/chicagoflf";
-        # The designer's public-domain statement ships in README.ChicagoFLF.
-        license = pkgs.lib.licenses.publicDomain;
-        platforms = pkgs.lib.platforms.all;
-      };
-    };
-  w95fa-grid =
-    pkgs:
-    pkgs.stdenvNoCC.mkDerivation {
-      pname = "w95fa-grid";
-      version = "1.002-grid1";
-      src = inputs.w95fa-src;
-      nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.fonttools ])) ];
-      buildPhase = ''
-        runHook preBuild
-        python3 ${../scripts/w95fa-grid.py} W95FA/W95FA.otf W95FAGrid.ttf
-        runHook postBuild
-      '';
-      installPhase = ''
-        runHook preInstall
-        install -Dm644 W95FAGrid.ttf "$out/share/fonts/truetype/W95FAGrid.ttf"
-        install -Dm644 W95FA/OFL.txt "$out/share/licenses/w95fa-grid/OFL.txt"
-        runHook postInstall
-      '';
-      meta = {
-        description = "W95FA Grid pixel-aligned Windows 95/98 UI font";
-        homepage = "https://fontsarena.com/w95fa/";
-        license = pkgs.lib.licenses.ofl;
-        platforms = pkgs.lib.platforms.all;
-      };
-    };
+  # One font implementation for the shell and standalone Hensou applications.
+  # Keep Hensou's tested nixpkgs pin; do not rebuild these with fleet overrides.
+  chicagoflf = pkgs: inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.chicagoflf;
+  w95fa-grid = pkgs: inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.w95fa-grid;
+
 in
 {
   perSystem =

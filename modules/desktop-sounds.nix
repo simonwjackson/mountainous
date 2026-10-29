@@ -27,7 +27,7 @@
               config.packages.w95fa-grid
             ];
           };
-          QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+          QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
           QML = "${pkgs.qt6.qtdeclarative}/bin/qml";
           QML_IMPORT_PATH = "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
         }

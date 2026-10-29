@@ -166,7 +166,7 @@ Every theme must open the picker from all of: its own menu (Platinum clock menu,
 
 ## Fonts
 
-ChicagoFLF and W95FA Grid are installed on every desktop host (`modules/fonts.nix`, merged from `win98-font`), so a switch never waits for a font. W95FA comes from the `w95fa-src` flake input (`flake = false`); `scripts/w95fa-grid.py` snaps it to its pixel grid as "W95FA Grid", and `checks.w95fa-grid` verifies the family name, the grid and the unchanged OFL text (its template copyright line is recorded in the input's comment). The Win98 Desktop names the packaged family; only the development gallery uses a FontLoader.
+ChicagoFLF and W95FA Grid are installed on every desktop host (`modules/fonts.nix`, merged from `win98-font`), so a switch never waits for a font. Hensou now packages ChicagoFLF and W95FA Grid for both the shell and standalone applications. Its authoritative W95FA transform snaps the original to its pixel grid as "W95FA Grid". Mountainous preserves `packages.chicagoflf`, `packages.w95fa-grid` and their checks; `checks.w95fa-grid` verifies the family name, grid and unchanged OFL text against the existing `w95fa-src` input. Terminal fonts remain Mountainous-owned. The Win98 Desktop names the packaged family; only the development gallery uses a FontLoader.
 
 ## Checks
 
@@ -311,7 +311,7 @@ Simon can pick "Windows 98" in either picker (or run `desktop-theme set win98`).
 | Part | Files |
 |---|---|
 | Control library (merged from `c-341adb…`, moved flat) | `Win98*.qml` controls; icons in `themes/win98/icons/`; gallery and scripts in `themes/win98/dev/` (not delivered) |
-| Font (merged from `win98-font`) | `modules/fonts.nix` `w95fa-grid`, `scripts/w95fa-grid.py`, `tests/w95fa-grid.py` |
+| Font (merged from `win98-font`) | `modules/fonts.nix` Hensou font outputs, `tests/w95fa-grid.py` |
 | Desktop | `Win98Desktop.qml` (contract, selection, tray data, Start model), `Win98Taskbar.qml`, `Win98MenuHost.qml` (Start, chevron menus, tray windows, Log Off), `Win98TipWindow.qml` |
 | Tray windows | `Win98SoundWindow`, `Win98BluetoothWindow`, `Win98WifiWindow`, `Win98BrightnessWindow`, `Win98OciWindow`, `Win98StorageWindow`, `Win98BuilderWindow`, `Win98NotificationWindow`, `Win98DictationWindow`, `Win98ClockWindow`, `Win98LogOffDialog` |
 | Picker view | `Win98PickerView.qml` (Display Properties), `Win98Preview.qml` (a scheme drawn in its own palette) |
