@@ -1,6 +1,6 @@
 # Owner apps: Rust and Qt (cxx-qt) on a Quickshell-free theme kit
 
-Status: accepted 2026-10-28. Applies to Simon's own themed apps: Files first, then Pyxamp, settings and control panels, media players and remotes, chat and mail, fleet tools. Third-party apps keep the native GTK, Qt and web themes.
+Status: reopened 2026-10-28 (accepted earlier the same day). The owner wants one stack for every app, and one app (the Forgerie client) must also run on Android, where cxx-qt has no supported path under Nix. See `docs/plans/desktop-themes/files.md`, "New requirement under review: Android". Applies to Simon's own themed apps: Files first, then Pyxamp, settings and control panels, media players and remotes, chat and mail, fleet tools. Third-party apps keep the native GTK, Qt and web themes.
 
 Each app is one Rust process with a Qt Quick UI through cxx-qt. Its QML draws with the same Platinum and Windows 98 kit that the Quickshell shell uses, so an app matches the shell pixel for pixel and follows the live theme switch. The kit has no Quickshell imports. Each host feeds it the theme state: a Rust watcher in an app, a `FileView` feeder in the shell.
 

@@ -154,6 +154,8 @@ Research result (2026-10-28):
 | Tauri 2 | WebKitGTK webview | Stable, with official plugins (notifications, files, deep links, back button) | `androidenv` + Gradle | Port to CSS |
 | Slint 1.18 | Native (Skia/FemtoVG) | Supported since 1.5 | `androidenv` + `cargo-apk` | Redraw in `.slint`; has physical-pixel units (`phx`) for exact bevels |
 
+Owner's answers (2026-10-28): on the phone a kit app has a **plain phone-native look**; the retro themes are desktop only. Only the **Forgerie client** needs a phone version. **One stack for every app**, even if desktop fidelity or speed drops a little. Consequence: cxx-qt cannot be that stack (no Android path under Nix), so **decision 38 is reopened**. The candidates are Tauri 2 or Dioxus (webview, kit in CSS) and Slint (native, kit redrawn). Either way the shell keeps its QML, so each theme exists twice (QML for the shell, CSS or Slint for apps) and the parity rule must compare them. A benchmark of a webview (D) and Slint (E) on the same workload is running.
+
 My checks: the QML kit already snaps bevels to device pixels at 1.5 (the shell does it today), so the research's "QML needs pixelAligned or 9-patches" does not apply. "100% reuse" for cxx-qt is too strong: it reuses the kit after the Quickshell-free refactor. The CSS route is not new ground: the mocks and `themes/*/web.css` already draw both themes in CSS, but not yet at the shell's fidelity. Webview performance on the 10,000-row workload is not measured.
 
 ## Order of work
