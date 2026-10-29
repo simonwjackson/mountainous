@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import QtQuick
 import "themes/win98/tray-model.js" as Tray
 import "themes/win98/taskbar-plan.js" as Plan
+import "themes/win98/session-model.js" as Session
 
 // The one surface of a screen that shows whichever Win98 menu or window is
 // open: the Start menu, a tray window, a chevron menu, or the Log Off
@@ -92,7 +93,7 @@ Scope {
                 start: startMenu, tasks: tasksMenu, more: moreMenu, logoff: logoffDialog,
                 glance: glanceMenu, fleetmenu: fleetMenu,
                 winmenu: windowMenu, tbmenu: taskbarMenu, sysprops: systemWindow,
-                bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
+                layout: layoutWindow, bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
                 disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow,
                 find: host.desktop.omniClaimed ? findWindow : null, address: host.desktop.omniClaimed ? openDialog : null
             })
@@ -332,6 +333,10 @@ Scope {
                     availableHeight: win.barTop
                     desktop: host.desktop
                 }
+            }
+            Component {
+                id: layoutWindow
+                Win98LayoutWindow { width: win.widthFor(Session.LAYOUT.width); availableHeight: win.barTop; layout: host.desktop.layout }
             }
             Component { id: btWindow; Win98BluetoothWindow { width: win.widthFor(340); availableHeight: win.barTop; panel: host.desktop.context.bluetooth } }
             Component { id: wifiWindow; Win98WifiWindow { width: win.widthFor(340); availableHeight: win.barTop; panel: host.desktop.context.wifi } }

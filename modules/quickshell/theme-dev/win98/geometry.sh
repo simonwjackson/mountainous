@@ -13,7 +13,9 @@
 #     into view;
 #   - the window and taskbar menus, Shut Down Myoko, System Properties, the
 #     Cool Switch and the volume pop-up at 360x640, 800x480, 1280x360 and
-#     1920x1200: inside the screen, above the bar, or scrolling.
+#     1920x1200: inside the screen, above the bar, or scrolling;
+#   - the Layout window from 360x640 to 1200x180: inside, every control
+#     inside its width, and inside its height unless the body scrolls.
 #
 #   modules/quickshell/theme-dev/win98/geometry.sh <shell dir> [work dir]
 #
@@ -156,6 +158,41 @@ for size in 360x640 800x480 1280x360 1920x1200; do
   w98 cycle cancel 0 $(( $(date +%s%N) / 1000000 )) >/dev/null; sleep 0.3
   sleep 2.2; w98 setVolume $(( 30 + w % 50 )) >/dev/null; sleep 0.4
   check "volume pop-up at ${size}: inside, above the bar" "g.get('popup') and ins(g['popup'], $ROOM)"
+  session_stop
+done
+
+# The Layout window from 360x640 down to a 180-px-tall strip: inside the
+# room above the bar; every control inside the window's width, and inside
+# its height unless the body scrolls (then the keys and the scroll bar
+# reach it). Each control by objectName (w98 at menu rect:<name>).
+layout_controls() {  # layout_controls <label> <names...>
+  local label=$1 out n rects="{"; shift
+  for n in "$@"; do rects="$rects\"$n\": $(w98 at menu "rect:$n" | grep . || echo null),"; done
+  rects="${rects%,}}"
+  out=$(python3 -c '
+import json, sys
+g = json.loads(sys.argv[1]); w = g["window"]; e = 0.51
+bad = []
+for n, r in json.loads(sys.argv[2]).items():
+    if r is None: bad.append(n + " missing"); continue
+    if r["x"] < w["x"] - e or r["x"] + r["w"] > w["x"] + w["w"] + e: bad.append(n + " outside the width")
+    if not w["scrolls"] and (r["y"] < w["y"] - e or r["y"] + r["h"] > w["y"] + w["h"] + e): bad.append(n + " outside the height")
+print("ok" if not bad else "FAIL " + ", ".join(bad))' "$(w98 geometry)" "$rects")
+  if [ "$out" = ok ]; then echo "PASS $label"; pass=$((pass + 1)); else echo "FAIL $label: $out"; fail=1; fi
+}
+for size in 360x640 800x480 1280x360 1200x180 1920x1200; do
+  w=${size%x*}; h=${size#*x}
+  session "$w" "$h"
+  for state in m-layout m-layout-gap m-layout-floating m-layout-default; do
+    w98 set "$state" >/dev/null; settle
+    check "Layout $state at ${size}: inside, above the bar; scrolls only when still too tall" \
+      "g['window'] and ins(g['window'], $ROOM) and (g['window']['scrolls'] == (g['window']['natural'] > g['window']['h'] + e))"
+    case $state in
+      m-layout-default) layout_controls "Layout $state at ${size}: every control reachable" layoutTiled layoutFloating layoutCap1 layoutCap2 layoutCap3 layoutGap layoutResetAll ;;
+      m-layout-gap) layout_controls "Layout $state at ${size}: every control reachable" layoutTiled layoutFloating layoutCap1 layoutCap3 layoutGap layoutCapDefault layoutGapDefault layoutZen ;;
+      *) layout_controls "Layout $state at ${size}: every control reachable" layoutTiled layoutFloating layoutCap1 layoutCap2 layoutCap3 layoutGap layoutZen ;;
+    esac
+  done
   session_stop
 done
 

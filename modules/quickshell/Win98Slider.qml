@@ -9,10 +9,12 @@ import QtQuick
 // sunken channel, an 11 x 21 u thumb that points down, ticks below.
 // Vertical (TBS_BOTH, as the Win98 tray volume popup): 30 u wide, ticks on
 // both sides, a 21 x 11 u rectangular thumb. Ticks: `ticks` marks, every
-// fifth one 4 u long, the rest 3 u.
+// majorEvery-th one (fifth by default) 4 u long, the rest 3 u; disabled,
+// they draw grey.
 //
 // value runs 0..1; a drag or a key emits moved(value) and the owner sets
-// value (the slider does not hold its own state). Keys: arrows step by
+// value (the slider does not hold its own state). held is true while the
+// pointer holds it (an owner that coalesces a drag reads it). Keys: arrows step by
 // stepSize, Page Up/Down by 2 steps, Home/End to the ends. Disabled: no
 // thumb, the channel at half strength. Focus: a dotted rectangle 1 u out.
 FocusScope {
@@ -22,7 +24,9 @@ FocusScope {
     property real value: 0
     property real stepSize: 0.05
     property int ticks: 11
+    property int majorEvery: 5
     property bool showFocus: false
+    readonly property bool held: area.pressed
 
     signal moved(real value)
 
@@ -70,14 +74,14 @@ FocusScope {
             id: tick
             required property int index
             readonly property int at: Math.round(5 + index * (root.span - 11) / Math.max(1, root.ticks - 1))
-            readonly property real len: (index % 5 === 0 ? 4 : 3) * root.u
+            readonly property real len: (index % Math.max(1, root.majorEvery) === 0 ? 4 : 3) * root.u
 
             Rectangle {
                 x: root.vertical ? 0 : tick.at * root.u
                 y: root.vertical ? tick.at * root.u : 23 * root.u
                 width: root.vertical ? tick.len : root.u
                 height: root.vertical ? root.u : tick.len
-                color: Win98Tokens.text
+                color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
             }
             Rectangle {
                 visible: root.vertical
@@ -85,7 +89,7 @@ FocusScope {
                 y: tick.at * root.u
                 width: tick.len
                 height: root.u
-                color: Win98Tokens.text
+                color: root.enabled ? Win98Tokens.text : Win98Tokens.gray
             }
         }
     }
@@ -134,6 +138,7 @@ FocusScope {
     }
 
     MouseArea {
+        id: area
         anchors.fill: parent
         enabled: root.enabled
         function at(mouse) {

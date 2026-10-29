@@ -50,7 +50,8 @@ const d = {
     oci: { state: 'ready', stateText: 'Outbound data, Zone 1', rows: [{ name: 'DEFAULT', value: '38.0%' }] },
     bat: { percent: 87, onBattery: true, indicator: '' },
     dict: { text: 'Recording' },
-    clock: { date: 'Thursday, October 22, 2026' }
+    clock: { date: 'Thursday, October 22, 2026' },
+    layout: { floating: false, cap: 2, gap: 8, zen: false }
 };
 assert.equal(T.badge('disk', d), '3');
 assert.equal(T.badge('ntf', d), '99+');
@@ -72,6 +73,21 @@ assert.equal(T.tooltip('start', d), 'Click here to begin.');
 assert.equal(T.tooltip('clock', d), 'Thursday, October 22, 2026');
 assert.equal(T.tooltip('disk', Object.assign({}, d, { disk: { state: 'loading', issues: 0, label: 'Disks ...', statusText: 'Checking the servers\u2026' } })),
     'Server storage: checking...\nChecking the servers...');
+
+// ---- the Layout control: first in the tray, its glyph as the icon
+assert.equal(T.ORDER[0], 'layout');
+assert.equal(T.LABEL.layout, 'Layout');
+for (const g of ['tile-1', 'tile-2', 'tile-3', 'float']) assert.equal(T.layoutIcon(g), 'layout-' + g);
+assert.equal(T.layoutIcon(''), 'layout-tile-1');
+assert.equal(T.tooltip('layout', d), 'Layout: Tiled, 2 windows\nOuter gap 8 px');
+const one = Object.assign({}, d, { layout: { floating: false, cap: 1, gap: 0, zen: true } });
+assert.equal(T.tooltip('layout', one), 'Layout: Tiled, 1 window\nZen margins');
+const floating = Object.assign({}, d, { layout: { floating: true, cap: 3, gap: 8, zen: false } });
+assert.equal(T.tooltip('layout', floating), 'Layout: Floating');
+assert.equal(T.overflowValue('layout', d), '2 windows');
+assert.equal(T.overflowValue('layout', floating), 'Floating');
+// Pages are never numbered: no Layout string names one.
+for (const v of [d, one, floating]) assert.ok(!/\bpage\s*\d/i.test(T.tooltip('layout', v) + T.overflowValue('layout', v)));
 
 // ---- the clock: 12-hour with AM/PM
 assert.deepEqual(plain(T.clock(new Date(2026, 9, 22, 16, 51))), { time: '4:51', ampm: 'PM' });

@@ -70,6 +70,16 @@ function baseData() {
     // TopBar.battery: UPower displayDevice; battery.js rule(percent, charging, full, onBattery).
     bat: { present: true, onBattery: true, pct: 87, charging: false, full: false },
     flatPrograms: false,
+    // The Layout control: $XDG_RUNTIME_DIR/mountainous-page-layout.json as
+    // page-layout.lua writes it (page-layout-model.js, Contract 1). The
+    // harness's screen stands in for eDP-1 and shows page 1. The approved
+    // Layout mock's scene "page": two windows a page, the default one.
+    layout: { version: 1, fallback: { cap: 1, floating: false, gap: 8 },
+      defaults: { 'eDP-1': { cap: 1, floating: false, gap: 8 } },
+      pages: {
+        1: { monitor: 'eDP-1', cap: 2, floating: false, gap: 8, zen: false, own: true },
+        2: { monitor: 'eDP-1', cap: 1, floating: false, gap: 8, zen: false, own: false },
+        3: { monitor: 'eDP-1', cap: 3, floating: false, gap: 16, zen: false, own: true } } },
   };
 }
 
@@ -151,9 +161,9 @@ st(1, 'dict-failed', 'Dictation failed · Groq: Retry and Dismiss', d => { d.dic
 st(1, 'dict-micfail', 'Microphone failed: Dismiss only', d => { d.dict = { state: 'failed', backend: '', queue: 0, failureKind: 'recorder', canRetry: false }; });
 
 // 2. Every control: rest, hover, open or pressed, keyboard focus
-const CONTROLS = [['start', 'Start button'], ['win1', 'Window button'], ['dict', 'Dictation'], ['bt', 'Bluetooth'], ['wifi', 'Wi-Fi'], ['vol', 'Sound'], ['bri', 'Brightness'],
+const CONTROLS = [['start', 'Start button'], ['win1', 'Window button'], ['layout', 'Layout'], ['dict', 'Dictation'], ['bt', 'Bluetooth'], ['wifi', 'Wi-Fi'], ['vol', 'Sound'], ['bri', 'Brightness'],
   ['oci', 'OCI egress'], ['disk', 'Server storage'], ['builder', 'Remote builds'], ['ntf', 'Notifications'], ['bat', 'Battery'], ['clock', 'Clock'], ['tasks', 'Windows » (600 px)'], ['more', 'Tray » (400 px)']];
-const MENU_OF = { start: 'start', dict: 'dict', bt: 'bt', wifi: 'wifi', vol: 'vol', bri: 'bri', oci: 'oci', disk: 'disk', builder: 'builder', ntf: 'ntf', clock: 'clock', tasks: 'tasks', more: 'more' };
+const MENU_OF = { start: 'start', layout: 'layout', dict: 'dict', bt: 'bt', wifi: 'wifi', vol: 'vol', bri: 'bri', oci: 'oci', disk: 'disk', builder: 'builder', ntf: 'ntf', clock: 'clock', tasks: 'tasks', more: 'more' };
 for (const [c, name] of CONTROLS) for (const k of ['rest', 'hover', 'open', 'focus']) {
   const p = { w: c === 'tasks' ? 600 : c === 'more' ? 400 : undefined };
   if (k === 'hover') { p.hov = c; if (c === 'win1') p.tip = 'win1'; }
@@ -286,6 +296,24 @@ M('4e', 'm-dict-failed', 'Dictation window: failed, Retry focused', 'dict', d =>
 M('4e', 'm-dict-micfail', 'Dictation window: microphone failed', 'dict', d => { d.dict = { state: 'failed', backend: '', queue: 0, failureKind: 'recorder', canRetry: false }; });
 M('4e', 'm-dict-queued', 'Dictation window: working, 3 takes', 'dict', d => { d.dict = { state: 'working', backend: 'zao', queue: 3 }; });
 M('4e', 'm-clock', 'Date/Time window', 'clock');
+// The Layout window (the approved Layout mock's scenes, and the stress set).
+const lp = (d) => d.layout.pages[1];
+const ML = (id, label, set, p) => M('4f', id, label, 'layout', set, p);
+ML('m-layout', 'Layout: this page tiled, two windows (the default is one)');
+ML('m-layout-floating', 'Layout: a Floating page, capacity and gap greyed', d => { lp(d).floating = true; });
+ML('m-layout-gap', 'Layout: gap 32 px and two windows, both differ from the default', d => { lp(d).gap = 32; });
+ML('m-layout-same', 'Layout: this page as the default, Zen on, no Use Default', d => { Object.assign(lp(d), { cap: 1, gap: 8, zen: true, own: false }); });
+ML('m-layout-ends', 'Layout: three windows, no gap (the ends)', d => { Object.assign(lp(d), { cap: 3, gap: 0 }); });
+ML('m-layout-max', 'Layout: gap 48 px (the far end)', d => { Object.assign(lp(d), { cap: 1, gap: 48 }); });
+ML('m-layout-default', 'Layout: Default tab, 2 pages differ', null, { layoutTab: 'default' });
+ML('m-layout-default-one', 'Layout: Default tab, 1 page differs', d => { Object.assign(d.layout.pages[3], { cap: 1, gap: 8, own: false }); }, { layoutTab: 'default' });
+ML('m-layout-default-none', 'Layout: Default tab, no page differs (no Reset All)', d => {
+  for (const id in d.layout.pages) Object.assign(d.layout.pages[id], { cap: 1, gap: 8, own: false }); }, { layoutTab: 'default' });
+ML('m-layout-default-floating', 'Layout: Default tab, new pages float', d => {
+  d.layout.defaults['eDP-1'].floating = true; for (const id in d.layout.pages) d.layout.pages[id].own = true; }, { layoutTab: 'default' });
+st(1, 'tb-layout-none', 'Layout: no state file, the tray icon hides', d => { d.layout = null; });
+for (const [g, set] of [['tile-1', d => { lp(d).cap = 1; }], ['tile-2', null], ['tile-3', d => { lp(d).cap = 3; }], ['float', d => { lp(d).floating = true; }]])
+  st(1, 'tb-layout-' + g, 'Layout tray icon: ' + g, set, { tip: 'layout' });
 
 // 5. Start menu
 st(5, 's-top', 'Start menu', null, { open: 'start' });

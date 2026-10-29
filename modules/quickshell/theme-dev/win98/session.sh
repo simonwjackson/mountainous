@@ -45,6 +45,12 @@ cat > "$session_work/bin/beszel-status" <<EOF
 echo "beszel-status \$*" >> "$session_work/beszel.log"
 exec node "$session_work/shell/win98-dev/beszel-stub.js" "\$@"
 EOF
+# The Layout control's command: page-layout-stub.js applies each call to
+# the state file the harness writes ($XDG_RUNTIME_DIR/mountainous-page-layout.json).
+cat > "$session_work/bin/mountainous-page-layout" <<EOF
+#!/bin/sh
+exec node "$session_work/shell/win98-dev/page-layout-stub.js" "\$@"
+EOF
 printf 'fake\n' > "$session_work/fake-token"
 export BESZEL_MCP_TOKEN_FILE="$session_work/fake-token"
 printf '%s\n' "${SESSION_FLEET:-unzen-problem}" > "$XDG_STATE_HOME/fleet-fixture"
@@ -70,8 +76,9 @@ cp -r "$session_shell"/. "$stage"/
 chmod -R u+w "$stage"
 rm -rf "$stage/win98-dev"
 mkdir -p "$stage/win98-dev"
-cp "$session_here"/states.js "$session_here"/beszel-stub.js "$session_here"/fleet-fixtures.json "$session_here"/find-states.js "$stage/win98-dev/"
-cp "$session_here/OmniFixture.qml" "$stage/"
+cp "$session_here"/states.js "$session_here"/beszel-stub.js "$session_here"/fleet-fixtures.json "$session_here"/find-states.js \
+  "$session_here"/page-layout-stub.js "$stage/win98-dev/"
+cp "$session_here/OmniFixture.qml" "$session_here/LayoutFixture.qml" "$stage/"
 cp "$session_here/harness.qml" "$stage/shell.qml"
 [ -n "${SESSION_SCHEMA:-}" ] && cp "$SESSION_SCHEMA" "$stage/notification-schema.js"
 printf '%s\n' "${SESSION_THEME:-win98}" > "$XDG_STATE_HOME/mountainous/theme-name"

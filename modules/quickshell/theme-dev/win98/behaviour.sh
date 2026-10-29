@@ -109,6 +109,40 @@ if grep -q "desktop-theme apply win98 dark off" "$work/commands.log" 2>/dev/null
 else echo "FAIL Apply did not commit ($(cat "$work/commands.log" 2>/dev/null | tr '\n' ' '))"; fail=1; fi
 check 'Apply keeps the window open' 'picker=open'
 
+# The Layout window: the tray icon opens it; its keys go through
+# mountainous-page-layout (page-layout-stub.js edits the state file), and
+# the window follows the file.
+lay() {   # lay <label> <python expression over L (w98 layout)>
+  local got ok=0
+  for _ in $(seq 30); do
+    got=$(w98 layout)
+    if printf '%s' "$got" | python3 -c 'import json,sys; L=json.load(sys.stdin); sys.exit(0 if eval(sys.argv[1]) else 1)' "$2"; then ok=1; break; fi
+    sleep 0.1
+  done
+  if [ $ok = 1 ]; then echo "PASS $1"; pass=$((pass + 1)); else echo "FAIL $1 -> $got (want $2)"; fail=1; fi
+}
+w98 set m-layout >/dev/null; sleep 1; w98 closeAll >/dev/null; settle ''
+click layout; settle layout;                lay 'click the Layout icon opens its window on This Page' 'L["open"] == "layout" and L["tab"] == "page"'
+letter f;                                   lay 'F floats the page' 'L["page"]["floating"] and L["glyph"] == "float"'
+letter 3;                                   lay 'a Floating page ignores 3' 'L["page"]["cap"] == 2'
+letter t;                                   lay 'T tiles it again' 'not L["page"]["floating"] and L["glyph"] == "tile-2"'
+letter 3;                                   lay '3: three windows on this page' 'L["page"]["cap"] == 3'
+key Right; key Right;                       lay 'Right x2: gap 8 -> 16' 'L["page"]["gap"] == 16'
+key Home;                                   lay 'Home: no gap' 'L["page"]["gap"] == 0'
+letter d;                                   lay 'D: the capacity back to the default' 'L["page"]["cap"] == 1 and L["page"]["gap"] == 0'
+letter d;                                   lay 'D again: the gap back to the default' 'L["page"]["gap"] == 8 and not L["page"]["own"]'
+letter z;                                   lay 'Z: Zen margins' 'L["page"]["zen"]'
+key Tab;                                    lay 'Tab: the Default tab' 'L["tab"] == "default"'
+letter 2;                                   lay 'on Default, 2 sets the screen default' 'L["def"]["cap"] == 2 and L["page"]["cap"] == 1'
+letter r;                                   lay 'R: Reset All, every page takes the default' 'L["ownCount"] == 0 and L["page"]["cap"] == 2 and not L["page"]["zen"]'
+wtype -M ctrl -k Tab -m ctrl; sleep 0.2;    lay 'Ctrl+Tab: back to This Page' 'L["tab"] == "page"'
+key Escape;                                 lay 'Esc closes the Layout window' 'L["open"] == ""'
+grep -q "mountainous-page-layout page 1 floating=true" "$work/commands.log" && { echo "PASS the keys run mountainous-page-layout"; pass=$((pass + 1)); } \
+  || { echo "FAIL no mountainous-page-layout call ($(tail -3 "$work/commands.log" | tr '\n' ' '))"; fail=1; }
+w98 set tb-layout-none >/dev/null; sleep 1
+for _ in $(seq 20); do w98 places | grep -q '"layout"' || break; sleep 0.1; done
+w98 places | grep -q '"layout"' && { echo "FAIL the Layout icon shows without a state file"; fail=1; } || { echo "PASS no state file: the Layout icon hides"; pass=$((pass + 1)); }
+
 if grep -E "WARN scene|TypeError|ReferenceError" "$work/qs.log" >&2; then echo "FAIL QML warnings" >&2; fail=1; fi
 echo "$pass checks passed"
 [ $fail = 0 ] && echo WIN98_BEHAVIOUR_PASSED || { echo WIN98_BEHAVIOUR_FAILED; exit 1; }

@@ -48,8 +48,10 @@ var GAP = 3;
 var LABEL_MIN = 46;
 var STEPS = ["clockShort", "dictText", "titles", "startIcon"];
 var MIN_WIDTH = 2 + START_ICON + 2;
-// bar-plan.js overflowOrder, with dictation last.
-var TRAY_OVERFLOW = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol", "dict"];
+// bar-plan.js overflowOrder, with dictation last. The Layout control
+// (first in the tray) goes after Wi-Fi: its icon is the page's state, read
+// more often than the radios'.
+var TRAY_OVERFLOW = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "layout", "ntf", "vol", "dict"];
 
 // A tray icon is 20 u; a badge wider than one digit adds 4 u a digit.
 function trayWidth(badge) {
@@ -70,7 +72,7 @@ function startWidth(measure) {
 // input: {
 //   windows: [{ page, focused }] in lane order,
 //   showingPage,
-//   tray: [{ id, badge }] in tray order (dict first when shown),
+//   tray: [{ id, badge }] in tray order (layout, then dict when shown, first),
 //   clock: { time, ampm },
 //   dict: { visible, failed, canRetry, text },
 //   extras: [{ id, label, bold }] (optional; see above),

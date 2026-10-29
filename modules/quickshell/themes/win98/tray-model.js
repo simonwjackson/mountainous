@@ -7,13 +7,13 @@
 // window here.
 
 // The order icons sit in, left to right; the clock follows.
-var ORDER = ["dict", "bt", "wifi", "vol", "bri", "oci", "disk", "fleet", "builder", "ntf", "bat"];
+var ORDER = ["layout", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "fleet", "builder", "ntf", "bat"];
 
 // The Super+O chord's keys (hyprland.lua topbar-access submap).
 var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" };
 
 var LABEL = {
-    start: "Start", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
+    start: "Start", layout: "Layout", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
     oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
     bat: "Battery", clock: "Date/Time", more: "More icons", tasks: "More windows"
 };
@@ -68,6 +68,18 @@ function batteryColor(tone) {
     return tone === "danger" ? "#ff0000" : tone === "warning" ? "#e0c000" : "#00a000";
 }
 
+// The Layout control's glyph (PageLayout.glyph: tile-1, tile-2, tile-3 or
+// float) as its tray icon.
+function layoutIcon(glyph) {
+    return ["tile-1", "tile-2", "tile-3", "float"].indexOf(glyph) >= 0 ? "layout-" + glyph : "layout-tile-1";
+}
+// d.layout: { floating, cap, gap, zen } of the page this screen shows.
+function layoutWindows(cap) { return cap + (cap === 1 ? " window" : " windows"); }
+function layoutTooltip(l) {
+    if (l.floating) return "Layout: Floating";
+    return "Layout: Tiled, " + layoutWindows(l.cap) + "\n" + (l.zen ? "Zen margins" : "Outer gap " + l.gap + " px");
+}
+
 function notificationCount(count) { return count > 99 ? "99+" : String(count); }
 
 function badge(id, d) {
@@ -86,6 +98,7 @@ function clock(date) {
 
 function tooltip(id, d) {
     if (id === "start") return "Click here to begin.";
+    if (id === "layout") return layoutTooltip(d.layout);
     if (id === "vol") return "Volume " + (d.vol.muted ? "muted" : d.vol.percent + "%") + (d.vol.name ? "\n" + d.vol.name : "");
     if (id === "bat") {
         return d.bat.percent + "% " + (d.bat.onBattery ? "remaining"
@@ -131,6 +144,7 @@ function tooltip(id, d) {
 // What the tray chevron's menu shows beside each name: the value the tray
 // would have drawn (the Platinum top bar's words, by control).
 function overflowValue(id, d) {
+    if (id === "layout") return d.layout.floating ? "Floating" : layoutWindows(d.layout.cap);
     if (id === "bt") return !d.bt.on ? "Off" : d.bt.count > 0 ? d.bt.count + " connected" : "On";
     if (id === "wifi") return d.wifi.name || "Not connected";
     if (id === "vol") return d.vol.muted ? "Muted" : d.vol.percent + "%";

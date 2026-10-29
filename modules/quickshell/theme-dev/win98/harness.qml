@@ -390,6 +390,24 @@ ShellRoot {
         defaultSource: root.ins.find(function (n, i) { return root.dd.sound.inputs[i].def; }) || null
     }
     BrightnessPanel { id: bri; shown: MenuState.current === "bri" }
+    // The Layout control: PageLayout's twin over the state file the state
+    // writes (layoutFile), for the page the fixture shows.
+    LayoutFixture {
+        id: pageLayout
+        shown: MenuState.current === "layout"
+        pageId: root.dd.showingPage
+        pageIds: {
+            const out = [root.dd.showingPage];
+            for (const w of root.windowList()) if (w.page > 0 && out.indexOf(w.page) < 0) out.push(w.page);
+            return out;
+        }
+    }
+    Timer { id: layoutLater; interval: 150; onTriggered: pageLayout.reload() }
+    FileView {
+        id: layoutFile
+        path: Quickshell.env("XDG_RUNTIME_DIR") + "/mountainous-page-layout.json"
+        printErrors: false
+    }
     OciEgress { id: oci; enabled: root.dd.ociEnabled }
     StorageHealth {
         id: storage
@@ -451,6 +469,7 @@ ShellRoot {
         readonly property var wifi: wifi
         readonly property var sound: sound
         readonly property var brightness: bri
+        readonly property var layout: pageLayout
         readonly property var oci: oci
         readonly property var storage: storage
         readonly property var builder: builderPanel
@@ -567,6 +586,9 @@ ShellRoot {
         storage.checkedAt = d.disk.state === "stale" ? new Date(2026, 9, 22, 15, 20) : new Date(2026, 9, 22, 16, 47);
         storage.now = new Date(2026, 9, 22, 16, 51).getTime();
         storage.setFindings(d.disk.rows);
+        // The Layout control's state file ("" is no file: unavailable).
+        layoutFile.setText(d.layout ? JSON.stringify(d.layout) + "\n" : "");
+        layoutLater.restart();
         // After the window opens: showing it clears both (WifiPanel).
         wifiLater.restart();
         root.findReady = "";
@@ -634,6 +656,9 @@ ShellRoot {
         onTriggered: {
             const d = root.dd;
             if (root.st.p && root.st.p.section) sound.section = root.st.p.section;
+            // Opening the Layout window starts on This Page; a state may
+            // show the Default tab.
+            if (root.st.p && root.st.p.layoutTab) pageLayout.tab = root.st.p.layoutTab;
             wifi.failureMessage = d.wifi.failure || "";
             wifi.passwordNetwork = d.wifi.password && root.wifiDevice
                 ? root.wifiDevice.networks.values.find(function (n) { return n.name === d.wifi.password; }) || null : null;
@@ -769,6 +794,12 @@ ShellRoot {
         function openPicker(): string { ThemePicker.open(root.screen0); return String(ThemePicker.visible); }
         function closeAll(): string { MenuState.close(); ThemePicker.close(); return "closed"; }
         function volume(): string { return root.volumeNow(); }
+        // The Layout control as its window reads it (checks).
+        function layout(): string {
+            const l = pageLayout;
+            return JSON.stringify({ available: l.available, glyph: l.glyph, tab: l.tab, page: l.page, def: l.def,
+                shownGap: l.shownGap, ownCount: l.ownCount, dragging: l.dragging, open: MenuState.current });
+        }
         function picker(): string { return ThemePicker.visible ? "open" : "closed"; }
         function commands(): string { return root.log.join("|"); }
         // The Fleet views: a fixture, a Desktop method, a view setting, and

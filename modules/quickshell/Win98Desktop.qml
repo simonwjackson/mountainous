@@ -77,7 +77,7 @@ Scope {
     // the shell never sets it): { hover, press, focus, tip, flash, drag }.
     property var preview: ({})
 
-    readonly property var menuIds: ["start", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks",
+    readonly property var menuIds: ["start", "layout", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks",
         "glance", "fleetmenu"]
     // Opened by the Desktop itself, never by hovering onto a control: the
     // dialogs and the two context menus (Win98's context menus stayed put).
@@ -86,6 +86,7 @@ Scope {
     function canOpen(id) {
         if (id === "fleet" || id === "fleetmenu") return fleetGlance.present;
         if (id === "glance") return fleetGlance.glanceShown;
+        if (id === "layout") return desktop.layoutShown;
         if (id === "oci") return context.oci.enabled;
         if (id === "disk") return context.storage.enabled;
         if (id === "builder") return context.builderGate.enabled;
@@ -319,6 +320,11 @@ Scope {
 
     readonly property var clock: Tray.clock(context.now)
 
+    // The Layout control (panels/PageLayout.qml): this screen's page. It
+    // hides while the state file is unread or the screen shows no page.
+    readonly property var layout: context.layout || null
+    readonly property bool layoutShown: !!desktop.layout && desktop.layout.available
+
     readonly property var trayData: {
         const c = context;
         const net = c.wifi.connectedNetwork;
@@ -343,7 +349,9 @@ Scope {
                 barText: Gate.barText(gate.sample, gate.pending, gate.actionError, "wide") },
             dict: { text: desktop.dictText },
             fleet: desktop.fleetTray,
-            clock: { date: Qt.formatDateTime(c.now, "dddd, MMMM d, yyyy") }
+            clock: { date: Qt.formatDateTime(c.now, "dddd, MMMM d, yyyy") },
+            layout: desktop.layout ? { floating: desktop.layout.page.floating, cap: desktop.layout.page.cap,
+                gap: desktop.layout.page.gap, zen: desktop.layout.page.zen } : { floating: false, cap: 1, gap: 0, zen: false }
         };
     }
 
@@ -351,6 +359,7 @@ Scope {
     // service is missing; Start > Settings still opens those windows.
     readonly property var trayIds: {
         const c = context, out = [];
+        if (desktop.layoutShown) out.push("layout");
         if (dictation.barVisible) out.push("dict");
         if (c.bluetooth.adapter !== null) out.push("bt");
         if (c.wifi.device !== null) out.push("wifi");
@@ -367,6 +376,7 @@ Scope {
 
     function trayIcon(id) {
         const d = desktop.trayData;
+        if (id === "layout") return Tray.layoutIcon(desktop.layout ? desktop.layout.glyph : "");
         if (id === "dict") return Tray.micIcon(dictation.state);
         if (id === "bt") return d.bt.on ? "bluetooth-on" : "bluetooth-off";
         if (id === "wifi") return Tray.wifiIcon(!d.wifi.hw || !d.wifi.enabled, Tray.wifiLevel(d.wifi.name !== "", d.wifi.signal));

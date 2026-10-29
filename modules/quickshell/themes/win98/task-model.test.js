@@ -197,4 +197,45 @@ deq([pp.width, pp.label, pp.x], [96, false, 2], 'narrow: the word goes');
 deq(plain(S.popupText('vol', 42, false)), { label: 'Volume', value: '42%' });
 deq(plain(S.popupText('vol', 42, true)), { label: 'Volume', value: 'Muted' });
 deq(plain(S.popupText('bri', 60.4, false)), { label: 'Brightness', value: '60%' });
+// ---- the Layout window: width decides the buttons, height the yield order
+const save = { tight: 30, flat: 22, intro: 17, status: 25 };
+let lp = plain(S.layoutPlan(1920 / 0.75, 1000, 450, save));
+deq([lp.width, lp.columns, lp.picto, lp.steps, lp.scrolls], [316, 3, true, [], false], 'room for everything');
+assert.equal(lp.intro && lp.status && !lp.tight && !lp.flat, true);
+// 316 u wide: buttons of (316 - 52 - 12) / 3 = 84 u.
+assert.equal(lp.button, 84);
+// Width: one unit either side of the picture and the column thresholds.
+// button = floor((w - 64) / 3); w = widthU - 4.
+const at = (b) => 3 * b + 64 + 4;
+assert.equal(S.layoutPlan(at(40), 1000, 450, save).picto, true);
+assert.equal(S.layoutPlan(at(40) - 1, 1000, 450, save).picto, false);
+assert.equal(S.layoutPlan(at(34), 1000, 450, save).columns, 3);
+assert.equal(S.layoutPlan(at(34) - 1, 1000, 450, save).columns, 1);
+// One column: the buttons are flat and as wide as the group; the picture
+// comes back while the group has 40 u.
+lp = plain(S.layoutPlan(at(34) - 1, 1000, 450, save));
+deq([lp.flat, lp.button, lp.picto], [true, lp.inner, lp.inner >= 40]);
+assert.equal(S.layoutPlan(40 + 52 + 4, 1000, 450, save).picto, true);
+assert.equal(S.layoutPlan(40 + 52 + 3, 1000, 450, save).picto, false);
+assert.equal(S.layoutPlan(2, 1000, 450, save).width, 0);
+// Height: each step only while still too tall, in order, then a scroll.
+const steps = (room) => plain(S.layoutPlan(1280, room, 450, save)).steps.join(' ');
+assert.equal(steps(450), '');
+assert.equal(steps(449), 'tight');
+assert.equal(steps(420), 'tight');
+assert.equal(steps(419), 'tight flat');
+assert.equal(steps(398), 'tight flat');
+assert.equal(steps(397), 'tight flat intro');
+assert.equal(steps(381), 'tight flat intro');
+assert.equal(steps(380), 'tight flat intro status');
+assert.equal(S.layoutPlan(1280, 356, 450, save).scrolls, false);
+assert.equal(S.layoutPlan(1280, 355, 450, save).scrolls, true);
+// No room given (0): nothing yields.
+assert.equal(steps(0), '');
+// Flat gives nothing in one column, so intro follows at once.
+assert.equal(plain(S.layoutPlan(at(34) - 1, 419, 450, save)).steps.join(' '), 'tight flat intro');
+// The intro line moves into the caption; the status line goes; nothing else.
+lp = plain(S.layoutPlan(1280, 100, 450, save));
+deq([lp.intro, lp.status, lp.scrolls, lp.columns], [false, false, true, 3]);
+
 console.log('WIN98_TASK_SESSION_TESTS_PASSED');

@@ -201,4 +201,24 @@ for (let W = 1440; W >= 1; W--) {
     if (builderOut < 0 && q.trayOut.includes('builder')) builderOut = W;
 }
 assert.ok(diskOut > fleetOut && fleetOut > builderOut, `Fleet overflows after Disks, before Remote builds (${diskOut} ${fleetOut} ${builderOut})`);
+
+// The Layout control, first in the tray: every width keeps every icon
+// reachable, and it moves into the tray chevron after Wi-Fi, before the
+// notifications.
+const layoutTray = ['layout'].concat(trayIds);
+const withLayout = input(ideal, { tray: layoutTray.map(id => ({ id, badge: id === 'ntf' ? '3' : '' })) });
+let layoutOut = -1, wifiOut = -1, ntfOut = -1;
+for (let W = 1440; W >= 1; W--) {
+    const q = P.plan(W, withLayout);
+    if (W >= P.MIN_WIDTH) assert.ok(q.fits, 'fits with Layout at ' + W);
+    eq(q.tray.concat(q.trayOut).sort(), layoutTray.slice().sort(), 'every tray icon with Layout at ' + W);
+    if (q.tray.includes('layout')) assert.equal(q.tray[0], 'layout', 'Layout leads the tray at ' + W);
+    if (wifiOut < 0 && q.trayOut.includes('wifi')) wifiOut = W;
+    if (layoutOut < 0 && q.trayOut.includes('layout')) layoutOut = W;
+    if (ntfOut < 0 && q.trayOut.includes('ntf')) ntfOut = W;
+}
+assert.ok(wifiOut > layoutOut && layoutOut > ntfOut, `Layout overflows after Wi-Fi, before the bell: ${wifiOut} ${layoutOut} ${ntfOut}`);
+assert.ok(!P.plan(layoutOut + 1, withLayout).trayOut.includes('layout'));
+assert.ok(P.plan(layoutOut, withLayout).trayOut.includes('layout'));
+
 console.log('WIN98_TASKBAR_PLAN_TESTS_PASSED');

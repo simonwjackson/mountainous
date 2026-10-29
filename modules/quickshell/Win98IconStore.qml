@@ -30,7 +30,12 @@ Singleton {
         // Find (Super+P) and Internet Explorer's Open (Ctrl+L)
         "find", "find-large", "globe", "globe-large",
         // The taskbar and session pieces (dev/make-parity-icons.sh).
-        "favorites", "documents", "lock-computer", "computer", "system", "maximize", "restore"
+        "favorites", "documents", "lock-computer", "computer", "system", "maximize", "restore",
+        // The Layout control: its tray glyphs and its capacity buttons'
+        // pictures (dev/make-layout-icons.sh).
+        "layout-tile-1", "layout-tile-2", "layout-tile-3", "layout-float",
+        "layout-picto-1", "layout-picto-2", "layout-picto-3",
+        "layout-picto-1-off", "layout-picto-2-off", "layout-picto-3-off"
     ]
 
     property var sources: ({})
