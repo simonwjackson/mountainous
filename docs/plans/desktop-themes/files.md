@@ -141,6 +141,10 @@ Upstream says Quickshell targets shell parts (bars, lock screens, widgets), not 
 
 None in the design interview (2026-10-28). Implementation unknowns: a menu host for apps (Qt `Popup` with `popupType: Window` on Hyprland), the per-window Win98 unit at fractional scale, Hyprland rules for restoring window positions, and benchmark repeats on a quiet machine or Myoko.
 
+### New requirement under review (2026-10-28): Android
+
+The owner may want some apps on Android too, from the same Rust code, starting with a Rust client for Forgerie (today a browser app). Dioxus is the candidate he named. This may reopen decision 38 for apps that must run on a phone. Research on Dioxus, cxx-qt, Slint and Tauri on Android is running. Step 1 waits until this settles, because it decides what Hotaka's drawing is written in.
+
 ## Order of work
 
 1. Hotaka: create the repository; move the shared QML out of the shell, Quickshell-free; move Pyxamp's library clients into crates; the shell imports Hotaka.
