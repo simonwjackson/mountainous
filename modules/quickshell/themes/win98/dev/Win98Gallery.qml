@@ -15,7 +15,7 @@ Scope {
     id: gallery
 
     property string page: "controls"
-    readonly property real u: Kit.Win98Tokens.u
+    readonly property real u: Kit.Win98Tokens.unitFor(win)
 
     FontLoader {
         source: "file://" + (Quickshell.env("WIN98_FONT") || "/tmp/win98-mock/fonts/W95FAGrid.ttf")
