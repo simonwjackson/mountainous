@@ -22,7 +22,7 @@ MotionLayer {
     // The window's title bar (hyprbars-platinum, bar_height).
     readonly property real titleBar: 20
     // The top bar keeps the tokens' scale current.
-    dpr: (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
+    dpr: Kit.PlatinumTokens.ratioFor(QsWindow.window)
     function snap(v) { return Math.round(v * overlay.dpr) / overlay.dpr; }
 
     // The tiles as they were one change ago: a closed window's tile has

@@ -22,7 +22,7 @@ Item {
     implicitWidth: size
     implicitHeight: size
 
-    readonly property int physical: Math.max(1, Math.round(size * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)))
+    readonly property int physical: Math.max(1, Math.round(size * Kit.PlatinumTokens.ratioFor(QsWindow.window)))
 
     // The icon is always drawn through the effect, so becoming inactive
     // (a page change) only changes the effect's numbers. Toggling the

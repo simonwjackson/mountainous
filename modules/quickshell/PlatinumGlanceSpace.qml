@@ -49,7 +49,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
 
     readonly property real barH: Kit.PlatinumTokens.barHeight
-    readonly property real dpr: devicePixelRatio > 0 ? devicePixelRatio : (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
+    readonly property real dpr: devicePixelRatio > 0 ? devicePixelRatio : Kit.PlatinumTokens.ratioFor(QsWindow.window)
     function snap(v) { return Math.round(v * space.dpr) / space.dpr; }
     // Before the first show the window has no size yet; the screen does.
     readonly property real spaceW: width > 0 ? width : (screen ? screen.width : 1920)

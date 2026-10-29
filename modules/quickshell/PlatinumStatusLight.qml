@@ -22,7 +22,7 @@ Item {
     readonly property var colors: PlatinumGlanceTokens.lamp[tone === "quiet" ? "normal" : tone]
         || PlatinumGlanceTokens.lamp.muted
     readonly property real dpr: QsWindow.window && QsWindow.window.devicePixelRatio > 0
-        ? QsWindow.window.devicePixelRatio : (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
+        ? QsWindow.window.devicePixelRatio : Kit.PlatinumTokens.ratioFor(QsWindow.window)
 
     readonly property string svg: {
         const b = colors[0], hi = colors[1], lo = colors[2];

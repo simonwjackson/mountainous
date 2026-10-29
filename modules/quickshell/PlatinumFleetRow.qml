@@ -97,8 +97,8 @@ Item {
                 width: 10
                 height: 10
                 smooth: true
-                sourceSize.width: Math.ceil(width * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5))
-                sourceSize.height: Math.ceil(height * (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5))
+                sourceSize.width: Math.ceil(width * Kit.PlatinumTokens.ratioFor(QsWindow.window))
+                sourceSize.height: Math.ceil(height * Kit.PlatinumTokens.ratioFor(QsWindow.window))
                 readonly property color ink: row.selected ? Kit.PlatinumTokens.highlightText : Kit.PlatinumTokens.menuText
                 source: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path fill="'
                     + ink + '" d="' + (row.open ? "M1 2.5 L9 2.5 L5 8.5 Z" : "M2.5 1 L8.5 5 L2.5 9 Z") + '"/></svg>')

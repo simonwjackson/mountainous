@@ -59,8 +59,8 @@ Item {
     PlatinumAppIcon {
         id: image
         visible: !tile.source && tile.icon !== ""
-        x: Kit.PlatinumTokens.snapFor(QsWindow.window, 3) + (tile.sunk ? 1 / (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5) : 0)
-        y: Kit.PlatinumTokens.snapFor(QsWindow.window, 5) + (tile.sunk ? 1 / (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5) : 0)
+        x: Kit.PlatinumTokens.snapFor(QsWindow.window, 3) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
+        y: Kit.PlatinumTokens.snapFor(QsWindow.window, 5) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
         size: 20
         name: tile.icon
         inactive: !tile.shown

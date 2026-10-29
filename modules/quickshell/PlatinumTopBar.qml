@@ -855,7 +855,7 @@ PanelWindow {
             // The meter's fill, inside the icon's well (x 18-20, y 5.33-12),
             // in whole device pixels: at least two once there is any use.
             iconExtras: Rectangle {
-                readonly property real dpr: (QsWindow.window && QsWindow.window.devicePixelRatio > 0 ? QsWindow.window.devicePixelRatio : 1.5)
+                readonly property real dpr: Kit.PlatinumTokens.ratioFor(QsWindow.window)
                 readonly property real inner: 20 / 3
                 readonly property int device: bar.ociFraction > 0
                     ? Math.max(2, Math.round(inner * dpr * bar.ociFraction)) : 0
