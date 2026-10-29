@@ -10,6 +10,7 @@
     let
       quickshell = ./quickshell;
       qmlPaths = builtins.concatStringsSep ":" [
+        "${inputs.hensou}/kit/qml"
         "${pkgs.quickshell}/lib/qt-6/qml"
         "${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
         "${pkgs.qt6.qtbase}/lib/qt-6/qml"
@@ -156,6 +157,7 @@
               # access.sh reads the gallery's JSON.
               pkgs.python3
             ];
+            QML2_IMPORT_PATH = "${inputs.hensou}/kit/qml";
             QMLLINT = "${pkgs.qt6.qtdeclarative}/bin/qmllint";
             QML_PATHS = qmlPaths;
             QUICKSHELL = "${pkgs.quickshell}/bin/qs";
