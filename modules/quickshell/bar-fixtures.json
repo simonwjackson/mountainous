@@ -1,8 +1,9 @@
 {
-  "description": "Widths the Platinum bar measured (barProbe in the nested session, 2026-10-26) in ChicagoFLF (PlatinumMetrics) for the approved mock's states (/tmp/bar-calm/states.js), direction A. Content widths only: the planner adds pads and gaps.",
+  "description": "Widths the Platinum bar measured (barProbe in the nested session, 2026-10-26) in ChicagoFLF (PlatinumMetrics) for the approved mock's states (/tmp/bar-calm/states.js), direction A. Content widths only: the planner adds pads and gaps. 2026-10-29: the Layout control (a 16 px glyph, no readout) and its Super+O key (Y Layout: cap 18 + 6 + name 55 + 14 = 93 named, 24 caps) were added.",
   "quiet": {
     "calm": {
       "controls": [
+        {"id": "layout", "iconWidth": 16, "readoutWidth": 0},
         {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
         {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
         {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
@@ -19,6 +20,7 @@
     },
     "wrong": {
       "controls": [
+        {"id": "layout", "iconWidth": 16, "readoutWidth": 0},
         {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
         {"id": "wifi", "iconWidth": 16, "readoutWidth": 8},
         {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
@@ -35,6 +37,7 @@
     },
     "long": {
       "controls": [
+        {"id": "layout", "iconWidth": 16, "readoutWidth": 0},
         {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
         {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
         {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
@@ -51,6 +54,7 @@
     },
     "dictation": {
       "controls": [
+        {"id": "layout", "iconWidth": 16, "readoutWidth": 0},
         {"id": "bt", "iconWidth": 16, "readoutWidth": 0},
         {"id": "wifi", "iconWidth": 16, "readoutWidth": 0},
         {"id": "vol", "iconWidth": 16, "readoutWidth": 0},
@@ -63,7 +67,7 @@
       "clockWidth": 45, "chordWidth": 0, "chordCompactWidth": 0,
       "batteryWidth": 18, "batteryReadoutWidth": 0, "appIconWidth": 16, "appNameWidth": 57, "overflowWidth": 16
     },
-    "chord": {"named": 993, "caps": 265},
-    "calmThresholds": {"space": 858, "uncentre": 680, "titleMin": 487, "overflow:oci": 404, "overflow:disk": 398, "overflow:fleet": 372, "overflow:builder": 350, "overflow:bri": 324, "overflow:bt": 298, "overflow:wifi": 272, "overflow:ntf": 246, "overflow:vol": 220, "overflow:battery": 144, "overflow:clock": 126, "overflow:app": 80, "overflow:apple": 36, "pad:4": 194, "pad:0": 154, "compact": 144}
+    "chord": {"named": 1086, "caps": 289},
+    "calmThresholds": {"space": 926, "uncentre": 732, "titleMin": 513, "overflow:oci": 430, "overflow:disk": 424, "overflow:fleet": 398, "overflow:builder": 376, "overflow:layout": 350, "overflow:bri": 324, "overflow:bt": 298, "overflow:wifi": 272, "overflow:ntf": 246, "overflow:vol": 220, "overflow:battery": 144, "overflow:clock": 126, "overflow:app": 80, "overflow:apple": 36, "pad:4": 194, "pad:0": 154, "compact": 144}
   }
 }

@@ -742,6 +742,7 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("D", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open disk"))
     hl.bind("F", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
     hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
+    hl.bind("Y", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open layout"))
     -- Both desktop themes draw N (Platinum's bar, Win98's tray); under any
     -- other theme N passes through.
     hl.bind("N", function()

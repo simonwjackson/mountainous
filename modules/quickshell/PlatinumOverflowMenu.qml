@@ -32,7 +32,7 @@ PlatinumMenuFrame {
     scrolls: entriesList.scrolls
 
     readonly property var labels: ({
-        bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
+        layout: "Layout", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
         oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
         apple: "Apple menu", battery: "Battery", clock: "Clock", app: "Applications",
         retry: "Retry dictation", dismiss: "Dismiss"
@@ -56,8 +56,8 @@ PlatinumMenuFrame {
         return out;
     }
     // Each control's Super+O letter, on the right edge, as in the mock.
-    readonly property var keys: ({ bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" })
-    readonly property real keyWidth: PlatinumMetrics.smallWidest(["B", "W", "S", "L", "C", "D", "F", "R", "N"])
+    readonly property var keys: ({ layout: "Y", bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" })
+    readonly property real keyWidth: PlatinumMetrics.smallWidest(["Y", "B", "W", "S", "L", "C", "D", "F", "R", "N"])
     readonly property bool anyKey: frame.entries.some(function (id) { return frame.keys[id] !== undefined; })
     // A value in a warning or danger tone keeps that tone here, as on the bar.
     function valueColor(id) {

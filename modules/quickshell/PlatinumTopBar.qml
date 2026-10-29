@@ -40,6 +40,10 @@ PanelWindow {
     required property var notifications
     required property var dictation
     required property var omniBar
+    // This screen's page layout (panels/PageLayout.qml): tiled or floating,
+    // windows per page and the gap. Null where the shell has none.
+    property var layout: null
+    readonly property bool layoutPresent: !!layout && layout.available === true
     // The remote-builder gate (BuilderGate.qml), on hosts that have one.
     property var builderGate: null
     readonly property bool builderPresent: !!builderGate && builderGate.enabled === true
@@ -80,7 +84,7 @@ PanelWindow {
     function itemFor(name) {
         return ({
             apple: markControl, find: markControl, app: appControl,
-            bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
+            layout: layoutControl, bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
             oci: ociControl, disk: diskControl, fleet: fleetControl, builder: builderControl, ntf: ntfControl,
             battery: batteryControl, chord: chord,
             clock: bar.plan.centred ? clockCentre : clockRight,
@@ -121,7 +125,7 @@ PanelWindow {
 
     // What the » menu shows for a control that moved into it.
     function iconFor(id) {
-        return ({ bt: "bluetooth", wifi: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel,
+        return ({ layout: bar.layoutIcon, bt: "bluetooth", wifi: bar.wifiRadioOff ? "wifi-0" : "wifi-" + bar.wifiLevel,
                   vol: bar.sound.muted ? "volume-muted" : bar.volIcon, bri: bar.briIcon, oci: "cloud", disk: "disk",
                   builder: "builder", ntf: "bell", apple: "mark", battery: "battery", clock: "", app: "desktop" })[id] || "";
     }
@@ -130,6 +134,8 @@ PanelWindow {
         if (id === "battery") return bar.battery.percent + "%";
         if (id === "clock") return Qt.formatDateTime(bar.now, "M/d") + "  " + bar.clockTime(bar.now);
         if (id === "app") return bar.appName;
+        if (id === "layout") return !bar.layoutPresent ? "" : bar.layout.page.floating ? "Floating"
+            : "Tiled, " + bar.layout.page.cap + (bar.layout.page.cap === 1 ? " window" : " windows");
         if (id === "bt") return !bar.btOn ? "Off" : bar.btCount > 0 ? bar.btCount + " connected" : "On";
         if (id === "wifi") return bar.wifi.statusText;
         if (id === "vol") return bar.sound.muted ? "Muted" : bar.sound.volumePercent + "%";
@@ -153,6 +159,7 @@ PanelWindow {
             ? "OCI egress this month: " + bar.ociRows.map(function (r) { return r.name + " " + r.value; }).join(", ")
                 + ". Click for usage in GB."
             : "OCI egress: " + bar.oci.stateText + ".";
+        if (id === "layout") return "Layout: " + bar.layoutText.toLowerCase() + ".";
         if (id === "bt") return "Bluetooth: " + (!bar.btOn ? "off" : bar.btCount > 0 ? bar.btCount + " connected" : "on, nothing connected") + ".";
         if (id === "wifi") return "Wi-Fi: " + bar.wifi.statusText + ".";
         if (id === "vol") return "Sound: " + (bar.sound.muted ? "muted" : bar.sound.volumePercent + "%") + ".";
@@ -181,6 +188,13 @@ PanelWindow {
     // State the bar draws
     //----------------------------------------------------------------
     readonly property int inGap: 6
+
+    // Layout: the page's tile shape, or two overlapping windows.
+    readonly property string layoutIcon: layoutPresent ? "layout-" + layout.glyph : "layout-tile-1"
+    readonly property string layoutText: !layoutPresent ? ""
+        : layout.page.floating ? "Floating"
+        : "Tiled, " + layout.word(layout.page.cap).toLowerCase() + (layout.page.cap === 1 ? " window" : " windows")
+            + ", " + layout.page.gap + " px gap"
 
     readonly property bool btPresent: bluetooth.adapter !== null
     readonly property bool btOn: btPresent && bluetooth.adapter.enabled
@@ -277,7 +291,9 @@ PanelWindow {
 
     // The Super+O chord's keys (modules/hyprland/hyprland.lua topbar-access).
     readonly property var chordKeys: {
-        const k = [["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]];
+        const k = [];
+        if (bar.layoutPresent) k.push(["Y", "Layout"]);
+        k.push(["B", "Bluetooth"], ["W", "Wi-Fi"], ["S", "Sound"], ["L", "Brightness"]);
         if (bar.oci.enabled) k.push(["C", "Cloud"]);
         if (bar.storage.enabled) k.push(["D", "Disks"]);
         if (bar.fleetPresent) k.push(["F", "Fleet"]);
@@ -339,6 +355,7 @@ PanelWindow {
 
     readonly property var metrics: ({
         controls: [
+            layoutPresent ? { id: "layout", iconWidth: 16, readoutWidth: 0 } : null,
             btPresent ? { id: "bt", iconWidth: 16, readoutWidth: 0 } : null,
             // The "!" of a radio with no network never yields.
             wifiPresent ? { id: "wifi", iconWidth: 16, readoutWidth: wifiDown ? PlatinumMetrics.width("!") : 0 } : null,
@@ -407,7 +424,7 @@ PanelWindow {
     //----------------------------------------------------------------
     // The title under the pointer, by name.
     readonly property string hoverId: {
-        const titles = [["bt", btControl], ["wifi", wifiControl], ["vol", volControl], ["bri", briControl],
+        const titles = [["layout", layoutControl], ["bt", btControl], ["wifi", wifiControl], ["vol", volControl], ["bri", briControl],
             ["oci", ociControl], ["disk", diskControl], ["fleet", fleetControl], ["builder", builderControl],
             ["ntf", ntfControl], ["battery", batteryControl], ["app", appControl],
             ["clock", clockCentre], ["clock", clockRight]];
@@ -750,6 +767,18 @@ PanelWindow {
         ClockTitle {
             id: clockRight
             visible: !bar.chordVisible && !bar.plan.centred && bar.plan.show.clock !== false
+        }
+
+        // Layout: the page's tile shape (one, two or three windows) or two
+        // overlapping windows for a floating page. It opens the Layout menu.
+        PlatinumBarControl {
+            id: layoutControl
+            visible: bar.layoutPresent && bar.onBar("layout")
+            screen: bar.modelData
+            menu: "layout"
+            open: bar.isOpen("layout")
+            pad: bar.pad
+            icon: bar.layoutIcon
         }
 
         // Bluetooth: the rune alone. Grey while on with nothing connected,

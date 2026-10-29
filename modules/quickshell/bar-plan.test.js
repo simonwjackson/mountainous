@@ -15,7 +15,7 @@ const Q = fixtures.quiet;
 const EDGE = 6, GAP16 = 16;
 const even = v => Math.ceil(v / 2 - 1e-6) * 2;
 const YIELD = ["space", "appName", "diskLabel", "uncentre", "titleMin", "builderLabel", "ociNumber", "ntfCount", "fleetCount", "batteryPct"];
-const OVERFLOW = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+const OVERFLOW = ["oci", "disk", "fleet", "builder", "layout", "bri", "bt", "wifi", "ntf", "vol"];
 const KEY = {oci: "ociNumber", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "ntfCount"};
 let checks = 0;
 const ok = (v, m) => { assert.ok(v, m); checks++; };
@@ -154,7 +154,7 @@ for (const [label, list] of Object.entries(thresholds)) {
     }
 }
 // The pinned rungs of the calm bar, as measured (bar-fixtures.json
-// quiet.calmThresholds): the first control moves into » at about 402 px.
+// quiet.calmThresholds): the first control moves into » at about 428 px.
 for (const [step, t] of Object.entries(Q.calmThresholds)) {
     const at = model.plan(t, Q.calm), below = model.plan(t - 1, Q.calm);
     const has = (p) => step.startsWith("overflow:") ? p.overflow.includes(step.slice(9)) : step === "compact" ? p.steps.includes("compact")
@@ -162,7 +162,7 @@ for (const [step, t] of Object.entries(Q.calmThresholds)) {
     ok(!has(at) && has(below), "calm: " + step + " starts at " + (t - 1) + " px, not at " + t + " px");
     ok(!has(model.plan(t + 1, Q.calm)), "calm: " + step + " not at " + (t + 1) + " px");
 }
-ok(Q.calmThresholds["overflow:oci"] >= 398 && Q.calmThresholds["overflow:oci"] <= 406, "the first control moves into » at about 402 px");
+ok(Q.calmThresholds["overflow:oci"] >= 424 && Q.calmThresholds["overflow:oci"] <= 432, "the first control moves into » at about 428 px");
 eq(model.plan(1920, Q.calm).steps, [], "calm at 1920 gives up nothing");
 
 // ---------------------------------------------------------------- yield order
@@ -192,6 +192,18 @@ eq(model.plan(2400, Q.calm).show.appName, true);
 ok(!expectedSteps(Q.calm).includes("appName"), "no appName step when the title names the app (Forgerie)");
 ok(expectedSteps(Q.long).includes("appName"), "the name (Ghostty) is a readout when the title does not name it");
 eq(expectedSteps(Q.long)[1], "appName", "the name is the first readout to yield");
+// Without a page layout (the state file is not read yet) the bar plans
+// no Layout control; with one, Layout moves into » after the status
+// readouts and before Brightness.
+{
+    const bare = {...Q.calm, controls: Q.calm.controls.filter(c => c.id !== "layout")};
+    for (let w = 2400; w > 0; w -= 3) {
+        const p = model.plan(w, bare);
+        ok(!p.controls.includes("layout") && !p.overflow.includes("layout"), "no Layout without a page layout at " + w);
+    }
+    const t = Q.calmThresholds;
+    ok(t["overflow:builder"] > t["overflow:layout"] && t["overflow:layout"] > t["overflow:bri"], "Layout overflows between Builder and Brightness");
+}
 // Hosts without the builder gate or Beszel take no step for them.
 {
     const bare = {...Q.wrong, controls: Q.wrong.controls.filter(c => c.id !== "builder" && c.id !== "fleet")};
@@ -249,6 +261,8 @@ if (fs.existsSync(qmlPath)) {
     ok(/id: chordSlot[\s\S]{0,200}width: bar\.plan\.chordWidth/.test(qml), "the right group reserves the chord's slot");
     ok(/compact: !bar\.plan\.show\.chordNames/.test(qml), "the names follow the plan");
     ok(/\["N", "Notifications"\]/.test(qml), "Super+O lists N for Notifications");
+    ok(/\["Y", "Layout"\]/.test(qml), "Super+O lists Y for Layout");
+    ok(/id: layoutControl[\s\S]{0,200}visible: bar\.layoutPresent && bar\.onBar\("layout"\)/.test(qml), "Layout hides without a page layout and follows the plan");
 }
 
 // ---------------------------------------------------------------- compact

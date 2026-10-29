@@ -82,6 +82,9 @@ QtObject {
         id: hint
         property string text: ""
         property real rightInset: PlatinumTokens.menuRightInset
+        // The space between words. A long hint that must hold one line
+        // (the Layout menu's footer) passes the face's own space width.
+        property real wordSpacing: 5
         readonly property var words: {
             const out = [];
             for (const part of hint.text.split(" ")) {
@@ -105,7 +108,7 @@ QtObject {
                 required property int index
                 readonly property var pieces: modelData.split(/([↑↓←→])/).filter(function (p) { return p !== ""; })
                 height: 16
-                rightPadding: index < hint.words.length - 1 ? 5 : 0
+                rightPadding: index < hint.words.length - 1 ? hint.wordSpacing : 0
 
                 Repeater {
                     model: word.pieces

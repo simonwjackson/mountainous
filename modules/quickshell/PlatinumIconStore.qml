@@ -18,11 +18,15 @@ Singleton {
     // (lit waves; muted adds the slash), brightness-1..8 (lit rays) and
     // cloud-meter (the cloud with the worst profile's meter; the bar
     // draws the fill). Straight edges sit on whole device pixels at 1.5.
+    // layout-tile-1..3 and layout-float are the Layout control's glyph;
+    // layout-cap-1..3 are its capacity pictures, whose tiles take the
+    // knock colour (the highlight on the chosen one).
     readonly property var names: [
         "appearance", "arrow", "band-down", "band-up", "battery", "bell", "bluetooth", "bolt", "builder", "brightness",
         "brightness-1", "brightness-2", "brightness-3", "brightness-4", "brightness-5", "brightness-6", "brightness-7",
-        "brightness-8", "check", "close", "cloud", "cloud-meter", "desktop", "disk", "dot", "folder", "grip", "lock",
-        "mark", "more", "plug", "pop", "popup", "ring", "scroll-left", "scroll-right", "slash", "speaker",
+        "brightness-8", "check", "close", "cloud", "cloud-meter", "desktop", "disk", "dot", "folder", "grip",
+        "layout-cap-1", "layout-cap-2", "layout-cap-3", "layout-float", "layout-tile-1", "layout-tile-2", "layout-tile-3",
+        "lock", "mark", "more", "plug", "pop", "popup", "ring", "scroll-left", "scroll-right", "slash", "speaker",
         "speaker-0", "speaker-1", "speaker-2", "speaker-3", "submenu",
         "volume-0", "volume-1", "volume-2",
         "volume-muted", "wifi-0", "wifi-1", "wifi-2", "wifi-3", "wifi-4"

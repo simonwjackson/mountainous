@@ -415,6 +415,7 @@ Scope {
     Component { id: btMenu; PlatinumBluetoothMenu { panel: desktop.context.bluetooth } }
     Component { id: wifiMenu; PlatinumWifiMenu { panel: desktop.context.wifi } }
     Component { id: volMenu; PlatinumSoundMenu { panel: desktop.context.sound } }
+    Component { id: layoutMenu; PlatinumLayoutMenu { panel: desktop.context.layout } }
     Component { id: briMenu; PlatinumBrightnessMenu { panel: desktop.context.brightness } }
     Component { id: ociMenu; PlatinumOciEgressMenu { panel: desktop.context.oci } }
     Component { id: diskMenu; PlatinumStorageHealthMenu { panel: desktop.context.storage } }
@@ -441,6 +442,8 @@ Scope {
         bluetooth: desktop.context.bluetooth
         wifi: desktop.context.wifi
         sound: desktop.context.sound
+        // A shell (or harness) without the page layout owner has no Layout control.
+        layout: desktop.context.layout || null
         brightness: desktop.context.brightness
         oci: desktop.context.oci
         storage: desktop.context.storage
@@ -500,6 +503,7 @@ Scope {
             bt: btMenu,
             wifi: wifiMenu,
             vol: volMenu,
+            layout: desktop.context.layout ? layoutMenu : null,
             bri: briMenu,
             oci: desktop.context.oci.enabled ? ociMenu : null,
             disk: desktop.context.storage.enabled ? diskMenu : null,

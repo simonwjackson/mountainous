@@ -43,13 +43,16 @@
 // (PlatinumMetrics.even), so the plan counts each one the same way and
 // what it fits is what the bar draws.
 /**
- * @typedef {'bt'|'wifi'|'vol'|'bri'|'oci'|'disk'|'fleet'|'builder'|'ntf'} ControlId
+ * @typedef {'layout'|'bt'|'wifi'|'vol'|'bri'|'oci'|'disk'|'fleet'|'builder'|'ntf'} ControlId
  * @typedef {{id: ControlId, iconWidth: number, readoutWidth: number, compactReadoutWidth?: number}} Control
  */
 
 var YIELD_ORDER = ["space", "appName", "diskLabel", "uncentre", "titleMin", "builderLabel",
     "ociNumber", "ntfCount", "fleetCount", "batteryPct"];
-var OVERFLOW_ORDER = ["oci", "disk", "fleet", "builder", "bri", "bt", "wifi", "ntf", "vol"];
+// Layout (tiled or floating, windows per page, the gap) has a key for
+// every action (Super+F, Super+1 2 3, Super+[ ]), so it moves into » right
+// after the status readouts and before the hardware controls.
+var OVERFLOW_ORDER = ["oci", "disk", "fleet", "builder", "layout", "bri", "bt", "wifi", "ntf", "vol"];
 var READOUTS = {oci: "ociNumber", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "ntfCount"};
 var EDGE = 6, INSIDE_GAP = 6, CLOCK_GAP = 16, TITLE_STUB = 56;
 var PAD = 8, PAD_TIGHT = 5, GAP = 2;

@@ -19,7 +19,12 @@ Item {
     signal moved(real ratio)
     signal released
 
-    readonly property real valueWidth: PlatinumMetrics.widest(["100%", "--"])
+    // The value's box: wide enough for its widest value, so the track
+    // never moves. A slider with other values ("48 px") passes its own.
+    property real valueWidth: PlatinumMetrics.widest(["100%", "--"])
+    // The track's place in the slider, for a scale drawn under it.
+    readonly property real trackX: track.x
+    readonly property real trackWidth: track.width
 
     Layout.fillWidth: true
     implicitHeight: 32
