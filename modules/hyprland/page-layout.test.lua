@@ -1,6 +1,6 @@
 -- Headless compositor adapter. Dispatch changes the same live objects the
 -- queries return, including synchronous move events and deferred timers.
-local module_path, output_path = arg[1], arg[2]
+local module_path, output_path, config_path = arg[1], arg[2], arg[3]
 local json = require("dkjson")
 local dir = os.tmpname()
 os.remove(dir)
@@ -19,7 +19,7 @@ local monitors = {
     { name = "DP-1", description = "", width = 1200, height = 1920, scale = 1, focused = false },
 }
 local spaces, windows, events, timers, rules, moves = {}, {}, {}, {}, {}, {}
-local focused, reject_dispatch
+local focused, reject_dispatch, on_focus
 local function emit(name, ...)
     for _, callback in ipairs(events[name] or {}) do callback(...) end
 end
@@ -38,8 +38,9 @@ local function ws(id, monitor)
         for _, win in ipairs(windows) do if win.workspace == self then out[#out + 1] = win end end
         return out
     end
-    spaces[#spaces + 1] = w
+    -- Workspace::init emits created before CWorkspace::create registers it.
     emit("workspace.created", w)
+    spaces[#spaces + 1] = w
     return w
 end
 local function by_id(id)
@@ -73,6 +74,7 @@ _G.hl = {
     get_windows = function() return windows end,
     get_monitors = function() return monitors end,
     get_active_workspace = function() return monitors[1].active_workspace end,
+    get_active_window = function() return focused end,
     on = function(name, callback)
         events[name] = events[name] or {}; table.insert(events[name], callback)
     end,
@@ -97,11 +99,17 @@ _G.hl = {
         if d.kind == reject_dispatch then return { ok = false, error = "configured dispatch rejection" } end
         local a = d.args
         if d.kind == "float" then
-            assert(a.action == "on" or a.action == "off", "real API float action is on/off, not set/unset")
-            by_address(a.window).floating = a.action == "on"
+            assert(a.action == "on" or a.action == "off" or a.action == "toggle", "real API float action is on/off/toggle, not set/unset")
+            local w = by_address(a.window)
+            if a.action == "toggle" then
+                local provenance = json.decode(read(dir .. "/mountainous-page-layout-floated.json"))
+                check(provenance[w.address] == nil, "manual float ownership is persisted before dispatch")
+                w.floating = not w.floating
+            else w.floating = a.action == "on" end
         elseif d.kind == "focus" then
             if a.window then focused = by_address(a.window)
             else monitors[1].active_workspace = assert(by_id(a.workspace)) end
+            if on_focus then on_focus() end
         elseif d.kind == "move" then
             local page = by_id(a.workspace) or ws(a.workspace, focused.workspace.monitor)
             moves[#moves + 1] = { address = focused.address, target = page.id }
@@ -117,6 +125,9 @@ local M = dofile(module_path).attach()
 check(read(M.FILE):match('"pages":{}'), "no pages encodes an object, not an array")
 local p1, p2 = ws(1), ws(2, monitors[2])
 monitors[1].active_workspace, monitors[2].active_workspace = p1, p2
+flush()
+check(json.decode(read(M.FILE)).pages["1"] and json.decode(read(M.FILE)).pages["2"], "created pages appear after registration without another event")
+check(rules["2"] and rules["2"].gaps_out == 8, "latest created empty page gets its gap rule after registration")
 local function page(id) return M.snapshot().pages[tostring(id)] end
 check(page(1).cap == 1 and page(1).gap == 8 and not page(1).floating, "fallback")
 check(not page(1).own, "new page follows default")
@@ -129,6 +140,8 @@ check(page(1).cap == 1 and page(1).own, "default edits do not change existing pa
 local persisted = json.decode(read(M.DEFAULTS_FILE))
 check(persisted['Built-in "Display"'].cap == 2 and persisted["DP-1"].floating, "description key with connector fallback persists JSON")
 local p8, p9 = ws(8), ws(9, monitors[2])
+flush()
+check(json.decode(read(M.FILE)).pages["8"].gap == 16 and rules["8"].gaps_out == 16, "created page publishes monitor default gap")
 check(page(8).cap == 2 and page(8).gap == 16 and not page(8).own, "new page gets monitor default")
 check(page(9).floating and page(9).cap == 3, "independent monitor defaults")
 
@@ -153,6 +166,18 @@ check(not page(8) and not rules["8"].enabled and rules["5"].enabled, "old page/r
 check(d.floating, "page floated window before renumber")
 M.page(5, { floating = false, zen = false })
 check(not d.floating and rules["5"].gaps_out == 36, "float ownership and ordinary gaps follow renumbering")
+M.page(5, { floating = true })
+focused = d
+M.toggle_window_floating()
+check(not d.floating, "manual toggle tiles a page-floated window")
+M.toggle_window_floating()
+check(d.floating, "manual toggle refloats the same window")
+-- Verify persistence too: a reload must not restore the discarded ownership.
+flush()
+events = {}
+M = dofile(module_path).attach()
+M.page(5, { floating = false })
+check(d.floating, "manual refloat stays floating when page returns to tiled, including after reload")
 
 -- Page floating has no capacity. Pre-existing hand floaters and pins survive.
 M.page(1, { zen = false, floating = true })
@@ -228,6 +253,7 @@ check(not json.decode(read(M.FILE)).pages["40"], "removed page disappears from f
 -- Reload the module like a new config Lua state; state and provenance are
 -- read from the real JSON files, not injected into module internals.
 M.page(1, { cap = 3, floating = true, gap = 20, zen = true })
+flush()
 local before = page(1)
 events = {}
 M = dofile(module_path).attach()
@@ -275,5 +301,41 @@ check(failed.id ~= 110 and page(failed.id).cap == 2, "compaction guard recovers 
 -- Preserve the actual emitted file for the JS model contract check.
 local out = assert(io.open(output_path, "w")); out:write(read(M.FILE)); out:close()
 check(not io.open(M.FILE .. ".tmp"), "atomic write leaves no temp file")
+
+-- Reset holds weak objects while earlier targets can move focus. Simulate an
+-- empty target expiring on the first focus change caused by overflow.
+M.default("DP-4", { cap = 3, floating = false, gap = 8 })
+local reset_page = ws(200)
+M.page(200, { cap = 3, gap = 32, zen = true })
+win("reset-a", reset_page); win("reset-b", reset_page); win("reset-c", reset_page)
+local expired = ws(201)
+local survivor = ws(202)
+M.page(202, { gap = 28, zen = true })
+flush()
+M.default("DP-4", { cap = 1, gap = 8 })
+on_focus = function()
+    on_focus = nil
+    remove(expired)
+    for key in pairs(expired) do expired[key] = nil end
+    setmetatable(expired, { __index = function(_, key)
+        check(key == "id", "reset must check the weak workspace id before its monitor")
+        return nil
+    end })
+end
+M.reset("DP-4")
+flush()
+check(expired.id == nil, "reset regression expired an empty target during enforcement")
+check(not page(survivor.id).own and not page(survivor.id).zen, "reset skips expired target and continues with remaining pages")
+
+-- Plain brackets must remain window cycling, not duplicate gap actions.
+local config = read(config_path)
+for _, side in ipairs({ "bracketleft", "bracketright" }) do
+    local prefix = 'hl.bind(mod .. " + ' .. side .. '",'
+    local first = assert(config:find(prefix, 1, true), "cycle binding missing")
+    check(not config:find(prefix, first + #prefix, true), "plain bracket must have only one binding")
+    check(config:find('hl.bind(mod .. " + SHIFT + ' .. side .. '", function() page_layout.step_gap', 1, true), "gap binding needs Shift")
+end
+check(config:find('hl.dsp.layout("cycleprev")', 1, true) and config:find('hl.dsp.layout("cyclenext")', 1, true), "cycle actions remain installed")
+check(config:find('hl.bind(mod .. " + CTRL + F", function() page_layout.toggle_window_floating() end)', 1, true), "manual float binding clears module ownership")
 assert(os.execute("rm -r " .. dir))
 print("page-layout: all tests passed")

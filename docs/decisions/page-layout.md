@@ -11,6 +11,13 @@ runtime wire. The runtime state file also restores page settings on a config
 reload. A separate runtime file stores only addresses of page-floated windows,
 so a reload can still distinguish them from hand-floated windows. No settings
 are duplicated there. Atomic replacement uses a sibling `.tmp` file.
+Super+Ctrl+F calls the module's manual window toggle. It clears and persists
+page float ownership before dispatching the toggle, so a tile/refloat sequence
+and a config reload cannot reclaim a hand-floated window.
+
+Super+Shift+bracketleft and Super+Shift+bracketright change the outer gap by
+-4/+4. Plain Super+bracketleft/right keep the existing cycleprev/cyclenext
+bindings. Hyprland runs duplicate bindings, so the gap actions need Shift.
 
 Zen no longer maximizes the focused window. A page can have two or three tiled
 windows; maximizing one hides the others and makes a page setting depend on
@@ -42,6 +49,8 @@ legacy configuration names.
 | Open, destroy events | `config/lua/LuaEventHandler.cpp:94-97`: `dispatch("window.open", 1, ...)`, `dispatch("window.destroy", 1, ...)` |
 | Move event and arguments | Same file, lines 111-115: `dispatch("window.move_to_workspace", 2, ...)`, `CLuaWindow::push(L, w);`, `CLuaWorkspace::push(L, ws);` |
 | Move event timing | `desktop/view/Window.cpp:570`: `m_workspace = pWorkspace;`; line 581: `window.moveToWorkspace.emit(m_self.lock(), pWorkspace);`. The method continues after the emission, so float/enforcement waits one timer tick and looks up the live address. |
+| Workspace creation timing | `desktop/Workspace.cpp:30-32`: `workspace->init(workspace);` precedes `State::workspaceState()->add(workspace);`; line 74: `workspace.created.emit(self);` runs inside `init`. Refresh waits one tick so an empty page reaches the registry before publication and rule application. |
+| Expired workspace references | `config/lua/objects/LuaWorkspace.cpp:97-101`: `if (!ws || ws->inert())` calls `lua_pushnil(L);`. Reset checks the id first and skips expired targets after earlier overflow operations move focus. |
 | Workspace lifecycle | `config/lua/LuaEventHandler.cpp:137`: `dispatch("workspace.created", 1, ...)`; line 142: `dispatch("workspace.removed", 1, ...)`; line 145: `dispatch("workspace.move_to_monitor", 2, ...)` |
 | Monitor and start events | Same file, lines 121-124: `"monitor.added"`, `"monitor.removed"`, `"monitor.layout_changed"`; line 165: `dispatch("hyprland.start", 0, ...)` |
 | Monitor identity and size | `config/lua/objects/LuaMonitor.cpp:87-88`: `key == "description"`, `mon->m_shortDescription`; lines 91-94: `"width"`/`"height"` expose `m_pixelSize.x`/`.y`; lines 127-130 expose `"scale"`/`"transform"` |
@@ -63,7 +72,7 @@ The page-layout check runs Lua syntax validation, the actual module with a
 headless `hl` adapter and real temporary JSON files, the production JavaScript
 model against emitted JSON, shellcheck, and command argument/error tests.
 The headless tests cover overflow, renumbering, monitor defaults and reloads,
-float provenance and pins, gaps, rotated Zen, restore capacity, lifecycle
+float provenance, manual takeover and pins, non-colliding gap keys, rotated Zen, restore capacity, pre-registry creation, expired reset targets, lifecycle
 publication, and the exact state-file fields.
 
 Myoko's login is `simon` (uid 1000), not `simonwjackson`. Read-only monitor JSON

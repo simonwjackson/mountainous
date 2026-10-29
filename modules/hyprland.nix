@@ -52,7 +52,7 @@ in {
       nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.nodejs pkgs.shellcheck];
     } ''
       luac -p ${./hyprland/page-layout.lua}
-      lua ${./hyprland/page-layout.test.lua} ${./hyprland/page-layout.lua} "$TMPDIR/state.json"
+      lua ${./hyprland/page-layout.test.lua} ${./hyprland/page-layout.lua} "$TMPDIR/state.json" ${./hyprland/hyprland.lua}
       node ${./hyprland/page-layout-state.test.js} ${./quickshell/page-layout-model.js} "$TMPDIR/state.json"
       shellcheck -s bash ${./hyprland/page-layout.sh} ${./hyprland/page-layout-command.test.sh}
       bash ${./hyprland/page-layout-command.test.sh} ${./hyprland/page-layout.sh}

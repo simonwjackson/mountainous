@@ -16,7 +16,7 @@ Approved mock: `/tmp/layout-mock/` (served at `http://100.114.19.92:8765/layout-
 |---|---|
 | Gap row on a Floating page | Greyed out, with "Gaps apply to tiled windows." (`general:snap:monitor_gap` is a snapping threshold, not a margin, so the mock's "snap" line is dropped.) |
 | Super+F | Toggles the page between Tiled and Floating. The old per-window float toggle moves to Super+Ctrl+F. |
-| Gap keys | Super+[ and Super+] step the page's gap by 4 px. |
+| Gap keys | Super+Shift+[ and Super+Shift+] step the page's gap by 4 px. |
 | Default storage | Per monitor, in `$XDG_STATE_HOME/mountainous/page-layout-defaults.json`, keyed by monitor description (fallback: connector name). |
 | Zen | A per-page flag owned by page-layout.lua. `hypr-zen` stays as the command and calls it. Zen does not make a page "differ from default". |
 
@@ -93,7 +93,7 @@ Win98*.qml, themes/win98/*                         Win98 UI
 - **Floating page**: every tiled window on it floats, and windows that open on it or move to it float. Capacity is not enforced there. Back to Tiled: windows the page floated tile again (windows a person floated by hand, or pinned, stay floating), then capacity is enforced.
 - **Gap**: per page, applied as a workspace rule. Zen on a page replaces its gap with Kamoi's 12% sides and 5% top and bottom of that monitor's logical size.
 - **Session restore** keeps working: it shares capacity through page-layout.lua.
-- **Keys**: Super+1/2/3 cap, Super+F arrange, Super+Ctrl+F the focused window, Super+[ ] gap, Super+Shift+M zen. All act on the focused monitor's active page.
+- **Keys**: Super+1/2/3 cap, Super+F arrange, Super+Ctrl+F the focused window, Super+Shift+[ ] gap, Super+Shift+M zen. All act on the focused monitor's active page.
 
 ## UI wording (both themes)
 
@@ -103,7 +103,7 @@ Win98*.qml, themes/win98/*                         Win98 UI
 | Arrange label | Arrange (Super+F) | Arrange new pages |
 | Capacity label | Windows on this page (Super+1 2 3) | Windows per page |
 | Capacity note | `capNote()`; plus "New pages start with N." + Use Default when it differs | "Super+1 2 3 change only the current page." |
-| Gap label | Outer gap (Super+[ ]) | Outer gap |
+| Gap label | Outer gap (Super+Shift+[ ]) | Outer gap |
 | Gap note | "New pages use N px." + Use Default when it differs; "Gaps apply to tiled windows." when floating | none |
 | Last row | Zen margins check (Super+Shift+M) | "N pages differ from this." + Reset All (hidden when N is 0) |
 | Footer (Platinum) / status bar (Win98) | "Tab this page/default · F float · 1 2 3 windows / ←→ gap · Z zen · Esc close" | same |

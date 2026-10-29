@@ -201,8 +201,8 @@ for n = 1, 3 do
     local cap = n
     hl.bind(mod .. " + " .. n, function() page_layout.page("active", { cap = cap }) end)
 end
-hl.bind(mod .. " + bracketleft", function() page_layout.step_gap("active", -4) end)
-hl.bind(mod .. " + bracketright", function() page_layout.step_gap("active", 4) end)
+hl.bind(mod .. " + SHIFT + bracketleft", function() page_layout.step_gap("active", -4) end)
+hl.bind(mod .. " + SHIFT + bracketright", function() page_layout.step_gap("active", 4) end)
 
 -- Even versus golden split.
 hl.bind(mod .. " + G", hl.dsp.exec_cmd("hypr-split"))
@@ -221,7 +221,7 @@ hl.bind(mod .. " + M", hl.dsp.window.fullscreen({ mode = "fullscreen", action = 
 hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("hypr-zen"))
 
 hl.bind(mod .. " + F", function() page_layout.toggle_floating("active") end)
-hl.bind(mod .. " + CTRL + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mod .. " + CTRL + F", function() page_layout.toggle_window_floating() end)
 -- Kamoi Meta+Shift+F makes a floater sticky, so it follows you along
 -- the workspace strip.
 hl.bind(mod .. " + SHIFT + F", hl.dsp.window.pin())

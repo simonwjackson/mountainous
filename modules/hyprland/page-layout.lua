@@ -283,9 +283,18 @@ function M.reset(connector)
     -- A reset can enforce capacity and renumber other targets. Keep workspace
     -- objects, not a list of ids that becomes stale after the first edit.
     for _, ws in ipairs(targets) do
-        local d = initial(ws.monitor)
-        d.zen = false
-        M.page(ws.id, d)
+        -- Enforcement on an earlier target can move focus and collect an
+        -- empty page. LuaWorkspace returns nil for fields of an expired weak
+        -- object. Check its id before reading its monitor or changing it.
+        local id = ws.id
+        if id and id > 0 then
+            local monitor = ws.monitor
+            if monitor and monitor.name == connector then
+                local d = initial(monitor)
+                d.zen = false
+                M.page(id, d)
+            end
+        end
     end
     publish()
 end
@@ -297,6 +306,15 @@ end
 function M.toggle_floating(id)
     local ws = workspace(id)
     M.page(ws.id, { floating = not ensure(ws).floating })
+end
+function M.toggle_window_floating()
+    local w = hl.get_active_window()
+    if not w or not w.address then return end
+    -- A manual toggle takes ownership even when it tiles our floater first.
+    -- Persist before dispatch, so a reload cannot reclaim a later refloat.
+    owned[w.address] = nil
+    write_json(OWNED_FILE, object(owned))
+    dispatch(hl.dsp.window.float({ action = "toggle", window = "address:" .. w.address }))
 end
 function M.toggle_zen(id)
     local ws = workspace(id or "active")
@@ -416,7 +434,17 @@ function M.attach()
     end)
     -- Do not leave on workspace.active: it kicks an intentional swipe off an
     -- empty page and causes re-entrant CUnifiedWorkspaceSwipeGesture::end().
-    hl.on("workspace.created", M.refresh)
+    local created_timer
+    hl.on("workspace.created", function()
+        -- Workspace::init emits created before CWorkspace::create adds it to
+        -- the registry. Query on the next tick, including empty pages that
+        -- will never raise a window event. Coalesce creations within a tick.
+        if created_timer then return end
+        created_timer = hl.timer(function()
+            created_timer = nil
+            M.refresh()
+        end, { timeout = 1, type = "oneshot" })
+    end)
     hl.on("workspace.removed", M.compact)
     hl.on("workspace.move_to_monitor", M.refresh)
     for _, event in ipairs({ "monitor.added", "monitor.removed", "monitor.layout_changed", "hyprland.start" }) do
