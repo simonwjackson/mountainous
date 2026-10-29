@@ -93,6 +93,14 @@ Notes: `/tmp/ui-stack/notes.md`.
 - Item 4 of the QML structure (no subfolders, no root qmldir) still holds, and now has a cause: Quickshell makes a qmldir only for folders reached by a static import from `shell.qml`. A static `import "sub"` makes later dynamic loads from `sub/` work.
 - Pyxamp's "cannot import the bar's files" was untried, not a real limit.
 
+### Stack choice: criteria and evidence in progress
+
+The owner keeps all three stacks open: A (Rust service + Quickshell window), B (cxx-qt with a Quickshell-free kit), C (gtk-rs with the GTK themes). The deciding criteria are **performance at the fidelity already proven**, and **Quickshell's real limits as an application platform**. Evidence being gathered:
+
+- One benchmark for all three (`/tmp/stack-bench/WORKLOAD.md`): 10,000-row list, cold start, PSS, scroll frame times, theme switch, idle CPU, row updates, fidelity screenshots.
+- A cxx-qt spike (`/tmp/cxxqt-spike/`).
+- A source-based review of Quickshell's limits for apps: windows, menus, text and IME, clipboard and drag and drop, accessibility, lists, D-Bus and portals, hot reload, stability.
+
 ## Open questions
 
 Tracked in the interview; this list moves into the decisions table as each one settles.
