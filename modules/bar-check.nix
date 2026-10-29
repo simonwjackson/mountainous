@@ -195,7 +195,7 @@
         assert !(builtins.hasAttr (prefix + "PlatinumTokens.qml") files);
         assert !(builtins.hasAttr (prefix + "Win98Tokens.qml") files);
         assert desktop.systemd.user.services.quickshell.environment.QML2_IMPORT_PATH
-          == "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
+          == "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
         assert noDevelopment;
         assert builtins.hasAttr (prefix + "PlatinumDesktop.qml") files;
         assert builtins.hasAttr (prefix + "themes/platinum/previews/light.png") files;

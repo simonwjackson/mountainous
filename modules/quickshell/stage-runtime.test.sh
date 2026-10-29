@@ -4,7 +4,7 @@ source_dir=$(realpath "${1:-modules/quickshell}")
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 bash "$source_dir/stage-runtime.sh" "$source_dir" "$work/runtime"
-for file in shell.qml Theme.qml panels/StorageHealth.qml panels/NotificationCentre.qml \
+for file in shell.qml Theme.qml hensou-host.js panels/StorageHealth.qml panels/NotificationCentre.qml \
   themes/platinum/picker-plan.js themes/platinum/previews/light.png icons/builder.svg; do
   test -L "$work/runtime/$file"
   cmp "$source_dir/$file" "$work/runtime/$file"
