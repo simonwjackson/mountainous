@@ -122,7 +122,7 @@ Upstream says Quickshell targets shell parts (bars, lock screens, widgets), not 
 | Area | Finding | Check |
 |---|---|---|
 | Clipboard | Only plain text (`Quickshell.clipboardText`). No file clipboard (`text/uri-list`), no primary selection. | Fits the source cited. A Files service in Rust can own the clipboard instead. |
-| Drag and drop with other apps | Reported missing in pure QML. | **Disputed.** Qt Quick `Drag` with `dragType: Drag.Automatic` and `mimeData` starts a platform drag in Qt 6. Not tested in a Quickshell window. Needs a spike, because Files depends on it. |
+| Drag and drop with other apps | Reported missing in pure QML. | **Wrong.** Spike (`/tmp/dnd-spike/`, sway headless): with plain QML `Drag.Automatic` + `text/uri-list`, both A and B drag files out to GTK4 and Chromium 153 (Chromium read the file) and accept drops from GTK4. File clipboard: B in-process (about 30 lines of cxx-qt and C++ `QClipboard`); A only through a long-lived owner such as wl-clipboard-rs in the Rust service (a one-shot `Process` lost the clipboard). Hyprland, multi-file drags and MOVE are untested. |
 | Modal dialogs | `parentWindow` stacks but does not block the parent. | Plausible; untested. Files can disable the parent itself. |
 | Window position | Clients cannot place themselves under xdg-shell. | True for **every** stack on Wayland, not only Quickshell. Restoring positions (decision 27) needs Hyprland rules or IPC in A, B and C alike. |
 | Accessibility | Fixed in Quickshell 0.3.2. | Myoko runs 0.3.1, so it lacks the fix until an update. |
