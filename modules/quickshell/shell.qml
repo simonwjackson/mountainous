@@ -659,6 +659,9 @@ ShellRoot {
             BluetoothPanel { id: bluetoothPanel; shown: screenScope.shows("bt") }
             WifiPanel { id: wifiPanel; shown: screenScope.shows("wifi") }
             SoundPanel { id: soundPanel; shown: screenScope.shows("vol") }
+            // Tiled or floating, windows per page and the outer gap for the
+            // page this screen shows, and this screen's default for new pages.
+            PageLayout { id: pageLayout; screen: screenScope.modelData; shown: screenScope.shows("layout") }
             BrightnessPanel { id: brightnessPanel; shown: screenScope.shows("bri") }
             OciEgress { id: ociEgress; shown: screenScope.shows("oci") }
             // The glance space's Disks widget reads this owner too.
@@ -680,6 +683,7 @@ ShellRoot {
                 readonly property var bluetooth: bluetoothPanel
                 readonly property var wifi: wifiPanel
                 readonly property var sound: soundPanel
+                readonly property var layout: pageLayout
                 readonly property var brightness: brightnessPanel
                 readonly property var oci: ociEgress
                 readonly property var storage: storageHealth

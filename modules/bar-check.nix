@@ -74,6 +74,7 @@
             node ${./quickshell/battery.test.js} ${./quickshell/battery.js}
             node ${./quickshell/oci-model.test.js} ${./quickshell/oci-model.js}
             node ${./quickshell/media-hold.test.js} ${./quickshell/media-hold.js}
+            node ${./quickshell/page-layout-model.test.js} ${./quickshell/page-layout-model.js}
             node ${./quickshell/bar-plan.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json} ${./quickshell/PlatinumTopBar.qml}
             node ${./quickshell/bar-compact.test.js} ${./quickshell/bar-plan.js} ${./quickshell/bar-fixtures.json}
             node ${./quickshell/theme-dev/overflow-geometry.test.js} ${./quickshell}
