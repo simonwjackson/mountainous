@@ -61,6 +61,10 @@
 
       # The operator's daily machine shows the servers' storage health.
       mountainous.features.storage-health.enable = true;
+
+      # Every Chromium page in its own window (Tab-less, vertical tabs
+      # collapsed). See docs/plans/desktop-themes/tabless.md for the cost.
+      mountainous.browser.tabless.enable = true;
     };
   };
 }
