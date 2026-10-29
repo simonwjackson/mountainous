@@ -1,6 +1,6 @@
 # Files: a file manager for both desktop themes
 
-Status: design interview in progress (started 2026-10-28). Nothing is built. The mock is at `/tmp/explorer-mock/` (served at `http://100.114.19.92:8765/explorer-mock/`).
+Status: design interview complete (2026-10-28), awaiting the owner's confirmation. Nothing is built. The mock is at `/tmp/explorer-mock/` (served at `http://100.114.19.92:8765/explorer-mock/`).
 
 Files is a file manager for Myoko. It shows local files, files on SSH hosts, and libraries in one place. It looks like the Mac OS 8 Finder under Platinum and like Windows Explorer under Windows 98, and follows a live theme switch. Desktop icons come later and use the same model.
 
@@ -63,6 +63,9 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 37 | Pyxamp moves onto the kit first, before Files. | A known app proves the kit early. Cost: Files waits for that move. |
 | 38 | Stack: each app is one Rust process with a Qt Quick UI through cxx-qt, drawing with a Quickshell-free Platinum and Windows 98 kit that the shell also uses. Files' always-on service (decision 30) is the app process itself. | A and B tied on performance and pixels; B gives full Qt in one process and does not build apps on a shell-only tool. See `docs/decisions/app-stack.md`. |
 | 39 | The kit is curated, not the shell's whole folder: Theme, tokens and shared controls, with no Quickshell imports. The shell imports it too, so there is one copy. | Required by decision 38. Closes the unanswered question about importing the whole folder. |
+| 40 | The QML kit lives in the kit repository, beside its Rust crates. Mountainous, Files and Pyxamp all take it as a flake input. | One version for the whole kit; dependencies run one way. Cost: a shell theme change is a kit change plus an input bump, and the parity check must read the kit. |
+| 41 | The shell draws the desktop icons with the kit, on its desktop surface. Files supplies the list and handles open, move and drop over a socket. | The desktop stays with the shell and survives a Files restart. Cost: a small shell–Files protocol; the desktop surface takes input. |
+| 42 | The kit is named after a mountain, like the hosts: **Hotaka** (repository `hotaka`, QML module `Hotaka`, crates `hotaka-*`). | Owner chose the style; the name is my pick ("Kamoi" is taken, "Tateyama" is close to host `tate`). Cheap to rename before the repository exists. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
@@ -136,4 +139,12 @@ Upstream says Quickshell targets shell parts (bars, lock screens, widgets), not 
 
 ## Open questions
 
-Tracked in the interview; this list moves into the decisions table as each one settles.
+None in the design interview (2026-10-28). Implementation unknowns: a menu host for apps (Qt `Popup` with `popupType: Window` on Hyprland), the per-window Win98 unit at fractional scale, Hyprland rules for restoring window positions, and benchmark repeats on a quiet machine or Myoko.
+
+## Order of work
+
+1. Hotaka: create the repository; move the shared QML out of the shell, Quickshell-free; move Pyxamp's library clients into crates; the shell imports Hotaka.
+2. Pyxamp moves its face onto Hotaka (decision 37).
+3. Comics serves original files (decision 25), in parallel.
+4. Files, first build: local files and SSH hosts in both themes (decision 33).
+5. Then libraries, then desktop icons.
