@@ -61,6 +61,8 @@ One entry in a library: a track, an episode, a book, a comic, a movie. To the re
 | 35 | The kit must cover the controls for the next apps: control panels and settings, media players and remotes, chat, mail and notifications, fleet and host tools. | Owner's list. Viewers, editors and terminal-like apps are not planned. |
 | 36 | The kit's Rust parts (service skeleton: socket, protocol, systemd unit; library clients for Pyxis, Ossicle, Jellyfin, Comics) live in their own repository of crates, used by Files and Pyxamp. Pyxamp's clients move there. | One client per service. Cost: a third repository and a Pyxamp refactor. |
 | 37 | Pyxamp moves onto the kit first, before Files. | A known app proves the kit early. Cost: Files waits for that move. |
+| 38 | Stack: each app is one Rust process with a Qt Quick UI through cxx-qt, drawing with a Quickshell-free Platinum and Windows 98 kit that the shell also uses. Files' always-on service (decision 30) is the app process itself. | A and B tied on performance and pixels; B gives full Qt in one process and does not build apps on a shell-only tool. See `docs/decisions/app-stack.md`. |
+| 39 | The kit is curated, not the shell's whole folder: Theme, tokens and shared controls, with no Quickshell imports. The shell imports it too, so there is one copy. | Required by decision 38. Closes the unanswered question about importing the whole folder. |
 
 ## What the library APIs offer today (recon 2026-10-28)
 
