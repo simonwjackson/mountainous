@@ -67,6 +67,15 @@ for file in (root / 'panels').glob('*.qml'):
     assert 'property Component menu' not in text, file
     for prefix in prefixes:
         assert not re.search(r'\b' + re.escape(prefix) + r'[A-Z]\w*', text), file
+# Shell-local Theme is the host seam; all shared tokens have one URI identity.
+for name in ('Theme', 'PlatinumTokens', 'Win98Tokens', 'PlatinumMetrics',
+             'PlatinumIconStore', 'Win98IconStore'):
+    if name != 'Theme':
+        assert not (root / (name + '.qml')).exists(), name
+for file in root.glob('*.qml'):
+    text = file.read_text()
+    assert not re.search(r'^import Hensou(?:\s*$|\s+\d)', text, re.M), file
+assert 'import Hensou as Kit' in (root / 'Theme.qml').read_text()
 assert not (root / 'qmldir').exists()
 assert 'Desktop theme…' in (root / 'OmniBar.qml').read_text()
 assert 'text: "Desktop theme…"' in (root / 'PlatinumClockMenu.qml').read_text()

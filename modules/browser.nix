@@ -49,7 +49,7 @@ in
             QUICKSHELL_LINT_QS = pkgs.quickshell;
             QUICKSHELL_LINT_QT = pkgs.qt6.qtdeclarative;
             QUICKSHELL_LINT_QTBASE = pkgs.qt6.qtbase;
-            # bars.nix owns the complete shell QML import path.
+            QML2_IMPORT_PATH = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
             EXPECTED_NAVIGATION = if desktop.mountainous.browser.shellNavigation.enable then "1" else "0";
             CHROMIUM = "${self.nixosConfigurations.myoko.pkgs.chromium}/bin/chromium";
           }
