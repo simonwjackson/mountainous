@@ -144,7 +144,7 @@ Scope {
         for (const id of p.trayOut) {
             if (id === "bat") continue;
             out.push({ text: Tray.LABEL[id], icon: id === "fleet" ? "host" : desktop.trayIcon(id), action: "open", control: id,
-                shortcut: label(Tray.overflowValue(id, desktop.trayData)) });
+                shortcut: label(Tray.overflowValue(id, id === "layout" ? desktop.layoutData() : desktop.trayData)) });
         }
         // The Glance button and a minimized Fleet, when the bar has no room
         // for their band (compact, start): before the windows.
@@ -324,6 +324,14 @@ Scope {
     // hides while the state file is unread or the screen shows no page.
     readonly property var layout: context.layout || null
     readonly property bool layoutShown: !!desktop.layout && desktop.layout.available
+    // Its words, read only when asked (a tooltip, the chevron's menu): not
+    // in trayData, whose every change rebuilds the taskbar's plan and with
+    // it an open Start menu, and the state file is rewritten whenever a
+    // page comes or goes.
+    function layoutData() {
+        const p = desktop.layout ? desktop.layout.page : null;
+        return { layout: p ? { floating: p.floating, cap: p.cap, gap: p.gap, zen: p.zen } : { floating: false, cap: 1, gap: 0, zen: false } };
+    }
 
     readonly property var trayData: {
         const c = context;
@@ -349,9 +357,7 @@ Scope {
                 barText: Gate.barText(gate.sample, gate.pending, gate.actionError, "wide") },
             dict: { text: desktop.dictText },
             fleet: desktop.fleetTray,
-            clock: { date: Qt.formatDateTime(c.now, "dddd, MMMM d, yyyy") },
-            layout: desktop.layout ? { floating: desktop.layout.page.floating, cap: desktop.layout.page.cap,
-                gap: desktop.layout.page.gap, zen: desktop.layout.page.zen } : { floating: false, cap: 1, gap: 0, zen: false }
+            clock: { date: Qt.formatDateTime(c.now, "dddd, MMMM d, yyyy") }
         };
     }
 
@@ -395,7 +401,7 @@ Scope {
             const t = desktop.lane[Number(id.slice(3))];
             return t ? (t.title || "(untitled)") : "";
         }
-        return Tray.tooltip(id, desktop.trayData);
+        return Tray.tooltip(id, id === "layout" ? desktop.layoutData() : desktop.trayData);
     }
 
     //------------------------------------------------------------------

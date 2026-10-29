@@ -44,21 +44,32 @@ Scope {
     readonly property int gapMax: Model.GAP_MAX
     readonly property int gapStep: Model.GAP_STEP
 
-    // The harness reads again after it writes (a file that did not exist
-    // when the view started is not watched yet).
-    function reload() { file.reload(); }
+    // The harness hands over what it just wrote, so the state is there
+    // before the state's menu opens (a late tray change rebuilds the
+    // taskbar's plan and closes an open Start cascade). The file is read
+    // once more to start watching it, if it did not exist before; the same
+    // text twice changes nothing.
+    property string lastText: ""
+    property bool watching: false
+    function take(text) {
+        if (text === root.lastText) return;
+        root.lastText = text;
+        // An empty file is the harness's "no file" (unavailable).
+        if (text.trim() === "") { root.state = null; return; }
+        const parsed = Model.parse(text);
+        if (parsed) root.state = parsed;
+    }
+    function load(text) {
+        root.take(text);
+        if (!root.watching) file.reload();
+    }
     FileView {
         id: file
         path: Quickshell.env("XDG_RUNTIME_DIR") + "/mountainous-page-layout.json"
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
-        onLoaded: {
-            // An empty file is the harness's "no file" (unavailable).
-            if (text().trim() === "") { root.state = null; return; }
-            const parsed = Model.parse(text());
-            if (parsed) root.state = parsed;
-        }
+        onLoaded: { root.watching = true; root.take(text()); }
     }
 
     function run(args) { Quickshell.execDetached(["mountainous-page-layout"].concat(args)); }

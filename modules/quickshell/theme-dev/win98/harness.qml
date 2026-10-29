@@ -402,11 +402,12 @@ ShellRoot {
             return out;
         }
     }
-    Timer { id: layoutLater; interval: 150; onTriggered: pageLayout.reload() }
     FileView {
         id: layoutFile
         path: Quickshell.env("XDG_RUNTIME_DIR") + "/mountainous-page-layout.json"
         printErrors: false
+        // Written before the twin reads it.
+        blockWrites: true
     }
     OciEgress { id: oci; enabled: root.dd.ociEnabled }
     StorageHealth {
@@ -587,8 +588,9 @@ ShellRoot {
         storage.now = new Date(2026, 9, 22, 16, 51).getTime();
         storage.setFindings(d.disk.rows);
         // The Layout control's state file ("" is no file: unavailable).
-        layoutFile.setText(d.layout ? JSON.stringify(d.layout) + "\n" : "");
-        layoutLater.restart();
+        const layoutText = d.layout ? JSON.stringify(d.layout) + "\n" : "";
+        layoutFile.setText(layoutText);
+        pageLayout.load(layoutText);
         // After the window opens: showing it clears both (WifiPanel).
         wifiLater.restart();
         root.findReady = "";
