@@ -76,7 +76,8 @@ stage="$work/shell"
 mkdir -p "$stage/themes/win98"
 ln -s "$shell_dir/Theme.qml" "$stage/Theme.qml"
 ln -s "$shell_dir/SoundEvents.qml" "$stage/SoundEvents.qml"
-ln -s "$shell_dir/app-icon.js" "$shell_dir/hensou-host.js" "$stage/app-icon.js"
+ln -s "$shell_dir/app-icon.js" "$stage/app-icon.js"
+ln -s "$shell_dir/hensou-host.js" "$stage/hensou-host.js"
 for f in "$shell_dir"/Win98*.qml; do
   case "$(basename "$f")" in
     Win98Window.qml) ;;
