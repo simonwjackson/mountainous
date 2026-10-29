@@ -50,7 +50,7 @@
 var YIELD_ORDER = ["space", "appName", "diskLabel", "uncentre", "titleMin", "builderLabel",
     "ociNumber", "ntfCount", "fleetCount", "batteryPct"];
 // Layout (tiled or floating, windows per page, the gap) has a key for
-// every action (Super+F, Super+1 2 3, Super+[ ]), so it moves into » right
+// every action (Super+F, Super+1 2 3, Super+Shift+[ ]), so it moves into » right
 // after the status readouts and before the hardware controls.
 var OVERFLOW_ORDER = ["oci", "disk", "fleet", "builder", "layout", "bri", "bt", "wifi", "ntf", "vol"];
 var READOUTS = {oci: "ociNumber", disk: "diskLabel", fleet: "fleetCount", builder: "builderLabel", ntf: "ntfCount"};

@@ -310,7 +310,7 @@ PlatinumMenuFrame {
 
                 LabelRow {
                     text: "Outer gap"
-                    keys: frame.onPage ? "Super+[ ]" : ""
+                    keys: frame.onPage ? "Super+Shift+[ ]" : ""
                     off: frame.floating || !frame.live
                 }
 
