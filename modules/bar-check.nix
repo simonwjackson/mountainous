@@ -177,6 +177,7 @@
             HENSOU_QML_ROOT = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml";
           }
           ''
+            node ${./quickshell/hensou-host.test.js} ${./quickshell/hensou-host.js}
             node ${./quickshell/chrome-open.test.js} ${./quickshell}
             python3 ${./quickshell/theme-dev/check-boundaries.py} ${./quickshell}
             python3 ${./quickshell/theme-dev/check-registry.test.py} ${./quickshell}

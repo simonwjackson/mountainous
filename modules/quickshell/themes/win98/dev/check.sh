@@ -55,7 +55,7 @@ library() {
     echo "$f"
   done
 }
-cp "$shell_dir/Theme.qml" "$shell_dir/SoundEvents.qml" "$shell_dir/app-icon.js" $(library) "$here/Win98Gallery.qml" "$stage/"
+cp "$shell_dir/Theme.qml" "$shell_dir/SoundEvents.qml" "$shell_dir/app-icon.js" "$shell_dir/hensou-host.js" $(library) "$here/Win98Gallery.qml" "$stage/"
 cp -r "$shell_dir/themes/win98/icons" "$stage/themes/win98/icons"
 for f in "$shell_dir"/themes/win98/*.js; do case "$f" in *.test.js) ;; *) cp "$f" "$stage/themes/win98/" ;; esac; done
 chmod -R u+w "$stage"
