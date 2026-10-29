@@ -80,7 +80,7 @@ Scope {
 
         PanelWindow {
             id: win
-            readonly property real u: Kit.Win98Tokens.unitFor(host.taskbar)nitFor(win)
+            readonly property real u: Kit.Win98Tokens.unitFor(win)
 
             screen: host.desktop.screen
             anchors { top: true; bottom: true; left: true; right: true }
