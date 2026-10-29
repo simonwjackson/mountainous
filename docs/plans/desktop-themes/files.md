@@ -101,6 +101,23 @@ The owner keeps all three stacks open: A (Rust service + Quickshell window), B (
 - A cxx-qt spike (`/tmp/cxxqt-spike/`).
 - A source-based review of Quickshell's limits for apps: windows, menus, text and IME, clipboard and drag and drop, accessibility, lists, D-Bus and portals, hot reload, stability.
 
+### Quickshell as an app platform: review (2026-10-28)
+
+Upstream says Quickshell targets shell parts (bars, lock screens, widgets), not application windows, and promises no API stability before 1.0. Findings, with my checks:
+
+| Area | Finding | Check |
+|---|---|---|
+| Clipboard | Only plain text (`Quickshell.clipboardText`). No file clipboard (`text/uri-list`), no primary selection. | Fits the source cited. A Files service in Rust can own the clipboard instead. |
+| Drag and drop with other apps | Reported missing in pure QML. | **Disputed.** Qt Quick `Drag` with `dragType: Drag.Automatic` and `mimeData` starts a platform drag in Qt 6. Not tested in a Quickshell window. Needs a spike, because Files depends on it. |
+| Modal dialogs | `parentWindow` stacks but does not block the parent. | Plausible; untested. Files can disable the parent itself. |
+| Window position | Clients cannot place themselves under xdg-shell. | True for **every** stack on Wayland, not only Quickshell. Restoring positions (decision 27) needs Hyprland rules or IPC in A, B and C alike. |
+| Accessibility | Fixed in Quickshell 0.3.2. | Myoko runs 0.3.1, so it lacks the fix until an update. |
+| Text and IME | `TextInput`/`TextEdit` and IME work; rich text is Qt's HTML subset; no spell check. | Qt Quick limits; the same in B. |
+| D-Bus and portals | No generic D-Bus client; no file chooser portal. | The Rust service can do both (`zbus`, `ashpd`). |
+| Single instance | Reported missing. | **Wrong**: Pyxamp already launches with `qs -n -c pyxamp`. |
+| Hot reload | File changes reload and drop state unless persisted; production sets `QS_DISABLE_FILE_WATCHER=1`. | Keep state in the Rust service. |
+| Memory | About 40–80 MB per instance (inferred). | The benchmark measures it. |
+
 ## Open questions
 
 Tracked in the interview; this list moves into the decisions table as each one settles.
