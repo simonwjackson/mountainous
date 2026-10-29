@@ -195,236 +195,14 @@ hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 hl.bind(mod .. " + N", hl.dsp.exec_cmd("ghostty"))
 hl.bind(mod .. " + C", hl.dsp.window.close())
 
--- Kamoi Meta+1/2/3 set the page capacity: one fullscreen window, two
--- columns, or a master pane with two stacked windows. Hyprland derives
--- the shape from the window count, so 1 forces the single-window view
--- and 2/3 set the split those capacities use.
---
--- "maximized" fills the usable area and leaves room for a bar;
--- "fullscreen" below covers everything. That is exactly Kamoi's
--- distinction between capacity 1 and monocle mode.
--- Capacity is a CAP on how many windows the page holds, not a split
--- ratio. Hyprland has no such cap, so this keeps the number per
--- workspace and pushes the overflow onto the next one, which is what
--- Kamoi's ordered strip does.
---
--- The shapes then fall out of the master layout by themselves: one
--- window fills the screen, two give two columns, three give a master
--- with two stacked beside it. No mfact is set here; that is Meta+G.
---
--- hl.bind takes a plain Lua function as well as a dispatcher object:
---   "bind: dispatcher must be a dispatcher (e.g. hl.dsp.window.close())
---    or a lua function"
-local DEFAULT_CAPACITY = 1
-local capacity = {}
-
--- Forward declaration: enforce() finishes by compacting the strip, and
--- compact() is defined further down next to the page lifecycle.
-local compact
-
-local function cap_of(id)
-    return capacity[id] or DEFAULT_CAPACITY
+-- The page owns capacity, floating, gaps, defaults and strip lifecycle.
+local page_layout = require("page-layout").attach()
+for n = 1, 3 do
+    local cap = n
+    hl.bind(mod .. " + " .. n, function() page_layout.page("active", { cap = cap }) end)
 end
-
-local function tiled_windows(ws)
-    local out = {}
-    for _, w in ipairs(ws:get_windows()) do
-        -- Floating windows sit outside the tiled page, so Kamoi's
-        -- capacity does not count them.
-        if not w.floating then out[#out + 1] = w end
-    end
-    return out
-end
-
--- The first id past the end of the strip.
---
--- Every page counts, empty or not. With a second monitor attached (see
--- second-screen.lua), that monitor always shows a page, and it may be
--- empty. An id past only the occupied pages could be that page, and the
--- overflow window would land on the other screen.
-local function end_of_strip()
-    local maxid = 0
-    for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id > maxid then maxid = w.id end
-    end
-    return maxid + 1
-end
-
--- Each monitor walks its own pages. Hyprland keeps one set of ids for all
--- monitors, so the pages of one monitor are the ids it holds, in order.
-local function same_monitor(a, b)
-    return a.monitor ~= nil and b.monitor ~= nil and a.monitor.name == b.monitor.name
-end
-
--- Move everything past the cap off the page, newest first, so the
--- master end keeps the windows already there.
---
--- Each overflow window gets a fresh page at the end of the strip, not
--- ws.id + 1. Two reasons, both found by testing: id+1 may already be
--- full, and an overflow landing on a full page raises no event, so
--- nothing would ever correct it. Compaction then pulls the new page
--- back next to its neighbours, so "the end" is only where it lands,
--- not where it stays.
-local function enforce(ws)
-    if ws == nil or ws.special then return end
-    local wins = tiled_windows(ws)
-    local over = #wins - cap_of(ws.id)
-    if over <= 0 then return end
-
-    local target = end_of_strip()
-    for i = #wins, #wins - over + 1, -1 do
-        hl.dispatch(hl.dsp.focus({ window = "address:" .. wins[i].address }))
-        hl.dispatch(hl.dsp.window.move({ workspace = target }))
-        target = target + 1
-    end
-    compact()
-end
-
-local function set_capacity(n)
-    return function()
-        local ws = hl.get_active_workspace()
-        if ws == nil or ws.special then return end
-        capacity[ws.id] = n
-        enforce(ws)
-    end
-end
-
-hl.bind(mod .. " + 1", set_capacity(1))
-hl.bind(mod .. " + 2", set_capacity(2))
-hl.bind(mod .. " + 3", set_capacity(3))
-
--- A config reload starts a fresh Lua state and loses the table above. A
--- page already holding N tiled windows has room for N, so rebuild that
--- much from the pages themselves; otherwise the next window to open
--- would split them. At first load there are no pages yet.
-for _, ws in ipairs(hl.get_workspaces()) do
-    if ws.id > 0 then
-        local n = #tiled_windows(ws)
-        if n > cap_of(ws.id) then capacity[ws.id] = n end
-    end
-end
-
--- A new window over the cap goes straight to the next page. Moving a
--- window raises no open event, so this cannot cascade: if the next
--- page is also full, the window simply stays there.
-hl.on("window.open", function(win)
-    if win == nil or win.floating then return end
-    enforce(win.workspace)
-end)
-
--- Closing the last window on a page should leave the page, not strand
--- you on it.
---
--- Hyprland destroys an empty workspace only when you walk away from
--- it, so on one monitor the focused one is the single empty workspace
--- that can exist. Measured on this machine:
---
---   after closing everything   known=[3] occupied=[] EMPTY=[3]
---   after visiting ws 7        known=[7] occupied=[] EMPTY=[7]
---   after leaving ws 7         known=[1] occupied=[] EMPTY=[1]
---
--- Kamoi's strip has no dead pages: a page exists while it holds
--- something. Stepping away on the last close gives the same result,
--- because Hyprland then collects the workspace itself.
---
--- Only pages on the same monitor qualify. Closing the last window on one
--- screen must not pull focus, and the pointer, onto the other screen; that
--- screen keeps its empty page instead, as a lone screen keeps its last one.
-local function nearest_occupied(here)
-    local best = nil
-    local from = here.id
-    for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id ~= from and w.windows > 0 and same_monitor(w, here) then
-            if best == nil then
-                best = w.id
-            else
-                local d, bd = math.abs(w.id - from), math.abs(best - from)
-                -- On a tie, step back along the strip rather than
-                -- forward, so closing a window walks you towards the
-                -- work you already had open.
-                if d < bd or (d == bd and w.id < best) then best = w.id end
-            end
-        end
-    end
-    return best
-end
-
-local function leave_if_empty()
-    local ws = hl.get_active_workspace()
-    if ws == nil or ws.special then return end
-    if ws.windows > 0 then return end
-    local target = nearest_occupied(ws)
-    -- No target means this was the last window anywhere. Stay put:
-    -- an empty desktop is a real state, not a page to flee.
-    if target ~= nil then
-        hl.dispatch(hl.dsp.focus({ workspace = target }))
-    end
-end
-
-hl.on("window.destroy", leave_if_empty)
--- Do not run leave_if_empty on workspace.active. That would kick the user off
--- an empty workspace when they intentionally swipe or switch to it, and causes
--- a re-entrant crash in CUnifiedWorkspaceSwipeGesture::end().
-
--- Keep the strip numbered 1..N with no holes.
---
--- Pages are positions on Kamoi's strip, not names, so a gap in the
--- numbering is meaningless. Left alone the ids only climb: creating
--- and collecting pages walked this machine up to 21..23 in one
--- session of testing.
---
--- An empty page that still exists keeps its id, and the occupied pages
--- number around it. One monitor has at most one such page, the focused
--- one, which Hyprland collects as soon as you leave it. A second monitor
--- shows a page of its own, which can be empty for as long as that
--- monitor is attached. Renaming an occupied page onto either id would
--- collide with a page that exists.
---
--- Renaming in ascending order cannot collide. Let t[i] be the i-th
--- positive id that no empty page holds. occ is a sorted list of distinct
--- ids that no empty page holds either, so occ[i] >= t[i]. By the time
--- occ[i] is renamed to t[i], every smaller occupied page holds a t[j]
--- below t[i], and every page not yet renamed holds occ[j] > occ[i] >=
--- t[i]. Target t[i] is free.
-local compacting = false
--- Session restore holds the strip while it places windows on their saved
--- pages, so a page is not renumbered under the next window aimed at it.
-local strip_held = false
-
-compact = function()
-    -- hl.dispatch runs synchronously and change_id raises workspace
-    -- events, so without this guard compact() re-enters itself.
-    if compacting or strip_held then return end
-    compacting = true
-
-    local occ, held = {}, {}
-    for _, w in ipairs(hl.get_workspaces()) do
-        -- Special workspaces are not part of the strip at all.
-        if w.id > 0 then
-            if w.windows > 0 then occ[#occ + 1] = w.id else held[w.id] = true end
-        end
-    end
-    table.sort(occ)
-
-    local target = 0
-    for _, id in ipairs(occ) do
-        repeat target = target + 1 until not held[target]
-        if id ~= target then
-            hl.dispatch(hl.dsp.workspace.change_id({ workspace = id, id = target }))
-            -- Capacity belongs to the page, so it follows the new id. Any
-            -- value already at target is stale: that page did not exist.
-            capacity[target] = capacity[id]
-            capacity[id] = nil
-        end
-    end
-
-    compacting = false
-end
-
--- Compaction runs when a workspace is removed (leaving a possible hole).
--- It must not run on workspace.created, which cannot create holes and would
--- disrupt active gesture completion.
-hl.on("workspace.removed", compact)
+hl.bind(mod .. " + bracketleft", function() page_layout.step_gap("active", -4) end)
+hl.bind(mod .. " + bracketright", function() page_layout.step_gap("active", 4) end)
 
 -- Even versus golden split.
 hl.bind(mod .. " + G", hl.dsp.exec_cmd("hypr-split"))
@@ -442,7 +220,8 @@ hl.bind(mod .. " + Return", hl.dsp.layout("swapwithmaster master"))
 hl.bind(mod .. " + M", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("hypr-zen"))
 
-hl.bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mod .. " + F", function() page_layout.toggle_floating("active") end)
+hl.bind(mod .. " + CTRL + F", hl.dsp.window.float({ action = "toggle" }))
 -- Kamoi Meta+Shift+F makes a floater sticky, so it follows you along
 -- the workspace strip.
 hl.bind(mod .. " + SHIFT + F", hl.dsp.window.pin())
@@ -1017,11 +796,11 @@ end
 if package.searchpath("session-restore", package.path) then
     local ok, err = pcall(function()
         require("session-restore").attach({
-            capacity = capacity,
-            default_capacity = DEFAULT_CAPACITY,
+            capacity = page_layout.capacity,
+            default_capacity = page_layout.FALLBACK.cap,
             layout_defaults = { side = MASTER_SIDE, ratio = MASTER_RATIO },
-            hold = function(on) strip_held = on end,
-            compact = function() compact() end,
+            hold = page_layout.hold,
+            compact = page_layout.compact,
         })
     end)
     if not ok then

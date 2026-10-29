@@ -48,6 +48,16 @@ in {
       lua ${./hyprland/duplicate-outputs.test.lua} ${./hyprland/duplicate-outputs.lua}
       touch $out
     '';
+    checks.page-layout = pkgs.runCommand "page-layout" {
+      nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.nodejs pkgs.shellcheck];
+    } ''
+      luac -p ${./hyprland/page-layout.lua}
+      lua ${./hyprland/page-layout.test.lua} ${./hyprland/page-layout.lua} "$TMPDIR/state.json"
+      node ${./hyprland/page-layout-state.test.js} ${./quickshell/page-layout-model.js} "$TMPDIR/state.json"
+      shellcheck -s bash ${./hyprland/page-layout.sh} ${./hyprland/page-layout-command.test.sh}
+      bash ${./hyprland/page-layout-command.test.sh} ${./hyprland/page-layout.sh}
+      touch $out
+    '';
     packages.hyprbars-platinum = hyprbarsPlatinum pkgs;
 
     # The patch applies and builds against the pinned Hyprland, and the
@@ -195,41 +205,25 @@ in {
       '';
     };
 
-    # Kamoi zen mode: the same single window, inside a margin, so the page
-    # reads as a column rather than a wall. Kamoi's defaults are 12% of the
-    # width each side and 5% of the height top and bottom, stored as shares
-    # so one setting reads the same in both orientations. Computed from the
-    # live logical size for that reason.
+    mountainous-page-layout = pkgs.writeShellApplication {
+      name = "mountainous-page-layout";
+      runtimeInputs = [hyprPkg];
+      text = builtins.readFile ./hyprland/page-layout.sh;
+    };
+
+    # Zen is page-local, like its workspace gaps. It no longer maximizes the
+    # focused window: that hides the other panes of a cap-2/3 page, making a
+    # page setting depend on which window happened to have focus. Super+M
+    # remains the independent monocle action; the omni bar keeps this name.
     hypr-zen = pkgs.writeShellApplication {
       name = "hypr-zen";
-      runtimeInputs = [
-        pkgs.jq
-        pkgs.gawk
-        hyprPkg
-      ];
+      runtimeInputs = [hyprPkg];
       text = ''
-        state="''${XDG_RUNTIME_DIR:-/tmp}/hypr-zen"
-        NORMAL_GAPS=8   # must match general.gaps_out in hyprland.lua
-
-        if [ -e "$state" ]; then
-          rm -f "$state"
-          hyprctl eval "hl.config({ general = { gaps_out = $NORMAL_GAPS } })"
-          hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "unset" })'
-          exit 0
+        reply=$(hyprctl --instance 0 eval 'require("page-layout").toggle_zen("active")')
+        if [[ "$reply" != ok ]]; then
+          printf '%s\n' "$reply" >&2
+          exit 1
         fi
-
-        mon=$(hyprctl -j monitors | jq -r 'map(select(.focused))[0]')
-        lw=$(printf '%s' "$mon" | jq -r '(.width / .scale) | round')
-        lh=$(printf '%s' "$mon" | jq -r '(.height / .scale) | round')
-        side=$(awk -v w="$lw" 'BEGIN { printf "%d", w * 0.12 }')
-        vert=$(awk -v h="$lh" 'BEGIN { printf "%d", h * 0.05 }')
-
-        touch "$state"
-        # A comma string is the legacy form. Lua's css_gap type refuses it:
-        #   "css_gap type requires an integer or a table with optional
-        #    top, right, bottom, left fields"
-        hyprctl eval "hl.config({ general = { gaps_out = { top = ''${vert}, right = ''${side}, bottom = ''${vert}, left = ''${side} } } })"
-        hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "set" })'
       '';
     };
 
@@ -430,6 +424,7 @@ in {
       adwaita-icon-theme # without a cursor theme Hyprland falls back badly
       hypr-scale
       hypr-zen
+      mountainous-page-layout
       hypr-split
       mountainous-screenshot
       zed-editor
@@ -456,6 +451,13 @@ in {
       ./hyprland/hyprland.lua;
     hjem.users.simon.files.".config/hypr/duplicate-outputs.lua".source =
       ./hyprland/duplicate-outputs.lua;
+    systemd.user.tmpfiles.users.simon.rules = [
+      "d %S/mountainous 0700 - - -"
+    ];
+    hjem.users.simon.files.".config/hypr/page-layout.lua".source =
+      ./hyprland/page-layout.lua;
+    hjem.users.simon.files.".config/hypr/dkjson.lua".source =
+      "${pkgs.luaPackages.dkjson}/share/lua/${pkgs.lua.luaversion}/dkjson.lua";
     hjem.users.simon.files.".config/hypr/titlebars.lua".source =
       ./hyprland/titlebars.lua;
   };
