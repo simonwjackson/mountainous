@@ -80,7 +80,7 @@ Win98*.qml, themes/win98/*                         Win98 UI
 | `page`, `def` | `{cap, floating, gap}` (page also `zen`, `own`). |
 | `shownValues` | The tab's target: `page` or `def`. |
 | `shownGap` | The gap to draw (follows a held drag). Set `dragging` while a slider is held. |
-| `pageIndex`, `pageCount`, `title`, `ownCount` | "Page 2 of 4 · Built-in Display"; "2 pages differ from this." |
+| `title`, `ownCount` | "Built-in Display"; "2 pages differ from this." (`pageIndex`/`pageCount` exist but are never drawn: no page numbers) |
 | `capMax`, `gapMax`, `gapStep` | 3, 48, 4. |
 | `setArrange(floating)`, `setCap(n)`, `setGap(px)`, `stepGap(dir)` | Act on the tab's target. |
 | `toggleZen()`, `useDefault(field)` | This page only. |
@@ -99,7 +99,7 @@ Win98*.qml, themes/win98/*                         Win98 UI
 
 | Element | This page tab | Default tab |
 |---|---|---|
-| Header | Layout / "Page 2 of 4 · Built-in Display" | Layout / "New pages on Built-in Display" |
+| Header | Layout / "This page · Built-in Display" (no page numbers: docs/plans/desktop-themes.md) | Layout / "New pages on Built-in Display" |
 | Arrange label | Arrange (Super+F) | Arrange new pages |
 | Capacity label | Windows on this page (Super+1 2 3) | Windows per page |
 | Capacity note | `capNote()`; plus "New pages start with N." + Use Default when it differs | "Super+1 2 3 change only the current page." |
