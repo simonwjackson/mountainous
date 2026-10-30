@@ -168,6 +168,19 @@
         "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
       }
     },
+    "chicagoflf-src_2": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1400766801,
+        "narHash": "sha256-eWA31QVZC8R1gw3/c6M2ooYDxcgD9lxdC8h9Wifrd7M=",
+        "type": "tarball",
+        "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://fontlibrary.org/assets/downloads/chicagoflf/a2e4a3d14e40fa7076a0a1bc06f3de43/chicagoflf.zip"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1785284101,
@@ -353,6 +366,29 @@
         "type": "github"
       }
     },
+    "hensou": {
+      "inputs": {
+        "chicagoflf-src": "chicagoflf-src_2",
+        "nixpkgs": "nixpkgs",
+        "w95fa-src": "w95fa-src"
+      },
+      "locked": {
+        "allRefs": true,
+        "lastModified": 1793322981,
+        "narHash": "sha256-VUOfTL0Mgo2l9gs/ENqOwiyMDpuxnTY/hEbJMl31Qvg=",
+        "ref": "refs/heads/main",
+        "rev": "ce52d4911b421983807065a7f34b59b75db91c51",
+        "revCount": 82,
+        "type": "git",
+        "url": "ssh://git@github.com/hensou-desktop/hensou"
+      },
+      "original": {
+        "allRefs": true,
+        "rev": "ce52d4911b421983807065a7f34b59b75db91c51",
+        "type": "git",
+        "url": "ssh://git@github.com/hensou-desktop/hensou"
+      }
+    },
     "herdr-bin-aarch64": {
       "flake": false,
       "locked": {
@@ -481,7 +517,7 @@
         "crane": "crane",
         "flake-utils": "flake-utils_2",
         "inputplumber-nixpkgs": "inputplumber-nixpkgs",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "proseql": "proseql",
         "rust-overlay": "rust-overlay"
       },
@@ -502,7 +538,7 @@
     "nix-extras": {
       "inputs": {
         "cache-publisher": "cache-publisher",
-        "nixpkgs": "nixpkgs_2",
+        "nixpkgs": "nixpkgs_3",
         "nzbfast-src": "nzbfast-src",
         "reskate-client": "reskate-client",
         "scryer-newznab-bundle": "scryer-newznab-bundle",
@@ -574,8 +610,8 @@
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
         "repo": "nixpkgs",
+        "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
         "type": "github"
       }
     },
@@ -662,6 +698,22 @@
     },
     "nixpkgs_2": {
       "locked": {
+        "lastModified": 1790185690,
+        "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
         "lastModified": 1791594108,
         "narHash": "sha256-XK4KceonkwD8LuMAt/vNrz982mXJM5jeHAxMwsUXXAQ=",
         "owner": "NixOS",
@@ -676,7 +728,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "nixpkgs_4": {
       "locked": {
         "lastModified": 1790185690,
         "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
@@ -692,7 +744,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_4": {
+    "nixpkgs_5": {
       "locked": {
         "lastModified": 1789286504,
         "narHash": "sha256-eiEK7cKZORNEvX0GeF3RtNEF/JXhgf2RqSp3230q13E=",
@@ -708,7 +760,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1792773339,
         "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
@@ -747,7 +799,7 @@
         "bun2nix-x86_64-darwin": "bun2nix-x86_64-darwin",
         "flake-parts": "flake-parts_2",
         "jail-nix": "jail-nix",
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "nixpkgs-x86_64-darwin": "nixpkgs-x86_64-darwin"
       },
       "locked": {
@@ -843,7 +895,7 @@
     },
     "pyxamp": {
       "inputs": {
-        "nixpkgs": "nixpkgs_5",
+        "nixpkgs": "nixpkgs_6",
         "wacup": "wacup",
         "webamp": "webamp"
       },
@@ -903,6 +955,7 @@
         "fixedsys-src": "fixedsys-src",
         "flake-parts": "flake-parts",
         "gomod2nix-rakku": "gomod2nix-rakku",
+        "hensou": "hensou",
         "herdr-bin-aarch64": "herdr-bin-aarch64",
         "herdr-bin-x86_64": "herdr-bin-x86_64",
         "hjem": "hjem",
@@ -913,7 +966,7 @@
         "nix-extras": "nix-extras",
         "nixos-anywhere-src": "nixos-anywhere-src",
         "nixos-images-src": "nixos-images-src",
-        "nixpkgs": "nixpkgs_3",
+        "nixpkgs": "nixpkgs_4",
         "nixpkgs-media": "nixpkgs-media",
         "nixpkgs-rakku": "nixpkgs-rakku",
         "nixpkgs-sunshine": "nixpkgs-sunshine",
@@ -926,7 +979,7 @@
         "retrosmart-cursors-src": "retrosmart-cursors-src",
         "sops-nix": "sops-nix",
         "vela": "vela",
-        "w95fa-src": "w95fa-src"
+        "w95fa-src": "w95fa-src_2"
       }
     },
     "rust-overlay": {
@@ -1250,6 +1303,19 @@
       }
     },
     "w95fa-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1578028708,
+        "narHash": "sha256-eobn+Bvy0U6eRGOVCoTXpRTPKPZPCrlJlHRNxiyoizY=",
+        "type": "tarball",
+        "url": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip"
+      }
+    },
+    "w95fa-src_2": {
       "flake": false,
       "locked": {
         "lastModified": 1578028708,
