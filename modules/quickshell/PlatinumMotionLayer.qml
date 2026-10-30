@@ -21,7 +21,8 @@ MotionLayer {
 
     // The window's title bar (hyprbars-platinum, bar_height).
     readonly property real titleBar: 20
-    // The top bar keeps the tokens' scale current.
+    // Each window supplies its own device pixel ratio: ratioFor reads this
+    // layer's window. The tokens' pixelRatio is only the fallback outside one.
     dpr: Kit.PlatinumTokens.ratioFor(QsWindow.window)
     function snap(v) { return Math.round(v * overlay.dpr) / overlay.dpr; }
 
