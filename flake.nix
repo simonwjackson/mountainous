@@ -9,7 +9,7 @@
   inputs = {
     # Shared plain Qt Quick drawing. The shell owns persistence and surfaces.
     hensou = {
-      url = "git+ssh://git@github.com/hensou-desktop/hensou?allRefs=1&rev=ce52d4911b421983807065a7f34b59b75db91c51";
+      url = "github:hensou-desktop/hensou/6b2dfd887b949b41d8dd3c45647d75a0d99da3d5";
       # Keep the kit's tested Qt/font nixpkgs pin, independently of fleet hosts.
     };
 

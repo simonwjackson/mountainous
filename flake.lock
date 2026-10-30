@@ -373,20 +373,18 @@
         "w95fa-src": "w95fa-src"
       },
       "locked": {
-        "allRefs": true,
-        "lastModified": 1793322981,
-        "narHash": "sha256-VUOfTL0Mgo2l9gs/ENqOwiyMDpuxnTY/hEbJMl31Qvg=",
-        "ref": "refs/heads/main",
-        "rev": "ce52d4911b421983807065a7f34b59b75db91c51",
-        "revCount": 82,
-        "type": "git",
-        "url": "ssh://git@github.com/hensou-desktop/hensou"
+        "lastModified": 1793370977,
+        "narHash": "sha256-uBXgS0E0zdTKEIh2/SR9DDf5oc/OPXsOuiF5nSqBDPc=",
+        "owner": "hensou-desktop",
+        "repo": "hensou",
+        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
+        "type": "github"
       },
       "original": {
-        "allRefs": true,
-        "rev": "ce52d4911b421983807065a7f34b59b75db91c51",
-        "type": "git",
-        "url": "ssh://git@github.com/hensou-desktop/hensou"
+        "owner": "hensou-desktop",
+        "repo": "hensou",
+        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
+        "type": "github"
       }
     },
     "herdr-bin-aarch64": {
