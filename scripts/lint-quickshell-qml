@@ -32,10 +32,19 @@ echo "QTDECLARATIVE: $qt"
 report=$(mktemp)
 trap 'rm -f "$report"' EXIT
 
+# qmllint needs explicit roots for shared modules used by flat shell adapters.
+# Runtime QML2_IMPORT_PATH alone does not supply those roots to this lint gate.
+extra_import_args=()
+IFS=: read -r -a extra_import_paths <<< "${QML2_IMPORT_PATH:-}"
+for import_path in "${extra_import_paths[@]}"; do
+  if [ -n "$import_path" ]; then extra_import_args+=(-I "$import_path"); fi
+done
+
 "$qt/bin/qmllint" \
   -I "$qs/lib/qt-6/qml" \
   -I "$qt/lib/qt-6/qml" \
   -I "$qtbase/lib/qt-6/qml" \
+  "${extra_import_args[@]}" \
   "$@" >"$report" 2>&1 || true
 
 # Unqualified access and uncreatable-type fire on every panel in this repo,

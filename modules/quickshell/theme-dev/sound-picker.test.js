@@ -42,7 +42,7 @@ ShellRoot {
         function state(): string { return JSON.stringify({theme: Theme.name, mode: Theme.mode, sounds: Theme.soundsEnabled, audio: root.audioActive, applying: ThemePicker.applying}); }
         function toggle(): void {
             const option = root.find(picker.item.contentItem);
-            if (typeof option.toggle === "function") option.toggle(); else option.toggled();
+            if (typeof option.toggle === "function") option.toggle(); else option.toggled(!option.checked);
         }
         function focus(): void { root.find(picker.item.contentItem).forceActiveFocus(); }
         function hooks(): string {
