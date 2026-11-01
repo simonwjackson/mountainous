@@ -59,6 +59,10 @@ in
               ++ want (lib.elem "household" service.serviceConfig.SupplementaryGroups) "pi-${name} cannot write the notebook"
               ++ want (lib.any (lib.hasPrefix "d ${service.serviceConfig.WorkingDirectory} ") c.systemd.tmpfiles.rules) "pi-assistant-${name}'s working directory is not created before it starts"
               # An app runs as its person, on loopback only, with data in the person's state.
+              ++ want (
+                (cfg.people.${name}.apps or { }) == { }
+                || lib.elem "d ${stateOf name}/apps 0700 pi-${name} pi-${name} -" c.systemd.tmpfiles.rules
+              ) "${stateOf name}/apps is not created for pi-${name} before its apps start"
               ++ lib.concatMap (
                 app:
                 let
@@ -532,7 +536,10 @@ in
         ++ lib.concatLists (
           lib.mapAttrsToList (
             name: _:
-            lib.mapAttrsToList (app: _: "d ${stateOf name}/apps/${app} 0700 pi-${name} pi-${name} -") (appsOf name)
+            # The parent first: tmpfiles refuses a root-owned step under the
+            # person's own directory ("unsafe path transition").
+            lib.optional (appsOf name != { }) "d ${stateOf name}/apps 0700 pi-${name} pi-${name} -"
+            ++ lib.mapAttrsToList (app: _: "d ${stateOf name}/apps/${app} 0700 pi-${name} pi-${name} -") (appsOf name)
           ) instances
         );
 
