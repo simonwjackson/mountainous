@@ -58,6 +58,16 @@ in
               ++ want (!(service.environment ? ASSISTANT_HOST)) "pi-assistant-${name} sets ASSISTANT_HOST"
               ++ want (lib.elem "household" service.serviceConfig.SupplementaryGroups) "pi-${name} cannot write the notebook"
               ++ want (lib.any (lib.hasPrefix "d ${service.serviceConfig.WorkingDirectory} ") c.systemd.tmpfiles.rules) "pi-assistant-${name}'s working directory is not created before it starts"
+              # An app runs as its person, on loopback only, with data in the person's state.
+              ++ lib.concatMap (
+                app:
+                let
+                  appUnit = c.systemd.services."assistant-app-${name}-${app}";
+                in
+                want (appUnit.serviceConfig.User == "pi-${name}") "assistant-app-${name}-${app} does not run as pi-${name}"
+                ++ want (appUnit.environment.HOST == "127.0.0.1") "assistant-app-${name}-${app} is not loopback only"
+                ++ want (lib.hasPrefix "${stateOf name}/apps/" appUnit.environment.STATE_DIRECTORY) "assistant-app-${name}-${app} keeps data outside ${name}'s state"
+              ) (lib.attrNames (cfg.people.${name}.apps or { }))
               ++ lib.optionals gateway (
                 want (
                   lib.elem "ai-gateway.service" service.wants
@@ -214,6 +224,20 @@ in
           }
         );
 
+      # External apps (core ADR 0006): the file core reads. No apps, no file.
+      mcpAppsOf =
+        name:
+        pkgs.writeText "pi-assistant-mcp-apps-${name}.json" (
+          builtins.toJSON {
+            servers = lib.mapAttrsToList (app: spec: {
+              id = lib.replaceStrings [ "-" ] [ "_" ] app;
+              inherit (spec) title readOnlyTools;
+              url = "http://127.0.0.1:${toString spec.port}/mcp";
+            }) (instances.${name}.apps or { });
+          }
+        );
+      appsOf = name: instances.${name}.apps or { };
+
       # Runs as the instance's user before each start. It keeps the host's
       # proxy address and key current in the home, and seeds a new home.
       prepare =
@@ -238,6 +262,12 @@ in
               mv "$state/agent/cliproxyapi.json.new" "$state/agent/cliproxyapi.json"
             fi
             cp --no-preserve=mode ${webSearch name} "$state/agent/web-search.json"
+            ${
+              if appsOf name == { } then
+                ''rm -f "$state/mcp-apps.json"''
+              else
+                ''cp --no-preserve=mode ${mcpAppsOf name} "$state/mcp-apps.json"''
+            }
             ${lib.optionalString (cfg.groceries != null) ''
               # The core wants an owner-only 0600 file. The credential is root's,
               # with an ACL for this user, so it is copied.
@@ -348,6 +378,36 @@ in
                     default = false;
                     description = "Give this person's assistant the training tools, which read and write this host's Logbook on loopback.";
                   };
+                  apps = lib.mkOption {
+                    type = lib.types.attrsOf (
+                      lib.types.submodule {
+                        options = {
+                          title = lib.mkOption {
+                            type = lib.types.str;
+                            description = "The app's name in the assistant, such as \"To-do board\".";
+                          };
+                          port = lib.mkOption {
+                            type = lib.types.port;
+                            description = "The app's loopback port.";
+                          };
+                          readOnlyTools = lib.mkOption {
+                            type = lib.types.listOf lib.types.str;
+                            default = [ ];
+                            description = "Tools that only read. Core counts every other call as a change.";
+                          };
+                        };
+                      }
+                    );
+                    default = { };
+                    example = {
+                      todo-board = {
+                        title = "To-do board";
+                        port = 3170;
+                        readOnlyTools = [ "list_todos" "board_state" ];
+                      };
+                    };
+                    description = "This person's own apps (assistant/apps, core ADR 0006), by package name. Each runs as this person's user on loopback, keeps its data in the person's state, and shows in their assistant through mcp-apps.json.";
+                  };
                 };
             }
           );
@@ -432,10 +492,14 @@ in
           {
             assertion =
               let
-                ports = lib.concatMap (instance: [
-                  instance.voicePort
-                  instance.webPort
-                ]) (lib.attrValues instances);
+                ports = lib.concatMap (
+                  instance:
+                  [
+                    instance.voicePort
+                    instance.webPort
+                  ]
+                  ++ map (app: app.port) (lib.attrValues (instance.apps or { }))
+                ) (lib.attrValues instances);
               in
               lib.length (lib.unique ports) == lib.length ports;
             message = "pi-assistant: two instances share a port.";
@@ -463,7 +527,14 @@ in
         ]
         ++ lib.mapAttrsToList (
           name: _: "d ${stateOf name}/workspace 0700 pi-${name} pi-${name} -"
-        ) instances;
+        ) instances
+        # Each app's data directory, inside its person's persisted state.
+        ++ lib.concatLists (
+          lib.mapAttrsToList (
+            name: _:
+            lib.mapAttrsToList (app: _: "d ${stateOf name}/apps/${app} 0700 pi-${name} pi-${name} -") (appsOf name)
+          ) instances
+        );
 
         users.groups = {
           household = { };
@@ -521,12 +592,14 @@ in
               wants = [
                 "network-online.target"
               ]
-              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service";
+              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service"
+              ++ lib.mapAttrsToList (app: _: "assistant-app-${name}-${app}.service") (appsOf name);
               after = [
                 "network-online.target"
                 "cliproxyapi.service"
               ]
-              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service";
+              ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service"
+              ++ lib.mapAttrsToList (app: _: "assistant-app-${name}-${app}.service") (appsOf name);
               environment = environmentOf name instance;
               # The application brings its own tools; the host adds the signed-in gh.
               path = lib.optional (githubOf instance) config.mountainous.github.package;
@@ -583,6 +656,49 @@ in
                 ];
               };
             }
+          ) instances
+          # Each person's apps: the person's own user, loopback, data in their state.
+          // lib.concatMapAttrs (
+            name: _:
+            lib.mapAttrs' (
+              app: spec:
+              lib.nameValuePair "assistant-app-${name}-${app}" {
+                description = "${spec.title} for ${name}'s assistant";
+                wantedBy = [ "multi-user.target" ];
+                environment = {
+                  HOST = "127.0.0.1";
+                  PORT = toString spec.port;
+                  STATE_DIRECTORY = "${stateOf name}/apps/${app}";
+                };
+                unitConfig = {
+                  ConditionPathExists = "${profile}/bin/${app}";
+                  RequiresMountsFor = [ (stateOf name) ];
+                };
+                serviceConfig = {
+                  User = "pi-${name}";
+                  Group = "pi-${name}";
+                  ExecStart = "${profile}/bin/${app}";
+                  UMask = "0077";
+                  Restart = "on-failure";
+                  RestartSec = 3;
+                  NoNewPrivileges = true;
+                  ProtectSystem = "strict";
+                  ProtectHome = true;
+                  ReadWritePaths = [ "${stateOf name}/apps/${app}" ];
+                  PrivateTmp = true;
+                  PrivateDevices = true;
+                  ProtectKernelTunables = true;
+                  ProtectKernelModules = true;
+                  ProtectControlGroups = true;
+                  RestrictSUIDSGID = true;
+                  LockPersonality = true;
+                  RestrictAddressFamilies = [
+                    "AF_INET"
+                    "AF_INET6"
+                  ];
+                };
+              }
+            ) (appsOf name)
           ) instances
           // {
             assistant-tsgo = {
