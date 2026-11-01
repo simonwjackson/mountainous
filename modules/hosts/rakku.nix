@@ -150,6 +150,15 @@ in
               github = true;
               # Training in the Assistant: Logbook on loopback and the Coach skill.
               logbook = true;
+              # Simon's own apps (assistant/apps, assistant core ADR 0006).
+              apps.todo-board = {
+                title = "To-do board";
+                port = 3170;
+                readOnlyTools = [
+                  "list_todos"
+                  "board_state"
+                ];
+              };
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               skills.coach = "/nix/var/nix/profiles/per-user/pi-assistant/skills/coach";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
