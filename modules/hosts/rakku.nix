@@ -142,6 +142,9 @@ in
         # Simon's and Laure's assistants, and their shared one, behind
         # https://assistant.hummingbird-lake.ts.net.
         mountainous.features.pi-assistant = {
+          # Simon's ~/.agents/skills, as a snapshot in the shared skills
+          # profile, for every assistant: Simon's, Laure's, and the Household's.
+          sharedSkills.agents = "/nix/var/nix/profiles/per-user/pi-assistant/skills/agents";
           people = {
             simon = {
               voicePort = 4317;

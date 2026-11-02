@@ -169,11 +169,19 @@ in
       # assistant ADR 0001) through it, on the same grant as the chat lanes.
       frontDoor = config.mountainous.features.ai-gateway.enable or false;
       people = lib.attrNames cfg.people;
-      instances = lib.mapAttrs (name: ports: ports // { person = name; }) cfg.people // {
-        household = cfg.household // {
-          person = null;
+      # Every instance gets the feature's shared skills; its own entry of the
+      # same name wins.
+      withShared = instance: instance // { skills = cfg.sharedSkills // (instance.skills or { }); };
+      instances =
+        lib.mapAttrs (name: ports: withShared (ports // { person = name; })) cfg.people
+        // {
+          household = withShared (
+            cfg.household
+            // {
+              person = null;
+            }
+          );
         };
-      };
 
       # The model settings a new home starts from: the instance copies these
       # once, then they are its own.
@@ -365,6 +373,14 @@ in
     in
     {
       options.mountainous.features.pi-assistant = {
+        sharedSkills = lib.mkOption {
+          type = lib.types.attrsOf lib.types.str;
+          default = { };
+          example = {
+            agents = "/nix/var/nix/profiles/per-user/pi-assistant/skills/agents";
+          };
+          description = "Skills linked into every assistant: each person's and the Household's. A source is an absolute path to one skill (it holds SKILL.md) or to a collection of skills (its subdirectories hold SKILL.md); Pi reads a collection recursively. An instance's own skills entry of the same name wins.";
+        };
         people = lib.mkOption {
           type = lib.types.attrsOf (
             lib.types.submodule {
@@ -485,9 +501,18 @@ in
           type = lib.types.attrsOf (lib.types.listOf lib.types.str);
           description = "Fallback models per lane. The core refuses a lanes file that leaves a lane out.";
         };
+        installedSkills = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+          readOnly = true;
+          internal = true;
+          description = "The skills each instance links, by instance: sharedSkills with its own skills over them.";
+        };
       };
 
       config = lib.mkIf (cfg.people != { }) {
+        mountainous.features.pi-assistant.installedSkills = lib.mapAttrs (
+          _: instance: instance.skills
+        ) instances;
         assertions = [
           {
             assertion = !(cfg.people ? household);
