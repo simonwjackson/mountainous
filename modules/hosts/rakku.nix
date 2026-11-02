@@ -25,7 +25,7 @@ in
       "no-builds"
     ];
     module =
-      { config, lib, ... }:
+      { config, lib, pkgs, ... }:
       {
         imports = [
           (inputs.impermanence-rakku + "/nixos.nix")
@@ -145,6 +145,11 @@ in
           # Simon's ~/.agents/skills, as a snapshot in the shared skills
           # profile, for every assistant: Simon's, Laure's, and the Household's.
           sharedSkills.agents = "/nix/var/nix/profiles/per-user/pi-assistant/skills/agents";
+          # The agent-browser skill drives a headless Chromium.
+          sharedPackages = [
+            pkgs.agent-browser
+            pkgs.chromium
+          ];
           people = {
             simon = {
               voicePort = 4317;

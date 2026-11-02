@@ -373,6 +373,12 @@ in
     in
     {
       options.mountainous.features.pi-assistant = {
+        sharedPackages = lib.mkOption {
+          type = lib.types.listOf lib.types.package;
+          default = [ ];
+          example = lib.literalExpression "[ pkgs.agent-browser pkgs.chromium ]";
+          description = "Commands on every assistant's PATH: each person's and the Household's. Use it for the programs a shared skill runs.";
+        };
         sharedSkills = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };
@@ -633,8 +639,9 @@ in
               ++ lib.optional (config.mountainous.features.ai-gateway.enable or false) "ai-gateway.service"
               ++ lib.mapAttrsToList (app: _: "assistant-app-${name}-${app}.service") (appsOf name);
               environment = environmentOf name instance;
-              # The application brings its own tools; the host adds the signed-in gh.
-              path = lib.optional (githubOf instance) config.mountainous.github.package;
+              # The application brings its own tools; the host adds the signed-in
+              # gh and the commands the shared skills run.
+              path = cfg.sharedPackages ++ lib.optional (githubOf instance) config.mountainous.github.package;
               unitConfig = {
                 ConditionPathExists = "${profile}/bin/assistant";
                 RequiresMountsFor = [
