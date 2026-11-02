@@ -59,10 +59,14 @@ in
           ./pi-decide.ts
           "${askQuestions}/src/index.ts"
           "${webAccess}/node_modules/pi-web-access/dist/index.js"
+          ./pi-direnv.ts
+          ./pi-interactive-shell.ts
+          ./pi-notify.ts
         ];
         wrapper = pkgs.writeShellApplication {
           name = "pi";
-          runtimeInputs = [ pkgs.coreutils ];
+          # direnv for pi-direnv.ts; it skips when no .envrc is found.
+          runtimeInputs = [ pkgs.coreutils pkgs.direnv ];
           text = ''
             if [[ "$#" == 1 && ( "$1" == "--version" || "$1" == "--help" ) ]]; then
               PI_OFFLINE=1 exec ${agent}/bin/pi "$@"
