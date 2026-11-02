@@ -830,6 +830,23 @@
         "type": "github"
       }
     },
+    "pi-durable-processes": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793661900,
+        "narHash": "sha256-fPuWtgR6h2EqUbcus82R/mnqVjXKHJFyC+V8EuRJEyg=",
+        "owner": "simonwjackson",
+        "repo": "pi-durable-processes",
+        "rev": "d416b42eea24d9076b03fb6056e6804bdb92faed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "simonwjackson",
+        "ref": "v0.1.0",
+        "repo": "pi-durable-processes",
+        "type": "github"
+      }
+    },
     "pi-ebay-seller": {
       "flake": false,
       "locked": {
@@ -1003,6 +1020,7 @@
         "nixpkgs-sunshine": "nixpkgs-sunshine",
         "pi": "pi",
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
+        "pi-durable-processes": "pi-durable-processes",
         "pi-ebay-seller": "pi-ebay-seller",
         "pi-harness": "pi-harness",
         "platinum-gtk-src": "platinum-gtk-src",

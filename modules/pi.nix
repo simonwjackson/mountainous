@@ -51,7 +51,7 @@ in
         mkdir -p "$HOME" "$PI_CODING_AGENT_DIR"
         ${inputs.pi.packages.${system}.coding-agent-bun}/bin/pi --mode rpc --no-session \
           --no-extensions -e ${durableProcessesFor system} \
-          -e ${../tests/pi-durable-processes-probe.ts} </dev/null >probe.log 2>probe.err
+          -e ${../tests/pi-durable-processes-probe.ts} </dev/null >probe.log 2>&1
         grep -qx DURABLE_PROCESS_TOOL_READY probe.log
         touch $out
       '';
