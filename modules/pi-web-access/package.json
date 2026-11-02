@@ -1,0 +1,7 @@
+{
+  "name": "mountainous-pi-web-access",
+  "private": true,
+  "dependencies": {
+    "pi-web-access": "0.39.0"
+  }
+}

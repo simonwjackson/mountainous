@@ -47,10 +47,18 @@ in
           cp -r ${inputs.pi-harness}/packages/ask-questions/. $out/
           ln -s ../../kit $out/node_modules/@adeildo/pi-kit
         '';
+        # pi-web-access 0.39.0 (Forgerie's pin) and its npm dependencies,
+        # locked in pi-web-access/package-lock.json. Pi supplies the peers.
+        webAccess = pkgs.importNpmLock.buildNodeModules {
+          npmRoot = ./pi-web-access;
+          nodejs = pkgs.nodejs;
+          derivationArgs.npmFlags = [ "--legacy-peer-deps" "--ignore-scripts" ];
+        };
         extensions = [
           "${inputs.pi-cliproxyapi-provider}/extensions/index.ts"
           ./pi-decide.ts
           "${askQuestions}/src/index.ts"
+          "${webAccess}/node_modules/pi-web-access/dist/index.js"
         ];
         wrapper = pkgs.writeShellApplication {
           name = "pi";
@@ -81,9 +89,23 @@ in
       });
 
     hostModule =
-      { config, lib, ... }:
+      { config, lib, pkgs, ... }:
       let
         home = config.users.users.simon.home;
+        # Search goes through the AI front door with the host's gateway key,
+        # read at call time so it never enters the store. DuckDuckGo needs
+        # no key and takes over when the front door fails.
+        webSearchConfig = pkgs.writeText "web-search.json" (builtins.toJSON {
+          openaiResponsesUrl = "https://ai.hummingbird-lake.ts.net/v1/responses";
+          openaiApiKey = "!cat /run/secrets/pi-ai-gateway-api-key";
+          openaiSearchModel = "gpt-5.6-luna";
+          workflow = "none";
+          searchRouting = {
+            providers = [ "openai" "duckduckgo" ];
+            useCurrentModel = false;
+            fallbackOn = [ "unsupported" "transient" "quota" "network" "invalid-response" ];
+          };
+        });
       in
       lib.mkIf config.mountainous.appProfiles.pi.enable {
         sops.secrets.pi-ai-gateway-api-key = {
@@ -110,6 +132,7 @@ in
           "d ${home}/.local/share/fleet-sync/pi 0700 simon users -"
           # Never replace a pre-existing settings file. Migrate it explicitly.
           "L ${home}/.pi/agent/settings.json - - - - ${home}/.local/share/fleet-sync/pi/settings.json"
+          "L+ ${home}/.pi/agent/web-search.json - - - - ${webSearchConfig}"
         ];
       };
   };
