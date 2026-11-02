@@ -1,4 +1,5 @@
-# Repository-owned trust and one allow-listed folder per service.
+# Repository-owned trust and one sync folder per use case. A folder either
+# allows a list of top-level files, or syncs a whole directory minus ignores.
 { config, lib, ... }:
 let
   flake = config;
@@ -36,13 +37,24 @@ in
       type = types.attrsOf (
         types.submodule {
           options = {
-            enable = lib.mkEnableOption "this allow-listed sync folder" // {
+            enable = lib.mkEnableOption "this sync folder" // {
               default = true;
             };
             hosts = mkOption { type = types.listOf types.str; };
+            path = mkOption {
+              type = types.nullOr (types.strMatching "[A-Za-z0-9_.-][A-Za-z0-9_./-]*");
+              default = null;
+              description = "Directory relative to simon's home. Null keeps it under ~/.local/share/fleet-sync/<name>.";
+            };
             files = mkOption {
-              type = types.listOf (types.strMatching "[A-Za-z0-9_.-]+");
-              description = "Top-level file names to sync. All other files are ignored.";
+              type = types.nullOr (types.listOf (types.strMatching "[A-Za-z0-9_.-]+"));
+              default = null;
+              description = "Top-level file names to sync; all other files are ignored. Null syncs the whole directory.";
+            };
+            ignore = mkOption {
+              type = types.listOf types.str;
+              default = [ ];
+              description = "Syncthing ignore patterns for a whole-directory folder.";
             };
           };
         }
@@ -63,6 +75,7 @@ in
       home = config.users.users.simon.home;
       root = "${home}/.local/share/fleet-sync";
       state = "${home}/.local/state/fleet-sync";
+      dirOf = name: f: if f.path == null then "${root}/${name}" else "${home}/${f.path}";
       mine = lib.filterAttrs (_: f: (f.enable or true) && lib.elem host f.hosts) cfg.folders;
       members = lib.unique (lib.concatMap (f: f.hosts) (lib.attrValues mine));
       peers = lib.filter (h: h != host) members;
@@ -102,8 +115,10 @@ in
           message = "fleetSync: fill in mountainous.fleetSync.externalDevices.<name>.deviceId (the phone's 8-group Syncthing device ID) and tailnetName (its full <name>.hummingbird-lake.ts.net DNS name). For phone, edit the two null placeholders in modules/logbook.nix before enabling mountainous.fleetSync.folders.gadgetbridge.enable.";
         }
         {
-          assertion = builtins.all (f: f.files != [ ]) (lib.attrValues mine);
-          message = "fleetSync: a folder needs at least one allowed file.";
+          assertion = builtins.all (f: f.files != [ ] && (f.files == null || f.ignore == [ ])) (
+            lib.attrValues mine
+          );
+          message = "fleetSync: a file-list folder needs at least one file and no ignore patterns.";
         }
       ];
       sops.secrets.syncthing-cert = secret;
@@ -115,7 +130,7 @@ in
         "d ${root} 0700 simon users -"
         "d ${state} 0700 simon users -"
       ]
-      ++ lib.mapAttrsToList (name: _: "d ${root}/${name} 0700 simon users -") mine;
+      ++ lib.mapAttrsToList (name: f: "d ${dirOf name f} 0700 simon users -") mine;
       services.syncthing = {
         enable = lib.mkDefault true;
         user = lib.mkDefault "simon";
@@ -163,9 +178,9 @@ in
           });
           folders = lib.mapAttrs (name: f: {
             id = name;
-            path = "${root}/${name}";
+            path = dirOf name f;
             devices = lib.filter (h: h != host) f.hosts;
-            ignorePatterns = map (p: "!/${p}") f.files ++ [ "*" ];
+            ignorePatterns = if f.files == null then f.ignore else map (p: "!/${p}") f.files ++ [ "*" ];
             fsWatcherEnabled = true;
             fsWatcherDelayS = 1;
             rescanIntervalS = 60;
