@@ -38,6 +38,20 @@ in
       let
         pkgs = inputs.nixpkgs.legacyPackages.${system};
         agent = inputs.pi.packages.${system}.coding-agent-bun;
+        # Extensions every host loads. Add one by adding a flake input
+        # and an entry here. Pi itself supplies the @earendil-works/* and
+        # typebox imports, so only package-to-package links are needed.
+        askQuestions = pkgs.runCommand "pi-ask-questions" { } ''
+          mkdir -p $out/node_modules/@adeildo
+          cp -r ${inputs.pi-harness}/packages/kit $out/kit
+          cp -r ${inputs.pi-harness}/packages/ask-questions/. $out/
+          ln -s ../../kit $out/node_modules/@adeildo/pi-kit
+        '';
+        extensions = [
+          "${inputs.pi-cliproxyapi-provider}/extensions/index.ts"
+          ./pi-decide.ts
+          "${askQuestions}/src/index.ts"
+        ];
         wrapper = pkgs.writeShellApplication {
           name = "pi";
           runtimeInputs = [ pkgs.coreutils ];
@@ -58,8 +72,7 @@ in
             CLIPROXYAPI_API_KEY=$(cat /run/secrets/pi-ai-gateway-api-key)
             PI_DECIDE_API_KEY=$CLIPROXYAPI_API_KEY
             ${agent}/bin/pi \
-              -e ${inputs.pi-cliproxyapi-provider}/extensions/index.ts \
-              -e ${./pi-decide.ts} "$@"
+              ${lib.concatMapStringsSep " " (e: "-e ${e}") extensions} "$@"
           '';
         };
       in

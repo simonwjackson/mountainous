@@ -830,6 +830,22 @@
         "type": "github"
       }
     },
+    "pi-harness": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793628830,
+        "narHash": "sha256-gsM6EkWJLeB8rz6DGqRP4jjLxjd6QwsgeS8D8qUjwiA=",
+        "owner": "felipeadeildo",
+        "repo": "pi-harness",
+        "rev": "c024da1020f117c815db3078497238a041a41623",
+        "type": "github"
+      },
+      "original": {
+        "owner": "felipeadeildo",
+        "repo": "pi-harness",
+        "type": "github"
+      }
+    },
     "platinum-gtk-src": {
       "flake": false,
       "locked": {
@@ -970,6 +986,7 @@
         "nixpkgs-sunshine": "nixpkgs-sunshine",
         "pi": "pi",
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
+        "pi-harness": "pi-harness",
         "platinum-gtk-src": "platinum-gtk-src",
         "platinum-kvantum-src": "platinum-kvantum-src",
         "profont-src": "profont-src",

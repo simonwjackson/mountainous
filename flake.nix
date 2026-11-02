@@ -21,6 +21,11 @@
     };
 
     pi.url = "github:lukasl-dev/pi.nix";
+    # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
+    pi-harness = {
+      url = "github:felipeadeildo/pi-harness";
+      flake = false;
+    };
     pi-cliproxyapi-provider = {
       url = "github:router-for-me/pi-cliproxyapi-provider";
       flake = false;
