@@ -22,6 +22,10 @@
 
     pi.url = "github:lukasl-dev/pi.nix";
     # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
+    pi-durable-processes = {
+      url = "github:simonwjackson/pi-durable-processes/v0.1.0";
+      flake = false;
+    };
     pi-harness = {
       url = "github:felipeadeildo/pi-harness";
       flake = false;

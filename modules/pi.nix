@@ -6,8 +6,57 @@
 }:
 let
   flake = config;
+  durableProcessesFor =
+    system:
+    let
+      pkgs = inputs.nixpkgs.legacyPackages.${system};
+      source = inputs.pi-durable-processes;
+      manifest = builtins.fromJSON (builtins.readFile "${source}/package.json");
+      lock = builtins.fromJSON (builtins.readFile "${source}/package-lock.json");
+      # Pi supplies the host peers. Build just the locked runtime dependencies,
+      # not the development/test SDK or its native dependencies.
+      package = builtins.removeAttrs manifest [
+        "scripts"
+        "devDependencies"
+      ];
+      packageLock = lock // {
+        packages = lib.mapAttrs (name: value: if name == "" then package else value) (
+          lib.filterAttrs (name: value: name == "" || !(value.dev or false)) lock.packages
+        );
+      };
+      dependencies = pkgs.importNpmLock.buildNodeModules {
+        inherit package packageLock;
+        nodejs = pkgs.nodejs;
+        derivationArgs.npmFlags = [
+          "--legacy-peer-deps"
+          "--ignore-scripts"
+          "--omit=dev"
+        ];
+      };
+    in
+    pkgs.runCommand "pi-durable-processes-${manifest.version}" { } ''
+      mkdir -p $out
+      cp -r ${source}/src ${source}/skills ${source}/package.json $out/
+      ln -s ${dependencies}/node_modules $out/node_modules
+    '';
 in
 {
+  perSystem =
+    { pkgs, system, ... }:
+    {
+      packages.pi-durable-processes = durableProcessesFor system;
+      checks.pi-durable-processes = pkgs.runCommand "check-pi-durable-processes" { } ''
+        export HOME="$TMPDIR/home" PI_CODING_AGENT_DIR="$TMPDIR/profile"
+        export PI_DURABLE_PROCESSES_STATE_DIR="$TMPDIR/process-state" PI_OFFLINE=1
+        mkdir -p "$HOME" "$PI_CODING_AGENT_DIR"
+        ${inputs.pi.packages.${system}.coding-agent-bun}/bin/pi --mode rpc --no-session \
+          --no-extensions -e ${durableProcessesFor system} \
+          -e ${../tests/pi-durable-processes-probe.ts} </dev/null >probe.log 2>probe.err
+        grep -qx DURABLE_PROCESS_TOOL_READY probe.log
+        touch $out
+      '';
+    };
+
   nixos.modules.base =
     { config, lib, ... }:
     {
@@ -52,7 +101,10 @@ in
         webAccess = pkgs.importNpmLock.buildNodeModules {
           npmRoot = ./pi-web-access;
           nodejs = pkgs.nodejs;
-          derivationArgs.npmFlags = [ "--legacy-peer-deps" "--ignore-scripts" ];
+          derivationArgs.npmFlags = [
+            "--legacy-peer-deps"
+            "--ignore-scripts"
+          ];
         };
         extensions = [
           "${inputs.pi-cliproxyapi-provider}/extensions/index.ts"
@@ -62,11 +114,15 @@ in
           ./pi-direnv.ts
           ./pi-interactive-shell.ts
           ./pi-notify.ts
+          "${durableProcessesFor system}"
         ];
         wrapper = pkgs.writeShellApplication {
           name = "pi";
           # direnv for pi-direnv.ts; it skips when no .envrc is found.
-          runtimeInputs = [ pkgs.coreutils pkgs.direnv ];
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.direnv
+          ];
           text = ''
             if [[ "$#" == 1 && ( "$1" == "--version" || "$1" == "--help" ) ]]; then
               PI_OFFLINE=1 exec ${agent}/bin/pi "$@"
@@ -93,23 +149,39 @@ in
       });
 
     hostModule =
-      { config, lib, pkgs, ... }:
+      {
+        config,
+        lib,
+        pkgs,
+        ...
+      }:
       let
         home = config.users.users.simon.home;
         # Search goes through the AI front door with the host's gateway key,
         # read at call time so it never enters the store. DuckDuckGo needs
         # no key and takes over when the front door fails.
-        webSearchConfig = pkgs.writeText "web-search.json" (builtins.toJSON {
-          openaiResponsesUrl = "https://ai.hummingbird-lake.ts.net/v1/responses";
-          openaiApiKey = "!cat /run/secrets/pi-ai-gateway-api-key";
-          openaiSearchModel = "gpt-5.6-luna";
-          workflow = "none";
-          searchRouting = {
-            providers = [ "openai" "duckduckgo" ];
-            useCurrentModel = false;
-            fallbackOn = [ "unsupported" "transient" "quota" "network" "invalid-response" ];
-          };
-        });
+        webSearchConfig = pkgs.writeText "web-search.json" (
+          builtins.toJSON {
+            openaiResponsesUrl = "https://ai.hummingbird-lake.ts.net/v1/responses";
+            openaiApiKey = "!cat /run/secrets/pi-ai-gateway-api-key";
+            openaiSearchModel = "gpt-5.6-luna";
+            workflow = "none";
+            searchRouting = {
+              providers = [
+                "openai"
+                "duckduckgo"
+              ];
+              useCurrentModel = false;
+              fallbackOn = [
+                "unsupported"
+                "transient"
+                "quota"
+                "network"
+                "invalid-response"
+              ];
+            };
+          }
+        );
       in
       lib.mkIf config.mountainous.appProfiles.pi.enable {
         sops.secrets.pi-ai-gateway-api-key = {
