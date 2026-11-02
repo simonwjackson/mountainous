@@ -259,6 +259,7 @@ in
           name = "pi-assistant-${name}-prepare";
           runtimeInputs = [
             pkgs.coreutils
+            pkgs.curl
             pkgs.jq
           ];
           text = ''
@@ -288,6 +289,16 @@ in
               else
                 ''cp --no-preserve=mode ${mcpAppsOf name} "$state/mcp-apps.json"''
             }
+            # The core connects to its apps once, at start, and an app it cannot
+            # reach has no tools until the next restart. An app's unit is
+            # "started" before it listens, so wait for each app's port (60 s at
+            # most; a dead app must not keep the assistant down).
+            ${lib.concatMapStrings (spec: ''
+              for _ in $(seq 60); do
+                curl -s -o /dev/null -m 1 http://127.0.0.1:${toString spec.port}/ && break
+                sleep 1
+              done
+            '') (lib.attrValues (appsOf name))}
             ${lib.optionalString (cfg.groceries != null) ''
               # The core wants an owner-only 0600 file. The credential is root's,
               # with an ACL for this user, so it is copied.
