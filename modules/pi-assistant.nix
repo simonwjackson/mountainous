@@ -189,6 +189,7 @@ in
         builtins.toJSON {
           defaultProvider = "cliproxyapi";
           defaultModel = lib.removePrefix "cliproxyapi/" cfg.lanes.chat;
+          defaultThinkingLevel = cfg.thinkingLevel;
           # A fallback that is not enabled resolves to no model, and the
           # instance refuses to start. Enable every lane model and fallback.
           enabledModels = lib.unique (
@@ -272,6 +273,13 @@ in
               jq --arg key "$key" '.baseUrl = "http://127.0.0.1:${toString cfg.cliproxyapiPort}" | .apiKey = $key' \
                 "$state/agent/cliproxyapi.json" > "$state/agent/cliproxyapi.json.new"
               mv "$state/agent/cliproxyapi.json.new" "$state/agent/cliproxyapi.json"
+            fi
+            # A home made before thinkingLevel existed gets it once; a level
+            # the person set later stays theirs.
+            if [ -f "$state/agent/settings.json" ]; then
+              jq --arg level ${lib.escapeShellArg cfg.thinkingLevel} '.defaultThinkingLevel //= $level' \
+                "$state/agent/settings.json" > "$state/agent/settings.json.new"
+              mv "$state/agent/settings.json.new" "$state/agent/settings.json"
             fi
             cp --no-preserve=mode ${webSearch name} "$state/agent/web-search.json"
             ${
@@ -502,6 +510,18 @@ in
         lanes = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           description = "The model lanes a new home starts with.";
+        };
+        thinkingLevel = lib.mkOption {
+          type = lib.types.enum [
+            "off"
+            "minimal"
+            "low"
+            "medium"
+            "high"
+            "xhigh"
+          ];
+          default = "medium";
+          description = "The thinking level a new conversation starts with (Pi defaultThinkingLevel). Seeds a new home, and fills it into an existing home that has none.";
         };
         laneFallbacks = lib.mkOption {
           type = lib.types.attrsOf (lib.types.listOf lib.types.str);
