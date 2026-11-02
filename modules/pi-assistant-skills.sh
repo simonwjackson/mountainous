@@ -19,7 +19,16 @@ while (( $# > 0 )); do
     exit 2
   fi
   case "$source" in /*) ;; *) echo 'Skill source must be absolute' >&2; exit 2 ;; esac
-  if [[ ! -f $source/SKILL.md ]]; then
+  # One skill holds SKILL.md; a collection holds skills one level down.
+  ready=0
+  if [[ -f $source/SKILL.md ]]; then
+    ready=1
+  else
+    for skill in "$source"/*/SKILL.md; do
+      [[ -f $skill ]] && { ready=1; break; }
+    done
+  fi
+  if (( ready == 0 )); then
     echo "Skill source is not ready: $name" >&2
     exit 1
   fi

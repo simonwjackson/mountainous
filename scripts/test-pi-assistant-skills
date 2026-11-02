@@ -36,7 +36,15 @@ fi
 if bash "$helper" "$scratch/simon" unpaired 2>/dev/null; then
   echo 'Unpaired argument was not refused' >&2; exit 1
 fi
+mkdir -p "$scratch/collection/one" "$scratch/collection/two" "$scratch/empty/none"
+printf 'One\n' > "$scratch/collection/one/SKILL.md"
+printf 'Two\n' > "$scratch/collection/two/SKILL.md"
+bash "$helper" "$scratch/laure" agents "$scratch/collection"
+test "$(readlink "$scratch/laure/skills/agents")" = "$scratch/collection"
+if bash "$helper" "$scratch/laure" empty "$scratch/empty" 2>/dev/null; then
+  echo 'Collection without skills was not refused' >&2; exit 1
+fi
 bash "$helper" "$scratch/household"
 test -d "$scratch/household/skills"
 test ! -e "$scratch/household/skills/scryer"
-printf 'PASS: shared skills install for both people; updates, isolation, conflicts, and invalid inputs.\n'
+printf 'PASS: shared skills install for both people; collections, updates, isolation, conflicts, and invalid inputs.\n'
