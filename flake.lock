@@ -801,11 +801,11 @@
         "nixpkgs-x86_64-darwin": "nixpkgs-x86_64-darwin"
       },
       "locked": {
-        "lastModified": 1791892157,
-        "narHash": "sha256-HwskvVBJpc4F5d+mnIQwbEeMvAKEVNE6IXczHx3wA3I=",
+        "lastModified": 1793546272,
+        "narHash": "sha256-r6OE/eL0hlkdpA8v3g7ilG6dp0IlDxav96CdBghoZdA=",
         "owner": "lukasl-dev",
         "repo": "pi.nix",
-        "rev": "f49d69d52582b5781e1705608b607e77a43e3071",
+        "rev": "7da31c8602620be9102afbfe49785e9ca1e935c3",
         "type": "github"
       },
       "original": {
