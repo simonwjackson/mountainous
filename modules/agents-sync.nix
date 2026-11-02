@@ -12,7 +12,9 @@
     hosts = config.mountainous.fleetSync.folders.pi.hosts ++ [ "zao" ];
     path = ".agents";
     ignore = [
-      "/.git"
+      # Every Git file and directory at any depth: .git, .gitignore,
+      # .gitattributes, .gitmodules, and nested repositories' .git.
+      "(?d).git*"
       "(?d)__pycache__"
       "(?d)node_modules"
       "(?d).DS_Store"
