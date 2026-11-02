@@ -1,0 +1,8 @@
+{
+  "name": "mountainous-pi-ebay-seller",
+  "private": true,
+  "dependencies": {
+    "fast-xml-parser": "5.11.1",
+    "proper-lockfile": "4.1.2"
+  }
+}

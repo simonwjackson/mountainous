@@ -26,6 +26,11 @@
       url = "github:felipeadeildo/pi-harness";
       flake = false;
     };
+    # eBay seller tools for Simon's assistant on Rakku.
+    pi-ebay-seller = {
+      url = "git+ssh://git@github.com/simonwjackson/pi-ebay-seller?ref=main";
+      flake = false;
+    };
     pi-cliproxyapi-provider = {
       url = "github:router-for-me/pi-cliproxyapi-provider";
       flake = false;

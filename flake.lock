@@ -830,6 +830,23 @@
         "type": "github"
       }
     },
+    "pi-ebay-seller": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788398310,
+        "narHash": "sha256-fxvJfA4V9/FzPQWOsI70g84VmVhCs/ZEmz5nM/zMWbs=",
+        "ref": "main",
+        "rev": "2658d39a52f7821f8bec644895d90d99f9ed7697",
+        "revCount": 34,
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/pi-ebay-seller"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/pi-ebay-seller"
+      }
+    },
     "pi-harness": {
       "flake": false,
       "locked": {
@@ -986,6 +1003,7 @@
         "nixpkgs-sunshine": "nixpkgs-sunshine",
         "pi": "pi",
         "pi-cliproxyapi-provider": "pi-cliproxyapi-provider",
+        "pi-ebay-seller": "pi-ebay-seller",
         "pi-harness": "pi-harness",
         "platinum-gtk-src": "platinum-gtk-src",
         "platinum-kvantum-src": "platinum-kvantum-src",

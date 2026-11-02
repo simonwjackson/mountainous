@@ -49,6 +49,14 @@ assert builtins.all (
   "laure"
   "household"
 ];
+# eBay acts in Simon's name: only his assistant loads it or its secrets.
+assert cfg.people.simon.extensions ? ebay-seller;
+assert (unit "simon").serviceConfig.EnvironmentFile != [ ];
+assert builtins.all (name: (unit name).serviceConfig.EnvironmentFile == [ ]) [
+  "laure"
+  "household"
+];
+assert !(cfg.people.laure.extensions ? ebay-seller) && !(cfg.household.extensions ? ebay-seller);
 assert cfg.household.skills.scryer == cfg.people.simon.skills.scryer;
 assert cfg.household.skills.scryer == cfg.people.laure.skills.scryer;
 true

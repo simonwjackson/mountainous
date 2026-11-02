@@ -309,6 +309,22 @@ in
             if [ ! -f "$state/model-lanes.json" ]; then
               cp --no-preserve=mode ${lanesSeed} "$state/model-lanes.json"
             fi
+            # Managed extensions are store links. Drop the ones no longer
+            # listed; never touch a local, non-store extension.
+            mkdir -p "$state/agent/extensions"
+            for link in "$state/agent/extensions"/*; do
+              if [ -L "$link" ] && [[ $(readlink "$link") == /nix/store/* ]]; then
+                case "''${link##*/}" in
+                  ${lib.concatStringsSep "|" ([ "''" ] ++ lib.attrNames (instances.${name}.extensions or { }))}) ;;
+                  *) rm -f "$link" ;;
+                esac
+              fi
+            done
+            ${lib.concatStrings (
+              lib.mapAttrsToList (extension: source: ''
+                ln -sfnT ${source} "$state/agent/extensions/${extension}"
+              '') (instances.${name}.extensions or { })
+            )}
             ${pkgs.bash}/bin/bash ${./pi-assistant-skills.sh} "$state/agent" ${
               lib.escapeShellArgs (
                 lib.concatLists (
@@ -376,6 +392,19 @@ in
             scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
           };
           description = "Shared skill directories linked into this assistant's own agent directory. Sources must be absolute paths containing SKILL.md.";
+        };
+        extensions = lib.mkOption {
+          type = lib.types.attrsOf lib.types.path;
+          default = { };
+          example = {
+            ebay-seller = "/nix/store/...-pi-ebay-seller";
+          };
+          description = "Pi packages linked into this assistant's agent/extensions directory. Pi loads each one's package.json manifest. Their tools reach only this assistant.";
+        };
+        environmentFiles = lib.mkOption {
+          type = lib.types.listOf lib.types.path;
+          default = [ ];
+          description = "systemd EnvironmentFile entries for this assistant only, for extensions that read their secrets from the environment. systemd reads them as root, so nothing is copied into the home.";
         };
         credentials = lib.mkOption {
           type = lib.types.attrsOf lib.types.path;
@@ -696,6 +725,7 @@ in
                 ++ lib.mapAttrsToList (name: file: "${name}:${file}") (instance.credentials or { });
                 # Scratch clones of repositories: on disk, never persisted,
                 # safe to delete. $CACHE_DIRECTORY points here.
+                EnvironmentFile = instance.environmentFiles or [ ];
                 CacheDirectory = "pi-assistant-${name}";
                 CacheDirectoryMode = "0700";
                 ExecStartPre = "${prepare name}/bin/pi-assistant-${name}-prepare";

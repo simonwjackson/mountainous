@@ -25,7 +25,30 @@ in
       "no-builds"
     ];
     module =
-      { config, lib, pkgs, ... }:
+      {
+        config,
+        lib,
+        pkgs,
+        ...
+      }:
+      let
+        # The eBay seller tools and their runtime dependencies, locked in
+        # modules/pi-ebay-seller (runtime only: the upstream lock has entries
+        # without integrity). Pi supplies the pi-* and typebox peers.
+        ebaySellerModules = pkgs.importNpmLock.buildNodeModules {
+          npmRoot = ../pi-ebay-seller;
+          nodejs = pkgs.nodejs;
+          derivationArgs.npmFlags = [
+            "--legacy-peer-deps"
+            "--ignore-scripts"
+          ];
+        };
+        ebaySeller = pkgs.runCommand "pi-ebay-seller" { } ''
+          mkdir -p $out
+          cp -r ${inputs.pi-ebay-seller}/package.json ${inputs.pi-ebay-seller}/extensions $out/
+          ln -s ${ebaySellerModules}/node_modules $out/node_modules
+        '';
+      in
       {
         imports = [
           (inputs.impermanence-rakku + "/nixos.nix")
@@ -67,6 +90,23 @@ in
                 "pi-assistant-household.service"
               ];
             };
+        # eBay seller credentials, from the old agenix ebay-api-env and
+        # ebay-refresh-token. Root reads the env file for the simon unit.
+        sops.secrets.ebay-api-env = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          restartUnits = [ "pi-assistant-simon.service" ];
+        };
+        sops.secrets.ebay-refresh-token = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          restartUnits = [ "pi-assistant-simon.service" ];
+        };
+        sops.templates."pi-assistant-simon-ebay.env" = {
+          content = ''
+            ${config.sops.placeholder.ebay-api-env}
+            ${config.sops.placeholder.ebay-refresh-token}
+          '';
+          restartUnits = [ "pi-assistant-simon.service" ];
+        };
         # Nano Banana (Gemini image) key, served through CLIProxyAPI.
         sops.secrets.cliproxyapi-gemini-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
@@ -170,6 +210,10 @@ in
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               skills.coach = "/nix/var/nix/profiles/per-user/pi-assistant/skills/coach";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+              # eBay acts as Simon (offers, buyer messages), so only his
+              # assistant gets it. Laure and Household do not.
+              extensions.ebay-seller = ebaySeller;
+              environmentFiles = [ config.sops.templates."pi-assistant-simon-ebay.env".path ];
             };
             laure = {
               voicePort = 4327;
