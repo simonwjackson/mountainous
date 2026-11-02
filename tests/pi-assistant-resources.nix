@@ -41,6 +41,14 @@ assert builtins.all (
 assert installed.household.probe == "/nix/var/nix/profiles/per-user/pi-assistant/probe-skill";
 assert !(installed.laure ? probe);
 assert installed.simon.scryer == cfg.people.simon.skills.scryer;
+# Shared packages reach every instance's PATH.
+assert builtins.all (
+  name: builtins.all (package: builtins.elem package (unit name).path) cfg.sharedPackages
+) [
+  "simon"
+  "laure"
+  "household"
+];
 assert cfg.household.skills.scryer == cfg.people.simon.skills.scryer;
 assert cfg.household.skills.scryer == cfg.people.laure.skills.scryer;
 true
