@@ -7,8 +7,9 @@
 # runs as its own user and its state directory is 0700, so one person's
 # assistant cannot read the other's conversations, memory, or files. The
 # Household instance never reads a personal one either. The only shared path
-# is the notebook directory, 2770 for the `household` group, which every
-# instance writes and only a person's own confirmation fills.
+# is the notebook directory, 3770 for the `household` group, which every
+# instance writes and only a person's own confirmation fills. The sticky bit
+# keeps each instance's file its own: no one can delete or rename another's.
 #
 # Host-owned units and storage; the application is deployed separately, like
 # CLIProxyAPI. scripts/pi-assistant-deploy builds the core, the web app, and
@@ -86,9 +87,9 @@ in
               )
             ) names
             ++ want (
-              (persisted.${notebookDir} or { mode = ""; }).mode == "2770"
+              (persisted.${notebookDir} or { mode = ""; }).mode == "3770"
               && persisted.${notebookDir}.group == "household"
-            ) "the notebook directory is not 2770 for the household group"
+            ) "the notebook directory is not 3770 for the household group"
             ++ want (
               lib.length (lib.unique (map (name: (unit name).serviceConfig.User) names)) == lib.length names
             ) "two instances share a user"
@@ -671,7 +672,7 @@ in
               directory = notebookDir;
               user = "root";
               group = "household";
-              mode = "2770";
+              mode = "3770";
             }
             {
               directory = tsgoState;

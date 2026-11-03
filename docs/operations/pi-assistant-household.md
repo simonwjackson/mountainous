@@ -15,7 +15,7 @@ and how to roll it back.
 | `assistant-tsgo` | `assistant-tsgo` | `/var/lib/assistant-tsgo` (0700, the tailnet identity) | tailnet 443 |
 
 Every instance is in the `household` group, which owns
-`/var/lib/pi-household-notebook` (2770). That directory is the only place two
+`/var/lib/pi-household-notebook` (3770, sticky). That directory is the only place two
 instances share. `checks.pi-assistant` fails the flake if an instance shares a
 user, loses its 0700 state, leaves the persistent volume, or sets
 `ASSISTANT_HOST`.
