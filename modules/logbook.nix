@@ -10,14 +10,14 @@ let
   fleet = config.mountainous.fleetSync;
 in
 {
-  # PHONE PLACEHOLDERS: copy the existing phone identity and full MagicDNS name.
-  # These are checked only on hosts in enabled folders that use this peer.
+  # The phone is futago, a Galaxy Z Fold 3 running Syncthing-Fork and
+  # Gadgetbridge. Its Syncthing identity was made on the phone; never enroll it.
   mountainous.fleetSync.externalDevices.phone = {
-    deviceId = null;
-    tailnetName = null;
+    deviceId = "4FOJIBC-WGJ5VKX-7SZKIR6-IO53D6O-354ONPL-ZTWFPVR-6IJQLHY-FTOM3A3";
+    tailnetName = "futago.hummingbird-lake.ts.net";
   };
   mountainous.fleetSync.folders.gadgetbridge = {
-    enable = lib.mkDefault false;
+    enable = lib.mkDefault true;
     hosts = [
       "rakku"
       "phone"
