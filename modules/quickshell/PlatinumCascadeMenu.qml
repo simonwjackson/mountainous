@@ -393,6 +393,7 @@ Item {
                 x: 8; y: 6
                 size: 20
                 name: rowItem.row.app || ""
+                toplevel: rowItem.row.window ? (rowItem.row.window.toplevel || rowItem.row.window) : null
                 visible: name !== ""
                 surface: Kit.PlatinumTokens.menuSurface
             }
@@ -460,6 +461,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 size: 16
                 name: rowItem.row.app || ""
+                toplevel: rowItem.row.window ? (rowItem.row.window.toplevel || rowItem.row.window) : null
                 inactive: rowItem.row.dim === true
                 surface: rowItem.lit ? Kit.PlatinumTokens.highlight : Kit.PlatinumTokens.menuSurface
             }

@@ -183,7 +183,7 @@ FocusScope {
         id: balloonTimer
         interval: 600
         onTriggered: {
-            const item = rowRepeater.itemAt(root.balloonCandidate);
+            const item = rowRepeater.itemAt(root.balloonCandidate) as FindRow;
             root.balloonIndex = item && item.cut ? root.balloonCandidate : -1;
         }
     }
@@ -551,12 +551,13 @@ FocusScope {
         Rectangle { visible: rowItem.row.t === "sep"; y: 3 + root.hair; width: parent.width; height: root.hair; color: Kit.PlatinumTokens.bevelLight }
         Rectangle { visible: rowItem.lit; anchors.fill: parent; color: Kit.PlatinumTokens.highlight }
 
-        IconImage {
+        WindowIcon {
+            toplevel: rowItem.row.k === "win" && rowItem.row.ref ? rowItem.row.ref.toplevel : null
             visible: rowItem.isItem && !!rowItem.row.icon && (rowItem.row.k === "win" || rowItem.row.k === "app" || rowItem.row.k === "recent")
             x: 3 + root.hair
             anchors.verticalCenter: parent.verticalCenter
             implicitSize: 16
-            source: visible ? Quickshell.iconPath(rowItem.row.icon, AppIcon.fallback(rowItem.row.icon)) : ""
+            fallbackSource: visible ? Quickshell.iconPath(rowItem.row.icon, AppIcon.fallback(rowItem.row.icon)) : ""
         }
         Text {
             id: label

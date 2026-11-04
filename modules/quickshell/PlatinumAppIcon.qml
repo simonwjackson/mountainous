@@ -14,6 +14,7 @@ Item {
 
     // An icon theme name, or "" for none.
     property string name: ""
+    property var toplevel: null
     property real size: 20
     property bool inactive: false
     // The surface the icon sits on: the checker's colour.
@@ -27,13 +28,14 @@ Item {
     // The icon is always drawn through the effect, so becoming inactive
     // (a page change) only changes the effect's numbers. Toggling the
     // source's visibility instead left the effect blank.
-    IconImage {
+    WindowIcon {
         id: image
+        toplevel: root.toplevel
         anchors.fill: parent
         implicitSize: root.size
         visible: false
         layer.enabled: true
-        source: root.name === "" ? "" : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))
+        fallbackSource: root.name === "" ? "" : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))
     }
 
     MultiEffect {

@@ -45,6 +45,8 @@ in
               pkgs.nodejs
               pkgs.lua
               pkgs.bash
+              pkgs.quickshell
+              pkgs.coreutils
             ];
             QUICKSHELL_LINT_QS = pkgs.quickshell;
             QUICKSHELL_LINT_QT = pkgs.qt6.qtdeclarative;
@@ -59,6 +61,7 @@ in
           ''
             lua ${./hyprland/browser-keys.test.lua} ${./hyprland/hyprland.lua}
             node ${./quickshell/cdp-target.test.js} ${./quickshell}
+            node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
             node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             if [ "$EXPECTED_NAVIGATION" = 1 ]; then
@@ -80,7 +83,23 @@ in
               if grep -q '^pragma Singleton' "$file"; then printf 'singleton ' >> qml/qmldir; fi
               printf '%s 1.0 %s.qml\n' "$name" "$name" >> qml/qmldir
             done
-            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/Win98OpenDialog.qml
+            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/Win98OpenDialog.qml \
+              qml/WindowIcon.qml qml/Win98Taskbar.qml qml/Win98CoolSwitch.qml qml/Win98FindWindow.qml \
+              qml/PlatinumFindMenu.qml qml/PlatinumCascadeMenu.qml qml/PlatinumControlStrip.qml \
+              qml/PlatinumStripTile.qml qml/PlatinumAppIcon.qml qml/PlatinumDesktop.qml
+            # A runtime load catches Image property errors which qmllint
+            # alone misses. No compositor, network or browser is needed.
+            export XDG_RUNTIME_DIR="$TMPDIR/runtime"
+            mkdir -m 700 "$XDG_RUNTIME_DIR"
+            mkdir icon-smoke
+            cp qml/WindowIcon.qml qml/CdpBrowser.qml qml/cdp-target.js icon-smoke/
+            cp qml/theme-dev/favicon-smoke.qml icon-smoke/shell.qml
+            QT_QPA_PLATFORM=offscreen timeout 10s qs -p icon-smoke/shell.qml --no-color > icon-smoke.log 2>&1 || {
+              cat icon-smoke.log
+              exit 1
+            }
+            cat icon-smoke.log
+            grep -q FAVICON_ICON_SMOKE_READY icon-smoke.log
             touch "$out"
           '';
     };

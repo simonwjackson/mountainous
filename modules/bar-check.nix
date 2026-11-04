@@ -107,6 +107,7 @@
       checks.find-menu = pkgs.runCommand "find-menu" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
         node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
         node ${./quickshell/cdp-target.test.js} ${./quickshell}
+        node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
         node ${./quickshell/themes/platinum/find-plan.test.js} ${./quickshell/themes/platinum/find-plan.js}
         touch $out
       '';
@@ -287,6 +288,8 @@
         assert builtins.hasAttr (prefix + "PlatinumTextField.qml") files;
         assert builtins.hasAttr (prefix + "find-model.js") files;
         assert builtins.hasAttr (prefix + "cdp-target.js") files;
+        assert builtins.hasAttr (prefix + "WindowIcon.qml") files;
+        assert !(builtins.hasAttr (prefix + "cdp-favicon.test.js") files);
         assert builtins.hasAttr (prefix + "chrome-open.js") files;
         assert !(builtins.hasAttr (prefix + "chrome-open.test.js") files);
         assert !(builtins.hasAttr (prefix + "cdp-target.test.js") files);

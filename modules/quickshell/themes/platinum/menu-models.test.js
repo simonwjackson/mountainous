@@ -54,6 +54,15 @@ assert.deepEqual(plain(labels(m)), ["Hide Firefox", "Hide Others", "Show All", "
 const ghRow = m.find((r) => r.id === "app-gh");
 assert.deepEqual(plain([ghRow.count, ghRow.highlight, ghRow.submenu.length, ghRow.submenu[2].hint]), [5, true, 5, ""], "this screen: no hint");
 assert.equal(m.find((r) => r.id === "app-firefox").check, true);
+assert.equal(ghRow.window, undefined, "app groups keep their app-level icon");
+assert.equal(ghRow.submenu[0].window, apps[1].windows[0], "per-window submenu rows carry window identity for favicons");
+assert.equal(ghRow.submenu[0].app, "", "other apps' window rows retain their existing text-only presentation");
+const browser = app("chromium-browser", "Chromium", 2, {icon: "chromium"});
+const browserMenu = M.application({apps: [browser], windowIcon: (_window, a) => a.icon});
+assert.equal(browserMenu[4].app, "chromium", "a browser group retains its app icon");
+assert.equal(browserMenu[4].window, undefined, "a browser group cannot pick one page's favicon");
+assert.equal(browserMenu[4].submenu[0].app, "chromium", "browser window rows carry their app icon fallback");
+assert.equal(browserMenu[4].submenu[0].window, browser.windows[0]);
 assert.equal(m.find((r) => r.id === "app-firefox").submenu, null, "one window: no submenu");
 assert.equal(m.find((r) => r.id === "app-signal").dim, true);
 // No front app, nothing hidden, nothing else shown: the three actions disable.
@@ -78,6 +87,7 @@ let t = M.tile({ window: { address: "w4", appId: "gh", title: "feat(quickshell):
     appName: "GitHub", appIcon: "github", front: false, shown: false, move });
 assert.deepEqual(plain(labels(t)), ["feat(quickshell): Platinum control strip #418", "—", "Switch to window", "Close window", "—", "Move to page", "Hide GitHub"]);
 assert.equal(t[0].kind, "header");
+assert.equal(t[0].window.address, "w4", "a single-window strip menu header carries window identity");
 assert.equal(t[0].detail, "GitHub, not showing");
 assert.deepEqual(plain(labels(t[5].submenu)), ["Beside Signal and Zed", "On its own", "—", "New page"]);
 assert.deepEqual(plain([t[5].submenu[1].check, t[5].submenu[1].disabled]), [true, true]);

@@ -502,6 +502,7 @@ PanelWindow {
         property bool focusRing: false
         property string iconName: ""
         property var toplevel: null
+        readonly property bool browser: CdpBrowser.isBrowserWindow(tb.toplevel)
         // A Fleet host icon instead ({ status, tone }).
         property var hostLook: null
         property string label: ""
@@ -524,7 +525,7 @@ PanelWindow {
                 width: bar.units(16)
                 height: parent.height
                 Win98Icon {
-                    visible: tb.iconName !== ""
+                    visible: tb.iconName !== "" && !tb.browser
                     name: tb.iconName
                     y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
@@ -534,12 +535,14 @@ PanelWindow {
                     tone: tb.hostLook ? tb.hostLook.tone : "normal"
                     y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                 }
-                IconImage {
-                    visible: tb.iconName === "" && tb.hostLook === null && source !== ""
+                WindowIcon {
+                    toplevel: tb.toplevel
+                    smooth: false
+                    visible: (tb.iconName === "" || tb.browser) && tb.hostLook === null && source !== ""
                     y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                     implicitSize: bar.units(16)
-                    source: {
-                        if (tb.iconName !== "" || tb.hostLook !== null || !tb.toplevel) return "";
+                    fallbackSource: {
+                        if ((tb.iconName !== "" && !tb.browser) || tb.hostLook !== null || !tb.toplevel) return "";
                         const id = bar.desktop.appIdOf(tb.toplevel);
                         if (id === "") return "";
                         const e = DesktopEntries.heuristicLookup(id);

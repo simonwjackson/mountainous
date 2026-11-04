@@ -117,10 +117,12 @@ PanelWindow {
     readonly property var dropInfo: StripPlan.drop(strip.rows, strip.dragFrom, strip.dragOver, strip.owner.appNames)
     function tileAt(x, y) {
         const p = track.mapFromItem(strip.contentItem, x, y);
-        const item = inner.childAt(p.x + strip.shownScroll, inner.height / 2);
+        const item = inner.childAt(p.x + strip.shownScroll, inner.height / 2) as StripSlot;
         if (p.y < -8 || p.y > track.height + 8 || p.x < 0 || p.x > track.width) return -1;
         return item && item.tileIndex !== undefined ? item.tileIndex : -1;
     }
+
+    component StripSlot: Item { property int tileIndex: -1 }
 
     // ------------------------------------------------------------ drawing
     Item {
@@ -215,11 +217,11 @@ PanelWindow {
                 Repeater {
                     model: strip.layout.slots
 
-                    Item {
+                    StripSlot {
                         id: slot
                         required property var modelData
                         readonly property bool isTile: modelData.kind === "tile"
-                        readonly property int tileIndex: isTile ? modelData.index : -1
+                        tileIndex: isTile ? modelData.index : -1
                         readonly property var row: isTile ? strip.rows[modelData.index] : null
                         x: Kit.PlatinumTokens.snapFor(QsWindow.window, modelData.x)
                         y: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.height - 30) / 2)
@@ -243,6 +245,7 @@ PanelWindow {
                         }
 
                         PlatinumStripTile {
+                            toplevel: slot.row ? slot.row.toplevel : null
                             visible: slot.isTile
                             icon: slot.row ? strip.owner.appIcon(slot.row.appId) : ""
                             letter: slot.row ? (slot.row.title || "?").charAt(0).toUpperCase() : ""
@@ -416,6 +419,7 @@ PanelWindow {
         PlatinumAppIcon {
             anchors.centerIn: parent
             size: 20
+            toplevel: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.rows[strip.dragFrom].toplevel : null
             name: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.owner.appIcon(strip.rows[strip.dragFrom].appId) : ""
         }
     }

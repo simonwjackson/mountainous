@@ -97,6 +97,8 @@ Scope {
     })
 
     readonly property var applicationRows: Menus.application({
+        // Other apps' window submenus keep their existing text-only rows.
+        windowIcon: function (window, app) { return CdpBrowser.isBrowserWindow(window.toplevel) ? app.icon : ""; },
         apps: desktop.apps,
         front: desktop.frontAddress,
         frontApp: desktop.frontApp,

@@ -414,11 +414,32 @@ Application-menu app **with all its windows**; that is not the tile/button
 model. The new 30-window test confirms one Chromium app group contains 30
 unique windows and Win98's window cycle contains all 30.
 
-Titles are already per window. Favicons are **not** complete: both themes
-normally resolve a desktop-entry/app-class icon. The extension's shared class
-would give repeated generic browser icons, not page favicons. `CdpBrowser` now
-retains `/json/list` favicon metadata, but no unreviewed icon/UI path was added.
-A future exact target registry can supply it through the existing icon slots.
+### Per-window favicons
+
+Both themes now use the page's `/json/list` `faviconUrl` in their existing
+per-window icon slots. Qt loads HTTP(S) images, including `.ico`, directly;
+missing, ambiguous or failed images fall back to the existing themed app icon.
+The Win98 taskbar keeps its 16-unit slot and nearest-neighbour rendering.
+Other surfaces keep their existing sizes. Images request their physical pixel
+size. Platinum's grouped Application-menu entries keep their app-level icon;
+window submenu rows, Find results and individual Control Strip tiles use the
+page favicon. Favicons are page-controlled decoration, not identity/security
+indicators. Qt's image requests do not use Chromium's profile/cookies, and the
+site can observe these additional requests.
+
+A unique host/title match wins first, within the correct CDP endpoint. On a
+focus change with tied matches, `CdpBrowser` evaluates `document.hasFocus()`
+only on those candidate pages. All replies must complete within one second,
+with exactly one true result and the same window still active. The shell then
+records window address → page id. Zero, multiple, failed, timed-out or stale
+reports do not establish a mapping. Closing a window or losing a page removes
+its record. Navigation keeps the page id, so the icon follows the new URL.
+The volatile map is not a second browser history and does not change the
+navigation/security matcher.
+
+**Known gap:** two same-title windows that have not been focused since the
+shell started show the Chromium icon until each is focused once. Custom
+user-data roots remain unsupported. A shell restart clears focus evidence.
 
 Opinion: keep individual windows reachable and make **optional origin/site
 groups** only in overflow/app menus if a trial proves crowded. Use the browser's
@@ -455,5 +476,5 @@ commands, logs and cleanup scans live in the evidence directory. Nested
 compositors/clients used a private `/dev` with only `renderD128`, nonexistent
 `AQ_DRM_DEVICES`/`SEATD_SOCK`, a private runtime and private D-Bus. No real seat
 or card node was used. Real Myoko input, its GPU/VRAM, long-term restore,
-automatic discard, PWA protocol delivery and page favicon rendering remain
+automatic discard, PWA protocol delivery and on-device page favicon rendering remain
 unverified or explicitly blocked. The parent lands and deploys.

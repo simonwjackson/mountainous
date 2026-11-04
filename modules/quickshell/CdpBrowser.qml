@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import QtWebSockets
 import QtQuick
+import QtQml.Models
 import "cdp-target.js" as CdpTarget
 
 Singleton {
@@ -19,9 +20,68 @@ Singleton {
     property int normalPort: 0
     property var endpointPages: ({})
     property int port: 0
-    property var pages: []          // [{ id, url, title, host, ws }]
+    property var pages: []          // [{ id, url, title, host, ws, endpoint, favicon }]
     property string lastError: ""
     property var navigationHistory: ({})
+    property var focusMap: ({})    // normalized window address -> live page id
+    readonly property var windows: Hyprland.toplevels.values
+    onWindowsChanged: root.pruneFocus()
+    onPagesChanged: root.pruneFocus()
+
+    function pruneFocus() {
+        root.focusMap = CdpTarget.pruneFocusMap(root.focusMap, root.windows, root.pages);
+    }
+
+    function faviconFor(toplevel) {
+        return CdpTarget.faviconFor(toplevel, root.pages, root.focusMap);
+    }
+
+    Connections {
+        target: Hyprland
+        function onActiveToplevelChanged() { root.probeFocusedWindow(); }
+    }
+
+    // One bounded batch per focus change, only for ambiguous matches.
+    // Results from a previous focus, errors and partial batches prove nothing.
+    property int focusSequence: 0
+    property var focusProbe: null
+    property var focusReplies: ({})
+    function probeFocusedWindow() {
+        root.focusProbe = null;
+        focusTimeout.stop();
+        const t = Hyprland.activeToplevel;
+        if (!t || !t.address || !root.isBrowserWindow(t)) return;
+        const candidates = CdpTarget.candidatesFor(root.pages, CdpTarget.appIdOf(t), t.title || "");
+        if (candidates.length < 2) return;
+        const sequence = ++root.focusSequence;
+        root.focusReplies = {};
+        root.focusProbe = {sequence: sequence, address: t.address,
+            candidates: candidates.map(function (page) { return {sequence: sequence, page: page}; })};
+        focusTimeout.restart();
+    }
+
+    function focusReply(sequence, id, focused) {
+        const probe = root.focusProbe;
+        if (!probe || probe.sequence !== sequence) return;
+        const replies = Object.assign({}, root.focusReplies);
+        replies[id] = focused;
+        root.focusReplies = replies;
+        if (Object.keys(replies).length !== probe.candidates.length) return;
+        const active = Hyprland.activeToplevel;
+        if (active && active.address === probe.address && Object.values(replies).every(function (r) { return r !== null; })) {
+            const ids = Object.keys(replies).filter(function (key) { return replies[key] === true; });
+            root.focusMap = CdpTarget.recordFocus(root.focusMap, probe.address, ids);
+            root.pruneFocus();
+        }
+        root.focusProbe = null;
+        focusTimeout.stop();
+    }
+
+    Timer {
+        id: focusTimeout
+        interval: 1000
+        onTriggered: root.focusProbe = null
+    }
 
     // A dead browser leaves DevToolsActivePort behind holding the port
     // it used to own. Zeroing `port` when a request fails made the
@@ -242,6 +302,33 @@ Singleton {
             root.pendingNav = null;
             pageSock.active = false;
             root.refresh();
+        }
+    }
+
+    Instantiator {
+        model: root.focusProbe ? root.focusProbe.candidates : []
+        delegate: WebSocket {
+            id: focusSocket
+            required property var modelData
+            url: modelData.page.ws || ""
+            active: true
+            onStatusChanged: function(status) {
+                if (status === WebSocket.Open) {
+                    focusSocket.sendTextMessage(JSON.stringify({id: 1, method: "Runtime.evaluate",
+                        params: {expression: "document.hasFocus()", returnByValue: true}}));
+                } else if (status === WebSocket.Error || status === WebSocket.Closed) {
+                    root.focusReply(modelData.sequence, modelData.page.id, null);
+                }
+            }
+            onTextMessageReceived: function(msg) {
+                let response;
+                try { response = JSON.parse(msg); } catch (e) { return; }
+                if (response.id !== 1) return;
+                const result = response.result;
+                const value = !response.error && result && !result.exceptionDetails && result.result
+                    && result.result.type === "boolean" && typeof result.result.value === "boolean" ? result.result.value : null;
+                root.focusReply(modelData.sequence, modelData.page.id, value);
+            }
         }
     }
 

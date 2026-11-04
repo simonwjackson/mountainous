@@ -95,7 +95,7 @@ function placeLabel(w, here, screenLabel) {
 
 // The windows of one app, in strip order (along the pages), each with
 // where it is.
-function windowRows(app, front, here, screenLabel) {
+function windowRows(app, front, here, screenLabel, windowIcon) {
     var list = (app.windows || []).slice();
     var at = list.slice();
     list.sort(function (a, b) {
@@ -104,7 +104,7 @@ function windowRows(app, front, here, screenLabel) {
     });
     return list.map(function (w) {
         return item({ id: "win-" + w.address, label: w.title || app.name, hint: placeLabel(w, here, screenLabel),
-                      check: w.address === front, action: { kind: "activate", address: w.address, appId: app.appId } });
+                      app: windowIcon ? windowIcon(w, app) : "", window: w, check: w.address === front, action: { kind: "activate", address: w.address, appId: app.appId } });
     });
 }
 
@@ -129,7 +129,7 @@ function application(opts) {
         rows.push(item({
             id: "app-" + a.appId, label: a.name, app: a.icon, check: a.front, dim: a.hidden,
             count: a.count > 1 ? a.count : 0, highlight: o.target === a.appId,
-            submenu: a.count > 1 ? windowRows(a, o.front, o.here, o.screenLabel) : null,
+            submenu: a.count > 1 ? windowRows(a, o.front, o.here, o.screenLabel, o.windowIcon) : null,
             action: { kind: "switchApp", appId: a.appId },
         }));
     }
@@ -154,7 +154,7 @@ function tile(opts) {
                         action: { kind: "moveTo", address: w.address, page: opts.move.newPage } }));
     }
     return [
-        { kind: "header", label: w.title || name, detail: name + state, app: opts.appIcon || "" },
+        { kind: "header", label: w.title || name, detail: name + state, app: opts.appIcon || "", window: w },
         sep(),
         item({ id: "switch", label: opts.front ? "Front window" : "Switch to window", hint: "Click", disabled: !!opts.front,
                action: { kind: "activate", address: w.address, appId: w.appId } }),

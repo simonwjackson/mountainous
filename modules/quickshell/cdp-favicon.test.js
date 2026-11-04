@@ -1,0 +1,86 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const dir = process.argv[2] || __dirname;
+const policy = {};
+vm.runInNewContext(fs.readFileSync(path.join(dir, "cdp-target.js"), "utf8").replace(/^\.pragma library\s*$/m, ""), policy);
+const win = (address, title, appId = "chromium-browser") => ({address, title, appId});
+const page = (id, title, extra = {}) => ({id, title, endpoint: "normal", favicon: `https://${id}.test/favicon.ico`, ...extra});
+let pages = [page("a", "Shared"), page("b", "Shared")];
+const a = win("0xaaa", "Shared - Chromium"), b = win("bbb", "Shared - Chromium");
+assert.equal(policy.faviconFor(a, pages, {}), "", "unfocused title ties use the existing browser icon");
+assert.equal(policy.faviconFor(a, [pages[0]], {}), pages[0].favicon, "a unique title needs no focus record");
+assert.equal(policy.faviconFor(win("x", "Shared", "ghostty"), pages, {x: "a"}), "", "non-browser windows never receive favicons");
+let map = policy.recordFocus({}, a.address, ["a"]);
+assert.equal(map.aaa, "a", "addresses use the same key with or without 0x");
+assert.equal(policy.faviconFor(a, pages, map), pages[0].favicon);
+assert.equal(policy.faviconFor(b, pages, map), "", "focusing one tied window does not identify its peer");
+map = policy.recordFocus(map, b.address, ["b"]);
+assert.equal(policy.faviconFor(b, pages, map), pages[1].favicon);
+assert.equal(policy.faviconFor(a, pages, policy.recordFocus(map, a.address, [])), pages[0].favicon, "no focus report does not invent new evidence");
+assert.equal(policy.faviconFor(a, pages, policy.recordFocus(map, a.address, ["a", "b"])), pages[0].favicon, "multiple true reports cannot overwrite a record");
+assert.equal(policy.faviconFor(a, [page("a", "Elsewhere"), page("b", "Shared")], map), pages[1].favicon, "a unique title match takes precedence over a record");
+const navigated = [page("a", "New title", {favicon: "https://new.test/new.ico"}), page("b", "Other")];
+assert.equal(policy.faviconFor(a, navigated, map), navigated[0].favicon, "navigation keeps the page id and updates its favicon even before the caption poll");
+assert.equal(policy.faviconFor(a, [page("b", "Other")], map), "", "a vanished page cannot supply a stale favicon");
+assert.deepEqual(JSON.parse(JSON.stringify(policy.pruneFocusMap(map, [a], pages))), {aaa: "a"}, "closed windows lose their records");
+assert.deepEqual(JSON.parse(JSON.stringify(policy.pruneFocusMap(map, [a, b], [pages[1]]))), {bbb: "b"}, "vanished pages lose their records");
+assert.deepEqual(JSON.parse(JSON.stringify(map)), {aaa: "a", bbb: "b"}, "pruning does not mutate the previous map");
+assert.equal(policy.faviconFor(a, [page("a", "Shared", {favicon: ""})], map), "", "missing metadata falls back");
+assert.equal(policy.faviconFor(a, [page("a", "Shared", {favicon: "file:///secret"})], map), "", "only HTTP(S) site icons are loaded");
+const web = win("web", "A & B", "chrome-site.test__-Default");
+pages = [page("web", "A &amp; B", {host: "site.test", endpoint: "web"}), page("normal", "A &amp; B", {host: "site.test"})];
+assert.equal(policy.faviconFor(web, pages, {}), pages[0].favicon, "web-app host matching stays in its endpoint");
+assert.equal(policy.faviconFor({...web, title: "Unrelated"}, pages, {web: "normal"}), pages[0].favicon, "a unique host wins over the title and an old focus record");
+assert.equal(policy.faviconFor(win("plain", "A & B - Chromium"), pages, {}), pages[1].favicon, "normal titles decode entities and stay in their endpoint");
+pages.push(page("web2", "A &amp; B", {host: "site.test", endpoint: "web"}));
+assert.equal(policy.faviconFor(web, pages, {}), "", "same-host same-title web apps also need focus evidence");
+assert.equal(policy.candidatesFor(pages, web.appId, web.title).length, 2, "focus probes only inspect tied pages in the matching endpoint");
+assert.equal(policy.candidatesFor(pages, "chromium-browser", "A & B - Chromium").length, 1);
+assert.equal(policy.faviconFor(null, pages, map), "");
+console.log("cdp-favicon: ties, focus evidence, pruning, navigation, host/title/profile matching and fallback pass");
+
+// Execute the production batch controller, not a second implementation.
+const qml = fs.readFileSync(path.join(dir, "CdpBrowser.qml"), "utf8");
+const native = (address, title) => ({address, title, wayland: {appId: "chromium-browser"}});
+const active = native("0xaaa", "Shared - Chromium");
+const Hyprland = {activeToplevel: active};
+const timer = {stop() {}, restart() {}};
+const root = {pages: [page("a", "Shared"), page("b", "Shared"), page("unrelated", "Other"), page("web", "Shared", {endpoint: "web"})],
+    windows: [active], focusMap: {}, focusSequence: 0, focusProbe: null, focusReplies: {},
+    isBrowserWindow: t => policy.isBrowser(policy.appIdOf(t)),
+    pruneFocus() { this.focusMap = policy.pruneFocusMap(this.focusMap, this.windows, this.pages); }};
+const scope = {root, CdpTarget: policy, Hyprland, focusTimeout: timer};
+vm.runInNewContext(qml.slice(qml.indexOf("function probeFocusedWindow("), qml.indexOf("    Timer {")), scope);
+root.focusReply = scope.focusReply;
+scope.probeFocusedWindow();
+assert.deepEqual(Array.from(root.focusProbe.candidates, c => c.page.id), ["a", "b"], "only tied candidates open evaluation sockets");
+const sequence = root.focusProbe.sequence;
+scope.focusReply(sequence - 1, "a", true);
+assert.equal(Object.keys(root.focusReplies).length, 0, "late responses from the previous focus are ignored");
+scope.focusReply(sequence, "a", true);
+assert.equal(root.focusMap.aaa, undefined, "one early true response waits for all candidates");
+scope.focusReply(sequence, "b", false);
+assert.equal(root.focusMap.aaa, "a", "exactly one true result records the focused window");
+assert.equal(root.focusProbe, null, "completion tears down the evaluation batch");
+for (const responses of [[false, false], [true, true], [true, null]]) {
+    root.focusMap = {};
+    scope.probeFocusedWindow();
+    const seq = root.focusProbe.sequence;
+    scope.focusReply(seq, "a", responses[0]);
+    scope.focusReply(seq, "b", responses[1]);
+    assert.equal(root.focusMap.aaa, undefined, "zero, multiple, or incomplete focus evidence cannot create a record");
+}
+scope.probeFocusedWindow();
+const stale = root.focusProbe.sequence;
+Hyprland.activeToplevel = native("0xbbb", "Other - Chromium");
+scope.focusReply(stale, "a", true);
+scope.focusReply(stale, "b", false);
+assert.equal(root.focusMap.aaa, undefined, "a focus change during evaluation cannot identify the previous window");
+scope.probeFocusedWindow();
+assert.equal(root.focusProbe, null, "a unique title never starts an evaluation batch");
+Hyprland.activeToplevel = null;
+scope.probeFocusedWindow();
+assert.equal(root.focusProbe, null);
+console.log("cdp-favicon: production focus batches skip unique/unrelated pages and reject stale, failed or ambiguous evidence");

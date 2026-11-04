@@ -32,8 +32,8 @@ Scope {
             const r = desktop.rowFor(k);
             const t = r ? r.toplevel : null;
             const appId = r ? r.appId : "";
-            return { address: k, title: r ? (r.title || "(untitled)") : "", appId: appId,
-                icon: StartModel.appIcon(appId, ""), minimized: !!(r && desktop.hider && desktop.hider.isHidden(r)) };
+            return { address: k, toplevel: t, title: r ? (r.title || "(untitled)") : "", appId: appId,
+                icon: CdpBrowser.isBrowserWindow(t) ? "" : StartModel.appIcon(appId, ""), minimized: !!(r && desktop.hider && desktop.hider.isHidden(r)) };
         });
     }
     readonly property int current: {
@@ -105,12 +105,14 @@ Scope {
                                 x: Kit.Win98Tokens.snap((cell.width - width) / 2, win.u)
                                 y: Kit.Win98Tokens.snap((cell.height - height) / 2, win.u)
                             }
-                            IconImage {
+                            WindowIcon {
+                                toplevel: cell.modelData.toplevel
+                                smooth: false
                                 visible: cell.modelData.icon === ""
                                 implicitSize: 32 * win.u
                                 x: Kit.Win98Tokens.snap((cell.width - width) / 2, win.u)
                                 y: Kit.Win98Tokens.snap((cell.height - height) / 2, win.u)
-                                source: {
+                                fallbackSource: {
                                     if (cell.modelData.icon !== "" || cell.modelData.appId === "") return "";
                                     const e = DesktopEntries.heuristicLookup(cell.modelData.appId);
                                     const name = AppIcon.themeName(cell.modelData.appId, e && e.icon ? e.icon : "");

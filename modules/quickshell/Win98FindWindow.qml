@@ -580,6 +580,8 @@ FocusScope {
         property var row: ({})
         property bool lit: false
         readonly property bool isItem: rowItem.row.t === "item"
+        readonly property var toplevel: rowItem.kind === "win" && rowItem.row.ref ? rowItem.row.ref.toplevel : null
+        readonly property bool browser: CdpBrowser.isBrowserWindow(rowItem.toplevel)
         readonly property bool cut: nameText.truncated
         readonly property string kind: rowItem.row.k || ""
         readonly property string win98Icon: !rowItem.isItem ? ""
@@ -588,11 +590,12 @@ FocusScope {
             : rowItem.kind === "app" || rowItem.kind === "recent" ? root.win98Icon(rowItem.row.id || "", rowItem.row.label || "") : ""
         // The icon theme's icon, or "" when the theme has none.
         readonly property string themeIcon: {
-            if (!rowItem.isItem || rowItem.win98Icon !== "" || !(rowItem.kind === "win" || rowItem.kind === "app" || rowItem.kind === "recent")) return "";
+            if (!rowItem.isItem || (rowItem.win98Icon !== "" && !rowItem.browser) || !(rowItem.kind === "win" || rowItem.kind === "app" || rowItem.kind === "recent")) return "";
             const id = rowItem.row.icon || "";
             if (id === "") return "";
             const e = rowItem.kind === "win" ? DesktopEntries.heuristicLookup(id) : null;
-            return Quickshell.iconPath(AppIcon.themeName(rowItem.kind === "win" ? id : "", e && e.icon ? e.icon : id), true);
+            const name = AppIcon.themeName(rowItem.kind === "win" ? id : "", e && e.icon ? e.icon : id);
+            return Quickshell.iconPath(name, AppIcon.fallback(name));
         }
         readonly property color ink: rowItem.lit ? Kit.Win98Tokens.selectionText : rowItem.row.dis ? Kit.Win98Tokens.gray : Kit.Win98Tokens.winText
         height: Plan.rowHeight(rowItem.row) * root.u
@@ -636,10 +639,12 @@ FocusScope {
                     : rowItem.kind === "win" || rowItem.kind === "app" || rowItem.kind === "recent" ? "doc" : ""
                 color: rowItem.ink
             }
-            IconImage {
+            WindowIcon {
+                toplevel: rowItem.toplevel
+                smooth: false
                 visible: rowItem.themeIcon !== ""
                 implicitSize: 16 * root.u
-                source: rowItem.themeIcon
+                fallbackSource: rowItem.themeIcon
             }
         }
         Win98Text {

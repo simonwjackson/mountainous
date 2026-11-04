@@ -179,13 +179,14 @@ FocusScope {
                 Row {
                     visible: root.dest.here
                     spacing: 6
-                    IconImage {
+                    WindowIcon {
                         id: destIcon
+                        toplevel: root.caller
                         visible: root.callerApp !== ""
                         y: 1
                         implicitSize: 16
                         // A browser window: Chromium's icon when its site has no entry.
-                        source: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "chromium") : ""
+                        fallbackSource: visible ? Quickshell.iconPath(root.iconOf(root.callerApp), "chromium") : ""
                     }
                     Text {
                         readonly property real room: body.width - 28 - (destIcon.visible ? 22 : 0)

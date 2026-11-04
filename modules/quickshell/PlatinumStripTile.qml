@@ -17,6 +17,7 @@ Item {
     id: tile
 
     property string icon: ""
+    property var toplevel: null
     property string letter: ""
     property bool shown: true
     property bool focused: false
@@ -63,6 +64,7 @@ Item {
         y: Kit.PlatinumTokens.snapFor(QsWindow.window, 5) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
         size: 20
         name: tile.icon
+        toplevel: tile.toplevel
         inactive: !tile.shown
         surface: Kit.PlatinumTokens.stripSurface
     }
