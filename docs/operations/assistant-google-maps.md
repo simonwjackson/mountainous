@@ -20,9 +20,8 @@ by the board's 03:00 boundary. Maps uses the existing tailnet Valhalla name,
 `https://valhalla.hummingbird-lake.ts.net`, whose placement is Unzen.
 
 The keyring password `pi-assistant-google-keyring-password` is set in
-`secrets/hosts/rakku.yaml` (a random value made for this; rotate with `./scripts/secrets`). This
-change declares the secret and LoadCredential only; it does not add a secret
-value or sign in. The service reads `gog-keyring-password` from its systemd
+`secrets/hosts/rakku.yaml` (a random value made for this; rotate with `./scripts/secrets`). Nothing here
+signs in to Google. The service reads `gog-keyring-password` from its systemd
 credential directory. The value does not enter a Nix derivation or unit env.
 The app passes it to the gog subprocess's environment, as gog 0.11.0 requires.
 A separate authorized Google sign-in remains outside fixture development.
