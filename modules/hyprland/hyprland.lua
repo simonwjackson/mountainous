@@ -204,12 +204,30 @@ if CHROMIUM_FAKE_FULLSCREEN then
         suppress_event = "fullscreen",
     })
 
-    -- Temporarily recover the address bar and menu, including Install app.
     -- Lua patterns have no alternation; keep this equivalent to the rule.
+    local function chromium_class(class)
+        class = class or ""
+        return class == "chromium-browser" or class == "chromium" or class:match("^chrome%-") ~= nil
+    end
+
+    -- Hyprland applies a fullscreen_state rule only to a window that takes
+    -- focus when it maps (Window.cpp: `if (!m_noInitialFocus && ...)`).
+    -- Windows that open in the background (xdg-open, session restore,
+    -- a PWA launched while another window has focus) missed it on Myoko.
+    -- Apply the same state on open; a window in real fullscreen is left
+    -- alone, and Super+U's choice is never undone (open fires once).
+    hl.on("window.open", function(w)
+        if w and chromium_class(w.class) and w.fullscreen == 0 and w.fullscreen_client ~= 2 then
+            hl.dispatch(hl.dsp.window.fullscreen_state({
+                internal = 0, client = 2, window = "address:" .. w.address,
+            }))
+        end
+    end)
+
+    -- Temporarily recover the address bar and menu, including Install app.
     hl.bind(mod .. " + U", function()
         local w = hl.get_active_window()
-        local class = w and w.class or ""
-        if class ~= "chromium-browser" and class ~= "chromium" and not class:match("^chrome%-") then return end
+        if not (w and chromium_class(w.class)) then return end
         hl.dispatch(hl.dsp.window.fullscreen_state({
             internal = 0, client = w.fullscreen_client == 2 and 0 or 2,
         }))

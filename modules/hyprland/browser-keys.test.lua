@@ -38,16 +38,17 @@ print("browser keys: normal, popup, app, non-browser and no-window Ctrl+L pass")
 -- The real fake-fullscreen rule and Super+U callback. LuaWindow exposes
 -- fullscreen_client (snake_case), not hyprctl JSON's fullscreenClient.
 local section = assert(source:match('%-%- CHROMIUM PAGE FRAME\n(.-)\n%-%-%-%-'))
-local rules, toggle, states
+local rules, toggle, states, on_open
 hl = {
     window_rule = function(rule) rules[#rules + 1] = rule end,
+    on = function(event, cb) assert(event == "window.open"); on_open = cb end,
     bind = function(key, cb) assert(key == "SUPER + U"); toggle = cb end,
     get_active_window = function() return active end,
     dsp = { window = { fullscreen_state = function(state) return state end } },
-    dispatch = function(state) states[#states + 1] = state; active.fullscreen_client = state.client end,
+    dispatch = function(state) states[#states + 1] = state; if active then active.fullscreen_client = state.client end end,
 }
 local function configure(text)
-    rules, toggle, states = {}, nil, {}
+    rules, toggle, states, on_open = {}, nil, {}, nil
     assert(load('local mod = "SUPER"\n' .. text))()
 end
 configure(section)
@@ -71,6 +72,21 @@ toggle()
 active = nil
 toggle()
 assert(#states == 0, "missing class/window is safe")
+
+-- A window that opened without focus missed the rule: the open handler
+-- applies the state to that window by address.
+for _, class in ipairs({ "chromium-browser", "chrome-appid-Default", "chrome-site.test__-Default" }) do
+    states = {}
+    on_open({ class = class, address = "0xabc", fullscreen = 0, fullscreen_client = 0 })
+    assert(#states == 1 and states[1].internal == 0 and states[1].client == 2 and states[1].window == "address:0xabc",
+        "background " .. class .. " window gets the page frame")
+end
+states = {}
+on_open({ class = "chromium-browser", address = "0xabc", fullscreen = 0, fullscreen_client = 2 })
+on_open({ class = "chromium-browser", address = "0xabc", fullscreen = 2, fullscreen_client = 2 })
+on_open({ class = "ghostty", address = "0xabc", fullscreen = 0, fullscreen_client = 0 })
+on_open(nil)
+assert(#states == 0, "framed, really fullscreen, non-browser and missing windows are left alone")
 configure((section:gsub('local CHROMIUM_FAKE_FULLSCREEN = true', 'local CHROMIUM_FAKE_FULLSCREEN = false', 1)))
-assert(#rules == 0 and toggle == nil, "local flag disables the rule and toggle")
+assert(#rules == 0 and toggle == nil and on_open == nil, "local flag disables the rule, open handler and toggle")
 print("browser frame: fake fullscreen and active-window Super+U toggle pass")
