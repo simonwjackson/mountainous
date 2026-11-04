@@ -23,6 +23,7 @@
 #   window.resize keep_aspect_ratio  -> dsp_mouseResize, shape preserved
 #   hl.gesture fingers 2..9     config/ConfigManager.cpp handleGesture
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
+{ inputs, ... }:
 let
   # Platinum and Windows 98 title bars: nixpkgs' hyprbars with our patch
   # (hyprland/hyprbars-platinum.patch). The patch adds square bevelled
@@ -67,11 +68,12 @@ in {
     checks.titlebars = pkgs.runCommand "titlebars" {
       nativeBuildInputs = [pkgs.lua pkgs.binutils];
       PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
+      HENSOU_QML = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml/Hensou";
     } ''
       nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
-      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${./quickshell/PlatinumTokens.qml} ${./hyprland/hyprland.lua} ${./quickshell/Win98Tokens.qml}
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} "$HENSOU_QML/PlatinumTokens.qml" ${./hyprland/hyprland.lua} "$HENSOU_QML/Win98Tokens.qml"
       touch $out
     '';
   };
