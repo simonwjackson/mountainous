@@ -61,7 +61,8 @@ hl.env("NIXOS_OZONE_WL", "1")
 --------------------------------------------------------------------
 -- The master layout's starting split and side. Session restore compares a
 -- saved page against these to decide whether the page needs changing.
-local MASTER_RATIO = 0.5
+-- Golden by default (hypr-split.lua's GOLDEN); Meta+G toggles to even.
+local MASTER_RATIO = 0.61803
 local MASTER_SIDE  = "left"
 
 -- The window edge outside Platinum. Under the Platinum desktop theme
@@ -127,12 +128,13 @@ hl.config({
     },
 
     master = {
-        -- Even split by default; Meta+G toggles to golden.
+        -- Golden split by default; Meta+G toggles to even.
         mfact       = MASTER_RATIO,
         -- Kamoi's master sits on one side; Meta+Shift+G mirrors it.
         orientation = MASTER_SIDE,
-        -- A new window joins the stack rather than displacing master.
-        new_status  = "slave",
+        -- A new window takes the master pane, the larger golden part, and
+        -- the window it replaces moves to the stack.
+        new_status  = "master",
     },
 
     input = {
