@@ -138,7 +138,12 @@ local function publish()
     write_json(M.FILE, M.snapshot())
     write_json(OWNED_FILE, object(owned))
 end
-local function tiled_windows(ws)
+-- Shared with directional page navigation; monitor objects are weak views,
+-- so compare connector names rather than Lua object identity.
+function M.same_monitor(a, b)
+    return a.monitor ~= nil and b.monitor ~= nil and a.monitor.name == b.monitor.name
+end
+function M.tiled_windows(ws)
     local out = {}
     for _, w in ipairs(ws:get_windows()) do
         -- Floating windows sit outside the tiled page, so Kamoi's capacity
@@ -186,7 +191,7 @@ function M.enforce(ws)
     if not ws or ws.id <= 0 or enforcing or held then return end
     local p = ensure(ws)
     if p.floating then return end
-    local wins = tiled_windows(ws)
+    local wins = M.tiled_windows(ws)
     local over = #wins - p.cap
     if over <= 0 then return end
     enforcing = true
@@ -366,8 +371,7 @@ local function leave_if_empty()
     if not here or here.id <= 0 or here.windows > 0 then return end
     local best
     for _, ws in ipairs(hl.get_workspaces()) do
-        if ws.id > 0 and ws.id ~= here.id and ws.windows > 0 and ws.monitor and here.monitor
-            and ws.monitor.name == here.monitor.name then
+        if ws.id > 0 and ws.id ~= here.id and ws.windows > 0 and M.same_monitor(ws, here) then
             local d = math.abs(ws.id - here.id)
             if not best or d < math.abs(best - here.id) or (d == math.abs(best - here.id) and ws.id < best) then best = ws.id end
         end
@@ -396,7 +400,7 @@ function M.attach()
             if not pages[ws.id] then
                 -- A config reload must not split an existing tiled page just
                 -- because its old in-memory capacity was lost.
-                ensure(ws).cap = math.min(3, math.max(ensure(ws).cap, #tiled_windows(ws)))
+                ensure(ws).cap = math.min(3, math.max(ensure(ws).cap, #M.tiled_windows(ws)))
             end
             for _, w in ipairs(ws:get_windows()) do
                 if provenance[w.address] == ws.id and w.floating and not w.pinned then owned[w.address] = ws.id end

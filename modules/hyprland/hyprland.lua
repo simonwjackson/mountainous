@@ -255,7 +255,7 @@ end
 local function prev_occupied_workspace(here)
     local best = nil
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id < here.id and w.windows > 0 and same_monitor(w, here) then
+        if w.id > 0 and w.id < here.id and w.windows > 0 and page_layout.same_monitor(w, here) then
             if best == nil or w.id > best.id then best = w end
         end
     end
@@ -265,7 +265,7 @@ end
 local function next_occupied_workspace(here)
     local best = nil
     for _, w in ipairs(hl.get_workspaces()) do
-        if w.id > 0 and w.id > here.id and w.windows > 0 and same_monitor(w, here) then
+        if w.id > 0 and w.id > here.id and w.windows > 0 and page_layout.same_monitor(w, here) then
             if best == nil or w.id < best.id then best = w end
         end
     end
@@ -324,7 +324,7 @@ local function move_focus(dir)
 
     if target_ws == nil then return end
 
-    local wins = tiled_windows(target_ws)
+    local wins = page_layout.tiled_windows(target_ws)
     local win_to_focus = select_target_window(wins)
 
     if win_to_focus ~= nil then
