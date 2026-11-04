@@ -1,5 +1,5 @@
 # The browser spine: CDP control in QML for Ctrl+L. Chromium retains window
-# ownership and its origin/security UI. See desktop-themes/chromium-windows.md.
+# ownership; Super+U recovers its UI. See desktop-themes/chromium-windows.md.
 { self, inputs, ... }:
 let
   tablessPolicy = "mdndkociaebjkggmhnemegoegnbfbgoo;https://clients2.google.com/service/update2/crx";
@@ -53,6 +53,7 @@ in
               inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
             }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
             EXPECTED_NAVIGATION = if desktop.mountainous.browser.shellNavigation.enable then "1" else "0";
+            EXPECTED_KIOSK = if desktop.mountainous.browser.kiosk.enable then "1" else "0";
             CHROMIUM = "${self.nixosConfigurations.myoko.pkgs.chromium}/bin/chromium";
           }
           ''
@@ -64,6 +65,11 @@ in
               grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
             else
               ! grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
+            fi
+            if [ "$EXPECTED_KIOSK" = 1 ]; then
+              grep -q -- '--kiosk' "$CHROMIUM"
+            else
+              ! grep -q -- '--kiosk' "$CHROMIUM"
             fi
             # Quickshell discovers pragma Singleton itself; qmllint needs an
             # explicit complete index. This index is test-only, never delivered.
@@ -89,6 +95,7 @@ in
     let
       cfg = config.mountainous.browser.shellNavigation;
       tabless = config.mountainous.browser.tabless;
+      kiosk = config.mountainous.browser.kiosk;
     in
     {
       options.mountainous.browser.tabless.enable = lib.mkEnableOption ''
@@ -110,6 +117,16 @@ in
           does not enable the no-tab prototype or change profile cookies.
         '';
       };
+      options.mountainous.browser.kiosk.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = cfg.enable;
+        description = ''
+          Start Chromium with --kiosk to suppress its fullscreen Esc bubble.
+          Cost: F11 does nothing. Super+U shows or hides Chromium's own UI
+          on the active window through Hyprland's client fullscreen state.
+          Restart Chromium after changing this option.
+        '';
+      };
       config = {
         programs.chromium = lib.mkIf tabless.enable {
           # The upstream module emits ExtensionInstallForcelist. Never load
@@ -127,9 +144,13 @@ in
         };
         # Wrap, do not replace the profile. --remote-debugging-port=0 selects
         # a random loopback port. Both user-data roots keep their own endpoint.
-        nixpkgs.overlays = lib.optional cfg.enable (
+        nixpkgs.overlays = lib.optional (cfg.enable || kiosk.enable) (
           _final: prev: {
-            chromium = prev.chromium.override { commandLineArgs = "--remote-debugging-port=0"; };
+            chromium = prev.chromium.override {
+              commandLineArgs = lib.concatStringsSep " " (
+                lib.optional cfg.enable "--remote-debugging-port=0" ++ lib.optional kiosk.enable "--kiosk"
+              );
+            };
           }
         );
         environment.sessionVariables.MOUNTAINOUS_BROWSER_INTEGRATION = if cfg.enable then "1" else "0";

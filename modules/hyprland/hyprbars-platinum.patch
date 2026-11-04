@@ -381,7 +381,7 @@ index c27653d..e64c376 100644
          Vector2D   currentPos = Vector2D{(BUTTONSRIGHT ? BARBUF.x - BARBUTTONPADDING - b.size - offset : offset), (BARBUF.y - b.size) / 2.0}.floor();
  
          bool       hover = VECINRECT(COORDS, currentPos.x, currentPos.y, currentPos.x + b.size + BARBUTTONPADDING, currentPos.y + b.size);
-@@ -689,3 +814,390 @@ void CHyprBar::damageOnButtonHover() {
+@@ -689,3 +814,398 @@ void CHyprBar::damageOnButtonHover() {
          offset += BARBUTTONPADDING + b.size;
      }
  }
@@ -405,8 +405,16 @@ index c27653d..e64c376 100644
 +// xdg-decoration or KDE server-decoration with a client-side mode, or no
 +// decoration object at all (GTK4/libadwaita, GTK3). X11 windows keep the
 +// stock rule (m_X11DoesntWantBorders, checked when the bar is made).
++// A client-only fullscreen state overrides the decoration request below.
 +bool platinumClientDecorates(PHLWINDOW window) {
 +    if (!window || !g_pGlobalState->config.platinum->value() || window->m_isX11)
++        return false;
++
++    // A client told it is fullscreen draws no frame of its own: Chromium
++    // drops its tab strip and an installed app's title bar. When Hyprland
++    // still tiles the window (fullscreen_state 0 2), draw ours.
++    const auto MODES = Fullscreen::controller()->getFullscreenModes(window);
++    if (MODES.client == Fullscreen::FSMODE_FULLSCREEN && MODES.internal != Fullscreen::FSMODE_FULLSCREEN)
 +        return false;
 +
 +    const auto XDG      = window->m_xdgSurface.lock();

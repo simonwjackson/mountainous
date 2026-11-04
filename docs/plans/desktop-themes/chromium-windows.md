@@ -1,12 +1,46 @@
-# Chromium windows: investigation and navigation subset (2026-10-28)
+# Chromium windows: page-only frame and navigation
 
-**Ctrl+L is implemented for normal Chromium and its popups under both themes.
-The no-tab conversion is not enabled.** Chromium 153's extension popups hide
-the origin; a native popup bridge cannot accept a live tab through `tabs.move`.
-Ordinary Memory Saver also protects the only tab in each window.
-Neither issue is a cosmetic detail. The supervisor asked that an origin-less
-popup conversion stay disabled. No extension, PWA launcher rewrite or browser
-engine change is installed by this branch.
+## Current config (2026-11-04)
+
+Normal Chromium, `--app` windows and installed PWAs now use client-only
+fullscreen. `hyprland.lua` matches `^(chromium-browser|chromium|chrome-.*)$`
+with `fullscreen_state = "0 2"` and `suppress_event = "fullscreen"`. Chromium
+hides its tab strip, toolbar and PWA title bar while Hyprland keeps it tiled.
+The hyprbars patch draws our Platinum or Windows 98 caption when the client
+is fullscreen but the compositor is not, even for client-decorated windows.
+This replaces the old assumption below that installed PWAs must keep their
+Chromium frame. It does not ship the rejected extension popup conversion.
+
+Installed PWAs stay installed and keep their original `--app-id` launchers,
+profiles and logins. They retain periodic background sync, persistent storage
+grants, remembered File System Access, protocol/file handlers, badging and
+manifest scope. There is no PWA-to-`--app` launcher rewrite.
+
+**Super+U** toggles the active Chromium window's client state between 0 and 2,
+always with internal state 0. Use it to show the address bar and menu when
+installing a PWA, then return to page-only mode. Other clients do not change.
+`mountainous.browser.kiosk.enable` adds `--kiosk` to suppress the fullscreen
+Esc bubble. It defaults to the shell-navigation setting, which already adds
+`--remote-debugging-port=0`. **Cost: F11 does nothing.** Restart Chromium to
+pick up wrapper changes. The named local `CHROMIUM_FAKE_FULLSCREEN` flag
+can disable both the fullscreen rule and Super+U.
+
+Security cost: the native origin/security display is hidden too. Our caption
+and a page title do not prove origin. Super+U recovers Chromium's UI; no
+replacement security display ships. CDP's existing local-control risk remains.
+The earlier investigation below documents why a popup conversion was rejected;
+it is historical evidence, not a claim that native origin UI stays visible
+with the new fullscreen rule. Daily-profile kiosk behavior, permission prompts,
+downloads, printing, extension popups and a real installed PWA with the patched
+plugin need post-deployment checks on Myoko. Local headless checks do not
+replace those checks.
+
+## Earlier investigation and navigation subset (2026-10-28)
+
+At this stage Ctrl+L shipped for normal Chromium and popups under both themes.
+The origin-less popup conversion stayed disabled. The observations below
+predate the client-only fullscreen rule; normal windows then kept browser UI,
+and installed PWAs kept Chromium's frame.
 
 Evidence: [/tandem/chromium-windows/](http://100.114.19.92:8765/tandem/chromium-windows/).
 All browser work used private test profiles. No real profile, account, cookie,
@@ -64,14 +98,16 @@ Chromium 153 permits debugging its default root; Google Chrome does not.
 limits the default-directory restriction to Google Chrome branding (except a
 Chromium test hook). This is **Chromium**, not Google Chrome support.
 
-### Rollback: one option
+### Navigation rollback
 
 ```nix
 mountainous.browser.shellNavigation.enable = false;
 ```
 
 Rebuild, close Chromium, and start a new desktop session. This removes the
-normal-browser CDP flag and returns normal Chromium's Ctrl+L to Chromium. The
+normal-browser CDP flag and returns normal Chromium's Ctrl+L to Chromium.
+The kiosk default also follows this option; an explicit kiosk override does not.
+To restore the ordinary frame too, disable `CHROMIUM_FAKE_FULLSCREEN` as above. The
 pre-existing declared-web-app Ctrl+L/CDP path remains. No profile migration or
 cookie rollback is needed. The rejected extension/PWA conversion has nothing
 to uninstall because it was never enabled.
@@ -271,8 +307,9 @@ audio/capture/form and reload-on-activation rules. That was not built.
 Go to Address / Open remains the shared shell navigation path. Alt+Left,
 Alt+Right, Ctrl+R and F5 are left to Chromium; no theme intercepts them. No
 parallel history implementation or new theme-specific toolbar was added.
-Normal browser windows retain Chromium's location/security UI and permission,
-download and certificate-error surfaces. The origin-less app-popup prototype
+Before the client-only fullscreen change, normal browser windows retained
+Chromium's location/security UI and permission, download and certificate-error
+surfaces. The current rule hides the browser UI until Super+U restores it. The origin-less app-popup prototype
 must not be used as the daily browser.
 
 If a future shell security surface is approved, the **data path**, not its UI,
@@ -342,7 +379,8 @@ The private normal page, installed fixture and generic `--app` launch all see
 the same test cookie, `session=private-login`. The generic app's observed class
 is `chrome-127.0.0.1__fixture-Default`, which also demonstrates that URL paths,
 not only hosts, participate in that class. The standalone installed fixture
-has class `chrome-<app-id>-Default` and Chromium's own caption; the generic app
+has class `chrome-<app-id>-Default` and, without fake fullscreen, Chromium's
+own caption; the generic app
 has our SSD caption but no origin strip. Both launch shapes were captured
 under Platinum and Win98. This confirms cookie retention, not protocol-handler
 or installed-app parity.
@@ -362,9 +400,10 @@ The private launch/cookie/registrar prototype is tested; a reversible launcher
 adapter and protocol semantics are not. The eight installed apps' real start
 URLs remain unknown, not guessed. There is no speculative URL list to approve.
 No installed PWA was uninstalled, no launcher was overwritten, and Simon keeps
-his existing logins. Open item 7 remains blocked, rather than calling unsafe
-origin removal a scalable fix. The shell can now navigate an identifiable
-installed PWA in its original profile without converting its window.
+his existing logins. The launcher rewrite remains unnecessary: current config keeps installed apps
+and replaces only their visible frame through client-only fullscreen. The
+shell can navigate an identifiable installed PWA in its original profile
+without converting its window.
 
 ## Taskbar and Control Strip
 
@@ -391,7 +430,8 @@ the fallback. This needs design review, not a second application-group model.
 
 `checks.chromium-windows` runs the real Lua binding test, CDP matcher tests,
 Find model tests, 30-window app-model coverage, the packaged Chromium wrapper
-flag assertion and focused QML type/lint checks. The lint helper accepts a
+flag assertions (CDP and kiosk) and focused QML type/lint checks. The Lua
+binding test also covers the fullscreen rule, Super+U and the local disable flag. The lint helper accepts a
 pinned toolchain from a Nix check so it does not invoke nested Nix builds.
 Its complete singleton index is test-only; no qmldir is delivered to Quickshell.
 `checks.titlebars` and the 22 lane checks also passed during development.

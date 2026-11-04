@@ -190,6 +190,33 @@ hl.animation({ leaf = "fade",       enabled = true, speed = 4, bezier = "quick" 
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 --------------------------------------------------------------------
+-- CHROMIUM PAGE FRAME
+local CHROMIUM_FAKE_FULLSCREEN = true
+
+-- Chromium hides its own UI, but Hyprland keeps the window tiled and our
+-- patched hyprbars supplies the caption. Ignore client fullscreen requests
+-- so a page cannot replace this split state. --kiosk silences the Esc bubble.
+if CHROMIUM_FAKE_FULLSCREEN then
+    hl.window_rule({
+        name = "chromium-page-frame",
+        match = { class = "^(chromium-browser|chromium|chrome-.*)$" },
+        fullscreen_state = "0 2",
+        suppress_event = "fullscreen",
+    })
+
+    -- Temporarily recover the address bar and menu, including Install app.
+    -- Lua patterns have no alternation; keep this equivalent to the rule.
+    hl.bind(mod .. " + U", function()
+        local w = hl.get_active_window()
+        local class = w and w.class or ""
+        if class ~= "chromium-browser" and class ~= "chromium" and not class:match("^chrome%-") then return end
+        hl.dispatch(hl.dsp.window.fullscreen_state({
+            internal = 0, client = w.fullscreen_client == 2 and 0 or 2,
+        }))
+    end)
+end
+
+--------------------------------------------------------------------
 -- GROUP 1: layout and windows
 --------------------------------------------------------------------
 hl.bind(mod .. " + N", hl.dsp.exec_cmd("ghostty"))

@@ -9,54 +9,69 @@ Kamoi installs web pages as PWAs and lists them in the omni bar under "PWA apps"
 - `--class` is ignored on Wayland. Chromium derives `app_id` from the URL, producing `chrome-<host>__-Default`. Window rules and `startupWMClass` must use the host-derived class.
 - All web apps share a single profile directory (`~/.local/share/mountainous/browser`) so authentication sessions (e.g., Google login) are shared rather than isolated per app.
 
-## A Declared App Is Not an Installed PWA
-The two launch paths draw different window frames. This is the reason a PWA
-installed through Chromium shows a title bar and the declared web apps do not.
+## Keep Installed PWAs, Replace Their Frame
 
-| Launch | Window | Frame |
+A declared app and an installed PWA are different browser objects. Keep both
+launch paths; do not rewrite an installed app to a generic URL launch.
+
+| Launch | Browser object | Frame without our fullscreen rule |
 |---|---|---|
-| `chromium --app=<url>` (`web-app`) | generic app window | none |
-| `chromium --app-id=<id>` (Chromium Install button) | installed web app | Chromium client-side title bar, origin text, menu, minimise, maximise, close |
+| `chromium --app=<url>` (`web-app`) | generic app window | asks for our server-side caption |
+| `chromium --app-id=<id>` (Chromium Install button) | installed web app | Chromium client-side title bar, origin text, menu and window buttons |
 
-Measured against Chromium 153 under Hyprland 0.56.2:
+Chromium 153's `AppBrowserController::ShouldUseCustomFrame()` requests its own
+frame for installed apps. The frame preference used for normal windows does
+not override it. `--disable-features=WebAppFrameToolbarView` changed nothing;
+that feature name does not exist. `Borderless` applies to Isolated Web Apps,
+not ordinary installed PWAs.
 
-- `--app=https://example.com` rendered with no frame. Content filled the window.
-- `--app-id=<id>` rendered a title bar showing the origin
-  `forgerie.hummingbird-lake.ts.net` and the app menu and window buttons.
-- `--disable-features=WebAppFrameToolbarView` changed nothing. The feature name
-  does not exist.
+### Client-only fullscreen (2026-11-04)
 
-### Why the frame cannot be removed
-Chromium's `AppBrowserController::ShouldUseCustomFrame()` returns `true`. An
-installed web app is the only case that builds that controller, so Chromium
-always draws its own frame for `--app-id` windows and ignores the compositor.
-With `--app` Chromium draws no frame and asks the compositor for server-side
-decorations. Our patched hyprbars draws the caption and outer frame under
-**both Platinum and Windows 98** (`docs/decisions/hyprland.md`). An `--app-id`
-window keeps Chromium's frame and gets no compositor caption. Normal browser
-windows can also ask for our frame while keeping Chromium's tabs and toolbar;
-see Phase A below.
+`hyprland.lua` matches `^(chromium-browser|chromium|chrome-.*)$`, including
+installed classes such as `chrome-<id>-Default`. Its `fullscreen_state = "0 2"`
+keeps the window tiled inside Hyprland but tells Chromium it is fullscreen.
+Chromium then hides its tab strip, toolbar and installed-app title bar.
+`suppress_event = "fullscreen"` prevents client requests from changing that
+split. Our hyprbars patch treats a client-only fullscreen window as drawing
+no frame, even if it requested client-side decorations. Platinum light/dark
+and Windows 98 supply the caption and outer frame instead.
 
-Upstream keeps this behaviour on purpose, to show a tamper-proof origin in the
-title bar. Chromium closed the request to change it as infeasible. There is no
-command-line flag and no user preference that removes it. The `Borderless`
-display mode exists, but it applies to Isolated Web Apps only, not to ordinary
-installed PWAs.
+Installed PWAs stay installed in their original profile. They keep periodic
+background sync, persistent storage grants, remembered File System Access,
+protocol/file handlers, badging, and manifest scope. No launcher, cookie or
+profile conversion is needed. New declared apps still live in
+`modules/web-apps.nix` and use the shared web-app root.
 
-### The rule
-New declared web apps live in `modules/web-apps.nix`. Existing installed PWAs
-are not automatically converted or uninstalled. Do not delete their launchers
-merely to remove their title bars: generic `--app` windows lose native origin
-chrome and installed-app integration.
+**Super+U** shows or hides Chromium's own UI on the active Chromium window.
+Use it to recover the address bar and menu, including the Install app action,
+then press it again to return to the page-only window. Other clients do not
+change. `mountainous.browser.kiosk.enable` adds `--kiosk` to the wrapper to
+remove the “press and hold Esc” fullscreen bubble. It defaults to the existing
+shell-navigation setting. **Cost: F11 does nothing.** Restart Chromium after
+changing the wrapper option. Super+U is the recovery control, not F11.
 
-As of 2026-10-28, `CdpBrowser.qml` also reads normal Chromium's own Default-root
-CDP endpoint. It can navigate a uniquely identifiable installed PWA without
-moving its cookies into `mountainous/browser`. This does not change its frame.
-The no-tab extension, native-popup bridge, memory measurements, scalable PWA
-conversion boundary and one-option rollback are recorded in
-[`chromium-windows.md`](../plans/desktop-themes/chromium-windows.md). Both profile
-roots remain separate. No launcher conversion is enabled while origin and
-live-tab promotion remain blocked.
+This deliberately hides Chromium's native origin/security display. A page's
+title and our caption are not trusted origin indicators. Super+U recovers the
+browser UI; no replacement security display ships. Kiosk with daily profiles,
+downloads, permission prompts, printing and extension popups still needs
+post-deployment checks. The standalone plugin probe proved captions on a
+client-decorated Chromium window; a real installed PWA with the new plugin
+still needs a post-deployment check on Myoko.
+
+### Rollback and navigation
+
+Set `mountainous.browser.kiosk.enable = false` to remove only the kiosk flag.
+Set `CHROMIUM_FAKE_FULLSCREEN = false` at the top of the Chromium page-frame
+section in `hyprland.lua` to disable the rule and Super+U. Reload Hyprland and
+restart Chromium to return to ordinary browser UI. The stopped-profile frame
+preference below remains useful then; installed PWAs return to Chromium's
+frame. No app needs uninstalling.
+
+`CdpBrowser.qml` can navigate a uniquely identifiable installed PWA through its
+original profile's endpoint. The shared `mountainous/browser` root and normal
+Chromium root remain separate. The rejected popup conversion, memory limits
+and navigation details are recorded in
+[`chromium-windows.md`](../plans/desktop-themes/chromium-windows.md).
 
 ## Single CDP Endpoint and Flag Inheritance
 All web-app launches route through `web-app`:
@@ -64,7 +79,11 @@ All web-app launches route through `web-app`:
 2. `--remote-debugging-port=0`: Chromium selects a random loopback port and writes it to `<profile>/DevToolsActivePort`.
 3. The flag must be present on every launch command so the initial instance binds the debugging port regardless of which app was opened first.
 
-## Normal browser windows: Phase A (2026-10-27)
+## Normal browser system-frame preference: Phase A (2026-10-27)
+
+This preference remains the fallback when client-only fullscreen is off or
+Super+U shows the browser UI. It is not required to force our caption in
+client-only fullscreen; the plugin override handles that state directly.
 
 Myoko selects the `desktop` layer in `modules/hosts/myoko.nix`.
 `modules/web-apps.nix` installs **Chromium**, not Google Chrome. The locked
