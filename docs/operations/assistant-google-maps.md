@@ -19,8 +19,8 @@ therefore persists with that folder. `GOG_BIN` points at the locked official
 by the board's 03:00 boundary. Maps uses the existing tailnet Valhalla name,
 `https://valhalla.hummingbird-lake.ts.net`, whose placement is Unzen.
 
-Before activation, use `./scripts/secrets secrets/hosts/rakku.yaml` and set
-`pi-assistant-google-keyring-password` to the file keyring password. This
+The keyring password `pi-assistant-google-keyring-password` is set in
+`secrets/hosts/rakku.yaml` (a random value made for this; rotate with `./scripts/secrets`). This
 change declares the secret and LoadCredential only; it does not add a secret
 value or sign in. The service reads `gog-keyring-password` from its systemd
 credential directory. The value does not enter a Nix derivation or unit env.
