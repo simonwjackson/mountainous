@@ -364,6 +364,11 @@ in
           ASSISTANT_NOTEBOOK = "${notebookDir}/notebook.jsonl";
         }
         // lib.optionalAttrs (instance.person != null) { ASSISTANT_PERSON = instance.person; }
+        // lib.optionalAttrs (instance.person != null) {
+          # Household routing (core ADR 0011): a personal instance sends
+          # household-bound requests to Household's own RPC, never through tsgo.
+          ASSISTANT_HOUSEHOLD_RPC_URL = "http://127.0.0.1:${toString cfg.household.voicePort}/rpc";
+        }
         // lib.optionalAttrs (instance.person == null) { ASSISTANT_HOUSEHOLD = "1"; }
         // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
         // lib.optionalAttrs frontDoor {
