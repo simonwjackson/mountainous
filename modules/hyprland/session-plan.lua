@@ -29,6 +29,28 @@ end
 -- exists(name) reports whether a launcher of that name is installed.
 function M.launch_command(class, argv, exists)
     if #argv == 0 then return nil end
+    -- Installed PWAs share the browser process. Its cmdline names neither
+    -- their app id nor necessarily their profile, so replaying it launches
+    -- another browser (or the first PWA), not this window. These are the
+    -- standard profile directory names, encoded by Chromium's desktop id.
+    local app_id, profile = class:match("^chrome%-([a-p]+)%-(.+)$")
+    if app_id and #app_id == 32 and (profile == "Default" or profile:match("^Profile_%d+$")) then
+        profile = profile:gsub("_", " ")
+        local out, skip = { "chromium" }, false
+        for i = 2, #argv do
+            local arg = argv[i]
+            if skip then
+                skip = false
+            elseif arg == "--app" or arg == "--app-id" or arg == "--profile-directory" then
+                skip = true
+            elseif not (arg:match("^%-%-app=") or arg:match("^%-%-app%-id=") or arg:match("^%-%-profile%-directory=")) then
+                out[#out + 1] = M.quote(arg)
+            end
+        end
+        out[#out + 1] = M.quote("--profile-directory=" .. profile)
+        out[#out + 1] = "--app-id=" .. app_id
+        return table.concat(out, " ")
+    end
     if class:match("^chrome%-") then
         for i = 2, #argv do
             local url = argv[i]:match("^%-%-app=(.+)$")

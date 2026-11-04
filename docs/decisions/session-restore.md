@@ -47,8 +47,13 @@ snapshot. An empty desktop never replaces a saved one. Hyprland emits
 not the save path. A change made less than 10 to 20 seconds before a reboot
 can be lost.
 
-Launch commands. A Chromium app window relaunches as `web-app <url>`; its
-process command is Chromium's internal binary. A browser window relaunches
+Launch commands. A Chromium `--app` window relaunches as `web-app <url>`
+when its class matches the process's app URL. An installed PWA relaunches
+through `chromium --profile-directory=<profile> --app-id=<id>`, using its
+class, not its shared process's app identity. This supports `Default` and
+the standard `Profile N` directories. It keeps other process flags, including
+a custom user-data root, but replaces inherited app and profile switches.
+A browser window relaunches
 through the installed `chromium` wrapper; the unwrapped binary exits with
 signal 4 on Myoko. Zed relaunches as `zeditor`, and Zed reopens its own
 windows. Any other `/nix/store` path becomes its installed name when one
@@ -120,7 +125,62 @@ These fix defects that restore exposed, and they apply to every host.
 - The module depends on Hyprland 0.56's Lua API, which is new and can
   change between releases.
 
+## 2026-11-04 Chromium restore investigation
+
+Read-only inspection on Myoko established the following. Times are MST.
+
+| Evidence | Finding |
+| --- | --- |
+| Hyprland instance | The new instance started at 16:02:53. |
+| User journal at 16:02:45 | The previous compositor dumped core during cleanup. The stack includes `hlGetWindows`, a Lua event callback and `CWindow` destruction. This is a separate shutdown defect; the browser's shutdown signal was not recorded. |
+| Chromium's old `Session_13438306548314550` | Four normal windows remained saved before logout, including `amaze` and `amaze-next - Repos`. |
+| Current `Session_13438306995759020` | Both windows existed in this session. `amaze` reached its login URL. Chromium then recorded window closures at 16:07:39.209625 and 16:07:40.237661, respectively. These times come from the command payloads, not file modification times. |
+| Old/current `Apps_` files | Assistant and Teams were saved before logout. Only Teams exists in the new app session. |
+| Live snapshot and `/proc` | Teams shares the normal browser PID. Its saved command was plain `chromium ... --kiosk`, with no `--app-id`. The installed session planner and restorer matched this branch byte-for-byte. |
+
+The verified launcher defect is that installed PWAs inherited their shared
+browser's command. Separate `spawn` flags did not help: both launches named
+the browser rather than the saved app. The planner now reconstructs each
+installed PWA's identity. This is the likely reason Assistant did not reopen,
+but the overwritten pre-login snapshot prevents proof of its exact launch.
+Chromium's app-session startup path only restores apps automatically after
+a browser self-restart, not an ordinary Linux login. See Chromium
+[153.0.8010.52 startup_browser_creator_impl.cc](https://github.com/chromium/chromium/blob/153.0.8010.52/chrome/browser/ui/startup/startup_browser_creator_impl.cc)
+(`ShouldRestoreApps`).
+
+Simon then confirmed that he closed the normal windows himself after login.
+Their absence is user action, not a restore bug. Neither the restorer nor
+page overflow/compaction closes windows. The page-frame open handler only
+changes fullscreen state. No normal-window restore change is needed.
+
+A local experiment ran the same Chromium 153.0.8010.52 binary in a private
+Xvfb with four windows and `--kiosk`, then sent SIGTERM. Chromium wrote
+`SessionEnded`. Relaunch without restore flags opened one new tab;
+`--restore-last-session` reopened all four. Adding
+`--hide-crash-restore-bubble` also reopened all four. Thus kiosk plus SIGTERM
+alone did not reproduce selective loss. This does not prove behavior after
+a compositor crash or with Myoko's extensions. No browser policy, crash
+bubble flag or CDP recovery mechanism was changed on this evidence.
+
+After deployment, Simon must reopen the desired missing windows and wait
+at least 20 seconds for a stable snapshot. Check that Assistant and Teams
+have distinct `--app-id` commands. Then Simon must log out and log in and
+check every window and page. The fix cannot recover entries already removed
+from the snapshot. Custom-named Chromium profiles and arbitrary app URLs
+that differ from the process's initial `--app` URL still need a separate
+identity source, such as CDP; this change does not guess those URLs.
+
 ## Tests
+
+`scripts/test-hyprland-session --plan-only` runs the pure planner cases,
+including installed PWAs sharing a browser PID, app/profile switch replacement,
+numbered profiles and preservation of a custom user-data root. The focused
+flake check is `checks.x86_64-linux.hyprland-session-plan`, also a dependency
+of the existing `checks.x86_64-linux.chromium-windows` check.
+
+The full compositor model below currently needs updates: without the session
+module its boot helper cannot load the now-required `duplicate-outputs`
+module. The planner check does not claim to validate that integration.
 
 `scripts/test-hyprland-session` runs the real `hyprland.lua` and both
 modules against `scripts/lib/hypr-model.lua`, a model of the Lua API:

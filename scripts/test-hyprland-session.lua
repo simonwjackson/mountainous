@@ -63,6 +63,27 @@ check(plan.launch_command("chrome-app.test__-Default", { "/nix/store/x-chromium-
     == "web-app https://app.test/", "a Chromium app window relaunches through web-app")
 check(plan.launch_command("chromium-browser", { "/nix/store/x-chromium-unwrapped-1/libexec/chromium/chromium", "--flag" }, never)
     == "chromium --flag", "a browser window relaunches through the chromium wrapper")
+local chromium_binary = "/nix/store/x-chromium-unwrapped-1/libexec/chromium/chromium"
+local assistant_id = "ahmfndipfijlijminhiobipfjpafbndb"
+local teams_id = "ompifgpmddkgmclendfeacglnodjjndh"
+local assistant_class = "chrome-" .. assistant_id .. "-Default"
+local teams_class = "chrome-" .. teams_id .. "-Default"
+check(plan.launch_command(assistant_class, { chromium_binary, "--kiosk" }, never)
+    == "chromium --kiosk --profile-directory=Default --app-id=" .. assistant_id,
+    "an installed PWA gets its own app id, not its shared browser's command")
+check(plan.launch_command(teams_class, { chromium_binary, "--app-id=" .. assistant_id,
+    "--profile-directory=Default", "--user-data-dir=/custom", "--kiosk" }, never)
+    == "chromium --user-data-dir=/custom --kiosk --profile-directory=Default --app-id=" .. teams_id,
+    "a PWA keeps its user-data root but replaces another app's launch identity")
+check(plan.launch_command(assistant_class, { chromium_binary, "--app", "https://other.test/",
+    "--profile-directory", "Other", "--flag" }, never)
+    == "chromium --flag --profile-directory=Default --app-id=" .. assistant_id,
+    "separate-value app and profile switches cannot override the saved PWA")
+check(plan.launch_command("chrome-" .. assistant_id .. "-Profile_1", { chromium_binary, "--profile-directory=Default" }, never)
+    == "chromium '--profile-directory=Profile 1' --app-id=" .. assistant_id,
+    "a numbered profile is recovered from Chromium's desktop app id")
+check(plan.launch_command("chrome-abc-Default", { "/bin/chromium", "--flag" }, never)
+    == "/bin/chromium --flag", "a short chrome class is not mistaken for an installed app id")
 check(plan.launch_command("dev.zed.Zed", { "/nix/store/z/libexec/zed-editor", "x" }, never) == "zeditor", "Zed relaunches through its launcher")
 check(plan.launch_command("x", { "/nix/store/a/bin/tool", "-v" }, function(n) return n == "tool" end) == "tool -v",
     "a store path becomes its installed name, which survives garbage collection")
@@ -79,6 +100,18 @@ local captured = plan.capture({
 }, {}, 1)
 check(captured.pages[1].capacity == 2 and captured.windows[1].page == 1, "a page holding two tiled windows keeps room for two")
 check(captured.windows[1].spawn and not captured.windows[2].spawn, "one launch per process and class")
+local apps = plan.capture({
+    { class = assistant_class, title = "Assistant", pid = 1, ws_id = 1, at = { 0, 0 }, size = { 1, 1 },
+      command = plan.launch_command(assistant_class, { chromium_binary, "--kiosk" }, never) },
+    { class = teams_class, title = "Teams", pid = 1, ws_id = 2, at = { 0, 0 }, size = { 1, 1 },
+      command = plan.launch_command(teams_class, { chromium_binary, "--kiosk" }, never) },
+    { class = "chromium-browser", title = "Browser", pid = 1, ws_id = 3, at = { 0, 0 }, size = { 1, 1 },
+      command = plan.launch_command("chromium-browser", { chromium_binary, "--kiosk" }, never) },
+}, {}, 1)
+check(apps.windows[1].spawn and apps.windows[2].spawn and apps.windows[3].spawn,
+    "two installed PWAs and their shared browser each need a launch")
+check(apps.windows[1].command ~= apps.windows[2].command and apps.windows[2].command ~= apps.windows[3].command,
+    "shared-process PWA launches name different apps instead of opening duplicate browsers")
 check(plan.decode("return " .. plan.serialize(captured)).windows[2].title == "u", "serialize and decode round-trip")
 check(plan.decode("os.exit(1)") == nil and plan.decode("return 1") == nil, "decode rejects anything but a snapshot")
 check(plan.capture({}, {}, 1) == nil, "an empty desktop captures nothing")
@@ -93,6 +126,13 @@ local defaults = { side = "left", ratio = 0.5 }
 check(#plan.layout_messages({ side = "left", ratio = 0.5 }, defaults) == 0, "a default page needs no messages")
 same(plan.layout_messages({ side = "right", ratio = 0.61803 }, defaults),
     { "orientationright", "mfact exact 0.61803" }, "a changed page gets its side and split")
+
+-- The planner has no compositor dependencies. Keep its check useful even
+-- when the compositor API model needs updates for unrelated desktop changes.
+if arg[1] == "--plan-only" then
+    print(string.format("HYPRLAND_SESSION_PLAN_TESTS_OK %d checks", passed))
+    return
+end
 
 -- ------------------------------------------------------ Super+G, per page
 local sp = boot(false)

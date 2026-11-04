@@ -6,7 +6,7 @@ let
 in
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, config, ... }:
     {
       checks.chromium-tabless =
         let
@@ -59,6 +59,8 @@ in
             CHROMIUM = "${self.nixosConfigurations.myoko.pkgs.chromium}/bin/chromium";
           }
           ''
+            # Installed PWA launch identities are part of browser restore.
+            test -e ${config.checks.hyprland-session-plan}
             lua ${./hyprland/browser-keys.test.lua} ${./hyprland/hyprland.lua}
             node ${./quickshell/cdp-target.test.js} ${./quickshell}
             node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
