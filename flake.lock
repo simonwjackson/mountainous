@@ -344,6 +344,30 @@
         "type": "github"
       }
     },
+    "gogcli-aarch64-linux-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-5vjSKo8K+SX6zGx9W5Iu8fltcCEqXr1VBCoy2iESRtk=",
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_arm64.tar.gz"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_arm64.tar.gz"
+      }
+    },
+    "gogcli-x86_64-linux-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-RE7euClYTN2rW0M6dbWX6Ik9JqS28nIgtwXFvTj2ujk=",
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz"
+      }
+    },
     "gomod2nix-rakku": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -985,6 +1009,8 @@
         "disko": "disko",
         "fixedsys-src": "fixedsys-src",
         "flake-parts": "flake-parts",
+        "gogcli-aarch64-linux-src": "gogcli-aarch64-linux-src",
+        "gogcli-x86_64-linux-src": "gogcli-x86_64-linux-src",
         "gomod2nix-rakku": "gomod2nix-rakku",
         "hensou": "hensou",
         "herdr-bin-aarch64": "herdr-bin-aarch64",

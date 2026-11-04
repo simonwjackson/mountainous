@@ -88,6 +88,7 @@ in
                 "pi-assistant-simon.service"
                 "pi-assistant-laure.service"
                 "pi-assistant-household.service"
+                "assistant-app-simon-google.service"
               ];
             };
         # eBay seller credentials, from the old agenix ebay-api-env and
@@ -207,6 +208,27 @@ in
                   "board_state"
                 ];
               };
+              apps.google = {
+                title = "Google";
+                port = 3171;
+                readOnlyTools = [
+                  "calendar_busy"
+                  "mail_list"
+                  "mail_read"
+                  "mail_proposals"
+                ];
+                credentials = {
+                  gog-keyring-password = config.sops.secrets.pi-assistant-google-keyring-password.path;
+                  decide-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
+                  mechanical-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
+                };
+              };
+              apps.maps = {
+                title = "Maps";
+                port = 3172;
+                readOnlyTools = [ "travel_time" ];
+                environment.VALHALLA_URL = "https://valhalla.hummingbird-lake.ts.net";
+              };
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               skills.coach = "/nix/var/nix/profiles/per-user/pi-assistant/skills/coach";
               credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
@@ -307,6 +329,15 @@ in
             "pi-assistant-laure.service"
             "pi-assistant-household.service"
           ];
+        };
+        # Set this value before activation: ./scripts/secrets secrets/hosts/rakku.yaml
+        # Only Simon's Google service receives it. No Google sign-in in this build.
+        sops.secrets.pi-assistant-google-keyring-password = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          owner = "root";
+          group = "root";
+          mode = "0400";
+          restartUnits = [ "assistant-app-simon-google.service" ];
         };
         sops.secrets.pi-assistant-brave-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;

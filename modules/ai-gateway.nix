@@ -111,6 +111,8 @@ in
                   # recall ask Jev here (assistant ADR 0001).
                   dialects = [
                     "codex"
+                    # The Google service's mechanical triage fallback.
+                    "chat_completions"
                     "models"
                     "responses"
                     "systemone"
@@ -122,9 +124,9 @@ in
                     "gpt-5.6-luna"
                     "jev"
                   ];
-                  # Jev is the one paid model here, at the fixed $0.0001 charge
-                  # per call. About 12,000 calls a month are expected; past the
-                  # cap, core falls back to its rules (assistant ADR 0001).
+                  # This required gateway field guards future non-prepaid routes.
+                  # It does NOT cap Jev: typesafe is prepaid above. Jev's free
+                  # $5/month and top-ups are its only limit (assistant ADR 0010).
                   monthly_cap_usd = 5;
                   requests_per_minute = 600;
                 }

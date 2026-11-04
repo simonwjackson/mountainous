@@ -69,8 +69,12 @@ in
                 let
                   appUnit = c.systemd.services."assistant-app-${name}-${app}";
                 in
-                want (appUnit.serviceConfig.User == "pi-${name}") "assistant-app-${name}-${app} does not run as pi-${name}"
-                ++ want (appUnit.environment.HOST == "127.0.0.1") "assistant-app-${name}-${app} is not loopback only"
+                want (
+                  appUnit.serviceConfig.User == "pi-${name}"
+                ) "assistant-app-${name}-${app} does not run as pi-${name}"
+                ++ want (
+                  appUnit.environment.HOST == "127.0.0.1"
+                ) "assistant-app-${name}-${app} is not loopback only"
                 ++ want (lib.hasPrefix "${stateOf name}/apps/" appUnit.environment.STATE_DIRECTORY) "assistant-app-${name}-${app} keeps data outside ${name}'s state"
               ) (lib.attrNames (cfg.people.${name}.apps or { }))
               ++ lib.optionals gateway (
@@ -116,6 +120,9 @@ in
                 in
                 lib.elem "jev" grant.models && lib.elem "systemone" grant.dialects
               ) "the assistant grant does not allow Jev (model jev, dialect systemone)"
+              ++
+                want (c.mountainous.features.ai-gateway.settings.providers.typesafe.prepaid or false)
+                  "Jev must be prepaid: only the provider balance, never the gateway monthly cap, limits assistant decisions"
               ++ want (
                 lib.all (
                   name:
@@ -173,16 +180,14 @@ in
       # Every instance gets the feature's shared skills; its own entry of the
       # same name wins.
       withShared = instance: instance // { skills = cfg.sharedSkills // (instance.skills or { }); };
-      instances =
-        lib.mapAttrs (name: ports: withShared (ports // { person = name; })) cfg.people
-        // {
-          household = withShared (
-            cfg.household
-            // {
-              person = null;
-            }
-          );
-        };
+      instances = lib.mapAttrs (name: ports: withShared (ports // { person = name; })) cfg.people // {
+        household = withShared (
+          cfg.household
+          // {
+            person = null;
+          }
+        );
+      };
 
       # The model settings a new home starts from: the instance copies these
       # once, then they are its own.
@@ -316,7 +321,9 @@ in
             for link in "$state/agent/extensions"/*; do
               if [ -L "$link" ] && [[ $(readlink "$link") == /nix/store/* ]]; then
                 case "''${link##*/}" in
-                  ${lib.concatStringsSep "|" ([ "''" ] ++ lib.attrNames (instances.${name}.extensions or { }))}) ;;
+                  ${
+                    lib.concatStringsSep "|" ([ "''" ] ++ lib.attrNames (instances.${name}.extensions or { }))
+                  }) ;;
                   *) rm -f "$link" ;;
                 esac
               fi
@@ -465,6 +472,16 @@ in
                             type = lib.types.port;
                             description = "The app's loopback port.";
                           };
+                          environment = lib.mkOption {
+                            type = lib.types.attrsOf lib.types.str;
+                            default = { };
+                            description = "Non-secret configuration for this app.";
+                          };
+                          credentials = lib.mkOption {
+                            type = lib.types.attrsOf lib.types.path;
+                            default = { };
+                            description = "Secrets loaded as systemd credentials, never copied to the app store.";
+                          };
                           readOnlyTools = lib.mkOption {
                             type = lib.types.listOf lib.types.str;
                             default = [ ];
@@ -478,7 +495,10 @@ in
                       todo-board = {
                         title = "To-do board";
                         port = 3170;
-                        readOnlyTools = [ "list_todos" "board_state" ];
+                        readOnlyTools = [
+                          "list_todos"
+                          "board_state"
+                        ];
                       };
                     };
                     description = "This person's own apps (assistant/apps, core ADR 0006), by package name. Each runs as this person's user on loopback, keeps its data in the person's state, and shows in their assistant through mcp-apps.json.";
@@ -631,7 +651,9 @@ in
             # The parent first: tmpfiles refuses a root-owned step under the
             # person's own directory ("unsafe path transition").
             lib.optional (appsOf name != { }) "d ${stateOf name}/apps 0700 pi-${name} pi-${name} -"
-            ++ lib.mapAttrsToList (app: _: "d ${stateOf name}/apps/${app} 0700 pi-${name} pi-${name} -") (appsOf name)
+            ++ lib.mapAttrsToList (app: _: "d ${stateOf name}/apps/${app} 0700 pi-${name} pi-${name} -") (
+              appsOf name
+            )
           ) instances
         );
 
@@ -766,11 +788,30 @@ in
               lib.nameValuePair "assistant-app-${name}-${app}" {
                 description = "${spec.title} for ${name}'s assistant";
                 wantedBy = [ "multi-user.target" ];
-                environment = {
-                  HOST = "127.0.0.1";
-                  PORT = toString spec.port;
-                  STATE_DIRECTORY = "${stateOf name}/apps/${app}";
-                };
+                wants = [
+                  "network-online.target"
+                ]
+                ++ lib.optional (frontDoor && app == "google") "ai-gateway.service";
+                after = [
+                  "network-online.target"
+                ]
+                ++ lib.optional (frontDoor && app == "google") "ai-gateway.service";
+                environment =
+                  lib.optionalAttrs (app == "google") {
+                    GOG_BIN = "${self.packages.${pkgs.stdenv.hostPlatform.system}.gogcli}/bin/gog";
+                    GOG_KEYRING_BACKEND = "file";
+                    ASSISTANT_DECIDE_URL = "http://127.0.0.1:${toString cfg.cliproxyapiPort}/v1";
+                    MECHANICAL_BASE_URL = "http://127.0.0.1:${toString cfg.cliproxyapiPort}/v1";
+                    MECHANICAL_MODEL = lib.removePrefix "cliproxyapi/" cfg.lanes.mechanical;
+                  }
+                  // {
+                    HOST = "127.0.0.1";
+                    PORT = toString spec.port;
+                    STATE_DIRECTORY = "${stateOf name}/apps/${app}";
+                    HOME = "${stateOf name}/apps/${app}";
+                    TZ = builtins.elemAt (lib.splitString "|" cfg.homePlace) 3;
+                  }
+                  // spec.environment;
                 unitConfig = {
                   ConditionPathExists = "${profile}/bin/${app}";
                   RequiresMountsFor = [ (stateOf name) ];
@@ -779,6 +820,7 @@ in
                   User = "pi-${name}";
                   Group = "pi-${name}";
                   ExecStart = "${profile}/bin/${app}";
+                  LoadCredential = lib.mapAttrsToList (credential: file: "${credential}:${file}") spec.credentials;
                   UMask = "0077";
                   Restart = "on-failure";
                   RestartSec = 3;

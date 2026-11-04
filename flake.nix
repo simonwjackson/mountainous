@@ -7,6 +7,15 @@
   };
 
   inputs = {
+    # Non-flake release files: no OAuth or Google calls during a build.
+    gogcli-x86_64-linux-src = {
+      url = "file+https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz";
+      flake = false;
+    };
+    gogcli-aarch64-linux-src = {
+      url = "file+https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_arm64.tar.gz";
+      flake = false;
+    };
     # Shared plain Qt Quick drawing. The shell owns persistence and surfaces.
     hensou = {
       url = "github:hensou-desktop/hensou/6b2dfd887b949b41d8dd3c45647d75a0d99da3d5";
