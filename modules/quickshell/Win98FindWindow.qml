@@ -641,7 +641,7 @@ FocusScope {
             }
             WindowIcon {
                 toplevel: rowItem.toplevel
-                smooth: false
+                fallbackSmooth: false
                 visible: rowItem.themeIcon !== ""
                 implicitSize: 16 * root.u
                 fallbackSource: rowItem.themeIcon

@@ -7,6 +7,7 @@ import QtWebSockets
 import QtQuick
 import QtQml.Models
 import "cdp-target.js" as CdpTarget
+import "favicon.js" as Favicon
 
 Singleton {
     id: root
@@ -32,8 +33,53 @@ Singleton {
         root.focusMap = CdpTarget.pruneFocusMap(root.focusMap, root.windows, root.pages);
     }
 
-    function faviconFor(toplevel) {
-        return CdpTarget.faviconFor(toplevel, root.pages, root.focusMap);
+    // Cached per target/navigation. Errors are cached too; polling /json/list
+    // must not repeatedly fetch manifests or create evaluation sockets.
+    property var pageIcons: ({})
+
+    function faviconFor(toplevel, pixels) {
+        const page = CdpTarget.faviconPageFor(toplevel, root.pages, root.focusMap);
+        if (!page) return "";
+        const metadata = root.pageIcons[page.id];
+        const icons = metadata && metadata.key === Favicon.pageKey(page) ? metadata.icons : [];
+        return Favicon.choose(icons.concat([{url: page.favicon, sizes: ""}]), pixels || 16);
+    }
+
+    function recordPageIcons(page, icons) {
+        if (!root.pages.some(function (p) { return p.id === page.id && Favicon.pageKey(p) === Favicon.pageKey(page); })) return;
+        const next = Object.assign({}, root.pageIcons);
+        next[page.id] = {key: Favicon.pageKey(page), icons: Array.isArray(icons) ? icons : []};
+        root.pageIcons = next;
+    }
+
+    Instantiator {
+        model: root.pages
+        delegate: WebSocket {
+            id: iconSocket
+            required property var modelData
+            url: modelData.ws || ""
+            active: !!modelData.ws && (!root.pageIcons[modelData.id] || root.pageIcons[modelData.id].key !== Favicon.pageKey(modelData))
+            onStatusChanged: function(status) {
+                if (status === WebSocket.Open) {
+                    iconSocket.sendTextMessage(JSON.stringify({id: 1, method: "Runtime.evaluate",
+                        params: {expression: Favicon.pageExpression(), awaitPromise: true, returnByValue: true}}));
+                } else if (status === WebSocket.Error || (status === WebSocket.Closed && active)) {
+                    root.recordPageIcons(modelData, []);
+                }
+            }
+            onTextMessageReceived: function(msg) {
+                let response;
+                try { response = JSON.parse(msg); } catch (e) { return; }
+                if (response.id !== 1) return;
+                const result = response.result;
+                root.recordPageIcons(modelData, !response.error && result && !result.exceptionDetails && result.result ? result.result.value : []);
+            }
+            property Timer timeout: Timer {
+                interval: 2500
+                running: iconSocket.active
+                onTriggered: root.recordPageIcons(iconSocket.modelData, [])
+            }
+        }
     }
 
     Connections {
@@ -169,6 +215,11 @@ Singleton {
         next[endpoint] = pages;
         root.endpointPages = next;
         root.pages = (next.web || []).concat(next.normal || []);
+        const icons = {};
+        for (const page of root.pages) {
+            if (root.pageIcons[page.id]) icons[page.id] = root.pageIcons[page.id];
+        }
+        root.pageIcons = icons;
         root.navigationHistory = CdpTarget.remember(root.navigationHistory, root.pages);
     }
 

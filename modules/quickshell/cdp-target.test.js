@@ -73,11 +73,13 @@ assert.equal(scope.targetFor(window("original.test", "A & B")), null, "same-host
 // With no endpoint, the preview harness's explicit page fixture stays intact.
 vm.runInNewContext(qml.slice(qml.indexOf("function publishPages("), qml.indexOf("// ACTIVE WINDOW")), scope);
 root.endpointPages = {};
+root.pageIcons = {vanished: {key: "old", icons: []}};
 const fixturePages = root.pages;
 scope.refreshEndpoint("normal",0);
 assert.equal(root.pages,fixturePages);
 root.publishPages = scope.publishPages;
 root.publishPages("normal",[{id:"previous-browser-page"}]);
+assert.equal(Object.keys(root.pageIcons).length, 0, "vanished targets lose their declared icon metadata");
 scope.refreshEndpoint("normal",0);
 assert.equal(root.pages.length,0,"a previously live endpoint is cleared when its port vanishes");
 root.pages = [
@@ -88,7 +90,7 @@ assert.equal(scope.targetFor(window("alpha.test","Alpha"))?.id,"web-root",
     "a declared web app must not navigate the normal-profile target with its original host");
 // A peer disconnect must release the navigation gate so a restarted browser
 // can accept the next address. Intentional socket resets must not cancel it.
-const statusBody = qml.match(/onStatusChanged:\s*function\(status\)\s*({[\s\S]*?})\s*onTextMessageReceived:/)[1];
+const statusBody = qml.slice(qml.indexOf("id: pageSock")).match(/onStatusChanged:\s*function\(status\)\s*({[\s\S]*?})\s*onTextMessageReceived:/)[1];
 const socket = {active:true,sendTextMessage() {}};
 const events = {Open:1,Error:2,Closed:3};
 root.log = () => {};

@@ -45,6 +45,7 @@ in
               pkgs.nodejs
               pkgs.lua
               pkgs.bash
+              pkgs.python3
               pkgs.quickshell
               pkgs.coreutils
             ];
@@ -64,6 +65,7 @@ in
             lua ${./hyprland/browser-keys.test.lua} ${./hyprland/hyprland.lua}
             node ${./quickshell/cdp-target.test.js} ${./quickshell}
             node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
+            node ${./quickshell/favicon.test.js} ${./quickshell}
             node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             if [ "$EXPECTED_NAVIGATION" = 1 ]; then
@@ -94,7 +96,7 @@ in
             export XDG_RUNTIME_DIR="$TMPDIR/runtime"
             mkdir -m 700 "$XDG_RUNTIME_DIR"
             mkdir icon-smoke
-            cp qml/WindowIcon.qml qml/CdpBrowser.qml qml/cdp-target.js icon-smoke/
+            cp qml/WindowIcon.qml qml/CdpBrowser.qml qml/cdp-target.js qml/favicon.js icon-smoke/
             cp qml/theme-dev/favicon-smoke.qml icon-smoke/shell.qml
             QT_QPA_PLATFORM=offscreen timeout 10s qs -p icon-smoke/shell.qml --no-color > icon-smoke.log 2>&1 || {
               cat icon-smoke.log
@@ -102,6 +104,7 @@ in
             }
             cat icon-smoke.log
             grep -q FAVICON_ICON_SMOKE_READY icon-smoke.log
+            python3 ${./quickshell/theme-dev/favicon-runtime.py} ${./quickshell}
             touch "$out"
           '';
     };

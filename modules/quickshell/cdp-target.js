@@ -83,13 +83,17 @@ function windowKey(address) { return String(address || "").replace(/^0x/, ""); }
 
 // Focus evidence is used only after the ordinary unique host/title match.
 // Page identity survives navigation; titles and URLs need not stay equal.
-function faviconFor(window, pages, focusMap) {
+function faviconPageFor(window, pages, focusMap) {
     const appId = appIdOf(window);
-    if (!window || !isBrowser(appId)) return "";
+    if (!window || !isBrowser(appId)) return null;
     const candidates = candidatesFor(pages, appId, window.title || "");
     const id = focusMap[windowKey(window.address)];
-    const page = candidates.length === 1 ? candidates[0]
-        : id ? pages.find(function (p) { return p.id === id; }) : null;
+    return candidates.length === 1 ? candidates[0]
+        : id ? pages.find(function (p) { return p.id === id; }) || null : null;
+}
+
+function faviconFor(window, pages, focusMap) {
+    const page = faviconPageFor(window, pages, focusMap);
     const url = page ? page.favicon || "" : "";
     return /^https?:\/\//i.test(url) ? url : "";
 }

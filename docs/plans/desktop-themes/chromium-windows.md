@@ -416,16 +416,69 @@ unique windows and Win98's window cycle contains all 30.
 
 ### Per-window favicons
 
-Both themes now use the page's `/json/list` `faviconUrl` in their existing
-per-window icon slots. Qt loads HTTP(S) images, including `.ico`, directly;
-missing, ambiguous or failed images fall back to the existing themed app icon.
-The Win98 taskbar keeps its 16-unit slot and nearest-neighbour rendering.
-Other surfaces keep their existing sizes. Images request their physical pixel
-size. Platinum's grouped Application-menu entries keep their app-level icon;
-window submenu rows, Find results and individual Control Strip tiles use the
-page favicon. Favicons are page-controlled decoration, not identity/security
-indicators. Qt's image requests do not use Chromium's profile/cookies, and the
-site can observe these additional requests.
+Both themes keep their existing per-window icon slots. Installed Default-profile
+PWAs prefer their desktop entry's absolute `Icon=` PNG, even when the PWA's
+prefixed title cannot match CDP. Other pages use declared `rel=icon`,
+`apple-touch-icon` and manifest icons read through a bounded, read-only CDP
+`Runtime.evaluate`. Choose the smallest declared size at least as large as the
+physical slot; otherwise try an unknown-size source (which can be a multi-size
+ICO), then the largest undersized source. CDP's `/json/list` `faviconUrl` remains
+an unknown-size candidate. Only HTTP(S) page icon URLs are accepted.
+
+Discovery is cached by target websocket, page URL and CDP favicon URL. It runs
+once per observed navigation/icon change, not on every target-list poll.
+Manifest fetches stop after 1.5 seconds; evaluation sockets stop after 2.5 seconds.
+Closed targets lose their metadata, and late replies cannot update a different
+navigation. A same-URL SPA change which changes only link/manifest declarations
+is not rediscovered until the CDP favicon URL changes or the shell restarts.
+
+Decode raster icons at native size. Inspect up to 64 ICO frames and choose the
+smallest frame covering the slot, or the largest frame if none covers it.
+Directory order is not size order. Use the containing window's device pixel
+ratio: Wayland's `QScreen` can report 2 while the actual window uses 1.5.
+Smooth downscales, with mipmaps on GPU; use nearest-neighbour for exact-size and
+undersized sources. A 16px-only source in a 24px slot keeps its size and has
+uneven pixel widths rather than interpolated blur. We do not shrink the icon
+inside the slot to obtain an integer scale. SVG URLs rasterize at the requested
+size. Reset `sourceSize` as one QSize, not separate width/height assignments:
+the latter can retain the previous image's resolved decode size.
+
+Missing, ambiguous or failed page images still fall back to the existing themed
+app icon. A missing installed PWA PNG first falls back to page discovery. The
+Win98 taskbar keeps 16 units (32 physical pixels; 21 1/3 logical pixels at 1.5x).
+A 16-logical-pixel Platinum row needs 24 physical pixels. Grouped Application-menu
+entries keep their app-level icon. Window submenu rows, Find results and
+individual Control Strip tiles use per-window icons.
+
+Cost: native decoding and frame inspection use more memory than a pre-sized
+image. Frames are capped at 64. Discovery can fetch a site's manifest in Chromium,
+and Qt makes its own icon requests without Chromium's profile/cookies. The site
+can observe these requests. Protected icons can still fail. Favicons remain
+page-controlled decoration, not identity/security indicators.
+
+#### Source and renderer evidence (Zao, Myoko queried read-only)
+
+| Real source | Native frames in directory order | Previous Qt default |
+| --- | --- | --- |
+| Teams favicon ICO | 256, 64, 48, 40, 32, 24, 20, 16 | frame 0: 256 |
+| Amaze UAT and local Amaze ICO | 48 | frame 0: 48 |
+| Forgerie ICO | 16, 32, 48 | frame 0: 16 |
+| Installed Teams PWA | hicolor PNGs: 32, 48, 128, 256, 512; `Icon=` points to 512 | themed app fallback because the prefixed title did not match |
+
+Teams also declares manifest PNGs including 32px; ordinary Teams pages can use
+that source. At a 24px slot, Forgerie now selects its 32px frame; at 32px it uses
+that frame without resampling. The review page declared no icon and keeps its
+fallback.
+
+`/tmp/favicon-sharp-evidence/` holds downloaded real files, read-only CDP icon
+metadata, Qt frame logs, and before/after PNGs. `before-wayland-1.5x.png` and
+`after-wayland-1.5x.png` use Myoko's exact Hyprland build inside private headless
+labwc on Zao. The headless output runs at 1.5x; the GPU Qt renderer uses native
+24/30/32/48px slots. `before-1.5x.png` and `after-1.5x.png` repeat the comparison
+with Qt's offscreen software renderer. The 16px-only case extracts the real
+Teams ICO's 16px frame. No screenshots or window actions ran on Myoko, and no
+code was deployed. Live Myoko GPU rendering, theme effects and preference for
+the new sampling rule still need on-device verification after an approved deploy.
 
 A unique host/title match wins first, within the correct CDP endpoint. On a
 focus change with tied matches, `CdpBrowser` evaluates `document.hasFocus()`
@@ -451,7 +504,10 @@ the fallback. This needs design review, not a second application-group model.
 
 `checks.chromium-windows` runs the real Lua binding test, CDP matcher tests,
 Find model tests, 30-window app-model coverage, the packaged Chromium wrapper
-flag assertions (CDP and kiosk) and focused QML type/lint checks. The Lua
+flag assertions (CDP and kiosk), focused QML type/lint checks, pure source/frame
+choice tests, and an isolated Chromium + Qt runtime test at 1.5x. The runtime
+test proves apple-touch/manifest discovery, manifest-relative URLs, installed
+PWA lookup, native ICO frame choice, sampling, and HTTP/no-icon fallbacks. The Lua
 binding test also covers the fullscreen rule, Super+U and the local disable flag. The lint helper accepts a
 pinned toolchain from a Nix check so it does not invoke nested Nix builds.
 Its complete singleton index is test-only; no qmldir is delivered to Quickshell.

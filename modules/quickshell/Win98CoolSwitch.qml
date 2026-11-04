@@ -107,7 +107,7 @@ Scope {
                             }
                             WindowIcon {
                                 toplevel: cell.modelData.toplevel
-                                smooth: false
+                                fallbackSmooth: false
                                 visible: cell.modelData.icon === ""
                                 implicitSize: 32 * win.u
                                 x: Kit.Win98Tokens.snap((cell.width - width) / 2, win.u)

@@ -537,7 +537,7 @@ PanelWindow {
                 }
                 WindowIcon {
                     toplevel: tb.toplevel
-                    smooth: false
+                    fallbackSmooth: false
                     visible: (tb.iconName === "" || tb.browser) && tb.hostLook === null && source !== ""
                     y: Kit.Win98Tokens.snap((iconCell.height - height) / 2, bar.u)
                     implicitSize: bar.units(16)
