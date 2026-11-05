@@ -2,12 +2,11 @@ import Hensou as Kit
 import Quickshell
 import Quickshell.Widgets
 import QtQuick
-import "themes/shared/tray-lettermark.js" as Mark
+import "lettermark.js" as Mark
 
 // An app's tray icon (a StatusNotifierItem), for both themes: the icon
 // theme's own art when the theme's set has the icon, otherwise the period
-// lettermark (lettermark rule: themes/shared/tray-lettermark.js, the
-// stand-in for the desktop worker's lettermark.js). Never Adwaita or
+// lettermark (the shared rule in lettermark.js). Never Adwaita or
 // hicolor art, never an app's own pixmap.
 //
 //   SniIcon { themeId: "win98"; row: <sni-tray.js row>; tray: <SniTray>; size: 16 * u }

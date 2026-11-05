@@ -147,7 +147,7 @@ in
           ''
             node ${./hensou-files-polkit.test.js} "$RULE"
             lua ${./hyprland/files-keys.test.lua} ${./hyprland/hyprland.lua}
-            node ${quickshell}/sni-tray.test.js ${quickshell}/sni-tray.js ${quickshell}/themes/shared/tray-lettermark.js
+            node ${quickshell}/sni-tray.test.js ${quickshell}/sni-tray.js ${quickshell}/lettermark.js
             node ${quickshell}/show-desktop.test.js ${quickshell}/show-desktop.js
             node ${quickshell}/themes/platinum/menu-models.test.js ${quickshell}/themes/platinum/menu-models.js
             node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js

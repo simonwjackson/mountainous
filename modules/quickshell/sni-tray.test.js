@@ -1,7 +1,7 @@
 // sni-tray.js: which StatusNotifierItems show and in what order, their
 // keys, what a press does, and dbusmenu labels; and the lettermark
-// stand-in's contract (themes/shared/tray-lettermark.js).
-// Run: node sni-tray.test.js sni-tray.js themes/shared/tray-lettermark.js
+// shared lettermark contract (lettermark.js).
+// Run: node sni-tray.test.js sni-tray.js lettermark.js
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
@@ -12,7 +12,7 @@ const load = (file) => {
     return ctx;
 };
 const T = load(process.argv[2] || path.join(__dirname, "sni-tray.js"));
-const L = load(process.argv[3] || path.join(__dirname, "themes/shared/tray-lettermark.js"));
+const L = load(process.argv[3] || path.join(__dirname, "lettermark.js"));
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 const item = (id, extra) => Object.assign({ id, title: id, status: "Active", iconSource: "image://icon/" + id + "?fallback=x&theme=T",
@@ -65,7 +65,7 @@ assert.equal(T.plainText("Save _As__x"), "Save As_x");
 assert.deepEqual(plain(T.tidy([{ separator: true }, { text: "a" }, { separator: true }, { separator: true }, { text: "b" }, { separator: true }, null])),
     [{ text: "a" }, { separator: true }, { text: "b" }]);
 
-// ---- the lettermark stand-in keeps the agreed API
+// ---- the shared lettermark keeps the agreed API
 assert.equal(L.needs("", "/x/icons/Chicago95/16/apps/a.png", "win98"), true, "no name");
 assert.equal(L.needs("a", "", "win98"), true, "not found");
 assert.equal(L.needs("a", "image://qsimage/1", "win98"), true, "a pixmap");
