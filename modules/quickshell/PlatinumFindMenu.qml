@@ -200,18 +200,14 @@ FocusScope {
         width: root.width
         height: root.height
 
-        // The hard shadow, one rule down and right.
-        Rectangle {
-            x: 2 * root.hair
-            y: 2 * root.hair
-            width: parent.width
-            height: parent.height
-            color: Kit.PlatinumTokens.menuShadow
-        }
+        // The hard shadow, one rule down and right (hatched, with crop
+        // marks, on Drawing Board).
+        PlatinumShadow { hairs: 2 }
         PlatinumBevel {
             anchors.fill: parent
             color: Kit.PlatinumTokens.menuSurface
         }
+        PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
         // Clicks inside the menu stay inside it.
         MouseArea {
             anchors.fill: parent
@@ -397,8 +393,9 @@ FocusScope {
         width: Kit.PlatinumMetrics.even(Math.max(200, 30 + Kit.PlatinumMetrics.width("Go to Address…") + 24 + Kit.PlatinumMetrics.smallWidth("Ctrl+L") + 12))
         height: popupColumn.height + 4 + 5 + 2 * root.hair
 
-        Rectangle { x: 2 * root.hair; y: 2 * root.hair; width: parent.width; height: parent.height; color: Kit.PlatinumTokens.menuShadow }
+        PlatinumShadow { hairs: 2 }
         PlatinumBevel { anchors.fill: parent; color: Kit.PlatinumTokens.menuSurface }
+        PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
         Column {
             id: popupColumn
             x: root.hair

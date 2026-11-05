@@ -16,10 +16,14 @@ PanelWindow {
     screen: modelData
 
     anchors { top: true; left: true }
-    margins { top: 22; left: 24 }
+    // Drawing Board's crop marks and hatched shadow reach past the frame:
+    // the surface grows by that bleed on every side and moves out by it,
+    // so the frame stays where it was. Light and Dark grey have none.
+    readonly property real bleed: Kit.PlatinumTokens.drafting ? 6 * Kit.PlatinumTokens.hairFor(QsWindow.window) : 0
+    margins { top: 22 - bleed; left: 24 - bleed }
     // Room for the windoid's hard shadow, one rule down and right.
-    implicitWidth: Math.min(frame.implicitWidth, (modelData ? modelData.width : 1920) - 32) + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
-    implicitHeight: frame.implicitHeight + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+    implicitWidth: Math.min(frame.implicitWidth, (modelData ? modelData.width : 1920) - 32) + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window) + 2 * bleed
+    implicitHeight: frame.implicitHeight + 2 * Kit.PlatinumTokens.hairFor(QsWindow.window) + 2 * bleed
     exclusionMode: ExclusionMode.Normal
     focusable: true
     color: "transparent"
@@ -50,8 +54,10 @@ PanelWindow {
 
     PlatinumDialogFrame {
         id: frame
-        width: about.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
-        height: about.height - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window)
+        x: about.bleed
+        y: about.bleed
+        width: about.width - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window) - 2 * about.bleed
+        height: about.height - 2 * Kit.PlatinumTokens.hairFor(QsWindow.window) - 2 * about.bleed
         title: "About " + (about.capitalised(about.host) || "This Computer")
         onCloseRequested: about.closeRequested()
         focus: true

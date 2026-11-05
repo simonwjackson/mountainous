@@ -47,17 +47,22 @@ Item {
         onPressed: function (mouse) { root.activated(); mouse.accepted = false; }
     }
 
-    Rectangle {
-        x: root.h
-        y: root.h
-        width: parent.width
-        height: parent.height
-        color: Kit.PlatinumTokens.menuShadow
-    }
+    // The hard shadow (hatched, with crop marks, on Drawing Board).
+    PlatinumShadow { hairs: 1 }
 
     PlatinumBevel {
         anchors.fill: parent
         color: Kit.PlatinumTokens.menuSurface
+    }
+    PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
+
+    // Drawing Board: the paper under the title is a shade deeper.
+    Rectangle {
+        visible: Kit.PlatinumTokens.drafting
+        x: 2 * root.h; y: 2 * root.h
+        width: parent.width - 4 * root.h
+        height: root.titleHeight
+        color: Kit.PlatinumTokens.titleSurface
     }
 
     Item {
@@ -87,13 +92,16 @@ Item {
             height: PlatinumGlanceTokens.boxSize
             anchors.verticalCenter: parent.verticalCenter
             sunken: held
+            // Drawing Board sketches the boxes: an outline, no bevel.
+            bevelled: !Kit.PlatinumTokens.drafting
             color: held ? Kit.PlatinumTokens.well : Kit.PlatinumTokens.raised
         }
 
         component Stripes: Item {
             height: 8 * root.h
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.front && width > 0
+            // Drawing Board's title bar is plain: no stripes.
+            visible: root.front && width > 0 && !Kit.PlatinumTokens.drafting
             Repeater {
                 model: 3
                 Item {
