@@ -50,7 +50,7 @@ PanelWindow {
     }
 
     Item {
-        id: bounds
+        id: menuBounds
         anchors.fill: parent
     }
 
@@ -81,7 +81,7 @@ PanelWindow {
         id: win98Menu
         Win98Menu {
             animate: false
-            bounds: bounds
+            bounds: menuBounds
             model: Model.win98Items(win.rows)
             onTriggered: function (item) { if (item && item.row) win.choose(item.row); }
             onClosed: win.close()
