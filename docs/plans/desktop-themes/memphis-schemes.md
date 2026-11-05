@@ -3,7 +3,9 @@
 This section supersedes the mode-only registry and state contract above.
 There are **25 appearances, 26 native payloads**: 22 Memphis appearances and
 three Platinum appearances, plus the retained Platinum Extra dark/OLED payload.
-`memphis`, `platinum`, `light` and `dark` remain saved identifiers (ADR 0003).
+The saved theme IDs are `memphis` and `platinum`; modes remain `light` and `dark`.
+ADR 0003 deliberately provides no alias for the retired theme ID. An older saved
+name falls back to Platinum; the user selects Memphis again once.
 The five existing payloads retain their palettes, including pure OLED black.
 The existing public theme labels stay unchanged.
 
@@ -42,9 +44,9 @@ The existing public theme labels stay unchanged.
 `scripts/xp-classic-schemes.json` is a byte-for-byte copy of the supplied XP
 classic table from zaxbux's **Windows System Colours (by OS)** gist. SHA256:
 `a7f330d2e3ccc077a98ef220f86e3aee8c19be488c93c569bb81cbbfee59d406`.
-The copy was compared to `/tmp/memphis-schemes/xp-classic-schemes.json` when added;
+The copy was compared byte-for-byte with the supplied source table when added;
 `tests/system-palettes.py` pins that digest. Brick matches ReactOS
-`boot/bootdata/hivedef.inf`; equality to Memphis remains **inferred**, not verified.
+`boot/bootdata/hivedef.inf`; an original-system comparison was not performed.
 No new Memphis colour was selected from memory. Existing Standard and Dark grey
 palettes take precedence over the table's two Classic entries to prevent a
 regression of the five existing payloads.
@@ -223,3 +225,39 @@ a dark one switches to `standard` (Memphis) or `light` (Platinum). Explicit
 `desktop-theme dark`/`light` commands (used by the omni commands) select the same
 defaults. No last scheme is remembered. CLI tests cover Brick, High Contrast
 Black and Drawing Board, including preservation of Extra dark.
+
+### Identifier rebase and integration proof (2026-11-05)
+
+The appearance branch replays onto `fab1823f`. The owner already landed the
+mechanical Memphis rename in `14e1f66c`; this branch does not duplicate it.
+The base locks Hensou `c0ca8e2`. Live identifiers, palette helpers, shortcuts
+and checks use Memphis. There is no saved theme-name alias.
+
+An unknown saved name now selects Platinum captions as well as Platinum kit
+and CLI state. The added caption regression failed three assertions before
+that fix. Explicit unsupported-state calls still restore the session's bars
+and motion. A real CLI call with the retired saved name selected Platinum;
+`set` rejected that name. The read did not rewrite the raw saved data.
+
+The additional desktop-surface fixture stages QtWebSockets, QtMultimedia and
+the generated notification schema used by the upstream desktop-icon imports.
+It keeps the full shell dependency tree. No desktop-icon behaviour changed.
+Legacy web-token hashes use the renamed upstream blocks at `fab1823f`.
+
+Focused checks passed on Aka under the shared heavy lock, using throwaway
+combined snapshots only:
+
+- Hensou build `56278c2865ab38e19c67564d5cd5b9427c8ab056` plus design
+  `0f0c6753c5a5c50933bcbe00c0c056e3014398e5`.
+- Mountainous replayed build plus design
+  `3cafbc1f007683d3a486442705d37998bd7b483d`.
+- `desktop-theme`, `native-themes`, `titlebars`, `theme-appearance-host`,
+  `desktop-icons`, `desktop-appearances` and `desktop-appearance-surface`.
+- The surface check verified all 20 new scheme colours as real compositor
+  pixels. The host checked all 25 choices, previews and unknown-name fallback.
+- ShellCheck, Bash syntax, Ruff lint/format, Python compilation and focused
+  Nix formatting passed. No aggregate flake check ran.
+
+Logs: `/tmp/memphis-schemes/final-rename/logs/`. Chicago95 paths, the W95FA Grid
+font identity and Qt's `Windows` style API retain their required upstream names.
+The final locked Hensou feature revision remains the integrator's landing step.

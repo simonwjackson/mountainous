@@ -49,6 +49,9 @@ with tempfile.TemporaryDirectory(prefix="appearance-host-") as directory:
             source, config, dirs_exist_ok=True, copy_function=shutil.copyfile
         )
         config.chmod(0o700)
+        schema = os.environ.get("NOTIFICATION_SCHEMA_JS")
+        if schema:
+            shutil.copyfile(schema, config / "notification-schema.js")
     shell_source = """import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -243,6 +246,11 @@ ShellRoot {
                 json.loads(call("resolve", "unknown-theme", "brick", "light").stdout)
                 is None
             )
+            write("theme", "light")
+            write("theme-appearance", "brick")
+            write("theme-name", "unknown-theme")
+            await_state("platinum", "light", "light")
+            assert (state / "theme-name").read_text().strip() == "unknown-theme"
             print(
                 "APPEARANCE_HOST_PASSED: 25 live state/preview choices, old files, unknown IDs"
             )

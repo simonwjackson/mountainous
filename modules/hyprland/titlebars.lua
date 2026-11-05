@@ -121,7 +121,7 @@ end
 -- missing mode is dark, a missing extra file is off.
 function M.state()
     local name = read("theme-name")
-    if name == "" then name = "platinum" end
+    if name ~= "platinum" and name ~= "memphis" then name = "platinum" end
     local mode = read("theme") == "light" and "light" or "dark"
     local appearance = read("theme-appearance")
     local known = name == "memphis" and (M.SCHEME_PALETTES[appearance] or appearance == "standard" or appearance == "dark-grey")

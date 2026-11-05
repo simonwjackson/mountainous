@@ -271,8 +271,8 @@ const strip = (sections) => ({ tokens: Object.fromEntries(Object.entries(section
 const memphisRaw = fs.readFileSync(path.join(root, "themes/memphis/web.css"), "utf8");
 const memphisCss = stripComments(memphisRaw);
 const memphis = strip(policy.parse(memphisRaw));
-// The original light/dark token blocks remain unchanged (b04f724f).
-for (const [mode, digest] of Object.entries({"light": "c720ae6978e162ea03abb4bf44b1034ebdbacc0791317a4813179d7f0892256d", "dark": "3bc5577b431967d276e717843e63eed07082981cb0343613ecfb0afb6383b4c8"})) {
+// The renamed upstream light/dark token blocks remain unchanged (fab1823f).
+for (const [mode, digest] of Object.entries({"light": "f7ba5df5d7cdb0de5f6ee5766091791a7dca41202956621f3f04fc252ac859d1", "dark": "5573b24f55b62ed8d238680f6f5ed29acff8bffaea00c32c3262923e9df224d9"})) {
     assert.equal(crypto.createHash("sha256").update(policy.parse(memphisRaw).tokens[mode]).digest("hex"), digest, "legacy " + mode + " block");
 }
 const plat = strip(policy.parse(fs.readFileSync(path.join(root, "themes/platinum/web.css"), "utf8")));

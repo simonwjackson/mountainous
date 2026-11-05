@@ -449,9 +449,13 @@ in
             pkgs.grim
           ];
           SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+          QML_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
           FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
         }
         ''
+          export NOTIFICATION_SCHEMA_JS="$TMPDIR/notification-schema.js"
+          bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > "$NOTIFICATION_SCHEMA_JS"
           python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
             ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
             ${pkgs.quickshell}/bin/qs ${pkgs.labwc}/bin/labwc

@@ -273,11 +273,11 @@ while read -r theme selected toggled; do
   [[ $(<"$appearance") == dark-grey && $(<"$state") == dark ]]
   "$command_path" apply "$theme" "$selected" on >/dev/null
   "$command_path" light >/dev/null
-  if [[ $theme == win98 ]]; then light_default=standard; else light_default=light; fi
+  if [[ $theme == memphis ]]; then light_default=standard; else light_default=light; fi
   [[ $(<"$appearance") == "$light_default" && $(<"$state") == light && $(<"$extra") == on ]]
 done <<'CASES'
-win98 brick dark-grey
-win98 high-contrast-black standard
+memphis brick dark-grey
+memphis high-contrast-black standard
 platinum drawing-board dark-grey
 CASES
 echo 'DESKTOP_THEME_TESTS_PASSED'  

@@ -12,7 +12,7 @@ Later (2026-10-24): the `77dd2791` bevel and cast shadow were ported onto the ph
 
 Platinum and Memphis move together. A feature lands for both themes in the same phase, or this ledger records why one theme has no counterpart. New theme work updates this table when it lands. Fleet data, launches, windows and session actions stay in the shared owners; each theme draws its own view.
 
-| Feature | Platinum | Memphis | Memphis counterpart |
+| Feature | Platinum | Memphis | Memphis form |
 |---|---|---|---|
 | Status controls (Bluetooth, Wi-Fi, Sound, Brightness, OCI, Disks, builder gate, Notifications, Dictation, battery, clock) | Done | Done | Tray icons and windows |
 | Theme picker | Done | Done | Display Properties |
