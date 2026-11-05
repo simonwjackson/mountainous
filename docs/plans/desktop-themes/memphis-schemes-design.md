@@ -27,7 +27,7 @@ The scheme colours are the zaxbux gist's classic set, verbatim in `MemphisTokens
 | Menus use Menu and MenuText; the Start band uses the caption text colours | New kit tokens `menu`, `menuText`, `bandText`, `bandSubText`, `windowFrame`, `scrollTrack`, `scrollDither`. Standard and Dark grey keep their old values. |
 | Grey text follows the data, also where it is weak | Wheat 1.4:1, Pumpkin 1.6:1 and High Contrast White (`#00ff00` on white) 1.4:1. These are the source values. |
 | The drop-down list shows at most 10 single rows' worth and scrolls | The original's lists scrolled. `themes/memphis/combo-plan.js` is the pure policy (tested at each boundary): down, up when there is more room above, shortened, or over the field when neither side holds a row. The list is as wide as its longest name, up to the window; narrower, names wrap and rows grow. A closed field too narrow for its value wraps it, and below a 24-u value box the button moves under the value. |
-| Display Properties under 200 u wide shrinks its insets (6 to 2 u, 8 to 3 u) | Spacing yields before the names do. |
+| Display Properties under 200 u wide shrinks its insets (6 to 2 u, 8 to 3 u) | Spacing yields before the names do. The threshold is `COMPACT_WIDTH` in `themes/memphis/picker-plan.js`, tested at 199, 200 and 201 u. |
 | The pickers accept the old mode API | When the model has no `currentAppearance`, apply and preview take the mode. The branch works before and after the build branch lands. |
 | Drawing Board's shadow is hatched, five hairs down and right; the frame lines run five hairs past each corner | Read from the references, redrawn. The About window's surface grows by six hairs on each side on Drawing Board only. |
 | Drawing Board's highlight is a blueprint blue `#3a5784` | White has 7.4:1 on it. |
@@ -60,4 +60,4 @@ Headless sway, Mesa llvmpipe, 2880 x 1800 at scale 1.5, the real shell through t
 - On Myoko with real input.
 - That the gist's classic values equal the original release's (inferred).
 - Below about 120 px wide, scheme names wrap inside a word ("Eggpla/nt") in the open list and the closed field. Every name stays whole and readable; review round 1 replaced the earlier elision.
-- Mountainous's `flake.lock` still pins Hensou `0e8a41a`. The shell needs the design kit (`PlatinumShadow`, `PlatinumCropMarks`, `palette(id)`) before it can load.
+- Historical: until the merge, `flake.lock` pinned a Hensou without the design kit (`PlatinumShadow`, `PlatinumCropMarks`, `palette(id)`). It now pins Hensou `c969483`, which has it.

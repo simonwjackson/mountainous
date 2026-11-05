@@ -23,14 +23,14 @@ PanelWindow {
     // and apply take it; "light" and "dark" are the old aliases). A choice
     // without one takes its mode's default ID.
     function choiceId(c) {
-        return c.appearanceId || (c.mode === "dark" ? "dark-grey" : c.theme === "memphis" ? "standard" : "light");
+        return c.appearanceId || ThemeCatalog.defaultAppearance(c.theme, c.mode);
     }
     // A model without currentAppearance has the old mode API: apply and
     // preview then take the mode.
     readonly property bool idApi: model.currentAppearance !== undefined
     function appearanceArg(c) { return win.idApi ? win.choiceId(c) : c.mode; }
     readonly property string currentAppearance: model.currentAppearance
-        || (model.currentMode === "dark" ? "dark-grey" : model.currentTheme === "memphis" ? "standard" : "light")
+        || ThemeCatalog.defaultAppearance(model.currentTheme, model.currentMode)
     // Extra dark: only for a theme that has it, and only in its dark grey
     // appearance (Light and Drawing Board disable it).
     readonly property bool extraOffered: !!ThemeCatalog.find(model.currentTheme) && ThemeCatalog.find(model.currentTheme).options.extraDark

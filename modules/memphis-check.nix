@@ -77,6 +77,7 @@
           ${quickshell}/themes/memphis/tab-strip.js ${quickshell}/themes/memphis/host-icon.js
         node ${quickshell}/themes/memphis/find-plan.test.js ${quickshell}/themes/memphis/find-plan.js
         node ${quickshell}/themes/memphis/combo-plan.test.js ${quickshell}/themes/memphis/combo-plan.js
+        node ${quickshell}/themes/memphis/picker-plan.test.js ${quickshell}/themes/memphis/picker-plan.js
         node ${quickshell}/themes/memphis/task-model.test.js ${quickshell}/themes/memphis/task-model.js \
           ${quickshell}/themes/memphis/session-model.js ${quickshell}/page-names.js
         bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js

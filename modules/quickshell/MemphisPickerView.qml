@@ -4,6 +4,7 @@ import Hensou as Kit
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import "themes/memphis/picker-plan.js" as PickerPlan
 
 // The desktop theme picker in Memphis's words: Display Properties, the
 // Appearance tab. Theme and Scheme drop-down lists over a preview that
@@ -48,14 +49,14 @@ PanelWindow {
         if (!a) return "";
         if (a.appearanceId) return a.appearanceId;
         if (a.id) return a.id;
-        return a.mode === "dark" ? "dark-grey" : themeId === "memphis" ? "standard" : "light";
+        return ThemeCatalog.defaultAppearance(themeId, a.mode);
     }
     // A model without currentAppearance has the old mode API: apply and
     // preview then take the mode, and only the mode defaults exist.
     readonly property bool idApi: model.currentAppearance !== undefined
     function appearanceArg(a) { return win.idApi ? win.appearanceId(win.theme ? win.theme.id : "", a) : (a ? a.mode : ""); }
     readonly property string currentAppearance: model.currentAppearance
-        || (model.currentMode === "dark" ? "dark-grey" : model.currentTheme === "memphis" ? "standard" : "light")
+        || ThemeCatalog.defaultAppearance(model.currentTheme, model.currentMode)
     // This theme first, then the others in registry order.
     readonly property var themes: model.themes.filter(function (t) { return t.id === "memphis"; })
         .concat(model.themes.filter(function (t) { return t.id !== "memphis"; }))
@@ -102,12 +103,12 @@ PanelWindow {
     // does the dialog scroll, and the focused control scrolls into view.
     readonly property real buttonRow: 3 * 75 * win.u + 12 * win.u
     readonly property bool stackLabels: sheet.width < 62 * win.u + 100 * win.u
-    // Spacing yields before content: a dialog under 200 u wide draws its
-    // body 2 u (not 6 u) inside the frame and its sheet 3 u (not 8 u)
-    // inside the tab, so the lists keep that room for the names.
-    readonly property bool compact: dialog.width < 200 * win.u
-    readonly property real bodyInset: (compact ? 2 : 6) * win.u
-    readonly property real sheetInset: (compact ? 3 : 8) * win.u
+    // Spacing yields before content: a narrow dialog draws its body and
+    // its sheet closer to the frame (themes/memphis/picker-plan.js), so the
+    // lists keep that room for the names.
+    readonly property var insets: PickerPlan.insets(dialog.width / win.u)
+    readonly property real bodyInset: insets.body * win.u
+    readonly property real sheetInset: insets.sheet * win.u
     readonly property real previewNatural: 166 * win.u
     // Measured after layout settles, not bound: the list's height feeds
     // the window's own height, so a binding would loop. The sum is a fixed

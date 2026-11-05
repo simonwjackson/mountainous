@@ -105,7 +105,8 @@ wtype -M alt s -m alt; sleep 0.2; key Down; sleep 0.4
 click_at $(memphis control pickerApply)
 # A loaded machine runs the command late: wait up to 4 s.
 for _ in $(seq 40); do grep -q "desktop-theme apply" "$work/commands.log" 2>/dev/null && break; sleep 0.1; done
-if grep -q "desktop-theme apply memphis dark off" "$work/commands.log" 2>/dev/null; then echo "PASS Apply commits memphis dark"; pass=$((pass + 1));
+# The picker applies by appearance ID (ThemePicker.apply): Dark grey.
+if grep -q "desktop-theme apply memphis dark-grey off" "$work/commands.log" 2>/dev/null; then echo "PASS Apply commits memphis dark-grey"; pass=$((pass + 1));
 else echo "FAIL Apply did not commit ($(cat "$work/commands.log" 2>/dev/null | tr '\n' ' '))"; fail=1; fi
 check 'Apply keeps the window open' 'picker=open'
 
