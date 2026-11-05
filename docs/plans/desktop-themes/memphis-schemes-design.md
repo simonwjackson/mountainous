@@ -14,7 +14,7 @@ Branch `feat/memphis-schemes-design`. The binding contract is `/tmp/memphis-sche
 | Art | `themes/platinum/patterns/drawing-board.svg` (original 8 x 8 wave); `themes/memphis/previews/<id>.png` (22) and `themes/platinum/previews/{dark-grey,drawing-board}.png` |
 | Renders | `theme-dev/schemes/render.sh`; harness IPC `appearance`, `desktopColour`, `about`, `pickerShow` |
 
-The scheme colours are the XP classic set from the zaxbux gist, verbatim in `MemphisTokens.systemColours`. The kit test `tst_appearances.qml` compares them with the JSON.
+The scheme colours are the zaxbux gist's classic set, verbatim in `MemphisTokens.systemColours`. The kit test `tst_appearances.qml` compares them with the JSON.
 
 ## Decisions made without asking
 
@@ -22,11 +22,12 @@ The scheme colours are the XP classic set from the zaxbux gist, verbatim in `Mem
 |---|---|
 | Standard and Dark grey keep Hensou's palettes, not "Windows Classic" from the JSON | The contract keeps the five existing appearances. Standard's `li` stays `#dfdfdf`, not the JSON's `#c0c0c0`. |
 | A scheme's tokens with no system colour take Standard's (light) or Dark grey's (dark) | Status colours, charts and the icon outline. Dark schemes keep Dark grey's grey icon outline and no emboss. |
-| `meter` (progress blocks) is the scheme's Highlight | Memphis drew progress bars in the highlight colour (inferred). |
-| The scroll track is solid ScrollBar, except where ControlLightLight equals Window; then the face and light dither | Wine's and ReactOS's default scroll-bar brush (inferred, not checked on Memphis). Standard and Dark grey keep the dither. |
+| `meter` (progress blocks) is the scheme's Highlight | The original drew progress bars in the highlight colour (inferred). |
+| The scroll track is solid ScrollBar, except where ControlLightLight equals Window; then the face and light dither | Wine's and ReactOS's default scroll-bar brush (inferred, not checked on the original). Standard and Dark grey keep the dither. |
 | Menus use Menu and MenuText; the Start band uses the caption text colours | New kit tokens `menu`, `menuText`, `bandText`, `bandSubText`, `windowFrame`, `scrollTrack`, `scrollDither`. Standard and Dark grey keep their old values. |
 | Grey text follows the data, also where it is weak | Wheat 1.4:1, Pumpkin 1.6:1 and High Contrast White (`#00ff00` on white) 1.4:1. These are the source values. |
-| The drop-down list shows at most 10 rows and scrolls | Memphis lists scrolled. It rises above the field when there is more room there; with no room on either side, its one row lies over the field. It can be wider than the field, up to the window. |
+| The drop-down list shows at most 10 single rows' worth and scrolls | The original's lists scrolled. `themes/memphis/combo-plan.js` is the pure policy (tested at each boundary): down, up when there is more room above, shortened, or over the field when neither side holds a row. The list is as wide as its longest name, up to the window; narrower, names wrap and rows grow. A closed field too narrow for its value wraps it, and below a 24-u value box the button moves under the value. |
+| Display Properties under 200 u wide shrinks its insets (6 to 2 u, 8 to 3 u) | Spacing yields before the names do. |
 | The pickers accept the old mode API | When the model has no `currentAppearance`, apply and preview take the mode. The branch works before and after the build branch lands. |
 | Drawing Board's shadow is hatched, five hairs down and right; the frame lines run five hairs past each corner | Read from the references, redrawn. The About window's surface grows by six hairs on each side on Drawing Board only. |
 | Drawing Board's highlight is a blueprint blue `#3a5784` | White has 7.4:1 on it. |
@@ -49,7 +50,7 @@ The scheme colours are the XP classic set from the zaxbux gist, verbatim in `Mem
 
 ## Evidence
 
-Headless sway, Mesa llvmpipe, 2880 x 1800 at scale 1.5, the real shell through the Memphis harness. Kit with a render-only `Theme.appearance` shim and the build branch's ThemePicker API as an overlay (not committed).
+Headless sway, Mesa llvmpipe, 2880 x 1800 at scale 1.5, the real shell through the Memphis development harness. Since review round 1 the desktop is the shell's own `DesktopPattern`, and each appearance is set through the state files. Kit with a render-only `Theme.appearance` shim and the build branch's ThemePicker API as an overlay (not committed).
 
 - Renders: `/tmp/scheme-renders/memphis/<id>/{window,menu,sound}.png`, `/tmp/scheme-renders/platinum/<id>/{window,menu,clock-menu}.png`, picker ladder `/tmp/scheme-renders/ladder/`.
 - Focused checks (Aka, with `--override-input hensou` at the design branch): `checks.desktop-theme-shell`, `checks.memphis-desktop`, `checks.memphis-theme` passed. Kit `tests/run.sh`: 26 passed and 1 skipped without `Theme.appearance`; 27 passed with it.
@@ -57,6 +58,6 @@ Headless sway, Mesa llvmpipe, 2880 x 1800 at scale 1.5, the real shell through t
 ## Not verified
 
 - On Myoko with real input.
-- That the XP classic values equal Memphis's (inferred).
-- At 80 px wide, the open scheme list elides names longer than about six letters, and the closed field has no room for its value. The keys and the list still reach every scheme, and the preview draws it.
+- That the gist's classic values equal the original release's (inferred).
+- Below about 120 px wide, scheme names wrap inside a word ("Eggpla/nt") in the open list and the closed field. Every name stays whole and readable; review round 1 replaced the earlier elision.
 - Mountainous's `flake.lock` still pins Hensou `0e8a41a`. The shell needs the design kit (`PlatinumShadow`, `PlatinumCropMarks`, `palette(id)`) before it can load.
