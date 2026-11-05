@@ -714,7 +714,11 @@ ShellRoot {
             }
 
             // The desktop pattern under everything, for both themes.
-            DesktopPattern { screen: screenScope.modelData }
+            DesktopPattern {
+                screen: screenScope.modelData
+                // Desktop icons on the primary screen only (DesktopIcons.qml).
+                desktopIcons: screenScope.modelData === root.primaryScreen()
+            }
         }
     }
 

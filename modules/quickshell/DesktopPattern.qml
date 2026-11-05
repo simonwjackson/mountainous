@@ -9,6 +9,13 @@ import "desktop-art.js" as Art
 // shared, not part of a Desktop, so a theme swap repaints it in place
 // instead of mapping a second full-screen surface.
 //
+// On the primary screen (desktopIcons) it also carries the desktop icons
+// (DesktopIcons.qml): the surface then takes clicks where it shows, which
+// is only where no window covers it, since it lies on the Background layer
+// under every window, and takes the keyboard on demand (a click on it),
+// for arrow keys and rename. Its input mask is the icon layer while the
+// provider is live, and empty otherwise.
+//
 // A tile is an 8 x 8 SVG drawn at whole device pixels per tile pixel and
 // shown unfiltered, tiles starting at the screen's origin, so its cells
 // share the glance dither's grid (3 device px at 1.5 for Platinum).
@@ -23,10 +30,12 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Background
     WlrLayershell.namespace: "mountainous-desktop"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: root.desktopIcons ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     color: "#000000"
-    // Nothing on the desktop takes input.
-    mask: Region {}
+    // The primary screen's pattern carries the desktop icons.
+    property bool desktopIcons: false
+    readonly property var iconLayer: icons.item
+    mask: Region { item: icons.item && icons.item.takesInput ? icons : null }
 
     Image {
         id: tiles
@@ -45,5 +54,17 @@ PanelWindow {
         smooth: false
         mipmap: false
         asynchronous: false
+    }
+
+    Loader {
+        id: icons
+        anchors.fill: parent
+        active: root.desktopIcons
+        focus: true
+        sourceComponent: DesktopIcons {
+            screen: root.screen
+            window: root
+            focus: true
+        }
     }
 }
