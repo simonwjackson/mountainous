@@ -28,7 +28,7 @@ PanelWindow {
     // A model without currentAppearance has the old mode API: apply and
     // preview then take the mode.
     readonly property bool idApi: model.currentAppearance !== undefined
-    function arg(c) { return win.idApi ? win.choiceId(c) : c.mode; }
+    function appearanceArg(c) { return win.idApi ? win.choiceId(c) : c.mode; }
     readonly property string currentAppearance: model.currentAppearance
         || (model.currentMode === "dark" ? "dark-grey" : model.currentTheme === "memphis" ? "standard" : "light")
     // Extra dark: only for a theme that has it, and only in its dark grey
@@ -204,7 +204,7 @@ PanelWindow {
                                 Component.onCompleted: if (index === 0)
                                     forceActiveFocus()
                                 function apply() {
-                                    win.model.apply(modelData.theme, win.arg(modelData), win.model.extraDark);
+                                    win.model.apply(modelData.theme, win.appearanceArg(modelData), win.model.extraDark);
                                 }
                                 onActiveFocusChanged: if (activeFocus)
                                     win.rememberFocus(choice)
@@ -231,7 +231,7 @@ PanelWindow {
                                     Image {
                                         anchors.fill: parent
                                         anchors.margins: 3
-                                        source: preview.visible ? win.model.preview(choice.modelData.theme, win.arg(choice.modelData)) : ""
+                                        source: preview.visible ? win.model.preview(choice.modelData.theme, win.appearanceArg(choice.modelData)) : ""
                                         fillMode: Image.PreserveAspectFit
                                     }
                                 }

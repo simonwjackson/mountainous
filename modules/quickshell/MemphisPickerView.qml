@@ -53,7 +53,7 @@ PanelWindow {
     // A model without currentAppearance has the old mode API: apply and
     // preview then take the mode, and only the mode defaults exist.
     readonly property bool idApi: model.currentAppearance !== undefined
-    function arg(a) { return win.idApi ? win.appearanceId(win.theme ? win.theme.id : "", a) : (a ? a.mode : ""); }
+    function appearanceArg(a) { return win.idApi ? win.appearanceId(win.theme ? win.theme.id : "", a) : (a ? a.mode : ""); }
     readonly property string currentAppearance: model.currentAppearance
         || (model.currentMode === "dark" ? "dark-grey" : model.currentTheme === "memphis" ? "standard" : "light")
     // This theme first, then the others in registry order.
@@ -83,11 +83,11 @@ PanelWindow {
         win.schemeIndex = win.schemeIndexFor(win.themes[i], id, dark);
     }
     function apply() {
-        if (win.changed) win.model.apply(win.theme.id, win.arg(win.scheme), win.model.extraDark);
+        if (win.changed) win.model.apply(win.theme.id, win.appearanceArg(win.scheme), win.model.extraDark);
     }
     function ok() {
         const go = win.changed;
-        const id = win.theme ? win.theme.id : "", appearance = win.arg(win.scheme);
+        const id = win.theme ? win.theme.id : "", appearance = win.appearanceArg(win.scheme);
         win.model.close();
         if (go) win.model.apply(id, appearance, win.model.extraDark);
     }
@@ -102,6 +102,12 @@ PanelWindow {
     // does the dialog scroll, and the focused control scrolls into view.
     readonly property real buttonRow: 3 * 75 * win.u + 12 * win.u
     readonly property bool stackLabels: sheet.width < 62 * win.u + 100 * win.u
+    // Spacing yields before content: a dialog under 200 u wide draws its
+    // body 2 u (not 6 u) inside the frame and its sheet 3 u (not 8 u)
+    // inside the tab, so the lists keep that room for the names.
+    readonly property bool compact: dialog.width < 200 * win.u
+    readonly property real bodyInset: (compact ? 2 : 6) * win.u
+    readonly property real sheetInset: (compact ? 3 : 8) * win.u
     readonly property real previewNatural: 166 * win.u
     // Measured after layout settles, not bound: the list's height feeds
     // the window's own height, so a binding would loop. The sum is a fixed
@@ -179,8 +185,8 @@ PanelWindow {
 
         Item {
             id: dp
-            x: 6 * win.u; y: 4 * win.u
-            width: dialog.width - 18 * win.u
+            x: win.bodyInset; y: 4 * win.u
+            width: dialog.width - 6 * win.u - 2 * win.bodyInset
             implicitWidth: width
             implicitHeight: column.height + 10 * win.u
 
@@ -200,8 +206,8 @@ PanelWindow {
 
                     Item {
                         id: sheet
-                        x: 8 * win.u; y: 10 * win.u
-                        width: dp.width - 16 * win.u
+                        x: win.sheetInset; y: 10 * win.u
+                        width: dp.width - 2 * win.sheetInset
                         height: appearance.height
 
                         Column {
@@ -236,7 +242,7 @@ PanelWindow {
                                     horizontalAlignment: Image.AlignHCenter
                                     verticalAlignment: Image.AlignVCenter
                                     smooth: true
-                                    source: visible && win.scheme ? win.model.preview(win.theme.id, win.arg(win.scheme)) : ""
+                                    source: visible && win.scheme ? win.model.preview(win.theme.id, win.appearanceArg(win.scheme)) : ""
                                 }
                             }
                             Grid {
