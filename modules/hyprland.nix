@@ -77,7 +77,7 @@ in {
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
       lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} "$KIT_PALETTES" ${./hyprland/hyprland.lua}
-      python3 ${../tests/system-palettes.py} ${../scripts/generate-native-themes.py} ${../scripts/xp-classic-schemes.json} ${./hyprland/titlebars.lua} ${./quickshell}
+      python3 ${../tests/system-palettes.py} ${../scripts/generate-native-themes.py} ${../scripts/system-colour-schemes.json} ${./hyprland/titlebars.lua} ${./quickshell}
       touch $out
     '';
   };

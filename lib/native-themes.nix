@@ -9,7 +9,7 @@ pkgs.stdenvNoCC.mkDerivation {
   buildPhase = ''
     runHook preBuild
     python3 ${../scripts/generate-native-themes.py} \
-      --schemes ${../scripts/xp-classic-schemes.json} \
+      --schemes ${../scripts/system-colour-schemes.json} \
       --out "$out" --mac ${inputs.platinum-gtk-src} \
       --chicago ${inputs.chicago95-src} --kvantum ${inputs.platinum-kvantum-src}
     runHook postBuild

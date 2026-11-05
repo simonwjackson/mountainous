@@ -383,7 +383,7 @@ in
             pkgs.nodejs
           ];
           DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
-          SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
           KIT_PALETTES = kitPalettes;
           # Phase 4: icons, cursors and the desktop pattern, asserted after
           # every set, toggle and reapply in scripts/test-native-themes.
@@ -429,7 +429,7 @@ in
             inherit pkgs;
             kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
           };
-          SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
           HENSOU_QML_ROOT = "${
             inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
           }/lib/qt-6/qml";
@@ -448,7 +448,7 @@ in
             pkgs.labwc
             pkgs.grim
           ];
-          SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
           QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
           QML_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
           FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };

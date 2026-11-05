@@ -86,7 +86,7 @@ PALETTES = {
         },
     },
 }
-# XP classic system colours from zaxbux "Windows System Colours (by OS)".
+# System colours from zaxbux "Windows System Colours (by OS)".
 # Brick matches ReactOS hivedef.inf; equivalence to Memphis is inferred, not verified.
 # The byte-for-byte source copy and its SHA256 are recorded in the plan ledger.
 DARK_APPEARANCES = {

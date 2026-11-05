@@ -41,8 +41,8 @@ The existing public theme labels stay unchanged.
 
 ### One colour source and generated outputs
 
-`scripts/xp-classic-schemes.json` is a byte-for-byte copy of the supplied XP
-classic table from zaxbux's **Windows System Colours (by OS)** gist. SHA256:
+`scripts/system-colour-schemes.json` is a byte-for-byte copy of the supplied
+system colour table from zaxbux's **Windows System Colours (by OS)** gist. SHA256:
 `a7f330d2e3ccc077a98ef220f86e3aee8c19be488c93c569bb81cbbfee59d406`.
 The copy was compared byte-for-byte with the supplied source table when added;
 `tests/system-palettes.py` pins that digest. Brick matches ReactOS
@@ -58,7 +58,7 @@ system-palette block, with:
 
 ```sh
 python3 scripts/generate-native-themes.py \
-  --schemes scripts/xp-classic-schemes.json --update-shell modules/quickshell
+  --schemes scripts/system-colour-schemes.json --update-shell modules/quickshell
 ```
 
 GTK/Qt fields use Window/WindowText, selections use Highlight/HighlightText,
