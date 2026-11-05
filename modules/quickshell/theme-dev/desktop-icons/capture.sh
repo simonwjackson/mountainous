@@ -33,7 +33,7 @@ if [ -z "${DESKTOP_DEV_TOOLS:-}" ]; then
   art=$(flake desktop-art)
   export XDG_DATA_DIRS="$art/share:$(pkg hicolor-icon-theme)/share"
   hensou_qml=$(nix eval --raw "$repo#nixosConfigurations.myoko.config.systemd.user.services.quickshell.environment.QML2_IMPORT_PATH")
-  export QML2_IMPORT_PATH="$hensou_qml"
+  export QML2_IMPORT_PATH="$hensou_qml:$(pkg qt6.qtmultimedia)/lib/qt-6/qml:$(pkg qt6.qtwebsockets)/lib/qt-6/qml"
   cfg="$out/fonts.conf"
   printf '<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><dir>%s/share/fonts</dir><dir>%s/share/fonts</dir><dir>%s/share/fonts</dir><cachedir>%s/fontcache</cachedir></fontconfig>\n' \
     "$w95" "$chicago" "$dejavu" "$out" > "$cfg"

@@ -24,7 +24,9 @@ PanelWindow {
     screen: modelData
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
-    focusable: true
+    // The keyboard at once (a menu's arrows, an alert's Enter and Escape),
+    // under any compositor; HyprlandFocusGrab ends it on an outside click.
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "mountainous-alert"
