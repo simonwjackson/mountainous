@@ -57,11 +57,15 @@ FocusScope {
     }
     readonly property var connection: session
 
+    // Runs when the provider goes away. A confirmation the user has not
+    // answered yet (Empty Trash with its count, a permanent delete) belonged
+    // to the old connection: drop it, so it can never act on a new one.
     function reset() {
         root.selection = [];
         root.focusId = "";
         root.pending = {};
         root.menu = null;
+        root.alertSpec = null;
         root.renamingId = "";
     }
     // Drop ids the provider removed.
