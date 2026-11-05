@@ -46,7 +46,7 @@
   },
   {
     "id": "win98",
-    "label": "Windows 98",
+    "label": "Memphis",
     "desktop": "Win98Desktop.qml",
     "picker": "Win98PickerView.qml",
     "appearances": [

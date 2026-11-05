@@ -102,7 +102,7 @@ name="$XDG_STATE_HOME/mountainous/theme-name"
 rm -f "$name"
 [[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
 [[ ! -e $name ]]
-[[ $("$command_path" list) == $'platinum\tMac OS 8 Platinum\nwin98\tWindows 98' ]]
+[[ $("$command_path" list) == $'platinum\tMac OS 8 Platinum\nwin98\tMemphis' ]]
 [[ $("$command_path" set platinum) == platinum ]]
 [[ $(<"$name") == platinum ]]
 for bad in unknown '../platinum' ''; do

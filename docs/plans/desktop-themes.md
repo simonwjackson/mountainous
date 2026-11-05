@@ -304,7 +304,7 @@ Review validation evidence lives under `/tmp/themes-p1/review/`. `picker-before.
 
 ## Phase 2: Windows 98 (implemented)
 
-Simon can pick "Windows 98" in either picker (or run `desktop-theme set win98`). Each screen's chrome becomes one Win98 taskbar on the bottom edge, with the Start menu, tray windows, tooltips and Display Properties. The switch is live through the phase 1 loader, and it switches back to Platinum the same way. Spec: the approved mock at `/tmp/win98-mock/` (`REPORT.md`, `STATES.md`, the state sheets).
+Simon can pick "Memphis" (formerly labelled "Windows 98") in either picker (or run `desktop-theme set win98`). Each screen's chrome becomes one Win98 taskbar on the bottom edge, with the Start menu, tray windows, tooltips and Display Properties. The switch is live through the phase 1 loader, and it switches back to Platinum the same way. Spec: the approved mock at `/tmp/win98-mock/` (`REPORT.md`, `STATES.md`, the state sheets).
 
 ### What was built
 

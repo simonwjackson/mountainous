@@ -712,7 +712,7 @@ def win98_icons(out, name, chicago, web_apps, font):
             directories.add((f"apps/{size}", size, "Applications"))
     index_theme(
         theme,
-        "Mountainous Windows 98",
+        "Mountainous Memphis",
         "Chicago95 (grassmunk, GPL-3.0+/MIT) with Myoko's apps",
         "Chicago95,hicolor",
         sorted(directories),
@@ -791,7 +791,7 @@ def main():
         retrosmart_shapes(args.retrosmart),
     )
     cursor_theme(
-        out, win98["cursors"], "Mountainous Windows 98", chicago_shapes(args.chicago)
+        out, win98["cursors"], "Mountainous Memphis", chicago_shapes(args.chicago)
     )
     shutil.rmtree(out / "build")
 
