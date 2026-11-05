@@ -39,7 +39,6 @@ PanelWindow {
     readonly property var iconLayer: icons.item
     mask: Region { item: icons.item && icons.item.takesInput ? icons : null }
 
-
     Image {
         id: tiles
         objectName: "desktopPattern"

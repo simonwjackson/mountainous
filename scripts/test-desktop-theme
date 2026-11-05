@@ -260,4 +260,24 @@ if "$command_path" apply memphis drawing-board off; then exit 1; fi
 printf dark > "$state"
 "$command_path" reapply >/dev/null
 [[ $(<"$state") == light && $(<"$appearance") == brick ]]
+# Super+X and omni's explicit mode commands select defaults, not a remembered
+# colour scheme. The stored Extra dark preference survives all three paths.
+while read -r theme selected toggled; do
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" toggle >/dev/null
+  [[ $(<"$appearance") == "$toggled" && $(<"$extra") == on ]]
+  if [[ $toggled == dark-grey ]]; then expected_mode=dark; else expected_mode=light; fi
+  [[ $(<"$state") == "$expected_mode" ]]
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" dark >/dev/null
+  [[ $(<"$appearance") == dark-grey && $(<"$state") == dark ]]
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" light >/dev/null
+  if [[ $theme == win98 ]]; then light_default=standard; else light_default=light; fi
+  [[ $(<"$appearance") == "$light_default" && $(<"$state") == light && $(<"$extra") == on ]]
+done <<'CASES'
+win98 brick dark-grey
+win98 high-contrast-black standard
+platinum drawing-board dark-grey
+CASES
 echo 'DESKTOP_THEME_TESTS_PASSED'  

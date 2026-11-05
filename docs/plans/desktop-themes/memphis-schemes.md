@@ -210,3 +210,16 @@ Both legacy Memphis tile hashes and both legacy web token-block hashes are pinne
 | `checks.desktop-appearance-surface` | Passed: actual desktop surface and compositor pixels for all 20 schemes, plus live state/preview/resolver cases | `round1-surface-final.log` |
 | `checks.theme-appearance-host` | Passed: 25 live choices, resolver valid/unknown IDs and mode defaults | `round1-host.log` |
 | Ruff, Python compilation, ShellCheck/Bash syntax, focused Nixfmt, registry positive/negative checks and plan location | Passed | `round1-style-final.log` |
+
+### Rebase onto desktop icons and mode shortcuts
+
+The desktop layer retains upstream's `desktopIcons`, icon-layer input mask,
+OnDemand keyboard focus, and Loader. Appearance colour and tile selection are
+added without replacing that behaviour. `generate-desktop-art.py` and
+`tests/desktop-art.py` consume only icon/cursor registry fields, not patterns.
+
+Super+X calls `desktop-theme toggle`. A light appearance switches to `dark-grey`;
+a dark one switches to `standard` (Memphis) or `light` (Platinum). Explicit
+`desktop-theme dark`/`light` commands (used by the omni commands) select the same
+defaults. No last scheme is remembered. CLI tests cover Brick, High Contrast
+Black and Drawing Board, including preservation of Extra dark.
