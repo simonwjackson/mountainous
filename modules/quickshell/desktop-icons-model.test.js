@@ -344,7 +344,9 @@ p = M.errorPlan("platinum", busy, ["USB"]);
 assert.match(p.title, /“USB” could not be put away/);
 assert.equal(p.text, "The volume is in use by ghostty.");
 p = M.errorPlan("win98", busy, ["USB"]);
-assert.match(p.title, /'USB'/);
+assert.equal(p.title, "Eject");
+assert.match(p.text, /'USB'/);
+assert.match(p.text, /in use by ghostty/);
 assert.equal(M.errorPlan("win98", { code: "other", message: "x" }, []).text, "x");
 
 // ---- the art

@@ -42,6 +42,7 @@ fi
 
 # shellcheck source=session.sh
 . "$here/session.sh" "$shell_dir" "$out/session" "${DESKTOP_RES:-2880x1800}"
+trap session_stop EXIT
 desk_wait live || { cat "$out/session/qs.log" >&2; echo "no live session" >&2; exit 1; }
 
 snap() { sleep 0.7; shot "$out/$1/$2.png"; echo "$1/$2 $(desk current | head -c 200)"; }
@@ -56,7 +57,7 @@ for a in $appearances; do
   desk_wait live
   trash=trash; volume=volume:sdb1
   desk select "file:notes.txt" >/dev/null; snap "$label" icons
-  desk window 520 200 900 600 >/dev/null; snap "$label" under-window; desk window 0 0 0 0 >/dev/null
+  desk window 60 150 900 520 >/dev/null; snap "$label" under-window; desk window 0 0 0 0 >/dev/null
   desk menu "file:notes.txt" >/dev/null; snap "$label" icon-menu; settle
   desk menu "" >/dev/null; snap "$label" desktop-menu; settle
   desk menu "$trash" >/dev/null; snap "$label" trash-menu; settle

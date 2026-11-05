@@ -362,6 +362,7 @@ FocusScope {
             icon: modelData
             themeId: root.themeId
             cellWidth: root.grid.cell_width
+            cellHeight: root.grid.cell_height
             devicePixelRatio: root.devicePixelRatio
             selected: root.selection.indexOf(modelData.id) >= 0
             focused: root.focusId === modelData.id

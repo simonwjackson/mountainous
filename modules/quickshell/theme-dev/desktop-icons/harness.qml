@@ -44,6 +44,7 @@ ShellRoot {
         }
     }
     PanelWindow {
+        id: taskbar
         screen: root.screen0
         visible: root.win98
         anchors { bottom: true; left: true; right: true }
@@ -52,9 +53,9 @@ ShellRoot {
         exclusiveZone: 0
         color: Kit.Win98Tokens.face
         WlrLayershell.namespace: "harness-taskbar"
-        Rectangle { width: parent.width; height: parent.u; color: Kit.Win98Tokens.li }
-        Rectangle { y: parent.u; width: parent.width; height: parent.u; color: Kit.Win98Tokens.hi }
-        Win98Text { x: 8 * parent.u; y: 9 * parent.u; text: "Taskbar stand-in"; accessMarks: false }
+        Rectangle { width: taskbar.width; height: taskbar.u; color: Kit.Win98Tokens.li }
+        Rectangle { y: taskbar.u; width: taskbar.width; height: taskbar.u; color: Kit.Win98Tokens.hi }
+        Win98Text { x: 8 * taskbar.u; y: 9 * taskbar.u; text: "Taskbar stand-in"; accessMarks: false }
     }
 
     // A stand-in app window above the desktop (Bottom layer: above the

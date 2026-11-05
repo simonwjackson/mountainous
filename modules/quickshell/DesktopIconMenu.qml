@@ -71,8 +71,8 @@ PanelWindow {
         id: platinumMenu
         PlatinumCascadeMenu {
             items: Model.platinumRows(win.rows)
-            menuWidth: 220
-            maxHeight: win.height - loader.y - 8
+            menuWidth: 360
+            maxHeight: win.height - 16
             onActivated: function (row) { if (row && row.action) win.choose(row.action.row); }
             onCloseRequested: win.close()
         }

@@ -640,27 +640,37 @@ function confirmPlan(theme, confirmation, ids, names) {
 }
 
 // A provider Error as a themed alert: { title, text, accept: "OK", icon }.
+// Platinum puts the sentence in bold and the provider's detail under it;
+// Memphis captions the box and puts both in its body.
 function errorPlan(theme, error, names) {
     var t = themeOf(theme);
     var e = error || {};
     var name = names && names.length === 1 ? names[0] : "";
-    var text = String(e.message || "");
-    var title;
+    var detail = String(e.message || "");
+    var sentence, caption;
     if (e.code === "busy") {
-        title = t === "win98"
+        caption = "Eject";
+        sentence = t === "win98"
             ? (name !== "" ? "Windows cannot eject " + quoted(t, name) + " right now." : "The device cannot be stopped right now.")
             : (name !== "" ? "The disk " + quoted(t, name) + " could not be put away, because it is in use." : "The disk could not be put away, because it is in use.");
-        if (text === "") text = t === "win98" ? "Close any programs that are using it, and then try again." : "Quit any application that is using it, and try again.";
+        if (detail === "") detail = t === "win98" ? "Close any programs that are using it, and then try again." : "Quit any application that is using it, and try again.";
     } else if (e.code === "exists") {
-        title = t === "win98" ? "Error Renaming File" : "That name is already taken.";
+        caption = "Error Renaming File";
+        sentence = t === "win98" ? "A file with the name you specified already exists." : "That name is already taken.";
     } else if (e.code === "permission") {
-        title = t === "win98" ? "Access is denied." : "You do not have enough access privileges for this operation.";
+        caption = "Error";
+        sentence = t === "win98" ? "Access is denied." : "You do not have enough access privileges for this operation.";
     } else if (e.code === "not-found") {
-        title = t === "win98" ? "Cannot find the item." : "The item could not be found.";
+        caption = "Error";
+        sentence = t === "win98" ? "Cannot find the item." : "The item could not be found.";
     } else {
-        title = t === "win98" ? "Desktop" : "The operation could not be completed.";
+        caption = "Desktop";
+        sentence = t === "win98" ? "" : "The operation could not be completed.";
     }
-    return { title: title, text: text, accept: "OK", cancel: "", defaultButton: "accept", icon: t === "win98" ? "error" : "stop", send: null };
+    if (t === "win98")
+        return { title: caption, text: sentence !== "" && detail !== "" ? sentence + "\n\n" + detail : sentence + detail,
+            accept: "OK", cancel: "", defaultButton: "accept", icon: "error", send: null };
+    return { title: sentence, text: detail, accept: "OK", cancel: "", defaultButton: "accept", icon: "stop", send: null };
 }
 
 // ---------------------------------------------------------------- the art

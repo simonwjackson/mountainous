@@ -29,6 +29,7 @@ Item {
     property bool dragging: false
     property bool renaming: false
     property real cellWidth: 80
+    property real cellHeight: 72
     property real devicePixelRatio: QsWindow.window && QsWindow.window.devicePixelRatio > 0
         ? QsWindow.window.devicePixelRatio : 1.5
 
@@ -114,8 +115,12 @@ Item {
     Item {
         id: label
         visible: !root.renaming
-        readonly property real maxWidth: root.win98 ? Math.max(root.cellWidth - 2 * root.u, 74 * root.u)
-            : Math.max(root.cellWidth + 32, 112)
+        // Inside the provider's cell, so neighbours never overlap; the
+        // selected or focused name shows whole (it is raised over them).
+        readonly property bool whole: root.lit || root.focused
+        readonly property real maxWidth: root.win98
+            ? (whole ? Math.max(root.cellWidth, 74 * root.u) : root.cellWidth - 2 * root.u)
+            : (whole ? Math.max(2 * root.cellWidth, 160) : root.cellWidth - 4)
         readonly property real padX: root.win98 ? root.u : 3
         width: Math.min(maxWidth, (root.win98 ? w98.implicitWidth : platinumText.implicitWidth) + 2 * padX)
         height: root.win98 ? w98.height + 2 * root.u : platinumText.implicitHeight + 2
@@ -154,7 +159,10 @@ Item {
             accessMarks: false
             wrap: true
             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-            maximumLineCount: root.selected && root.focused ? 1000 : 2
+            // As many lines as the cell has room for (at least one), all
+            // of them when selected and focused, as Windows 98 did.
+            maximumLineCount: label.whole ? 1000
+                : Math.max(1, Math.floor((root.cellHeight - label.y - 2 * root.u) / (Kit.Win98Tokens.lineUnits * root.u)))
             horizontalAlignment: Text.AlignHCenter
             color: root.lit ? Kit.Win98Tokens.selectionText : "#ffffff"
             disabledLook: !root.available

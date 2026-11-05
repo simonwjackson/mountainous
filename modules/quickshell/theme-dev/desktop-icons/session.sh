@@ -51,6 +51,8 @@ default_border none
 seat seat0 hide_cursor 100000
 EOF
 session_pids=()
+# Defined below; set now so even a failed start leaves nothing running.
+trap session_stop EXIT
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
   sway -c "$session_work/sway.conf" >"$session_work/sway.log" 2>&1 &
 session_pids+=($!)
@@ -89,12 +91,6 @@ USER=simon HOSTNAME=myoko QT_QPA_PLATFORM=wayland QT_SCALE_FACTOR_ROUNDING_POLIC
   qs -p "$stage/shell.qml" --no-color >"$session_work/qs.log" 2>&1 &
 session_pids+=($!)
 
-# A virtual keyboard that stays, so a surface can hold the keyboard.
-if command -v wtype >/dev/null; then
-  wtype -s 100000000 &
-  session_pids+=($!)
-fi
-
 desk() { qs -p "$stage/shell.qml" ipc call desk "$@" 2>/dev/null; }
 theme() {
   printf '%s\n' "$1" > "$XDG_STATE_HOME/mountainous/theme-name"
@@ -109,7 +105,34 @@ desk_wait() {
 for _ in $(seq 100); do desk current >/dev/null && break; sleep 0.2; done
 
 shot() { grim -o HEADLESS-1 "$1"; }
+# Stops the session and everything it started: its own pids, then every
+# process whose environment names this session's runtime directory (the
+# compositor, the provider, Quickshell's children), never the caller or its
+# ancestors. Run it from a trap on EXIT so a failed run leaves nothing.
+session_keep() {
+  local p=$BASHPID
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do echo "$p"; p=$(awk '/^PPid:/ {print $2}' "/proc/$p/status" 2>/dev/null); done
+  echo "$$"
+}
+session_procs() {
+  local p keep
+  keep=" $(session_keep | tr '\n' ' ') "
+  for p in /proc/[0-9]*; do
+    [[ "$keep" == *" ${p#/proc/} "* ]] && continue
+    { tr '\0' '\n' < "$p/environ"; } 2>/dev/null | grep -qxF "XDG_RUNTIME_DIR=$session_work/run" && echo "${p#/proc/}"
+  done
+  return 0
+}
 session_stop() {
   for pid in "${session_pids[@]}"; do kill "$pid" 2>/dev/null || true; done
+  local left
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    left=$(session_procs)
+    [ -z "$left" ] && break
+    kill $left 2>/dev/null || true
+    sleep 0.2
+  done
+  left=$(session_procs)
+  [ -n "$left" ] && kill -9 $left 2>/dev/null || true
   wait 2>/dev/null || true
 }
