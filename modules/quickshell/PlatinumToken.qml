@@ -10,8 +10,13 @@ Item {
     property string source: ""
     property int pixels: 24
     property string theme: "platinum-light"
+    // Device px. > 0: the token's opaque bounds are this many px on their
+    // longest side, centred on the pixels canvas (the Control Strip's
+    // optical size, platinum_icons.py render_extent). 0: they fill the
+    // canvas inside the renderer's margin.
+    property int extent: 0
     property string cachedSource: ""
-    readonly property string requestKey: source !== "" ? JSON.stringify([source, pixels, theme]) : ""
+    readonly property string requestKey: source !== "" ? JSON.stringify([source, pixels, theme, extent]) : ""
     readonly property string helper: Quickshell.env("MOUNTAINOUS_PLATINUM_ICON") || "mountainous-platinum-icon"
 
     onRequestKeyChanged: {
@@ -26,7 +31,8 @@ Item {
         onTriggered: {
             if (root.requestKey === "" || job.running) return;
             job.activeKey = root.requestKey;
-            job.command = [root.helper, root.source, String(root.pixels), root.theme];
+            job.command = [root.helper, root.source, String(root.pixels), root.theme]
+                .concat(root.extent > 0 ? ["--extent", String(root.extent)] : []);
             job.running = true;
         }
     }

@@ -21,10 +21,16 @@ Image {
     // Control Strip's box, where Platinum's 32 px art is drawn 1:1 at scale
     // 1.5 (strip-plan.js tileGeometry). 0: theme art fills the slot.
     property int artPixels: 0
-    readonly property bool boxedArt: root.artPixels > 0 && !root.siteIcon
+    // Device px. > 0 (the Control Strip): the site icon's token has opaque
+    // bounds this size (PlatinumToken.extent), and nothing else is shown
+    // scaled. Until it arrives, or with no site icon, the theme art
+    // (fallbackSource: the strip's build-time token) draws 1:1 at artPixels.
+    property int opticalExtent: 0
+    readonly property bool boxedArt: root.artPixels > 0 && (root.opticalExtent > 0 ? !root.tokenReady : !root.siteIcon)
     // Wayland QScreen may report integer scale 2 while the window uses 1.5.
     readonly property real pixelRatio: root.Window.window ? root.Window.window.devicePixelRatio : Screen.devicePixelRatio
-    readonly property int pixels: Math.ceil(Math.min(width, height) * root.pixelRatio)
+    // (Less a hair of float error: 20.8 logical at 1.25 is 26 px, not 27.)
+    readonly property int pixels: Math.ceil(Math.min(width, height) * root.pixelRatio - 1e-6)
     readonly property string installedIcon: {
         DesktopEntries.applications.values;
         const appId = CdpTarget.appIdOf(root.toplevel);
@@ -67,6 +73,7 @@ Image {
         id: token
         source: root.platinumToken && CdpTarget.isBrowser(CdpTarget.appIdOf(root.toplevel)) && root.favicon !== "" ? root.favicon : ""
         pixels: root.pixels
+        extent: root.opticalExtent
         theme: "platinum-" + Kit.Theme.mode
     }
     Image {

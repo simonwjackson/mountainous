@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# The Platinum Control Strip's icons in the real shell, at scale 1.5: theme
-# art, generated tokens, a build-time token and a letter, raised, pressed in
-# and on another page, in light, dark and black (extra dark). Captures the
-# strip and measures its pixels against the tile geometry in
-# themes/platinum/strip-plan.js (platinum-strip.py): the icon's padding, the
-# gap to the ▴, the 1:1 theme art and the stipple.
+# The Platinum Control Strip's icons in the real shell, at scale 1.5: site
+# tokens (Teams, Assistant, Jellyfin), Chromium with no page icon, apps with
+# only theme art, a build-time token and a letter, raised, pressed in and on
+# another page, in light, dark and black (extra dark). Captures the strip
+# and measures its pixels against the tile geometry in
+# themes/platinum/strip-plan.js (platinum-strip.py): one optical size and
+# one padding for every icon, the gap to the ▴, every token drawn 1:1 and
+# the stipple.
 #
 #   platinum-strip.sh <shell dir> <work dir> <out dir> [--no-measure]
 #
@@ -24,8 +26,9 @@ measure=1
 mkdir -p "$work/data/applications" "$out"
 
 python3 "$here/platinum-strip-fixtures.py" "$work/data"
-# What environment.extraSetup does on a host: tokens for the apps the theme
-# has no 32 px art for, as the Mountainous-platinum-apps theme.
+# What environment.extraSetup does on a host: the Mountainous-platinum-apps
+# theme, with 32 px tokens for the apps the theme has no art for and the
+# strip's tokens (mountainous.strip.<name>) for every app.
 tokens=$(dirname "$MOUNTAINOUS_PLATINUM_ICON")/mountainous-platinum-app-tokens
 if [ -x "$tokens" ]; then
   "$tokens" "$work/data" "$work/data/icons/Mountainous-platinum-apps" \
@@ -105,7 +108,7 @@ if [ "$measure" = 1 ]; then
     const lib = (f) => fs.readFileSync(f, "utf8").replace(/^\.pragma library\s*$/m, "").replace(/^\.import .*$/m, "");
     const P = { PageNames: {} };
     vm.runInNewContext(lib(process.argv[1]), P);
-    const rows = [1, 1, 1, 1, 1, 2, 2, 2].map((page, i) => ({ page: page, address: "w" + i }));
+    const rows = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2].map((page, i) => ({ page: page, address: "w" + i }));
     console.log(JSON.stringify({ tile: P.tileGeometry(1.5), slots: P.slots(rows).slots.filter((s) => s.kind === "tile").map((s) => s.x),
       HEIGHT: P.HEIGHT, BOTTOM: P.BOTTOM, TILE_H: P.TILE_H, CAP: P.CAP, RIGHT_EDGE: P.RIGHT_EDGE, MIN_POP_GAP: P.MIN_POP_GAP, desktopArt: process.argv[2] }));
   ' "$shell_dir/themes/platinum/strip-plan.js" "$DESKTOP_ART" > "$work/geometry.json"

@@ -154,18 +154,21 @@ st(1, 'tb-web', 'Chromium, web apps and PWAs: the icon theme draws them', d => {
   { app: 'Microsoft Teams', appId: 'chrome-ompifgpmddkgmclendfeacglnodjjndh-Default', title: 'Microsoft Teams', page: 1 },
   { app: 'Example', appId: 'chrome-example.org__-Default', title: 'Example Domain', page: 1 },
   { app: 'Ghostty', icon: 'term', title: 'simon@myoko: ~', page: 1 }]; });
-// The Platinum Control Strip's icons (theme-dev/platinum-strip.sh): theme
-// art (Ghostty, Chromium without a page icon, Signal), generated tokens (two
-// installed PWAs, whose desktop entries name their own PNG), a build-time
-// token for an app without 32 px theme art (Syncthing), a window with no app
-// id yet (the title's letter); raised, pressed in (focused) and on another
-// page (the disabled stipple).
-st(1, 'strip-icons', 'Control Strip: theme art, tokens, a build-time token, a letter', d => { d.windows = [
+// The Platinum Control Strip's icons (theme-dev/platinum-strip.sh), every
+// one a token at the strip's one optical size: Chromium without a page icon
+// (the browser's own icon), apps with only theme art (Ghostty, Signal),
+// run-time tokens (three installed PWAs, whose desktop entries name their
+// own PNG: Jellyfin, Teams, Assistant), an app without 32 px theme art
+// (Syncthing), a window with no app id yet (the title's letter); raised,
+// pressed in (focused) and on another page (the disabled stipple).
+st(1, 'strip-icons', 'Control Strip: one optical size for site, app, theme-art and browser tokens', d => { d.windows = [
   { app: 'Chromium', appId: 'chromium-browser', title: 'New Tab - Chromium', page: 1, focused: true },
   { app: 'Ghostty', icon: 'term', title: 'simon@myoko: ~', page: 1 },
   { app: 'Jellyfin', appId: 'chrome-lneafpomhdmfgkblnkjeglpppndalpik-Default', title: 'Jellyfin', page: 1 },
   { app: 'Syncthing', icon: 'sync', title: 'Syncthing', page: 1 },
   { app: '', appId: '', title: 'untitled', page: 1 },
+  { app: 'Microsoft Teams', appId: 'chrome-ompifgpmddkgmclendfeacglnodjjndh-Default', title: 'Chat | Microsoft Teams', page: 1, at: [1804, 40] },
+  { app: 'Assistant', appId: 'chrome-ahmfndipfijlijminhiobipfjpafbndb-Default', title: 'Assistant', page: 1, at: [1808, 40] },
   { app: 'Signal', icon: 'signal', title: 'Signal', page: 2 },
   { app: 'Microsoft Teams', appId: 'chrome-ompifgpmddkgmclendfeacglnodjjndh-Default', title: 'Microsoft Teams', page: 2 },
   { app: 'Syncthing', icon: 'sync', title: 'Syncthing', page: 2 }]; });

@@ -565,7 +565,7 @@ fonts, network access or browser state. Nix pins Pillow, numpy and librsvg.
   48→3 device pixels. (Simon asked for bigger tokens on 2026-11-04: the margin
   went from S/12 to S/16, the body depth from up to 6 px to `max(2, S/12)`,
   the shadow to 1 px and the plate border to 1 px. Since 2026-11-05 the
-  Control Strip draws every icon in one box; see "Strip tile geometry".)
+  Control Strip draws every icon at one optical size; see "Strip optical size".)
   `RENDER_VERSION` is part of each cache key; bump it with any drawing change. The band must contain no non-transparent pixel,
   including outline, extrusion and shadow. Transparent source padding is trimmed.
   The entire composite fits the inner `S−2M` box, using its full longest axis.
@@ -600,37 +600,77 @@ filtering off. Win98 does not opt in. No installed-app theme icons change here.
 
 For installed apps, the same pure renderer runs at build time
 (`scripts/platinum-app-tokens.py`, `mountainous-platinum-app-tokens`). The
-desktop module's `environment.extraSetup` reads the finished system path: for
-each desktop entry whose `Icon=` theme name has no 32 px art in
-Mountainous-platinum, it draws the app's own hicolor or pixmaps icon as
-`boxed(frames, 32)` (a 36 px token without its margin) into
-`share/icons/Mountainous-platinum-apps/32x32/apps/`. Mountainous-platinum
-inherits that theme first. On Myoko (2026-11-05 build) it makes Sunshine,
-Kvantum, nix-snowflake, Quickshell and Syncthing. It does not call the
-URL/cache CLI and does not fork the geometry. Not covered: a path `Icon=`,
-`-symbolic` names, apps from a user profile, and names whose only source is
-another theme (qt5ct's `preferences-desktop-theme`).
+desktop module's `environment.extraSetup` reads the finished system path and
+writes `share/icons/Mountainous-platinum-apps`, which Mountainous-platinum
+inherits first:
 
-### Strip tile geometry (2026-11-05)
+- `32x32/apps/<name>.png`: for each desktop entry whose `Icon=` theme name has
+  no 32 px art in Mountainous-platinum, the app's own hicolor or pixmaps icon
+  as `boxed(frames, 32)`. On Myoko (2026-11-05 build): Sunshine, Kvantum,
+  nix-snowflake, Quickshell and Syncthing.
+- `<C>x<C>/apps/mountainous.strip.<name>.png`: the Control Strip's tokens (see
+  "Strip optical size"), for every desktop entry's icon, every app name
+  Mountainous-platinum draws, and the strip's fallbacks `chromium` and
+  `application-x-executable`. The source is the app's own icon, else the
+  theme's own art at its largest size. Made for scales 1 (22 px) and 1.5
+  (30 px) only: Qt looks an icon up at the scale rounded up (20 logical px at
+  1.5 as 40) and takes the nearest directory, so a 40 px directory for scale 2
+  won 1.5's lookup and was scaled to 30 (seen in `checks.platinum-strip`).
+
+It does not call the URL/cache CLI and does not fork the geometry. Not
+covered: a path `Icon=`, `-symbolic` names, apps from a user profile.
+
+### Strip optical size (2026-11-05)
 
 `strip-plan.js tileGeometry(dpr)` is the one source; `PlatinumStripTile`
 draws it and `strip-plan.test.js` and `theme-dev/platinum-strip.sh` check
-it. At scale 1.5, in device px:
+it. Simon's feedback on the 32 px box: a token's opaque art filled ~30 of
+32 px, 7 px from the bevel, and read as cramped; a Chromium window with no
+page icon showed the theme's 32 px cube, whose opaque body is ~22 px, so it
+read as tiny. Theme art's opaque extents range from 18 to 32 px over the 84
+32 px app icons, so 1:1 art cannot have one size.
 
-| Part | Value |
+The rule: every strip icon is a Platinum token whose **opaque bounds**
+(outline, depth and shadow included) are one extent on their longest side,
+centred by those bounds in the box. `platinum_icons.render_extent(frames,
+extent, canvas)` renders at the token sizes around `canvas_for(extent)` and
+keeps the one whose opaque bounds hit the extent (render() is deterministic;
+the finished pixels are never resized). Sources:
+
+| Tile | Token |
 | --- | --- |
-| Tile | 60 × 48 (40 × 32 logical), was 45 × 45; strip 38 + 6 logical, was 36 + 6 |
-| Bevel | 2 (one hair) |
-| Icon box | 32 × 32 at (8, 8): a 36 px token's inner box, and Platinum theme art 1:1 |
-| Padding | 6 from the inside of the bevel to the box, top, left and bottom |
-| ▴ | 11 × 8 at (45, 36), 2 inside the bevel; its own column right of the box |
-| ▴ gap | 5 from the box at rest, 4 pressed in; at least 2 (`MIN_POP_GAP`) |
+| Chromium window or PWA with a site icon | run-time, `mountainous-platinum-icon SOURCE 30 THEME --extent 26` (cache name `<digest>-30e26-<theme>.png`, `RENDER_VERSION` 3) |
+| Same, before its token arrives or if the helper fails | the build-time token for its name (a web app's fallback: `chromium`) |
+| Chromium window with no page icon | build-time `mountainous.strip.chromium`, from Chromium's own hicolor icon |
+| Any app | build-time `mountainous.strip.<name>`, else `mountainous.strip.application-x-executable` |
+| No app id yet | the title's letter (text, unchanged) |
 
-Pressed in, the icon moves 1 px down and right. Theme art draws through
-`WindowIcon.artPixels`: the icon-theme URL is asked for 32 px and drawn at
-32 px, so Qt returns the 32 px art unscaled. At other scales the box is the
-token's inner box and theme art is scaled to it. A Chromium window whose
-token has not arrived yet still shows its favicon across the 36 px slot.
+At scale 1.5, in device px (measured in `checks.platinum-strip`, light, dark
+and black, 27 tiles with icons):
+
+| Part | Before (bddea926) | Now |
+| --- | --- | --- |
+| Tile | 60 × 48 | 60 × 48 |
+| Icon box | 32 × 32 at (8, 8) | 26 × 26 at (11, 11): the optical size |
+| Opaque size | token 32, theme cube 28 × 26 | 26 × 26 for every tile |
+| Padding, inside of the bevel to the opaque bounds | token 6, cube 6–9 | 9 left, top and bottom for every tile (`ICON_PAD` 6 logical) |
+| Token canvas | 36 at (6, 6) | 30 at (9, 9): the box and a 2 px margin |
+| ▴ | 11 × 8 at (45, 36) | unchanged |
+| Box to ▴ | 5 at rest, 4 pressed in | 8 at rest, 7 pressed in; nearest icon px to the ▴ 8–13 |
+
+Why 26: in a side-by-side of 24, 26 and 28 (Chromium, a theme-art app, Teams
+and Assistant), 28 leaves 8 px to the bevel, near the 7 px Simon called
+cramped; 24 leaves 10 px and the ▴ starts to compete with the icon; 26 is
+the largest size that keeps 9 px. In the black scheme a raised tile's face is
+black, so a token's black outline and shadow do not show: the visible size is
+23 px, the same for every token.
+
+Pressed in, the icon moves 1 px down and right. Every token draws through
+`WindowIcon.artPixels` (the build-time token, 30 px, which Qt returns
+unscaled) or as the run-time token's PNG, both at 30 px with filtering off.
+Inactive tiles keep the one-device-pixel checker. At scale 1 the box is 18 px
+(22 px canvas). At other scales the geometry holds but the build-time tokens
+are the nearest made size, scaled by Qt.
 
 **Verified:** `checks.platinum-icons` runs nine tests, including 54 synthetic
 shape/size/mode combinations, byte determinism, margins, palette membership,

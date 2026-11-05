@@ -22,7 +22,9 @@ from platinum_icons import (
     boxed,
     canvas_for,
     margin,
+    opaque_extent,
     render,
+    render_extent,
     select_frame,
 )
 
@@ -145,6 +147,74 @@ class RendererTests(unittest.TestCase):
             render([corpus()["square"]], 24, "win98")
 
 
+class OpticalSizeTests(unittest.TestCase):
+    """The Control Strip's one optical size (strip-plan.js tileGeometry):
+    every token's opaque bounds the same extent, centred, never resized."""
+
+    def test_every_shape_has_the_extent_centred(self):
+        palette = set(map(tuple, PALETTE.tolist()))
+        for name, image in corpus().items():
+            for extent in [18, 22, 26, 36]:
+                for theme in ["platinum-light", "platinum-dark"]:
+                    with self.subTest(name=name, extent=extent, theme=theme):
+                        size = canvas_for(extent)
+                        token = render_extent([image], extent, theme=theme)
+                        self.assertEqual(token.size, (size, size))
+                        self.assertEqual(
+                            token.tobytes(),
+                            render_extent([image], extent, theme=theme).tobytes(),
+                        )
+                        width, height = opaque_extent(token)
+                        self.assertEqual(max(width, height), extent)
+                        left, top, _, _ = token.getbbox()
+                        self.assertEqual(
+                            (left, top), ((size - width) // 2, (size - height) // 2)
+                        )
+                        m = margin(size)
+                        alpha = np.array(token)[:, :, 3]
+                        self.assertFalse(alpha[:m].any() or alpha[-m:].any())
+                        self.assertFalse(alpha[:, :m].any() or alpha[:, -m:].any())
+                        self.assertTrue(set(np.unique(alpha)).issubset({0, 96, 255}))
+                        rgb = np.array(token)[:, :, :3].reshape(-1, 3).tolist()
+                        self.assertTrue(set(map(tuple, rgb)).issubset(palette))
+
+    def test_the_pixels_are_a_rendered_token_unscaled(self):
+        # The same pixels as render() at some token size, moved, not resized.
+        for name, image in corpus().items():
+            with self.subTest(name=name):
+                token = render_extent([image], 26)
+                art = token.crop(token.getbbox()).tobytes()
+                self.assertTrue(
+                    any(
+                        (r := render([image], size)) is not None
+                        and r.crop(r.getbbox()).tobytes() == art
+                        for size in range(26, 40)
+                    )
+                )
+
+    def test_a_larger_canvas_and_bad_input(self):
+        token = render_extent([corpus()["disc"]], 26, 36)
+        self.assertEqual(token.size, (36, 36))
+        self.assertEqual(token.getbbox(), (5, 5, 31, 31))
+        self.assertEqual(
+            token.crop((5, 5, 31, 31)).tobytes(),
+            render_extent([corpus()["disc"]], 26).crop((2, 2, 28, 28)).tobytes(),
+        )
+        with self.assertRaises(ValueError):
+            render_extent([corpus()["disc"]], 26, 29)
+        self.assertIsNone(render_extent([], 26))
+        self.assertIsNone(render_extent([Image.new("RGBA", (32, 32))], 26))
+
+    def test_padded_theme_art_reaches_the_extent(self):
+        # Platinum's 32 px art has empty space of its own (the cube: 23 px
+        # of body); its token still has the one optical size.
+        art = Image.new("RGBA", (32, 32))
+        draw = ImageDraw.Draw(art)
+        draw.rectangle((3, 12, 18, 27), fill=(200, 200, 200, 255), outline=(0, 0, 0, 255))
+        draw.polygon([(19, 28), (26, 21), (30, 21), (30, 24), (24, 30), (19, 30)], fill=(0, 0, 0, 80))
+        self.assertEqual(max(opaque_extent(render_extent([art], 26))), 26)
+
+
 class CacheTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -197,6 +267,43 @@ class CacheTests(unittest.TestCase):
         )
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "")
+
+    def test_extent_is_part_of_the_key(self):
+        plain = cache_helper.cached_icon(str(self.source), 30, "platinum-light", self.cache)
+        optical = cache_helper.cached_icon(
+            str(self.source), 30, "platinum-light", self.cache, extent=26
+        )
+        digest = hashlib.sha256(
+            RENDER_VERSION.encode() + b"\0" + self.source.read_bytes()
+        ).hexdigest()
+        self.assertEqual(plain.name, digest + "-30-platinum-light.png")
+        self.assertEqual(optical.name, digest + "-30e26-platinum-light.png")
+        self.assertTrue(cache_helper.CACHE_NAME.fullmatch(optical.name))
+        with Image.open(optical) as icon:
+            self.assertEqual(icon.size, (30, 30))
+            self.assertEqual(opaque_extent(icon), (26, 26))
+            self.assertEqual(icon.getbbox(), (2, 2, 28, 28))
+        with Image.open(plain) as icon:
+            self.assertEqual(opaque_extent(icon), (26, 26))
+        with self.assertRaises(ValueError):
+            cache_helper.cached_icon(str(self.source), 30, "platinum-light", self.cache, extent=27)
+        command = (
+            [os.environ["PLATINUM_ICON"]]
+            if "PLATINUM_ICON" in os.environ
+            else [sys.executable, str(Path(__file__).with_name("platinum-icon.py"))]
+        )
+        env = dict(os.environ, XDG_CACHE_HOME=str(self.directory / "xdg"))
+        result = subprocess.run(
+            command + [str(self.source), "30", "platinum-dark", "--extent", "24"],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=env,
+        )
+        path = Path(result.stdout.strip())
+        self.assertTrue(path.name.endswith("-30e24-platinum-dark.png"), path)
+        with Image.open(path) as icon:
+            self.assertEqual(max(opaque_extent(icon)), 24)
 
     def test_ico_png_svg_and_animation(self):
         # Each ICO frame has a different colour so selection is observable.
@@ -402,6 +509,69 @@ class StripArtTests(unittest.TestCase):
                     (out / "32x32/apps" / name).read_bytes(),
                     (again / "32x32/apps" / name).read_bytes(),
                 )
+
+
+    def test_strip_tokens_for_every_app_the_strip_can_show(self):
+        self.assertEqual([app_tokens.strip_extent(s) for s in (1, 1.25, 1.5, 1.75, 2)], [18, 22, 26, 30, 36])
+        with tempfile.TemporaryDirectory() as temp:
+            share = Path(temp) / "share"
+            apps = share / "applications"
+            apps.mkdir(parents=True)
+
+            def entry(name, icon):
+                (apps / f"{name}.desktop").write_text(
+                    f"[Desktop Entry]\nType=Application\nName={name}\nExec=true\nIcon={icon}\n"
+                )
+
+            covering = Path(temp) / "Mountainous-platinum"
+            (covering / "32x32/apps").mkdir(parents=True)
+            (covering / "32x32/mimes").mkdir(parents=True)
+            # Theme art for chromium (padded, as the cube) and a theme-only
+            # app; the generic fallback is a mime icon linked from apps.
+            cube = Image.new("RGBA", (32, 32))
+            ImageDraw.Draw(cube).rectangle((3, 12, 18, 27), fill="grey", outline="black")
+            cube.save(covering / "32x32/apps/chromium.png")
+            cube.save(covering / "32x32/apps/themed.png")
+            corpus()["square"].resize((32, 32)).save(covering / "32x32/mimes/application-x-executable.png")
+            (covering / "32x32/apps/application-x-executable.png").symlink_to("../mimes/application-x-executable.png")
+            # Chromium's own icon in hicolor: it, not the theme's cube.
+            hicolor = share / "icons/hicolor/256x256/apps"
+            hicolor.mkdir(parents=True)
+            corpus()["disc"].resize((256, 256)).save(hicolor / "chromium.png")
+            entry("chromium-browser", "chromium")
+            corpus()["ring"].save(hicolor / "own.png")
+            entry("own", "own")
+            entry("glyph", "mark-location-symbolic")
+            out = Path(temp) / "out"
+            app_tokens.generate(share, out, [covering], scales=(1, 1.5))
+            index = (out / "index.theme").read_text()
+            self.assertIn("Directories=32x32/apps,22x22/apps,30x30/apps\n", index)
+            self.assertIn("[30x30/apps]\nSize=30\nContext=Applications\nType=Fixed\n", index)
+            for directory, extent in (("22x22/apps", 18), ("30x30/apps", 26)):
+                names = sorted(p.name for p in (out / directory).iterdir())
+                self.assertEqual(
+                    names,
+                    [
+                        "mountainous.strip.application-x-executable.png",
+                        "mountainous.strip.chromium.png",
+                        "mountainous.strip.own.png",
+                        "mountainous.strip.themed.png",
+                    ],
+                )
+                size = canvas_for(extent)
+                for name in names:
+                    with Image.open(out / directory / name) as image:
+                        self.assertEqual(image.size, (size, size))
+                        self.assertEqual(max(opaque_extent(image)), extent, name)
+            with Image.open(out / "30x30/apps/mountainous.strip.chromium.png") as image:
+                frames = [Image.open(hicolor / "chromium.png").convert("RGBA")]
+                self.assertEqual(image.tobytes(), render_extent(frames, 26).tobytes())
+            with Image.open(out / "30x30/apps/mountainous.strip.themed.png") as image:
+                self.assertEqual(image.tobytes(), render_extent([cube], 26).tobytes())
+            again = Path(temp) / "again"
+            app_tokens.generate(share, again, [covering], scales=(1, 1.5))
+            for file in sorted((out / "30x30/apps").iterdir()):
+                self.assertEqual(file.read_bytes(), (again / "30x30/apps" / file.name).read_bytes())
 
 
 if __name__ == "__main__":

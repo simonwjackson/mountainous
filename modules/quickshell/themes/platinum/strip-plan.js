@@ -21,37 +21,51 @@ var CAP = 12, ARROW = 15, TAB = 18;
 var HEIGHT = 38, BOTTOM = 6, BAND = HEIGHT + BOTTOM;
 var RIGHT_EDGE = 6;          // the strip stops this far short of the right edge
 var MIN_AREA = TILE_W + 2 * PAD;
-// The icon's slot: a generated token's whole canvas (24 logical, 36 device
-// px at 1.5), and the ▴ (7 x 5 logical).
-var ICON = 24, POP_W = 7, POP_H = 5;
+// The icon's optical padding: logical px from the inside of the bevel to
+// the icon's opaque bounds (outline, depth and shadow included), top, left
+// and bottom. The icon's optical size is what is left (tileGeometry). And
+// the ▴ (7 x 5 logical).
+var ICON_PAD = 6, POP_W = 7, POP_H = 5;
 // The least gap, in device px, between the icon's box and the ▴, pressed in
 // (the icon one device px down and right) included.
 var MIN_POP_GAP = 2;
 
+// The Platinum token renderer's margin (scripts/platinum_icons.py margin)
+// and the smallest token canvas whose inner box is box px (canvas_for).
+function tokenMargin(size) { return Math.max(2, Math.floor(size / 16)); }
+function canvasFor(box) {
+    for (var s = box; s < 2 * box + 8; s++) if (s - 2 * tokenMargin(s) === box) return s;
+    return box + 4;
+}
+
 // One tile's parts in whole device px from its top-left corner, at device
-// pixel ratio dpr. The Platinum token renderer (scripts/platinum_icons.py)
-// keeps margin max(2, S/16) clear on a token of S px; the box inside it is
-// where every icon draws: a token's art, and theme art at that size (32 px
-// at 1.5, Platinum's own pixel-art size, so it is never scaled).
+// pixel ratio dpr. Every icon has one optical size: its opaque bounds fill
+// the box, extent px on their longest side, centred in it by those bounds.
+// The strip's icons are Platinum tokens rendered to that extent
+// (platinum_icons.py render_extent): at run time for a Chromium window's
+// site icon, at build time for every app (platinum-app-tokens.py, the
+// mountainous.strip.<name> icons). Each is a canvas px image with the
+// renderer's margin clear around the box, drawn 1:1 at canvas.
 //
-//   bevel  the raised or sunken edge, one hair (2 px at 1.5)
-//   pad    from the inside of the bevel to the box: top, left and bottom
-//   pop    the ▴, one hair inside the bevel at the bottom right
-//   gap    from the box's right edge to the ▴, at rest; pressed in, one less
+//   bevel   the raised or sunken edge, one hair (2 px at 1.5)
+//   pad     from the inside of the bevel to the box: top, left and bottom
+//   extent  the box's size: every icon's opaque size (26 px at 1.5)
+//   pop     the ▴, one hair inside the bevel at the bottom right
+//   gap     from the box's right edge to the ▴, at rest; pressed in, one less
 function tileGeometry(dpr) {
     var d = dpr > 0 ? dpr : 1;
     var w = Math.round(TILE_W * d), h = Math.round(TILE_H * d);
     var bevel = Math.max(1, Math.round(d));
-    var canvas = Math.ceil(ICON * d);
-    var margin = Math.max(2, Math.floor(canvas / 16));
-    var size = canvas - 2 * margin;
-    var pad = Math.floor((h - 2 * bevel - size) / 2);
+    var pad = Math.round(ICON_PAD * d);
+    var size = h - 2 * bevel - 2 * pad;
+    var canvas = canvasFor(size);
+    var margin = (canvas - size) / 2;
     var box = { x: bevel + pad, y: bevel + pad, size: size };
     var pop = { w: Math.round(POP_W * d), h: Math.round(POP_H * d) };
     pop.x = w - 2 * bevel - pop.w;
     pop.y = h - 2 * bevel - pop.h;
     return {
-        dpr: d, w: w, h: h, bevel: bevel, pad: pad, margin: margin, sunk: 1,
+        dpr: d, w: w, h: h, bevel: bevel, pad: pad, margin: margin, sunk: 1, extent: size,
         inner: { x: bevel, y: bevel, w: w - 2 * bevel, h: h - 2 * bevel },
         canvas: { x: box.x - margin, y: box.y - margin, size: canvas },
         box: box, pop: pop,

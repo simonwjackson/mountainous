@@ -24,6 +24,18 @@ Item {
     // inner box, so a token and theme art are the same size. 0: theme art
     // fills the slot.
     property int artPixels: 0
+    // Device px. > 0 (the Control Strip): every icon is a Platinum token
+    // whose opaque bounds are this size, centred on the size slot: a site
+    // icon's run-time token (WindowIcon.opticalExtent), else the build-time
+    // mountainous.strip.<name> token (scripts/platinum-app-tokens.py), else
+    // the one for the name's fallback (a web app: Chromium's), drawn 1:1 at
+    // artPixels. Only an app with neither falls back to its theme art.
+    property int opticalExtent: 0
+    readonly property string stripArt: {
+        if (root.opticalExtent <= 0 || root.name === "") return "";
+        const own = Quickshell.iconPath("mountainous.strip." + root.name, true);
+        return own !== "" ? own : Quickshell.iconPath("mountainous.strip." + AppIcon.fallback(root.name), true);
+    }
 
     implicitWidth: size
     implicitHeight: size
@@ -40,9 +52,10 @@ Item {
         anchors.fill: parent
         implicitSize: root.size
         artPixels: root.artPixels
+        opticalExtent: root.opticalExtent
         visible: false
         layer.enabled: true
-        fallbackSource: root.name === "" ? "" : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))
+        fallbackSource: root.name === "" ? "" : root.stripArt !== "" ? root.stripArt : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))
     }
 
     MultiEffect {

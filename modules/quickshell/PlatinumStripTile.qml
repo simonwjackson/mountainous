@@ -61,18 +61,20 @@ Item {
         Rectangle { x: parent.width - tile.hair; y: 0; width: tile.hair; height: parent.height; color: parent.darkEdge }
     }
 
-    // Every icon draws in one box, the same distance from the inside of the
-    // bevel on three sides, with the ▴ in its own column to the right: a
-    // generated token's inner box, and theme art at that size, 1:1 (32 px
-    // at scale 1.5). Pressed in, the icon moves one physical pixel down and
-    // right, as a Platinum button's face.
+    // Every icon has one optical size: a Platinum token whose opaque bounds
+    // fill the box (26 px at scale 1.5), the same distance from the inside
+    // of the bevel on three sides, with the ▴ in its own column to the
+    // right. The token's canvas (box and margin) draws 1:1. Pressed in, the
+    // icon moves one physical pixel down and right, as a Platinum button's
+    // face.
     PlatinumAppIcon {
         id: image
         visible: !tile.source && tile.icon !== ""
         x: (tile.g.canvas.x + tile.press) / tile.ratio
         y: (tile.g.canvas.y + tile.press) / tile.ratio
-        size: StripPlan.ICON
-        artPixels: tile.g.box.size
+        size: tile.g.canvas.size / tile.ratio
+        artPixels: tile.g.canvas.size
+        opticalExtent: tile.g.extent
         name: tile.icon
         toplevel: tile.toplevel
         inactive: !tile.shown

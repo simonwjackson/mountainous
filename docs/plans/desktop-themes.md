@@ -462,7 +462,7 @@ coalesce, and an open during a theme change can be dropped.
 | About shows Host, NixOS (version, generation), Revision (`configurationRevision`, "Not recorded" when unset), Uptime, and the DMI product name under the title | The brief's fields; the product name is what the mock showed. |
 | Strip surface is taller (44 + 52 px) than its 44 px exclusive zone; input only on the strip | The drag label and ghost draw above the tiles. Collapsing never changes the zone. |
 | Move to page from a tile is silent (`follow = false`); a drag across pages keeps today's `dropOnto` | The menu row says where the window goes; the user stays where they are. |
-| Tile menu: right-click or the ▴ corner (the column right of the icon, bottom 15 px) | As the mock. Tiles are 40 × 32 since 2026-11-05 (see chromium-windows.md, "Strip tile geometry"). |
+| Tile menu: right-click or the ▴ corner (the column right of the icon, bottom 15 px) | As the mock. Tiles are 40 × 32 since 2026-11-05; every icon has one 26 px optical size (see chromium-windows.md, "Strip optical size"). |
 | Stipple: icon through `MultiEffect` (saturation −1, contrast −0.25) under a one-physical-pixel checker of the surface colour masked to the icon | Qt's SVG renderer has no `<pattern>`, so the checker is one path of unit squares at the icon's physical size. |
 
 ### Narrow and short bar follow-ups

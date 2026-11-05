@@ -147,9 +147,10 @@
             bash ${quickshell}/theme-dev/win98/app-icons.sh ${quickshell} $TMPDIR/app-icons $out
           '';
       # The Platinum Control Strip's icons in the real shell at scale 1.5,
-      # light, dark and black (theme-dev/platinum-strip.sh): every icon in
-      # one 32 px box with 6 px from the bevel, at least 2 px clear of the
-      # ▴ (pressed in too), theme art and tokens drawn 1:1, the stipple on
+      # light, dark and black (theme-dev/platinum-strip.sh): every icon a
+      # token of one optical size (26 px opaque, 9 px from the bevel) for
+      # site icons, app icons, theme-art apps and Chromium with no page
+      # icon, clear of the ▴ (pressed in too), drawn 1:1, the stipple on
       # other pages; a drag's ghost and label; many windows at 600 px. The
       # strip plan's geometry test runs first. Captures are the output.
       checks.platinum-strip =

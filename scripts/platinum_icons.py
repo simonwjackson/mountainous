@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 THEMES = ("platinum-light", "platinum-dark")
 # Part of every cache key: bump it whenever the drawing changes, so cached
 # tokens from an older renderer are never shown again.
-RENDER_VERSION = "2"
+RENDER_VERSION = "3"
 
 
 def margin(size: int) -> int:
@@ -47,6 +47,59 @@ def boxed(
         return None
     m = margin(size)
     return token.crop((m, m, size - m, size - m))
+
+
+def opaque_extent(image: Image.Image) -> tuple[int, int]:
+    """Width and height of the bounds of every non-transparent pixel: the
+    outline, the body's depth and the cast shadow included."""
+    bounds = image.getchannel("A").getbbox()
+    if bounds is None:
+        return (0, 0)
+    return (bounds[2] - bounds[0], bounds[3] - bounds[1])
+
+
+def render_extent(
+    frames: Sequence[Image.Image],
+    extent: int,
+    canvas: int | None = None,
+    theme: str = "platinum-light",
+) -> Image.Image | None:
+    """A token whose opaque bounds are extent px on their longest side,
+    centred by those bounds (floor; an odd spare px goes right/bottom) on a
+    canvas x canvas image (default canvas_for(extent), so the margin rule
+    holds).
+
+    The optical size of the Control Strip (strip-plan.js tileGeometry):
+    every strip icon shows the same opaque size, whatever the source's
+    shape or the depth the renderer gives it. render() is deterministic, so
+    this renders at the token sizes around canvas_for(extent) and keeps the
+    largest whose opaque bounds are at most extent; the finished pixel art is
+    never resized. A source whose thresholded edge loses a px at one size
+    and not at the next can end 1 px short.
+    """
+    canvas = canvas_for(extent) if canvas is None else canvas
+    if canvas - 2 * margin(canvas) < extent:
+        raise ValueError("the canvas has no room for the extent and its margin")
+    best = None
+    first = canvas_for(extent)
+    for size in range(first, min(256, first + extent) + 1):
+        token = render(frames, size, theme)
+        if token is None:
+            continue
+        longest = max(opaque_extent(token))
+        if longest > extent:
+            break
+        best = token
+        if longest == extent:
+            break
+    if best is None:
+        return None
+    composite = best.crop(best.getchannel("A").getbbox())
+    result = Image.new("RGBA", (canvas, canvas))
+    result.paste(
+        composite, ((canvas - composite.width) // 2, (canvas - composite.height) // 2)
+    )
+    return result
 
 
 def mac_system_palette() -> np.ndarray:

@@ -134,32 +134,38 @@ assert.equal(P.BAND, 44);
 assert.equal(P.HEIGHT - P.TILE_H, 6, "3 px above and below a tile");
 
 // ---- one tile's parts, in device px (PlatinumStripTile draws these)
-// Every edge on a whole device pixel; the icon's box the same distance
-// from the inside of the bevel on the top, left and bottom; at least
-// MIN_POP_GAP px between the box and the ▴, pressed in too; the ▴ inside
-// the bevel; the box is a token's inner box (platinum_icons.py margin).
+// Every edge on a whole device pixel; the icon's box (its optical size:
+// every icon's opaque bounds) the same distance from the inside of the
+// bevel on the top, left and bottom; at least MIN_POP_GAP px between the
+// box and the ▴, pressed in too; the ▴ inside the bevel; the token canvas
+// is the box and the renderer's margin (platinum_icons.py canvas_for).
 const margin = (S) => Math.max(2, Math.floor(S / 16));
-for (const dpr of [1, 1.25, 1.5, 2, 3]) {
+for (const dpr of [1, 1.25, 1.5, 1.75, 2, 3]) {
     const g = P.tileGeometry(dpr), at = "at " + dpr;
-    for (const v of [g.w, g.h, g.bevel, g.pad, g.box.x, g.box.y, g.box.size, g.pop.x, g.pop.y, g.pop.w, g.pop.h, g.canvas.x, g.canvas.y])
+    for (const v of [g.w, g.h, g.bevel, g.pad, g.extent, g.margin, g.box.x, g.box.y, g.box.size, g.pop.x, g.pop.y, g.pop.w, g.pop.h, g.canvas.x, g.canvas.y, g.canvas.size])
         assert.ok(Number.isInteger(v), "whole device px " + at);
     assert.equal(g.w, P.TILE_W * dpr, at);
     assert.equal(g.h, P.TILE_H * dpr, at);
-    assert.equal(g.canvas.size, Math.ceil(P.ICON * dpr), "the token canvas WindowIcon asks for " + at);
-    assert.equal(g.box.size, g.canvas.size - 2 * margin(g.canvas.size), "a token's inner box " + at);
+    assert.equal(g.box.size, g.extent, at);
+    assert.equal(g.box.size, g.canvas.size - 2 * margin(g.canvas.size), "the box is the token canvas's inner box " + at);
+    for (let c = g.box.size; c < g.canvas.size; c++)
+        assert.notEqual(c - 2 * margin(c), g.box.size, "the smallest such canvas " + at);
+    assert.equal(g.canvas.x, g.box.x - g.margin, at);
+    assert.equal(g.pad, Math.round(P.ICON_PAD * dpr), "optical padding " + at);
     assert.equal(g.box.x - g.inner.x, g.pad, "left padding " + at);
     assert.equal(g.box.y - g.inner.y, g.pad, "top padding " + at);
-    const bottom = g.inner.y + g.inner.h - (g.box.y + g.box.size);
-    assert.ok(bottom === g.pad || bottom === g.pad + 1, "bottom padding " + at + ": " + bottom);
-    assert.ok(g.pad >= 4 * dpr - 1, "breathing room " + at + ": " + g.pad);
-    assert.ok(g.gap - g.sunk >= P.MIN_POP_GAP, "▴ gap, pressed in, " + at + ": " + (g.gap - g.sunk));
+    assert.equal(g.inner.y + g.inner.h - (g.box.y + g.box.size), g.pad, "bottom padding " + at);
+    assert.ok(g.gap - g.sunk >= P.MIN_POP_GAP + 2, "▴ gap, pressed in, " + at + ": " + (g.gap - g.sunk));
     assert.ok(g.pop.x + g.pop.w <= g.inner.x + g.inner.w - g.bevel && g.pop.y + g.pop.h <= g.inner.y + g.inner.h - g.bevel,
         "the ▴ one hair inside the bevel " + at);
     assert.ok(g.box.y + g.box.size + g.sunk <= g.inner.y + g.inner.h, "pressed in, the box stays inside " + at);
 }
-// The numbers at Myoko's scale 1.5, as reported.
+// The numbers at Myoko's scale 1.5, as reported: a 26 px optical size,
+// 9 px from the inside of the bevel, 8 px from the ▴ (7 pressed in).
 const g15 = P.tileGeometry(1.5);
 assert.deepEqual(plain([g15.w, g15.h, g15.bevel, g15.pad, g15.box, g15.gap, g15.pop]),
-    [60, 48, 2, 6, { x: 8, y: 8, size: 32 }, 5, { w: 11, h: 8, x: 45, y: 36 }]);
-assert.deepEqual(plain(g15.canvas), { x: 6, y: 6, size: 36 }, "the token canvas at (4, 4) logical");
+    [60, 48, 2, 9, { x: 11, y: 11, size: 26 }, 8, { w: 11, h: 8, x: 45, y: 36 }]);
+assert.deepEqual(plain(g15.canvas), { x: 9, y: 9, size: 30 }, "the token canvas at (6, 6) logical");
+// platinum-app-tokens.py strip_extent makes the build-time tokens at these.
+assert.deepEqual([1, 1.5].map((d) => P.tileGeometry(d).extent), [18, 26]);
 console.log("strip-plan: order, slots, fit and scroll boundaries, tab drag, drop, pages and state pass");

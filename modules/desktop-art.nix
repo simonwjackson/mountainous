@@ -40,11 +40,12 @@
         (import ../lib/desktop-art.nix { inherit pkgs inputs; })
         (import ../lib/platinum-icons.nix { inherit pkgs; })
       ];
-      # Platinum art for every app the theme has no 32 px art for: a token
-      # from the app's own icon, drawn at build time into the
-      # Mountainous-platinum-apps theme, which Mountainous-platinum inherits
-      # first (scripts/platinum-app-tokens.py). The Control Strip then draws
-      # every icon 1:1 in its 32 px box; nothing is resampled at run time.
+      # Platinum tokens drawn at build time into the Mountainous-platinum-apps
+      # theme, which Mountainous-platinum inherits first
+      # (scripts/platinum-app-tokens.py): 32 px art for every app the theme
+      # has none for, and the Control Strip's mountainous.strip.<name> tokens
+      # for every app, at the strip's one optical size (26 px opaque at 1.5).
+      # The strip draws them 1:1; nothing is resampled at run time.
       # It reads the finished system path, so it sees every app without a
       # dependency cycle; apps from a user profile are not covered.
       environment.extraSetup = ''

@@ -19,13 +19,13 @@ import warnings
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
-from platinum_icons import RENDER_VERSION, THEMES, render
+from platinum_icons import RENDER_VERSION, THEMES, margin, render, render_extent
 
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
 MAX_SOURCE_PIXELS = 4 * 1024 * 1024
 MAX_CACHE_FILES = 512
 MAX_CACHE_BYTES = 32 * 1024 * 1024
-CACHE_NAME = re.compile(r"[0-9a-f]{64}-[0-9]+-platinum-(light|dark)\.png$")
+CACHE_NAME = re.compile(r"[0-9a-f]{64}-[0-9]+(e[0-9]+)?-platinum-(light|dark)\.png$")
 Image.MAX_IMAGE_PIXELS = MAX_SOURCE_PIXELS
 
 
@@ -128,10 +128,20 @@ def prune(cache: Path, keep: Path) -> None:
 
 
 def cached_icon(
-    source: str, size: int, theme: str, cache: Path | None = None
+    source: str,
+    size: int,
+    theme: str,
+    cache: Path | None = None,
+    extent: int | None = None,
 ) -> Path | None:
+    """The token for source on a size px canvas. With extent, its opaque
+    bounds are extent px on their longest side, centred (render_extent: the
+    Control Strip's optical size); without, they fill the canvas inside the
+    margin (render)."""
     if theme not in THEMES or not 8 <= size <= 256:
         raise ValueError("invalid icon size/theme")
+    if extent is not None and not 1 <= extent <= size - 2 * margin(size):
+        raise ValueError("the extent does not fit the canvas inside its margin")
     data = source_bytes(source)
     # The renderer version is part of the digest, so a new drawing gets new
     # names and the old files age out through the normal size limit.
@@ -141,7 +151,10 @@ def cached_icon(
         cache_home = Path.home() / ".cache"
     cache = cache or cache_home / "mountainous/icons"
     cache.mkdir(parents=True, exist_ok=True, mode=0o700)
-    output = cache / f"{digest}-{size}-{theme}.png"
+    # The sizing is part of the name: a canvas alone, or a canvas and the
+    # opaque extent drawn on it.
+    sizing = f"{size}" if extent is None else f"{size}e{extent}"
+    output = cache / f"{digest}-{sizing}-{theme}.png"
     # Lock pruning, cache hits and atomic publication together. Rendering is
     # bounded and small; concurrent surfaces cannot prune each other's writes.
     with (cache / ".lock").open("a") as lock:
@@ -150,7 +163,12 @@ def cached_icon(
             output.touch()
             prune(cache, output)
             return output
-        icon = render(decode(data, size), size, theme)
+        frames = decode(data, size)
+        icon = (
+            render(frames, size, theme)
+            if extent is None
+            else render_extent(frames, extent, size, theme)
+        )
         if icon is None:
             return None
         temporary = None
@@ -175,6 +193,11 @@ def main() -> int:
     parser.add_argument("source")
     parser.add_argument("size", type=int)
     parser.add_argument("theme", choices=THEMES)
+    parser.add_argument(
+        "--extent",
+        type=int,
+        help="draw the token's opaque bounds this many px on their longest side, centred",
+    )
     args = parser.parse_args()
 
     def deadline(_signal, _frame):
@@ -183,7 +206,7 @@ def main() -> int:
     signal.signal(signal.SIGALRM, deadline)
     signal.alarm(12)
     try:
-        path = cached_icon(args.source, args.size, args.theme)
+        path = cached_icon(args.source, args.size, args.theme, extent=args.extent)
         if path is not None:
             print(path)
     except (

@@ -428,8 +428,9 @@ PanelWindow {
         PlatinumAppIcon {
             x: ghost.g.canvas.x / ghost.g.dpr
             y: ghost.g.canvas.y / ghost.g.dpr
-            size: StripPlan.ICON
-            artPixels: ghost.g.box.size
+            size: ghost.g.canvas.size / ghost.g.dpr
+            artPixels: ghost.g.canvas.size
+            opticalExtent: ghost.g.extent
             toplevel: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.rows[strip.dragFrom].toplevel : null
             name: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.owner.appIcon(strip.rows[strip.dragFrom].appId) : ""
         }

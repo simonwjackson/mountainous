@@ -1,23 +1,37 @@
 #!/usr/bin/env python3
-"""Build-time Platinum tokens for the apps the Platinum icon theme has no art for.
+"""Build-time Platinum tokens for installed apps.
 
 usage: platinum-app-tokens.py SHARE OUT [--covered THEME_DIR]...
 
 SHARE is a profile's share directory (a NixOS system path's, in
-environment.extraSetup). For every desktop entry in SHARE/applications whose
-Icon= is a theme name that no --covered theme has as 32 px art, this draws the
-app's own icon (hicolor or pixmaps in SHARE) as a direction A token with the
-pure renderer in platinum_icons.py, at the Control Strip's 32 px content box,
-and writes OUT/32x32/apps/<name>.png and OUT/index.theme: the
-Mountainous-platinum-apps icon theme, which Mountainous-platinum inherits
-first. The strip then draws every icon 1:1 and nothing is resampled at run
-time. Deterministic: the same SHARE gives the same bytes. No network, cache
-or browser state; this is not the favicon CLI.
+environment.extraSetup). Writes the Mountainous-platinum-apps icon theme to
+OUT, which Mountainous-platinum inherits first, with two kinds of token, both
+drawn by the pure renderer in platinum_icons.py:
+
+  32x32/apps/<name>.png
+      For every desktop entry whose Icon= is a theme name that no --covered
+      theme has as 32 px art: the app's own icon (hicolor or pixmaps in
+      SHARE) as a 32 px token, so Platinum surfaces that ask the theme for
+      the name find Platinum art.
+
+  <C>x<C>/apps/mountainous.strip.<name>.png
+      The Control Strip's icons (strip-plan.js tileGeometry). For every name
+      the strip can ask for (each desktop entry's icon, each app the covering
+      theme draws, and the strip's fallbacks chromium and
+      application-x-executable), a token whose opaque bounds are the strip's
+      optical size (render_extent): 26 px on a 30 px canvas at scale 1.5.
+      The source is the app's own icon, else the covering theme's own art.
+      The strip draws them 1:1, so every strip icon has the same size and
+      none is resampled at run time.
+
+Deterministic: the same SHARE gives the same bytes. No network, cache or
+browser state; this is not the favicon CLI.
 """
 
 import argparse
 import configparser
 import io
+import math
 import os
 import re
 import subprocess
@@ -25,13 +39,37 @@ import sys
 from pathlib import Path
 
 from PIL import Image
-from platinum_icons import boxed, canvas_for
+from platinum_icons import boxed, canvas_for, render_extent
 
-# The strip's content box at scale 1.5 (strip-plan.js tileGeometry), and the
-# size of the Platinum theme's pixel art.
+# Platinum's pixel-art size: the art other surfaces ask the theme for.
 BOX = 32
 THEME_NAME = "Mountainous-platinum-apps"
 SIZE_DIR = re.compile(r"^(\d+)x\1$")
+# The strip's icons: a name prefix with no dash before the app's name, so
+# Qt's dash fallback never turns a missing strip name into another icon.
+STRIP_PREFIX = "mountainous.strip."
+# The scales the strip's tokens are made for (one directory each). Qt asks
+# an icon theme for a size at the window's scale rounded up (20 logical px at
+# 1.5 is looked up as 40) and takes the nearest directory, only ever scaling
+# it down: a 40 px directory for scale 2 would win 1.5's lookup and be
+# scaled to 30. So no directory is larger than 1.5's 30; at 2 the strip
+# draws the 30 px tokens nearest-neighbour at 40.
+STRIP_SCALES = (1, 1.5)
+# app-icon.js BROWSER and GENERIC: what the strip shows for a name it has no
+# token for.
+FALLBACKS = ("chromium", "application-x-executable")
+
+
+def js_round(value: float) -> int:
+    """JavaScript's Math.round: halves go up."""
+    return math.floor(value + 0.5)
+
+
+def strip_extent(scale: float) -> int:
+    """The strip's optical size in device px at a scale: strip-plan.js
+    tileGeometry's box (TILE_H 32 logical, a one-hair bevel, ICON_PAD 6 on
+    each side). 26 at 1.5."""
+    return js_round(32 * scale) - 2 * max(1, js_round(scale)) - 2 * js_round(6 * scale)
 
 
 def icon_names(applications: Path) -> list[str]:
@@ -68,6 +106,16 @@ def covered(themes: list[Path]) -> set[str]:
     return out
 
 
+def covered_apps(themes: list[Path]) -> set[str]:
+    """The app names a covering theme draws at 32 px."""
+    out = set()
+    for theme in themes:
+        for file in (theme / f"{BOX}x{BOX}/apps").glob("*.png"):
+            if file.exists():
+                out.add(file.stem)
+    return out
+
+
 def sources(share: Path, name: str) -> tuple[list[Path], Path | None]:
     """The app's own PNGs (every size) and its SVG, from hicolor or pixmaps."""
     pngs, svg = [], None
@@ -91,11 +139,10 @@ def sources(share: Path, name: str) -> tuple[list[Path], Path | None]:
     return pngs, svg
 
 
-def frames_for(share: Path, name: str) -> list[Image.Image]:
-    """The source frames, chosen as the favicon path chooses: bitmaps that
-    cover the token's size, else the SVG drawn at that size, else the
-    largest bitmap."""
-    size = canvas_for(BOX)
+def frames_for(share: Path, name: str, size: int) -> list[Image.Image]:
+    """The source frames for a size px token, chosen as the favicon path
+    chooses: bitmaps that cover the size, else the SVG drawn at that size,
+    else the largest bitmap."""
     pngs, svg = sources(share, name)
     bitmaps = []
     for file in pngs:
@@ -122,14 +169,73 @@ def frames_for(share: Path, name: str) -> list[Image.Image]:
     return bitmaps
 
 
-def generate(share: Path, out: Path, covering: list[Path]) -> list[str]:
+def theme_art(covering: list[Path], name: str) -> list[Image.Image]:
+    """A covering theme's own app art for name, its largest size: the
+    strip token's source when the app ships no icon of its own."""
+    for theme in covering:
+        files = []
+        for directory in theme.iterdir() if theme.is_dir() else []:
+            match = SIZE_DIR.match(directory.name)
+            file = directory / "apps" / f"{name}.png"
+            if match and file.is_file():
+                files.append((int(match.group(1)), file))
+        if files:
+            with Image.open(max(files)[1]) as image:
+                return [image.convert("RGBA")]
+    return []
+
+
+def strip_names(share: Path, covering: list[Path]) -> list[str]:
+    """Every name the Control Strip can ask for: each desktop entry's icon,
+    each app the covering themes draw, and the strip's fallbacks."""
+    return sorted(
+        set(icon_names(share / "applications")) | covered_apps(covering) | set(FALLBACKS)
+    )
+
+
+def generate_strip(
+    share: Path, out: Path, covering: list[Path], scales=STRIP_SCALES
+) -> list[tuple[str, int]]:
+    """The strip's tokens at each scale; returns (directory, size) pairs."""
+    directories = []
+    names = strip_names(share, covering)
+    # Read each name's source once; many names share one (theme aliases).
+    frames = {}
+    for name in names:
+        frames[name] = frames_for(share, name, canvas_for(strip_extent(max(scales))))
+        frames[name] = frames[name] or theme_art(covering, name)
+    for scale in scales:
+        extent = strip_extent(scale)
+        canvas = canvas_for(extent)
+        directory = f"{canvas}x{canvas}/apps"
+        target = out / directory
+        drawn = {}
+        for name in names:
+            if not frames[name]:
+                continue
+            key = tuple((image.size, image.tobytes()) for image in frames[name])
+            if key not in drawn:
+                drawn[key] = render_extent(frames[name], extent, canvas, "platinum-light")
+            if drawn[key] is None:
+                continue
+            target.mkdir(parents=True, exist_ok=True)
+            drawn[key].save(target / f"{STRIP_PREFIX}{name}.png", format="PNG", optimize=False)
+        if target.is_dir():
+            directories.append((directory, canvas))
+    return directories
+
+
+def generate(
+    share: Path, out: Path, covering: list[Path], scales=STRIP_SCALES
+) -> list[str]:
+    """Write the theme; returns the names that got 32 px art."""
     have = covered(covering)
     made = []
     apps = out / f"{BOX}x{BOX}/apps"
     for name in icon_names(share / "applications"):
         if name in have:
             continue
-        frames = frames_for(share, name)
+        frames = frames_for(share, name, canvas_for(BOX))
         if not frames:
             continue
         token = boxed(frames, BOX, "platinum-light")
@@ -139,17 +245,18 @@ def generate(share: Path, out: Path, covering: list[Path]) -> list[str]:
         token.save(apps / f"{name}.png", format="PNG", optimize=False)
         made.append(name)
     out.mkdir(parents=True, exist_ok=True)
+    directories = [(f"{BOX}x{BOX}/apps", BOX)]
+    directories += [d for d in generate_strip(share, out, covering, scales) if d[1] != BOX]
     (out / "index.theme").write_text(
         "[Icon Theme]\n"
         "Name=Mountainous Platinum app tokens\n"
-        "Comment=Platinum tokens for apps without 32 px Platinum art, made at build time\n"
+        "Comment=Platinum tokens made at build time: 32 px art for apps without it, and the Control Strip's icons\n"
         "Hidden=true\n"
-        f"Directories={BOX}x{BOX}/apps\n"
-        "\n"
-        f"[{BOX}x{BOX}/apps]\n"
-        f"Size={BOX}\n"
-        "Context=Applications\n"
-        "Type=Fixed\n"
+        f"Directories={','.join(d for d, _ in directories)}\n"
+        + "".join(
+            f"\n[{d}]\nSize={size}\nContext=Applications\nType=Fixed\n"
+            for d, size in directories
+        )
     )
     return made
 

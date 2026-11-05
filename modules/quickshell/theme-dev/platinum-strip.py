@@ -8,17 +8,24 @@ the slots of the strip-icons fixture and the strip's constants); the
 captures are <work>/{light,dark,black}-full.png, the whole 2880 x 1800
 output. Each tile is found where the plan puts it, and its pixels must hold:
 
+  optical  every icon's opaque bounds (outline, depth and shadow: every px
+           that is not the face) are the plan's extent on their longest
+           side, centred in the box, so every tile shows one size with the
+           same padding to the bevel: a run-time site token, a build-time
+           app token, a theme-art app's token and Chromium's own token for
+           a window with no page icon. Across all of them the size and the
+           padding agree to 1 px (the box moves one px down and right when
+           pressed in)
   padding  nothing but the face between the inside of the bevel and the
-           icon's box, and between the box and the ▴ (the box moves one px
-           down and right when pressed in)
+           box, and between the box and the ▴
   gap      at least MIN_POP_GAP clear device px between any icon pixel and
            any ▴ pixel (Chebyshev: a diagonal neighbour touches)
-  1:1      theme art, a build-time token and a run-time token match their
-           PNGs exactly over the face, unscaled, in the same box
+  1:1      every token matches its PNG exactly over the face, unscaled, on
+           its canvas
   stipple  an icon on another page: every other device px is the surface
 
 Writes <out>/measurements.json and an 8x zoom of each scheme's tiles with
-the box and the ▴ outlined.
+the box (green), the canvas (blue) and the ▴ (red) outlined.
 """
 
 import json
@@ -39,24 +46,31 @@ snap = lambda v: int(np.floor(v * dpr + 0.5))  # JS Math.round, for v >= 0
 body_top = H - snap(plan["BOTTOM"] + plan["HEIGHT"])
 tile_top = body_top + snap((plan["HEIGHT"] - plan["TILE_H"]) / 2)
 track_x = snap(plan["CAP"])
-# The strip-icons fixture, in the strip's order (by page, then position).
+# The strip-icons fixture, in the strip's order (by page, then position):
+# (label, kind, page, pressed in). Kinds: "browser" Chromium's own token for
+# a window with no page icon; "built" a build-time token from the app's own
+# icon; "theme" a build-time token from the theme's art (no icon of its
+# own); "site" a run-time token of a PWA's icon; "letter" no app id yet.
 TILES = [
-    ("chromium", "art", 1, True),
+    ("chromium", "browser", 1, True),
     ("syncthing", "built", 1, False),
-    ("ghostty", "art", 1, False),
+    ("com.mitchellh.ghostty", "theme", 1, False),
     ("letter", "letter", 1, False),
-    ("jellyfin", "token", 1, False),
-    ("teams", "token", 2, False),
+    ("jellyfin", "site", 1, False),
+    ("teams", "site", 1, False),
+    ("assistant", "site", 1, False),
     ("syncthing", "built", 2, False),
-    ("signal", "art", 2, False),
+    ("signal", "theme", 2, False),
+    ("teams", "site", 2, False),
 ]
-ART = {
-    "chromium": "32x32/apps/chromium.png",
-    "ghostty": "32x32/apps/com.mitchellh.ghostty.png",
-    "signal": "32x32/apps/signal.png",
+SITE = {
+    "jellyfin": "pwa-jellyfin.png",
+    "teams": "pwa-teams.png",
+    "assistant": "pwa-assistant.png",
 }
-desktop_art = Path(plan["desktopArt"]) / "share/icons/Mountainous-platinum"
-built = work / "data/icons/Mountainous-platinum-apps/32x32/apps"
+canvas = g["canvas"]["size"]
+extent = g["extent"]
+strip = work / f"data/icons/Mountainous-platinum-apps/{canvas}x{canvas}/apps"
 cache = work / "cache/mountainous/icons"
 failures = []
 
@@ -68,19 +82,14 @@ def check(ok, message):
 
 
 def reference(name, kind, scheme):
-    """The PNG the box must show, unscaled, or None."""
-    if kind == "art":
-        return Image.open(desktop_art / ART[name]).convert("RGBA")
-    if kind == "built":
-        return Image.open(built / f"{name}.png").convert("RGBA")
-    if kind == "token":
-        # The helper's cached 36 px token, without its 2 px margin.
+    """The canvas px PNGs the tile may show, unscaled, or None."""
+    if kind in ("browser", "built", "theme"):
+        return [Image.open(strip / f"mountainous.strip.{name}.png").convert("RGBA")]
+    if kind == "site":
+        # The helper's cached tokens at the strip's canvas and extent.
         theme = "platinum-light" if scheme == "light" else "platinum-dark"
-        files = sorted(cache.glob(f"*-{g['canvas']['size']}-{theme}.png"))
-        tokens = [Image.open(f).convert("RGBA") for f in files]
-        m = g["margin"]
-        s = g["canvas"]["size"]
-        return [t.crop((m, m, s - m, s - m)) for t in tokens]
+        files = sorted(cache.glob(f"*-{canvas}e{extent}-{theme}.png"))
+        return [Image.open(f).convert("RGBA") for f in files]
     return None
 
 
@@ -95,6 +104,7 @@ def gap(a, b):
 
 
 results = {}
+optical = []
 for scheme in ("light", "dark", "black"):
     full = np.array(Image.open(work / f"{scheme}-full.png").convert("RGB")).astype(int)
     surface = tuple(full[body_top + snap(plan["HEIGHT"]) // 2, snap(plan["CAP"]) + 1])
@@ -106,11 +116,12 @@ for scheme in ("light", "dark", "black"):
         inner = g["inner"]
         press = g["sunk"] if focused else 0
         bx, by, bs = g["box"]["x"] + press, g["box"]["y"] + press, g["box"]["size"]
+        cx, cy = g["canvas"]["x"] + press, g["canvas"]["y"] + press
         p = g["pop"]
         region = tile[inner["y"] : inner["y"] + inner["h"], inner["x"] : inner["x"] + inner["w"]]
         # The face: the commonest colour inside the bevel.
         colours, counts = np.unique(region.reshape(-1, 3), axis=0, return_counts=True)
-        face = tuple(colours[counts.argmax()])
+        face = tuple(int(c) for c in colours[counts.argmax()])
         differs = np.abs(tile - np.array(face)).sum(axis=2) > 0
         in_box = np.zeros_like(differs)
         in_box[by : by + bs, bx : bx + bs] = True
@@ -118,7 +129,7 @@ for scheme in ("light", "dark", "black"):
         in_pop[p["y"] : p["y"] + p["h"], p["x"] : p["x"] + p["w"]] = True
         in_inner = np.zeros_like(differs)
         in_inner[inner["y"] : inner["y"] + inner["h"], inner["x"] : inner["x"] + inner["w"]] = True
-        label = f"{scheme} {name} (page {page}{', pressed in' if focused else ''})"
+        label = f"{scheme} {name} ({kind}, page {page}{', pressed in' if focused else ''})"
         stray = differs & in_inner & ~in_box & ~in_pop
         check(not stray.any(), f"{label}: nothing in the padding or the gap ({int(stray.sum())} px)")
         icon = np.argwhere(differs & in_box)
@@ -127,36 +138,54 @@ for scheme in ("light", "dark", "black"):
         check(len(mark) > 0, f"{label}: the ▴ draws")
         clear = gap(icon, mark)
         check(clear is not None and clear >= plan["MIN_POP_GAP"], f"{label}: {clear} px between the icon and the ▴")
-        entry = {"face": [int(c) for c in face], "gap": clear}
-        if len(icon):
-            top, left = icon.min(axis=0)
-            bottom, right = icon.max(axis=0)
-            entry["iconBox"] = [int(left), int(top), int(right) + 1, int(bottom) + 1]
-            entry["padding"] = {
-                "left": int(left - inner["x"]),
-                "top": int(top - inner["y"]),
-                "bottom": int(inner["y"] + inner["h"] - 1 - bottom),
-                "toPop": int(mark[:, 1].min() - right - 1) if len(mark) else None,
-            }
-            check(
-                min(entry["padding"]["left"], entry["padding"]["top"], entry["padding"]["bottom"]) >= g["pad"] - (1 if focused else 0),
-                f"{label}: padding {entry['padding']} >= {g['pad']} px",
-            )
-        ref = reference(name, kind, scheme)
-        shown = tile[by : by + bs, bx : bx + bs]
-        if ref is not None and page == 1:
-            refs = ref if isinstance(ref, list) else [ref]
+        entry = {"kind": kind, "face": list(face), "gap": clear}
+        # 1:1: the canvas shows a token PNG composited on the face, unscaled.
+        refs = reference(name, kind, scheme)
+        shown = tile[cy : cy + canvas, cx : cx + canvas]
+        matched = None
+        if refs is not None and page == 1:
             best = None
             for r in refs:
-                if r.size != (bs, bs):
+                if r.size != (canvas, canvas):
                     continue
                 over = Image.new("RGBA", r.size, face + (255,))
                 over.alpha_composite(r)
                 want = np.array(over.convert("RGB")).astype(int)
                 worst = int(np.abs(want - shown).max())
-                best = worst if best is None else min(best, worst)
-            check(best is not None and best <= 1, f"{label}: the {kind} is drawn 1:1 in the {bs} px box (max channel error {best})")
+                if best is None or worst < best:
+                    best, matched = worst, r
+            check(best is not None and best <= 1, f"{label}: the token is drawn 1:1 on its {canvas} px canvas (max channel error {best})")
             entry["oneToOne"] = best
+            if best is None or best > 1:
+                matched = None
+        if len(icon):
+            top, left = icon.min(axis=0)
+            bottom, right = icon.max(axis=0)
+            # What differs from the face. A black outline on a black face
+            # (the black scheme) does not show, so this can be smaller.
+            entry["visible"] = [int(right - left + 1), int(bottom - top + 1)]
+            if matched is not None:
+                # The token's opaque bounds, where the 1:1 match put them.
+                l, t, r, b = matched.getchannel("A").getbbox()
+                left, top, right, bottom = cx + l, cy + t, cx + r - 1, cy + b - 1
+            entry["iconBox"] = [int(left), int(top), int(right) + 1, int(bottom) + 1]
+            entry["size"] = [int(right - left + 1), int(bottom - top + 1)]
+            # Padding at rest: a pressed-in icon is one px further from the
+            # top and left, one nearer the bottom.
+            entry["padding"] = {
+                "left": int(left - inner["x"]) - press,
+                "top": int(top - inner["y"]) - press,
+                "bottom": int(inner["y"] + inner["h"] - 1 - bottom) + press,
+                "toPop": int(mark[:, 1].min() - right - 1) + press if len(mark) else None,
+            }
+            if kind != "letter":
+                longest = max(entry["size"])
+                check(extent - 1 <= longest <= extent, f"{label}: opaque bounds {entry['size'][0]} x {entry['size'][1]}, {extent} px on the longest side (±1); visible {entry['visible'][0]} x {entry['visible'][1]}")
+                pads = entry["padding"]
+                for side in ("left", "top", "bottom"):
+                    want = g["pad"] + (bs - entry["size"][0 if side == "left" else 1]) // 2
+                    check(abs(pads[side] - want) <= 1, f"{label}: {pads[side]} px from the bevel on the {side}, want {want} (±1)")
+                optical.append((label, entry["size"], pads))
         if page != 1 and len(icon):
             # The disabled stipple: on a flat tile the face is the surface, so
             # the icon's visible pixels sit on one checker parity; the other
@@ -168,9 +197,10 @@ for scheme in ("light", "dark", "black"):
             check(face == surface, f"{label}: a flat tile on the surface")
             check(share >= 0.85, f"{label}: the stipple covers every other px ({share:.2f} of the icon on one parity)")
         results.setdefault(scheme, {})[f"{name}-p{page}"] = entry
-        # 8x inspection copy with the box (green) and the ▴ rect (red).
+        # 8x inspection copy: the box (green), the canvas (blue), the ▴ (red).
         crop = Image.fromarray(tile.astype(np.uint8)).resize((g["w"] * 8, g["h"] * 8), Image.NEAREST)
         draw = ImageDraw.Draw(crop)
+        draw.rectangle((cx * 8, cy * 8, (cx + canvas) * 8 - 1, (cy + canvas) * 8 - 1), outline=(0, 90, 255))
         draw.rectangle((bx * 8, by * 8, (bx + bs) * 8 - 1, (by + bs) * 8 - 1), outline=(0, 200, 0))
         draw.rectangle((p["x"] * 8, p["y"] * 8, (p["x"] + p["w"]) * 8 - 1, (p["y"] + p["h"]) * 8 - 1), outline=(220, 0, 0))
         zoom_tiles.append(crop)
@@ -180,6 +210,22 @@ for scheme in ("light", "dark", "black"):
         sheet.paste(t, (x, 0))
         x += t.width + 8
     sheet.save(out / f"tiles-{scheme}-8x.png")
+
+# One optical size: across every tile with an icon, in every scheme, the
+# opaque size and the padding to the bevel agree to 1 px.
+if optical:
+    longest = [max(size) for _, size, _ in optical]
+    check(max(longest) - min(longest) <= 1, f"one optical size: longest side {min(longest)}..{max(longest)} px over {len(optical)} tiles")
+    for side in ("left", "top", "bottom"):
+        values = [pads[side] for _, _, pads in optical]
+        check(max(values) - min(values) <= 1, f"one padding: {side} {min(values)}..{max(values)} px over {len(optical)} tiles")
+    gaps = [pads["toPop"] for _, _, pads in optical if pads["toPop"] is not None]
+    results["optical"] = {
+        "extent": extent,
+        "longest": [min(longest), max(longest)],
+        "padding": {side: [min(p[side] for _, _, p in optical), max(p[side] for _, _, p in optical)] for side in ("left", "top", "bottom")},
+        "toPop": [min(gaps), max(gaps)] if gaps else None,
+    }
 
 # Many windows at 600 logical px: the strip still ends RIGHT_EDGE short of
 # the screen's right edge (the rest scrolls; strip-plan.test.js proves every
