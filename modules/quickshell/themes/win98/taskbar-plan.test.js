@@ -221,4 +221,48 @@ assert.ok(wifiOut > layoutOut && layoutOut > ntfOut, `Layout overflows after Wi-
 assert.ok(!P.plan(layoutOut + 1, withLayout).trayOut.includes('layout'));
 assert.ok(P.plan(layoutOut, withLayout).trayOut.includes('layout'));
 
+// Quick Launch and the apps' tray icons (StatusNotifierItems): every width
+// keeps every item reachable. Show Desktop is on the bar, or the tray
+// chevron (its menu lists it) shows, or Start holds the taskbar's items;
+// app icons go into the chevron before any built-in control, the last
+// registered first; the band leaves only after the tray icons and the
+// focused window, before the clock.
+const sniIds = ['sni:nm-applet', 'sni:hensou-files', 'sni:telegram'];
+const fullTray = trayIds.concat(sniIds);
+const ordered = ['clockShort', 'dictText', 'titles', 'startIcon', 'windows»', 'tray»', 'quick»', 'clockOut', 'batteryOut', 'compact', 'start'];
+for (const windows of [[], ideal, many]) {
+    let last = [];
+    const inp = input(windows, { quick: true, tray: fullTray.map(id => ({ id, badge: id === 'ntf' ? '3' : '' })) });
+    let firstBuiltinOut = -1;
+    for (let W = 1440; W >= 1; W--) {
+        const q = P.plan(W, inp);
+        if (W >= P.MIN_WIDTH) assert.ok(q.fits, `fits with Quick Launch at ${W} (${q.steps})`);
+        for (const s of last) assert.ok(q.steps.includes(s), `step ${s} came back at ${W} (Quick Launch)`);
+        last = q.steps;
+        const idx = q.steps.map(s => ordered.indexOf(s));
+        assert.ok(!idx.includes(-1), 'known steps ' + q.steps);
+        eq(idx, idx.slice().sort((a, b) => a - b), 'in order at ' + W);
+        eq(q.tray.concat(q.trayOut).sort(), fullTray.slice().sort(), 'every tray item at ' + W);
+        assert.ok(q.quick || q.chevron || q.structure === 'start', 'Show Desktop reachable at ' + W);
+        assert.equal(q.quick, !q.steps.includes('quick»') && q.structure === 'full', 'the band and its step agree at ' + W);
+        // App icons before built-in controls, the last one first.
+        const outSni = q.trayOut.filter(id => id.startsWith('sni:'));
+        const outBuiltin = q.trayOut.filter(id => !id.startsWith('sni:'));
+        if (outBuiltin.length) eq(outSni.slice().sort(), sniIds.slice().sort(), 'every app icon left before a control at ' + W);
+        eq(outSni, sniIds.slice().reverse().slice(0, outSni.length), 'the last app icon first at ' + W);
+        if (outBuiltin.length && firstBuiltinOut < 0) firstBuiltinOut = W;
+        if (q.quick && q.structure === 'full' && W >= P.MIN_WIDTH) {
+            const b = q.boxes;
+            assert.ok(b.quick.x >= b.start.x + b.start.w - 1e-9 && b.quick.x + b.quick.w <= b.tasks.x + 1e-9, 'the band between Start and the windows at ' + W);
+            assert.equal(b.quick.w, P.QUICK);
+        }
+    }
+    assert.ok(firstBuiltinOut > 0);
+}
+// Without Quick Launch nothing changes.
+eq(P.plan(900, input(ideal)).boxes.quick, null);
+assert.equal(P.plan(900, input(ideal)).quick, false);
+// The band costs its width: at 1440 u the windows give it up.
+assert.equal(P.plan(1440, input(ideal, { quick: true })).boxes.tasks.x, 2 + P.plan(1440, input(ideal)).startW + P.QUICK);
+
 console.log('WIN98_TASKBAR_PLAN_TESTS_PASSED');

@@ -68,12 +68,19 @@ PlatinumMenuFrame {
     readonly property real nameWidth: {
         let w = 0;
         for (const id of frame.entries)
-            if (id !== "status") w = Math.max(w, Kit.PlatinumMetrics.width(frame.labels[id] || id));
+            if (id !== "status") w = Math.max(w, Kit.PlatinumMetrics.width(frame.nameOf(id)));
         return w;
+    }
+
+    // A row's name: the control's, or an app's own (StatusNotifierItem).
+    function nameOf(id) {
+        if (id.indexOf("sni:") === 0) { const r = frame.bar.sniRowFor(id); return r ? r.label : id; }
+        return frame.labels[id] || id;
     }
 
     function run(id) {
         if (id === "battery" || id === "status") return;
+        if (id.indexOf("sni:") === 0) { frame.bar.sniChoose(id); return; }
         if (id === "retry") {
             MenuState.close();
             frame.bar.dictation.retryFailed();
@@ -106,7 +113,7 @@ PlatinumMenuFrame {
             readonly property bool readout: status || modelData === "battery"
             selected: (hover.hovered || ListView.isCurrentItem) && !readout
             mark: action || status ? "" : frame.bar.iconFor(modelData)
-            name: status ? frame.bar.dictationText : frame.labels[modelData] || modelData
+            name: status ? frame.bar.dictationText : frame.nameOf(modelData)
             nameColor: status ? Kit.PlatinumTokens.menuDanger : Kit.PlatinumTokens.menuText
             onClicked: if (!readout) frame.run(modelData)
 

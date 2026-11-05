@@ -138,6 +138,20 @@ ShellRoot {
     WindowMotion { id: windowMotion; rows: root.windowRows; hider: windowHider }
     readonly property var motion: windowMotion
 
+    // Show Desktop (Super+Shift+D, Quick Launch, Platinum's Application
+    // menu): shell.showDesktop.toggle(screen name), .active(screen name).
+    ShowDesktop {
+        id: showDesktopOwner
+        rows: root.windowRows
+        shownPageOn: root.shownPageOn
+        screens: root.desktopScreens.map(function (s) { return s.name; })
+    }
+    readonly property var showDesktop: showDesktopOwner
+
+    // The StatusNotifierItem host: app icons in both themes' trays.
+    SniTray { id: sniTray }
+    readonly property var tray: sniTray
+
     function rowFor(address) {
         const k = AppModel.key(address);
         for (const r of root.windowRows) if (r.address === k) return r;
@@ -391,6 +405,19 @@ ShellRoot {
             return dictationService.state + " "
                 + (dictationService.backend || "none") + " "
                 + dictationService.queueCount;
+        }
+    }
+
+    // Super+Shift+D (hyprland.lua): Show Desktop on the focused screen.
+    IpcHandler {
+        target: "showDesktop"
+        function toggle(): string {
+            const s = root.focusedScreen();
+            return s ? showDesktopOwner.toggle(s.name) : "none";
+        }
+        function current(): string {
+            const s = root.focusedScreen();
+            return s && showDesktopOwner.active(s.name) ? "shown" : "covered";
         }
     }
 
@@ -694,6 +721,7 @@ ShellRoot {
                 readonly property var omniBar: omniBarService
                 readonly property var builderGate: builderGateService
                 readonly property var beszel: beszelService
+                readonly property var tray: sniTray
                 readonly property var frontWindow: screenScope.frontWindow
                 readonly property date now: clock.date
             }

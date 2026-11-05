@@ -117,11 +117,24 @@ assert.equal(new Set(keysOf(wm)).size, 5);
 // ---- the taskbar menu
 let tm = plain(M.taskbarMenu({ shown: 3, others: 2, hidden: 0 }));
 deq(tm.map((i) => i.separator ? '-' : plainText(i.text) + (i.enabled === false ? ' (off)' : '')),
-    ['Minimize All Windows', 'Minimize Other Windows', 'Restore All Windows (off)', '-', 'Find...']);
-deq([tm[4].shortcut, tm[4].act], ['Super+P', 'find']);
-tm = plain(M.taskbarMenu({ shown: 0, others: 0, hidden: 4 }));
-deq(tm.map((i) => i.enabled !== false), [false, false, true, true, true], 'everything minimized: Restore All only');
-assert.equal(new Set(keysOf(tm)).size, 4);
+    ['Minimize All Windows', 'Minimize Other Windows', 'Restore All Windows (off)', '-', 'Show the Desktop', '-', 'Find...']);
+deq([tm[6].shortcut, tm[6].act], ['Super+P', 'find']);
+deq([tm[4].shortcut, tm[4].act, tm[4].checked], ['Super+Shift+D', 'showDesktop', false]);
+tm = plain(M.taskbarMenu({ shown: 0, others: 0, hidden: 4, desktop: true }));
+deq(tm.map((i) => i.enabled !== false), [false, false, true, true, true, true, true], 'everything minimized: Restore All only');
+assert.equal(tm[4].checked, true, 'the desktop shows: Show the Desktop is checked');
+assert.equal(new Set(keysOf(tm)).size, 5);
+
+// ---- Show Desktop's parked windows keep their buttons, raised, in their page's band
+const parked = [row('p1', 'term', -99, 'eDP-1', { workspace: 'special:desktop-eDP-1' }),
+    row('p2', 'zed', -99, 'eDP-1', { workspace: 'special:desktop-eDP-1' }),
+    row('p3', 'mpv', -99, '', { workspace: 'special:desktop-HDMI-A-1' }),
+    row('s1', 'signal', 1, 'eDP-1')];
+let pl = plain(M.lane(parked, null, 'eDP-1', { screens: ['eDP-1'], fallbackPage: 4, parked: { p1: { page: 2, screen: 'eDP-1' } } }));
+deq(pl.map((e) => [e.row.address, e.home, e.minimized]), [['s1', 1, false], ['p1', 2, true], ['p2', 4, true], ['p3', 4, true]],
+    'by page: a known page, else the page shown; a gone screen\'s windows on the primary');
+pl = plain(M.lane(parked, null, 'DP-2', { screens: ['eDP-1', 'DP-2'], parked: {} }));
+deq(pl, [], 'another screen lists none of them');
 
 // ---- the Cool Switch box: 7 a row, fewer when narrow; rows scroll to the current one
 let cp = plain(M.coolPlan(11, 3, 1280, 800));

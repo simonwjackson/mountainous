@@ -40,6 +40,7 @@ Scope {
     // The taskbar's controls in keyboard order.
     readonly property var focusOrder: {
         const p = host.taskbar.plan, out = ["start"];
+        if (p.quick) out.push("quick");
         // Page dividers are drawn only: the keyboard steps over them.
         for (const g of p.groups) for (const i of g.windows) out.push("win" + i);
         if (p.tasksChevron) out.push("tasks");
@@ -56,6 +57,10 @@ Scope {
         const id = desktop.taskbarFocus;
         desktop.taskbarFocus = "";
         if (id.indexOf("win") === 0) desktop.clickWindow(desktop.lane[Number(id.slice(3))]);
+        else if (id === "quick") desktop.toggleDesktop();
+        // An app's icon from the keyboard: its menu (Shift+F10 in Win98's
+        // tray), or its command when it has none.
+        else if (id.indexOf("sni:") === 0) desktop.sniPress(id, "right");
         else desktop.openMenu(id, true);
     }
     // Shift+F10 or the Menu key: the focused window button's window menu,
@@ -92,7 +97,7 @@ Scope {
 
             readonly property var components: ({
                 start: startMenu, tasks: tasksMenu, more: moreMenu, logoff: logoffDialog,
-                glance: glanceMenu, fleetmenu: fleetMenu,
+                glance: glanceMenu, fleetmenu: fleetMenu, sni: sniMenu,
                 winmenu: windowMenu, tbmenu: taskbarMenu, sysprops: systemWindow,
                 layout: layoutWindow, bt: btWindow, wifi: wifiWindow, vol: soundWindow, bri: brightnessWindow, oci: ociWindow,
                 disk: storageWindow, builder: builderWindow, ntf: notificationWindow, dict: dictationWindow, clock: clockWindow,
@@ -161,7 +166,7 @@ Scope {
                     // A window on its way out (LazyLoader deletes it later)
                     // never loads again: the next menu is the next window's.
                     sourceComponent: host.menuShown && win.alive ? (win.components[host.current] || null) : null
-                    readonly property bool isMenu: ["start", "tasks", "more", "glance", "fleetmenu"].indexOf(host.current) >= 0
+                    readonly property bool isMenu: ["start", "tasks", "more", "glance", "fleetmenu", "sni"].indexOf(host.current) >= 0
                     // The context menus open at a point (the pointer, a
                     // caption's left edge below its bar): its top-left,
                     // moved up to stay above the taskbar and left to stay
@@ -267,6 +272,8 @@ Scope {
                     onTriggered: function (item) {
                         if (item.action === "window") { MenuState.close(); host.desktop.activateWindow(host.desktop.lane[item.window]); }
                         else if (item.action === "restorefleet") { MenuState.close(); host.desktop.restoreFleet(); }
+                        else if (item.action === "sni") host.desktop.sniChoose(item.key);
+                        else if (item.action === "showDesktop") { MenuState.close(); host.desktop.toggleDesktop(); }
                         else host.desktop.openFromOverflow(item.control);
                     }
                     onClosed: MenuState.close()
@@ -292,6 +299,19 @@ Scope {
                     bounds: menuBounds
                     model: host.desktop.fleetMenu
                     onTriggered: function (item) { host.desktop.runFleetMenu(item); }
+                    onClosed: MenuState.close()
+                }
+            }
+            // An app's tray icon menu (its dbusmenu), drawn as a Win98 menu.
+            Component {
+                id: sniMenu
+                Win98Menu {
+                    objectName: "sniMenu"
+                    animate: false
+                    widthUnits: 0
+                    bounds: menuBounds
+                    model: host.desktop.sniMenuItems
+                    onTriggered: function (item) { host.desktop.runSni(item); }
                     onClosed: MenuState.close()
                 }
             }

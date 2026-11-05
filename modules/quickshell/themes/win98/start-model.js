@@ -181,8 +181,9 @@ function findMenu() {
 
 // taskbarList: what a bar too narrow for its tray holds (the tray
 // controls, the clock, the battery); empty while the bar has room.
-// extra: { favorites, documents, host } (favorites() and documents()
-// lists; the host name for Lock).
+// extra: { favorites, documents, host, files } (favorites() and
+// documents() lists; the host name for Lock; files: Hensou Files is
+// installed, so Start has F&iles, Super+E, which opens My Computer).
 function top(programList, windowList, commandList, user, taskbarList, extra) {
     var x = extra || {};
     var taskbar = taskbarList && taskbarList.length
@@ -191,11 +192,12 @@ function top(programList, windowList, commandList, user, taskbarList, extra) {
     return [
         { text: "&Programs", icon: "programs", submenu: programList },
         { text: "Fa&vorites", icon: "favorites", submenu: x.favorites || favorites([]) },
-        { text: "&Documents", icon: "documents", submenu: x.documents || documents([]) },
+        { text: "&Documents", icon: "documents", submenu: x.documents || documents([]) }
+    ].concat(x.files ? [{ text: "F&iles", icon: "computer", shortcut: "Super+E", action: "files" }] : [], [
         { text: "&Windows", icon: "windows", submenu: windowList },
         { text: "&Commands", icon: "commands", submenu: commandList },
         { text: "&Settings", icon: "settings", submenu: settings() }
-    ].concat(taskbar, [
+    ], taskbar, [
         { separator: true },
         { text: "&Find", icon: "find-large", submenu: findMenu() },
         { text: "&Run...", icon: "run", action: "run" },

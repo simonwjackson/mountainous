@@ -14,13 +14,18 @@
 // (shell.qml rowOf); an address has no "0x".
 
 var HIDDEN = "special:hidden-";
+// Show Desktop's parked windows (show-desktop.js): minimized too, as
+// Win98's Show Desktop minimized every window.
+var PARKED = "special:desktop-";
 
 function key(address) { return String(address || "").replace(/^0x/, ""); }
 function isHidden(row) { return !!row && typeof row.workspace === "string" && row.workspace.indexOf(HIDDEN) === 0; }
+function isParked(row) { return !!row && typeof row.workspace === "string" && row.workspace.indexOf(PARKED) === 0; }
 
 // rows: windowRows in Hyprland's order; hidden: WindowHider.state;
 // screen: this screen's output name; opts: { screens (output names; the
-// first is the primary), fallbackPage (the page this screen shows) }.
+// first is the primary), fallbackPage (the page this screen shows),
+// parked ({ <address>: { page, screen } }: Show Desktop's windows) }.
 // Returns [{ row, home, minimized }]: by home page, Hyprland's order inside
 // a page (so a button keeps its place when its window is minimized).
 // A hidden window whose home screen is gone (the tablet left) shows on the
@@ -35,6 +40,13 @@ function lane(rows, hidden, screen, opts) {
     for (var i = 0; i < list.length; i++) {
         var r = list[i];
         if (!r) continue;
+        if (isParked(r)) {
+            var pk = (o.parked || {})[key(r.address)] || {};
+            var at = pk.screen || r.workspace.slice(PARKED.length);
+            if (screens.length && screens.indexOf(at) < 0) at = screens[0];
+            if (at === screen) out.push({ row: r, home: pk.page > 0 ? pk.page : fallback, minimized: true, at: i });
+            continue;
+        }
         if (!isHidden(r)) {
             if (r.page > 0 && r.screen === screen) out.push({ row: r, home: r.page, minimized: false, at: i });
             continue;
@@ -85,13 +97,17 @@ function windowMenu(o) {
 
 // The taskbar's own menu (a right click where no button is). o: { shown
 // (windows shown on this screen), others (of those, not the front
-// window's app), hidden (hidden windows anywhere) }. Restore All is the
+// window's app), hidden (hidden windows anywhere), desktop (Show Desktop
+// has the desktop shown on this screen) }. Show the Desktop is the Quick
+// Launch button's command, so a bar too narrow for the button keeps it. Restore All is the
 // shared Show All, so it acts on every screen, as Platinum's does.
 function taskbarMenu(o) {
     return [
         { text: "&Minimize All Windows", enabled: o.shown > 0, act: "minimizeAll" },
         { text: "Minimize &Other Windows", enabled: o.others > 0, act: "minimizeOthers" },
         { text: "&Restore All Windows", enabled: o.hidden > 0, act: "restoreAll" },
+        { separator: true },
+        { text: "Show the &Desktop", checked: !!o.desktop, shortcut: "Super+Shift+D", act: "showDesktop" },
         { separator: true },
         { text: "&Find...", shortcut: "Super+P", act: "find" }
     ];

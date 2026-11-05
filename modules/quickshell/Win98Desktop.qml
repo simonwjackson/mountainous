@@ -19,6 +19,7 @@ import "themes/win98/session-model.js" as Session
 import "beszel-model.js" as FleetModel
 import "page-names.js" as PageNames
 import "glance-registry.js" as GlanceRegistry
+import "sni-tray.js" as Sni
 
 // One screen's Windows 98 chrome: one bottom taskbar (Start, a band per
 // page with its window buttons, the dictation band, the tray and the
@@ -79,7 +80,7 @@ Scope {
     property var preview: ({})
 
     readonly property var menuIds: ["start", "layout", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "builder", "ntf", "clock", "more", "tasks",
-        "glance", "fleetmenu"]
+        "glance", "fleetmenu", "sni"]
     // Opened by the Desktop itself, never by hovering onto a control: the
     // dialogs and the two context menus (Win98's context menus stayed put).
     readonly property var ownIds: ["logoff", "shutdown", "sysprops", "winmenu", "tbmenu"]
@@ -94,6 +95,8 @@ Scope {
         if (id === "dict") return context.dictation.barVisible;
         if (id === "find" || id === "address") return omniView.want() === id;
         if (id === "winmenu") return desktop.menuRow !== null;
+        if (id === "sni") return desktop.sniKey !== "" && desktop.sniRow !== null;
+        if (Sni.isKey(id)) return false;
         if (id === "bat" || id === "") return false;
         return menuIds.indexOf(id) >= 0 || ownIds.indexOf(id) >= 0;
     }
@@ -105,7 +108,9 @@ Scope {
         desktop.tipId = "";
         desktop.taskbarFocus = "";
         desktop.keyboardOpened = !!byKeyboard;
-        desktop.anchorId = taskbar.overflowed(id) ? "more"
+        desktop.anchorId = id === "sni" ? (taskbar.overflowed(desktop.sniKey) || !taskbar.placeOf(desktop.sniKey)
+                ? (taskbar.plan.structure === "start" ? "start" : "more") : desktop.sniKey)
+            : taskbar.overflowed(id) ? "more"
             : id === "fleetmenu" ? (taskbar.overflowed("fleet") ? "more" : "fleet")
             : id === "glance" && !taskbar.placeOf("glance") ? (taskbar.plan.structure === "start" ? "start" : "more") : "";
         if (id !== "builder") shell.builderKeyboard = false;
@@ -144,6 +149,12 @@ Scope {
         const label = function (s) { return String(s).replace(/&/g, "&&"); };
         for (const id of p.trayOut) {
             if (id === "bat") continue;
+            if (Sni.isKey(id)) {
+                const r = desktop.sniRowFor(id);
+                if (r) out.push({ text: label(r.label), icon: "", themeIcon: r.iconName, action: "sni", key: id,
+                    shortcut: r.attention ? "Attention" : "" });
+                continue;
+            }
             out.push({ text: Tray.LABEL[id], icon: id === "fleet" ? "host" : desktop.trayIcon(id), action: "open", control: id,
                 shortcut: label(Tray.overflowValue(id, id === "layout" ? desktop.layoutData() : desktop.trayData)) });
         }
@@ -167,6 +178,12 @@ Scope {
                 out.push({ text: label((t && t.title) || "(untitled)"), icon: desktop.winIcon(t) || "doc",
                     shortcut: desktop.windowHint(t), action: "window", window: i });
             }
+        }
+        // The Quick Launch band, when the bar has no room for it.
+        if (p.quickOut) {
+            if (out.length) out.push({ separator: true });
+            out.push({ text: "Show the &Desktop", icon: "show-desktop", action: "showDesktop", checked: desktop.desktopShown,
+                shortcut: "Super+Shift+D" });
         }
         if (p.clockOut || p.trayOut.indexOf("bat") >= 0) {
             if (out.length) out.push({ separator: true });
@@ -206,7 +223,8 @@ Scope {
     }
     readonly property var laneEntries: shell.windowRows !== undefined
         ? TaskModel.lane(desktop.rows, desktop.hider ? desktop.hider.state : null, desktop.here, {
-            screens: Quickshell.screens.map(function (s) { return s.name; }), fallbackPage: desktop.shownPage })
+            screens: Quickshell.screens.map(function (s) { return s.name; }), fallbackPage: desktop.shownPage,
+            parked: desktop.parked })
         : shell.windowsOn(screen).map(function (t) { return { row: { toplevel: t, address: "", appId: desktop.appIdOf(t) }, home: Lanes.pageOf(t), minimized: false }; })
     readonly property var lane: laneEntries.map(function (e) { return e.row.toplevel; })
     readonly property int showingPage: {
@@ -266,7 +284,104 @@ Scope {
     }
     function minimizeWindow(address) { if (desktop.hider && address) desktop.hider.hideWindow(address); }
     function restoreWindow(address, after) {
+        const r = desktop.rowFor(address);
+        // A window Show Desktop parked comes back alone, as a minimized one.
+        if (r && desktop.showDesktop && desktop.showDesktop.isParked(r)) { desktop.showDesktop.restoreWindow(r.address, desktop.here); return; }
         if (desktop.hider && address) desktop.hider.showWindow(address, desktop.shownPage, true, after || "");
+    }
+
+    //------------------------------------------------------------------
+    // Show Desktop (shell.showDesktop): the Quick Launch button, the
+    // taskbar menu, Super+Shift+D
+    //------------------------------------------------------------------
+    readonly property var showDesktop: shell.showDesktop || null
+    readonly property bool desktopShown: !!desktop.showDesktop && desktop.showDesktop.active(desktop.here)
+    function toggleDesktop() {
+        if (desktop.showDesktop) desktop.showDesktop.toggle(desktop.here);
+    }
+    // Parked windows' pages and screens, for the taskbar's bands.
+    readonly property var parked: {
+        const out = {}, sd = desktop.showDesktop;
+        if (!sd) return out;
+        for (const r of desktop.rows) if (sd.isParked(r)) out[r.address] = { page: sd.homeOf(r.address), screen: sd.screenOf(r) };
+        return out;
+    }
+
+    //------------------------------------------------------------------
+    // The apps' tray icons (StatusNotifierItems, context.tray)
+    //------------------------------------------------------------------
+    readonly property var tray: context.tray || null
+    readonly property var sniRows: desktop.tray ? desktop.tray.rows : []
+    function sniRowFor(key) {
+        for (const r of desktop.sniRows) if (r.key === key) return r;
+        return null;
+    }
+    // The item whose menu is open (or was last), and its loaded dbusmenu.
+    property string sniKey: ""
+    property bool sniFromOverflow: false
+    readonly property var sniRow: desktop.sniRowFor(desktop.sniKey)
+    SniMenuTree {
+        id: sniTree
+        menu: desktop.sniKey !== "" && desktop.tray && !desktop.tray.fixture ? desktop.tray.menuOf(desktop.sniKey) : null
+    }
+    readonly property var sniEntries: desktop.tray && desktop.tray.fixture
+        ? (desktop.tray.fixtureMenus[desktop.sniKey] || []) : sniTree.entries
+    readonly property var sniMenuItems: desktop.sniRow
+        ? Tray.sniMenu(desktop.sniEntries, { defaultLabel: desktop.sniFromOverflow && !desktop.sniRow.onlyMenu ? desktop.sniRow.label : "" })
+        : []
+    // A press on an app's tray icon. button: "left", "middle", "right".
+    function sniPress(key, button) {
+        const r = desktop.sniRowFor(key);
+        const what = Sni.press(r, button);
+        desktop.tipId = "";
+        if (what === "menu") {
+            if (desktop.openId === "sni" && desktop.sniKey === key) { desktop.closeMenu(); return; }
+            desktop.sniKey = key;
+            desktop.sniFromOverflow = false;
+            desktop.openMenu("sni", false);
+            return;
+        }
+        desktop.closeMenu();
+        if (what === "activate") desktop.tray.activate(key);
+        else if (what === "secondary") desktop.tray.secondary(key);
+    }
+    // Chosen in the tray chevron's menu: its menu (led by its own
+    // command), or its command.
+    function sniChoose(key) {
+        const r = desktop.sniRowFor(key);
+        if (Sni.overflowChoice(r) === "menu") {
+            desktop.sniKey = key;
+            desktop.sniFromOverflow = true;
+            desktop.openMenu("sni", false);
+        } else {
+            desktop.closeMenu();
+            if (r) desktop.tray.activate(key);
+        }
+    }
+    function runSni(item) {
+        MenuState.close();
+        if (!item) return;
+        if (item.act === "activate") { desktop.tray.activate(desktop.sniKey); return; }
+        if (item.act === "entry" && item.ref) {
+            if (desktop.tray && desktop.tray.fixture) desktop.tray.fixturePressed(desktop.sniKey, "entry " + item.text);
+            else item.ref.triggered();
+        }
+    }
+
+    //------------------------------------------------------------------
+    // Files (Hensou Files): Start > Files and Super+E open My Computer
+    //------------------------------------------------------------------
+    // Present only where the hensou-files package is installed; a harness
+    // may force it.
+    property bool filesForced: false
+    readonly property var filesEntry: {
+        for (const e of DesktopEntries.applications.values) if (e && e.id === "hensou-files") return e;
+        return null;
+    }
+    readonly property bool filesPresent: desktop.filesForced || desktop.filesEntry !== null
+    function openFiles() {
+        if (desktop.filesEntry) Launcher.launchEntry(desktop.filesEntry);
+        else Launcher.launch(["hensou-files"], { id: "hensou-files", name: "Files", icon: "hensou-files", kind: "app" });
     }
     // Win98 maximize is Hyprland's maximized fullscreen state (the usable
     // area, the taskbar stays); fullscreen state 2 covers everything.
@@ -378,6 +493,8 @@ Scope {
         if (gate.enabled) out.push("builder");
         out.push("ntf");
         if (desktop.battery.present) out.push("bat");
+        // The apps' StatusNotifierItems, after the built-in controls.
+        for (const r of desktop.sniRows) out.push(r.key);
         return out;
     }
 
@@ -396,8 +513,10 @@ Scope {
         if (id === "bat") return Tray.batteryIcon(desktop.batteryRule.indicator);
         return "";
     }
-    function badge(id) { return Tray.badge(id, desktop.trayData); }
+    function badge(id) { return Sni.isKey(id) ? "" : Tray.badge(id, desktop.trayData); }
     function tooltip(id) {
+        if (Sni.isKey(id)) { const r = desktop.sniRowFor(id); return r ? r.tooltip : ""; }
+        if (id === "quick") return desktop.desktopShown ? "Show the windows again" : "Show Desktop";
         if (id.indexOf("win") === 0) {
             const t = desktop.lane[Number(id.slice(3))];
             return t ? (t.title || "(untitled)") : "";
@@ -441,7 +560,8 @@ Scope {
         StartModel.commands(desktop.commandRows),
         desktop.userName,
         taskbar.plan.structure === "start" ? desktop.overflowItems(false) : [],
-        { favorites: StartModel.favorites(desktop.webApps), documents: StartModel.documents(desktop.recent), host: desktop.hostName })
+        { favorites: StartModel.favorites(desktop.webApps), documents: StartModel.documents(desktop.recent), host: desktop.hostName,
+          files: desktop.filesPresent })
 
     function runStart(item) {
         MenuState.close();
@@ -460,6 +580,9 @@ Scope {
         else if (item.action === "logoff") desktop.openMenu("logoff", false);
         else if (item.action === "shutdown") desktop.openShutDown();
         else if (item.action === "lock") desktop.sessionLater("lock");
+        else if (item.action === "files") desktop.openFiles();
+        else if (item.action === "showDesktop") desktop.toggleDesktop();
+        else if (item.action === "sni") desktop.sniChoose(item.key);
     }
     function logOff() {
         MenuState.close();
@@ -604,7 +727,8 @@ Scope {
         return TaskModel.taskbarMenu({
             shown: shown.length,
             others: front === "" ? shown.length : shown.filter(function (e) { return e.row.appId !== front; }).length,
-            hidden: desktop.hider ? desktop.hider.hiddenCount : 0
+            hidden: desktop.hider ? desktop.hider.hiddenCount : 0,
+            desktop: desktop.desktopShown
         });
     }
     // A chosen item runs on the next turn of the event loop, once the menu
@@ -646,6 +770,7 @@ Scope {
             break;
         case "restoreAll": if (desktop.hider) desktop.hider.showAll(desktop.shownPage); break;
         case "find": context.omniBar.enterRoot(); break;
+        case "showDesktop": desktop.toggleDesktop(); break;
         }
     }
 

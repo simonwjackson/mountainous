@@ -8,10 +8,12 @@ const path = require('node:path');
 // start-model.js .imports ../../app-icon.js as AppIcon, as QML does.
 const load = (file, ctx = {}) => {
     vm.runInNewContext(fs.readFileSync(file, 'utf8').replace(/^\.pragma library\s*$/m, '')
-        .replace(/^\.import "\.\.\/\.\.\/app-icon\.js" as AppIcon\s*$/m, ''), ctx);
+        .replace(/^\.import "[^"]+" as \w+\s*$/mg, ''), ctx);
     return ctx;
 };
-const T = load(process.argv[2] || __dirname + '/tray-model.js');
+const trayModel = process.argv[2] || __dirname + '/tray-model.js';
+const Sni = load(path.join(path.dirname(trayModel), '../../sni-tray.js'));
+const T = load(trayModel, { Sni });
 const startModel = process.argv[3] || __dirname + '/start-model.js';
 const S = load(startModel, { AppIcon: load(path.join(path.dirname(startModel), '../../app-icon.js')) });
 const plain = (v) => JSON.parse(JSON.stringify(v));
@@ -178,6 +180,26 @@ const narrow = plain(S.top(p, w, c, 'simon', [{ text: 'Sound', action: 'open', c
 assert.equal(narrow[6].text, 'T&askbar');
 assert.equal(narrow[6].submenu[0].control, 'vol');
 assert.equal(plain(S.top(p, w, c, 'simon', [])).length, plain(S.top(p, w, c, 'simon')).length);
+// Files, while Hensou Files is installed: after Documents, Super+E.
+const withFiles = plain(S.top(p, w, c, 'simon', [], { host: 'myoko', files: true }));
+assert.deepEqual(withFiles.slice(2, 5).map(i => i.text), ['&Documents', 'F&iles', '&Windows']);
+assert.deepEqual([withFiles[3].icon, withFiles[3].shortcut, withFiles[3].action], ['computer', 'Super+E', 'files']);
+const fkeys = withFiles.filter(i => !i.separator).map(i => (/&(.)/.exec(i.text) || [])[1].toLowerCase());
+assert.equal(new Set(fkeys).size, fkeys.length, 'Files keeps the access keys unique: ' + fkeys.join(''));
+assert.equal(top.some(i => i.action === 'files'), false, 'not installed: no Files');
+// An app's tray menu (dbusmenu) as Win98Menu items: its access keys.
+const e = (text, extra) => Object.assign({ text, enabled: true, separator: false, check: 'none', checked: false, ref: { t: text } }, extra || {});
+let sm = plain(T.sniMenu([{ separator: true }, e('_Show Transfers'), { separator: true }, { separator: true }, e('Cancel _All', { enabled: false }),
+    e('R&D', { children: [e('_On', { check: 'checkbox', checked: true }), e('Off', { check: 'checkbox' })] }), e('None', { children: [] }), { separator: true }]));
+assert.deepEqual(sm.map(i => i.separator ? '-' : i.text), ['&Show Transfers', '-', 'Cancel &All', 'R&&D', 'None']);
+assert.deepEqual([sm[0].act, sm[0].ref.t, sm[2].enabled, sm[4].enabled], ['entry', '_Show Transfers', false, false]);
+assert.deepEqual(sm[3].submenu.map(i => [i.text, i.checked]), [['&On', true], ['Off', false]]);
+assert.equal('checked' in sm[0], false);
+sm = plain(T.sniMenu([e('Quit')], { defaultLabel: 'Files & Co' }));
+assert.deepEqual(sm.map(i => i.separator ? '-' : i.text), ['&Open Files && Co', '-', 'Quit']);
+assert.deepEqual([sm[0].bold, sm[0].act], [true, 'activate']);
+assert.deepEqual(plain(T.sniMenu([])), [{ text: '(Empty)', enabled: false }]);
+assert.equal(T.LABEL.quick, 'Show Desktop');
 // Super+O: every tray letter, N for Notifications included.
 assert.deepEqual(Object.keys(T.CHORD).map(k => T.CHORD[k]).join(''), 'BWSLCDFRN');
 assert.equal(T.CHORD.ntf, 'N');

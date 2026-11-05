@@ -1,4 +1,5 @@
 .pragma library
+.import "../../sni-tray.js" as Sni
 // What the Win98 tray draws for each control: the icon, the count badge and
 // the tooltip, as pure functions of plain values the Desktop reads from the
 // shared data owners. The wording is the approved mock's (tipText in
@@ -13,7 +14,7 @@ var ORDER = ["layout", "dict", "bt", "wifi", "vol", "bri", "oci", "disk", "fleet
 var CHORD = { bt: "B", wifi: "W", vol: "S", bri: "L", oci: "C", disk: "D", fleet: "F", builder: "R", ntf: "N" };
 
 var LABEL = {
-    start: "Start", layout: "Layout", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
+    start: "Start", quick: "Show Desktop", layout: "Layout", dict: "Dictation", bt: "Bluetooth", wifi: "Wi-Fi", vol: "Sound", bri: "Brightness",
     oci: "OCI egress", disk: "Server storage", fleet: "Fleet", builder: "Remote builds", ntf: "Notifications",
     bat: "Battery", clock: "Date/Time", more: "More icons", tasks: "More windows"
 };
@@ -164,4 +165,31 @@ function dictationText(statusText, backendLabel, queueCount, queueText) {
     if (backendLabel) v += " \u00b7 " + backendLabel;
     if (queueCount > 1) v += " \u00b7 " + queueText;
     return v;
+}
+
+// An app's StatusNotifierItem menu (its dbusmenu, loaded by SniMenuTree)
+// as Win98Menu items. Its access keys are the app's ("_" becomes "&").
+// opts.defaultLabel: opened from the tray chevron, the menu starts with
+// the item's own command in bold (Win98's default item), so the app is
+// reachable there by its left click too.
+function sniMenu(entries, opts) {
+    var o = opts || {};
+    var items = convert(Sni.tidy(entries));
+    if (o.defaultLabel) {
+        var head = { text: "&Open " + String(o.defaultLabel).replace(/&/g, "&&"), bold: true, act: "activate" };
+        items = items.length ? [head, { separator: true }].concat(items) : [head];
+    }
+    return items.length ? items : [{ text: "(Empty)", enabled: false }];
+}
+function convert(list) {
+    return list.map(function (e) {
+        if (e.separator) return { separator: true };
+        var it = { text: Sni.accessText(e.text) || "(untitled)", enabled: e.enabled !== false, act: "entry", ref: e.ref };
+        if (e.check && e.check !== "none") it.checked = !!e.checked;
+        if (e.children) {
+            var sub = convert(Sni.tidy(e.children));
+            if (sub.length) it.submenu = sub; else it.enabled = false;
+        }
+        return it;
+    });
 }

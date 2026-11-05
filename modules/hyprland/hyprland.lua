@@ -624,6 +624,19 @@ end, { ignore_mods = true, auto_consuming = true })
 --------------------------------------------------------------------
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("desktop-theme toggle"))
 
+--------------------------------------------------------------------
+-- Files and the desktop (Hensou Files, modules/hensou-files.nix).
+--
+-- SUPER+E opens the Computer window ("Myoko" in Platinum, My Computer in
+-- Memphis); a running Files takes the request over its socket. The
+-- command exists only where the hensou-files package is installed.
+-- SUPER+SHIFT+D is Show Desktop (SUPER+D is the theme toggle above): the
+-- shell parks the shown page's windows and brings them back
+-- (modules/quickshell/show-desktop.js).
+--------------------------------------------------------------------
+hl.bind(mod .. " + E", hl.dsp.exec_cmd("hensou-files"))
+hl.bind(mod .. " + SHIFT + D", hl.dsp.exec_cmd("qs -c mountainous ipc call showDesktop toggle"))
+
 -- Separate face and verified runtime; do not send this to the desktop shell.
 hl.bind(mod .. " + Z", hl.dsp.exec_cmd("pyxamp ipc call pyxamp toggle"))
 

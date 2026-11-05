@@ -18,6 +18,9 @@
     layers = [
       "desktop"
       "disk"
+      # Hensou Files: its service, the folder handler, the udisks2 rule
+      # (modules/hensou-files.nix).
+      "files"
       "galaxy-book3"
       "session-restore"
     ];

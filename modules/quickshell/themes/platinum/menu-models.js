@@ -1,4 +1,5 @@
 .pragma library
+.import "../../sni-tray.js" as Sni
 // The rows of the Platinum menus that are built from data: the Apple menu
 // under the mountain, the Application menu at the right end of the bar,
 // and a Control Strip tile's menu. PlatinumCascadeMenu draws any list of
@@ -47,7 +48,10 @@ function recentRows(recent) {
 }
 
 // The Apple menu: launch and find (things not running yet), and the system.
-// opts: { host, builder, recent, webApps: [{ id, name, icon }] }
+// opts: { host, builder, recent, webApps: [{ id, name, icon }],
+//         files: { icon } while Hensou Files is installed (its desktop
+//         entry), or null: then the menu has Files, Super+E, in its
+//         alphabetical place between Control Panels and Recent Applications }
 function apple(opts) {
     var o = opts || {};
     var host = o.host ? o.host.charAt(0).toUpperCase() + o.host.slice(1) : "This Computer";
@@ -55,8 +59,11 @@ function apple(opts) {
         item({ id: "about", label: "About " + host + "…", spacer: true, action: { kind: "about" } }),
         sep(),
         item({ id: "cp", label: "Control Panels", icon: "folder", submenu: controlPanels(o) }),
-        item({ id: "recent", label: "Recent Applications", icon: "folder", submenu: recentRows(o.recent) }),
     ];
+    if (o.files)
+        rows.push(item({ id: "files", label: "Files", hint: "Super+E", app: o.files.icon || "", spacer: !o.files.icon,
+                         action: { kind: "files" } }));
+    rows.push(item({ id: "recent", label: "Recent Applications", icon: "folder", submenu: recentRows(o.recent) }));
     var apps = (o.webApps || []).slice().sort(function (a, b) {
         return String(a.name).toLowerCase() < String(b.name).toLowerCase() ? -1 : 1;
     });
@@ -88,7 +95,8 @@ function alert(what, host) {
 // ephemeral (docs/plans/desktop-themes.md, "No workspace numbers").
 // here is this bar's output name; screenLabel names the other one.
 function placeLabel(w, here, screenLabel) {
-    if (typeof w.workspace === "string" && w.workspace.indexOf("special:hidden-") === 0) return "hidden";
+    if (typeof w.workspace === "string" && (w.workspace.indexOf("special:hidden-") === 0
+        || w.workspace.indexOf("special:desktop-") === 0)) return "hidden";
     if (!(w.page > 0)) return "";
     return w.screen && here && w.screen !== here ? (screenLabel ? screenLabel(w.screen) : w.screen) : "";
 }
@@ -111,15 +119,24 @@ function windowRows(app, front, here, screenLabel) {
 // The Application menu: switch what is running.
 // opts: { apps (app-model.apps), front (address), frontApp (app id or ""),
 //         frontName, othersShown (bool), anyHidden (bool), target (app id
-//         Super+Tab is on), here, screenLabel }
+//         Super+Tab is on), here, screenLabel, desktopShown (bool),
+//         coveredShown (bool: windows cover this screen's page) }
+// Show Desktop (Super+Shift+D) is the desktop's own row, checked while the
+// desktop shows. With no app in front (the desktop is), Hide Others is
+// Show Desktop too, as Mac OS's Hide Others with the Finder in front.
 function application(opts) {
     var o = opts || {};
     var name = o.frontName || "";
     var rows = [
         item({ id: "hide", label: name ? "Hide " + name : "Hide", disabled: !o.frontApp, spacer: true,
                action: { kind: "hide", appId: o.frontApp } }),
-        item({ id: "hideOthers", label: "Hide Others", disabled: !o.othersShown, spacer: true, action: { kind: "hideOthers", appId: o.frontApp } }),
+        o.frontApp
+            ? item({ id: "hideOthers", label: "Hide Others", disabled: !o.othersShown, spacer: true, action: { kind: "hideOthers", appId: o.frontApp } })
+            : item({ id: "hideOthers", label: "Hide Others", disabled: !o.coveredShown, spacer: true, action: { kind: "showDesktop" } }),
         item({ id: "showAll", label: "Show All", disabled: !o.anyHidden, spacer: true, action: { kind: "showAll" } }),
+        sep(),
+        item({ id: "showDesktop", label: "Show Desktop", hint: "Super+Shift+D", check: !!o.desktopShown, spacer: true,
+               disabled: !o.desktopShown && !o.coveredShown, action: { kind: "showDesktop" } }),
     ];
     var apps = o.apps || [];
     if (apps.length > 0) rows.push(sep());
@@ -163,6 +180,33 @@ function tile(opts) {
         item({ id: "move", label: "Move to page", submenu: sub }),
         item({ id: "hideApp", label: "Hide " + name, action: { kind: "hide", appId: w.appId } }),
     ];
+}
+
+// An app's StatusNotifierItem menu (its dbusmenu, loaded by SniMenuTree)
+// as cascade rows. Platinum has no access keys: "_" marks are dropped.
+// opts.defaultLabel: opened from », the menu starts with the item's own
+// command, so its left click is reachable there too.
+function sniRows(entries, opts) {
+    var o = opts || {};
+    var rows = sniConvert(Sni.tidy(entries), "sni");
+    if (o.defaultLabel) {
+        var head = item({ id: "sni-open", label: "Open " + o.defaultLabel, action: { kind: "sniActivate" } });
+        rows = rows.length ? [head, sep()].concat(rows) : [head];
+    }
+    return rows.length ? rows : [item({ id: "sni-none", label: "No commands", disabled: true })];
+}
+function sniConvert(list, prefix) {
+    return list.map(function (e, i) {
+        if (e.separator) return sep();
+        var r = item({ id: prefix + "-" + i, label: Sni.plainText(e.text) || "(untitled)", disabled: e.enabled === false,
+                       action: { kind: "sniEntry", ref: e.ref } });
+        if (e.check && e.check !== "none") r.check = !!e.checked;
+        if (e.children) {
+            var sub = sniConvert(Sni.tidy(e.children), prefix + "-" + i);
+            if (sub.length) { r.submenu = sub; r.action = null; } else r.disabled = true;
+        }
+        return r;
+    });
 }
 
 // The first enabled row at or after `from` in `dir`, wrapping; -1 if none.

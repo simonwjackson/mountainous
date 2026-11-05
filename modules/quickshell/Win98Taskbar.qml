@@ -8,10 +8,15 @@ import QtQuick
 import "themes/win98/taskbar-plan.js" as Plan
 import "themes/win98/tray-model.js" as Tray
 import "app-icon.js" as AppIcon
+import "sni-tray.js" as Sni
 
 // The Win98 taskbar: 28 u at the bottom edge, which it reserves.
 //
-//   [Start] [window][window] | [window] ... » | ‖ dictation | [» icons  4:51 PM]
+//   [Start] ‖[desk] [window][window] | [window] ... » | ‖ dictation | [» icons apps  4:51 PM]
+//
+// Quick Launch (‖[desk]) holds Show Desktop. The tray lists the built-in
+// controls, then the apps' StatusNotifierItems (SniIcon: theme art or a
+// period lettermark); app icons go into the tray chevron first.
 //
 // One band per page. Between two pages stands a divider: Win98's etched
 // groove between toolbar groups (2 u), drawn only, with no button, hover,
@@ -74,6 +79,7 @@ PanelWindow {
         clock: bar.desktop.clock,
         dict: { visible: dict.barVisible, failed: bar.dictFailed, canRetry: dict.canRetry, text: bar.desktop.dictText },
         extras: bar.desktop.taskExtras,
+        quick: !!bar.desktop.showDesktop,
         measure: bar.m
     })
 
@@ -197,10 +203,60 @@ PanelWindow {
             }
         }
 
+        // ---- Quick Launch: Show Desktop, flat until hovered (a Win98
+        // toolbar button), pressed in while the desktop shows.
+        Item {
+            id: quickBand
+            visible: bar.plan.quick
+            x: start.x + start.width
+            y: bar.units(4)
+            width: visible ? bar.units(Plan.QUICK) : 0
+            height: bar.units(22)
+            Etch { x: bar.units(2) }
+            Grip { x: bar.units(7) }
+            Item {
+                id: quickButton
+                objectName: "quickShowDesktop"
+                x: bar.units(Plan.BAND)
+                width: bar.units(Plan.QUICK_BTN)
+                height: bar.units(22)
+                readonly property bool sunk: bar.pressed("quick") || bar.desktop.desktopShown
+                Component.onCompleted: bar.register("quick", quickButton)
+                Component.onDestruction: if (bar.places.quick === quickButton) bar.register("quick", null)
+                Win98Dither { visible: bar.desktop.desktopShown && !bar.pressed("quick"); anchors.fill: parent }
+                Win98Bevel {
+                    anchors.fill: parent
+                    filled: false
+                    visible: quickButton.sunk || bar.hovered("quick")
+                    variant: quickButton.sunk ? "thinSunken" : "thinRaised"
+                }
+                Win98Icon {
+                    name: "show-desktop"
+                    x: Kit.Win98Tokens.snap((quickButton.width - width) / 2 + (quickButton.sunk ? bar.u : 0), bar.u)
+                    y: Kit.Win98Tokens.snap((quickButton.height - height) / 2 + (quickButton.sunk ? bar.u : 0), bar.u)
+                }
+                Win98FocusRect {
+                    visible: bar.focused("quick")
+                    x: bar.units(2); y: bar.units(2)
+                    width: quickButton.width - bar.units(4); height: quickButton.height - bar.units(4)
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: bar.hoverIn("quick")
+                    onExited: bar.hoverOut("quick")
+                    onPressed: { bar.pressId = "quick"; bar.desktop.tipId = ""; bar.desktop.closeMenu(); }
+                    onReleased: bar.pressId = ""
+                    onCanceled: bar.pressId = ""
+                    onClicked: bar.desktop.toggleDesktop()
+                }
+            }
+        }
+
         // ---- page bands and window buttons
         Item {
             id: tasks
-            x: start.x + start.width
+            x: start.x + start.width + quickBand.width
             y: bar.units(4)
             width: Math.max(0, (trayBox.visible ? trayBox.x - bar.units(3) : bar.width - bar.units(2))
                 - (dictBand.visible ? dictBand.width : 0) - (extrasBand.visible ? extrasBand.width : 0) - x)
@@ -710,7 +766,10 @@ PanelWindow {
         id: ti
         property string tid: ""
         readonly property string badge: bar.desktop.badge(tid)
+        readonly property bool sni: Sni.isKey(tid)
+        readonly property var sniRow: sni ? bar.desktop.sniRowFor(tid) : null
         readonly property bool open: bar.isOpen(tid) || bar.pressed(tid)
+            || (sni && bar.isOpen("sni") && bar.desktop.sniKey === tid)
         readonly property bool latched: tid === "builder" && bar.desktop.builderLook.latched && !open
         width: bar.units(Plan.trayWidth(badge))
         height: bar.units(20)
@@ -730,9 +789,17 @@ PanelWindow {
             tone: bar.desktop.fleetLook.tone
             x: bar.units(2); y: bar.units(2)
         }
+        SniIcon {
+            visible: ti.sni
+            themeId: "win98"
+            row: ti.sniRow
+            tray: bar.desktop.tray
+            size: bar.units(16)
+            x: bar.units(2); y: bar.units(2)
+        }
         Win98Icon {
-            visible: ti.tid !== "fleet"
-            name: ti.tid === "fleet" ? "" : bar.desktop.trayIcon(ti.tid)
+            visible: ti.tid !== "fleet" && !ti.sni
+            name: ti.tid === "fleet" || ti.sni ? "" : bar.desktop.trayIcon(ti.tid)
             level: ti.tid === "bat" ? Math.max(0, Math.min(1, bar.desktop.battery.percent / 100)) : undefined
             levelColor: Tray.batteryColor(bar.desktop.batteryRule.tone)
             x: bar.units(2); y: bar.units(2)
@@ -769,12 +836,22 @@ PanelWindow {
             hoverEnabled: true
             // The Fleet icon's right button opens its menu (Win98's tray
             // context menu): Open Fleet, Show Glance.
-            acceptedButtons: ti.tid === "fleet" ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
+            acceptedButtons: ti.sni ? Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                : ti.tid === "fleet" ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
             onEntered: bar.hoverIn(ti.tid)
             onExited: bar.hoverOut(ti.tid)
+            // An app's icon scrolls as its app asks (volume, pages).
+            onWheel: function (wheel) {
+                if (!ti.sni) { wheel.accepted = false; return; }
+                if (ti.sni && bar.desktop.tray) bar.desktop.tray.scroll(ti.tid, wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x, wheel.angleDelta.y === 0);
+            }
             onPressed: function (mouse) {
                 bar.pressId = ti.tid;
                 bar.desktop.tipId = "";
+                if (ti.sni) {
+                    bar.desktop.sniPress(ti.tid, mouse.button === Qt.RightButton ? "right" : mouse.button === Qt.MiddleButton ? "middle" : "left");
+                    return;
+                }
                 if (ti.tid === "fleet" && mouse.button === Qt.RightButton) bar.desktop.openMenu("fleetmenu", false);
                 else if (ti.tid !== "bat") bar.desktop.press(ti.tid);
             }

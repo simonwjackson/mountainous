@@ -144,6 +144,41 @@
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/app-icons.sh ${quickshell} $TMPDIR/app-icons $out
           '';
+      # Files' shell pieces in both themes (theme-dev/win98/capture-chrome.sh):
+      # the apps' tray icons with theme art and lettermarks, an app's menu,
+      # Files in Start and the Apple menu, Show Desktop, the narrow
+      # overflow; Platinum light, dark and extra dark, Memphis light and
+      # dark, at scale 1.5. The shots are the output.
+      checks.files-chrome-captures =
+        pkgs.runCommand "files-chrome-captures"
+          (
+            sessionEnv
+            // {
+              nativeBuildInputs = [
+                config.packages.quickshell-mountainous
+                (pkgs.python3.withPackages (p: [
+                  p.pillow
+                  p.pywayland
+                ]))
+              ]
+              ++ sessionEnv.nativeBuildInputs;
+              XDG_DATA_DIRS = "${config.packages.desktop-art}/share:${pkgs.hicolor-icon-theme}/share";
+              # Platinum draws in ChicagoFLF, Memphis in W95FA Grid.
+              FONTCONFIG_FILE = pkgs.makeFontsConf {
+                fontDirectories = [
+                  config.packages.w95fa-grid
+                  config.packages.chicagoflf
+                  pkgs.dejavu_fonts
+                ];
+              };
+            }
+          )
+          ''
+            export HOME=$TMPDIR
+            bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+            export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+            bash ${quickshell}/theme-dev/win98/capture-chrome.sh ${quickshell} $TMPDIR/chrome $out
+          '';
       checks.win98-theme =
         pkgs.runCommand "win98-theme"
           {

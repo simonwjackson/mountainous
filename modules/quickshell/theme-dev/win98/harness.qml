@@ -14,6 +14,8 @@ import "panels"
 import "lanes.js" as Lanes
 import "app-model.js" as AppModel
 import "window-hide.js" as WindowHide
+import "show-desktop.js" as ShowRule
+import "sni-tray.js" as Sni
 import "win98-dev/states.js" as States
 import "win98-dev/find-states.js" as FindStates
 
@@ -55,6 +57,7 @@ ShellRoot {
         readonly property var windowRows: root.toplevels.map(function (t) { return root.rowOf(t); })
         readonly property var mru: root.mru
         readonly property var hider: hiderStub
+        readonly property var showDesktop: showStub
         readonly property var motion: motionStub
         function addressOf(t) { return t && t.lastIpcObject ? t.lastIpcObject.address : ""; }
         function rowOf(t) { return root.rowOf(t); }
@@ -164,6 +167,76 @@ ShellRoot {
         function setHome(a, page) { state = WindowHide.setHome(state, shellStub.windowRows, a, page); root.note("home " + root.indexOf(a) + " " + page); }
         function homeOf(a) { return WindowHide.homeOf(state, a); }
         function isHidden(row) { return !!row && WindowHide.isHiddenWorkspace(row.workspace); }
+    }
+
+    // ---- ShowDesktop's public shape, with show-desktop.js's own rules;
+    // its moves land on the fixture's windows instead of Hyprland.
+    QtObject {
+        id: showStub
+        property var state: ShowRule.empty()
+        function active(name) { return ShowRule.active(shellStub.windowRows, name || ""); }
+        function homeOf(a) { return ShowRule.homeOf(showStub.state, a); }
+        function screenOf(row) { return ShowRule.screenOf(showStub.state, row); }
+        function isParked(row) { return ShowRule.isParked(row); }
+        function run(result) {
+            showStub.state = result.state;
+            for (const m of result.moves) {
+                const i = root.indexOf(m.address);
+                if (i < 0) continue;
+                const t = root.toplevels[i];
+                if (typeof m.workspace === "number") { t.workspace = root.pageWs(m.workspace, root.monitor.name); root.note("unpark " + i + " " + m.workspace); }
+                else { t.workspace = { id: -97, name: m.workspace, active: false, monitor: t.workspace ? t.workspace.monitor : root.monitor }; t.activated = false; root.note("park " + i); }
+            }
+            if (result.focus) { const f = root.indexOf(result.focus); if (f >= 0) root.focus(f); }
+            return result.action;
+        }
+        function toggle(name) { return showStub.run(ShowRule.toggle(showStub.state, shellStub.windowRows, name, root.dd.showingPage, { screens: [root.monitor.name] })); }
+        function restoreWindow(a, name) { return showStub.run(ShowRule.restoreWindow(showStub.state, shellStub.windowRows, a, root.dd.showingPage)); }
+    }
+
+    // ---- SniTray's public shape over fixture items (sni-tray.js rows);
+    // presses and menu choices only log.
+    QtObject {
+        id: trayStub
+        property var fixture: []
+        property var fixtureMenus: ({})
+        signal fixturePressed(string key, string what)
+        readonly property var rows: Sni.rows(trayStub.fixture)
+        function rowFor(key) { return trayStub.rows.find(function (r) { return r.key === key; }) || null; }
+        function itemFor(key) { return null; }
+        function menuOf(key) { return null; }
+        function activate(key) { trayStub.fixturePressed(key, "activate"); }
+        function secondary(key) { trayStub.fixturePressed(key, "secondary"); }
+        function scroll(key, delta, horizontal) { trayStub.fixturePressed(key, "scroll " + delta); }
+        // The names the fixture says the theme's own set has.
+        property var own: ({})
+        function resolvedPath(themeId, name) {
+            const set = themeId === "win98" ? "Chicago95" : "Mountainous-platinum";
+            return (trayStub.own[name] || []).indexOf(themeId) >= 0 ? "/fixture/share/icons/" + set + "/16/apps/" + name + ".png" : "";
+        }
+        onFixturePressed: function (key, what) { root.note("tray " + key + " " + what); }
+    }
+    // Four apps: Files copying (no icon: a lettermark, needs attention),
+    // Ghostty with theme art in both sets, Krita whose icon is hicolor only
+    // (a lettermark), and a Passive item that never shows.
+    readonly property var trayFixture: [
+        { id: "hensou-files", title: "Files", status: "NeedsAttention", iconSource: "image://qsimage/hensou-files",
+          tooltipTitle: "Files", tooltipDescription: "Copying 3 items to kaiju", hasMenu: true, onlyMenu: false },
+        { id: "ghostty", title: "Ghostty", status: "Active", iconSource: "image://icon/com.mitchellh.ghostty?fallback=x",
+          tooltipTitle: "Ghostty", tooltipDescription: "", hasMenu: true, onlyMenu: true },
+        { id: "steam", title: "Steam", status: "Passive", iconSource: "image://icon/steam", hasMenu: true },
+        { id: "org.kde.krita", title: "Krita", status: "Active", iconSource: "image://icon/krita?fallback=x",
+          tooltipTitle: "Krita", tooltipDescription: "Rendering frame 12 of 48", hasMenu: true, onlyMenu: false }
+    ]
+    readonly property var trayFixtureMenus: {
+        const e = function (text, extra) { return Object.assign({ text: text, enabled: true, separator: false, check: "none", checked: false, ref: { text: text } }, extra || {}); };
+        return {
+            "sni:hensou-files": [e("_Show Transfers"), { separator: true }, e("Cancel _All")],
+            "sni:ghostty": [e("_New Window"), e("New _Tab", { enabled: false }), { separator: true },
+                e("_Quit Ghostty")],
+            "sni:org.kde.krita": [e("_Pause Render"), e("Render _Queue", { children: [e("_Frames 1-48", { check: "radio", checked: true }), e("_Current Frame", { check: "radio" })] }),
+                e("_Notify When Done", { check: "checkbox", checked: true }), { separator: true }, e("_Quit")]
+        };
     }
 
     // ---- windows: Hyprland toplevels' shape (lanes.js)
@@ -481,6 +554,7 @@ ShellRoot {
         readonly property var omniBar: omni
         readonly property var builderGate: gate
         readonly property var beszel: fleetData
+        readonly property var tray: trayStub
         readonly property var frontWindow: root.toplevels.find(function (t) { return t.activated; }) || null
         readonly property date now: new Date(2026, 9, 22, 16, 51)
     }
@@ -1080,6 +1154,37 @@ ShellRoot {
             return JSON.stringify({ drawn: out, tips: tips, pages: pages, dividers: dividers });
         }
         function shutChoice(): string { return root.desktop ? root.desktop.shutChoice : ""; }
+        // ---- Files' shell pieces: the apps' tray icons, Show Desktop, Files
+        // in Start and the Apple menu (capture-chrome.sh).
+        function tray(on: bool): string {
+            trayStub.own = { "com.mitchellh.ghostty": ["win98", "platinum"] };
+            trayStub.fixtureMenus = root.trayFixtureMenus;
+            trayStub.fixture = on ? root.trayFixture : [];
+            return JSON.stringify(trayStub.rows.map(function (r) { return r.key; }));
+        }
+        // Press an app's icon as the pointer would: left, middle, right.
+        function trayPress(key: string, button: string): string {
+            const d = root.desktop;
+            if (!d) return "no desktop";
+            if (typeof d.sniPress === "function") d.sniPress(key, button);
+            else if (d.bar && typeof d.bar.sniPress === "function") d.bar.sniPress(key, button);
+            return MenuState.current;
+        }
+        function trayChoose(key: string): string {
+            const d = root.desktop;
+            if (typeof d.sniChoose === "function") d.sniChoose(key);
+            else d.bar.sniChoose(key);
+            return MenuState.current;
+        }
+        function files(on: bool): string { if (root.desktop) root.desktop.filesForced = on; return String(on); }
+        function showDesktop(): string { return showStub.toggle(root.monitor.name); }
+        function desktopShown(): string { return String(showStub.active(root.monitor.name)); }
+        function planOf(): string {
+            const d = root.desktop;
+            if (d && d.taskbarPlan) return JSON.stringify(d.taskbarPlan());
+            if (d && d.bar) return JSON.stringify(d.bar.plan);
+            return "{}";
+        }
         // The items under a point of the open menu's window, top first (development).
         function probe(x: int, y: int): string {
             const m = root.desktop ? root.desktop.openItem : null;

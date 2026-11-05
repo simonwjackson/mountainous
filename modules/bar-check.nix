@@ -97,7 +97,7 @@
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             node ${./quickshell/page-names.test.js} ${./quickshell/page-names.js}
             node ${./quickshell/themes/platinum/strip-plan.test.js} ${./quickshell/themes/platinum/strip-plan.js} ${./quickshell/page-names.js}
-            node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js}
+            node ${./quickshell/themes/platinum/menu-models.test.js} ${./quickshell/themes/platinum/menu-models.js} ${./quickshell/sni-tray.js}
             node ${./quickshell/app-icon.test.js} ${./quickshell} ${./web-apps.json} ${./web-app-pwas.json}
             touch $out
           '';

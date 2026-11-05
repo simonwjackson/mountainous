@@ -89,12 +89,50 @@ Scope {
     FileView { path: "/proc/sys/kernel/hostname"; blockLoading: true; printErrors: false
         onLoaded: desktop.host = text().trim() }
 
+    // Files (Hensou Files): Apple menu ▸ Files and Super+E open the
+    // computer's window. Present only where the hensou-files package is
+    // installed; a harness may force it.
+    property bool filesForced: false
+    readonly property var filesEntry: {
+        for (const e of DesktopEntries.applications.values) if (e && e.id === "hensou-files") return e;
+        return null;
+    }
+    function openFiles() {
+        if (desktop.filesEntry) Launcher.launchEntry(desktop.filesEntry);
+        else Launcher.launch(["hensou-files"], { id: "hensou-files", name: "Files", icon: "hensou-files", kind: "app" });
+    }
+
     readonly property var appleRows: Menus.apple({
         host: desktop.host,
         builder: desktop.context.builderGate.enabled === true,
         recent: desktop.recent,
-        webApps: desktop.webApps
+        webApps: desktop.webApps,
+        files: desktop.filesEntry ? { icon: desktop.filesEntry.icon || "" } : desktop.filesForced ? { icon: "" } : null
     })
+
+    // Show Desktop (shell.showDesktop): the Application menu's row, and
+    // Hide Others while the desktop is in front. Super+Shift+D reaches the
+    // same owner through the shell.
+    readonly property var showDesktop: desktop.shell.showDesktop || null
+    readonly property bool desktopShown: !!desktop.showDesktop && desktop.showDesktop.active(desktop.here)
+    readonly property bool desktopCovered: {
+        const page = desktop.shownPage();
+        return desktop.rows.some(function (r) { return r.page > 0 && r.page === page && r.screen === desktop.here; });
+    }
+    function toggleDesktop() { if (desktop.showDesktop) desktop.showDesktop.toggle(desktop.here); }
+
+    // The apps' tray icons: the open item's dbusmenu, as Platinum rows.
+    readonly property var tray: desktop.context.tray || null
+    SniMenuTree {
+        id: sniTree
+        menu: topBar.sniKey !== "" && desktop.tray && !desktop.tray.fixture ? desktop.tray.menuOf(topBar.sniKey) : null
+    }
+    readonly property var sniEntries: desktop.tray && desktop.tray.fixture
+        ? (desktop.tray.fixtureMenus[topBar.sniKey] || []) : sniTree.entries
+    readonly property var sniRow: topBar.sniRowFor(topBar.sniKey)
+    readonly property var sniMenuRows: desktop.sniRow
+        ? Menus.sniRows(desktop.sniEntries, { defaultLabel: topBar.sniFromOverflow && !desktop.sniRow.onlyMenu ? desktop.sniRow.label : "" })
+        : []
 
     readonly property var applicationRows: Menus.application({
         apps: desktop.apps,
@@ -105,6 +143,8 @@ Scope {
             return r.page > 0 && r.screen === desktop.here && r.appId !== desktop.frontApp;
         }),
         anyHidden: desktop.hider ? desktop.hider.hiddenCount > 0 : false,
+        desktopShown: desktop.desktopShown,
+        coveredShown: desktop.desktopCovered,
         target: desktop.cycleTarget,
         here: desktop.here,
         screenLabel: Lanes.screenLabel
@@ -182,6 +222,13 @@ Scope {
         case "activate": desktop.activateWindow(a.address); break;
         case "close": if (typeof desktop.shell.closeWindow === "function") desktop.shell.closeWindow(a.address); break;
         case "moveTo": if (typeof desktop.shell.moveToPage === "function") desktop.shell.moveToPage(a.address, a.page); break;
+        case "showDesktop": desktop.toggleDesktop(); break;
+        case "files": desktop.openFiles(); break;
+        case "sniActivate": if (desktop.tray) desktop.tray.activate(topBar.sniKey); break;
+        case "sniEntry":
+            if (desktop.tray && desktop.tray.fixture) desktop.tray.fixturePressed(topBar.sniKey, "entry " + a.ref.text);
+            else if (a.ref) a.ref.triggered();
+            break;
         }
     }
 
@@ -453,6 +500,7 @@ Scope {
         omniBar: desktop.context.omniBar
         frontWindow: desktop.context.frontWindow
         builderGate: desktop.context.builderGate
+        tray: desktop.context.tray || null
         now: desktop.context.now
         chordVisible: desktop.context.shell.chromeAccessVisible
     }
@@ -492,6 +540,15 @@ Scope {
     }
 
     Component {
+        id: sniMenu
+        PlatinumCascadeMenu {
+            objectName: "sniMenu"
+            items: desktop.sniMenuRows
+            onActivated: function (row) { desktop.run(row); }
+        }
+    }
+
+    Component {
         id: stripMenu
         PlatinumCascadeMenu {
             items: desktop.stripRows
@@ -517,7 +574,8 @@ Scope {
             find: desktop.omniClaimed ? findMenu : null,
             address: desktop.omniClaimed ? addressMenu : null,
             app: applicationMenu,
-            strip: desktop.stripMenuAddress !== "" ? stripMenu : null
+            strip: desktop.stripMenuAddress !== "" ? stripMenu : null,
+            sni: topBar.sniKey !== "" ? sniMenu : null
         })
 
     PlatinumMenuHost {

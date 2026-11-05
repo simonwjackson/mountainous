@@ -9,9 +9,12 @@
 //   3. titles      window buttons drop their titles (icons only)
 //   4. startIcon   the Start button drops its label
 // Then windows move into the windows chevron (other pages first, the last
-// page first), then tray icons move into the tray chevron in bar-plan.js's
-// overflow order, dictation last, then the focused window. Then the
-// readouts leave the bar for the tray chevron: the clock, then the battery.
+// page first), then tray icons move into the tray chevron: the apps'
+// StatusNotifierItems first (the last one first), then bar-plan.js's
+// overflow order, dictation last; then the focused window. Then the Quick
+// Launch band (Show Desktop) leaves; its command is in the tray chevron's
+// menu and the taskbar's own menu. Then the readouts leave the bar for the
+// tray chevron: the clock, then the battery.
 // Then two last structures:
 //   compact  Start and one chevron, which holds the tray controls, the
 //            windows, the clock and the battery;
@@ -26,6 +29,9 @@
 // task area, after the windows. They keep their place through every step
 // of the full structure (icons only once titles go); in the compact and
 // start structures they move into the same menu as the windows.
+//
+// Quick Launch: after Start, an etched groove and a grip, then the Show
+// Desktop button (22 u), then the windows' first gap.
 //
 // Pages: the first page's buttons follow Start after one gap; each later
 // page starts with a divider, Win98's etched groove between toolbar groups
@@ -45,6 +51,8 @@ var TBTN_MAX = 160;
 var TBTN_MIN = 72;
 var TBTN_ICON = 26;
 var GAP = 3;
+var QUICK_BTN = 22;
+var QUICK = BAND + QUICK_BTN;
 var LABEL_MIN = 46;
 var STEPS = ["clockShort", "dictText", "titles", "startIcon"];
 var MIN_WIDTH = 2 + START_ICON + 2;
@@ -72,12 +80,16 @@ function startWidth(measure) {
 // input: {
 //   windows: [{ page, focused }] in lane order,
 //   showingPage,
-//   tray: [{ id, badge }] in tray order (layout, then dict when shown, first),
+//   tray: [{ id, badge }] in tray order (layout, then dict when shown, first;
+//         StatusNotifierItems, "sni:<id>", last),
+//   quick: the Quick Launch band is wanted (Show Desktop exists),
 //   clock: { time, ampm },
 //   dict: { visible, failed, canRetry, text },
 //   extras: [{ id, label, bold }] (optional; see above),
 //   measure(text, bold) -> whole units
 // }
+function isSni(id) { return typeof id === "string" && id.indexOf("sni:") === 0; }
+
 function plan(W, input) {
     var wins = input.windows.map(function (w, i) {
         return { page: w.page, focused: !!w.focused, i: i };
@@ -104,9 +116,10 @@ function plan(W, input) {
         if (r2.fits) return r2;
     }
     var present = input.tray.map(function (t) { return t.id; });
-    for (var t = 0; t < TRAY_OVERFLOW.length; t++) {
-        if (present.indexOf(TRAY_OVERFLOW[t]) < 0) continue;
-        trayOut.push(TRAY_OVERFLOW[t]);
+    var trayOrder = present.filter(function (id) { return isSni(id); }).reverse().concat(TRAY_OVERFLOW);
+    for (var t = 0; t < trayOrder.length; t++) {
+        if (present.indexOf(trayOrder[t]) < 0) continue;
+        trayOut.push(trayOrder[t]);
         var r3 = layout(W, on, wins, pages, out, trayOut, input);
         if (r3.fits) return r3;
     }
@@ -116,15 +129,21 @@ function plan(W, input) {
         var r4 = layout(W, on, wins, pages, out, trayOut, input);
         if (r4.fits) return r4;
     }
+    // Quick Launch leaves next; Show Desktop stays in the menus.
+    var quickOut = !!input.quick;
+    if (quickOut) {
+        var rq = layout(W, on, wins, pages, out, trayOut, input, { quickOut: true });
+        if (rq.fits) return rq;
+    }
     // The readouts go before the bar changes shape.
-    var r5 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true });
+    var r5 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, quickOut: quickOut });
     if (r5.fits) return r5;
     if (present.indexOf("bat") >= 0) trayOut.push("bat");
-    var r6 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true });
+    var r6 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, quickOut: quickOut });
     if (r6.fits) return r6;
-    var r7 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, structure: "compact" });
+    var r7 = layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, quickOut: quickOut, structure: "compact" });
     if (r7.fits) return r7;
-    return layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, structure: "start" });
+    return layout(W, on, wins, pages, out, trayOut, input, { clockOut: true, quickOut: quickOut, structure: "start" });
 }
 
 function layout(W, on, wins, pages, outW, outT, input, opts) {
@@ -135,7 +154,10 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
     var startW = has("startIcon") ? START_ICON : startWidth(measure);
     var tray = input.tray.filter(function (t) { return outT.indexOf(t.id) < 0; });
     var clockText = has("clockShort") || !input.clock.ampm ? input.clock.time : input.clock.time + " " + input.clock.ampm;
-    var chevron = outT.length > 0 || !!o.clockOut
+    // The Quick Launch band, in the full structure only.
+    var quick = !!input.quick && !o.quickOut && structure === "full";
+    var quickW = quick ? QUICK : 0;
+    var chevron = outT.length > 0 || !!o.clockOut || (!!input.quick && !quick && structure !== "start")
         || (structure === "compact" && (outW.length > 0 || (input.extras || []).length > 0));
     var trayW = structure === "start" ? 0
         : 3 + 3 + tray.reduce(function (s, t) { return s + trayWidth(t.badge); }, 0)
@@ -172,13 +194,14 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
     // Start alone: 2 u each side while there is room, then less.
     var startX = structure === "start" ? Math.max(0, Math.min(2, Math.floor((W - 1) / 2))) : 2;
     if (structure === "start") startW = Math.max(1, Math.min(startW, W - 2 * startX));
-    var avail = W - 2 - 2 - startW - GAP - dictW - trayW - 3;
+    var avail = W - 2 - 2 - startW - quickW - GAP - dictW - trayW - 3;
     var room = avail - taskFixed - n * GAP;
     var fits = structure === "start" ? W >= MIN_WIDTH : avail >= 0 && room >= n * perBtn;
     var bw = Math.max(perBtn, Math.min(TBTN_MAX, Math.floor(room / Math.max(1, n))));
     var steps = on.slice();
     if (outW.length) steps.push("windows»");
     if (outT.length) steps.push("tray»");
+    if (o.quickOut) steps.push("quick»");
     if (o.clockOut) steps.push("clockOut");
     if (outT.indexOf("bat") >= 0) steps.push("batteryOut");
     if (structure !== "full") steps.push("compact");
@@ -187,8 +210,9 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
     var trayBox = structure === "start" ? null : { x: W - 2 - (trayW - 3), w: trayW - 3 };
     var right = trayBox ? trayBox.x - 3 : W - 2;
     var dictBox = dictShow && structure !== "start" ? { x: right - dictW, w: dictW } : null;
-    var tasksAll = Math.max(0, (dictBox ? dictBox.x : right) - 2 - startW);
-    var tasksBox = { x: 2 + startW, w: Math.max(0, tasksAll - extrasW) };
+    var quickBox = quick ? { x: 2 + startW, w: quickW } : null;
+    var tasksAll = Math.max(0, (dictBox ? dictBox.x : right) - 2 - startW - quickW);
+    var tasksBox = { x: 2 + startW + quickW, w: Math.max(0, tasksAll - extrasW) };
     var extrasBox = extrasW > 0 ? { x: tasksBox.x + tasksBox.w, w: Math.min(extrasW, tasksAll) } : null;
     return {
         fits: fits,
@@ -199,6 +223,8 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
         tray: tray.map(function (t) { return t.id; }),
         trayOut: outT.slice(),
         clockOut: !!o.clockOut,
+        quick: quick,
+        quickOut: !!input.quick && !quick,
         chevron: chevron && structure !== "start",
         tasksChevron: tasksChevron,
         clockText: clockText,
@@ -212,7 +238,7 @@ function layout(W, on, wins, pages, outW, outT, input, opts) {
         extraW: extraW,
         icons: bw < LABEL_MIN,
         startX: startX,
-        boxes: { start: { x: startX, w: startW }, tasks: tasksBox, extras: extrasBox, dict: dictBox, tray: trayBox,
+        boxes: { start: { x: startX, w: startW }, quick: quickBox, tasks: tasksBox, extras: extrasBox, dict: dictBox, tray: trayBox,
                  used: taskFixed - extrasW + n * (bw + GAP) },
         width: W
     };
