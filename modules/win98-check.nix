@@ -117,10 +117,10 @@
         bash ${quickshell}/theme-dev/win98/taskbar.sh ${quickshell} $TMPDIR/taskbar
         touch $out
       '';
-      # Chromium and its web apps draw the Phase 4 icon set in both themes
-      # (app-icon.js): the Win98 taskbar and the Platinum Control Strip with
-      # the patched Quickshell and the art package, and no fallthrough to
-      # Chromium's logo or a PWA's own icon. The crops are the output.
+      # Per-window Chromium/PWA icons on the real Win98 taskbar and Platinum
+      # strip: sharp site/installed icons, generated Platinum tokens, and
+      # theme art/lettermarks only when neither icon exists. Each window is
+      # checked separately against its PNG; no upstream Chromium-logo leak.
       checks.app-icons =
         pkgs.runCommand "app-icons"
           (
@@ -135,6 +135,8 @@
               ]
               ++ sessionEnv.nativeBuildInputs;
               XDG_DATA_DIRS = "${config.packages.desktop-art}/share:${pkgs.hicolor-icon-theme}/share";
+              DESKTOP_ART = config.packages.desktop-art;
+              MOUNTAINOUS_PLATINUM_ICON = "${config.packages.platinum-icons}/bin/mountainous-platinum-icon";
             }
           )
           ''

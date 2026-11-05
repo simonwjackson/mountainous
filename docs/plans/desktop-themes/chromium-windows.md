@@ -450,6 +450,21 @@ A 16-logical-pixel Platinum row needs 24 physical pixels. Grouped Application-me
 entries keep their app-level icon. Window submenu rows, Find results and
 individual Control Strip tiles use per-window icons.
 
+`checks.app-icons` checks this contract in the real taskbar and Control Strip
+at scale 1.5. Its former ban on installed-PWA colours and unconditional Jellyfin
+and Teams lettermark expectations were obsolete after per-window icons, not
+production regressions. Lettermarks remain required when no site or installed
+icon exists. The check now gives each window a different original synthetic
+icon through private HTTP target lists and desktop entries. It compares each
+window separately with its own PNG (Win98) or the packaged renderer's 36 px
+token in the 32 px strip box (Platinum). Jellyfin has no matching CDP title;
+Teams has a conflicting page icon. Both must prefer their installed icon.
+A second session has neither site nor installed icons and must draw theme art,
+including Reddit, Jellyfin and Teams lettermarks and the themed browser for an
+unknown site. Upstream Chromium-logo colours remain forbidden in both sessions.
+The check supplies the same pinned Platinum helper as the desktop service;
+without it, a raw favicon must fail the token comparison.
+
 Cost: native decoding and frame inspection use more memory than a pre-sized
 image. Frames are capped at 64. Discovery can fetch a site's manifest in Chromium,
 and Qt makes its own icon requests without Chromium's profile/cookies. The site
