@@ -11,7 +11,8 @@ import QtQuick
 // ThemePicker model, Cancel closes without a change. The draft lives only
 // here; the saved choice is the state files'.
 //
-// A Memphis scheme preview is drawn live in that scheme's palette. Another
+// A Memphis scheme preview is drawn live in that scheme's palette
+// (MemphisTokens.palette(appearance ID)), all 22 of them. Another
 // theme's preview is its registered thumbnail (themes.json), so this view
 // never loads that theme's QML. Memphis has no Extra dark: the option is not
 // shown and the stored value passes through unchanged.
@@ -40,31 +41,55 @@ PanelWindow {
 
 
     // ---- the draft
+    // An appearance is named by its stable ID (ThemePicker: preview and
+    // apply take it; "light" and "dark" are the old aliases). A registry
+    // entry without an ID takes its mode's default ID.
+    function appearanceId(themeId, a) {
+        if (!a) return "";
+        if (a.appearanceId) return a.appearanceId;
+        if (a.id) return a.id;
+        return a.mode === "dark" ? "dark-grey" : themeId === "memphis" ? "standard" : "light";
+    }
+    // A model without currentAppearance has the old mode API: apply and
+    // preview then take the mode, and only the mode defaults exist.
+    readonly property bool idApi: model.currentAppearance !== undefined
+    function arg(a) { return win.idApi ? win.appearanceId(win.theme ? win.theme.id : "", a) : (a ? a.mode : ""); }
+    readonly property string currentAppearance: model.currentAppearance
+        || (model.currentMode === "dark" ? "dark-grey" : model.currentTheme === "memphis" ? "standard" : "light")
     // This theme first, then the others in registry order.
     readonly property var themes: model.themes.filter(function (t) { return t.id === "memphis"; })
         .concat(model.themes.filter(function (t) { return t.id !== "memphis"; }))
     property int themeIndex: Math.max(0, themes.findIndex(function (t) { return t.id === win.model.currentTheme; }))
     readonly property var theme: themes[themeIndex] || null
     readonly property var schemes: theme ? theme.appearances : []
-    property int schemeIndex: Math.max(0, schemes.findIndex(function (a) { return a.mode === win.model.currentMode; }))
+    function schemeIndexFor(t, id, dark) {
+        const list = t ? t.appearances : [];
+        let i = list.findIndex(function (a) { return win.appearanceId(t.id, a) === id; });
+        if (i < 0) i = list.findIndex(function (a) { return a.mode === (dark ? "dark" : "light"); });
+        return Math.max(0, i);
+    }
+    property int schemeIndex: schemeIndexFor(theme, currentAppearance, model.currentMode === "dark")
     readonly property var scheme: schemes[schemeIndex] || null
-    readonly property bool changed: !!theme && !!scheme && (theme.id !== model.currentTheme || scheme.mode !== model.currentMode)
+    readonly property string schemeId: theme ? appearanceId(theme.id, scheme) : ""
+    // The draft's colours when the draft is this theme's: the preview draws
+    // in them, whatever is on screen.
+    readonly property var draftPalette: theme && theme.id === "memphis" ? Kit.MemphisTokens.palette(schemeId) : null
+    readonly property bool changed: !!theme && !!scheme && (theme.id !== model.currentTheme || schemeId !== currentAppearance)
     property int tab: 0
 
     function pickTheme(i) {
-        const mode = win.scheme ? win.scheme.mode : win.model.currentMode;
+        const id = win.schemeId, dark = !!win.scheme && win.scheme.mode === "dark";
         win.themeIndex = i;
-        const next = win.themes[i].appearances.findIndex(function (a) { return a.mode === mode; });
-        win.schemeIndex = Math.max(0, next);
+        win.schemeIndex = win.schemeIndexFor(win.themes[i], id, dark);
     }
     function apply() {
-        if (win.changed) win.model.apply(win.theme.id, win.scheme.mode, win.model.extraDark);
+        if (win.changed) win.model.apply(win.theme.id, win.arg(win.scheme), win.model.extraDark);
     }
     function ok() {
         const go = win.changed;
-        const id = win.theme ? win.theme.id : "", mode = win.scheme ? win.scheme.mode : "";
+        const id = win.theme ? win.theme.id : "", appearance = win.arg(win.scheme);
         win.model.close();
-        if (go) win.model.apply(id, mode, win.model.extraDark);
+        if (go) win.model.apply(id, appearance, win.model.extraDark);
     }
 
     MouseArea {
@@ -77,7 +102,7 @@ PanelWindow {
     // does the dialog scroll, and the focused control scrolls into view.
     readonly property real buttonRow: 3 * 75 * win.u + 12 * win.u
     readonly property bool stackLabels: sheet.width < 62 * win.u + 100 * win.u
-    readonly property real previewNatural: 150 * win.u
+    readonly property real previewNatural: 166 * win.u
     // Measured after layout settles, not bound: the list's height feeds
     // the window's own height, so a binding would loop. The sum is a fixed
     // point (what the list gives up, it adds back).
@@ -193,14 +218,14 @@ PanelWindow {
                                 height: win.previewHeight
                                 variant: "field"
                                 clip: true
-                                color: win.theme && win.theme.id === "memphis" ? Kit.MemphisTokens.palette(win.scheme && win.scheme.mode === "dark").desktop : "#000000"
+                                color: win.draftPalette ? win.draftPalette.desktop : "#000000"
 
                                 MemphisPreview {
-                                    visible: !!win.theme && win.theme.id === "memphis"
+                                    visible: !!win.draftPalette
                                     x: 2 * win.u; y: 2 * win.u
                                     width: parent.width - 4 * win.u
                                     height: parent.height - 4 * win.u
-                                    scheme: Kit.MemphisTokens.palette(!!win.scheme && win.scheme.mode === "dark")
+                                    scheme: win.draftPalette || Kit.MemphisTokens.current
                                 }
                                 Image {
                                     visible: !!win.theme && win.theme.id !== "memphis"
@@ -211,7 +236,7 @@ PanelWindow {
                                     horizontalAlignment: Image.AlignHCenter
                                     verticalAlignment: Image.AlignVCenter
                                     smooth: true
-                                    source: visible && win.scheme ? win.model.preview(win.theme.id, win.scheme.mode) : ""
+                                    source: visible && win.scheme ? win.model.preview(win.theme.id, win.arg(win.scheme)) : ""
                                 }
                             }
                             Grid {
@@ -225,6 +250,7 @@ PanelWindow {
                                     width: win.stackLabels ? sheet.width : sheet.width - 62 * win.u
                                     model: win.themes.map(function (t) { return t.label; })
                                     currentIndex: win.themeIndex
+                                    bottomInset: win.barHeight
                                     focus: true
                                     onActivated: function (i) { win.pickTheme(i); }
                                 }
@@ -240,6 +266,7 @@ PanelWindow {
                                     width: win.stackLabels ? sheet.width : sheet.width - 62 * win.u
                                     model: win.schemes.map(function (a) { return a.label; })
                                     currentIndex: win.schemeIndex
+                                    bottomInset: win.barHeight
                                     onActivated: function (i) { win.schemeIndex = i; }
                                 }
                             }
@@ -341,7 +368,10 @@ PanelWindow {
     // { theme, scheme, drop: "theme"|"scheme", applyFocus }.
     function show(state) {
         if (state.theme !== undefined) win.pickTheme(Math.max(0, win.themes.findIndex(function (t) { return t.id === state.theme; })));
-        if (state.scheme !== undefined) win.schemeIndex = Math.max(0, win.schemes.findIndex(function (a) { return a.mode === state.scheme; }));
+        // scheme: an appearance ID, or the old "light" / "dark".
+        if (state.scheme !== undefined) win.schemeIndex = state.scheme === "light" || state.scheme === "dark"
+            ? win.schemeIndexFor(win.theme, "", state.scheme === "dark")
+            : win.schemeIndexFor(win.theme, state.scheme, false);
         themeBox.open = state.drop === "theme";
         schemeBox.open = state.drop === "scheme";
         if (state.drop === "theme") themeBox.forceActiveFocus();
