@@ -12,8 +12,9 @@
 # No as the way out, a resubscribe on a theme switch and on a display
 # change, and no icons while the provider is down, then back.
 #
-# Needs sway, wtype, qs, node and a python3 with pywayland on PATH;
-# WLR_PROTOCOL and WAYLAND_XML for pointer.py; FONTCONFIG_FILE.
+# Needs sway, qs, node and a python3 with pywayland on PATH;
+# WLR_PROTOCOL and WAYLAND_XML for pointer.py, XKB_LIB and XKB_CONFIG_ROOT
+# for keyboard.py; FONTCONFIG_FILE.
 set -euo pipefail
 shell_dir=$(realpath "${1:?shell dir}")
 work=$(realpath -m "${2:?work dir}")
@@ -51,13 +52,20 @@ session_pids+=($!)
 exec 3>"$work/pointer"
 for _ in $(seq 50); do grep -q ready "$work/pointer.log" && break; sleep 0.1; done
 grep -q ready "$work/pointer.log" || { cat "$work/pointer.log"; exit 1; }
+# One virtual keyboard for the run (keyboard.py), so the surface that has
+# the keyboard keeps it; it exits when fd 4 closes with this script.
+mkfifo "$work/keyboard"
+python3 "$here/keyboard.py" "$work/keyboard" > "$work/keyboard.log" 2>&1 &
+session_pids+=($!)
+exec 4>"$work/keyboard"
+for _ in $(seq 50); do grep -q ready "$work/keyboard.log" && break; sleep 0.1; done
+grep -q ready "$work/keyboard.log" || { cat "$work/keyboard.log"; exit 1; }
 p() { echo "$*" >&3; sleep 0.15; }
 click() { p move "$1" "$2"; p down; p up; }
-key() { wtype -k "$1"; sleep 0.25; }
-# Each wtype call is its own short-lived virtual keyboard, and sway does
-# not hand an on-demand layer the keyboard again when a new keyboard
-# appears; a click on an empty spot gives it back first, then the icon is
-# selected over IPC (a click could land on an icon covering it).
+key() { echo "key $1" >&4; sleep 0.25; }
+# A click on an empty spot gives the desktop the keyboard (on demand),
+# then the icon is selected over IPC (a click could land on an icon
+# covering it).
 press_on() { click 1800 1000; desk select "$1" >/dev/null; key "$2"; }
 
 # A click on an icon selects it and gives the desktop the keyboard.

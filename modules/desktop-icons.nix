@@ -28,7 +28,6 @@
               pkgs.nodejs
               pkgs.sway-unwrapped
               pkgs.grim
-              pkgs.wtype
               config.packages.quickshell-mountainous
               (pkgs.python3.withPackages (p: [ p.pywayland ]))
             ];
@@ -47,6 +46,9 @@
             }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
             WLR_PROTOCOL = "${pkgs.wlr-protocols}/share/wlr-protocols/unstable/wlr-virtual-pointer-unstable-v1.xml";
             WAYLAND_XML = "${pkgs.wayland-scanner.out}/share/wayland/wayland.xml";
+            # keyboard.py: one virtual keyboard for the run.
+            XKB_LIB = "${pkgs.libxkbcommon}/lib/libxkbcommon.so";
+            XKB_CONFIG_ROOT = "${pkgs.xkeyboard_config}/share/X11/xkb";
           }
           ''
             export HOME=$TMPDIR
