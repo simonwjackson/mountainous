@@ -48,9 +48,15 @@ local function find(address)
     return nil
 end
 
+-- Pure. Whether a window, as hl.get_windows() reports it, should be fitted.
+-- `fullscreen` is a mode number there, and 0 (not fullscreen) is true in Lua.
+function M.eligible(w)
+    return w ~= nil and w.floating == true and (w.fullscreen or 0) == 0 and w.monitor ~= nil
+end
+
 local function fit_now(address, bar_height)
     local w = find(address)
-    if not w or not w.floating or w.fullscreen or not w.monitor then return end
+    if not M.eligible(w) then return end
     local m = w.monitor
     local box = { x = w.at.x, y = w.at.y, w = w.size.x, h = w.size.y }
     local target = M.plan(box, {

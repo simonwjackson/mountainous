@@ -46,4 +46,9 @@ eq(M.plan({ x = 0, y = 0, w = 1920, h = 1200 }, platinum, 20),
 eq(M.plan({ x = 0, y = -1200, w = 1920, h = 1200 }, upper, 0),
     { x = 0, y = -1200, w = 1920, h = 1162 }, "no title bar")
 
+-- Eligibility uses Hyprland's window fields: fullscreen is a mode number.
+assert(M.eligible({ floating = true, fullscreen = 0, monitor = {} }), "a floating, non-fullscreen window is fitted")
+assert(not M.eligible({ floating = true, fullscreen = 1, monitor = {} }), "a fullscreen window is left alone")
+assert(not M.eligible({ floating = false, fullscreen = 0, monitor = {} }), "a tiled window is left alone")
+
 print("float-fit: floats shrink to the usable area, keep their title bar on screen, and fitting floats are untouched")
