@@ -397,17 +397,17 @@
         "w95fa-src": "w95fa-src"
       },
       "locked": {
-        "lastModified": 1793370977,
-        "narHash": "sha256-uBXgS0E0zdTKEIh2/SR9DDf5oc/OPXsOuiF5nSqBDPc=",
+        "lastModified": 1793382049,
+        "narHash": "sha256-yzT98Rqx1zbuG20P6pL+Oue1bq4Of2UemIBLJ6hcRvI=",
         "owner": "hensou-desktop",
         "repo": "hensou",
-        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
+        "rev": "0e8a41af400b29afa0c030e7afdf583dea3e4f74",
         "type": "github"
       },
       "original": {
         "owner": "hensou-desktop",
+        "ref": "main",
         "repo": "hensou",
-        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
         "type": "github"
       }
     },

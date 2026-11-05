@@ -18,7 +18,8 @@
     };
     # Shared plain Qt Quick drawing. The shell owns persistence and surfaces.
     hensou = {
-      url = "github:hensou-desktop/hensou/6b2dfd887b949b41d8dd3c45647d75a0d99da3d5";
+      # Track main; flake.lock holds the exact commit. Public repo, no key needed.
+      url = "github:hensou-desktop/hensou/main";
       # Keep the kit's tested Qt/font nixpkgs pin, independently of fleet hosts.
     };
 
