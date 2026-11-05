@@ -32,6 +32,7 @@ for mode in site fallback; do
   case_work="$work/$mode"
   case_out="$out/$mode"
   mkdir -p "$case_work" "$case_out"
+  cp "$work/strip.json" "$case_work/strip.json"
   export HOME="$case_work"
   python3 "$here/app-icons-fixtures.py" "$case_work" "$mode" > "$case_work/http.log" 2>&1 &
   fixture_pid=$!
@@ -52,7 +53,6 @@ for mode in site fallback; do
   for _ in $(seq 80); do w98 current | grep -q '"loaded":"platinum"' && break; sleep 0.1; done
   sleep 4
   shot "$case_out/platinum-full.png"
-  cp "$work/strip.json" "$case_work/strip.json"
   python3 "$here/app-icons.py" "$case_work" "$case_out" "$mode" || fail=1
   cp "$case_work/qs.log" "$case_out/qs.log"
   cp "$case_work/http.log" "$case_out/http.log"

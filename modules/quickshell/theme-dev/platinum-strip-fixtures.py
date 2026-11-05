@@ -20,9 +20,9 @@ sync = Image.new("RGBA", (128, 128)); d = ImageDraw.Draw(sync)
 d.ellipse((6, 6, 121, 121), fill="#1e88e5"); d.ellipse((34, 34, 93, 93), fill="#ffffff"); d.ellipse((48, 48, 79, 79), fill="#1e88e5")
 (data / "icons/hicolor/128x128/apps").mkdir(parents=True, exist_ok=True)
 sync.save(data / "icons/hicolor/128x128/apps/syncthing.png")
-# The browser's own icon, as Chromium installs it in hicolor: the strip's
-# token for a Chromium window with no page icon. A three-part wheel around a
-# blue hub, drawn here.
+# A competing browser icon, as Chromium installs it in hicolor. The strip
+# must use the theme's cube instead. A three-part wheel around a blue hub,
+# drawn here.
 browser = Image.new("RGBA", (256, 256)); d = ImageDraw.Draw(browser)
 for start, colour in ((-150, "#db4437"), (-30, "#f4c20d"), (90, "#0f9d58")):
     d.pieslice((8, 8, 247, 247), start, start + 120, fill=colour)

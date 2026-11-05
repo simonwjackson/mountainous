@@ -12,7 +12,7 @@ output. Each tile is found where the plan puts it, and its pixels must hold:
            that is not the face) are the plan's extent on their longest
            side, centred in the box, so every tile shows one size with the
            same padding to the bevel: a run-time site token, a build-time
-           app token, a theme-art app's token and Chromium's own token for
+           app token, a theme-art app's token and Chromium's theme cube token for
            a window with no page icon. Across all of them the size and the
            padding agree to 1 px (the box moves one px down and right when
            pressed in)
@@ -47,10 +47,10 @@ body_top = H - snap(plan["BOTTOM"] + plan["HEIGHT"])
 tile_top = body_top + snap((plan["HEIGHT"] - plan["TILE_H"]) / 2)
 track_x = snap(plan["CAP"])
 # The strip-icons fixture, in the strip's order (by page, then position):
-# (label, kind, page, pressed in). Kinds: "browser" Chromium's own token for
-# a window with no page icon; "built" a build-time token from the app's own
-# icon; "theme" a build-time token from the theme's art (no icon of its
-# own); "site" a run-time token of a PWA's icon; "letter" no app id yet.
+# (label, kind, page, pressed in). Kinds: "browser" the theme's cube token
+# for a window with no page icon; "built" a build-time token from the app's
+# own icon (no theme art); "theme" a build-time token from the theme's art;
+# "site" a run-time token of a PWA's icon; "letter" no app id yet.
 TILES = [
     ("chromium", "browser", 1, True),
     ("syncthing", "built", 1, False),

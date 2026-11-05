@@ -526,7 +526,7 @@ class StripArtTests(unittest.TestCase):
             covering = Path(temp) / "Mountainous-platinum"
             (covering / "32x32/apps").mkdir(parents=True)
             (covering / "32x32/mimes").mkdir(parents=True)
-            # Theme art for chromium (padded, as the cube) and a theme-only
+            # Theme art for chromium (padded, as the cube) and another
             # app; the generic fallback is a mime icon linked from apps.
             cube = Image.new("RGBA", (32, 32))
             ImageDraw.Draw(cube).rectangle((3, 12, 18, 27), fill="grey", outline="black")
@@ -534,10 +534,11 @@ class StripArtTests(unittest.TestCase):
             cube.save(covering / "32x32/apps/themed.png")
             corpus()["square"].resize((32, 32)).save(covering / "32x32/mimes/application-x-executable.png")
             (covering / "32x32/apps/application-x-executable.png").symlink_to("../mimes/application-x-executable.png")
-            # Chromium's own icon in hicolor: it, not the theme's cube.
+            # Competing upstream icons must not replace the theme's art.
             hicolor = share / "icons/hicolor/256x256/apps"
             hicolor.mkdir(parents=True)
-            corpus()["disc"].resize((256, 256)).save(hicolor / "chromium.png")
+            for name in ("chromium", "themed", "application-x-executable"):
+                corpus()["disc"].resize((256, 256)).save(hicolor / f"{name}.png")
             entry("chromium-browser", "chromium")
             corpus()["ring"].save(hicolor / "own.png")
             entry("own", "own")
@@ -563,11 +564,21 @@ class StripArtTests(unittest.TestCase):
                     with Image.open(out / directory / name) as image:
                         self.assertEqual(image.size, (size, size))
                         self.assertEqual(max(opaque_extent(image)), extent, name)
-            with Image.open(out / "30x30/apps/mountainous.strip.chromium.png") as image:
-                frames = [Image.open(hicolor / "chromium.png").convert("RGBA")]
-                self.assertEqual(image.tobytes(), render_extent(frames, 26).tobytes())
-            with Image.open(out / "30x30/apps/mountainous.strip.themed.png") as image:
-                self.assertEqual(image.tobytes(), render_extent([cube], 26).tobytes())
+            # Both scales use theme art first, including the symlinked generic
+            # fallback. Only an app with no theme art uses its hicolor icon.
+            for directory, extent in (("22x22/apps", 18), ("30x30/apps", 26)):
+                for name in ("chromium", "themed", "application-x-executable", "own"):
+                    source = (
+                        hicolor / "own.png"
+                        if name == "own"
+                        else covering / "32x32/apps" / f"{name}.png"
+                    )
+                    with Image.open(source) as image:
+                        expected = render_extent([image.convert("RGBA")], extent)
+                    with Image.open(
+                        out / directory / f"mountainous.strip.{name}.png"
+                    ) as image:
+                        self.assertEqual(image.tobytes(), expected.tobytes(), name)
             again = Path(temp) / "again"
             app_tokens.generate(share, again, [covering], scales=(1, 1.5))
             for file in sorted((out / "30x30/apps").iterdir()):

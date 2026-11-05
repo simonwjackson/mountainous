@@ -84,8 +84,11 @@ for theme in ["win98", "platinum"]:
                 work / ("web" if theme == "win98" else "references") / f"{name}.png"
             ).convert("RGBA")
         elif theme == "platinum":
+            canvas = plan["tile"]["canvas"]["size"]
             ref = Image.open(
-                art / "Mountainous-platinum/32x32/apps" / f"{icon}.png"
+                work
+                / f"data/icons/Mountainous-platinum-apps/{canvas}x{canvas}/apps"
+                / f"mountainous.strip.{icon}.png"
             ).convert("RGBA")
         else:
             path = art / "Mountainous-win98/apps/32" / f"{icon}.png"
@@ -100,11 +103,16 @@ for theme in ["win98", "platinum"]:
         if theme == "platinum":
             g = plan["tile"]
             slot = plan["slots"][order.index(i)]
-            press = 1 if i == 0 else 0
-            x = snap(plan["CAP"] + slot) + g["box"]["x"] + press
+            press = g["sunk"] if i == 0 else 0
+            x = snap(plan["CAP"] + slot) + g["canvas"]["x"] + press
             y = full.height - snap(plan["BOTTOM"] + plan["HEIGHT"])
-            y += snap((plan["HEIGHT"] - plan["TILE_H"]) / 2) + g["box"]["y"] + press
-            shown = full.crop((x, y, x + 32, y + 32))
+            y += snap((plan["HEIGHT"] - plan["TILE_H"]) / 2) + g["canvas"]["y"] + press
+            canvas = g["canvas"]["size"]
+            check(
+                ref.size == (canvas, canvas),
+                f"{theme} {name}: {canvas} px reference canvas",
+            )
+            shown = full.crop((x, y, x + canvas, y + canvas))
             ok = matches(shown, ref)
         else:
             # The button's actual place comes from the live QML. Only search
@@ -134,8 +142,8 @@ for theme in ["win98", "platinum"]:
                 if theme == "win98" and site and i in [3, 4]
                 else "sharp site icon"
                 if theme == "win98" and site
-                else "generated 36 px token in its 32 px inner box"
-                if site
+                else f"generated {canvas} px {'site/installed' if site else 'theme art fallback'} token drawn 1:1"
+                if theme == "platinum"
                 else "theme art fallback"
             ),
         )

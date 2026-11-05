@@ -67,6 +67,19 @@ for box, colour in zip(
     draw.rectangle(box, fill=colour)
 logo.save(icons / "chromium.png")
 
+# Exercise the host's build-time path, including the competing hicolor logo.
+helper = Path(os.environ["MOUNTAINOUS_PLATINUM_ICON"])
+subprocess.run(
+    [
+        str(helper.with_name("mountainous-platinum-app-tokens")),
+        str(data),
+        str(data / "icons/Mountainous-platinum-apps"),
+        "--covered",
+        str(Path(os.environ["DESKTOP_ART"]) / "share/icons/Mountainous-platinum"),
+    ],
+    check=True,
+)
+
 handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(web))
 server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
 origin = f"http://127.0.0.1:{server.server_port}"
@@ -103,6 +116,7 @@ for profile in [work / ".local/share/mountainous/browser", work / "config/chromi
 # shell must still invoke the helper itself: its cache is a different folder.
 refs = work / "references"
 refs.mkdir()
+g = json.loads((work / "strip.json").read_text())["tile"]
 if mode == "site":
     env = dict(os.environ, XDG_CACHE_HOME=str(work / "reference-cache"))
     for name in ["browser", "tab", "reddit", "Jellyfin", "Microsoft Teams"]:
@@ -110,12 +124,15 @@ if mode == "site":
             [
                 os.environ["MOUNTAINOUS_PLATINUM_ICON"],
                 str(web / f"{name}.png"),
-                "36",
+                str(g["canvas"]["size"]),
                 "platinum-light",
+                "--extent",
+                str(g["extent"]),
             ],
             env=env,
             text=True,
         ).strip()
-        Image.open(token).crop((2, 2, 34, 34)).save(refs / f"{name}.png")
+        with Image.open(token) as image:
+            image.save(refs / f"{name}.png")
 (work / "ready").touch()
 server.serve_forever()

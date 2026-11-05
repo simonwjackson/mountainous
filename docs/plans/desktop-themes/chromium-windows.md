@@ -611,9 +611,11 @@ inherits first:
 - `<C>x<C>/apps/mountainous.strip.<name>.png`: the Control Strip's tokens (see
   "Strip optical size"), for every desktop entry's icon, every app name
   Mountainous-platinum draws, and the strip's fallbacks `chromium` and
-  `application-x-executable`. The source is the app's own icon, else the
-  theme's own art at its largest size. Made for scales 1 (22 px) and 1.5
-  (30 px) only: Qt looks an icon up at the scale rounded up (20 logical px at
+  `application-x-executable`. The source is the theme's own art at its
+  largest size, else the app's own hicolor or pixmaps icon. Browser and
+  web-app fallbacks keep the theme's cube/lettermarks, not Chromium's logo.
+  Made for scales 1 (22 px) and 1.5 (30 px) only: Qt looks an icon up at the
+  scale rounded up (20 logical px at
   1.5 as 40) and takes the nearest directory, so a 40 px directory for scale 2
   won 1.5's lookup and was scaled to 30 (seen in `checks.platinum-strip`).
 
@@ -641,8 +643,8 @@ the finished pixels are never resized). Sources:
 | --- | --- |
 | Chromium window or PWA with a site icon | run-time, `mountainous-platinum-icon SOURCE 30 THEME --extent 26` (cache name `<digest>-30e26-<theme>.png`, `RENDER_VERSION` 3) |
 | Same, before its token arrives or if the helper fails | the build-time token for its name (a web app's fallback: `chromium`) |
-| Chromium window with no page icon | build-time `mountainous.strip.chromium`, from Chromium's own hicolor icon |
-| Any app | build-time `mountainous.strip.<name>`, else `mountainous.strip.application-x-executable` |
+| Chromium window with no page icon | build-time `mountainous.strip.chromium`, from Mountainous-platinum's cube art |
+| Any app | build-time `mountainous.strip.<name>` from theme art when available, else the app's own icon; missing token: `mountainous.strip.application-x-executable` |
 | No app id yet | the title's letter (text, unchanged) |
 
 At scale 1.5, in device px (measured in `checks.platinum-strip`, light, dark

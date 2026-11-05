@@ -20,7 +20,8 @@ drawn by the pure renderer in platinum_icons.py:
       theme draws, and the strip's fallbacks chromium and
       application-x-executable), a token whose opaque bounds are the strip's
       optical size (render_extent): 26 px on a 30 px canvas at scale 1.5.
-      The source is the app's own icon, else the covering theme's own art.
+      The source is the covering theme's own art, else the app's own icon.
+      Browser and web-app fallbacks must keep the theme's cube/lettermarks.
       The strip draws them 1:1, so every strip icon has the same size and
       none is resampled at run time.
 
@@ -171,7 +172,7 @@ def frames_for(share: Path, name: str, size: int) -> list[Image.Image]:
 
 def theme_art(covering: list[Path], name: str) -> list[Image.Image]:
     """A covering theme's own app art for name, its largest size: the
-    strip token's source when the app ships no icon of its own."""
+    strip token's preferred source, even when the app ships its own icon."""
     for theme in covering:
         files = []
         for directory in theme.iterdir() if theme.is_dir() else []:
@@ -202,8 +203,9 @@ def generate_strip(
     # Read each name's source once; many names share one (theme aliases).
     frames = {}
     for name in names:
-        frames[name] = frames_for(share, name, canvas_for(strip_extent(max(scales))))
-        frames[name] = frames[name] or theme_art(covering, name)
+        frames[name] = theme_art(covering, name) or frames_for(
+            share, name, canvas_for(strip_extent(max(scales)))
+        )
     for scale in scales:
         extent = strip_extent(scale)
         canvas = canvas_for(extent)
