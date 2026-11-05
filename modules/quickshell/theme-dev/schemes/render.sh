@@ -11,6 +11,8 @@
 # part: memphis, platinum, ladder (default: all three).
 # Session directories stay short: Quickshell's IPC socket path must fit
 # in 108 bytes.
+# The desktop is the shell's own DesktopPattern (HARNESS_DESKTOP=1), so a
+# wrong pattern or colour shows in the renders.
 # Writes <outdir>/<theme>/<appearance>/{window,menu,sound}.png (2880x1800,
 # 1920x1200 logical at 1.5), <outdir>/thumbnails/<theme>/<appearance>.png
 # (360x225, cut as the registered ones were: Memphis the bottom-right of
@@ -32,10 +34,11 @@ parts=${*:-memphis platinum ladder}
 : "${HENSOU_QML:?set HENSOU_QML to the kit qml directory}"
 mkdir -p "$out"
 
+export HARNESS_DESKTOP=1
 if [ -z "${MEMPHIS_DEV_TOOLS:-}" ]; then
   export MEMPHIS_DEV_TOOLS=1
   pkg() { nix build --option builders '' --max-jobs 1 --cores 4 --no-link --print-out-paths "$repo#nixosConfigurations.myoko.pkgs.$1"; }
-  PATH="$(pkg sway)/bin:$(pkg swaybg)/bin:$(pkg grim)/bin:$(pkg quickshell)/bin:$(pkg wtype)/bin:$(pkg imagemagick)/bin:$(pkg nodejs)/bin:$PATH"
+  PATH="$(pkg sway)/bin:$(pkg grim)/bin:$(pkg quickshell)/bin:$(pkg wtype)/bin:$(pkg imagemagick)/bin:$(pkg nodejs)/bin:$PATH"
   font=$(nix build --option builders '' --max-jobs 1 --cores 4 --no-link --print-out-paths "$repo#packages.x86_64-linux.w95fa-grid")
   chicago=$(nix build --option builders '' --max-jobs 1 --cores 4 --no-link --print-out-paths "$repo#packages.x86_64-linux.chicagoflf")
   dejavu=$(pkg dejavu_fonts)
@@ -70,18 +73,19 @@ const block = src.slice(src.indexOf("readonly property var appearances: ["), src
 for (const m of block.matchAll(/id: "([a-z0-9-]+)"/g)) console.log(m[1]);' "$HENSOU_QML/Hensou/$1"
 }
 
-# A desktop: a plain colour, or a pattern tile (8 x 8 cells at 3 device px,
-# as DesktopPattern draws Platinum's).
-desktop_bg() {
-  case "$1" in
-    \#*) swaymsg -q output HEADLESS-1 bg "$1" solid_color ;;
-    *.svg)
-      local tile
-      tile="$out/tiles/$(basename "$(dirname "$(dirname "$1")")")-$(basename "$1" .svg).png"
-      mkdir -p "$out/tiles"
-      magick -background none "$1" -filter point -resize "$((8 * ${2:-3}))x$((8 * ${2:-3}))" "$tile"
-      swaymsg -q output HEADLESS-1 bg "$tile" tile ;;
-  esac
+# An appearance, the way the host sets one: desktop-theme writes the saved
+# appearance and the mode it implies, and the shell (Theme.qml, the
+# desktop pattern, the tokens) follows the files. The harness call also
+# sets the kit's Theme.appearance, for a Theme.qml that does not read it.
+dark_ids=" dark-grey high-contrast-black high-contrast-1 high-contrast-2 "
+put_state() { printf '%s\n' "$2" > "$XDG_STATE_HOME/mountainous/$1.new" && mv "$XDG_STATE_HOME/mountainous/$1.new" "$XDG_STATE_HOME/mountainous/$1"; }
+appearance() {
+  local mode=light
+  case "$dark_ids" in *" $1 "*) mode=dark ;; esac
+  put_state theme-appearance "$1"
+  put_state theme "$mode"
+  sleep 0.3
+  memphis appearance "$1"
 }
 settle() { sleep "${1:-0.8}"; for _ in $(seq 30); do memphis current | grep -q '"settled":true' && break; sleep 0.1; done; sleep 0.4; }
 : > "$out/warnings.log"
@@ -99,12 +103,7 @@ memphis() {
   sleep 1.5
   for id in $(ids MemphisTokens.qml); do
     local dir="$out/memphis/$id"; mkdir -p "$dir"
-    echo "memphis $id: $(memphis appearance "$id")"
-    case "$id" in
-      standard) desktop_bg "$shell_dir/themes/memphis/patterns/light.svg" 2 ;;
-      dark-grey) desktop_bg "$shell_dir/themes/memphis/patterns/dark.svg" 2 ;;
-      *) desktop_bg "$(memphis desktopColour)" ;;
-    esac
+    echo "memphis $id: $(appearance "$id") desktop token $(memphis desktopColour)"
     # A window: System Properties over an inactive app window.
     memphis closeAll >/dev/null; memphis set tb-normal >/dev/null; settle
     memphis app '{"rect":[220,160,860,520],"title":"Untitled - Notepad","active":false}' >/dev/null
@@ -129,12 +128,7 @@ platinum() {
   sleep 1.5
   for id in $(ids PlatinumTokens.qml); do
     local dir="$out/platinum/$id"; mkdir -p "$dir"
-    echo "platinum $id: $(memphis appearance "$id")"
-    case "$id" in
-      light) desktop_bg "$shell_dir/themes/platinum/patterns/light.svg" ;;
-      dark-grey) desktop_bg "$shell_dir/themes/platinum/patterns/dark.svg" ;;
-      *) desktop_bg "$shell_dir/themes/platinum/patterns/$id.svg" ;;
-    esac
+    echo "platinum $id: $(appearance "$id")"
     memphis closeAll >/dev/null; sleep 0.4
     memphis about >/dev/null; sleep 1.0
     shot "$dir/window.png"
@@ -161,7 +155,7 @@ ladder() {
       SESSION_THEME=$theme . "$here/../memphis/session.sh" "$shell_dir" "$out/l-${theme:0:1}$size" "$((w * 3 / 2))x$((h * 3 / 2))"
       sleep 1.5
       if [ "$theme" = memphis ]; then
-        memphis appearance standard >/dev/null; desktop_bg '#008080'
+        appearance standard >/dev/null
         memphis openPicker >/dev/null; sleep 1.2
         memphis pickerShow '{"theme":"memphis","scheme":"high-contrast-1"}' >/dev/null; sleep 0.6
         shot "$out/ladder/memphis-$size.png"
@@ -169,7 +163,7 @@ ladder() {
         shot "$out/ladder/memphis-$size-list.png"
         memphis geometry > "$out/ladder/memphis-$size.json" || true
       else
-        memphis appearance drawing-board >/dev/null; desktop_bg "$shell_dir/themes/platinum/patterns/drawing-board.svg"
+        appearance drawing-board >/dev/null
         memphis openPicker >/dev/null; sleep 1.2
         shot "$out/ladder/platinum-$size.png"
       fi

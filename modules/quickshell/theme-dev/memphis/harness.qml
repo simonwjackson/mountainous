@@ -559,6 +559,14 @@ ShellRoot {
         readonly property date now: new Date(2026, 9, 22, 16, 51)
     }
 
+    // The shell's own desktop pattern, when a capture asks for it
+    // (HARNESS_DESKTOP=1, theme-dev/schemes/render.sh): the same
+    // DesktopPattern shell.qml maps, reading the same registry and state.
+    LazyLoader {
+        active: Quickshell.env("HARNESS_DESKTOP") === "1"
+        DesktopPattern { screen: root.screen0 }
+    }
+
     ThemeDesktop {
         id: loader
         screen: root.screen0
