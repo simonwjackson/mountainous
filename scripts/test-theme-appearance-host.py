@@ -43,13 +43,12 @@ with tempfile.TemporaryDirectory(prefix="appearance-host-") as directory:
     for name in ("Theme.qml", "ThemeCatalog.qml", "ThemePicker.qml", "themes.json"):
         shutil.copyfile(source / name, config / name)
     if labwc:
-        for name in ("DesktopPattern.qml", "desktop-art.js"):
-            shutil.copyfile(source / name, config / name)
-        for theme in registry:
-            shutil.copytree(
-                source / "themes" / theme["id"] / "patterns",
-                config / "themes" / theme["id"] / "patterns",
-            )
+        # DesktopPattern now owns the upstream icon Loader. Stage its real
+        # dependency closure too, even while icons are inactive in this fixture.
+        shutil.copytree(
+            source, config, dirs_exist_ok=True, copy_function=shutil.copyfile
+        )
+        config.chmod(0o700)
     shell_source = """import Quickshell
 import Quickshell.Io
 import QtQuick
