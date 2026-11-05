@@ -51,7 +51,8 @@ in {
     checks.page-layout = pkgs.runCommand "page-layout" {
       nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.nodejs pkgs.shellcheck];
     } ''
-      luac -p ${./hyprland/page-layout.lua}
+      luac -p ${./hyprland/page-layout.lua} ${./hyprland/float-fit.lua}
+      lua ${./hyprland/float-fit.test.lua} ${./hyprland/float-fit.lua}
       lua ${./hyprland/page-layout.test.lua} ${./hyprland/page-layout.lua} "$TMPDIR/state.json" ${./hyprland/hyprland.lua}
       node ${./hyprland/page-layout-state.test.js} ${./quickshell/page-layout-model.js} "$TMPDIR/state.json"
       shellcheck -s bash ${./hyprland/page-layout.sh} ${./hyprland/page-layout-command.test.sh}
@@ -456,6 +457,8 @@ in {
     ];
     hjem.users.simon.files.".config/hypr/page-layout.lua".source =
       ./hyprland/page-layout.lua;
+    hjem.users.simon.files.".config/hypr/float-fit.lua".source =
+      ./hyprland/float-fit.lua;
     hjem.users.simon.files.".config/hypr/dkjson.lua".source =
       "${pkgs.luaPackages.dkjson}/share/lua/${pkgs.lua.luaversion}/dkjson.lua";
     hjem.users.simon.files.".config/hypr/titlebars.lua".source =

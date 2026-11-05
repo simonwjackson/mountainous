@@ -154,6 +154,7 @@ local function arrange(ws)
         if p.floating then
             if not w.floating and not w.pinned then
                 dispatch(hl.dsp.window.float({ action = "on", window = selector }))
+                if M.after_float then M.after_float(w.address) end
                 owned[w.address] = ws.id
             elseif owned[w.address] then owned[w.address] = ws.id end
         elseif owned[w.address] then
@@ -315,6 +316,7 @@ function M.toggle_window_floating()
     owned[w.address] = nil
     write_json(OWNED_FILE, object(owned))
     dispatch(hl.dsp.window.float({ action = "toggle", window = "address:" .. w.address }))
+    if not w.floating and M.after_float then M.after_float(w.address) end
 end
 function M.toggle_zen(id)
     local ws = workspace(id or "active")

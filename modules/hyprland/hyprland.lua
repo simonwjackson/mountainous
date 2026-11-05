@@ -197,6 +197,22 @@ hl.bind(mod .. " + C", hl.dsp.window.close())
 
 -- The page owns capacity, floating, gaps, defaults and strip lifecycle.
 local page_layout = require("page-layout").attach()
+
+-- Floating windows fit the usable screen: Hyprland moves a float inside the
+-- work area but never shrinks it (modules/hyprland/float-fit.lua). The title
+-- bar's height comes from the theme that draws it, 0 when none does.
+local float_fit = require("float-fit")
+page_layout.after_float = float_fit.attach({
+    bar_height = function()
+        if not package.searchpath("titlebars", package.path) then return 0 end
+        local ok, h = pcall(function()
+            local t = require("titlebars")
+            local bars = t.settings(t.state()).plugin.hyprbars
+            return bars.enabled and bars.bar_height or 0
+        end)
+        return ok and h or 0
+    end,
+})
 for n = 1, 3 do
     local cap = n
     hl.bind(mod .. " + " .. n, function() page_layout.page("active", { cap = cap }) end)
