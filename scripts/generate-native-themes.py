@@ -2,7 +2,7 @@
 """Generate the five native appearances from pinned artwork and one palette source.
 
 No artwork is checked in. Generated derivatives retain the upstream licences.
-The native ramps match PlatinumTokens and Win98Tokens; test-native-palettes.py
+The native ramps match PlatinumTokens and MemphisTokens; test-native-palettes.py
 checks those seams. GTK3, GTK4, Kvantum, Qt palettes and Ghostty share these ramps.
 """
 
@@ -51,7 +51,7 @@ PALETTES = {
             "muted": "#808080",
         },
     },
-    "win98": {
+    "memphis": {
         "font": "W95FA Grid",
         "light": {
             "face": "#c0c0c0",
@@ -308,7 +308,7 @@ def stylesheet(text, palette, theme, appearance):
         return f"{prop}: {value};"
 
     text = re.sub(r"([\w-]+)\s*:\s*([^;{}]+);", declaration, text)
-    if theme == "win98":
+    if theme == "memphis":
         # Chicago95 uses named colours for GTK3 and most GTK4 partials.
         # These are semantic system colours, so do not invert border black.
         roles = {
@@ -370,8 +370,8 @@ def gtk_overrides(p, font, version, theme):
             "window-fg": "text",
             "view-bg": "base",
             "view-fg": "text",
-            "headerbar-bg": "caption" if theme == "win98" else "face",
-            "headerbar-fg": "caption_text" if theme == "win98" else "text",
+            "headerbar-bg": "caption" if theme == "memphis" else "face",
+            "headerbar-fg": "caption_text" if theme == "memphis" else "text",
             "sidebar-bg": "face",
             "sidebar-fg": "text",
             "card-bg": "face",

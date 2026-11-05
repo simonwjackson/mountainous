@@ -34,7 +34,7 @@ roles = {
         "selected": "highlight",
         "muted": "menuTextOff",
     },
-    "win98": {
+    "memphis": {
         "face": "face",
         "text": "text",
         "base": "win",
@@ -46,7 +46,7 @@ roles = {
 }
 for theme, mapping in roles.items():
     source = (
-        qml / ("PlatinumTokens.qml" if theme == "platinum" else "Win98Tokens.qml")
+        qml / ("PlatinumTokens.qml" if theme == "platinum" else "MemphisTokens.qml")
     ).read_text()
     for role, token in mapping.items():
         pattern = r"\b" + token + r': dark \? "(#[0-9a-f]+)" : "(#[0-9a-f]+)"'
@@ -58,12 +58,12 @@ assert set(manifest) == {
     "platinum-light",
     "platinum-dark",
     "platinum-extra",
-    "win98-light",
-    "win98-dark",
+    "memphis-light",
+    "memphis-dark",
 }
 for theme, variants in native.PALETTES.items():
     tokens = (
-        (qml / ("PlatinumTokens.qml" if theme == "platinum" else "Win98Tokens.qml"))
+        (qml / ("PlatinumTokens.qml" if theme == "platinum" else "MemphisTokens.qml"))
         .read_text()
         .lower()
     )

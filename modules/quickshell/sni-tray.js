@@ -81,7 +81,7 @@ function overflowChoice(row) {
 }
 
 // A dbusmenu label: "_" marks the access key, "__" is a literal "_".
-// Win98 marks with "&" ("&&" literal); Platinum has none.
+// Memphis marks with "&" ("&&" literal); Platinum has none.
 function accessText(text) {
     var s = String(text || "").replace(/&/g, "&&"), out = "";
     for (var i = 0; i < s.length; i++) {

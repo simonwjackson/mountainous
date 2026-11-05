@@ -13,7 +13,7 @@
   nixos.modules.desktop =
     { pkgs, lib, ... }:
     {
-      # share/icons: Mountainous-{platinum,win98} icon themes, Chicago95,
+      # share/icons: Mountainous-{platinum,memphis} icon themes, Chicago95,
       # and the two cursor themes (XCursor and hyprcursor in one directory).
       environment.systemPackages = [ (import ../lib/desktop-art.nix { inherit pkgs inputs; }) ];
       # A client with no XCURSOR_THEME loads "default"; send it to the alias

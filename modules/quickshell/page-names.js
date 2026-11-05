@@ -9,7 +9,7 @@
 //
 // Page ids stay internal: they order the pages along the strip and go to
 // the compositor, and they are never in a returned label. Platinum's strip
-// and tile menu and the Win98 taskbar and Move to Page menu share this file,
+// and tile menu and the Memphis taskbar and Move to Page menu share this file,
 // so the two themes keep the same words. node page-names.test.js runs it.
 
 // At most this many names; a longer list ends with "…".

@@ -344,7 +344,7 @@ is `chrome-127.0.0.1__fixture-Default`, which also demonstrates that URL paths,
 not only hosts, participate in that class. The standalone installed fixture
 has class `chrome-<app-id>-Default` and Chromium's own caption; the generic app
 has our SSD caption but no origin strip. Both launch shapes were captured
-under Platinum and Win98. This confirms cookie retention, not protocol-handler
+under Platinum and Memphis. This confirms cookie retention, not protocol-handler
 or installed-app parity.
 
 | Property | `--app-id` → same-profile `--app=start_url` |
@@ -369,11 +369,11 @@ installed PWA in its original profile without converting its window.
 ## Taskbar and Control Strip
 
 The taskbar and strip already enumerate **windows**, not an app count.
-`lanes.js` keeps every toplevel in its screen/page lane. Win98's task model also
+`lanes.js` keeps every toplevel in its screen/page lane. Memphis's task model also
 keeps minimized windows. `app-model.js` groups the same Wayland class into one
 Application-menu app **with all its windows**; that is not the tile/button
 model. The new 30-window test confirms one Chromium app group contains 30
-unique windows and Win98's window cycle contains all 30.
+unique windows and Memphis's window cycle contains all 30.
 
 Titles are already per window. Favicons are **not** complete: both themes
 normally resolve a desktop-entry/app-class icon. The extension's shared class
@@ -401,7 +401,7 @@ The real Quickshell, both themes, Chromium and virtual keyboard ran in the
 private nested session. A separate native-popup test opened the real shell
 under both themes and navigated that popup without changing its target ID.
 The Chromium-native location/security row remained visible. Ctrl+L opened Go to Address / Open and navigated the
-existing page under Platinum light/dark and Win98 light/dark. Four snapshots
+existing page under Platinum light/dark and Memphis light/dark. Four snapshots
 of `/json/list` verify the resulting URL/title. A second real-key run with two
 identical page titles verifies Go/Enter changes neither target under all four
 light/dark theme combinations; the disabled buttons and explanation are

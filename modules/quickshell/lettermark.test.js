@@ -15,7 +15,7 @@ assert.equal(L.needs("zed", "file://" + own), false);
 assert.equal(L.needs("zed", own, "platinum"), false);
 // Chicago95 is Memphis's own set, not Platinum's.
 const c95 = "/nix/store/x-desktop-art/share/icons/Chicago95/apps/32/chromium.png";
-assert.equal(L.needs("chromium", c95, "win98"), false);
+assert.equal(L.needs("chromium", c95, "memphis"), false);
 assert.equal(L.needs("chromium", c95, "platinum"), true);
 assert.equal(L.needs("chromium", c95), false);
 // hicolor, Adwaita and an app's own file are not period art.
@@ -29,15 +29,15 @@ assert.equal(L.needs("zed", ""), true);
 assert.equal(L.needs(null, undefined), true);
 assert.equal(L.needs("nm-applet", "image://qsimage/1234/0"), true);
 // Escaped paths decode.
-assert.equal(L.needs("x", "file:///usr/share/icons/Mountainous-win98/apps/32/x%20y.png", "win98"), false);
+assert.equal(L.needs("x", "file:///usr/share/icons/Mountainous-memphis/apps/32/x%20y.png", "memphis"), false);
 
 // ---- mark(): the letter
 assert.equal(L.mark("platinum", "Krita", "org.kde.krita").letter, "K");
 assert.equal(L.mark("platinum", "  zed editor", "dev.zed.Zed").letter, "Z");
-assert.equal(L.mark("win98", "3D Pinball", "pinball").letter, "3");
-assert.equal(L.mark("win98", "(beta) Tool", "tool").letter, "B");
-assert.equal(L.mark("win98", "", "org.signal.Signal").letter, "O");
-assert.equal(L.mark("win98", "—", "").letter, "?");
+assert.equal(L.mark("memphis", "3D Pinball", "pinball").letter, "3");
+assert.equal(L.mark("memphis", "(beta) Tool", "tool").letter, "B");
+assert.equal(L.mark("memphis", "", "org.signal.Signal").letter, "O");
+assert.equal(L.mark("memphis", "—", "").letter, "?");
 assert.equal(L.mark("platinum", "", "").letter, "?");
 assert.equal(L.mark("platinum", "élan", "x").letter, "É");
 assert.equal(L.mark("platinum", "Ωmega", "x").letter, "Ω");
@@ -47,10 +47,10 @@ const a = L.mark("platinum", "Krita", "org.kde.krita");
 const b = L.mark("platinum", "Krita (renamed)", "org.kde.krita");
 assert.equal(a.fill, b.fill, "the tint follows the id, not the label");
 assert.ok(L.TINTS.platinum.indexOf(a.fill) >= 0);
-assert.ok(L.TINTS.win98.indexOf(L.mark("win98", "Krita", "org.kde.krita").fill) >= 0);
+assert.ok(L.TINTS.memphis.indexOf(L.mark("memphis", "Krita", "org.kde.krita").fill) >= 0);
 const fills = new Set(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"].map((id) => L.mark("platinum", id, id).fill));
 assert.ok(fills.size >= 4, "ids spread over the palette: " + fills.size);
-for (const theme of ["platinum", "win98"]) {
+for (const theme of ["platinum", "memphis"]) {
     const m = L.mark(theme, "A", "a");
     assert.equal(m.ink, "#ffffff");
     assert.equal(m.edge, "#000000");
@@ -60,20 +60,20 @@ function lum(h) {
     const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 }
-for (const t of L.TINTS.platinum.concat(L.TINTS.win98))
+for (const t of L.TINTS.platinum.concat(L.TINTS.memphis))
     assert.ok(1.05 / (lum(t) + 0.05) >= 4, t + " is too light for white ink");
 // Unknown themes draw Platinum.
 assert.deepEqual(L.mark("nope", "A", "a"), L.mark("platinum", "A", "a"));
 // A provider-given tint (IconArt::Lettermark) gets the same colours.
 assert.equal(L.colours("platinum", "#3a6ea5").fill, "#3a6ea5");
 assert.equal(L.colours("platinum", "#3a6ea5").light, "#92afcd");
-assert.equal(L.colours("win98", "bogus").fill, "#808080");
+assert.equal(L.colours("memphis", "bogus").fill, "#808080");
 
 // ---- art()
 assert.equal(L.gridFor("platinum", 16), 32);
-assert.equal(L.gridFor("win98", 16), 16);
-assert.equal(L.gridFor("win98", 24), 16);
-assert.equal(L.gridFor("win98", 32), 32);
+assert.equal(L.gridFor("memphis", 16), 16);
+assert.equal(L.gridFor("memphis", 24), 16);
+assert.equal(L.gridFor("memphis", 32), 32);
 function grid(art) {
     const g = Array.from({ length: art.grid }, () => Array(art.grid).fill(null));
     for (const r of art.rects) {
@@ -98,9 +98,9 @@ assert.equal(p[16][21], pc.dark);
 assert.equal(p[29][21], "#50000000");
 assert.equal(p[0][0], null);
 assert.equal(p[31][0], null);
-const wc = L.colours("win98", "#000080");
+const wc = L.colours("memphis", "#000080");
 for (const n of [16, 32]) {
-    const art = L.art("win98", wc, n);
+    const art = L.art("memphis", wc, n);
     const w = grid(art);
     const lo = n === 16 ? 1 : 2, hi = n - 1 - lo;
     assert.equal(art.grid, n);
@@ -112,7 +112,7 @@ for (const n of [16, 32]) {
     assert.equal(art.text, 12 * n / 16);
 }
 // Few rectangles: vertical runs merge.
-assert.ok(L.art("win98", wc, 32).rects.length < 20);
+assert.ok(L.art("memphis", wc, 32).rects.length < 20);
 assert.ok(L.art("platinum", pc, 32).rects.length < 120);
 
 console.log("LETTERMARK_TESTS_PASSED");

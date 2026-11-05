@@ -15,7 +15,7 @@ pkgs.stdenvNoCC.mkDerivation {
   '';
   dontInstall = true;
   meta = {
-    description = "Platinum and Windows 98 native desktop appearances";
+    description = "Platinum and Memphis native desktop appearances";
     # Mac-OS-9 and the stable Kvantum fork include GPLv3 texts. Chicago95's
     # README declares GPL-3.0+/MIT; its theme code is kept under GPL-3.0+.
     license = with pkgs.lib.licenses; [

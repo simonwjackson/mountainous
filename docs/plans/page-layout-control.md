@@ -31,7 +31,7 @@ modules/quickshell/page-layout-model.js   contract (done): parse the state file,
 modules/quickshell/panels/PageLayout.qml  contract (done): the per-screen state Scope
 modules/quickshell/shell.qml              contract (done): PageLayout per screen, desktopContext.layout
 Platinum*.qml, bar-plan.js, themes/platinum/*      Platinum UI
-Win98*.qml, themes/win98/*                         Win98 UI
+Memphis*.qml, themes/memphis/*                         Memphis UI
 ```
 
 ## Contract 1: the state file
@@ -106,9 +106,9 @@ Win98*.qml, themes/win98/*                         Win98 UI
 | Gap label | Outer gap (Super+Shift+[ ]) | Outer gap |
 | Gap note | "New pages use N px." + Use Default when it differs; "Gaps apply to tiled windows." when floating | none |
 | Last row | Zen margins check (Super+Shift+M) | "N pages differ from this." + Reset All (hidden when N is 0) |
-| Footer (Platinum) / status bar (Win98) | "Tab this page/default · F float · 1 2 3 windows / ←→ gap · Z zen · Esc close" | same |
+| Footer (Platinum) / status bar (Memphis) | "Tab this page/default · F float · 1 2 3 windows / ←→ gap · Z zen · Esc close" | same |
 
-Win98 uses "Win+" where Platinum says "Super+", and access keys: &This Page, &Default, &Tiled, &Floating, Use &Default, &Zen margins, &Reset All.
+Memphis uses "Win+" where Platinum says "Super+", and access keys: &This Page, &Default, &Tiled, &Floating, Use &Default, &Zen margins, &Reset All.
 
 ## Validation
 

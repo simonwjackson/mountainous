@@ -11,11 +11,11 @@ shell root, is the sole playback subscriber. Each theme's registry entry maps
 its events to WAVs. The bank uses QtMultimedia `SoundEffect`, decoded PCM and
 no per-event subprocess.
 
-| Event | Hook | Platinum | Win98 |
+| Event | Hook | Platinum | Memphis |
 |---|---|---|---|
 | Menu open | Changed menu/screen in `MenuState.open` | Dry click | Start-menu click |
-| Menu choose | Enabled leaf in `PlatinumCascadeMenu.choose` / `Win98Menu.trigger` | Higher click | Select click |
-| Confirmation | Platinum alert creation; Win98 `shutdown`/`logoff` open | Alert beep | Exclamation |
+| Menu choose | Enabled leaf in `PlatinumCascadeMenu.choose` / `MemphisMenu.trigger` | Higher click | Select click |
+| Confirmation | Platinum alert creation; Memphis `shutdown`/`logoff` open | Alert beep | Exclamation |
 | Notification | Fresh accepted upsert, never snapshot/reconnect replay | Two-note tag | Asterisk; Critical Stop for critical urgency |
 | Minimize / restore | One per nonempty shared `WindowHider.run` batch | Down/up gesture | Down/up gesture |
 | Available, no current caller | Registry `beep`, `emptyTrash` | Alert, dry trash-like rattle | Default Beep, Exclamation |
@@ -30,7 +30,7 @@ one event, as the notification owner's `fresh` contract specifies.
 content means **on**; explicit `off` disables it. The same lock and atomic
 rename protect writes. One global preference survives theme/mode changes.
 `reapply` creates a missing file. Existing `status` output and `apply`
-arguments remain compatible. Both pickers use this owner. Win98's checkbox
+arguments remain compatible. Both pickers use this owner. Memphis's checkbox
 applies at once, independently of its Appearance draft/Apply button.
 
 A blocking initial read prevents an off preference from briefly opening an
@@ -59,10 +59,10 @@ recordings, samples, transcriptions or external sound inputs.
 
 **Choice (a): fixed Platinum boot/shutdown, regardless of runtime theme.**
 No privileged theme helper, session ESP writer, runtime `/boot` file,
-early-boot state parser, or switch-time initrd rebuild is added. Cost: Win98
+early-boot state parser, or switch-time initrd rebuild is added. Cost: Memphis
 users see Platinum at boot/shutdown. Both original packages are installed for
 preview. An administrator can select
-`boot.plymouth.theme = "mountainous-win98"` in a later rebuild. The upstream
+`boot.plymouth.theme = "mountainous-memphis"` in a later rebuild. The upstream
 systemd-initrd module includes only the selected theme in the initrd.
 
 Chicago95's general GPL-3.0+/MIT statement does not establish permission for
@@ -105,7 +105,7 @@ Upstream NixOS adds these initrd paths (Myoko uses systemd initrd):
 Stage 2 gains `/etc/plymouth/{plymouthd.conf,plymouthd.defaults,logo.png,plugins,themes}`,
 `/run/plymouth` links, upstream `plymouth-*` units and
 `systemd-ask-password-plymouth.{path,service}`. Both theme directories live under
-the store's `share/plymouth/themes/mountainous-{platinum,win98}`. A normal parent
+the store's `share/plymouth/themes/mountainous-{platinum,memphis}`. A normal parent
 rebuild writes a new initrd under `/boot/nixos/` and its normal systemd-boot
 entry under `/boot/loader/entries/`; the entry gains `splash`. It does not
 replace systemd-boot or the kernel with a different package. Evidence
@@ -141,6 +141,6 @@ Bluetooth route or Myoko timing. The VM boots an unencrypted fixture; the live
 systemd password protocol is tested, not cryptsetup unlocking storage. The
 full boot-time delta on Myoko is not measured. Review the original boot art as
 reuse of existing chrome, not Apple's Happy Mac or Microsoft's logo. Fixed
-Platinum deliberately does not follow Win98 at boot. Win98's checkbox label
+Platinum deliberately does not follow Memphis at boot. Memphis's checkbox label
 does not yet wrap below its existing picker minimum; it fits the tested 360 px
 narrow screen. No full test suite ran.

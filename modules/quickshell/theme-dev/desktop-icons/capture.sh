@@ -48,7 +48,7 @@ desk_wait live || { cat "$out/session/qs.log" >&2; echo "no live session" >&2; e
 snap() { sleep 0.7; shot "$out/$1/$2.png"; echo "$1/$2 $(desk current | head -c 200)"; }
 settle() { sleep 0.4; desk closeAll >/dev/null; sleep 0.3; }
 
-appearances="platinum:light:off:platinum-light platinum:dark:off:platinum-dark platinum:dark:on:platinum-extra win98:light:off:memphis-light win98:dark:off:memphis-dark"
+appearances="platinum:light:off:platinum-light platinum:dark:off:platinum-dark platinum:dark:on:platinum-extra memphis:light:off:memphis-light memphis:dark:off:memphis-dark"
 for a in $appearances; do
   IFS=: read -r name mode extra label <<<"$a"
   mkdir -p "$out/$label"
@@ -61,7 +61,7 @@ for a in $appearances; do
   desk menu "file:notes.txt" >/dev/null; snap "$label" icon-menu; settle
   desk menu "" >/dev/null; snap "$label" desktop-menu; settle
   desk menu "$trash" >/dev/null; snap "$label" trash-menu; settle
-  if [ "$name" = win98 ]; then
+  if [ "$name" = memphis ]; then
     desk trash "file:notes.txt" >/dev/null; snap "$label" trash-confirm; settle
   fi
   desk permanent "file:Projects" "USB has no Trash." >/dev/null; snap "$label" permanent; settle

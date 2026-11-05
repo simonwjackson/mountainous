@@ -173,7 +173,7 @@ hl.config({
     },
 })
 
--- The session's motion. Under the Platinum and Windows 98 desktop themes
+-- The session's motion. Under the Platinum and Memphis desktop themes
 -- titlebars.lua (below) turns windows, fade and layers off on every parse
 -- and theme change: those OSes cut, and the shell draws their own motion.
 hl.curve("quick", { type = "bezier", points = { {0.15, 0}, {0.1, 1} } })
@@ -348,7 +348,7 @@ end
 --
 -- Held: with Super still down, each further Tab steps through the apps in
 -- most recently used order on the Platinum Application menu, or through
--- the windows in Win98's Cool Switch box (Shift+Tab steps back), and
+-- the windows in Memphis's Cool Switch box (Shift+Tab steps back), and
 -- releasing Super switches to the one it is on. A repeat
 -- timer watches for Super going up (hl.is_key_down), because a release
 -- bind on Super_L would also fire after every other Super chord. Each
@@ -691,7 +691,7 @@ hl.bind(mod .. " + I", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome toggle
 
 -- The Fleet window (Beszel's fleet health) and the glance space it shares
 -- with Disks. Each desktop theme draws its own (Platinum's windoid and
--- focus layer; Win98's window above the tray and the Shut Down checker);
+-- focus layer; Memphis's window above the tray and the Shut Down checker);
 -- a theme without them ignores the calls.
 hl.bind(mod .. " + B", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
 hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle"))
@@ -700,7 +700,7 @@ hl.bind(mod .. " + W", hl.dsp.exec_cmd("qs -c mountainous ipc call glance toggle
 -- namespace, then B opens Bluetooth, W opens Wi-Fi, S opens Sound, L opens
 -- Brightness, C opens Cloud, D opens Disks, F toggles the Fleet window, R
 -- opens Remote builds on hosts that show them, or N opens Notifications
--- (Platinum and Win98; under another desktop theme N passes through as
+-- (Platinum and Memphis; under another desktop theme N passes through as
 -- before). The top bar or the tray shows the available keys while the
 -- submap is active. Escape
 -- or three seconds of inactivity cancels it.
@@ -720,7 +720,7 @@ hl.bind(mod .. " + O", function()
     end, { timeout = 3000, type = "oneshot" })
 end)
 
--- Win98's Start key. While the Windows 98 desktop theme is active (see
+-- Memphis's Start key. While the Memphis desktop theme is active (see
 -- modules/theme.nix: theme-name), Ctrl+Esc opens its Start menu; under any
 -- other theme the keys go to the focused window as before. A lone Super is
 -- not bound: Kanata's held Space is Super, so a lone Super release would
@@ -734,15 +734,15 @@ local function desktop_theme_name()
     return name ~= "" and name or "platinum"
 end
 hl.bind("CTRL + Escape", function()
-    if desktop_theme_name() ~= "win98" then return { ok = false } end
+    if desktop_theme_name() ~= "memphis" then return { ok = false } end
     hl.exec_cmd("qs -c mountainous ipc call chrome open start")
     return { ok = true }
 end, { auto_consuming = true })
 
--- The same window menu as a Win98 caption's icon and taskbar right click.
+-- The same window menu as a Memphis caption's icon and taskbar right click.
 -- Empty address and -1/-1 request the focused window's caption anchor.
 hl.bind("ALT + Space", function()
-    if desktop_theme_name() ~= "win98" then return { ok = false } end
+    if desktop_theme_name() ~= "memphis" then return { ok = false } end
     hl.exec_cmd("qs -c mountainous ipc call windows menu '' -1 -1")
     return { ok = true }
 end, { auto_consuming = true })
@@ -757,11 +757,11 @@ hl.define_submap("topbar-access", "reset", function()
     hl.bind("F", hl.dsp.exec_cmd("qs -c mountainous ipc call fleet toggle"))
     hl.bind("R", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open builder"))
     hl.bind("Y", hl.dsp.exec_cmd("qs -c mountainous ipc call chrome open layout"))
-    -- Both desktop themes draw N (Platinum's bar, Win98's tray); under any
+    -- Both desktop themes draw N (Platinum's bar, Memphis's tray); under any
     -- other theme N passes through.
     hl.bind("N", function()
         local theme = desktop_theme_name()
-        if theme ~= "platinum" and theme ~= "win98" then return { ok = false } end
+        if theme ~= "platinum" and theme ~= "memphis" then return { ok = false } end
         hl.exec_cmd("qs -c mountainous ipc call chrome open ntf")
         return { ok = true }
     end, { auto_consuming = true })

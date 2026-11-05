@@ -11,7 +11,7 @@ import "lettermark.js" as Mark
 // Platinum (Mac OS 8): a 32 px icon, the name on one line in a white box
 // (black on white, inverse when selected), the icon darkened when
 // selected; an alias's name in italics.
-// Memphis (Windows 98): a 32 u icon (whole device pixels, nearest
+// Memphis (Memphis): a 32 u icon (whole device pixels, nearest
 // neighbour), the name in white under it, wrapped to two lines (all lines
 // when selected), selected in the selection colour with the icon dithered
 // toward it and a dotted focus rectangle on the focused one; a shortcut
@@ -33,9 +33,9 @@ Item {
     property real devicePixelRatio: QsWindow.window && QsWindow.window.devicePixelRatio > 0
         ? QsWindow.window.devicePixelRatio : 1.5
 
-    readonly property bool win98: root.themeId === "win98"
+    readonly property bool memphis: root.themeId === "memphis"
     readonly property real u: 2 / root.devicePixelRatio
-    readonly property real iconSize: root.win98 ? 32 * root.u : 32
+    readonly property real iconSize: root.memphis ? 32 * root.u : 32
     readonly property bool lit: root.selected || root.dropTarget
     readonly property var art: Model.artFor(root.themeId, root.icon, Mark.needs)
     readonly property string aliasStyle: Model.aliasStyle(root.themeId, root.icon)
@@ -52,7 +52,7 @@ Item {
     Item {
         id: picture
         x: Math.round((root.width - width) / 2 * root.devicePixelRatio) / root.devicePixelRatio
-        y: root.win98 ? 2 * root.u : 2
+        y: root.memphis ? 2 * root.u : 2
         width: root.iconSize
         height: root.iconSize
         opacity: root.available ? 1 : 0.45
@@ -67,9 +67,9 @@ Item {
                 visible: root.art.type !== "lettermark"
                 // Memphis draws the 32 px art at 2 device px per pixel,
                 // unfiltered; Platinum lets Qt pick the closest size.
-                sourceSize.width: root.win98 ? 32 : Math.round(root.iconSize * root.devicePixelRatio)
-                sourceSize.height: root.win98 ? 32 : Math.round(root.iconSize * root.devicePixelRatio)
-                smooth: !root.win98
+                sourceSize.width: root.memphis ? 32 : Math.round(root.iconSize * root.devicePixelRatio)
+                sourceSize.height: root.memphis ? 32 : Math.round(root.iconSize * root.devicePixelRatio)
+                smooth: !root.memphis
                 mipmap: false
                 fillMode: Image.PreserveAspectFit
                 source: root.art.type === "icon" ? Quickshell.iconPath(root.art.name, "hensou-kind-document")
@@ -105,7 +105,7 @@ Item {
             anchors.fill: parent
             source: source
             colorization: root.lit ? 0.5 : 0
-            colorizationColor: root.win98 ? Kit.Win98Tokens.selection : "#000000"
+            colorizationColor: root.memphis ? Kit.MemphisTokens.selection : "#000000"
         }
     }
 
@@ -118,29 +118,29 @@ Item {
         // Inside the provider's cell, so neighbours never overlap; the
         // selected or focused name shows whole (it is raised over them).
         readonly property bool whole: root.lit || root.focused
-        readonly property real maxWidth: root.win98
+        readonly property real maxWidth: root.memphis
             ? (whole ? Math.max(root.cellWidth, 74 * root.u) : root.cellWidth - 2 * root.u)
             : (whole ? Math.max(2 * root.cellWidth, 160) : root.cellWidth - 4)
-        readonly property real padX: root.win98 ? root.u : 3
+        readonly property real padX: root.memphis ? root.u : 3
         // The one-line width, measured without the wrapped text (which
         // takes its width from here).
-        readonly property real natural: root.win98
-            ? Kit.Win98Tokens.textWidth(root.labelText, false, root.u) + root.u
+        readonly property real natural: root.memphis
+            ? Kit.MemphisTokens.textWidth(root.labelText, false, root.u) + root.u
             : platinumText.implicitWidth
         width: Math.min(maxWidth, natural + 2 * padX)
-        height: root.win98 ? w98.height + 2 * root.u : platinumText.implicitHeight + 2
+        height: root.memphis ? memphis.height + 2 * root.u : platinumText.implicitHeight + 2
         x: Math.round((root.width - width) / 2 * root.devicePixelRatio) / root.devicePixelRatio
-        y: picture.y + picture.height + (root.win98 ? 3 * root.u : 3)
+        y: picture.y + picture.height + (root.memphis ? 3 * root.u : 3)
 
         Rectangle {
             anchors.fill: parent
-            visible: !root.win98 || root.lit
-            color: root.win98 ? Kit.Win98Tokens.selection
+            visible: !root.memphis || root.lit
+            color: root.memphis ? Kit.MemphisTokens.selection
                 : root.lit ? Kit.PlatinumTokens.menuText : Kit.PlatinumTokens.field
         }
         Text {
             id: platinumText
-            visible: !root.win98
+            visible: !root.memphis
             x: label.padX
             y: 1
             width: label.width - 2 * label.padX
@@ -154,9 +154,9 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             opacity: root.available ? 1 : 0.6
         }
-        Win98Text {
-            id: w98
-            visible: root.win98
+        MemphisText {
+            id: memphis
+            visible: root.memphis
             x: label.padX
             y: root.u
             width: label.width - 2 * label.padX
@@ -165,15 +165,15 @@ Item {
             wrap: true
             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
             // As many lines as the cell has room for (at least one), all
-            // of them when selected and focused, as Windows 98 did.
+            // of them when selected and focused, as Memphis did.
             maximumLineCount: label.whole ? 1000
-                : Math.max(1, Math.floor((root.cellHeight - label.y - 2 * root.u) / (Kit.Win98Tokens.lineUnits * root.u)))
+                : Math.max(1, Math.floor((root.cellHeight - label.y - 2 * root.u) / (Kit.MemphisTokens.lineUnits * root.u)))
             horizontalAlignment: Text.AlignHCenter
-            color: root.lit ? Kit.Win98Tokens.selectionText : "#ffffff"
+            color: root.lit ? Kit.MemphisTokens.selectionText : "#ffffff"
             disabledLook: !root.available
         }
-        Win98FocusRect {
-            visible: root.win98 && root.focused && root.keyboard
+        MemphisFocusRect {
+            visible: root.memphis && root.focused && root.keyboard
             anchors.fill: parent
             color: root.lit ? "#ffffff" : "#000000"
         }

@@ -23,9 +23,9 @@ pkgs.stdenvNoCC.mkDerivation {
       --chi-nata ${inputs.chi-nata-src} \
       --retrosmart ${inputs.retrosmart-cursors-src} \
       --platinum-font ${fonts.chicagoflf}/share/fonts/truetype/ChicagoFLF.ttf \
-      --win98-font ${fonts.w95fa-grid}/share/fonts/truetype/W95FAGrid.ttf
+      --memphis-font ${fonts.w95fa-grid}/share/fonts/truetype/W95FAGrid.ttf
     # GTK and Qt read this cache instead of probing every directory.
-    for theme in "$out"/share/icons/{Mountainous-platinum,Mountainous-win98,Chicago95}; do
+    for theme in "$out"/share/icons/{Mountainous-platinum,Mountainous-memphis,Chicago95}; do
       gtk-update-icon-cache --force --ignore-theme-index "$theme"
     done
     runHook postBuild
@@ -34,7 +34,7 @@ pkgs.stdenvNoCC.mkDerivation {
   # gtk3's setup hook would delete the caches made above.
   dontDropIconThemeCache = true;
   meta = {
-    description = "Platinum and Windows 98 icon and cursor themes";
+    description = "Platinum and Memphis icon and cursor themes";
     # Chi-Nata: CC BY-SA 4.0. Retrosmart: GPL-3.0. Chicago95: GPL-3.0+/MIT.
     license = with pkgs.lib.licenses; [
       cc-by-sa-40

@@ -2,8 +2,8 @@
 -- appearance, each appearance sets the plugin and the window edge, attach()
 -- loads the plugin on every parse and makes the boxes once, and the
 -- palettes are PlatinumTokens.qml's.
--- Run: lua titlebars.test.lua titlebars.lua PlatinumTokens.qml hyprland.lua Win98Tokens.qml
-local module_path, tokens_path, hyprland_path, win98_tokens_path = arg[1], arg[2], arg[3], arg[4]
+-- Run: lua titlebars.test.lua titlebars.lua PlatinumTokens.qml hyprland.lua MemphisTokens.qml
+local module_path, tokens_path, hyprland_path, memphis_tokens_path = arg[1], arg[2], arg[3], arg[4]
 
 local function read_file(path)
     local f = assert(io.open(path, "r"))
@@ -49,7 +49,7 @@ for _, name in ipairs({ "enabled", "platinum", "bar_height", "bar_text_font", "b
     "bar_padding", "bar_button_padding", "bar_precedence_over_border", "bar_part_of_window", "on_double_click",
     "bar_color", "col.text", "platinum_title_inactive", "platinum_hi", "platinum_lo", "platinum_frame",
     "platinum_box", "platinum_rule" }) do OLD_OPTIONS[name] = true end
-local WIN98_OPTIONS = { "win98", "win98_li", "win98_caption1", "win98_caption2", "win98_inactive1", "win98_inactive2", "win98_button_text" }
+local MEMPHIS_OPTIONS = { "memphis", "memphis_li", "memphis_caption1", "memphis_caption2", "memphis_inactive1", "memphis_inactive2", "memphis_button_text" }
 local function fresh_hl(loaded, opts)
     opts = opts or {}
     calls = { config = {}, load = {}, rules = {}, buttons = {}, refresh = 0, queries = {}, rejected = {}, animation = {} }
@@ -75,7 +75,7 @@ local function fresh_hl(loaded, opts)
             if opts.probe_throws then error("configuration query unavailable") end
             if opts.old or name == opts.missing then return nil, "unknown config key" end
             -- A supported boolean option can be false. Presence is not truthiness.
-            if name == "win98" then return false end
+            if name == "memphis" then return false end
             return 0
         end,
         window_rule = function(t) table.insert(calls.rules, t) end,
@@ -105,8 +105,8 @@ write_state("platinum", "dark", "on")
 check(M.appearance(M.state()) == "black", "dark with extra is black")
 write_state("  platinum  ", "dark", "off")
 check(M.appearance(M.state()) == "dark", "whitespace is trimmed")
-write_state("win98", "light", "off")
-check(M.appearance(M.state()) == "win98_light", "win98 selects its light appearance")
+write_state("memphis", "light", "off")
+check(M.appearance(M.state()) == "memphis_light", "memphis selects its light appearance")
 
 -- Each appearance: the plugin on with its palette, square windows with
 -- no Hyprland border; without bars, the session's edge and corners.
@@ -130,11 +130,11 @@ for _, key in ipairs({ "light", "dark", "black" }) do
     check(t.group.groupbar.rounding == 0, key .. ": square group indicator")
 end
 for _, mode in ipairs({ "light", "dark" }) do
-    local state = { name = "win98", mode = mode, extra = true }
+    local state = { name = "memphis", mode = mode, extra = true }
     local t = M.settings(state)
-    check(t.plugin.hyprbars.enabled and t.plugin.hyprbars.win98, mode .. ": Win98 bars enabled")
-    check(t.decoration.rounding == 0 and t.general.border_size == 0, mode .. ": Win98 square edge")
-    check(t.plugin.hyprbars.bar_text_font == "W95FA Grid", mode .. ": Win98 font")
+    check(t.plugin.hyprbars.enabled and t.plugin.hyprbars.memphis, mode .. ": Memphis bars enabled")
+    check(t.decoration.rounding == 0 and t.general.border_size == 0, mode .. ": Memphis square edge")
+    check(t.plugin.hyprbars.bar_text_font == "W95FA Grid", mode .. ": Memphis font")
 end
 local none = M.settings({ name = "unknown", mode = "light", extra = false })
 check(none.plugin.hyprbars.enabled == false, "unknown theme: bars off")
@@ -174,23 +174,23 @@ check(last.plugin.hyprbars.platinum == true and last.plugin.hyprbars.bar_text_fo
 check(static.on_double_click == calls.buttons[3].action, "a double click zooms")
 
 -- apply() after desktop-theme changes the files: values only.
-write_state("win98", "light", "off")
+write_state("memphis", "light", "off")
 fresh_hl(true)
 check(M.apply() == true, "apply with the plugin")
 check(#calls.buttons == 0 and #calls.rules == 0 and #calls.load == 0, "apply only sets values")
-check(calls.config[1].plugin.hyprbars.win98 == true and calls.config[1].decoration.rounding == 0, "apply follows win98")
+check(calls.config[1].plugin.hyprbars.memphis == true and calls.config[1].decoration.rounding == 0, "apply follows memphis")
 
 -- Returning to Platinum resets every style choice, not just the palette.
 write_state("platinum", "dark", "on")
 fresh_hl(true)
 M.apply()
 local restored = calls.config[1].plugin.hyprbars
-check(restored.win98 == false and restored.bar_text_font == "ChicagoFLF" and restored.bar_height == 20,
+check(restored.memphis == false and restored.bar_text_font == "ChicagoFLF" and restored.bar_height == 20,
     "switching back restores Platinum's font and geometry")
 
 -- A deployed Lua may meet the still-loaded generation-52 plugin. Reject
--- every new option, not just win98, so attach/apply cannot hide an error.
-for _, state in ipairs({ { "win98", "light", "off" }, { "win98", "dark", "on" },
+-- every new option, not just memphis, so attach/apply cannot hide an error.
+for _, state in ipairs({ { "memphis", "light", "off" }, { "memphis", "dark", "on" },
     { "platinum", "light", "off" }, { "platinum", "dark", "off" }, { "platinum", "dark", "on" } }) do
     write_state(table.unpack(state))
     fresh_hl(true, { old = true })
@@ -198,13 +198,13 @@ for _, state in ipairs({ { "win98", "light", "off" }, { "win98", "dark", "on" },
     check(ok, "old plugin attach " .. state[1] .. ": " .. tostring(err))
     check(#calls.rejected == 0, "old plugin receives only registered options on attach")
     local cfg = calls.config[#calls.config]
-    if state[1] == "win98" then
-        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == false, "old plugin Win98: no bars")
+    if state[1] == "memphis" then
+        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == false, "old plugin Memphis: no bars")
         check(cfg and cfg.general and cfg.general.border_size == 0 and cfg.decoration.rounding == 6,
-            "old plugin Win98: session edge and rounding")
-        check(cfg and cfg.group and cfg.group.groupbar.col.active == "rgba(ffff0066)", "old plugin Win98: default groupbar")
+            "old plugin Memphis: session edge and rounding")
+        check(cfg and cfg.group and cfg.group.groupbar.col.active == "rgba(ffff0066)", "old plugin Memphis: default groupbar")
     else
-        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == true and cfg.plugin.hyprbars.win98 == nil,
+        check(cfg and cfg.plugin and cfg.plugin.hyprbars.enabled == true and cfg.plugin.hyprbars.memphis == nil,
             "old plugin Platinum: enabled without the new style option")
         check(cfg and cfg.decoration and cfg.decoration.rounding == 0, "old plugin Platinum: square")
         check(cfg and cfg.plugin and cfg.plugin.hyprbars.bar_text_font == "ChicagoFLF" and
@@ -217,12 +217,12 @@ end
 
 -- Probe failures and partial implementations must fall back without trying
 -- a configuration write. Check every new option is required by the style.
-write_state("win98", "light", "off")
-for _, name in ipairs(WIN98_OPTIONS) do
+write_state("memphis", "light", "off")
+for _, name in ipairs(MEMPHIS_OPTIONS) do
     fresh_hl(true, { missing = name })
     M.apply()
     check(calls.config[1].plugin.hyprbars.enabled == false and calls.config[1].decoration.rounding == 6,
-        "missing " .. name .. " falls back to generation-52 Win98")
+        "missing " .. name .. " falls back to generation-52 Memphis")
 end
 fresh_hl(true, { probe_throws = true })
 check(pcall(M.apply) and calls.config[1].plugin.hyprbars.enabled == false, "a guarded probe failure falls back")
@@ -231,7 +231,7 @@ hl.get_config = nil
 check(pcall(M.apply) and calls.config[1].plugin.hyprbars.enabled == false, "a missing query API falls back")
 fresh_hl(true)
 M.apply()
-check(calls.config[1].plugin.hyprbars.win98 == true, "registered false option still enables Win98 support")
+check(calls.config[1].plugin.hyprbars.memphis == true, "registered false option still enables Memphis support")
 
 -- Motion: both themes cut windows, fades and layers; any other theme gets
 -- the session's values back. apply() sets it with or without the plugin.
@@ -240,7 +240,7 @@ local function leaves(list)
     for _, a in ipairs(list) do out[a.leaf] = a end
     return out
 end
-for _, name in ipairs({ "platinum", "win98" }) do
+for _, name in ipairs({ "platinum", "memphis" }) do
     local m = leaves(M.motion({ name = name, mode = "dark", extra = false }))
     for _, leaf in ipairs({ "windows", "fade", "layers" }) do
         check(m[leaf] and m[leaf].enabled == false, name .. ": " .. leaf .. " animation off")
@@ -251,7 +251,7 @@ local back = leaves(M.motion({ name = "unknown", mode = "dark", extra = false })
 check(back.windows.enabled and back.windows.speed == 4 and back.windows.bezier == "quick", "unknown theme: session windows")
 check(back.fade.enabled and back.fade.speed == 4 and back.fade.bezier == "quick", "unknown theme: session fade")
 check(back.layers.enabled and back.layers.speed == 8 and back.layers.bezier == "default", "unknown theme: Hyprland's layers")
-write_state("win98", "light", "off")
+write_state("memphis", "light", "off")
 fresh_hl(false)
 M.apply()
 check(#calls.animation == 3 and leaves(calls.animation).layers.enabled == false, "apply without the plugin still cuts the motion")
@@ -263,7 +263,7 @@ write_state("unknown", "dark", "off")
 fresh_hl(true)
 M.apply()
 check(leaves(calls.animation).windows.enabled == true, "apply for another theme puts the session's motion back")
-write_state("win98", "dark", "off")
+write_state("memphis", "dark", "off")
 fresh_hl(true, { reject_leaf = "layers" })
 check(M.apply_motion() == false and #calls.animation == 2, "a rejected leaf does not stop the others")
 fresh_hl(true, { no_animation = true })
@@ -299,27 +299,27 @@ same(M.PALETTES.black.edge, black_edge, "black box edge = ridgeLow")
 check(M.PALETTES.black.hi == M.PALETTES.black.face and M.PALETTES.black.lo == M.PALETTES.black.face,
     "black is flat: no stripes, no bevel")
 
--- Win98 palettes are checked against the very same palette() used by QML.
-local win98 = read_file(win98_tokens_path)
+-- Memphis palettes are checked against the very same palette() used by QML.
+local memphis = read_file(memphis_tokens_path)
 for _, mode in ipairs({ "light", "dark" }) do
-    local p = M.WIN98_PALETTES[mode]
-    local hb = M.settings({ name = "win98", mode = mode, extra = true }).plugin.hyprbars
+    local p = M.MEMPHIS_PALETTES[mode]
+    local hb = M.settings({ name = "memphis", mode = mode, extra = true }).plugin.hyprbars
     for field, token in pairs({ face = "face", hi = "hi", li = "li", lo = "sh", edge = "dk", text = "captionText",
         text_off = "inactiveCaptionText", glyph = "text", caption1 = "caption1", caption2 = "caption2",
         inactive1 = "inactiveCaption1", inactive2 = "inactiveCaption2" }) do
-        local dark, light = win98:match(token .. ': dark %? "#(%x+)" : "#(%x+)"')
-        local fixed = win98:match(token .. ': "#(%x+)"')
-        same(p[field], fixed or (mode == "dark" and dark or light), "Win98 " .. mode .. " " .. token)
+        local dark, light = memphis:match(token .. ': dark %? "#(%x+)" : "#(%x+)"')
+        local fixed = memphis:match(token .. ': "#(%x+)"')
+        same(p[field], fixed or (mode == "dark" and dark or light), "Memphis " .. mode .. " " .. token)
     end
     for option, field in pairs({ bar_color = "face", ["col.text"] = "text", platinum_title_inactive = "text_off",
         platinum_hi = "hi", platinum_lo = "lo", platinum_frame = "edge", platinum_box = "face",
-        platinum_rule = "edge", win98_li = "li", win98_button_text = "glyph" }) do
-        same(hb[option], "rgb(" .. p[field] .. ")", "Win98 " .. mode .. " setting " .. option)
+        platinum_rule = "edge", memphis_li = "li", memphis_button_text = "glyph" }) do
+        same(hb[option], "rgb(" .. p[field] .. ")", "Memphis " .. mode .. " setting " .. option)
     end
-    check(hb.win98_caption1 == "rgb(" .. p.caption1 .. ")", "active Win98 gradient start")
-    check(hb.win98_caption2 == "rgb(" .. p.caption2 .. ")", "active Win98 gradient end")
-    check(hb.win98_inactive1 == "rgb(" .. p.inactive1 .. ")", "inactive Win98 gradient start")
-    check(hb.win98_inactive2 == "rgb(" .. p.inactive2 .. ")", "inactive Win98 gradient end")
+    check(hb.memphis_caption1 == "rgb(" .. p.caption1 .. ")", "active Memphis gradient start")
+    check(hb.memphis_caption2 == "rgb(" .. p.caption2 .. ")", "active Memphis gradient end")
+    check(hb.memphis_inactive1 == "rgb(" .. p.inactive1 .. ")", "inactive Memphis gradient start")
+    check(hb.memphis_inactive2 == "rgb(" .. p.inactive2 .. ")", "inactive Memphis gradient end")
 end
 
 -- hyprland.lua hands the module the values it uses itself.

@@ -45,46 +45,46 @@
     }
   },
   {
-    "id": "win98",
+    "id": "memphis",
     "label": "Memphis",
-    "desktop": "Win98Desktop.qml",
-    "picker": "Win98PickerView.qml",
+    "desktop": "MemphisDesktop.qml",
+    "picker": "MemphisPickerView.qml",
     "appearances": [
       {
         "mode": "light",
         "label": "Standard",
-        "thumbnail": "themes/win98/previews/light.png"
+        "thumbnail": "themes/memphis/previews/light.png"
       },
       {
         "mode": "dark",
         "label": "Dark grey",
-        "thumbnail": "themes/win98/previews/dark.png"
+        "thumbnail": "themes/memphis/previews/dark.png"
       }
     ],
     "options": {
       "extraDark": false
     },
-    "qmlPrefix": "Win98",
+    "qmlPrefix": "Memphis",
     "pyxampFace": "winamp",
     "sounds": {
-      "menuOpen": "themes/win98/sounds/start-menu.wav",
-      "menuChoose": "themes/win98/sounds/menu-choose.wav",
-      "alert": "themes/win98/sounds/exclamation.wav",
-      "beep": "themes/win98/sounds/default-beep.wav",
-      "critical": "themes/win98/sounds/critical-stop.wav",
-      "notification": "themes/win98/sounds/asterisk.wav",
-      "emptyTrash": "themes/win98/sounds/exclamation.wav",
-      "minimize": "themes/win98/sounds/minimize.wav",
-      "restore": "themes/win98/sounds/restore.wav"
+      "menuOpen": "themes/memphis/sounds/start-menu.wav",
+      "menuChoose": "themes/memphis/sounds/menu-choose.wav",
+      "alert": "themes/memphis/sounds/exclamation.wav",
+      "beep": "themes/memphis/sounds/default-beep.wav",
+      "critical": "themes/memphis/sounds/critical-stop.wav",
+      "notification": "themes/memphis/sounds/asterisk.wav",
+      "emptyTrash": "themes/memphis/sounds/exclamation.wav",
+      "minimize": "themes/memphis/sounds/minimize.wav",
+      "restore": "themes/memphis/sounds/restore.wav"
     },
     "art": {
-      "icons": "Mountainous-win98",
-      "cursors": "Mountainous-win98-cursors",
+      "icons": "Mountainous-memphis",
+      "cursors": "Mountainous-memphis-cursors",
       "cursorSize": 24,
       "patternCell": 2,
       "patterns": {
-        "light": "themes/win98/patterns/light.svg",
-        "dark": "themes/win98/patterns/dark.svg"
+        "light": "themes/memphis/patterns/light.svg",
+        "dark": "themes/memphis/patterns/dark.svg"
       }
     }
   }

@@ -32,7 +32,7 @@ PanelWindow {
     WlrLayershell.namespace: "mountainous-alert"
     Component.onCompleted: SoundEvents.requested("alert")
 
-    readonly property bool win98: alert.themeId === "win98"
+    readonly property bool memphis: alert.themeId === "memphis"
     readonly property bool hasCancel: !!alert.spec && (alert.spec.cancel || "") !== ""
     readonly property bool cancelIsDefault: alert.hasCancel && alert.spec.defaultButton === "cancel"
     property bool done: false
@@ -48,12 +48,12 @@ PanelWindow {
 
     Shortcut { sequence: "Escape"; context: Qt.WindowShortcut; onActivated: alert.cancel() }
     Shortcut { sequences: ["Return", "Enter"]; context: Qt.WindowShortcut; onActivated: alert.takeDefault() }
-    Shortcut { sequence: "Y"; context: Qt.WindowShortcut; enabled: alert.win98 && alert.hasCancel; onActivated: alert.accept() }
-    Shortcut { sequence: "N"; context: Qt.WindowShortcut; enabled: alert.win98 && alert.hasCancel; onActivated: alert.cancel() }
+    Shortcut { sequence: "Y"; context: Qt.WindowShortcut; enabled: alert.memphis && alert.hasCancel; onActivated: alert.accept() }
+    Shortcut { sequence: "N"; context: Qt.WindowShortcut; enabled: alert.memphis && alert.hasCancel; onActivated: alert.cancel() }
 
     // ---------------------------------------------------------- Platinum
     PlatinumDialogFrame {
-        visible: !alert.win98
+        visible: !alert.memphis
         x: Math.max(4, Math.min(24, alert.width - width - 4))
         y: Math.max(4, Math.min(Kit.PlatinumTokens.barHeight + 22, alert.height - height - 4))
         width: Math.min(implicitWidth, alert.width - 8)
@@ -156,41 +156,41 @@ PanelWindow {
     }
 
     // ----------------------------------------------------------- Memphis
-    Win98Window {
+    MemphisWindow {
         id: box
-        visible: alert.win98
+        visible: alert.memphis
         title: alert.spec ? alert.spec.title : ""
         showClose: true
         margins: false
         onCloseClicked: alert.cancel()
-        x: Kit.Win98Tokens.snap((alert.width - width) / 2, box.u)
-        y: Kit.Win98Tokens.snap((alert.height - height) / 2, box.u)
+        x: Kit.MemphisTokens.snap((alert.width - width) / 2, box.u)
+        y: Kit.MemphisTokens.snap((alert.height - height) / 2, box.u)
         width: Math.min(implicitWidth, alert.width - 8)
 
         Item {
             readonly property real textWidth: Math.min(260 * box.u, Math.max(140 * box.u, message.implicitWidth))
             implicitWidth: 12 * box.u + 32 * box.u + 12 * box.u + textWidth + 14 * box.u
             implicitHeight: 12 * box.u + Math.max(32 * box.u, message.height) + 14 * box.u + 23 * box.u + 10 * box.u
-            Win98Icon {
+            MemphisIcon {
                 x: 12 * box.u
                 y: 12 * box.u
                 size: 32
                 name: alert.spec && alert.spec.icon === "error" ? "bad" : "warn"
             }
-            Win98Text {
+            MemphisText {
                 id: message
                 x: 56 * box.u
-                y: 12 * box.u + (message.height < 32 * box.u ? Kit.Win98Tokens.snap((32 * box.u - message.height) / 2, box.u) : 0)
+                y: 12 * box.u + (message.height < 32 * box.u ? Kit.MemphisTokens.snap((32 * box.u - message.height) / 2, box.u) : 0)
                 width: parent.textWidth
                 text: alert.spec ? alert.spec.text : ""
                 accessMarks: false
                 wrap: true
             }
             Row {
-                x: Kit.Win98Tokens.half((parent.width - width) / 2, box.u)
+                x: Kit.MemphisTokens.half((parent.width - width) / 2, box.u)
                 y: parent.implicitHeight - 10 * box.u - 23 * box.u
                 spacing: 6 * box.u
-                Win98Button {
+                MemphisButton {
                     objectName: "alertAccept"
                     text: alert.spec ? alert.spec.accept : "OK"
                     widthUnits: 75
@@ -198,7 +198,7 @@ PanelWindow {
                     focus: !alert.cancelIsDefault
                     onClicked: alert.accept()
                 }
-                Win98Button {
+                MemphisButton {
                     objectName: "alertCancel"
                     visible: alert.hasCancel
                     widthUnits: 75

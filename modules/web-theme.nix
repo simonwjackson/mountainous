@@ -9,7 +9,7 @@
     {
       # The theme-to-stylesheet policy, the in-page script in a fake
       # window, a lint of each theme's web.css, and the family names the
-      # sheets name literally: Platinum's body face, Win98's W95FA Grid.
+      # sheets name literally: Platinum's body face, Memphis's W95FA Grid.
       checks.web-theme =
         pkgs.runCommand "web-theme"
           {

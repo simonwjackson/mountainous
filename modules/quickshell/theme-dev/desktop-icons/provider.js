@@ -31,7 +31,7 @@ function icon(id, kind, label, generic, row, extra) {
 }
 
 function fixtures(name, theme, screen) {
-    const memphis = theme === "win98";
+    const memphis = theme === "memphis";
     if (name === "empty") return [];
     const base = [
         icon("computer", "computer", memphis ? "My Computer" : "Myoko", "computer", 0),

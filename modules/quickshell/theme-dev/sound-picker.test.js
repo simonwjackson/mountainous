@@ -28,7 +28,7 @@ ShellRoot {
     property var trace: []
     Connections { target: SoundEvents; function onRequested(event) { root.trace = root.trace.concat([event]); } }
     PlatinumCascadeMenu { id: macMenu; visible: false; items: [{kind: "item", text: "Choose", action: {kind: "test"}}, {kind: "item", text: "Disabled", disabled: true, action: {kind: "test"}}] }
-    Win98Menu { id: pcMenu; visible: false; model: [{text: "Choose"}, {text: "Disabled", enabled: false}] }
+    MemphisMenu { id: pcMenu; visible: false; model: [{text: "Choose"}, {text: "Disabled", enabled: false}] }
     function find(item) {
         if (!item) return null;
         if (item.objectName === "pickerSounds") return item;
@@ -93,18 +93,18 @@ function write(name, value) { fs.writeFileSync(path.join(state, name + '.new'), 
         assert.equal(fs.readFileSync(path.join(state, 'theme-sounds'), 'utf8'), 'on\n');
         ipc('toggle');
         await until(() => !JSON.parse(ipc('state')).sounds && !JSON.parse(ipc('state')).applying, 'off persists');
-        for (const [theme, mode, extra] of [['platinum','light','off'], ['platinum','dark','off'], ['platinum','dark','on'], ['win98','light','off'], ['win98','dark','off']]) {
+        for (const [theme, mode, extra] of [['platinum','light','off'], ['platinum','dark','off'], ['platinum','dark','on'], ['memphis','light','off'], ['memphis','dark','off']]) {
             write('theme', mode); write('theme-extra', extra); write('theme-name', theme);
             await until(() => { const s = JSON.parse(ipc('state')); return s.theme === theme && s.mode === mode; }, 'appearance');
             ipc('focus'); await wait(200);
             run('grim', [path.join(evidence, `${theme}-${mode}-${extra}.png`)]);
         }
         ipc('toggle');
-        await until(() => JSON.parse(ipc('state')).sounds && !JSON.parse(ipc('state')).applying, 'Win98 checkbox on');
+        await until(() => JSON.parse(ipc('state')).sounds && !JSON.parse(ipc('state')).applying, 'Memphis checkbox on');
         ipc('toggle');
-        await until(() => !JSON.parse(ipc('state')).sounds && !JSON.parse(ipc('state')).applying, 'Win98 checkbox off');
+        await until(() => !JSON.parse(ipc('state')).sounds && !JSON.parse(ipc('state')).applying, 'Memphis checkbox off');
         run('wlr-randr', ['--output', 'HEADLESS-1', '--custom-mode', '360x640']);
-        for (const theme of ['win98', 'platinum']) {
+        for (const theme of ['memphis', 'platinum']) {
             write('theme-name', theme);
             await until(() => JSON.parse(ipc('state')).theme === theme, 'narrow picker'); ipc('focus'); await wait(200);
             run('grim', [path.join(evidence, `${theme}-narrow.png`)]);

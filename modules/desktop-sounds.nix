@@ -44,7 +44,7 @@
           node ${./quickshell/MenuState.test.js} ${./quickshell/MenuState.qml}
           python3 ${./desktop-sounds/generate.py} generated
           diff -r generated/platinum/sounds ${./quickshell/themes/platinum/sounds}
-          diff -r generated/win98/sounds ${./quickshell/themes/win98/sounds}
+          diff -r generated/memphis/sounds ${./quickshell/themes/memphis/sounds}
           qmllint -I ${pkgs.qt6.qtdeclarative}/lib/qt-6/qml -I ${pkgs.qt6.qtmultimedia}/lib/qt-6/qml ${./quickshell}/ThemeSoundPlayer.qml ${./quickshell}/ThemeSoundBank.qml
           touch $out/passed
         '';

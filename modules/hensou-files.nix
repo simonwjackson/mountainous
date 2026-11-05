@@ -150,10 +150,10 @@ in
             node ${quickshell}/sni-tray.test.js ${quickshell}/sni-tray.js ${quickshell}/lettermark.js
             node ${quickshell}/show-desktop.test.js ${quickshell}/show-desktop.js
             node ${quickshell}/themes/platinum/menu-models.test.js ${quickshell}/themes/platinum/menu-models.js
-            node ${quickshell}/themes/win98/models.test.js ${quickshell}/themes/win98/tray-model.js ${quickshell}/themes/win98/start-model.js
-            node ${quickshell}/themes/win98/task-model.test.js ${quickshell}/themes/win98/task-model.js \
-              ${quickshell}/themes/win98/session-model.js ${quickshell}/page-names.js
-            node ${quickshell}/themes/win98/taskbar-plan.test.js ${quickshell}/themes/win98/taskbar-plan.js
+            node ${quickshell}/themes/memphis/models.test.js ${quickshell}/themes/memphis/tray-model.js ${quickshell}/themes/memphis/start-model.js
+            node ${quickshell}/themes/memphis/task-model.test.js ${quickshell}/themes/memphis/task-model.js \
+              ${quickshell}/themes/memphis/session-model.js ${quickshell}/page-names.js
+            node ${quickshell}/themes/memphis/taskbar-plan.test.js ${quickshell}/themes/memphis/taskbar-plan.js
             node ${quickshell}/bar-plan.test.js ${quickshell}/bar-plan.js ${quickshell}/bar-fixtures.json ${quickshell}/PlatinumTopBar.qml
             echo "files layer enabled: $FILES_ENABLED"
             touch $out

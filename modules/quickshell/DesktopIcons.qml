@@ -17,10 +17,10 @@ FocusScope {
     required property var screen
     // The background surface (DesktopPattern), for the rename focus grab.
     required property var window
-    property string themeId: Theme.name === "win98" ? "win98" : "platinum"
+    property string themeId: Theme.name === "memphis" ? "memphis" : "platinum"
     property real devicePixelRatio: root.window && root.window.devicePixelRatio > 0 ? root.window.devicePixelRatio : 1.5
 
-    readonly property bool win98: root.themeId === "win98"
+    readonly property bool memphis: root.themeId === "memphis"
     readonly property var layout: root.width > 0 && root.height > 0
         ? Model.screenLayout(root.themeId, { name: root.screen ? root.screen.name : "", width: root.width, height: root.height, scale: root.devicePixelRatio })
         : null
@@ -314,7 +314,7 @@ FocusScope {
     function moveFocus(id, mods) {
         if (id === "") return;
         root.focusId = id;
-        if (mods && mods.ctrl && root.win98) return;   // Memphis: Ctrl moves focus only
+        if (mods && mods.ctrl && root.memphis) return;   // Memphis: Ctrl moves focus only
         root.selection = [id];
         root.anchorId = id;
     }
@@ -340,7 +340,7 @@ FocusScope {
             root.selection = [];
         } else if (event.key === Qt.Key_A && mods.ctrl) {
             root.selection = root.icons.map(function (i) { return i.id; });
-        } else if (event.key === Qt.Key_Space && mods.ctrl && root.win98 && from !== "") {
+        } else if (event.key === Qt.Key_Space && mods.ctrl && root.memphis && from !== "") {
             const c = Model.click(root.themeId, root.icons, root.selection, root.anchorId, from, { ctrl: true });
             root.selection = c.selection;
         } else if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && mods.shift)) {
@@ -403,7 +403,7 @@ FocusScope {
                 c.lineDashOffset = offset;
                 c.strokeRect(hair / 2, hair / 2, width - hair, height - hair);
             };
-            if (root.win98) { draw("#ffffff", 0); draw("#000000", 2); }
+            if (root.memphis) { draw("#ffffff", 0); draw("#000000", 2); }
             else draw(Theme.mode === "light" ? "#404040" : "#c0c0c0", 0);
         }
     }
@@ -414,12 +414,12 @@ FocusScope {
         readonly property var target: root.renamingId !== "" ? root.delegateFor(root.renamingId) : null
         visible: target !== null
         z: 30001
-        readonly property real pad: root.win98 ? 2 / root.devicePixelRatio : 2
+        readonly property real pad: root.memphis ? 2 / root.devicePixelRatio : 2
         width: Math.max(target ? target.labelRect.width + 12 : 60, renameField.contentWidth + 2 * pad + 8)
         height: renameField.implicitHeight + 2 * pad
         x: target ? Math.round(target.x + target.width / 2 - width / 2) : 0
         y: target ? target.y + target.labelRect.y - pad : 0
-        color: root.win98 ? Kit.Win98Tokens.win : Kit.PlatinumTokens.field
+        color: root.memphis ? Kit.MemphisTokens.win : Kit.PlatinumTokens.field
         border.width: 1 / root.devicePixelRatio
         border.color: "#000000"
         TextInput {
@@ -427,11 +427,11 @@ FocusScope {
             x: renameBox.pad + 2
             y: renameBox.pad
             width: renameBox.width - 2 * renameBox.pad - 4
-            color: root.win98 ? Kit.Win98Tokens.winText : Kit.PlatinumTokens.menuText
-            selectionColor: root.win98 ? Kit.Win98Tokens.selection : Kit.PlatinumTokens.highlight
+            color: root.memphis ? Kit.MemphisTokens.winText : Kit.PlatinumTokens.menuText
+            selectionColor: root.memphis ? Kit.MemphisTokens.selection : Kit.PlatinumTokens.highlight
             selectedTextColor: "#ffffff"
-            font.family: root.win98 ? Kit.Win98Tokens.fontFamily : Kit.PlatinumTokens.platinumFont
-            font.pixelSize: root.win98 ? Math.round(12.5 * 2 / root.devicePixelRatio) : Kit.PlatinumTokens.platinumSmall
+            font.family: root.memphis ? Kit.MemphisTokens.fontFamily : Kit.PlatinumTokens.platinumFont
+            font.pixelSize: root.memphis ? Math.round(12.5 * 2 / root.devicePixelRatio) : Kit.PlatinumTokens.platinumSmall
             horizontalAlignment: TextInput.AlignHCenter
             selectByMouse: true
             Keys.onReturnPressed: root.endRename(true)
@@ -445,7 +445,7 @@ FocusScope {
         const icon = root.iconById(root.renamingId);
         renameField.text = icon ? icon.label : "";
         // The name without its extension is selected, as both OSes did
-        // for files (Windows 98 selected all; Mac OS 8 all as well: the
+        // for files (Memphis selected all; Mac OS 8 all as well: the
         // extension rule is newer). Select all.
         renameField.selectAll();
         renameField.forceActiveFocus();

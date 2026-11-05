@@ -6,7 +6,7 @@
 // windows, fade and layers off); the shell draws the OS's own motion over
 // the cut, from WindowMotion.qml's events:
 //
-//   event        Windows 98                       Mac OS 8 (Platinum)
+//   event        Memphis                       Mac OS 8 (Platinum)
 //   minimize     caption: window -> its button    zoom rects: window -> its tile
 //   restore      caption: button -> window        zoom rects: tile -> window
 //   maximize     caption: old caption -> new      none (the zoom box cut)
@@ -14,7 +14,7 @@
 //   open         none (a window appeared)         zoom rects: tile -> window
 //   close        none                             zoom rects: window -> tile
 //
-// "Minimize" is the shared hide (WindowHider): Win98's minimize, Platinum's
+// "Minimize" is the shared hide (WindowHider): Memphis's minimize, Platinum's
 // collapse box, Hide and Hide Others. 150 ms, nine frames at 60 Hz, the
 // glance space's own timing (GlancePlan.frameAt). No alpha in any frame.
 // Reduced motion is the cut: no frame is drawn.
@@ -22,7 +22,7 @@
 var DURATION = GlancePlan.ZOOM_FRAMES * GlancePlan.FRAME;
 
 var MOVES = {
-    win98: { minimize: "caption", restore: "caption", maximize: "caption", unmaximize: "caption" },
+    memphis: { minimize: "caption", restore: "caption", maximize: "caption", unmaximize: "caption" },
     platinum: { minimize: "zoom", restore: "zoom", open: "zoom", close: "zoom" }
 };
 
@@ -62,7 +62,7 @@ function snapshot(rows, shown) {
     return out;
 }
 
-// The rows whose maximized state changed between two snapshots: Win98's
+// The rows whose maximized state changed between two snapshots: Memphis's
 // Maximize and Restore (0 <-> 1). Fullscreen (2) has no motion.
 function zooms(before, after) {
     var out = [];
@@ -107,7 +107,7 @@ function eventAddress(data) {
     return key(String(data || "").split(",")[0]);
 }
 
-// Win98's caption bar over a client rect (Hyprland's at is the client's
+// Memphis's caption bar over a client rect (Hyprland's at is the client's
 // corner, under its caption): the caption's height above it, as wide.
 function captionOf(rect, height) {
     return { x: rect.x, y: rect.y - height, w: rect.w, h: height };

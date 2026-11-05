@@ -47,7 +47,7 @@ check "platinum: live with the stub's icons" 's.shown && s.input && s.icons.leng
 check "subscribed with the usable area under the menu bar" 'log.some((m) => m.type === "subscribe" && m.theme === "platinum" && m.screen.usable.y === 28 && m.screen.width === 1920 && m.screen.scale === 1.5)'
 
 mkfifo "$work/pointer"
-python3 "$here/../win98/pointer.py" "$work/pointer" 1920 1200 > "$work/pointer.log" 2>&1 &
+python3 "$here/../memphis/pointer.py" "$work/pointer" 1920 1200 > "$work/pointer.log" 2>&1 &
 session_pids+=($!)
 exec 3>"$work/pointer"
 for _ in $(seq 50); do grep -q ready "$work/pointer.log" && break; sleep 0.1; done
@@ -122,10 +122,10 @@ check "a click on a window never reaches the desktop" 's.selection.length === 0'
 desk window 0 0 0 0 >/dev/null
 sleep 0.3
 
-# Memphis: resubscribe as win98; Delete asks first and No keeps the file.
-theme win98 light
-check "a theme switch resubscribes" 'log.some((m) => m.type === "subscribe" && m.theme === "win98" && m.screen.usable.y === 0 && m.screen.usable.height === 1200 - 38)'
-check "Memphis has no volume on the desktop" 's.theme === "win98" && s.shown && !s.icons.includes("volume:sdb1")'
+# Memphis: resubscribe as memphis; Delete asks first and No keeps the file.
+theme memphis light
+check "a theme switch resubscribes" 'log.some((m) => m.type === "subscribe" && m.theme === "memphis" && m.screen.usable.y === 0 && m.screen.usable.height === 1200 - 38)'
+check "Memphis has no volume on the desktop" 's.theme === "memphis" && s.shown && !s.icons.includes("volume:sdb1")'
 press_on file:Projects Delete
 check "Memphis asks before Delete" 's.alert && s.alert.title === "Confirm File Delete" && s.alert.accept === "&Yes"'
 key n

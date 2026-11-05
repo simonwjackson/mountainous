@@ -10,7 +10,7 @@
 //   platinum  a Chi-Nata-style cube (32 art px: 1 px black outline, an
 //             upright front face in the tint, a lighter top, a darker
 //             side, a soft shadow), a white ChicagoFLF letter on the face;
-//   win98     a raised Win98 tile (16 art px, or 32 at desktop size): white
+//   memphis     a raised Memphis tile (16 art px, or 32 at desktop size): white
 //             and black outer bevel, grey inner shadow, a white W95FA Grid
 //             letter struck twice.
 //
@@ -25,19 +25,19 @@
 // an app's own directory) is not period art.
 var OWN = {
     platinum: ["Mountainous-platinum"],
-    win98: ["Mountainous-win98", "Chicago95"]
+    memphis: ["Mountainous-memphis", "Chicago95"]
 };
 
 // Tints a letter stays legible on in white (each at least 4:1 against
-// white). Platinum: muted Mac OS 8/9 accents. Win98: the dark half of the
-// VGA palette, as Windows 98 drew its own icons.
+// white). Platinum: muted Mac OS 8/9 accents. Memphis: the dark half of the
+// VGA palette, as Memphis drew its own icons.
 var TINTS = {
     platinum: ["#3a6ea5", "#6b4fa0", "#2f7d6d", "#a5462f", "#7d6420", "#3d5a80", "#7a3b69", "#4d6b2f"],
-    win98: ["#000080", "#008080", "#800000", "#6b6b00", "#800080", "#008000", "#0000c0"]
+    memphis: ["#000080", "#008080", "#800000", "#6b6b00", "#800080", "#008000", "#0000c0"]
 };
 
 function themeOf(themeId) {
-    return themeId === "win98" ? "win98" : "platinum";
+    return themeId === "memphis" ? "memphis" : "platinum";
 }
 
 // True when the icon has no art in the theme's own set: no name, no
@@ -52,7 +52,7 @@ function needs(iconName, resolvedPath, themeId) {
     if (path.indexOf("file://") === 0) path = path.slice(7);
     else if (path.indexOf("://") >= 0) return true;
     try { path = decodeURIComponent(path); } catch (e) { /* keep it raw */ }
-    var own = themeId ? OWN[themeOf(themeId)] : OWN.platinum.concat(OWN.win98);
+    var own = themeId ? OWN[themeOf(themeId)] : OWN.platinum.concat(OWN.memphis);
     var m = /\/icons\/([^\/]+)\//.exec(path);
     if (!m) return true;
     return own.indexOf(m[1]) < 0;
@@ -102,12 +102,12 @@ function shade(colour, amount) {
 }
 
 // The colours of a tile in this tint. fill: the face; ink: the letter;
-// edge: the outline; light/dark: the bevel (Win98) or top/side faces
+// edge: the outline; light/dark: the bevel (Memphis) or top/side faces
 // (Platinum); shade: the front face's highlight (Platinum) or the inner
-// shadow (Win98).
+// shadow (Memphis).
 function colours(themeId, tint) {
     var fill = hex(parse(tint));
-    if (themeOf(themeId) === "win98")
+    if (themeOf(themeId) === "memphis")
         return { fill: fill, ink: "#ffffff", edge: "#000000", light: "#ffffff", dark: "#000000", shade: "#808080" };
     return { fill: fill, ink: "#ffffff", edge: "#000000", light: shade(fill, 0.45), dark: shade(fill, -0.35), shade: shade(fill, 0.6) };
 }
@@ -123,7 +123,7 @@ function mark(themeId, label, id) {
     return c;
 }
 
-// The art grid: Platinum is always the 32 px cube; Win98 draws its 16 px
+// The art grid: Platinum is always the 32 px cube; Memphis draws its 16 px
 // tile up to 24 logical px and the 32 px one above.
 function gridFor(themeId, size) {
     if (themeOf(themeId) === "platinum") return 32;
@@ -210,7 +210,7 @@ function art(themeId, c, grid) {
         line(g, 4, 13, 4, 26, c.shade);
         return { grid: 32, rects: runs(g), face: { x: 4, y: 14, w: 14, h: 12 }, text: 12, strike: 0 };
     }
-    // lettermark_win98() in the generator.
+    // lettermark_memphis() in the generator.
     var n = grid === 32 ? 32 : 16;
     g = canvas(n);
     var inset = n === 16 ? 1 : 2, lo = inset, hi = n - 1 - inset;

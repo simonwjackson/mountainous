@@ -9,7 +9,7 @@ import "lettermark.js" as Mark
 // lettermark (the shared rule in lettermark.js). Never Adwaita or
 // hicolor art, never an app's own pixmap.
 //
-//   SniIcon { themeId: "win98"; row: <sni-tray.js row>; tray: <SniTray>; size: 16 * u }
+//   SniIcon { themeId: "memphis"; row: <sni-tray.js row>; tray: <SniTray>; size: 16 * u }
 Item {
     id: root
 
@@ -22,7 +22,7 @@ Item {
     readonly property string resolved: tray && iconName !== "" ? tray.resolvedPath(themeId, iconName) : ""
     readonly property bool lettermark: Mark.needs(iconName, resolved, themeId)
     readonly property var mark: Mark.mark(themeId, row ? row.label : "", row ? row.id : "")
-    readonly property bool win98: themeId === "win98"
+    readonly property bool memphis: themeId === "memphis"
     // One art pixel: the tile is 16 art px across.
     readonly property real px: root.size / 16
 
@@ -38,16 +38,16 @@ Item {
         source: root.lettermark ? "" : Quickshell.iconPath(root.iconName, true)
     }
 
-    // The lettermark: Memphis a raised Win98 tile (white and black outer
+    // The lettermark: Memphis a raised Memphis tile (white and black outer
     // bevel, grey inner shadow); Platinum a black-outlined face with a
     // lighter top edge. The letter is white, in the theme's face.
     Item {
         visible: root.lettermark
         anchors.fill: parent
 
-        Rectangle { anchors.fill: parent; color: root.mark.edge; visible: !root.win98 }
+        Rectangle { anchors.fill: parent; color: root.mark.edge; visible: !root.memphis }
         Rectangle {
-            visible: root.win98
+            visible: root.memphis
             anchors.fill: parent
             color: root.mark.dark
             Rectangle { width: parent.width - root.px; height: parent.height - root.px; color: root.mark.light }
@@ -59,7 +59,7 @@ Item {
             }
         }
         Rectangle {
-            visible: !root.win98
+            visible: !root.memphis
             x: root.px; y: root.px
             width: parent.width - 2 * root.px; height: parent.height - 2 * root.px
             color: root.mark.fill
@@ -67,13 +67,13 @@ Item {
         }
         Text {
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: root.win98 ? -root.px / 2 : 0
-            anchors.verticalCenterOffset: root.win98 ? -root.px / 2 : root.px / 2
+            anchors.horizontalCenterOffset: root.memphis ? -root.px / 2 : 0
+            anchors.verticalCenterOffset: root.memphis ? -root.px / 2 : root.px / 2
             text: root.mark.letter
             color: root.mark.ink
-            font.family: root.win98 ? Kit.Win98Tokens.fontFamily : Kit.PlatinumTokens.platinumFont
-            font.pixelSize: Math.round(root.size * (root.win98 ? 0.72 : 0.62))
-            font.bold: root.win98
+            font.family: root.memphis ? Kit.MemphisTokens.fontFamily : Kit.PlatinumTokens.platinumFont
+            font.pixelSize: Math.round(root.size * (root.memphis ? 0.72 : 0.62))
+            font.bold: root.memphis
             font.hintingPreference: Font.PreferNoHinting
             renderType: Text.NativeRendering
         }

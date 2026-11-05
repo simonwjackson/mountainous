@@ -42,7 +42,7 @@ Singleton {
 
     // "Extra dark": the stored choice, on or off. Each theme and native
     // toolkit adapter decides how it applies in dark mode. A missing file
-    // is off; Win98 keeps this preference but ignores it.
+    // is off; Memphis keeps this preference but ignores it.
     readonly property string extraState: Kit.Theme.extraState
     readonly property bool extraDark: Kit.Theme.extraDark
 
@@ -81,7 +81,7 @@ Singleton {
     // Quickshell.iconPath() calls already resolve, and are cached, under
     // it. Quickshell.iconTheme comes from lib/patches/quickshell-icon-
     // theme.patch; an unpatched Quickshell keeps its startup icon theme.
-    // Theme.qml also runs without the registry: the Win98 control gallery
+    // Theme.qml also runs without the registry: the Memphis control gallery
     // and the dictation test stage it alone, and a reload of a half-linked
     // tree may lack a new file. Then there is no icon theme to choose.
     function choose(id) {

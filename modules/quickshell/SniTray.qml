@@ -71,7 +71,7 @@ Scope {
         running: tray.fixture === null || tray.scanFixtures
         command: ["sh", "-c",
             'IFS=:; for d in ${XDG_DATA_DIRS:-/run/current-system/sw/share}; do '
-            + 'for t in Mountainous-platinum Mountainous-win98 Chicago95; do '
+            + 'for t in Mountainous-platinum Mountainous-memphis Chicago95; do '
             + '[ -d "$d/icons/$t" ] && find -L "$d/icons/$t" -type f \\( -name "*.png" -o -name "*.svg" \\) -printf "$t %f %p\\n" 2>/dev/null; '
             + 'done; done']
         stdout: StdioCollector {
@@ -91,7 +91,7 @@ Scope {
     property bool scanFixtures: false
     // A path under one of themeId's own icon themes for name, else "".
     function resolvedPath(themeId, name) {
-        const sets = themeId === "win98" ? ["Mountainous-win98", "Chicago95"] : ["Mountainous-platinum"];
+        const sets = themeId === "memphis" ? ["Mountainous-memphis", "Chicago95"] : ["Mountainous-platinum"];
         const found = tray.ownIcons[name] || {};
         for (const s of sets) if (found[s]) return found[s];
         return "";

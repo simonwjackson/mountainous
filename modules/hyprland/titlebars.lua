@@ -1,4 +1,4 @@
--- Platinum and Windows 98 window title bars, drawn by hyprbars-platinum
+-- Platinum and Memphis window title bars, drawn by hyprbars-platinum
 -- plugin (modules/hyprland/hyprbars-platinum.patch, built in
 -- modules/hyprland.nix). modules/hyprland.nix installs this file next to
 -- hyprland.lua, which attaches it.
@@ -36,9 +36,9 @@ M.PALETTES = {
     },
 }
 
--- Win98Tokens.palette(). checks.titlebars compares every caption/frame
+-- MemphisTokens.palette(). checks.titlebars compares every caption/frame
 -- token in both appearances; Extra dark is intentionally ignored.
-M.WIN98_PALETTES = {
+M.MEMPHIS_PALETTES = {
     light = {
         face = "c0c0c0", hi = "ffffff", li = "dfdfdf", lo = "808080", edge = "000000",
         text = "ffffff", text_off = "c0c0c0", glyph = "000000",
@@ -47,7 +47,7 @@ M.WIN98_PALETTES = {
     dark = {
         face = "3c3c3c", hi = "7a7a7a", li = "565656", lo = "222222", edge = "000000",
         text = "ffffff", text_off = "9a9a9a", glyph = "ececec",
-        -- Steel, not navy, in dark grey (Win98Tokens.palette()).
+        -- Steel, not navy, in dark grey (MemphisTokens.palette()).
         caption1 = "26364f", caption2 = "56708e", inactive1 = "2a2a2a", inactive2 = "4a4a4a",
     },
 }
@@ -62,9 +62,9 @@ M.session = { border_size = 0, rounding = 6 }
 -- put back when the theme has no bars.
 M.GROUPBAR_DEFAULT = { rounding = 1, col = { active = "rgba(ffff0066)", inactive = "rgba(77770066)" } }
 
--- Window and layer motion. Neither Mac OS 8 nor Windows 98 faded or
+-- Window and layer motion. Neither Mac OS 8 nor Memphis faded or
 -- popped a window: a window appeared and went at once, and the shell
--- draws the OS's own motion over it (Win98's caption animation, the
+-- draws the OS's own motion over it (Memphis's caption animation, the
 -- Finder's zoom rectangles; modules/quickshell/WindowMotion.qml and each
 -- theme's motion layer). Under both themes Hyprland's window, fade and
 -- layer animations are off, so windows, Quickshell's menus, tray windows,
@@ -100,7 +100,7 @@ end
 
 -- The palette name for a state, or nil for an unsupported theme.
 function M.appearance(state)
-    if state.name == "win98" then return "win98_" .. (state.mode == "light" and "light" or "dark") end
+    if state.name == "memphis" then return "memphis_" .. (state.mode == "light" and "light" or "dark") end
     if state.name ~= "platinum" then return nil end
     if state.mode == "light" then return "light" end
     return state.extra and "black" or "dark"
@@ -110,9 +110,9 @@ local function rgb(hex) return "rgb(" .. hex .. ")" end
 
 -- The values for one state, as a pure table. Explicit false selects the
 -- generation-52 capability set; omitted defaults to the current plugin.
-function M.settings(state, win98_supported)
+function M.settings(state, memphis_supported)
     local key = M.appearance(state)
-    if state.name == "win98" and win98_supported == false then key = nil end
+    if state.name == "memphis" and memphis_supported == false then key = nil end
     if not key then
         return {
             general = { border_size = M.session.border_size },
@@ -121,32 +121,32 @@ function M.settings(state, win98_supported)
             plugin = { hyprbars = { enabled = false } },
         }
     end
-    local win98 = state.name == "win98"
-    local p = win98 and M.WIN98_PALETTES[state.mode == "light" and "light" or "dark"] or M.PALETTES[key]
+    local memphis = state.name == "memphis"
+    local p = memphis and M.MEMPHIS_PALETTES[state.mode == "light" and "light" or "dark"] or M.PALETTES[key]
     local style = {
         platinum = true, -- shared client-decoration test and frame owner
-        -- Win98 computes its 18-u caption plus 1-u seam per output; the
+        -- Memphis computes its 18-u caption plus 1-u seam per output; the
         -- config height is the caption at the default 1.5 scale.
-        bar_height = win98 and 24 or 20,
-        bar_text_font = win98 and "W95FA Grid" or "ChicagoFLF",
-        bar_text_size = win98 and 17 or 12,
-        bar_text_align = win98 and "left" or "center",
+        bar_height = memphis and 24 or 20,
+        bar_text_font = memphis and "W95FA Grid" or "ChicagoFLF",
+        bar_text_size = memphis and 17 or 12,
+        bar_text_align = memphis and "left" or "center",
         enabled = true,
         bar_color = rgb(p.face),
         ["col.text"] = rgb(p.text),
         platinum_title_inactive = rgb(p.text_off),
         platinum_hi = rgb(p.hi), platinum_lo = rgb(p.lo),
-        platinum_frame = rgb(p.edge), platinum_box = rgb(win98 and p.face or p.box),
-        platinum_rule = rgb(win98 and p.edge or p.rule),
+        platinum_frame = rgb(p.edge), platinum_box = rgb(memphis and p.face or p.box),
+        platinum_rule = rgb(memphis and p.edge or p.rule),
     }
-    if win98_supported ~= false then style.win98 = win98 end
-    if win98 then
-        style.win98_li = rgb(p.li)
-        style.win98_caption1 = rgb(p.caption1)
-        style.win98_caption2 = rgb(p.caption2)
-        style.win98_inactive1 = rgb(p.inactive1)
-        style.win98_inactive2 = rgb(p.inactive2)
-        style.win98_button_text = rgb(p.glyph)
+    if memphis_supported ~= false then style.memphis = memphis end
+    if memphis then
+        style.memphis_li = rgb(p.li)
+        style.memphis_caption1 = rgb(p.caption1)
+        style.memphis_caption2 = rgb(p.caption2)
+        style.memphis_inactive1 = rgb(p.inactive1)
+        style.memphis_inactive2 = rgb(p.inactive2)
+        style.memphis_button_text = rgb(p.glyph)
     end
     return {
         general = { border_size = M.PLATINUM_WINDOW.border_size },
@@ -160,7 +160,7 @@ end
 
 -- The hl.animation calls for a state, as a pure list.
 function M.motion(state)
-    local themed = state.name == "platinum" or state.name == "win98"
+    local themed = state.name == "platinum" or state.name == "memphis"
     local out = {}
     for _, leaf in ipairs(M.MOTION_LEAVES) do
         local a = { leaf = leaf, enabled = false }
@@ -189,10 +189,10 @@ end
 -- plus a message, without adding a config error (unlike hl.config). Check
 -- every new option, including false-valued booleans. Do not cache absence:
 -- the first config parse can run before plugin registration.
-local function supports_win98()
+local function supports_memphis()
     if type(hl.get_config) ~= "function" then return false end
-    for _, name in ipairs({ "win98", "win98_li", "win98_caption1", "win98_caption2",
-        "win98_inactive1", "win98_inactive2", "win98_button_text" }) do
+    for _, name in ipairs({ "memphis", "memphis_li", "memphis_caption1", "memphis_caption2",
+        "memphis_inactive1", "memphis_inactive2", "memphis_button_text" }) do
         local ok, value = pcall(hl.get_config, "plugin:hyprbars:" .. name)
         if not ok or value == nil then return false end
     end
@@ -209,7 +209,7 @@ function M.apply()
         hl.config({ general = { border_size = M.session.border_size }, decoration = { rounding = M.session.rounding } })
         return false
     end
-    hl.config(M.settings(M.state(), supports_win98()))
+    hl.config(M.settings(M.state(), supports_memphis()))
     hl.plugin.hyprbars.refresh()
     return true
 end

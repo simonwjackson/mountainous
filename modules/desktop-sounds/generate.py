@@ -13,7 +13,7 @@ from pathlib import Path
 
 RATE = 48000
 # (frequency Hz, duration seconds). Gaps separate alert tones. The clicks use
-# short decaying high notes, Platinum a dry sine and Win98 a hollow triangle.
+# short decaying high notes, Platinum a dry sine and Memphis a hollow triangle.
 SCORES = {
     "platinum": {
         "menu-open": [(1600, .012)],
@@ -24,7 +24,7 @@ SCORES = {
         "minimize": [(620, .025), (310, .035)],
         "restore": [(310, .025), (620, .035)],
     },
-    "win98": {
+    "memphis": {
         "start-menu": [(1350, .018)],
         "menu-choose": [(1800, .014)],
         "default-beep": [(740, .1)],
@@ -49,7 +49,7 @@ def generate(output: Path) -> None:
                     t = i / RATE
                     phase = 2 * math.pi * frequency * t
                     tone = math.sin(phase)
-                    if theme == "win98":
+                    if theme == "memphis":
                         tone = (tone + math.sin(3 * phase) / 9) / 1.112
                     envelope = min(1, t / .0015) * min(1, (duration - t) / .004)
                     envelope *= math.exp(-2.5 * t / duration)

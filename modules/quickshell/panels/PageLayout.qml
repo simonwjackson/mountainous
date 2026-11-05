@@ -4,7 +4,7 @@ import Quickshell.Hyprland
 import QtQuick
 import "../page-layout-model.js" as Model
 
-// Layout: the bar control's state and its menu (Platinum) or window (Win98)
+// Layout: the bar control's state and its menu (Platinum) or window (Memphis)
 // for one screen. This Scope owns the state; each theme draws it.
 //
 // The Hyprland page-layout module (modules/hyprland/page-layout.lua) owns

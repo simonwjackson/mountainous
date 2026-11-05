@@ -209,7 +209,7 @@
         assert allDelivered;
         # Tokens must only exist under URI Hensou, never in the flat shell scan.
         assert !(builtins.hasAttr (prefix + "PlatinumTokens.qml") files);
-        assert !(builtins.hasAttr (prefix + "Win98Tokens.qml") files);
+        assert !(builtins.hasAttr (prefix + "MemphisTokens.qml") files);
         assert
           desktop.systemd.user.services.quickshell.environment.QML2_IMPORT_PATH == "${
             inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
@@ -219,48 +219,48 @@
         assert builtins.hasAttr (prefix + "themes/platinum/previews/light.png") files;
         assert builtins.hasAttr (prefix + "themes.json") files;
         assert !(builtins.hasAttr (prefix + "qmldir") files);
-        # Win98: its flat QML, its policies, icons and thumbnails; never the
+        # Memphis: its flat QML, its policies, icons and thumbnails; never the
         # control gallery, its scripts or the harness.
-        assert builtins.hasAttr (prefix + "Win98Desktop.qml") files;
-        assert builtins.hasAttr (prefix + "Win98PickerView.qml") files;
-        assert builtins.hasAttr (prefix + "themes/win98/taskbar-plan.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/icons/mark.svg") files;
-        assert builtins.hasAttr (prefix + "themes/win98/previews/light.png") files;
-        assert !(builtins.hasAttr (prefix + "themes/win98/dev/Win98Gallery.qml") files);
-        assert !(builtins.hasAttr (prefix + "themes/win98/taskbar-plan.test.js") files);
-        assert !(builtins.hasAttr (prefix + "theme-dev/win98/harness.qml") files);
-        # Win98's Fleet window and glance space, their policies and icons;
+        assert builtins.hasAttr (prefix + "MemphisDesktop.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisPickerView.qml") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/taskbar-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/icons/mark.svg") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/previews/light.png") files;
+        assert !(builtins.hasAttr (prefix + "themes/memphis/dev/MemphisGallery.qml") files);
+        assert !(builtins.hasAttr (prefix + "themes/memphis/taskbar-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/memphis/harness.qml") files);
+        # Memphis's Fleet window and glance space, their policies and icons;
         # never their tests, the fixtures or the beszel-status stand-in.
-        assert builtins.hasAttr (prefix + "Win98FleetView.qml") files;
-        assert builtins.hasAttr (prefix + "Win98GlanceSpace.qml") files;
-        assert builtins.hasAttr (prefix + "themes/win98/fleet-plan.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/host-icon.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/icons/glance.svg") files;
-        assert !(builtins.hasAttr (prefix + "themes/win98/fleet-plan.test.js") files);
-        assert !(builtins.hasAttr (prefix + "theme-dev/win98/fleet-fixtures.json") files);
-        # Win98's Find window and Open dialog, their plan and its web sheet;
+        assert builtins.hasAttr (prefix + "MemphisFleetView.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisGlanceSpace.qml") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/fleet-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/host-icon.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/icons/glance.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/memphis/fleet-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/memphis/fleet-fixtures.json") files);
+        # Memphis's Find window and Open dialog, their plan and its web sheet;
         # never their tests or the harness fixtures.
-        assert builtins.hasAttr (prefix + "Win98FindWindow.qml") files;
-        assert builtins.hasAttr (prefix + "Win98OpenDialog.qml") files;
-        assert builtins.hasAttr (prefix + "Win98OmniView.qml") files;
-        assert builtins.hasAttr (prefix + "themes/win98/find-plan.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/web.css") files;
-        assert builtins.hasAttr (prefix + "themes/win98/icons/find.svg") files;
-        assert !(builtins.hasAttr (prefix + "themes/win98/find-plan.test.js") files);
-        assert !(builtins.hasAttr (prefix + "theme-dev/win98/OmniFixture.qml") files);
+        assert builtins.hasAttr (prefix + "MemphisFindWindow.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisOpenDialog.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisOmniView.qml") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/find-plan.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/web.css") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/icons/find.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/memphis/find-plan.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/memphis/OmniFixture.qml") files);
         assert !(builtins.hasAttr (prefix + "theme-dev/theme-parity.js") files);
-        # Win98's taskbar and session pieces, their policies, the shared
+        # Memphis's taskbar and session pieces, their policies, the shared
         # About reader and the page names; never their tests or scripts.
-        assert builtins.hasAttr (prefix + "Win98ShutDownScreen.qml") files;
-        assert builtins.hasAttr (prefix + "Win98SystemProperties.qml") files;
-        assert builtins.hasAttr (prefix + "Win98CoolSwitch.qml") files;
-        assert builtins.hasAttr (prefix + "Win98VolumePopup.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisShutDownScreen.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisSystemProperties.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisCoolSwitch.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisVolumePopup.qml") files;
         assert builtins.hasAttr (prefix + "SystemFacts.qml") files;
-        assert builtins.hasAttr (prefix + "themes/win98/task-model.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/session-model.js") files;
-        assert builtins.hasAttr (prefix + "themes/win98/icons/computer.svg") files;
-        assert !(builtins.hasAttr (prefix + "themes/win98/task-model.test.js") files);
-        assert !(builtins.hasAttr (prefix + "theme-dev/win98/taskbar.sh") files);
+        assert builtins.hasAttr (prefix + "themes/memphis/task-model.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/session-model.js") files;
+        assert builtins.hasAttr (prefix + "themes/memphis/icons/computer.svg") files;
+        assert !(builtins.hasAttr (prefix + "themes/memphis/task-model.test.js") files);
+        assert !(builtins.hasAttr (prefix + "theme-dev/memphis/taskbar.sh") files);
         # Platinum phase 3: the strip, the cascading menus and their policies,
         # and the theme-neutral hide/show and running-app models; never tests.
         assert builtins.hasAttr (prefix + "PlatinumControlStrip.qml") files;
@@ -269,7 +269,7 @@
         # Window motion: the shared events, the overlay, each theme's move.
         assert builtins.hasAttr (prefix + "WindowMotion.qml") files;
         assert builtins.hasAttr (prefix + "MotionLayer.qml") files;
-        assert builtins.hasAttr (prefix + "Win98MotionLayer.qml") files;
+        assert builtins.hasAttr (prefix + "MemphisMotionLayer.qml") files;
         assert builtins.hasAttr (prefix + "PlatinumMotionLayer.qml") files;
         assert builtins.hasAttr (prefix + "window-motion.js") files;
         assert !(builtins.hasAttr (prefix + "window-motion.test.js") files);

@@ -24,7 +24,7 @@
 #   hl.gesture fingers 2..9     config/ConfigManager.cpp handleGesture
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
 let
-  # Platinum and Windows 98 title bars: nixpkgs' hyprbars with our patch
+  # Platinum and Memphis title bars: nixpkgs' hyprbars with our patch
   # (hyprland/hyprbars-platinum.patch). The patch adds square bevelled
   # boxes on both ends, pinstripes, the bevelled window frame, a palette
   # set from config, and no bar on clients that draw their own. It uses
@@ -62,7 +62,7 @@ in {
 
     # The patch applies and builds against the pinned Hyprland, and the
     # module that styles it (titlebars.lua) keeps to its contract and to the
-    # Platinum and Win98 tokens. Headless: no compositor runs.
+    # Platinum and Memphis tokens. Headless: no compositor runs.
     checks.titlebars = pkgs.runCommand "titlebars" {
       nativeBuildInputs = [pkgs.lua pkgs.binutils];
       PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
@@ -70,7 +70,7 @@ in {
       nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
-      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${./quickshell/PlatinumTokens.qml} ${./hyprland/hyprland.lua} ${./quickshell/Win98Tokens.qml}
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${./quickshell/PlatinumTokens.qml} ${./hyprland/hyprland.lua} ${./quickshell/MemphisTokens.qml}
       touch $out
     '';
   };

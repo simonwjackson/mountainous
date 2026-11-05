@@ -15,7 +15,7 @@ ShellRoot {
 
     readonly property var screen0: Quickshell.screens[0]
     readonly property var layer: pattern.iconLayer
-    readonly property bool win98: Theme.name === "win98"
+    readonly property bool memphis: Theme.name === "memphis"
 
     // The desktop under everything, with the icons (primary screen).
     DesktopPattern {
@@ -28,7 +28,7 @@ ShellRoot {
     // and Control Strip band, Memphis's taskbar. Not the real chrome.
     PanelWindow {
         screen: root.screen0
-        visible: !root.win98
+        visible: !root.memphis
         anchors { top: true; left: true; right: true }
         implicitHeight: Kit.PlatinumTokens.barHeight
         exclusiveZone: 0
@@ -46,16 +46,16 @@ ShellRoot {
     PanelWindow {
         id: taskbar
         screen: root.screen0
-        visible: root.win98
+        visible: root.memphis
         anchors { bottom: true; left: true; right: true }
-        readonly property real u: Kit.Win98Tokens.unitFor(QsWindow.window)
+        readonly property real u: Kit.MemphisTokens.unitFor(QsWindow.window)
         implicitHeight: Math.ceil(28 * u - 1e-6)
         exclusiveZone: 0
-        color: Kit.Win98Tokens.face
+        color: Kit.MemphisTokens.face
         WlrLayershell.namespace: "harness-taskbar"
-        Rectangle { width: taskbar.width; height: taskbar.u; color: Kit.Win98Tokens.li }
-        Rectangle { y: taskbar.u; width: taskbar.width; height: taskbar.u; color: Kit.Win98Tokens.hi }
-        Win98Text { x: 8 * taskbar.u; y: 9 * taskbar.u; text: "Taskbar stand-in"; accessMarks: false }
+        Rectangle { width: taskbar.width; height: taskbar.u; color: Kit.MemphisTokens.li }
+        Rectangle { y: taskbar.u; width: taskbar.width; height: taskbar.u; color: Kit.MemphisTokens.hi }
+        MemphisText { x: 8 * taskbar.u; y: 9 * taskbar.u; text: "Taskbar stand-in"; accessMarks: false }
     }
 
     // A stand-in app window above the desktop (Bottom layer: above the
@@ -72,7 +72,7 @@ ShellRoot {
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.namespace: "harness-window"
-        color: root.win98 ? Kit.Win98Tokens.face : "#ffffff"
+        color: root.memphis ? Kit.MemphisTokens.face : "#ffffff"
         Rectangle { anchors.fill: parent; color: "transparent"; border.color: "#000000"; border.width: 1 }
         Text { anchors.centerIn: parent; text: "App window stand-in"; font.family: Kit.PlatinumTokens.platinumFont; font.pixelSize: 14 }
     }

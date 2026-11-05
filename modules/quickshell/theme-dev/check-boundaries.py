@@ -68,8 +68,8 @@ for file in (root / 'panels').glob('*.qml'):
     for prefix in prefixes:
         assert not re.search(r'\b' + re.escape(prefix) + r'[A-Z]\w*', text), file
 # Shell-local Theme is the host seam; all shared tokens have one URI identity.
-for name in ('Theme', 'PlatinumTokens', 'Win98Tokens', 'PlatinumMetrics',
-             'PlatinumIconStore', 'Win98IconStore'):
+for name in ('Theme', 'PlatinumTokens', 'MemphisTokens', 'PlatinumMetrics',
+             'PlatinumIconStore', 'MemphisIconStore'):
     if name != 'Theme':
         assert not (root / (name + '.qml')).exists(), name
 for file in root.glob('*.qml'):
@@ -80,10 +80,10 @@ assert not (root / 'qmldir').exists()
 assert 'Desktop theme…' in (root / 'OmniBar.qml').read_text()
 assert 'text: "Desktop theme…"' in (root / 'PlatinumClockMenu.qml').read_text()
 assert 'target: "themePicker"' in (root / 'shell.qml').read_text()
-# Win98 opens the picker from Start > Settings > Display... and Ctrl+Esc /
+# Memphis opens the picker from Start > Settings > Display... and Ctrl+Esc /
 # chrome open start reaches its Start menu.
-start_model = (root / 'themes/win98/start-model.js').read_text()
+start_model = (root / 'themes/memphis/start-model.js').read_text()
 assert '"&Display..."' in start_model and 'action: "picker"' in start_model
-assert 'item.action === "picker") ThemePicker.open' in (root / 'Win98Desktop.qml').read_text()
-assert 'control === "start"' in (root / 'Win98Desktop.qml').read_text()
+assert 'item.action === "picker") ThemePicker.open' in (root / 'MemphisDesktop.qml').read_text()
+assert 'control === "start"' in (root / 'MemphisDesktop.qml').read_text()
 print('THEME_BOUNDARIES_PASSED')

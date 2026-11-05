@@ -3,7 +3,7 @@ import QtQuick
 import "lettermark.js" as Mark
 
 // A period lettermark tile (lettermark.js): the Chi-Nata-style cube in
-// Platinum, the raised Win98 tile in Memphis, with the app's letter.
+// Platinum, the raised Memphis tile in Memphis, with the app's letter.
 //
 //   Lettermark { themeId: Theme.name; label: "Krita"; appId: "org.kde.krita"; size: 32 }
 //
@@ -26,7 +26,7 @@ Item {
     property real devicePixelRatio: QsWindow.window && QsWindow.window.devicePixelRatio > 0
         ? QsWindow.window.devicePixelRatio : 1.5
 
-    readonly property bool win98: root.themeId === "win98"
+    readonly property bool memphis: root.themeId === "memphis"
     readonly property var derived: Mark.mark(root.themeId, root.label, root.appId)
     readonly property var colours: root.tint !== "" ? Mark.colours(root.themeId, root.tint) : root.derived
     readonly property string shownLetter: root.letter !== "" ? root.letter.charAt(0).toUpperCase() : root.derived.letter
@@ -56,7 +56,7 @@ Item {
     }
 
     // The letter, centred on the front face (Platinum) or the tile, struck
-    // twice one art pixel apart in Memphis as Win98Text draws bold.
+    // twice one art pixel apart in Memphis as MemphisText draws bold.
     Item {
         id: face
         x: root.at(root.art.face.x)
@@ -74,7 +74,7 @@ Item {
                 color: root.colours.ink
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                font.family: root.win98 ? "W95FA Grid" : "ChicagoFLF"
+                font.family: root.memphis ? "W95FA Grid" : "ChicagoFLF"
                 font.pixelSize: Math.max(6, Math.round(root.art.text * root.size / root.grid))
                 font.hintingPreference: Font.PreferNoHinting
                 font.kerning: false

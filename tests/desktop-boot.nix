@@ -26,10 +26,10 @@
     start_all()
     machine.wait_for_unit("multi-user.target")
     machine.succeed("test -e /etc/plymouth/themes/mountainous-platinum/boot.png")
-    machine.succeed("test -e /etc/plymouth/themes/mountainous-win98/shutdown.png")
+    machine.succeed("test -e /etc/plymouth/themes/mountainous-memphis/shutdown.png")
     machine.succeed("Xvfb :1 -screen 0 800x600x24 -ac >/tmp/xvfb.log 2>&1 &")
     machine.wait_until_succeeds("DISPLAY=:1 ${pkgs.xorg.xdpyinfo}/bin/xdpyinfo >/dev/null")
-    for theme in ["platinum", "win98"]:
+    for theme in ["platinum", "memphis"]:
         machine.succeed("rm /etc/plymouth/plymouthd.conf")
         machine.succeed(f"printf '[Daemon]\\nTheme=mountainous-{theme}\\nShowDelay=0\\nDeviceTimeout=0.1\\n' >/etc/plymouth/plymouthd.conf")
         for mode in ["boot", "shutdown"]:

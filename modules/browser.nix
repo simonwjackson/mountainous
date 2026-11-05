@@ -74,7 +74,7 @@ in
               if grep -q '^pragma Singleton' "$file"; then printf 'singleton ' >> qml/qmldir; fi
               printf '%s 1.0 %s.qml\n' "$name" "$name" >> qml/qmldir
             done
-            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/Win98OpenDialog.qml
+            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/MemphisOpenDialog.qml
             touch "$out"
           '';
     };

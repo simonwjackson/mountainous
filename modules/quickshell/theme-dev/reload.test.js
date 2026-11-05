@@ -88,7 +88,7 @@ ${soundLine ? '    ' + soundLine : ''}
         spawnSync('chmod', ['-R', 'u+w', config]);
         if (process.argv[4]) fs.copyFileSync(process.argv[4], path.join(config, 'notification-schema.js'));
         if (process.argv[3]) fs.symlinkSync(process.argv[3], path.join(bin, 'desktop-theme'));
-        fs.writeFileSync(path.join(state, 'theme-name'), 'win98\n');
+        fs.writeFileSync(path.join(state, 'theme-name'), 'memphis\n');
         fs.writeFileSync(path.join(state, 'theme-sounds'), 'off\n');
         // 1. The previous generation: no sound owner yet.
         const owner = fs.readFileSync(path.join(config, 'ThemeSounds.qml'), 'utf8');
@@ -121,7 +121,7 @@ ${soundLine ? '    ' + soundLine : ''}
         await stop(qsProcess);
         qsProcess = start(qs, ['-p', config]);
         await until(() => snapshot().owner === true, 'restart on the complete tree');
-        assert.equal(snapshot().theme, 'win98');
+        assert.equal(snapshot().theme, 'memphis');
         assert.equal(snapshot().sounds, false, 'sounds off opens no bank');
         await wait(300);
         assert.ok(!BAD.test(logs), 'complete tree:\n' + logs);

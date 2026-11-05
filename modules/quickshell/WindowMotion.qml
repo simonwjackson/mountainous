@@ -8,7 +8,7 @@ import "window-motion.js" as Motion
 // turns the hide/show batches (WindowHider's moving signal) and Hyprland's
 // openwindow, closewindow and fullscreen events into `requested(e)`. Each
 // theme's motion layer draws its own move for an event on its screen
-// (Win98MotionLayer, PlatinumMotionLayer); a theme without one ignores
+// (MemphisMotionLayer, PlatinumMotionLayer); a theme without one ignores
 // them. See window-motion.js for the table.
 //
 //   e = { kind, address, screen, rect, to, title, appId, active }

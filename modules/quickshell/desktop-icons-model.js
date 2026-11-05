@@ -11,7 +11,7 @@
 // Snapshot and applies Changed deltas. The provider owns positions, Snap
 // to Grid and arrangement; the shell sends intents only.
 //
-// Theme ids are the persisted ones: "platinum" and "win98" (Memphis).
+// Theme ids are the persisted ones: "platinum" and "memphis" (Memphis).
 
 var MAJOR = 1;
 var MINOR = 0;
@@ -25,7 +25,7 @@ var DRAG_THRESHOLD = 4;
 // The provider's grid when it has not sent one.
 var DEFAULT_GRID = { cell_width: 80, cell_height: 72 };
 
-function themeOf(theme) { return theme === "win98" ? "win98" : "platinum"; }
+function themeOf(theme) { return theme === "memphis" ? "memphis" : "platinum"; }
 
 // ------------------------------------------------------------- the screen
 
@@ -34,7 +34,7 @@ function themeOf(theme) { return theme === "win98" ? "win98" : "platinum"; }
 // zone rounds up; 1 u = 2 device px).
 function reserved(theme, dpr) {
     var ratio = dpr > 0 ? dpr : 1;
-    if (themeOf(theme) === "win98")
+    if (themeOf(theme) === "memphis")
         return { top: 0, bottom: Math.ceil(28 * 2 / ratio - 1e-6), left: 0, right: 0 };
     return { top: 28, bottom: 42, left: 0, right: 0 };
 }
@@ -252,7 +252,7 @@ function find(icons, id) {
 function click(theme, icons, sel, anchor, id, mods) {
     var m = mods || {};
     var has = sel.indexOf(id) >= 0;
-    if (themeOf(theme) === "win98" && m.shift && anchor) {
+    if (themeOf(theme) === "memphis" && m.shift && anchor) {
         var ids = sortIcons(icons).map(function (i) { return i.id; });
         var a = ids.indexOf(anchor), b = ids.indexOf(id);
         if (a >= 0 && b >= 0) {
@@ -262,7 +262,7 @@ function click(theme, icons, sel, anchor, id, mods) {
             return { selection: run, anchor: anchor };
         }
     }
-    var toggles = themeOf(theme) === "win98" ? m.ctrl : (m.shift || m.ctrl);
+    var toggles = themeOf(theme) === "memphis" ? m.ctrl : (m.shift || m.ctrl);
     if (toggles) {
         return { selection: has ? sel.filter(function (x) { return x !== id; }) : sel.concat([id]), anchor: id };
     }
@@ -484,7 +484,7 @@ function iconMenu(theme, icons, ids, id) {
     var targets = ids.map(function (x) { return find(icons, x); }).filter(Boolean);
     var allTrash = targets.length > 0 && targets.every(canTrash);
     var rows = [];
-    if (t === "win98") {
+    if (t === "memphis") {
         rows.push({ id: "open", label: "&Open", action: "open", bold: true, disabled: icon.available === false });
         if (icon.kind === "trash") {
             rows.push(sep());
@@ -514,7 +514,7 @@ function iconMenu(theme, icons, ids, id) {
 
 // The menu for the desktop itself. Snap to Grid is one shared setting.
 function desktopMenu(theme, snap) {
-    if (themeOf(theme) === "win98") {
+    if (themeOf(theme) === "memphis") {
         return [
             { id: "arrange", label: "Arrange &Icons", submenu: [
                 { id: "by-name", label: "by &Name", action: "arrange", by: "name" },
@@ -549,14 +549,14 @@ function menuAction(row, ids, id, snap, request) {
     return null;
 }
 
-// Win98Menu's items from rows ("&" marks the access key).
-function win98Items(rows) {
+// MemphisMenu's items from rows ("&" marks the access key).
+function memphisItems(rows) {
     return rows.map(function (r) {
         if (r.separator) return { separator: true };
         var out = { text: r.label, enabled: !r.disabled, row: r };
         if (r.checked !== undefined) out.checked = r.checked;
         if (r.bold) out.bold = true;
-        if (r.submenu) out.submenu = win98Items(r.submenu);
+        if (r.submenu) out.submenu = memphisItems(r.submenu);
         return out;
     });
 }
@@ -575,7 +575,7 @@ function platinumRows(rows) {
 // ---------------------------------------------------------- confirmations
 
 function quoted(theme, name) {
-    return themeOf(theme) === "win98" ? "'" + name + "'" : "“" + name + "”";
+    return themeOf(theme) === "memphis" ? "'" + name + "'" : "“" + name + "”";
 }
 
 function plural(n, one, many) { return n === 1 ? one : many; }
@@ -602,7 +602,7 @@ function confirmPlan(theme, confirmation, ids, names) {
         };
     case "permanent":
         var reason = String(c.reason || "");
-        if (t === "win98") {
+        if (t === "memphis") {
             return {
                 title: n === 1 ? "Confirm File Delete" : "Confirm Multiple File Delete",
                 text: (one !== "" ? "Are you sure you want to delete " + quoted(t, one) + "?"
@@ -620,7 +620,7 @@ function confirmPlan(theme, confirmation, ids, names) {
             send: { type: "delete-permanently", ids: ids.slice() }
         };
     case "empty-trash":
-        if (t === "win98") {
+        if (t === "memphis") {
             return {
                 title: n === 1 ? "Confirm File Delete" : "Confirm Multiple File Delete",
                 text: n === 1 ? "Are you sure you want to delete this item from the Recycle Bin?"
@@ -650,24 +650,24 @@ function errorPlan(theme, error, names) {
     var sentence, caption;
     if (e.code === "busy") {
         caption = "Eject";
-        sentence = t === "win98"
+        sentence = t === "memphis"
             ? (name !== "" ? "Windows cannot eject " + quoted(t, name) + " right now." : "The device cannot be stopped right now.")
             : (name !== "" ? "The disk " + quoted(t, name) + " could not be put away, because it is in use." : "The disk could not be put away, because it is in use.");
-        if (detail === "") detail = t === "win98" ? "Close any programs that are using it, and then try again." : "Quit any application that is using it, and try again.";
+        if (detail === "") detail = t === "memphis" ? "Close any programs that are using it, and then try again." : "Quit any application that is using it, and try again.";
     } else if (e.code === "exists") {
         caption = "Error Renaming File";
-        sentence = t === "win98" ? "A file with the name you specified already exists." : "That name is already taken.";
+        sentence = t === "memphis" ? "A file with the name you specified already exists." : "That name is already taken.";
     } else if (e.code === "permission") {
         caption = "Error";
-        sentence = t === "win98" ? "Access is denied." : "You do not have enough access privileges for this operation.";
+        sentence = t === "memphis" ? "Access is denied." : "You do not have enough access privileges for this operation.";
     } else if (e.code === "not-found") {
         caption = "Error";
-        sentence = t === "win98" ? "Cannot find the item." : "The item could not be found.";
+        sentence = t === "memphis" ? "Cannot find the item." : "The item could not be found.";
     } else {
         caption = "Desktop";
-        sentence = t === "win98" ? "" : "The operation could not be completed.";
+        sentence = t === "memphis" ? "" : "The operation could not be completed.";
     }
-    if (t === "win98")
+    if (t === "memphis")
         return { title: caption, text: sentence !== "" && detail !== "" ? sentence + "\n\n" + detail : sentence + detail,
             accept: "OK", cancel: "", defaultButton: "accept", icon: "error", send: null };
     return { title: sentence, text: detail, accept: "OK", cancel: "", defaultButton: "accept", icon: "stop", send: null };
@@ -711,5 +711,5 @@ function artFor(theme, icon, needs) {
 // arrow over the icon.
 function aliasStyle(theme, icon) {
     if (!icon || icon.kind !== "alias") return "";
-    return themeOf(theme) === "win98" ? "arrow" : "italic";
+    return themeOf(theme) === "memphis" ? "arrow" : "italic";
 }

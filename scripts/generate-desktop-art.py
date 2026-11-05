@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Icon and cursor themes for the Platinum and Windows 98 desktop themes.
+"""Icon and cursor themes for the Platinum and Memphis desktop themes.
 
 Everything that starts from Apple or Microsoft art is read from a locked flake
 input at build time and written only to the Nix store: Chi-Nata (CC BY-SA 4.0),
@@ -275,12 +275,12 @@ def retrosmart_shapes(root):
 
 
 # Chicago95 draws grab and grabbing as its copy arrow and closedhand as its
-# shortcut arrow. Windows 98 had no hand cursors; it dragged with Move.
+# shortcut arrow. Memphis had no hand cursors; it dragged with Move.
 CHICAGO = {"grab": "move", "grabbing": "move"}
 
 
 def chicago_shapes(root):
-    """Win98: Chicago95's standard (static) set, its 32 px 1x images."""
+    """Memphis: Chicago95's standard (static) set, its 32 px 1x images."""
     source = root / "Cursors/Chicago95_Standard_Cursors/cursors"
     shapes = {}
     for role, aliases in ROLES.items():
@@ -411,7 +411,7 @@ APP_NAMES = {
     "video": ["com.obsproject.Studio", "obs", "obs-studio"],
     "notes": ["obsidian", "md.obsidian.Obsidian"],
 }
-# The Chicago95 icon each Win98 role borrows when Chicago95 has none of the
+# The Chicago95 icon each Memphis role borrows when Chicago95 has none of the
 # names above (it has chromium, utilities-terminal, accessories-text-editor).
 CHICAGO_ROLES = {
     "terminal": "utilities-terminal",
@@ -552,7 +552,7 @@ CHI_NATA_PLACES = {
     "libraries": ("places", "folder"),
 }
 
-# Memphis: Chicago95's Windows 98 icon for each (context, name).
+# Memphis: Chicago95's Memphis icon for each (context, name).
 CHICAGO_KINDS = {
     "document": ("mimes", "x-office-document"),
     "text": ("mimes", "text-x-generic"),
@@ -649,8 +649,8 @@ def lettermark_platinum(letter, tint, font):
     return image
 
 
-def lettermark_win98(letter, tint, font, size):
-    """A raised Win98 tile with the site's letter: white and light grey on
+def lettermark_memphis(letter, tint, font, size):
+    """A raised Memphis tile with the site's letter: white and light grey on
     the top left, dark grey and black on the bottom right."""
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -664,7 +664,7 @@ def lettermark_win98(letter, tint, font, size):
     draw.line([(lo + 1, hi - 1), (hi - 1, hi - 1)], fill=rgb("#808080"))
     draw.line([(hi - 1, lo + 1), (hi - 1, hi - 1)], fill=rgb("#808080"))
     # W95FA Grid is drawn on its 12 px grid, struck twice for bold (as
-    # Win98Text does), then doubled for the 32 px icon: whole pixels only.
+    # MemphisText does), then doubled for the 32 px icon: whole pixels only.
     glyph = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     pen = ImageDraw.Draw(glyph)
     pen.fontmode = "1"
@@ -801,7 +801,7 @@ def chicago95(out, chicago):
     return theme
 
 
-def win98_icons(out, name, chicago, web_apps, font):
+def memphis_icons(out, name, chicago, web_apps, font):
     base = chicago95(out, chicago)
     theme = out / "share/icons" / name
     directories = set()
@@ -824,7 +824,7 @@ def win98_icons(out, name, chicago, web_apps, font):
                 )
                 directories.add((f"apps/{size}", size, "Applications"))
     # The desktop's kinds and places (hensou-kind-*, hensou-place-*):
-    # Chicago95's own Windows 98 icons, at every size it has.
+    # Chicago95's own Memphis icons, at every size it has.
     for prefix, table in (("kind", CHICAGO_KINDS), ("place", CHICAGO_PLACES)):
         for name, (context, source) in table.items():
             for size in (16, 22, 24, 32, 48):
@@ -841,7 +841,7 @@ def win98_icons(out, name, chicago, web_apps, font):
     for app_id, app in sorted(web_apps.items()):
         for size in (16, 32):
             png(
-                lettermark_win98(app["letter"], app["tint"], font, size),
+                lettermark_memphis(app["letter"], app["tint"], font, size),
                 theme / "apps" / str(size) / f"webapp-{app_id}.png",
             )
             for window_class in app["classes"]:
@@ -911,7 +911,7 @@ def main():
     parser.add_argument("--chi-nata", type=Path, required=True)
     parser.add_argument("--retrosmart", type=Path, required=True)
     parser.add_argument("--platinum-font", type=Path, required=True)
-    parser.add_argument("--win98-font", type=Path, required=True)
+    parser.add_argument("--memphis-font", type=Path, required=True)
     args = parser.parse_args()
 
     registry = {
@@ -921,9 +921,9 @@ def main():
         json.loads(args.web_apps.read_text()), json.loads(args.pwas.read_text())
     )
     out = args.out
-    platinum, win98 = registry["platinum"], registry["win98"]
+    platinum, memphis = registry["platinum"], registry["memphis"]
     platinum_icons(out, platinum["icons"], args.chi_nata, web_apps, args.platinum_font)
-    win98_icons(out, win98["icons"], args.chicago, web_apps, args.win98_font)
+    memphis_icons(out, memphis["icons"], args.chicago, web_apps, args.memphis_font)
     cursor_theme(
         out,
         platinum["cursors"],
@@ -931,7 +931,7 @@ def main():
         retrosmart_shapes(args.retrosmart),
     )
     cursor_theme(
-        out, win98["cursors"], "Mountainous Memphis", chicago_shapes(args.chicago)
+        out, memphis["cursors"], "Mountainous Memphis", chicago_shapes(args.chicago)
     )
     shutil.rmtree(out / "build")
 
@@ -962,7 +962,7 @@ def main():
         "cubes and web-app lettermarks are drawn by scripts/generate-desktop-art.py.\n"
         "Mountainous-platinum-cursors: Retrosmart X11 cursors by Manuel Domínguez\n"
         "López, GPL-3.0, black variant, scaled by whole factors.\n"
-        "Mountainous-win98 icons and cursors: Chicago95 by grassmunk\n"
+        "Mountainous-memphis icons and cursors: Chicago95 by grassmunk\n"
         "(GPL-3.0+/MIT per its README); cursors scaled by whole factors.\n"
     )
 

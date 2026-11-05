@@ -37,10 +37,10 @@ const line = (m) => JSON.stringify(m);
 const screen = { name: "eDP-1", width: 1920, height: 1200, scale: 1.5 };
 const pl = M.screenLayout("platinum", screen);
 same(plain(pl), { output: "eDP-1", width: 1920, height: 1200, scale: 1.5, usable: { x: 0, y: 28, width: 1920, height: 1130 } });
-const wl = M.screenLayout("win98", screen);
+const wl = M.screenLayout("memphis", screen);
 // 28 u at 1.5 is 37.3 logical px; the taskbar's zone rounds up to 38.
 same(plain(wl.usable), { x: 0, y: 0, width: 1920, height: 1162 });
-assert.equal(M.screenLayout("win98", Object.assign({}, screen, { scale: 1 })).usable.height, 1200 - 56);
+assert.equal(M.screenLayout("memphis", Object.assign({}, screen, { scale: 1 })).usable.height, 1200 - 56);
 
 // ---- the session
 function run(state, events) {
@@ -72,11 +72,11 @@ assert.equal(M.shown(r.s), true);
 let live = r.s;
 
 // Layout first, then Hello: the Hello answer subscribes at once.
-r = run(M.initial(), [{ type: "layout", theme: "win98", layout: wl }, { type: "connect" }, { type: "opened" },
+r = run(M.initial(), [{ type: "layout", theme: "memphis", layout: wl }, { type: "connect" }, { type: "opened" },
     { type: "line", data: line({ type: "hello", major: 1, minor: 3 }) }]);
 assert.equal(r.s.kind, "subscribing");
 same(r.sent.map((m) => m.type), ["hello", "subscribe"]);
-assert.equal(r.sent[1].theme, "win98");
+assert.equal(r.sent[1].theme, "memphis");
 
 // Changed: upserts by id, then removals.
 r = run(live, [{ type: "line", data: line({ type: "changed",
@@ -104,8 +104,8 @@ const rotated = M.screenLayout("platinum", { name: "eDP-1", width: 1200, height:
 assert.equal(run(live, [{ type: "layout", theme: "platinum", layout: rotated }]).sent.length, 1);
 const rescaled = M.screenLayout("platinum", { name: "eDP-1", width: 1920, height: 1200, scale: 1.25 });
 assert.equal(run(live, [{ type: "layout", theme: "platinum", layout: rescaled }]).sent.length, 1);
-r = run(live, [{ type: "layout", theme: "win98", layout: wl }]);
-same(r.sent, [{ type: "subscribe", theme: "win98", screen: plain(wl) }]);
+r = run(live, [{ type: "layout", theme: "memphis", layout: wl }]);
+same(r.sent, [{ type: "subscribe", theme: "memphis", screen: plain(wl) }]);
 // The fresh snapshot replaces the icons (Memphis has no volume on the desktop).
 r = run(r.s, [{ type: "line", data: line({ type: "snapshot", icons: icons.slice(0, 7), snap: true, grid: { cell_width: 75, cell_height: 75 } }) }]);
 assert.equal(r.s.icons.length, 7);
@@ -155,11 +155,11 @@ c = M.click("platinum", icons, c.selection, c.anchor, "computer", { shift: true 
 same(plain(c.selection), ["trash", "computer"], "Platinum: Shift adds");
 c = M.click("platinum", icons, c.selection, c.anchor, "trash", { shift: true });
 same(plain(c.selection), ["computer"], "Platinum: Shift removes");
-c = M.click("win98", icons, ["trash"], "trash", "computer", { ctrl: true });
+c = M.click("memphis", icons, ["trash"], "trash", "computer", { ctrl: true });
 same(plain(c.selection), ["trash", "computer"], "Memphis: Ctrl adds");
-c = M.click("win98", icons, ["computer"], "computer", "file:notes.txt", { shift: true });
+c = M.click("memphis", icons, ["computer"], "computer", "file:notes.txt", { shift: true });
 same(plain(c.selection), ["computer", "ssh-hosts", "trash", "file:notes.txt"], "Memphis: Shift selects the run");
-c = M.click("win98", icons, ["file:notes.txt"], "file:notes.txt", "computer", { shift: true });
+c = M.click("memphis", icons, ["file:notes.txt"], "file:notes.txt", "computer", { shift: true });
 same(plain(c.selection), ["computer", "ssh-hosts", "trash", "file:notes.txt"]);
 // A plain press on a selected icon keeps the group for a drag; release narrows it.
 c = M.click("platinum", icons, ["trash", "computer"], "trash", "computer", {});
@@ -273,25 +273,25 @@ assert.equal(M.canRename(icons[7]), false);
 // ---- menus
 const labels = (rows) => rows.map((r) => (r.separator ? "-" : r.label + (r.disabled ? " (off)" : "") + (r.checked ? " ✓" : "")));
 same(labels(M.iconMenu("platinum", icons, ["file:notes.txt"], "file:notes.txt")), ["Open", "Move to Trash", "-", "Rename"]);
-same(labels(M.iconMenu("win98", icons, ["file:notes.txt"], "file:notes.txt")), ["&Open", "-", "&Delete", "Rena&me"]);
+same(labels(M.iconMenu("memphis", icons, ["file:notes.txt"], "file:notes.txt")), ["&Open", "-", "&Delete", "Rena&me"]);
 same(labels(M.iconMenu("platinum", icons, ["trash"], "trash")), ["Open", "Empty Trash…"]);
-same(labels(M.iconMenu("win98", icons, ["trash"], "trash")), ["&Open", "-", "Empty Recycle &Bin"]);
+same(labels(M.iconMenu("memphis", icons, ["trash"], "trash")), ["&Open", "-", "Empty Recycle &Bin"]);
 const emptyTrash = icons.map((i) => (i.id === "trash" ? Object.assign({}, i, { full: false }) : i));
 same(labels(M.iconMenu("platinum", emptyTrash, ["trash"], "trash")), ["Open", "Empty Trash… (off)"]);
 same(labels(M.iconMenu("platinum", icons, ["volume:sdb1"], "volume:sdb1")), ["Open", "Eject"]);
-same(labels(M.iconMenu("win98", icons, ["volume:sdb1"], "volume:sdb1")), ["&Open", "-", "&Eject"]);
+same(labels(M.iconMenu("memphis", icons, ["volume:sdb1"], "volume:sdb1")), ["&Open", "-", "&Eject"]);
 same(labels(M.iconMenu("platinum", icons, ["computer"], "computer")), ["Open"]);
 // Several selected: Move to Trash only when all can go; Rename off.
 same(labels(M.iconMenu("platinum", icons, ["file:notes.txt", "file:Projects"], "file:notes.txt")), ["Open", "Move to Trash", "-", "Rename (off)"]);
 same(labels(M.iconMenu("platinum", icons, ["file:notes.txt", "trash"], "file:notes.txt")), ["Open", "-", "Rename (off)"]);
 // No Get Info / Properties, no New Folder, no Show Desktop in this release.
-for (const t of ["platinum", "win98"]) {
+for (const t of ["platinum", "memphis"]) {
     const all = JSON.stringify(icons.map((i) => M.iconMenu(t, icons, [i.id], i.id)).concat([M.desktopMenu(t, false)]));
     for (const banned of ["Info", "Properties", "New", "Show Desktop"]) assert.ok(all.indexOf(banned) < 0, t + ": " + banned);
 }
 same(labels(M.desktopMenu("platinum", false)), ["Clean Up", "-", "Always snap to grid"]);
 same(labels(M.desktopMenu("platinum", true)), ["Clean Up", "-", "Always snap to grid ✓"]);
-const arrange = M.desktopMenu("win98", true);
+const arrange = M.desktopMenu("memphis", true);
 same(labels(arrange), ["Arrange &Icons"]);
 same(labels(arrange[0].submenu), ["by &Name", "by &Type", "by Si&ze", "by &Date", "-", "&Align to Grid ✓"]);
 // Rows to messages.
@@ -307,21 +307,21 @@ same(act(M.desktopMenu("platinum", false)[2], [], "", false), { send: { type: "s
 same(act({ action: "rename" }, ["a"], "a"), { local: "rename", id: "a" });
 assert.equal(M.menuAction({ action: "open", disabled: true }, ["a"], "a"), null);
 // Theme shapes.
-same(plain(M.win98Items(arrange)[0].submenu[5]), { text: "&Align to Grid", enabled: true, checked: true, row: plain(arrange[0].submenu[5]) });
+same(plain(M.memphisItems(arrange)[0].submenu[5]), { text: "&Align to Grid", enabled: true, checked: true, row: plain(arrange[0].submenu[5]) });
 assert.equal(M.platinumRows(M.desktopMenu("platinum", true))[2].check, true);
 assert.equal(M.platinumRows(M.desktopMenu("platinum", true))[1].kind, "separator");
 
 // ---- confirmations per theme
 const trash1 = { type: "move-to-trash", count: 1 };
 assert.equal(M.confirmPlan("platinum", trash1, ["file:notes.txt"], ["notes.txt"]), null, "Platinum moves to the Trash at once");
-let p = M.confirmPlan("win98", trash1, ["file:notes.txt"], ["notes.txt"]);
+let p = M.confirmPlan("memphis", trash1, ["file:notes.txt"], ["notes.txt"]);
 assert.equal(p.title, "Confirm File Delete");
 assert.equal(p.text, "Are you sure you want to send 'notes.txt' to the Recycle Bin?");
 same(plain(p.send), { type: "trash", ids: ["file:notes.txt"] });
-p = M.confirmPlan("win98", { type: "move-to-trash", count: 3 }, ["a", "b", "c"], ["a", "b", "c"]);
+p = M.confirmPlan("memphis", { type: "move-to-trash", count: 3 }, ["a", "b", "c"], ["a", "b", "c"]);
 assert.equal(p.title, "Confirm Multiple File Delete");
 assert.match(p.text, /these 3 items/);
-for (const t of ["platinum", "win98"]) {
+for (const t of ["platinum", "memphis"]) {
     p = M.confirmPlan(t, { type: "permanent", count: 1, reason: "USB has no Trash." }, ["volume:x"], ["photo.jpg"]);
     assert.ok(p, t + " warns before a permanent delete");
     assert.equal(p.defaultButton, "cancel");
@@ -335,25 +335,25 @@ for (const t of ["platinum", "win98"]) {
     same(plain(p.send), { type: "empty-trash" });
 }
 assert.equal(M.confirmPlan("platinum", { type: "empty-trash", count: 3 }, [], []).cancel, "Cancel");
-assert.equal(M.confirmPlan("win98", { type: "empty-trash", count: 3 }, [], []).cancel, "&No");
+assert.equal(M.confirmPlan("memphis", { type: "empty-trash", count: 3 }, [], []).cancel, "&No");
 assert.match(M.confirmPlan("platinum", { type: "empty-trash", count: 1 }, [], []).title, /1 item\./);
-assert.equal(M.confirmPlan("win98", { type: "who-knows" }, [], []), null);
+assert.equal(M.confirmPlan("memphis", { type: "who-knows" }, [], []), null);
 // Errors are themed alerts with the provider's message.
 const busy = { code: "busy", message: "The volume is in use by ghostty.", ids: ["volume:sdb1"] };
 p = M.errorPlan("platinum", busy, ["USB"]);
 assert.match(p.title, /“USB” could not be put away/);
 assert.equal(p.text, "The volume is in use by ghostty.");
-p = M.errorPlan("win98", busy, ["USB"]);
+p = M.errorPlan("memphis", busy, ["USB"]);
 assert.equal(p.title, "Eject");
 assert.match(p.text, /'USB'/);
 assert.match(p.text, /in use by ghostty/);
-assert.equal(M.errorPlan("win98", { code: "other", message: "x" }, []).text, "x");
+assert.equal(M.errorPlan("memphis", { code: "other", message: "x" }, []).text, "x");
 
 // ---- the art
 const needs = L.needs;
 same(plain(M.artFor("platinum", icons[0], needs)), { type: "icon", name: "hensou-place-computer" });
 same(plain(M.artFor("platinum", icons[2], needs)), { type: "icon", name: "hensou-place-trash-full" });
-same(plain(M.artFor("win98", emptyTrash[2], needs)), { type: "icon", name: "hensou-place-trash" });
+same(plain(M.artFor("memphis", emptyTrash[2], needs)), { type: "icon", name: "hensou-place-trash" });
 same(plain(M.artFor("platinum", icons[1], needs)), { type: "icon", name: "hensou-place-network" });
 same(plain(M.artFor("platinum", icons[3], needs)), { type: "icon", name: "hensou-kind-text" });
 same(plain(M.artFor("platinum", icons[4], needs)), { type: "icon", name: "hensou-kind-folder" });
@@ -365,10 +365,10 @@ same(plain(M.artFor("platinum", themed("/run/current-system/sw/share/icons/Mount
 assert.equal(M.artFor("platinum", themed("/usr/share/icons/hicolor/48x48/apps/krita.png"), needs).type, "lettermark", "never hicolor");
 assert.equal(M.artFor("platinum", themed("/usr/share/icons/Adwaita/48x48/apps/krita.png"), needs).type, "lettermark", "never Adwaita");
 assert.equal(M.artFor("platinum", themed("/x/share/icons/Chicago95/apps/32/krita.png"), needs).type, "lettermark", "not the other theme's");
-same(plain(M.artFor("win98", Object.assign({}, icons[3], { art: { type: "generic", kind: "mystery" } }), needs)), { type: "icon", name: "hensou-kind-document" });
-for (const k of M.GENERIC) assert.equal(M.artFor("win98", Object.assign({}, icons[3], { art: { type: "generic", kind: k } }), needs).name, "hensou-kind-" + k);
+same(plain(M.artFor("memphis", Object.assign({}, icons[3], { art: { type: "generic", kind: "mystery" } }), needs)), { type: "icon", name: "hensou-kind-document" });
+for (const k of M.GENERIC) assert.equal(M.artFor("memphis", Object.assign({}, icons[3], { art: { type: "generic", kind: k } }), needs).name, "hensou-kind-" + k);
 assert.equal(M.aliasStyle("platinum", icons[6]), "italic");
-assert.equal(M.aliasStyle("win98", icons[6]), "arrow");
-assert.equal(M.aliasStyle("win98", icons[3]), "");
+assert.equal(M.aliasStyle("memphis", icons[6]), "arrow");
+assert.equal(M.aliasStyle("memphis", icons[3]), "");
 
 console.log("DESKTOP_ICONS_MODEL_TESTS_PASSED");

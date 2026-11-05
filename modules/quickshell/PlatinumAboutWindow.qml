@@ -7,7 +7,7 @@ import QtQuick
 // centred. SystemFacts reads the host name, the NixOS version and
 // generation, the configuration revision (nixos-version --json) and the
 // uptime when it opens, and the uptime again each minute while it stays
-// open. Win98's System Properties reads the same.
+// open. Memphis's System Properties reads the same.
 PanelWindow {
     id: about
 

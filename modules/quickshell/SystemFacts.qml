@@ -3,7 +3,7 @@ import Quickshell.Io
 import QtQuick
 
 // What this machine is, for every theme's About view (Platinum's About
-// <host>, Win98's System Properties): the host name, the DMI product
+// <host>, Memphis's System Properties): the host name, the DMI product
 // name, the NixOS version and configuration revision (nixos-version
 // --json), the system generation and the uptime. Read when it is created;
 // the uptime again each minute while `live` is true. Theme-neutral.

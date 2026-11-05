@@ -130,7 +130,7 @@ for theme_id, entry in registry.items():
     # The desktop's icons (Hensou docs/design/desktop-icons.md): the kinds
     # the Hensou resolver asks for and the places the shell draws resolve in
     # the theme's own set, never Adwaita or hicolor, at 32 px and above.
-    own = {"platinum": {"Mountainous-platinum"}, "win98": {"Mountainous-win98", "Chicago95"}}[theme_id]
+    own = {"platinum": {"Mountainous-platinum"}, "memphis": {"Mountainous-memphis", "Chicago95"}}[theme_id]
     for name in [f"hensou-kind-{k}" for k in KINDS] + [f"hensou-place-{p}" for p in PLACES]:
         found = lookup(theme, name)
         check(

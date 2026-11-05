@@ -66,18 +66,18 @@ assert.deepEqual(plain(T.tidy([{ separator: true }, { text: "a" }, { separator: 
     [{ text: "a" }, { separator: true }, { text: "b" }]);
 
 // ---- the shared lettermark keeps the agreed API
-assert.equal(L.needs("", "/x/icons/Chicago95/16/apps/a.png", "win98"), true, "no name");
-assert.equal(L.needs("a", "", "win98"), true, "not found");
-assert.equal(L.needs("a", "image://qsimage/1", "win98"), true, "a pixmap");
-assert.equal(L.needs("a", "/run/current-system/sw/share/icons/hicolor/16x16/apps/a.png", "win98"), true, "hicolor only");
-assert.equal(L.needs("a", "/run/current-system/sw/share/icons/Chicago95/16/apps/a.png", "win98"), false);
+assert.equal(L.needs("", "/x/icons/Chicago95/16/apps/a.png", "memphis"), true, "no name");
+assert.equal(L.needs("a", "", "memphis"), true, "not found");
+assert.equal(L.needs("a", "image://qsimage/1", "memphis"), true, "a pixmap");
+assert.equal(L.needs("a", "/run/current-system/sw/share/icons/hicolor/16x16/apps/a.png", "memphis"), true, "hicolor only");
+assert.equal(L.needs("a", "/run/current-system/sw/share/icons/Chicago95/16/apps/a.png", "memphis"), false);
 assert.equal(L.needs("a", "file:///s/icons/Mountainous-platinum/32/apps/a.png", "platinum"), false);
 assert.equal(L.needs("a", "/s/icons/Chicago95/16/apps/a.png", "platinum"), true, "Memphis art is not Platinum art");
 assert.equal(L.needs("a", "/s/icons/Chicago95/16/apps/a.png"), false, "no theme: both sets count");
-const m = plain(L.mark("win98", "Hensou Files", "hensou-files"));
+const m = plain(L.mark("memphis", "Hensou Files", "hensou-files"));
 assert.deepEqual(Object.keys(m).sort(), ["dark", "edge", "fill", "ink", "letter", "light", "shade"]);
 assert.equal(m.letter, "H");
-assert.deepEqual(plain(L.mark("win98", "Hensou Files", "hensou-files")), m, "the same app, the same tile");
+assert.deepEqual(plain(L.mark("memphis", "Hensou Files", "hensou-files")), m, "the same app, the same tile");
 assert.equal(L.mark("platinum", "", "9lives").letter, "9");
 assert.equal(L.mark("platinum", "", "").letter, "?");
 

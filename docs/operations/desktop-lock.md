@@ -30,7 +30,7 @@ delayed, the new lock-relative delay still blanks the display.
 The wrapper reads the existing `mountainous/theme` and `theme-extra` files
 under `$XDG_STATE_HOME` (default `~/.local/state`). Light ignores extra-dark.
 Dark defaults to grey; dark with extra-dark enabled uses pure black and the
-compact dialog. Windows 98 currently uses the same Platinum dialog.
+compact dialog. Memphis currently uses the same Platinum dialog.
 
 ChicagoFLF dialog PNGs are built at scales 1, 1.25, 1.5 and 2. The live field,
 date and attempt count share the PNG generator's geometry. Other scales use

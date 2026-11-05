@@ -6,7 +6,7 @@ import QtQuick
 import "desktop-icons-model.js" as Model
 
 // A desktop context menu at the pointer, drawn with the theme's own menu:
-// PlatinumCascadeMenu (Platinum) or Win98Menu (Memphis). An overlay window
+// PlatinumCascadeMenu (Platinum) or MemphisMenu (Memphis). An overlay window
 // over the whole screen, so the menu shows above windows as a period menu
 // did; a click outside, or Escape, closes it. rows: desktop-icons-model
 // rows; chosen(row) runs the action.
@@ -32,7 +32,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "mountainous-desktop-menu"
 
-    readonly property bool win98: win.themeId === "win98"
+    readonly property bool memphis: win.themeId === "memphis"
     property bool alive: true
     function close() { if (!win.alive) return; win.alive = false; win.dismissed(); }
     function choose(row) { if (!win.alive) return; win.alive = false; win.chosen(row); }
@@ -63,7 +63,7 @@ PanelWindow {
         x: Math.max(2, Math.min(win.atX, win.width - w - 2))
         y: Math.max(2, Math.min(win.atY, win.height - h - 2))
         focus: true
-        sourceComponent: win.win98 ? win98Menu : platinumMenu
+        sourceComponent: win.memphis ? memphisMenu : platinumMenu
         onLoaded: loader.forceActiveFocus()
     }
 
@@ -78,11 +78,11 @@ PanelWindow {
         }
     }
     Component {
-        id: win98Menu
-        Win98Menu {
+        id: memphisMenu
+        MemphisMenu {
             animate: false
             bounds: menuBounds
-            model: Model.win98Items(win.rows)
+            model: Model.memphisItems(win.rows)
             onTriggered: function (item) { if (item && item.row) win.choose(item.row); }
             onClosed: win.close()
         }
@@ -91,7 +91,7 @@ PanelWindow {
     Shortcut {
         sequence: "Escape"
         context: Qt.WindowShortcut
-        enabled: !win.win98
+        enabled: !win.memphis
         onActivated: {
             const item = loader.item;
             if (item && item.cancel && item.cancel()) return;

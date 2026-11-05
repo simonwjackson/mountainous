@@ -22,13 +22,13 @@ if (process.argv[4] === "--state") {
     process.exit(0);
 }
 
-const platinum = find("platinum"), win98 = find("win98");
+const platinum = find("platinum"), memphis = find("memphis");
 assert.equal(A.appearance(platinum, "light", false), "light");
 assert.equal(A.appearance(platinum, "light", true), "light");
 assert.equal(A.appearance(platinum, "dark", false), "dark");
 assert.equal(A.appearance(platinum, "dark", true), "extra");
-// Win98 keeps the Extra dark choice but ignores it.
-assert.equal(A.appearance(win98, "dark", true), "dark");
+// Memphis keeps the Extra dark choice but ignores it.
+assert.equal(A.appearance(memphis, "dark", true), "dark");
 assert.equal(A.appearance(null, "dark", true), "dark");
 
 // Every theme has a tile for every appearance it offers, under its folder.
@@ -47,9 +47,9 @@ for (const theme of registry) {
 }
 // The five appearances draw five different tiles.
 const five = [["platinum", "light", false], ["platinum", "dark", false], ["platinum", "dark", true],
-              ["win98", "light", false], ["win98", "dark", true]].map(([t, m, e]) => A.pattern(find(t), m, e));
+              ["memphis", "light", false], ["memphis", "dark", true]].map(([t, m, e]) => A.pattern(find(t), m, e));
 assert.equal(new Set(five).size, 5);
-assert.equal(A.pattern(win98, "dark", true), A.pattern(win98, "dark", false));
+assert.equal(A.pattern(memphis, "dark", true), A.pattern(memphis, "dark", false));
 assert.equal(A.pattern({ id: "x" }, "dark", false), "");
 
 // Whole device pixels: at Myoko's 1.5 a Platinum cell is 3 device px and

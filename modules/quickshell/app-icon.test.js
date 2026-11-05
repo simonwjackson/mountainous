@@ -51,13 +51,13 @@ for (const app of Object.values(pwas)) {
 }
 
 // The shared place: every app-icon lookup in both themes and both Find
-// windows goes through app-icon.js; Win98's set no longer has a Chromium
+// windows goes through app-icon.js; Memphis's set no longer has a Chromium
 // rule of its own.
 for (const file of ['PlatinumAppIcon.qml', 'PlatinumDesktop.qml', 'PlatinumTopBar.qml', 'PlatinumFindMenu.qml',
-    'Win98Icon.qml', 'Win98Taskbar.qml', 'Win98CoolSwitch.qml', 'Win98FindWindow.qml'])
+    'MemphisIcon.qml', 'MemphisTaskbar.qml', 'MemphisCoolSwitch.qml', 'MemphisFindWindow.qml'])
     assert.match(read(file), /import "app-icon\.js" as AppIcon/, file);
-assert.match(read('themes/win98/start-model.js'), /^\.import "\.\.\/\.\.\/app-icon\.js" as AppIcon$/m);
-assert.doesNotMatch(read('themes/win98/start-model.js'), /\/chrom\//, 'no Chromium rule of its own');
-for (const file of ['PlatinumAppIcon.qml', 'PlatinumTopBar.qml', 'PlatinumFindMenu.qml', 'Win98Taskbar.qml', 'Win98CoolSwitch.qml'])
+assert.match(read('themes/memphis/start-model.js'), /^\.import "\.\.\/\.\.\/app-icon\.js" as AppIcon$/m);
+assert.doesNotMatch(read('themes/memphis/start-model.js'), /\/chrom\//, 'no Chromium rule of its own');
+for (const file of ['PlatinumAppIcon.qml', 'PlatinumTopBar.qml', 'PlatinumFindMenu.qml', 'MemphisTaskbar.qml', 'MemphisCoolSwitch.qml'])
     assert.doesNotMatch(read(file), /iconPath\([^)]*"application-x-executable"\)/, file + ': use AppIcon.fallback');
 console.log('APP_ICON_TESTS_PASSED');

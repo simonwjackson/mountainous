@@ -11,8 +11,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-def generate(output: Path, platinum_font: str, win98_font: str) -> None:
-    for theme, font_path in (("platinum", platinum_font), ("win98", win98_font)):
+def generate(output: Path, platinum_font: str, memphis_font: str) -> None:
+    for theme, font_path in (("platinum", platinum_font), ("memphis", memphis_font)):
         mac = theme == "platinum"
         face, desktop = ("#dddddd", "#aaaaaa") if mac else ("#c0c0c0", "#008080")
         directory = output / f"mountainous-{theme}"
@@ -45,6 +45,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("platinum_font")
-    parser.add_argument("win98_font")
+    parser.add_argument("memphis_font")
     args = parser.parse_args()
-    generate(args.output, args.platinum_font, args.win98_font)
+    generate(args.output, args.platinum_font, args.memphis_font)

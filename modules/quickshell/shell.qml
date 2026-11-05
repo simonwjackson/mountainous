@@ -284,7 +284,7 @@ ShellRoot {
             const t = Hyprland.activeToplevel;
             if (t && t.address) windowHider.hideWindow(t.address);
         }
-        // A Win98 caption's icon and Alt+Space (hyprbars, hyprland.lua):
+        // A Memphis caption's icon and Alt+Space (hyprbars, hyprland.lua):
         // the window menu at x, y. See windowMenu above.
         function menu(address: string, x: int, y: int): void { root.windowMenu(address, x, y); }
     }
@@ -337,7 +337,7 @@ ShellRoot {
         detailShown: root.anyDesktop("fleetDetailShown")
     }
     // Fleet and glance routes go to the focused screen's Desktop; a theme
-    // without them ignores them (Platinum and Win98 both have them).
+    // without them ignores them (Platinum and Memphis both have them).
     function fleetCall(method) {
         const screen = root.focusedScreen();
         const desktop = screen ? root.desktops[screen.name] : null;

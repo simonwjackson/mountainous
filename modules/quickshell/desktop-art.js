@@ -6,7 +6,7 @@
 // A theme's "art" entry in themes.json names one tile per appearance:
 // "light", "dark" and, when the theme honours Extra dark, "extra". A tile
 // is an 8 x 8 SVG; "patternCell" is device pixels per tile pixel at scale
-// 1.5 (Platinum 3, one 72-dpi Mac pixel; Win98 2, one Win98 unit).
+// 1.5 (Platinum 3, one 72-dpi Mac pixel; Memphis 2, one Memphis unit).
 
 // "light", "dark" or "extra": desktop-theme's own rule (theme.nix).
 function appearance(entry, mode, extraDark) {
@@ -26,7 +26,7 @@ function pattern(entry, mode, extraDark) {
 // Device pixels per tile pixel on a screen of this device pixel ratio,
 // and the tile's logical size. Qt takes the tile's size in whole logical
 // pixels, so the cell grows to the first size whose 8-cell tile is whole
-// in logical pixels (at 1.5: Platinum 3 -> 16 logical; Win98 2 -> 3, its
+// in logical pixels (at 1.5: Platinum 3 -> 16 logical; Memphis 2 -> 3, its
 // tiles are plain). Then every tile pixel lands on whole device pixels.
 function tile(base, dpr) {
     const ratio = dpr > 0 ? dpr : 1;

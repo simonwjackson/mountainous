@@ -32,7 +32,7 @@ installed web app is the only case that builds that controller, so Chromium
 always draws its own frame for `--app-id` windows and ignores the compositor.
 With `--app` Chromium draws no frame and asks the compositor for server-side
 decorations. Our patched hyprbars draws the caption and outer frame under
-**both Platinum and Windows 98** (`docs/decisions/hyprland.md`). An `--app-id`
+**both Platinum and Memphis** (`docs/decisions/hyprland.md`). An `--app-id`
 window keeps Chromium's frame and gets no compositor caption. Normal browser
 windows can also ask for our frame while keeping Chromium's tabs and toolbar;
 see Phase A below.

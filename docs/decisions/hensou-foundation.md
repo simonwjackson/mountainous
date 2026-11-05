@@ -7,7 +7,7 @@ Terminal fonts remain in Mountainous. There is one authoritative W95FA transform
 in Hensou, not a second copy in Mountainous.
 
 This is an extraction of existing drawing, not a redesign. No public theme IDs
-change: persisted `platinum` and `win98` keep their meaning. The module exports a
+change: persisted `platinum` and `memphis` keep their meaning. The module exports a
 selected set of actual buttons, fields, checkboxes, list drawing and frame/icon
 support. No desktop/service owners move into the kit.
 
@@ -36,7 +36,7 @@ Each adapter binds `hensouDevicePixelRatio` to its actual `QsWindow.window`.
 Shared controls find the nearest provider (apps use `Kit.WindowScale`). No shell
 window writes a global token DPR. Platinum shell-only drawing calls token
 helpers with its actual QsWindow too. Two differently scaled windows must not
-change one another's geometry. Win98 keeps exactly two physical pixels per unit,
+change one another's geometry. Memphis keeps exactly two physical pixels per unit,
 including DPR 1.5. Screen DPR is not a substitute for QsWindow DPR.
 
 The ancestor provider also supplies the shell's icon-theme URL resolver. Shared
@@ -47,7 +47,7 @@ the shell root. They require no FileView, XMLHttpRequest or file-read permission
 
 Platinum's shell checkbox remains drawing-only, and its shell button keeps
 `keyboardEnabled:false`. The existing menu host owns keys/focus. Standalone
-apps opt into checkbox interaction and ordinary tab focus. Existing Win98
+apps opt into checkbox interaction and ordinary tab focus. Existing Memphis
 checkbox handlers ignore the additive next-value signal argument and still
 invert owner state once. The controls never also mutate owner-bound `checked`.
 

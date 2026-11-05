@@ -165,7 +165,7 @@ def apply(root, theme, mode, extra, art=None):
             },
             defaults={"fixed": '"monospace,12,-1,5,50,0,0,0,0,0"'},
         )
-    # Win98 uses QWindowsStyle, not Kvantum. Keep a valid dormant selection.
+    # Memphis uses QWindowsStyle, not Kvantum. Keep a valid dormant selection.
     kvantum = name if theme == "platinum" else "Mountainous-platinum-light"
     ini(config / "Kvantum/kvantum.kvconfig", "General", {"theme": kvantum})
     atomic(config / "ghostty/mountainous.conf", (assets / "ghostty.conf").read_text())
@@ -186,7 +186,7 @@ def apply(root, theme, mode, extra, art=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
-    parser.add_argument("theme", choices=("platinum", "win98"))
+    parser.add_argument("theme", choices=("platinum", "memphis"))
     parser.add_argument("mode", choices=("light", "dark"))
     parser.add_argument("extra", choices=("on", "off"))
     parser.add_argument("--art", type=Path, help="the desktop-art package")
