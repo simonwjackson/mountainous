@@ -35,7 +35,7 @@ check() {
     if node -e '
       const s = JSON.parse(process.argv[1]);
       const log = require("fs").existsSync(process.argv[2]) ? require("fs").readFileSync(process.argv[2], "utf8").split("\n").filter((l) => l.startsWith("< ")).map((l) => JSON.parse(l.slice(2))) : [];
-      process.exit((' "$expr" ') ? 0 : 1);' "$state" "$work/provider-messages.log" 2>/dev/null; then ok "$name"; return 0; fi
+      process.exit(('"$expr"') ? 0 : 1);' "$state" "$work/provider-messages.log" 2>/dev/null; then ok "$name"; return 0; fi
     sleep 0.1
   done
   bad "$name: $(echo "$state" | head -c 600)"
@@ -54,6 +54,11 @@ grep -q ready "$work/pointer.log" || { cat "$work/pointer.log"; exit 1; }
 p() { echo "$*" >&3; sleep 0.15; }
 click() { p move "$1" "$2"; p down; p up; }
 key() { wtype -k "$1"; sleep 0.25; }
+# Each wtype call is its own short-lived virtual keyboard, and sway does
+# not hand an on-demand layer the keyboard again when a new keyboard
+# appears; a click on an empty spot gives it back first, then the icon is
+# selected over IPC (a click could land on an icon covering it).
+press_on() { click 1800 1000; desk select "$1" >/dev/null; key "$2"; }
 
 # A click on an icon selects it and gives the desktop the keyboard.
 read -r x y <<<"$(desk where file:notes.txt)"
@@ -62,9 +67,9 @@ check "click selects" 'JSON.stringify(s.selection) === JSON.stringify(["file:not
 check "the desktop has the keyboard on demand" 's.activeFocus === true'
 key Down
 check "Down moves to the next icon" 'JSON.stringify(s.selection) === JSON.stringify(["file:Projects"])'
-key Tab
+press_on file:Projects Tab
 check "Tab follows the snapshot order" 's.focus === "file:krita.desktop"'
-key Return
+press_on file:krita.desktop Return
 check "Enter opens" 'log.some((m) => m.type === "open" && m.ids[0] === "file:krita.desktop")'
 
 # An empty spot clears the selection; a band selects what it crosses.
@@ -113,9 +118,7 @@ sleep 0.3
 theme win98 light
 check "a theme switch resubscribes" 'log.some((m) => m.type === "subscribe" && m.theme === "win98" && m.screen.usable.y === 0 && m.screen.usable.height === 1200 - 38)'
 check "Memphis has no volume on the desktop" 's.theme === "win98" && s.shown && !s.icons.includes("volume:sdb1")'
-read -r x y <<<"$(desk where file:Projects)"
-click "$x" "$y"
-key Delete
+press_on file:Projects Delete
 check "Memphis asks before Delete" 's.alert && s.alert.title === "Confirm File Delete" && s.alert.accept === "&Yes"'
 key n
 check "No keeps the file" 's.alert === null && s.icons.includes("file:Projects") && !log.some((m) => m.type === "trash" && m.ids.includes("file:Projects"))'
@@ -137,16 +140,12 @@ SESSION_FIXTURE=stress provider_start node stress
 check "provider back: live again, quietly" 's.shown && s.input && s.icons.includes("file:cascade-5")'
 
 # A cascade: Tab reaches the covered icons; the focused one is on top.
-desk select "file:cascade-0" >/dev/null
-read -r x y <<<"$(desk where file:cascade-5)"
-click 1700 900
-desk select "file:cascade-0" >/dev/null
-key Tab
+press_on file:cascade-0 Tab
 check "Tab reaches a covered icon" 's.focus === "file:cascade-1"'
 check "the focused icon is raised over the cascade" 'Object.keys(s.boxes).every((id) => id === "file:cascade-1" || s.boxes[id].z < s.boxes["file:cascade-1"].z)'
-for _ in 1 2 3 4; do key Tab; done
+for k in 2 3 4 5; do press_on file:cascade-$((k - 1)) Tab; done
 check "Tab walks the whole cascade" 's.focus === "file:cascade-5"'
-key Up
+press_on file:cascade-5 Up
 check "an arrow climbs the cascade" 's.focus === "file:cascade-4"'
 
 grep -E "WARN|TypeError|ReferenceError|Error:" "$work/qs.log" | grep -v "propagateComposedEvents" > "$work/warnings.log" || true

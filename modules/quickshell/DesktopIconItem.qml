@@ -122,7 +122,12 @@ Item {
             ? (whole ? Math.max(root.cellWidth, 74 * root.u) : root.cellWidth - 2 * root.u)
             : (whole ? Math.max(2 * root.cellWidth, 160) : root.cellWidth - 4)
         readonly property real padX: root.win98 ? root.u : 3
-        width: Math.min(maxWidth, (root.win98 ? w98.implicitWidth : platinumText.implicitWidth) + 2 * padX)
+        // The one-line width, measured without the wrapped text (which
+        // takes its width from here).
+        readonly property real natural: root.win98
+            ? Kit.Win98Tokens.textWidth(root.labelText, false, root.u) + root.u
+            : platinumText.implicitWidth
+        width: Math.min(maxWidth, natural + 2 * padX)
         height: root.win98 ? w98.height + 2 * root.u : platinumText.implicitHeight + 2
         x: Math.round((root.width - width) / 2 * root.devicePixelRatio) / root.devicePixelRatio
         y: picture.y + picture.height + (root.win98 ? 3 * root.u : 3)
