@@ -107,7 +107,7 @@ function taskbarMenu(o) {
         { text: "Minimize &Other Windows", enabled: o.others > 0, act: "minimizeOthers" },
         { text: "&Restore All Windows", enabled: o.hidden > 0, act: "restoreAll" },
         { separator: true },
-        { text: "Show the &Desktop", checked: !!o.desktop, shortcut: "Super+Shift+D", act: "showDesktop" },
+        { text: "Show the &Desktop", checked: !!o.desktop, shortcut: "Super+D", act: "showDesktop" },
         { separator: true },
         { text: "&Find...", shortcut: "Super+P", act: "find" }
     ];

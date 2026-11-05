@@ -138,7 +138,7 @@ ShellRoot {
     WindowMotion { id: windowMotion; rows: root.windowRows; hider: windowHider }
     readonly property var motion: windowMotion
 
-    // Show Desktop (Super+Shift+D, Quick Launch, Platinum's Application
+    // Show Desktop (Super+D, Quick Launch, Platinum's Application
     // menu): shell.showDesktop.toggle(screen name), .active(screen name).
     ShowDesktop {
         id: showDesktopOwner
@@ -408,7 +408,7 @@ ShellRoot {
         }
     }
 
-    // Super+Shift+D (hyprland.lua): Show Desktop on the focused screen.
+    // Super+D (hyprland.lua): Show Desktop on the focused screen.
     IpcHandler {
         target: "showDesktop"
         function toggle(): string {

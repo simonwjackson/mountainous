@@ -67,8 +67,8 @@ Scope {
         { kind: "cmd", label: "Interface scale down", detail: "Super+-", act: "scaledown" },
         { kind: "cmd", label: "Interface scale 100%", detail: "Super+0", act: "scalereset" },
         { kind: "cmd", label: "Toggle bars", detail: "Super+I", act: "chrome" },
-        { kind: "cmd", label: "Dark appearance", detail: "Super+D", act: "theme:dark" },
-        { kind: "cmd", label: "Light appearance", detail: "Super+D", act: "theme:light" },
+        { kind: "cmd", label: "Dark appearance", detail: "Super+X", act: "theme:dark" },
+        { kind: "cmd", label: "Light appearance", detail: "Super+X", act: "theme:light" },
         { kind: "cmd", label: "Desktop theme\u2026", detail: "Appearance", act: "theme:picker" },
         { kind: "cmd", label: "Extra dark appearance", detail: "off", act: "theme:extra" },
         { kind: "cmd", label: "Screenshot", detail: "Super+S", act: "shot" }

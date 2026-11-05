@@ -119,7 +119,7 @@ let tm = plain(M.taskbarMenu({ shown: 3, others: 2, hidden: 0 }));
 deq(tm.map((i) => i.separator ? '-' : plainText(i.text) + (i.enabled === false ? ' (off)' : '')),
     ['Minimize All Windows', 'Minimize Other Windows', 'Restore All Windows (off)', '-', 'Show the Desktop', '-', 'Find...']);
 deq([tm[6].shortcut, tm[6].act], ['Super+P', 'find']);
-deq([tm[4].shortcut, tm[4].act, tm[4].checked], ['Super+Shift+D', 'showDesktop', false]);
+deq([tm[4].shortcut, tm[4].act, tm[4].checked], ['Super+D', 'showDesktop', false]);
 tm = plain(M.taskbarMenu({ shown: 0, others: 0, hidden: 4, desktop: true }));
 deq(tm.map((i) => i.enabled !== false), [false, false, true, true, true, true, true], 'everything minimized: Restore All only');
 assert.equal(tm[4].checked, true, 'the desktop shows: Show the Desktop is checked');

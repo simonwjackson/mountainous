@@ -84,7 +84,7 @@ assert.deepEqual(plain(M.application({ apps: [mixed], here: "eDP-1" })[6].submen
 // ---- Show Desktop: its own row, and Hide Others while the desktop is in front
 m = M.application({ apps, front: "firefox0", frontApp: "firefox", frontName: "Firefox", othersShown: true, coveredShown: true });
 let sd = m.find((r) => r.id === "showDesktop");
-assert.deepEqual(plain([sd.hint, sd.check, sd.disabled, sd.action]), ["Super+Shift+D", false, false, { kind: "showDesktop" }]);
+assert.deepEqual(plain([sd.hint, sd.check, sd.disabled, sd.action]), ["Super+D", false, false, { kind: "showDesktop" }]);
 assert.deepEqual(plain(m.find((r) => r.id === "hideOthers").action), { kind: "hideOthers", appId: "firefox" }, "an app in front: Hide Others hides the other apps");
 m = M.application({ apps, front: "", frontApp: "", coveredShown: true });
 assert.deepEqual(plain([m[1].label, m[1].disabled, m[1].action]), ["Hide Others", false, { kind: "showDesktop" }], "the desktop in front: Hide Others shows the desktop");

@@ -111,7 +111,7 @@ Scope {
     })
 
     // Show Desktop (shell.showDesktop): the Application menu's row, and
-    // Hide Others while the desktop is in front. Super+Shift+D reaches the
+    // Hide Others while the desktop is in front. Super+D reaches the
     // same owner through the shell.
     readonly property var showDesktop: desktop.shell.showDesktop || null
     readonly property bool desktopShown: !!desktop.showDesktop && desktop.showDesktop.active(desktop.here)

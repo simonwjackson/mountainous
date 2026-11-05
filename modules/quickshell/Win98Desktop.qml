@@ -183,7 +183,7 @@ Scope {
         if (p.quickOut) {
             if (out.length) out.push({ separator: true });
             out.push({ text: "Show the &Desktop", icon: "", themeIcon: "user-desktop", action: "showDesktop", checked: desktop.desktopShown,
-                shortcut: "Super+Shift+D" });
+                shortcut: "Super+D" });
         }
         if (p.clockOut || p.trayOut.indexOf("bat") >= 0) {
             if (out.length) out.push({ separator: true });
@@ -292,7 +292,7 @@ Scope {
 
     //------------------------------------------------------------------
     // Show Desktop (shell.showDesktop): the Quick Launch button, the
-    // taskbar menu, Super+Shift+D
+    // taskbar menu, Super+D
     //------------------------------------------------------------------
     readonly property var showDesktop: shell.showDesktop || null
     readonly property bool desktopShown: !!desktop.showDesktop && desktop.showDesktop.active(desktop.here)

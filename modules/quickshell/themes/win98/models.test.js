@@ -138,7 +138,7 @@ const rows = [
     { kind: 'cmd', label: 'Go to window', detail: 'mode', act: 'mode:window' },
     { kind: 'cmd', label: 'Interface scale up', detail: 'Super+=', act: 'scaleup' },
     { kind: 'cmd', label: 'Toggle bars', detail: 'Super+I', act: 'chrome' },
-    { kind: 'cmd', label: 'Dark appearance', detail: 'Super+D', act: 'theme:dark' },
+    { kind: 'cmd', label: 'Dark appearance', detail: 'Super+X', act: 'theme:dark' },
     { kind: 'cmd', label: 'Desktop theme\u2026', detail: 'Appearance', act: 'theme:picker' }
 ];
 const c = plain(S.commands(rows));

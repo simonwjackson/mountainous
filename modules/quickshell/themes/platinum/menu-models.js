@@ -121,7 +121,7 @@ function windowRows(app, front, here, screenLabel) {
 //         frontName, othersShown (bool), anyHidden (bool), target (app id
 //         Super+Tab is on), here, screenLabel, desktopShown (bool),
 //         coveredShown (bool: windows cover this screen's page) }
-// Show Desktop (Super+Shift+D) is the desktop's own row, checked while the
+// Show Desktop (Super+D) is the desktop's own row, checked while the
 // desktop shows. With no app in front (the desktop is), Hide Others is
 // Show Desktop too, as Mac OS's Hide Others with the Finder in front.
 function application(opts) {
@@ -135,7 +135,7 @@ function application(opts) {
             : item({ id: "hideOthers", label: "Hide Others", disabled: !o.coveredShown, spacer: true, action: { kind: "showDesktop" } }),
         item({ id: "showAll", label: "Show All", disabled: !o.anyHidden, spacer: true, action: { kind: "showAll" } }),
         sep(),
-        item({ id: "showDesktop", label: "Show Desktop", hint: "Super+Shift+D", check: !!o.desktopShown, spacer: true,
+        item({ id: "showDesktop", label: "Show Desktop", hint: "Super+D", check: !!o.desktopShown, spacer: true,
                disabled: !o.desktopShown && !o.coveredShown, action: { kind: "showDesktop" } }),
     ];
     var apps = o.apps || [];

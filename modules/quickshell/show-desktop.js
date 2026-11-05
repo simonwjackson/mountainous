@@ -1,5 +1,5 @@
 .pragma library
-// Show Desktop, for every theme: Super+Shift+D, the Memphis Quick Launch
+// Show Desktop, for every theme: Super+D, the Memphis Quick Launch
 // button and the taskbar menu, Platinum's Application menu (Show Desktop,
 // and Hide Others while the desktop is in front). The windows of the page
 // a screen shows move, silently, to that screen's own special workspace

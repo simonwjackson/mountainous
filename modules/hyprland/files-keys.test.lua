@@ -1,5 +1,5 @@
--- Super+E opens Files and Super+Shift+D is Show Desktop, each bound once,
--- and neither chord is taken by another bind.
+-- Super+E opens Files, Super+D is Show Desktop and Super+X flips light and
+-- dark, each bound once. Super+Shift+D is no longer bound.
 -- Run: lua files-keys.test.lua hyprland.lua
 local file = assert(io.open(arg[1], "r"))
 local source = file:read("*a")
@@ -14,9 +14,11 @@ end
 local n, line = binds("E")
 assert(n == 1, "Super+E bound " .. n .. " times")
 assert(line:find('hl.dsp.exec_cmd("hensou-files")', 1, true), "Super+E runs hensou-files: " .. line)
-n, line = binds("SHIFT + D")
-assert(n == 1, "Super+Shift+D bound " .. n .. " times")
-assert(line:find('qs -c mountainous ipc call showDesktop toggle', 1, true), "Super+Shift+D is Show Desktop: " .. line)
 n, line = binds("D")
-assert(n == 1 and line:find("desktop-theme toggle", 1, true), "Super+D stays the theme toggle")
-print("files keys: Super+E runs hensou-files, Super+Shift+D toggles Show Desktop, Super+D unchanged")
+assert(n == 1, "Super+D bound " .. n .. " times")
+assert(line:find('qs -c mountainous ipc call showDesktop toggle', 1, true), "Super+D is Show Desktop: " .. line)
+n, line = binds("X")
+assert(n == 1 and line:find("desktop-theme toggle", 1, true), "Super+X flips light and dark")
+n = binds("SHIFT + D")
+assert(n == 0, "Super+Shift+D is unbound")
+print("files keys: Super+E runs hensou-files, Super+D toggles Show Desktop, Super+X flips light and dark")

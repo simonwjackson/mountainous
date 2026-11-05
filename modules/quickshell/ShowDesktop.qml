@@ -10,7 +10,7 @@ import "window-hide.js" as WindowHide
 // parked window's page in $XDG_STATE_HOME/mountainous/show-desktop.json so
 // a Quickshell restart still restores them to their pages.
 //
-//   shell.showDesktop.toggle(screenName)   Super+Shift+D, Quick Launch,
+//   shell.showDesktop.toggle(screenName)   Super+D, Quick Launch,
 //                                          Platinum's Application menu
 //   shell.showDesktop.active(screenName)   bindable: the desktop is shown
 Scope {
