@@ -193,7 +193,7 @@ function top(programList, windowList, commandList, user, taskbarList, extra) {
         { text: "&Programs", icon: "programs", submenu: programList },
         { text: "Fa&vorites", icon: "favorites", submenu: x.favorites || favorites([]) },
         { text: "&Documents", icon: "documents", submenu: x.documents || documents([]) }
-    ].concat(x.files ? [{ text: "F&iles", icon: "computer", shortcut: "Super+E", action: "files" }] : [], [
+    ].concat(x.files ? [{ text: "F&iles", icon: "", themeIcon: "computer", shortcut: "Super+E", action: "files" }] : [], [
         { text: "&Windows", icon: "windows", submenu: windowList },
         { text: "&Commands", icon: "commands", submenu: commandList },
         { text: "&Settings", icon: "settings", submenu: settings() }

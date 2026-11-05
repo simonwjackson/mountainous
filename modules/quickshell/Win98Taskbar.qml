@@ -9,6 +9,7 @@ import "themes/win98/taskbar-plan.js" as Plan
 import "themes/win98/tray-model.js" as Tray
 import "app-icon.js" as AppIcon
 import "sni-tray.js" as Sni
+import "themes/win98/quick-launch.js" as QuickLaunch
 
 // The Win98 taskbar: 28 u at the bottom edge, which it reserves.
 //
@@ -230,8 +231,11 @@ PanelWindow {
                     visible: quickButton.sunk || bar.hovered("quick")
                     variant: quickButton.sunk ? "thinSunken" : "thinRaised"
                 }
-                Win98Icon {
-                    name: "show-desktop"
+                Image {
+                    width: bar.units(16); height: bar.units(16)
+                    sourceSize: Qt.size(Math.round(16 * bar.u * bar.devicePixelRatio), Math.round(16 * bar.u * bar.devicePixelRatio))
+                    smooth: false
+                    source: QuickLaunch.icon(Kit.Win98Tokens.ink)
                     x: Kit.Win98Tokens.snap((quickButton.width - width) / 2 + (quickButton.sunk ? bar.u : 0), bar.u)
                     y: Kit.Win98Tokens.snap((quickButton.height - height) / 2 + (quickButton.sunk ? bar.u : 0), bar.u)
                 }

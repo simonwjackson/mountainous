@@ -183,7 +183,7 @@ assert.equal(plain(S.top(p, w, c, 'simon', [])).length, plain(S.top(p, w, c, 'si
 // Files, while Hensou Files is installed: after Documents, Super+E.
 const withFiles = plain(S.top(p, w, c, 'simon', [], { host: 'myoko', files: true }));
 assert.deepEqual(withFiles.slice(2, 5).map(i => i.text), ['&Documents', 'F&iles', '&Windows']);
-assert.deepEqual([withFiles[3].icon, withFiles[3].shortcut, withFiles[3].action], ['computer', 'Super+E', 'files']);
+assert.deepEqual([withFiles[3].icon, withFiles[3].themeIcon, withFiles[3].shortcut, withFiles[3].action], ['', 'computer', 'Super+E', 'files'], 'My Computer from the icon theme (Chicago95)');
 const fkeys = withFiles.filter(i => !i.separator).map(i => (/&(.)/.exec(i.text) || [])[1].toLowerCase());
 assert.equal(new Set(fkeys).size, fkeys.length, 'Files keeps the access keys unique: ' + fkeys.join(''));
 assert.equal(top.some(i => i.action === 'files'), false, 'not installed: no Files');

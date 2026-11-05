@@ -182,7 +182,7 @@ Scope {
         // The Quick Launch band, when the bar has no room for it.
         if (p.quickOut) {
             if (out.length) out.push({ separator: true });
-            out.push({ text: "Show the &Desktop", icon: "show-desktop", action: "showDesktop", checked: desktop.desktopShown,
+            out.push({ text: "Show the &Desktop", icon: "", themeIcon: "user-desktop", action: "showDesktop", checked: desktop.desktopShown,
                 shortcut: "Super+Shift+D" });
         }
         if (p.clockOut || p.trayOut.indexOf("bat") >= 0) {

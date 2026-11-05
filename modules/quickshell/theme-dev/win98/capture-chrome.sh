@@ -126,9 +126,9 @@ session_stop
 trap - EXIT
 
 # ---------------------------------------------------------------- narrow
-# 480 x 700 logical: the app icons go into the tray chevron / » first,
+# 360 x 700 logical: the app icons go into the tray chevron / » first,
 # and each is still one choice away.
-session_round narrow 720x1050
+session_round narrow 540x1050
 w98 theme light >/dev/null
 w98 set tb-normal >/dev/null; sleep 1
 w98 tray true >/dev/null; sleep 1.2
@@ -142,7 +142,7 @@ sleep 0.8; shot "$out/memphis-narrow-sni-from-chevron.png"
 w98 closeAll >/dev/null
 put theme-name platinum; loaded platinum || bad "platinum loaded (narrow)"
 sleep 2; w98 tray true >/dev/null; sleep 1.5
-contains "platinum narrow: an app icon in »" "$(w98 planOf)" '"sni:'
+contains "platinum narrow: an app icon in »" "$(w98 planOf)" '"overflow":["sni:'
 shot "$out/platinum-narrow-full.png"
 w98 openMenu more >/dev/null; sleep 0.8
 shot "$out/platinum-narrow-more.png"
