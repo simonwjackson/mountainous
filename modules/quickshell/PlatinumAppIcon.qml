@@ -4,7 +4,6 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "app-icon.js" as AppIcon
-import "cdp-target.js" as CdpTarget
 
 // An app's icon from the icon theme. Inactive (a window on a page the
 // screen is not showing, a hidden app) draws Platinum's disabled look: the
@@ -20,10 +19,11 @@ Item {
     property bool inactive: false
     // The surface the icon sits on: the checker's colour.
     property color surface: Kit.PlatinumTokens.stripSurface
-    // A Chromium window with a site icon: it draws a generated 3/4 token,
-    // which may use a bigger slot than theme art. Without a site icon it
-    // shows the browser's 32 px theme art, which keeps the normal slot.
-    readonly property bool siteToken: root.toplevel !== null && CdpTarget.isBrowser(CdpTarget.appIdOf(root.toplevel)) && image.favicon !== ""
+    // Device px: draw theme art at this size, unscaled, centred in the slot
+    // (WindowIcon.artPixels). The Control Strip passes a generated token's
+    // inner box, so a token and theme art are the same size. 0: theme art
+    // fills the slot.
+    property int artPixels: 0
 
     implicitWidth: size
     implicitHeight: size
@@ -39,6 +39,7 @@ Item {
         toplevel: root.toplevel
         anchors.fill: parent
         implicitSize: root.size
+        artPixels: root.artPixels
         visible: false
         layer.enabled: true
         fallbackSource: root.name === "" ? "" : Quickshell.iconPath(root.name, AppIcon.fallback(root.name))

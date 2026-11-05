@@ -22,6 +22,33 @@ def margin(size: int) -> int:
     return max(2, size // 16)
 
 
+def canvas_for(box: int) -> int:
+    """The smallest token size whose inner box is box px: 32 -> 36, 20 -> 24.
+
+    The Control Strip draws every icon in one content box
+    (strip-plan.js tileGeometry): at scale 1.5 a 36 px token's inner box,
+    which is also the size of Platinum's 32 px theme art.
+    """
+    for size in range(box, 2 * box + 8):
+        if size - 2 * margin(size) == box:
+            return size
+    raise ValueError(f"no token size has a {box} px inner box")
+
+
+def boxed(
+    frames: Sequence[Image.Image], box: int, theme: str = "platinum-light"
+) -> Image.Image | None:
+    """The token for a box px content box, without its margin: the same
+    pixels a canvas_for(box) token has inside its margin. Build-time strip
+    art for an app with no theme art of that size."""
+    size = canvas_for(box)
+    token = render(frames, size, theme)
+    if token is None:
+        return None
+    m = margin(size)
+    return token.crop((m, m, size - m, size - m))
+
+
 def mac_system_palette() -> np.ndarray:
     cube = (255, 204, 153, 102, 51, 0)
     ramp = (238, 221, 187, 170, 136, 119, 85, 68, 34, 17)

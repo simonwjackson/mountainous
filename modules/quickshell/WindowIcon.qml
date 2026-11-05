@@ -16,6 +16,12 @@ Image {
     property bool platinumToken: false
     readonly property bool tokenReady: tokenImage.status === Image.Ready && tokenImage.source.toString() === token.cachedSource
     property real implicitSize: 16
+    // Device px. Draw theme art (fallbackSource) at exactly this size,
+    // centred in the slot on whole device pixels and never scaled: the
+    // Control Strip's box, where Platinum's 32 px art is drawn 1:1 at scale
+    // 1.5 (strip-plan.js tileGeometry). 0: theme art fills the slot.
+    property int artPixels: 0
+    readonly property bool boxedArt: root.artPixels > 0 && !root.siteIcon
     // Wayland QScreen may report integer scale 2 while the window uses 1.5.
     readonly property real pixelRatio: root.Window.window ? root.Window.window.devicePixelRatio : Screen.devicePixelRatio
     readonly property int pixels: Math.ceil(Math.min(width, height) * root.pixelRatio)
@@ -46,7 +52,7 @@ Image {
     sourceSize: root.siteIcon && !root.vectorIcon ? Qt.size(-1, -1) : Qt.size(root.pixels, root.pixels)
     currentFrame: root.siteIcon ? root.chosenFrame : 0
     fillMode: Image.PreserveAspectFit
-    source: root.tokenReady ? "" : root.siteIcon ? root.favicon : root.fallbackSource
+    source: root.tokenReady || root.boxedArt ? "" : root.siteIcon ? root.favicon : root.fallbackSource
     // Smooth only a downscale. A 16px-only icon at 1.5x has uneven pixel
     // widths, but no interpolated blur. Do not shrink or enlarge the slot.
     smooth: root.siteIcon ? Favicon.smoothFor(root.nativePixels, root.pixels) : root.fallbackSmooth
@@ -74,6 +80,23 @@ Image {
         x: Math.round((root.width - width) * root.pixelRatio / 2) / root.pixelRatio
         y: Math.round((root.height - height) * root.pixelRatio / 2) / root.pixelRatio
         sourceSize: Qt.size(-1, -1)
+        smooth: false
+        mipmap: false
+    }
+
+    Image {
+        id: artImage
+        objectName: "platinum-art-image"
+        visible: root.boxedArt
+        source: root.boxedArt ? root.fallbackSource : ""
+        width: root.artPixels / root.pixelRatio
+        height: root.artPixels / root.pixelRatio
+        x: Math.round((root.width * root.pixelRatio - root.artPixels) / 2) / root.pixelRatio
+        y: Math.round((root.height * root.pixelRatio - root.artPixels) / 2) / root.pixelRatio
+        // An icon-theme URL is scalable: Qt asks the provider for this size
+        // times the ratio, artPixels, and the theme's 32 px art comes back
+        // unscaled.
+        sourceSize: Qt.size(width, height)
         smooth: false
         mipmap: false
     }

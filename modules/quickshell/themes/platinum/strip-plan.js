@@ -13,11 +13,51 @@
 // and the track scrolls. The band the strip sits in is reserved at its
 // full width, and collapsing never changes it, so windows never resize.
 
-var TILE = 30, GROOVE = 10, GAP = 2, PAD = 2;
+// A tile is wider than tall, as a Mac OS 8 Control Strip module: the icon,
+// then a column for the ▴ (tileGeometry). Logical px; even, so every edge
+// is a whole device pixel at scale 1.5.
+var TILE_W = 40, TILE_H = 32, GROOVE = 10, GAP = 2, PAD = 2;
 var CAP = 12, ARROW = 15, TAB = 18;
-var HEIGHT = 36, BOTTOM = 6, BAND = HEIGHT + BOTTOM;
+var HEIGHT = 38, BOTTOM = 6, BAND = HEIGHT + BOTTOM;
 var RIGHT_EDGE = 6;          // the strip stops this far short of the right edge
-var MIN_AREA = TILE + 2 * PAD;
+var MIN_AREA = TILE_W + 2 * PAD;
+// The icon's slot: a generated token's whole canvas (24 logical, 36 device
+// px at 1.5), and the ▴ (7 x 5 logical).
+var ICON = 24, POP_W = 7, POP_H = 5;
+// The least gap, in device px, between the icon's box and the ▴, pressed in
+// (the icon one device px down and right) included.
+var MIN_POP_GAP = 2;
+
+// One tile's parts in whole device px from its top-left corner, at device
+// pixel ratio dpr. The Platinum token renderer (scripts/platinum_icons.py)
+// keeps margin max(2, S/16) clear on a token of S px; the box inside it is
+// where every icon draws: a token's art, and theme art at that size (32 px
+// at 1.5, Platinum's own pixel-art size, so it is never scaled).
+//
+//   bevel  the raised or sunken edge, one hair (2 px at 1.5)
+//   pad    from the inside of the bevel to the box: top, left and bottom
+//   pop    the ▴, one hair inside the bevel at the bottom right
+//   gap    from the box's right edge to the ▴, at rest; pressed in, one less
+function tileGeometry(dpr) {
+    var d = dpr > 0 ? dpr : 1;
+    var w = Math.round(TILE_W * d), h = Math.round(TILE_H * d);
+    var bevel = Math.max(1, Math.round(d));
+    var canvas = Math.ceil(ICON * d);
+    var margin = Math.max(2, Math.floor(canvas / 16));
+    var size = canvas - 2 * margin;
+    var pad = Math.floor((h - 2 * bevel - size) / 2);
+    var box = { x: bevel + pad, y: bevel + pad, size: size };
+    var pop = { w: Math.round(POP_W * d), h: Math.round(POP_H * d) };
+    pop.x = w - 2 * bevel - pop.w;
+    pop.y = h - 2 * bevel - pop.h;
+    return {
+        dpr: d, w: w, h: h, bevel: bevel, pad: pad, margin: margin, sunk: 1,
+        inner: { x: bevel, y: bevel, w: w - 2 * bevel, h: h - 2 * bevel },
+        canvas: { x: box.x - margin, y: box.y - margin, size: canvas },
+        box: box, pop: pop,
+        gap: pop.x - (box.x + box.size)
+    };
+}
 
 // Window order inside a page. "position" sorts by where the window sits on
 // screen (left to right, then top to bottom), so a swap moves the tiles
@@ -47,8 +87,8 @@ function slots(rows) {
             out.push({ kind: "groove", x: x, w: GROOVE, page: r.page });
             x += GROOVE + GAP;
         }
-        out.push({ kind: "tile", x: x, w: TILE, index: i, page: r.page });
-        x += TILE + GAP;
+        out.push({ kind: "tile", x: x, w: TILE_W, index: i, page: r.page });
+        x += TILE_W + GAP;
     }
     return { slots: out, content: out.length === 0 ? 0 : x - GAP + PAD };
 }
@@ -107,8 +147,8 @@ function scrollToShow(slot, scroll, area, maxScroll) {
 function dragLength(startArea, dx, content) {
     var raw = startArea + dx;
     if (content > 0 && raw >= content - GAP) return null;
-    var n = Math.max(1, Math.round((raw - 2 * PAD + GAP) / (TILE + GAP)));
-    return Math.max(MIN_AREA, n * (TILE + GAP) - GAP + 2 * PAD);
+    var n = Math.max(1, Math.round((raw - 2 * PAD + GAP) / (TILE_W + GAP)));
+    return Math.max(MIN_AREA, n * (TILE_W + GAP) - GAP + 2 * PAD);
 }
 
 // What dropping one tile on another means, and the label the drag shows.

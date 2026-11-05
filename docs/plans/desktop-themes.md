@@ -460,9 +460,9 @@ coalesce, and an open during a theme change can be dropped.
 | Session commands | Lock `loginctl lock-session`, Sleep `systemctl suspend`, Log Out `hyprctl --instance 0 dispatch hl.dsp.exit()` (as Super+Shift+E and Win98), Restart `systemctl reboot`, Shut Down `systemctl poweroff`. |
 | No polkit agent or rule is added for Sleep, Restart and Shut Down | Myoko's evaluated `security.polkit.extraConfig` has no `login1` rule, and Simon is in `wheel`. systemd's `org.freedesktop.login1.policy` (read on Zao's systemd, not Myoko's build) allows `reboot`, `power-off`, `suspend` and their `-multiple-sessions` forms for an active session (`allow_active yes`). Cost: an app holding a *block* inhibitor makes logind ask for `ignore-inhibit`, which needs an agent the session does not run; the command then fails and nothing happens. |
 | About shows Host, NixOS (version, generation), Revision (`configurationRevision`, "Not recorded" when unset), Uptime, and the DMI product name under the title | The brief's fields; the product name is what the mock showed. |
-| Strip surface is taller (42 + 52 px) than its 42 px exclusive zone; input only on the strip | The drag label and ghost draw above the tiles. Collapsing never changes the zone. |
+| Strip surface is taller (44 + 52 px) than its 44 px exclusive zone; input only on the strip | The drag label and ghost draw above the tiles. Collapsing never changes the zone. |
 | Move to page from a tile is silent (`follow = false`); a drag across pages keeps today's `dropOnto` | The menu row says where the window goes; the user stays where they are. |
-| Tile menu: right-click or the ▴ corner (13 × 15 hit area) | As the mock. |
+| Tile menu: right-click or the ▴ corner (the column right of the icon, bottom 15 px) | As the mock. Tiles are 40 × 32 since 2026-11-05 (see chromium-windows.md, "Strip tile geometry"). |
 | Stipple: icon through `MultiEffect` (saturation −1, contrast −0.25) under a one-physical-pixel checker of the surface colour masked to the icon | Qt's SVG renderer has no `<pattern>`, so the checker is one path of unit squares at the icon's physical size. |
 
 ### Narrow and short bar follow-ups

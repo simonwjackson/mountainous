@@ -16,7 +16,7 @@ import "lanes.js" as Lanes
 //   cap / tab      collapse; the tab expands, and dragging it sets the length
 //   ◂ ▸ / wheel    scroll when the windows do not fit
 //
-// The window reserves a full-width band, 36 + 6 px, and keeps it when the
+// The window reserves a full-width band, 38 + 6 px, and keeps it when the
 // strip collapses, so windows never resize on a click. The surface is
 // taller than the band so a drag's label can show above the tiles; only
 // the strip itself takes input.
@@ -95,20 +95,21 @@ PanelWindow {
     readonly property real screenTop: (strip.modelData ? strip.modelData.height : strip.height) - strip.height + body.y
     readonly property var tiles: {
         const out = {};
-        const y = strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - 30) / 2);
+        const y = strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - StripPlan.TILE_H) / 2);
         for (const s of strip.layout.slots) {
             if (s.kind !== "tile") continue;
             const r = strip.rows[s.index];
             if (!r || !r.address) continue;
             if (strip.collapsed) { out[r.address] = { x: 0, y: strip.screenTop, w: StripPlan.TAB, h: StripPlan.HEIGHT }; continue; }
             const x = track.x + s.x - strip.shownScroll;
-            out[r.address] = { x: Math.max(track.x, Math.min(track.x + track.width - 30, x)), y: y, w: 30, h: 30 };
+            out[r.address] = { x: Math.max(track.x, Math.min(track.x + track.width - StripPlan.TILE_W, x)), y: y, w: StripPlan.TILE_W, h: StripPlan.TILE_H };
         }
         return out;
     }
     readonly property var tail: strip.collapsed ? { x: 0, y: strip.screenTop, w: StripPlan.TAB, h: StripPlan.HEIGHT }
-        : { x: Math.max(track.x, Math.min(track.x + track.width - 30, track.x + strip.layout.content - strip.shownScroll)),
-            y: strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - 30) / 2), w: 30, h: 30 }
+        : { x: Math.max(track.x, Math.min(track.x + track.width - StripPlan.TILE_W, track.x + strip.layout.content - strip.shownScroll)),
+            y: strip.screenTop + Kit.PlatinumTokens.snapFor(QsWindow.window, (StripPlan.HEIGHT - StripPlan.TILE_H) / 2),
+            w: StripPlan.TILE_W, h: StripPlan.TILE_H }
 
     // ------------------------------------------------------------ drag
     property int dragFrom: -1
@@ -224,9 +225,9 @@ PanelWindow {
                         tileIndex: isTile ? modelData.index : -1
                         readonly property var row: isTile ? strip.rows[modelData.index] : null
                         x: Kit.PlatinumTokens.snapFor(QsWindow.window, modelData.x)
-                        y: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.height - 30) / 2)
+                        y: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.height - StripPlan.TILE_H) / 2)
                         width: modelData.w
-                        height: 30
+                        height: StripPlan.TILE_H
 
                         // The engraved groove between two pages.
                         Item {
@@ -234,17 +235,18 @@ PanelWindow {
                             anchors.fill: parent
                             Rectangle {
                                 x: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.width - 2 * strip.hair) / 2)
-                                y: 4; width: strip.hair; height: 22
+                                y: 4; width: strip.hair; height: parent.height - 8
                                 color: Kit.PlatinumTokens.grooveLow
                             }
                             Rectangle {
                                 x: Kit.PlatinumTokens.snapFor(QsWindow.window, (parent.width - 2 * strip.hair) / 2) + strip.hair
-                                y: 4; width: strip.hair; height: 22
+                                y: 4; width: strip.hair; height: parent.height - 8
                                 color: Kit.PlatinumTokens.grooveHigh
                             }
                         }
 
                         PlatinumStripTile {
+                            id: stripTile
                             toplevel: slot.row ? slot.row.toplevel : null
                             visible: slot.isTile
                             icon: slot.row ? strip.owner.appIcon(slot.row.appId) : ""
@@ -262,8 +264,12 @@ PanelWindow {
                                 readonly property int threshold: 8
                                 property real pressX: 0
                                 property bool dragging: false
-                                // The ▴ corner: 13 x 15 at the bottom right.
-                                function onPop(mx, my) { return mx >= width - 13 && my >= height - 15; }
+                                // The ▴ corner: its column right of the icon, the
+                                // bottom 15 px.
+                                function onPop(mx, my) {
+                                    const g = stripTile.g;
+                                    return mx >= (g.box.x + g.box.size) / stripTile.ratio && my >= height - 15;
+                                }
 
                                 onPressed: function (mouse) {
                                     grip.pressX = mouse.x;
@@ -407,18 +413,23 @@ PanelWindow {
 
     // ------------------------------------------------------------ drag feedback
     // A dotted ghost follows the pointer; the target names what a drop does.
+    // Its icon stands where the tile's does, the same size.
     Rectangle {
+        id: ghost
         visible: strip.dragFrom >= 0
-        x: strip.dragAt.x - 15
-        y: Math.min(strip.dragAt.y - 15, strip.height - 30)
-        width: 30; height: 30
+        readonly property var g: StripPlan.tileGeometry(Kit.PlatinumTokens.ratioFor(QsWindow.window))
+        x: Kit.PlatinumTokens.snapFor(QsWindow.window, strip.dragAt.x - StripPlan.TILE_W / 2)
+        y: Kit.PlatinumTokens.snapFor(QsWindow.window, Math.min(strip.dragAt.y - StripPlan.TILE_H / 2, strip.height - StripPlan.TILE_H))
+        width: StripPlan.TILE_W; height: StripPlan.TILE_H
         color: "transparent"
         border.width: strip.hair
         border.color: Kit.PlatinumTokens.barText
         opacity: 0.9
         PlatinumAppIcon {
-            anchors.centerIn: parent
-            size: 20
+            x: ghost.g.canvas.x / ghost.g.dpr
+            y: ghost.g.canvas.y / ghost.g.dpr
+            size: StripPlan.ICON
+            artPixels: ghost.g.box.size
             toplevel: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.rows[strip.dragFrom].toplevel : null
             name: strip.dragFrom >= 0 && strip.rows[strip.dragFrom] ? strip.owner.appIcon(strip.rows[strip.dragFrom].appId) : ""
         }
@@ -427,9 +438,10 @@ PanelWindow {
         id: dropLabel
         visible: strip.dragFrom >= 0 && strip.dropInfo.label !== ""
         readonly property var targetSlot: strip.slotOf(strip.dragOver)
-        readonly property real targetX: targetSlot ? track.x + targetSlot.x - strip.shownScroll + 15 : 0
+        readonly property real targetX: targetSlot ? track.x + targetSlot.x - strip.shownScroll + StripPlan.TILE_W / 2 : 0
         x: Math.max(2, Math.min(targetX - width / 2, strip.width - width - 2))
-        y: body.y + 3 - 30
+        // 30 px above the tiles' top edge.
+        y: body.y + (StripPlan.HEIGHT - StripPlan.TILE_H) / 2 - 30
         width: dropText.implicitWidth + 16
         height: dropText.implicitHeight + 6
         color: Kit.PlatinumTokens.menuSurface

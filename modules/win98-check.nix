@@ -144,6 +144,45 @@
             export SESSION_SCHEMA=$TMPDIR/notification-schema.js
             bash ${quickshell}/theme-dev/win98/app-icons.sh ${quickshell} $TMPDIR/app-icons $out
           '';
+      # The Platinum Control Strip's icons in the real shell at scale 1.5,
+      # light, dark and black (theme-dev/platinum-strip.sh): every icon in
+      # one 32 px box with 6 px from the bevel, at least 2 px clear of the
+      # ▴ (pressed in too), theme art and tokens drawn 1:1, the stipple on
+      # other pages; a drag's ghost and label; many windows at 600 px. The
+      # strip plan's geometry test runs first. Captures are the output.
+      checks.platinum-strip =
+        pkgs.runCommand "platinum-strip"
+          (
+            sessionEnv
+            // {
+              nativeBuildInputs = [
+                config.packages.quickshell-mountainous
+                (pkgs.python3.withPackages (p: [
+                  p.pillow
+                  p.numpy
+                  p.pywayland
+                ]))
+              ]
+              ++ sessionEnv.nativeBuildInputs;
+              XDG_DATA_DIRS = "${config.packages.desktop-art}/share:${pkgs.hicolor-icon-theme}/share";
+              DESKTOP_ART = config.packages.desktop-art;
+              MOUNTAINOUS_PLATINUM_ICON = "${config.packages.platinum-icons}/bin/mountainous-platinum-icon";
+              FONTCONFIG_FILE = pkgs.makeFontsConf {
+                fontDirectories = [
+                  config.packages.chicagoflf
+                  config.packages.w95fa-grid
+                  pkgs.dejavu_fonts
+                ];
+              };
+            }
+          )
+          ''
+            export HOME=$TMPDIR
+            node ${quickshell}/themes/platinum/strip-plan.test.js ${quickshell}/themes/platinum/strip-plan.js ${quickshell}/page-names.js
+            bash ${quickshell}/notification-schema-js.sh ${../packages/notify-sync/schema/ui-socket.v1.json} > $TMPDIR/notification-schema.js
+            export SESSION_SCHEMA=$TMPDIR/notification-schema.js
+            bash ${quickshell}/theme-dev/platinum-strip.sh ${quickshell} $TMPDIR/platinum-strip $out
+          '';
       checks.win98-theme =
         pkgs.runCommand "win98-theme"
           {

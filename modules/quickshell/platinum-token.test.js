@@ -8,7 +8,12 @@ const read = name => fs.readFileSync(path.join(dir, name), "utf8");
 const icon = read("WindowIcon.qml"), helper = read("PlatinumToken.qml");
 assert.match(icon, /property bool platinumToken: false/, "Win98 must not opt in implicitly");
 assert.match(icon, /root\.platinumToken && CdpTarget\.isBrowser\(CdpTarget\.appIdOf\(root\.toplevel\)\)/, "only Chromium gets generated tokens");
-assert.match(icon, /source: root\.tokenReady \? "" : root\.siteIcon \? root\.favicon : root\.fallbackSource/, "keep today's image until the token is decoded");
+assert.match(icon, /source: root\.tokenReady \|\| root\.boxedArt \? "" : root\.siteIcon \? root\.favicon : root\.fallbackSource/, "keep today's image until the token is decoded");
+// The Control Strip: theme art 1:1 in a token's inner box, never scaled.
+assert.match(icon, /readonly property bool boxedArt: root\.artPixels > 0 && !root\.siteIcon/);
+assert.match(icon, /width: root\.artPixels \/ root\.pixelRatio/);
+assert.match(icon, /sourceSize: Qt\.size\(width, height\)\s+smooth: false/);
+assert.match(read("PlatinumStripTile.qml"), /artPixels: tile\.g\.box\.size/, "the strip boxes theme art");
 assert.match(icon, /width: root\.pixels \/ root\.pixelRatio/);
 assert.match(icon, /height: root\.pixels \/ root\.pixelRatio/);
 assert.match(icon, /smooth: false\s+mipmap: false/);

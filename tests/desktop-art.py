@@ -123,6 +123,22 @@ for theme_id, entry in registry.items():
     drawn = [found[1].read_bytes() for found in drawn if found]
     check(len(set(drawn)) == len(marks), f"{theme}: two web apps share a lettermark")
 
+# The Control Strip draws Platinum art 1:1 at 32 px: every icon the theme
+# has at 256 px also has 32 px art, so none is scaled down at run time; and
+# a host's build-time tokens (Mountainous-platinum-apps) come before Adwaita
+# and hicolor.
+platinum = registry["platinum"]["icons"]
+for big in (icons / platinum / "256x256").glob("*/*.png"):
+    check(
+        (icons / platinum / "32x32" / big.parent.name / big.name).exists(),
+        f"{platinum}: {big.parent.name}/{big.name} has no 32 px art",
+    )
+check(
+    index(platinum)["Icon Theme"]["Inherits"].split(",")[0]
+    == "Mountainous-platinum-apps",
+    f"{platinum}: does not inherit Mountainous-platinum-apps first",
+)
+
 # Chicago95's icon theme is copied without its SVG tracings, so lookups
 # between PNG sizes scale pixel art instead of resampling a tracing, and the
 # rest of the Chicago95 source stays out of the closure.

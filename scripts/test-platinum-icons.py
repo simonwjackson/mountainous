@@ -16,13 +16,26 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from platinum_icons import PALETTE, RENDER_VERSION, margin, render, select_frame
+from platinum_icons import (
+    PALETTE,
+    RENDER_VERSION,
+    boxed,
+    canvas_for,
+    margin,
+    render,
+    select_frame,
+)
 
 spec = importlib.util.spec_from_file_location(
     "platinum_cache", Path(__file__).with_name("platinum-icon.py")
 )
 cache_helper = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache_helper)
+spec = importlib.util.spec_from_file_location(
+    "platinum_app_tokens", Path(__file__).with_name("platinum-app-tokens.py")
+)
+app_tokens = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(app_tokens)
 
 
 def corpus():
@@ -296,6 +309,99 @@ class CacheTests(unittest.TestCase):
             stream.truncate(cache_helper.MAX_SOURCE_BYTES + 1)
         with self.assertRaises(ValueError):
             cache_helper.source_bytes(str(oversized))
+
+
+class StripArtTests(unittest.TestCase):
+    """The Control Strip's one content box (strip-plan.js tileGeometry): a
+    token's inner box, which is 32 px at scale 1.5, Platinum's art size."""
+
+    def test_canvas_for_inner_box(self):
+        # The smallest such token: 36 for the strip's 32 px box at scale 1.5.
+        self.assertEqual(
+            [canvas_for(box) for box in [20, 26, 32, 64]], [24, 30, 36, 72]
+        )
+        for box in [20, 26, 32, 42, 64]:
+            size = canvas_for(box)
+            self.assertEqual(size - 2 * margin(size), box)
+
+    def test_boxed_is_the_token_without_its_margin(self):
+        for name, image in corpus().items():
+            with self.subTest(name=name):
+                token = render([image], 36)
+                art = boxed([image], 32)
+                self.assertEqual(art.size, (32, 32))
+                self.assertEqual(art.tobytes(), token.crop((2, 2, 34, 34)).tobytes())
+                # Nothing of the token is lost: it fills the box exactly.
+                self.assertEqual(art.getbbox(), (0, 0, 32, 32))
+        self.assertIsNone(boxed([Image.new("RGBA", (32, 32))], 32))
+
+    def test_build_time_tokens_for_apps_without_32_px_art(self):
+        with tempfile.TemporaryDirectory() as temp:
+            share = Path(temp) / "share"
+            apps = share / "applications"
+            apps.mkdir(parents=True)
+
+            def entry(name, icon):
+                (apps / f"{name}.desktop").write_text(
+                    f"[Desktop Entry]\nType=Application\nName={name}\nExec=true\nIcon={icon}\n"
+                )
+
+            # Platinum art exists: no token. hicolor PNGs (16 and 128): the
+            # 128 is chosen. Only a 16 px PNG: the largest. Only an SVG.
+            # A pixmap. A path, a symbolic glyph and a missing icon: skipped.
+            covering = Path(temp) / "Mountainous-platinum"
+            (covering / "32x32/apps").mkdir(parents=True)
+            Image.new("RGBA", (32, 32), "red").save(covering / "32x32/apps/themed.png")
+            entry("themed", "themed")
+            for size in (16, 128):
+                directory = share / f"icons/hicolor/{size}x{size}/apps"
+                directory.mkdir(parents=True, exist_ok=True)
+                corpus()["disc"].resize((size, size)).save(directory / "multi.png")
+            entry("multi", "multi")
+            small = share / "icons/hicolor/16x16/apps"
+            corpus()["16-only"].save(small / "small.png")
+            entry("small", "small")
+            scalable = share / "icons/hicolor/scalable/apps"
+            scalable.mkdir(parents=True)
+            (scalable / "vector.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48">'
+                '<rect x="4" y="4" width="40" height="40" rx="8" fill="#2771d5"/></svg>'
+            )
+            entry("vector", "vector")
+            (share / "pixmaps").mkdir()
+            corpus()["rounded-square"].save(share / "pixmaps/legacy.png")
+            entry("legacy", "legacy")
+            entry("path", str(share / "pixmaps/legacy.png"))
+            entry("glyph", "mark-location-symbolic")
+            entry("missing", "nowhere")
+            out = Path(temp) / "out"
+            made = app_tokens.generate(share, out, [covering])
+            self.assertEqual(made, ["legacy", "multi", "small", "vector"])
+            files = sorted(p.name for p in (out / "32x32/apps").iterdir())
+            self.assertEqual(files, ["legacy.png", "multi.png", "small.png", "vector.png"])
+            for name in files:
+                with Image.open(out / "32x32/apps" / name) as image:
+                    self.assertEqual(image.size, (32, 32))
+                    self.assertEqual(image.mode, "RGBA")
+            # The same pixels the run-time token has inside its margin.
+            with Image.open(out / "32x32/apps/multi.png") as image:
+                frames = [
+                    Image.open(share / f"icons/hicolor/{s}x{s}/apps/multi.png").convert("RGBA")
+                    for s in (16, 128)
+                ]
+                self.assertEqual(image.tobytes(), boxed(frames, 32).tobytes())
+            index = (out / "index.theme").read_text()
+            self.assertIn("Directories=32x32/apps", index)
+            self.assertIn("Size=32", index)
+            self.assertIn("Type=Fixed", index)
+            # Deterministic: a second run writes the same bytes.
+            again = Path(temp) / "again"
+            app_tokens.generate(share, again, [covering])
+            for name in files + ["../../index.theme"]:
+                self.assertEqual(
+                    (out / "32x32/apps" / name).read_bytes(),
+                    (again / "32x32/apps" / name).read_bytes(),
+                )
 
 
 if __name__ == "__main__":

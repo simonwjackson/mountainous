@@ -1,8 +1,10 @@
 import Quickshell
 import Hensou as Kit
 import QtQuick
+import "themes/platinum/strip-plan.js" as StripPlan
 
-// One window on the Control Strip: a square Platinum module.
+// One window on the Control Strip: a Platinum module, the icon and then a
+// column for the ▴ (StripPlan.tileGeometry has every part's device px).
 //
 //   on the page the screen shows   raised bevelled tile
 //   the focused window             pressed in (sunken bevel, well colour)
@@ -28,9 +30,13 @@ Item {
     readonly property real hair: Kit.PlatinumTokens.hairFor(QsWindow.window)
     readonly property bool black: !Kit.PlatinumTokens.stripBevelled
     readonly property bool sunk: focused && !menuOpen && !source
+    readonly property real ratio: Kit.PlatinumTokens.ratioFor(QsWindow.window)
+    // Device px from the tile's corner; divide by ratio for logical px.
+    readonly property var g: StripPlan.tileGeometry(tile.ratio)
+    readonly property real press: tile.sunk ? tile.g.sunk : 0
 
-    width: 30
-    height: 30
+    width: StripPlan.TILE_W
+    height: StripPlan.TILE_H
 
     // The face.
     Rectangle {
@@ -55,28 +61,31 @@ Item {
         Rectangle { x: parent.width - tile.hair; y: 0; width: tile.hair; height: parent.height; color: parent.darkEdge }
     }
 
-    // The icon sits a little left of centre, clear of the ▴. Pressed in, it
-    // moves one physical pixel down and right, as a Platinum button's face.
-    // A site token uses a 24 px slot with the same centre as the 20 px slot
-    // (13, 15), so every tile's icon lines up; the ▴ draws over its empty
-    // bottom-right margin. Theme art keeps 20 px, so 32 px pixel art is not
-    // stretched.
+    // Every icon draws in one box, the same distance from the inside of the
+    // bevel on three sides, with the ▴ in its own column to the right: a
+    // generated token's inner box, and theme art at that size, 1:1 (32 px
+    // at scale 1.5). Pressed in, the icon moves one physical pixel down and
+    // right, as a Platinum button's face.
     PlatinumAppIcon {
         id: image
         visible: !tile.source && tile.icon !== ""
-        x: Kit.PlatinumTokens.snapFor(QsWindow.window, image.siteToken ? 1 : 3) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
-        y: Kit.PlatinumTokens.snapFor(QsWindow.window, image.siteToken ? 3 : 5) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
-        size: image.siteToken ? 24 : 20
+        x: (tile.g.canvas.x + tile.press) / tile.ratio
+        y: (tile.g.canvas.y + tile.press) / tile.ratio
+        size: StripPlan.ICON
+        artPixels: tile.g.box.size
         name: tile.icon
         toplevel: tile.toplevel
         inactive: !tile.shown
         surface: Kit.PlatinumTokens.stripSurface
     }
 
-    // Until the app id arrives, the title's first letter.
+    // Until the app id arrives, the title's first letter, in the same box.
     Text {
         visible: !tile.source && tile.icon === ""
-        x: 3; y: 5; width: 20; height: 20
+        x: (tile.g.box.x + tile.press) / tile.ratio
+        y: (tile.g.box.y + tile.press) / tile.ratio
+        width: tile.g.box.size / tile.ratio
+        height: tile.g.box.size / tile.ratio
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         text: tile.letter
@@ -87,10 +96,10 @@ Item {
 
     PlatinumIcon {
         visible: !tile.source
-        x: parent.width - 2 - 7
-        y: parent.height - 2 - 5
-        width: 7
-        height: 5
+        x: tile.g.pop.x / tile.ratio
+        y: tile.g.pop.y / tile.ratio
+        width: tile.g.pop.w / tile.ratio
+        height: tile.g.pop.h / tile.ratio
         name: "pop"
         color: tile.menuOpen ? Kit.PlatinumTokens.highlightText : tile.shown ? Kit.PlatinumTokens.barText : Kit.PlatinumTokens.barTextOff
     }

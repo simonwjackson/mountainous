@@ -689,6 +689,8 @@ ShellRoot {
         target: "w98"
         function set(id: string): string { if (root.stateId === id) Qt.callLater(root.apply); else root.stateId = id; return id; }
         function theme(mode: string): void { Kit.Theme.mode = mode; }
+        // "on": extra dark (the black Platinum bar and strip), dark mode only.
+        function extra(state: string): void { Kit.Theme.extraState = state; }
         function current(): string {
             const d = root.desktop;
             const p = root.st.p || {};

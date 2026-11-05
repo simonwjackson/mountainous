@@ -549,8 +549,8 @@ fonts, network access or browser state. Nix pins Pillow, numpy and librsvg.
 - Reserve **`M(S) = max(2, floor(S/16))`** on all four sides: 24, 30 and 36→2,
   48→3 device pixels. (Simon asked for bigger tokens on 2026-11-04: the margin
   went from S/12 to S/16, the body depth from up to 6 px to `max(2, S/12)`,
-  the shadow to 1 px and the plate border to 1 px. The Control Strip draws a
-  Chromium window's token in a 24 px slot, theme art stays at 20 px.)
+  the shadow to 1 px and the plate border to 1 px. Since 2026-11-05 the
+  Control Strip draws every icon in one box; see "Strip tile geometry".)
   `RENDER_VERSION` is part of each cache key; bump it with any drawing change. The band must contain no non-transparent pixel,
   including outline, extrusion and shadow. Transparent source padding is trimmed.
   The entire composite fits the inner `S−2M` box, using its full longest axis.
@@ -583,11 +583,39 @@ icon until the cached PNG decodes. Late replies cannot replace a newer request.
 that path. The PNG child draws at `S / devicePixelRatio` logical pixels with
 filtering off. Win98 does not opt in. No installed-app theme icons change here.
 
-For the installed-app follow-up, use the same pure renderer from a build-time
-Python step, with `platinum-icons.python` in `nativeBuildInputs`. Decode the
-licensed source from its locked flake input into Pillow frames, call
-`render(frames, S, "platinum-light")`, and save directly under `$out/share/icons/`.
-Do not call the URL/cache CLI in a Nix build or fork the geometry.
+For installed apps, the same pure renderer runs at build time
+(`scripts/platinum-app-tokens.py`, `mountainous-platinum-app-tokens`). The
+desktop module's `environment.extraSetup` reads the finished system path: for
+each desktop entry whose `Icon=` theme name has no 32 px art in
+Mountainous-platinum, it draws the app's own hicolor or pixmaps icon as
+`boxed(frames, 32)` (a 36 px token without its margin) into
+`share/icons/Mountainous-platinum-apps/32x32/apps/`. Mountainous-platinum
+inherits that theme first. On Myoko (2026-11-05 build) it makes Sunshine,
+Kvantum, nix-snowflake, Quickshell and Syncthing. It does not call the
+URL/cache CLI and does not fork the geometry. Not covered: a path `Icon=`,
+`-symbolic` names, apps from a user profile, and names whose only source is
+another theme (qt5ct's `preferences-desktop-theme`).
+
+### Strip tile geometry (2026-11-05)
+
+`strip-plan.js tileGeometry(dpr)` is the one source; `PlatinumStripTile`
+draws it and `strip-plan.test.js` and `theme-dev/platinum-strip.sh` check
+it. At scale 1.5, in device px:
+
+| Part | Value |
+| --- | --- |
+| Tile | 60 × 48 (40 × 32 logical), was 45 × 45; strip 38 + 6 logical, was 36 + 6 |
+| Bevel | 2 (one hair) |
+| Icon box | 32 × 32 at (8, 8): a 36 px token's inner box, and Platinum theme art 1:1 |
+| Padding | 6 from the inside of the bevel to the box, top, left and bottom |
+| ▴ | 11 × 8 at (45, 36), 2 inside the bevel; its own column right of the box |
+| ▴ gap | 5 from the box at rest, 4 pressed in; at least 2 (`MIN_POP_GAP`) |
+
+Pressed in, the icon moves 1 px down and right. Theme art draws through
+`WindowIcon.artPixels`: the icon-theme URL is asked for 32 px and drawn at
+32 px, so Qt returns the 32 px art unscaled. At other scales the box is the
+token's inner box and theme art is scaled to it. A Chromium window whose
+token has not arrived yet still shows its favicon across the 36 px slot.
 
 **Verified:** `checks.platinum-icons` runs nine tests, including 54 synthetic
 shape/size/mode combinations, byte determinism, margins, palette membership,

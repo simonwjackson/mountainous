@@ -22,6 +22,7 @@
           ''
             cp ${../scripts/platinum_icons.py} platinum_icons.py
             cp ${../scripts/platinum-icon.py} platinum-icon.py
+            cp ${../scripts/platinum-app-tokens.py} platinum-app-tokens.py
             cp ${../scripts/test-platinum-icons.py} test-platinum-icons.py
             python3 test-platinum-icons.py
             touch "$out"
@@ -39,6 +40,23 @@
         (import ../lib/desktop-art.nix { inherit pkgs inputs; })
         (import ../lib/platinum-icons.nix { inherit pkgs; })
       ];
+      # Platinum art for every app the theme has no 32 px art for: a token
+      # from the app's own icon, drawn at build time into the
+      # Mountainous-platinum-apps theme, which Mountainous-platinum inherits
+      # first (scripts/platinum-app-tokens.py). The Control Strip then draws
+      # every icon 1:1 in its 32 px box; nothing is resampled at run time.
+      # It reads the finished system path, so it sees every app without a
+      # dependency cycle; apps from a user profile are not covered.
+      environment.extraSetup = ''
+        if [ -d "$out/share/icons" ] && [ ! -L "$out/share/icons" ]; then
+          ${
+            import ../lib/platinum-icons.nix { inherit pkgs; }
+          }/bin/mountainous-platinum-app-tokens "$out/share" "$out/share/icons/Mountainous-platinum-apps" \
+            --covered "$out/share/icons/Mountainous-platinum"
+          ${pkgs.buildPackages.gtk3.out}/bin/gtk-update-icon-cache --force --ignore-theme-index \
+            "$out/share/icons/Mountainous-platinum-apps"
+        fi
+      '';
       # Pin the helper for the user service; do not rely on a login-shell PATH.
       systemd.user.services.quickshell.environment.MOUNTAINOUS_PLATINUM_ICON = "${
         import ../lib/platinum-icons.nix { inherit pkgs; }

@@ -22,17 +22,17 @@ assert.deepEqual(plain(swapped.map((r) => r.id)), [2, 1]);
 assert.deepEqual(plain(P.order([{ id: 1, page: 1 }, { id: 2, page: 1 }, { id: 3, page: 1, x: 5 }]).map((r) => r.id)), [1, 2, 3],
     "rows without a position keep the compositor's order");
 
-// ---- slots: tiles 30, grooves 10, gaps 2, end padding 2
+// ---- slots: tiles 40, grooves 10, gaps 2, end padding 2
 const s = P.slots([row(1, 1), row(2, 1), row(3, 2), row(4, 4)]);
-assert.deepEqual(plain(s.slots.map((x) => [x.kind, x.x])), [["tile", 2], ["tile", 34], ["groove", 66], ["tile", 78], ["groove", 110], ["tile", 122]]);
-assert.equal(s.content, 154);
+assert.deepEqual(plain(s.slots.map((x) => [x.kind, x.x])), [["tile", 2], ["tile", 44], ["groove", 86], ["tile", 98], ["groove", 140], ["tile", 152]]);
+assert.equal(s.content, 194);
 assert.equal(P.slots([]).content, 0);
-assert.equal(P.slots([row(1, 1)]).content, 34);
+assert.equal(P.slots([row(1, 1)]).content, 44);
 assert.equal(P.slots([row(1, 1), row(2, -1)]).slots.filter((x) => x.kind === "groove").length, 0, "no groove beside a window between pages");
 
 // ---- plan at full width: as long as the windows need
 let p = P.plan(1920, s.content, null, 0);
-assert.deepEqual(plain(p), { area: 154, arrows: false, maxScroll: 0, total: 12 + 154 + 18, empty: false, fullLength: true });
+assert.deepEqual(plain(p), { area: 194, arrows: false, maxScroll: 0, total: 12 + 194 + 18, empty: false, fullLength: true });
 
 // The boundary where the strip stops fitting: CAP + content + TAB = screen - 6.
 const content = 400;
@@ -54,13 +54,13 @@ assert.deepEqual([p.arrows, p.area, p.fullLength], [false, content, true]);
 p = P.plan(1920, content, content - 1, 0);
 assert.equal(p.arrows, true);
 p = P.plan(1920, content, 5, 0);
-assert.equal(p.area, 34, "never below one tile");
+assert.equal(p.area, 44, "never below one tile");
 
 // 600 and 360 wide: every window stays reachable by scrolling
 for (const w of [600, 360, 100, 0]) {
     p = P.plan(w, 1600, null, 0);
     assert.equal(p.arrows, true, String(w));
-    assert.ok(p.area >= 34, String(w));
+    assert.ok(p.area >= 44, String(w));
     assert.equal(p.maxScroll, 1600 - p.area, "the whole track is reachable at " + w);
 }
 assert.equal(P.plan(360, 1600, null, 0).total, 354);
@@ -74,8 +74,8 @@ assert.equal(P.plan(20, 0, null, 80).area, 0);
 // ---- scrolling
 const many = P.slots(Array.from({ length: 20 }, (_, i) => row(i, 1 + Math.floor(i / 5))));
 const mp = P.plan(400, many.content, null, 0);
-assert.equal(P.scrollStep(many.slots, 0, 1, mp.maxScroll), 32, "next slot edge");
-assert.equal(P.scrollStep(many.slots, 32, -1, mp.maxScroll), 0);
+assert.equal(P.scrollStep(many.slots, 0, 1, mp.maxScroll), 42, "next slot edge");
+assert.equal(P.scrollStep(many.slots, 42, -1, mp.maxScroll), 0);
 assert.equal(P.scrollStep(many.slots, mp.maxScroll, 1, mp.maxScroll), mp.maxScroll);
 assert.equal(P.scrollStep(many.slots, 0, -1, mp.maxScroll), 0);
 const last = many.slots[many.slots.length - 1];
@@ -86,12 +86,12 @@ assert.equal(P.clampScroll(-5, 10), 0);
 assert.equal(P.clampScroll(50, 10), 10);
 
 // ---- dragging the tab: whole tiles, full length past the content
-assert.equal(P.dragLength(154, 0, 154), null);
-assert.equal(P.dragLength(154, -60, 154), 2 + 3 * 32 - 2 + 2);
-assert.equal(P.dragLength(154, -1000, 154), 34);
-assert.equal(P.dragLength(100, 1000, 154), null);
-assert.equal(P.dragLength(34, 15, 400), 34);
-assert.equal(P.dragLength(34, 17, 400), 66);
+assert.equal(P.dragLength(194, 0, 194), null);
+assert.equal(P.dragLength(194, -60, 194), 2 + 3 * 42 - 2 + 2);
+assert.equal(P.dragLength(194, -1000, 194), 44);
+assert.equal(P.dragLength(100, 1000, 194), null);
+assert.equal(P.dragLength(44, 20, 400), 44, "half a tile less one px: one tile");
+assert.equal(P.dragLength(44, 21, 400), 86, "half a tile: two");
 
 // ---- drop meaning and label: a page is named by its apps, never its number
 const lane = [row(1, 1, 0, 0, "firefox"), row(2, 1, 900, 0, "ghostty"), row(3, 3, 0, 0, "gh")];
@@ -130,5 +130,36 @@ assert.deepEqual(plain(P.screenState(st, "DP-2")), { collapsed: true, length: nu
 assert.equal(P.screenState(st, "eDP-1").length, 130, "other screens are kept");
 for (const bad of ["", "[]", "null", "{"]) assert.deepEqual(plain(P.parseState(bad)), {}, bad);
 
-assert.equal(P.BAND, 42);
+assert.equal(P.BAND, 44);
+assert.equal(P.HEIGHT - P.TILE_H, 6, "3 px above and below a tile");
+
+// ---- one tile's parts, in device px (PlatinumStripTile draws these)
+// Every edge on a whole device pixel; the icon's box the same distance
+// from the inside of the bevel on the top, left and bottom; at least
+// MIN_POP_GAP px between the box and the ▴, pressed in too; the ▴ inside
+// the bevel; the box is a token's inner box (platinum_icons.py margin).
+const margin = (S) => Math.max(2, Math.floor(S / 16));
+for (const dpr of [1, 1.25, 1.5, 2, 3]) {
+    const g = P.tileGeometry(dpr), at = "at " + dpr;
+    for (const v of [g.w, g.h, g.bevel, g.pad, g.box.x, g.box.y, g.box.size, g.pop.x, g.pop.y, g.pop.w, g.pop.h, g.canvas.x, g.canvas.y])
+        assert.ok(Number.isInteger(v), "whole device px " + at);
+    assert.equal(g.w, P.TILE_W * dpr, at);
+    assert.equal(g.h, P.TILE_H * dpr, at);
+    assert.equal(g.canvas.size, Math.ceil(P.ICON * dpr), "the token canvas WindowIcon asks for " + at);
+    assert.equal(g.box.size, g.canvas.size - 2 * margin(g.canvas.size), "a token's inner box " + at);
+    assert.equal(g.box.x - g.inner.x, g.pad, "left padding " + at);
+    assert.equal(g.box.y - g.inner.y, g.pad, "top padding " + at);
+    const bottom = g.inner.y + g.inner.h - (g.box.y + g.box.size);
+    assert.ok(bottom === g.pad || bottom === g.pad + 1, "bottom padding " + at + ": " + bottom);
+    assert.ok(g.pad >= 4 * dpr - 1, "breathing room " + at + ": " + g.pad);
+    assert.ok(g.gap - g.sunk >= P.MIN_POP_GAP, "▴ gap, pressed in, " + at + ": " + (g.gap - g.sunk));
+    assert.ok(g.pop.x + g.pop.w <= g.inner.x + g.inner.w - g.bevel && g.pop.y + g.pop.h <= g.inner.y + g.inner.h - g.bevel,
+        "the ▴ one hair inside the bevel " + at);
+    assert.ok(g.box.y + g.box.size + g.sunk <= g.inner.y + g.inner.h, "pressed in, the box stays inside " + at);
+}
+// The numbers at Myoko's scale 1.5, as reported.
+const g15 = P.tileGeometry(1.5);
+assert.deepEqual(plain([g15.w, g15.h, g15.bevel, g15.pad, g15.box, g15.gap, g15.pop]),
+    [60, 48, 2, 6, { x: 8, y: 8, size: 32 }, 5, { w: 11, h: 8, x: 45, y: 36 }]);
+assert.deepEqual(plain(g15.canvas), { x: 6, y: 6, size: 36 }, "the token canvas at (4, 4) logical");
 console.log("strip-plan: order, slots, fit and scroll boundaries, tab drag, drop, pages and state pass");

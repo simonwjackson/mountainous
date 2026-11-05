@@ -633,7 +633,10 @@ def platinum_icons(out, name, chi_nata, web_apps, font):
         theme,
         "Mountainous Platinum",
         "Chi-Nata (DawnVespero, CC BY-SA 4.0) and Mountainous pixel icons",
-        "Adwaita,hicolor",
+        # A host's build-time tokens for apps without 32 px art come first
+        # (platinum-app-tokens.py, modules/desktop-art.nix); a lookup skips
+        # the theme where it does not exist.
+        "Mountainous-platinum-apps,Adwaita,hicolor",
         directories,
     )
 
