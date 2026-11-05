@@ -66,13 +66,17 @@ in {
     # module that styles it (titlebars.lua) keeps to its contract and to the
     # Platinum and Memphis tokens. Headless: no compositor runs.
     checks.titlebars = pkgs.runCommand "titlebars" {
-      nativeBuildInputs = [pkgs.lua pkgs.binutils pkgs.python3];
+      nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.binutils pkgs.python3];
+      KIT_PALETTES = import ../lib/kit-palettes.nix {
+        inherit pkgs;
+        kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+      };
       PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
     } ''
       nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
-      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${inputs.hensou}/kit/qml/Hensou/PlatinumTokens.qml ${./hyprland/hyprland.lua} ${inputs.hensou}/kit/qml/Hensou/MemphisTokens.qml
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} "$KIT_PALETTES" ${./hyprland/hyprland.lua}
       python3 ${../tests/system-palettes.py} ${../scripts/generate-native-themes.py} ${../scripts/xp-classic-schemes.json} ${./hyprland/titlebars.lua} ${./quickshell}
       touch $out
     '';

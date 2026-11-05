@@ -1493,3 +1493,40 @@ not native-application visual captures. Design's token/component/asset merge,
 Drawing Board palette reconciliation and the combined headless render ladder
 remain the integrator's work. No live user state, compositor or device was
 changed; no deployment is claimed by these checks.
+
+### Integration seam correction (2026-11-05)
+
+The first merged check failed because the native and caption tests parsed the
+old spelling of QML colour properties. The merged kit now delegates those
+properties to `palette(id, extra)`. The first build-worker proof used its own
+unmerged kit and did not expose this failure.
+
+`lib/kit-palettes.nix` now runs `tests/tst_kit_palettes.qml` in the real headless
+Qt test runner. It exports both Extra dark states of all 25 public appearances.
+The native check compares all 26 generated payloads to these evaluated colour
+roles. The caption check compares all 25 appearances with Extra dark off and on.
+Neither check parses kit token source text. The extra QtTest dependency is
+check-only; installed native themes and the compositor gain no dependency.
+
+The semantic adapters keep existing native policy explicit: the two legacy
+Memphis native ramps use their existing inner highlight and field ink, and
+Platinum OLED native surfaces keep their black wells and existing disabled ramp.
+Drawing Board native/caption paper takes `titleSurface`, not the deliberately
+lighter `menuSurface`. This does not change the colours reconciled in da6441bc.
+
+The Kvantum `FileExistsError` in the native log is an expected, injected private
+HOME directory collision. The rollback test checks that native synchronization
+refuses to replace it, preserves the recovered state, then repairs the derived
+files after the collision is removed. `NATIVE_THEME_TESTS_PASSED` follows it;
+the exception is not the integration failure.
+
+Verified on Aka, under the shared heavy lock, against merged Hensou `42b3df9`
+(`path:/tmp/memphis-schemes/review/hensou`). The Mountainous source was the merged
+`df488771` snapshot with da6441bc and this seam correction overlaid. No kit token
+files were changed. No aggregate checks ran.
+
+| Focused check | Result | Aka log |
+|---|---|---|
+| `checks.native-themes` | Passed: 26 native payloads compared to evaluated kit palettes; native runtime/asset checks retained | `/tmp/memphis-schemes/build/logs/seam-native-1.log` |
+| `checks.titlebars` | Passed: actual evaluated colours for every appearance and both Extra dark states | `/tmp/memphis-schemes/build/logs/seam-titlebars-1.log` (execution); `seam-titlebars-final.log` (final cache confirmation in the same directory) |
+| Ruff, Python compilation, focused Nixfmt | Passed | `/tmp/memphis-schemes/build/logs/seam-style.log` |

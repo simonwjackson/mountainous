@@ -347,6 +347,10 @@ in
     packages.desktop-native-themes = import ../lib/native-themes.nix { inherit pkgs inputs; };
     checks.native-themes =
       let
+        kitPalettes = import ../lib/kit-palettes.nix {
+          inherit pkgs;
+          kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+        };
         qt5Probe = import ../lib/native-qt-probe.nix {
           inherit pkgs qtPlatformTheme;
           qt = pkgs.libsForQt5;
@@ -406,7 +410,7 @@ in
             import ../lib/native-themes.nix { inherit pkgs inputs; }
           }
           native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
-          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${inputs.hensou}/kit/qml/Hensou "$native"
+          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${kitPalettes} "$native"
           python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON" ${./web-apps.json} ${./web-app-pwas.json}
           node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
           export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"

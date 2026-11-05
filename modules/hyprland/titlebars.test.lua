@@ -2,8 +2,8 @@
 -- appearance, each appearance sets the plugin and the window edge, attach()
 -- loads the plugin on every parse and makes the boxes once, and the
 -- palettes are PlatinumTokens.qml's.
--- Run: lua titlebars.test.lua titlebars.lua PlatinumTokens.qml hyprland.lua MemphisTokens.qml
-local module_path, tokens_path, hyprland_path, memphis_tokens_path = arg[1], arg[2], arg[3], arg[4]
+-- Run: lua titlebars.test.lua titlebars.lua kit-palettes.json hyprland.lua
+local module_path, palettes_path, hyprland_path = arg[1], arg[2], arg[3]
 
 local function read_file(path)
     local f = assert(io.open(path, "r"))
@@ -269,57 +269,60 @@ check(M.apply_motion() == false and #calls.animation == 2, "a rejected leaf does
 fresh_hl(true, { no_animation = true })
 check(pcall(M.apply) and M.apply_motion() == false, "no hl.animation: apply still sets the bars")
 
--- The palettes are the tokens'. A windoid's colours for light and dark
--- grey; the black bar's for black.
-local qml = read_file(tokens_path)
-local function two(name)
-    return qml:match("property color " .. name .. ': dark %? "#(%x+)" : "#(%x+)"')
-end
-local function three(name)
-    return qml:match("property color " .. name .. ': !dark %? "#(%x+)" : barBlack %? "#(%x+)" : "#(%x+)"')
-end
+-- Compare the real QML palette results for every appearance, including
+-- Extra dark and light-only Drawing Board. Formatting/aliases in QML do not
+-- affect this seam: checks.titlebars obtains this JSON from qmltestrunner.
+local kit, _, decode_error = require("dkjson").decode(read_file(palettes_path))
+assert(kit, decode_error)
 local function same(a, b, what) check(a ~= nil and a == b, what .. ": " .. tostring(a) .. " vs " .. tostring(b)) end
-for field, token in pairs({ face = "menuSurface", text = "menuText", text_off = "menuTextOff",
-    hi = "bevelLight", lo = "bevelDark", box = "raised" }) do
-    local dark, light = two(token)
-    same(M.PALETTES.light[field], light, "light " .. field .. " = " .. token)
-    same(M.PALETTES.dark[field], dark, "dark " .. field .. " = " .. token)
+local function color(p, token)
+    local value = p[token]
+    assert(type(value) == "string" and value:match("^#%x%x%x%x%x%x$"), "Missing/invalid QML colour: " .. token)
+    return value:sub(2)
 end
-local edge = qml:match('property color menuEdge: "#(%x+)"')
-same(M.PALETTES.light.edge, edge, "light edge = menuEdge")
-same(M.PALETTES.dark.edge, edge, "dark edge = menuEdge")
-local _, black_face = three("barSurface")
-local _, black_text = three("barText")
-local _, black_off = three("barTextOff")
-local _, black_edge = three("ridgeLow")
-same(M.PALETTES.black.face, black_face, "black face = barSurface")
-same(M.PALETTES.black.text, black_text, "black title = barText")
-same(M.PALETTES.black.text_off, black_off, "black inactive title = barTextOff")
-same(M.PALETTES.black.edge, black_edge, "black box edge = ridgeLow")
-check(M.PALETTES.black.hi == M.PALETTES.black.face and M.PALETTES.black.lo == M.PALETTES.black.face,
-    "black is flat: no stripes, no bevel")
-
--- Memphis palettes are checked against the very same palette() used by QML.
-local memphis = read_file(memphis_tokens_path)
-for _, mode in ipairs({ "light", "dark" }) do
-    local p = M.MEMPHIS_PALETTES[mode]
-    local hb = M.settings({ name = "memphis", mode = mode, extra = true }).plugin.hyprbars
-    for field, token in pairs({ face = "face", hi = "hi", li = "li", lo = "sh", edge = "dk", text = "captionText",
-        text_off = "inactiveCaptionText", glyph = "text", caption1 = "caption1", caption2 = "caption2",
-        inactive1 = "inactiveCaption1", inactive2 = "inactiveCaption2" }) do
-        local dark, light = memphis:match(token .. ': dark %? "#(%x+)" : "#(%x+)"')
-        local fixed = memphis:match(token .. ': "#(%x+)"')
-        same(p[field], fixed or (mode == "dark" and dark or light), "Memphis " .. mode .. " " .. token)
+for id, appearances in pairs(kit.platinum) do
+    for _, extra in ipairs({ false, true }) do
+        local state = { name = "platinum", mode = appearances.mode, appearance = id, extra = extra }
+        local key = M.appearance(state)
+        local p = assert(M.PALETTES[key], id)
+        local qml = appearances[extra and "on" or "off"]
+        local roles = { face = "menuSurface", text = "menuText", text_off = "menuTextOff",
+            hi = "bevelLight", lo = "bevelDark", edge = "menuEdge", box = "raised", rule = "menuEdge" }
+        if id == "drawing-board" then
+            -- Plain paper caption, without stripes or bevel; boxes use field paper.
+            roles.face, roles.hi, roles.lo, roles.box = "titleSurface", "titleSurface", "titleSurface", "field"
+        elseif key == "black" then
+            roles = { face = "barSurface", text = "barText", text_off = "barTextOff",
+                hi = "barSurface", lo = "barSurface", edge = "ridgeLow", box = "barSurface", rule = "barRule" }
+        end
+        for field, token in pairs(roles) do
+            same(p[field], color(qml, token), "Platinum " .. id .. " extra=" .. tostring(extra) .. " " .. field .. " = " .. token)
+        end
+        local hb = M.settings(state).plugin.hyprbars
+        for option, field in pairs({ bar_color = "face", ["col.text"] = "text", platinum_title_inactive = "text_off",
+            platinum_hi = "hi", platinum_lo = "lo", platinum_frame = "edge", platinum_box = "box", platinum_rule = "rule" }) do
+            same(hb[option], "rgb(" .. p[field] .. ")", "Platinum " .. id .. " setting " .. option)
+        end
     end
-    for option, field in pairs({ bar_color = "face", ["col.text"] = "text", platinum_title_inactive = "text_off",
-        platinum_hi = "hi", platinum_lo = "lo", platinum_frame = "edge", platinum_box = "face",
-        platinum_rule = "edge", memphis_li = "li", memphis_button_text = "glyph" }) do
-        same(hb[option], "rgb(" .. p[field] .. ")", "Memphis " .. mode .. " setting " .. option)
+end
+for id, appearances in pairs(kit.memphis) do
+    local p = id == "standard" and M.MEMPHIS_PALETTES.light or id == "dark-grey" and M.MEMPHIS_PALETTES.dark or M.SCHEME_PALETTES[id]
+    assert(p, id)
+    for _, extra in ipairs({ false, true }) do
+        local hb = M.settings({ name = "memphis", mode = appearances.mode, appearance = id, extra = extra }).plugin.hyprbars
+        local qml = appearances[extra and "on" or "off"]
+        for field, token in pairs({ face = "face", hi = "hi", li = "li", lo = "sh", edge = "dk", text = "captionText",
+            text_off = "inactiveCaptionText", glyph = "text", caption1 = "caption1", caption2 = "caption2",
+            inactive1 = "inactiveCaption1", inactive2 = "inactiveCaption2" }) do
+            same(p[field], color(qml, token), "Memphis " .. id .. " " .. token)
+        end
+        for option, field in pairs({ bar_color = "face", ["col.text"] = "text", platinum_title_inactive = "text_off",
+            platinum_hi = "hi", platinum_lo = "lo", platinum_frame = "edge", platinum_box = "face", platinum_rule = "edge",
+            memphis_li = "li", memphis_button_text = "glyph", memphis_caption1 = "caption1", memphis_caption2 = "caption2",
+            memphis_inactive1 = "inactive1", memphis_inactive2 = "inactive2" }) do
+            same(hb[option], "rgb(" .. p[field] .. ")", "Memphis " .. id .. " setting " .. option)
+        end
     end
-    check(hb.memphis_caption1 == "rgb(" .. p.caption1 .. ")", "active Memphis gradient start")
-    check(hb.memphis_caption2 == "rgb(" .. p.caption2 .. ")", "active Memphis gradient end")
-    check(hb.memphis_inactive1 == "rgb(" .. p.inactive1 .. ")", "inactive Memphis gradient start")
-    check(hb.memphis_inactive2 == "rgb(" .. p.inactive2 .. ")", "inactive Memphis gradient end")
 end
 
 -- Every scheme uses its own gradient pair, frame and title text live.
