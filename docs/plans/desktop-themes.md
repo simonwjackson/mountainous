@@ -12,7 +12,7 @@ Later (2026-10-24): the `77dd2791` bevel and cast shadow were ported onto the ph
 
 Platinum and Memphis move together. A feature lands for both themes in the same phase, or this ledger records why one theme has no counterpart. New theme work updates this table when it lands. Fleet data, launches, windows and session actions stay in the shared owners; each theme draws its own view.
 
-| Feature | Platinum | Memphis | Memphis form |
+| Feature | Platinum | Memphis | Memphis counterpart |
 |---|---|---|---|
 | Status controls (Bluetooth, Wi-Fi, Sound, Brightness, OCI, Disks, builder gate, Notifications, Dictation, battery, clock) | Done | Done | Tray icons and windows |
 | Theme picker | Done | Done | Display Properties |
@@ -82,7 +82,7 @@ A theme is a set of prefixed QML files plus one entry in a list. Assets and pure
 | Menu shape and direction | Hangs down from its title | Rises from the tray; Start cascades up and right |
 | Components | `Platinum*` set | New Memphis set |
 | Font | ChicagoFLF | W95FA |
-| Appearances | Light, dark grey, plus Extra dark (black bar) | Light (Windows Standard), dark grey |
+| Appearances (25 total) | Light, Dark grey, Drawing Board; Extra dark remains an option | 22: Standard, Dark grey and 20 colour schemes |
 | Picker view | Appearance control panel | Display Properties |
 
 Shared by every theme, never forked:
@@ -90,12 +90,13 @@ Shared by every theme, never forked:
 - the logic modules and their tests: `MenuState`, `battery.js`, `oci-model.js`, `notification-model.js`, `builder-gate.js`;
 - what stays unthemed: the omni bar's service and its card (a theme may draw its own view of the service, see "Find menu" below), notification popups, the dictation overlay, app-specific content and non-GTK/Qt renderers (for example Zed).
 
-## The three settings
+## The settings
 
 | Setting | Values | Stored in | Exists today |
 |---|---|---|---|
-| Theme | `platinum`, `memphis` | `$XDG_STATE_HOME/mountainous/theme-name` (missing = `platinum`) | No |
-| Mode | `dark`, `light` | `.../mountainous/theme` | Yes |
+| Theme | `platinum`, `memphis` | `$XDG_STATE_HOME/mountainous/theme-name` (missing = `platinum`) | Yes |
+| Appearance | Stable ID from `themes.json` | `.../mountainous/theme-appearance` (missing = old mode default) | Yes |
+| Mode | `dark`, `light` (derived from appearance) | `.../mountainous/theme` | Yes |
 | Extra dark | `on`, `off` | `.../mountainous/theme-extra` | Yes (on the Platinum branch) |
 
 `desktop-theme` gains `desktop-theme set <theme>` and `desktop-theme list`. It writes `theme-name` under the same lock with the same atomic `mv`. `status` prints all three. Mode keeps driving GTK, Ghostty and dconf as today, for every theme.
@@ -216,7 +217,7 @@ Add one entry to `modules/quickshell/themes.json`. It is the only installed-them
 | `qmlPrefix` | `Platinum`; use `Memphis` for phase 2 |
 | `desktop` | `PlatinumDesktop.qml`; root-level prefixed file |
 | `picker` | `PlatinumPickerView.qml`; root-level prefixed file |
-| `appearances` | `{mode: "light" or "dark", label, thumbnail}` per supported appearance |
+| `appearances` | `{id, mode: "light" or "dark", label, thumbnail}` per supported appearance; 25 installed choices |
 | `options.extraDark` | `true` for Platinum; `false` for Memphis |
 
 Thumbnails are static PNGs under `themes/<id>/previews/`. Register each path in its appearance. The current thumbnails are crops of the real headless bar and Sound menu, not drawings or another theme's QML. QML delivery finds them recursively.
@@ -1349,3 +1350,146 @@ Not in the mock: System Properties reads the sandbox host's real name and DMI pr
 - Maximize and Restore dispatch the Lua strings shown; they were logged, not run in Hyprland.
 - Two screens: a window minimized on a screen that left falls to the primary screen's taskbar (unit test only).
 - The page names come from the fixtures' app names; real desktop entries were not read.
+
+## Memphis schemes and Drawing Board (2026-11-05)
+
+This section supersedes the mode-only registry and state contract above.
+There are **25 appearances, 26 native payloads**: 22 Memphis appearances and
+three Platinum appearances, plus the retained Platinum Extra dark/OLED payload.
+`memphis`, `platinum`, `light` and `dark` remain saved identifiers (ADR 0003).
+The five existing payloads retain their palettes, including pure OLED black.
+The existing public theme labels stay unchanged.
+
+### Registry, state and picker interface
+
+- `themes.json` declares `{id, mode, label, thumbnail}` for every appearance.
+  Thumbnail paths are `themes/<theme>/previews/<appearance-id>.png`.
+- `theme-appearance` adds the saved appearance ID beside `theme-name`, `theme`
+  (derived mode), `theme-extra` and `theme-sounds`. `desktop-theme` remains the
+  only writer, under its existing lock. This is one current-theme choice, not
+  a per-theme map. Switching themes falls back if the saved ID is not valid
+  for the target theme.
+- A missing key resolves from the old mode: Memphis light becomes `standard`,
+  Platinum light becomes `light`, and dark becomes `dark-grey` in either theme.
+  The next successful write creates the missing key. Reads do not create files.
+- An unknown ID resolves to the mode default without replacing the saved ID.
+  `reapply`, Extra dark and theme switches keep it. An explicit appearance or
+  mode choice replaces it. Known appearances always derive mode; a contradictory
+  old mode cannot override them.
+- Dark IDs: `dark-grey`, `high-contrast-black`, `high-contrast-1`,
+  `high-contrast-2`. All other IDs are light. Extra dark is retained but ignored
+  by Memphis and by Platinum Light/Drawing Board.
+- `desktop-theme apply <theme> <appearance-id> <on|off>` commits a choice.
+  Existing `light`/`dark` arguments remain aliases for the mode defaults.
+  The output/status format stays compatible with existing consumers.
+- `ThemeCatalog.appearance(theme, id)`, `ThemePicker.currentAppearance`,
+  `preview(theme, appearanceId)` and `apply(theme, appearanceId, extra)` use IDs.
+  Picker choices expose `appearanceId` and the existing `appearance` label.
+  The Memphis view owns draft/Apply/Cancel behaviour; it does not write state.
+- Hensou's Qt adapter and the Quickshell host read the same key and derive
+  mode before publishing kit state. Kit `Theme.appearance === ""` supports
+  mode-only hosts. `dark` and `extraDark` keep their existing meanings.
+
+### One colour source and generated outputs
+
+`scripts/xp-classic-schemes.json` is a byte-for-byte copy of the supplied XP
+classic table from zaxbux's **Windows System Colours (by OS)** gist. SHA256:
+`a7f330d2e3ccc077a98ef220f86e3aee8c19be488c93c569bb81cbbfee59d406`.
+The copy was compared to `/tmp/memphis-schemes/xp-classic-schemes.json` when added;
+`tests/system-palettes.py` pins that digest. Brick matches ReactOS
+`boot/bootdata/hivedef.inf`; equality to Memphis remains **inferred**, not verified.
+No new Memphis colour was selected from memory. Existing Standard and Dark grey
+palettes take precedence over the table's two Classic entries to prevent a
+regression of the five existing payloads.
+
+`scripts/generate-native-themes.py` maps system roles once, then generates
+GTK2, GTK3, GTK4, Qt5/Qt6 palettes, Kvantum (Platinum), Ghostty and per-payload
+web token CSS. It also regenerates the shell's web token sections and the Lua
+system-palette block, with:
+
+```sh
+python3 scripts/generate-native-themes.py \
+  --schemes scripts/xp-classic-schemes.json --update-shell modules/quickshell
+```
+
+GTK/Qt fields use Window/WindowText, selections use Highlight/HighlightText,
+menus use Menu/MenuText, and tooltips use Info/InfoText. Native geometry remains
+upstream geometry. GTK2 gets a generated RC include while preserving unrelated
+user configuration. Existing toolkit restart boundaries still apply.
+
+Title bars use ActiveCaption → GradientActiveCaption and InactiveCaption →
+GradientInactiveCaption with their corresponding text colours. The Lua data
+is generated, not hand-copied. No plugin ABI or login boundary changes.
+
+### Drawing Board native palette (provisional; reconcile with PlatinumTokens)
+
+These values shift the existing Platinum Light neutral ramp to cream paper
+and graphite. They are not sampled Apple artwork. Structure, fonts and metrics
+stay Platinum's. The design worker owns the final token review.
+
+| Role | Platinum Light native | Drawing Board native |
+|---|---|---|
+| Face/menu paper | `#dddddd` | `#f0eadb` |
+| Text | `#000000` | `#37342e` |
+| Field/base paper | `#ffffff` | `#fffdf5` |
+| Highlight edge | `#ffffff` | `#fffdf5` |
+| Shadow | `#999999` | `#a49b88` |
+| Graphite frame | `#000000` | `#4a463e` |
+| Selection | `#333399` | `#55516c` |
+| Disabled text | `#8a8a8a` | `#928a7b` |
+
+The Drawing Board title bar uses face `#f0eadb`, title `#37342e`, inactive title
+`#928a7b`, frame/rule `#4a463e`, and boxes `#fffdf5`. Its stripe/bevel pair both
+use the face colour, so the existing plugin draws a plain paper title bar.
+Extra dark does not change this light-only appearance.
+
+### Asset staging and parity ledger
+
+The appearance ID selects patterns and web palettes even when several choices
+share a mode. Patterns use `themes/<theme>/patterns/<appearance-id>.svg`.
+The registry retains `light`/`dark`/`extra` pattern aliases. Until design's asset
+commit lands, missing per-ID patterns fall back to the legacy mode tile, and
+catalog checks accept the existing legacy preview for a missing per-ID PNG.
+This is a staging compatibility seam, not evidence that missing art is complete.
+
+| Surface | Build-owned implementation | Proof |
+|---|---|---|
+| Registry/picker model | 25 ID-based entries; old mode API aliases | Catalog/model and migration checks |
+| State and kit host adapter | One `theme-appearance` key; derived mode; unknown IDs preserved | Rust state tests and CLI migration cases |
+| GTK2/3/4, Qt5/6, Ghostty | 26 generated payloads | `checks.native-themes`; real Qt engines and Ghostty config validator |
+| Web controls | Generated palette blocks and appearance-aware selection | Focused web policy tests |
+| Compositor captions | 20 generated system palettes, legacy ramps and Drawing Board | `checks.titlebars` and source-digest/role checks |
+| Bar/taskbar, menus/dialogs and previews | Design worker's kit tokens/components/views | Combined kit and headless sweep (design/integrator) |
+| Desktop pattern and thumbnails | ID-based selection/fallback; design worker owns SVG/PNG files | Combined asset review (design/integrator) |
+
+No aggregate flake checks are permitted. Focused proof runs on Aka through
+`/tmp/memphis-schemes/heavy.sh`, which takes `/tmp/platinum-heavy.lock`.
+Final logs and remaining gaps are recorded below after validation.
+
+### Build-worker proof on Aka
+
+All runs below used the shared heavy lock. Nix used no remote builders, one job
+and four cores. Mountainous checks used an explicit local Hensou input override
+containing the new kit property; the repository lock file was not rewritten.
+
+| Check / actual path | Result | Aka log under `/tmp/memphis-schemes/build/logs/` |
+|---|---|---|
+| `cargo test -p hensou-theme-state` | 6 passed, including real old-state files and unknown-ID preservation | `hensou-host-kit-2.log` |
+| `cargo clippy -p hensou-qt-host -- -D warnings` | Passed; the generated Rust/Qt property boundary compiled | `hensou-host-kit-2.log` |
+| Rustfmt and `bash kit/qml/Hensou/tests/run.sh` | 17 passed, 0 failed | `kit-3.log` |
+| `checks.desktop-theme` / `scripts/test-desktop-theme` | Passed; old-file migration, unknown IDs, aliases, Extra dark, recovery and bus failures | `desktop-theme-final.log` |
+| `checks.native-themes` | Passed; 26 payloads, all 25 choices applied through the real CLI, 108 real Qt5/Qt6 probes; all Ghostty configs validated | `native-themes-1.log` |
+| `checks.titlebars` | Passed; existing plugin binary contract, legacy palettes, 20 source gradient pairs and Drawing Board | `titlebars-1.log` |
+| `checks.theme-appearance-host` | Passed; actual offscreen Quickshell watched all 25 choices, returned their picker previews, derived contradictory modes, and retained unknown IDs | `appearance-host-1.log` |
+| Ruff, Python compilation, focused ShellCheck/Bash syntax, Nixfmt, source digest/roles, catalog, pattern and web policy checks | Passed | `static-3.log` |
+
+The first kit invocation returned 126 because the runner is not executable in
+the snapshot. Running it through Bash passed. The Rust steps before that failure
+had passed. The first static runs found formatting, an explicit-subprocess-check
+lint and a shell string warning; the final static run is clean.
+
+The native checks inspect GTK2/3/4 outputs and execute both Qt engines. They are
+not native-application visual captures. Design's token/component/asset merge,
+Drawing Board palette reconciliation and the combined headless render ladder
+remain the integrator's work. No live user state, compositor or device was
+changed; no deployment is claimed by these checks.

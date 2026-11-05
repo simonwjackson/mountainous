@@ -26,6 +26,9 @@ M.PALETTES = {
         face = "dddddd", text = "000000", text_off = "8a8a8a",
         hi = "ffffff", lo = "999999", edge = "000000", box = "e6e6e6", rule = "000000",
     },
+    ["drawing-board"] = {
+        face = "f0eadb", text = "37342e", text_off = "928a7b", hi = "f0eadb", lo = "f0eadb", edge = "4a463e", box = "fffdf5", rule = "4a463e",
+    },
     dark = {
         face = "3a3a3a", text = "ececec", text_off = "767676",
         hi = "565656", lo = "1e1e1e", edge = "000000", box = "444444", rule = "000000",
@@ -51,6 +54,31 @@ M.MEMPHIS_PALETTES = {
         caption1 = "26364f", caption2 = "56708e", inactive1 = "2a2a2a", inactive2 = "4a4a4a",
     },
 }
+
+-- BEGIN GENERATED SYSTEM PALETTES
+M.SCHEME_PALETTES = {
+    ["brick"] = { face = "c2bfa5", hi = "e1e0d2", li = "c2bfa5", lo = "8d8961", edge = "000000", text = "e1e0d2", text_off = "e1e0d2", glyph = "000000", caption1 = "800000", caption2 = "b07440", inactive1 = "8d8961", inactive2 = "c8b870" },
+    ["desert"] = { face = "d5ccbb", hi = "eae6dd", li = "d5ccbb", lo = "a28d68", edge = "000000", text = "ffffff", text_off = "ffffff", glyph = "000000", caption1 = "008080", caption2 = "84bdaa", inactive1 = "a28d68", inactive2 = "e8d080" },
+    ["eggplant"] = { face = "90b0a8", hi = "c8d8d8", li = "90b0a8", lo = "588078", edge = "000000", text = "ffffff", text_off = "588078", glyph = "000000", caption1 = "588078", caption2 = "834b83", inactive1 = "90b0a8", inactive2 = "cbbdd2" },
+    ["lilac"] = { face = "aea8d9", hi = "d8d5ec", li = "aea8d9", lo = "5a4eb1", edge = "000000", text = "ffffff", text_off = "ffffff", glyph = "000000", caption1 = "5a4eb1", caption2 = "b68fcb", inactive1 = "808080", inactive2 = "b8b4d0" },
+    ["maple"] = { face = "e6d8ae", hi = "f2ecd7", li = "e6d8ae", lo = "c6a646", edge = "000000", text = "ffffff", text_off = "f2ecd7", glyph = "000000", caption1 = "800000", caption2 = "c09c38", inactive1 = "c6a646", inactive2 = "e0c888" },
+    ["marine"] = { face = "88c0b8", hi = "c8e0d8", li = "88c0b8", lo = "489088", edge = "000000", text = "ffffff", text_off = "c0c0c0", glyph = "000000", caption1 = "000080", caption2 = "18b4c0", inactive1 = "489088", inactive2 = "78ccd8" },
+    ["plum"] = { face = "a89890", hi = "d8d0c8", li = "a89890", lo = "786058", edge = "000000", text = "ffffff", text_off = "a89890", glyph = "000000", caption1 = "484060", caption2 = "a084b8", inactive1 = "786058", inactive2 = "a89878" },
+    ["pumpkin"] = { face = "ecd59d", hi = "f5eacf", li = "ecd59d", lo = "d7a52f", edge = "000000", text = "ffffff", text_off = "f5eacf", glyph = "000000", caption1 = "d7a52f", caption2 = "e0cc88", inactive1 = "a0a0a4", inactive2 = "d0cc90" },
+    ["rainy-day"] = { face = "8399b1", hi = "c1ccd9", li = "8399b1", lo = "4f657d", edge = "000000", text = "ffffff", text_off = "c1ccd9", glyph = "000000", caption1 = "4f657d", caption2 = "80b4d0", inactive1 = "808080", inactive2 = "b0bcd0" },
+    ["red-white-blue"] = { face = "c0c0c0", hi = "ffffff", li = "c0c0c0", lo = "808080", edge = "000000", text = "ffffff", text_off = "c0c0c0", glyph = "000000", caption1 = "800000", caption2 = "0010a8", inactive1 = "808080", inactive2 = "babec9" },
+    ["rose"] = { face = "cfafb7", hi = "e7d8dc", li = "cfafb7", lo = "9f6070", edge = "000000", text = "ffffff", text_off = "7d7d7d", glyph = "000000", caption1 = "9f6070", caption2 = "d8ccd0", inactive1 = "a0a0a4", inactive2 = "d0d4d0" },
+    ["slate"] = { face = "9db9c8", hi = "cedce3", li = "9db9c8", lo = "558097", edge = "000000", text = "ffffff", text_off = "c0c0c0", glyph = "000000", caption1 = "558097", caption2 = "88b8d8", inactive1 = "808080", inactive2 = "a0bcc8" },
+    ["spruce"] = { face = "a2c8a9", hi = "d0e3d3", li = "a2c8a9", lo = "599764", edge = "000000", text = "ffffff", text_off = "d0e3d3", glyph = "000000", caption1 = "599764", caption2 = "98c8e8", inactive1 = "808080", inactive2 = "a8ccb0" },
+    ["storm"] = { face = "c0c0c0", hi = "ffffff", li = "c0c0c0", lo = "808080", edge = "000000", text = "ffffff", text_off = "c0c0c0", glyph = "000000", caption1 = "800080", caption2 = "388cb0", inactive1 = "808080", inactive2 = "a8aca8" },
+    ["teal"] = { face = "c0c0c0", hi = "ffffff", li = "c0c0c0", lo = "808080", edge = "000000", text = "ffffff", text_off = "fffbf0", glyph = "000000", caption1 = "008080", caption2 = "00ccd8", inactive1 = "808080", inactive2 = "98c8b8" },
+    ["wheat"] = { face = "dedea0", hi = "eeeed0", li = "dedea0", lo = "bcbc41", edge = "000000", text = "ffffff", text_off = "ffffff", glyph = "000000", caption1 = "808000", caption2 = "c8b048", inactive1 = "bcbc41", inactive2 = "b8b880" },
+    ["high-contrast-1"] = { face = "000000", hi = "c0c0c0", li = "ffffff", lo = "808080", edge = "ffffff", text = "ffffff", text_off = "000000", glyph = "ffffff", caption1 = "0000ff", caption2 = "0000ff", inactive1 = "00ffff", inactive2 = "00ffff" },
+    ["high-contrast-2"] = { face = "000000", hi = "c0c0c0", li = "ffffff", lo = "808080", edge = "ffffff", text = "000000", text_off = "ffffff", glyph = "00ff00", caption1 = "00ffff", caption2 = "00ffff", inactive1 = "0000ff", inactive2 = "0000ff" },
+    ["high-contrast-black"] = { face = "000000", hi = "c0c0c0", li = "ffffff", lo = "808080", edge = "ffffff", text = "ffffff", text_off = "ffffff", glyph = "ffffff", caption1 = "800080", caption2 = "800080", inactive1 = "008000", inactive2 = "008000" },
+    ["high-contrast-white"] = { face = "ffffff", hi = "c0c0c0", li = "c0c0c0", lo = "808080", edge = "000000", text = "ffffff", text_off = "000000", glyph = "000000", caption1 = "000000", caption2 = "000000", inactive1 = "ffffff", inactive2 = "ffffff" },
+}
+-- END GENERATED SYSTEM PALETTES
 
 -- Both desktop themes are square. The plugin's frame draws their black edge,
 -- because a hair is whole device pixels (2 at scale 1.5) and Hyprland's
@@ -95,13 +123,22 @@ function M.state()
     local name = read("theme-name")
     if name == "" then name = "platinum" end
     local mode = read("theme") == "light" and "light" or "dark"
-    return { name = name, mode = mode, extra = read("theme-extra") == "on" }
+    local appearance = read("theme-appearance")
+    local known = name == "memphis" and (M.SCHEME_PALETTES[appearance] or appearance == "standard" or appearance == "dark-grey")
+        or name == "platinum" and (appearance == "light" or appearance == "dark-grey" or appearance == "drawing-board")
+    if not known then appearance = mode == "dark" and "dark-grey" or (name == "memphis" and "standard" or "light") end
+    mode = (appearance == "dark-grey" or appearance == "high-contrast-black" or appearance == "high-contrast-1" or appearance == "high-contrast-2") and "dark" or "light"
+    return { name = name, mode = mode, appearance = appearance, extra = read("theme-extra") == "on" }
 end
 
 -- The palette name for a state, or nil for an unsupported theme.
 function M.appearance(state)
-    if state.name == "memphis" then return "memphis_" .. (state.mode == "light" and "light" or "dark") end
+    if state.name == "memphis" then
+        if M.SCHEME_PALETTES[state.appearance] then return "memphis_" .. state.appearance end
+        return "memphis_" .. (state.mode == "light" and "light" or "dark")
+    end
     if state.name ~= "platinum" then return nil end
+    if state.appearance == "drawing-board" then return "drawing-board" end
     if state.mode == "light" then return "light" end
     return state.extra and "black" or "dark"
 end
@@ -122,7 +159,7 @@ function M.settings(state, memphis_supported)
         }
     end
     local memphis = state.name == "memphis"
-    local p = memphis and M.MEMPHIS_PALETTES[state.mode == "light" and "light" or "dark"] or M.PALETTES[key]
+    local p = memphis and (M.SCHEME_PALETTES[state.appearance] or M.MEMPHIS_PALETTES[state.mode == "light" and "light" or "dark"]) or M.PALETTES[key]
     local style = {
         platinum = true, -- shared client-decoration test and frame owner
         -- Memphis computes its 18-u caption plus 1-u seam per output; the

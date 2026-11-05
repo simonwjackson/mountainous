@@ -18,9 +18,16 @@ for theme in registry:
     assert re.fullmatch(r'[A-Z][A-Za-z0-9]*', prefix), prefix
     for file in [theme['desktop'], theme['picker']]:
         assert '/' not in file and file.startswith(prefix) and (root / file).is_file(), file
+    appearance_ids = [appearance['id'] for appearance in theme['appearances']]
+    assert len(appearance_ids) == len(set(appearance_ids)), (name, 'duplicate appearance')
     for appearance in theme['appearances']:
+        assert re.fullmatch(r'[a-z][a-z0-9-]*', appearance['id']), (name, 'appearance id')
         file = appearance['thumbnail']
-        assert file.startswith(f'themes/{name}/') and (root / file).is_file(), file
+        assert appearance['id'] and file == f"themes/{name}/previews/{appearance['id']}.png", file
+        # Design assets can land separately. Only the two legacy mode files
+        # are permitted as a temporary missing-thumbnail fallback.
+        fallback = root / f"themes/{name}/previews/{appearance['mode']}.png"
+        assert (root / file).is_file() or fallback.is_file(), file
     desktop = (root / theme['desktop']).read_text()
     for contract in ['required property var screen', 'required property var context',
                      'required property var theme', 'property bool active',
@@ -35,10 +42,13 @@ for theme in registry:
     assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', art['cursors']), (name, 'art.cursors')
     assert isinstance(art['cursorSize'], int) and art['cursorSize'] > 0, (name, 'art.cursorSize')
     assert art['patternCell'] in (1, 2, 3, 4), (name, 'art.patternCell')
-    looks = {a['mode'] for a in theme['appearances']} | ({'extra'} if theme['options']['extraDark'] else set())
+    looks = {a['id'] for a in theme['appearances']} | {'light', 'dark'} | ({'extra'} if theme['options']['extraDark'] else set())
     assert set(art['patterns']) == looks, (name, 'art.patterns')
-    for file in art['patterns'].values():
-        assert file.startswith(f'themes/{name}/') and (root / file).is_file(), file
+    for key, file in art['patterns'].items():
+        assert file.startswith(f'themes/{name}/'), file
+        choice = next((a for a in theme['appearances'] if a['id'] == key), None)
+        fallback = root / f"themes/{name}/patterns/{choice['mode'] if choice else key}.svg"
+        assert (root / file).is_file() or fallback.is_file(), file
 
 # The flat prefix fallback avoids Quickshell 0.3.1's dynamic directory-scan
 # limitation. Asset and policy subfolders remain owned by their theme ID.

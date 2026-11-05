@@ -82,10 +82,17 @@ def cursor_alias(name):
     )
 
 
-def apply(root, theme, mode, extra, art=None):
-    appearance = (
-        "extra" if theme == "platinum" and mode == "dark" and extra == "on" else mode
+def apply(root, theme, mode, extra, art=None, appearance=None):
+    appearance = appearance or (
+        "standard"
+        if theme == "memphis" and mode == "light"
+        else "dark-grey"
+        if mode == "dark"
+        else "light"
     )
+    appearance = {"standard": "light", "dark-grey": "dark"}.get(appearance, appearance)
+    if theme == "platinum" and appearance == "dark" and extra == "on":
+        appearance = "extra"
     key = f"{theme}-{appearance}"
     manifest = json.loads((root / "share/mountainous/native/manifest.json").read_text())
     palette = manifest[key]
@@ -106,6 +113,19 @@ def apply(root, theme, mode, extra, art=None):
                 config / "Kvantum" / entry["name"],
                 root / "share/Kvantum" / entry["name"],
             )
+    gtk2 = Path.home() / ".gtkrc-2.0"
+    previous = gtk2.read_text() if gtk2.exists() else ""
+    previous = re.sub(
+        r"# >>> Mountainous native theme BEGIN.*?# <<< Mountainous native theme END\n?",
+        "",
+        previous,
+        flags=re.DOTALL,
+    )
+    atomic(
+        gtk2,
+        f'# >>> Mountainous native theme BEGIN\ninclude "{root}/share/themes/{name}/gtk-2.0/gtkrc"\n# <<< Mountainous native theme END\n'
+        + previous,
+    )
     for version in (3, 4):
         ini(
             config / f"gtk-{version}.0/settings.ini",
@@ -189,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("theme", choices=("platinum", "memphis"))
     parser.add_argument("mode", choices=("light", "dark"))
     parser.add_argument("extra", choices=("on", "off"))
+    parser.add_argument("--appearance", help="validated stable appearance ID")
     parser.add_argument("--art", type=Path, help="the desktop-art package")
     args = parser.parse_args()
-    apply(args.root, args.theme, args.mode, args.extra, args.art)
+    apply(args.root, args.theme, args.mode, args.extra, args.art, args.appearance)

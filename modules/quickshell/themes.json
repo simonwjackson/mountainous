@@ -6,14 +6,22 @@
     "picker": "PlatinumPickerView.qml",
     "appearances": [
       {
+        "id": "light",
         "mode": "light",
         "label": "Light",
         "thumbnail": "themes/platinum/previews/light.png"
       },
       {
+        "id": "dark-grey",
         "mode": "dark",
         "label": "Dark grey",
-        "thumbnail": "themes/platinum/previews/dark.png"
+        "thumbnail": "themes/platinum/previews/dark-grey.png"
+      },
+      {
+        "id": "drawing-board",
+        "mode": "light",
+        "label": "Drawing Board",
+        "thumbnail": "themes/platinum/previews/drawing-board.png"
       }
     ],
     "options": {
@@ -40,7 +48,9 @@
       "patterns": {
         "light": "themes/platinum/patterns/light.svg",
         "dark": "themes/platinum/patterns/dark.svg",
-        "extra": "themes/platinum/patterns/extra.svg"
+        "extra": "themes/platinum/patterns/extra.svg",
+        "dark-grey": "themes/platinum/patterns/dark-grey.svg",
+        "drawing-board": "themes/platinum/patterns/drawing-board.svg"
       }
     }
   },
@@ -51,14 +61,136 @@
     "picker": "MemphisPickerView.qml",
     "appearances": [
       {
+        "id": "standard",
         "mode": "light",
         "label": "Standard",
-        "thumbnail": "themes/memphis/previews/light.png"
+        "thumbnail": "themes/memphis/previews/standard.png"
       },
       {
+        "id": "dark-grey",
         "mode": "dark",
         "label": "Dark grey",
-        "thumbnail": "themes/memphis/previews/dark.png"
+        "thumbnail": "themes/memphis/previews/dark-grey.png"
+      },
+      {
+        "id": "brick",
+        "mode": "light",
+        "label": "Brick",
+        "thumbnail": "themes/memphis/previews/brick.png"
+      },
+      {
+        "id": "desert",
+        "mode": "light",
+        "label": "Desert",
+        "thumbnail": "themes/memphis/previews/desert.png"
+      },
+      {
+        "id": "eggplant",
+        "mode": "light",
+        "label": "Eggplant",
+        "thumbnail": "themes/memphis/previews/eggplant.png"
+      },
+      {
+        "id": "lilac",
+        "mode": "light",
+        "label": "Lilac",
+        "thumbnail": "themes/memphis/previews/lilac.png"
+      },
+      {
+        "id": "maple",
+        "mode": "light",
+        "label": "Maple",
+        "thumbnail": "themes/memphis/previews/maple.png"
+      },
+      {
+        "id": "marine",
+        "mode": "light",
+        "label": "Marine",
+        "thumbnail": "themes/memphis/previews/marine.png"
+      },
+      {
+        "id": "plum",
+        "mode": "light",
+        "label": "Plum",
+        "thumbnail": "themes/memphis/previews/plum.png"
+      },
+      {
+        "id": "pumpkin",
+        "mode": "light",
+        "label": "Pumpkin",
+        "thumbnail": "themes/memphis/previews/pumpkin.png"
+      },
+      {
+        "id": "rainy-day",
+        "mode": "light",
+        "label": "Rainy Day",
+        "thumbnail": "themes/memphis/previews/rainy-day.png"
+      },
+      {
+        "id": "red-white-blue",
+        "mode": "light",
+        "label": "Red, White and Blue",
+        "thumbnail": "themes/memphis/previews/red-white-blue.png"
+      },
+      {
+        "id": "rose",
+        "mode": "light",
+        "label": "Rose",
+        "thumbnail": "themes/memphis/previews/rose.png"
+      },
+      {
+        "id": "slate",
+        "mode": "light",
+        "label": "Slate",
+        "thumbnail": "themes/memphis/previews/slate.png"
+      },
+      {
+        "id": "spruce",
+        "mode": "light",
+        "label": "Spruce",
+        "thumbnail": "themes/memphis/previews/spruce.png"
+      },
+      {
+        "id": "storm",
+        "mode": "light",
+        "label": "Storm",
+        "thumbnail": "themes/memphis/previews/storm.png"
+      },
+      {
+        "id": "teal",
+        "mode": "light",
+        "label": "Teal",
+        "thumbnail": "themes/memphis/previews/teal.png"
+      },
+      {
+        "id": "wheat",
+        "mode": "light",
+        "label": "Wheat",
+        "thumbnail": "themes/memphis/previews/wheat.png"
+      },
+      {
+        "id": "high-contrast-black",
+        "mode": "dark",
+        "label": "High Contrast Black",
+        "thumbnail": "themes/memphis/previews/high-contrast-black.png"
+      },
+      {
+        "id": "high-contrast-white",
+        "mode": "light",
+        "label": "High Contrast White",
+        "thumbnail": "themes/memphis/previews/high-contrast-white.png"
+      },
+      {
+        "id": "high-contrast-1",
+        "mode": "dark",
+        "label": "High Contrast #1",
+        "thumbnail": "themes/memphis/previews/high-contrast-1.png"
+      },
+      {
+        "id": "high-contrast-2",
+        "mode": "dark",
+        "label": "High Contrast #2",
+        "thumbnail": "themes/memphis/previews/high-contrast-2.png"
       }
     ],
     "options": {
@@ -84,7 +216,29 @@
       "patternCell": 2,
       "patterns": {
         "light": "themes/memphis/patterns/light.svg",
-        "dark": "themes/memphis/patterns/dark.svg"
+        "dark": "themes/memphis/patterns/dark.svg",
+        "standard": "themes/memphis/patterns/standard.svg",
+        "dark-grey": "themes/memphis/patterns/dark-grey.svg",
+        "brick": "themes/memphis/patterns/brick.svg",
+        "desert": "themes/memphis/patterns/desert.svg",
+        "eggplant": "themes/memphis/patterns/eggplant.svg",
+        "lilac": "themes/memphis/patterns/lilac.svg",
+        "maple": "themes/memphis/patterns/maple.svg",
+        "marine": "themes/memphis/patterns/marine.svg",
+        "plum": "themes/memphis/patterns/plum.svg",
+        "pumpkin": "themes/memphis/patterns/pumpkin.svg",
+        "rainy-day": "themes/memphis/patterns/rainy-day.svg",
+        "red-white-blue": "themes/memphis/patterns/red-white-blue.svg",
+        "rose": "themes/memphis/patterns/rose.svg",
+        "slate": "themes/memphis/patterns/slate.svg",
+        "spruce": "themes/memphis/patterns/spruce.svg",
+        "storm": "themes/memphis/patterns/storm.svg",
+        "teal": "themes/memphis/patterns/teal.svg",
+        "wheat": "themes/memphis/patterns/wheat.svg",
+        "high-contrast-black": "themes/memphis/patterns/high-contrast-black.svg",
+        "high-contrast-white": "themes/memphis/patterns/high-contrast-white.svg",
+        "high-contrast-1": "themes/memphis/patterns/high-contrast-1.svg",
+        "high-contrast-2": "themes/memphis/patterns/high-contrast-2.svg"
       }
     }
   }

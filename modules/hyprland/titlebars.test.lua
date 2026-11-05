@@ -322,6 +322,26 @@ for _, mode in ipairs({ "light", "dark" }) do
     check(hb.memphis_inactive2 == "rgb(" .. p.inactive2 .. ")", "inactive Memphis gradient end")
 end
 
+-- Every scheme uses its own gradient pair, frame and title text live.
+for id, p in pairs(M.SCHEME_PALETTES) do
+    local hb = M.settings({ name = "memphis", mode = "light", appearance = id, extra = true }).plugin.hyprbars
+    check(hb.memphis_caption1 == "rgb(" .. p.caption1 .. ")", id .. ": active start")
+    check(hb.memphis_caption2 == "rgb(" .. p.caption2 .. ")", id .. ": active end")
+    check(hb.memphis_inactive1 == "rgb(" .. p.inactive1 .. ")", id .. ": inactive start")
+    check(hb.memphis_inactive2 == "rgb(" .. p.inactive2 .. ")", id .. ": inactive end")
+    local f = assert(io.open(dir .. "/mountainous/theme-appearance", "w")); f:write(id); f:close()
+    write_state("memphis", "light", "on")
+    local actual = M.state()
+    local dark = id == "high-contrast-black" or id == "high-contrast-1" or id == "high-contrast-2"
+    check(actual.appearance == id and actual.mode == (dark and "dark" or "light"), id .. ": derives mode")
+end
+local f = assert(io.open(dir .. "/mountainous/theme-appearance", "w")); f:write("drawing-board"); f:close()
+write_state("platinum", "dark", "on")
+check(M.state().mode == "light" and M.appearance(M.state()) == "drawing-board", "Drawing Board ignores Extra dark")
+local board = M.settings(M.state()).plugin.hyprbars
+check(board.bar_color == "rgb(" .. M.PALETTES["drawing-board"].face .. ")", "Drawing Board paper title bar")
+os.remove(dir .. "/mountainous/theme-appearance")
+
 -- hyprland.lua hands the module the values it uses itself.
 local hypr = read_file(hyprland_path)
 check(hypr:find('require("titlebars").attach({ border_size = BORDER_SIZE, rounding = ROUNDING })', 1, true) ~= nil,

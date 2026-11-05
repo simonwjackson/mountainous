@@ -10,6 +10,7 @@ Singleton {
     property var screen: null
     readonly property var themes: ThemeCatalog.themes
     readonly property string currentTheme: Theme.name
+    readonly property string currentAppearance: Theme.appearance
     readonly property string currentMode: Theme.mode
     readonly property bool soundsEnabled: Theme.soundsEnabled
     readonly property bool extraDark: Theme.extraDark
@@ -20,16 +21,15 @@ Singleton {
         for (const theme of themes) {
             for (const appearance of theme.appearances) {
                 choices.push({theme: theme.id, label: theme.label, mode: appearance.mode,
-                    appearance: appearance.label, thumbnail: appearance.thumbnail});
+                    appearanceId: appearance.id, appearance: appearance.label, thumbnail: appearance.thumbnail});
             }
         }
         return choices;
     }
     function open(onScreen) { MenuState.close(); screen = onScreen || Quickshell.screens[0]; visible = true; }
     function close() { visible = false; }
-    function preview(theme, mode) {
-        const entry = ThemeCatalog.find(theme);
-        const appearance = entry ? entry.appearances.find(function (a) { return a.mode === mode; }) : null;
+    function preview(theme, appearanceId) {
+        const appearance = ThemeCatalog.appearance(theme, appearanceId);
         return appearance ? Qt.resolvedUrl(appearance.thumbnail) : "";
     }
     function setSounds(enabled) {
@@ -38,11 +38,11 @@ Singleton {
         applyProcess.command = ["desktop-theme", "sounds", enabled ? "on" : "off"];
         applyProcess.running = true;
     }
-    function apply(theme, mode, extra) {
-        const entry = ThemeCatalog.find(theme);
-        if (!entry || !entry.appearances.some(function (a) { return a.mode === mode; }) || applying) return;
+    function apply(theme, appearanceId, extra) {
+        const appearance = ThemeCatalog.appearance(theme, appearanceId);
+        if (!appearance || applying) return;
         root.error = "";
-        applyProcess.command = ["desktop-theme", "apply", theme, mode, extra ? "on" : "off"];
+        applyProcess.command = ["desktop-theme", "apply", theme, appearance.id, extra ? "on" : "off"];
         applyProcess.running = true;
     }
     Process {

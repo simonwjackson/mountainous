@@ -23,6 +23,7 @@
 #   window.resize keep_aspect_ratio  -> dsp_mouseResize, shape preserved
 #   hl.gesture fingers 2..9     config/ConfigManager.cpp handleGesture
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
+{ inputs, ... }:
 let
   # Platinum and Memphis title bars: nixpkgs' hyprbars with our patch
   # (hyprland/hyprbars-platinum.patch). The patch adds square bevelled
@@ -65,13 +66,14 @@ in {
     # module that styles it (titlebars.lua) keeps to its contract and to the
     # Platinum and Memphis tokens. Headless: no compositor runs.
     checks.titlebars = pkgs.runCommand "titlebars" {
-      nativeBuildInputs = [pkgs.lua pkgs.binutils];
+      nativeBuildInputs = [pkgs.lua pkgs.binutils pkgs.python3];
       PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
     } ''
       nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
-      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${./quickshell/PlatinumTokens.qml} ${./hyprland/hyprland.lua} ${./quickshell/MemphisTokens.qml}
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} ${inputs.hensou}/kit/qml/Hensou/PlatinumTokens.qml ${./hyprland/hyprland.lua} ${inputs.hensou}/kit/qml/Hensou/MemphisTokens.qml
+      python3 ${../tests/system-palettes.py} ${../scripts/generate-native-themes.py} ${../scripts/xp-classic-schemes.json} ${./hyprland/titlebars.lua} ${./quickshell}
       touch $out
     '';
   };

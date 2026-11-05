@@ -23,7 +23,10 @@ PanelWindow {
     id: root
 
     readonly property var entry: ThemeCatalog.find(Theme.name)
-    readonly property string file: Art.pattern(entry, Theme.mode, Theme.extraDark)
+    readonly property string file: Art.pattern(entry, Theme.mode, Theme.extraDark, Theme.appearance)
+    readonly property string fallbackFile: Art.pattern(entry, Theme.mode, Theme.extraDark)
+    property bool missing: false
+    onFileChanged: missing = false
     readonly property int baseCell: entry && entry.art ? entry.art.patternCell : 2
 
     anchors { top: true; bottom: true; left: true; right: true }
@@ -45,7 +48,9 @@ PanelWindow {
         readonly property var tile: Art.tile(root.baseCell, dpr)
 
         anchors.fill: parent
-        source: root.file === "" ? "" : Quickshell.shellPath(root.file)
+        source: (root.missing ? root.fallbackFile : root.file) === "" ? ""
+            : Quickshell.shellPath(root.missing ? root.fallbackFile : root.file)
+        onStatusChanged: if (status === Image.Error && !root.missing) root.missing = true
         sourceSize.width: tile.logical
         sourceSize.height: tile.logical
         fillMode: Image.Tile

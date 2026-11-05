@@ -220,4 +220,44 @@ printf 'invalid\n' > "$sounds"
 rm -f "$sounds"
 "$command_path" reapply >/dev/null
 [[ $(<"$sounds") == on && ! -e $sounds.new ]]
-echo 'DESKTOP_THEME_TESTS_PASSED' 
+# Migrate real old files. Reads do not create keys; the next write does.
+appearance="$XDG_STATE_HOME/mountainous/theme-appearance"
+for theme in memphis platinum; do
+  for mode in light dark; do
+    printf '%s\n' "$theme" > "$name"
+    printf '%s\n' "$mode" > "$state"
+    rm -f "$appearance"
+    "$command_path" status >/dev/null
+    [[ ! -e $appearance ]]
+    "$command_path" reapply >/dev/null
+    if [[ $mode == dark ]]; then expected="dark-grey"
+    elif [[ $theme == memphis ]]; then expected=standard
+    else expected=light; fi
+    [[ $(<"$appearance") == "$expected" && $(<"$state") == "$mode" ]]
+    printf 'future-appearance\n' > "$appearance"
+    "$command_path" reapply >/dev/null
+    [[ $(<"$appearance") == future-appearance && $(<"$state") == "$mode" ]]
+  done
+done
+# Canonical IDs derive mode on every apply, even when Extra dark is retained.
+for dark in dark-grey high-contrast-black high-contrast-1 high-contrast-2; do
+  "$command_path" apply memphis "$dark" on >/dev/null
+  [[ $(<"$state") == dark && $(<"$appearance") == "$dark" && $(<"$extra") == on ]]
+done
+"$command_path" apply memphis high-contrast-white on >/dev/null
+[[ $(<"$state") == light ]]
+"$command_path" apply platinum drawing-board on >/dev/null
+[[ $(<"$state") == light && $(<"$appearance") == drawing-board && $(<"$extra") == on ]]
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Mountainous-platinum-drawing-board'" ]]
+"$command_path" extra off >/dev/null
+[[ $(<"$appearance") == drawing-board && $(<"$state") == light ]]
+"$command_path" set memphis >/dev/null
+[[ $(<"$appearance") == drawing-board && $(<"$state") == light ]]
+if "$command_path" apply memphis drawing-board off; then exit 1; fi
+"$command_path" apply memphis brick off >/dev/null
+[[ $(<"$appearance") == brick && $(<"$state") == light ]]
+# A contradictory old mode must not win over a known saved appearance.
+printf dark > "$state"
+"$command_path" reapply >/dev/null
+[[ $(<"$state") == light && $(<"$appearance") == brick ]]
+echo 'DESKTOP_THEME_TESTS_PASSED'  

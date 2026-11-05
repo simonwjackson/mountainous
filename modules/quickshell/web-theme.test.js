@@ -272,7 +272,7 @@ const memphisCss = stripComments(memphisRaw);
 const memphis = strip(policy.parse(memphisRaw));
 const plat = strip(policy.parse(fs.readFileSync(path.join(root, "themes/platinum/web.css"), "utf8")));
 assert.deepEqual(Object.keys(memphis.levels).sort(), Object.keys(plat.levels).sort(), "memphis: Platinum's levels");
-assert.deepEqual(Object.keys(memphis.tokens).sort(), Object.keys(plat.tokens).filter((k) => k !== "extra").sort(), "memphis: Platinum's token blocks");
+for (const key of ["all", "light", "dark"]) assert.ok(memphis.tokens[key] && plat.tokens[key], "both themes keep legacy " + key + " token blocks");
 // Every Platinum guard is kept, once for each place Platinum uses it: a
 // Memphis guard of its own in the same level skips at least what it skips
 // (Memphis may skip more: W95FA stays off ARIA tabs and switches, which its
@@ -333,5 +333,22 @@ const same = { "--mtn-face": "face", "--mtn-light": "hi", "--mtn-light-inner": "
 for (const mode of ["light", "dark"]) {
     const css = tokens(memphis.tokens[mode]), qml = palette(mode === "dark");
     for (const [name, key] of Object.entries(same)) assert.equal(css[name].toLowerCase(), qml[key], `memphis/${mode}: ${name} is MemphisTokens.${key}`);
+}
+// Each canonical ID can select its own palette even when it shares a mode.
+for (const theme of registry) {
+    const css = fs.readFileSync(path.join(root, "themes", theme.id, "web.css"), "utf8");
+    for (const choice of theme.appearances) {
+        const expected = choice.id === "standard" ? "light" : choice.id === "dark-grey" ? "dark" : choice.id;
+        const payload = policy.payload(css, theme.id, choice.mode, false, choice.id);
+        assert.equal(payload.appearance, expected, theme.id + "/" + choice.id);
+        const sections = policy.parse(css);
+        assert.deepEqual(Object.keys(tokens(sections.tokens[expected])).sort(),
+            Object.keys(tokens(sections.tokens[choice.mode])).sort(), theme.id + "/" + choice.id + ": every token defined");
+        assert.match(payload.tokens, /--mtn-face:/);
+        if (choice.id === "drawing-board") {
+            assert.equal(policy.payload(css, theme.id, "light", true, choice.id).appearance, "drawing-board");
+        }
+    }
+    assert.equal(policy.payload(css, theme.id, "dark", false, "unknown-id").appearance, "dark");
 }
 console.log(`WEB_THEME_TESTS_PASSED themes=${linted}`);

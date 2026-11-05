@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the five native appearances from pinned artwork and one palette source.
+"""Generate native appearances from pinned artwork and one palette source.
 
 No artwork is checked in. Generated derivatives retain the upstream licences.
 The native ramps match PlatinumTokens and MemphisTokens; test-native-palettes.py
@@ -8,14 +8,13 @@ checks those seams. GTK3, GTK4, Kvantum, Qt palettes and Ghostty share these ram
 
 import argparse
 import base64
+import copy
 import io
 import json
 import re
 import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
-
-from PIL import Image
 
 PALETTES = {
     "platinum": {
@@ -87,6 +86,238 @@ PALETTES = {
         },
     },
 }
+# XP classic system colours from zaxbux "Windows System Colours (by OS)".
+# Brick matches ReactOS hivedef.inf; equivalence to Memphis is inferred, not verified.
+# The byte-for-byte source copy and its SHA256 are recorded in the plan ledger.
+DARK_APPEARANCES = {
+    "dark",
+    "extra",
+    "dark-grey",
+    "high-contrast-black",
+    "high-contrast-1",
+    "high-contrast-2",
+}
+DRAWING_BOARD = {
+    "face": "#f0eadb",
+    "text": "#37342e",
+    "base": "#fffdf5",
+    "hi": "#fffdf5",
+    "shade": "#a49b88",
+    "edge": "#4a463e",
+    "selected": "#55516c",
+    "muted": "#928a7b",
+}
+
+
+def palettes(schemes):
+    result = copy.deepcopy(PALETTES)
+    result["platinum"]["drawing-board"] = dict(DRAWING_BOARD)
+    for scheme in json.loads(Path(schemes).read_text()):
+        if scheme["name"].startswith("Classic"):
+            continue  # Existing Standard and Dark grey palettes stay byte-identical.
+        identifier = scheme["name"].lower().replace(" #", "-").replace(" ", "-")
+        colors = scheme["colors"]
+        mapping = {
+            "face": "Control",
+            "hi": "ControlLightLight",
+            "li": "ControlLight",
+            "shade": "ControlDark",
+            "edge": "ControlDarkDark",
+            "text": "ControlText",
+            "base": "Window",
+            "base_text": "WindowText",
+            "selected": "Highlight",
+            "selected_text": "HighlightText",
+            "muted": "GrayText",
+            "caption": "ActiveCaption",
+            "caption2": "GradientActiveCaption",
+            "caption_text": "ActiveCaptionText",
+            "inactive_caption": "InactiveCaption",
+            "inactive_caption2": "GradientInactiveCaption",
+            "inactive_text": "InactiveCaptionText",
+            "tip": "Info",
+            "tip_text": "InfoText",
+            "menu": "Menu",
+            "menu_text": "MenuText",
+            "desktop": "Desktop",
+        }
+        result["memphis"][identifier] = {
+            role: colors[key] for role, key in mapping.items()
+        }
+    for variants in result.values():
+        for key, p in variants.items():
+            if key != "font":
+                p.setdefault("base_text", p["text"])
+                p.setdefault("selected_text", "#ffffff")
+                p.setdefault("li", p["hi"])
+    return result
+
+
+def mode_for(appearance):
+    return "dark" if appearance in DARK_APPEARANCES else "light"
+
+
+def gtk2(p, font):
+    return f'''# Generated from the same palette as GTK3/4 and Qt.
+style "mountainous" {{
+  font_name = "{font} 12"
+  bg[NORMAL] = "{p["face"]}"
+  fg[NORMAL] = "{p["text"]}"
+  base[NORMAL] = "{p["base"]}"
+  text[NORMAL] = "{p.get("base_text", p["text"])}"
+  bg[SELECTED] = "{p["selected"]}"
+  fg[SELECTED] = "{p.get("selected_text", "#ffffff")}"
+  base[SELECTED] = "{p["selected"]}"
+  text[SELECTED] = "{p.get("selected_text", "#ffffff")}"
+  fg[INSENSITIVE] = "{p["muted"]}"
+  text[INSENSITIVE] = "{p["muted"]}"
+}}
+class "*" style "mountainous"
+style "mountainous-menu" = "mountainous" {{
+  bg[NORMAL] = "{p.get("menu", p["face"])}"
+  fg[NORMAL] = "{p.get("menu_text", p["text"])}"
+}}
+class "GtkMenu*" style "mountainous-menu"
+'''
+
+
+def shell_tokens(theme, p, appearance):
+    if theme == "memphis":
+        roles = {
+            "face": "face",
+            "light": "hi",
+            "light-inner": "li",
+            "shadow": "shade",
+            "dark": "edge",
+            "text": "text",
+            "text-off": "muted",
+            "field": "base",
+            "field-text": "base_text",
+            "selection": "selected",
+            "selection-text": "selected_text",
+            "face-down": "face",
+            "thumb": "face",
+            "well-edge": "shade",
+            "well-edge-low": "hi",
+            "focus": "text",
+            "dither": "li",
+        }
+        colors = {key: p.get(value, p["text"]) for key, value in roles.items()}
+        colors["emboss"] = "transparent" if mode_for(appearance) == "dark" else p["hi"]
+    else:
+        # Preserve Platinum geometry and its existing CSS variable vocabulary.
+        roles = {
+            "text": "text",
+            "text-off": "muted",
+            "edge": "edge",
+            "edge-off": "shade",
+            "well-edge": "edge",
+            "face": "face",
+            "face-down": "shade",
+            "light": "hi",
+            "dark": "shade",
+            "field": "base",
+            "field-off": "face",
+            "track": "face",
+            "track-stripe": "shade",
+            "track-shadow": "shade",
+            "thumb": "face",
+            "thumb-light": "hi",
+            "thumb-dark": "shade",
+            "thumb-down": "shade",
+            "highlight": "selected",
+            "focus": "selected",
+            "selection": "selected",
+            "selection-text": "hi",
+        }
+        colors = {key: p[value] for key, value in roles.items()}
+    return (
+        ":root {\n"
+        + "".join(f"  --mtn-{key}: {value};\n" for key, value in colors.items())
+        + "}\n"
+    )
+
+
+def update_shell(root, schemes):
+    variants = palettes(schemes)
+    for theme in ("memphis", "platinum"):
+        path = root / "themes" / theme / "web.css"
+        text = path.read_text()
+        text = re.sub(
+            r"/\* >>> Generated appearances BEGIN \*/.*?/\* <<< Generated appearances END \*/\n?",
+            "",
+            text,
+            flags=re.DOTALL,
+        )
+        blocks = []
+        for appearance, p in variants[theme].items():
+            if appearance in ("font", "light", "dark", "extra"):
+                continue
+            blocks.append(
+                f"/* @tokens {appearance} */\n" + shell_tokens(theme, p, appearance)
+            )
+        text = (
+            text.rstrip()
+            + "\n\n/* >>> Generated appearances BEGIN */\n"
+            + "\n".join(blocks)
+            + "/* <<< Generated appearances END */\n"
+        )
+        path.write_text(text)
+    # Generated inline Lua data avoids a runtime JSON dependency or a second
+    # preference store. Regeneration is checked against this exact source.
+    path = root.parent / "hyprland/titlebars.lua"
+    text = path.read_text()
+    p = DRAWING_BOARD
+    roles = {
+        "face": "face",
+        "text": "text",
+        "text_off": "muted",
+        "hi": "face",
+        "lo": "face",
+        "edge": "edge",
+        "box": "base",
+        "rule": "edge",
+    }
+    board = (
+        '["drawing-board"] = {\n        '
+        + ", ".join(f'{key} = "{p[value][1:]}"' for key, value in roles.items())
+        + ",\n    }"
+    )
+    text = re.sub(r'\["drawing-board"\] = \{[^}]+\}', lambda _: board, text)
+    entries = []
+    for appearance, p in variants["memphis"].items():
+        if appearance in ("font", "light", "dark"):
+            continue
+        roles = {
+            "face": "face",
+            "hi": "hi",
+            "li": "li",
+            "lo": "shade",
+            "edge": "edge",
+            "text": "caption_text",
+            "text_off": "inactive_text",
+            "glyph": "text",
+            "caption1": "caption",
+            "caption2": "caption2",
+            "inactive1": "inactive_caption",
+            "inactive2": "inactive_caption2",
+        }
+        fields = ", ".join(f'{key} = "{p[value][1:]}"' for key, value in roles.items())
+        entries.append(f'    ["{appearance}"] = {{ {fields} }},')
+    block = (
+        "-- BEGIN GENERATED SYSTEM PALETTES\nM.SCHEME_PALETTES = {\n"
+        + "\n".join(entries)
+        + "\n}\n-- END GENERATED SYSTEM PALETTES"
+    )
+    text = re.sub(
+        r"-- BEGIN GENERATED SYSTEM PALETTES.*?-- END GENERATED SYSTEM PALETTES",
+        lambda _: block,
+        text,
+        flags=re.DOTALL,
+    )
+    path.write_text(text)
+
+
 # Keep the desktop's existing readable ANSI ramps; the historical UI font,
 # chrome and surface change, not applications' terminal colour meanings.
 ANSI = {
@@ -147,7 +378,9 @@ def recolor(value, palette, theme, appearance, foreground=False, background=Fals
             if level < 100:
                 return palette["text"]
             if level > 240:
-                return "#ffffff"  # selected text, not a bevel highlight
+                return palette.get(
+                    "selected_text", "#ffffff"
+                )  # selection ink, not a bevel highlight
             if appearance != "light":
                 return palette["muted"]
         if background and level > 245:
@@ -198,6 +431,8 @@ def raster(image, palette, theme, appearance, glyph=False, reference=None):
 
 def svg_theme(text, palette, theme, appearance, glyph=False):
     """Recolour vector paint AND the upstream Kvantum SVG's embedded PNGs."""
+    from PIL import Image
+
     for prefix, namespace in re.findall(r'xmlns(?::([\w-]+))?="([^"]+)"', text):
         ET.register_namespace(prefix or "", namespace)
     ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -316,13 +551,13 @@ def stylesheet(text, palette, theme, appearance):
             "fg_color": "text",
             "panel_fg_color": "text",
             "base_color": "base",
-            "text_color": "text",
+            "text_color": "base_text",
             "text_color_light": "muted",
             "selected_bg_color": "selected",
-            "selected_fg_color": None,
+            "selected_fg_color": "selected_text",
             "selected_inactive_fg_color": "text",
             "border_bright": "hi",
-            "border_light": "hi",
+            "border_light": "li",
             "border_dark": "edge",
             "border_shade": "shade",
             "bg_bright": "base",
@@ -336,7 +571,7 @@ def stylesheet(text, palette, theme, appearance):
             "disabled_font": "muted",
         }
         for role, key in roles.items():
-            color = palette[key] if key else "#ffffff"
+            color = palette.get(key, "#ffffff") if key else "#ffffff"
             text = re.sub(
                 r"(@define-color " + role + r") [^;]+;", r"\g<1> " + color + ";", text
             )
@@ -350,18 +585,18 @@ def gtk_overrides(p, font, version, theme):
         "theme_bg_color": "face",
         "theme_fg_color": "text",
         "theme_base_color": "base",
-        "theme_text_color": "text",
+        "theme_text_color": "base_text",
         "theme_selected_bg_color": "selected",
-        "theme_selected_fg_color": None,
+        "theme_selected_fg_color": "selected_text",
         "theme_unfocused_bg_color": "face",
         "theme_unfocused_fg_color": "text",
         "theme_unfocused_base_color": "base",
-        "theme_unfocused_text_color": "text",
+        "theme_unfocused_text_color": "base_text",
         "theme_unfocused_selected_bg_color": "selected",
-        "theme_unfocused_selected_fg_color": None,
+        "theme_unfocused_selected_fg_color": "selected_text",
     }
     variables = "".join(
-        f"@define-color {role} {p[key] if key else '#ffffff'};\n"
+        f"@define-color {role} {p.get(key, '#ffffff') if key else '#ffffff'};\n"
         for role, key in aliases.items()
     )
     if version == 4:
@@ -369,7 +604,7 @@ def gtk_overrides(p, font, version, theme):
             "window-bg": "face",
             "window-fg": "text",
             "view-bg": "base",
-            "view-fg": "text",
+            "view-fg": "base_text",
             "headerbar-bg": "caption" if theme == "memphis" else "face",
             "headerbar-fg": "caption_text" if theme == "memphis" else "text",
             "sidebar-bg": "face",
@@ -381,12 +616,12 @@ def gtk_overrides(p, font, version, theme):
             "dialog-bg": "face",
             "dialog-fg": "text",
             "accent-bg": "selected",
-            "accent-fg": None,
+            "accent-fg": "selected_text",
         }
         variables += (
             ":root {\n"
             + "".join(
-                f"  --{role}-color: {p[key] if key else '#ffffff'};\n"
+                f"  --{role}-color: {p.get(key, '#ffffff') if key else '#ffffff'};\n"
                 for role, key in roles.items()
             )
             + "}\n"
@@ -404,9 +639,10 @@ def gtk_overrides(p, font, version, theme):
 .background, window, dialog {{ background-color: {p["face"]}; color: {p["text"]}; }}
 {headerbar}
 tabbar, tabbar tabbox {{ background-color: {p["face"]}; color: {p["text"]}; border-radius: 0; }}
-entry, textview, textview text, .view, listview, columnview {{ background-color: {p["base"]}; color: {p["text"]}; }}
+entry, textview, textview text, .view, listview, columnview {{ background-color: {p["base"]}; color: {p.get("base_text", p["text"])}; }}
 button, menubutton > button {{ color: {p["text"]}; }}
-selection, *:selected {{ background-color: {p["selected"]}; color: #ffffff; }}
+selection, *:selected {{ background-color: {p["selected"]}; color: {p.get("selected_text", "#ffffff")}; }}
+menu, .menu, popover.menu {{ background-color: {p.get("menu", p["face"])}; color: {p.get("menu_text", p["text"])}; }}
 """
 
 
@@ -416,17 +652,17 @@ def qt_colors(p):
         p["text"],
         p["face"],
         p["hi"],
-        p["hi"],
+        p.get("li", p["hi"]),
         p["shade"],
         p["shade"],
-        p["text"],
+        p.get("base_text", p["text"]),
         p["text"],
         p["text"],
         p["base"],
         p["face"],
         p["edge"],
         p["selected"],
-        "#ffffff",
+        p.get("selected_text", "#ffffff"),
         p["selected"],
         p["selected"],
         p["face"],
@@ -548,9 +784,11 @@ window toast label {{ color: {p["text"]}; }}
     return sheet
 
 
-def generate(out, mac, chicago, kvantum):
+def generate(out, mac, chicago, kvantum, schemes):
+    from PIL import Image
+
     manifest = {}
-    for theme, variants in PALETTES.items():
+    for theme, variants in palettes(schemes).items():
         source = mac if theme == "platinum" else chicago / "Theme/Chicago95"
         for appearance, p in variants.items():
             if appearance == "font":
@@ -611,9 +849,13 @@ def generate(out, mac, chicago, kvantum):
             (target / "index.theme").write_text(
                 f"[Desktop Entry]\nName={name}\nType=X-GNOME-Metatheme\n[X-GNOME-Metatheme]\nGtkTheme={name}\n"
             )
+            gtk2dir = target / "gtk-2.0"
+            gtk2dir.mkdir()
+            (gtk2dir / "gtkrc").write_text(gtk2(p, variants["font"]))
             assets = out / "share/mountainous/native" / f"{theme}-{appearance}"
             assets.mkdir(parents=True)
             (assets / "qt-colors.conf").write_text(qt_colors(p))
+            (assets / "web.css").write_text(shell_tokens(theme, p, appearance))
             # Ghostty reloads this user-priority provider through its own
             # config action; ordinary libadwaita apps need a restart.
             (assets / "ghostty.css").write_text(
@@ -643,15 +885,15 @@ font-codepoint-map = U+F0000-U+FFFFD=Symbols Nerd Font Mono
 font-codepoint-map = U+100000-U+10FFFD=Symbols Nerd Font Mono
 window-padding-x = 8
 window-padding-y = 6
-window-theme = {"light" if appearance == "light" else "dark"}
+window-theme = {mode_for(appearance)}
 background = {p["base"][1:]}
-foreground = {p["text"][1:]}
-cursor-color = {p["text"][1:]}
+foreground = {p.get("base_text", p["text"])[1:]}
+cursor-color = {p.get("base_text", p["text"])[1:]}
 selection-background = {p["selected"][1:]}
-selection-foreground = ffffff
+selection-foreground = {p.get("selected_text", "#ffffff")[1:]}
 gtk-custom-css = {assets}/ghostty.css
 """)
-            ansi = ANSI["light" if appearance == "light" else "dark"]
+            ansi = ANSI[mode_for(appearance)]
             with (assets / "ghostty.conf").open("a") as config:
                 for index, color in enumerate(ansi):
                     config.write(f"palette = {index}={color}\n")
@@ -693,6 +935,19 @@ gtk-custom-css = {assets}/ghostty.css
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("out", "mac", "chicago", "kvantum"):
-        parser.add_argument("--" + name, required=True, type=Path)
+        parser.add_argument("--" + name, type=Path)
+    parser.add_argument("--schemes", required=True, type=Path)
+    parser.add_argument(
+        "--update-shell",
+        type=Path,
+        help="regenerate shell web tokens and Lua system palette block",
+    )
     args = parser.parse_args()
-    generate(args.out, args.mac, args.chicago, args.kvantum)
+    if args.update_shell:
+        update_shell(args.update_shell, args.schemes)
+    else:
+        if not all((args.out, args.mac, args.chicago, args.kvantum)):
+            parser.error(
+                "--out, --mac, --chicago and --kvantum are required for native generation"
+            )
+        generate(args.out, args.mac, args.chicago, args.kvantum, args.schemes)

@@ -18,7 +18,7 @@ if (process.argv[4] === "--state") {
     // Platinum, a missing mode dark, a missing extra file off.
     const read = (name) => { try { return fs.readFileSync(path.join(process.argv[5], name), "utf8").trim(); } catch (e) { return ""; } };
     const mode = read("theme") === "light" ? "light" : "dark";
-    process.stdout.write(A.pattern(find(read("theme-name")), mode, read("theme-extra") === "on") + "\n");
+    process.stdout.write(A.pattern(find(read("theme-name")), mode, read("theme-extra") === "on", read("theme-appearance")) + "\n");
     process.exit(0);
 }
 
@@ -34,17 +34,28 @@ assert.equal(A.appearance(null, "dark", true), "dark");
 // Every theme has a tile for every appearance it offers, under its folder.
 const root = path.dirname(registryPath);
 for (const theme of registry) {
-    const appearances = theme.appearances.map((a) => a.mode).concat(theme.options.extraDark ? ["extra"] : []);
+    const appearances = [...new Set(theme.appearances.map((a) => a.id).concat(["light", "dark"], theme.options.extraDark ? ["extra"] : []))];
     for (const a of appearances) {
         const file = theme.art.patterns[a];
         assert.ok(file && file.startsWith("themes/" + theme.id + "/"), theme.id + " " + a);
-        assert.ok(fs.existsSync(path.join(root, file)), file);
-        const svg = fs.readFileSync(path.join(root, file), "utf8");
+        const choice = theme.appearances.find((choice) => choice.id === a);
+        const fallback = `themes/${theme.id}/patterns/${choice ? choice.mode : a}.svg`;
+        const asset = fs.existsSync(path.join(root, file)) ? file : fallback;
+        assert.ok(fs.existsSync(path.join(root, asset)), file);
+        const svg = fs.readFileSync(path.join(root, asset), "utf8");
         assert.match(svg, /viewBox="0 0 8 8"/, file);
         assert.match(svg, /shape-rendering="crispEdges"/, file);
     }
     assert.deepEqual(Object.keys(theme.art.patterns).sort(), appearances.sort(), theme.id);
 }
+// Appearance IDs, not their shared light/dark mode, choose each new tile.
+for (const theme of registry) {
+    for (const choice of theme.appearances) {
+        assert.equal(A.pattern(theme, choice.mode, false, choice.id), theme.art.patterns[choice.id]);
+    }
+}
+assert.equal(A.pattern(platinum, "light", true, "drawing-board"), platinum.art.patterns["drawing-board"]);
+assert.equal(A.pattern(memphis, "dark", true, "unknown"), memphis.art.patterns.dark);
 // The five appearances draw five different tiles.
 const five = [["platinum", "light", false], ["platinum", "dark", false], ["platinum", "dark", true],
               ["memphis", "light", false], ["memphis", "dark", true]].map(([t, m, e]) => A.pattern(find(t), m, e));

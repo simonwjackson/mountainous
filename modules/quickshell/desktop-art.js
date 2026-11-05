@@ -9,7 +9,14 @@
 // 1.5 (Platinum 3, one 72-dpi Mac pixel; Memphis 2, one Memphis unit).
 
 // "light", "dark" or "extra": desktop-theme's own rule (theme.nix).
-function appearance(entry, mode, extraDark) {
+function appearance(entry, mode, extraDark, appearanceId) {
+    if (appearanceId && entry && entry.appearances) {
+        const choice = entry.appearances.find(function (a) { return a.id === appearanceId; });
+        if (choice) {
+            if (appearanceId === "dark-grey" && extraDark && entry.options.extraDark) return "extra";
+            return appearanceId;
+        }
+    }
     const dark = mode !== "light";
     if (dark && extraDark === true && entry && entry.options && entry.options.extraDark === true)
         return "extra";
@@ -18,9 +25,9 @@ function appearance(entry, mode, extraDark) {
 
 // The tile's path under the shell directory, or "" for none (the
 // compositor's black then shows).
-function pattern(entry, mode, extraDark) {
+function pattern(entry, mode, extraDark, appearanceId) {
     if (!entry || !entry.art || !entry.art.patterns) return "";
-    return entry.art.patterns[appearance(entry, mode, extraDark)] || "";
+    return entry.art.patterns[appearance(entry, mode, extraDark, appearanceId)] || "";
 }
 
 // Device pixels per tile pixel on a screen of this device pixel ratio,

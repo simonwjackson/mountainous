@@ -339,3 +339,31 @@
   outline: var(--mtn-hair2) solid var(--mtn-focus) !important;
   outline-offset: var(--mtn-hair) !important;
 }
+
+/* >>> Generated appearances BEGIN */
+/* @tokens drawing-board */
+:root {
+  --mtn-text: #37342e;
+  --mtn-text-off: #928a7b;
+  --mtn-edge: #4a463e;
+  --mtn-edge-off: #a49b88;
+  --mtn-well-edge: #4a463e;
+  --mtn-face: #f0eadb;
+  --mtn-face-down: #a49b88;
+  --mtn-light: #fffdf5;
+  --mtn-dark: #a49b88;
+  --mtn-field: #fffdf5;
+  --mtn-field-off: #f0eadb;
+  --mtn-track: #f0eadb;
+  --mtn-track-stripe: #a49b88;
+  --mtn-track-shadow: #a49b88;
+  --mtn-thumb: #f0eadb;
+  --mtn-thumb-light: #fffdf5;
+  --mtn-thumb-dark: #a49b88;
+  --mtn-thumb-down: #a49b88;
+  --mtn-highlight: #55516c;
+  --mtn-focus: #55516c;
+  --mtn-selection: #55516c;
+  --mtn-selection-text: #fffdf5;
+}
+/* <<< Generated appearances END */

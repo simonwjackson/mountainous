@@ -21,6 +21,29 @@ Singleton {
     readonly property string namePath: stateDir + "/mountainous/theme-name"
     readonly property string name: Kit.Theme.name
 
+    readonly property string appearancePath: stateDir + "/mountainous/theme-appearance"
+    readonly property string appearance: Kit.Theme.appearance
+    property string savedAppearance: ""
+    property string savedMode: "dark"
+
+    function syncAppearance() {
+        const catalog = typeof ThemeCatalog !== "undefined" ? ThemeCatalog : null;
+        const fallback = savedMode === "light" ? (name === "memphis" ? "standard" : "light") : "dark-grey";
+        const entry = catalog ? catalog.find(name) : null;
+        const choice = entry ? entry.appearances.find(function (a) { return a.id === savedAppearance; }) : null;
+        Kit.Theme.appearance = choice ? choice.id : fallback;
+        Kit.Theme.mode = choice ? choice.mode : savedMode;
+    }
+    FileView {
+        path: root.appearancePath
+        blockLoading: true
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: { root.savedAppearance = text().trim(); root.syncAppearance(); }
+        onLoadFailed: { root.savedAppearance = ""; root.syncAppearance(); }
+    }
+
     readonly property string extraPath: stateDir + "/mountainous/theme-extra"
 
     readonly property string soundsPath: stateDir + "/mountainous/theme-sounds"
@@ -54,7 +77,8 @@ Singleton {
         onFileChanged: reload()
         onLoaded: {
             const value = text().trim();
-            if (value === "dark" || value === "light") Kit.Theme.mode = value;
+            if (value === "dark" || value === "light") root.savedMode = value;
+            root.syncAppearance();
         }
     }
 
@@ -88,6 +112,7 @@ Singleton {
         const entry = typeof ThemeCatalog !== "undefined" ? ThemeCatalog.find(id) : null;
         if (entry && entry.art && ("iconTheme" in Quickshell)) Quickshell.iconTheme = entry.art.icons;
         Kit.Theme.name = id;
+        root.syncAppearance();
     }
     readonly property string iconTheme: ("iconTheme" in Quickshell) ? Quickshell.iconTheme : ""
     Component.onCompleted: root.choose(root.name)
@@ -102,7 +127,7 @@ Singleton {
         function current(): string {
             return root.mode + " " + root.bgBase + " " + root.bgVeil
                 + " extra=" + root.extraState + root.chromeStatus + " theme=" + root.name
-                + " icons=" + root.iconTheme;
+                + " icons=" + root.iconTheme + " appearance=" + root.appearance;
         }
     }
 
