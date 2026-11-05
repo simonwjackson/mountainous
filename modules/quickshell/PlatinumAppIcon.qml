@@ -4,6 +4,7 @@ import Quickshell.Widgets
 import QtQuick
 import QtQuick.Effects
 import "app-icon.js" as AppIcon
+import "cdp-target.js" as CdpTarget
 
 // An app's icon from the icon theme. Inactive (a window on a page the
 // screen is not showing, a hidden app) draws Platinum's disabled look: the
@@ -19,6 +20,9 @@ Item {
     property bool inactive: false
     // The surface the icon sits on: the checker's colour.
     property color surface: Kit.PlatinumTokens.stripSurface
+    // A Chromium window: it draws a generated 3/4 token, which may use a
+    // bigger slot than theme art (32 px pixel art keeps its own size).
+    readonly property bool browserWindow: root.toplevel !== null && CdpTarget.isBrowser(CdpTarget.appIdOf(root.toplevel))
 
     implicitWidth: size
     implicitHeight: size

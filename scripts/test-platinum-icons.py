@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from platinum_icons import PALETTE, margin, render, select_frame
+from platinum_icons import PALETTE, RENDER_VERSION, margin, render, select_frame
 
 spec = importlib.util.spec_from_file_location(
     "platinum_cache", Path(__file__).with_name("platinum-icon.py")
@@ -68,11 +68,11 @@ def corpus():
 
 class RendererTests(unittest.TestCase):
     def test_margin_rounding(self):
-        self.assertEqual([margin(size) for size in [24, 30, 48]], [2, 3, 4])
+        self.assertEqual([margin(size) for size in [24, 30, 36, 48]], [2, 2, 2, 3])
 
     def test_corpus_margin_full_inner_box_and_determinism(self):
         for name, image in corpus().items():
-            for size in [24, 30, 48]:
+            for size in [24, 30, 36, 48]:
                 for theme in ["platinum-light", "platinum-dark"]:
                     with self.subTest(name=name, size=size, theme=theme):
                         first = render([image], size, theme)
@@ -107,7 +107,7 @@ class RendererTests(unittest.TestCase):
     def test_transparent_padding_does_not_shrink_the_glyph(self):
         glyph = corpus()["tiny-padded"]
         cropped = glyph.crop(glyph.getbbox())
-        for size in [24, 30, 48]:
+        for size in [24, 30, 36, 48]:
             self.assertEqual(
                 render([glyph], size).tobytes(), render([cropped], size).tobytes()
             )
@@ -150,7 +150,9 @@ class CacheTests(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             paths = list(pool.map(call, range(8)))
         expected = (
-            hashlib.sha256(self.source.read_bytes()).hexdigest()
+            hashlib.sha256(
+                RENDER_VERSION.encode() + b"\0" + self.source.read_bytes()
+            ).hexdigest()
             + "-30-platinum-dark.png"
         )
         self.assertTrue(all(path.name == expected for path in paths))

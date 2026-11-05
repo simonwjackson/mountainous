@@ -546,8 +546,12 @@ fonts, network access or browser state. Nix pins Pillow, numpy and librsvg.
 - Colours use the Mac OS 8 system palette. Alpha edges are 1-bit. The outer black
   outline is one device pixel. Light comes from the top left. The hard shadow
   falls down-right. The light plate remains light in both modes for dark glyphs.
-- Reserve **`M(S) = max(2, floor(S/12 + 0.5))`** on all four sides: 24→2,
-  30→3, 48→4 device pixels. The band must contain no non-transparent pixel,
+- Reserve **`M(S) = max(2, floor(S/16))`** on all four sides: 24, 30 and 36→2,
+  48→3 device pixels. (Simon asked for bigger tokens on 2026-11-04: the margin
+  went from S/12 to S/16, the body depth from up to 6 px to `max(2, S/12)`,
+  the shadow to 1 px and the plate border to 1 px. The Control Strip draws a
+  Chromium window's token in a 24 px slot, theme art stays at 20 px.)
+  `RENDER_VERSION` is part of each cache key; bump it with any drawing change. The band must contain no non-transparent pixel,
   including outline, extrusion and shadow. Transparent source padding is trimmed.
   The entire composite fits the inner `S−2M` box, using its full longest axis.
   Centre its bounds with floor division; an odd spare pixel goes right/bottom.

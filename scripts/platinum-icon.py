@@ -19,7 +19,7 @@ import warnings
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
-from platinum_icons import THEMES, render
+from platinum_icons import RENDER_VERSION, THEMES, render
 
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
 MAX_SOURCE_PIXELS = 4 * 1024 * 1024
@@ -133,7 +133,9 @@ def cached_icon(
     if theme not in THEMES or not 8 <= size <= 256:
         raise ValueError("invalid icon size/theme")
     data = source_bytes(source)
-    digest = hashlib.sha256(data).hexdigest()
+    # The renderer version is part of the digest, so a new drawing gets new
+    # names and the old files age out through the normal size limit.
+    digest = hashlib.sha256(RENDER_VERSION.encode() + b"\0" + data).hexdigest()
     cache_home = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
     if not cache_home.is_absolute():
         cache_home = Path.home() / ".cache"

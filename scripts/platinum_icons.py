@@ -11,11 +11,15 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 THEMES = ("platinum-light", "platinum-dark")
+# Part of every cache key: bump it whenever the drawing changes, so cached
+# tokens from an older renderer are never shown again.
+RENDER_VERSION = "2"
 
 
 def margin(size: int) -> int:
-    # Round halves up, unlike Python's round(2.5): 30 px must reserve 3 px.
-    return max(2, (size + 6) // 12)
+    # S/16, at least 2 device px: 24 and 30 -> 2, 36 -> 2, 48 -> 3. Never
+    # touching the edge is the rule; the gap stays small so the face is large.
+    return max(2, size // 16)
 
 
 def mac_system_palette() -> np.ndarray:
@@ -164,8 +168,10 @@ def render(
         return None
     source = source.crop(bounds)
     inner = size - 2 * margin(size)
-    depth = min({24: 2, 30: 4, 48: 6}.get(size, max(2, size // 8)), max(1, inner // 4))
-    shadow = 1 if size < 30 else 2
+    # A thin body, as Mac OS 8's own 3/4 icons (2-3 px of depth at 32 px),
+    # so the flat face keeps most of the slot.
+    depth = min(max(2, size // 12), max(1, inner // 4))
+    shadow = 1
     face_size = inner - depth - 2 - shadow
     if face_size < 1:
         return None
@@ -186,7 +192,7 @@ def render(
         )
         body[y : y + face_size, x : x + face_size] = np.array(plate_image) >= 128
         colours[body] = 238
-        inset = min(1 if size < 30 else 2, max(0, (face_size - 1) // 2))
+        inset = min(1, max(0, (face_size - 1) // 2))
         glyph_size = face_size - 2 * inset
         face, mask = fit(source, glyph_size)
         patch = colours[
