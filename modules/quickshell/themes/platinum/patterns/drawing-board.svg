@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" shape-rendering="crispEdges">
+<!-- Platinum Drawing Board: an original 8x8 tile, a faint pencil wave on white paper. One cell per Mac pixel; the wave meets itself at the tile's edges. -->
+<rect width="8" height="8" fill="#ffffff"/>
+<g fill="#efebe2"><rect x="0" y="3" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/></g>
+</svg>
