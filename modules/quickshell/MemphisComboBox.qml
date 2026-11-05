@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import Hensou as Kit
 import Quickshell
 import QtQuick
+import "themes/memphis/combo-plan.js" as Plan
 
 // A Memphis drop-down list (CBS_DROPDOWNLIST).
 //
@@ -11,13 +12,19 @@ import QtQuick
 // dotted rectangle. Open: the button presses in and a list with a 1-u
 // black edge drops below, the current item highlighted.
 //
+// Every name stays readable at every size. A value wider than its box
+// wraps, and the field grows a line at a time; a field too narrow for a
+// value box beside the button stacks the button under the value. The open
+// list is as wide as its longest name needs, up to the window; narrower
+// than that, its names wrap and their rows grow.
+//
 // The list escapes clipping: while open it is reparented to `overlay`
-// (default: the window's content item). It shows at most maxRows rows and
-// scrolls the rest, with a scroll bar, as Memphis's lists did. It drops
-// below the field, or rises above it when there is more room there; on a
-// short window it shrinks to the room (one row at least) and scrolls, so
-// every item stays reachable. bottomInset keeps it off a strip at the
-// window's foot (the taskbar under the picker).
+// (default: the window's content item). It shows at most maxRows single
+// rows' worth and scrolls the rest, with a scroll bar, as Memphis's lists
+// did. Where it goes is combo-plan.js's place(): below the field, above
+// it when there is more room there, shortened to the room, or over the
+// field when neither side holds a row. bottomInset keeps it off a strip
+// at the window's foot (the taskbar under the picker).
 //
 // Keys: Up/Down change the value (closed) or the highlight (open);
 // Page Up/Down, Home and End move the highlight a page or to an end;
@@ -31,7 +38,7 @@ FocusScope {
     property bool open: false
     property bool showFocus: false
     property Item overlay: null
-    property int maxRows: 10
+    property int maxRows: Plan.MAX_ROWS
     property real bottomInset: 0
 
     signal activated(int index)
@@ -39,65 +46,80 @@ FocusScope {
     readonly property real u: Kit.MemphisTokens.unitFor(QsWindow.window)
     readonly property bool focusShown: enabled && (showFocus || activeFocus)
     property int highlighted: currentIndex
-    readonly property real rowHeight: 15 * u
-    readonly property real listRow: 17 * u
-    // Rows the open list shows; place() sets it from the room.
-    property int shownRows: Math.min(root.model.length, root.maxRows)
-    readonly property bool listScrolls: shownRows < root.model.length
+    readonly property real listRow: Plan.ROW * u
+    readonly property string value: root.model.length > root.currentIndex && root.currentIndex >= 0 ? root.model[root.currentIndex] : ""
+
+    // The field: its widths from the width alone, its heights from the
+    // lines the value needs at that width (two calls, so no loop).
+    readonly property var shape: Plan.field(root.width / root.u, 1)
+    readonly property int valueLines: Math.max(1, Math.round(valueText.implicitHeight / (Kit.MemphisTokens.lineUnits * root.u)))
+    readonly property var sized: Plan.field(root.width / root.u, root.valueLines)
+
+    // The open list, as place() last set it.
+    property bool listScrolls: false
+    property real listTextWidth: 1
 
     implicitWidth: Kit.MemphisTokens.ceilU(Kit.MemphisTokens.widest(model, false, root.u), root.u) + 4 * u + 23 * u + 4 * u
-    implicitHeight: Kit.MemphisTokens.fieldHeight * u
+    implicitHeight: sized.height * u
     activeFocusOnTab: enabled
 
     onOpenChanged: {
         highlighted = currentIndex;
         if (open) { place(); replace.restart(); }
     }
+    onHighlightedChanged: reveal()
+    onWidthChanged: if (open) replace.restart()
     // A host that scrolls the field into view when it takes the focus
     // moves it after the list opened: place the list again once it has.
     Timer { id: replace; interval: 40; onTriggered: if (root.open) root.place() }
-    // The open list is at least as wide as its longest item (and its
-    // scroll bar), as Memphis's drop-down lists could be, so a narrow field
-    // still shows whole names; never wider than the window.
-    readonly property real listWidth: Math.max(root.width, Kit.MemphisTokens.ceilU(Kit.MemphisTokens.widest(root.model, false, root.u), root.u)
-        + 8 * root.u + 2 * root.u + (root.listScrolls ? Kit.MemphisTokens.scrollBar * root.u : 0))
-    onHighlightedChanged: reveal()
+
+    function rowHeights() {
+        const out = [];
+        for (let i = 0; i < rowRepeater.count; i++) {
+            const it = rowRepeater.itemAt(i);
+            out.push(it ? it.height / root.u : Plan.ROW);
+        }
+        return out;
+    }
     // Keep the highlighted row inside the list's view.
     function reveal() {
         if (!root.open) return;
-        const top = root.highlighted * root.listRow;
-        let y = view.contentY;
-        if (top < y) y = top;
-        else if (top + root.listRow > y + view.height) y = top + root.listRow - view.height;
-        view.contentY = Math.max(0, Math.min(Math.max(0, view.contentHeight - view.height), y));
+        view.contentY = Plan.reveal(root.rowHeights(), root.highlighted, view.contentY / root.u, view.height / root.u) * root.u;
     }
-
     function choose(i) {
         if (i < 0 || i >= root.model.length) return;
         root.activated(i);
         root.currentIndex = i;
         root.open = false;
     }
+    // Size the list for the window, then let the policy place it. A list
+    // that scrolls gives its scroll bar room, which can rewrap its names,
+    // so the width is settled first and checked once.
     function place() {
         const host = root.overlay || root.Window.contentItem;
         if (!host) return;
         list.parent = host;
-        const p = root.mapToItem(host, 0, root.height);
-        const top = root.mapToItem(host, 0, 0).y;
-        const n = root.model.length;
-        const want = Math.max(1, Math.min(n, root.maxRows));
-        const fit = room => Math.max(0, Math.floor((room - 2 * root.u + 1e-6) / root.listRow));
-        const area = host.height - root.bottomInset;
-        const below = fit(area - p.y), above = fit(top);
-        const up = below < want && above > below;
-        root.shownRows = Math.max(1, Math.min(want, up ? above : below));
-        list.width = Math.min(root.listWidth, host.width);
-        list.x = Kit.MemphisTokens.snap(Math.max(0, Math.min(p.x, host.width - list.width)), root.u);
-        // No room for a row on either side: the one row lies over the
-        // field, inside the window's usable height.
-        const cramped = below < 1 && above < 1;
-        list.y = Kit.MemphisTokens.snap(cramped ? Math.max(0, Math.min(top, area - list.height))
-            : up ? top - list.height : p.y, root.u);
+        const u = root.u;
+        const top = root.mapToItem(host, 0, 0).y / u;
+        const fieldBottom = root.mapToItem(host, 0, root.height).y / u;
+        const x = root.mapToItem(host, 0, 0).x / u;
+        const widest = Kit.MemphisTokens.widest(root.model, false, u) / u;
+        let scrolls = root.model.length > root.maxRows;
+        let p = null;
+        for (let pass = 0; pass < 2; pass++) {
+            const w = Plan.listWidth(root.width / u, widest, host.width / u, scrolls);
+            list.width = w * u;
+            root.listScrolls = scrolls;
+            root.listTextWidth = Plan.rowTextWidth(w, scrolls) * u;
+            p = Plan.place({ rows: root.rowHeights(), fieldTop: top, fieldBottom: fieldBottom,
+                area: (host.height - root.bottomInset) / u, maxRows: root.maxRows });
+            if (p.scrolls === scrolls) break;
+            scrolls = p.scrolls;
+        }
+        list.height = p.height * u;
+        view.height = p.view * u;
+        list.x = Kit.MemphisTokens.snap(Math.max(0, Math.min(x * u, host.width - list.width)), u);
+        list.y = Kit.MemphisTokens.snap(p.y * u, u);
         view.contentY = 0;
         root.reveal();
     }
@@ -105,11 +127,10 @@ FocusScope {
     Keys.onPressed: event => {
         const n = root.model.length;
         if (root.open) {
-            const page = Math.max(1, root.shownRows - 1);
             if (event.key === Qt.Key_Down) root.highlighted = Math.min(n - 1, root.highlighted + 1);
             else if (event.key === Qt.Key_Up) root.highlighted = Math.max(0, root.highlighted - 1);
-            else if (event.key === Qt.Key_PageDown) root.highlighted = Math.min(n - 1, root.highlighted + page);
-            else if (event.key === Qt.Key_PageUp) root.highlighted = Math.max(0, root.highlighted - page);
+            else if (event.key === Qt.Key_PageDown) root.highlighted = Plan.page(root.rowHeights(), root.highlighted, view.height / root.u, 1);
+            else if (event.key === Qt.Key_PageUp) root.highlighted = Plan.page(root.rowHeights(), root.highlighted, view.height / root.u, -1);
             else if (event.key === Qt.Key_Home) root.highlighted = 0;
             else if (event.key === Qt.Key_End) root.highlighted = n - 1;
             else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.choose(root.highlighted);
@@ -130,26 +151,29 @@ FocusScope {
         color: root.enabled ? Kit.MemphisTokens.win : Kit.MemphisTokens.face
     }
 
-    // The value box: 3 u in, up to the button.
+    // The value box: 3 u in; beside the button, or above it when stacked.
     Rectangle {
         id: valueBox
-        x: 3 * root.u; y: 3 * root.u
-        width: Math.max(0, root.width - 3 * root.u - 2 * root.u - 16 * root.u - 2 * root.u)
-        height: root.rowHeight
+        objectName: "comboValue"
+        x: Plan.INSET * root.u; y: Plan.INSET * root.u
+        width: root.shape.valueWidth * root.u
+        height: root.sized.valueHeight * root.u
         color: root.focusShown ? Kit.MemphisTokens.selection : "transparent"
-        // A field narrower than its value cuts it here, not past the button.
-        clip: true
 
         MemphisText {
+            id: valueText
             x: 2 * root.u; y: root.u
-            width: valueBox.width - 4 * root.u
-            text: root.model.length > root.currentIndex && root.currentIndex >= 0 ? root.model[root.currentIndex] : ""
+            width: Math.max(root.u, valueBox.width - 4 * root.u)
+            text: root.value
             accessMarks: false
+            wrap: true
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+            elide: Text.ElideNone
             color: root.focusShown ? Kit.MemphisTokens.selectionText : Kit.MemphisTokens.winText
             disabledLook: !root.enabled
         }
         MemphisFocusRect {
-            visible: root.focusShown
+            visible: root.focusShown && valueBox.width > 0
             anchors.fill: parent
             color: Kit.MemphisTokens.selectionText
         }
@@ -157,9 +181,9 @@ FocusScope {
 
     Item {
         id: button
-        x: root.width - 2 * root.u - width
-        y: 2 * root.u
-        width: 16 * root.u
+        x: root.shape.buttonX * root.u
+        y: root.sized.buttonY * root.u
+        width: Plan.BUTTON * root.u
         height: 17 * root.u
         MemphisBevel {
             anchors.fill: parent
@@ -185,7 +209,7 @@ FocusScope {
         visible: root.open
         z: 1000
         width: root.width
-        height: root.shownRows * root.listRow + 2 * root.u
+        height: root.listRow + 2 * root.u
 
         Rectangle {
             anchors.fill: parent
@@ -196,10 +220,10 @@ FocusScope {
         Flickable {
             id: view
             x: root.u; y: root.u
-            width: list.width - 2 * root.u - (root.listScrolls && root.shownRows >= 2 ? Kit.MemphisTokens.scrollBar * root.u : 0)
-            height: root.shownRows * root.listRow
+            width: list.width - 2 * root.u - (root.listScrolls ? Kit.MemphisTokens.scrollBar * root.u : 0)
+            height: root.listRow
             contentWidth: width
-            contentHeight: root.model.length * root.listRow
+            contentHeight: rows.height
             interactive: false
             clip: true
             WheelHandler {
@@ -209,20 +233,28 @@ FocusScope {
                 }
             }
             Column {
+                id: rows
                 Repeater {
+                    id: rowRepeater
                     model: root.model
                     Rectangle {
                         id: row
                         required property string modelData
                         required property int index
+                        objectName: "comboRow" + index
                         width: view.width
-                        height: root.listRow
+                        // One line is Memphis's 17-u row; a wrapped name adds a line.
+                        height: Math.max(root.listRow, rowText.implicitHeight + 4 * root.u)
                         color: index === root.highlighted ? Kit.MemphisTokens.selection : "transparent"
                         MemphisText {
+                            id: rowText
                             x: 4 * root.u; y: root.u
-                            width: row.width - 8 * root.u
+                            width: root.listTextWidth
                             text: row.modelData
                             accessMarks: false
+                            wrap: true
+                            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                            elide: Text.ElideNone
                             color: row.index === root.highlighted ? Kit.MemphisTokens.selectionText : Kit.MemphisTokens.winText
                         }
                         MouseArea {
@@ -235,8 +267,8 @@ FocusScope {
                 }
             }
         }
-        // Below two rows the arrows would not fit: the wheel and the keys
-        // still scroll the list.
+        // Below two rows' height the arrows would not fit: the wheel and
+        // the keys still scroll the list.
         MemphisScrollBar {
             visible: root.listScrolls && view.height >= 2 * Kit.MemphisTokens.scrollBar * root.u
             x: list.width - root.u - width
