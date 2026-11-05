@@ -27,7 +27,7 @@ M.PALETTES = {
         hi = "ffffff", lo = "999999", edge = "000000", box = "e6e6e6", rule = "000000",
     },
     ["drawing-board"] = {
-        face = "f0eadb", text = "37342e", text_off = "928a7b", hi = "f0eadb", lo = "f0eadb", edge = "4a463e", box = "fffdf5", rule = "4a463e",
+        face = "e8e2d5", text = "24221e", text_off = "8a8477", hi = "e8e2d5", lo = "e8e2d5", edge = "3b3833", box = "fefcf8", rule = "3b3833",
     },
     dark = {
         face = "3a3a3a", text = "ececec", text_off = "767676",

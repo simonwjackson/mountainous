@@ -98,14 +98,14 @@ DARK_APPEARANCES = {
     "high-contrast-2",
 }
 DRAWING_BOARD = {
-    "face": "#f0eadb",
-    "text": "#37342e",
-    "base": "#fffdf5",
-    "hi": "#fffdf5",
-    "shade": "#a49b88",
-    "edge": "#4a463e",
-    "selected": "#55516c",
-    "muted": "#928a7b",
+    "face": "#e8e2d5",
+    "text": "#24221e",
+    "base": "#fefcf8",
+    "hi": "#fdfbf6",
+    "shade": "#bdb5a6",
+    "edge": "#3b3833",
+    "selected": "#3a5784",
+    "muted": "#8a8477",
 }
 
 

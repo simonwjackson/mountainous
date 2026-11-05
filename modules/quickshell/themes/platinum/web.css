@@ -343,27 +343,27 @@
 /* >>> Generated appearances BEGIN */
 /* @tokens drawing-board */
 :root {
-  --mtn-text: #37342e;
-  --mtn-text-off: #928a7b;
-  --mtn-edge: #4a463e;
-  --mtn-edge-off: #a49b88;
-  --mtn-well-edge: #4a463e;
-  --mtn-face: #f0eadb;
-  --mtn-face-down: #a49b88;
-  --mtn-light: #fffdf5;
-  --mtn-dark: #a49b88;
-  --mtn-field: #fffdf5;
-  --mtn-field-off: #f0eadb;
-  --mtn-track: #f0eadb;
-  --mtn-track-stripe: #a49b88;
-  --mtn-track-shadow: #a49b88;
-  --mtn-thumb: #f0eadb;
-  --mtn-thumb-light: #fffdf5;
-  --mtn-thumb-dark: #a49b88;
-  --mtn-thumb-down: #a49b88;
-  --mtn-highlight: #55516c;
-  --mtn-focus: #55516c;
-  --mtn-selection: #55516c;
-  --mtn-selection-text: #fffdf5;
+  --mtn-text: #24221e;
+  --mtn-text-off: #8a8477;
+  --mtn-edge: #3b3833;
+  --mtn-edge-off: #bdb5a6;
+  --mtn-well-edge: #3b3833;
+  --mtn-face: #e8e2d5;
+  --mtn-face-down: #bdb5a6;
+  --mtn-light: #fdfbf6;
+  --mtn-dark: #bdb5a6;
+  --mtn-field: #fefcf8;
+  --mtn-field-off: #e8e2d5;
+  --mtn-track: #e8e2d5;
+  --mtn-track-stripe: #bdb5a6;
+  --mtn-track-shadow: #bdb5a6;
+  --mtn-thumb: #e8e2d5;
+  --mtn-thumb-light: #fdfbf6;
+  --mtn-thumb-dark: #bdb5a6;
+  --mtn-thumb-down: #bdb5a6;
+  --mtn-highlight: #3a5784;
+  --mtn-focus: #3a5784;
+  --mtn-selection: #3a5784;
+  --mtn-selection-text: #fdfbf6;
 }
 /* <<< Generated appearances END */

@@ -1421,25 +1421,25 @@ Title bars use ActiveCaption → GradientActiveCaption and InactiveCaption →
 GradientInactiveCaption with their corresponding text colours. The Lua data
 is generated, not hand-copied. No plugin ABI or login boundary changes.
 
-### Drawing Board native palette (provisional; reconcile with PlatinumTokens)
+### Drawing Board native palette
 
-These values shift the existing Platinum Light neutral ramp to cream paper
-and graphite. They are not sampled Apple artwork. Structure, fonts and metrics
-stay Platinum's. The design worker owns the final token review.
+The native, web and title-bar values come from `PlatinumTokens.palette("drawing-board")`
+in the Hensou kit, which is the single visual source. They are not sampled Apple
+artwork. Structure, fonts and metrics stay Platinum's.
 
-| Role | Platinum Light native | Drawing Board native |
-|---|---|---|
-| Face/menu paper | `#dddddd` | `#f0eadb` |
-| Text | `#000000` | `#37342e` |
-| Field/base paper | `#ffffff` | `#fffdf5` |
-| Highlight edge | `#ffffff` | `#fffdf5` |
-| Shadow | `#999999` | `#a49b88` |
-| Graphite frame | `#000000` | `#4a463e` |
-| Selection | `#333399` | `#55516c` |
-| Disabled text | `#8a8a8a` | `#928a7b` |
+| Role | Platinum Light native | Drawing Board native | Kit token |
+|---|---|---|---|
+| Face (bar, title, window) | `#dddddd` | `#e8e2d5` | `barSurface`, `titleSurface` |
+| Text | `#000000` | `#24221e` | `barText`, `menuText` |
+| Field/base paper | `#ffffff` | `#fefcf8` | `field`, `list` |
+| Highlight edge | `#ffffff` | `#fdfbf6` | `bevelLight` |
+| Shadow | `#999999` | `#bdb5a6` | `bevelDark` |
+| Graphite frame | `#000000` | `#3b3833` | `frameLine`, `barRule` |
+| Selection | `#333399` | `#3a5784` | `highlight` |
+| Disabled text | `#8a8a8a` | `#8a8477` | `barTextOff`, `menuTextOff` |
 
-The Drawing Board title bar uses face `#f0eadb`, title `#37342e`, inactive title
-`#928a7b`, frame/rule `#4a463e`, and boxes `#fffdf5`. Its stripe/bevel pair both
+The Drawing Board title bar uses face `#e8e2d5`, title `#24221e`, inactive title
+`#8a8477`, frame/rule `#3b3833`, and boxes `#fefcf8`. Its stripe/bevel pair both
 use the face colour, so the existing plugin draws a plain paper title bar.
 Extra dark does not change this light-only appearance.
 
