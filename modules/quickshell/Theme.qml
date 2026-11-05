@@ -28,10 +28,10 @@ Singleton {
 
     function syncAppearance() {
         const catalog = typeof ThemeCatalog !== "undefined" ? ThemeCatalog : null;
-        const fallback = savedMode === "light" ? (name === "memphis" ? "standard" : "light") : "dark-grey";
-        const entry = catalog ? catalog.find(name) : null;
-        const choice = entry ? entry.appearances.find(function (a) { return a.id === savedAppearance; }) : null;
-        Kit.Theme.appearance = choice ? choice.id : fallback;
+        const choice = catalog ? catalog.resolveAppearance(name, savedAppearance, savedMode) : null;
+        // A standalone gallery has no registry. Empty is the kit's existing
+        // mode-only host contract, not a second list of default IDs.
+        Kit.Theme.appearance = choice ? choice.id : "";
         Kit.Theme.mode = choice ? choice.mode : savedMode;
     }
     FileView {

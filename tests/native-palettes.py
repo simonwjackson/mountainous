@@ -64,6 +64,7 @@ roles = {
         "menu": "menu",
         "menu_text": "menuText",
         "desktop": "desktop",
+        "scroll_track": "scrollTrack",
     },
 }
 

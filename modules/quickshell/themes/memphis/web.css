@@ -35,6 +35,9 @@
   --mtn-ui-font: "W95FA Grid", "Public Sans", system-ui, sans-serif;
   --mtn-ui-size: calc(12.5 * var(--mtn-u));
   --mtn-bar: calc(16 * var(--mtn-u));
+  /* Legacy blocks keep their original face/light-edge checker. */
+  --mtn-track: var(--mtn-face);
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 @media (resolution: 1dppx) { :root { --mtn-u: 2px; } }
 @media (resolution: 1.25dppx) { :root { --mtn-u: 1.6px; } }
@@ -113,10 +116,10 @@
 /* @level scrollbars */
 :where(*) { scrollbar-color: auto !important; scrollbar-width: auto !important; }
 ::-webkit-scrollbar { width: var(--mtn-bar); height: var(--mtn-bar); background-color: var(--mtn-face); }
-/* The track: Memphis's 50% checker of the face and the light edge, one u per cell. */
+/* Legacy tracks keep their checker. Schemes select solid ScrollBar or the kit checker. */
 ::-webkit-scrollbar-track {
-  background-color: var(--mtn-face);
-  background-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
+  background-color: var(--mtn-track);
+  background-image: var(--mtn-track-image);
   background-size: var(--mtn-u2) var(--mtn-u2);
 }
 /* The thumb and the arrow buttons are push buttons. */
@@ -384,8 +387,10 @@
   --mtn-well-edge: #8d8961;
   --mtn-well-edge-low: #e1e0d2;
   --mtn-focus: #000000;
-  --mtn-dither: #c2bfa5;
+  --mtn-dither: #e1e0d2;
   --mtn-emboss: #e1e0d2;
+  --mtn-track: #e1e0d2;
+  --mtn-track-image: none;
 }
 
 /* @tokens desert */
@@ -406,8 +411,10 @@
   --mtn-well-edge: #a28d68;
   --mtn-well-edge-low: #eae6dd;
   --mtn-focus: #000000;
-  --mtn-dither: #d5ccbb;
+  --mtn-dither: #eae6dd;
   --mtn-emboss: #eae6dd;
+  --mtn-track: #eae6dd;
+  --mtn-track-image: none;
 }
 
 /* @tokens eggplant */
@@ -428,8 +435,10 @@
   --mtn-well-edge: #588078;
   --mtn-well-edge-low: #c8d8d8;
   --mtn-focus: #000000;
-  --mtn-dither: #90b0a8;
+  --mtn-dither: #c8d8d8;
   --mtn-emboss: #c8d8d8;
+  --mtn-track: #90b0a8;
+  --mtn-track-image: none;
 }
 
 /* @tokens lilac */
@@ -450,8 +459,10 @@
   --mtn-well-edge: #5a4eb1;
   --mtn-well-edge-low: #d8d5ec;
   --mtn-focus: #000000;
-  --mtn-dither: #aea8d9;
+  --mtn-dither: #d8d5ec;
   --mtn-emboss: #d8d5ec;
+  --mtn-track: #aea8d9;
+  --mtn-track-image: none;
 }
 
 /* @tokens maple */
@@ -472,8 +483,10 @@
   --mtn-well-edge: #c6a646;
   --mtn-well-edge-low: #f2ecd7;
   --mtn-focus: #000000;
-  --mtn-dither: #e6d8ae;
+  --mtn-dither: #f2ecd7;
   --mtn-emboss: #f2ecd7;
+  --mtn-track: #f2ecd7;
+  --mtn-track-image: none;
 }
 
 /* @tokens marine */
@@ -494,8 +507,10 @@
   --mtn-well-edge: #489088;
   --mtn-well-edge-low: #c8e0d8;
   --mtn-focus: #000000;
-  --mtn-dither: #88c0b8;
+  --mtn-dither: #c8e0d8;
   --mtn-emboss: #c8e0d8;
+  --mtn-track: #88c0b8;
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 
 /* @tokens plum */
@@ -516,8 +531,10 @@
   --mtn-well-edge: #786058;
   --mtn-well-edge-low: #d8d0c8;
   --mtn-focus: #000000;
-  --mtn-dither: #a89890;
+  --mtn-dither: #d8d0c8;
   --mtn-emboss: #d8d0c8;
+  --mtn-track: #a89890;
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 
 /* @tokens pumpkin */
@@ -538,8 +555,10 @@
   --mtn-well-edge: #d7a52f;
   --mtn-well-edge-low: #f5eacf;
   --mtn-focus: #000000;
-  --mtn-dither: #ecd59d;
+  --mtn-dither: #f5eacf;
   --mtn-emboss: #f5eacf;
+  --mtn-track: #f5eacf;
+  --mtn-track-image: none;
 }
 
 /* @tokens rainy-day */
@@ -560,8 +579,10 @@
   --mtn-well-edge: #4f657d;
   --mtn-well-edge-low: #c1ccd9;
   --mtn-focus: #000000;
-  --mtn-dither: #8399b1;
+  --mtn-dither: #c1ccd9;
   --mtn-emboss: #c1ccd9;
+  --mtn-track: #c1ccd9;
+  --mtn-track-image: none;
 }
 
 /* @tokens red-white-blue */
@@ -582,8 +603,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #ffffff;
   --mtn-focus: #000000;
-  --mtn-dither: #c0c0c0;
+  --mtn-dither: #ffffff;
   --mtn-emboss: #ffffff;
+  --mtn-track: #c0c0c0;
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 
 /* @tokens rose */
@@ -604,8 +627,10 @@
   --mtn-well-edge: #9f6070;
   --mtn-well-edge-low: #e7d8dc;
   --mtn-focus: #000000;
-  --mtn-dither: #cfafb7;
+  --mtn-dither: #e7d8dc;
   --mtn-emboss: #e7d8dc;
+  --mtn-track: #cfafb7;
+  --mtn-track-image: none;
 }
 
 /* @tokens slate */
@@ -626,8 +651,10 @@
   --mtn-well-edge: #558097;
   --mtn-well-edge-low: #cedce3;
   --mtn-focus: #000000;
-  --mtn-dither: #9db9c8;
+  --mtn-dither: #cedce3;
   --mtn-emboss: #cedce3;
+  --mtn-track: #cedce3;
+  --mtn-track-image: none;
 }
 
 /* @tokens spruce */
@@ -648,8 +675,10 @@
   --mtn-well-edge: #599764;
   --mtn-well-edge-low: #d0e3d3;
   --mtn-focus: #000000;
-  --mtn-dither: #a2c8a9;
+  --mtn-dither: #d0e3d3;
   --mtn-emboss: #d0e3d3;
+  --mtn-track: #d0e3d3;
+  --mtn-track-image: none;
 }
 
 /* @tokens storm */
@@ -670,8 +699,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #ffffff;
   --mtn-focus: #000000;
-  --mtn-dither: #c0c0c0;
+  --mtn-dither: #ffffff;
   --mtn-emboss: #ffffff;
+  --mtn-track: #c0c0c0;
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 
 /* @tokens teal */
@@ -692,8 +723,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #ffffff;
   --mtn-focus: #000000;
-  --mtn-dither: #c0c0c0;
+  --mtn-dither: #ffffff;
   --mtn-emboss: #ffffff;
+  --mtn-track: #c0c0c0;
+  --mtn-track-image: repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%);
 }
 
 /* @tokens wheat */
@@ -714,8 +747,10 @@
   --mtn-well-edge: #bcbc41;
   --mtn-well-edge-low: #eeeed0;
   --mtn-focus: #000000;
-  --mtn-dither: #dedea0;
+  --mtn-dither: #eeeed0;
   --mtn-emboss: #eeeed0;
+  --mtn-track: #eeeed0;
+  --mtn-track-image: none;
 }
 
 /* @tokens high-contrast-1 */
@@ -736,8 +771,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #c0c0c0;
   --mtn-focus: #ffffff;
-  --mtn-dither: #ffffff;
+  --mtn-dither: #c0c0c0;
   --mtn-emboss: transparent;
+  --mtn-track: #000000;
+  --mtn-track-image: none;
 }
 
 /* @tokens high-contrast-2 */
@@ -758,8 +795,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #c0c0c0;
   --mtn-focus: #00ff00;
-  --mtn-dither: #ffffff;
+  --mtn-dither: #c0c0c0;
   --mtn-emboss: transparent;
+  --mtn-track: #000000;
+  --mtn-track-image: none;
 }
 
 /* @tokens high-contrast-black */
@@ -780,8 +819,10 @@
   --mtn-well-edge: #808080;
   --mtn-well-edge-low: #c0c0c0;
   --mtn-focus: #ffffff;
-  --mtn-dither: #ffffff;
+  --mtn-dither: #c0c0c0;
   --mtn-emboss: transparent;
+  --mtn-track: #000000;
+  --mtn-track-image: none;
 }
 
 /* @tokens high-contrast-white */
@@ -804,5 +845,7 @@
   --mtn-focus: #000000;
   --mtn-dither: #c0c0c0;
   --mtn-emboss: #c0c0c0;
+  --mtn-track: #ffffff;
+  --mtn-track-image: none;
 }
 /* <<< Generated appearances END */

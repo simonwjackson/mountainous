@@ -28,6 +28,14 @@ Singleton {
     }
     function find(id) { return themes.find(function (theme) { return theme.id === id; }) || null; }
     function defaultAppearance(theme, mode) { return mode === "light" ? (theme === "memphis" ? "standard" : "light") : "dark-grey"; }
+    // Resolve saved/draft IDs without accepting legacy mode aliases as IDs.
+    // Unknown values use the mode default, but callers retain the raw saved ID.
+    function resolveAppearance(theme, id, mode) {
+        const entry = find(theme);
+        if (!entry) return null;
+        return entry.appearances.find(function (a) { return a.id === id; })
+            || entry.appearances.find(function (a) { return a.id === defaultAppearance(theme, mode); }) || null;
+    }
     function appearance(theme, id) {
         const entry = find(theme);
         if (!entry) return null;

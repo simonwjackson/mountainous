@@ -140,6 +140,7 @@ def palettes(schemes):
             "menu": "Menu",
             "menu_text": "MenuText",
             "desktop": "Desktop",
+            "scroll_track": "ScrollBar",
         }
         result["memphis"][identifier] = {
             role: colors[key] for role, key in mapping.items()
@@ -200,10 +201,20 @@ def shell_tokens(theme, p, appearance):
             "well-edge": "shade",
             "well-edge-low": "hi",
             "focus": "text",
-            "dither": "li",
+            "dither": "hi",
         }
         colors = {key: p.get(value, p["text"]) for key, value in roles.items()}
         colors["emboss"] = "transparent" if mode_for(appearance) == "dark" else p["hi"]
+        if "scroll_track" in p:
+            # Match MemphisTokens.schemePalette: checker only when the light
+            # edge equals Window; otherwise paint the solid ScrollBar colour.
+            dither = p["hi"] == p["base"]
+            colors["track"] = p["face"] if dither else p["scroll_track"]
+            colors["track-image"] = (
+                "repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%)"
+                if dither
+                else "none"
+            )
     else:
         # Preserve Platinum geometry and its existing CSS variable vocabulary.
         roles = {

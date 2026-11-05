@@ -1,10 +1,11 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import Hensou as Kit
 import "desktop-art.js" as Art
 
 // The desktop itself: one background-layer surface per screen, under every
-// window, the bars and the glance space, tiled with the current theme's
+// window, the bars and the glance space, using a solid colour or the
 // pattern for the current appearance (themes.json "art.patterns"). It is
 // shared, not part of a Desktop, so a theme swap repaints it in place
 // instead of mapping a second full-screen surface.
@@ -24,9 +25,7 @@ PanelWindow {
 
     readonly property var entry: ThemeCatalog.find(Theme.name)
     readonly property string file: Art.pattern(entry, Theme.mode, Theme.extraDark, Theme.appearance)
-    readonly property string fallbackFile: Art.pattern(entry, Theme.mode, Theme.extraDark)
-    property bool missing: false
-    onFileChanged: missing = false
+    readonly property var desktopPalette: entry && entry.id === "memphis" ? Kit.MemphisTokens.palette(Theme.appearance) : null
     readonly property int baseCell: entry && entry.art ? entry.art.patternCell : 2
 
     anchors { top: true; bottom: true; left: true; right: true }
@@ -34,11 +33,12 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Background
     WlrLayershell.namespace: "mountainous-desktop"
     WlrLayershell.keyboardFocus: root.desktopIcons ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-    color: "#000000"
+    color: Art.background(entry, Theme.mode, Theme.extraDark, Theme.appearance, desktopPalette)
     // The primary screen's pattern carries the desktop icons.
     property bool desktopIcons: false
     readonly property var iconLayer: icons.item
     mask: Region { item: icons.item && icons.item.takesInput ? icons : null }
+
 
     Image {
         id: tiles
@@ -48,9 +48,8 @@ PanelWindow {
         readonly property var tile: Art.tile(root.baseCell, dpr)
 
         anchors.fill: parent
-        source: (root.missing ? root.fallbackFile : root.file) === "" ? ""
-            : Quickshell.shellPath(root.missing ? root.fallbackFile : root.file)
-        onStatusChanged: if (status === Image.Error && !root.missing) root.missing = true
+        visible: root.file !== ""
+        source: root.file === "" ? "" : Quickshell.shellPath(root.file)
         sourceSize.width: tile.logical
         sourceSize.height: tile.logical
         fillMode: Image.Tile

@@ -31,31 +31,44 @@ assert.equal(A.appearance(platinum, "dark", true), "extra");
 assert.equal(A.appearance(memphis, "dark", true), "dark");
 assert.equal(A.appearance(null, "dark", true), "dark");
 
-// Every theme has a tile for every appearance it offers, under its folder.
+// Only real tiles belong in the registry. Schemes without a tile are solid.
 const root = path.dirname(registryPath);
 for (const theme of registry) {
-    const appearances = [...new Set(theme.appearances.map((a) => a.id).concat(["light", "dark"], theme.options.extraDark ? ["extra"] : []))];
-    for (const a of appearances) {
-        const file = theme.art.patterns[a];
-        assert.ok(file && file.startsWith("themes/" + theme.id + "/"), theme.id + " " + a);
-        const choice = theme.appearances.find((choice) => choice.id === a);
-        const fallback = `themes/${theme.id}/patterns/${choice ? choice.mode : a}.svg`;
-        const asset = fs.existsSync(path.join(root, file)) ? file : fallback;
-        assert.ok(fs.existsSync(path.join(root, asset)), file);
-        const svg = fs.readFileSync(path.join(root, asset), "utf8");
+    for (const file of Object.values(theme.art.patterns)) {
+        assert.ok(file.startsWith("themes/" + theme.id + "/"), file);
+        assert.ok(fs.existsSync(path.join(root, file)), "missing registered pattern: " + file);
+        const svg = fs.readFileSync(path.join(root, file), "utf8");
         assert.match(svg, /viewBox="0 0 8 8"/, file);
         assert.match(svg, /shape-rendering="crispEdges"/, file);
     }
-    assert.deepEqual(Object.keys(theme.art.patterns).sort(), appearances.sort(), theme.id);
 }
-// Appearance IDs, not their shared light/dark mode, choose each new tile.
-for (const theme of registry) {
-    for (const choice of theme.appearances) {
-        assert.equal(A.pattern(theme, choice.mode, false, choice.id), theme.art.patterns[choice.id]);
-    }
+assert.deepEqual(Object.keys(memphis.art.patterns).sort(), ["dark", "light"]);
+assert.deepEqual(Object.keys(platinum.art.patterns).sort(), ["dark", "drawing-board", "extra", "light"]);
+// Existing Memphis tiles remain byte-for-byte unchanged.
+const crypto = require("node:crypto");
+for (const [mode, digest] of Object.entries({
+    light: "fefa39a17477f326f0e9ca94f3ca4947852c068dc8b174181452373bc3ba449d",
+    dark: "e916792350c8a1d2318323195aa6c5b53d3b10beffb01ef6f7203bb781094cd0"
+})) {
+    assert.equal(crypto.createHash("sha256").update(fs.readFileSync(path.join(root, memphis.art.patterns[mode]))).digest("hex"), digest);
 }
+assert.equal(A.pattern(memphis, "light", false, "standard"), memphis.art.patterns.light);
+assert.equal(A.pattern(memphis, "dark", true, "dark-grey"), memphis.art.patterns.dark);
 assert.equal(A.pattern(platinum, "light", true, "drawing-board"), platinum.art.patterns["drawing-board"]);
 assert.equal(A.pattern(memphis, "dark", true, "unknown"), memphis.art.patterns.dark);
+if (process.env.KIT_PALETTES && process.env.SCHEMES_JSON) {
+    const kit = JSON.parse(fs.readFileSync(process.env.KIT_PALETTES, "utf8"));
+    const schemes = JSON.parse(fs.readFileSync(process.env.SCHEMES_JSON, "utf8")).filter((s) => !s.name.startsWith("Classic"));
+    assert.equal(schemes.length, 20);
+    for (const scheme of schemes) {
+        const id = scheme.name.toLowerCase().replace(" #", "-").replaceAll(" ", "-");
+        const choice = memphis.appearances.find((a) => a.id === id);
+        const palette = kit.memphis[id].off;
+        assert.equal(A.pattern(memphis, choice.mode, false, id), "", id + ": no tile");
+        assert.equal(A.background(memphis, choice.mode, false, id, palette), scheme.colors.Desktop, id + ": JSON Desktop colour");
+        assert.equal(A.background(memphis, choice.mode, true, id, palette), scheme.colors.Desktop, id + ": Extra dark ignored");
+    }
+}
 // The five appearances draw five different tiles.
 const five = [["platinum", "light", false], ["platinum", "dark", false], ["platinum", "dark", true],
               ["memphis", "light", false], ["memphis", "dark", true]].map(([t, m, e]) => A.pattern(find(t), m, e));

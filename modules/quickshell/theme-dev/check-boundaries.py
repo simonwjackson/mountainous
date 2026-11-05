@@ -36,19 +36,15 @@ for theme in registry:
     assert theme['appearances'] and {a['mode'] for a in theme['appearances']} <= {'dark', 'light'}
     assert isinstance(theme['options']['extraDark'], bool)
     # Phase 4 art: icon and cursor theme names (lib/desktop-art.nix builds
-    # them) and one pattern tile per appearance, Extra dark included.
+    # them), plus the optional pattern tiles which really exist.
     art = theme['art']
     assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', art['icons']), (name, 'art.icons')
     assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', art['cursors']), (name, 'art.cursors')
     assert isinstance(art['cursorSize'], int) and art['cursorSize'] > 0, (name, 'art.cursorSize')
     assert art['patternCell'] in (1, 2, 3, 4), (name, 'art.patternCell')
-    looks = {a['id'] for a in theme['appearances']} | {'light', 'dark'} | ({'extra'} if theme['options']['extraDark'] else set())
-    assert set(art['patterns']) == looks, (name, 'art.patterns')
-    for key, file in art['patterns'].items():
+    for file in art['patterns'].values():
         assert file.startswith(f'themes/{name}/'), file
-        choice = next((a for a in theme['appearances'] if a['id'] == key), None)
-        fallback = root / f"themes/{name}/patterns/{choice['mode'] if choice else key}.svg"
-        assert (root / file).is_file() or fallback.is_file(), file
+        assert (root / file).is_file(), f'missing registered pattern: {file}'
 
 # The flat prefix fallback avoids Quickshell 0.3.1's dynamic directory-scan
 # limitation. Asset and policy subfolders remain owned by their theme ID.

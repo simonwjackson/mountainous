@@ -108,12 +108,14 @@ verify() {
     [[ $(grep -F setcursor "$HYPRCTL_LOG" | tail -n 1) == "--instance 0 setcursor $cursors 24" ]]
     [[ $(tail -n 1 "$HYPRCTL_LOG") == "--instance 0 eval hl.config({ cursor = { invisible = false } })" ]]
     pattern=$(node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON" --state "$XDG_STATE_HOME/mountainous")
-    # The selection seam chooses canonical IDs; missing staged assets can
-    # still fall back in DesktopPattern.qml until design's assets land.
-    local selected
-    selected=$(<"$XDG_STATE_HOME/mountainous/theme-appearance")
-    [[ $theme == platinum && $mode == dark && $extra == on ]] && selected=extra
-    [[ $pattern == "themes/$theme/patterns/$selected.svg" ]]
+    local expected_pattern
+    expected_pattern=$(python3 - "$THEMES_JSON" "$theme" "$appearance" <<'EOF'
+import json, sys
+entry = next(t for t in json.load(open(sys.argv[1])) if t["id"] == sys.argv[2])
+print(entry["art"]["patterns"].get(sys.argv[3], ""))
+EOF
+)
+    [[ $pattern == "$expected_pattern" ]]
     echo "art: $theme $mode $extra -> $icons, $cursors, $pattern"
   fi
 }

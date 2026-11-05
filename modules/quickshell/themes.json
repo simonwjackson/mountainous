@@ -49,7 +49,6 @@
         "light": "themes/platinum/patterns/light.svg",
         "dark": "themes/platinum/patterns/dark.svg",
         "extra": "themes/platinum/patterns/extra.svg",
-        "dark-grey": "themes/platinum/patterns/dark-grey.svg",
         "drawing-board": "themes/platinum/patterns/drawing-board.svg"
       }
     }
@@ -216,29 +215,7 @@
       "patternCell": 2,
       "patterns": {
         "light": "themes/memphis/patterns/light.svg",
-        "dark": "themes/memphis/patterns/dark.svg",
-        "standard": "themes/memphis/patterns/standard.svg",
-        "dark-grey": "themes/memphis/patterns/dark-grey.svg",
-        "brick": "themes/memphis/patterns/brick.svg",
-        "desert": "themes/memphis/patterns/desert.svg",
-        "eggplant": "themes/memphis/patterns/eggplant.svg",
-        "lilac": "themes/memphis/patterns/lilac.svg",
-        "maple": "themes/memphis/patterns/maple.svg",
-        "marine": "themes/memphis/patterns/marine.svg",
-        "plum": "themes/memphis/patterns/plum.svg",
-        "pumpkin": "themes/memphis/patterns/pumpkin.svg",
-        "rainy-day": "themes/memphis/patterns/rainy-day.svg",
-        "red-white-blue": "themes/memphis/patterns/red-white-blue.svg",
-        "rose": "themes/memphis/patterns/rose.svg",
-        "slate": "themes/memphis/patterns/slate.svg",
-        "spruce": "themes/memphis/patterns/spruce.svg",
-        "storm": "themes/memphis/patterns/storm.svg",
-        "teal": "themes/memphis/patterns/teal.svg",
-        "wheat": "themes/memphis/patterns/wheat.svg",
-        "high-contrast-black": "themes/memphis/patterns/high-contrast-black.svg",
-        "high-contrast-white": "themes/memphis/patterns/high-contrast-white.svg",
-        "high-contrast-1": "themes/memphis/patterns/high-contrast-1.svg",
-        "high-contrast-2": "themes/memphis/patterns/high-contrast-2.svg"
+        "dark": "themes/memphis/patterns/dark.svg"
       }
     }
   }

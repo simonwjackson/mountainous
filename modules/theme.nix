@@ -384,6 +384,7 @@ in
           ];
           DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
           SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          KIT_PALETTES = kitPalettes;
           # Phase 4: icons, cursors and the desktop pattern, asserted after
           # every set, toggle and reapply in scripts/test-native-themes.
           DESKTOP_ART = import ../lib/desktop-art.nix { inherit pkgs inputs; };
@@ -418,6 +419,42 @@ in
           for config in "$native"/share/mountainous/native/*/ghostty.conf; do
             ghostty +validate-config --config-file="$config"
           done
+          touch $out
+        '';
+    checks.desktop-appearances =
+      pkgs.runCommand "desktop-appearances"
+        {
+          nativeBuildInputs = [ pkgs.nodejs ];
+          KIT_PALETTES = import ../lib/kit-palettes.nix {
+            inherit pkgs;
+            kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+          };
+          SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          HENSOU_QML_ROOT = "${
+            inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+          }/lib/qt-6/qml";
+        }
+        ''
+          node ${./quickshell/desktop-art.test.js} ${./quickshell/desktop-art.js} ${./quickshell}/themes.json
+          node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
+          touch $out
+        '';
+    checks.desktop-appearance-surface =
+      pkgs.runCommand "desktop-appearance-surface"
+        {
+          nativeBuildInputs = [
+            (pkgs.python3.withPackages (p: [ p.pillow ]))
+            pkgs.quickshell
+            pkgs.labwc
+            pkgs.grim
+          ];
+          SCHEMES_JSON = ../scripts/xp-classic-schemes.json;
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        }
+        ''
+          python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
+            ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
+            ${pkgs.quickshell}/bin/qs ${pkgs.labwc}/bin/labwc
           touch $out
         '';
     checks.theme-appearance-host =

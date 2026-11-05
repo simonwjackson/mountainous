@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const crypto = require("node:crypto");
 
 const policyPath = process.argv[2] || path.join(__dirname, "web-theme.js");
 const pagePath = process.argv[3] || path.join(__dirname, "web-theme-page.js");
@@ -270,6 +271,10 @@ const strip = (sections) => ({ tokens: Object.fromEntries(Object.entries(section
 const memphisRaw = fs.readFileSync(path.join(root, "themes/memphis/web.css"), "utf8");
 const memphisCss = stripComments(memphisRaw);
 const memphis = strip(policy.parse(memphisRaw));
+// The original light/dark token blocks remain unchanged (b04f724f).
+for (const [mode, digest] of Object.entries({"light": "c720ae6978e162ea03abb4bf44b1034ebdbacc0791317a4813179d7f0892256d", "dark": "3bc5577b431967d276e717843e63eed07082981cb0343613ecfb0afb6383b4c8"})) {
+    assert.equal(crypto.createHash("sha256").update(policy.parse(memphisRaw).tokens[mode]).digest("hex"), digest, "legacy " + mode + " block");
+}
 const plat = strip(policy.parse(fs.readFileSync(path.join(root, "themes/platinum/web.css"), "utf8")));
 assert.deepEqual(Object.keys(memphis.levels).sort(), Object.keys(plat.levels).sort(), "memphis: Platinum's levels");
 for (const key of ["all", "light", "dark"]) assert.ok(memphis.tokens[key] && plat.tokens[key], "both themes keep legacy " + key + " token blocks");
@@ -342,7 +347,7 @@ for (const theme of registry) {
         const payload = policy.payload(css, theme.id, choice.mode, false, choice.id);
         assert.equal(payload.appearance, expected, theme.id + "/" + choice.id);
         const sections = policy.parse(css);
-        assert.deepEqual(Object.keys(tokens(sections.tokens[expected])).sort(),
+        assert.deepEqual(Object.keys(tokens(sections.tokens[expected])).filter((name) => !(name in tokens(sections.tokens.all))).sort(),
             Object.keys(tokens(sections.tokens[choice.mode])).sort(), theme.id + "/" + choice.id + ": every token defined");
         assert.match(payload.tokens, /--mtn-face:/);
         if (choice.id === "drawing-board") {
@@ -350,5 +355,16 @@ for (const theme of registry) {
         }
     }
     assert.equal(policy.payload(css, theme.id, "dark", false, "unknown-id").appearance, "dark");
+}
+if (process.env.KIT_PALETTES) {
+    const kit = JSON.parse(fs.readFileSync(process.env.KIT_PALETTES, "utf8"));
+    for (const choice of registry.find((theme) => theme.id === "memphis").appearances) {
+        if (choice.id === "standard" || choice.id === "dark-grey") continue;
+        const css = tokens(memphis.tokens[choice.id]);
+        const palette = kit.memphis[choice.id].off;
+        assert.equal(css["--mtn-dither"], palette.dither, choice.id + ": kit dither");
+        assert.equal(css["--mtn-track"], palette.scrollDither ? palette.face : palette.scrollTrack, choice.id + ": kit track");
+        assert.equal(css["--mtn-track-image"], palette.scrollDither ? "repeating-conic-gradient(var(--mtn-dither) 0 25%, transparent 0 50%)" : "none", choice.id + ": kit track policy");
+    }
 }
 console.log(`WEB_THEME_TESTS_PASSED themes=${linted}`);

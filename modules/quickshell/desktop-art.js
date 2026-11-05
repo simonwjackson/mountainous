@@ -3,7 +3,9 @@
 // how big a tile cell is on a screen. Pure, so desktop-art.test.js and
 // checks.native-themes (after each desktop-theme change) run it too.
 //
-// A theme's "art" entry in themes.json names one tile per appearance:
+// A theme's "art" entry names only appearances which have real tiles.
+// Memphis schemes without a tile use the kit palette's solid Desktop colour.
+// Legacy tile aliases are:
 // "light", "dark" and, when the theme honours Extra dark, "extra". A tile
 // is an 8 x 8 SVG; "patternCell" is device pixels per tile pixel at scale
 // 1.5 (Platinum 3, one 72-dpi Mac pixel; Memphis 2, one Memphis unit).
@@ -23,11 +25,20 @@ function appearance(entry, mode, extraDark, appearanceId) {
     return dark ? "dark" : "light";
 }
 
-// The tile's path under the shell directory, or "" for none (the
-// compositor's black then shows).
+// The tile path, or "" when the desktop surface supplies a solid colour.
 function pattern(entry, mode, extraDark, appearanceId) {
     if (!entry || !entry.art || !entry.art.patterns) return "";
-    return entry.art.patterns[appearance(entry, mode, extraDark, appearanceId)] || "";
+    const id = appearance(entry, mode, extraDark, appearanceId);
+    const key = id === "standard" ? "light" : id === "dark-grey" ? "dark" : id;
+    return entry.art.patterns[key] || "";
+}
+
+// The surface behind tiles stays unchanged. A tile-less Memphis appearance
+// paints its Desktop system colour instead of inheriting the old mode's tile.
+function background(entry, mode, extraDark, appearanceId, palette) {
+    if (entry && entry.id === "memphis" && pattern(entry, mode, extraDark, appearanceId) === "" && palette)
+        return palette.desktop;
+    return "#000000";
 }
 
 // Device pixels per tile pixel on a screen of this device pixel ratio,
