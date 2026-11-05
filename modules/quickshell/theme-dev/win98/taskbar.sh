@@ -129,7 +129,8 @@ reset
 nonumbers 'the taskbar'
 # Three pages: two dividers, each a 2-u groove in the gap between two
 # pages' buttons (3 u, the groove, 3 u). Drawn only: no place (so no
-# click, hover or tooltip) and no stop in the taskbar's keyboard order.
+# click, hover or tooltip) and no stop in the taskbar's keyboard order
+# (Start, Quick Launch's Show Desktop, then the windows).
 divs=$(w98 places | python3 -c '
 import json, sys
 g = json.load(sys.stdin)
@@ -142,7 +143,7 @@ def groove(v):
 d = g["dividers"]
 order = g["focusOrder"]
 ok = len(d) == 2 and all(groove(v) for v in d) and not any(k.startswith("page") for k in g) \
-    and not any(k.startswith("page") for k in order) and order[:6] == ["start", "win0", "win1", "win2", "win3", "win4"]
+    and not any(k.startswith("page") for k in order) and order[:7] == ["start", "quick", "win0", "win1", "win2", "win3", "win4"]
 print("ok" if ok else "no: %s %s" % (json.dumps(d), order))')
 [ "$divs" = ok ] && ok "two dividers between three pages: a groove in the gap, no head, no keyboard stop" || bad "dividers: $divs"
 startmenu; letter w; settle start
