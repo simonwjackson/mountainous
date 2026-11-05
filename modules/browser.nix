@@ -55,6 +55,7 @@ in
             QML2_IMPORT_PATH = "${
               inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
             }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
+            MOUNTAINOUS_PLATINUM_ICON = "${config.packages.platinum-icons}/bin/mountainous-platinum-icon";
             EXPECTED_NAVIGATION = if desktop.mountainous.browser.shellNavigation.enable then "1" else "0";
             EXPECTED_KIOSK = if desktop.mountainous.browser.kiosk.enable then "1" else "0";
             CHROMIUM = "${self.nixosConfigurations.myoko.pkgs.chromium}/bin/chromium";
@@ -66,6 +67,7 @@ in
             node ${./quickshell/cdp-target.test.js} ${./quickshell}
             node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
             node ${./quickshell/favicon.test.js} ${./quickshell}
+            node ${./quickshell/platinum-token.test.js} ${./quickshell}
             node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             if [ "$EXPECTED_NAVIGATION" = 1 ]; then
@@ -88,7 +90,7 @@ in
               printf '%s 1.0 %s.qml\n' "$name" "$name" >> qml/qmldir
             done
             bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/Win98OpenDialog.qml \
-              qml/WindowIcon.qml qml/Win98Taskbar.qml qml/Win98CoolSwitch.qml qml/Win98FindWindow.qml \
+              qml/WindowIcon.qml qml/PlatinumToken.qml qml/Win98Taskbar.qml qml/Win98CoolSwitch.qml qml/Win98FindWindow.qml \
               qml/PlatinumFindMenu.qml qml/PlatinumCascadeMenu.qml qml/PlatinumControlStrip.qml \
               qml/PlatinumStripTile.qml qml/PlatinumAppIcon.qml qml/PlatinumDesktop.qml
             # A runtime load catches Image property errors which qmllint
@@ -96,7 +98,7 @@ in
             export XDG_RUNTIME_DIR="$TMPDIR/runtime"
             mkdir -m 700 "$XDG_RUNTIME_DIR"
             mkdir icon-smoke
-            cp qml/WindowIcon.qml qml/CdpBrowser.qml qml/cdp-target.js qml/favicon.js icon-smoke/
+            cp qml/WindowIcon.qml qml/PlatinumToken.qml qml/CdpBrowser.qml qml/cdp-target.js qml/favicon.js icon-smoke/
             cp qml/theme-dev/favicon-smoke.qml icon-smoke/shell.qml
             QT_QPA_PLATFORM=offscreen timeout 10s qs -p icon-smoke/shell.qml --no-color > icon-smoke.log 2>&1 || {
               cat icon-smoke.log

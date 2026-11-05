@@ -552,6 +552,7 @@ FocusScope {
         Rectangle { visible: rowItem.lit; anchors.fill: parent; color: Kit.PlatinumTokens.highlight }
 
         WindowIcon {
+            platinumToken: true
             toplevel: rowItem.row.k === "win" && rowItem.row.ref ? rowItem.row.ref.toplevel : null
             visible: rowItem.isItem && !!rowItem.row.icon && (rowItem.row.k === "win" || rowItem.row.k === "app" || rowItem.row.k === "recent")
             x: 3 + root.hair

@@ -22,7 +22,7 @@ print("Evidence:", work, flush=True)
 for directory in ["runtime", "home", "config/chromium", "data/applications", "shell"]:
     (work / directory).mkdir(parents=True)
 (work / "runtime").chmod(0o700)
-for name in ["CdpBrowser.qml", "WindowIcon.qml", "cdp-target.js", "favicon.js"]:
+for name in ["CdpBrowser.qml", "WindowIcon.qml", "PlatinumToken.qml", "cdp-target.js", "favicon.js"]:
     shutil.copy(source / name, work / "shell" / name)
 
 
@@ -93,7 +93,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(content)
-        except BrokenPipeError:
+        except (BrokenPipeError, ConnectionResetError):
             pass
 
     def log_message(self, *_):
@@ -123,6 +123,7 @@ env.update(
     XDG_RUNTIME_DIR=str(work / "runtime"),
     XDG_DATA_HOME=str(work / "data"),
     XDG_DATA_DIRS=str(work / "data"),
+    XDG_CACHE_HOME=str(work / "cache"),
     QT_QPA_PLATFORM="offscreen",
     QT_SCALE_FACTOR="1.5",
     QT_QUICK_BACKEND="software",
@@ -157,6 +158,7 @@ try:
         time.sleep(0.1)
     (work / "shell/shell.qml").write_text(
         """import Quickshell
+import Hensou as Kit
 import QtQuick
 import QtQuick.Window
 ShellRoot {
@@ -164,6 +166,7 @@ ShellRoot {
     property int stage: 0
     Window { visible: true; width: 160; height: 96
     WindowIcon { id: small; implicitSize: 16; toplevel: ({address: "a", appId: "chromium-browser", title: "Sharp icons - Chromium"}); fallbackSource: "ORIGIN/32.png" }
+    WindowIcon { id: medium; implicitSize: 20; toplevel: small.toplevel; fallbackSource: small.fallbackSource }
     WindowIcon { id: large; implicitSize: 32; toplevel: small.toplevel; fallbackSource: small.fallbackSource }
     WindowIcon { id: pwa; implicitSize: 16; toplevel: ({appId: "APP_ID", title: "Unmatched installed app"}) }
     }
@@ -195,11 +198,41 @@ ShellRoot {
                 root.stage = 4;
             } else if (root.stage === 4 && small.favicon === "" && small.status === Image.Ready && small.source.toString() === small.fallbackSource) {
                 console.log("NO_FAVICON_FALLBACK_READY");
+                small.platinumToken = true;
+                medium.platinumToken = true;
+                large.platinumToken = true;
+                pwa.platinumToken = true;
+                Kit.Theme.mode = "light";
+                CdpBrowser.pages = CdpBrowser.pages.map(function(p) { return Object.assign({}, p, {favicon: "ORIGIN/32.png"}); });
+                root.stage = 5;
+            } else if (root.stage === 5 && small.tokenReady && medium.tokenReady && large.tokenReady && pwa.tokenReady) {
+                for (const icon of [small, medium, large, pwa]) {
+                    const token = icon.children.find(function(child) { return child.objectName === "platinum-token-image"; });
+                    if (token.sourceSize.width !== icon.pixels || token.width * icon.pixelRatio !== icon.pixels || token.smooth || token.mipmap)
+                        throw new Error("token was rescaled or filtered");
+                    if (!token.source.toString().endsWith("-" + icon.pixels + "-platinum-light.png")) throw new Error("wrong light cache key");
+                }
+                console.log("PLATINUM_TOKEN_LIGHT_READY", small.pixels, medium.pixels, large.pixels);
+                Kit.Theme.mode = "dark";
+                root.stage = 6;
+            } else if (root.stage === 6 && small.tokenReady && medium.tokenReady && large.tokenReady && pwa.tokenReady) {
+                const token = small.children.find(function(child) { return child.objectName === "platinum-token-image"; });
+                if (!token.source.toString().endsWith("-24-platinum-dark.png")) return;
+                console.log("PLATINUM_TOKEN_DARK_READY");
+                // Opt-out restores today's icon, as on Win98.
+                small.platinumToken = false;
+                medium.platinumToken = false;
+                large.platinumToken = false;
+                pwa.platinumToken = false;
+                root.stage = 7;
+            } else if (root.stage === 7 && small.status === Image.Ready && !small.tokenReady) {
+                if (small.source.toString() !== "ORIGIN/32.png") throw new Error("token opt-out changed the existing icon");
+                console.log("WIN98_ICON_PATH_UNCHANGED");
                 Qt.quit();
             }
         }
     }
-    Timer { interval: 12000; running: true; onTriggered: { console.log("FAVICON_TIMEOUT", root.stage, JSON.stringify(CdpBrowser.pageIcons)); Qt.quit(); } }
+    Timer { interval: 22000; running: true; onTriggered: { console.log("FAVICON_TIMEOUT", root.stage, JSON.stringify(CdpBrowser.pageIcons)); Qt.quit(); } }
 }
 """.replace("ORIGIN", origin)
         .replace("APP_ID", app_id)
@@ -212,7 +245,7 @@ ShellRoot {
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        timeout=20,
+        timeout=30,
     )
     (work / "quickshell.log").write_text(result.stdout)
     print(result.stdout)
@@ -224,6 +257,9 @@ ShellRoot {
         "LOW_RES_NEAREST_READY",
         "FAVICON_ERROR_FALLBACK_READY",
         "NO_FAVICON_FALLBACK_READY",
+        "PLATINUM_TOKEN_LIGHT_READY 24 30 48",
+        "PLATINUM_TOKEN_DARK_READY",
+        "WIN98_ICON_PATH_UNCHANGED",
     ]:
         assert marker in result.stdout, marker
 finally:

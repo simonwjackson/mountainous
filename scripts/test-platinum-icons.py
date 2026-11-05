@@ -1,0 +1,300 @@
+#!/usr/bin/env python3
+"""Synthetic original fixtures: no third-party favicon redistribution rights needed."""
+
+import concurrent.futures
+import hashlib
+import http.server
+import importlib.util
+import io
+import os
+import subprocess
+import sys
+import tempfile
+import threading
+import unittest
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw
+from platinum_icons import PALETTE, margin, render, select_frame
+
+spec = importlib.util.spec_from_file_location(
+    "platinum_cache", Path(__file__).with_name("platinum-icon.py")
+)
+cache_helper = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cache_helper)
+
+
+def corpus():
+    fixtures = {}
+    for shape in [
+        "square",
+        "rounded-square",
+        "disc",
+        "ring",
+        "thin-glyph",
+        "full-bleed",
+        "tiny-padded",
+        "wide",
+        "16-only",
+    ]:
+        size = (
+            (96, 32)
+            if shape == "wide"
+            else (16, 16)
+            if shape == "16-only"
+            else (64, 64)
+        )
+        image = Image.new("RGBA", size)
+        draw = ImageDraw.Draw(image)
+        colour = (39, 113, 213, 255)
+        if shape in ["full-bleed", "16-only", "wide"]:
+            draw.rectangle((0, 0, size[0] - 1, size[1] - 1), fill=colour)
+        elif shape == "square":
+            draw.rectangle((4, 4, 59, 59), fill=colour)
+        elif shape == "rounded-square":
+            draw.rounded_rectangle((4, 4, 59, 59), radius=12, fill=colour)
+        elif shape in ["disc", "ring"]:
+            draw.ellipse((4, 4, 59, 59), fill=colour)
+            if shape == "ring":
+                draw.ellipse((13, 13, 50, 50), fill=(0, 0, 0, 0))
+        elif shape == "thin-glyph":
+            draw.line((7, 7, 7, 56, 56, 56), fill=colour, width=3)
+        elif shape == "tiny-padded":
+            draw.line((30, 29, 30, 34, 34, 34), fill=colour, width=1)
+        fixtures[shape] = image
+    return fixtures
+
+
+class RendererTests(unittest.TestCase):
+    def test_margin_rounding(self):
+        self.assertEqual([margin(size) for size in [24, 30, 48]], [2, 3, 4])
+
+    def test_corpus_margin_full_inner_box_and_determinism(self):
+        for name, image in corpus().items():
+            for size in [24, 30, 48]:
+                for theme in ["platinum-light", "platinum-dark"]:
+                    with self.subTest(name=name, size=size, theme=theme):
+                        first = render([image], size, theme)
+                        second = render([image], size, theme)
+                        self.assertIsNotNone(first)
+                        self.assertEqual(first.mode, "RGBA")
+                        self.assertEqual(first.size, (size, size))
+                        self.assertEqual(first.tobytes(), second.tobytes())
+                        a, b = io.BytesIO(), io.BytesIO()
+                        first.save(a, format="PNG")
+                        second.save(b, format="PNG")
+                        self.assertEqual(a.getvalue(), b.getvalue())
+                        m = margin(size)
+                        alpha = np.array(first)[:, :, 3]
+                        self.assertFalse(alpha[:m].any())
+                        self.assertFalse(alpha[-m:].any())
+                        self.assertFalse(alpha[:, :m].any())
+                        self.assertFalse(alpha[:, -m:].any())
+                        # The whole composite, not only the front, uses the box.
+                        self.assertEqual(first.getbbox(), (m, m, size - m, size - m))
+                        self.assertTrue(set(np.unique(alpha)).issubset({0, 96, 255}))
+                        palette = set(map(tuple, PALETTE.tolist()))
+                        self.assertTrue(
+                            set(
+                                map(
+                                    tuple,
+                                    np.array(first)[:, :, :3].reshape(-1, 3).tolist(),
+                                )
+                            ).issubset(palette)
+                        )
+
+    def test_transparent_padding_does_not_shrink_the_glyph(self):
+        glyph = corpus()["tiny-padded"]
+        cropped = glyph.crop(glyph.getbbox())
+        for size in [24, 30, 48]:
+            self.assertEqual(
+                render([glyph], size).tobytes(), render([cropped], size).tobytes()
+            )
+
+    def test_frame_selection(self):
+        frames = [
+            Image.new("RGBA", (s, s), c)
+            for s, c in [(64, "red"), (16, "green"), (32, "blue")]
+        ]
+        self.assertEqual(select_frame(frames, 24).size, (32, 32))
+        self.assertEqual(select_frame(frames, 32).size, (32, 32))
+        self.assertEqual(select_frame(frames, 48).size, (64, 64))
+        self.assertEqual(select_frame(frames, 96).size, (64, 64))
+
+    def test_invalid_or_empty_input(self):
+        self.assertIsNone(render([], 24))
+        self.assertIsNone(render([Image.new("RGBA", (32, 32))], 24))
+        for size in [0, 7, 513]:
+            with self.assertRaises(ValueError):
+                render([corpus()["square"]], size)
+        with self.assertRaises(ValueError):
+            render([corpus()["square"]], 24, "win98")
+
+
+class CacheTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.directory = Path(self.temp.name)
+        self.cache = self.directory / "cache"
+        self.source = self.directory / "source.png"
+        corpus()["square"].save(self.source)
+
+    def test_content_address_atomic_concurrent_and_failure(self):
+        def call(_):
+            return cache_helper.cached_icon(
+                str(self.source), 30, "platinum-dark", self.cache
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            paths = list(pool.map(call, range(8)))
+        expected = (
+            hashlib.sha256(self.source.read_bytes()).hexdigest()
+            + "-30-platinum-dark.png"
+        )
+        self.assertTrue(all(path.name == expected for path in paths))
+        with Image.open(paths[0]) as icon:
+            self.assertEqual(icon.size, (30, 30))
+        self.assertEqual(
+            sorted(p.name for p in self.cache.iterdir()), [".lock", expected]
+        )
+        same = self.directory / "renamed.png"
+        same.write_bytes(self.source.read_bytes())
+        self.assertEqual(
+            cache_helper.cached_icon(same.as_uri(), 30, "platinum-dark", self.cache),
+            paths[0],
+        )
+        # A changed source at the same URL/path gets a new content key.
+        corpus()["disc"].save(self.source)
+        self.assertNotEqual(call(0), paths[0])
+        self.source.write_bytes(b"not an image")
+        command = (
+            [os.environ["PLATINUM_ICON"]]
+            if "PLATINUM_ICON" in os.environ
+            else [sys.executable, str(Path(__file__).with_name("platinum-icon.py"))]
+        )
+        result = subprocess.run(
+            command + [str(self.source), "30", "platinum-dark"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
+
+    def test_ico_png_svg_and_animation(self):
+        # Each ICO frame has a different colour so selection is observable.
+        frames = [
+            Image.new("RGBA", (s, s), c)
+            for s, c in [(16, "red"), (32, "blue"), (64, "green")]
+        ]
+        encoded = io.BytesIO()
+        frames[-1].save(
+            encoded,
+            format="ICO",
+            sizes=[(16, 16), (32, 32), (64, 64)],
+            append_images=frames[:-1],
+        )
+        decoded = cache_helper.decode(encoded.getvalue(), 24)
+        self.assertEqual(select_frame(decoded, 24).size, (32, 32))
+        self.assertEqual(select_frame(decoded, 24).getpixel((0, 0)), (0, 0, 255, 255))
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"><rect width="64" height="32" fill="red"/></svg>'
+        svg_frames = cache_helper.decode(svg, 48)
+        self.assertEqual(svg_frames[0].size, (48, 24))
+        animation = io.BytesIO()
+        frames[0].save(
+            animation,
+            format="GIF",
+            save_all=True,
+            append_images=[frames[1].resize((16, 16))],
+            duration=50,
+            loop=0,
+        )
+        self.assertEqual(
+            cache_helper.decode(animation.getvalue(), 24)[0].getpixel((0, 0)),
+            (255, 0, 0, 255),
+        )
+        self.assertEqual(
+            cache_helper.decode(self.source.read_bytes(), 24)[0].size, (64, 64)
+        )
+
+    def test_lru_count_and_byte_limits(self):
+        self.cache.mkdir()
+        # Exercise the actual production bounds without generating 513 images.
+        for index in range(cache_helper.MAX_CACHE_FILES + 2):
+            path = self.cache / f"{index:064x}-24-platinum-light.png"
+            path.write_bytes(b"png")
+            os.utime(path, ns=(index + 1, index + 1))
+        keep = self.cache / f"{0:064x}-24-platinum-light.png"
+        cache_helper.prune(self.cache, keep)
+        self.assertTrue(keep.exists())
+        self.assertFalse((self.cache / f"{1:064x}-24-platinum-light.png").exists())
+        self.assertEqual(
+            len(list(self.cache.glob("*.png"))), cache_helper.MAX_CACHE_FILES
+        )
+        huge = self.cache / f"{'f' * 64}-48-platinum-dark.png"
+        with huge.open("wb") as stream:
+            stream.truncate(cache_helper.MAX_CACHE_BYTES + 1)
+        cache_helper.prune(self.cache, keep)
+        self.assertFalse(huge.exists())
+
+    def test_http_has_no_cookies_and_bad_inputs_fail(self):
+        received = []
+        data = self.source.read_bytes()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                received.append(dict(self.headers))
+                if self.path == "/missing":
+                    self.send_error(404)
+                    return
+                if self.path == "/redirect":
+                    self.send_response(302)
+                    self.send_header("Location", "file:///etc/passwd")
+                    self.end_headers()
+                    return
+                self.send_response(200)
+                self.send_header("Set-Cookie", "private=value")
+                self.end_headers()
+                self.wfile.write(data)
+
+            def log_message(self, *_):
+                pass
+
+        with http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                url = f"http://127.0.0.1:{server.server_port}"
+                for _ in range(2):
+                    self.assertEqual(cache_helper.source_bytes(url), data)
+                self.assertTrue(
+                    all(
+                        "Cookie" not in headers and "Authorization" not in headers
+                        for headers in received
+                    )
+                )
+                for path in ["/missing", "/redirect"]:
+                    with self.assertRaises((OSError, ValueError)):
+                        cache_helper.source_bytes(url + path)
+            finally:
+                server.shutdown()
+                thread.join()
+        for source in [
+            "ftp://host/icon",
+            "file://other/etc/passwd",
+            "relative.png",
+            "http://name:password@localhost/icon",
+        ]:
+            with self.assertRaises(ValueError):
+                cache_helper.source_bytes(source)
+        oversized = self.directory / "large"
+        with oversized.open("wb") as stream:
+            stream.truncate(cache_helper.MAX_SOURCE_BYTES + 1)
+        with self.assertRaises(ValueError):
+            cache_helper.source_bytes(str(oversized))
+
+
+if __name__ == "__main__":
+    unittest.main()

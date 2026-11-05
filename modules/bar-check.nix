@@ -92,6 +92,7 @@
       checks.platinum-desktop =
         pkgs.runCommand "platinum-desktop" { nativeBuildInputs = [ pkgs.nodejs ]; }
           ''
+            node ${./quickshell/platinum-token.test.js} ${./quickshell}
             node ${./quickshell/window-hide.test.js} ${./quickshell/window-hide.js}
             node ${./quickshell/window-motion.test.js} ${./quickshell/window-motion.js} ${./quickshell/glance-plan.js}
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
@@ -105,6 +106,7 @@
       # scopes and empty/no-results states; the omni service's caller rule on
       # every entry point; the web-app launch kind; the menu and dialog plans.
       checks.find-menu = pkgs.runCommand "find-menu" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
+        node ${./quickshell/platinum-token.test.js} ${./quickshell}
         node ${./quickshell/find-model.test.js} ${./quickshell/find-model.js} ${./quickshell/OmniBar.qml} ${./quickshell/launcher-model.js} ${./quickshell/Launcher.qml}
         node ${./quickshell/cdp-target.test.js} ${./quickshell}
         node ${./quickshell/cdp-favicon.test.js} ${./quickshell}
@@ -290,6 +292,12 @@
         assert builtins.hasAttr (prefix + "find-model.js") files;
         assert builtins.hasAttr (prefix + "cdp-target.js") files;
         assert builtins.hasAttr (prefix + "WindowIcon.qml") files;
+        assert builtins.hasAttr (prefix + "PlatinumToken.qml") files;
+        assert !(builtins.hasAttr (prefix + "platinum-token.test.js") files);
+        assert
+          desktop.systemd.user.services.quickshell.environment.MOUNTAINOUS_PLATINUM_ICON
+          == "${config.packages.platinum-icons}/bin/mountainous-platinum-icon";
+        assert builtins.elem config.packages.platinum-icons desktop.environment.systemPackages;
         assert builtins.hasAttr (prefix + "favicon.js") files;
         assert !(builtins.hasAttr (prefix + "favicon.test.js") files);
         assert !(builtins.hasAttr (prefix + "cdp-favicon.test.js") files);

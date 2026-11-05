@@ -180,6 +180,7 @@ FocusScope {
                     visible: root.dest.here
                     spacing: 6
                     WindowIcon {
+                        platinumToken: true
                         id: destIcon
                         toplevel: root.caller
                         visible: root.callerApp !== ""

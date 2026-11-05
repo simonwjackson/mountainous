@@ -29,6 +29,7 @@ Item {
     // (a page change) only changes the effect's numbers. Toggling the
     // source's visibility instead left the effect blank.
     WindowIcon {
+        platinumToken: true
         id: image
         toplevel: root.toplevel
         anchors.fill: parent

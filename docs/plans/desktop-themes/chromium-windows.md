@@ -534,3 +534,73 @@ compositors/clients used a private `/dev` with only `renderD128`, nonexistent
 or card node was used. Real Myoko input, its GPU/VRAM, long-term restore,
 automatic discard, PWA protocol delivery and on-device page favicon rendering remain
 unverified or explicitly blocked. The parent lands and deploys.
+
+### Platinum favicon tokens (direction A)
+
+`scripts/platinum_icons.py` exposes the pure `render(frames, size, theme)`
+function. It returns RGBA or `None` for empty art. It does not use AI, randomness,
+fonts, network access or browser state. Nix pins Pillow, numpy and librsvg.
+
+- The favicon stays flat and front-on. Compact solid silhouettes extrude their
+  own outline. Rings, clusters, thin and wide marks use a small Platinum plate.
+- Colours use the Mac OS 8 system palette. Alpha edges are 1-bit. The outer black
+  outline is one device pixel. Light comes from the top left. The hard shadow
+  falls down-right. The light plate remains light in both modes for dark glyphs.
+- Reserve **`M(S) = max(2, floor(S/12 + 0.5))`** on all four sides: 24→2,
+  30→3, 48→4 device pixels. The band must contain no non-transparent pixel,
+  including outline, extrusion and shadow. Transparent source padding is trimmed.
+  The entire composite fits the inner `S−2M` box, using its full longest axis.
+  Centre its bounds with floor division; an odd spare pixel goes right/bottom.
+  No source-specific offsets or resampling of the finished art are allowed.
+- ICO selection uses the smallest frame covering the requested device slot,
+  otherwise the largest. PNG and first-frame GIF/WebP/APNG work. SVG is rasterised
+  through `rsvg-convert` on stdin, without a local resource base URL.
+
+`mountainous-platinum-icon SOURCE SIZE platinum-light|platinum-dark` prints a PNG
+path, or nothing on failure. `SOURCE` is an HTTP(S) URL or an absolute local file
+(including a PWA's `Icon=` file). Fetches use no Chromium cookies, authentication,
+Referer or proxy credentials. Sources are limited to 2 MiB and 4 megapixels.
+The CLI has a 12-second deadline; the QML process has a 15-second backstop.
+
+The content cache is
+`$XDG_CACHE_HOME/mountainous/icons/<sha256(source bytes)>-<S>-<theme>.png`,
+defaulting to `~/.cache/mountainous/icons/`. Writes use a temporary file plus atomic
+rename under a lock. The cache keeps at most **512 PNGs / 32 MiB**, pruning least
+recently used files by mtime. It also removes abandoned temporary PNGs. Changing
+source bytes at the same URL produces a new key. A mounted icon is requested again
+when its URL, size or mode changes; there is no additional periodic URL polling.
+After a future renderer change, clear this disposable cache or add versioned
+invalidation before release.
+
+The desktop module installs the helper and pins its path in the Quickshell user
+service. `PlatinumToken.qml` runs it asynchronously. `WindowIcon.qml` keeps today's
+icon until the cached PNG decodes. Late replies cannot replace a newer request.
+`PlatinumAppIcon`, Find and Go to Address opt in; the strip and window menu share
+that path. The PNG child draws at `S / devicePixelRatio` logical pixels with
+filtering off. Win98 does not opt in. No installed-app theme icons change here.
+
+For the installed-app follow-up, use the same pure renderer from a build-time
+Python step, with `platinum-icons.python` in `nativeBuildInputs`. Decode the
+licensed source from its locked flake input into Pillow frames, call
+`render(frames, S, "platinum-light")`, and save directly under `$out/share/icons/`.
+Do not call the URL/cache CLI in a Nix build or fork the geometry.
+
+**Verified:** `checks.platinum-icons` runs nine tests, including 54 synthetic
+shape/size/mode combinations, byte determinism, margins, palette membership,
+transparent padding, frame choice, real HTTP, SVG/animation, atomic concurrent
+writes, content keys, failure fallback and both cache limits. Synthetic fixtures
+avoid redistributing favicons without established licences.
+`checks.chromium-windows` exercises the packaged helper through real Chromium and
+Qt at 1.5x (24/30/48 px, light/dark and installed PWA), and runs QML lint.
+`platinum-desktop`, `find-menu` and `bar-delivery` assert callers and delivery.
+
+**Visual evidence:** `/tmp/platinum-token-evidence/platinum-{light,dark}-pil.png`
+contains 1:1 strip/window-menu **PIL mocks**, using the exploration's real favicons
+and the production renderer. `*-pil-3x.png` is a nearest-neighbour inspection copy.
+`real-corpus-results.json` records 78 successful real-source size/mode cases and
+one empty-source fallback. The nested Hyprland loaded the production components
+and token PNGs, but its evidence assertion counted hidden empty icon slots and
+failed before capture. **In-shell visual rendering remains unverified.** The
+operator requested the PIL fallback after that attempt. No deployment or Myoko
+window action/screenshot ran. Small-icon legibility on Myoko's panel remains an
+on-device follow-up; the required margins reduce the favicon's front-face area.
