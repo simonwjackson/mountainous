@@ -20,9 +20,10 @@ Item {
     property bool inactive: false
     // The surface the icon sits on: the checker's colour.
     property color surface: Kit.PlatinumTokens.stripSurface
-    // A Chromium window: it draws a generated 3/4 token, which may use a
-    // bigger slot than theme art (32 px pixel art keeps its own size).
-    readonly property bool browserWindow: root.toplevel !== null && CdpTarget.isBrowser(CdpTarget.appIdOf(root.toplevel))
+    // A Chromium window with a site icon: it draws a generated 3/4 token,
+    // which may use a bigger slot than theme art. Without a site icon it
+    // shows the browser's 32 px theme art, which keeps the normal slot.
+    readonly property bool siteToken: root.toplevel !== null && CdpTarget.isBrowser(CdpTarget.appIdOf(root.toplevel)) && image.favicon !== ""
 
     implicitWidth: size
     implicitHeight: size

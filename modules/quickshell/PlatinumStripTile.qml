@@ -57,16 +57,16 @@ Item {
 
     // The icon sits a little left of centre, clear of the ▴. Pressed in, it
     // moves one physical pixel down and right, as a Platinum button's face.
-    // A Chromium window's generated token uses a 24 px slot from the tile's
-    // top edge (the top bevel falls in its transparent margin), so its bottom
-    // edge (24 - 2/1.5 px) ends above the ▴ at y 23. Theme art
-    // keeps 20 px, so 32 px pixel art is not stretched.
+    // A site token uses a 24 px slot with the same centre as the 20 px slot
+    // (13, 15), so every tile's icon lines up; the ▴ draws over its empty
+    // bottom-right margin. Theme art keeps 20 px, so 32 px pixel art is not
+    // stretched.
     PlatinumAppIcon {
         id: image
         visible: !tile.source && tile.icon !== ""
-        x: Kit.PlatinumTokens.snapFor(QsWindow.window, image.browserWindow ? 1 : 3) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
-        y: Kit.PlatinumTokens.snapFor(QsWindow.window, image.browserWindow ? 0 : 5) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
-        size: image.browserWindow ? 24 : 20
+        x: Kit.PlatinumTokens.snapFor(QsWindow.window, image.siteToken ? 1 : 3) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
+        y: Kit.PlatinumTokens.snapFor(QsWindow.window, image.siteToken ? 3 : 5) + (tile.sunk ? 1 / Kit.PlatinumTokens.ratioFor(QsWindow.window) : 0)
+        size: image.siteToken ? 24 : 20
         name: tile.icon
         toplevel: tile.toplevel
         inactive: !tile.shown
