@@ -7,6 +7,7 @@ let
         mountainous.features.pi-assistant.sharedSkills.shared-probe =
           "/nix/var/nix/profiles/per-user/pi-assistant/shared-probe";
         mountainous.features.pi-assistant.household = {
+          voicePort = 4397;
           skills.probe = "/nix/var/nix/profiles/per-user/pi-assistant/probe-skill";
           credentials.probe = "/run/secrets/probe";
         };
@@ -82,4 +83,47 @@ assert builtins.all (name: (unit name).serviceConfig.EnvironmentFile == [ ]) [
 assert !(cfg.people.laure.extensions ? ebay-seller) && !(cfg.household.extensions ? ebay-seller);
 assert cfg.household.skills.scryer == cfg.people.simon.skills.scryer;
 assert cfg.household.skills.scryer == cfg.people.laure.skills.scryer;
+# Personal instances route to Household's loopback RPC, never its web port.
+assert builtins.all
+  (
+    name:
+    (unit name).environment.ASSISTANT_HOUSEHOLD_RPC_URL
+    == "http://127.0.0.1:${toString cfg.household.voicePort}/rpc"
+  )
+  [
+    "simon"
+    "laure"
+  ];
+assert !((unit "household").environment ? ASSISTANT_HOUSEHOLD_RPC_URL);
+assert (unit "household").environment.ASSISTANT_PORT == toString cfg.household.voicePort;
+# Only Simon can publish assistant warnings. The fleet CLI owns auth and schema.
+assert builtins.elem flake.packages.x86_64-linux.notify-sync (unit "simon").path;
+assert (unit "simon").environment.NOTIFY_URL == config.mountainous.notifications.server;
+assert
+  (unit "simon").environment.NOTIFY_TOKEN_FILE
+  == "/run/credentials/pi-assistant-simon.service/notify-token";
+assert builtins.elem "notify-token:${config.sops.secrets.notify-agent-token.path}"
+  (unit "simon").serviceConfig.LoadCredential;
+assert
+  (unit "simon").environment.NOTIFY_BUTTON_TOKEN_FILE
+  == "/run/credentials/pi-assistant-simon.service/notify-button-token";
+assert builtins.elem "notify-button-token:${config.sops.secrets.notify-button-token.path}"
+  (unit "simon").serviceConfig.LoadCredential;
+assert builtins.all
+  (
+    name:
+    !((unit name).environment ? NOTIFY_TOKEN_FILE)
+    && !((unit name).environment ? NOTIFY_BUTTON_TOKEN_FILE)
+    && !((unit name).environment ? NOTIFY_URL)
+    && !(builtins.elem flake.packages.x86_64-linux.notify-sync (unit name).path)
+    && !(builtins.any (
+      credential: builtins.match "notify-(button-)?token:.*" credential != null
+    ) (unit name).serviceConfig.LoadCredential)
+    && !((unit name).environment ? ASSISTANT_LOGBOOK_URL)
+  )
+  [
+    "laure"
+    "household"
+  ];
+assert (unit "simon").environment.ASSISTANT_LOGBOOK_URL == "http://127.0.0.1:3160";
 true
