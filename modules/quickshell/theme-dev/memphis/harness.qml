@@ -763,6 +763,27 @@ ShellRoot {
         target: "memphis"
         function set(id: string): string { if (root.stateId === id) Qt.callLater(root.apply); else root.stateId = id; return id; }
         function theme(mode: string): void { Kit.Theme.mode = mode; }
+        // An appearance by its ID, as the host sets it: the mode follows
+        // the ID (Memphis or Platinum), then Kit.Theme.appearance. Returns
+        // the appearance each token file resolved.
+        function appearance(id: string): string {
+            const info = Kit.MemphisTokens.appearanceInfo(id) || Kit.PlatinumTokens.appearanceInfo(id);
+            if (info) Kit.Theme.mode = info.dark ? "dark" : "light";
+            if (typeof Kit.Theme.appearance === "string") Kit.Theme.appearance = id;
+            return Kit.MemphisTokens.appearance + " " + Kit.PlatinumTokens.appearance;
+        }
+        // The current Memphis desktop colour (the plain desktop the
+        // pattern draws for each scheme).
+        function desktopColour(): string { return String(Kit.MemphisTokens.desktop); }
+        // A window of the theme's own: Platinum's About window, Memphis's
+        // System Properties.
+        function about(): string {
+            const d = root.desktop;
+            if (!d) return "";
+            if (Theme.name === "platinum") { d.aboutOpen = true; return "about"; }
+            MenuState.open("sysprops", root.screen0, -1);
+            return MenuState.current;
+        }
         function current(): string {
             const d = root.desktop;
             const p = root.st.p || {};
@@ -859,6 +880,14 @@ ShellRoot {
                 }
             }
             return JSON.stringify(out);
+        }
+        // Draw the picker in a state: {theme, scheme, drop, applyFocus}
+        // (MemphisPickerView.show; scheme takes an appearance ID).
+        function pickerShow(json: string): string {
+            const v = root.findPicker();
+            if (!v || typeof v.show !== "function") return "no picker";
+            v.show(JSON.parse(json));
+            return "ok";
         }
         function focusApply(): string {
             const v = root.findPicker();
