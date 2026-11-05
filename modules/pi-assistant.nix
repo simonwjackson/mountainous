@@ -374,6 +374,8 @@ in
           NOTIFY_URL = config.mountainous.notifications.server;
           NOTIFY_TOKEN_FILE = "/run/credentials/pi-assistant-${name}.service/notify-token";
           NOTIFY_BUTTON_TOKEN_FILE = "/run/credentials/pi-assistant-${name}.service/notify-button-token";
+          # Simon approved the persona's therapy skill on 2026-11-05 (core ADR 0014).
+          ASSISTANT_THERAPY = "1";
         }
         // lib.optionalAttrs (instance.person == null) { ASSISTANT_HOUSEHOLD = "1"; }
         // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
