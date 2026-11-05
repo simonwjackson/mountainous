@@ -14,6 +14,7 @@
     {
       checks.desktop-icons = pkgs.runCommand "desktop-icons" { nativeBuildInputs = [ pkgs.nodejs ]; } ''
         node ${./quickshell/lettermark.test.js} ${./quickshell/lettermark.js}
+        node ${./quickshell/desktop-icons-model.test.js} ${./quickshell/desktop-icons-model.js} ${./quickshell/lettermark.js}
         touch $out
       '';
     };
