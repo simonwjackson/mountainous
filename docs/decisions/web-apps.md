@@ -46,8 +46,11 @@ profile conversion is needed. New declared apps still live in
 Use it to recover the address bar and menu, including the Install app action,
 then press it again to return to the page-only window. Other clients do not
 change. `mountainous.browser.kiosk.enable` adds `--kiosk` to the wrapper to
-remove the “press and hold Esc” fullscreen bubble. It defaults to the existing
-shell-navigation setting. **Cost: F11 does nothing.** Restart Chromium after
+remove the “press and hold Esc” fullscreen bubble. It is off by default.
+Chromium's `--kiosk` blocks DevTools (F12, Ctrl+Shift+I, Inspect) and the
+page right-click menu, and daily browsing needs both. With it off, the Esc
+bubble shows when a page window enters page-only mode. **Cost when on: F11
+does nothing, and no DevTools or right-click menu.** Restart Chromium after
 changing the wrapper option. Super+U is the recovery control, not F11.
 
 This deliberately hides Chromium's native origin/security display. A page's

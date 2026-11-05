@@ -20,8 +20,9 @@ manifest scope. There is no PWA-to-`--app` launcher rewrite.
 always with internal state 0. Use it to show the address bar and menu when
 installing a PWA, then return to page-only mode. Other clients do not change.
 `mountainous.browser.kiosk.enable` adds `--kiosk` to suppress the fullscreen
-Esc bubble. It defaults to the shell-navigation setting, which already adds
-`--remote-debugging-port=0`. **Cost: F11 does nothing.** Restart Chromium to
+Esc bubble. It is off by default, because `--kiosk` also blocks DevTools and
+the page right-click menu. **Cost when on: F11, DevTools and the right-click
+menu do nothing.** Restart Chromium to
 pick up wrapper changes. The named local `CHROMIUM_FAKE_FULLSCREEN` flag
 can disable both the fullscreen rule and Super+U.
 
@@ -106,7 +107,6 @@ mountainous.browser.shellNavigation.enable = false;
 
 Rebuild, close Chromium, and start a new desktop session. This removes the
 normal-browser CDP flag and returns normal Chromium's Ctrl+L to Chromium.
-The kiosk default also follows this option; an explicit kiosk override does not.
 To restore the ordinary frame too, disable `CHROMIUM_FAKE_FULLSCREEN` as above. The
 pre-existing declared-web-app Ctrl+L/CDP path remains. No profile migration or
 cookie rollback is needed. The rejected extension/PWA conversion has nothing

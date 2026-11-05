@@ -145,10 +145,11 @@ in
       };
       options.mountainous.browser.kiosk.enable = lib.mkOption {
         type = lib.types.bool;
-        default = cfg.enable;
+        default = false;
         description = ''
           Start Chromium with --kiosk to suppress its fullscreen Esc bubble.
-          Cost: F11 does nothing. Super+U shows or hides Chromium's own UI
+          Off by default: --kiosk also blocks DevTools (F12, Ctrl+Shift+I,
+          Inspect) and the page right-click menu. Cost: F11 does nothing. Super+U shows or hides Chromium's own UI
           on the active window through Hyprland's client fullscreen state.
           Restart Chromium after changing this option.
         '';

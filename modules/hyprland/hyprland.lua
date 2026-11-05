@@ -197,7 +197,7 @@ local CHROMIUM_FAKE_FULLSCREEN = true
 
 -- Chromium hides its own UI, but Hyprland keeps the window tiled and our
 -- patched hyprbars supplies the caption. Ignore client fullscreen requests
--- so a page cannot replace this split state. --kiosk silences the Esc bubble.
+-- so a page cannot replace this split state. Opt-in --kiosk silences the Esc bubble (and blocks DevTools).
 if CHROMIUM_FAKE_FULLSCREEN then
     hl.window_rule({
         name = "chromium-page-frame",
