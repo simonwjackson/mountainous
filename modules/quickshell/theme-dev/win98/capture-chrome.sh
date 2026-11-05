@@ -126,9 +126,9 @@ session_stop
 trap - EXIT
 
 # ---------------------------------------------------------------- narrow
-# 600 x 700 logical: the app icons go into the tray chevron / » first,
+# 480 x 700 logical: the app icons go into the tray chevron / » first,
 # and each is still one choice away.
-session_round narrow 900x1050
+session_round narrow 720x1050
 w98 theme light >/dev/null
 w98 set tb-normal >/dev/null; sleep 1
 w98 tray true >/dev/null; sleep 1.2
