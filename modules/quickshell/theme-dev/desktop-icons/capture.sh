@@ -27,7 +27,7 @@ if [ -z "${DESKTOP_DEV_TOOLS:-}" ]; then
   export DESKTOP_DEV_TOOLS=1
   pkg() { nix build --option builders '' --no-link --print-out-paths "$repo#nixosConfigurations.myoko.pkgs.$1"; }
   flake() { nix build --option builders '' --no-link --print-out-paths "$repo#packages.x86_64-linux.$1"; }
-  PATH="$(pkg sway)/bin:$(pkg grim)/bin:$(flake quickshell-mountainous)/bin:$(pkg wtype)/bin:$(pkg nodejs)/bin:$(pkg imagemagick)/bin:$PATH"
+  PATH="$(pkg sway)/bin:$(pkg grim)/bin:$(flake quickshell-mountainous)/bin:$(pkg nodejs)/bin:$(pkg imagemagick)/bin:$PATH"
   export PATH
   w95=$(flake w95fa-grid); chicago=$(flake chicagoflf); dejavu=$(pkg dejavu_fonts)
   art=$(flake desktop-art)
@@ -94,5 +94,5 @@ for a in $appearances; do
 done
 
 session_stop
-grep -E "WARN|TypeError|ReferenceError|Error:" "$out/session/qs.log" > "$out/warnings.log" || true
+grep -E "WARN scene|WARN: qs:|TypeError|ReferenceError|Binding loop" "$out/session/qs.log" > "$out/warnings.log" || true
 echo "warnings: $(wc -l < "$out/warnings.log") ($out/warnings.log)"
