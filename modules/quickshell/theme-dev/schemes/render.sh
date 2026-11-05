@@ -39,7 +39,8 @@ if [ -z "${MEMPHIS_DEV_TOOLS:-}" ]; then
   font=$(nix build --option builders '' --max-jobs 1 --cores 4 --no-link --print-out-paths "$repo#packages.x86_64-linux.w95fa-grid")
   chicago=$(nix build --option builders '' --max-jobs 1 --cores 4 --no-link --print-out-paths "$repo#packages.x86_64-linux.chicagoflf")
   dejavu=$(pkg dejavu_fonts)
-  export QML2_IMPORT_PATH="$HENSOU_QML:$(pkg qt6.qtwebsockets)/lib/qt-6/qml:$(pkg qt6.qtmultimedia)/lib/qt-6/qml"
+  QML2_IMPORT_PATH="$HENSOU_QML:$(pkg qt6.qtwebsockets)/lib/qt-6/qml:$(pkg qt6.qtmultimedia)/lib/qt-6/qml"
+  export QML2_IMPORT_PATH
   export PATH
   # Mesa's llvmpipe, as checks.memphis-desktop renders (Qt's own software
   # renderer draws 1.5-scale lines unevenly).
@@ -75,7 +76,8 @@ desktop_bg() {
   case "$1" in
     \#*) swaymsg -q output HEADLESS-1 bg "$1" solid_color ;;
     *.svg)
-      local tile="$out/tiles/$(basename "$(dirname "$(dirname "$1")")")-$(basename "$1" .svg).png"
+      local tile
+      tile="$out/tiles/$(basename "$(dirname "$(dirname "$1")")")-$(basename "$1" .svg).png"
       mkdir -p "$out/tiles"
       magick -background none "$1" -filter point -resize "$((8 * ${2:-3}))x$((8 * ${2:-3}))" "$tile"
       swaymsg -q output HEADLESS-1 bg "$tile" tile ;;
@@ -84,11 +86,15 @@ desktop_bg() {
 settle() { sleep "${1:-0.8}"; for _ in $(seq 30); do memphis current | grep -q '"settled":true' && break; sleep 0.1; done; sleep 0.4; }
 : > "$out/warnings.log"
 finish() {
+  # session_work is set by session.sh, which each part sources.
+  # shellcheck disable=SC2154
   session_stop
+  # shellcheck disable=SC2154
   grep -E "WARN scene|TypeError|ReferenceError|Error:" "$session_work/qs.log" >> "$out/warnings.log" || true
 }
 
 memphis() {
+  # shellcheck source=/dev/null
   SESSION_THEME=memphis . "$here/../memphis/session.sh" "$shell_dir" "$out/session-memphis" 2880x1800
   sleep 1.5
   for id in $(ids MemphisTokens.qml); do
@@ -118,6 +124,7 @@ memphis() {
 }
 
 platinum() {
+  # shellcheck source=/dev/null
   SESSION_THEME=platinum . "$here/../memphis/session.sh" "$shell_dir" "$out/session-platinum" 2880x1800
   sleep 1.5
   for id in $(ids PlatinumTokens.qml); do
@@ -150,6 +157,7 @@ ladder() {
   for theme in memphis platinum; do
     for size in $sizes; do
       local w=${size%x*} h=${size#*x}
+      # shellcheck source=/dev/null
       SESSION_THEME=$theme . "$here/../memphis/session.sh" "$shell_dir" "$out/l-${theme:0:1}$size" "$((w * 3 / 2))x$((h * 3 / 2))"
       sleep 1.5
       if [ "$theme" = memphis ]; then
